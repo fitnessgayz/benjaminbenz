@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fitness with Benjamin | Personal Training San Francisco</title>
+  <meta name="description" content="Personal training with Benjamin Benz in San Francisco. Strength training, physique coaching, confidence building, and sustainable fitness programs." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0b0d10;
+      --panel: #12161c;
+      --panel-2: #191f27;
+      --text: #f5f7fa;
+      --muted: #a7b0bd;
+      --line: rgba(255,255,255,0.12);
+      --accent: #d7ff3f;
+      --accent-2: #8ee8ff;
+      --shadow: 0 24px 70px rgba(0,0,0,0.42);
+      --radius: 28px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 20% 5%, rgba(215,255,63,0.18), transparent 32rem),
+        radial-gradient(circle at 85% 12%, rgba(142,232,255,0.12), transparent 28rem),
+        var(--bg);
+      line-height: 1.5;
+    }
+
+    a { color: inherit; text-decoration: none; }
+
+    .container {
+      width: min(1140px, calc(100% - 40px));
+      margin: 0 auto;
+    }
+
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      backdrop-filter: blur(18px);
+      background: rgba(11,13,16,0.72);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .nav-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 0;
+      gap: 18px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 900;
+      letter-spacing: -0.04em;
+      font-size: 1.15rem;
+    }
+
+    .brand-mark {
+      width: 38px;
+      height: 38px;
+      display: grid;
+      place-items: center;
+      border-radius: 14px;
+      background: var(--accent);
+      color: #0b0d10;
+      font-weight: 900;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      color: var(--muted);
+      font-size: 0.95rem;
+      font-weight: 600;
+    }
+
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 13px 18px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 800;
+      transition: transform 180ms ease, background 180ms ease, border-color 180ms ease;
+      cursor: pointer;
+    }
+
+    .button:hover { transform: translateY(-2px); }
+
+    .button-primary {
+      background: var(--accent);
+      color: #0b0d10;
+      box-shadow: 0 16px 40px rgba(215,255,63,0.18);
+    }
+
+    .button-secondary {
+      background: rgba(255,255,255,0.06);
+      border-color: var(--line);
+      color: var(--text);
+    }
+
+    .hero {
+      padding: 86px 0 54px;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1.05fr 0.95fr;
+      gap: 36px;
+      align-items: center;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      color: var(--accent);
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      font-size: 0.78rem;
+      margin-bottom: 18px;
+    }
+
+    .eyebrow::before {
+      content: "";
+      width: 9px;
+      height: 9px;
+      border-radius: 99px;
+      background: var(--accent);
+      box-shadow: 0 0 0 7px rgba(215,255,63,0.12);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(3rem, 8vw, 6.7rem);
+      line-height: 0.88;
+      letter-spacing: -0.09em;
+      max-width: 900px;
+    }
+
+    .hero p {
+      color: var(--muted);
+      font-size: 1.16rem;
+      max-width: 620px;
+      margin: 28px 0 0;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-top: 34px;
+    }
+
+    .hero-card {
+      position: relative;
+      min-height: 560px;
+      border-radius: var(--radius);
+      overflow: hidden;
+      background:
+        linear-gradient(155deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02)),
+        var(--panel);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      padding: 28px;
+    }
+
+    .photo-placeholder {
+      height: 100%;
+      min-height: 500px;
+      border-radius: 24px;
+      background:
+        linear-gradient(180deg, rgba(11,13,16,0.08), rgba(11,13,16,0.82)),
+        url('https://s3-media0.fl.yelpcdn.com/bphoto/s1SGEMQ_79eHAOyS4Hkbkw/l.jpg') center/cover;
+      border: 1px solid rgba(255,255,255,0.12);
+    }
+
+    .stat-strip {
+      position: absolute;
+      left: 46px;
+      right: 46px;
+      bottom: 46px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .stat {
+      padding: 16px;
+      border-radius: 20px;
+      background: rgba(11,13,16,0.72);
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(255,255,255,0.14);
+    }
+
+    .stat strong {
+      display: block;
+      font-size: 1.35rem;
+      letter-spacing: -0.05em;
+    }
+
+    .stat span {
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    section { padding: 76px 0; }
+
+    .section-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      align-items: end;
+      margin-bottom: 28px;
+    }
+
+    .section-top h2 {
+      margin: 0;
+      font-size: clamp(2.2rem, 5vw, 4.2rem);
+      line-height: 0.95;
+      letter-spacing: -0.07em;
+    }
+
+    .section-top p {
+      color: var(--muted);
+      max-width: 450px;
+      margin: 0;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+    }
+
+    .card {
+      background: linear-gradient(180deg, rgba(255,255,255,0.075), rgba(255,255,255,0.03));
+      border: 1px solid var(--line);
+      border-radius: 26px;
+      padding: 26px;
+      box-shadow: 0 16px 44px rgba(0,0,0,0.18);
+    }
+
+    .card .icon {
+      width: 46px;
+      height: 46px;
+      display: grid;
+      place-items: center;
+      border-radius: 16px;
+      background: rgba(215,255,63,0.13);
+      color: var(--accent);
+      font-size: 1.3rem;
+      margin-bottom: 22px;
+    }
+
+    .card h3 {
+      margin: 0 0 10px;
+      letter-spacing: -0.04em;
+      font-size: 1.35rem;
+    }
+
+    .card p { color: var(--muted); margin: 0; }
+
+    .split {
+      display: grid;
+      grid-template-columns: 0.9fr 1.1fr;
+      gap: 22px;
+      align-items: stretch;
+    }
+
+    .about-panel {
+      background: var(--accent);
+      color: #0b0d10;
+      border-radius: var(--radius);
+      padding: 34px;
+      min-height: 360px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .about-panel h2 {
+      margin: 0;
+      font-size: clamp(2.4rem, 5vw, 4.8rem);
+      line-height: 0.9;
+      letter-spacing: -0.08em;
+    }
+
+    .about-panel p {
+      font-weight: 700;
+      font-size: 1.05rem;
+      max-width: 470px;
+    }
+
+    .list-panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 34px;
+    }
+
+    .feature-row {
+      display: grid;
+      grid-template-columns: 44px 1fr;
+      gap: 16px;
+      padding: 20px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .feature-row:last-child { border-bottom: 0; }
+
+    .feature-row b { display: block; margin-bottom: 4px; }
+    .feature-row span { color: var(--muted); }
+
+    .reviews {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+    }
+
+    .album-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr 0.8fr;
+      grid-auto-rows: 260px;
+      gap: 18px;
+    }
+
+    .album-photo {
+      position: relative;
+      overflow: hidden;
+      border-radius: 26px;
+      border: 1px solid var(--line);
+      background: var(--panel-2);
+      box-shadow: 0 16px 44px rgba(0,0,0,0.18);
+    }
+
+    .album-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: transform 260ms ease;
+    }
+
+    .album-photo:hover img { transform: scale(1.045); }
+
+    .album-photo.featured { grid-row: span 2; }
+
+    .album-caption {
+      position: absolute;
+      left: 16px;
+      right: 16px;
+      bottom: 16px;
+      padding: 12px 14px;
+      border-radius: 18px;
+      background: rgba(11,13,16,0.72);
+      backdrop-filter: blur(14px);
+      color: var(--text);
+      font-weight: 800;
+      font-size: 0.92rem;
+    }
+
+    .review-card {
+      background: #f7f8fa;
+      color: #101318;
+      border-radius: 26px;
+      padding: 26px;
+      min-height: 270px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .stars { color: #d58c00; font-size: 1.1rem; letter-spacing: 0.06em; }
+    .review-card p { font-size: 1.02rem; color: #2b3038; }
+    .review-card footer { color: #6b7280; font-weight: 800; }
+
+    .contact {
+      background: linear-gradient(135deg, rgba(215,255,63,0.14), rgba(142,232,255,0.08));
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .contact-box {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 20px;
+      align-items: center;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 34px;
+    }
+
+    .contact-box h2 {
+      margin: 0 0 10px;
+      font-size: clamp(2rem, 4vw, 3.8rem);
+      line-height: 1;
+      letter-spacing: -0.07em;
+    }
+
+    .contact-box p { color: var(--muted); margin: 0; }
+
+    .contact-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 24px;
+    }
+
+    footer.site-footer {
+      padding: 34px 0;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .footer-inner {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      flex-wrap: wrap;
+      border-top: 1px solid var(--line);
+      padding-top: 24px;
+    }
+
+    @media (max-width: 860px) {
+      .nav-links { display: none; }
+      .hero-grid, .split, .contact-box { grid-template-columns: 1fr; }
+      .hero-card { min-height: 470px; }
+      .cards, .reviews, .album-grid { grid-template-columns: 1fr; }
+      .album-grid { grid-auto-rows: 320px; }
+      .album-photo.featured { grid-row: span 1; }
+      .section-top { display: block; }
+      .section-top p { margin-top: 14px; }
+      .stat-strip { left: 28px; right: 28px; bottom: 28px; grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <nav class="nav">
+    <div class="container nav-inner">
+      <a class="brand" href="#top" aria-label="Benjamin Benz Fitness home">
+        <span class="brand-mark">FWB</span>
+        <span>Fitness with Benjamin</span>
+      </a>
+      <div class="nav-links">
+        <a href="#training">Training</a>
+        <a href="#about">About</a>
+        <a href="#reviews">Reviews</a>
+        <a href="#album">Photos</a>
+        <a href="#contact">Contact</a>
+      </div>
+    </div>
+  </nav>
+
+  <main id="top">
+    <header class="hero">
+      <div class="container hero-grid">
+        <div>
+          <div class="eyebrow">Personal Training · San Francisco</div>
+          <h1>Know your body. Move with intention.</h1>
+          <p>
+            Fitness coaching focused on awareness, engagement, movement quality, and building a stronger connection between mind and body through intentional training.
+          </p>
+          <div class="hero-actions">
+            <a class="button button-primary" href="mailto:fwb@benjaminbenz.com">Book a Consultation</a>
+            <a class="button button-secondary" href="https://www.yelp.com/biz/benjamin-benz-san-francisco-5" target="_blank" rel="noopener">Read Yelp Reviews</a>
+            <a class="button button-secondary" href="#training">See Training Options</a>
+          </div>
+        </div>
+
+        <div class="hero-card" aria-label="Fitness image card">
+          <div class="photo-placeholder"></div>
+          <div class="stat-strip">
+            <div class="stat"><strong>5.0</strong><span>Yelp Rating</span></div>
+            <div class="stat"><strong>20</strong><span>Reviews</span></div>
+            <div class="stat"><strong>1:1</strong><span>Training</span></div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <section id="training">
+      <div class="container">
+        <div class="section-top">
+          <h2>Training that fits your body, not someone else’s template.</h2>
+          <p>Smart programming for muscle, mobility, and long-term consistency. No random punishment workouts. We’re adults now.</p>
+        </div>
+
+        <div class="cards">
+          <article class="card">
+            <div class="icon">↗</div>
+            <h3>Strength & Hypertrophy</h3>
+            <p>Progressive training plans designed to build shape, strength, and confidence without wasting time.</p>
+          </article>
+          <article class="card">
+            <div class="icon">◉</div>
+            <h3>Body Composition</h3>
+            <p>Practical coaching for fat loss, lean muscle, and habits that don’t require becoming a meal-prep hostage.</p>
+          </article>
+          <article class="card">
+            <div class="icon">◎</div>
+            <h3>Form & Mobility</h3>
+            <p>Technique-focused sessions that help you lift better, move smoother, and stop guessing your way through machines.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="about">
+      <div class="container split">
+        <div class="about-panel">
+          <h2>Train with intention.</h2>
+          <p>
+            Benjamin’s approach is direct, supportive, and built around real people with real schedules.
+            The goal: make training feel clear, effective, and worth showing up for.
+          </p>
+        </div>
+        <div class="list-panel">
+          <div class="feature-row">
+            <div>01</div>
+            <div><b>Personalized programming</b><span>Sessions are tailored to your goals, experience level, schedule, and body mechanics.</span></div>
+          </div>
+          <div class="feature-row">
+            <div>02</div>
+            <div><b>Supportive coaching</b><span>Expect clear cues, smart progressions, and accountability without the drill-sergeant cosplay.</span></div>
+          </div>
+          <div class="feature-row">
+            <div>03</div>
+            <div><b>Fitness-only brand</b><span>This site keeps the focus on coaching, training, and client results.</span></div>
+          </div>
+          <div class="feature-row">
+            <div>04</div>
+            <div><b>San Francisco availability</b><span>Available for personal training inquiries in San Francisco. Use the contact links below to start.</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="reviews">
+      <div class="container">
+        <div class="section-top">
+          <h2>Client love</h2>
+          <p>Rated 5.0 stars on Yelp with 20 reviews. Clients highlight Benjamin’s thoughtful programming, form coaching, mobility work, and motivating style.</p>
+        </div>
+
+        <div class="reviews">
+          <article class="review-card">
+            <div>
+              <div class="stars">★★★★★</div>
+              <p>“One of the best personal trainers I’ve ever worked with. He helped me figure out my goals, meet them, and train safely with better form.”</p>
+            </div>
+            <footer>Jimmy L. · Yelp</footer>
+          </article>
+          <article class="review-card">
+            <div>
+              <div class="stars">★★★★★</div>
+              <p>“No one has made me feel as motivated or given me better results. I noticed improved muscle definition, heavier lifts, and better mobility.”</p>
+            </div>
+            <footer>Michael B. · Yelp</footer>
+          </article>
+          <article class="review-card">
+            <div>
+              <div class="stars">★★★★★</div>
+              <p>“Benjamin is caring, thoughtful, and honest. His routines change based on what my body needs, and I feel stronger thanks to him.”</p>
+            </div>
+            <footer>Michael S. · Yelp</footer>
+          </article>
+        </div>
+
+        <div class="hero-actions" style="justify-content:center; margin-top: 28px;">
+          <a class="button button-primary" href="https://www.yelp.com/biz/benjamin-benz-san-francisco-5" target="_blank" rel="noopener">View All Yelp Reviews</a>
+        </div>
+      </div>
+    </section>
+
+    <section id="album">
+      <div class="container">
+        <div class="section-top">
+          <h2>Photos</h2>
+          <p>A sharper look at the Fitness with Benjamin vibe: movement, strength, conditioning, and client-focused coaching.</p>
+        </div>
+
+        <div class="album-grid">
+          <a class="album-photo featured" href="https://www.yelp.com/biz/benjamin-benz-san-francisco-5" target="_blank" rel="noopener">
+            <img src="https://s3-media0.fl.yelpcdn.com/bphoto/s1SGEMQ_79eHAOyS4Hkbkw/l.jpg" alt="Benjamin Benz fitness portrait from Yelp" loading="lazy">
+            <div class="album-caption">Mind x Muscle</div>
+          </a>
+          <a class="album-photo" href="https://www.yelp.com/biz/benjamin-benz-san-francisco-5" target="_blank" rel="noopener">
+            <img src="https://s3-media0.fl.yelpcdn.com/bphoto/ueOGMs7z-ERec9fxW5OQIg/l.jpg" alt="Outdoor kettlebell training photo from Yelp" loading="lazy">
+            <div class="album-caption">Strength</div>
+          </a>
+          <a class="album-photo" href="https://www.yelp.com/biz/benjamin-benz-san-francisco-5" target="_blank" rel="noopener">
+            <img src="https://s3-media0.fl.yelpcdn.com/bphoto/PwvoKKn8z8ooqHV2gWP6Aw/l.jpg" alt="Sprint training photo from Yelp" loading="lazy">
+            <div class="album-caption">Mindset</div>
+          </a>
+          <a class="album-photo" href="https://www.yelp.com/biz/benjamin-benz-san-francisco-5" target="_blank" rel="noopener">
+            <img src="https://s3-media0.fl.yelpcdn.com/bphoto/1INc91Daclw_LtT5jGD3IQ/l.jpg" alt="Kettlebell overhead training photo from Yelp" loading="lazy">
+            <div class="album-caption">Awareness</div>
+          </a>
+          <a class="album-photo" href="https://www.yelp.com/biz/benjamin-benz-san-francisco-5" target="_blank" rel="noopener">
+            <img src="https://s3-media0.fl.yelpcdn.com/bphoto/RVeM2nkIgXCNvy0WOUt9DQ/l.jpg" alt="Push-up training photo from Yelp" loading="lazy">
+            <div class="album-caption">Recovery</div>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section id="contact" class="contact">
+      <div class="container">
+        <div class="contact-box">
+          <div>
+            <h2>Ready to start?</h2>
+            <p>Send a message, ask about availability, or book a consultation.</p>
+            <div class="contact-links">
+              <a class="button button-primary" href="mailto:fwb@benjaminbenz.com">Email Benjamin</a>
+            </div>
+          </div>
+          <div>
+            <p><strong>Fitness with Benjamin</strong></p>
+            <p>San Francisco, CA</p>
+            <p>fwb@benjaminbenz.com</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <span>© <span id="year"></span> Fitness with Benjamin. All rights reserved.</span>
+      <span>Personal training · Strength · Body composition · Confidence</span>
+    </div>
+  </footer>
+
+  <script>
+    document.getElementById('year').textContent = new Date().getFullYear();
+  </script>
+</body>
+</html>
