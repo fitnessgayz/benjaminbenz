@@ -492,7 +492,7 @@
         </div>
 
         <div class="hero-card" aria-label="Fitness image card">
-          <div class="photo-placeholder"></div>
+          <div class="photo-placeholder" id="random-photo"></div>
           <div class="stat-strip">
             <div class="stat"><strong>5.0</strong><span>Yelp Rating</span></div>
             <div class="stat"><strong>20</strong><span>Reviews</span></div>
@@ -658,6 +658,21 @@
 
   <script>
     document.getElementById('year').textContent = new Date().getFullYear();
+
+    const photos = [
+      'https://s3-media0.fl.yelpcdn.com/bphoto/s1SGEMQ_79eHAOyS4Hkbkw/l.jpg',
+      'https://s3-media0.fl.yelpcdn.com/bphoto/ueOGMs7z-ERec9fxW5OQIg/l.jpg',
+      'https://s3-media0.fl.yelpcdn.com/bphoto/PwvoKKn8z8ooqHV2gWP6Aw/l.jpg',
+      'https://s3-media0.fl.yelpcdn.com/bphoto/1INc91Daclw_LtT5jGD3IQ/l.jpg',
+      'https://s3-media0.fl.yelpcdn.com/bphoto/RVeM2nkIgXCNvy0WOUt9DQ/l.jpg'
+    ];
+
+    const randomImage = photos[Math.floor(Math.random() * photos.length)];
+
+    document.getElementById('random-photo').style.background = `
+      linear-gradient(180deg, rgba(11,13,16,0.08), rgba(11,13,16,0.82)),
+      url('${randomImage}') center/cover
+    `;
   </script>
 </body>
 </html>
