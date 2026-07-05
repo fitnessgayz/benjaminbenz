@@ -4,6 +4,19 @@ if (year) {
   year.textContent = new Date().getFullYear();
 }
 
+const reviewTrack = document.querySelector(".review-track");
+
+if (reviewTrack) {
+  const reviews = Array.from(reviewTrack.children);
+
+  for (let index = reviews.length - 1; index > 0; index -= 1) {
+    const randomIndex = Math.floor(Math.random() * (index + 1));
+    [reviews[index], reviews[randomIndex]] = [reviews[randomIndex], reviews[index]];
+  }
+
+  reviews.forEach((review) => reviewTrack.appendChild(review));
+}
+
 const questionnaire = document.getElementById("training-questionnaire");
 
 if (questionnaire) {

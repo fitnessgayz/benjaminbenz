@@ -292,6 +292,7 @@ h3 {
 .split-feature,
 .proof,
 .photo-story,
+.client-progress,
 .contact {
   width: min(var(--max), calc(100% - 40px));
   margin: 0 auto;
@@ -516,6 +517,44 @@ figcaption {
   text-transform: uppercase;
 }
 
+.client-progress {
+  padding: clamp(54px, 8vw, 96px) 0;
+  border-top: 1px solid var(--line);
+}
+
+.client-progress-heading {
+  max-width: 980px;
+  margin-bottom: 34px;
+}
+
+.client-gallery {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.client-gallery figure {
+  display: flex;
+  min-height: 100%;
+  flex-direction: column;
+}
+
+.client-gallery figure:nth-child(2) {
+  margin-top: 0;
+}
+
+.client-gallery img {
+  width: 100%;
+  height: clamp(380px, 42vw, 540px);
+  display: block;
+  object-fit: contain;
+  background: var(--black);
+}
+
+.client-gallery figcaption {
+  font-size: clamp(1.4rem, 2vw, 2.4rem);
+}
+
 .contact {
   margin-top: 54px;
   margin-bottom: 54px;
@@ -736,6 +775,7 @@ textarea:focus {
   .split-feature,
   .review-track,
   .photo-grid,
+  .client-gallery,
   .yelp-summary {
     grid-template-columns: 1fr;
   }
@@ -766,6 +806,10 @@ textarea:focus {
   figure img {
     height: 430px;
   }
+
+  .client-gallery img {
+    height: auto;
+  }
 }
 
 @media (max-width: 620px) {
@@ -795,6 +839,7 @@ textarea:focus {
   .split-feature,
   .proof,
   .photo-story,
+  .client-progress,
   .contact,
   .questionnaire-shell,
   footer {
