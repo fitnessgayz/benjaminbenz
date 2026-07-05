@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fitness Questionnaire | Fitness with Benjamin</title>
+  <meta name="description" content="Fitness with Benjamin training questionnaire." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css?v=questionnaire" />
+</head>
+<body class="questionnaire-page">
+  <header class="site-header">
+    <a class="brand" href="index.html#top" aria-label="Fitness with Benjamin home">
+      <span>FWB</span>
+      <strong>Fitness with Benjamin</strong>
+    </a>
+    <nav class="nav-links" aria-label="Primary navigation">
+      <a href="index.html#method">Method</a>
+      <a href="index.html#training">Training</a>
+      <a href="index.html#proof">Reviews</a>
+      <a href="index.html#photos">Photos</a>
+    </nav>
+    <div class="header-actions">
+      <a class="login-link" href="client-login.html">Client Login</a>
+      <a class="online-link" href="https://invite.everfit.io/A7JSGOTK7S">Online Coaching</a>
+      <a class="header-cta" href="index.html#contact">Start</a>
+    </div>
+  </header>
+
+  <main class="questionnaire-shell">
+    <section class="questionnaire-hero">
+      <p class="kicker">Start training</p>
+      <h1>Fitness questionnaire</h1>
+      <p>Share your goals, movement history, schedule, and training needs so Benjamin can build a thoughtful path forward.</p>
+    </section>
+
+    <form class="questionnaire-form" id="training-questionnaire" action="https://docs.google.com/forms/u/0/d/e/1FAIpQLScOnf2PUdN1JkkZ2--h33R73FtjBEQCVU4VKDL9aDjpoKotSQ/formResponse" method="POST" target="google-form-target" data-google-form="true">
+      <input type="hidden" name="fvv" value="1">
+      <input type="hidden" name="pageHistory" value="0">
+      <input type="hidden" name="fbzx" value="-1184672957029485111">
+      <input type="hidden" name="submissionTimestamp" value="-1">
+      <input type="hidden" name="emailReceipt" value="true">
+      <input type="hidden" name="entry.1734222278_year" id="dob-year">
+      <input type="hidden" name="entry.1734222278_month" id="dob-month">
+      <input type="hidden" name="entry.1734222278_day" id="dob-day">
+      <section class="form-section">
+        <h2>Contact</h2>
+        <label>Email <input type="email" name="emailAddress" required autocomplete="email"></label>
+        <label>Name <input type="text" name="entry.1669821459" required autocomplete="name"></label>
+        <label>Date of Birth <input type="date" id="date-of-birth"></label>
+        <label>Phone Number <input type="tel" name="entry.1545628165" autocomplete="tel"></label>
+        <label>Home Address <input type="text" name="entry.1594583095" autocomplete="street-address"></label>
+        <fieldset>
+          <legend>Preferred Communication</legend>
+          <label><input type="radio" name="entry.1398929920" value="Email"> Email</label>
+          <label><input type="radio" name="entry.1398929920" value="Phone"> Phone</label>
+          <label><input type="radio" name="entry.1398929920" value="Text"> Text</label>
+        </fieldset>
+      </section>
+
+      <section class="form-section">
+        <h2>Readiness</h2>
+        <fieldset>
+          <legend>Has your doctor ever said that you have a heart condition and that you should only perform physical activity recommended by a doctor?</legend>
+          <label><input type="radio" name="entry.860218452" value="Yes"> Yes</label>
+          <label><input type="radio" name="entry.860218452" value="No"> No</label>
+        </fieldset>
+        <fieldset>
+          <legend>Do you feel pain in your chest when you perform physical activity?</legend>
+          <label><input type="radio" name="entry.387403937" value="Yes"> Yes</label>
+          <label><input type="radio" name="entry.387403937" value="No"> No</label>
+        </fieldset>
+        <fieldset>
+          <legend>In the past month, have you had chest pain when you were not performing any physical activity?</legend>
+          <label><input type="radio" name="entry.690858714" value="Yes"> Yes</label>
+          <label><input type="radio" name="entry.690858714" value="No"> No</label>
+          <label><input type="radio" name="entry.690858714" value="Maybe"> Maybe</label>
+        </fieldset>
+        <fieldset>
+          <legend>Do you have a bone or joint problem that could be made worse by a change in your physical activity?</legend>
+          <label><input type="radio" name="entry.841459174" value="Yes"> Yes</label>
+          <label><input type="radio" name="entry.841459174" value="No"> No</label>
+          <label><input type="radio" name="entry.841459174" value="Maybe"> Maybe</label>
+        </fieldset>
+        <fieldset>
+          <legend>Do you know of any other reason why you should not engage in physical activity?</legend>
+          <label><input type="radio" name="entry.1621636660" value="Yes"> Yes</label>
+          <label><input type="radio" name="entry.1621636660" value="No"> No</label>
+          <label><input type="radio" name="entry.1621636660" value="Maybe"> Maybe</label>
+        </fieldset>
+      </section>
+
+      <section class="form-section">
+        <h2>Goals</h2>
+        <label>How long has it been since you were comfortable with your level of fitness? How did you feel at that time? <input type="text" name="entry.1380380496"></label>
+        <label>What are your fitness goals, and why? <textarea name="entry.2068691995"></textarea></label>
+        <label>How long have you been thinking about achieving these goals? <input type="text" name="entry.1988079474"></label>
+        <label>Why have you waited? What is different this time? <textarea name="entry.829897095"></textarea></label>
+        <label>What is your plan for achieving these goals? <textarea name="entry.29519721"></textarea></label>
+        <label>What’s your daily nutrition like? <textarea name="entry.2086908736" placeholder="Breakfast, lunch, dinner, snacks"></textarea></label>
+        <label>Do you use fitness apps to keep track of your daily activities? If so, which apps? <input type="text" name="entry.1006926549"></label>
+        <label>On a scale from 1 to 5, how committed are you to your fitness goals? <input type="number" name="entry.991176272" min="1" max="5"></label>
+        <fieldset>
+          <legend>Are you ready for a change today?</legend>
+          <label><input type="radio" name="entry.546079274" value="Yes"> Yes</label>
+          <label><input type="radio" name="entry.546079274" value="No"> No</label>
+          <label><input type="radio" name="entry.546079274" value="Maybe"> Maybe</label>
+        </fieldset>
+      </section>
+
+      <section class="form-section">
+        <h2>Lifestyle</h2>
+        <label>What is your current occupation? <input type="text" name="entry.914990004"></label>
+        <label>Does your occupation require extended periods of repetitive movements? <textarea name="entry.239800035"></textarea></label>
+        <label>Does your occupation cause you anxiety or mental stress? <input type="text" name="entry.878843636"></label>
+        <label>Do you partake in any recreational activities? <textarea name="entry.847789731" placeholder="Golf, tennis, skiing, etc."></textarea></label>
+        <label>Do you have any hobbies? <textarea name="entry.1689967939" placeholder="Reading, gardening, working on cars, exploring the Internet, etc."></textarea></label>
+        <label>Have you ever had any pain or injuries? <textarea name="entry.679011878" placeholder="Ankle, knee, hip, back, shoulder, etc."></textarea></label>
+        <label>Have you ever had any surgeries? <textarea name="entry.467258900"></textarea></label>
+        <label>What time do you go to bed? What time do you wake up? <input type="text" name="entry.515393375"></label>
+      </section>
+
+      <section class="form-section">
+        <h2>Training logistics</h2>
+        <fieldset>
+          <legend>Are you able to train at Castro Fitness, Market Street?</legend>
+          <label><input type="radio" name="entry.491199772" value="Yes"> Yes</label>
+          <label><input type="radio" name="entry.491199772" value="No"> No</label>
+        </fieldset>
+        <label>What workout equipment do you have at home? <input type="text" name="entry.1309282204"></label>
+        <fieldset>
+          <legend>Availability by day</legend>
+          <label><input type="checkbox" name="entry.32058535" value="Monday"> Monday</label>
+          <label><input type="checkbox" name="entry.32058535" value="Tuesday"> Tuesday</label>
+          <label><input type="checkbox" name="entry.32058535" value="Wednesday"> Wednesday</label>
+          <label><input type="checkbox" name="entry.32058535" value="Thursday"> Thursday</label>
+          <label><input type="checkbox" name="entry.32058535" value="Friday"> Friday</label>
+          <label><input type="checkbox" name="entry.32058535" value="Saturday"> Saturday</label>
+          <label><input type="checkbox" name="entry.32058535" value="Sunday"> Sunday</label>
+        </fieldset>
+        <label>Availability by time <textarea name="entry.102487108" placeholder="Please list times available for training"></textarea></label>
+        <label>Anything else I should know about you? <textarea name="entry.1621066572"></textarea></label>
+      </section>
+
+      <div class="form-submit-panel">
+        <p id="questionnaire-status" role="status"></p>
+        <button class="button button-dark" type="submit">Submit questionnaire</button>
+      </div>
+    </form>
+    <iframe class="form-target" name="google-form-target" title="Google Form submission target"></iframe>
+  </main>
+
+  <script src="js/script.js?v=questionnaire"></script>
+</body>
+</html>

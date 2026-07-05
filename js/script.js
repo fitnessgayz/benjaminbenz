@@ -1,18 +1,33 @@
-document.getElementById("year").textContent = new Date().getFullYear();
+const year = document.getElementById("year");
 
-const reviews = [
-  { quote: "One of the best personal trainers I’ve ever worked with. He helped me figure out my goals, meet them, and train safely with better form.", name: "Jimmy L. · Yelp" },
-  { quote: "No one has made me feel as motivated or given me better results. I noticed improved muscle definition, heavier lifts, and better mobility.", name: "Michael B. · Yelp" },
-  { quote: "Benjamin is caring, thoughtful, and honest. His routines change based on what my body needs, and I feel stronger thanks to him.", name: "Michael S. · Yelp" },
-  { quote: "Benjamin is knowledgeable, motivating, and makes every session feel focused. I always leave feeling stronger and more confident.", name: "Yelp Review" },
-  { quote: "He pays attention to form, explains everything clearly, and creates workouts that actually match your goals.", name: "Yelp Review" }
-];
+if (year) {
+  year.textContent = new Date().getFullYear();
+}
 
-const reviewCards = document.querySelectorAll(".review-card");
-const shuffledReviews = [...reviews].sort(() => 0.5 - Math.random()).slice(0, 3);
+const questionnaire = document.getElementById("training-questionnaire");
 
-reviewCards.forEach((card, index) => {
-  const review = shuffledReviews[index];
-  card.querySelector("p").textContent = `“${review.quote}”`;
-  card.querySelector("strong").textContent = review.name;
-});
+if (questionnaire) {
+  questionnaire.addEventListener("submit", (event) => {
+    const dateInput = document.getElementById("date-of-birth");
+    const status = document.getElementById("questionnaire-status");
+
+    if (dateInput?.value) {
+      const [yearValue, monthValue, dayValue] = dateInput.value.split("-");
+      document.getElementById("dob-year").value = yearValue || "";
+      document.getElementById("dob-month").value = monthValue || "";
+      document.getElementById("dob-day").value = dayValue || "";
+    }
+
+    if (status) {
+      status.textContent = "Submitting your questionnaire...";
+    }
+
+    window.setTimeout(() => {
+      if (status) {
+        status.textContent = "Thanks. Your questionnaire was sent to Benjamin.";
+      }
+
+      questionnaire.reset();
+    }, 1400);
+  });
+}

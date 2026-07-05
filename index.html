@@ -4,103 +4,160 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Fitness with Benjamin | Personal Training San Francisco</title>
-  <meta name="description" content="Personal training with Benjamin in San Francisco. Intentional strength coaching focused on awareness, movement quality, and mind-body connection." />
+  <meta name="description" content="Personal training with Benjamin in San Francisco. Strength coaching built around awareness, control, and mind-body connection." />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/style.css?v=yelp-reviews" />
 </head>
 <body>
-  <nav class="nav">
-    <a class="brand" href="#top"><span>FWB</span><strong>Fitness with Benjamin</strong></a>
-    <div class="nav-links">
-      <a href="#approach">Approach</a>
-      <a href="#services">Services</a>
-      <a href="#reviews">Reviews</a>
+  <header class="site-header">
+    <a class="brand" href="#top" aria-label="Fitness with Benjamin home">
+      <span>FWB</span>
+      <strong>Fitness with Benjamin</strong>
+    </a>
+    <nav class="nav-links" aria-label="Primary navigation">
+      <a href="#method">Method</a>
+      <a href="#training">Training</a>
+      <a href="#proof">Reviews</a>
       <a href="#photos">Photos</a>
-      <a href="#contact">Contact</a>
+    </nav>
+    <div class="header-actions">
+      <a class="login-link" href="client-login.html">Client Login</a>
+      <a class="online-link" href="https://invite.everfit.io/A7JSGOTK7S">Online Coaching</a>
+      <a class="header-cta" href="#contact">Start</a>
     </div>
-  </nav>
+  </header>
 
   <main id="top">
-    <section class="hero">
-      <div class="hero-copy">
-        <p class="eyebrow">Personal Training · San Francisco</p>
-        <h1>Know your body. Move with intention.</h1>
-        <p class="hero-text">Private coaching focused on strength, awareness, movement quality, and building a deeper connection between mind and body.</p>
-        <div class="hero-actions">
-          <a class="button primary" href="https://docs.google.com/forms/d/e/1FAIpQLScOnf2PUdN1JkkZ2--h33R73FtjBEQCVU4VKDL9aDjpoKotSQ/viewform?usp=dialog" target="_blank" rel="noopener">Fitness Questionnaire Form</a>
-          <a class="button secondary" href="mailto:fwb@benjaminbenz.com">Email Benjamin</a>
+    <section class="hero" aria-label="Fitness with Benjamin campaign">
+      <img src="https://s3-media0.fl.yelpcdn.com/bphoto/s1SGEMQ_79eHAOyS4Hkbkw/l.jpg" alt="Benjamin training outdoors" />
+      <div class="hero-overlay"></div>
+      <div class="hero-content">
+        <p class="kicker">San Francisco personal training</p>
+        <h1>Fitness with Benjamin</h1>
+        <p>Mindful workouts tailored to individual needs, built to create body awareness and connect mind x body for stronger, smarter training.</p>
+        <div class="button-row">
+          <a class="button button-light" href="questionnaire.html">Take the questionnaire</a>
+          <a class="button button-outline" href="#method">Explore the method</a>
         </div>
       </div>
-      <div class="hero-visual">
-        <img src="https://s3-media0.fl.yelpcdn.com/bphoto/s1SGEMQ_79eHAOyS4Hkbkw/l.jpg" alt="Fitness with Benjamin training photo">
-        <div class="hero-card"><strong>5.0</strong><span>Yelp rating · 20 reviews</span></div>
+      <div class="hero-meta" aria-label="Training highlights">
+        <span>Private coaching</span>
+        <span>Online coaching</span>
+        <span>Mind x muscle</span>
       </div>
     </section>
 
-    <section id="approach" class="section intro-section">
+    <section id="method" class="editorial">
+      <p class="kicker">The campaign</p>
+      <h2>Know your body. Move with intention.</h2>
+      <p>Benjamin’s methodical approach helps clients learn how to engage and activate muscles with intention, optimize each workout, and build strength that feels connected instead of forced.</p>
+    </section>
+
+    <section id="training" class="training-grid" aria-label="Training options">
+      <article class="training-tile tile-dark">
+        <span>01</span>
+        <h3>Strength build</h3>
+        <p>Progressive lifts, clean mechanics, and smart volume tailored to your needs, goals, and recovery.</p>
+      </article>
+      <article class="training-tile tile-photo">
+        <img src="https://s3-media0.fl.yelpcdn.com/bphoto/ueOGMs7z-ERec9fxW5OQIg/l.jpg" alt="Kettlebell training outdoors" />
+        <div><span>02</span><h3>Mindful work</h3></div>
+      </article>
+      <article class="training-tile tile-lime">
+        <span>03</span>
+        <h3>Mind x muscle</h3>
+        <p>Learn how to engage and activate the right muscles so each rep feels sharper and more connected.</p>
+      </article>
+      <article class="training-tile tile-light">
+        <span>04</span>
+        <h3>Mobility and form</h3>
+        <p>A methodical approach to better positions, better patterns, and deeper body awareness.</p>
+      </article>
+    </section>
+
+    <section class="split-feature">
       <div>
-        <p class="eyebrow">The Approach</p>
-        <h2>Training is not just reps. It is awareness, control, and connection.</h2>
+        <p class="kicker">Built around you</p>
+        <h2>Training that reads your body in real time.</h2>
       </div>
-      <p>Benjamin’s coaching blends strength training, form refinement, mobility, and practical habit-building. The goal is to help you understand your body, train with more intention, and feel stronger inside and outside the gym.</p>
-    </section>
-
-    <section id="services" class="section">
-      <div class="section-heading">
-        <p class="eyebrow">Services</p>
-        <h2>Coaching designed around how you actually move.</h2>
-      </div>
-      <div class="service-grid">
-        <article class="service-card"><span>01</span><h3>Strength & Hypertrophy</h3><p>Build strength, shape, and confidence with progressive training that fits your body and experience level.</p></article>
-        <article class="service-card"><span>02</span><h3>Mind x Muscle</h3><p>Learn how to engage the right muscles, improve body awareness, and train with more control.</p></article>
-        <article class="service-card"><span>03</span><h3>Form & Mobility</h3><p>Move better, lift better, and reduce the guesswork with clear cues and intentional programming.</p></article>
+      <div class="feature-list">
+        <p><strong>Assess.</strong> See how you move, where you compensate, and what your body actually needs.</p>
+        <p><strong>Connect.</strong> Build mind x body awareness so you can feel the right muscles working at the right time.</p>
+        <p><strong>Optimize.</strong> Make every workout more intentional, efficient, and specific to your goals.</p>
       </div>
     </section>
 
-    <section class="statement">
-      <h2>Strength starts with connection.</h2>
-      <p>Not punishment. Not random workouts. Just smart coaching that helps you know your body and move with purpose.</p>
+    <section id="proof" class="proof">
+      <div class="proof-heading">
+        <p class="kicker">Yelp reviews</p>
+        <h2>Client stories from the work.</h2>
+      </div>
+      <div class="yelp-summary">
+        <strong>Real</strong>
+        <span>Client experiences · Personal training · San Francisco</span>
+      </div>
+      <div class="review-track">
+        <article class="review-card">
+          <span>★★★★★</span>
+          <p><q>one of the best personal trainers</q></p>
+          <strong>Jimmy L. · Yelp · Dec 21, 2023</strong>
+        </article>
+        <article class="review-card">
+          <span>★★★★★</span>
+          <p><q>no one has made me feel as motivated</q></p>
+          <strong>Michael B. · Yelp · Dec 21, 2023</strong>
+        </article>
+        <article class="review-card">
+          <span>★★★★★</span>
+          <p><q>caring, thoughtful, honest personal trainer</q></p>
+          <strong>Michael S. · Yelp · May 10, 2022</strong>
+        </article>
+      </div>
+      <div class="proof-actions">
+        <a class="button button-dark" href="https://www.yelp.com/biz/benjamin-benz-san-francisco-5" target="_blank" rel="noopener">Read Yelp reviews</a>
+        <a class="text-link" href="https://www.yelp.com/biz/benjamin-benz-san-francisco-5#reviews" target="_blank" rel="noopener">Open Yelp reviews</a>
+      </div>
     </section>
 
-    <section id="reviews" class="section">
-      <div class="section-heading">
-        <p class="eyebrow">Client Love</p>
-        <h2>Yelp-backed reviews from real clients.</h2>
+    <section id="photos" class="photo-story">
+      <div class="photo-story-heading">
+        <p class="kicker">Field notes</p>
+        <h2>Movement, strength, awareness, control.</h2>
       </div>
-      <div class="review-grid">
-        <article class="review-card"><div class="stars">★★★★★</div><p>“One of the best personal trainers I’ve ever worked with. He helped me figure out my goals, meet them, and train safely with better form.”</p><strong>Jimmy L. · Yelp</strong></article>
-        <article class="review-card"><div class="stars">★★★★★</div><p>“No one has made me feel as motivated or given me better results. I noticed improved muscle definition, heavier lifts, and better mobility.”</p><strong>Michael B. · Yelp</strong></article>
-        <article class="review-card"><div class="stars">★★★★★</div><p>“Benjamin is caring, thoughtful, and honest. His routines change based on what my body needs, and I feel stronger thanks to him.”</p><strong>Michael S. · Yelp</strong></article>
-      </div>
-      <div class="center"><a class="button secondary" href="https://www.yelp.com/biz/benjamin-benz-san-francisco-5" target="_blank" rel="noopener">View All Yelp Reviews</a></div>
-    </section>
-
-    <section id="photos" class="section">
-      <div class="section-heading">
-        <p class="eyebrow">Photos</p>
-        <h2>Movement, strength, awareness, and control.</h2>
-      </div>
-      <div class="photo-gallery">
-        <a href="https://www.yelp.com/biz/benjamin-benz-san-francisco-5" target="_blank" rel="noopener"><img src="https://s3-media0.fl.yelpcdn.com/bphoto/s1SGEMQ_79eHAOyS4Hkbkw/l.jpg" alt="Fitness with Benjamin photo"><span>Mind x Muscle</span></a>
-        <a href="https://www.yelp.com/biz/benjamin-benz-san-francisco-5" target="_blank" rel="noopener"><img src="https://s3-media0.fl.yelpcdn.com/bphoto/ueOGMs7z-ERec9fxW5OQIg/l.jpg" alt="Fitness with Benjamin photo"><span>Strength</span></a>
-        <a href="https://www.yelp.com/biz/benjamin-benz-san-francisco-5" target="_blank" rel="noopener"><img src="https://s3-media0.fl.yelpcdn.com/bphoto/PwvoKKn8z8ooqHV2gWP6Aw/l.jpg" alt="Fitness with Benjamin photo"><span>Mindset</span></a>
-        <a href="https://www.yelp.com/biz/benjamin-benz-san-francisco-5" target="_blank" rel="noopener"><img src="https://s3-media0.fl.yelpcdn.com/bphoto/1INc91Daclw_LtT5jGD3IQ/l.jpg" alt="Fitness with Benjamin photo"><span>Awareness</span></a>
-        <a href="https://www.yelp.com/biz/benjamin-benz-san-francisco-5" target="_blank" rel="noopener"><img src="https://s3-media0.fl.yelpcdn.com/bphoto/RVeM2nkIgXCNvy0WOUt9DQ/l.jpg" alt="Fitness with Benjamin photo"><span>Recovery</span></a>
+      <div class="photo-grid">
+        <figure>
+          <img src="https://s3-media0.fl.yelpcdn.com/bphoto/PwvoKKn8z8ooqHV2gWP6Aw/l.jpg" alt="Sprint training photo" />
+          <figcaption>Mindset</figcaption>
+        </figure>
+        <figure>
+          <img src="https://s3-media0.fl.yelpcdn.com/bphoto/1INc91Daclw_LtT5jGD3IQ/l.jpg" alt="Kettlebell overhead training photo" />
+          <figcaption>Awareness</figcaption>
+        </figure>
+        <figure>
+          <img src="https://s3-media0.fl.yelpcdn.com/bphoto/RVeM2nkIgXCNvy0WOUt9DQ/l.jpg" alt="Push-up training photo" />
+          <figcaption>Recovery</figcaption>
+        </figure>
       </div>
     </section>
 
     <section id="contact" class="contact">
-      <div><p class="eyebrow">Start Here</p><h2>Ready to train with intention?</h2><p>Send a message or fill out the questionnaire so Benjamin can learn more about your goals, schedule, and training needs.</p></div>
-      <div class="contact-actions">
-        <a class="button primary" href="https://docs.google.com/forms/d/e/1FAIpQLScOnf2PUdN1JkkZ2--h33R73FtjBEQCVU4VKDL9aDjpoKotSQ/viewform?usp=dialog" target="_blank" rel="noopener">Fitness Questionnaire Form</a>
-        <a class="button secondary" href="mailto:fwb@benjaminbenz.com">Email Benjamin</a>
+      <p class="kicker">Start here</p>
+      <h2>Ready to train with intention?</h2>
+      <p>Fill out the questionnaire or send a note. Benjamin will use your goals, schedule, training history, and movement needs to shape the next step.</p>
+      <div class="button-row">
+        <a class="button button-dark" href="questionnaire.html">Fitness questionnaire</a>
+        <a class="button button-ghost" href="mailto:fwb@benjaminbenz.com">Email Benjamin</a>
       </div>
     </section>
   </main>
 
-  <footer><span>© <span id="year"></span> Fitness with Benjamin</span><span>San Francisco · fwb@benjaminbenz.com</span></footer>
-  <script src="js/script.js"></script>
+  <footer>
+    <span>© <span id="year"></span> Fitness with Benjamin</span>
+    <span>San Francisco · fwb@benjaminbenz.com</span>
+  </footer>
+
+  <script src="js/script.js?v=yelp-reviews"></script>
 </body>
 </html>
