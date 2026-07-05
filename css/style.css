@@ -746,14 +746,6 @@ textarea:focus {
   font-weight: 900;
 }
 
-.form-target {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  opacity: 0;
-  pointer-events: none;
-}
-
 @media (max-width: 980px) {
   .site-header {
     grid-template-columns: 1fr auto;

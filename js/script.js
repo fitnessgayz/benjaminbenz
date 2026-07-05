@@ -20,27 +20,39 @@ if (reviewTrack) {
 const questionnaire = document.getElementById("training-questionnaire");
 
 if (questionnaire) {
-  questionnaire.addEventListener("submit", (event) => {
-    const dateInput = document.getElementById("date-of-birth");
+  questionnaire.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
     const status = document.getElementById("questionnaire-status");
+    const submitButton = questionnaire.querySelector('button[type="submit"]');
 
-    if (dateInput?.value) {
-      const [yearValue, monthValue, dayValue] = dateInput.value.split("-");
-      document.getElementById("dob-year").value = yearValue || "";
-      document.getElementById("dob-month").value = monthValue || "";
-      document.getElementById("dob-day").value = dayValue || "";
+    if (submitButton) {
+      submitButton.disabled = true;
     }
-
     if (status) {
       status.textContent = "Submitting your questionnaire...";
     }
 
-    window.setTimeout(() => {
+    try {
+      await fetch(questionnaire.action, {
+        method: "POST",
+        mode: "no-cors",
+        body: new URLSearchParams(new FormData(questionnaire))
+      });
+
       if (status) {
         status.textContent = "Thanks. Your questionnaire was sent to Benjamin.";
       }
 
       questionnaire.reset();
-    }, 1400);
+    } catch (error) {
+      if (status) {
+        status.textContent = "Something went wrong. Please email fwb@benjaminbenz.com.";
+      }
+    } finally {
+      if (submitButton) {
+        submitButton.disabled = false;
+      }
+    }
   });
 }
