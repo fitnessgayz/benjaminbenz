@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=login-refresh-4" />
+  <link rel="stylesheet" href="css/style.css?v=login-refresh-5" />
 </head>
 <body class="login-page">
   <header class="site-header">
@@ -23,7 +23,7 @@
       <a href="index.html#photos">Photos</a>
     </nav>
     <div class="header-actions">
-      <a class="login-link is-current" href="client-login.html?v=login-refresh-4">Client Login</a>
+      <a class="login-link is-current" href="client-login.html?v=login-refresh-5">Client Login</a>
       <a class="online-link" href="https://invite.everfit.io/A7JSGOTK7S">Online Coaching</a>
       <a class="header-cta" href="index.html#contact">Start</a>
     </div>
@@ -36,37 +36,56 @@
       <p>Sign in to view your current program, log your workouts, and track progress.</p>
     </section>
 
-    <section class="access-panel" aria-label="Client sign in">
-      <div class="access-panel-heading">
-        <p class="kicker">Private login</p>
-        <h2>Client access</h2>
+    <section class="access-options" aria-label="Portal sign in options">
+      <div class="access-panel" aria-label="Client sign in">
+        <div class="access-panel-heading">
+          <p class="kicker">Private login</p>
+          <h2>Client access</h2>
+        </div>
+        <form class="login-form" id="client-login-form">
+          <label>
+            Email
+            <input type="email" name="email" placeholder="client@example.com" autocomplete="email" required aria-label="Email" />
+          </label>
+          <label>
+            Password
+            <input type="password" name="password" placeholder="Password" autocomplete="current-password" required aria-label="Password" />
+          </label>
+          <button class="button button-dark" type="submit">Sign in</button>
+          <p class="login-status" id="login-status" role="status">Use the email and password from your coach.</p>
+        </form>
+        <div class="access-demo">
+          <strong>Secure client portal</strong>
+          <span>Your program is only visible after sign in.</span>
+        </div>
       </div>
-      <form class="login-form" id="client-login-form">
-        <label>
-          Email
-          <input type="email" name="email" placeholder="client@example.com" autocomplete="email" required aria-label="Email" />
-        </label>
-        <label>
-          Password
-          <input type="password" name="password" placeholder="Password" autocomplete="current-password" required aria-label="Password" />
-        </label>
-        <button class="button button-dark" type="submit">Sign in</button>
-        <p class="login-status" id="login-status" role="status">Use the email and password from your coach.</p>
-      </form>
-      <div class="access-demo">
-        <strong>Secure client portal</strong>
-        <span>Your program is only visible after sign in.</span>
+
+      <div class="access-panel coach-access-panel" aria-label="Coach sign in">
+        <div class="access-panel-heading">
+          <p class="kicker">Coach login</p>
+          <h2>Coach access</h2>
+        </div>
+        <form class="login-form" id="coach-login-form">
+          <label>
+            Email
+            <input type="email" name="email" placeholder="coach@example.com" autocomplete="email" required aria-label="Coach email" />
+          </label>
+          <label>
+            Password
+            <input type="password" name="password" placeholder="Password" autocomplete="current-password" required aria-label="Coach password" />
+          </label>
+          <button class="button button-dark" type="submit">Sign in</button>
+          <p class="login-status" id="coach-login-status" role="status">Use your coach admin login.</p>
+        </form>
+        <div class="access-demo">
+          <strong>Client programs</strong>
+          <span>Coach sign-in opens the program editor.</span>
+        </div>
       </div>
-      <p class="coach-login-card">
-        <a href="coach-admin.html?v=coach-login-refresh-4">Coach Login</a>
-      </p>
     </section>
-    <p class="coach-login-footer">
-      <a href="coach-admin.html?v=coach-login-refresh-4">Coach Login</a>
-    </p>
   </main>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/supabase-config.js?v=login-refresh-4"></script>
-  <script src="js/client-portal.js?v=login-refresh-4"></script>
+  <script src="js/supabase-config.js?v=login-refresh-5"></script>
+  <script src="js/client-portal.js?v=login-refresh-5"></script>
 </body>
 </html>

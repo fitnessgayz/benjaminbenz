@@ -8,8 +8,13 @@ const isConfigured = Boolean(
 const supabaseClient = isConfigured && window.supabase
   ? window.supabase.createClient(config.url, config.anonKey)
   : null;
+const coachPortalEmails = ["benjaminbenz.fit@gmail.com"];
 let activeClientEmail = "";
 let trainingLogs = [];
+
+function isCoachPortalEmail(email) {
+  return coachPortalEmails.includes(String(email || "").toLowerCase());
+}
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -858,6 +863,54 @@ async function handleLogin() {
   }
 }
 
+async function handleCoachPortalLogin() {
+  const form = document.getElementById("coach-login-form");
+  const status = document.getElementById("coach-login-status");
+
+  if (!form) {
+    return;
+  }
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    if (!supabaseClient) {
+      if (status) {
+        status.textContent = "Coach login is being connected. Please try again soon.";
+      }
+      return;
+    }
+
+    const data = new FormData(form);
+    const email = data.get("email");
+    const password = data.get("password");
+
+    if (status) {
+      status.textContent = "Signing in...";
+    }
+
+    const { data: loginData, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+
+    if (error) {
+      if (status) {
+        status.textContent = "That email or password did not work. Please try again.";
+      }
+      return;
+    }
+
+    if (!isCoachPortalEmail(loginData.user?.email)) {
+      await supabaseClient.auth.signOut();
+
+      if (status) {
+        status.textContent = "This login is not set up as a coach admin.";
+      }
+      return;
+    }
+
+    window.location.href = "coach-admin.html?v=coach-login-refresh-5";
+  });
+}
+
 async function loadDashboard() {
   if (!document.querySelector(".dashboard-page")) {
     return;
@@ -1046,6 +1099,7 @@ async function handleSignOut() {
 }
 
 handleLogin();
+handleCoachPortalLogin();
 loadDashboard();
 handleSignOut();
 handleTrainingDateChange();

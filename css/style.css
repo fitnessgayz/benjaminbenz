@@ -648,11 +648,11 @@ footer {
 }
 
 .client-access {
-  width: min(1040px, calc(100% - 40px));
+  width: min(1280px, calc(100% - 40px));
   min-height: calc(100svh - 72px);
   display: grid;
-  grid-template-columns: minmax(0, .95fr) minmax(340px, 420px);
-  gap: clamp(28px, 6vw, 86px);
+  grid-template-columns: minmax(260px, .7fr) minmax(0, 1.3fr);
+  gap: clamp(28px, 4vw, 64px);
   align-items: center;
   margin: 0 auto;
   padding: clamp(42px, 7vw, 92px) 0;
@@ -673,8 +673,16 @@ footer {
   font-weight: 800;
 }
 
+.access-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  align-items: stretch;
+}
+
 .access-panel {
   display: grid;
+  align-content: start;
   gap: 20px;
   padding: clamp(24px, 3.5vw, 34px);
   background: var(--paper);
@@ -684,7 +692,7 @@ footer {
 }
 
 .access-panel-heading h2 {
-  font-size: clamp(2.25rem, 4vw, 3.8rem);
+  font-size: clamp(2.1rem, 3.3vw, 3.55rem);
   line-height: .9;
 }
 
@@ -1988,6 +1996,7 @@ textarea:focus {
   .photo-grid,
   .yelp-summary,
   .client-access,
+  .access-options,
   .dashboard-hero,
   .dashboard-grid,
   .mini-table,
