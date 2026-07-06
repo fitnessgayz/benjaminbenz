@@ -1,0 +1,2 @@
+[functions.invite-client]
+verify_jwt = false

@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Coach Admin | Fitness with Benjamin</title>
+  <meta name="description" content="Fitness with Benjamin private coach admin." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css?v=compact-header" />
+</head>
+<body class="dashboard-page coach-admin-page">
+  <header class="site-header dashboard-header">
+    <a class="brand" href="index.html#top" aria-label="Fitness with Benjamin home">
+      <span>FWB</span>
+      <strong>Fitness with Benjamin</strong>
+    </a>
+    <nav class="nav-links" aria-label="Primary navigation">
+      <a href="client-dashboard.html">Client View</a>
+      <a href="client-login.html">Client Login</a>
+    </nav>
+    <div class="header-actions">
+      <button class="login-link is-current sign-out-button" type="button" data-coach-sign-out hidden>Sign Out</button>
+      <a class="header-cta" href="index.html#contact">Start</a>
+    </div>
+  </header>
+
+  <main class="admin-shell">
+    <section class="dashboard-hero" aria-label="Coach admin summary">
+      <div>
+        <p class="kicker">Coach admin</p>
+        <h1>Client programs</h1>
+        <p>Update client profiles, coach notes, and workouts from one private page.</p>
+      </div>
+    </section>
+
+    <section class="access-panel admin-login-panel" id="coach-login-panel" aria-label="Coach sign in">
+      <div class="access-panel-heading">
+        <p class="kicker">Sign in</p>
+        <h2>Coach access</h2>
+      </div>
+      <form class="login-form" id="coach-login-form">
+        <label>
+          Email
+          <input type="email" name="email" placeholder="coach@example.com" autocomplete="email" required aria-label="Email" />
+        </label>
+        <label>
+          Password
+          <input type="password" name="password" placeholder="Password" autocomplete="current-password" required aria-label="Password" />
+        </label>
+        <button class="button button-dark" type="submit">Sign in</button>
+        <p class="login-status" id="coach-login-status" role="status">Use your coach admin login.</p>
+      </form>
+    </section>
+
+    <section class="admin-workspace" id="coach-admin-workspace" hidden>
+      <aside class="admin-client-list" aria-label="Clients">
+        <div class="admin-section-heading">
+          <div>
+            <p class="kicker">Clients</p>
+            <h2>Programs</h2>
+          </div>
+          <button class="button button-dark" type="button" id="new-client-button">New</button>
+        </div>
+        <div class="client-list" id="client-list"></div>
+      </aside>
+
+      <form class="admin-editor" id="program-editor">
+        <input type="hidden" name="id" />
+
+        <section class="admin-card">
+          <div class="admin-section-heading">
+            <div>
+              <p class="kicker">Profile</p>
+              <h2>Client</h2>
+            </div>
+            <label class="toggle-label">
+              <input type="checkbox" name="active" checked />
+              Active
+            </label>
+          </div>
+          <div class="admin-field-grid">
+            <label>
+              Client email
+              <input type="email" name="client_email" placeholder="client@example.com" required />
+            </label>
+            <label>
+              Client name
+              <input type="text" name="client_name" placeholder="Client name" required />
+            </label>
+            <label>
+              Initials
+              <input type="text" name="initials" placeholder="BG" maxlength="4" />
+            </label>
+            <label>
+              Height
+              <input type="text" name="height" placeholder="5 ft 10 in" />
+            </label>
+            <label>
+              Starting weight
+              <input type="text" name="starting_weight" placeholder="180 lb" />
+            </label>
+            <label>
+              Starting bodyfat
+              <input type="text" name="starting_bodyfat" placeholder="Not set" />
+            </label>
+          </div>
+          <div class="invite-row">
+            <div>
+              <strong>Client login</strong>
+              <p id="invite-status" role="status">Send an invite so this client can set their password.</p>
+            </div>
+            <button class="button button-dark" type="button" id="send-invite-button">Send invite</button>
+          </div>
+        </section>
+
+        <section class="admin-card">
+          <div class="admin-section-heading">
+            <div>
+              <p class="kicker">Program</p>
+              <h2>Training block</h2>
+            </div>
+            <button class="button button-dark" type="button" id="start-new-program-button">Start new program</button>
+          </div>
+          <div class="admin-field-grid">
+            <label>
+              Program title
+              <input type="text" name="program_title" placeholder="Client Program" required />
+            </label>
+            <label>
+              Fitness goal
+              <input type="text" name="fitness_goal" placeholder="Gain muscle / reduce bodyfat" />
+            </label>
+            <label>
+              Focus target
+              <input type="text" name="focus_target" placeholder="Chest" />
+            </label>
+            <label>
+              Google Sheet link
+              <input type="url" name="sheet_url" placeholder="https://docs.google.com/..." />
+            </label>
+          </div>
+          <label>
+            Program summary
+            <textarea name="program_summary" placeholder="Short summary for the top of the client dashboard."></textarea>
+          </label>
+        </section>
+
+        <section class="admin-card progress-editor-card">
+          <div class="admin-section-heading">
+            <div>
+              <p class="kicker">Progress</p>
+              <h2>Check-ins</h2>
+            </div>
+          </div>
+          <div class="admin-field-grid">
+            <label>
+              Date
+              <input type="date" name="progress_date" />
+            </label>
+            <label>
+              Current bodyweight
+              <input type="number" name="progress_bodyweight" placeholder="180" step="0.1" min="0" />
+            </label>
+            <label>
+              Current bodyfat
+              <input type="number" name="progress_bodyfat" placeholder="18" step="0.1" min="0" />
+            </label>
+          </div>
+          <label>
+            Updated goal
+            <textarea name="progress_goal" placeholder="Updated goal for this check-in."></textarea>
+          </label>
+          <div class="progress-actions">
+            <p id="progress-status" role="status">Save dated check-ins to build the progress graph.</p>
+            <button class="button button-dark" type="button" id="save-progress-button">Save check-in</button>
+          </div>
+          <div class="progress-history" id="progress-history"></div>
+        </section>
+
+        <section class="admin-card training-log-card">
+          <div class="admin-section-heading">
+            <div>
+              <p class="kicker">Training logs</p>
+              <h2>Weights used</h2>
+            </div>
+          </div>
+          <div class="training-log-history" id="training-log-history">
+            <p class="empty-state">No weights logged yet.</p>
+          </div>
+        </section>
+
+        <section class="admin-card">
+          <div class="admin-section-heading">
+            <div>
+              <p class="kicker">Notes</p>
+              <h2>Coach notes</h2>
+            </div>
+          </div>
+          <label>
+            Note title
+            <input type="text" name="coach_note_title" placeholder="Keep the pairings tight." />
+          </label>
+          <label>
+            Note body
+            <textarea name="coach_note_body" placeholder="What should this client remember this week?"></textarea>
+          </label>
+        </section>
+
+        <div class="workout-fields" id="workout-fields"></div>
+
+        <section class="form-submit-panel admin-submit-panel">
+          <p id="admin-save-status" role="status">Ready.</p>
+          <button class="button button-dark" type="submit">Save program</button>
+        </section>
+      </form>
+    </section>
+  </main>
+
+  <script src="js/script.js?v=coach-admin"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase-config.js"></script>
+  <script src="js/coach-admin.js"></script>
+</body>
+</html>

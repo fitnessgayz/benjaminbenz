@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Client Dashboard | Fitness with Benjamin</title>
+  <meta name="description" content="Fitness with Benjamin private client dashboard." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css?v=bottom-workout-sheet" />
+</head>
+<body class="dashboard-page is-loading">
+  <header class="site-header dashboard-header">
+    <a class="brand" href="index.html#top" aria-label="Fitness with Benjamin home">
+      <span>FWB</span>
+      <strong>Fitness with Benjamin</strong>
+    </a>
+    <nav class="nav-links" aria-label="Primary navigation">
+      <a href="index.html#method">Method</a>
+      <a href="index.html#training">Training</a>
+      <a href="index.html#proof">Reviews</a>
+      <a href="index.html#photos">Photos</a>
+    </nav>
+    <div class="header-actions">
+      <button class="login-link is-current sign-out-button" type="button" data-sign-out>Sign Out</button>
+      <a class="online-link" href="https://invite.everfit.io/A7JSGOTK7S">Online Coaching</a>
+      <a class="header-cta" href="index.html#contact">Start</a>
+    </div>
+  </header>
+
+  <main class="dashboard-shell">
+    <section class="dashboard-loading" id="dashboard-loading" role="status">
+      <p class="kicker">Client dashboard</p>
+      <h1>Loading</h1>
+      <p>Checking client access.</p>
+    </section>
+
+    <div id="dashboard-content" hidden>
+      <section class="dashboard-hero" aria-label="Program summary">
+        <div>
+          <p class="kicker">Client dashboard</p>
+          <h1 id="dashboard-program-title"></h1>
+          <p id="dashboard-program-summary"></p>
+        </div>
+      </section>
+
+      <section class="dashboard-grid" aria-label="Client program dashboard">
+        <aside class="client-summary">
+          <div class="client-avatar" id="client-avatar"></div>
+          <h2 id="client-name"></h2>
+          <p>Current training block</p>
+          <div class="summary-metrics" id="summary-metrics"></div>
+        </aside>
+
+        <section class="progress-panel" aria-labelledby="progress-title">
+          <div class="panel-heading">
+            <div>
+              <p class="kicker">Progress</p>
+              <h2 id="progress-title">Check-ins</h2>
+            </div>
+            <span class="status-pill" id="progress-date"></span>
+          </div>
+          <div class="progress-current" id="progress-current"></div>
+          <div class="progress-chart" id="progress-chart" aria-label="Progress line graph"></div>
+          <p class="progress-goal" id="progress-goal"></p>
+        </section>
+
+        <section class="today-panel" aria-labelledby="today-title">
+          <div class="panel-heading">
+            <div>
+              <h2 id="today-title"></h2>
+            </div>
+            <span class="status-pill" id="today-focus"></span>
+          </div>
+
+          <div class="exercise-list" id="today-exercises"></div>
+        </section>
+
+        <section class="lower-panel" aria-labelledby="lower-title">
+          <div class="panel-heading">
+            <div>
+              <h2 id="lower-title"></h2>
+            </div>
+            <span class="status-pill" id="next-focus"></span>
+          </div>
+          <div class="workout-app-list" id="next-exercises" role="list" aria-label="Workout 2 exercises"></div>
+        </section>
+
+        <div class="additional-workouts" id="additional-workouts"></div>
+      </section>
+
+      <div class="dashboard-sheet-action">
+        <a class="button button-dark" id="workout-sheet-link" href="#" target="_blank" rel="noopener" hidden>Open workout sheet</a>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <span>&copy; <span id="year"></span> Fitness with Benjamin</span>
+    <span>San Francisco &middot; fwb@benjaminbenz.com</span>
+  </footer>
+
+  <script src="js/script.js?v=client-dashboard"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase-config.js"></script>
+  <script src="js/client-portal.js"></script>
+</body>
+</html>

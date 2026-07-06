@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Client Login | Fitness with Benjamin</title>
-  <meta name="description" content="Fitness with Benjamin client login page." />
+  <title>Set Password | Fitness with Benjamin</title>
+  <meta name="description" content="Set your Fitness with Benjamin client password." />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=compact-header" />
+  <link rel="stylesheet" href="css/style.css?v=client-invite" />
 </head>
 <body class="login-page">
   <header class="site-header">
@@ -24,43 +24,39 @@
     </nav>
     <div class="header-actions">
       <a class="login-link is-current" href="client-login.html">Client Login</a>
-      <a class="online-link" href="https://invite.everfit.io/A7JSGOTK7S">Online Coaching</a>
       <a class="header-cta" href="index.html#contact">Start</a>
     </div>
   </header>
 
   <main class="client-access">
-    <section class="access-intro" aria-labelledby="access-title">
-      <p class="kicker">Client access</p>
-      <h1 id="access-title">Training portal</h1>
-      <p>Sign in to view your current program, log your workouts, and track progress.</p>
+    <section class="access-intro" aria-labelledby="invite-title">
+      <p class="kicker">Client invite</p>
+      <h1 id="invite-title">Set password</h1>
+      <p>Create your password to open your private training dashboard.</p>
     </section>
 
-    <section class="access-panel" aria-label="Client sign in">
+    <section class="access-panel" aria-label="Set client password">
       <div class="access-panel-heading">
-        <p class="kicker">Private login</p>
+        <p class="kicker">Password</p>
         <h2>Client access</h2>
       </div>
-      <form class="login-form" id="client-login-form">
+      <form class="login-form" id="client-invite-form" hidden>
         <label>
-          Email
-          <input type="email" name="email" placeholder="client@example.com" autocomplete="email" required aria-label="Email" />
+          New password
+          <input type="password" name="password" placeholder="New password" autocomplete="new-password" required minlength="8" aria-label="New password" />
         </label>
         <label>
-          Password
-          <input type="password" name="password" placeholder="Password" autocomplete="current-password" required aria-label="Password" />
+          Confirm password
+          <input type="password" name="confirm_password" placeholder="Confirm password" autocomplete="new-password" required minlength="8" aria-label="Confirm password" />
         </label>
-        <button class="button button-dark" type="submit">Sign in</button>
-        <p class="login-status" id="login-status" role="status">Use the email and password from your coach.</p>
+        <button class="button button-dark" type="submit">Set password</button>
       </form>
-      <div class="access-demo">
-        <strong>Secure client portal</strong>
-        <span>Your program is only visible after sign in.</span>
-      </div>
+      <p class="login-status" id="client-invite-status" role="status">Checking invite link...</p>
     </section>
   </main>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js"></script>
-  <script src="js/client-portal.js"></script>
+  <script src="js/client-invite.js"></script>
 </body>
 </html>
