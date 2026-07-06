@@ -907,7 +907,7 @@ async function handleCoachPortalLogin() {
       return;
     }
 
-    window.location.href = "coach-admin.html?v=coach-login-refresh-5";
+    window.location.href = "coach-admin.html?v=coach-login-refresh-6";
   });
 }
 

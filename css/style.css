@@ -127,11 +127,15 @@ footer {
 .online-link,
 .header-cta {
   border: 0;
-  padding: 10px 18px;
+  min-height: 36px;
+  padding: 7px 12px;
   border-radius: 999px;
   color: var(--white);
   background: var(--black);
   font: inherit;
+  font-size: .78rem;
+  line-height: 1;
+  white-space: nowrap;
   cursor: pointer;
 }
 
@@ -148,19 +152,6 @@ footer {
 .dashboard-header .header-actions,
 .login-page .header-actions {
   gap: 10px;
-}
-
-.dashboard-header .login-link,
-.dashboard-header .online-link,
-.dashboard-header .header-cta,
-.login-page .login-link,
-.login-page .online-link,
-.login-page .header-cta {
-  min-height: 36px;
-  padding: 7px 12px;
-  font-size: .78rem;
-  line-height: 1;
-  white-space: nowrap;
 }
 
 .hero {
