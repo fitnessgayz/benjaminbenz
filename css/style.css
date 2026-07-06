@@ -735,6 +735,24 @@ footer {
   color: var(--black);
 }
 
+.coach-login-card {
+  margin: -2px 0 0;
+  text-align: center;
+}
+
+.coach-login-card a {
+  color: var(--muted);
+  font-size: .86rem;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.coach-login-card a:hover,
+.coach-login-card a:focus-visible {
+  color: var(--black);
+  text-decoration: underline;
+}
+
 .coach-login-footer {
   grid-column: 1 / -1;
   margin: -18px 0 0;
