@@ -1567,9 +1567,27 @@ footer {
   padding: clamp(34px, 6vw, 76px) 0;
 }
 
+.coach-admin-page .admin-shell {
+  width: min(1120px, calc(100% - 48px));
+  padding: clamp(28px, 4vw, 48px) 0;
+}
+
+.coach-admin-page .dashboard-hero h1 {
+  max-width: 720px;
+  font-size: clamp(2.8rem, 4.8vw, 5rem);
+}
+
+.coach-admin-page .dashboard-hero p:not(.kicker) {
+  max-width: 560px;
+}
+
 .admin-login-panel {
   max-width: 520px;
   margin-top: 24px;
+}
+
+.coach-admin-page .admin-login-panel {
+  margin-inline: auto;
 }
 
 .admin-workspace {
@@ -1577,6 +1595,11 @@ footer {
   grid-template-columns: 320px minmax(0, 1fr);
   gap: 14px;
   padding-top: 14px;
+}
+
+.coach-admin-page .admin-workspace {
+  grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
+  gap: 16px;
 }
 
 .admin-client-list,
@@ -1605,6 +1628,11 @@ footer {
 
 .admin-section-heading h2 {
   font-size: clamp(2rem, 3vw, 3.8rem);
+}
+
+.coach-admin-page .admin-section-heading h2 {
+  font-size: clamp(1.45rem, 2vw, 2.25rem);
+  line-height: 1;
 }
 
 .admin-section-heading .button {
@@ -1671,10 +1699,18 @@ footer {
   padding: clamp(20px, 3vw, 30px);
 }
 
+.coach-admin-page .admin-card {
+  padding: clamp(18px, 2vw, 24px);
+}
+
 .admin-field-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 14px;
+}
+
+.coach-admin-page .admin-field-grid {
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
 }
 
 .admin-card label {
