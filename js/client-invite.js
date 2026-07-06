@@ -30,10 +30,34 @@ async function prepareInviteSession() {
   }
 
   const params = new URLSearchParams(window.location.search);
+  const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
   const code = params.get("code");
+  const accessToken = hashParams.get("access_token");
+  const refreshToken = hashParams.get("refresh_token");
+  const inviteError = params.get("error_description") || hashParams.get("error_description");
+
+  if (inviteError) {
+    setInviteStatus(inviteError);
+    return;
+  }
 
   if (code) {
-    await inviteSupabase.auth.exchangeCodeForSession(code);
+    const { error } = await inviteSupabase.auth.exchangeCodeForSession(code);
+
+    if (error) {
+      setInviteStatus(error.message);
+      return;
+    }
+  } else if (accessToken && refreshToken) {
+    const { error } = await inviteSupabase.auth.setSession({
+      access_token: accessToken,
+      refresh_token: refreshToken
+    });
+
+    if (error) {
+      setInviteStatus(error.message);
+      return;
+    }
   }
 
   const { data } = await inviteSupabase.auth.getSession();
@@ -44,6 +68,7 @@ async function prepareInviteSession() {
   }
 
   form.hidden = false;
+  window.history.replaceState({}, document.title, window.location.pathname);
   setInviteStatus("Choose a password with at least 8 characters.");
 }
 

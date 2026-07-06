@@ -10,7 +10,7 @@ const coachSupabase = hasCoachConfig && window.supabase
   ? window.supabase.createClient(coachConfig.url, coachConfig.anonKey)
   : null;
 const workoutSlots = [1, 2, 3, 4, 5, 6, 7];
-const coachLoginUrl = "client-login.html?v=mobile-overflow-fix-1";
+const coachLoginUrl = "client-login.html?v=client-admin-fixes-1";
 
 let programs = [];
 let selectedProgramId = "";
@@ -27,6 +27,14 @@ function adminStatus(message) {
 
 function sendToCoachLogin() {
   window.location.href = coachLoginUrl;
+}
+
+function inviteRedirectUrl() {
+  if (window.location.hostname === "benjaminbenz.com" || window.location.hostname === "www.benjaminbenz.com") {
+    return `${window.location.origin}/client-invite.html`;
+  }
+
+  return "https://benjaminbenz.com/client-invite.html";
 }
 
 function inviteStatus(message) {
@@ -384,20 +392,26 @@ async function loadTrainingLogsForEmail(email) {
 
 function renderClientList() {
   const list = document.getElementById("client-list");
+  const deleteButton = document.getElementById("delete-client-button");
+  const visiblePrograms = programs.filter((program) => program.active !== false);
 
   if (!list) {
     return;
   }
 
-  if (programs.length === 0) {
+  if (deleteButton) {
+    deleteButton.disabled = !selectedProgramId;
+  }
+
+  if (visiblePrograms.length === 0) {
     list.innerHTML = '<p class="empty-state">No client programs yet.</p>';
     return;
   }
 
-  list.innerHTML = programs.map((program) => `
+  list.innerHTML = visiblePrograms.map((program) => `
     <button class="client-list-button${program.id === selectedProgramId ? " is-selected" : ""}" type="button" data-program-id="${program.id}">
       <strong>${program.client_name || "Client"}</strong>
-      <span>${program.client_email || ""} · ${program.active ? "Active" : "Archived"}</span>
+      <span>${program.client_email || ""}</span>
     </button>
   `).join("");
 
@@ -418,6 +432,7 @@ async function loadPrograms() {
   const { data, error } = await coachSupabase
     .from("client_programs")
     .select("*")
+    .eq("active", true)
     .order("client_name", { ascending: true });
 
   if (error) {
@@ -519,6 +534,75 @@ async function handleSave() {
   });
 }
 
+function handleSaveNewClient() {
+  const button = document.getElementById("save-new-client-button");
+  const form = document.getElementById("program-editor");
+
+  if (!button || !form) {
+    return;
+  }
+
+  button.addEventListener("click", () => {
+    if (form.elements.id.value) {
+      adminStatus("Use New first, then Save new client.");
+      return;
+    }
+
+    adminStatus("Saving new client...");
+    form.requestSubmit();
+  });
+}
+
+async function handleDeleteClient() {
+  const button = document.getElementById("delete-client-button");
+  const form = document.getElementById("program-editor");
+
+  if (!button || !form) {
+    return;
+  }
+
+  button.addEventListener("click", async () => {
+    const id = form.elements.id.value || selectedProgramId;
+    const selectedProgram = programs.find((program) => program.id === id);
+
+    if (!id || !selectedProgram) {
+      adminStatus("Choose a client to delete.");
+      return;
+    }
+
+    const label = selectedProgram.client_name || selectedProgram.client_email || "this client";
+    const confirmed = window.confirm(`Delete ${label} from the active client list?`);
+
+    if (!confirmed) {
+      return;
+    }
+
+    button.disabled = true;
+    adminStatus("Deleting client...");
+
+    const { error } = await coachSupabase
+      .from("client_programs")
+      .update({ active: false })
+      .eq("id", id);
+
+    if (error) {
+      adminStatus(error.message);
+      button.disabled = false;
+      return;
+    }
+
+    programs = programs.map((program) => (
+      program.id === id ? { ...program, active: false } : program
+    ));
+    const nextProgram = programs.find((program) => program.active !== false) || {};
+
+    selectedProgramId = nextProgram.id || "";
+    fillForm(nextProgram);
+    renderClientList();
+    adminStatus("Client deleted.");
+  });
+}
+
 async function handleSendInvite() {
   const button = document.getElementById("send-invite-button");
   const form = document.getElementById("program-editor");
@@ -560,7 +644,7 @@ async function handleSendInvite() {
         },
         body: JSON.stringify({
           email,
-          redirectTo: `${window.location.origin}/client-invite.html`
+          redirectTo: inviteRedirectUrl()
         })
       });
       const result = await response.json().catch(() => ({}));
@@ -709,6 +793,8 @@ async function bootCoachAdmin() {
 
   renderWorkoutFields();
   handleSave();
+  handleSaveNewClient();
+  handleDeleteClient();
   handleSendInvite();
   handleSaveProgress();
   handleCoachSignOut();

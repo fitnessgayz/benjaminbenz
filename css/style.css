@@ -272,6 +272,12 @@ h3 {
   transform: translateY(-2px);
 }
 
+.button:disabled {
+  cursor: not-allowed;
+  opacity: .46;
+  transform: none;
+}
+
 .button-light {
   color: var(--black);
   background: var(--white);
@@ -290,6 +296,11 @@ h3 {
 .button-ghost {
   color: var(--black);
   background: transparent;
+}
+
+.danger-button {
+  color: var(--red);
+  border-color: rgba(255, 59, 48, .42);
 }
 
 .hero-meta {
@@ -554,7 +565,7 @@ figcaption {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 220px));
   justify-content: start;
-  gap: 12px;
+  gap: 14px;
   align-items: start;
 }
 
@@ -571,12 +582,14 @@ figcaption {
 
 .client-gallery img {
   width: 100%;
-  aspect-ratio: 4 / 5;
+  aspect-ratio: 1 / 1;
   height: auto;
   display: block;
-  object-fit: cover;
+  object-fit: contain;
   object-position: center;
-  background: var(--black);
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 8px;
 }
 
 .client-gallery figcaption {
@@ -1654,6 +1667,19 @@ footer {
   min-height: 42px;
 }
 
+.client-list-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.client-list-actions .button {
+  min-height: 40px;
+  padding: 10px 14px;
+  font-size: .78rem;
+}
+
 #start-new-program-button {
   white-space: nowrap;
 }
@@ -2046,7 +2072,7 @@ textarea:focus {
   }
 
   .client-gallery {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .yelp-summary {
@@ -2087,6 +2113,14 @@ textarea:focus {
 
   .client-gallery {
     gap: 8px;
+  }
+
+  .client-list-actions {
+    justify-content: stretch;
+  }
+
+  .client-list-actions .button {
+    width: 100%;
   }
 
   .client-gallery figcaption {
