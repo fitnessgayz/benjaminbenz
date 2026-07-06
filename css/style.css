@@ -1823,6 +1823,33 @@ footer {
   width: auto;
 }
 
+.ai-program-card {
+  border-color: rgba(215, 255, 63, .75);
+}
+
+.ai-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px;
+  color: var(--paper);
+  background: var(--black);
+  border-radius: 8px;
+}
+
+.ai-actions p {
+  margin: 0;
+  color: rgba(255, 255, 255, .74);
+  font-weight: 900;
+}
+
+.ai-actions .button {
+  width: auto;
+  color: var(--black);
+  background: var(--lime);
+}
+
 .progress-history {
   display: grid;
   gap: 8px;
@@ -1969,6 +1996,7 @@ footer {
 }
 
 input,
+select,
 textarea {
   width: 100%;
   min-height: 48px;
@@ -1998,6 +2026,7 @@ textarea {
 }
 
 input:focus,
+select:focus,
 textarea:focus {
   outline: 3px solid rgba(215, 255, 63, .7);
   border-color: var(--black);
@@ -2221,11 +2250,17 @@ textarea:focus {
     display: grid;
   }
 
+  .ai-actions,
   .progress-actions,
   .progress-current,
   .progress-history-row {
     display: grid;
     grid-template-columns: 1fr;
+  }
+
+  .ai-actions .button,
+  .progress-actions .button {
+    width: 100%;
   }
 
   .panel-heading {

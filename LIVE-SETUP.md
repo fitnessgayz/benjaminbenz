@@ -36,7 +36,24 @@ The function already allows:
 - local testing at `127.0.0.1:4177`
 - local testing at `127.0.0.1:4191`
 
-## 3. Create the first login
+## 3. Deploy the AI program function
+
+Deploy `supabase/functions/generate-program`.
+
+Set these secrets in Supabase functions:
+
+```text
+OPENAI_API_KEY=your OpenAI API key
+COACH_ADMIN_EMAILS=benjaminbenz.fit@gmail.com
+```
+
+Optional:
+
+```text
+OPENAI_MODEL=gpt-4.1-mini
+```
+
+## 4. Create the first login
 
 Use Supabase Authentication to invite or create the coach admin:
 
@@ -58,7 +75,7 @@ Use the test client login for:
 
 - Client dashboard: `/client-login.html`
 
-## 4. Test the loop
+## 5. Test the loop
 
 1. Sign in as the client.
 2. Open Workout 1.
@@ -66,3 +83,4 @@ Use the test client login for:
 4. Confirm the entries appear under Previous.
 5. Sign in as coach.
 6. Confirm the training logs and progress check-ins appear.
+7. Generate an AI draft, review it, and save the program.

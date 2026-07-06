@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=invite-list-layout-fix-1" />
+  <link rel="stylesheet" href="css/style.css?v=ai-program-draft-1" />
 </head>
 <body class="dashboard-page coach-admin-page">
   <header class="site-header dashboard-header">
@@ -18,7 +18,7 @@
     </a>
     <nav class="nav-links" aria-label="Primary navigation">
       <a href="client-dashboard.html">Client View</a>
-      <a href="client-login.html?v=invite-list-layout-fix-1">Client Login</a>
+      <a href="client-login.html?v=ai-program-draft-1">Client Login</a>
     </nav>
     <div class="header-actions">
       <button class="login-link is-current sign-out-button" type="button" data-coach-sign-out hidden>Sign Out</button>
@@ -144,6 +144,58 @@
           </label>
         </section>
 
+        <section class="admin-card ai-program-card">
+          <div class="admin-section-heading">
+            <div>
+              <p class="kicker">AI draft</p>
+              <h2>Program assistant</h2>
+            </div>
+          </div>
+          <div class="admin-field-grid">
+            <label>
+              Experience level
+              <select name="ai_experience">
+                <option value="beginner">Beginner</option>
+                <option value="intermediate" selected>Intermediate</option>
+                <option value="advanced">Advanced</option>
+              </select>
+            </label>
+            <label>
+              Days per week
+              <input type="number" name="ai_days_per_week" value="4" min="1" max="7" />
+            </label>
+            <label>
+              Program length
+              <select name="ai_program_length">
+                <option value="8 weeks">8 weeks</option>
+                <option value="12 weeks" selected>12 weeks</option>
+                <option value="16 weeks">16 weeks</option>
+                <option value="24 weeks">24 weeks</option>
+              </select>
+            </label>
+            <label>
+              Equipment
+              <input type="text" name="ai_equipment" placeholder="Full gym, dumbbells, cables" />
+            </label>
+            <label>
+              Limitations
+              <input type="text" name="ai_limitations" placeholder="Shoulder, knee, low back, none" />
+            </label>
+            <label>
+              Split preference
+              <input type="text" name="ai_split" placeholder="Push/pull/lower, upper/lower" />
+            </label>
+          </div>
+          <label>
+            Coach direction
+            <textarea name="ai_notes" placeholder="Programming style, exercise preferences, muscles to prioritize, or anything to avoid."></textarea>
+          </label>
+          <div class="ai-actions">
+            <p id="ai-program-status" role="status">Generate a draft, then review and save.</p>
+            <button class="button button-dark" type="button" id="generate-program-button">Generate draft</button>
+          </div>
+        </section>
+
         <section class="admin-card progress-editor-card">
           <div class="admin-section-heading">
             <div>
@@ -215,9 +267,9 @@
     </section>
   </main>
 
-  <script src="js/script.js?v=invite-list-layout-fix-1"></script>
+  <script src="js/script.js?v=ai-program-draft-1"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/supabase-config.js?v=invite-list-layout-fix-1"></script>
-  <script src="js/coach-admin.js?v=invite-list-layout-fix-1"></script>
+  <script src="js/supabase-config.js?v=ai-program-draft-1"></script>
+  <script src="js/coach-admin.js?v=ai-program-draft-1"></script>
 </body>
 </html>

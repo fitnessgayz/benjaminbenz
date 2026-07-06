@@ -10,7 +10,7 @@ const coachSupabase = hasCoachConfig && window.supabase
   ? window.supabase.createClient(coachConfig.url, coachConfig.anonKey)
   : null;
 const workoutSlots = [1, 2, 3, 4, 5, 6, 7];
-const coachLoginUrl = "client-login.html?v=invite-list-layout-fix-1";
+const coachLoginUrl = "client-login.html?v=ai-program-draft-1";
 
 let programs = [];
 let selectedProgramId = "";
@@ -61,6 +61,14 @@ function trainingLogStatus(message) {
   }
 }
 
+function aiProgramStatus(message) {
+  const status = document.getElementById("ai-program-status");
+
+  if (status) {
+    status.textContent = message;
+  }
+}
+
 function isCoachEmail(email) {
   return coachEmails.includes(String(email || "").toLowerCase());
 }
@@ -100,6 +108,20 @@ function exercisesToText(exercises) {
       exercise.rest || ""
     ].join(" | "))
     .join("\n");
+}
+
+function normalizeWorkoutFormat(value) {
+  const format = String(value || "").toLowerCase();
+
+  if (format.includes("super")) {
+    return "superset";
+  }
+
+  if (format.includes("circuit")) {
+    return "circuit";
+  }
+
+  return "single";
 }
 
 function formValue(form, name) {
@@ -227,6 +249,58 @@ function clearProgramFields(form) {
   });
 
   selectedProgramId = "";
+}
+
+function generatedValue(draft, snakeName, camelName) {
+  return draft?.[snakeName] ?? draft?.[camelName] ?? "";
+}
+
+function applyGeneratedProgram(draft, form) {
+  const workouts = Array.isArray(draft?.workouts) ? draft.workouts.slice(0, workoutSlots.length) : [];
+
+  form.elements.program_title.value = generatedValue(draft, "program_title", "programTitle") || formValue(form, "program_title");
+  form.elements.program_summary.value = generatedValue(draft, "program_summary", "programSummary") || formValue(form, "program_summary");
+  form.elements.fitness_goal.value = generatedValue(draft, "fitness_goal", "fitnessGoal") || formValue(form, "fitness_goal");
+  form.elements.focus_target.value = generatedValue(draft, "focus_target", "focusTarget") || formValue(form, "focus_target");
+  form.elements.coach_note_title.value = generatedValue(draft, "coach_note_title", "coachNoteTitle") || formValue(form, "coach_note_title");
+  form.elements.coach_note_body.value = generatedValue(draft, "coach_note_body", "coachNoteBody") || formValue(form, "coach_note_body");
+
+  workoutSlots.forEach((number, index) => {
+    const workout = workouts[index];
+
+    form.elements[`workout_${number}_include`].checked = Boolean(workout);
+    form.elements[`workout_${number}_title`].value = workout?.title || "";
+    form.elements[`workout_${number}_focus`].value = workout?.focus || "";
+    form.elements[`workout_${number}_format`].value = normalizeWorkoutFormat(workout?.format);
+    form.elements[`workout_${number}_exercises`].value = exercisesToText(workout?.exercises);
+  });
+}
+
+function aiProgramRequestFromForm(form) {
+  return {
+    client: {
+      name: formValue(form, "client_name"),
+      email: formValue(form, "client_email").toLowerCase(),
+      height: formValue(form, "height"),
+      startingWeight: formValue(form, "starting_weight"),
+      startingBodyfat: formValue(form, "starting_bodyfat")
+    },
+    program: {
+      title: formValue(form, "program_title"),
+      fitnessGoal: formValue(form, "fitness_goal"),
+      focusTarget: formValue(form, "focus_target"),
+      summary: formValue(form, "program_summary")
+    },
+    preferences: {
+      experience: formValue(form, "ai_experience"),
+      daysPerWeek: numberOrNull(formValue(form, "ai_days_per_week")) || 4,
+      programLength: formValue(form, "ai_program_length"),
+      equipment: formValue(form, "ai_equipment"),
+      limitations: formValue(form, "ai_limitations"),
+      split: formValue(form, "ai_split"),
+      coachDirection: formValue(form, "ai_notes")
+    }
+  };
 }
 
 function renderWorkoutFields() {
@@ -688,6 +762,59 @@ async function handleSendInvite() {
   });
 }
 
+async function handleGenerateProgram() {
+  const button = document.getElementById("generate-program-button");
+  const form = document.getElementById("program-editor");
+
+  if (!button || !form) {
+    return;
+  }
+
+  button.addEventListener("click", async () => {
+    if (!coachSupabase) {
+      aiProgramStatus("Coach admin is not connected yet.");
+      return;
+    }
+
+    const { data } = await coachSupabase.auth.getSession();
+    const token = data.session?.access_token;
+
+    if (!token) {
+      aiProgramStatus("Sign in as coach first.");
+      return;
+    }
+
+    button.disabled = true;
+    aiProgramStatus("Generating draft...");
+
+    try {
+      const response = await fetch(`${coachConfig.url}/functions/v1/generate-program`, {
+        method: "POST",
+        headers: {
+          "apikey": coachConfig.anonKey,
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(aiProgramRequestFromForm(form))
+      });
+      const result = await response.json().catch(() => ({}));
+      const safeResult = result && typeof result === "object" ? result : {};
+
+      if (!response.ok) {
+        aiProgramStatus(safeResult.error || safeResult.message || "Could not generate a program draft.");
+        return;
+      }
+
+      applyGeneratedProgram(safeResult.program || safeResult, form);
+      aiProgramStatus("Draft loaded. Review, adjust, then save program.");
+    } catch (error) {
+      aiProgramStatus(`Could not reach the AI function: ${error.message}`);
+    } finally {
+      button.disabled = false;
+    }
+  });
+}
+
 async function handleSaveProgress() {
   const button = document.getElementById("save-progress-button");
   const form = document.getElementById("program-editor");
@@ -821,6 +948,7 @@ async function bootCoachAdmin() {
   handleSaveNewClient();
   handleDeleteClient();
   handleSendInvite();
+  handleGenerateProgram();
   handleSaveProgress();
   handleCoachSignOut();
   handleNewClient();
