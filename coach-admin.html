@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=coach-login-refresh-7" />
+  <link rel="stylesheet" href="css/style.css?v=coach-login-refresh-8" />
 </head>
 <body class="dashboard-page coach-admin-page">
   <header class="site-header dashboard-header">
@@ -18,7 +18,7 @@
     </a>
     <nav class="nav-links" aria-label="Primary navigation">
       <a href="client-dashboard.html">Client View</a>
-      <a href="client-login.html?v=login-refresh-7">Client Login</a>
+      <a href="client-login.html?v=login-refresh-8">Client Login</a>
     </nav>
     <div class="header-actions">
       <button class="login-link is-current sign-out-button" type="button" data-coach-sign-out hidden>Sign Out</button>
@@ -30,44 +30,35 @@
     <section class="dashboard-hero" aria-label="Coach admin summary">
       <div>
         <p class="kicker">Coach admin</p>
-        <h1>Client programs</h1>
+        <h1>Coach access</h1>
         <p>Update client profiles, coach notes, and workouts from one private page.</p>
       </div>
     </section>
 
-    <section class="access-panel admin-login-panel" id="coach-login-panel" aria-label="Coach sign in">
-      <div class="access-panel-heading">
-        <p class="kicker">Sign in</p>
-        <h2>Coach access</h2>
-      </div>
-      <form class="login-form" id="coach-login-form">
-        <label>
-          Email
-          <input type="email" name="email" placeholder="coach@example.com" autocomplete="email" required aria-label="Email" />
-        </label>
-        <label>
-          Password
-          <input type="password" name="password" placeholder="Password" autocomplete="current-password" required aria-label="Password" />
-        </label>
-        <button class="button button-dark" type="submit">Sign in</button>
-        <p class="login-status" id="coach-login-status" role="status">Use your coach admin login.</p>
-      </form>
-    </section>
-
     <section class="admin-workspace" id="coach-admin-workspace" hidden>
-      <aside class="admin-client-list" aria-label="Clients">
+      <section class="admin-client-list" aria-label="Client list">
         <div class="admin-section-heading">
           <div>
             <p class="kicker">Clients</p>
-            <h2>Programs</h2>
+            <h2>Client list</h2>
           </div>
           <button class="button button-dark" type="button" id="new-client-button">New</button>
         </div>
         <div class="client-list" id="client-list"></div>
-      </aside>
+      </section>
 
       <form class="admin-editor" id="program-editor">
         <input type="hidden" name="id" />
+
+        <section class="admin-card programming-heading-card">
+          <div class="admin-section-heading">
+            <div>
+              <p class="kicker">Programming</p>
+              <h2>Program editor</h2>
+            </div>
+          </div>
+          <p>Build the client profile, progress check-ins, notes, and workouts here.</p>
+        </section>
 
         <section class="admin-card">
           <div class="admin-section-heading">
@@ -218,9 +209,9 @@
     </section>
   </main>
 
-  <script src="js/script.js?v=coach-login-refresh-7"></script>
+  <script src="js/script.js?v=coach-login-refresh-8"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/supabase-config.js?v=coach-login-refresh-7"></script>
-  <script src="js/coach-admin.js?v=coach-login-refresh-7"></script>
+  <script src="js/supabase-config.js?v=coach-login-refresh-8"></script>
+  <script src="js/coach-admin.js?v=coach-login-refresh-8"></script>
 </body>
 </html>

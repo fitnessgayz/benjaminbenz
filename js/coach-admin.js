@@ -10,6 +10,7 @@ const coachSupabase = hasCoachConfig && window.supabase
   ? window.supabase.createClient(coachConfig.url, coachConfig.anonKey)
   : null;
 const workoutSlots = [1, 2, 3, 4, 5, 6, 7];
+const coachLoginUrl = "client-login.html?v=login-refresh-8";
 
 let programs = [];
 let selectedProgramId = "";
@@ -24,12 +25,8 @@ function adminStatus(message) {
   }
 }
 
-function loginStatus(message) {
-  const status = document.getElementById("coach-login-status");
-
-  if (status) {
-    status.textContent = message;
-  }
+function sendToCoachLogin() {
+  window.location.href = coachLoginUrl;
 }
 
 function inviteStatus(message) {
@@ -441,17 +438,16 @@ async function loadPrograms() {
 }
 
 async function showAdminWorkspace(user) {
-  const loginPanel = document.getElementById("coach-login-panel");
   const workspace = document.getElementById("coach-admin-workspace");
   const signOutButton = document.querySelector("[data-coach-sign-out]");
 
   if (!isCoachEmail(user.email)) {
-    loginStatus("This login is not set up as a coach admin.");
-    return;
-  }
+    if (coachSupabase) {
+      await coachSupabase.auth.signOut();
+    }
 
-  if (loginPanel) {
-    loginPanel.hidden = true;
+    sendToCoachLogin();
+    return;
   }
 
   if (workspace) {
@@ -463,37 +459,6 @@ async function showAdminWorkspace(user) {
   }
 
   await loadPrograms();
-}
-
-async function handleCoachLogin() {
-  const form = document.getElementById("coach-login-form");
-
-  if (!form) {
-    return;
-  }
-
-  form.addEventListener("submit", async (event) => {
-    event.preventDefault();
-
-    if (!coachSupabase) {
-      loginStatus("Coach admin is not connected yet.");
-      return;
-    }
-
-    loginStatus("Signing in...");
-
-    const data = new FormData(form);
-    const email = data.get("email");
-    const password = data.get("password");
-    const { data: loginData, error } = await coachSupabase.auth.signInWithPassword({ email, password });
-
-    if (error) {
-      loginStatus("That email or password did not work.");
-      return;
-    }
-
-    await showAdminWorkspace(loginData.user);
-  });
 }
 
 async function handleSave() {
@@ -675,7 +640,7 @@ async function handleCoachSignOut() {
       await coachSupabase.auth.signOut();
     }
 
-    window.location.reload();
+    sendToCoachLogin();
   });
 }
 
@@ -743,7 +708,6 @@ async function bootCoachAdmin() {
   }
 
   renderWorkoutFields();
-  handleCoachLogin();
   handleSave();
   handleSendInvite();
   handleSaveProgress();
@@ -752,7 +716,7 @@ async function bootCoachAdmin() {
   handleStartNewProgram();
 
   if (!coachSupabase) {
-    loginStatus("Coach admin is not connected yet.");
+    sendToCoachLogin();
     return;
   }
 
@@ -761,6 +725,8 @@ async function bootCoachAdmin() {
 
   if (user) {
     await showAdminWorkspace(user);
+  } else {
+    sendToCoachLogin();
   }
 }
 
