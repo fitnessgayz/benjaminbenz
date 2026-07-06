@@ -907,7 +907,7 @@ async function handleCoachPortalLogin() {
       return;
     }
 
-    window.location.href = "coach-admin.html?v=client-admin-fixes-1";
+    window.location.href = "coach-admin.html?v=invite-list-layout-fix-1";
   });
 }
 
