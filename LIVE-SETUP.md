@@ -17,7 +17,7 @@ This creates:
 - Progress check-ins
 - Workout logs
 - Coach-only permissions
-- The starter Benjamin test program for `fwb@benjaminbenz.com`
+- The starter Benjamin test program for `benzzzzy@gmail.com`
 
 ## 2. Deploy the invite function
 
@@ -26,7 +26,7 @@ Deploy `supabase/functions/invite-client`.
 Set this secret in Supabase functions:
 
 ```text
-COACH_ADMIN_EMAILS=fwb@benjaminbenz.com
+COACH_ADMIN_EMAILS=benjaminbenz.fit@gmail.com
 ```
 
 The function already allows:
@@ -37,15 +37,24 @@ The function already allows:
 
 ## 3. Create the first login
 
-Use Supabase Authentication to invite or create:
+Use Supabase Authentication to invite or create the coach admin:
 
 ```text
-fwb@benjaminbenz.com
+benjaminbenz.fit@gmail.com
 ```
 
-That same login can test both:
+Then invite or create the first test client:
+
+```text
+benzzzzy@gmail.com
+```
+
+Use the coach admin login for:
 
 - Coach admin: `/coach-admin.html`
+
+Use the test client login for:
+
 - Client dashboard: `/client-login.html`
 
 ## 4. Test the loop

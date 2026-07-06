@@ -3,7 +3,7 @@ returns boolean
 language sql
 stable
 as $$
-  select lower(auth.jwt() ->> 'email') = lower('fwb@benjaminbenz.com');
+  select lower(auth.jwt() ->> 'email') = lower('benjaminbenz.fit@gmail.com');
 $$;
 
 create or replace function public.set_updated_at()

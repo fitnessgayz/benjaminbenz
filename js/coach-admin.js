@@ -1,5 +1,5 @@
 const coachConfig = window.FWB_SUPABASE_CONFIG || {};
-const coachEmails = ["fwb@benjaminbenz.com"];
+const coachEmails = ["benjaminbenz.fit@gmail.com"];
 const hasCoachConfig = Boolean(
   coachConfig.url &&
   coachConfig.anonKey &&

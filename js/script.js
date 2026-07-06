@@ -47,7 +47,7 @@ if (questionnaire) {
       questionnaire.reset();
     } catch (error) {
       if (status) {
-        status.textContent = "Something went wrong. Please email fwb@benjaminbenz.com.";
+        status.textContent = "Something went wrong. Please email benjaminbenz.fit@gmail.com.";
       }
     } finally {
       if (submitButton) {

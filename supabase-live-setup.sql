@@ -5,7 +5,7 @@ returns boolean
 language sql
 stable
 as $$
-  select lower(auth.jwt() ->> 'email') = lower('fwb@benjaminbenz.com');
+  select lower(auth.jwt() ->> 'email') = lower('benjaminbenz.fit@gmail.com');
 $$;
 
 create or replace function public.set_updated_at()
@@ -260,7 +260,7 @@ insert into public.client_programs (
   active
 )
 select
-  'fwb@benjaminbenz.com',
+  'benzzzzy@gmail.com',
   'Benjamin',
   'BG',
   'Benjamin Program',
@@ -308,7 +308,7 @@ select
 where not exists (
   select 1
   from public.client_programs
-  where lower(client_email) = lower('fwb@benjaminbenz.com')
+  where lower(client_email) = lower('benzzzzy@gmail.com')
   and active
 );
 
@@ -320,7 +320,7 @@ insert into public.client_progress (
   goal_note
 )
 select
-  'fwb@benjaminbenz.com',
+  'benzzzzy@gmail.com',
   current_date,
   null,
   null,
@@ -328,5 +328,5 @@ select
 where not exists (
   select 1
   from public.client_progress
-  where lower(client_email) = lower('fwb@benjaminbenz.com')
+  where lower(client_email) = lower('benzzzzy@gmail.com')
 );

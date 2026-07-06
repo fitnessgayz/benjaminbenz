@@ -31,7 +31,7 @@ function jsonResponse(request: Request, body: Record<string, unknown>, status = 
 }
 
 function coachEmails() {
-  return (Deno.env.get("COACH_ADMIN_EMAILS") || "fwb@benjaminbenz.com")
+  return (Deno.env.get("COACH_ADMIN_EMAILS") || "benjaminbenz.fit@gmail.com")
     .split(",")
     .map((email) => email.trim().toLowerCase())
     .filter(Boolean);

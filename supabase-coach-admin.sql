@@ -3,7 +3,7 @@ returns boolean
 language sql
 stable
 as $$
-  select lower(auth.jwt() ->> 'email') = lower('fwb@benjaminbenz.com');
+  select lower(auth.jwt() ->> 'email') = lower('benjaminbenz.fit@gmail.com');
 $$;
 
 drop policy if exists "Coach admins can read all programs" on public.client_programs;
