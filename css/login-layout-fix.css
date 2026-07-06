@@ -1,0 +1,27 @@
+.client-access {
+  width: min(1500px, calc(100% - 48px));
+  grid-template-columns: minmax(280px, .48fr) minmax(720px, 1.52fr);
+  gap: clamp(28px, 3.5vw, 52px);
+}
+
+.access-intro {
+  min-width: 0;
+}
+
+.access-intro h1 {
+  max-width: 520px;
+  font-size: clamp(3.4rem, 5vw, 5.8rem);
+  line-height: .88;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 1180px) {
+  .client-access {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+
+  .access-intro h1 {
+    max-width: 780px;
+  }
+}
