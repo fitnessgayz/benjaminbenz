@@ -109,7 +109,9 @@ serve(async (request) => {
   });
 
   if (inviteError) {
-    return jsonResponse(request, { error: inviteError.message }, 400);
+    return jsonResponse(request, {
+      error: inviteError.message || "Supabase could not send the invite email. Check Auth email logs and SMTP settings."
+    }, 400);
   }
 
   return jsonResponse(request, { message: `Invite sent to ${email}.` });

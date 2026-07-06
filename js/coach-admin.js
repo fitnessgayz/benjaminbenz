@@ -131,16 +131,18 @@ function workoutIsIncluded(form, number) {
 
 function programFromForm(form) {
   const clientName = formValue(form, "client_name");
+  const clientEmail = formValue(form, "client_email").toLowerCase();
+  const fallbackClientName = clientEmail ? clientEmail.split("@")[0] : "";
   const workouts = workoutSlots
     .filter((number) => workoutIsIncluded(form, number))
     .map((number) => buildWorkoutFromForm(form, number))
     .filter((workout) => workout.title || workout.focus || workout.exercises.length);
 
   return {
-    client_email: formValue(form, "client_email").toLowerCase(),
-    client_name: clientName,
-    initials: formValue(form, "initials") || initialsFromName(clientName),
-    program_title: formValue(form, "program_title"),
+    client_email: clientEmail,
+    client_name: clientName || fallbackClientName || "Client",
+    initials: formValue(form, "initials") || initialsFromName(clientName || fallbackClientName),
+    program_title: formValue(form, "program_title") || "Client Program",
     program_summary: formValue(form, "program_summary"),
     sheet_url: formValue(form, "sheet_url") || null,
     fitness_goal: formValue(form, "fitness_goal"),
@@ -153,6 +155,56 @@ function programFromForm(form) {
     workouts,
     active: form.elements.active.checked
   };
+}
+
+async function saveProgramFromForm(form) {
+  const payload = programFromForm(form);
+  const id = form.elements.id.value;
+
+  if (!payload.client_email) {
+    return { error: { message: "Add the client email first." } };
+  }
+
+  if (!id && payload.active) {
+    const { error: archiveError } = await coachSupabase
+      .from("client_programs")
+      .update({ active: false })
+      .eq("client_email", payload.client_email)
+      .eq("active", true);
+
+    if (archiveError) {
+      return { error: archiveError };
+    }
+
+    programs = programs.map((program) => (
+      program.client_email === payload.client_email ? { ...program, active: false } : program
+    ));
+  }
+
+  const query = id
+    ? coachSupabase.from("client_programs").update(payload).eq("id", id).select("*").single()
+    : coachSupabase.from("client_programs").insert(payload).select("*").single();
+
+  const { data, error } = await query;
+
+  if (error) {
+    return { error };
+  }
+
+  const existingIndex = programs.findIndex((program) => program.id === data.id);
+
+  if (existingIndex >= 0) {
+    programs[existingIndex] = data;
+  } else {
+    programs.push(data);
+  }
+
+  selectedProgramId = data.id;
+  programs.sort((a, b) => String(a.client_name).localeCompare(String(b.client_name)));
+  fillForm(data);
+  renderClientList();
+
+  return { data };
 }
 
 function clearProgramFields(form) {
@@ -487,49 +539,12 @@ async function handleSave() {
     event.preventDefault();
     adminStatus("Saving...");
 
-    const payload = programFromForm(form);
-    const id = form.elements.id.value;
-
-    if (!id && payload.active && payload.client_email) {
-      const { error: archiveError } = await coachSupabase
-        .from("client_programs")
-        .update({ active: false })
-        .eq("client_email", payload.client_email)
-        .eq("active", true);
-
-      if (archiveError) {
-        adminStatus(archiveError.message);
-        return;
-      }
-
-      programs = programs.map((program) => (
-        program.client_email === payload.client_email ? { ...program, active: false } : program
-      ));
-    }
-
-    const query = id
-      ? coachSupabase.from("client_programs").update(payload).eq("id", id).select("*").single()
-      : coachSupabase.from("client_programs").insert(payload).select("*").single();
-
-    const { data, error } = await query;
+    const { error } = await saveProgramFromForm(form);
 
     if (error) {
       adminStatus(error.message);
       return;
     }
-
-    const existingIndex = programs.findIndex((program) => program.id === data.id);
-
-    if (existingIndex >= 0) {
-      programs[existingIndex] = data;
-    } else {
-      programs.push(data);
-    }
-
-    selectedProgramId = data.id;
-    programs.sort((a, b) => String(a.client_name).localeCompare(String(b.client_name)));
-    fillForm(data);
-    renderClientList();
     adminStatus("Saved.");
   });
 }
@@ -633,7 +648,15 @@ async function handleSendInvite() {
     }
 
     button.disabled = true;
-    inviteStatus("Sending invite...");
+    inviteStatus("Saving client, then sending invite...");
+
+    const saveResult = await saveProgramFromForm(form);
+
+    if (saveResult.error) {
+      inviteStatus(saveResult.error.message || "Could not save this client before sending invite.");
+      button.disabled = false;
+      return;
+    }
 
     try {
       const response = await fetch(`${coachConfig.url}/functions/v1/invite-client`, {
@@ -649,13 +672,14 @@ async function handleSendInvite() {
         })
       });
       const result = await response.json().catch(() => ({}));
+      const safeResult = result && typeof result === "object" ? result : {};
 
       if (!response.ok) {
-        inviteStatus(result.error || result.message || "Could not send invite.");
+        inviteStatus(safeResult.error || safeResult.message || "Could not send invite. Check Supabase Auth logs for the exact email error.");
         return;
       }
 
-      inviteStatus(result.message || `Invite sent to ${email}.`);
+      inviteStatus(safeResult.message || `Invite sent to ${email}.`);
     } catch (error) {
       inviteStatus(`Could not reach the invite function: ${error.message}`);
     } finally {

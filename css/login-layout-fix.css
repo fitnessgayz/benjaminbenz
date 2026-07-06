@@ -1,7 +1,7 @@
 .client-access {
-  width: min(1500px, calc(100% - 48px));
-  grid-template-columns: minmax(280px, .48fr) minmax(720px, 1.52fr);
-  gap: clamp(28px, 3.5vw, 52px);
+  width: min(1320px, calc(100% - 48px));
+  grid-template-columns: minmax(260px, 360px) minmax(0, 1fr);
+  gap: clamp(28px, 4vw, 56px);
 }
 
 .access-intro {
@@ -9,13 +9,27 @@
 }
 
 .access-intro h1 {
-  max-width: 520px;
-  font-size: clamp(3.4rem, 5vw, 5.8rem);
-  line-height: .88;
-  overflow-wrap: anywhere;
+  max-width: 360px;
+  font-size: clamp(3rem, 4vw, 4.7rem);
+  line-height: .92;
+  overflow-wrap: normal;
+  word-break: normal;
 }
 
-@media (max-width: 1180px) {
+.access-options {
+  grid-template-columns: repeat(2, minmax(280px, 1fr));
+}
+
+.access-panel {
+  min-width: 0;
+  padding: clamp(24px, 2.6vw, 32px);
+}
+
+.access-panel-heading h2 {
+  font-size: clamp(2rem, 3vw, 3.1rem);
+}
+
+@media (max-width: 1080px) {
   .client-access {
     grid-template-columns: 1fr;
     align-items: start;
@@ -23,5 +37,15 @@
 
   .access-intro h1 {
     max-width: 780px;
+  }
+}
+
+@media (max-width: 760px) {
+  .client-access {
+    width: min(100% - 32px, 560px);
+  }
+
+  .access-options {
+    grid-template-columns: 1fr;
   }
 }
