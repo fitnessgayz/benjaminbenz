@@ -10,7 +10,7 @@ const coachSupabase = hasCoachConfig && window.supabase
   ? window.supabase.createClient(coachConfig.url, coachConfig.anonKey)
   : null;
 const workoutSlots = [1, 2, 3, 4, 5, 6, 7];
-const coachLoginUrl = "client-login.html?v=login-refresh-8";
+const coachLoginUrl = "client-login.html?v=mobile-overflow-fix-1";
 
 let programs = [];
 let selectedProgramId = "";
