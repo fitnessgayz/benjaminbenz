@@ -10,7 +10,7 @@ const coachSupabase = hasCoachConfig && window.supabase
   ? window.supabase.createClient(coachConfig.url, coachConfig.anonKey)
   : null;
 const workoutSlots = [1, 2, 3, 4, 5, 6, 7];
-const coachLoginUrl = "client-login.html?v=ai-program-draft-2";
+const coachLoginUrl = "client-login.html?v=invite-message-fix-1";
 
 let programs = [];
 let selectedProgramId = "";
@@ -45,6 +45,19 @@ function isValidEmail(value) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizeEmail(value));
 }
 
+function readableInviteMessage(message, manualInviteUrl = "") {
+  const text = String(message || "").trim();
+  const unhelpfulMessages = new Set(["{}", "[]", "null", "undefined", "[object Object]"]);
+
+  if (!text || unhelpfulMessages.has(text)) {
+    return manualInviteUrl
+      ? "Email did not send automatically. Use the invite link below."
+      : "Could not send invite. Check Supabase Auth logs for the exact email error.";
+  }
+
+  return text;
+}
+
 function inviteStatus(message, manualInviteUrl = "") {
   const status = document.getElementById("invite-status");
 
@@ -52,7 +65,7 @@ function inviteStatus(message, manualInviteUrl = "") {
     status.textContent = "";
 
     const messageNode = document.createElement("span");
-    messageNode.textContent = message;
+    messageNode.textContent = readableInviteMessage(message, manualInviteUrl);
     status.append(messageNode);
 
     if (manualInviteUrl) {
@@ -803,7 +816,7 @@ async function handleSendInvite() {
 
       if (!response.ok) {
         inviteStatus(
-          safeResult.error || safeResult.message || "Could not send invite. Check Supabase Auth logs for the exact email error.",
+          safeResult.error || safeResult.message,
           manualInviteUrl
         );
         return;
