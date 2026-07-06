@@ -27,7 +27,8 @@ function jsonResponse(request: Request, body: Record<string, unknown>, status = 
     status,
     headers: {
       ...corsHeaders(request),
-      "Content-Type": "application/json"
+      "Content-Type": "application/json",
+      "Cache-Control": "no-store"
     }
   });
 }
@@ -55,6 +56,30 @@ function safeRedirectTo(value: unknown) {
   } catch {
     return "https://benjaminbenz.com/client-invite.html";
   }
+}
+
+function stringValue(value: unknown) {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function normalizeEmail(value: unknown) {
+  return stringValue(value).toLowerCase();
+}
+
+function manualInviteUrl(data: unknown) {
+  if (!data || typeof data !== "object") {
+    return "";
+  }
+
+  const properties = "properties" in data ? data.properties : undefined;
+
+  if (!properties || typeof properties !== "object") {
+    return "";
+  }
+
+  const actionLink = "action_link" in properties ? properties.action_link : undefined;
+
+  return typeof actionLink === "string" ? actionLink : "";
 }
 
 serve(async (request) => {
@@ -95,7 +120,10 @@ serve(async (request) => {
   }
 
   const body = await request.json().catch(() => ({}));
-  const email = String(body.email || "").trim().toLowerCase();
+  const safeBody = body && typeof body === "object" ? body as Record<string, unknown> : {};
+  const email = normalizeEmail(safeBody.email || safeBody.client_email);
+  const clientName = stringValue(safeBody.clientName || safeBody.client_name);
+  const redirectTo = safeRedirectTo(safeBody.redirectTo);
 
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return jsonResponse(request, { error: "Add a valid client email." }, 400);
@@ -104,15 +132,59 @@ serve(async (request) => {
   const adminClient = createClient(supabaseUrl, serviceRoleKey, {
     auth: { persistSession: false }
   });
-  const { error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(email, {
-    redirectTo: safeRedirectTo(body.redirectTo)
-  });
+  const inviteOptions = {
+    redirectTo,
+    data: {
+      email,
+      client_email: email,
+      client_name: clientName
+    }
+  };
+  const { data: inviteData, error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(email, inviteOptions);
 
   if (inviteError) {
+    const { data: linkData, error: linkError } = await adminClient.auth.admin.generateLink({
+      type: "invite",
+      email,
+      options: inviteOptions
+    });
+    const actionLink = linkError ? "" : manualInviteUrl(linkData);
+
     return jsonResponse(request, {
-      error: inviteError.message || "Supabase could not send the invite email. Check Auth email logs and SMTP settings."
+      error: inviteError.message || "Supabase could not send the invite email. Check Auth email logs and SMTP settings.",
+      manualInviteUrl: actionLink || undefined
     }, 400);
   }
 
-  return jsonResponse(request, { message: `Invite sent to ${email}.` });
+  const invitedEmail = normalizeEmail(inviteData?.user?.email);
+
+  if (invitedEmail && invitedEmail !== email) {
+    const { data: linkData, error: linkError } = await adminClient.auth.admin.generateLink({
+      type: "invite",
+      email,
+      options: inviteOptions
+    });
+    const actionLink = linkError ? "" : manualInviteUrl(linkData);
+
+    return jsonResponse(request, {
+      error: `Supabase returned ${invitedEmail} instead of ${email}. Invite email was not trusted.`,
+      manualInviteUrl: actionLink || undefined
+    }, 502);
+  }
+
+  if (!invitedEmail) {
+    const { data: linkData, error: linkError } = await adminClient.auth.admin.generateLink({
+      type: "invite",
+      email,
+      options: inviteOptions
+    });
+    const actionLink = linkError ? "" : manualInviteUrl(linkData);
+
+    return jsonResponse(request, {
+      error: "Supabase accepted the invite request but did not confirm the invited email.",
+      manualInviteUrl: actionLink || undefined
+    }, 502);
+  }
+
+  return jsonResponse(request, { message: `Invite sent to ${invitedEmail}.`, email: invitedEmail });
 });

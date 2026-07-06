@@ -1798,6 +1798,21 @@ footer {
   font-weight: 900;
 }
 
+.invite-row a,
+.invite-row .text-button {
+  color: var(--black);
+  font: inherit;
+  font-weight: 900;
+}
+
+.invite-row .text-button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
 .invite-row .button {
   width: auto;
 }

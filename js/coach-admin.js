@@ -10,7 +10,7 @@ const coachSupabase = hasCoachConfig && window.supabase
   ? window.supabase.createClient(coachConfig.url, coachConfig.anonKey)
   : null;
 const workoutSlots = [1, 2, 3, 4, 5, 6, 7];
-const coachLoginUrl = "client-login.html?v=ai-program-draft-1";
+const coachLoginUrl = "client-login.html?v=ai-program-draft-2";
 
 let programs = [];
 let selectedProgramId = "";
@@ -37,11 +37,46 @@ function inviteRedirectUrl() {
   return "https://benjaminbenz.com/client-invite.html";
 }
 
-function inviteStatus(message) {
+function normalizeEmail(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function isValidEmail(value) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizeEmail(value));
+}
+
+function inviteStatus(message, manualInviteUrl = "") {
   const status = document.getElementById("invite-status");
 
   if (status) {
-    status.textContent = message;
+    status.textContent = "";
+
+    const messageNode = document.createElement("span");
+    messageNode.textContent = message;
+    status.append(messageNode);
+
+    if (manualInviteUrl) {
+      const link = document.createElement("a");
+      const copyButton = document.createElement("button");
+
+      link.href = manualInviteUrl;
+      link.target = "_blank";
+      link.rel = "noopener";
+      link.textContent = "Open invite link";
+      copyButton.className = "text-button";
+      copyButton.type = "button";
+      copyButton.textContent = "Copy link";
+      copyButton.addEventListener("click", async () => {
+        try {
+          await navigator.clipboard.writeText(manualInviteUrl);
+          messageNode.textContent = "Invite link copied.";
+        } catch {
+          messageNode.textContent = "Could not copy automatically. Open the invite link and copy it from the address bar.";
+        }
+      });
+
+      status.append(document.createElement("br"), link, document.createTextNode(" "), copyButton);
+    }
   }
 }
 
@@ -701,10 +736,16 @@ async function handleSendInvite() {
   }
 
   button.addEventListener("click", async () => {
-    const email = formValue(form, "client_email").toLowerCase();
+    const requestedEmail = normalizeEmail(formValue(form, "client_email"));
 
-    if (!email) {
+    if (!requestedEmail) {
       inviteStatus("Add the client email first.");
+      return;
+    }
+
+    if (!isValidEmail(requestedEmail)) {
+      form.elements.client_email?.reportValidity();
+      inviteStatus("Add a valid client email.");
       return;
     }
 
@@ -732,6 +773,16 @@ async function handleSendInvite() {
       return;
     }
 
+    const savedProgram = saveResult.data || {};
+    const inviteEmail = normalizeEmail(savedProgram.client_email || requestedEmail);
+    const clientName = String(savedProgram.client_name || formValue(form, "client_name")).trim();
+
+    if (!isValidEmail(inviteEmail)) {
+      inviteStatus("Saved client email is not valid. Fix it, save, then send the invite again.");
+      button.disabled = false;
+      return;
+    }
+
     try {
       const response = await fetch(`${coachConfig.url}/functions/v1/invite-client`, {
         method: "POST",
@@ -741,19 +792,24 @@ async function handleSendInvite() {
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          email,
+          email: inviteEmail,
+          clientName,
           redirectTo: inviteRedirectUrl()
         })
       });
       const result = await response.json().catch(() => ({}));
       const safeResult = result && typeof result === "object" ? result : {};
+      const manualInviteUrl = typeof safeResult.manualInviteUrl === "string" ? safeResult.manualInviteUrl : "";
 
       if (!response.ok) {
-        inviteStatus(safeResult.error || safeResult.message || "Could not send invite. Check Supabase Auth logs for the exact email error.");
+        inviteStatus(
+          safeResult.error || safeResult.message || "Could not send invite. Check Supabase Auth logs for the exact email error.",
+          manualInviteUrl
+        );
         return;
       }
 
-      inviteStatus(safeResult.message || `Invite sent to ${email}.`);
+      inviteStatus(safeResult.message || `Invite sent to ${inviteEmail}.`);
     } catch (error) {
       inviteStatus(`Could not reach the invite function: ${error.message}`);
     } finally {
