@@ -735,6 +735,25 @@ footer {
   color: var(--black);
 }
 
+.coach-login-footer {
+  grid-column: 1 / -1;
+  margin: -18px 0 0;
+  text-align: center;
+}
+
+.coach-login-footer a {
+  color: var(--muted);
+  font-size: .82rem;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.coach-login-footer a:hover,
+.coach-login-footer a:focus-visible {
+  color: var(--black);
+  text-decoration: underline;
+}
+
 .dashboard-page {
   background: #f2f2ed;
 }
