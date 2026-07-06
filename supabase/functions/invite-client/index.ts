@@ -5,7 +5,9 @@ const allowedOrigins = new Set([
   "https://benjaminbenz.com",
   "https://www.benjaminbenz.com",
   "http://127.0.0.1:4177",
-  "http://localhost:4177"
+  "http://localhost:4177",
+  "http://127.0.0.1:4191",
+  "http://localhost:4191"
 ]);
 
 function corsHeaders(request: Request) {

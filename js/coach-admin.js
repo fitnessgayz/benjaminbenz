@@ -639,6 +639,7 @@ async function handleSendInvite() {
       const response = await fetch(`${coachConfig.url}/functions/v1/invite-client`, {
         method: "POST",
         headers: {
+          "apikey": coachConfig.anonKey,
           "Authorization": `Bearer ${token}`,
           "Content-Type": "application/json"
         },
@@ -650,13 +651,13 @@ async function handleSendInvite() {
       const result = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        inviteStatus(result.error || "Could not send invite.");
+        inviteStatus(result.error || result.message || "Could not send invite.");
         return;
       }
 
       inviteStatus(result.message || `Invite sent to ${email}.`);
     } catch (error) {
-      inviteStatus("Could not reach the invite function.");
+      inviteStatus(`Could not reach the invite function: ${error.message}`);
     } finally {
       button.disabled = false;
     }

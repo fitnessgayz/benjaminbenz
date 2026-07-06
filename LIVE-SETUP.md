@@ -34,6 +34,7 @@ The function already allows:
 - `https://benjaminbenz.com`
 - `https://www.benjaminbenz.com`
 - local testing at `127.0.0.1:4177`
+- local testing at `127.0.0.1:4191`
 
 ## 3. Create the first login
 

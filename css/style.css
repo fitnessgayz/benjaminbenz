@@ -1680,6 +1680,15 @@ footer {
   font-size: .78rem;
 }
 
+.profile-actions-row {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.profile-actions-row .button {
+  width: auto;
+}
+
 #start-new-program-button {
   white-space: nowrap;
 }
@@ -2120,6 +2129,14 @@ textarea:focus {
   }
 
   .client-list-actions .button {
+    width: 100%;
+  }
+
+  .profile-actions-row {
+    display: grid;
+  }
+
+  .profile-actions-row .button {
     width: 100%;
   }
 
