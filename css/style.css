@@ -1946,6 +1946,7 @@ footer {
 
 .questionnaire-page {
   background: #f2f2ed;
+  overflow-x: hidden;
 }
 
 .questionnaire-shell {
@@ -1963,6 +1964,8 @@ footer {
   margin-bottom: 18px;
   color: var(--black);
   font-size: clamp(4rem, 11vw, 9rem);
+  overflow-wrap: normal;
+  word-break: normal;
 }
 
 .questionnaire-hero p:not(.kicker) {
@@ -2238,6 +2241,32 @@ textarea:focus {
     font-size: clamp(2.2rem, 11vw, 3.8rem);
   }
 
+  .questionnaire-shell {
+    padding-top: 44px;
+  }
+
+  .questionnaire-hero {
+    margin-bottom: 28px;
+  }
+
+  .questionnaire-hero h1 {
+    font-size: clamp(2.15rem, 10.5vw, 2.72rem);
+    line-height: .9;
+  }
+
+  .questionnaire-hero p:not(.kicker) {
+    font-size: 1rem;
+  }
+
+  .form-section,
+  .form-submit-panel {
+    padding: 22px;
+  }
+
+  .form-section h2 {
+    font-size: clamp(2.25rem, 12vw, 3.2rem);
+  }
+
   .button {
     width: 100%;
   }
@@ -2341,5 +2370,21 @@ textarea:focus {
 
   .training-log-row {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 420px) {
+  .questionnaire-page .header-cta {
+    display: none;
+  }
+
+  .questionnaire-page .login-link,
+  .questionnaire-page .online-link {
+    padding-inline: 8px;
+    font-size: .64rem;
+  }
+
+  .questionnaire-hero h1 {
+    font-size: clamp(2rem, 9.5vw, 2.45rem);
   }
 }
