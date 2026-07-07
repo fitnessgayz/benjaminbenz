@@ -58,6 +58,26 @@ if (questionnaire) {
 }
 
 const contactForm = document.getElementById("contact-message-form");
+const contactEmail = "benjaminbenz.fit@gmail.com";
+
+function contactMailto(formData) {
+  const name = String(formData.get("name") || "").trim();
+  const email = String(formData.get("email") || "").trim();
+  const phone = String(formData.get("phone") || "").trim();
+  const message = String(formData.get("message") || "").trim();
+  const body = [
+    "New message from benjaminbenz.com.",
+    "",
+    `Name: ${name}`,
+    `Email: ${email}`,
+    `Phone: ${phone || "Not provided"}`,
+    "",
+    "Message:",
+    message
+  ].join("\n");
+
+  return `mailto:${contactEmail}?subject=${encodeURIComponent(`Website message from ${name || "visitor"}`)}&body=${encodeURIComponent(body)}`;
+}
 
 if (contactForm) {
   contactForm.addEventListener("submit", async (event) => {
@@ -65,6 +85,7 @@ if (contactForm) {
 
     const status = document.getElementById("contact-message-status");
     const submitButton = contactForm.querySelector('button[type="submit"]');
+    const formData = new FormData(contactForm);
     const contactConfig = window.FWB_SUPABASE_CONFIG || {};
     const endpoint = contactConfig.url
       ? `${contactConfig.url}/functions/v1/send-contact-message`
@@ -82,7 +103,6 @@ if (contactForm) {
         throw new Error("Contact form is not connected.");
       }
 
-      const formData = new FormData(contactForm);
       const response = await fetch(endpoint, {
         method: "POST",
         headers: {
@@ -110,8 +130,9 @@ if (contactForm) {
       contactForm.reset();
     } catch (error) {
       if (status) {
-        status.textContent = error.message || "Something went wrong. Please email Benjamin directly.";
+        status.textContent = "Opening your email app so the message still reaches Benjamin.";
       }
+      window.location.href = contactMailto(formData);
     } finally {
       if (submitButton) {
         submitButton.disabled = false;
