@@ -53,7 +53,21 @@ Optional:
 OPENAI_MODEL=gpt-4.1-mini
 ```
 
-## 4. Create the first login
+## 4. Deploy the password notification function
+
+Deploy `supabase/functions/notify-client-password-set`.
+
+Set these secrets in Supabase functions:
+
+```text
+RESEND_API_KEY=your Resend API key
+PASSWORD_NOTIFICATION_FROM=Fitness with Benjamin <notify@your-verified-domain.com>
+PASSWORD_NOTIFICATION_EMAILS=benjaminbenz.fit@gmail.com
+```
+
+The notification email is sent after a client successfully creates their portal password. It includes the client email and completion time, never the password.
+
+## 5. Create the first login
 
 Use Supabase Authentication to invite or create the coach admin:
 
@@ -75,7 +89,7 @@ Use the test client login for:
 
 - Client dashboard: `/client-login.html`
 
-## 5. Test the loop
+## 6. Test the loop
 
 1. Sign in as the client.
 2. Open Workout 1.

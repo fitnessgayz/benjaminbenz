@@ -17,6 +17,33 @@ function setInviteStatus(message) {
   }
 }
 
+async function notifyPasswordCreated() {
+  if (!inviteSupabase || !inviteConfig.url || !inviteConfig.anonKey) {
+    return;
+  }
+
+  const { data } = await inviteSupabase.auth.getSession();
+  const token = data.session?.access_token;
+
+  if (!token) {
+    return;
+  }
+
+  try {
+    await fetch(`${inviteConfig.url}/functions/v1/notify-client-password-set`, {
+      method: "POST",
+      headers: {
+        "apikey": inviteConfig.anonKey,
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({})
+    });
+  } catch (error) {
+    console.warn("Could not send password-created notification.", error);
+  }
+}
+
 async function prepareInviteSession() {
   const form = document.getElementById("client-invite-form");
 
@@ -106,6 +133,7 @@ function handleInvitePassword() {
     }
 
     setInviteStatus("Password saved. Opening dashboard...");
+    await notifyPasswordCreated();
     window.location.href = "client-dashboard.html";
   });
 }
