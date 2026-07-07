@@ -47,7 +47,7 @@ if (questionnaire) {
       questionnaire.reset();
     } catch (error) {
       if (status) {
-        status.textContent = "Something went wrong. Please email benjaminbenz.fit@gmail.com.";
+        status.textContent = "Something went wrong. Please email fwb@benjaminbenz.com.";
       }
     } finally {
       if (submitButton) {
@@ -58,7 +58,7 @@ if (questionnaire) {
 }
 
 const contactForm = document.getElementById("contact-message-form");
-const contactEmail = "benjaminbenz.fit@gmail.com";
+const contactEmail = "fwb@benjaminbenz.com";
 
 function contactMailto(formData) {
   const name = String(formData.get("name") || "").trim();

@@ -76,10 +76,10 @@ Set these secrets in Supabase functions:
 ```text
 RESEND_API_KEY=your Resend API key
 CONTACT_MESSAGE_FROM=Fitness with Benjamin <notify@your-verified-domain.com>
-CONTACT_MESSAGE_EMAILS=benjaminbenz.fit@gmail.com
+CONTACT_MESSAGE_EMAILS=fwb@benjaminbenz.com
 ```
 
-`CONTACT_MESSAGE_FROM` and `CONTACT_MESSAGE_EMAILS` can be omitted if `PASSWORD_NOTIFICATION_FROM` and `PASSWORD_NOTIFICATION_EMAILS` are already configured.
+Set `CONTACT_MESSAGE_EMAILS` to the inbox that should receive website contact form messages.
 
 ## 6. Create the first login
 

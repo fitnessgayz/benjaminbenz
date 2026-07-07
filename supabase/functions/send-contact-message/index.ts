@@ -72,7 +72,7 @@ serve(async (request) => {
     Deno.env.get("CONTACT_MESSAGE_EMAILS") ||
     Deno.env.get("PASSWORD_NOTIFICATION_EMAILS") ||
     Deno.env.get("COACH_ADMIN_EMAILS") ||
-    "benjaminbenz.fit@gmail.com"
+    "fwb@benjaminbenz.com"
   );
 
   if (!resendApiKey || !fromEmail || notifyEmails.length === 0) {
