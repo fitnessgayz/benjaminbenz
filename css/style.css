@@ -1805,6 +1805,13 @@ footer {
   font-weight: 900;
 }
 
+.invite-link-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  margin-top: 10px;
+}
+
 .invite-row .text-button {
   padding: 0;
   border: 0;

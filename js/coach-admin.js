@@ -10,7 +10,7 @@ const coachSupabase = hasCoachConfig && window.supabase
   ? window.supabase.createClient(coachConfig.url, coachConfig.anonKey)
   : null;
 const workoutSlots = [1, 2, 3, 4, 5, 6, 7];
-const coachLoginUrl = "client-login.html?v=invite-message-fix-1";
+const coachLoginUrl = "client-login.html?v=manual-invite-copy-1";
 
 let programs = [];
 let selectedProgramId = "";
@@ -51,7 +51,7 @@ function readableInviteMessage(message, manualInviteUrl = "") {
 
   if (!text || unhelpfulMessages.has(text)) {
     return manualInviteUrl
-      ? "Email did not send automatically. Use the invite link below."
+      ? "Email did not send automatically. Copy the invite link and send it to the client."
       : "Could not send invite. Check Supabase Auth logs for the exact email error.";
   }
 
@@ -78,17 +78,20 @@ function inviteStatus(message, manualInviteUrl = "") {
       link.textContent = "Open invite link";
       copyButton.className = "text-button";
       copyButton.type = "button";
-      copyButton.textContent = "Copy link";
+      copyButton.textContent = "Copy invite link";
       copyButton.addEventListener("click", async () => {
         try {
           await navigator.clipboard.writeText(manualInviteUrl);
-          messageNode.textContent = "Invite link copied.";
+          messageNode.textContent = "Invite link copied. Paste it into a text or email to send it to the client.";
         } catch {
           messageNode.textContent = "Could not copy automatically. Open the invite link and copy it from the address bar.";
         }
       });
 
-      status.append(document.createElement("br"), link, document.createTextNode(" "), copyButton);
+      const actions = document.createElement("span");
+      actions.className = "invite-link-actions";
+      actions.append(copyButton, link);
+      status.append(actions);
     }
   }
 }
