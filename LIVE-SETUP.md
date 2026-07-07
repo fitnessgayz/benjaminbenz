@@ -67,7 +67,21 @@ PASSWORD_NOTIFICATION_EMAILS=benjaminbenz.fit@gmail.com
 
 The notification email is sent after a client successfully creates their portal password. It includes the client email and completion time, never the password.
 
-## 5. Create the first login
+## 5. Deploy the website contact form function
+
+Deploy `supabase/functions/send-contact-message`.
+
+Set these secrets in Supabase functions:
+
+```text
+RESEND_API_KEY=your Resend API key
+CONTACT_MESSAGE_FROM=Fitness with Benjamin <notify@your-verified-domain.com>
+CONTACT_MESSAGE_EMAILS=benjaminbenz.fit@gmail.com
+```
+
+`CONTACT_MESSAGE_FROM` and `CONTACT_MESSAGE_EMAILS` can be omitted if `PASSWORD_NOTIFICATION_FROM` and `PASSWORD_NOTIFICATION_EMAILS` are already configured.
+
+## 6. Create the first login
 
 Use Supabase Authentication to invite or create the coach admin:
 
@@ -89,7 +103,7 @@ Use the test client login for:
 
 - Client dashboard: `/client-login.html`
 
-## 6. Test the loop
+## 7. Test the loop
 
 1. Sign in as the client.
 2. Open Workout 1.

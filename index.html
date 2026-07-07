@@ -143,13 +143,23 @@
     </section>
 
     <section id="contact" class="contact">
-      <p class="kicker">Start here</p>
-      <h2>Ready to train with intention?</h2>
-      <p>Fill out the questionnaire or send a note. Benjamin will use your goals, schedule, training history, and movement needs to shape the next step.</p>
-      <div class="button-row">
-        <a class="button button-dark" href="questionnaire.html">Fitness questionnaire</a>
-        <a class="button button-ghost" href="mailto:benjaminbenz.fit@gmail.com">Email Benjamin</a>
+      <div class="contact-copy">
+        <p class="kicker">Start here</p>
+        <h2>Ready to train with intention?</h2>
+        <p>Fill out the questionnaire or send a note. Benjamin will use your goals, schedule, training history, and movement needs to shape the next step.</p>
+        <div class="button-row">
+          <a class="button button-dark" href="questionnaire.html">Fitness questionnaire</a>
+        </div>
       </div>
+      <form class="contact-form" id="contact-message-form">
+        <input class="contact-website-field" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" />
+        <label>Name <input type="text" name="name" autocomplete="name" required></label>
+        <label>Email <input type="email" name="email" autocomplete="email" required></label>
+        <label>Phone <input type="tel" name="phone" autocomplete="tel"></label>
+        <label>Message <textarea name="message" required minlength="8"></textarea></label>
+        <p id="contact-message-status" role="status"></p>
+        <button class="button button-dark" type="submit">Send message</button>
+      </form>
     </section>
 
     <section class="client-progress">
@@ -179,6 +189,7 @@
     <span>San Francisco · fwb@benjaminbenz.com</span>
   </footer>
 
-  <script src="js/script.js?v=homepage-refresh-2"></script>
+  <script src="js/supabase-config.js"></script>
+  <script src="js/script.js?v=contact-message-1"></script>
 </body>
 </html>

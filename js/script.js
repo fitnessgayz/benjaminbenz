@@ -56,3 +56,66 @@ if (questionnaire) {
     }
   });
 }
+
+const contactForm = document.getElementById("contact-message-form");
+
+if (contactForm) {
+  contactForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    const status = document.getElementById("contact-message-status");
+    const submitButton = contactForm.querySelector('button[type="submit"]');
+    const contactConfig = window.FWB_SUPABASE_CONFIG || {};
+    const endpoint = contactConfig.url
+      ? `${contactConfig.url}/functions/v1/send-contact-message`
+      : "";
+
+    if (submitButton) {
+      submitButton.disabled = true;
+    }
+    if (status) {
+      status.textContent = "Sending your message...";
+    }
+
+    try {
+      if (!endpoint || !contactConfig.anonKey) {
+        throw new Error("Contact form is not connected.");
+      }
+
+      const formData = new FormData(contactForm);
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "apikey": contactConfig.anonKey,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          name: String(formData.get("name") || ""),
+          email: String(formData.get("email") || ""),
+          phone: String(formData.get("phone") || ""),
+          message: String(formData.get("message") || ""),
+          website: String(formData.get("website") || "")
+        })
+      });
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(result.error || "Message could not be sent.");
+      }
+
+      if (status) {
+        status.textContent = "Thanks. Your message was sent to Benjamin.";
+      }
+
+      contactForm.reset();
+    } catch (error) {
+      if (status) {
+        status.textContent = error.message || "Something went wrong. Please email Benjamin directly.";
+      }
+    } finally {
+      if (submitButton) {
+        submitButton.disabled = false;
+      }
+    }
+  });
+}

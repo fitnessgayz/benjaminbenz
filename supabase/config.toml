@@ -6,3 +6,6 @@ verify_jwt = false
 
 [functions.notify-client-password-set]
 verify_jwt = false
+
+[functions.send-contact-message]
+verify_jwt = false
