@@ -16,6 +16,7 @@ let programs = [];
 let selectedProgramId = "";
 let progressEntries = [];
 let trainingLogs = [];
+let showingArchivedClients = false;
 
 function adminStatus(message) {
   const status = document.getElementById("admin-save-status");
@@ -509,19 +510,29 @@ async function loadTrainingLogsForEmail(email) {
 
 function renderClientList() {
   const list = document.getElementById("client-list");
-  const deleteButton = document.getElementById("delete-client-button");
-  const visiblePrograms = programs.filter((program) => program.active !== false);
+  const archiveButton = document.getElementById("archive-client-button");
+  const archivedButton = document.getElementById("archived-clients-button");
+  const visiblePrograms = programs.filter((program) => (
+    showingArchivedClients ? program.active === false : program.active !== false
+  ));
+  const selectedProgram = programs.find((program) => program.id === selectedProgramId);
 
   if (!list) {
     return;
   }
 
-  if (deleteButton) {
-    deleteButton.disabled = !selectedProgramId;
+  if (archiveButton) {
+    archiveButton.disabled = !selectedProgramId;
+    archiveButton.textContent = selectedProgram?.active === false ? "Restore" : "Archive";
+  }
+
+  if (archivedButton) {
+    archivedButton.textContent = showingArchivedClients ? "Active clients" : "Archived";
+    archivedButton.classList.toggle("is-selected", showingArchivedClients);
   }
 
   if (visiblePrograms.length === 0) {
-    list.innerHTML = '<p class="empty-state">No client programs yet.</p>';
+    list.innerHTML = `<p class="empty-state">No ${showingArchivedClients ? "archived" : "active"} client programs yet.</p>`;
     return;
   }
 
@@ -549,7 +560,6 @@ async function loadPrograms() {
   const { data, error } = await coachSupabase
     .from("client_programs")
     .select("*")
-    .eq("active", true)
     .order("client_name", { ascending: true });
 
   if (error) {
@@ -559,8 +569,12 @@ async function loadPrograms() {
 
   programs = data || [];
 
-  if (programs.length > 0) {
-    fillForm(programs[0]);
+  const visiblePrograms = programs.filter((program) => (
+    showingArchivedClients ? program.active === false : program.active !== false
+  ));
+
+  if (visiblePrograms.length > 0) {
+    fillForm(visiblePrograms[0]);
   } else {
     fillForm();
   }
@@ -633,8 +647,8 @@ function handleSaveNewClient() {
   });
 }
 
-async function handleDeleteClient() {
-  const button = document.getElementById("delete-client-button");
+async function handleArchiveClient() {
+  const button = document.getElementById("archive-client-button");
   const form = document.getElementById("program-editor");
 
   if (!button || !form) {
@@ -646,23 +660,25 @@ async function handleDeleteClient() {
     const selectedProgram = programs.find((program) => program.id === id);
 
     if (!id || !selectedProgram) {
-      adminStatus("Choose a client to delete.");
+      adminStatus("Choose a client first.");
       return;
     }
 
+    const shouldRestore = selectedProgram.active === false;
     const label = selectedProgram.client_name || selectedProgram.client_email || "this client";
-    const confirmed = window.confirm(`Delete ${label} from the active client list?`);
+    const actionLabel = shouldRestore ? "restore" : "archive";
+    const confirmed = window.confirm(`${shouldRestore ? "Restore" : "Archive"} ${label}?`);
 
     if (!confirmed) {
       return;
     }
 
     button.disabled = true;
-    adminStatus("Deleting client...");
+    adminStatus(`${shouldRestore ? "Restoring" : "Archiving"} client...`);
 
     const { error } = await coachSupabase
       .from("client_programs")
-      .update({ active: false })
+      .update({ active: shouldRestore })
       .eq("id", id);
 
     if (error) {
@@ -672,14 +688,36 @@ async function handleDeleteClient() {
     }
 
     programs = programs.map((program) => (
-      program.id === id ? { ...program, active: false } : program
+      program.id === id ? { ...program, active: shouldRestore } : program
     ));
-    const nextProgram = programs.find((program) => program.active !== false) || {};
+    const nextProgram = programs.find((program) => (
+      showingArchivedClients ? program.active === false : program.active !== false
+    )) || {};
 
     selectedProgramId = nextProgram.id || "";
     fillForm(nextProgram);
     renderClientList();
-    adminStatus("Client deleted.");
+    adminStatus(`Client ${actionLabel}d.`);
+  });
+}
+
+function handleArchivedClientsToggle() {
+  const button = document.getElementById("archived-clients-button");
+
+  if (!button) {
+    return;
+  }
+
+  button.addEventListener("click", () => {
+    showingArchivedClients = !showingArchivedClients;
+
+    const visiblePrograms = programs.filter((program) => (
+      showingArchivedClients ? program.active === false : program.active !== false
+    ));
+
+    fillForm(visiblePrograms[0] || {});
+    renderClientList();
+    adminStatus(showingArchivedClients ? "Showing archived clients." : "Showing active clients.");
   });
 }
 
@@ -905,7 +943,8 @@ async function bootCoachAdmin() {
   renderWorkoutFields();
   handleSave();
   handleSaveNewClient();
-  handleDeleteClient();
+  handleArchiveClient();
+  handleArchivedClientsToggle();
   handleSendInvite();
   handleSaveProgress();
   handleCoachSignOut();

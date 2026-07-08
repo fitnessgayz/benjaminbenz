@@ -259,23 +259,33 @@ function setCountFromPrescription(prescription) {
   return Number.isFinite(count) && count > 0 ? Math.min(count, 8) : 3;
 }
 
-function repsFromPrescription(prescription) {
+function repTargetsFromPrescription(prescription) {
   const text = String(prescription || "");
+  const ladderMatch = text.match(/((?:\d+\s*,\s*)+\d+)\s*reps?/i);
+
+  if (ladderMatch) {
+    return ladderMatch[1].split(",").map((rep) => rep.trim()).filter(Boolean);
+  }
+
   const match = text.match(/(\d+\s*-\s*\d+|\d+)\s*reps?/i);
 
-  return match ? match[1].replace(/\s/g, "") : "";
+  return match ? [match[1].replace(/\s/g, "")] : [];
+}
+
+function repsFromPrescription(prescription) {
+  return repTargetsFromPrescription(prescription)[0] || "";
 }
 
 function setRows(exercise) {
   const setCount = setCountFromPrescription(exercise.prescription);
-  const reps = repsFromPrescription(exercise.prescription);
+  const repTargets = repTargetsFromPrescription(exercise.prescription);
 
   return Array.from({ length: setCount }, (_, index) => `
     <div class="set-row" data-set-row data-set-number="${index + 1}">
       <span>${index + 1}</span>
       <input type="number" min="0" step="0.5" placeholder="0" data-set-weight />
       <b>x</b>
-      <input type="number" min="0" step="1" placeholder="${escapeHtml(reps)}" data-set-reps />
+      <input type="number" min="0" step="1" placeholder="${escapeHtml(repTargets[index] || repTargets[0] || "")}" data-set-reps />
     </div>
   `).join("");
 }

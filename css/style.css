@@ -1730,6 +1730,12 @@ footer {
   font-size: .78rem;
 }
 
+.client-list-actions .button.is-selected {
+  background: var(--lime);
+  border-color: var(--black);
+  color: var(--black);
+}
+
 .profile-actions-row {
   display: flex;
   justify-content: flex-end;
