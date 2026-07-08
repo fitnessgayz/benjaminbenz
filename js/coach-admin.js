@@ -527,7 +527,7 @@ function renderClientList() {
   }
 
   if (archivedButton) {
-    archivedButton.textContent = showingArchivedClients ? "Active clients" : "Archived";
+    archivedButton.textContent = showingArchivedClients ? "Active clients" : "Archived clients";
     archivedButton.classList.toggle("is-selected", showingArchivedClients);
   }
 
