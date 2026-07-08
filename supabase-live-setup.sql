@@ -106,6 +106,13 @@ to authenticated
 using (public.is_coach_admin())
 with check (public.is_coach_admin());
 
+drop policy if exists "Coach admins can delete archived programs" on public.client_programs;
+create policy "Coach admins can delete archived programs"
+on public.client_programs
+for delete
+to authenticated
+using (public.is_coach_admin() and active = false);
+
 create unique index if not exists client_programs_one_active_per_email
 on public.client_programs (lower(client_email))
 where active;

@@ -28,6 +28,13 @@ to authenticated
 using (public.is_coach_admin())
 with check (public.is_coach_admin());
 
+drop policy if exists "Coach admins can delete archived programs" on public.client_programs;
+create policy "Coach admins can delete archived programs"
+on public.client_programs
+for delete
+to authenticated
+using (public.is_coach_admin() and active = false);
+
 create or replace function public.set_updated_at()
 returns trigger
 language plpgsql

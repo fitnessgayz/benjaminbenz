@@ -512,6 +512,7 @@ function renderClientList() {
   const list = document.getElementById("client-list");
   const archiveButton = document.getElementById("archive-client-button");
   const archivedButton = document.getElementById("archived-clients-button");
+  const deleteArchivedButton = document.getElementById("delete-archived-client-button");
   const visiblePrograms = programs.filter((program) => (
     showingArchivedClients ? program.active === false : program.active !== false
   ));
@@ -524,11 +525,17 @@ function renderClientList() {
   if (archiveButton) {
     archiveButton.disabled = !selectedProgramId;
     archiveButton.textContent = selectedProgram?.active === false ? "Restore" : "Archive";
+    archiveButton.hidden = showingArchivedClients && !selectedProgramId;
   }
 
   if (archivedButton) {
     archivedButton.textContent = showingArchivedClients ? "Active clients" : "Archived clients";
     archivedButton.classList.toggle("is-selected", showingArchivedClients);
+  }
+
+  if (deleteArchivedButton) {
+    deleteArchivedButton.hidden = !showingArchivedClients;
+    deleteArchivedButton.disabled = selectedProgram?.active !== false;
   }
 
   if (visiblePrograms.length === 0) {
@@ -718,6 +725,57 @@ function handleArchivedClientsToggle() {
     fillForm(visiblePrograms[0] || {});
     renderClientList();
     adminStatus(showingArchivedClients ? "Showing archived clients." : "Showing active clients.");
+  });
+}
+
+function handleDeleteArchivedClient() {
+  const button = document.getElementById("delete-archived-client-button");
+  const form = document.getElementById("program-editor");
+
+  if (!button || !form) {
+    return;
+  }
+
+  button.addEventListener("click", async () => {
+    const id = form.elements.id.value || selectedProgramId;
+    const selectedProgram = programs.find((program) => program.id === id);
+
+    if (!id || selectedProgram?.active !== false) {
+      adminStatus("Choose an archived client first.");
+      return;
+    }
+
+    const label = selectedProgram.client_name || selectedProgram.client_email || "this archived client";
+    const confirmed = window.confirm(`Permanently delete ${label} from archived clients?`);
+
+    if (!confirmed) {
+      return;
+    }
+
+    button.disabled = true;
+    adminStatus("Deleting archived client...");
+
+    const { error } = await coachSupabase
+      .from("client_programs")
+      .delete()
+      .eq("id", id)
+      .eq("active", false);
+
+    if (error) {
+      adminStatus(error.message);
+      button.disabled = false;
+      return;
+    }
+
+    programs = programs.filter((program) => program.id !== id);
+    const nextProgram = programs.find((program) => (
+      showingArchivedClients ? program.active === false : program.active !== false
+    )) || {};
+
+    selectedProgramId = nextProgram.id || "";
+    fillForm(nextProgram);
+    renderClientList();
+    adminStatus("Archived client deleted.");
   });
 }
 
@@ -945,6 +1003,7 @@ async function bootCoachAdmin() {
   handleSaveNewClient();
   handleArchiveClient();
   handleArchivedClientsToggle();
+  handleDeleteArchivedClient();
   handleSendInvite();
   handleSaveProgress();
   handleCoachSignOut();
