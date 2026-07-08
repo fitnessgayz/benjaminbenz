@@ -11,6 +11,7 @@ const supabaseClient = isConfigured && window.supabase
 const coachPortalEmails = ["benjaminbenz.fit@gmail.com"];
 let activeClientEmail = "";
 let trainingLogs = [];
+const dashboardRequestTimeout = 15000;
 
 function isCoachPortalEmail(email) {
   return coachPortalEmails.includes(String(email || "").toLowerCase());
@@ -31,6 +32,19 @@ function setText(selector, value) {
   if (element) {
     element.textContent = value || "";
   }
+}
+
+function withTimeout(promise, message, timeoutMs = dashboardRequestTimeout) {
+  let timeoutId;
+  const timeout = new Promise((_, reject) => {
+    timeoutId = window.setTimeout(() => {
+      reject(new Error(message));
+    }, timeoutMs);
+  });
+
+  return Promise.race([promise, timeout]).finally(() => {
+    window.clearTimeout(timeoutId);
+  });
 }
 
 function setDashboardMessage(title, message) {
@@ -916,67 +930,95 @@ async function loadDashboard() {
     return;
   }
 
-  if (!supabaseClient) {
-    setDashboardMessage(
-      "Client login unavailable",
-      "This page is not connected yet. Please message Benjamin for your workout."
+  try {
+    if (!supabaseClient) {
+      setDashboardMessage(
+        "Client login unavailable",
+        "This page is not connected yet. Please message Benjamin for your workout."
+      );
+      return;
+    }
+
+    const { data: sessionData, error: sessionError } = await withTimeout(
+      supabaseClient.auth.getSession(),
+      "Client access check timed out."
     );
-    return;
-  }
+    const user = sessionData?.session?.user;
 
-  const { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
-  const user = sessionData?.session?.user;
+    if (sessionError || !user) {
+      window.location.href = "client-login.html";
+      return;
+    }
 
-  if (sessionError || !user) {
-    window.location.href = "client-login.html";
-    return;
-  }
+    activeClientEmail = user.email;
 
-  activeClientEmail = user.email;
+    const { data, error } = await withTimeout(
+      supabaseClient
+        .from("client_programs")
+        .select("*")
+        .eq("client_email", user.email)
+        .eq("active", true)
+        .maybeSingle(),
+      "Program request timed out."
+    );
 
-  const { data, error } = await supabaseClient
-    .from("client_programs")
-    .select("*")
-    .eq("client_email", user.email)
-    .eq("active", true)
-    .maybeSingle();
+    if (error) {
+      setDashboardMessage(
+        "Could not load dashboard",
+        "Please refresh the page. If it still does not load, message Benjamin."
+      );
+      return;
+    }
 
-  if (error) {
+    if (!data) {
+      setDashboardMessage(
+        "No active program yet",
+        "You are signed in, but your workout has not been added to this dashboard yet."
+      );
+      return;
+    }
+
+    renderProgram(data);
+
+    const [progressResult, trainingLogResult] = await Promise.allSettled([
+      withTimeout(
+        supabaseClient
+          .from("client_progress")
+          .select("*")
+          .eq("client_email", user.email)
+          .order("entry_date", { ascending: true }),
+        "Progress request timed out."
+      ),
+      withTimeout(
+        supabaseClient
+          .from("client_workout_logs")
+          .select("*")
+          .eq("client_email", user.email)
+          .order("entry_date", { ascending: true })
+          .limit(500),
+        "Training log request timed out."
+      )
+    ]);
+
+    const progressData = progressResult.status === "fulfilled" && !progressResult.value.error
+      ? progressResult.value.data
+      : [];
+    const trainingLogData = trainingLogResult.status === "fulfilled" && !trainingLogResult.value.error
+      ? trainingLogResult.value.data
+      : [];
+
+    renderProgress(progressData || []);
+    populateTrainingLogs(
+      trainingLogData?.length || !shouldUseDemoTrainingLogs()
+        ? trainingLogData || []
+        : demoTrainingLogsForProgram(data)
+    );
+  } catch (error) {
     setDashboardMessage(
       "Could not load dashboard",
       "Please refresh the page. If it still does not load, message Benjamin."
     );
-    return;
   }
-
-  if (!data) {
-    setDashboardMessage(
-      "No active program yet",
-      "You are signed in, but your workout has not been added to this dashboard yet."
-    );
-    return;
-  }
-
-  const { data: progressData } = await supabaseClient
-    .from("client_progress")
-    .select("*")
-    .eq("client_email", user.email)
-    .order("entry_date", { ascending: true });
-
-  const { data: trainingLogData } = await supabaseClient
-    .from("client_workout_logs")
-    .select("*")
-    .eq("client_email", user.email)
-    .order("entry_date", { ascending: true })
-    .limit(500);
-
-  renderProgram(data);
-  renderProgress(progressData || []);
-  populateTrainingLogs(
-    trainingLogData?.length || !shouldUseDemoTrainingLogs()
-      ? trainingLogData || []
-      : demoTrainingLogsForProgram(data)
-  );
 }
 
 function rowsForTrainingLog(logElement) {

@@ -1891,33 +1891,6 @@ footer {
   width: auto;
 }
 
-.ai-program-card {
-  border-color: rgba(215, 255, 63, .75);
-}
-
-.ai-actions {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 16px;
-  color: var(--paper);
-  background: var(--black);
-  border-radius: 8px;
-}
-
-.ai-actions p {
-  margin: 0;
-  color: rgba(255, 255, 255, .74);
-  font-weight: 900;
-}
-
-.ai-actions .button {
-  width: auto;
-  color: var(--black);
-  background: var(--lime);
-}
-
 .progress-history {
   display: grid;
   gap: 8px;
@@ -2282,10 +2255,16 @@ textarea:focus {
 
   h1 {
     font-size: clamp(3rem, 14vw, 4.2rem);
+    line-height: .88;
   }
 
   h2 {
     font-size: clamp(2.2rem, 11vw, 3.8rem);
+    line-height: .9;
+  }
+
+  h3 {
+    line-height: .94;
   }
 
   .questionnaire-shell {
@@ -2348,7 +2327,6 @@ textarea:focus {
     display: grid;
   }
 
-  .ai-actions,
   .progress-actions,
   .progress-current,
   .progress-history-row {
@@ -2356,7 +2334,6 @@ textarea:focus {
     grid-template-columns: 1fr;
   }
 
-  .ai-actions .button,
   .progress-actions .button {
     width: 100%;
   }
@@ -2421,7 +2398,9 @@ textarea:focus {
 }
 
 @media (max-width: 420px) {
-  .questionnaire-page .header-cta {
+  .questionnaire-page .header-cta,
+  .dashboard-page .header-cta,
+  .login-page .header-cta {
     display: none;
   }
 
