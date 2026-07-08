@@ -1736,6 +1736,38 @@ footer {
   color: var(--black);
 }
 
+.client-search-control {
+  display: grid;
+  gap: 8px;
+  margin-top: -6px;
+  font-weight: 900;
+}
+
+.client-search-control span {
+  color: var(--muted);
+  font-size: .82rem;
+  text-transform: uppercase;
+  letter-spacing: 0;
+}
+
+.client-search-control input {
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfbf8;
+  color: var(--black);
+  font: inherit;
+  font-weight: 900;
+}
+
+.client-search-control input:focus {
+  outline: 2px solid var(--lime);
+  outline-offset: 2px;
+  border-color: var(--black);
+}
+
 .profile-actions-row {
   display: flex;
   justify-content: flex-end;

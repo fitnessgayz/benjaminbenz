@@ -17,6 +17,7 @@ let selectedProgramId = "";
 let progressEntries = [];
 let trainingLogs = [];
 let showingArchivedClients = false;
+let clientSearchTerm = "";
 
 function adminStatus(message) {
   const status = document.getElementById("admin-save-status");
@@ -111,6 +112,28 @@ function trainingLogStatus(message) {
   if (history) {
     history.innerHTML = `<p class="empty-state">${message}</p>`;
   }
+}
+
+function searchableClientText(program) {
+  return [
+    program.client_name,
+    program.client_email,
+    program.program_title
+  ].join(" ").toLowerCase();
+}
+
+function programsForCurrentClientView() {
+  const basePrograms = programs.filter((program) => (
+    showingArchivedClients ? program.active === false : program.active !== false
+  ));
+
+  if (!clientSearchTerm) {
+    const selectedProgram = basePrograms.find((program) => program.id === selectedProgramId);
+
+    return selectedProgram ? [selectedProgram] : [];
+  }
+
+  return basePrograms.filter((program) => searchableClientText(program).includes(clientSearchTerm));
 }
 
 function isCoachEmail(email) {
@@ -513,9 +536,7 @@ function renderClientList() {
   const archiveButton = document.getElementById("archive-client-button");
   const archivedButton = document.getElementById("archived-clients-button");
   const deleteArchivedButton = document.getElementById("delete-archived-client-button");
-  const visiblePrograms = programs.filter((program) => (
-    showingArchivedClients ? program.active === false : program.active !== false
-  ));
+  const visiblePrograms = programsForCurrentClientView();
   const selectedProgram = programs.find((program) => program.id === selectedProgramId);
 
   if (!list) {
@@ -539,7 +560,12 @@ function renderClientList() {
   }
 
   if (visiblePrograms.length === 0) {
-    list.innerHTML = `<p class="empty-state">No ${showingArchivedClients ? "archived" : "active"} client programs yet.</p>`;
+    const clientType = showingArchivedClients ? "archived" : "active";
+    const message = clientSearchTerm
+      ? `No ${clientType} clients match that search.`
+      : `Search ${clientType} clients by name or email.`;
+
+    list.innerHTML = `<p class="empty-state">${message}</p>`;
     return;
   }
 
@@ -576,9 +602,7 @@ async function loadPrograms() {
 
   programs = data || [];
 
-  const visiblePrograms = programs.filter((program) => (
-    showingArchivedClients ? program.active === false : program.active !== false
-  ));
+  const visiblePrograms = programsForCurrentClientView();
 
   if (visiblePrograms.length > 0) {
     fillForm(visiblePrograms[0]);
@@ -697,9 +721,7 @@ async function handleArchiveClient() {
     programs = programs.map((program) => (
       program.id === id ? { ...program, active: shouldRestore } : program
     ));
-    const nextProgram = programs.find((program) => (
-      showingArchivedClients ? program.active === false : program.active !== false
-    )) || {};
+    const nextProgram = programsForCurrentClientView()[0] || {};
 
     selectedProgramId = nextProgram.id || "";
     fillForm(nextProgram);
@@ -718,13 +740,32 @@ function handleArchivedClientsToggle() {
   button.addEventListener("click", () => {
     showingArchivedClients = !showingArchivedClients;
 
-    const visiblePrograms = programs.filter((program) => (
-      showingArchivedClients ? program.active === false : program.active !== false
-    ));
+    const visiblePrograms = programsForCurrentClientView();
 
     fillForm(visiblePrograms[0] || {});
     renderClientList();
     adminStatus(showingArchivedClients ? "Showing archived clients." : "Showing active clients.");
+  });
+}
+
+function handleClientSearch() {
+  const input = document.getElementById("client-search-input");
+
+  if (!input) {
+    return;
+  }
+
+  input.addEventListener("input", () => {
+    clientSearchTerm = input.value.trim().toLowerCase();
+
+    const visiblePrograms = programsForCurrentClientView();
+    const selectedVisible = visiblePrograms.some((program) => program.id === selectedProgramId);
+
+    if (clientSearchTerm && !selectedVisible) {
+      fillForm(visiblePrograms[0] || {});
+    }
+
+    renderClientList();
   });
 }
 
@@ -768,9 +809,7 @@ function handleDeleteArchivedClient() {
     }
 
     programs = programs.filter((program) => program.id !== id);
-    const nextProgram = programs.find((program) => (
-      showingArchivedClients ? program.active === false : program.active !== false
-    )) || {};
+    const nextProgram = programsForCurrentClientView()[0] || {};
 
     selectedProgramId = nextProgram.id || "";
     fillForm(nextProgram);
@@ -943,6 +982,13 @@ function handleNewClient() {
   }
 
   button.addEventListener("click", () => {
+    const searchInput = document.getElementById("client-search-input");
+
+    clientSearchTerm = "";
+    if (searchInput) {
+      searchInput.value = "";
+    }
+
     fillForm();
     renderClientList();
     adminStatus("New client ready.");
@@ -1003,6 +1049,7 @@ async function bootCoachAdmin() {
   handleSaveNewClient();
   handleArchiveClient();
   handleArchivedClientsToggle();
+  handleClientSearch();
   handleDeleteArchivedClient();
   handleSendInvite();
   handleSaveProgress();

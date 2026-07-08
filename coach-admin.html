@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=delete-archived-client-1" />
+  <link rel="stylesheet" href="css/style.css?v=client-search-picker-1" />
 </head>
 <body class="dashboard-page coach-admin-page">
   <header class="site-header dashboard-header">
@@ -40,7 +40,7 @@
         <div class="admin-section-heading">
           <div>
             <p class="kicker">Clients</p>
-            <h2>Client list</h2>
+            <h2>Find client</h2>
           </div>
           <div class="client-list-actions">
             <button class="button button-dark" type="button" id="new-client-button">New</button>
@@ -49,6 +49,10 @@
             <button class="button button-ghost danger-button" type="button" id="delete-archived-client-button" hidden>Delete archived</button>
           </div>
         </div>
+        <label class="client-search-control">
+          <span>Search by name or email</span>
+          <input type="search" id="client-search-input" placeholder="Start typing a client name..." autocomplete="off" />
+        </label>
         <div class="client-list" id="client-list"></div>
       </section>
 
@@ -220,6 +224,6 @@
   <script src="js/script.js?v=manual-invite-copy-1"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js?v=manual-invite-copy-1"></script>
-  <script src="js/coach-admin.js?v=delete-archived-client-1"></script>
+  <script src="js/coach-admin.js?v=client-search-picker-1"></script>
 </body>
 </html>
