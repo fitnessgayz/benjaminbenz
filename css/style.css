@@ -1912,7 +1912,8 @@ footer {
   width: auto;
 }
 
-.progress-actions {
+.progress-actions,
+.notes-actions {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1923,13 +1924,15 @@ footer {
   border-radius: 8px;
 }
 
-.progress-actions p {
+.progress-actions p,
+.notes-actions p {
   margin: 0;
   color: var(--muted);
   font-weight: 900;
 }
 
-.progress-actions .button {
+.progress-actions .button,
+.notes-actions .button {
   width: auto;
 }
 
@@ -2370,13 +2373,15 @@ textarea:focus {
   }
 
   .progress-actions,
+  .notes-actions,
   .progress-current,
   .progress-history-row {
     display: grid;
     grid-template-columns: 1fr;
   }
 
-  .progress-actions .button {
+  .progress-actions .button,
+  .notes-actions .button {
     width: 100%;
   }
 

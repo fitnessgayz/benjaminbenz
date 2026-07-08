@@ -106,6 +106,14 @@ function progressStatus(message) {
   }
 }
 
+function coachNotesStatus(message) {
+  const status = document.getElementById("coach-notes-status");
+
+  if (status) {
+    status.textContent = message;
+  }
+}
+
 function trainingLogStatus(message) {
   const history = document.getElementById("training-log-history");
 
@@ -678,6 +686,34 @@ function handleSaveNewClient() {
   });
 }
 
+function handleSaveCoachNotes() {
+  const button = document.getElementById("save-coach-notes-button");
+  const form = document.getElementById("program-editor");
+
+  if (!button || !form) {
+    return;
+  }
+
+  button.addEventListener("click", async () => {
+    button.disabled = true;
+    coachNotesStatus("Saving notes...");
+    adminStatus("Saving notes...");
+
+    const { error } = await saveProgramFromForm(form);
+
+    if (error) {
+      coachNotesStatus(error.message);
+      adminStatus(error.message);
+      button.disabled = false;
+      return;
+    }
+
+    coachNotesStatus("Notes saved.");
+    adminStatus("Notes saved.");
+    button.disabled = false;
+  });
+}
+
 async function handleArchiveClient() {
   const button = document.getElementById("archive-client-button");
   const form = document.getElementById("program-editor");
@@ -1047,6 +1083,7 @@ async function bootCoachAdmin() {
   renderWorkoutFields();
   handleSave();
   handleSaveNewClient();
+  handleSaveCoachNotes();
   handleArchiveClient();
   handleArchivedClientsToggle();
   handleClientSearch();
