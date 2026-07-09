@@ -130,6 +130,213 @@ function renderRest(rest) {
   return `<small>${escapeHtml(rest)}</small>`;
 }
 
+const muscleMeta = {
+  chest: { label: "Chest", group: "Push", selector: "chest" },
+  shoulders: { label: "Shoulders", group: "Push", selector: "shoulders" },
+  triceps: { label: "Triceps", group: "Push", selector: "triceps" },
+  biceps: { label: "Biceps", group: "Pull", selector: "biceps" },
+  back: { label: "Back", group: "Pull", selector: "back" },
+  lats: { label: "Lats", group: "Pull", selector: "lats" },
+  glutes: { label: "Glutes", group: "Lower", selector: "glutes" },
+  hamstrings: { label: "Hamstrings", group: "Lower", selector: "hamstrings" },
+  quads: { label: "Quads", group: "Lower", selector: "quads" },
+  calves: { label: "Calves", group: "Lower", selector: "calves" },
+  core: { label: "Core", group: "Core", selector: "core" }
+};
+
+const muscleRules = [
+  { pattern: /\b(lat pulldown|pull[-\s]?up|chin[-\s]?up)\b/i, muscles: ["lats", "biceps"] },
+  { pattern: /\b(row|pullover)\b/i, muscles: ["back", "lats", "biceps"] },
+  { pattern: /\b(face pull|rear delt|reverse fly)\b/i, muscles: ["shoulders", "back"] },
+  { pattern: /\b(shoulder press|overhead press|military press)\b/i, muscles: ["shoulders", "triceps"] },
+  { pattern: /\b(lateral raise|front raise|upright row)\b/i, muscles: ["shoulders"] },
+  { pattern: /\b(curl|hammer curl)\b/i, muscles: ["biceps"] },
+  { pattern: /\b(triceps|pushdown|skull crusher|dip)\b/i, muscles: ["triceps"] },
+  { pattern: /\b(bench|chest press|push[-\s]?up|fly|pec)\b/i, muscles: ["chest", "triceps", "shoulders"] },
+  { pattern: /\b(hip thrust|glute bridge|kickback)\b/i, muscles: ["glutes", "hamstrings"] },
+  { pattern: /\b(romanian deadlift|rdl|stiff leg|good morning)\b/i, muscles: ["hamstrings", "glutes", "back"] },
+  { pattern: /\b(deadlift)\b/i, muscles: ["hamstrings", "glutes", "back"] },
+  { pattern: /\b(squat|split squat|lunge|leg press|step[-\s]?up)\b/i, muscles: ["quads", "glutes", "hamstrings"] },
+  { pattern: /\b(leg extension)\b/i, muscles: ["quads"] },
+  { pattern: /\b(leg curl)\b/i, muscles: ["hamstrings"] },
+  { pattern: /\b(back extension)\b/i, muscles: ["glutes", "hamstrings", "back"] },
+  { pattern: /\b(lateral walk|abduction|clam)\b/i, muscles: ["glutes"] },
+  { pattern: /\b(calf|calves)\b/i, muscles: ["calves"] },
+  { pattern: /\b(plank|dead bug|crunch|sit[-\s]?up|pallof|woodchop|rotation|hollow)\b/i, muscles: ["core"] }
+];
+
+function normalizeMuscle(value) {
+  const text = String(value || "").toLowerCase().trim();
+  const aliases = {
+    abs: "core",
+    abdominal: "core",
+    abdominals: "core",
+    arm: "biceps",
+    arms: "biceps",
+    back: "back",
+    chest: "chest",
+    delts: "shoulders",
+    delt: "shoulders",
+    glute: "glutes",
+    glutes: "glutes",
+    hamstring: "hamstrings",
+    hamstrings: "hamstrings",
+    lats: "lats",
+    lat: "lats",
+    legs: "quads",
+    quads: "quads",
+    quadriceps: "quads",
+    shoulders: "shoulders",
+    shoulder: "shoulders",
+    tricep: "triceps",
+    triceps: "triceps",
+    bicep: "biceps",
+    biceps: "biceps",
+    calves: "calves",
+    calf: "calves"
+  };
+
+  return aliases[text] || "";
+}
+
+function uniqueMuscles(muscles) {
+  return [...new Set((muscles || []).map(normalizeMuscle).filter(Boolean))];
+}
+
+function explicitMusclesForExercise(exercise) {
+  return uniqueMuscles(String(exercise.muscles || exercise.targets || "")
+    .split(/[,/]+/)
+    .map((item) => item.trim()));
+}
+
+function inferExerciseMuscles(exercise, workoutFocus = "") {
+  const explicit = explicitMusclesForExercise(exercise);
+
+  if (explicit.length > 0) {
+    return explicit.slice(0, 5);
+  }
+
+  const text = `${exercise.name || ""} ${exercise.prescription || ""}`;
+  const matched = muscleRules.flatMap((rule) => rule.pattern.test(text) ? rule.muscles : []);
+  const focusMuscles = uniqueMuscles(String(workoutFocus || "")
+    .split(/[,/]+/)
+    .map((item) => item.trim()));
+
+  return uniqueMuscles([...matched, ...focusMuscles]).slice(0, 5);
+}
+
+function muscleLabels(muscles) {
+  return (muscles || []).map((muscle) => muscleMeta[muscle]?.label || muscle);
+}
+
+function muscleTargetMarkup(muscles) {
+  if (!muscles.length) {
+    return '<span class="muscle-target-empty">Target muscles inferred after coach tags this exercise.</span>';
+  }
+
+  return `
+    <div class="muscle-targets" aria-label="Targeted muscle groups">
+      ${muscles.map((muscle, index) => `
+        <span class="${index === 0 ? "is-primary" : ""}">${escapeHtml(muscleMeta[muscle]?.label || muscle)}</span>
+      `).join("")}
+    </div>
+  `;
+}
+
+function muscleGraphicMarkup(muscles) {
+  const active = new Set(muscles || []);
+  const activeClass = (muscle) => active.has(muscle) ? " is-active" : "";
+
+  return `
+    <div class="muscle-graphic" aria-label="${escapeHtml(muscleLabels(muscles).join(", ") || "Target muscles")}">
+      <div class="muscle-map-image">
+        <img src="images/ui/muscle-map-body.png" alt="" loading="lazy" />
+        <span class="muscle-hotspot hotspot-chest${activeClass("chest")}"></span>
+        <span class="muscle-hotspot hotspot-shoulders-front${activeClass("shoulders")}"></span>
+        <span class="muscle-hotspot hotspot-shoulders-back${activeClass("shoulders")}"></span>
+        <span class="muscle-hotspot hotspot-biceps${activeClass("biceps")}"></span>
+        <span class="muscle-hotspot hotspot-triceps-front${activeClass("triceps")}"></span>
+        <span class="muscle-hotspot hotspot-triceps-back${activeClass("triceps")}"></span>
+        <span class="muscle-hotspot hotspot-core${activeClass("core")}"></span>
+        <span class="muscle-hotspot hotspot-back${activeClass("back")}"></span>
+        <span class="muscle-hotspot hotspot-lats${activeClass("lats")}"></span>
+        <span class="muscle-hotspot hotspot-glutes${activeClass("glutes")}"></span>
+        <span class="muscle-hotspot hotspot-quads${activeClass("quads")}"></span>
+        <span class="muscle-hotspot hotspot-hamstrings${activeClass("hamstrings")}"></span>
+        <span class="muscle-hotspot hotspot-calves-front${activeClass("calves")}"></span>
+        <span class="muscle-hotspot hotspot-calves-back${activeClass("calves")}"></span>
+      </div>
+      ${muscleTargetMarkup(muscles)}
+    </div>
+  `;
+}
+
+function workoutInsightData(workout) {
+  const exercises = Array.isArray(workout.exercises) ? workout.exercises : [];
+  const muscleCounts = new Map();
+
+  exercises.forEach((exercise) => {
+    inferExerciseMuscles(exercise, workout.focus).forEach((muscle) => {
+      muscleCounts.set(muscle, (muscleCounts.get(muscle) || 0) + 1);
+    });
+  });
+
+  const topMuscles = Array.from(muscleCounts.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 4)
+    .map(([muscle]) => muscle);
+  const estimatedSets = exercises.reduce((total, exercise) => total + setCountFromPrescription(exercise.prescription), 0);
+  const heavySetCount = exercises.filter((exercise) => setCountFromPrescription(exercise.prescription) >= 5).length;
+  const format = formatLabel(inferWorkoutFormat(workout));
+
+  return { exerciseCount: exercises.length, estimatedSets, format, topMuscles, heavySetCount };
+}
+
+function renderWorkoutInsights(program) {
+  const panel = document.getElementById("workout-insights-panel");
+
+  if (!panel) {
+    return;
+  }
+
+  const workouts = Array.isArray(program.workouts) ? program.workouts : [];
+  const firstWorkout = workouts[0] || {};
+  const nextWorkout = workouts[1] || {};
+  const todayInsights = workoutInsightData(firstWorkout);
+  const nextInsights = workoutInsightData(nextWorkout);
+  const allMuscles = uniqueMuscles(workouts.flatMap((workout) => (
+    (workout.exercises || []).flatMap((exercise) => inferExerciseMuscles(exercise, workout.focus))
+  )));
+
+  panel.innerHTML = `
+    <div class="panel-heading">
+      <div>
+        <p class="kicker">Workout insights</p>
+        <h2>What this block is training</h2>
+      </div>
+      <span class="status-pill">${escapeHtml(workouts.length || 0)} workouts</span>
+    </div>
+    <div class="insight-grid">
+      <article class="insight-card">
+        <span>Today</span>
+        <strong>${escapeHtml(todayInsights.exerciseCount || 0)} exercises</strong>
+        <p>${escapeHtml(todayInsights.estimatedSets || 0)} planned sets · ${escapeHtml(todayInsights.format)}</p>
+        ${muscleTargetMarkup(todayInsights.topMuscles)}
+      </article>
+      <article class="insight-card">
+        <span>Next focus</span>
+        <strong>${escapeHtml(nextWorkout.focus || "Not set")}</strong>
+        <p>${escapeHtml(nextInsights.estimatedSets || 0)} planned sets waiting in the next session.</p>
+        ${muscleTargetMarkup(nextInsights.topMuscles)}
+      </article>
+      <article class="insight-card insight-graphic-card">
+        <span>Training map</span>
+        ${muscleGraphicMarkup(allMuscles.slice(0, 6))}
+      </article>
+    </div>
+  `;
+}
+
 function todayDate() {
   return new Date().toISOString().slice(0, 10);
 }
@@ -295,6 +502,7 @@ function exerciseLogFields(exercise, workoutTitle, options = {}) {
   const panelClass = options.panelClass || "exercise-detail";
   const showSubmit = options.showSubmit !== false;
   const showInlineHeader = Boolean(options.showInlineHeader);
+  const muscles = inferExerciseMuscles(exercise, options.workoutFocus);
 
   return `
     <div class="${panelClass}"
@@ -311,6 +519,13 @@ function exerciseLogFields(exercise, workoutTitle, options = {}) {
           <small data-set-progress>0 / ${setCount} sets completed</small>
         </div>
       ` : ""}
+      <div class="exercise-insight">
+        <div>
+          <strong>Muscle target</strong>
+          <p>${escapeHtml(muscles.length ? `${muscleLabels(muscles).slice(0, 2).join(" + ")} first` : "Add a muscle tag for a sharper target.")}</p>
+        </div>
+        ${muscleGraphicMarkup(muscles)}
+      </div>
       <label class="exercise-substitute">
         <span>Substitute exercise</span>
         <input type="text" placeholder="Optional replacement" data-substitute-exercise />
@@ -343,8 +558,9 @@ function exerciseLogFields(exercise, workoutTitle, options = {}) {
   `;
 }
 
-function exerciseCard(exercise, workoutTitle, isOpen = false) {
+function exerciseCard(exercise, workoutTitle, isOpen = false, workoutFocus = "") {
   const setCount = setCountFromPrescription(exercise.prescription);
+  const muscles = inferExerciseMuscles(exercise, workoutFocus);
 
   return `
     <article class="workout-exercise-card${isOpen ? " is-open" : ""}">
@@ -354,15 +570,16 @@ function exerciseCard(exercise, workoutTitle, isOpen = false) {
           <strong>${escapeHtml(exercise.name)}</strong>
           <em>${escapeHtml(exercise.prescription)}${exercise.rest ? ` · ${escapeHtml(exercise.rest)}` : ""}</em>
           <small data-set-progress>0 / ${setCount} sets completed</small>
+          ${muscleTargetMarkup(muscles)}
         </span>
         <i>›</i>
       </button>
-      ${exerciseLogFields(exercise, workoutTitle)}
+      ${exerciseLogFields(exercise, workoutTitle, { workoutFocus })}
     </article>
   `;
 }
 
-function exerciseCardRows(exercises, workoutTitle, openMode = "first") {
+function exerciseCardRows(exercises, workoutTitle, openMode = "first", workoutFocus = "") {
   if (!Array.isArray(exercises) || exercises.length === 0) {
     return '<p class="empty-state">Workout details will appear here when your coach adds them.</p>';
   }
@@ -370,7 +587,7 @@ function exerciseCardRows(exercises, workoutTitle, openMode = "first") {
   return exercises.map((exercise, index) => {
     const isOpen = openMode === "all" || (openMode === "first" && index === 0);
 
-    return exerciseCard(exercise, workoutTitle, isOpen);
+    return exerciseCard(exercise, workoutTitle, isOpen, workoutFocus);
   }).join("");
 }
 
@@ -430,7 +647,7 @@ function skipControl() {
   `;
 }
 
-function supersetCard(group, workoutTitle) {
+function supersetCard(group, workoutTitle, workoutFocus = "") {
   const countLabel = `${group.exercises.length} exercise${group.exercises.length === 1 ? "" : "s"}`;
 
   return `
@@ -447,7 +664,8 @@ function supersetCard(group, workoutTitle) {
         ${group.exercises.map((exercise) => exerciseLogFields(exercise, workoutTitle, {
           panelClass: "superset-exercise-log",
           showInlineHeader: true,
-          showSubmit: false
+          showSubmit: false,
+          workoutFocus
         })).join("")}
         <button class="complete-exercise-button" type="button" data-superset-submit>Save Superset</button>
         <small data-superset-status></small>
@@ -463,7 +681,7 @@ function supersetRows(workout, workoutTitle) {
     const isPair = group.exercises.length > 1;
     const countLabel = `${group.exercises.length} exercise${group.exercises.length === 1 ? "" : "s"}`;
 
-    return isPair ? supersetCard(group, workoutTitle) : `
+    return isPair ? supersetCard(group, workoutTitle, workout.focus) : `
       <section class="workout-format-group">
         <div class="workout-format-heading">
           <div>
@@ -471,7 +689,7 @@ function supersetRows(workout, workoutTitle) {
             <span>${countLabel}${isPair ? " · log both exercises each round" : ""}</span>
           </div>
         </div>
-        ${exerciseCardRows(group.exercises, workoutTitle, "all")}
+        ${exerciseCardRows(group.exercises, workoutTitle, "all", workout.focus)}
       </section>
     `;
   }).join("");
@@ -489,7 +707,7 @@ function circuitRows(workout, workoutTitle) {
           <span>${roundCount} rounds · move through each exercise in order</span>
         </div>
       </div>
-      ${exerciseCardRows(exercises, workoutTitle, "first")}
+      ${exerciseCardRows(exercises, workoutTitle, "first", workout.focus)}
     </section>
   `;
 }
@@ -509,7 +727,7 @@ function workoutExerciseMarkup(workout, workoutTitle) {
     return circuitRows(workout, workoutTitle);
   }
 
-  return exerciseCardRows(workout.exercises, workoutTitle, "first");
+  return exerciseCardRows(workout.exercises, workoutTitle, "first", workout.focus);
 }
 
 function workoutActionsMarkup(workout) {
@@ -855,6 +1073,7 @@ function renderProgram(program) {
   }
 
   renderMetrics(program);
+  renderWorkoutInsights(program);
   renderExerciseList("today-exercises", firstWorkout, firstWorkout.title || "Workout 1");
   renderExerciseList("next-exercises", nextWorkout, nextWorkout.title || "Workout 2");
   renderAdditionalWorkouts(workouts);

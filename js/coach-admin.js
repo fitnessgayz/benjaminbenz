@@ -211,9 +211,9 @@ function parseExercises(value) {
     .map((line) => line.trim())
     .filter(Boolean)
     .map((line) => {
-      const [code = "", name = "", prescription = "", rest = ""] = line.split("|").map((part) => part.trim());
+      const [code = "", name = "", prescription = "", rest = "", muscles = ""] = line.split("|").map((part) => part.trim());
 
-      return { code, name, prescription, rest };
+      return { code, name, prescription, rest, muscles };
     });
 }
 
@@ -223,12 +223,20 @@ function exercisesToText(exercises) {
   }
 
   return exercises
-    .map((exercise) => [
-      exercise.code || "",
-      exercise.name || "",
-      exercise.prescription || "",
-      exercise.rest || ""
-    ].join(" | "))
+    .map((exercise) => {
+      const fields = [
+        exercise.code || "",
+        exercise.name || "",
+        exercise.prescription || "",
+        exercise.rest || ""
+      ];
+
+      if (exercise.muscles) {
+        fields.push(exercise.muscles);
+      }
+
+      return fields.join(" | ");
+    })
     .join("\n");
 }
 
@@ -460,7 +468,7 @@ function renderWorkoutFields() {
       </div>
       <label>
         Exercises
-        <textarea class="exercise-textarea" name="workout_${number}_exercises" placeholder="A1 | Exercise name | 15 reps x 4 sets | 60-90s rest"></textarea>
+        <textarea class="exercise-textarea" name="workout_${number}_exercises" placeholder="A1 | Exercise name | 15 reps x 4 sets | 60-90s rest | glutes, hamstrings"></textarea>
       </label>
     </section>
   `).join("");

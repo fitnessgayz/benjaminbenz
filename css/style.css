@@ -901,6 +901,7 @@ footer {
 }
 
 .client-summary,
+.workout-insights-panel,
 .today-panel,
 .coach-panel,
 .lower-panel,
@@ -973,6 +974,87 @@ footer {
 
 .summary-metrics strong {
   color: var(--black);
+}
+
+.workout-insights-panel {
+  display: grid;
+  gap: 18px;
+  padding: 18px;
+}
+
+.insight-grid {
+  display: grid;
+  grid-template-columns: minmax(0, .9fr) minmax(0, .9fr) minmax(280px, 1.2fr);
+  gap: 12px;
+}
+
+.insight-card {
+  display: grid;
+  align-content: space-between;
+  gap: 18px;
+  min-height: 210px;
+  padding: 16px;
+  background: #fbfbf8;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.insight-card > span,
+.exercise-insight strong {
+  color: var(--muted);
+  font-size: .74rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.insight-card > strong {
+  color: var(--black);
+  font-size: clamp(1.8rem, 3vw, 3rem);
+  line-height: .92;
+  text-transform: uppercase;
+}
+
+.insight-card p {
+  margin: 0;
+  color: var(--muted);
+  font-weight: 900;
+}
+
+.insight-graphic-card {
+  align-content: start;
+}
+
+.muscle-targets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.muscle-targets span,
+.muscle-target-empty {
+  display: inline-flex;
+  min-height: 28px;
+  align-items: center;
+  padding: 6px 9px;
+  color: var(--muted);
+  background: #f1f1eb;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: .7rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.muscle-targets span.is-primary {
+  color: var(--black);
+  background: var(--lime);
+  border-color: rgba(0, 0, 0, .14);
+}
+
+.muscle-target-empty {
+  margin-top: 10px;
+  text-transform: none;
 }
 
 .client-summary .button {
@@ -1219,6 +1301,10 @@ footer {
   font-weight: 900;
 }
 
+.exercise-card-summary .muscle-targets {
+  margin-top: 10px;
+}
+
 .exercise-card-summary i {
   color: var(--black);
   font-size: 2.2rem;
@@ -1236,6 +1322,197 @@ footer {
   gap: 16px;
   padding: 16px;
   border-top: 1px solid var(--line);
+}
+
+.exercise-insight {
+  display: grid;
+  grid-template-columns: minmax(160px, .75fr) minmax(260px, 1.25fr);
+  gap: 14px;
+  align-items: start;
+  padding: 14px;
+  background: #fbfbf8;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+
+.exercise-insight p {
+  margin: 6px 0 0;
+  color: var(--black);
+  font-weight: 900;
+}
+
+.muscle-graphic {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.muscle-map-image {
+  position: relative;
+  width: 100%;
+  max-width: 360px;
+  aspect-ratio: 3 / 2;
+  padding: 10px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.muscle-map-image img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+}
+
+.muscle-hotspot {
+  position: absolute;
+  display: none;
+  background: rgba(215, 255, 63, .68);
+  border: 1px solid rgba(0, 0, 0, .16);
+  border-radius: 50%;
+  filter: saturate(1.08);
+  mix-blend-mode: multiply;
+  pointer-events: none;
+}
+
+.muscle-hotspot.is-active {
+  display: block;
+}
+
+.muscle-hotspot::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  display: none;
+  background: inherit;
+  border: inherit;
+  border-radius: inherit;
+}
+
+.hotspot-chest {
+  left: 24.5%;
+  top: 22.5%;
+  width: 12.5%;
+  height: 11%;
+  border-radius: 44% 44% 52% 52%;
+}
+
+.hotspot-shoulders-front {
+  left: 19.6%;
+  top: 20.4%;
+  width: 21.5%;
+  height: 8.2%;
+  border-radius: 999px 999px 55% 55%;
+}
+
+.hotspot-shoulders-back {
+  left: 65.6%;
+  top: 20.2%;
+  width: 21.5%;
+  height: 8.4%;
+  border-radius: 999px 999px 55% 55%;
+}
+
+.hotspot-biceps {
+  left: 16.2%;
+  top: 29%;
+  width: 6.8%;
+  height: 18%;
+  border-radius: 55% 45% 45% 55%;
+}
+
+.hotspot-biceps::after {
+  display: block;
+  transform: translateX(315%);
+}
+
+.hotspot-triceps-front {
+  left: 17.4%;
+  top: 29%;
+  width: 5.4%;
+  height: 17%;
+  border-radius: 55% 45% 45% 55%;
+}
+
+.hotspot-triceps-back {
+  left: 63.5%;
+  top: 30%;
+  width: 5.8%;
+  height: 18%;
+  border-radius: 55% 45% 45% 55%;
+}
+
+.hotspot-triceps-back::after {
+  display: block;
+  transform: translateX(345%);
+}
+
+.hotspot-core {
+  left: 25%;
+  top: 33.5%;
+  width: 11.7%;
+  height: 18%;
+  border-radius: 42% 42% 54% 54%;
+}
+
+.hotspot-back {
+  left: 71.5%;
+  top: 22%;
+  width: 13.4%;
+  height: 22%;
+  border-radius: 46% 46% 54% 54%;
+}
+
+.hotspot-lats {
+  left: 67.5%;
+  top: 29%;
+  width: 21%;
+  height: 20%;
+  border-radius: 40% 40% 56% 56%;
+}
+
+.hotspot-glutes {
+  left: 71%;
+  top: 48.5%;
+  width: 14.5%;
+  height: 14%;
+  border-radius: 46% 46% 58% 58%;
+}
+
+.hotspot-quads {
+  left: 23.2%;
+  top: 52.5%;
+  width: 15%;
+  height: 27%;
+  border-radius: 42% 42% 48% 48%;
+}
+
+.hotspot-hamstrings {
+  left: 72%;
+  top: 62%;
+  width: 13.2%;
+  height: 20%;
+  border-radius: 42% 42% 48% 48%;
+}
+
+.hotspot-calves-front {
+  left: 24.2%;
+  top: 78%;
+  width: 13.5%;
+  height: 15%;
+  border-radius: 48% 48% 42% 42%;
+}
+
+.hotspot-calves-back {
+  left: 72%;
+  top: 80%;
+  width: 13.2%;
+  height: 13.5%;
+  border-radius: 48% 48% 42% 42%;
 }
 
 .workout-exercise-card.is-open .exercise-detail {
@@ -2302,6 +2579,7 @@ textarea:focus {
   .yelp-summary,
   .client-access,
   .access-options,
+  .insight-grid,
   .dashboard-hero,
   .dashboard-grid,
   .mini-table,
@@ -2315,6 +2593,7 @@ textarea:focus {
   }
 
   .coach-panel,
+  .workout-insights-panel,
   .today-panel,
   .lower-panel,
   .progress-panel,
@@ -2489,6 +2768,7 @@ textarea:focus {
 
   .dashboard-grid,
   .client-summary,
+  .workout-insights-panel,
   .today-panel,
   .coach-panel,
   .lower-panel {
@@ -2549,6 +2829,14 @@ textarea:focus {
   .exercise-card-summary {
     grid-template-columns: minmax(0, 1fr) 24px;
     padding-right: 112px;
+  }
+
+  .exercise-insight {
+    grid-template-columns: 1fr;
+  }
+
+  .muscle-map-image {
+    max-width: none;
   }
 
   .skip-toggle {
