@@ -1344,6 +1344,48 @@ footer {
   cursor: pointer;
 }
 
+.workout-actions {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  background: #fbfbf8;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+
+.workout-actions > div {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.workout-actions button {
+  min-height: 56px;
+  border-radius: 14px;
+  font: inherit;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.workout-save-button {
+  color: var(--black);
+  background: var(--paper);
+  border: 1px solid var(--line);
+}
+
+.workout-finish-button {
+  color: var(--paper);
+  background: #1fa637;
+  border: 0;
+}
+
+.workout-actions small {
+  min-height: 16px;
+  color: var(--muted);
+  font-size: .78rem;
+  font-weight: 900;
+}
+
 .exercise-detail small {
   min-height: 16px;
   color: var(--muted);
@@ -2249,6 +2291,10 @@ textarea:focus {
 
   .client-list-actions .button {
     width: 100%;
+  }
+
+  .workout-actions > div {
+    grid-template-columns: 1fr;
   }
 
   .profile-actions-row {

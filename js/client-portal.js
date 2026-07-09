@@ -336,7 +336,7 @@ function exerciseLogFields(exercise, workoutTitle, options = {}) {
         <span>Notes</span>
         <textarea placeholder="How did that set feel?" data-log-notes></textarea>
       </label>
-      ${showSubmit ? '<button class="complete-exercise-button" type="button" data-log-submit>Complete Exercise</button>' : ""}
+      ${showSubmit ? '<button class="complete-exercise-button" type="button" data-log-submit>Save Exercise</button>' : ""}
       <small data-log-status></small>
       <div class="previous-weights" data-previous-weights>Previous: none</div>
     </div>
@@ -449,7 +449,7 @@ function supersetCard(group, workoutTitle) {
           showInlineHeader: true,
           showSubmit: false
         })).join("")}
-        <button class="complete-exercise-button" type="button" data-superset-submit>Complete Superset</button>
+        <button class="complete-exercise-button" type="button" data-superset-submit>Save Superset</button>
         <small data-superset-status></small>
       </div>
     </article>
@@ -512,6 +512,22 @@ function workoutExerciseMarkup(workout, workoutTitle) {
   return exerciseCardRows(workout.exercises, workoutTitle, "first");
 }
 
+function workoutActionsMarkup(workout) {
+  if (!Array.isArray(workout.exercises) || workout.exercises.length === 0) {
+    return "";
+  }
+
+  return `
+    <div class="workout-actions">
+      <div>
+        <button class="workout-save-button" type="button" data-workout-save>Save workout</button>
+        <button class="workout-finish-button" type="button" data-workout-finish>Finish workout</button>
+      </div>
+      <small data-workout-status></small>
+    </div>
+  `;
+}
+
 function renderExerciseList(elementId, workout, workoutTitle) {
   const element = document.getElementById(elementId);
 
@@ -519,7 +535,7 @@ function renderExerciseList(elementId, workout, workoutTitle) {
     return;
   }
 
-  element.innerHTML = workoutExerciseMarkup(workout, workoutTitle);
+  element.innerHTML = `${workoutExerciseMarkup(workout, workoutTitle)}${workoutActionsMarkup(workout)}`;
 }
 
 function renderAdditionalWorkouts(workouts) {
@@ -547,6 +563,7 @@ function renderAdditionalWorkouts(workouts) {
       <div class="workout-format-pill">${escapeHtml(formatLabel(inferWorkoutFormat(workout)))}</div>
       <div class="workout-app-list" role="list" aria-label="${escapeHtml(workout.title || `Workout ${index + 3}`)} exercises">
         ${workoutExerciseMarkup(workout, workout.title || `Workout ${index + 3}`)}
+        ${workoutActionsMarkup(workout)}
       </div>
     </section>
   `).join("");
@@ -1059,19 +1076,45 @@ function rowsForTrainingLog(logElement) {
     .filter((row) => row.weight_used > 0);
 }
 
-async function saveTrainingLogRows(button, logElements, status) {
+function filledSetCount(logElement) {
+  return Array.from(logElement.querySelectorAll("[data-set-row]"))
+    .filter((setRow) => Number(setRow.querySelector("[data-set-weight]")?.value || 0) > 0)
+    .length;
+}
+
+function incompleteWorkoutExercises(logElements) {
+  return logElements.filter((logElement) => {
+    const card = logElement.closest(".workout-exercise-card");
+    const prescribedSets = Number(logElement.dataset.prescribedSets || 0);
+
+    if (card?.classList.contains("is-skipped")) {
+      return false;
+    }
+
+    return filledSetCount(logElement) < prescribedSets;
+  });
+}
+
+function workoutSectionForButton(button) {
+  return button.closest(".today-panel, .lower-panel, .extra-workout-panel");
+}
+
+async function saveTrainingLogRows(button, logElements, status, options = {}) {
+  const savingMessage = options.savingMessage || "Saving...";
+  const successMessage = options.successMessage || "Saved.";
+
   if (!supabaseClient || !activeClientEmail) {
     if (status) {
       status.textContent = "Sign in first.";
     }
-    return;
+    return { saved: false };
   }
 
   if (logElements.length === 0) {
     if (status) {
       status.textContent = "Choose a date first.";
     }
-    return;
+    return { saved: false };
   }
 
   const rows = logElements.flatMap(rowsForTrainingLog);
@@ -1080,12 +1123,12 @@ async function saveTrainingLogRows(button, logElements, status) {
     if (status) {
       status.textContent = "Enter at least one weight.";
     }
-    return;
+    return { saved: false };
   }
 
   button.disabled = true;
   if (status) {
-    status.textContent = "Saving...";
+    status.textContent = savingMessage;
   }
 
   const { data, error } = await supabaseClient
@@ -1098,25 +1141,59 @@ async function saveTrainingLogRows(button, logElements, status) {
       status.textContent = "Could not save yet.";
     }
     button.disabled = false;
-    return;
+    return { saved: false, error };
   }
 
   (data || rows).forEach((row) => upsertLocalTrainingLog(row));
   logElements.forEach(updateExerciseLogField);
 
   if (status) {
-    status.textContent = "Saved.";
+    status.textContent = successMessage;
   }
   button.disabled = false;
+  return { saved: true, rows: data || rows };
 }
 
 async function handleTrainingLogSave() {
   document.addEventListener("click", async (event) => {
+    const saveWorkoutButton = event.target.closest("[data-workout-save]");
+    const finishWorkoutButton = event.target.closest("[data-workout-finish]");
     const supersetButton = event.target.closest("[data-superset-submit]");
     const exerciseButton = event.target.closest("[data-log-submit]");
-    const button = supersetButton || exerciseButton;
+    const workoutButton = saveWorkoutButton || finishWorkoutButton;
+    const button = workoutButton || supersetButton || exerciseButton;
 
     if (!button) {
+      return;
+    }
+
+    if (workoutButton) {
+      const section = workoutSectionForButton(workoutButton);
+      const logElements = Array.from(section?.querySelectorAll("[data-exercise-log]") || []);
+      const status = section?.querySelector("[data-workout-status]");
+
+      if (finishWorkoutButton) {
+        const incompleteExercises = incompleteWorkoutExercises(logElements);
+
+        if (incompleteExercises.length > 0) {
+          const names = incompleteExercises
+            .slice(0, 3)
+            .map((logElement) => logElement.dataset.exerciseName)
+            .filter(Boolean)
+            .join(", ");
+          const extra = incompleteExercises.length > 3 ? ` and ${incompleteExercises.length - 3} more` : "";
+
+          if (status) {
+            status.textContent = `Finish needs all sets logged${names ? `: ${names}${extra}.` : "."}`;
+          }
+          return;
+        }
+      }
+
+      await saveTrainingLogRows(workoutButton, logElements, status, {
+        savingMessage: finishWorkoutButton ? "Finishing workout..." : "Saving workout...",
+        successMessage: finishWorkoutButton ? "Workout finished." : "Workout progress saved."
+      });
       return;
     }
 
