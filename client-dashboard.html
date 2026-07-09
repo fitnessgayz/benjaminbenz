@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=muscle-x-precision-1" />
+  <link rel="stylesheet" href="css/style.css?v=client-dashboard-tabs-1" />
 </head>
 <body class="dashboard-page is-loading">
   <header class="site-header dashboard-header">
@@ -53,9 +53,27 @@
           <div class="summary-metrics" id="summary-metrics"></div>
         </aside>
 
-        <section class="workout-insights-panel" id="workout-insights-panel" aria-label="Workout insights"></section>
+        <nav class="client-dashboard-tabs" aria-label="Client dashboard sections">
+          <button class="client-dashboard-tab is-active" type="button" data-client-dashboard-tab="insights" aria-selected="true">Workout insights</button>
+          <button class="client-dashboard-tab" type="button" data-client-dashboard-tab="workouts" aria-selected="false">Workouts</button>
+          <button class="client-dashboard-tab" type="button" data-client-dashboard-tab="progress" aria-selected="false">Progress / check-ins</button>
+        </nav>
 
-        <section class="progress-panel" aria-labelledby="progress-title">
+        <section class="workout-insights-panel" id="workout-insights-panel" data-client-dashboard-panel="insights" aria-label="Workout insights"></section>
+
+        <section class="client-workouts-panel" id="client-workouts-panel" data-client-dashboard-panel="workouts" aria-labelledby="client-workouts-title" hidden>
+          <div class="panel-heading">
+            <div>
+              <p class="kicker">Workouts</p>
+              <h2 id="client-workouts-title">Training sessions</h2>
+            </div>
+            <span class="status-pill" id="client-workouts-count"></span>
+          </div>
+          <div class="client-workout-tabs" id="client-workout-tabs" role="tablist" aria-label="Workout sessions"></div>
+          <div class="client-workout-panels" id="client-workout-panels"></div>
+        </section>
+
+        <section class="progress-panel" data-client-dashboard-panel="progress" aria-labelledby="progress-title" hidden>
           <div class="panel-heading">
             <div>
               <p class="kicker">Progress</p>
@@ -66,18 +84,6 @@
           <div class="progress-current" id="progress-current"></div>
           <div class="progress-chart" id="progress-chart" aria-label="Progress line graph"></div>
           <p class="progress-goal" id="progress-goal"></p>
-        </section>
-
-        <section class="client-workouts-panel" id="client-workouts-panel" aria-labelledby="client-workouts-title">
-          <div class="panel-heading">
-            <div>
-              <p class="kicker">Workouts</p>
-              <h2 id="client-workouts-title">Training sessions</h2>
-            </div>
-            <span class="status-pill" id="client-workouts-count"></span>
-          </div>
-          <div class="client-workout-tabs" id="client-workout-tabs" role="tablist" aria-label="Workout sessions"></div>
-          <div class="client-workout-panels" id="client-workout-panels"></div>
         </section>
       </section>
 
@@ -95,6 +101,6 @@
   <script src="js/script.js?v=client-dashboard"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js"></script>
-  <script src="js/client-portal.js?v=client-workout-tabs-1"></script>
+  <script src="js/client-portal.js?v=client-dashboard-tabs-1"></script>
 </body>
 </html>

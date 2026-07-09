@@ -11,6 +11,7 @@ const supabaseClient = isConfigured && window.supabase
 const coachPortalEmails = ["benjaminbenz.fit@gmail.com"];
 let activeClientEmail = "";
 let trainingLogs = [];
+let activeClientDashboardTab = "insights";
 let activeWorkoutTabIndex = 0;
 const dashboardRequestTimeout = 15000;
 
@@ -290,34 +291,6 @@ function muscleTargetMarkup(muscles) {
   `;
 }
 
-function muscleGraphicMarkup(muscles) {
-  const active = new Set(muscles || []);
-  const activeClass = (muscle) => active.has(muscle) ? " is-active" : "";
-
-  return `
-    <div class="muscle-graphic" aria-label="${escapeHtml(muscleLabels(muscles).join(", ") || "Target muscles")}">
-      <div class="muscle-map-image">
-        <img src="images/ui/muscle-map-body.png" alt="" loading="lazy" />
-        <span class="muscle-hotspot hotspot-chest${activeClass("chest")}"></span>
-        <span class="muscle-hotspot hotspot-shoulders-front${activeClass("shoulders")}"></span>
-        <span class="muscle-hotspot hotspot-shoulders-back${activeClass("shoulders")}"></span>
-        <span class="muscle-hotspot hotspot-biceps${activeClass("biceps")}"></span>
-        <span class="muscle-hotspot hotspot-triceps-front${activeClass("triceps")}"></span>
-        <span class="muscle-hotspot hotspot-triceps-back${activeClass("triceps")}"></span>
-        <span class="muscle-hotspot hotspot-core${activeClass("core")}"></span>
-        <span class="muscle-hotspot hotspot-back${activeClass("back")}"></span>
-        <span class="muscle-hotspot hotspot-lats${activeClass("lats")}"></span>
-        <span class="muscle-hotspot hotspot-glutes${activeClass("glutes")}"></span>
-        <span class="muscle-hotspot hotspot-quads${activeClass("quads")}"></span>
-        <span class="muscle-hotspot hotspot-hamstrings${activeClass("hamstrings")}"></span>
-        <span class="muscle-hotspot hotspot-calves-front${activeClass("calves")}"></span>
-        <span class="muscle-hotspot hotspot-calves-back${activeClass("calves")}"></span>
-      </div>
-      ${muscleTargetMarkup(muscles)}
-    </div>
-  `;
-}
-
 function workoutInsightData(workout) {
   const exercises = Array.isArray(workout.exercises) ? workout.exercises : [];
   const muscleCounts = new Map();
@@ -351,10 +324,6 @@ function renderWorkoutInsights(program) {
   const nextWorkout = workouts[1] || {};
   const todayInsights = workoutInsightData(firstWorkout);
   const nextInsights = workoutInsightData(nextWorkout);
-  const allMuscles = uniqueMuscles(workouts.flatMap((workout) => (
-    (workout.exercises || []).flatMap((exercise) => inferExerciseMuscles(exercise, workout.focus))
-  )));
-
   panel.innerHTML = `
     <div class="panel-heading">
       <div>
@@ -375,10 +344,6 @@ function renderWorkoutInsights(program) {
         <strong>${escapeHtml(nextWorkout.focus || "Not set")}</strong>
         <p>${escapeHtml(nextInsights.estimatedSets || 0)} planned sets waiting in the next session.</p>
         ${muscleTargetMarkup(nextInsights.topMuscles)}
-      </article>
-      <article class="insight-card insight-graphic-card">
-        <span>Training map</span>
-        ${muscleGraphicMarkup(allMuscles.slice(0, 6))}
       </article>
     </div>
   `;
@@ -580,7 +545,6 @@ function exerciseLogFields(exercise, workoutTitle, options = {}) {
           <p>${escapeHtml(muscles.length ? `${muscleLabels(muscles).slice(0, 2).join(" + ")} first` : "Add a muscle tag for a sharper target.")}</p>
           ${exerciseVideoMarkup(exercise)}
         </div>
-        ${muscleGraphicMarkup(muscles)}
       </div>
       <label class="exercise-substitute">
         <span>Substitute exercise</span>
@@ -1090,6 +1054,37 @@ function addSetRow(logElement) {
   `);
 }
 
+function setClientDashboardTab(tabName) {
+  const nextTab = tabName || "insights";
+  const tabs = document.querySelectorAll("[data-client-dashboard-tab]");
+  const panels = document.querySelectorAll("[data-client-dashboard-panel]");
+
+  activeClientDashboardTab = nextTab;
+  tabs.forEach((button) => {
+    const isActive = button.dataset.clientDashboardTab === nextTab;
+
+    button.classList.toggle("is-active", isActive);
+    button.setAttribute("aria-selected", isActive ? "true" : "false");
+  });
+  panels.forEach((panel) => {
+    const isActive = panel.dataset.clientDashboardPanel === nextTab;
+
+    panel.hidden = !isActive;
+  });
+}
+
+function handleClientDashboardTabs() {
+  document.addEventListener("click", (event) => {
+    const tab = event.target.closest("[data-client-dashboard-tab]");
+
+    if (!tab) {
+      return;
+    }
+
+    setClientDashboardTab(tab.dataset.clientDashboardTab);
+  });
+}
+
 function handleWorkoutInteractions() {
   document.addEventListener("click", (event) => {
     const toggle = event.target.closest("[data-exercise-toggle]");
@@ -1185,6 +1180,7 @@ function renderProgram(program) {
   renderMetrics(program);
   renderWorkoutInsights(program);
   renderClientWorkoutTabs(workouts);
+  setClientDashboardTab(activeClientDashboardTab);
   showDashboardContent();
 }
 
@@ -1612,6 +1608,7 @@ handlePasswordResetRequests();
 loadDashboard();
 handleSignOut();
 handleTrainingDateChange();
+handleClientDashboardTabs();
 handleClientWorkoutTabs();
 handleWorkoutInteractions();
 handleSkipToggle();
