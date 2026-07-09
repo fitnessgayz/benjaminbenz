@@ -114,6 +114,14 @@ function coachNotesStatus(message) {
   }
 }
 
+function trainingBlockStatus(message) {
+  const status = document.getElementById("training-block-status");
+
+  if (status) {
+    status.textContent = message;
+  }
+}
+
 function trainingLogStatus(message) {
   const history = document.getElementById("training-log-history");
 
@@ -347,6 +355,45 @@ async function saveProgramFromForm(form) {
 
   selectedProgramId = data.id;
   programs.sort((a, b) => String(a.client_name).localeCompare(String(b.client_name)));
+  fillForm(data);
+  renderClientList();
+  renderProgramHistory(data.client_email);
+
+  return { data };
+}
+
+async function saveTrainingBlockFromForm(form) {
+  const id = form.elements.id.value;
+
+  if (!id) {
+    return saveProgramFromForm(form);
+  }
+
+  const payload = {
+    program_title: formValue(form, "program_title") || "Client Program",
+    fitness_goal: formValue(form, "fitness_goal"),
+    focus_target: formValue(form, "focus_target"),
+    sheet_url: formValue(form, "sheet_url") || null,
+    program_summary: formValue(form, "program_summary")
+  };
+
+  const { data, error } = await coachSupabase
+    .from("client_programs")
+    .update(payload)
+    .eq("id", id)
+    .select("*")
+    .single();
+
+  if (error) {
+    return { error };
+  }
+
+  const existingIndex = programs.findIndex((program) => program.id === data.id);
+
+  if (existingIndex >= 0) {
+    programs[existingIndex] = data;
+  }
+
   fillForm(data);
   renderClientList();
   renderProgramHistory(data.client_email);
@@ -793,6 +840,34 @@ function handleSaveNewClient() {
 
     adminStatus("Saving new client...");
     form.requestSubmit();
+  });
+}
+
+function handleSaveTrainingBlock() {
+  const button = document.getElementById("save-training-block-button");
+  const form = document.getElementById("program-editor");
+
+  if (!button || !form) {
+    return;
+  }
+
+  button.addEventListener("click", async () => {
+    button.disabled = true;
+    trainingBlockStatus("Saving training block...");
+    adminStatus("Saving training block...");
+
+    const { error } = await saveTrainingBlockFromForm(form);
+
+    if (error) {
+      trainingBlockStatus(error.message);
+      adminStatus(error.message);
+      button.disabled = false;
+      return;
+    }
+
+    trainingBlockStatus("Training block saved.");
+    adminStatus("Training block saved.");
+    button.disabled = false;
   });
 }
 
@@ -1322,6 +1397,7 @@ async function bootCoachAdmin() {
   renderWorkoutFields();
   handleSave();
   handleSaveNewClient();
+  handleSaveTrainingBlock();
   handleSaveCoachNotes();
   handleArchiveClient();
   handleArchivedClientsToggle();

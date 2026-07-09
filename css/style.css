@@ -2033,7 +2033,8 @@ footer {
 }
 
 .progress-actions,
-.notes-actions {
+.notes-actions,
+.training-block-actions {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -2045,14 +2046,16 @@ footer {
 }
 
 .progress-actions p,
-.notes-actions p {
+.notes-actions p,
+.training-block-actions p {
   margin: 0;
   color: var(--muted);
   font-weight: 900;
 }
 
 .progress-actions .button,
-.notes-actions .button {
+.notes-actions .button,
+.training-block-actions .button {
   width: auto;
 }
 
@@ -2511,6 +2514,7 @@ textarea:focus {
 
   .progress-actions,
   .notes-actions,
+  .training-block-actions,
   .progress-current,
   .progress-history-row {
     display: grid;
@@ -2518,7 +2522,8 @@ textarea:focus {
   }
 
   .progress-actions .button,
-  .notes-actions .button {
+  .notes-actions .button,
+  .training-block-actions .button {
     width: 100%;
   }
 

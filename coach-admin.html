@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=program-history-1" />
+  <link rel="stylesheet" href="css/style.css?v=training-block-save-1" />
 </head>
 <body class="dashboard-page coach-admin-page">
   <header class="site-header dashboard-header">
@@ -148,6 +148,10 @@
             Program summary
             <textarea name="program_summary" placeholder="Short summary for the top of the client dashboard."></textarea>
           </label>
+          <div class="training-block-actions">
+            <p id="training-block-status" role="status">Training block saves with this program.</p>
+            <button class="button button-dark" type="button" id="save-training-block-button">Save training block</button>
+          </div>
           <div class="program-history">
             <div class="program-history-heading">
               <strong>Program history</strong>
@@ -235,6 +239,6 @@
   <script src="js/script.js?v=manual-invite-copy-1"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js?v=manual-invite-copy-1"></script>
-  <script src="js/coach-admin.js?v=program-history-1"></script>
+  <script src="js/coach-admin.js?v=training-block-save-1"></script>
 </body>
 </html>
