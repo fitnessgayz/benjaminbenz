@@ -1260,13 +1260,10 @@ async function loadDashboard() {
       return;
     }
 
-    activeClientEmail = user.email;
-
     const { data, error } = await withTimeout(
       supabaseClient
         .from("client_programs")
         .select("*")
-        .eq("client_email", user.email)
         .eq("active", true)
         .maybeSingle(),
       "Program request timed out."
@@ -1288,6 +1285,7 @@ async function loadDashboard() {
       return;
     }
 
+    activeClientEmail = data.client_email || user.email;
     renderProgram(data);
 
     const [progressResult, trainingLogResult] = await Promise.allSettled([
@@ -1295,7 +1293,6 @@ async function loadDashboard() {
         supabaseClient
           .from("client_progress")
           .select("*")
-          .eq("client_email", user.email)
           .order("entry_date", { ascending: true }),
         "Progress request timed out."
       ),
@@ -1303,7 +1300,6 @@ async function loadDashboard() {
         supabaseClient
           .from("client_workout_logs")
           .select("*")
-          .eq("client_email", user.email)
           .order("entry_date", { ascending: true })
           .limit(500),
         "Training log request timed out."
