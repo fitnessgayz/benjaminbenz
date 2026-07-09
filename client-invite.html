@@ -4,11 +4,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Set Password | Fitness with Benjamin</title>
-  <meta name="description" content="Set your Fitness with Benjamin client password." />
+  <meta name="description" content="Set or reset your Fitness with Benjamin password." />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=mobile-headline-fix-1" />
+  <link rel="stylesheet" href="css/style.css?v=password-reset-1" />
 </head>
 <body class="login-page">
   <header class="site-header">
@@ -30,15 +30,15 @@
 
   <main class="client-access">
     <section class="access-intro" aria-labelledby="invite-title">
-      <p class="kicker">Client invite</p>
+      <p class="kicker">Account access</p>
       <h1 id="invite-title">Set password</h1>
-      <p>Create your password to open your private training dashboard.</p>
+      <p>Create a new password to open your private training portal.</p>
     </section>
 
-    <section class="access-panel" aria-label="Set client password">
+    <section class="access-panel" aria-label="Set account password">
       <div class="access-panel-heading">
         <p class="kicker">Password</p>
-        <h2>Client access</h2>
+        <h2>Account access</h2>
       </div>
       <form class="login-form" id="client-invite-form" hidden>
         <label>
@@ -51,12 +51,12 @@
         </label>
         <button class="button button-dark" type="submit">Set password</button>
       </form>
-      <p class="login-status" id="client-invite-status" role="status">Checking invite link...</p>
+      <p class="login-status" id="client-invite-status" role="status">Checking password link...</p>
     </section>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js"></script>
-  <script src="js/client-invite.js?v=password-notify-1"></script>
+  <script src="js/client-invite.js?v=password-reset-1"></script>
 </body>
 </html>

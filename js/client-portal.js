@@ -341,6 +341,14 @@ function todayDate() {
   return new Date().toISOString().slice(0, 10);
 }
 
+function passwordResetRedirectUrl() {
+  if (window.location.hostname === "benjaminbenz.com" || window.location.hostname === "www.benjaminbenz.com") {
+    return `${window.location.origin}/client-invite.html`;
+  }
+
+  return `${window.location.origin}/client-invite.html`;
+}
+
 function shouldUseDemoTrainingLogs() {
   const params = new URLSearchParams(window.location.search);
 
@@ -1171,6 +1179,62 @@ async function handleCoachPortalLogin() {
   });
 }
 
+function handlePasswordResetRequests() {
+  const buttons = document.querySelectorAll("[data-password-reset]");
+
+  buttons.forEach((button) => {
+    button.addEventListener("click", async () => {
+      if (!supabaseClient) {
+        const status = button.dataset.passwordReset === "coach"
+          ? document.getElementById("coach-login-status")
+          : document.getElementById("login-status");
+
+        if (status) {
+          status.textContent = "Password reset is not connected yet.";
+        }
+        return;
+      }
+
+      const isCoach = button.dataset.passwordReset === "coach";
+      const form = document.getElementById(isCoach ? "coach-login-form" : "client-login-form");
+      const status = document.getElementById(isCoach ? "coach-login-status" : "login-status");
+      const email = String(form?.elements.email?.value || "").trim().toLowerCase();
+
+      if (!email) {
+        if (status) {
+          status.textContent = "Enter your email first, then request a reset link.";
+        }
+        form?.elements.email?.focus();
+        return;
+      }
+
+      button.disabled = true;
+
+      if (status) {
+        status.textContent = "Sending password reset link...";
+      }
+
+      const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+        redirectTo: passwordResetRedirectUrl()
+      });
+
+      if (error) {
+        if (status) {
+          status.textContent = error.message;
+        }
+        button.disabled = false;
+        return;
+      }
+
+      if (status) {
+        status.textContent = "If that account exists, a password reset link was sent.";
+      }
+
+      button.disabled = false;
+    });
+  });
+}
+
 async function loadDashboard() {
   if (!document.querySelector(".dashboard-page")) {
     return;
@@ -1448,6 +1512,7 @@ async function handleSignOut() {
 
 handleLogin();
 handleCoachPortalLogin();
+handlePasswordResetRequests();
 loadDashboard();
 handleSignOut();
 handleTrainingDateChange();

@@ -780,6 +780,24 @@ footer {
   border-radius: 14px;
 }
 
+.password-reset-button {
+  width: max-content;
+  padding: 0;
+  border: 0;
+  color: var(--muted);
+  background: transparent;
+  font: inherit;
+  font-size: .86rem;
+  font-weight: 900;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.password-reset-button:hover,
+.password-reset-button:focus-visible {
+  color: var(--black);
+}
+
 .login-form input {
   min-height: 54px;
   border-radius: 14px;

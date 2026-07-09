@@ -8,6 +8,7 @@ const inviteConfigured = Boolean(
 const inviteSupabase = inviteConfigured && window.supabase
   ? window.supabase.createClient(inviteConfig.url, inviteConfig.anonKey)
   : null;
+let passwordFlow = "invite";
 
 function setInviteStatus(message) {
   const status = document.getElementById("client-invite-status");
@@ -61,7 +62,12 @@ async function prepareInviteSession() {
   const code = params.get("code");
   const accessToken = hashParams.get("access_token");
   const refreshToken = hashParams.get("refresh_token");
+  const authType = params.get("type") || hashParams.get("type") || "";
   const inviteError = params.get("error_description") || hashParams.get("error_description");
+
+  if (authType === "recovery") {
+    passwordFlow = "recovery";
+  }
 
   if (inviteError) {
     setInviteStatus(inviteError);
@@ -96,7 +102,9 @@ async function prepareInviteSession() {
 
   form.hidden = false;
   window.history.replaceState({}, document.title, window.location.pathname);
-  setInviteStatus("Choose a password with at least 8 characters.");
+  setInviteStatus(passwordFlow === "recovery"
+    ? "Choose a new password with at least 8 characters."
+    : "Choose a password with at least 8 characters.");
 }
 
 function handleInvitePassword() {
@@ -129,6 +137,12 @@ function handleInvitePassword() {
 
     if (error) {
       setInviteStatus(error.message);
+      return;
+    }
+
+    if (passwordFlow === "recovery") {
+      setInviteStatus("Password saved. Return to login with your new password.");
+      window.location.href = "client-login.html";
       return;
     }
 
