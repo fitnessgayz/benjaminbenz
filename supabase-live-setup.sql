@@ -22,6 +22,7 @@ create table if not exists public.client_programs (
   id uuid primary key default gen_random_uuid(),
   client_email text not null,
   client_name text not null,
+  client_phone text not null default '',
   initials text not null default '',
   program_title text not null,
   program_summary text not null default '',
@@ -39,6 +40,9 @@ create table if not exists public.client_programs (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table public.client_programs
+add column if not exists client_phone text not null default '';
 
 alter table public.client_programs
 add column if not exists initials text not null default '';
@@ -120,11 +124,12 @@ using (public.is_coach_admin())
 with check (public.is_coach_admin());
 
 drop policy if exists "Coach admins can delete archived programs" on public.client_programs;
-create policy "Coach admins can delete archived programs"
+drop policy if exists "Coach admins can delete programs" on public.client_programs;
+create policy "Coach admins can delete programs"
 on public.client_programs
 for delete
 to authenticated
-using (public.is_coach_admin() and client_archived = true);
+using (public.is_coach_admin());
 
 create unique index if not exists client_programs_one_active_per_email
 on public.client_programs (lower(client_email))

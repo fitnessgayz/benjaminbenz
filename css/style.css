@@ -327,6 +327,7 @@ h3 {
 }
 
 .editorial,
+.credentials,
 .split-feature,
 .proof,
 .photo-story,
@@ -344,6 +345,38 @@ h3 {
 .editorial p:last-child {
   margin: 24px auto 0;
   color: var(--muted);
+}
+
+.credentials {
+  display: grid;
+  grid-template-columns: minmax(0, .95fr) minmax(320px, .7fr);
+  gap: clamp(34px, 7vw, 92px);
+  padding: clamp(56px, 8vw, 104px) 0;
+  border-top: 1px solid var(--line);
+}
+
+.credentials-copy p:not(.kicker) {
+  max-width: 620px;
+  margin: 22px 0 0;
+  color: var(--muted);
+  font-size: clamp(1rem, 1.8vw, 1.35rem);
+}
+
+.credential-list {
+  display: grid;
+  align-content: center;
+}
+
+.credential-list p {
+  margin: 0;
+  padding: 18px 0;
+  border-top: 1px solid var(--line);
+  font-size: clamp(1rem, 1.7vw, 1.24rem);
+  line-height: 1.15;
+}
+
+.credential-list p:last-child {
+  border-bottom: 1px solid var(--line);
 }
 
 .training-grid {
@@ -1359,6 +1392,28 @@ footer {
   font-weight: 900;
 }
 
+.exercise-video-link {
+  display: inline-flex;
+  width: fit-content;
+  min-height: 34px;
+  align-items: center;
+  justify-content: center;
+  margin-top: 12px;
+  padding: 8px 12px;
+  color: var(--black);
+  background: var(--lime);
+  border: 1px solid rgba(0, 0, 0, .14);
+  border-radius: 999px;
+  font-size: .76rem;
+  font-weight: 900;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+
+.exercise-video-link:hover {
+  transform: translateY(-1px);
+}
+
 .muscle-graphic {
   display: grid;
   gap: 10px;
@@ -2073,24 +2128,31 @@ footer {
   color: var(--black);
 }
 
-.client-search-control {
+.client-search-control,
+.client-select-control {
   display: grid;
   gap: 8px;
   margin-top: -6px;
   font-weight: 900;
 }
 
-.client-search-control span {
+.client-select-control {
+  margin-top: 16px;
+}
+
+.client-search-control span,
+.client-select-control span {
   color: var(--muted);
   font-size: .82rem;
   text-transform: uppercase;
   letter-spacing: 0;
 }
 
-.client-search-control input {
+.client-search-control input,
+.client-select-control select {
   width: 100%;
-  min-height: 48px;
-  padding: 12px 14px;
+  min-height: 56px;
+  padding: 14px 16px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #fbfbf8;
@@ -2099,7 +2161,17 @@ footer {
   font-weight: 900;
 }
 
-.client-search-control input:focus {
+.client-select-control select {
+  cursor: pointer;
+}
+
+.client-select-control select:disabled {
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
+.client-search-control input:focus,
+.client-select-control select:focus {
   outline: 2px solid var(--lime);
   outline-offset: 2px;
   border-color: var(--black);
@@ -2108,9 +2180,47 @@ footer {
 .profile-actions-row {
   display: flex;
   justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .profile-actions-row .button {
+  width: auto;
+}
+
+.profile-management-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px;
+  background: #fbfbf8;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.profile-management-row p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-weight: 900;
+}
+
+.profile-save-status {
+  flex: 1 1 220px;
+  margin: 0;
+  color: var(--muted);
+  font-size: .9rem;
+  font-weight: 900;
+}
+
+.profile-management-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.profile-management-actions .button {
   width: auto;
 }
 
@@ -2196,43 +2306,186 @@ footer {
   white-space: nowrap;
 }
 
-.client-list {
+.client-selector-status {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: .9rem;
+  font-weight: 900;
+}
+
+.client-contact-panel {
   display: grid;
+  gap: 16px;
+  margin-top: 22px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+}
+
+.client-contact-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   gap: 8px;
 }
 
-.coach-admin-page .client-list {
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+.client-contact-actions .button {
+  width: auto;
 }
 
-.client-list-button {
+.copy-client-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
   display: grid;
-  gap: 4px;
-  width: 100%;
-  padding: 14px;
+  place-items: center;
+  padding: 18px;
+  background: rgba(0, 0, 0, .42);
+}
+
+.copy-client-modal[hidden] {
+  display: none;
+}
+
+.copy-client-dialog {
+  display: grid;
+  width: min(520px, 100%);
+  gap: 18px;
+  padding: 24px;
   border: 1px solid var(--line);
   border-radius: 8px;
+  background: var(--paper);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, .22);
+}
+
+.copy-client-dialog h2 {
+  margin: 0;
   color: var(--black);
-  background: #fbfbf8;
-  font: inherit;
-  font-weight: 900;
-  text-align: left;
-  cursor: pointer;
+  font-size: clamp(1.8rem, 4vw, 2.8rem);
+  line-height: 1;
 }
 
-.client-list-button span {
+.copy-client-status {
+  margin: 0;
   color: var(--muted);
-  font-size: .85rem;
+  font-weight: 900;
 }
 
-.client-list-button.is-selected {
-  border-color: var(--black);
-  background: var(--lime);
+.copy-client-warning {
+  margin: 0;
+  padding: 12px;
+  color: var(--black);
+  background: #fff6d8;
+  border: 1px solid #ead58a;
+  border-radius: 8px;
+  font-size: .9rem;
+  font-weight: 900;
+}
+
+.copy-client-warning[hidden] {
+  display: none;
+}
+
+.copy-client-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.copy-client-actions .button {
+  width: auto;
 }
 
 .admin-editor {
   display: grid;
   gap: 14px;
+}
+
+.selected-client-panel {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 16px;
+}
+
+.selected-client-copy {
+  min-width: 0;
+}
+
+.selected-client-copy h2 {
+  margin-bottom: 6px;
+  font-size: clamp(1.8rem, 3vw, 3rem);
+  line-height: 1;
+}
+
+.selected-client-copy p:not(.kicker) {
+  margin: 0;
+  color: var(--muted);
+  font-weight: 900;
+  overflow-wrap: anywhere;
+}
+
+.selected-client-meta,
+.selected-client-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.selected-client-meta span {
+  display: inline-flex;
+  min-height: 34px;
+  align-items: center;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--black);
+  background: #fbfbf8;
+  font-size: .72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.selected-client-actions .button {
+  width: auto;
+}
+
+.admin-tabs {
+  position: sticky;
+  top: 64px;
+  z-index: 8;
+  display: flex;
+  gap: 8px;
+  padding: 10px;
+  overflow-x: auto;
+  background: rgba(255, 255, 255, .92);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  backdrop-filter: blur(18px);
+}
+
+.admin-tab {
+  flex: 1 0 auto;
+  min-height: 42px;
+  padding: 10px 14px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  color: var(--muted);
+  background: transparent;
+  font: inherit;
+  font-size: .78rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.admin-tab.is-active {
+  color: var(--black);
+  background: var(--lime);
+  border-color: var(--black);
+}
+
+.compact-heading {
+  margin-bottom: 0;
 }
 
 .programming-heading-card p {
@@ -2247,8 +2500,76 @@ footer {
   gap: 14px;
 }
 
+.workout-tab-panel {
+  display: grid;
+  gap: 14px;
+}
+
+.workout-tab-heading p {
+  max-width: 620px;
+  margin: 0;
+  color: var(--muted);
+  font-weight: 900;
+}
+
+.workout-heading-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.workout-heading-actions .button {
+  width: auto;
+}
+
 .workout-card-heading {
   align-items: center;
+}
+
+.workout-editor-card {
+  gap: 0;
+}
+
+.workout-editor-card summary {
+  list-style: none;
+}
+
+.workout-editor-card summary::-webkit-details-marker {
+  display: none;
+}
+
+.workout-card-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  cursor: pointer;
+}
+
+.workout-card-summary > span {
+  display: grid;
+  min-width: 0;
+  gap: 5px;
+}
+
+.workout-card-summary strong {
+  color: var(--black);
+  font-size: clamp(1.25rem, 2vw, 1.8rem);
+  font-weight: 900;
+}
+
+.workout-card-summary small {
+  color: var(--muted);
+  font-size: .82rem;
+  font-weight: 900;
+  overflow-wrap: anywhere;
+}
+
+.workout-card-body {
+  display: grid;
+  gap: 18px;
+  padding-top: 18px;
 }
 
 .workout-include-label {
@@ -2422,10 +2743,6 @@ footer {
   line-height: 1.55;
 }
 
-.admin-submit-panel {
-  align-items: center;
-}
-
 .questionnaire-page {
   background: #f2f2ed;
   overflow-x: hidden;
@@ -2589,6 +2906,7 @@ textarea:focus {
   }
 
   .hero-meta,
+  .credentials,
   .training-grid,
   .split-feature,
   .contact,
@@ -2608,6 +2926,16 @@ textarea:focus {
 
   .admin-client-list {
     position: static;
+  }
+
+  .selected-client-panel {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .selected-client-meta,
+  .selected-client-actions {
+    justify-content: flex-start;
   }
 
   .coach-panel,
@@ -2696,6 +3024,70 @@ textarea:focus {
     width: 100%;
   }
 
+  .profile-management-row {
+    display: grid;
+  }
+
+  .profile-management-actions {
+    display: grid;
+    justify-content: stretch;
+  }
+
+  .profile-management-actions .button {
+    width: 100%;
+  }
+
+  .client-contact-actions {
+    display: grid;
+    justify-content: stretch;
+  }
+
+  .client-contact-actions .button {
+    width: 100%;
+  }
+
+  .copy-client-actions {
+    display: grid;
+    justify-content: stretch;
+  }
+
+  .copy-client-actions .button {
+    width: 100%;
+  }
+
+  .admin-tabs {
+    top: 64px;
+    margin-inline: -2px;
+    padding: 8px;
+  }
+
+  .admin-tab {
+    flex-basis: auto;
+    min-width: 104px;
+  }
+
+  .selected-client-actions {
+    display: grid;
+  }
+
+  .selected-client-actions .button {
+    width: 100%;
+  }
+
+  .workout-card-summary {
+    align-items: start;
+    display: grid;
+  }
+
+  .workout-heading-actions {
+    display: grid;
+    justify-content: stretch;
+  }
+
+  .workout-heading-actions .button {
+    width: 100%;
+  }
+
   .client-gallery figcaption {
     font-size: .78rem;
   }
@@ -2722,6 +3114,7 @@ textarea:focus {
 
   .hero-content,
   .editorial,
+  .credentials,
   .split-feature,
   .proof,
   .photo-story,

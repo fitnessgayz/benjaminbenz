@@ -1,6 +1,9 @@
 [functions.invite-client]
 verify_jwt = false
 
+[functions.update-client-profile]
+verify_jwt = false
+
 [functions.notify-client-password-set]
 verify_jwt = false
 

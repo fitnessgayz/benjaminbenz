@@ -130,6 +130,52 @@ function renderRest(rest) {
   return `<small>${escapeHtml(rest)}</small>`;
 }
 
+function exerciseVideoUrl(exercise) {
+  let rawUrl = String(
+    exercise.video ||
+    exercise.videoUrl ||
+    exercise.video_url ||
+    exercise.youtube_url ||
+    ""
+  ).trim();
+
+  if (!rawUrl) {
+    return "";
+  }
+
+  if (/^(www\.)?(youtube\.com|youtube-nocookie\.com|youtu\.be)\//i.test(rawUrl)) {
+    rawUrl = `https://${rawUrl}`;
+  }
+
+  try {
+    const url = new URL(rawUrl);
+    const host = url.hostname.replace(/^www\./i, "").toLowerCase();
+    const allowedHosts = new Set(["youtube.com", "youtube-nocookie.com", "m.youtube.com", "youtu.be"]);
+
+    if (!["http:", "https:"].includes(url.protocol) || !allowedHosts.has(host)) {
+      return "";
+    }
+
+    return url.href;
+  } catch (error) {
+    return "";
+  }
+}
+
+function exerciseVideoMarkup(exercise) {
+  const videoUrl = exerciseVideoUrl(exercise);
+
+  if (!videoUrl) {
+    return "";
+  }
+
+  return `
+    <a class="exercise-video-link" href="${escapeHtml(videoUrl)}" target="_blank" rel="noopener noreferrer">
+      Watch demo
+    </a>
+  `;
+}
+
 const muscleMeta = {
   chest: { label: "Chest", group: "Push", selector: "chest" },
   shoulders: { label: "Shoulders", group: "Push", selector: "shoulders" },
@@ -531,6 +577,7 @@ function exerciseLogFields(exercise, workoutTitle, options = {}) {
         <div>
           <strong>Muscle target</strong>
           <p>${escapeHtml(muscles.length ? `${muscleLabels(muscles).slice(0, 2).join(" + ")} first` : "Add a muscle tag for a sharper target.")}</p>
+          ${exerciseVideoMarkup(exercise)}
         </div>
         ${muscleGraphicMarkup(muscles)}
       </div>

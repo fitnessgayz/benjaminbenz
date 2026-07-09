@@ -7,7 +7,9 @@ const allowedOrigins = new Set([
   "http://127.0.0.1:4177",
   "http://localhost:4177",
   "http://127.0.0.1:4191",
-  "http://localhost:4191"
+  "http://localhost:4191",
+  "http://127.0.0.1:4196",
+  "http://localhost:4196"
 ]);
 
 function corsHeaders(request: Request) {

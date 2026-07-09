@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=training-block-save-1" />
+  <link rel="stylesheet" href="css/style.css?v=copy-client-restore-1" />
 </head>
 <body class="dashboard-page coach-admin-page">
   <header class="site-header dashboard-header">
@@ -17,6 +17,7 @@
       <strong>Fitness with Benjamin</strong>
     </a>
     <nav class="nav-links" aria-label="Primary navigation">
+      <a href="#clients">Clients</a>
       <a href="client-dashboard.html">Client View</a>
       <a href="client-login.html?v=manual-invite-copy-1">Client Login</a>
     </nav>
@@ -36,31 +37,35 @@
     </section>
 
     <section class="admin-workspace" id="coach-admin-workspace" hidden>
-      <section class="admin-client-list" aria-label="Client list">
-        <div class="admin-section-heading">
-          <div>
-            <p class="kicker">Clients</p>
-            <h2>Find client</h2>
-          </div>
-          <div class="client-list-actions">
-            <button class="button button-dark" type="button" id="new-client-button">New</button>
-            <button class="button button-ghost" type="button" id="archived-clients-button">Archived clients</button>
-            <button class="button button-ghost danger-button" type="button" id="archive-client-button">Archive</button>
-            <button class="button button-ghost danger-button" type="button" id="delete-archived-client-button" hidden>Delete archived</button>
-          </div>
-        </div>
-        <label class="client-search-control">
-          <span>Search by name or email</span>
-          <input type="search" id="client-search-input" placeholder="Start typing a client name..." autocomplete="off" />
-        </label>
-        <div class="client-list" id="client-list"></div>
-      </section>
-
       <form class="admin-editor" id="program-editor">
         <input type="hidden" name="id" />
 
-        <section class="admin-card programming-heading-card">
-          <div class="admin-section-heading">
+        <section class="admin-card selected-client-panel" aria-label="Selected client">
+          <div class="selected-client-copy">
+            <p class="kicker">Selected client</p>
+            <h2 id="selected-client-name">Choose a client</h2>
+            <p id="selected-client-email">Search or create a client to start editing.</p>
+          </div>
+          <div class="selected-client-meta" id="selected-client-meta">
+            <span>No client selected</span>
+          </div>
+          <div class="selected-client-actions">
+            <button class="button button-ghost" type="button" id="selected-save-profile-button">Save changes</button>
+          </div>
+        </section>
+
+        <nav class="admin-tabs" aria-label="Admin editor sections">
+          <button class="admin-tab is-active" type="button" data-admin-tab="clients" aria-selected="true">Clients</button>
+          <button class="admin-tab" type="button" data-admin-tab="profile" aria-selected="false">Profile</button>
+          <button class="admin-tab" type="button" data-admin-tab="program" aria-selected="false">Program</button>
+          <button class="admin-tab" type="button" data-admin-tab="workouts" aria-selected="false">Workouts</button>
+          <button class="admin-tab" type="button" data-admin-tab="progress" aria-selected="false">Progress</button>
+          <button class="admin-tab" type="button" data-admin-tab="notes" aria-selected="false">Notes</button>
+          <button class="admin-tab" type="button" data-admin-tab="logs" aria-selected="false">Logs</button>
+        </nav>
+
+        <section class="admin-card programming-heading-card" data-admin-panel="profile" hidden>
+          <div class="admin-section-heading compact-heading">
             <div>
               <p class="kicker">Programming</p>
               <h2>Program editor</h2>
@@ -69,7 +74,61 @@
           <p>Build the client profile, progress check-ins, notes, and workouts here.</p>
         </section>
 
-        <section class="admin-card">
+        <section class="admin-client-list" id="clients" data-admin-panel="clients" aria-label="Client list">
+          <div class="admin-section-heading">
+            <div>
+              <p class="kicker">Clients</p>
+              <h2>Client selector</h2>
+            </div>
+            <div class="client-list-actions">
+              <button class="button button-dark" type="button" id="new-client-button">New</button>
+              <button class="button button-ghost" type="button" id="archived-clients-button">Archived clients</button>
+            </div>
+          </div>
+          <label class="client-search-control">
+            <span>Search by name or email</span>
+            <input type="search" id="client-search-input" placeholder="Start typing a client name..." autocomplete="off" />
+          </label>
+          <label class="client-select-control">
+            <span>Choose client</span>
+            <select id="client-select" autocomplete="off"></select>
+          </label>
+          <p class="client-selector-status" id="client-selector-status" aria-live="polite"></p>
+          <div class="client-contact-panel">
+            <div class="admin-section-heading compact-heading">
+              <div>
+                <p class="kicker">Invite</p>
+                <h2>Client details</h2>
+              </div>
+            </div>
+            <div class="admin-field-grid">
+              <label>
+                Client email
+                <input type="email" name="client_email" placeholder="client@example.com" required />
+              </label>
+              <label>
+                Client name
+                <input type="text" name="client_name" placeholder="Client name" required />
+              </label>
+              <label>
+                Client phone number
+                <input type="tel" name="client_phone" placeholder="(555) 555-5555" autocomplete="tel" />
+              </label>
+            </div>
+            <div class="invite-row">
+              <div>
+                <strong>Client login</strong>
+                <p id="invite-status" role="status">Save the client, then send an invite when ready.</p>
+              </div>
+              <div class="client-contact-actions">
+                <button class="button button-ghost" type="button" id="save-client-button">Save client</button>
+                <button class="button button-dark" type="button" id="send-invite-button">Send invite link</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="admin-card" data-admin-panel="profile" hidden>
           <div class="admin-section-heading">
             <div>
               <p class="kicker">Profile</p>
@@ -81,14 +140,6 @@
             </label>
           </div>
           <div class="admin-field-grid">
-            <label>
-              Client email
-              <input type="email" name="client_email" placeholder="client@example.com" required />
-            </label>
-            <label>
-              Client name
-              <input type="text" name="client_name" placeholder="Client name" required />
-            </label>
             <label>
               Initials
               <input type="text" name="initials" placeholder="BG" maxlength="4" />
@@ -107,18 +158,22 @@
             </label>
           </div>
           <div class="profile-actions-row">
-            <button class="button button-dark" type="button" id="save-new-client-button">Save new client</button>
+            <p class="profile-save-status" id="admin-save-status" role="status">Ready.</p>
+            <button class="button button-ghost" type="button" id="save-profile-changes-button">Save changes</button>
           </div>
-          <div class="invite-row">
+          <div class="profile-management-row">
             <div>
-              <strong>Client login</strong>
-              <p id="invite-status" role="status">Send an invite so this client can set their password.</p>
+              <strong>Client status</strong>
+              <p id="profile-management-status">Archive or delete the selected client from this profile.</p>
             </div>
-            <button class="button button-dark" type="button" id="send-invite-button">Send invite</button>
+            <div class="profile-management-actions">
+              <button class="button button-ghost danger-button" type="button" id="profile-archive-client-button">Archive client</button>
+              <button class="button button-ghost danger-button" type="button" id="profile-delete-client-button">Delete client</button>
+            </div>
           </div>
         </section>
 
-        <section class="admin-card">
+        <section class="admin-card" data-admin-panel="program" hidden>
           <div class="admin-section-heading">
             <div>
               <p class="kicker">Program</p>
@@ -161,7 +216,7 @@
           </div>
         </section>
 
-        <section class="admin-card progress-editor-card">
+        <section class="admin-card progress-editor-card" data-admin-panel="progress" hidden>
           <div class="admin-section-heading">
             <div>
               <p class="kicker">Progress</p>
@@ -193,7 +248,7 @@
           <div class="progress-history" id="progress-history"></div>
         </section>
 
-        <section class="admin-card training-log-card">
+        <section class="admin-card training-log-card" data-admin-panel="logs" hidden>
           <div class="admin-section-heading">
             <div>
               <p class="kicker">Training logs</p>
@@ -205,7 +260,7 @@
           </div>
         </section>
 
-        <section class="admin-card">
+        <section class="admin-card" data-admin-panel="notes" hidden>
           <div class="admin-section-heading">
             <div>
               <p class="kicker">Notes</p>
@@ -226,19 +281,48 @@
           </div>
         </section>
 
-        <div class="workout-fields" id="workout-fields"></div>
-
-        <section class="form-submit-panel admin-submit-panel">
-          <p id="admin-save-status" role="status">Ready.</p>
-          <button class="button button-dark" type="submit">Save program</button>
+        <section class="workout-tab-panel" data-admin-panel="workouts" hidden>
+          <div class="admin-card workout-tab-heading">
+            <div class="admin-section-heading">
+              <div>
+                <p class="kicker">Workouts</p>
+                <h2>Workout builder</h2>
+              </div>
+              <div class="workout-heading-actions">
+                <button class="button button-ghost" type="button" id="copy-workouts-button">Copy to client</button>
+                <button class="button button-dark" type="button" id="save-workouts-button">Save workouts</button>
+              </div>
+            </div>
+            <p id="workouts-status" role="status">Open only the workout you need, then save the full program when the block is ready.</p>
+          </div>
+          <div class="workout-fields" id="workout-fields"></div>
         </section>
+
       </form>
+      <div class="copy-client-modal" id="copy-client-modal" role="dialog" aria-modal="true" aria-labelledby="copy-client-title" hidden>
+        <div class="copy-client-dialog">
+          <div>
+            <p class="kicker">Copy</p>
+            <h2 id="copy-client-title">Copy to client</h2>
+          </div>
+          <label class="client-select-control">
+            <span>Choose client</span>
+            <select id="copy-client-select" autocomplete="off"></select>
+          </label>
+          <p class="copy-client-warning" id="copy-client-warning" hidden></p>
+          <p class="copy-client-status" id="copy-client-status" role="status">Choose who should receive this program.</p>
+          <div class="copy-client-actions">
+            <button class="button button-ghost" type="button" id="cancel-copy-client-button">Cancel</button>
+            <button class="button button-dark" type="button" id="confirm-copy-client-button">Copy program</button>
+          </div>
+        </div>
+      </div>
     </section>
   </main>
 
   <script src="js/script.js?v=manual-invite-copy-1"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js?v=manual-invite-copy-1"></script>
-  <script src="js/coach-admin.js?v=training-block-save-1"></script>
+  <script src="js/coach-admin.js?v=copy-client-restore-1"></script>
 </body>
 </html>

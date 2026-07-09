@@ -29,6 +29,9 @@ using (public.is_coach_admin())
 with check (public.is_coach_admin());
 
 alter table public.client_programs
+add column if not exists client_phone text not null default '';
+
+alter table public.client_programs
 add column if not exists client_archived boolean not null default false;
 
 update public.client_programs cp
@@ -41,11 +44,12 @@ where not exists (
 );
 
 drop policy if exists "Coach admins can delete archived programs" on public.client_programs;
-create policy "Coach admins can delete archived programs"
+drop policy if exists "Coach admins can delete programs" on public.client_programs;
+create policy "Coach admins can delete programs"
 on public.client_programs
 for delete
 to authenticated
-using (public.is_coach_admin() and client_archived = true);
+using (public.is_coach_admin());
 
 create or replace function public.set_updated_at()
 returns trigger

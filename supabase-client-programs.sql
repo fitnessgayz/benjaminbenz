@@ -2,6 +2,7 @@ create table if not exists public.client_programs (
   id uuid primary key default gen_random_uuid(),
   client_email text not null,
   client_name text not null,
+  client_phone text not null default '',
   initials text not null default '',
   program_title text not null,
   program_summary text not null default '',
@@ -19,6 +20,9 @@ create table if not exists public.client_programs (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table public.client_programs
+add column if not exists client_phone text not null default '';
 
 alter table public.client_programs
 add column if not exists client_archived boolean not null default false;
