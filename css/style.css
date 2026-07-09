@@ -1819,6 +1819,84 @@ footer {
   width: auto;
 }
 
+.program-history {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  background: #fbfbf8;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.program-history-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.program-history-heading strong {
+  color: var(--black);
+  font-size: 1rem;
+  font-weight: 900;
+}
+
+.program-history-heading span {
+  color: var(--muted);
+  font-size: .82rem;
+  font-weight: 900;
+}
+
+.program-history-list {
+  display: grid;
+  gap: 8px;
+}
+
+.program-history-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 12px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.program-history-row.is-selected {
+  border-color: var(--black);
+}
+
+.program-history-row strong,
+.program-history-row span {
+  display: block;
+}
+
+.program-history-row strong {
+  color: var(--black);
+  font-weight: 900;
+}
+
+.program-history-row span {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: .82rem;
+  font-weight: 900;
+}
+
+.program-history-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.program-history-actions .button {
+  min-height: 34px;
+  padding: 8px 10px;
+  font-size: .72rem;
+}
+
 #start-new-program-button {
   white-space: nowrap;
 }
@@ -2295,6 +2373,19 @@ textarea:focus {
 
   .workout-actions > div {
     grid-template-columns: 1fr;
+  }
+
+  .program-history-heading,
+  .program-history-row {
+    display: grid;
+  }
+
+  .program-history-actions {
+    justify-content: stretch;
+  }
+
+  .program-history-actions .button {
+    flex: 1 1 90px;
   }
 
   .profile-actions-row {

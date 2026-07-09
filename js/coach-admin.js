@@ -122,6 +122,14 @@ function trainingLogStatus(message) {
   }
 }
 
+function programHistoryStatus(message) {
+  const status = document.getElementById("program-history-status");
+
+  if (status) {
+    status.textContent = message;
+  }
+}
+
 function searchableClientText(program) {
   return [
     program.client_name,
@@ -131,9 +139,9 @@ function searchableClientText(program) {
 }
 
 function programsForCurrentClientView() {
-  const basePrograms = programs.filter((program) => (
-    showingArchivedClients ? program.active === false : program.active !== false
-  ));
+  const basePrograms = showingArchivedClients
+    ? archivedClientPrograms()
+    : programs.filter((program) => program.active !== false && program.client_archived !== true);
 
   if (!clientSearchTerm) {
     const selectedProgram = basePrograms.find((program) => program.id === selectedProgramId);
@@ -142,6 +150,37 @@ function programsForCurrentClientView() {
   }
 
   return basePrograms.filter((program) => searchableClientText(program).includes(clientSearchTerm));
+}
+
+function archivedClientPrograms() {
+  const archivedByEmail = new Map();
+
+  programs
+    .filter((program) => program.client_archived === true)
+    .forEach((program) => {
+      const email = normalizeEmail(program.client_email);
+      const existing = archivedByEmail.get(email);
+
+      if (!existing) {
+        archivedByEmail.set(email, program);
+        return;
+      }
+
+      if (program.active && !existing.active) {
+        archivedByEmail.set(email, program);
+        return;
+      }
+
+      const programDate = String(program.updated_at || program.created_at || "");
+      const existingDate = String(existing.updated_at || existing.created_at || "");
+
+      if (programDate > existingDate) {
+        archivedByEmail.set(email, program);
+      }
+    });
+
+  return Array.from(archivedByEmail.values())
+    .sort((a, b) => String(a.client_name).localeCompare(String(b.client_name)));
 }
 
 function isCoachEmail(email) {
@@ -230,6 +269,7 @@ function programFromForm(form) {
   const clientName = formValue(form, "client_name");
   const clientEmail = formValue(form, "client_email").toLowerCase();
   const fallbackClientName = clientEmail ? clientEmail.split("@")[0] : "";
+  const existingProgram = programs.find((program) => program.id === form.elements.id.value);
   const workouts = workoutSlots
     .filter((number) => workoutIsIncluded(form, number))
     .map((number) => buildWorkoutFromForm(form, number))
@@ -250,7 +290,8 @@ function programFromForm(form) {
     coach_note_title: formValue(form, "coach_note_title"),
     coach_note_body: formValue(form, "coach_note_body"),
     workouts,
-    active: form.elements.active.checked
+    active: form.elements.active.checked,
+    client_archived: Boolean(existingProgram?.client_archived)
   };
 }
 
@@ -262,19 +303,27 @@ async function saveProgramFromForm(form) {
     return { error: { message: "Add the client email first." } };
   }
 
-  if (!id && payload.active) {
-    const { error: archiveError } = await coachSupabase
+  if (payload.active) {
+    let archiveQuery = coachSupabase
       .from("client_programs")
       .update({ active: false })
       .eq("client_email", payload.client_email)
       .eq("active", true);
+
+    if (id) {
+      archiveQuery = archiveQuery.neq("id", id);
+    }
+
+    const { error: archiveError } = await archiveQuery;
 
     if (archiveError) {
       return { error: archiveError };
     }
 
     programs = programs.map((program) => (
-      program.client_email === payload.client_email ? { ...program, active: false } : program
+      program.client_email === payload.client_email && program.id !== id
+        ? { ...program, active: false }
+        : program
     ));
   }
 
@@ -300,6 +349,7 @@ async function saveProgramFromForm(form) {
   programs.sort((a, b) => String(a.client_name).localeCompare(String(b.client_name)));
   fillForm(data);
   renderClientList();
+  renderProgramHistory(data.client_email);
 
   return { data };
 }
@@ -324,6 +374,7 @@ function clearProgramFields(form) {
   });
 
   selectedProgramId = "";
+  renderProgramHistory("");
 }
 
 function renderWorkoutFields() {
@@ -404,9 +455,11 @@ function fillForm(program = {}) {
   selectedProgramId = program.id || "";
 
   if (program.client_email) {
+    renderProgramHistory(program.client_email);
     loadProgressForEmail(program.client_email);
     loadTrainingLogsForEmail(program.client_email);
   } else {
+    renderProgramHistory("");
     progressEntries = [];
     trainingLogs = [];
     fillProgressForm();
@@ -539,6 +592,63 @@ async function loadTrainingLogsForEmail(email) {
   renderTrainingLogs();
 }
 
+function programsForEmail(email) {
+  const normalizedEmail = normalizeEmail(email);
+
+  if (!normalizedEmail) {
+    return [];
+  }
+
+  return programs
+    .filter((program) => normalizeEmail(program.client_email) === normalizedEmail)
+    .sort((a, b) => {
+      if (a.active !== b.active) {
+        return a.active ? -1 : 1;
+      }
+
+      return String(b.updated_at || b.created_at || "").localeCompare(String(a.updated_at || a.created_at || ""));
+    });
+}
+
+function programHistoryLabel(program) {
+  if (program.client_archived) {
+    return program.active === false ? "Archived client · old program" : "Archived client";
+  }
+
+  return program.active === false ? "Old program" : "Current program";
+}
+
+function renderProgramHistory(email = "") {
+  const list = document.getElementById("program-history-list");
+
+  if (!list) {
+    return;
+  }
+
+  const historyPrograms = programsForEmail(email);
+
+  if (historyPrograms.length === 0) {
+    list.innerHTML = '<p class="empty-state">Save this client first to build program history.</p>';
+    programHistoryStatus("Save old training blocks for reference.");
+    return;
+  }
+
+  programHistoryStatus(`${historyPrograms.length} program${historyPrograms.length === 1 ? "" : "s"} saved for this client.`);
+  list.innerHTML = historyPrograms.map((program) => `
+    <article class="program-history-row${program.id === selectedProgramId ? " is-selected" : ""}">
+      <div>
+        <strong>${program.program_title || "Client Program"}</strong>
+        <span>${programHistoryLabel(program)} · ${program.updated_at ? new Date(program.updated_at).toLocaleDateString() : "No date"}</span>
+      </div>
+      <div class="program-history-actions">
+        <button class="button button-ghost" type="button" data-program-history-view="${program.id}">View</button>
+        <button class="button button-ghost" type="button" data-program-history-copy="${program.id}">Copy</button>
+        <button class="button button-ghost" type="button" data-program-history-restore="${program.id}"${program.active !== false && !program.client_archived ? " disabled" : ""}>Restore</button>
+      </div>
+    </article>
+  `).join("");
+}
+
 function renderClientList() {
   const list = document.getElementById("client-list");
   const archiveButton = document.getElementById("archive-client-button");
@@ -553,7 +663,7 @@ function renderClientList() {
 
   if (archiveButton) {
     archiveButton.disabled = !selectedProgramId;
-    archiveButton.textContent = selectedProgram?.active === false ? "Restore" : "Archive";
+    archiveButton.textContent = selectedProgram?.client_archived === true ? "Restore" : "Archive";
     archiveButton.hidden = showingArchivedClients && !selectedProgramId;
   }
 
@@ -564,7 +674,7 @@ function renderClientList() {
 
   if (deleteArchivedButton) {
     deleteArchivedButton.hidden = !showingArchivedClients;
-    deleteArchivedButton.disabled = selectedProgram?.active !== false;
+    deleteArchivedButton.disabled = selectedProgram?.client_archived !== true;
   }
 
   if (visiblePrograms.length === 0) {
@@ -731,7 +841,7 @@ async function handleArchiveClient() {
       return;
     }
 
-    const shouldRestore = selectedProgram.active === false;
+    const shouldRestore = selectedProgram.client_archived === true;
     const label = selectedProgram.client_name || selectedProgram.client_email || "this client";
     const actionLabel = shouldRestore ? "restore" : "archive";
     const confirmed = window.confirm(`${shouldRestore ? "Restore" : "Archive"} ${label}?`);
@@ -745,8 +855,8 @@ async function handleArchiveClient() {
 
     const { error } = await coachSupabase
       .from("client_programs")
-      .update({ active: shouldRestore })
-      .eq("id", id);
+      .update({ client_archived: !shouldRestore })
+      .eq("client_email", selectedProgram.client_email);
 
     if (error) {
       adminStatus(error.message);
@@ -754,8 +864,40 @@ async function handleArchiveClient() {
       return;
     }
 
+    let restoredProgram = selectedProgram;
+
+    if (shouldRestore && selectedProgram.active === false) {
+      const hasActiveProgram = programs.some((program) => (
+        program.client_email === selectedProgram.client_email && program.active !== false
+      ));
+
+      if (!hasActiveProgram) {
+        const { data: restoredData, error: restoreError } = await coachSupabase
+          .from("client_programs")
+          .update({ active: true, client_archived: false })
+          .eq("id", selectedProgram.id)
+          .select("*")
+          .single();
+
+        if (restoreError) {
+          adminStatus(restoreError.message);
+          button.disabled = false;
+          return;
+        }
+
+        restoredProgram = restoredData;
+      }
+    }
+
     programs = programs.map((program) => (
-      program.id === id ? { ...program, active: shouldRestore } : program
+      program.client_email === selectedProgram.client_email
+        ? {
+          ...program,
+          client_archived: !shouldRestore,
+          active: program.id === restoredProgram.id ? restoredProgram.active : program.active,
+          ...(program.id === restoredProgram.id ? restoredProgram : {})
+        }
+        : program
     ));
     const nextProgram = programsForCurrentClientView()[0] || {};
 
@@ -817,7 +959,7 @@ function handleDeleteArchivedClient() {
     const id = form.elements.id.value || selectedProgramId;
     const selectedProgram = programs.find((program) => program.id === id);
 
-    if (!id || selectedProgram?.active !== false) {
+    if (!id || selectedProgram?.client_archived !== true) {
       adminStatus("Choose an archived client first.");
       return;
     }
@@ -835,8 +977,8 @@ function handleDeleteArchivedClient() {
     const { error } = await coachSupabase
       .from("client_programs")
       .delete()
-      .eq("id", id)
-      .eq("active", false);
+      .eq("client_email", selectedProgram.client_email)
+      .eq("client_archived", true);
 
     if (error) {
       adminStatus(error.message);
@@ -844,13 +986,110 @@ function handleDeleteArchivedClient() {
       return;
     }
 
-    programs = programs.filter((program) => program.id !== id);
+    programs = programs.filter((program) => program.client_email !== selectedProgram.client_email);
     const nextProgram = programsForCurrentClientView()[0] || {};
 
     selectedProgramId = nextProgram.id || "";
     fillForm(nextProgram);
     renderClientList();
     adminStatus("Archived client deleted.");
+  });
+}
+
+function handleProgramHistoryActions() {
+  document.addEventListener("click", async (event) => {
+    const viewButton = event.target.closest("[data-program-history-view]");
+    const copyButton = event.target.closest("[data-program-history-copy]");
+    const restoreButton = event.target.closest("[data-program-history-restore]");
+    const button = viewButton || copyButton || restoreButton;
+
+    if (!button) {
+      return;
+    }
+
+    const programId = button.dataset.programHistoryView || button.dataset.programHistoryCopy || button.dataset.programHistoryRestore;
+    const program = programs.find((item) => item.id === programId);
+
+    if (!program) {
+      programHistoryStatus("Could not find that saved program.");
+      return;
+    }
+
+    if (viewButton) {
+      fillForm(program);
+      renderClientList();
+      adminStatus("Viewing saved program.");
+      programHistoryStatus("Viewing saved program.");
+      return;
+    }
+
+    if (copyButton) {
+      fillForm({
+        ...program,
+        id: "",
+        active: true,
+        client_archived: false,
+        program_title: `${program.program_title || "Client Program"} copy`
+      });
+      renderClientList();
+      adminStatus("Program copied as a new draft. Save when ready.");
+      programHistoryStatus("Copied as a new draft.");
+      return;
+    }
+
+    const confirmed = window.confirm(`Restore ${program.program_title || "this program"} as the current program for ${program.client_name || program.client_email}?`);
+
+    if (!confirmed) {
+      return;
+    }
+
+    restoreButton.disabled = true;
+    adminStatus("Restoring program...");
+    programHistoryStatus("Restoring program...");
+
+    const { error: archiveError } = await coachSupabase
+      .from("client_programs")
+      .update({ active: false, client_archived: false })
+      .eq("client_email", program.client_email);
+
+    if (archiveError) {
+      adminStatus(archiveError.message);
+      programHistoryStatus(archiveError.message);
+      restoreButton.disabled = false;
+      return;
+    }
+
+    const { data, error } = await coachSupabase
+      .from("client_programs")
+      .update({ active: true, client_archived: false })
+      .eq("id", program.id)
+      .select("*")
+      .single();
+
+    if (error) {
+      adminStatus(error.message);
+      programHistoryStatus(error.message);
+      restoreButton.disabled = false;
+      return;
+    }
+
+    programs = programs.map((item) => {
+      if (item.client_email !== program.client_email) {
+        return item;
+      }
+
+      return {
+        ...item,
+        active: item.id === program.id,
+        client_archived: false,
+        ...(item.id === program.id ? data : {})
+      };
+    });
+
+    fillForm(data);
+    renderClientList();
+    adminStatus("Program restored.");
+    programHistoryStatus("Program restored as current.");
   });
 }
 
@@ -1088,6 +1327,7 @@ async function bootCoachAdmin() {
   handleArchivedClientsToggle();
   handleClientSearch();
   handleDeleteArchivedClient();
+  handleProgramHistoryActions();
   handleSendInvite();
   handleSaveProgress();
   handleCoachSignOut();

@@ -28,12 +28,24 @@ to authenticated
 using (public.is_coach_admin())
 with check (public.is_coach_admin());
 
+alter table public.client_programs
+add column if not exists client_archived boolean not null default false;
+
+update public.client_programs cp
+set client_archived = true
+where not exists (
+  select 1
+  from public.client_programs active_program
+  where lower(active_program.client_email) = lower(cp.client_email)
+  and active_program.active = true
+);
+
 drop policy if exists "Coach admins can delete archived programs" on public.client_programs;
 create policy "Coach admins can delete archived programs"
 on public.client_programs
 for delete
 to authenticated
-using (public.is_coach_admin() and active = false);
+using (public.is_coach_admin() and client_archived = true);
 
 create or replace function public.set_updated_at()
 returns trigger
