@@ -997,6 +997,7 @@ footer {
 
 .client-summary,
 .workout-insights-panel,
+.client-workouts-panel,
 .today-panel,
 .coach-panel,
 .lower-panel,
@@ -1244,6 +1245,75 @@ footer {
   border-radius: 18px;
 }
 
+.client-workouts-panel {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+}
+
+.client-workout-tabs {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scrollbar-width: thin;
+}
+
+.client-workout-tab {
+  flex: 1 0 min(210px, 72vw);
+  display: grid;
+  gap: 4px;
+  min-height: 64px;
+  padding: 10px 12px;
+  color: var(--black);
+  background: #fbfbf8;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.client-workout-tab span {
+  color: var(--muted);
+  font-size: .72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.client-workout-tab strong {
+  overflow: hidden;
+  font-size: .92rem;
+  font-weight: 900;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.client-workout-tab.is-active {
+  background: var(--lime);
+  border-color: var(--black);
+}
+
+.client-workout-tab:focus-visible {
+  outline: 2px solid var(--black);
+  outline-offset: 2px;
+}
+
+.client-workout-panels {
+  display: grid;
+  gap: 12px;
+}
+
+.client-workout-panel {
+  display: grid;
+  gap: 12px;
+}
+
+.client-workout-panel[hidden] {
+  display: none;
+}
+
 .workout-format-heading {
   display: flex;
   align-items: center;
@@ -1488,11 +1558,11 @@ footer {
 .muscle-hotspot {
   position: absolute;
   display: none;
-  background: rgba(215, 255, 63, .68);
-  border: 1px solid rgba(0, 0, 0, .16);
-  border-radius: 50%;
-  filter: saturate(1.08);
-  mix-blend-mode: multiply;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  filter: none;
+  mix-blend-mode: normal;
   pointer-events: none;
 }
 
@@ -1500,14 +1570,23 @@ footer {
   display: block;
 }
 
+.muscle-hotspot::before,
 .muscle-hotspot::after {
   content: "";
   position: absolute;
-  inset: 0;
-  display: none;
-  background: inherit;
-  border: inherit;
-  border-radius: inherit;
+  left: 50%;
+  top: 50%;
+  display: block;
+  width: clamp(14px, 3.8vw, 20px);
+  height: clamp(3px, .7vw, 4px);
+  background: var(--black);
+  border-radius: 999px;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, .86);
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.muscle-hotspot::after {
+  transform: translate(-50%, -50%) rotate(-45deg);
 }
 
 .hotspot-chest {
@@ -1542,11 +1621,6 @@ footer {
   border-radius: 55% 45% 45% 55%;
 }
 
-.hotspot-biceps::after {
-  display: block;
-  transform: translateX(315%);
-}
-
 .hotspot-triceps-front {
   left: 17.4%;
   top: 29%;
@@ -1561,11 +1635,6 @@ footer {
   width: 5.8%;
   height: 18%;
   border-radius: 55% 45% 45% 55%;
-}
-
-.hotspot-triceps-back::after {
-  display: block;
-  transform: translateX(345%);
 }
 
 .hotspot-core {
@@ -2984,6 +3053,7 @@ textarea:focus {
 
   .coach-panel,
   .workout-insights-panel,
+  .client-workouts-panel,
   .today-panel,
   .lower-panel,
   .progress-panel,
@@ -3238,6 +3308,7 @@ textarea:focus {
   .dashboard-grid,
   .client-summary,
   .workout-insights-panel,
+  .client-workouts-panel,
   .today-panel,
   .coach-panel,
   .lower-panel {

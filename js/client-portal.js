@@ -11,6 +11,7 @@ const supabaseClient = isConfigured && window.supabase
 const coachPortalEmails = ["benjaminbenz.fit@gmail.com"];
 let activeClientEmail = "";
 let trainingLogs = [];
+let activeWorkoutTabIndex = 0;
 const dashboardRequestTimeout = 15000;
 
 function isCoachPortalEmail(email) {
@@ -801,45 +802,77 @@ function workoutActionsMarkup(workout) {
   `;
 }
 
-function renderExerciseList(elementId, workout, workoutTitle) {
-  const element = document.getElementById(elementId);
+function renderClientWorkoutTabs(workouts = []) {
+  const tabs = document.getElementById("client-workout-tabs");
+  const panels = document.getElementById("client-workout-panels");
+  const count = document.getElementById("client-workouts-count");
 
-  if (!element) {
+  if (!tabs || !panels) {
     return;
   }
 
-  element.innerHTML = `${workoutExerciseMarkup(workout, workoutTitle)}${workoutActionsMarkup(workout)}`;
-}
+  const availableWorkouts = Array.isArray(workouts) ? workouts : [];
 
-function renderAdditionalWorkouts(workouts) {
-  const container = document.getElementById("additional-workouts");
+  if (count) {
+    count.textContent = `${availableWorkouts.length} workout${availableWorkouts.length === 1 ? "" : "s"}`;
+  }
 
-  if (!container) {
+  if (availableWorkouts.length === 0) {
+    tabs.innerHTML = "";
+    panels.innerHTML = '<p class="empty-state">No workouts have been added yet.</p>';
     return;
   }
 
-  const extraWorkouts = workouts.slice(2);
-
-  if (extraWorkouts.length === 0) {
-    container.innerHTML = "";
-    return;
+  if (activeWorkoutTabIndex >= availableWorkouts.length) {
+    activeWorkoutTabIndex = 0;
   }
 
-  container.innerHTML = extraWorkouts.map((workout, index) => `
-    <section class="lower-panel extra-workout-panel" aria-label="${escapeHtml(workout.title || `Workout ${index + 3}`)}">
+  tabs.innerHTML = availableWorkouts.map((workout, index) => {
+    const title = workout.title || `Workout ${index + 1}`;
+    const isActive = index === activeWorkoutTabIndex;
+
+    return `
+      <button
+        class="client-workout-tab${isActive ? " is-active" : ""}"
+        type="button"
+        role="tab"
+        id="client-workout-tab-${index}"
+        aria-selected="${isActive ? "true" : "false"}"
+        aria-controls="client-workout-panel-${index}"
+        data-client-workout-tab="${index}"
+      >
+        <span>Workout ${index + 1}</span>
+        <strong>${escapeHtml(title)}</strong>
+      </button>
+    `;
+  }).join("");
+
+  panels.innerHTML = availableWorkouts.map((workout, index) => {
+    const title = workout.title || `Workout ${index + 1}`;
+    const isActive = index === activeWorkoutTabIndex;
+
+    return `
+      <section
+        class="client-workout-panel${isActive ? " is-active" : ""}"
+        id="client-workout-panel-${index}"
+        role="tabpanel"
+        aria-labelledby="client-workout-tab-${index}"
+        ${isActive ? "" : "hidden"}
+      >
       <div class="panel-heading">
         <div>
-          <h2>${escapeHtml(workout.title || `Workout ${index + 3}`)}</h2>
+          <h2>${escapeHtml(title)}</h2>
         </div>
         <span class="status-pill">${escapeHtml(workout.focus || "")}</span>
       </div>
       <div class="workout-format-pill">${escapeHtml(formatLabel(inferWorkoutFormat(workout)))}</div>
-      <div class="workout-app-list" role="list" aria-label="${escapeHtml(workout.title || `Workout ${index + 3}`)} exercises">
-        ${workoutExerciseMarkup(workout, workout.title || `Workout ${index + 3}`)}
+      <div class="workout-app-list" role="list" aria-label="${escapeHtml(title)} exercises">
+        ${workoutExerciseMarkup(workout, title)}
         ${workoutActionsMarkup(workout)}
       </div>
     </section>
-  `).join("");
+  `;
+  }).join("");
 }
 
 function logKey(workoutTitle, exerciseCode) {
@@ -1080,6 +1113,34 @@ function handleWorkoutInteractions() {
   });
 }
 
+function handleClientWorkoutTabs() {
+  document.addEventListener("click", (event) => {
+    const tab = event.target.closest("[data-client-workout-tab]");
+
+    if (!tab) {
+      return;
+    }
+
+    const nextIndex = Number(tab.dataset.clientWorkoutTab || 0);
+    const tabs = document.querySelectorAll("[data-client-workout-tab]");
+    const panels = document.querySelectorAll(".client-workout-panel");
+
+    activeWorkoutTabIndex = nextIndex;
+    tabs.forEach((button) => {
+      const isActive = Number(button.dataset.clientWorkoutTab || 0) === nextIndex;
+
+      button.classList.toggle("is-active", isActive);
+      button.setAttribute("aria-selected", isActive ? "true" : "false");
+    });
+    panels.forEach((panel, index) => {
+      const isActive = index === nextIndex;
+
+      panel.classList.toggle("is-active", isActive);
+      panel.hidden = !isActive;
+    });
+  });
+}
+
 function handleSkipToggle() {
   document.addEventListener("change", (event) => {
     const skipInput = event.target.closest("[data-skip-card]");
@@ -1102,8 +1163,6 @@ function handleSkipToggle() {
 function renderProgram(program) {
   const displayProgram = displayProgramForCurrentView(program);
   const workouts = Array.isArray(program.workouts) ? program.workouts : [];
-  const firstWorkout = workouts[0] || {};
-  const nextWorkout = workouts[1] || {};
   const sheetLink = document.getElementById("workout-sheet-link");
   const programTitle = displayProgram.program_title || "Your Program";
 
@@ -1112,10 +1171,6 @@ function renderProgram(program) {
   setText("#dashboard-program-summary", displayProgram.program_summary || "Your current training block is ready.");
   setText("#client-avatar", clientInitials(displayProgram));
   setText("#client-name", displayProgram.client_name || "Client");
-  setText("#today-title", firstWorkout.title || "Workout 1");
-  setText("#today-focus", firstWorkout.focus || "");
-  setText("#lower-title", nextWorkout.title || "Next workout");
-  setText("#next-focus", nextWorkout.focus || "");
 
   if (sheetLink) {
     if (program.sheet_url) {
@@ -1129,9 +1184,7 @@ function renderProgram(program) {
 
   renderMetrics(program);
   renderWorkoutInsights(program);
-  renderExerciseList("today-exercises", firstWorkout, firstWorkout.title || "Workout 1");
-  renderExerciseList("next-exercises", nextWorkout, nextWorkout.title || "Workout 2");
-  renderAdditionalWorkouts(workouts);
+  renderClientWorkoutTabs(workouts);
   showDashboardContent();
 }
 
@@ -1422,7 +1475,7 @@ function incompleteWorkoutExercises(logElements) {
 }
 
 function workoutSectionForButton(button) {
-  return button.closest(".today-panel, .lower-panel, .extra-workout-panel");
+  return button.closest(".client-workout-panel, .today-panel, .lower-panel, .extra-workout-panel");
 }
 
 async function saveTrainingLogRows(button, logElements, status, options = {}) {
@@ -1559,5 +1612,7 @@ handlePasswordResetRequests();
 loadDashboard();
 handleSignOut();
 handleTrainingDateChange();
+handleClientWorkoutTabs();
+handleWorkoutInteractions();
 handleSkipToggle();
 handleTrainingLogSave();

@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=exercise-video-1" />
+  <link rel="stylesheet" href="css/style.css?v=client-workout-tabs-1" />
 </head>
 <body class="dashboard-page is-loading">
   <header class="site-header dashboard-header">
@@ -68,28 +68,17 @@
           <p class="progress-goal" id="progress-goal"></p>
         </section>
 
-        <section class="today-panel" aria-labelledby="today-title">
+        <section class="client-workouts-panel" id="client-workouts-panel" aria-labelledby="client-workouts-title">
           <div class="panel-heading">
             <div>
-              <h2 id="today-title"></h2>
+              <p class="kicker">Workouts</p>
+              <h2 id="client-workouts-title">Training sessions</h2>
             </div>
-            <span class="status-pill" id="today-focus"></span>
+            <span class="status-pill" id="client-workouts-count"></span>
           </div>
-
-          <div class="exercise-list" id="today-exercises"></div>
+          <div class="client-workout-tabs" id="client-workout-tabs" role="tablist" aria-label="Workout sessions"></div>
+          <div class="client-workout-panels" id="client-workout-panels"></div>
         </section>
-
-        <section class="lower-panel" aria-labelledby="lower-title">
-          <div class="panel-heading">
-            <div>
-              <h2 id="lower-title"></h2>
-            </div>
-            <span class="status-pill" id="next-focus"></span>
-          </div>
-          <div class="workout-app-list" id="next-exercises" role="list" aria-label="Workout 2 exercises"></div>
-        </section>
-
-        <div class="additional-workouts" id="additional-workouts"></div>
       </section>
 
       <div class="dashboard-sheet-action">
@@ -106,6 +95,6 @@
   <script src="js/script.js?v=client-dashboard"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js"></script>
-  <script src="js/client-portal.js?v=client-email-match-fix-1"></script>
+  <script src="js/client-portal.js?v=client-workout-tabs-1"></script>
 </body>
 </html>
