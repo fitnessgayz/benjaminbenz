@@ -1557,13 +1557,18 @@ footer {
 
 .muscle-hotspot {
   position: absolute;
+  left: var(--marker-x);
+  top: var(--marker-y);
   display: none;
+  width: clamp(18px, 4.6vw, 24px);
+  height: clamp(18px, 4.6vw, 24px);
   background: transparent;
   border: 0;
   border-radius: 0;
   filter: none;
   mix-blend-mode: normal;
   pointer-events: none;
+  transform: translate(-50%, -50%);
 }
 
 .muscle-hotspot.is-active {
@@ -1577,8 +1582,8 @@ footer {
   left: 50%;
   top: 50%;
   display: block;
-  width: clamp(14px, 3.8vw, 20px);
-  height: clamp(3px, .7vw, 4px);
+  width: clamp(12px, 3vw, 17px);
+  height: clamp(2.5px, .6vw, 3.5px);
   background: var(--black);
   border-radius: 999px;
   box-shadow: 0 0 0 2px rgba(255, 255, 255, .86);
@@ -1590,115 +1595,73 @@ footer {
 }
 
 .hotspot-chest {
-  left: 24.5%;
-  top: 22.5%;
-  width: 12.5%;
-  height: 11%;
-  border-radius: 44% 44% 52% 52%;
+  --marker-x: 30%;
+  --marker-y: 26.5%;
 }
 
 .hotspot-shoulders-front {
-  left: 19.6%;
-  top: 20.4%;
-  width: 21.5%;
-  height: 8.2%;
-  border-radius: 999px 999px 55% 55%;
+  --marker-x: 25.2%;
+  --marker-y: 24.5%;
 }
 
 .hotspot-shoulders-back {
-  left: 65.6%;
-  top: 20.2%;
-  width: 21.5%;
-  height: 8.4%;
-  border-radius: 999px 999px 55% 55%;
+  --marker-x: 70.7%;
+  --marker-y: 24.8%;
 }
 
 .hotspot-biceps {
-  left: 16.2%;
-  top: 29%;
-  width: 6.8%;
-  height: 18%;
-  border-radius: 55% 45% 45% 55%;
+  --marker-x: 21.2%;
+  --marker-y: 36%;
 }
 
 .hotspot-triceps-front {
-  left: 17.4%;
-  top: 29%;
-  width: 5.4%;
-  height: 17%;
-  border-radius: 55% 45% 45% 55%;
+  --marker-x: 39.4%;
+  --marker-y: 36%;
 }
 
 .hotspot-triceps-back {
-  left: 63.5%;
-  top: 30%;
-  width: 5.8%;
-  height: 18%;
-  border-radius: 55% 45% 45% 55%;
+  --marker-x: 86.3%;
+  --marker-y: 36%;
 }
 
 .hotspot-core {
-  left: 25%;
-  top: 33.5%;
-  width: 11.7%;
-  height: 18%;
-  border-radius: 42% 42% 54% 54%;
+  --marker-x: 30.4%;
+  --marker-y: 42.5%;
 }
 
 .hotspot-back {
-  left: 71.5%;
-  top: 22%;
-  width: 13.4%;
-  height: 22%;
-  border-radius: 46% 46% 54% 54%;
+  --marker-x: 77.5%;
+  --marker-y: 30.2%;
 }
 
 .hotspot-lats {
-  left: 67.5%;
-  top: 29%;
-  width: 21%;
-  height: 20%;
-  border-radius: 40% 40% 56% 56%;
+  --marker-x: 70.2%;
+  --marker-y: 41%;
 }
 
 .hotspot-glutes {
-  left: 71%;
-  top: 48.5%;
-  width: 14.5%;
-  height: 14%;
-  border-radius: 46% 46% 58% 58%;
+  --marker-x: 78.4%;
+  --marker-y: 56.2%;
 }
 
 .hotspot-quads {
-  left: 23.2%;
-  top: 52.5%;
-  width: 15%;
-  height: 27%;
-  border-radius: 42% 42% 48% 48%;
+  --marker-x: 30.3%;
+  --marker-y: 65.3%;
 }
 
 .hotspot-hamstrings {
-  left: 72%;
-  top: 62%;
-  width: 13.2%;
-  height: 20%;
-  border-radius: 42% 42% 48% 48%;
+  --marker-x: 77.7%;
+  --marker-y: 70.2%;
 }
 
 .hotspot-calves-front {
-  left: 24.2%;
-  top: 78%;
-  width: 13.5%;
-  height: 15%;
-  border-radius: 48% 48% 42% 42%;
+  --marker-x: 30.5%;
+  --marker-y: 85%;
 }
 
 .hotspot-calves-back {
-  left: 72%;
-  top: 80%;
-  width: 13.2%;
-  height: 13.5%;
-  border-radius: 48% 48% 42% 42%;
+  --marker-x: 77.7%;
+  --marker-y: 85.5%;
 }
 
 .workout-exercise-card.is-open .exercise-detail {
