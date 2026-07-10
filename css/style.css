@@ -653,9 +653,10 @@ figcaption {
 
 .client-gallery figure {
   display: flex;
-  min-height: 100%;
+  min-height: 0;
   flex-direction: column;
   min-width: 0;
+  background: transparent;
 }
 
 .client-gallery figure:nth-child(2) {
@@ -667,7 +668,7 @@ figcaption {
   aspect-ratio: 1 / 1;
   height: auto;
   display: block;
-  object-fit: contain;
+  object-fit: cover;
   object-position: center;
   background: transparent;
   border: 1px solid var(--line);
@@ -2966,6 +2967,10 @@ textarea:focus {
   figure img {
     aspect-ratio: 4 / 5;
     height: auto;
+  }
+
+  .client-gallery img {
+    aspect-ratio: 1 / 1;
   }
 
 }
