@@ -231,6 +231,75 @@ clientCarousels.forEach((carousel) => {
   updateCarousel();
 });
 
+const photoStoryCarousels = Array.from(document.querySelectorAll("[data-story-carousel]"));
+
+photoStoryCarousels.forEach((carousel) => {
+  const track = carousel.querySelector("[data-story-track]");
+  const slides = Array.from(carousel.querySelectorAll(".photo-story-slide"));
+  const prevButton = carousel.querySelector("[data-story-prev]");
+  const nextButton = carousel.querySelector("[data-story-next]");
+  const dotsContainer = carousel.querySelector("[data-story-dots]");
+  const viewport = carousel.querySelector(".photo-story-viewport");
+
+  if (!track || !viewport || slides.length === 0) {
+    return;
+  }
+
+  if (dotsContainer) {
+    dotsContainer.innerHTML = slides
+      .map(
+        (_, index) =>
+          `<button class="photo-story-dot${index === 0 ? " is-active" : ""}" type="button" aria-label="Show training photo ${
+            index + 1
+          }" aria-pressed="${index === 0 ? "true" : "false"}" data-story-dot="${index}"></button>`
+      )
+      .join("");
+  }
+
+  const dots = Array.from(carousel.querySelectorAll("[data-story-dot]"));
+  let activeIndex = 0;
+
+  const maxOffset = () => Math.max(0, track.scrollWidth - viewport.clientWidth);
+
+  const updateCarousel = () => {
+    const targetSlide = slides[activeIndex];
+    const targetOffset = targetSlide ? Math.min(targetSlide.offsetLeft, maxOffset()) : 0;
+    track.style.transform = `translateX(-${targetOffset}px)`;
+
+    dots.forEach((dot, index) => {
+      const isActive = index === activeIndex;
+      dot.classList.toggle("is-active", isActive);
+      dot.setAttribute("aria-pressed", isActive ? "true" : "false");
+    });
+  };
+
+  prevButton?.addEventListener("click", () => {
+    activeIndex = (activeIndex - 1 + slides.length) % slides.length;
+    updateCarousel();
+  });
+
+  nextButton?.addEventListener("click", () => {
+    activeIndex = (activeIndex + 1) % slides.length;
+    updateCarousel();
+  });
+
+  dots.forEach((dot) => {
+    dot.addEventListener("click", () => {
+      const nextIndex = Number(dot.dataset.storyDot);
+
+      if (Number.isNaN(nextIndex)) {
+        return;
+      }
+
+      activeIndex = nextIndex;
+      updateCarousel();
+    });
+  });
+
+  window.addEventListener("resize", updateCarousel);
+  updateCarousel();
+});
+
 const homeTabLinks = Array.from(document.querySelectorAll("[data-home-tab-link]"));
 const homeTabPanels = Array.from(document.querySelectorAll("[data-home-tab-panel]"));
 const homeTabStage = document.querySelector(".homepage-tab-stage");

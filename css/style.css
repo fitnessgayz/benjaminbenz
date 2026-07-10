@@ -865,6 +865,29 @@ h3 {
   align-items: start;
 }
 
+.photo-story-carousel {
+  display: grid;
+  gap: 16px;
+}
+
+.photo-story-viewport {
+  overflow: hidden;
+  width: min(100%, 1180px);
+}
+
+.photo-story-track {
+  display: flex;
+  gap: 14px;
+  transition: transform .28s ease;
+  will-change: transform;
+}
+
+.photo-story-slide {
+  flex: 0 0 clamp(240px, 30vw, 360px);
+  min-width: 0;
+  background: transparent;
+}
+
 figure {
   margin: 0;
   background: var(--black);
@@ -886,6 +909,60 @@ figcaption {
   font-weight: 900;
   line-height: .96;
   text-transform: uppercase;
+}
+
+.photo-story-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+
+.photo-story-dots {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+.photo-story-dot {
+  width: 10px;
+  height: 10px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid var(--black);
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.photo-story-dot.is-active {
+  background: var(--lime);
+  border-color: var(--black);
+}
+
+.photo-story-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  padding: 0;
+  color: var(--black);
+  background: #fbfbf8;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: 0;
+  cursor: pointer;
+}
+
+.photo-story-button::before {
+  content: "‹";
+  font-size: 1.55rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.photo-story-button-next::before {
+  content: "›";
 }
 
 .client-progress {
@@ -3594,6 +3671,10 @@ textarea:focus {
     flex-basis: clamp(180px, 38vw, 240px);
   }
 
+  .photo-story-slide {
+    flex-basis: clamp(220px, 42vw, 320px);
+  }
+
   .yelp-summary {
     display: grid;
     align-items: start;
@@ -3655,6 +3736,20 @@ textarea:focus {
   }
 
   .client-carousel-button {
+    width: 42px;
+    height: 42px;
+  }
+
+  .photo-story-controls {
+    gap: 12px;
+    justify-content: flex-start;
+  }
+
+  .photo-story-slide {
+    flex-basis: min(68vw, 260px);
+  }
+
+  .photo-story-button {
     width: 42px;
     height: 42px;
   }

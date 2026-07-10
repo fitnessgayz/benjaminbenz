@@ -15,7 +15,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=homepage-tabs-1" />
+  <link rel="stylesheet" href="css/style.css?v=photo-story-carousel-1" />
 </head>
 <body class="homepage">
   <header class="site-header">
@@ -151,19 +151,28 @@
                 <div class="photo-story-heading">
                   <h2>Movement. Strength. Awareness. Control.</h2>
                 </div>
-                <div class="photo-grid" data-photo-grid>
-                  <figure>
-                    <img src="images/home/benjamin-strength-rack.jpg" alt="Benjamin setting up a strength exercise at the rack" />
-                    <figcaption>Mindset</figcaption>
-                  </figure>
-                  <figure>
-                    <img src="images/home/benjamin-floor-core.jpg" alt="Benjamin performing a controlled floor core exercise" />
-                    <figcaption>Awareness</figcaption>
-                  </figure>
-                  <figure>
-                    <img src="images/home/benjamin-cable-rotation.jpg" alt="Benjamin training cable rotation in the gym" />
-                    <figcaption>Recovery</figcaption>
-                  </figure>
+                <div class="photo-story-carousel" data-story-carousel>
+                  <div class="photo-story-viewport">
+                    <div class="photo-story-track photo-grid" data-photo-grid data-story-track>
+                      <figure class="photo-story-slide">
+                        <img src="images/home/benjamin-strength-rack.jpg" alt="Benjamin setting up a strength exercise at the rack" />
+                        <figcaption>Mindset</figcaption>
+                      </figure>
+                      <figure class="photo-story-slide">
+                        <img src="images/home/benjamin-floor-core.jpg" alt="Benjamin performing a controlled floor core exercise" />
+                        <figcaption>Awareness</figcaption>
+                      </figure>
+                      <figure class="photo-story-slide">
+                        <img src="images/home/benjamin-cable-rotation.jpg" alt="Benjamin training cable rotation in the gym" />
+                        <figcaption>Recovery</figcaption>
+                      </figure>
+                    </div>
+                  </div>
+                  <div class="photo-story-controls">
+                    <button class="photo-story-button photo-story-button-prev" type="button" aria-label="Previous training photo" data-story-prev>Previous</button>
+                    <div class="photo-story-dots" aria-label="Training photo navigation" data-story-dots></div>
+                    <button class="photo-story-button photo-story-button-next" type="button" aria-label="Next training photo" data-story-next>Next</button>
+                  </div>
                 </div>
               </section>
             </div>
@@ -297,6 +306,6 @@
   </footer>
 
   <script src="js/supabase-config.js"></script>
-  <script src="js/script.js?v=homepage-tabs-1"></script>
+  <script src="js/script.js?v=photo-story-carousel-1"></script>
 </body>
 </html>
