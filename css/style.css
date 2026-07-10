@@ -128,23 +128,27 @@ footer {
   justify-self: end;
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: 12px;
 }
 
 .login-link,
 .online-link,
 .header-cta {
   border: 0;
-  min-height: 36px;
-  padding: 7px 12px;
+  min-height: 40px;
+  padding: 8px 18px;
   border-radius: 999px;
   color: var(--white);
   background: var(--black);
   font: inherit;
-  font-size: .78rem;
+  font-size: .8rem;
   line-height: 1;
   white-space: nowrap;
   cursor: pointer;
+}
+
+.mobile-label {
+  display: none;
 }
 
 .login-link.is-current,
@@ -332,6 +336,91 @@ h3 {
 
 .hero-meta span:last-child {
   border-right: 0;
+}
+
+.homepage-tab-stage {
+  width: 100%;
+  margin: 0 auto;
+}
+
+.home-tabs {
+  display: none;
+}
+
+.home-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.home-panels {
+  display: flex;
+  flex-direction: column;
+}
+
+.home-tab {
+  flex: 0 0 auto;
+  display: inline-flex;
+  min-height: 52px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 22px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--white);
+  color: var(--muted);
+  font-size: .95rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  transition: background-color .18s ease, border-color .18s ease, color .18s ease, transform .18s ease;
+}
+
+.home-tab:hover {
+  transform: translateY(-1px);
+}
+
+.home-tab.is-active {
+  color: var(--black);
+  background: var(--lime);
+  border-color: var(--black);
+}
+
+.home-panel {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.home-panel[data-home-tab-panel="method"] {
+  order: 1;
+}
+
+.home-panel[data-home-tab-panel="training"] {
+  order: 2;
+}
+
+.home-panel[data-home-tab-panel="reviews"] {
+  order: 3;
+}
+
+.home-panel[data-home-tab-panel="results"] {
+  order: 4;
+}
+
+.home-panel[data-home-tab-panel="start"] {
+  order: 5;
+}
+
+.home-panel[data-home-tab-panel="start"] {
+  display: flex;
+  flex-direction: column;
+}
+
+.home-panel[data-home-tab-panel="start"] .credentials {
+  order: 1;
+}
+
+.home-panel[data-home-tab-panel="start"] .contact {
+  order: 2;
 }
 
 .editorial,
@@ -2882,6 +2971,57 @@ textarea:focus {
     min-height: auto;
   }
 
+  .home-tabs {
+    position: sticky;
+    top: 76px;
+    z-index: 5;
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    width: min(var(--max), calc(100% - 40px));
+    padding: 12px;
+    margin: 18px auto 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, .92);
+    backdrop-filter: blur(16px);
+    scrollbar-width: none;
+  }
+
+  .home-panel {
+    width: min(var(--max), calc(100% - 40px));
+    padding: clamp(8px, 1.8vw, 18px) 0 clamp(34px, 5vw, 48px);
+    margin: 0 auto;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, .98), rgba(244, 245, 241, .96));
+  }
+
+  .home-panel[data-home-tab-panel] {
+    order: initial;
+  }
+
+  .home-panel[hidden] {
+    display: none !important;
+  }
+
+  .home-panel.is-active {
+    animation: homePanelReveal .28s ease;
+  }
+
+  @keyframes homePanelReveal {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
   .hero img {
     object-position: 60% 12%;
   }
@@ -3096,18 +3236,36 @@ textarea:focus {
   }
 
   .header-actions {
-    gap: 6px;
+    gap: 4px;
+  }
+
+  .header-cta {
+    display: none;
   }
 
   .login-link,
   .online-link,
   .header-cta {
-    padding: 8px 9px;
-    font-size: .68rem;
+    min-height: 34px;
+    padding: 8px 7px;
+    font-size: .64rem;
     white-space: nowrap;
   }
 
+  .desktop-label {
+    display: none;
+  }
+
+  .mobile-label {
+    display: inline;
+  }
+
+  .online-link {
+    display: none;
+  }
+
   .hero-content,
+  .homepage-tab-stage,
   .editorial,
   .credentials,
   .split-feature,
@@ -3121,6 +3279,22 @@ textarea:focus {
     .admin-shell,
     footer {
     width: calc(100% - 32px);
+  }
+
+  .home-tabs {
+    top: 64px;
+    padding: 8px;
+    gap: 6px;
+  }
+
+  .home-tab {
+    min-height: 48px;
+    padding: 0 16px;
+    font-size: .78rem;
+  }
+
+  .home-panel {
+    padding-top: 4px;
   }
 
   h1 {

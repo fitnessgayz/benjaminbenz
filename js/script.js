@@ -17,6 +17,125 @@ if (reviewTrack) {
   reviews.forEach((review) => reviewTrack.appendChild(review));
 }
 
+const homeTabLinks = Array.from(document.querySelectorAll("[data-home-tab-link]"));
+const homeTabPanels = Array.from(document.querySelectorAll("[data-home-tab-panel]"));
+const homeTabStage = document.querySelector(".homepage-tab-stage");
+const homeTabMedia = window.matchMedia("(max-width: 980px)");
+
+function activateHomeTab(tabId, options = {}) {
+  if (!homeTabPanels.length) {
+    return;
+  }
+
+  const { updateHash = true, scrollIntoView = false } = options;
+  const targetPanel = homeTabPanels.find((panel) => panel.dataset.homeTabPanel === tabId);
+
+  if (!targetPanel) {
+    return;
+  }
+
+  homeTabPanels.forEach((panel) => {
+    const isActive = panel === targetPanel;
+    panel.hidden = !isActive;
+    panel.classList.toggle("is-active", isActive);
+  });
+
+  homeTabLinks.forEach((link) => {
+    const isActive = link.dataset.homeTabLink === tabId;
+    link.classList.toggle("is-active", isActive);
+    link.setAttribute("aria-selected", isActive ? "true" : "false");
+    link.setAttribute("aria-current", isActive ? "page" : "false");
+  });
+
+  if (updateHash && window.location.hash !== `#${tabId}`) {
+    history.replaceState(null, "", `#${tabId}`);
+  }
+
+  if (scrollIntoView && homeTabStage) {
+    homeTabStage.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+}
+
+function showAllHomePanels() {
+  homeTabPanels.forEach((panel) => {
+    panel.hidden = false;
+    panel.classList.remove("is-active");
+  });
+
+  homeTabLinks.forEach((link) => {
+    link.classList.remove("is-active");
+    link.setAttribute("aria-selected", "false");
+    link.removeAttribute("aria-current");
+  });
+}
+
+if (homeTabLinks.length && homeTabPanels.length) {
+  const initialTab = window.location.hash.replace("#", "");
+  const validInitialTab = homeTabPanels.some((panel) => panel.dataset.homeTabPanel === initialTab)
+    ? initialTab
+    : "start";
+
+  if (homeTabMedia.matches) {
+    activateHomeTab(validInitialTab, { updateHash: validInitialTab === initialTab });
+  } else {
+    showAllHomePanels();
+  }
+
+  homeTabLinks.forEach((link) => {
+    link.addEventListener("click", (event) => {
+      const targetTab = link.dataset.homeTabLink;
+      const targetPanel = homeTabPanels.find((panel) => panel.dataset.homeTabPanel === targetTab);
+
+      if (!targetTab || !targetPanel) {
+        return;
+      }
+
+      event.preventDefault();
+
+      if (homeTabMedia.matches) {
+        activateHomeTab(targetTab, { scrollIntoView: true });
+        return;
+      }
+
+      targetPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  });
+
+  window.addEventListener("hashchange", () => {
+    const targetTab = window.location.hash.replace("#", "");
+
+    if (!targetTab) {
+      return;
+    }
+
+    if (homeTabMedia.matches) {
+      activateHomeTab(targetTab, { updateHash: false });
+      return;
+    }
+
+    const targetPanel = homeTabPanels.find((panel) => panel.dataset.homeTabPanel === targetTab);
+
+    if (targetPanel) {
+      targetPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  });
+
+  const syncHomeTabMode = (event) => {
+    if (event.matches) {
+      activateHomeTab(window.location.hash.replace("#", "") || "start", { updateHash: false });
+      return;
+    }
+
+    showAllHomePanels();
+  };
+
+  if (typeof homeTabMedia.addEventListener === "function") {
+    homeTabMedia.addEventListener("change", syncHomeTabMode);
+  } else if (typeof homeTabMedia.addListener === "function") {
+    homeTabMedia.addListener(syncHomeTabMode);
+  }
+}
+
 const questionnaire = document.getElementById("training-questionnaire");
 
 if (questionnaire) {

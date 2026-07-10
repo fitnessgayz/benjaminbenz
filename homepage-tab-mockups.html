@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Homepage Tab Mockups | Fitness with Benjamin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --ink: #050505;
+      --paper: #f4f5f1;
+      --line: #d8d8d1;
+      --muted: #6f706a;
+      --red: #ff3c38;
+      --lime: #d6ff26;
+      --white: #fff;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: Inter, Arial, sans-serif;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .mock-header {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(244, 245, 241, 0.96);
+      backdrop-filter: blur(14px);
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 900;
+    }
+
+    .brand-mark {
+      display: grid;
+      width: 44px;
+      height: 44px;
+      place-items: center;
+      border-radius: 999px;
+      background: var(--lime);
+      font-size: 15px;
+      letter-spacing: -0.02em;
+    }
+
+    .mock-header span:last-child {
+      font-size: 14px;
+      color: var(--muted);
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+    }
+
+    .intro {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 64px 24px 28px;
+    }
+
+    .kicker {
+      margin: 0 0 14px;
+      color: var(--red);
+      font-size: 13px;
+      font-weight: 900;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin-top: 0;
+    }
+
+    h1 {
+      max-width: 880px;
+      margin-bottom: 18px;
+      font-size: clamp(52px, 11vw, 132px);
+      line-height: 0.86;
+      letter-spacing: 0;
+      text-transform: uppercase;
+    }
+
+    .intro > p:last-child {
+      max-width: 740px;
+      color: var(--muted);
+      font-size: clamp(18px, 2.6vw, 28px);
+      line-height: 1.28;
+      font-weight: 700;
+    }
+
+    .mockup {
+      max-width: 1180px;
+      margin: 0 auto 80px;
+      padding: 0 24px;
+    }
+
+    .mockup-shell {
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--white);
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.08);
+    }
+
+    .mockup-title {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 24px;
+      padding: 24px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .mockup-title h2 {
+      margin: 0;
+      font-size: clamp(30px, 5vw, 64px);
+      line-height: 0.94;
+      text-transform: uppercase;
+    }
+
+    .mockup-title p {
+      max-width: 360px;
+      margin: 0;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.42;
+      font-weight: 700;
+    }
+
+    .button {
+      display: inline-flex;
+      min-height: 48px;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid var(--ink);
+      border-radius: 999px;
+      padding: 0 22px;
+      font-weight: 900;
+    }
+
+    .button.dark {
+      background: var(--ink);
+      color: var(--white);
+    }
+
+    .hero-preview {
+      position: relative;
+      min-height: 520px;
+      overflow: hidden;
+      background: var(--ink);
+      color: var(--white);
+    }
+
+    .hero-preview img {
+      position: absolute;
+      inset: 0;
+      opacity: 0.64;
+    }
+
+    .hero-preview::after {
+      position: absolute;
+      inset: 0;
+      content: "";
+      background: linear-gradient(90deg, rgba(0, 0, 0, 0.72), rgba(0, 0, 0, 0.16));
+    }
+
+    .hero-copy {
+      position: relative;
+      z-index: 1;
+      max-width: 800px;
+      padding: clamp(40px, 8vw, 88px);
+    }
+
+    .hero-copy h3 {
+      margin-bottom: 20px;
+      font-size: clamp(48px, 9vw, 118px);
+      line-height: 0.88;
+      text-transform: uppercase;
+    }
+
+    .hero-copy p {
+      max-width: 620px;
+      color: rgba(255, 255, 255, 0.88);
+      font-size: clamp(18px, 2vw, 25px);
+      line-height: 1.32;
+      font-weight: 700;
+    }
+
+    .tab-bar {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding: 12px;
+      border-bottom: 1px solid var(--line);
+      background: var(--paper);
+      scrollbar-width: none;
+    }
+
+    .tab-bar::-webkit-scrollbar {
+      display: none;
+    }
+
+    .tab-bar a {
+      display: inline-flex;
+      min-height: 50px;
+      align-items: center;
+      justify-content: center;
+      flex: 0 0 auto;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 0 20px;
+      background: var(--white);
+      color: var(--muted);
+      font-weight: 900;
+    }
+
+    .tab-bar a:first-child {
+      border-color: var(--ink);
+      background: var(--lime);
+      color: var(--ink);
+    }
+
+    .content-preview {
+      display: grid;
+      grid-template-columns: minmax(0, 0.85fr) minmax(300px, 0.45fr);
+      min-height: 460px;
+    }
+
+    .content-copy {
+      padding: clamp(32px, 5vw, 72px);
+    }
+
+    .content-copy h3 {
+      margin-bottom: 18px;
+      font-size: clamp(38px, 6vw, 84px);
+      line-height: 0.92;
+      text-transform: uppercase;
+    }
+
+    .content-copy p {
+      color: var(--muted);
+      font-size: 20px;
+      line-height: 1.34;
+      font-weight: 700;
+    }
+
+    .content-list {
+      display: grid;
+      gap: 12px;
+      margin-top: 32px;
+    }
+
+    .content-list span {
+      display: flex;
+      min-height: 58px;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 16px;
+      font-weight: 900;
+    }
+
+    .photo-strip {
+      display: grid;
+      grid-template-rows: repeat(3, 1fr);
+      min-height: 460px;
+      border-left: 1px solid var(--line);
+    }
+
+    .photo-strip figure {
+      position: relative;
+      margin: 0;
+      overflow: hidden;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .photo-strip figcaption {
+      position: absolute;
+      left: 16px;
+      bottom: 16px;
+      border-radius: 999px;
+      padding: 8px 12px;
+      background: var(--lime);
+      font-size: 13px;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .split-tabs {
+      display: grid;
+      grid-template-columns: 280px minmax(0, 1fr);
+      min-height: 680px;
+    }
+
+    .side-rail {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 18px;
+      border-right: 1px solid var(--line);
+      background: var(--ink);
+      color: var(--white);
+    }
+
+    .side-rail a {
+      display: flex;
+      min-height: 64px;
+      align-items: center;
+      justify-content: space-between;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 8px;
+      padding: 0 18px;
+      color: rgba(255, 255, 255, 0.68);
+      font-weight: 900;
+    }
+
+    .side-rail a:first-child {
+      background: var(--lime);
+      color: var(--ink);
+    }
+
+    .side-main {
+      display: grid;
+      grid-template-rows: 360px auto;
+    }
+
+    .side-image {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .side-image img {
+      object-position: center 20%;
+    }
+
+    .side-main .content-copy {
+      padding-top: 42px;
+      padding-bottom: 42px;
+    }
+
+    .mobile-frame {
+      display: grid;
+      grid-template-columns: minmax(280px, 390px) minmax(0, 1fr);
+      gap: 28px;
+      align-items: stretch;
+      padding: 24px;
+      background: #eceee8;
+    }
+
+    .phone {
+      overflow: hidden;
+      border: 10px solid var(--ink);
+      border-radius: 36px;
+      background: var(--white);
+      box-shadow: 0 22px 60px rgba(0, 0, 0, 0.18);
+    }
+
+    .phone-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px;
+      border-bottom: 1px solid var(--line);
+      font-weight: 900;
+    }
+
+    .mobile-tabs {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(86px, 1fr));
+      gap: 8px;
+      overflow-x: auto;
+      padding: 12px;
+      border-bottom: 1px solid var(--line);
+      scrollbar-width: none;
+    }
+
+    .mobile-tabs a {
+      display: grid;
+      min-height: 58px;
+      place-items: center;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .mobile-tabs a:first-child {
+      border-color: var(--ink);
+      background: var(--lime);
+      color: var(--ink);
+    }
+
+    .phone-hero {
+      position: relative;
+      min-height: 430px;
+      overflow: hidden;
+      background: var(--ink);
+      color: var(--white);
+    }
+
+    .phone-hero img {
+      position: absolute;
+      inset: 0;
+      opacity: 0.72;
+      object-position: 55% 0;
+    }
+
+    .phone-hero::after {
+      position: absolute;
+      inset: 0;
+      content: "";
+      background: linear-gradient(180deg, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.72));
+    }
+
+    .phone-hero div {
+      position: absolute;
+      right: 18px;
+      bottom: 22px;
+      left: 18px;
+      z-index: 1;
+    }
+
+    .phone-hero h3 {
+      margin-bottom: 12px;
+      font-size: 48px;
+      line-height: 0.9;
+      text-transform: uppercase;
+    }
+
+    .phone-section {
+      padding: 22px 18px 28px;
+    }
+
+    .phone-section h4 {
+      margin: 0 0 14px;
+      font-size: 28px;
+      line-height: 0.96;
+      text-transform: uppercase;
+    }
+
+    .phone-section p {
+      margin-bottom: 18px;
+      color: var(--muted);
+      font-weight: 700;
+      line-height: 1.4;
+    }
+
+    .mobile-copy {
+      align-self: center;
+      max-width: 520px;
+    }
+
+    .mobile-copy h3 {
+      margin-bottom: 18px;
+      font-size: clamp(38px, 6vw, 76px);
+      line-height: 0.92;
+      text-transform: uppercase;
+    }
+
+    .mobile-copy p {
+      color: var(--muted);
+      font-size: 19px;
+      line-height: 1.42;
+      font-weight: 700;
+    }
+
+    .recommendation {
+      display: inline-flex;
+      min-height: 36px;
+      align-items: center;
+      border-radius: 999px;
+      padding: 0 12px;
+      background: var(--lime);
+      font-size: 12px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    @media (max-width: 860px) {
+      .mock-header {
+        padding: 12px 16px;
+      }
+
+      .mock-header span:last-child {
+        display: none;
+      }
+
+      .intro,
+      .mockup {
+        padding-right: 16px;
+        padding-left: 16px;
+      }
+
+      .mockup-title,
+      .content-preview,
+      .split-tabs,
+      .mobile-frame {
+        display: block;
+      }
+
+      .mockup-title p {
+        margin-top: 14px;
+      }
+
+      .hero-preview {
+        min-height: 560px;
+      }
+
+      .hero-preview img {
+        object-position: 55% top;
+      }
+
+      .hero-preview::after {
+        background: linear-gradient(180deg, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.84));
+      }
+
+      .hero-copy {
+        position: absolute;
+        right: 0;
+        bottom: 0;
+        left: 0;
+      }
+
+      .photo-strip {
+        grid-template-columns: repeat(3, 1fr);
+        grid-template-rows: none;
+        min-height: 180px;
+        border-top: 1px solid var(--line);
+        border-left: 0;
+      }
+
+      .photo-strip figure {
+        border-right: 1px solid var(--line);
+        border-bottom: 0;
+      }
+
+      .side-rail {
+        flex-direction: row;
+        overflow-x: auto;
+        border-right: 0;
+      }
+
+      .side-rail a {
+        min-width: 160px;
+      }
+
+      .side-main {
+        display: block;
+      }
+
+      .side-image {
+        min-height: 420px;
+      }
+
+      .phone {
+        max-width: 390px;
+        margin: 0 auto 28px;
+      }
+
+      .mobile-copy {
+        max-width: none;
+      }
+    }
+
+    @media (max-width: 540px) {
+      .hero-copy {
+        padding: 28px;
+      }
+
+      .content-copy {
+        padding: 28px;
+      }
+
+      .photo-strip {
+        min-height: 150px;
+      }
+
+      .photo-strip figcaption {
+        left: 10px;
+        bottom: 10px;
+        font-size: 11px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="mock-header">
+    <a class="brand" href="#top">
+      <span class="brand-mark">FWB</span>
+      <strong>Homepage Navigation Mockups</strong>
+    </a>
+    <span>Three options</span>
+  </header>
+
+  <main id="top">
+    <section class="intro">
+      <p class="kicker">Mockups</p>
+      <h1>Shorter scroll, clearer choices.</h1>
+      <p>Each option keeps the homepage content, but makes the page feel easier to navigate by grouping the long sections into focused tabs.</p>
+    </section>
+
+    <section class="mockup" id="option-1">
+      <div class="mockup-shell">
+        <div class="mockup-title">
+          <div>
+            <p class="kicker">Option 1</p>
+            <h2>Sticky section tabs</h2>
+          </div>
+          <p>Closest to the current site. The hero stays big, and the tab row under it jumps people to Method, Training, Reviews, Photos, and Start.</p>
+        </div>
+        <div class="hero-preview">
+          <img src="images/home/benjamin-curl.jpg" alt="Benjamin training with a barbell in the gym">
+          <div class="hero-copy">
+            <p class="kicker">San Francisco personal training</p>
+            <h3>Fitness with Benjamin</h3>
+            <p>Mindful workouts tailored to individual needs, built to create body awareness and connect mind × body for stronger, smarter training.</p>
+            <a class="button dark" href="questionnaire.html">Take the questionnaire</a>
+          </div>
+        </div>
+        <nav class="tab-bar" aria-label="Homepage sections">
+          <a href="#option-1">Method</a>
+          <a href="#option-1">Training</a>
+          <a href="#option-1">Reviews</a>
+          <a href="#option-1">Photos</a>
+          <a href="#option-1">Start</a>
+        </nav>
+        <div class="content-preview">
+          <div class="content-copy">
+            <p class="kicker">Method</p>
+            <h3>Know your body. Move with intention.</h3>
+            <p>Visitors get one focused section at a time instead of one long vertical page. This option keeps the strongest first impression and is the simplest update.</p>
+            <div class="content-list">
+              <span>Assess movement</span>
+              <span>Connect mind × body</span>
+              <span>Optimize training</span>
+            </div>
+          </div>
+          <div class="photo-strip">
+            <figure>
+              <img src="images/home/benjamin-strength-rack.jpg" alt="Benjamin setting up a strength exercise">
+              <figcaption>Strength</figcaption>
+            </figure>
+            <figure>
+              <img src="images/home/benjamin-floor-core.jpg" alt="Benjamin training core on the floor">
+              <figcaption>Control</figcaption>
+            </figure>
+            <figure>
+              <img src="images/home/benjamin-cable-rotation.jpg" alt="Benjamin training cable rotation">
+              <figcaption>Awareness</figcaption>
+            </figure>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="mockup" id="option-2">
+      <div class="mockup-shell">
+        <div class="mockup-title">
+          <div>
+            <p class="kicker">Option 2</p>
+            <h2>Side menu dashboard</h2>
+          </div>
+          <p>A more app-like layout. It feels organized and premium, with a persistent menu on desktop and swipeable pills on mobile.</p>
+        </div>
+        <div class="split-tabs">
+          <nav class="side-rail" aria-label="Homepage sections">
+            <a href="#option-2">Overview</a>
+            <a href="#option-2">Method</a>
+            <a href="#option-2">Training</a>
+            <a href="#option-2">Reviews</a>
+            <a href="#option-2">Start</a>
+          </nav>
+          <div class="side-main">
+            <div class="side-image">
+              <img src="images/home/benjamin-dip-station.jpg" alt="Benjamin training in the gym">
+            </div>
+            <div class="content-copy">
+              <p class="kicker">Overview</p>
+              <h3>Everything in one clean control panel.</h3>
+              <p>This works best if you want the homepage to feel less like a sales page and more like a clear training hub. The visitor always knows where they are.</p>
+              <div class="content-list">
+                <span>Credentials and approach <strong>Open</strong></span>
+                <span>Training options <strong>Open</strong></span>
+                <span>Client reviews and photos <strong>Open</strong></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="mockup" id="option-3">
+      <div class="mockup-shell">
+        <div class="mockup-title">
+          <div>
+            <p class="kicker">Option 3</p>
+            <h2>Mobile-first cards</h2>
+          </div>
+          <p>This option treats mobile as the main experience: short panels, thumb-friendly tabs, and direct calls to action.</p>
+        </div>
+        <div class="mobile-frame">
+          <div class="phone" aria-label="Mobile homepage preview">
+            <div class="phone-top">
+              <span class="brand-mark">FWB</span>
+              <span>Start</span>
+            </div>
+            <nav class="mobile-tabs" aria-label="Mobile homepage sections">
+              <a href="#option-3">Start</a>
+              <a href="#option-3">Method</a>
+              <a href="#option-3">Train</a>
+              <a href="#option-3">Proof</a>
+              <a href="#option-3">Photos</a>
+            </nav>
+            <div class="phone-hero">
+              <img src="images/home/benjamin-strength-rack.jpg" alt="Benjamin setting up a strength exercise">
+              <div>
+                <p class="kicker">Personal training</p>
+                <h3>Build strength.</h3>
+              </div>
+            </div>
+            <div class="phone-section">
+              <h4>Pick what matters now.</h4>
+              <p>The page becomes a set of short, direct paths instead of one long scroll.</p>
+              <a class="button dark" href="questionnaire.html">Take questionnaire</a>
+            </div>
+          </div>
+          <div class="mobile-copy">
+            <span class="recommendation">Best for mobile</span>
+            <h3>A faster path for phone visitors.</h3>
+            <p>This is the most compact option. It would keep the homepage from feeling endless on mobile and make “Start” easier to reach from every section.</p>
+            <div class="content-list">
+              <span>Shorter mobile scroll <strong>Yes</strong></span>
+              <span>Easy tab switching <strong>Yes</strong></span>
+              <span>Desktop still polished <strong>Yes</strong></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
