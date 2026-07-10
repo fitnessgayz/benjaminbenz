@@ -73,7 +73,7 @@ if (homeTabLinks.length && homeTabPanels.length) {
   const initialTab = window.location.hash.replace("#", "");
   const validInitialTab = homeTabPanels.some((panel) => panel.dataset.homeTabPanel === initialTab)
     ? initialTab
-    : "start";
+    : "training";
 
   if (homeTabMedia.matches) {
     activateHomeTab(validInitialTab, { updateHash: validInitialTab === initialTab });
@@ -133,7 +133,7 @@ if (homeTabLinks.length && homeTabPanels.length) {
 
   const syncHomeTabMode = (event) => {
     if (event.matches) {
-      activateHomeTab(window.location.hash.replace("#", "") || "start", { updateHash: false });
+      activateHomeTab(window.location.hash.replace("#", "") || "training", { updateHash: false });
       return;
     }
 

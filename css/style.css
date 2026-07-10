@@ -914,6 +914,12 @@ footer {
   align-items: stretch;
 }
 
+.access-footer-cta {
+  display: flex;
+  justify-content: center;
+  padding-top: 20px;
+}
+
 .access-panel {
   display: grid;
   align-content: start;
@@ -3354,6 +3360,16 @@ textarea:focus {
 
   .photo-story-heading h2 {
     font-size: clamp(2.1rem, 10vw, 3.25rem);
+  }
+
+  .access-intro h1 {
+    max-width: 320px;
+    font-size: clamp(2.35rem, 11vw, 3.4rem);
+    line-height: .9;
+  }
+
+  .access-footer-cta .button {
+    width: 100%;
   }
 
   .questionnaire-shell {

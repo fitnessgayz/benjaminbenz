@@ -26,10 +26,6 @@
         <span class="desktop-label">Client Login</span>
         <span class="mobile-label">Login</span>
       </a>
-      <a class="online-link" href="https://invite.everfit.io/A7JSGOTK7S">
-        <span class="desktop-label">Online Coaching</span>
-        <span class="mobile-label">Coaching</span>
-      </a>
     </div>
   </header>
 
@@ -55,13 +51,13 @@
 
     <section class="homepage-tab-stage" aria-label="Homepage sections">
       <nav class="home-tabs" aria-label="Homepage tabs" role="tablist">
-        <a id="home-tab-training" class="home-tab" href="#training" data-home-tab-link="training" role="tab" aria-selected="false" aria-controls="training">Training</a>
+        <a id="home-tab-training" class="home-tab is-active" href="#training" data-home-tab-link="training" role="tab" aria-selected="true" aria-controls="training">Training</a>
         <a id="home-tab-results" class="home-tab" href="#results" data-home-tab-link="results" role="tab" aria-selected="false" aria-controls="results">Results</a>
-        <a id="home-tab-start" class="home-tab is-active" href="#start" data-home-tab-link="start" role="tab" aria-selected="true" aria-controls="start">Start</a>
+        <a id="home-tab-start" class="home-tab" href="#start" data-home-tab-link="start" role="tab" aria-selected="false" aria-controls="start">Start</a>
       </nav>
 
       <div class="home-panels">
-        <section id="start" class="home-panel is-active" data-home-tab-panel="start" role="tabpanel" aria-labelledby="home-tab-start">
+        <section id="start" class="home-panel" data-home-tab-panel="start" role="tabpanel" aria-labelledby="home-tab-start" hidden>
           <section class="contact">
             <div class="contact-copy">
               <p class="kicker">Start here</p>
@@ -69,7 +65,6 @@
               <p>Fill out the questionnaire or send a note. Benjamin will use your goals, schedule, training history, and movement needs to shape the next step.</p>
               <div class="button-row">
                 <a class="button button-dark" href="questionnaire.html">Fitness questionnaire</a>
-                <a class="button button-ghost" href="https://invite.everfit.io/A7JSGOTK7S">Online coaching</a>
               </div>
             </div>
             <form class="contact-form" id="contact-message-form">
@@ -100,7 +95,7 @@
           </section>
         </section>
 
-        <section id="training" class="home-panel" data-home-tab-panel="training" role="tabpanel" aria-labelledby="home-tab-training" hidden>
+        <section id="training" class="home-panel is-active" data-home-tab-panel="training" role="tabpanel" aria-labelledby="home-tab-training">
           <section class="editorial">
             <p class="kicker">The method</p>
             <h2>Know your body. Move with intention.</h2>
@@ -159,6 +154,9 @@
             </div>
           </section>
 
+        </section>
+
+        <section id="results" class="home-panel" data-home-tab-panel="results" role="tabpanel" aria-labelledby="home-tab-results" hidden>
           <section class="client-progress">
             <div class="client-progress-heading">
               <p class="kicker">Client photos</p>
@@ -179,9 +177,7 @@
               </figure>
             </div>
           </section>
-        </section>
 
-        <section id="results" class="home-panel" data-home-tab-panel="results" role="tabpanel" aria-labelledby="home-tab-results" hidden>
           <section class="proof">
             <div class="proof-heading">
               <p class="kicker">Yelp reviews</p>
