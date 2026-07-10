@@ -14,6 +14,7 @@ let trainingLogs = [];
 let clientTrainingLogDateFilter = "";
 let activeClientDashboardTab = "insights";
 let activeWorkoutTabIndex = 0;
+let currentProgram = null;
 const dashboardRequestTimeout = 15000;
 
 function isCoachPortalEmail(email) {
@@ -111,9 +112,22 @@ function renderMetrics(program) {
   }
 
   metrics.innerHTML = `
-    <span><strong>Height</strong> ${escapeHtml(program.height || "Not set")}</span>
-    <span><strong>Starting weight</strong> ${escapeHtml(program.starting_weight || "Not set")}</span>
-    <span><strong>Starting bodyfat</strong> ${escapeHtml(program.starting_bodyfat || "Not set")}</span>
+    <label class="summary-metric">
+      <strong>Height</strong>
+      <input type="text" name="height" value="${escapeHtml(program.height === "Not set" ? "" : (program.height || ""))}" placeholder="Not set" />
+    </label>
+    <label class="summary-metric">
+      <strong>Starting weight</strong>
+      <input type="text" name="starting_weight" value="${escapeHtml(program.starting_weight === "Not set" ? "" : (program.starting_weight || ""))}" placeholder="Not set" />
+    </label>
+    <label class="summary-metric">
+      <strong>Starting bodyfat</strong>
+      <input type="text" name="starting_bodyfat" value="${escapeHtml(program.starting_bodyfat === "Not set" ? "" : (program.starting_bodyfat || ""))}" placeholder="Not set" />
+    </label>
+    <div class="summary-metric-actions">
+      <button class="button button-ghost" type="button" id="save-client-metrics-button">Save</button>
+      <small id="client-metrics-status">Update these any time.</small>
+    </div>
   `;
 }
 
@@ -518,12 +532,35 @@ function setRows(exercise) {
   `).join("");
 }
 
+function exerciseDisplayName(code, name) {
+  return code ? `${code} ${name}` : name;
+}
+
+function syncExerciseNamePreview(logElement, nextName) {
+  if (!logElement) {
+    return;
+  }
+
+  const safeName = String(nextName || "").trim() || logElement.dataset.exerciseName || "";
+  const displayName = exerciseDisplayName(logElement.dataset.exerciseCode || "", safeName);
+  const card = logElement.closest(".workout-exercise-card");
+  const summaryTitle = card?.querySelector("[data-exercise-title]");
+  const detailTitle = logElement.querySelector("[data-exercise-heading]");
+
+  if (summaryTitle) {
+    summaryTitle.textContent = displayName;
+  }
+
+  if (detailTitle) {
+    detailTitle.textContent = displayName;
+  }
+}
+
 function exerciseLogFields(exercise, workoutTitle, options = {}) {
   const setCount = setCountFromPrescription(exercise.prescription);
   const panelClass = options.panelClass || "exercise-detail";
   const showSubmit = options.showSubmit !== false;
   const showInlineHeader = Boolean(options.showInlineHeader);
-  const muscles = inferExerciseMuscles(exercise, options.workoutFocus);
 
   return `
     <div class="${panelClass}"
@@ -535,23 +572,16 @@ function exerciseLogFields(exercise, workoutTitle, options = {}) {
     >
       ${showInlineHeader ? `
         <div class="superset-exercise-heading">
-          <strong>${escapeHtml(exercise.code ? `${exercise.code} ${exercise.name}` : exercise.name)}</strong>
+          <strong data-exercise-heading>${escapeHtml(exerciseDisplayName(exercise.code, exercise.name))}</strong>
           <em>${escapeHtml(exercise.prescription)}${exercise.rest ? ` · ${escapeHtml(exercise.rest)}` : ""}</em>
           <small data-set-progress>0 / ${setCount} sets completed</small>
         </div>
       ` : ""}
-      <div class="exercise-insight">
-        <div>
-          <strong>Muscle target</strong>
-          <p>${escapeHtml(muscles.length ? `${muscleLabels(muscles).slice(0, 2).join(" + ")} first` : "Add a muscle tag for a sharper target.")}</p>
-          ${exerciseVideoMarkup(exercise)}
-        </div>
-      </div>
-      <label class="exercise-substitute">
-        <span>Substitute exercise</span>
-        <input type="text" placeholder="Optional replacement" data-substitute-exercise />
-        <small>Use this if you swap the exercise today.</small>
+      <label class="exercise-name-field">
+        <span>Exercise</span>
+        <input type="text" value="${escapeHtml(exercise.name)}" placeholder="Exercise name" data-exercise-name-input />
       </label>
+      ${exerciseVideoMarkup(exercise)}
       <label class="exercise-date">
         <span>Date</span>
         <input type="date" data-log-date />
@@ -581,17 +611,15 @@ function exerciseLogFields(exercise, workoutTitle, options = {}) {
 
 function exerciseCard(exercise, workoutTitle, isOpen = false, workoutFocus = "") {
   const setCount = setCountFromPrescription(exercise.prescription);
-  const muscles = inferExerciseMuscles(exercise, workoutFocus);
 
   return `
     <article class="workout-exercise-card${isOpen ? " is-open" : ""}">
       ${skipControl()}
       <button class="exercise-card-summary" type="button" data-exercise-toggle>
         <span>
-          <strong>${escapeHtml(exercise.name)}</strong>
+          <strong data-exercise-title>${escapeHtml(exerciseDisplayName(exercise.code, exercise.name))}</strong>
           <em>${escapeHtml(exercise.prescription)}${exercise.rest ? ` · ${escapeHtml(exercise.rest)}` : ""}</em>
           <small data-set-progress>0 / ${setCount} sets completed</small>
-          ${muscleTargetMarkup(muscles)}
         </span>
         <i>›</i>
       </button>
@@ -878,7 +906,7 @@ function formatLogDate(value) {
 
 function updateExerciseLogField(logElement) {
   const dateInput = logElement.querySelector("[data-log-date]");
-  const substituteInput = logElement.querySelector("[data-substitute-exercise]");
+  const exerciseNameInput = logElement.querySelector("[data-exercise-name-input]");
   const notesInput = logElement.querySelector("[data-log-notes]");
   const previous = logElement.querySelector("[data-previous-weights]");
   const card = logElement.closest(".workout-exercise-card");
@@ -912,11 +940,11 @@ function updateExerciseLogField(logElement) {
     notesInput.value = selectedLogs.find((log) => log.notes)?.notes || "";
   }
 
-  if (substituteInput) {
+  if (exerciseNameInput) {
     const loggedExerciseName = selectedLogs.find((log) => log.exercise_name)?.exercise_name || "";
-    substituteInput.value = loggedExerciseName && loggedExerciseName !== logElement.dataset.exerciseName
-      ? loggedExerciseName
-      : "";
+    const nextName = loggedExerciseName || logElement.dataset.exerciseName || "";
+    exerciseNameInput.value = nextName;
+    syncExerciseNamePreview(logElement, nextName);
   }
 
   const completedSets = selectedLogs.filter((log) => log.weight_used !== null && log.weight_used !== undefined).length;
@@ -1238,6 +1266,76 @@ function setClientDashboardTab(tabName) {
   });
 }
 
+async function saveClientMetrics() {
+  if (!supabaseClient || !currentProgram?.id) {
+    return { error: new Error("Client profile is not connected yet.") };
+  }
+
+  const metrics = document.getElementById("summary-metrics");
+
+  if (!metrics) {
+    return { error: new Error("Profile fields are not available.") };
+  }
+
+  const payload = {
+    height: metrics.querySelector('[name="height"]')?.value.trim() || "Not set",
+    starting_weight: metrics.querySelector('[name="starting_weight"]')?.value.trim() || "Not set",
+    starting_bodyfat: metrics.querySelector('[name="starting_bodyfat"]')?.value.trim() || "Not set"
+  };
+
+  const { data, error } = await supabaseClient
+    .from("client_programs")
+    .update(payload)
+    .eq("id", currentProgram.id)
+    .select("*")
+    .single();
+
+  if (error) {
+    return { error };
+  }
+
+  currentProgram = data;
+  renderMetrics(currentProgram);
+  return { data };
+}
+
+function handleClientMetricSave() {
+  document.addEventListener("click", async (event) => {
+    const button = event.target.closest("#save-client-metrics-button");
+
+    if (!button) {
+      return;
+    }
+
+    const status = document.getElementById("client-metrics-status");
+    button.disabled = true;
+
+    if (status) {
+      status.textContent = "Saving...";
+    }
+
+    const { error } = await saveClientMetrics();
+
+    if (error) {
+      if (status) {
+        status.textContent = "Could not save yet.";
+      }
+      button.disabled = false;
+      return;
+    }
+
+    const nextStatus = document.getElementById("client-metrics-status");
+    const nextButton = document.getElementById("save-client-metrics-button");
+
+    if (nextStatus) {
+      nextStatus.textContent = "Saved.";
+    }
+    if (nextButton) {
+      nextButton.disabled = false;
+    }
+  });
+}
+
 function handleClientDashboardTabs() {
   document.addEventListener("click", (event) => {
     const tab = event.target.closest("[data-client-dashboard-tab]");
@@ -1270,6 +1368,19 @@ function handleWorkoutInteractions() {
         addSetRow(logElement);
       }
     }
+  });
+
+  document.addEventListener("input", (event) => {
+    const exerciseNameInput = event.target.closest("[data-exercise-name-input]");
+
+    if (!exerciseNameInput) {
+      return;
+    }
+
+    syncExerciseNamePreview(
+      exerciseNameInput.closest("[data-exercise-log]"),
+      exerciseNameInput.value
+    );
   });
 }
 
@@ -1321,6 +1432,7 @@ function handleSkipToggle() {
 }
 
 function renderProgram(program) {
+  currentProgram = { ...program };
   const displayProgram = displayProgramForCurrentView(program);
   const workouts = Array.isArray(program.workouts) ? program.workouts : [];
   const sheetLink = document.getElementById("workout-sheet-link");
@@ -1596,8 +1708,7 @@ function rowsForTrainingLog(logElement) {
   }
 
   const notes = logElement.querySelector("[data-log-notes]")?.value || "";
-  const substitute = logElement.querySelector("[data-substitute-exercise]")?.value?.trim() || "";
-  const exerciseName = substitute || logElement.dataset.exerciseName;
+  const exerciseName = logElement.querySelector("[data-exercise-name-input]")?.value?.trim() || logElement.dataset.exerciseName;
 
   return Array.from(logElement.querySelectorAll("[data-set-row]"))
     .map((setRow) => ({
@@ -1780,3 +1891,4 @@ handleClientWorkoutTabs();
 handleWorkoutInteractions();
 handleSkipToggle();
 handleTrainingLogSave();
+handleClientMetricSave();

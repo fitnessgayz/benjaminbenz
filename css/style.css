@@ -1520,7 +1520,7 @@ footer {
   border-top: 0;
 }
 
-.summary-metrics span {
+.summary-metric {
   display: grid;
   gap: 10px;
   padding: 10px 12px;
@@ -1531,8 +1531,40 @@ footer {
   font-weight: 900;
 }
 
-.summary-metrics strong {
+.summary-metric strong {
   color: var(--black);
+}
+
+.summary-metric input {
+  width: 100%;
+  min-height: 42px;
+  padding: 10px 0 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: clamp(1.05rem, 1.7vw, 1.25rem);
+  font-weight: 900;
+}
+
+.summary-metric input::placeholder {
+  color: var(--muted);
+  opacity: 1;
+}
+
+.summary-metric-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px 14px;
+}
+
+.summary-metric-actions small {
+  color: var(--muted);
+  font-weight: 900;
 }
 
 .workout-insights-panel {
@@ -1929,10 +1961,6 @@ footer {
   font-weight: 900;
 }
 
-.exercise-card-summary .muscle-targets {
-  margin-top: 10px;
-}
-
 .exercise-card-summary i {
   color: var(--black);
   font-size: 2.2rem;
@@ -1950,22 +1978,6 @@ footer {
   gap: 16px;
   padding: 16px;
   border-top: 1px solid var(--line);
-}
-
-.exercise-insight {
-  display: grid;
-  gap: 14px;
-  align-items: start;
-  padding: 14px;
-  background: #fbfbf8;
-  border: 1px solid var(--line);
-  border-radius: 14px;
-}
-
-.exercise-insight p {
-  margin: 6px 0 0;
-  color: var(--black);
-  font-weight: 900;
 }
 
 .exercise-video-link {
@@ -1994,7 +2006,7 @@ footer {
   display: grid;
 }
 
-.exercise-substitute,
+.exercise-name-field,
 .exercise-date,
 .exercise-notes {
   display: grid;
@@ -2003,23 +2015,17 @@ footer {
   font-weight: 900;
 }
 
-.exercise-substitute {
+.exercise-name-field {
   padding: 12px;
   background: #fbfbf8;
   border: 1px solid var(--line);
   border-radius: 14px;
 }
 
-.exercise-substitute input {
+.exercise-name-field input {
   min-height: 46px;
   border-radius: 12px;
   background: var(--paper);
-}
-
-.exercise-substitute small {
-  color: var(--muted);
-  font-size: .74rem;
-  line-height: 1.25;
 }
 
 .exercise-date {
@@ -4023,6 +4029,15 @@ textarea:focus {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
+  .summary-metric-actions {
+    justify-content: stretch;
+  }
+
+  .summary-metric-actions .button,
+  .summary-metric-actions small {
+    width: 100%;
+  }
+
   .invite-row {
     display: grid;
   }
@@ -4064,10 +4079,6 @@ textarea:focus {
   .exercise-card-summary {
     grid-template-columns: minmax(0, 1fr) 24px;
     padding-right: 112px;
-  }
-
-  .exercise-insight {
-    grid-template-columns: 1fr;
   }
 
   .skip-toggle {
