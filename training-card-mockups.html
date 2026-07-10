@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Training Card Mockups | Fitness with Benjamin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --ink: #050505;
+      --paper: #f4f5f1;
+      --line: #d8d8d1;
+      --muted: #6f706a;
+      --red: #ff3c38;
+      --lime: #d6ff26;
+      --white: #fff;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: Inter, Arial, sans-serif;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .shell {
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 28px 20px 80px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 900;
+    }
+
+    .brand-mark {
+      display: grid;
+      width: 44px;
+      height: 44px;
+      place-items: center;
+      border-radius: 999px;
+      background: var(--lime);
+      font-size: 15px;
+    }
+
+    .jump-links {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .jump-links a {
+      display: inline-flex;
+      min-height: 46px;
+      align-items: center;
+      justify-content: center;
+      padding: 0 18px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--white);
+      font-weight: 900;
+    }
+
+    .intro {
+      padding: 44px 0 30px;
+    }
+
+    .kicker {
+      margin: 0 0 12px;
+      color: var(--red);
+      font-size: 13px;
+      font-weight: 900;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin-top: 0;
+    }
+
+    h1 {
+      max-width: 860px;
+      margin-bottom: 16px;
+      font-size: clamp(52px, 10vw, 122px);
+      line-height: 0.86;
+      text-transform: uppercase;
+    }
+
+    .intro p:last-child {
+      max-width: 760px;
+      color: var(--muted);
+      font-size: clamp(18px, 2vw, 24px);
+      line-height: 1.34;
+      font-weight: 700;
+    }
+
+    .mockup-block {
+      margin-top: 34px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--white);
+      box-shadow: 0 26px 80px rgba(0, 0, 0, 0.08);
+    }
+
+    .mockup-header {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 18px;
+      align-items: end;
+      padding: 24px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .mockup-header h2 {
+      margin: 0 0 8px;
+      font-size: clamp(30px, 4vw, 60px);
+      line-height: 0.92;
+      text-transform: uppercase;
+    }
+
+    .mockup-header p {
+      max-width: 520px;
+      margin: 0;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.45;
+      font-weight: 700;
+    }
+
+    .tag {
+      display: inline-flex;
+      min-height: 40px;
+      align-items: center;
+      justify-content: center;
+      padding: 0 16px;
+      border: 1px solid var(--ink);
+      border-radius: 999px;
+      background: var(--lime);
+      font-size: 13px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .preview {
+      padding: 24px;
+    }
+
+    .section-kicker {
+      margin: 0 0 18px;
+      color: var(--red);
+      font-size: 13px;
+      font-weight: 900;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+    }
+
+    .preview-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+
+    .card {
+      min-height: 320px;
+      padding: 28px;
+      border-right: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card:nth-child(2n) {
+      border-right: 0;
+    }
+
+    .card:nth-last-child(-n + 2) {
+      border-bottom: 0;
+    }
+
+    .card h3 {
+      margin-bottom: 10px;
+      font-size: clamp(30px, 3vw, 48px);
+      line-height: 0.94;
+      text-transform: uppercase;
+    }
+
+    .card p {
+      max-width: 500px;
+      font-size: 17px;
+      line-height: 1.35;
+      font-weight: 700;
+    }
+
+    .text-dark {
+      background: var(--ink);
+      color: var(--white);
+    }
+
+    .text-lime {
+      background: var(--lime);
+      color: var(--ink);
+    }
+
+    .text-soft {
+      background: #efefe9;
+      color: var(--ink);
+    }
+
+    .photo-card {
+      color: var(--white);
+      padding: 0;
+      justify-content: end;
+    }
+
+    .photo-card img {
+      position: absolute;
+      inset: 0;
+    }
+
+    .photo-card::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(0deg, rgba(0, 0, 0, 0.86), rgba(0, 0, 0, 0.18) 58%);
+    }
+
+    .photo-copy {
+      position: relative;
+      z-index: 1;
+      padding: 28px;
+    }
+
+    .photo-copy p {
+      max-width: 420px;
+      color: rgba(255, 255, 255, 0.84);
+    }
+
+    .mobile-preview {
+      margin-top: 28px;
+      padding-top: 28px;
+      border-top: 1px solid var(--line);
+    }
+
+    .phone {
+      width: min(100%, 390px);
+      margin: 0 auto;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 28px;
+      background: #fbfbf8;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.08);
+    }
+
+    .phone-notch {
+      width: 150px;
+      height: 26px;
+      margin: 0 auto 18px;
+      border-radius: 999px;
+      background: var(--ink);
+    }
+
+    .phone-grid {
+      display: grid;
+      gap: 10px;
+    }
+
+    .phone-card {
+      min-height: 180px;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      position: relative;
+      overflow: hidden;
+      background: var(--white);
+    }
+
+    .phone-card h3 {
+      margin-bottom: 8px;
+      font-size: 28px;
+      line-height: 0.94;
+      text-transform: uppercase;
+    }
+
+    .phone-card p {
+      font-size: 14px;
+      line-height: 1.34;
+      font-weight: 700;
+    }
+
+    .phone-dark {
+      background: var(--ink);
+      color: var(--white);
+    }
+
+    .phone-lime {
+      background: var(--lime);
+    }
+
+    .phone-photo {
+      padding: 0;
+      color: var(--white);
+    }
+
+    .phone-photo img {
+      position: absolute;
+      inset: 0;
+    }
+
+    .phone-photo::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(0deg, rgba(0, 0, 0, 0.88), rgba(0, 0, 0, 0.2) 60%);
+    }
+
+    .phone-photo .photo-copy {
+      padding: 18px;
+    }
+
+    @media (max-width: 820px) {
+      .mockup-header {
+        grid-template-columns: 1fr;
+      }
+
+      .preview-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .card {
+        min-height: 260px;
+        border-right: 0;
+      }
+
+      .card:nth-last-child(-n + 2) {
+        border-bottom: 1px solid var(--line);
+      }
+
+      .card:last-child {
+        border-bottom: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <div class="topbar">
+      <a class="brand" href="index.html">
+        <span class="brand-mark">FWB</span>
+        <span>Fitness with Benjamin</span>
+      </a>
+      <div class="jump-links">
+        <a href="#option-mixed">Mixed Version</a>
+        <a href="#option-photo">All Photo Version</a>
+      </div>
+    </div>
+
+    <section class="intro">
+      <p class="kicker">Training Mockups</p>
+      <h1>Two Ways To Rework The Training Cards.</h1>
+      <p>These mockups use your actual gym photos so you can compare a cleaner mixed layout against a bolder all-photo version before we change the live homepage.</p>
+    </section>
+
+    <section class="mockup-block" id="option-mixed">
+      <div class="mockup-header">
+        <div>
+          <p class="kicker">Option 1</p>
+          <h2>Mixed Photo + Text</h2>
+          <p>This keeps the section easier to scan while still bringing in more of your own imagery. It feels organized, premium, and balanced on mobile.</p>
+        </div>
+        <span class="tag">Recommended</span>
+      </div>
+      <div class="preview">
+        <p class="section-kicker">Training grid</p>
+        <div class="preview-grid">
+          <article class="card text-dark">
+            <div>
+              <h3>Build strength</h3>
+              <p>Progressive lifts, clean mechanics, and smart volume tailored to your goals and recovery.</p>
+            </div>
+          </article>
+          <article class="card photo-card">
+            <img src="images/home/benjamin-mobility-floor.jpg" alt="Benjamin stretching and coaching in the gym" />
+            <div class="photo-copy">
+              <h3>Mindful work</h3>
+              <p>Intentional training built around awareness, tempo, and better movement quality.</p>
+            </div>
+          </article>
+          <article class="card text-lime">
+            <div>
+              <h3>Mind × muscle</h3>
+              <p>Learn how to engage the right muscles so every rep feels sharper and more connected.</p>
+            </div>
+          </article>
+          <article class="card photo-card">
+            <img src="images/home/benjamin-dumbbell-row.jpg" alt="Benjamin performing a one-arm dumbbell row in the gym" />
+            <div class="photo-copy">
+              <h3>Mobility and form</h3>
+              <p>Better positions, stronger patterns, and training that actually fits how you move.</p>
+            </div>
+          </article>
+        </div>
+
+        <div class="mobile-preview">
+          <p class="section-kicker">Mobile feel</p>
+          <div class="phone">
+            <div class="phone-notch"></div>
+            <div class="phone-grid">
+              <article class="phone-card phone-dark">
+                <div>
+                  <h3>Build strength</h3>
+                  <p>Progressive lifts and clean mechanics.</p>
+                </div>
+              </article>
+              <article class="phone-card phone-photo">
+                <img src="images/home/benjamin-mobility-floor.jpg" alt="Benjamin stretching and coaching in the gym" />
+                <div class="photo-copy">
+                  <h3>Mindful work</h3>
+                  <p>Intentional movement and awareness.</p>
+                </div>
+              </article>
+              <article class="phone-card phone-lime">
+                <div>
+                  <h3>Mind × muscle</h3>
+                  <p>Feel the right muscles working.</p>
+                </div>
+              </article>
+              <article class="phone-card phone-photo">
+                <img src="images/home/benjamin-dumbbell-row.jpg" alt="Benjamin performing a one-arm dumbbell row in the gym" />
+                <div class="photo-copy">
+                  <h3>Mobility and form</h3>
+                  <p>Better positions and stronger movement.</p>
+                </div>
+              </article>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="mockup-block" id="option-photo">
+      <div class="mockup-header">
+        <div>
+          <p class="kicker">Option 2</p>
+          <h2>All Photo Cards</h2>
+          <p>This version feels more editorial and image-led. It shows more of your presence right away, but it’s visually busier and relies more on the overlays to keep it readable.</p>
+        </div>
+        <span class="tag">Bolder</span>
+      </div>
+      <div class="preview">
+        <p class="section-kicker">Training grid</p>
+        <div class="preview-grid">
+          <article class="card photo-card">
+            <img src="images/home/benjamin-curl.jpg" alt="Benjamin training with a barbell in the gym" />
+            <div class="photo-copy">
+              <h3>Build strength</h3>
+              <p>Progressive lifts and smart volume built around your recovery.</p>
+            </div>
+          </article>
+          <article class="card photo-card">
+            <img src="images/home/benjamin-mobility-floor.jpg" alt="Benjamin stretching and coaching in the gym" />
+            <div class="photo-copy">
+              <h3>Mindful work</h3>
+              <p>Training with awareness, tempo, and control.</p>
+            </div>
+          </article>
+          <article class="card photo-card">
+            <img src="images/home/benjamin-incline-core.jpg" alt="Benjamin training on an incline bench in the gym" />
+            <div class="photo-copy">
+              <h3>Mind × muscle</h3>
+              <p>Dial in the right muscles and sharpen every rep.</p>
+            </div>
+          </article>
+          <article class="card photo-card">
+            <img src="images/home/benjamin-dumbbell-row.jpg" alt="Benjamin performing a one-arm dumbbell row in the gym" />
+            <div class="photo-copy">
+              <h3>Mobility and form</h3>
+              <p>Better positions, stronger patterns, cleaner mechanics.</p>
+            </div>
+          </article>
+        </div>
+
+        <div class="mobile-preview">
+          <p class="section-kicker">Mobile feel</p>
+          <div class="phone">
+            <div class="phone-notch"></div>
+            <div class="phone-grid">
+              <article class="phone-card phone-photo">
+                <img src="images/home/benjamin-curl.jpg" alt="Benjamin training with a barbell in the gym" />
+                <div class="photo-copy">
+                  <h3>Build strength</h3>
+                  <p>Progressive lifts and smart volume.</p>
+                </div>
+              </article>
+              <article class="phone-card phone-photo">
+                <img src="images/home/benjamin-mobility-floor.jpg" alt="Benjamin stretching and coaching in the gym" />
+                <div class="photo-copy">
+                  <h3>Mindful work</h3>
+                  <p>Awareness and intentional movement.</p>
+                </div>
+              </article>
+              <article class="phone-card phone-photo">
+                <img src="images/home/benjamin-incline-core.jpg" alt="Benjamin training on an incline bench in the gym" />
+                <div class="photo-copy">
+                  <h3>Mind × muscle</h3>
+                  <p>Feel the right muscles fire.</p>
+                </div>
+              </article>
+              <article class="phone-card phone-photo">
+                <img src="images/home/benjamin-dumbbell-row.jpg" alt="Benjamin performing a one-arm dumbbell row in the gym" />
+                <div class="photo-copy">
+                  <h3>Mobility and form</h3>
+                  <p>Better positions and cleaner mechanics.</p>
+                </div>
+              </article>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</body>
+</html>

@@ -437,12 +437,18 @@ h3 {
 
 .editorial {
   padding: clamp(64px, 9vw, 112px) 0;
+  border-bottom: 1px solid var(--line);
   text-align: center;
 }
 
 .editorial h2 {
-  max-width: 980px;
+  max-width: 1180px;
   margin-inline: auto;
+}
+
+.editorial h2 span {
+  display: block;
+  white-space: nowrap;
 }
 
 .editorial p:last-child {
@@ -558,7 +564,24 @@ h3 {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: center 22%;
   filter: saturate(.94) contrast(1.04);
+}
+
+.tile-photo-build img {
+  object-position: 68% 0%;
+}
+
+.tile-photo-mindful img {
+  object-position: 52% 14%;
+}
+
+.tile-photo-muscle img {
+  object-position: 54% 18%;
+}
+
+.tile-photo-mobility img {
+  object-position: 36% 8%;
 }
 
 .tile-photo::after {
@@ -3134,6 +3157,22 @@ textarea:focus {
     object-position: 60% 12%;
   }
 
+  .tile-photo-build img {
+    object-position: 72% 0%;
+  }
+
+  .tile-photo-mindful img {
+    object-position: 52% 10%;
+  }
+
+  .tile-photo-muscle img {
+    object-position: 56% 12%;
+  }
+
+  .tile-photo-mobility img {
+    object-position: 34% 6%;
+  }
+
   .hero-content {
     padding-top: 42vh;
   }
@@ -3483,6 +3522,10 @@ textarea:focus {
 
   .photo-story-heading h2 {
     font-size: clamp(2.1rem, 10vw, 3.25rem);
+  }
+
+  .editorial h2 span {
+    white-space: normal;
   }
 
   .access-intro h1 {

@@ -17,36 +17,150 @@ if (reviewTrack) {
   reviews.forEach((review) => reviewTrack.appendChild(review));
 }
 
-const photoGrids = Array.from(document.querySelectorAll("[data-photo-grid]"));
+function shuffleItems(items) {
+  const shuffledItems = [...items];
 
-photoGrids.forEach((photoGrid) => {
-  const photos = Array.from(photoGrid.children);
-  const storageKey = `photo-grid-order:${photoGrid.dataset.photoGrid || "default"}`;
-  const previousOrder = window.localStorage.getItem(storageKey);
-
-  for (let index = photos.length - 1; index > 0; index -= 1) {
+  for (let index = shuffledItems.length - 1; index > 0; index -= 1) {
     const randomIndex = Math.floor(Math.random() * (index + 1));
-    [photos[index], photos[randomIndex]] = [photos[randomIndex], photos[index]];
+    [shuffledItems[index], shuffledItems[randomIndex]] = [shuffledItems[randomIndex], shuffledItems[index]];
   }
 
-  if (photos.length > 1) {
-    const nextOrder = photos
-      .map((photo) => photo.querySelector("img")?.getAttribute("src") || "")
-      .join("|");
+  return shuffledItems;
+}
+
+const photoFocusPositions = {
+  "images/home/benjamin-cable-rotation.jpg": {
+    hero: "26% 24%",
+    card: "26% 18%",
+    figure: "28% 24%"
+  },
+  "images/home/benjamin-curl.jpg": {
+    hero: "68% 8%",
+    card: "68% 0%",
+    figure: "62% 16%"
+  },
+  "images/home/benjamin-dip-station.jpg": {
+    hero: "52% 14%",
+    card: "52% 12%",
+    figure: "54% 18%"
+  },
+  "images/home/benjamin-dumbbell-row.jpg": {
+    hero: "36% 16%",
+    card: "36% 8%",
+    figure: "40% 18%"
+  },
+  "images/home/benjamin-floor-core.jpg": {
+    hero: "34% 56%",
+    card: "34% 54%",
+    figure: "34% 58%"
+  },
+  "images/home/benjamin-incline-core.jpg": {
+    hero: "60% 18%",
+    card: "56% 18%",
+    figure: "58% 20%"
+  },
+  "images/home/benjamin-mobility-floor.jpg": {
+    hero: "30% 58%",
+    card: "24% 58%",
+    figure: "28% 62%"
+  },
+  "images/home/benjamin-strength-rack.jpg": {
+    hero: "62% 14%",
+    card: "62% 16%",
+    figure: "62% 18%"
+  }
+};
+
+function applyPhotoFocus(image, source, context) {
+  const nextPosition = photoFocusPositions[source]?.[context];
+
+  if (nextPosition) {
+    image.style.objectPosition = nextPosition;
+    return;
+  }
+
+  image.style.removeProperty("object-position");
+}
+
+const heroImage = document.querySelector(".hero img");
+const trainingCardImages = Array.from(document.querySelectorAll(".training-grid .tile-photo img"));
+const trainingPhotoGrid = document.querySelector("[data-photo-grid]");
+
+if (heroImage && trainingCardImages.length && trainingPhotoGrid) {
+  const photoFigures = Array.from(trainingPhotoGrid.querySelectorAll("figure"));
+  const storageKey = "training-photo-order";
+  const previousOrder = window.localStorage.getItem(storageKey);
+  const photoFigureImages = photoFigures
+    .map((figure) => figure.querySelector("img"))
+    .filter(Boolean);
+  const trainingPhotoSlots = [...trainingCardImages, ...photoFigureImages];
+  const combinedPhotoPool = [
+    {
+      src: "images/home/benjamin-curl.jpg",
+      alt: "Benjamin training with a barbell in the gym"
+    },
+    {
+      src: "images/home/benjamin-mobility-floor.jpg",
+      alt: "Benjamin stretching and coaching in the gym"
+    },
+    {
+      src: "images/home/benjamin-incline-core.jpg",
+      alt: "Benjamin training on an incline bench in the gym"
+    },
+    {
+      src: "images/home/benjamin-dumbbell-row.jpg",
+      alt: "Benjamin performing a one-arm dumbbell row in the gym"
+    },
+    {
+      src: "images/home/benjamin-strength-rack.jpg",
+      alt: "Benjamin setting up a strength exercise at the rack"
+    },
+    {
+      src: "images/home/benjamin-floor-core.jpg",
+      alt: "Benjamin performing a controlled floor core exercise"
+    },
+    {
+      src: "images/home/benjamin-cable-rotation.jpg",
+      alt: "Benjamin training cable rotation in the gym"
+    },
+    {
+      src: "images/home/benjamin-dip-station.jpg",
+      alt: "Benjamin training on the dip station in the gym"
+    }
+  ];
+
+  if (combinedPhotoPool.length >= trainingPhotoSlots.length) {
+    let shuffledPhotos = shuffleItems(combinedPhotoPool);
+    const nextOrder = shuffledPhotos.map((photo) => photo.src).join("|");
 
     if (nextOrder === previousOrder) {
-      photos.push(photos.shift());
+      shuffledPhotos.push(shuffledPhotos.shift());
     }
 
-    const finalOrder = photos
-      .map((photo) => photo.querySelector("img")?.getAttribute("src") || "")
-      .join("|");
-
+    const finalOrder = shuffledPhotos.map((photo) => photo.src).join("|");
     window.localStorage.setItem(storageKey, finalOrder);
-  }
 
-  photos.forEach((photo) => photoGrid.appendChild(photo));
-});
+    trainingPhotoSlots.forEach((image, index) => {
+      const nextPhoto = shuffledPhotos[index];
+
+      if (!nextPhoto) {
+        return;
+      }
+
+      image.setAttribute("src", nextPhoto.src);
+      image.setAttribute("alt", nextPhoto.alt);
+      applyPhotoFocus(image, nextPhoto.src, trainingCardImages.includes(image) ? "card" : "figure");
+    });
+
+    const heroPhoto = shuffledPhotos[trainingPhotoSlots.length];
+
+    if (heroPhoto) {
+      heroImage.setAttribute("src", heroPhoto.src);
+      heroImage.setAttribute("alt", heroPhoto.alt);
+      applyPhotoFocus(heroImage, heroPhoto.src, "hero");
+    }
+  }
+}
 
 const clientCarousels = Array.from(document.querySelectorAll("[data-client-carousel]"));
 
