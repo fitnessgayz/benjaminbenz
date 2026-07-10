@@ -85,6 +85,7 @@ if (homeTabLinks.length && homeTabPanels.length) {
     link.addEventListener("click", (event) => {
       const targetTab = link.dataset.homeTabLink;
       const targetPanel = homeTabPanels.find((panel) => panel.dataset.homeTabPanel === targetTab);
+      const isInlineMobileTab = link.classList.contains("home-tab");
 
       if (!targetTab || !targetPanel) {
         return;
@@ -93,7 +94,7 @@ if (homeTabLinks.length && homeTabPanels.length) {
       event.preventDefault();
 
       if (homeTabMedia.matches) {
-        activateHomeTab(targetTab, { scrollIntoView: true });
+        activateHomeTab(targetTab, { scrollIntoView: !isInlineMobileTab });
         return;
       }
 

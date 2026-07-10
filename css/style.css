@@ -132,19 +132,26 @@ footer {
 }
 
 .login-link,
-.online-link,
-.header-cta {
-  border: 0;
-  min-height: 40px;
-  padding: 8px 18px;
-  border-radius: 999px;
-  color: var(--white);
-  background: var(--black);
+.online-link {
+  display: inline-flex;
+  align-items: center;
+  padding: 0;
+  color: var(--black);
+  background: transparent;
   font: inherit;
-  font-size: .8rem;
+  font-size: .82rem;
   line-height: 1;
   white-space: nowrap;
-  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 4px;
+  text-decoration-thickness: 2px;
+  transition: color .18s ease, text-decoration-color .18s ease;
+}
+
+.login-link:hover,
+.online-link:hover {
+  text-decoration-color: currentColor;
 }
 
 .mobile-label {
@@ -153,7 +160,7 @@ footer {
 
 .login-link.is-current,
 .online-link.is-current {
-  background: var(--red);
+  color: var(--red);
 }
 
 .dashboard-header,
@@ -390,24 +397,16 @@ h3 {
   background: transparent;
 }
 
-.home-panel[data-home-tab-panel="method"] {
+.home-panel[data-home-tab-panel="training"] {
   order: 1;
 }
 
-.home-panel[data-home-tab-panel="training"] {
+.home-panel[data-home-tab-panel="results"] {
   order: 2;
 }
 
-.home-panel[data-home-tab-panel="reviews"] {
-  order: 3;
-}
-
-.home-panel[data-home-tab-panel="results"] {
-  order: 4;
-}
-
 .home-panel[data-home-tab-panel="start"] {
-  order: 5;
+  order: 3;
 }
 
 .home-panel[data-home-tab-panel="start"] {
@@ -3244,12 +3243,8 @@ textarea:focus {
   }
 
   .login-link,
-  .online-link,
-  .header-cta {
-    min-height: 34px;
-    padding: 8px 7px;
-    font-size: .64rem;
-    white-space: nowrap;
+  .online-link {
+    font-size: .66rem;
   }
 
   .desktop-label {
@@ -3258,10 +3253,6 @@ textarea:focus {
 
   .mobile-label {
     display: inline;
-  }
-
-  .online-link {
-    display: none;
   }
 
   .hero-content,
@@ -3281,20 +3272,55 @@ textarea:focus {
     width: calc(100% - 32px);
   }
 
+  .hero {
+    min-height: 0;
+  }
+
+  .hero-content {
+    padding-top: 18vh;
+    padding-bottom: 8vh;
+  }
+
+  .hero-meta {
+    display: none;
+  }
+
   .home-tabs {
     top: 64px;
-    padding: 8px;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    width: 100%;
+    padding: 10px;
     gap: 6px;
+    overflow: visible;
+    margin-top: 14px;
+    margin-bottom: 10px;
   }
 
   .home-tab {
     min-height: 48px;
-    padding: 0 16px;
-    font-size: .78rem;
+    min-width: 0;
+    padding: 0 6px;
+    font-size: .66rem;
+    text-align: center;
   }
 
   .home-panel {
+    width: 100%;
     padding-top: 4px;
+  }
+
+  .editorial h2,
+  .split-feature h2,
+  .credentials h2,
+  .photo-story-heading h2,
+  .proof-heading h2,
+  .contact h2,
+  .client-progress-heading h2 {
+    max-width: 300px;
+    margin-inline: auto;
+    font-size: clamp(1.75rem, 8.6vw, 2.6rem);
+    line-height: .94;
   }
 
   h1 {
