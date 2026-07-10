@@ -3115,6 +3115,50 @@ footer {
   gap: 8px;
 }
 
+.training-log-workout-group {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  background: #fbfbf8;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.training-log-workout-heading {
+  display: grid;
+  gap: 4px;
+}
+
+.training-log-workout-heading strong,
+.training-log-superset-heading,
+.training-log-row-main span {
+  color: var(--black);
+  font-weight: 900;
+}
+
+.training-log-workout-heading span {
+  color: var(--muted);
+  font-weight: 900;
+}
+
+.training-log-superset-list,
+.training-log-exercise-list {
+  display: grid;
+  gap: 8px;
+}
+
+.training-log-superset-group {
+  display: grid;
+  gap: 8px;
+  padding-top: 4px;
+}
+
+.training-log-superset-heading {
+  font-size: .78rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
 .training-log-controls {
   display: flex;
   flex-wrap: wrap;
@@ -3199,6 +3243,11 @@ footer {
 .training-log-row-compact {
   grid-template-columns: 1fr;
   gap: 8px;
+}
+
+.training-log-row-nested {
+  padding: 10px 12px;
+  background: var(--paper);
 }
 
 .training-log-row-top,

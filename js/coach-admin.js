@@ -1013,71 +1013,117 @@ function renderTrainingLogs() {
     return;
   }
 
-  const grouped = new Map();
+  const workoutGroups = new Map();
 
   filteredLogs.forEach((log) => {
-    const key = [
+    const workoutKey = [
       log.entry_date || "",
-      log.workout_title || "",
+      log.workout_title || "Workout"
+    ].join("::");
+    const supersetMatch = String(log.exercise_code || "").match(/^([A-Za-z]+)/);
+    const supersetKey = supersetMatch ? supersetMatch[1].toUpperCase() : "OTHER";
+
+    if (!workoutGroups.has(workoutKey)) {
+      workoutGroups.set(workoutKey, {
+        entry_date: log.entry_date || "",
+        workout_title: log.workout_title || "Workout",
+        supersets: new Map()
+      });
+    }
+
+    const workoutGroup = workoutGroups.get(workoutKey);
+
+    if (!workoutGroup.supersets.has(supersetKey)) {
+      workoutGroup.supersets.set(supersetKey, {
+        key: supersetKey,
+        exercises: new Map()
+      });
+    }
+
+    const supersetGroup = workoutGroup.supersets.get(supersetKey);
+    const exerciseKey = [
       log.exercise_code || "",
       log.exercise_name || ""
     ].join("::");
 
-    if (!grouped.has(key)) {
-      grouped.set(key, {
-        entry_date: log.entry_date || "",
-        workout_title: log.workout_title || "Workout",
+    if (!supersetGroup.exercises.has(exerciseKey)) {
+      supersetGroup.exercises.set(exerciseKey, {
         exercise_code: log.exercise_code || "",
         exercise_name: log.exercise_name || "",
         sets: []
       });
     }
 
-    grouped.get(key).sets.push({
+    supersetGroup.exercises.get(exerciseKey).sets.push({
       set_number: log.set_number,
       weight_used: log.weight_used,
       reps: log.reps
     });
   });
 
-  const compactRows = Array.from(grouped.values()).sort((a, b) => {
-    const left = `${b.entry_date} ${b.workout_title} ${b.exercise_code}`;
-    const right = `${a.entry_date} ${a.workout_title} ${a.exercise_code}`;
+  const workoutSections = Array.from(workoutGroups.values()).sort((a, b) => {
+    const left = `${b.entry_date} ${b.workout_title}`;
+    const right = `${a.entry_date} ${a.workout_title}`;
     return left.localeCompare(right);
   });
 
-  history.innerHTML = compactRows.map((entry) => {
-    const setSummary = entry.sets
-      .sort((a, b) => Number(a.set_number || 0) - Number(b.set_number || 0))
-      .map((set) => {
-        const parts = [];
-
-        if (set.set_number) {
-          parts.push(`Set ${set.set_number}`);
-        }
-
-        if (set.weight_used !== null && set.weight_used !== undefined && set.weight_used !== "") {
-          parts.push(`${set.weight_used} lb${set.reps ? ` x ${set.reps}` : ""}`);
-        } else if (set.reps) {
-          parts.push(`${set.reps} reps`);
-        }
-
-        return parts.join(": ");
-      })
-      .filter(Boolean)
-      .join("  |  ");
+  history.innerHTML = workoutSections.map((workout) => {
+    const supersets = Array.from(workout.supersets.values()).sort((a, b) => a.key.localeCompare(b.key));
 
     return `
-      <article class="training-log-row training-log-row-compact">
-        <div class="training-log-row-top">
-          <strong>${escapeHtml(formatAdminDate(entry.entry_date))}</strong>
-          <span>${escapeHtml(entry.workout_title)}</span>
+      <section class="training-log-workout-group">
+        <div class="training-log-workout-heading">
+          <strong>${escapeHtml(formatAdminDate(workout.entry_date))}</strong>
+          <span>${escapeHtml(workout.workout_title)}</span>
         </div>
-        <div class="training-log-row-main">
-          <span>${escapeHtml(entry.exercise_code)} ${escapeHtml(entry.exercise_name)}</span>
-          <em>${escapeHtml(setSummary || "Sets saved")}</em>
+        <div class="training-log-superset-list">
+          ${supersets.map((superset) => {
+            const exercises = Array.from(superset.exercises.values()).sort((a, b) => {
+              const left = `${a.exercise_code} ${a.exercise_name}`;
+              const right = `${b.exercise_code} ${b.exercise_name}`;
+              return left.localeCompare(right);
+            });
+
+            return `
+              <section class="training-log-superset-group">
+                <div class="training-log-superset-heading">${escapeHtml(superset.key === "OTHER" ? "Other" : `Superset ${superset.key}`)}</div>
+                <div class="training-log-exercise-list">
+                  ${exercises.map((entry) => {
+                    const setSummary = entry.sets
+                      .sort((a, b) => Number(a.set_number || 0) - Number(b.set_number || 0))
+                      .map((set) => {
+                        const parts = [];
+
+                        if (set.set_number) {
+                          parts.push(`Set ${set.set_number}`);
+                        }
+
+                        if (set.weight_used !== null && set.weight_used !== undefined && set.weight_used !== "") {
+                          parts.push(`${set.weight_used} lb${set.reps ? ` x ${set.reps}` : ""}`);
+                        } else if (set.reps) {
+                          parts.push(`${set.reps} reps`);
+                        }
+
+                        return parts.join(": ");
+                      })
+                      .filter(Boolean)
+                      .join("  |  ");
+
+                    return `
+                      <article class="training-log-row training-log-row-compact training-log-row-nested">
+                        <div class="training-log-row-main">
+                          <span>${escapeHtml(entry.exercise_code)} ${escapeHtml(entry.exercise_name)}</span>
+                          <em>${escapeHtml(setSummary || "Sets saved")}</em>
+                        </div>
+                      </article>
+                    `;
+                  }).join("")}
+                </div>
+              </section>
+            `;
+          }).join("")}
         </div>
-      </article>
+      </section>
     `;
   }).join("");
 }
