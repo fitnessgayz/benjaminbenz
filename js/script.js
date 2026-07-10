@@ -79,6 +79,16 @@ if (homeTabLinks.length && homeTabPanels.length) {
     activateHomeTab(validInitialTab, { updateHash: validInitialTab === initialTab });
   } else {
     showAllHomePanels();
+
+    if (validInitialTab === initialTab && initialTab) {
+      const initialPanel = homeTabPanels.find((panel) => panel.dataset.homeTabPanel === validInitialTab);
+
+      if (initialPanel) {
+        requestAnimationFrame(() => {
+          initialPanel.scrollIntoView({ behavior: "auto", block: "start" });
+        });
+      }
+    }
   }
 
   homeTabLinks.forEach((link) => {
