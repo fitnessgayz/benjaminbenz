@@ -10,7 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css?v=homepage-tabs-1" />
 </head>
-<body>
+<body class="homepage">
   <header class="site-header">
     <a class="brand" href="#top" aria-label="Fitness with Benjamin home">
       <span>FWB</span>
@@ -28,6 +28,14 @@
       </a>
     </div>
   </header>
+
+  <div class="home-tabs-shell">
+    <nav class="home-tabs" aria-label="Homepage tabs" role="tablist">
+      <a id="home-tab-training" class="home-tab is-active" href="#training" data-home-tab-link="training" role="tab" aria-selected="true" aria-controls="training">Training</a>
+      <a id="home-tab-results" class="home-tab" href="#results" data-home-tab-link="results" role="tab" aria-selected="false" aria-controls="results">Results</a>
+      <a id="home-tab-start" class="home-tab" href="#start" data-home-tab-link="start" role="tab" aria-selected="false" aria-controls="start">Start</a>
+    </nav>
+  </div>
 
   <main id="top">
     <section class="hero" aria-label="Fitness with Benjamin campaign">
@@ -50,12 +58,6 @@
     </section>
 
     <section class="homepage-tab-stage" aria-label="Homepage sections">
-      <nav class="home-tabs" aria-label="Homepage tabs" role="tablist">
-        <a id="home-tab-training" class="home-tab is-active" href="#training" data-home-tab-link="training" role="tab" aria-selected="true" aria-controls="training">Training</a>
-        <a id="home-tab-results" class="home-tab" href="#results" data-home-tab-link="results" role="tab" aria-selected="false" aria-controls="results">Results</a>
-        <a id="home-tab-start" class="home-tab" href="#start" data-home-tab-link="start" role="tab" aria-selected="false" aria-controls="start">Start</a>
-      </nav>
-
       <div class="home-panels">
         <section id="start" class="home-panel" data-home-tab-panel="start" role="tabpanel" aria-labelledby="home-tab-start" hidden>
           <section class="contact">
@@ -81,90 +83,101 @@
         </section>
 
         <section id="training" class="home-panel is-active" data-home-tab-panel="training" role="tabpanel" aria-labelledby="home-tab-training">
-          <section class="editorial">
-            <p class="kicker">The method</p>
-            <h2><span>Move your body.</span><span>Love with your intention.</span></h2>
-            <p>Benjamin’s methodical approach helps clients learn how to engage and activate muscles with intention, optimize each workout, and build strength that feels connected instead of forced.</p>
-          </section>
+          <nav class="training-subtabs" aria-label="Training sections">
+            <button class="training-subtab is-active" type="button" data-training-subtab-link="overview" aria-selected="true">Overview</button>
+            <button class="training-subtab" type="button" data-training-subtab-link="credentials" aria-selected="false">Credentials</button>
+          </nav>
 
-          <section class="split-feature">
-            <div>
-              <p class="kicker">Built around you</p>
-              <h2>Training built around how you move.</h2>
-            </div>
-            <div class="feature-list">
-              <p><strong>Assess.</strong> See how you move, where you compensate, and what your body actually needs.</p>
-              <p><strong>Connect.</strong> Build mind × body awareness so you can feel the right muscles working at the right time.</p>
-              <p><strong>Optimize.</strong> Make every workout more intentional, efficient, and specific to your goals.</p>
-            </div>
-          </section>
+          <div class="training-subpanels">
+            <div class="training-subpanel is-active" data-training-subtab-panel="overview">
+              <section class="editorial">
+                <p class="kicker">The method</p>
+                <h2><span>Move your body.</span><span>Love with your intention.</span></h2>
+                <p>Benjamin’s methodical approach helps clients learn how to engage and activate muscles with intention, optimize each workout, and build strength that feels connected instead of forced.</p>
+              </section>
 
-          <section class="credentials" aria-labelledby="credentials-title">
-            <div class="credentials-copy">
-              <p class="kicker">Credentials</p>
-              <h2 id="credentials-title">16 years of certified coaching.</h2>
-              <p>Training experience across functional training, weight loss, muscle building, and mind × muscle activation.</p>
-            </div>
-            <div class="credential-list" aria-label="Benjamin's certifications">
-              <p><strong>NASM Certified Personal Trainer</strong></p>
-              <p><strong>NASM Corrective Exercise Specialist</strong></p>
-              <p><strong>NASM Performance Enhancement Specialization</strong></p>
-              <p><strong>NASM Fitness Nutrition Specialist</strong></p>
-              <p><strong>Precision Nutrition Certified</strong></p>
-              <p><strong>FRC Functional Range Conditioning Certified</strong></p>
-            </div>
-          </section>
+              <section class="split-feature">
+                <div>
+                  <p class="kicker">Built around you</p>
+                  <h2>Training built around how you move.</h2>
+                </div>
+                <div class="feature-list">
+                  <p><strong>Assess.</strong> See how you move, where you compensate, and what your body actually needs.</p>
+                  <p><strong>Connect.</strong> Build mind × body awareness so you can feel the right muscles working at the right time.</p>
+                  <p><strong>Optimize.</strong> Make every workout more intentional, efficient, and specific to your goals.</p>
+                </div>
+              </section>
 
-          <section class="training-grid" aria-label="Training options">
-            <article class="training-tile tile-photo tile-photo-build">
-              <img src="images/home/benjamin-curl.jpg" alt="Benjamin training with a barbell in the gym" />
-              <div>
-                <h3>Build strength</h3>
-                <p>Progressive lifts and smart volume built around your recovery.</p>
-              </div>
-            </article>
-            <article class="training-tile tile-photo tile-photo-mindful">
-              <img src="images/home/benjamin-mobility-floor.jpg" alt="Benjamin stretching and coaching in the gym" />
-              <div>
-                <h3>Mindful work</h3>
-                <p>Training with awareness, tempo, and control.</p>
-              </div>
-            </article>
-            <article class="training-tile tile-photo tile-photo-muscle">
-              <img src="images/home/benjamin-incline-core.jpg" alt="Benjamin training on an incline bench in the gym" />
-              <div>
-                <h3>Mind × muscle</h3>
-                <p>Dial in the right muscles and sharpen every rep.</p>
-              </div>
-            </article>
-            <article class="training-tile tile-photo tile-photo-mobility">
-              <img src="images/home/benjamin-dumbbell-row.jpg" alt="Benjamin performing a one-arm dumbbell row in the gym" />
-              <div>
-                <h3>Mobility and form</h3>
-                <p>Better positions, stronger patterns, cleaner mechanics.</p>
-              </div>
-            </article>
-          </section>
+              <section class="training-grid" aria-label="Training options">
+                <article class="training-tile tile-photo tile-photo-build">
+                  <img src="images/home/benjamin-curl.jpg" alt="Benjamin training with a barbell in the gym" />
+                  <div>
+                    <h3>Build strength</h3>
+                    <p>Progressive lifts and smart volume built around your recovery.</p>
+                  </div>
+                </article>
+                <article class="training-tile tile-photo tile-photo-mindful">
+                  <img src="images/home/benjamin-mobility-floor.jpg" alt="Benjamin stretching and coaching in the gym" />
+                  <div>
+                    <h3>Mindful work</h3>
+                    <p>Training with awareness, tempo, and control.</p>
+                  </div>
+                </article>
+                <article class="training-tile tile-photo tile-photo-muscle">
+                  <img src="images/home/benjamin-incline-core.jpg" alt="Benjamin training on an incline bench in the gym" />
+                  <div>
+                    <h3>Mind × muscle</h3>
+                    <p>Dial in the right muscles and sharpen every rep.</p>
+                  </div>
+                </article>
+                <article class="training-tile tile-photo tile-photo-mobility">
+                  <img src="images/home/benjamin-dumbbell-row.jpg" alt="Benjamin performing a one-arm dumbbell row in the gym" />
+                  <div>
+                    <h3>Mobility and form</h3>
+                    <p>Better positions, stronger patterns, cleaner mechanics.</p>
+                  </div>
+                </article>
+              </section>
 
-          <section class="photo-story">
-            <div class="photo-story-heading">
-              <h2>Movement. Strength. Awareness. Control.</h2>
+              <section class="photo-story">
+                <div class="photo-story-heading">
+                  <h2>Movement. Strength. Awareness. Control.</h2>
+                </div>
+                <div class="photo-grid" data-photo-grid>
+                  <figure>
+                    <img src="images/home/benjamin-strength-rack.jpg" alt="Benjamin setting up a strength exercise at the rack" />
+                    <figcaption>Mindset</figcaption>
+                  </figure>
+                  <figure>
+                    <img src="images/home/benjamin-floor-core.jpg" alt="Benjamin performing a controlled floor core exercise" />
+                    <figcaption>Awareness</figcaption>
+                  </figure>
+                  <figure>
+                    <img src="images/home/benjamin-cable-rotation.jpg" alt="Benjamin training cable rotation in the gym" />
+                    <figcaption>Recovery</figcaption>
+                  </figure>
+                </div>
+              </section>
             </div>
-            <div class="photo-grid" data-photo-grid>
-              <figure>
-                <img src="images/home/benjamin-strength-rack.jpg" alt="Benjamin setting up a strength exercise at the rack" />
-                <figcaption>Mindset</figcaption>
-              </figure>
-              <figure>
-                <img src="images/home/benjamin-floor-core.jpg" alt="Benjamin performing a controlled floor core exercise" />
-                <figcaption>Awareness</figcaption>
-              </figure>
-              <figure>
-                <img src="images/home/benjamin-cable-rotation.jpg" alt="Benjamin training cable rotation in the gym" />
-                <figcaption>Recovery</figcaption>
-              </figure>
+
+            <div class="training-subpanel" data-training-subtab-panel="credentials" hidden>
+              <section class="credentials" aria-labelledby="credentials-title">
+                <div class="credentials-copy">
+                  <p class="kicker">Credentials</p>
+                  <h2 id="credentials-title">16 years of certified coaching.</h2>
+                  <p>Training experience across functional training, weight loss, muscle building, and mind × muscle activation.</p>
+                </div>
+                <div class="credential-list" aria-label="Benjamin's certifications">
+                  <p><strong>NASM Certified Personal Trainer</strong></p>
+                  <p><strong>NASM Corrective Exercise Specialist</strong></p>
+                  <p><strong>NASM Performance Enhancement Specialization</strong></p>
+                  <p><strong>NASM Fitness Nutrition Specialist</strong></p>
+                  <p><strong>Precision Nutrition Certified</strong></p>
+                  <p><strong>FRC Functional Range Conditioning Certified</strong></p>
+                </div>
+              </section>
             </div>
-          </section>
+          </div>
 
         </section>
 
@@ -211,7 +224,7 @@
           <section class="proof">
             <div class="proof-heading">
               <p class="kicker">Yelp reviews</p>
-              <h2>Client stories from the work.</h2>
+              <h2>Real people, real results.</h2>
             </div>
             <div class="yelp-summary">
               <strong>Real</strong>

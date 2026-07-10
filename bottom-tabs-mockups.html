@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bottom Tabs Mockups | Fitness with Benjamin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --ink: #070707;
+      --paper: #f5f5f0;
+      --white: #ffffff;
+      --line: #d7d7cf;
+      --muted: #6d6f68;
+      --lime: #d7ff3f;
+      --red: #ff3b30;
+      --shadow: 0 22px 70px rgba(0, 0, 0, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: Inter, Arial, sans-serif;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin-top: 0;
+    }
+
+    .header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(245, 245, 240, 0.95);
+      backdrop-filter: blur(14px);
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 900;
+    }
+
+    .brand-mark {
+      display: grid;
+      width: 44px;
+      height: 44px;
+      place-items: center;
+      border-radius: 999px;
+      background: var(--lime);
+      font-size: 15px;
+    }
+
+    .header-note {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    .intro,
+    .mockup {
+      width: min(1200px, calc(100% - 32px));
+      margin: 0 auto;
+    }
+
+    .intro {
+      padding: 56px 0 28px;
+    }
+
+    .kicker {
+      margin: 0 0 14px;
+      color: var(--red);
+      font-size: 13px;
+      font-weight: 900;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+    }
+
+    .intro h1 {
+      max-width: 900px;
+      margin-bottom: 18px;
+      font-size: clamp(54px, 11vw, 124px);
+      line-height: 0.86;
+      text-transform: uppercase;
+    }
+
+    .intro p:last-child {
+      max-width: 760px;
+      color: var(--muted);
+      font-size: clamp(18px, 2.3vw, 28px);
+      line-height: 1.3;
+      font-weight: 700;
+    }
+
+    .mockup {
+      margin-bottom: 52px;
+    }
+
+    .shell {
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--white);
+      box-shadow: var(--shadow);
+    }
+
+    .mockup-head {
+      display: grid;
+      grid-template-columns: minmax(0, 0.9fr) minmax(260px, 0.5fr);
+      gap: 20px;
+      align-items: end;
+      padding: 24px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .mockup-head h2 {
+      margin: 0;
+      font-size: clamp(30px, 5vw, 62px);
+      line-height: 0.94;
+      text-transform: uppercase;
+    }
+
+    .mockup-head p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.45;
+      font-weight: 700;
+    }
+
+    .frame {
+      position: relative;
+      min-height: 760px;
+      background: #111;
+    }
+
+    .hero {
+      position: relative;
+      min-height: 760px;
+      color: var(--white);
+      background: #111;
+    }
+
+    .hero img {
+      position: absolute;
+      inset: 0;
+      opacity: 0.72;
+    }
+
+    .hero::after {
+      position: absolute;
+      inset: 0;
+      content: "";
+      background: linear-gradient(180deg, rgba(0, 0, 0, 0.12), rgba(0, 0, 0, 0.78));
+    }
+
+    .hero-copy {
+      position: absolute;
+      left: clamp(28px, 5vw, 44px);
+      right: clamp(28px, 5vw, 44px);
+      bottom: 132px;
+      z-index: 1;
+      max-width: 740px;
+    }
+
+    .hero-copy h3 {
+      margin-bottom: 18px;
+      font-size: clamp(52px, 8vw, 108px);
+      line-height: 0.88;
+      text-transform: uppercase;
+    }
+
+    .hero-copy p {
+      max-width: 620px;
+      color: rgba(255, 255, 255, 0.88);
+      font-size: clamp(18px, 2vw, 24px);
+      line-height: 1.34;
+      font-weight: 700;
+    }
+
+    .content-card {
+      position: absolute;
+      right: 34px;
+      bottom: 154px;
+      z-index: 1;
+      width: min(360px, calc(100% - 68px));
+      padding: 22px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.12);
+      backdrop-filter: blur(12px);
+    }
+
+    .content-card p {
+      margin: 0;
+      color: rgba(255, 255, 255, 0.88);
+      font-size: 15px;
+      line-height: 1.42;
+      font-weight: 700;
+    }
+
+    .dock {
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      z-index: 2;
+      padding: 18px 20px 20px;
+    }
+
+    .dock-bar {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      width: min(760px, 100%);
+      margin: 0 auto;
+    }
+
+    .dock-tab {
+      display: inline-flex;
+      min-height: 58px;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--white);
+      color: var(--muted);
+      font-size: 16px;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .dock-tab.is-active {
+      border-color: var(--ink);
+      background: var(--lime);
+      color: var(--ink);
+    }
+
+    .dock-label {
+      position: absolute;
+      top: 18px;
+      right: 20px;
+      display: inline-flex;
+      min-height: 30px;
+      align-items: center;
+      border-radius: 999px;
+      padding: 0 12px;
+      background: var(--lime);
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .dock-minimal .dock {
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.92) 26%, rgba(255, 255, 255, 0.96));
+      border-top: 1px solid rgba(0, 0, 0, 0.08);
+      backdrop-filter: blur(16px);
+    }
+
+    .dock-minimal .dock-tab {
+      min-height: 56px;
+      font-size: 15px;
+    }
+
+    .dock-premium .dock {
+      padding-bottom: 26px;
+    }
+
+    .dock-premium .dock-bar {
+      padding: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.14);
+      backdrop-filter: blur(22px);
+      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.16);
+    }
+
+    .dock-premium .dock-tab {
+      min-height: 50px;
+      border-color: transparent;
+      background: rgba(255, 255, 255, 0.84);
+    }
+
+    .dock-premium .dock-tab:not(.is-active) {
+      background: rgba(255, 255, 255, 0.18);
+      color: rgba(255, 255, 255, 0.86);
+    }
+
+    .dock-premium .dock-tab.is-active {
+      background: var(--lime);
+      color: var(--ink);
+      border-color: var(--ink);
+    }
+
+    .dock-utility .frame {
+      background: var(--paper);
+    }
+
+    .dock-utility .hero {
+      min-height: 0;
+      padding: 34px 34px 180px;
+      color: var(--ink);
+      background: var(--paper);
+    }
+
+    .dock-utility .hero img,
+    .dock-utility .hero::after {
+      display: none;
+    }
+
+    .dock-utility .hero-copy {
+      position: static;
+      max-width: 100%;
+      color: var(--ink);
+    }
+
+    .dock-utility .hero-copy p {
+      max-width: 760px;
+      color: var(--muted);
+    }
+
+    .dock-utility .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(300px, 380px);
+      gap: 24px;
+      margin-top: 36px;
+    }
+
+    .dock-utility .hero-panel,
+    .dock-utility .hero-stack article {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--white);
+    }
+
+    .dock-utility .hero-panel {
+      padding: 24px;
+    }
+
+    .dock-utility .hero-panel h4,
+    .dock-utility .hero-stack h4 {
+      margin: 0 0 12px;
+      font-size: 34px;
+      line-height: 0.96;
+      text-transform: uppercase;
+    }
+
+    .dock-utility .hero-panel p,
+    .dock-utility .hero-stack p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.42;
+      font-weight: 700;
+    }
+
+    .dock-utility .hero-stack {
+      display: grid;
+      gap: 16px;
+    }
+
+    .dock-utility .hero-stack article {
+      padding: 20px;
+    }
+
+    .dock-utility .dock {
+      padding: 18px 24px 22px;
+      border-top: 1px solid var(--line);
+      background: rgba(245, 245, 240, 0.96);
+      backdrop-filter: blur(16px);
+    }
+
+    .dock-utility .dock-bar {
+      width: 100%;
+      max-width: none;
+      grid-template-columns: 1.1fr 1fr 1fr;
+    }
+
+    .dock-utility .dock-tab {
+      min-height: 62px;
+      border-radius: 16px;
+    }
+
+    .phone-preview {
+      display: grid;
+      grid-template-columns: minmax(280px, 380px) minmax(0, 1fr);
+      gap: 28px;
+      align-items: center;
+      padding: 24px;
+      border-top: 1px solid var(--line);
+      background: #eeefe9;
+    }
+
+    .phone {
+      overflow: hidden;
+      border: 10px solid var(--ink);
+      border-radius: 34px;
+      background: var(--white);
+      box-shadow: 0 20px 48px rgba(0, 0, 0, 0.18);
+    }
+
+    .phone-body {
+      position: relative;
+      min-height: 660px;
+      background: #111;
+      color: var(--white);
+    }
+
+    .phone-body img {
+      position: absolute;
+      inset: 0;
+      opacity: 0.72;
+      object-position: 58% 0;
+    }
+
+    .phone-body::after {
+      position: absolute;
+      inset: 0;
+      content: "";
+      background: linear-gradient(180deg, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.78));
+    }
+
+    .phone-copy {
+      position: absolute;
+      right: 18px;
+      bottom: 108px;
+      left: 18px;
+      z-index: 1;
+    }
+
+    .phone-copy h3 {
+      margin-bottom: 10px;
+      font-size: 48px;
+      line-height: 0.9;
+      text-transform: uppercase;
+    }
+
+    .phone-copy p {
+      margin: 0;
+      color: rgba(255, 255, 255, 0.88);
+      font-size: 15px;
+      line-height: 1.38;
+      font-weight: 700;
+    }
+
+    .phone-dock {
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      z-index: 2;
+      padding: 10px 10px 12px;
+      background: rgba(255, 255, 255, 0.96);
+      border-top: 1px solid rgba(0, 0, 0, 0.08);
+      backdrop-filter: blur(14px);
+    }
+
+    .phone-dock nav {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .phone-dock a {
+      display: inline-flex;
+      min-height: 48px;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--white);
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .phone-dock a:first-child {
+      border-color: var(--ink);
+      background: var(--lime);
+      color: var(--ink);
+    }
+
+    .phone-copy-side h3 {
+      margin-bottom: 18px;
+      font-size: clamp(36px, 5vw, 72px);
+      line-height: 0.92;
+      text-transform: uppercase;
+    }
+
+    .phone-copy-side p {
+      color: var(--muted);
+      font-size: 18px;
+      line-height: 1.42;
+      font-weight: 700;
+    }
+
+    .tag {
+      display: inline-flex;
+      min-height: 34px;
+      align-items: center;
+      border-radius: 999px;
+      padding: 0 12px;
+      background: var(--lime);
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    @media (max-width: 900px) {
+      .header {
+        padding: 14px 16px;
+      }
+
+      .header-note {
+        display: none;
+      }
+
+      .intro,
+      .mockup {
+        width: calc(100% - 20px);
+      }
+
+      .mockup-head,
+      .phone-preview,
+      .dock-utility .hero-grid {
+        display: block;
+      }
+
+      .mockup-head p,
+      .phone-copy-side {
+        margin-top: 16px;
+      }
+
+      .content-card {
+        position: static;
+        width: auto;
+        margin: 18px 24px 0;
+      }
+
+      .hero-copy {
+        bottom: 180px;
+        max-width: calc(100% - 48px);
+      }
+
+      .dock-utility .hero {
+        padding: 28px 20px 180px;
+      }
+
+      .dock-utility .hero-stack {
+        margin-top: 16px;
+      }
+
+      .phone {
+        max-width: 390px;
+        margin: 0 auto 24px;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .intro {
+        padding-top: 40px;
+      }
+
+      .hero,
+      .frame {
+        min-height: 620px;
+      }
+
+      .hero-copy {
+        left: 20px;
+        right: 20px;
+        bottom: 148px;
+        max-width: none;
+      }
+
+      .hero-copy h3 {
+        font-size: 56px;
+      }
+
+      .dock {
+        padding: 12px 12px 14px;
+      }
+
+      .dock-bar {
+        gap: 8px;
+      }
+
+      .dock-tab {
+        min-height: 50px;
+        padding: 0 8px;
+        font-size: 12px;
+      }
+
+      .dock-utility .dock-tab {
+        min-height: 54px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <a class="brand" href="#top">
+      <span class="brand-mark">FWB</span>
+      <strong>Bottom Tabs Mockups</strong>
+    </a>
+    <span class="header-note">Three directions</span>
+  </header>
+
+  <main id="top">
+    <section class="intro">
+      <p class="kicker">Mockups</p>
+      <h1>Tabs that stay put.</h1>
+      <p>These options keep the main section links anchored at the bottom the whole time, so they feel intentional instead of floating around the page.</p>
+    </section>
+
+    <section class="mockup" id="option-1">
+      <div class="shell">
+        <div class="mockup-head">
+          <div>
+            <p class="kicker">Option 1</p>
+            <h2>Clean bottom dock</h2>
+          </div>
+          <p>This is the calmest version. It feels closest to what you already have, but the tabs behave like a true dock and sit in one consistent place.</p>
+        </div>
+        <div class="frame dock-minimal">
+          <div class="dock-label">Recommended</div>
+          <section class="hero">
+            <img src="images/home/benjamin-strength-rack.jpg" alt="Benjamin coaching in the gym" />
+            <div class="hero-copy">
+              <p class="kicker">San Francisco personal training</p>
+              <h3>Fitness with Benjamin</h3>
+              <p>Mindful workouts tailored to individual needs, built to create body awareness and connect mind × body for stronger, smarter training.</p>
+            </div>
+          </section>
+          <div class="dock">
+            <nav class="dock-bar" aria-label="Homepage tabs option one">
+              <a class="dock-tab is-active" href="#option-1">Training</a>
+              <a class="dock-tab" href="#option-1">Results</a>
+              <a class="dock-tab" href="#option-1">Start</a>
+            </nav>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="mockup" id="option-2">
+      <div class="shell">
+        <div class="mockup-head">
+          <div>
+            <p class="kicker">Option 2</p>
+            <h2>Glass premium dock</h2>
+          </div>
+          <p>This one feels more elevated and editorial. The dock becomes part of the hero mood, almost like an app control bar floating over the image.</p>
+        </div>
+        <div class="frame dock-premium">
+          <section class="hero">
+            <img src="images/home/benjamin-curl.jpg" alt="Benjamin lifting in the gym" />
+            <div class="hero-copy">
+              <p class="kicker">Mindful training</p>
+              <h3>Build strength with intention.</h3>
+              <p>A more polished, high-touch version that makes the bottom navigation feel like a designed feature instead of a utility row.</p>
+            </div>
+            <aside class="content-card">
+              <p><strong>Best for:</strong> a more premium first impression on both web and mobile, while keeping the page simple to use.</p>
+            </aside>
+          </section>
+          <div class="dock">
+            <nav class="dock-bar" aria-label="Homepage tabs option two">
+              <a class="dock-tab is-active" href="#option-2">Training</a>
+              <a class="dock-tab" href="#option-2">Results</a>
+              <a class="dock-tab" href="#option-2">Start</a>
+            </nav>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="mockup" id="option-3">
+      <div class="shell">
+        <div class="mockup-head">
+          <div>
+            <p class="kicker">Option 3</p>
+            <h2>Structured utility bar</h2>
+          </div>
+          <p>This makes the page feel more like a clean training hub. The dock is still at the bottom, but the rest of the layout becomes more practical and content-forward.</p>
+        </div>
+        <div class="frame dock-utility">
+          <section class="hero">
+            <div class="hero-copy">
+              <p class="kicker">Training overview</p>
+              <h3>Clear sections. Less wandering.</h3>
+              <p>Good if you want the site to feel more direct and organized, especially for visitors who already know they want to learn about training, proof, and next steps.</p>
+            </div>
+            <div class="hero-grid">
+              <article class="hero-panel">
+                <h4>Training</h4>
+                <p>Method, credentials, coaching style, and the way each plan gets built around the client.</p>
+              </article>
+              <div class="hero-stack">
+                <article>
+                  <h4>Results</h4>
+                  <p>Real people, real results, reviews, and progress photos.</p>
+                </article>
+                <article>
+                  <h4>Start</h4>
+                  <p>Questionnaire, contact, and the easiest next move for a new client.</p>
+                </article>
+              </div>
+            </div>
+          </section>
+          <div class="dock">
+            <nav class="dock-bar" aria-label="Homepage tabs option three">
+              <a class="dock-tab is-active" href="#option-3">Training</a>
+              <a class="dock-tab" href="#option-3">Results</a>
+              <a class="dock-tab" href="#option-3">Start</a>
+            </nav>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="mockup">
+      <div class="shell">
+        <div class="mockup-head">
+          <div>
+            <p class="kicker">Mobile preview</p>
+            <h2>How it lands on the phone</h2>
+          </div>
+          <p>The bottom dock reads most naturally on mobile. It stays in reach, shortens the page mentally, and gives people a simple way to move around.</p>
+        </div>
+        <div class="phone-preview">
+          <div class="phone" aria-label="Mobile bottom tabs preview">
+            <div class="phone-body">
+              <img src="images/home/benjamin-curl.jpg" alt="Benjamin training in the gym" />
+              <div class="phone-copy">
+                <p class="kicker">Personal training</p>
+                <h3>Build strength.</h3>
+                <p>Clear sections, anchored tabs, and less visual drift while people scroll.</p>
+              </div>
+              <div class="phone-dock">
+                <nav aria-label="Mobile homepage tabs">
+                  <a href="#top">Training</a>
+                  <a href="#top">Results</a>
+                  <a href="#top">Start</a>
+                </nav>
+              </div>
+            </div>
+          </div>
+          <div class="phone-copy-side">
+            <span class="tag">Mobile note</span>
+            <h3>Feels more anchored, less floaty.</h3>
+            <p>On the phone, the bottom dock keeps the navigation in a familiar reach zone. It also separates the main tabs from the content itself, which is usually what makes the page feel more seamless.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

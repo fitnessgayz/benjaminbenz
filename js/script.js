@@ -234,7 +234,48 @@ clientCarousels.forEach((carousel) => {
 const homeTabLinks = Array.from(document.querySelectorAll("[data-home-tab-link]"));
 const homeTabPanels = Array.from(document.querySelectorAll("[data-home-tab-panel]"));
 const homeTabStage = document.querySelector(".homepage-tab-stage");
-const homeTabMedia = window.matchMedia("(max-width: 980px)");
+const trainingSubtabLinks = Array.from(document.querySelectorAll("[data-training-subtab-link]"));
+const trainingSubtabPanels = Array.from(document.querySelectorAll("[data-training-subtab-panel]"));
+
+function activateTrainingSubtab(tabId) {
+  if (!trainingSubtabPanels.length) {
+    return;
+  }
+
+  const targetPanel = trainingSubtabPanels.find((panel) => panel.dataset.trainingSubtabPanel === tabId);
+
+  if (!targetPanel) {
+    return;
+  }
+
+  trainingSubtabPanels.forEach((panel) => {
+    const isActive = panel === targetPanel;
+    panel.hidden = !isActive;
+    panel.classList.toggle("is-active", isActive);
+  });
+
+  trainingSubtabLinks.forEach((link) => {
+    const isActive = link.dataset.trainingSubtabLink === tabId;
+    link.classList.toggle("is-active", isActive);
+    link.setAttribute("aria-selected", isActive ? "true" : "false");
+  });
+}
+
+if (trainingSubtabLinks.length && trainingSubtabPanels.length) {
+  activateTrainingSubtab("overview");
+
+  trainingSubtabLinks.forEach((link) => {
+    link.addEventListener("click", () => {
+      const targetTab = link.dataset.trainingSubtabLink;
+
+      if (!targetTab) {
+        return;
+      }
+
+      activateTrainingSubtab(targetTab);
+    });
+  });
+}
 
 function activateHomeTab(tabId, options = {}) {
   if (!homeTabPanels.length) {
@@ -289,19 +330,15 @@ if (homeTabLinks.length && homeTabPanels.length) {
     ? initialTab
     : "training";
 
-  if (homeTabMedia.matches) {
-    activateHomeTab(validInitialTab, { updateHash: validInitialTab === initialTab });
-  } else {
-    showAllHomePanels();
+  activateHomeTab(validInitialTab, { updateHash: validInitialTab === initialTab });
 
-    if (validInitialTab === initialTab && initialTab) {
-      const initialPanel = homeTabPanels.find((panel) => panel.dataset.homeTabPanel === validInitialTab);
+  if (validInitialTab === initialTab && initialTab) {
+    const initialPanel = homeTabPanels.find((panel) => panel.dataset.homeTabPanel === validInitialTab);
 
-      if (initialPanel) {
-        requestAnimationFrame(() => {
-          initialPanel.scrollIntoView({ behavior: "auto", block: "start" });
-        });
-      }
+    if (initialPanel) {
+      requestAnimationFrame(() => {
+        initialPanel.scrollIntoView({ behavior: "auto", block: "start" });
+      });
     }
   }
 
@@ -309,20 +346,13 @@ if (homeTabLinks.length && homeTabPanels.length) {
     link.addEventListener("click", (event) => {
       const targetTab = link.dataset.homeTabLink;
       const targetPanel = homeTabPanels.find((panel) => panel.dataset.homeTabPanel === targetTab);
-      const isInlineMobileTab = link.classList.contains("home-tab");
 
       if (!targetTab || !targetPanel) {
         return;
       }
 
       event.preventDefault();
-
-      if (homeTabMedia.matches) {
-        activateHomeTab(targetTab, { scrollIntoView: !isInlineMobileTab });
-        return;
-      }
-
-      targetPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+      activateHomeTab(targetTab, { scrollIntoView: true });
     });
   });
 
@@ -332,33 +362,8 @@ if (homeTabLinks.length && homeTabPanels.length) {
     if (!targetTab) {
       return;
     }
-
-    if (homeTabMedia.matches) {
-      activateHomeTab(targetTab, { updateHash: false });
-      return;
-    }
-
-    const targetPanel = homeTabPanels.find((panel) => panel.dataset.homeTabPanel === targetTab);
-
-    if (targetPanel) {
-      targetPanel.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
+    activateHomeTab(targetTab, { updateHash: false, scrollIntoView: true });
   });
-
-  const syncHomeTabMode = (event) => {
-    if (event.matches) {
-      activateHomeTab(window.location.hash.replace("#", "") || "training", { updateHash: false });
-      return;
-    }
-
-    showAllHomePanels();
-  };
-
-  if (typeof homeTabMedia.addEventListener === "function") {
-    homeTabMedia.addEventListener("change", syncHomeTabMode);
-  } else if (typeof homeTabMedia.addListener === "function") {
-    homeTabMedia.addListener(syncHomeTabMode);
-  }
 }
 
 const questionnaire = document.getElementById("training-questionnaire");
