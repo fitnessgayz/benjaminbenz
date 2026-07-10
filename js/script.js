@@ -21,10 +21,28 @@ const photoGrids = Array.from(document.querySelectorAll("[data-photo-grid]"));
 
 photoGrids.forEach((photoGrid) => {
   const photos = Array.from(photoGrid.children);
+  const storageKey = `photo-grid-order:${photoGrid.dataset.photoGrid || "default"}`;
+  const previousOrder = window.localStorage.getItem(storageKey);
 
   for (let index = photos.length - 1; index > 0; index -= 1) {
     const randomIndex = Math.floor(Math.random() * (index + 1));
     [photos[index], photos[randomIndex]] = [photos[randomIndex], photos[index]];
+  }
+
+  if (photos.length > 1) {
+    const nextOrder = photos
+      .map((photo) => photo.querySelector("img")?.getAttribute("src") || "")
+      .join("|");
+
+    if (nextOrder === previousOrder) {
+      photos.push(photos.shift());
+    }
+
+    const finalOrder = photos
+      .map((photo) => photo.querySelector("img")?.getAttribute("src") || "")
+      .join("|");
+
+    window.localStorage.setItem(storageKey, finalOrder);
   }
 
   photos.forEach((photo) => photoGrid.appendChild(photo));
@@ -38,8 +56,9 @@ clientCarousels.forEach((carousel) => {
   const prevButton = carousel.querySelector("[data-carousel-prev]");
   const nextButton = carousel.querySelector("[data-carousel-next]");
   const dotsContainer = carousel.querySelector("[data-carousel-dots]");
+  const viewport = carousel.querySelector(".client-carousel-viewport");
 
-  if (!track || slides.length === 0) {
+  if (!track || !viewport || slides.length === 0) {
     return;
   }
 
@@ -57,8 +76,12 @@ clientCarousels.forEach((carousel) => {
   const dots = Array.from(carousel.querySelectorAll("[data-carousel-dot]"));
   let activeIndex = 0;
 
+  const maxOffset = () => Math.max(0, track.scrollWidth - viewport.clientWidth);
+
   const updateCarousel = () => {
-    track.style.transform = `translateX(-${activeIndex * 100}%)`;
+    const targetSlide = slides[activeIndex];
+    const targetOffset = targetSlide ? Math.min(targetSlide.offsetLeft, maxOffset()) : 0;
+    track.style.transform = `translateX(-${targetOffset}px)`;
 
     dots.forEach((dot, index) => {
       const isActive = index === activeIndex;
@@ -90,6 +113,7 @@ clientCarousels.forEach((carousel) => {
     });
   });
 
+  window.addEventListener("resize", updateCarousel);
   updateCarousel();
 });
 

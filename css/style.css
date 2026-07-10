@@ -772,30 +772,32 @@ figcaption {
 .client-carousel {
   position: relative;
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  gap: 18px;
-  align-items: center;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
 }
 
 .client-carousel-viewport {
   overflow: hidden;
+  width: min(100%, 980px);
+  margin: 0 auto;
 }
 
 .client-carousel-track {
   display: flex;
+  gap: 14px;
   transition: transform .28s ease;
   will-change: transform;
 }
 
 .client-slide {
-  flex: 0 0 100%;
+  flex: 0 0 clamp(180px, 24vw, 248px);
   min-width: 0;
   background: transparent;
 }
 
 .client-slide img {
   width: 100%;
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 5 / 6;
   height: auto;
   display: block;
   object-fit: cover;
@@ -841,12 +843,17 @@ figcaption {
   margin-right: 4px;
 }
 
+.client-carousel-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+
 .client-carousel-dots {
-  grid-column: 1 / -1;
   display: flex;
   justify-content: center;
   gap: 10px;
-  padding-top: 18px;
 }
 
 .client-carousel-dot {
@@ -3179,32 +3186,11 @@ textarea:focus {
   }
 
   .client-carousel {
-    grid-template-columns: minmax(0, 1fr);
     gap: 14px;
   }
 
-  .client-carousel-viewport {
-    order: 1;
-  }
-
-  .client-carousel-button {
-    width: 46px;
-    height: 46px;
-  }
-
-  .client-carousel-button-prev,
-  .client-carousel-button-next {
-    position: absolute;
-    top: calc(50% - 32px);
-    z-index: 1;
-  }
-
-  .client-carousel-button-prev {
-    left: 12px;
-  }
-
-  .client-carousel-button-next {
-    right: 12px;
+  .client-slide {
+    flex-basis: clamp(180px, 38vw, 240px);
   }
 
   .yelp-summary {
@@ -3259,9 +3245,17 @@ textarea:focus {
     gap: 8px;
   }
 
-  .client-carousel-button-prev,
-  .client-carousel-button-next {
-    top: calc(50% - 24px);
+  .client-carousel-controls {
+    gap: 12px;
+  }
+
+  .client-slide {
+    flex-basis: min(68vw, 220px);
+  }
+
+  .client-carousel-button {
+    width: 42px;
+    height: 42px;
   }
 
   .client-list-actions {
