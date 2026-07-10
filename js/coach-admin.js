@@ -17,6 +17,7 @@ let selectedProgramId = "";
 let progressEntries = [];
 let trainingLogs = [];
 let recentTrainingLogs = [];
+let trainingLogDateFilter = "";
 let showingArchivedClients = false;
 let clientSearchTerm = "";
 let activeAdminTab = "clients";
@@ -1001,19 +1002,104 @@ function renderTrainingLogs() {
     return;
   }
 
-  if (trainingLogs.length === 0) {
-    history.innerHTML = '<p class="empty-state">No weights logged yet.</p>';
+  const filteredLogs = trainingLogDateFilter
+    ? trainingLogs.filter((log) => String(log.entry_date || "") === trainingLogDateFilter)
+    : trainingLogs;
+
+  if (filteredLogs.length === 0) {
+    history.innerHTML = trainingLogDateFilter
+      ? '<p class="empty-state">No workout logs for that date.</p>'
+      : '<p class="empty-state">No weights logged yet.</p>';
     return;
   }
 
-  history.innerHTML = trainingLogs.map((log) => `
-    <div class="training-log-row">
-      <strong>${log.entry_date}</strong>
-      <span>${log.workout_title}</span>
-      <span>${log.exercise_code} ${log.exercise_name}${log.set_number ? ` · set ${log.set_number}` : ""}</span>
-      <em>${log.weight_used} lb${log.reps ? ` x ${log.reps}` : ""}</em>
-    </div>
-  `).join("");
+  const grouped = new Map();
+
+  filteredLogs.forEach((log) => {
+    const key = [
+      log.entry_date || "",
+      log.workout_title || "",
+      log.exercise_code || "",
+      log.exercise_name || ""
+    ].join("::");
+
+    if (!grouped.has(key)) {
+      grouped.set(key, {
+        entry_date: log.entry_date || "",
+        workout_title: log.workout_title || "Workout",
+        exercise_code: log.exercise_code || "",
+        exercise_name: log.exercise_name || "",
+        sets: []
+      });
+    }
+
+    grouped.get(key).sets.push({
+      set_number: log.set_number,
+      weight_used: log.weight_used,
+      reps: log.reps
+    });
+  });
+
+  const compactRows = Array.from(grouped.values()).sort((a, b) => {
+    const left = `${b.entry_date} ${b.workout_title} ${b.exercise_code}`;
+    const right = `${a.entry_date} ${a.workout_title} ${a.exercise_code}`;
+    return left.localeCompare(right);
+  });
+
+  history.innerHTML = compactRows.map((entry) => {
+    const setSummary = entry.sets
+      .sort((a, b) => Number(a.set_number || 0) - Number(b.set_number || 0))
+      .map((set) => {
+        const parts = [];
+
+        if (set.set_number) {
+          parts.push(`Set ${set.set_number}`);
+        }
+
+        if (set.weight_used !== null && set.weight_used !== undefined && set.weight_used !== "") {
+          parts.push(`${set.weight_used} lb${set.reps ? ` x ${set.reps}` : ""}`);
+        } else if (set.reps) {
+          parts.push(`${set.reps} reps`);
+        }
+
+        return parts.join(": ");
+      })
+      .filter(Boolean)
+      .join("  |  ");
+
+    return `
+      <article class="training-log-row training-log-row-compact">
+        <div class="training-log-row-top">
+          <strong>${escapeHtml(formatAdminDate(entry.entry_date))}</strong>
+          <span>${escapeHtml(entry.workout_title)}</span>
+        </div>
+        <div class="training-log-row-main">
+          <span>${escapeHtml(entry.exercise_code)} ${escapeHtml(entry.exercise_name)}</span>
+          <em>${escapeHtml(setSummary || "Sets saved")}</em>
+        </div>
+      </article>
+    `;
+  }).join("");
+}
+
+function handleTrainingLogDateFilter() {
+  const input = document.getElementById("training-log-date-filter");
+  const clearButton = document.getElementById("clear-training-log-date-filter");
+
+  if (!input || !clearButton) {
+    return;
+  }
+
+  input.addEventListener("input", () => {
+    trainingLogDateFilter = input.value || "";
+    renderTrainingLogs();
+  });
+
+  clearButton.addEventListener("click", () => {
+    trainingLogDateFilter = "";
+    input.value = "";
+    renderTrainingLogs();
+  });
 }
 
 async function loadTrainingLogsForEmail(email) {
@@ -1034,7 +1120,7 @@ async function loadTrainingLogsForEmail(email) {
     .order("workout_title", { ascending: true })
     .order("exercise_code", { ascending: true })
     .order("set_number", { ascending: true })
-    .limit(40);
+    .limit(250);
 
   if (error) {
     trainingLogs = [];
@@ -2677,6 +2763,7 @@ async function bootCoachAdmin() {
   handleProgramHistoryActions();
   handleSendInvite();
   handleSaveProgress();
+  handleTrainingLogDateFilter();
   handleCoachSignOut();
   handleNewClient();
   handleStartNewProgram();

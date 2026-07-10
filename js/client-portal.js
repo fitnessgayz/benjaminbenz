@@ -11,6 +11,7 @@ const supabaseClient = isConfigured && window.supabase
 const coachPortalEmails = ["benjaminbenz.fit@gmail.com"];
 let activeClientEmail = "";
 let trainingLogs = [];
+let clientTrainingLogDateFilter = "";
 let activeClientDashboardTab = "insights";
 let activeWorkoutTabIndex = 0;
 const dashboardRequestTimeout = 15000;
@@ -961,6 +962,8 @@ function populateTrainingLogs(logs) {
   document.querySelectorAll("[data-exercise-log]").forEach((logElement) => {
     updateExerciseLogField(logElement);
   });
+
+  renderClientTrainingLogs();
 }
 
 function demoTrainingLogsForProgram(program) {
@@ -1032,6 +1035,122 @@ function handleTrainingDateChange() {
     if (logElement) {
       updateExerciseLogField(logElement);
     }
+  });
+}
+
+function renderClientTrainingLogs() {
+  const history = document.getElementById("client-training-log-history");
+  const count = document.getElementById("client-logs-count");
+
+  if (!history) {
+    return;
+  }
+
+  const filteredLogs = clientTrainingLogDateFilter
+    ? trainingLogs.filter((log) => String(log.entry_date || "") === clientTrainingLogDateFilter)
+    : trainingLogs;
+
+  if (filteredLogs.length === 0) {
+    if (count) {
+      count.textContent = clientTrainingLogDateFilter ? "No logs for that date" : "No logs yet";
+    }
+
+    history.innerHTML = clientTrainingLogDateFilter
+      ? '<p class="empty-state">No workout logs for that date.</p>'
+      : '<p class="empty-state">No weights logged yet.</p>';
+    return;
+  }
+
+  const grouped = new Map();
+
+  filteredLogs.forEach((log) => {
+    const key = [
+      log.entry_date || "",
+      log.workout_title || "",
+      log.exercise_code || "",
+      log.exercise_name || ""
+    ].join("::");
+
+    if (!grouped.has(key)) {
+      grouped.set(key, {
+        entry_date: log.entry_date || "",
+        workout_title: log.workout_title || "Workout",
+        exercise_code: log.exercise_code || "",
+        exercise_name: log.exercise_name || "",
+        sets: []
+      });
+    }
+
+    grouped.get(key).sets.push({
+      set_number: log.set_number,
+      weight_used: log.weight_used,
+      reps: log.reps
+    });
+  });
+
+  const compactRows = Array.from(grouped.values()).sort((a, b) => {
+    const left = `${b.entry_date} ${b.workout_title} ${b.exercise_code}`;
+    const right = `${a.entry_date} ${a.workout_title} ${a.exercise_code}`;
+    return left.localeCompare(right);
+  });
+
+  if (count) {
+    count.textContent = `${compactRows.length} ${compactRows.length === 1 ? "entry" : "entries"}`;
+  }
+
+  history.innerHTML = compactRows.map((entry) => {
+    const setSummary = entry.sets
+      .sort((a, b) => Number(a.set_number || 0) - Number(b.set_number || 0))
+      .map((set) => {
+        const parts = [];
+
+        if (set.set_number) {
+          parts.push(`Set ${set.set_number}`);
+        }
+
+        if (set.weight_used !== null && set.weight_used !== undefined && set.weight_used !== "") {
+          parts.push(`${set.weight_used} lb${set.reps ? ` x ${set.reps}` : ""}`);
+        } else if (set.reps) {
+          parts.push(`${set.reps} reps`);
+        }
+
+        return parts.join(": ");
+      })
+      .filter(Boolean)
+      .join("  |  ");
+
+    return `
+      <article class="training-log-row training-log-row-compact">
+        <div class="training-log-row-top">
+          <strong>${escapeHtml(formatLogDate(entry.entry_date))}</strong>
+          <span>${escapeHtml(entry.workout_title)}</span>
+        </div>
+        <div class="training-log-row-main">
+          <span>${escapeHtml(entry.exercise_code)} ${escapeHtml(entry.exercise_name)}</span>
+          <em>${escapeHtml(setSummary || "Sets saved")}</em>
+        </div>
+      </article>
+    `;
+  }).join("");
+}
+
+function handleClientTrainingLogDateFilter() {
+  const input = document.getElementById("client-training-log-date-filter");
+  const clearButton = document.getElementById("clear-client-training-log-date-filter");
+
+  if (!input || !clearButton) {
+    return;
+  }
+
+  input.addEventListener("input", () => {
+    clientTrainingLogDateFilter = input.value || "";
+    renderClientTrainingLogs();
+  });
+
+  clearButton.addEventListener("click", () => {
+    clientTrainingLogDateFilter = "";
+    input.value = "";
+    renderClientTrainingLogs();
   });
 }
 
@@ -1521,6 +1640,7 @@ async function saveTrainingLogRows(button, logElements, status, options = {}) {
 
   (data || rows).forEach((row) => upsertLocalTrainingLog(row));
   logElements.forEach(updateExerciseLogField);
+  renderClientTrainingLogs();
 
   if (status) {
     status.textContent = successMessage;
@@ -1608,6 +1728,7 @@ handlePasswordResetRequests();
 loadDashboard();
 handleSignOut();
 handleTrainingDateChange();
+handleClientTrainingLogDateFilter();
 handleClientDashboardTabs();
 handleClientWorkoutTabs();
 handleWorkoutInteractions();

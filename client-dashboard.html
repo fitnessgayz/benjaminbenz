@@ -15,7 +15,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=client-dashboard-tabs-1" />
+  <link rel="stylesheet" href="css/style.css?v=client-dashboard-logs-1" />
 </head>
 <body class="dashboard-page is-loading">
   <header class="site-header dashboard-header">
@@ -63,6 +63,7 @@
           <button class="client-dashboard-tab is-active" type="button" data-client-dashboard-tab="insights" aria-selected="true">Workout insights</button>
           <button class="client-dashboard-tab" type="button" data-client-dashboard-tab="workouts" aria-selected="false">Workouts</button>
           <button class="client-dashboard-tab" type="button" data-client-dashboard-tab="progress" aria-selected="false">Progress / check-ins</button>
+          <button class="client-dashboard-tab" type="button" data-client-dashboard-tab="logs" aria-selected="false">Logs</button>
         </nav>
 
         <section class="workout-insights-panel" id="workout-insights-panel" data-client-dashboard-panel="insights" aria-label="Workout insights"></section>
@@ -91,6 +92,26 @@
           <div class="progress-chart" id="progress-chart" aria-label="Progress line graph"></div>
           <p class="progress-goal" id="progress-goal"></p>
         </section>
+
+        <section class="progress-panel" data-client-dashboard-panel="logs" aria-labelledby="client-logs-title" hidden>
+          <div class="panel-heading">
+            <div>
+              <p class="kicker">Training logs</p>
+              <h2 id="client-logs-title">Saved weights</h2>
+            </div>
+            <span class="status-pill" id="client-logs-count">No logs yet</span>
+          </div>
+          <div class="training-log-controls">
+            <label>
+              Search by date
+              <input type="date" id="client-training-log-date-filter" />
+            </label>
+            <button class="button button-ghost" type="button" id="clear-client-training-log-date-filter">Clear</button>
+          </div>
+          <div class="training-log-history" id="client-training-log-history">
+            <p class="empty-state">No weights logged yet.</p>
+          </div>
+        </section>
       </section>
 
       <div class="dashboard-sheet-action">
@@ -107,6 +128,6 @@
   <script src="js/script.js?v=client-dashboard"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js"></script>
-  <script src="js/client-portal.js?v=client-dashboard-tabs-1"></script>
+  <script src="js/client-portal.js?v=client-dashboard-logs-1"></script>
 </body>
 </html>
