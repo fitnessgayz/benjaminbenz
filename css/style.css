@@ -590,19 +590,57 @@ h3 {
 
 .credential-list {
   display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
   align-content: center;
 }
 
-.credential-list p {
+.credential-card {
+  display: grid;
+  gap: 10px;
   margin: 0;
-  padding: 18px 0;
-  border-top: 1px solid var(--line);
-  font-size: clamp(1rem, 1.7vw, 1.24rem);
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+  transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
+}
+
+.credential-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(0, 0, 0, .22);
+  box-shadow: 0 14px 30px rgba(0, 0, 0, .08);
+}
+
+.credential-card strong {
+  font-size: clamp(1rem, 1.3vw, 1.15rem);
   line-height: 1.15;
 }
 
-.credential-list p:last-child {
-  border-bottom: 1px solid var(--line);
+.credential-logo {
+  display: block;
+  width: auto;
+  max-width: 180px;
+  height: 42px;
+  object-fit: contain;
+  object-position: left center;
+}
+
+.credential-logo-frc {
+  max-width: 120px;
+}
+
+.credential-wordmark {
+  display: inline-flex;
+  width: max-content;
+  align-items: center;
+  justify-content: center;
+  color: var(--black);
+  font-size: 1.5rem;
+  font-weight: 900;
+  letter-spacing: .04em;
+  line-height: 1;
+  text-transform: uppercase;
 }
 
 .training-grid {
@@ -3410,6 +3448,7 @@ textarea:focus {
   .training-grid,
   .split-feature,
   .contact,
+  .credential-list,
   .review-track,
   .photo-grid,
   .yelp-summary,
