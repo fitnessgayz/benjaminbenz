@@ -17,6 +17,82 @@ if (reviewTrack) {
   reviews.forEach((review) => reviewTrack.appendChild(review));
 }
 
+const photoGrids = Array.from(document.querySelectorAll("[data-photo-grid]"));
+
+photoGrids.forEach((photoGrid) => {
+  const photos = Array.from(photoGrid.children);
+
+  for (let index = photos.length - 1; index > 0; index -= 1) {
+    const randomIndex = Math.floor(Math.random() * (index + 1));
+    [photos[index], photos[randomIndex]] = [photos[randomIndex], photos[index]];
+  }
+
+  photos.forEach((photo) => photoGrid.appendChild(photo));
+});
+
+const clientCarousels = Array.from(document.querySelectorAll("[data-client-carousel]"));
+
+clientCarousels.forEach((carousel) => {
+  const track = carousel.querySelector("[data-carousel-track]");
+  const slides = Array.from(carousel.querySelectorAll(".client-slide"));
+  const prevButton = carousel.querySelector("[data-carousel-prev]");
+  const nextButton = carousel.querySelector("[data-carousel-next]");
+  const dotsContainer = carousel.querySelector("[data-carousel-dots]");
+
+  if (!track || slides.length === 0) {
+    return;
+  }
+
+  if (dotsContainer) {
+    dotsContainer.innerHTML = slides
+      .map(
+        (_, index) =>
+          `<button class="client-carousel-dot${index === 0 ? " is-active" : ""}" type="button" aria-label="Show client photo ${
+            index + 1
+          }" aria-pressed="${index === 0 ? "true" : "false"}" data-carousel-dot="${index}"></button>`
+      )
+      .join("");
+  }
+
+  const dots = Array.from(carousel.querySelectorAll("[data-carousel-dot]"));
+  let activeIndex = 0;
+
+  const updateCarousel = () => {
+    track.style.transform = `translateX(-${activeIndex * 100}%)`;
+
+    dots.forEach((dot, index) => {
+      const isActive = index === activeIndex;
+      dot.classList.toggle("is-active", isActive);
+      dot.setAttribute("aria-pressed", isActive ? "true" : "false");
+    });
+  };
+
+  prevButton?.addEventListener("click", () => {
+    activeIndex = (activeIndex - 1 + slides.length) % slides.length;
+    updateCarousel();
+  });
+
+  nextButton?.addEventListener("click", () => {
+    activeIndex = (activeIndex + 1) % slides.length;
+    updateCarousel();
+  });
+
+  dots.forEach((dot) => {
+    dot.addEventListener("click", () => {
+      const nextIndex = Number(dot.dataset.carouselDot);
+
+      if (Number.isNaN(nextIndex)) {
+        return;
+      }
+
+      activeIndex = nextIndex;
+      updateCarousel();
+    });
+  });
+
+  updateCarousel();
+});
+
 const homeTabLinks = Array.from(document.querySelectorAll("[data-home-tab-link]"));
 const homeTabPanels = Array.from(document.querySelectorAll("[data-home-tab-panel]"));
 const homeTabStage = document.querySelector(".homepage-tab-stage");

@@ -769,6 +769,101 @@ figcaption {
   font-size: 1rem;
 }
 
+.client-carousel {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 18px;
+  align-items: center;
+}
+
+.client-carousel-viewport {
+  overflow: hidden;
+}
+
+.client-carousel-track {
+  display: flex;
+  transition: transform .28s ease;
+  will-change: transform;
+}
+
+.client-slide {
+  flex: 0 0 100%;
+  min-width: 0;
+  background: transparent;
+}
+
+.client-slide img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  height: auto;
+  display: block;
+  object-fit: cover;
+  object-position: center;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.client-carousel-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  padding: 0;
+  color: var(--black);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font: inherit;
+  font-size: .78rem;
+  font-weight: 900;
+  text-indent: -9999px;
+  cursor: pointer;
+  position: relative;
+}
+
+.client-carousel-button::before {
+  content: "";
+  width: 12px;
+  height: 12px;
+  border-top: 2px solid currentColor;
+  border-right: 2px solid currentColor;
+  transform: rotate(45deg);
+}
+
+.client-carousel-button-prev::before {
+  transform: rotate(-135deg);
+  margin-left: 4px;
+}
+
+.client-carousel-button-next::before {
+  margin-right: 4px;
+}
+
+.client-carousel-dots {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  padding-top: 18px;
+}
+
+.client-carousel-dot {
+  width: 10px;
+  height: 10px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid var(--black);
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.client-carousel-dot.is-active {
+  background: var(--lime);
+  border-color: var(--black);
+}
+
 .contact {
   margin-top: 54px;
   margin-bottom: 54px;
@@ -3083,6 +3178,35 @@ textarea:focus {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .client-carousel {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+  }
+
+  .client-carousel-viewport {
+    order: 1;
+  }
+
+  .client-carousel-button {
+    width: 46px;
+    height: 46px;
+  }
+
+  .client-carousel-button-prev,
+  .client-carousel-button-next {
+    position: absolute;
+    top: calc(50% - 32px);
+    z-index: 1;
+  }
+
+  .client-carousel-button-prev {
+    left: 12px;
+  }
+
+  .client-carousel-button-next {
+    right: 12px;
+  }
+
   .yelp-summary {
     display: grid;
     align-items: start;
@@ -3133,6 +3257,11 @@ textarea:focus {
 
   .client-gallery {
     gap: 8px;
+  }
+
+  .client-carousel-button-prev,
+  .client-carousel-button-next {
+    top: calc(50% - 24px);
   }
 
   .client-list-actions {
