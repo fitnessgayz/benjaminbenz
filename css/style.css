@@ -444,11 +444,16 @@ h3 {
 .editorial h2 {
   max-width: 1180px;
   margin-inline: auto;
+  line-height: .9;
 }
 
 .editorial h2 span {
   display: block;
   white-space: nowrap;
+}
+
+.editorial h2 span + span {
+  margin-top: .08em;
 }
 
 .editorial p:last-child {
@@ -3104,15 +3109,15 @@ textarea:focus {
   }
 
   .home-tabs {
-    position: sticky;
-    top: 76px;
+    position: static;
+    top: auto;
     z-index: 5;
     display: flex;
     gap: 8px;
     overflow-x: auto;
     width: min(var(--max), calc(100% - 40px));
     padding: 12px;
-    margin: 18px auto 12px;
+    margin: 6px auto 16px;
     border: 0;
     border-radius: 0;
     background: transparent;
@@ -3463,7 +3468,7 @@ textarea:focus {
   }
 
   .home-tabs {
-    top: 64px;
+    top: auto;
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     width: auto;
