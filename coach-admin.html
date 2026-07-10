@@ -126,6 +126,17 @@
               </div>
             </div>
           </div>
+          <section class="admin-card recent-client-logs-panel" aria-label="Recent workout logs">
+            <div class="admin-section-heading compact-heading">
+              <div>
+                <p class="kicker">Recent workout logs</p>
+                <h2>Latest client workouts</h2>
+              </div>
+            </div>
+            <div class="training-log-summary-list" id="recent-client-log-history">
+              <p class="empty-state">No workout logs yet.</p>
+            </div>
+          </section>
         </section>
 
         <section class="admin-card" data-admin-panel="profile" hidden>
@@ -246,6 +257,17 @@
             <button class="button button-dark" type="button" id="save-progress-button">Save check-in</button>
           </div>
           <div class="progress-history" id="progress-history"></div>
+          <div class="progress-training-log-panel">
+            <div class="admin-section-heading compact-heading">
+              <div>
+                <p class="kicker">Workout logs</p>
+                <h2>Recent saved workouts</h2>
+              </div>
+            </div>
+            <div class="training-log-summary-list" id="progress-training-log-history">
+              <p class="empty-state">Choose a client to view saved workouts.</p>
+            </div>
+          </div>
         </section>
 
         <section class="admin-card training-log-card" data-admin-panel="logs" hidden>

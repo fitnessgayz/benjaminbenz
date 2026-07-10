@@ -16,6 +16,7 @@ let programs = [];
 let selectedProgramId = "";
 let progressEntries = [];
 let trainingLogs = [];
+let recentTrainingLogs = [];
 let showingArchivedClients = false;
 let clientSearchTerm = "";
 let activeAdminTab = "clients";
@@ -227,6 +228,20 @@ function setAdminTab(tabName) {
   document.querySelectorAll("[data-admin-panel]").forEach((panel) => {
     panel.hidden = panel.dataset.adminPanel !== nextTab;
   });
+
+  if (nextTab === "clients") {
+    loadRecentTrainingLogs();
+  }
+
+  if (nextTab === "progress") {
+    const email = normalizeEmail(selectedProgram()?.client_email);
+
+    if (email) {
+      loadTrainingLogsForEmail(email);
+    } else {
+      renderSelectedClientTrainingLogs();
+    }
+  }
 }
 
 function workoutSummaryFromForm(form, number) {
@@ -656,6 +671,7 @@ async function saveProfileChangesFromForm(form, options = {}) {
   ));
   programs.sort((a, b) => String(a.client_name).localeCompare(String(b.client_name)));
   selectedProgramId = updatedProgram.id || id;
+  renderRecentClientTrainingLogs();
 
   if (shouldRefreshUi) {
     fillForm(updatedProgram);
@@ -899,6 +915,7 @@ function fillForm(program = {}) {
     fillProgressForm();
     renderProgressHistory();
     renderTrainingLogs();
+    renderSelectedClientTrainingLogs();
     progressStatus("Save the client first, then add progress check-ins.");
   }
 }
@@ -1001,6 +1018,9 @@ function renderTrainingLogs() {
 
 async function loadTrainingLogsForEmail(email) {
   if (!coachSupabase || !email) {
+    trainingLogs = [];
+    renderTrainingLogs();
+    renderSelectedClientTrainingLogs();
     return;
   }
 
@@ -1019,11 +1039,13 @@ async function loadTrainingLogsForEmail(email) {
   if (error) {
     trainingLogs = [];
     trainingLogStatus("Could not load weights. Run the training log SQL in Supabase.");
+    renderSelectedClientTrainingLogs();
     return;
   }
 
   trainingLogs = data || [];
   renderTrainingLogs();
+  renderSelectedClientTrainingLogs();
 }
 
 function programsForEmail(email) {
@@ -1042,6 +1064,155 @@ function programsForEmail(email) {
 
       return String(b.updated_at || b.created_at || "").localeCompare(String(a.updated_at || a.created_at || ""));
     });
+}
+
+function clientNameForEmail(email) {
+  const history = programsForEmail(email);
+  const current = history.find((program) => program.active !== false && program.client_archived !== true);
+
+  return current?.client_name || history[0]?.client_name || email || "Client";
+}
+
+function formatAdminDate(value) {
+  if (!value) {
+    return "No date";
+  }
+
+  const parsed = new Date(`${value}T12:00:00`);
+
+  if (Number.isNaN(parsed.getTime())) {
+    return String(value);
+  }
+
+  return parsed.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric"
+  });
+}
+
+function formatAdminTime(value) {
+  if (!value) {
+    return "";
+  }
+
+  const parsed = new Date(value);
+
+  if (Number.isNaN(parsed.getTime())) {
+    return "";
+  }
+
+  return parsed.toLocaleTimeString([], {
+    hour: "numeric",
+    minute: "2-digit"
+  });
+}
+
+function summarizeTrainingLogs(logs = []) {
+  const grouped = new Map();
+
+  logs.forEach((log) => {
+    const clientEmail = normalizeEmail(log.client_email);
+    const key = [clientEmail, log.entry_date || "", log.workout_title || ""].join("::");
+    const lastUpdated = String(log.updated_at || log.created_at || "");
+
+    if (!grouped.has(key)) {
+      grouped.set(key, {
+        client_email: clientEmail,
+        entry_date: log.entry_date || "",
+        workout_title: log.workout_title || "Workout",
+        last_updated: lastUpdated,
+        exercise_codes: new Set(),
+        set_count: 0
+      });
+    }
+
+    const entry = grouped.get(key);
+
+    entry.exercise_codes.add(`${log.exercise_code || ""}:${log.exercise_name || ""}`);
+    entry.set_count += 1;
+
+    if (lastUpdated && String(entry.last_updated || "") < lastUpdated) {
+      entry.last_updated = lastUpdated;
+    }
+  });
+
+  return Array.from(grouped.values())
+    .map((entry) => ({
+      ...entry,
+      exercise_count: entry.exercise_codes.size
+    }))
+    .sort((a, b) => String(b.last_updated || b.entry_date || "").localeCompare(String(a.last_updated || a.entry_date || "")));
+}
+
+function renderTrainingLogSummaryList(targetId, logs = [], options = {}) {
+  const history = document.getElementById(targetId);
+
+  if (!history) {
+    return;
+  }
+
+  if (logs.length === 0) {
+    history.innerHTML = `<p class="empty-state">${options.emptyMessage || "No workout logs yet."}</p>`;
+    return;
+  }
+
+  const summaries = summarizeTrainingLogs(logs);
+  const showClient = options.showClient !== false;
+
+  history.innerHTML = summaries.map((entry) => `
+    <article class="training-log-summary-row">
+      <div class="training-log-summary-date">
+        <strong>${escapeHtml(formatAdminDate(entry.entry_date))}</strong>
+        <span>${escapeHtml(showClient ? clientNameForEmail(entry.client_email) : "Saved workout")}</span>
+      </div>
+      <div class="training-log-summary-body">
+        <span>${escapeHtml(entry.workout_title || "Workout")}</span>
+        <small>${entry.exercise_count} exercise${entry.exercise_count === 1 ? "" : "s"} · ${entry.set_count} sets logged</small>
+      </div>
+      <em>${escapeHtml(formatAdminTime(entry.last_updated) || "Saved")}</em>
+    </article>
+  `).join("");
+}
+
+function renderRecentClientTrainingLogs() {
+  renderTrainingLogSummaryList("recent-client-log-history", recentTrainingLogs, {
+    emptyMessage: "No workout logs yet."
+  });
+}
+
+function renderSelectedClientTrainingLogs() {
+  const program = selectedProgram();
+  const email = normalizeEmail(program?.client_email);
+
+  renderTrainingLogSummaryList("progress-training-log-history", email ? trainingLogs : [], {
+    showClient: false,
+    emptyMessage: email
+      ? "No saved workouts for this client yet."
+      : "Choose a client to view saved workouts."
+  });
+}
+
+async function loadRecentTrainingLogs() {
+  if (!coachSupabase) {
+    return;
+  }
+
+  const { data, error } = await coachSupabase
+    .from("client_workout_logs")
+    .select("*")
+    .order("updated_at", { ascending: false })
+    .order("entry_date", { ascending: false })
+    .limit(120);
+
+  if (error) {
+    recentTrainingLogs = [];
+    renderRecentClientTrainingLogs();
+    return;
+  }
+
+  recentTrainingLogs = data || [];
+  renderRecentClientTrainingLogs();
 }
 
 function programHistoryLabel(program) {
@@ -1176,6 +1347,7 @@ async function loadPrograms() {
   }
 
   renderClientList();
+  await loadRecentTrainingLogs();
   adminStatus("Ready.");
 }
 

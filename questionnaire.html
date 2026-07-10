@@ -33,7 +33,7 @@
     <section class="questionnaire-hero">
       <p class="kicker">Start training</p>
       <h1>Fitness questionnaire</h1>
-      <p>Share your goals, movement history, schedule, and training needs so Benjamin can build a thoughtful path forward.</p>
+      <p>Share your goals, movement history, schedule, and training needs so Benjamin can build the right path forward for one-on-one private coaching or online training.</p>
     </section>
 
     <form class="questionnaire-form" id="training-questionnaire" action="https://script.google.com/macros/s/AKfycbzEPNFHhQ8gTdg3QbnEOLD2exNajO31dwDy0FXzNvQ-fjWmjwANdzwEc4q6zeXUnqgGiA/exec" method="POST">
@@ -49,6 +49,12 @@
           <label><input type="radio" name="preferred_communication" value="Email"> Email</label>
           <label><input type="radio" name="preferred_communication" value="Phone"> Phone</label>
           <label><input type="radio" name="preferred_communication" value="Text"> Text</label>
+        </fieldset>
+        <fieldset>
+          <legend>What type of coaching are you interested in?</legend>
+          <label><input type="radio" name="coaching_interest" value="One-on-one private coaching" required> One-on-one private coaching</label>
+          <label><input type="radio" name="coaching_interest" value="Online coaching"> Online coaching</label>
+          <label><input type="radio" name="coaching_interest" value="Not sure yet"> Not sure yet</label>
         </fieldset>
       </section>
 
