@@ -45,6 +45,19 @@ async function withSlowStatus(promise, message, onSlow, delayMs = 12000) {
   }
 }
 
+function withRequestTimeout(promise, message, timeoutMs = 15000) {
+  let timeoutId;
+  const timeout = new Promise((_, reject) => {
+    timeoutId = window.setTimeout(() => {
+      reject(new Error(message));
+    }, timeoutMs);
+  });
+
+  return Promise.race([promise, timeout]).finally(() => {
+    window.clearTimeout(timeoutId);
+  });
+}
+
 function errorMentionsMissingColumn(error, columnName) {
   const message = String(error?.message || error?.details || "");
 
@@ -1156,28 +1169,38 @@ async function loadTrainingLogsForEmail(email) {
     return;
   }
 
+  const normalizedEmail = normalizeEmail(email);
   trainingLogStatus("Loading weights...");
 
-  const { data, error } = await coachSupabase
-    .from("client_workout_logs")
-    .select("*")
-    .eq("client_email", email)
-    .order("entry_date", { ascending: false })
-    .order("workout_title", { ascending: true })
-    .order("exercise_code", { ascending: true })
-    .order("set_number", { ascending: true })
-    .limit(250);
+  try {
+    const { data, error } = await withRequestTimeout(
+      coachSupabase
+        .from("client_workout_logs")
+        .select("*")
+        .ilike("client_email", normalizedEmail)
+        .order("entry_date", { ascending: false })
+        .order("workout_title", { ascending: true })
+        .order("exercise_code", { ascending: true })
+        .order("set_number", { ascending: true })
+        .limit(250),
+      "Could not load weights right now. Please refresh and try again."
+    );
 
-  if (error) {
-    trainingLogs = [];
-    trainingLogStatus("Could not load weights. Run the training log SQL in Supabase.");
+    if (error) {
+      trainingLogs = [];
+      trainingLogStatus("Could not load weights. Please refresh and try again.");
+      renderSelectedClientTrainingLogs();
+      return;
+    }
+
+    trainingLogs = data || [];
+    renderTrainingLogs();
     renderSelectedClientTrainingLogs();
-    return;
+  } catch (error) {
+    trainingLogs = [];
+    trainingLogStatus(error?.message || "Could not load weights. Please refresh and try again.");
+    renderSelectedClientTrainingLogs();
   }
-
-  trainingLogs = data || [];
-  renderTrainingLogs();
-  renderSelectedClientTrainingLogs();
 }
 
 function programsForEmail(email) {
