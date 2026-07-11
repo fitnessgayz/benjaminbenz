@@ -921,6 +921,7 @@ figcaption {
 .photo-story-dots {
   display: flex;
   justify-content: center;
+  flex-wrap: wrap;
   gap: 10px;
 }
 
@@ -1966,11 +1967,13 @@ footer {
 .skip-toggle {
   position: absolute;
   top: 14px;
-  right: 52px;
+  right: 16px;
   z-index: 2;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
+  min-width: 112px;
   min-height: 30px;
   padding: 5px 9px;
   color: var(--muted);
@@ -2002,13 +2005,14 @@ footer {
 }
 
 .exercise-card-summary {
+  position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr) 26px;
   gap: 14px;
   align-items: center;
   width: 100%;
   min-height: 88px;
-  padding: 12px 132px 12px 16px;
+  padding: 12px 168px 12px 16px;
   color: var(--black);
   background: var(--paper);
   border: 0;
@@ -2039,15 +2043,19 @@ footer {
 }
 
 .exercise-card-summary i {
+  position: absolute;
+  top: 50%;
+  right: 136px;
   color: var(--black);
   font-size: 2.2rem;
   font-style: normal;
   line-height: 1;
+  transform: translateY(-50%);
   transition: transform .18s ease;
 }
 
 .workout-exercise-card.is-open .exercise-card-summary i {
-  transform: rotate(90deg);
+  transform: translateY(-50%) rotate(90deg);
 }
 
 .exercise-detail {
@@ -4173,13 +4181,18 @@ textarea:focus {
 
   .exercise-card-summary {
     grid-template-columns: minmax(0, 1fr) 24px;
-    padding-right: 112px;
+    padding-right: 136px;
   }
 
   .skip-toggle {
-    right: 44px;
+    right: 12px;
+    min-width: 98px;
     padding: 4px 8px;
     font-size: .68rem;
+  }
+
+  .exercise-card-summary i {
+    right: 110px;
   }
 
   .set-header {

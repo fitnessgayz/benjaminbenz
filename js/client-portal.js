@@ -1318,7 +1318,7 @@ function handleClientMetricSave() {
 
     if (error) {
       if (status) {
-        status.textContent = "Could not save yet.";
+        status.textContent = error.message || "Could not save yet.";
       }
       button.disabled = false;
       return;
@@ -1733,6 +1733,11 @@ function filledSetCount(logElement) {
     .length;
 }
 
+function currentExerciseLabel(logElement) {
+  const editedName = logElement?.querySelector("[data-exercise-name-input]")?.value?.trim();
+  return editedName || logElement?.dataset.exerciseName || "";
+}
+
 function incompleteWorkoutExercises(logElements) {
   return logElements.filter((logElement) => {
     const card = logElement.closest(".workout-exercise-card");
@@ -1828,15 +1833,24 @@ async function handleTrainingLogSave() {
         const incompleteExercises = incompleteWorkoutExercises(logElements);
 
         if (incompleteExercises.length > 0) {
+          const saveResult = await saveTrainingLogRows(finishWorkoutButton, logElements, status, {
+            savingMessage: "Saving progress...",
+            successMessage: "Workout progress saved."
+          });
+
+          if (!saveResult.saved) {
+            return;
+          }
+
           const names = incompleteExercises
             .slice(0, 3)
-            .map((logElement) => logElement.dataset.exerciseName)
+            .map((logElement) => currentExerciseLabel(logElement))
             .filter(Boolean)
             .join(", ");
           const extra = incompleteExercises.length > 3 ? ` and ${incompleteExercises.length - 3} more` : "";
 
           if (status) {
-            status.textContent = `Finish needs all sets logged${names ? `: ${names}${extra}.` : "."}`;
+            status.textContent = `Workout progress saved. Finish still needs all sets logged${names ? `: ${names}${extra}.` : "."}`;
           }
           return;
         }

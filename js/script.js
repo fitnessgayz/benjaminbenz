@@ -64,6 +64,51 @@ const photoFocusPositions = {
     card: "24% 58%",
     figure: "28% 62%"
   },
+  "images/home/benjamin-kettlebell-reach.jpg": {
+    hero: "50% 20%",
+    card: "50% 18%",
+    figure: "50% 22%"
+  },
+  "images/home/benjamin-bosu-core.jpg": {
+    hero: "52% 44%",
+    card: "52% 42%",
+    figure: "54% 44%"
+  },
+  "images/home/benjamin-bike-conditioning.jpg": {
+    hero: "48% 18%",
+    card: "48% 16%",
+    figure: "50% 20%"
+  },
+  "images/home/benjamin-stability-press.jpg": {
+    hero: "40% 34%",
+    card: "42% 32%",
+    figure: "44% 36%"
+  },
+  "images/home/benjamin-gym-reset.jpg": {
+    hero: "42% 20%",
+    card: "40% 20%",
+    figure: "42% 22%"
+  },
+  "images/home/benjamin-pullup-back.jpg": {
+    hero: "46% 24%",
+    card: "46% 22%",
+    figure: "50% 24%"
+  },
+  "images/home/benjamin-band-activation.jpg": {
+    hero: "48% 26%",
+    card: "50% 24%",
+    figure: "52% 26%"
+  },
+  "images/home/benjamin-climb-conditioning.jpg": {
+    hero: "50% 22%",
+    card: "50% 20%",
+    figure: "52% 22%"
+  },
+  "images/home/benjamin-stairs-reset.jpg": {
+    hero: "48% 18%",
+    card: "48% 18%",
+    figure: "50% 20%"
+  },
   "images/home/benjamin-strength-rack.jpg": {
     hero: "62% 14%",
     card: "62% 16%",
@@ -126,6 +171,42 @@ if (heroImage && trainingCardImages.length && trainingPhotoGrid) {
     {
       src: "images/home/benjamin-dip-station.jpg",
       alt: "Benjamin training on the dip station in the gym"
+    },
+    {
+      src: "images/home/benjamin-kettlebell-reach.jpg",
+      alt: "Benjamin pressing a dumbbell overhead with control in the gym"
+    },
+    {
+      src: "images/home/benjamin-bosu-core.jpg",
+      alt: "Benjamin using a BOSU ball for core stability work"
+    },
+    {
+      src: "images/home/benjamin-bike-conditioning.jpg",
+      alt: "Benjamin riding a stationary bike for conditioning"
+    },
+    {
+      src: "images/home/benjamin-stability-press.jpg",
+      alt: "Benjamin pressing dumbbells while balancing on a stability ball"
+    },
+    {
+      src: "images/home/benjamin-gym-reset.jpg",
+      alt: "Benjamin taking a reset moment on the gym floor"
+    },
+    {
+      src: "images/home/benjamin-pullup-back.jpg",
+      alt: "Benjamin performing a pull-up in the gym"
+    },
+    {
+      src: "images/home/benjamin-band-activation.jpg",
+      alt: "Benjamin using a resistance band for activation work"
+    },
+    {
+      src: "images/home/benjamin-climb-conditioning.jpg",
+      alt: "Benjamin climbing indoors for athletic conditioning"
+    },
+    {
+      src: "images/home/benjamin-stairs-reset.jpg",
+      alt: "Benjamin pausing on a staircase after training"
     }
   ];
 
