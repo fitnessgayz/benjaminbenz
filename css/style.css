@@ -1144,6 +1144,14 @@ figcaption {
   max-width: 780px;
 }
 
+.home-panel[data-home-tab-panel="start"] .contact h3 {
+  margin: 12px 0 0;
+  max-width: 780px;
+  font-size: clamp(2rem, 3.4vw, 3rem);
+  line-height: .98;
+  text-transform: uppercase;
+}
+
 .home-panel[data-home-tab-panel="start"] .contact p:not(.kicker) {
   max-width: 38ch;
   font-size: clamp(1.1rem, 1.9vw, 1.55rem);
