@@ -12,7 +12,7 @@ const coachPortalEmails = ["benjaminbenz.fit@gmail.com"];
 let activeClientEmail = "";
 let trainingLogs = [];
 let clientTrainingLogDateFilter = "";
-let activeClientDashboardTab = "insights";
+let activeClientDashboardTab = "workouts";
 let activeWorkoutTabIndex = 0;
 let currentProgram = null;
 const dashboardRequestTimeout = 15000;
@@ -1248,7 +1248,7 @@ function addSetRow(logElement) {
 }
 
 function setClientDashboardTab(tabName) {
-  const nextTab = tabName || "insights";
+  const nextTab = tabName || "workouts";
   const tabs = document.querySelectorAll("[data-client-dashboard-tab]");
   const panels = document.querySelectorAll("[data-client-dashboard-panel]");
 
