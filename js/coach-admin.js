@@ -302,12 +302,14 @@ function updateSelectedClientSummary(program = selectedProgram()) {
   const name = document.getElementById("selected-client-name");
   const email = document.getElementById("selected-client-email");
   const meta = document.getElementById("selected-client-meta");
+  const sessionLink = document.getElementById("selected-session-link");
   const saveButton = document.getElementById("selected-save-profile-button");
   const profileArchiveButton = document.getElementById("profile-archive-client-button");
   const profileDeleteButton = document.getElementById("profile-delete-client-button");
   const clientName = formValue(form, "client_name") || program?.client_name || "Choose a client";
   const clientEmail = formValue(form, "client_email") || program?.client_email || "Search or create a client to start editing.";
   const clientPhone = formValue(form, "client_phone") || program?.client_phone || "";
+  const sheetUrl = formValue(form, "sheet_url") || program?.sheet_url || "";
   const isExistingClient = Boolean(form?.elements.id?.value || program?.id);
   const isActive = form?.elements.active ? form.elements.active.checked : program?.active !== false;
   const status = program?.client_archived
@@ -346,6 +348,16 @@ function updateSelectedClientSummary(program = selectedProgram()) {
 
   if (saveButton) {
     saveButton.disabled = !isExistingClient;
+  }
+
+  if (sessionLink) {
+    if (isExistingClient && sheetUrl) {
+      sessionLink.href = sheetUrl;
+      sessionLink.hidden = false;
+    } else {
+      sessionLink.removeAttribute("href");
+      sessionLink.hidden = true;
+    }
   }
 
   if (profileArchiveButton) {
