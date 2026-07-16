@@ -16,6 +16,7 @@ let activeClientDashboardTab = "workouts";
 let activeWorkoutTabIndex = 0;
 let currentProgram = null;
 const dashboardRequestTimeout = 15000;
+const customWorkoutTitle = "Custom workout";
 
 function isCoachPortalEmail(email) {
   return coachPortalEmails.includes(String(email || "").toLowerCase());
@@ -676,6 +677,10 @@ function inferWorkoutFormat(workout) {
 }
 
 function formatLabel(format) {
+  if (format === "custom") {
+    return "Custom workout";
+  }
+
   if (format === "superset") {
     return "Superset";
   }
@@ -685,6 +690,53 @@ function formatLabel(format) {
   }
 
   return "Single exercises";
+}
+
+function isCustomWorkoutTitle(value) {
+  return String(value || "").trim().toLowerCase() === customWorkoutTitle;
+}
+
+function customExerciseCode(index = 0) {
+  return `CW${String(index + 1).padStart(2, "0")}`;
+}
+
+function customWorkoutLogs() {
+  return trainingLogs.filter((log) => isCustomWorkoutTitle(log.workout_title));
+}
+
+function customWorkoutExercises() {
+  const grouped = new Map();
+
+  customWorkoutLogs().forEach((log) => {
+    const code = String(log.exercise_code || "").trim() || customExerciseCode(grouped.size);
+    const exerciseName = String(log.exercise_name || "").trim();
+
+    if (!grouped.has(code)) {
+      grouped.set(code, {
+        code,
+        name: exerciseName || `Exercise ${grouped.size + 1}`,
+        prescription: "Custom sets",
+        rest: ""
+      });
+      return;
+    }
+
+    if (exerciseName) {
+      grouped.get(code).name = exerciseName;
+    }
+  });
+
+  return Array.from(grouped.values()).sort((left, right) => left.code.localeCompare(right.code, undefined, { numeric: true }));
+}
+
+function nextCustomExerciseCode(container) {
+  const codes = Array.from(container?.querySelectorAll("[data-exercise-log]") || [])
+    .map((element) => String(element.dataset.exerciseCode || "").match(/\d+/)?.[0])
+    .map((value) => Number(value))
+    .filter((value) => Number.isFinite(value));
+  const nextNumber = codes.length > 0 ? Math.max(...codes) + 1 : 1;
+
+  return customExerciseCode(nextNumber - 1);
 }
 
 function skipControl() {
@@ -795,6 +847,81 @@ function workoutActionsMarkup(workout) {
   `;
 }
 
+function customWorkoutCardMarkup(exercise, workoutTitle) {
+  const exerciseName = String(exercise.name || "").trim() || "Custom exercise";
+
+  return `
+    <article class="workout-exercise-card custom-workout-card is-open" data-custom-exercise-card>
+      <button class="exercise-card-summary" type="button" data-exercise-toggle>
+        <span>
+          <strong data-exercise-title>${escapeHtml(exerciseDisplayName(exercise.code, exerciseName))}</strong>
+          <em>Log sets, weight, and notes.</em>
+          <small data-set-progress>0 / 3 sets completed</small>
+        </span>
+        <i>›</i>
+      </button>
+      <div class="exercise-detail custom-workout-detail">
+        <div class="custom-workout-card-actions">
+          <span class="status-pill">Custom exercise</span>
+          <button class="button button-ghost danger-button" type="button" data-remove-custom-exercise>Remove</button>
+        </div>
+        ${exerciseLogFields({
+          code: exercise.code,
+          name: exerciseName,
+          prescription: exercise.prescription || "Custom sets",
+          rest: exercise.rest || ""
+        }, workoutTitle, {
+          panelClass: "custom-exercise-log",
+          showSubmit: false
+        })}
+      </div>
+    </article>
+  `;
+}
+
+function customWorkoutListMarkup() {
+  const exercises = customWorkoutExercises();
+
+  if (exercises.length === 0) {
+    return '<p class="empty-state custom-workout-empty">Add an exercise to start a custom workout.</p>';
+  }
+
+  return exercises.map((exercise) => customWorkoutCardMarkup(exercise, customWorkoutTitle)).join("");
+}
+
+function customWorkoutPanelMarkup(index) {
+  const exercises = customWorkoutExercises();
+  const hasExercises = exercises.length > 0;
+
+  return `
+    <section
+      class="client-workout-panel client-workout-panel-custom${index === activeWorkoutTabIndex ? " is-active" : ""}"
+      id="client-workout-panel-${index}"
+      role="tabpanel"
+      aria-labelledby="client-workout-tab-${index}"
+      ${index === activeWorkoutTabIndex ? "" : "hidden"}
+    >
+      <div class="panel-heading">
+        <div>
+          <h2>${escapeHtml(customWorkoutTitle)}</h2>
+        </div>
+        <span class="status-pill">Build your own</span>
+      </div>
+      <div class="workout-format-pill">${escapeHtml(formatLabel("custom"))}</div>
+      <div class="custom-workout-builder">
+        <div class="custom-workout-header">
+          <p>Add your own exercises here and save them into your workout log.</p>
+          <button class="button button-ghost" type="button" data-add-custom-exercise>Add exercise</button>
+        </div>
+        <div class="workout-app-list custom-workout-list" data-custom-workout-list role="list" aria-label="Custom workout exercises">
+          ${customWorkoutListMarkup()}
+        </div>
+        ${hasExercises ? workoutActionsMarkup({ exercises }) : ""}
+      </div>
+    </section>
+  `;
+}
+
 function renderClientWorkoutTabs(workouts = []) {
   const tabs = document.getElementById("client-workout-tabs");
   const panels = document.getElementById("client-workout-panels");
@@ -804,10 +931,16 @@ function renderClientWorkoutTabs(workouts = []) {
     return;
   }
 
-  const availableWorkouts = Array.isArray(workouts) ? workouts : [];
+  const scheduledWorkouts = Array.isArray(workouts) ? workouts : [];
+  const availableWorkouts = [...scheduledWorkouts, {
+    title: customWorkoutTitle,
+    focus: "Build your own",
+    format: "custom",
+    isCustom: true
+  }];
 
   if (count) {
-    count.textContent = `${availableWorkouts.length} workout${availableWorkouts.length === 1 ? "" : "s"}`;
+    count.textContent = `${scheduledWorkouts.length} workout${scheduledWorkouts.length === 1 ? "" : "s"}`;
   }
 
   if (availableWorkouts.length === 0) {
@@ -823,6 +956,7 @@ function renderClientWorkoutTabs(workouts = []) {
   tabs.innerHTML = availableWorkouts.map((workout, index) => {
     const title = workout.title || `Workout ${index + 1}`;
     const isActive = index === activeWorkoutTabIndex;
+    const label = workout.isCustom ? "Custom" : `Workout ${index + 1}`;
 
     return `
       <button
@@ -834,13 +968,17 @@ function renderClientWorkoutTabs(workouts = []) {
         aria-controls="client-workout-panel-${index}"
         data-client-workout-tab="${index}"
       >
-        <span>Workout ${index + 1}</span>
+        <span>${escapeHtml(label)}</span>
         <strong>${escapeHtml(title)}</strong>
       </button>
     `;
   }).join("");
 
   panels.innerHTML = availableWorkouts.map((workout, index) => {
+    if (workout.isCustom) {
+      return customWorkoutPanelMarkup(index);
+    }
+
     const title = workout.title || `Workout ${index + 1}`;
     const isActive = index === activeWorkoutTabIndex;
 
@@ -986,6 +1124,10 @@ function updateExerciseLogField(logElement) {
 
 function populateTrainingLogs(logs) {
   trainingLogs = Array.isArray(logs) ? logs : [];
+
+  if (currentProgram) {
+    renderClientWorkoutTabs(Array.isArray(currentProgram.workouts) ? currentProgram.workouts : []);
+  }
 
   document.querySelectorAll("[data-exercise-log]").forEach((logElement) => {
     updateExerciseLogField(logElement);
@@ -1352,6 +1494,8 @@ function handleWorkoutInteractions() {
   document.addEventListener("click", (event) => {
     const toggle = event.target.closest("[data-exercise-toggle]");
     const addSetButton = event.target.closest("[data-add-set]");
+    const addCustomExerciseButton = event.target.closest("[data-add-custom-exercise]");
+    const removeCustomExerciseButton = event.target.closest("[data-remove-custom-exercise]");
 
     if (toggle) {
       const card = toggle.closest(".workout-exercise-card");
@@ -1366,6 +1510,50 @@ function handleWorkoutInteractions() {
 
       if (logElement) {
         addSetRow(logElement);
+      }
+    }
+
+    if (addCustomExerciseButton) {
+      const panel = addCustomExerciseButton.closest(".client-workout-panel-custom");
+      const list = panel?.querySelector("[data-custom-workout-list]");
+
+      if (list) {
+        const nextCode = nextCustomExerciseCode(list);
+        const nextIndex = list.querySelectorAll("[data-custom-exercise-card]").length + 1;
+        const emptyState = list.querySelector(".custom-workout-empty");
+
+        emptyState?.remove();
+        list.insertAdjacentHTML("beforeend", customWorkoutCardMarkup({
+          code: nextCode,
+          name: `Exercise ${nextIndex}`,
+          prescription: "Custom sets",
+          rest: ""
+        }, customWorkoutTitle));
+
+        const newLogElement = list.querySelector("[data-custom-exercise-card]:last-child [data-exercise-log]");
+        const actionPanel = panel.querySelector(".custom-workout-builder");
+
+        if (!actionPanel.querySelector(".workout-actions")) {
+          actionPanel.insertAdjacentHTML("beforeend", workoutActionsMarkup({ exercises: [{ code: nextCode }] }));
+        }
+
+        if (newLogElement) {
+          updateExerciseLogField(newLogElement);
+          newLogElement.querySelector("[data-exercise-name-input]")?.focus();
+        }
+      }
+    }
+
+    if (removeCustomExerciseButton) {
+      const panel = removeCustomExerciseButton.closest(".client-workout-panel-custom");
+      const card = removeCustomExerciseButton.closest("[data-custom-exercise-card]");
+      const list = panel?.querySelector("[data-custom-workout-list]");
+
+      card?.remove();
+
+      if (list && list.querySelectorAll("[data-custom-exercise-card]").length === 0) {
+        list.innerHTML = '<p class="empty-state custom-workout-empty">Add an exercise to start a custom workout.</p>';
+        panel?.querySelector(".workout-actions")?.remove();
       }
     }
   });

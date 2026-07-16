@@ -1891,8 +1891,65 @@ footer {
   gap: 12px;
 }
 
+.client-workout-panel-custom {
+  align-content: start;
+}
+
 .client-workout-panel[hidden] {
   display: none;
+}
+
+.custom-workout-builder {
+  display: grid;
+  gap: 12px;
+}
+
+.custom-workout-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.custom-workout-header p {
+  margin: 0;
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.custom-workout-list {
+  gap: 12px;
+}
+
+.custom-workout-empty {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.custom-workout-card .exercise-card-summary {
+  padding-right: 52px;
+}
+
+.custom-workout-card .exercise-card-summary i {
+  right: 16px;
+}
+
+.custom-workout-card-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.custom-exercise-log {
+  display: grid;
+  gap: 16px;
+}
+
+.custom-exercise-log .exercise-date {
+  max-width: 210px;
 }
 
 .workout-format-heading {
@@ -2761,8 +2818,8 @@ footer {
 .program-history-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 12px;
-  align-items: center;
+  gap: 16px;
+  align-items: start;
   padding: 12px;
   background: var(--paper);
   border: 1px solid var(--line);
@@ -2773,6 +2830,10 @@ footer {
   border-color: var(--black);
 }
 
+.program-history-summary {
+  min-width: 0;
+}
+
 .program-history-row strong,
 .program-history-row span {
   display: block;
@@ -2781,26 +2842,31 @@ footer {
 .program-history-row strong {
   color: var(--black);
   font-weight: 900;
+  line-height: 1.08;
 }
 
 .program-history-row span {
-  margin-top: 3px;
+  margin-top: 8px;
   color: var(--muted);
   font-size: .82rem;
   font-weight: 900;
+  line-height: 1.25;
 }
 
 .program-history-actions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  width: min(100%, 360px);
+  justify-self: end;
   gap: 6px;
 }
 
 .program-history-actions .button {
+  width: 100%;
   min-height: 34px;
   padding: 8px 10px;
   font-size: .72rem;
+  white-space: nowrap;
 }
 
 #start-new-program-button {
@@ -3787,12 +3853,19 @@ textarea:focus {
     display: grid;
   }
 
+  .program-history-row {
+    grid-template-columns: 1fr;
+  }
+
   .program-history-actions {
-    justify-content: stretch;
+    grid-template-columns: 1fr;
+    width: 100%;
+    justify-self: stretch;
   }
 
   .program-history-actions .button {
-    flex: 1 1 90px;
+    width: 100%;
+    white-space: normal;
   }
 
   .profile-actions-row {
@@ -4170,6 +4243,16 @@ textarea:focus {
 
   .panel-heading {
     display: grid;
+  }
+
+  .custom-workout-header,
+  .custom-workout-card-actions {
+    display: grid;
+  }
+
+  .custom-workout-header .button,
+  .custom-workout-card-actions .button {
+    width: 100%;
   }
 
   .exercise-row {

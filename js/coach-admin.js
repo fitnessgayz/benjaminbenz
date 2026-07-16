@@ -1417,7 +1417,7 @@ function renderProgramHistory(email = "") {
   programHistoryStatus(`${historyPrograms.length} program${historyPrograms.length === 1 ? "" : "s"} saved for this client.`);
   list.innerHTML = historyPrograms.map((program) => `
     <article class="program-history-row${program.id === selectedProgramId ? " is-selected" : ""}">
-      <div>
+      <div class="program-history-summary">
         <strong>${program.program_title || "Client Program"}</strong>
         <span>${programHistoryLabel(program)} · ${program.updated_at ? new Date(program.updated_at).toLocaleDateString() : "No date"}</span>
       </div>
