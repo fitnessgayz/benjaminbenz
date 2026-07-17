@@ -22,6 +22,8 @@ let showingArchivedClients = false;
 let clientSearchTerm = "";
 let activeAdminTab = "clients";
 let pendingProgramCopy = null;
+let sessionSheetRequestId = 0;
+const sessionSheetCache = new Map();
 
 function adminStatus(message) {
   const status = document.getElementById("admin-save-status");
@@ -111,6 +113,347 @@ function escapeHtml(value) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
+}
+
+function parseGoogleSheetReference(sheetUrl) {
+  try {
+    const url = new URL(String(sheetUrl || "").trim());
+    const match = url.pathname.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+
+    if (!match) {
+      return null;
+    }
+
+    const hash = new URLSearchParams((url.hash || "").replace(/^#/, ""));
+    const gid = url.searchParams.get("gid") || hash.get("gid") || "";
+
+    return {
+      sheetId: match[1],
+      gid
+    };
+  } catch {
+    return null;
+  }
+}
+
+function googleSheetCsvUrl(sheetUrl) {
+  const reference = parseGoogleSheetReference(sheetUrl);
+
+  if (!reference) {
+    return "";
+  }
+
+  return `https://docs.google.com/spreadsheets/d/${reference.sheetId}/export?format=csv${reference.gid ? `&gid=${reference.gid}` : ""}`;
+}
+
+function parseCsvRows(csvText) {
+  const rows = [];
+  let row = [];
+  let cell = "";
+  let inQuotes = false;
+
+  for (let index = 0; index < csvText.length; index += 1) {
+    const char = csvText[index];
+    const nextChar = csvText[index + 1];
+
+    if (char === "\"") {
+      if (inQuotes && nextChar === "\"") {
+        cell += "\"";
+        index += 1;
+      } else {
+        inQuotes = !inQuotes;
+      }
+      continue;
+    }
+
+    if (char === "," && !inQuotes) {
+      row.push(cell.trim());
+      cell = "";
+      continue;
+    }
+
+    if ((char === "\n" || char === "\r") && !inQuotes) {
+      if (char === "\r" && nextChar === "\n") {
+        index += 1;
+      }
+
+      row.push(cell.trim());
+      rows.push(row);
+      row = [];
+      cell = "";
+      continue;
+    }
+
+    cell += char;
+  }
+
+  if (cell || row.length > 0) {
+    row.push(cell.trim());
+    rows.push(row);
+  }
+
+  return rows;
+}
+
+function nonEmptySheetRows(rows) {
+  return rows.filter((row) => row.some((value) => String(value || "").trim() !== ""));
+}
+
+function isLikelyHeaderRow(row) {
+  const values = row.filter((value) => String(value || "").trim() !== "");
+
+  return values.length > 0 &&
+    values.every((value) => !normalizeSessionDate(value) && Number.isNaN(Number(value)));
+}
+
+function normalizeSessionDate(value) {
+  const text = String(value || "").trim();
+
+  if (!text) {
+    return "";
+  }
+
+  let match = text.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+
+  if (match) {
+    const [, year, month, day] = match;
+    return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+  }
+
+  match = text.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+
+  if (match) {
+    let [, month, day, year] = match;
+    const resolvedYear = year.length === 2 ? `20${year}` : year;
+    return `${resolvedYear}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+  }
+
+  const parsed = new Date(text);
+
+  if (Number.isNaN(parsed.getTime())) {
+    return "";
+  }
+
+  return parsed.toLocaleDateString("en-CA", { timeZone: "UTC" });
+}
+
+function firstSessionDateInRow(row) {
+  for (const value of row) {
+    const normalized = normalizeSessionDate(value);
+
+    if (normalized) {
+      return normalized;
+    }
+  }
+
+  return "";
+}
+
+function formatSessionDate(value) {
+  const normalized = normalizeSessionDate(value);
+
+  if (!normalized) {
+    return "";
+  }
+
+  const [year, month, day] = normalized.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC"
+  });
+}
+
+function sessionSheetSummaryFromRows(rows) {
+  const populatedRows = nonEmptySheetRows(rows);
+  const dataRows = populatedRows.length > 1 && isLikelyHeaderRow(populatedRows[0])
+    ? populatedRows.slice(1)
+    : populatedRows;
+  const recentDates = Array.from(new Set(
+    dataRows
+      .map(firstSessionDateInRow)
+      .filter(Boolean)
+  ))
+    .sort((left, right) => right.localeCompare(left))
+    .slice(0, 10);
+
+  return {
+    count: dataRows.length,
+    recentDates
+  };
+}
+
+function renderSessionSheetState(state = {}) {
+  const summaryCard = document.getElementById("selected-session-count");
+  const summaryValue = document.getElementById("selected-session-count-value");
+  const programCount = document.getElementById("program-session-count");
+  const panelLink = document.getElementById("sessions-panel-link");
+  const panelCount = document.getElementById("session-sheet-count-value");
+  const panelStatus = document.getElementById("session-sheet-count-status");
+  const panelDatesStatus = document.getElementById("session-sheet-dates-status");
+  const panelDateList = document.getElementById("session-sheet-date-list");
+
+  if (summaryCard) {
+    summaryCard.hidden = !state.showSummary;
+  }
+
+  if (summaryValue) {
+    summaryValue.textContent = state.showSummary ? String(state.count ?? "--") : "--";
+  }
+
+  if (programCount) {
+    programCount.textContent = state.programMessage || "Add a Google Sheet link to load the count.";
+  }
+
+  if (panelLink) {
+    if (state.sheetUrl) {
+      panelLink.href = state.sheetUrl;
+      panelLink.hidden = false;
+    } else {
+      panelLink.removeAttribute("href");
+      panelLink.hidden = true;
+    }
+  }
+
+  if (panelCount) {
+    panelCount.textContent = String(state.count ?? "--");
+  }
+
+  if (panelStatus) {
+    panelStatus.textContent = state.panelMessage || "Select a client with a Google Sheet link.";
+  }
+
+  if (panelDatesStatus) {
+    panelDatesStatus.textContent = state.datesMessage || "Dates found in the linked session sheet.";
+  }
+
+  if (panelDateList) {
+    if (Array.isArray(state.recentDates) && state.recentDates.length > 0) {
+      panelDateList.innerHTML = state.recentDates.map((date) => (
+        `<span class="session-date-chip">${escapeHtml(formatSessionDate(date))}</span>`
+      )).join("");
+    } else {
+      panelDateList.innerHTML = `<p class="empty-state">${escapeHtml(state.emptyDatesMessage || "No session dates yet.")}</p>`;
+    }
+  }
+}
+
+async function loadSessionSheetSummary(sheetUrl, options = {}) {
+  const isExistingClient = options.isExistingClient !== false;
+  const trimmedUrl = String(sheetUrl || "").trim();
+
+  if (!isExistingClient) {
+    renderSessionSheetState({
+      showSummary: false,
+      programMessage: "Save the client first, then add a Google Sheet link.",
+      panelMessage: "Save the client first to track session counts.",
+      datesMessage: "Recent session dates will appear after a sheet is linked.",
+      emptyDatesMessage: "No client selected.",
+      sheetUrl: ""
+    });
+    return;
+  }
+
+  if (!trimmedUrl) {
+    renderSessionSheetState({
+      showSummary: false,
+      programMessage: "Add a Google Sheet link to load the count.",
+      panelMessage: "Add a Google Sheet link for this client.",
+      datesMessage: "Recent session dates will appear after a sheet is linked.",
+      emptyDatesMessage: "No session sheet linked.",
+      sheetUrl: ""
+    });
+    return;
+  }
+
+  const csvUrl = googleSheetCsvUrl(trimmedUrl);
+
+  if (!csvUrl) {
+    renderSessionSheetState({
+      showSummary: false,
+      programMessage: "Use a Google Sheets link to load the count.",
+      panelMessage: "This link is not a Google Sheets URL.",
+      datesMessage: "Recent session dates require a Google Sheets link.",
+      emptyDatesMessage: "Session sheet format not supported yet.",
+      sheetUrl: trimmedUrl
+    });
+    return;
+  }
+
+  if (sessionSheetCache.has(csvUrl)) {
+    const cached = sessionSheetCache.get(csvUrl);
+
+    renderSessionSheetState({
+      showSummary: true,
+      count: cached.count,
+      recentDates: cached.recentDates,
+      programMessage: `${cached.count} session${cached.count === 1 ? "" : "s"} found`,
+      panelMessage: `Loaded from linked session sheet.`,
+      datesMessage: cached.recentDates.length > 0 ? "Most recent dates found in the sheet." : "No dates were detected in the sheet.",
+      emptyDatesMessage: "No dated sessions found yet.",
+      sheetUrl: trimmedUrl
+    });
+    return;
+  }
+
+  const requestId = ++sessionSheetRequestId;
+
+  renderSessionSheetState({
+    showSummary: false,
+    count: "--",
+    recentDates: [],
+    programMessage: "Loading session count...",
+    panelMessage: "Loading linked session sheet...",
+    datesMessage: "Reading recent session dates...",
+    emptyDatesMessage: "Loading session dates...",
+    sheetUrl: trimmedUrl
+  });
+
+  try {
+    const response = await fetch(csvUrl);
+
+    if (!response.ok) {
+      throw new Error("Could not open the linked Google Sheet.");
+    }
+
+    const csvText = await response.text();
+    const summary = sessionSheetSummaryFromRows(parseCsvRows(csvText));
+
+    sessionSheetCache.set(csvUrl, summary);
+
+    if (requestId !== sessionSheetRequestId) {
+      return;
+    }
+
+    renderSessionSheetState({
+      showSummary: true,
+      count: summary.count,
+      recentDates: summary.recentDates,
+      programMessage: `${summary.count} session${summary.count === 1 ? "" : "s"} found`,
+      panelMessage: "Loaded from linked session sheet.",
+      datesMessage: summary.recentDates.length > 0 ? "Most recent dates found in the sheet." : "No dates were detected in the sheet.",
+      emptyDatesMessage: "No dated sessions found yet.",
+      sheetUrl: trimmedUrl
+    });
+  } catch (error) {
+    if (requestId !== sessionSheetRequestId) {
+      return;
+    }
+
+    renderSessionSheetState({
+      showSummary: false,
+      count: "--",
+      recentDates: [],
+      programMessage: "Could not load session count.",
+      panelMessage: error.message || "Could not load the linked session sheet.",
+      datesMessage: "Recent session dates could not be loaded.",
+      emptyDatesMessage: "Session dates unavailable.",
+      sheetUrl: trimmedUrl
+    });
+  }
 }
 
 function isValidEmail(value) {
@@ -368,6 +711,8 @@ function updateSelectedClientSummary(program = selectedProgram()) {
   if (profileDeleteButton) {
     profileDeleteButton.disabled = !isExistingClient;
   }
+
+  void loadSessionSheetSummary(sheetUrl, { isExistingClient });
 
   if (!isExistingClient) {
     profileManagementStatus("Save this client first, then archive or delete them.");
@@ -1609,6 +1954,16 @@ function handleAdminLiveUpdates() {
     }
 
     if (name === "active") {
+      updateSelectedClientSummary();
+    }
+
+    if (name === "sheet_url") {
+      const csvUrl = googleSheetCsvUrl(formValue(form, "sheet_url"));
+
+      if (csvUrl) {
+        sessionSheetCache.delete(csvUrl);
+      }
+
       updateSelectedClientSummary();
     }
   });

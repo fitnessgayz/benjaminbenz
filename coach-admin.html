@@ -56,6 +56,10 @@
             <span>No client selected</span>
           </div>
           <div class="selected-client-actions">
+            <div class="selected-session-count" id="selected-session-count" hidden>
+              <span>Session count</span>
+              <strong id="selected-session-count-value">--</strong>
+            </div>
             <a class="button button-dark" id="selected-session-link" href="#" target="_blank" rel="noopener" hidden>Open session link</a>
             <button class="button button-ghost" type="button" id="selected-save-profile-button">Save changes</button>
           </div>
@@ -68,6 +72,7 @@
           <button class="admin-tab" type="button" data-admin-tab="workouts" aria-selected="false">Workouts</button>
           <button class="admin-tab" type="button" data-admin-tab="progress" aria-selected="false">Progress</button>
           <button class="admin-tab" type="button" data-admin-tab="notes" aria-selected="false">Notes</button>
+          <button class="admin-tab" type="button" data-admin-tab="sessions" aria-selected="false">Sessions</button>
           <button class="admin-tab" type="button" data-admin-tab="logs" aria-selected="false">Logs</button>
         </nav>
 
@@ -216,6 +221,10 @@
               Google Sheet link
               <input type="url" name="sheet_url" placeholder="https://docs.google.com/..." />
             </label>
+            <label class="readonly-output-field">
+              Session log count
+              <output id="program-session-count">Add a Google Sheet link to load the count.</output>
+            </label>
           </div>
           <label>
             Program summary
@@ -273,6 +282,32 @@
             </div>
             <div class="training-log-summary-list" id="progress-training-log-history">
               <p class="empty-state">Choose a client to view saved workouts.</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="admin-card session-sheet-panel" data-admin-panel="sessions" hidden>
+          <div class="admin-section-heading">
+            <div>
+              <p class="kicker">Session sheet</p>
+              <h2>Session count</h2>
+            </div>
+            <a class="button button-dark" id="sessions-panel-link" href="#" target="_blank" rel="noopener" hidden>Open session link</a>
+          </div>
+          <div class="session-sheet-summary">
+            <article class="session-sheet-count-card">
+              <span>Total sessions</span>
+              <strong id="session-sheet-count-value">--</strong>
+              <small id="session-sheet-count-status">Select a client with a Google Sheet link.</small>
+            </article>
+          </div>
+          <div class="session-date-history">
+            <div class="program-history-heading">
+              <strong>Recent session dates</strong>
+              <span id="session-sheet-dates-status">Dates found in the linked session sheet.</span>
+            </div>
+            <div class="session-date-list" id="session-sheet-date-list">
+              <p class="empty-state">No session dates yet.</p>
             </div>
           </div>
         </section>
