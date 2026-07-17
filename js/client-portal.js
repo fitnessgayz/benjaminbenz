@@ -519,18 +519,25 @@ function repsFromPrescription(prescription) {
   return repTargetsFromPrescription(prescription)[0] || "";
 }
 
+function setRowMarkup(setNumber, repPlaceholder = "") {
+  return `
+    <div class="set-row" data-set-row data-set-number="${setNumber}">
+      <span>${setNumber}</span>
+      <input type="number" min="0" step="0.5" placeholder="0" data-set-weight />
+      <b>x</b>
+      <input type="number" min="0" step="1" placeholder="${escapeHtml(repPlaceholder)}" data-set-reps />
+      <button class="set-delete-button" type="button" data-delete-set aria-label="Delete set ${setNumber}">Delete</button>
+    </div>
+  `;
+}
+
 function setRows(exercise) {
   const setCount = setCountFromPrescription(exercise.prescription);
   const repTargets = repTargetsFromPrescription(exercise.prescription);
 
-  return Array.from({ length: setCount }, (_, index) => `
-    <div class="set-row" data-set-row data-set-number="${index + 1}">
-      <span>${index + 1}</span>
-      <input type="number" min="0" step="0.5" placeholder="0" data-set-weight />
-      <b>x</b>
-      <input type="number" min="0" step="1" placeholder="${escapeHtml(repTargets[index] || repTargets[0] || "")}" data-set-reps />
-    </div>
-  `).join("");
+  return Array.from({ length: setCount }, (_, index) => (
+    setRowMarkup(index + 1, repTargets[index] || repTargets[0] || "")
+  )).join("");
 }
 
 function exerciseDisplayName(code, name) {
@@ -588,12 +595,13 @@ function exerciseLogFields(exercise, workoutTitle, options = {}) {
         <input type="date" data-log-date />
       </label>
       <div class="set-table" aria-label="${escapeHtml(exercise.name)} set tracker">
-        <div class="set-header">
-          <span>Set</span>
-          <span>Weight (lbs)</span>
-          <span></span>
-          <span>Reps</span>
-        </div>
+      <div class="set-header">
+        <span>Set</span>
+        <span>Weight (lbs)</span>
+        <span></span>
+        <span>Reps</span>
+        <span></span>
+      </div>
         <div data-set-rows>
           ${setRows(exercise)}
         </div>
@@ -839,8 +847,8 @@ function workoutActionsMarkup(workout) {
   return `
     <div class="workout-actions">
       <div>
-        <button class="workout-save-button" type="button" data-workout-save>Save workout</button>
-        <button class="workout-finish-button" type="button" data-workout-finish>Finish workout</button>
+        <button class="workout-save-button" type="button" data-workout-save>Save progress</button>
+        <button class="workout-finish-button" type="button" data-workout-finish>Finish and save workout</button>
       </div>
       <small data-workout-status></small>
     </div>
@@ -1054,10 +1062,16 @@ function updateExerciseLogField(logElement) {
   const logs = logsForExercise(logElement.dataset.workoutTitle, logElement.dataset.exerciseCode);
   const selectedDate = dateInput?.value || todayDate();
   const selectedLogs = logs.filter((log) => log.entry_date === selectedDate);
+  const prescribedSets = Number(logElement.dataset.prescribedSets || 0);
+  const highestLoggedSet = selectedLogs.reduce((max, log) => (
+    Math.max(max, Number(log.set_number || 0))
+  ), 0);
 
   if (dateInput && !dateInput.value) {
     dateInput.value = todayDate();
   }
+
+  ensureSetRows(logElement, Math.max(prescribedSets, highestLoggedSet));
 
   logElement.querySelectorAll("[data-set-row]").forEach((row) => {
     const setNumber = Number(row.dataset.setNumber || 1);
@@ -1086,7 +1100,6 @@ function updateExerciseLogField(logElement) {
   }
 
   const completedSets = selectedLogs.filter((log) => log.weight_used !== null && log.weight_used !== undefined).length;
-  const prescribedSets = Number(logElement.dataset.prescribedSets || 0);
 
   if (progress) {
     progress.textContent = `${completedSets} / ${prescribedSets || completedSets || 0} sets completed`;
@@ -1379,14 +1392,125 @@ function addSetRow(logElement) {
   }
 
   const nextSet = lastRow ? Number(lastRow.dataset.setNumber || 0) + 1 : 1;
-  rows.insertAdjacentHTML("beforeend", `
-    <div class="set-row" data-set-row data-set-number="${nextSet}">
-      <span>${nextSet}</span>
-      <input type="number" min="0" step="0.5" placeholder="0" data-set-weight />
-      <b>x</b>
-      <input type="number" min="0" step="1" placeholder="0" data-set-reps />
-    </div>
-  `);
+  rows.insertAdjacentHTML("beforeend", setRowMarkup(nextSet, "0"));
+  updateVisibleSetProgress(logElement);
+}
+
+function renumberSetRows(logElement) {
+  logElement?.querySelectorAll("[data-set-row]").forEach((row, index) => {
+    const setNumber = index + 1;
+    row.dataset.setNumber = String(setNumber);
+    const numberCell = row.querySelector("span");
+    const deleteButton = row.querySelector("[data-delete-set]");
+
+    if (numberCell) {
+      numberCell.textContent = String(setNumber);
+    }
+
+    if (deleteButton) {
+      deleteButton.setAttribute("aria-label", `Delete set ${setNumber}`);
+    }
+  });
+}
+
+function ensureSetRows(logElement, count) {
+  const rows = logElement?.querySelector("[data-set-rows]");
+
+  if (!rows) {
+    return;
+  }
+
+  const existingCount = rows.querySelectorAll("[data-set-row]").length;
+
+  if (existingCount >= count) {
+    return;
+  }
+
+  for (let index = existingCount; index < count; index += 1) {
+    rows.insertAdjacentHTML("beforeend", setRowMarkup(index + 1, "0"));
+  }
+}
+
+function updateVisibleSetProgress(logElement) {
+  const card = logElement?.closest(".workout-exercise-card");
+  const progress = card?.matches(".superset-card")
+    ? logElement?.querySelector("[data-set-progress]")
+    : card?.querySelector("[data-set-progress]");
+  const completedSets = filledSetCount(logElement);
+  const prescribedSets = Number(logElement?.dataset.prescribedSets || 0);
+
+  if (progress) {
+    progress.textContent = `${completedSets} / ${prescribedSets || completedSets || 0} sets completed`;
+  }
+}
+
+function removeLocalTrainingLog(row) {
+  const index = trainingLogs.findIndex((log) => (
+    String(log.client_email).toLowerCase() === String(row.client_email).toLowerCase() &&
+    log.entry_date === row.entry_date &&
+    log.workout_title === row.workout_title &&
+    log.exercise_code === row.exercise_code &&
+    Number(log.set_number || 1) === Number(row.set_number || 1)
+  ));
+
+  if (index >= 0) {
+    trainingLogs.splice(index, 1);
+  }
+}
+
+async function deleteRemovedTrainingLogRows(logElements) {
+  let deletedCount = 0;
+
+  for (const logElement of logElements) {
+    const dateInput = logElement?.querySelector("[data-log-date]");
+    const entryDate = dateInput?.value || todayDate();
+    const workoutTitle = logElement?.dataset.workoutTitle || "";
+    const exerciseCode = logElement?.dataset.exerciseCode || "";
+
+    if (!workoutTitle || !exerciseCode || !entryDate) {
+      continue;
+    }
+
+    const currentSetNumbers = new Set(
+      rowsForTrainingLog(logElement).map((row) => Number(row.set_number || 1))
+    );
+
+    const existingRows = trainingLogs.filter((log) => (
+      String(log.client_email).toLowerCase() === String(activeClientEmail).toLowerCase() &&
+      log.entry_date === entryDate &&
+      log.workout_title === workoutTitle &&
+      log.exercise_code === exerciseCode
+    ));
+
+    const missingSetNumbers = existingRows
+      .map((log) => Number(log.set_number || 1))
+      .filter((setNumber) => !currentSetNumbers.has(setNumber));
+
+    if (missingSetNumbers.length === 0) {
+      continue;
+    }
+
+    const { error } = await supabaseClient
+      .from("client_workout_logs")
+      .delete()
+      .eq("client_email", activeClientEmail)
+      .eq("entry_date", entryDate)
+      .eq("workout_title", workoutTitle)
+      .eq("exercise_code", exerciseCode)
+      .in("set_number", missingSetNumbers);
+
+    if (error) {
+      return { deletedCount, error };
+    }
+
+    existingRows
+      .filter((row) => missingSetNumbers.includes(Number(row.set_number || 1)))
+      .forEach((row) => removeLocalTrainingLog(row));
+
+    deletedCount += missingSetNumbers.length;
+  }
+
+  return { deletedCount, error: null };
 }
 
 function setClientDashboardTab(tabName) {
@@ -1494,6 +1618,7 @@ function handleWorkoutInteractions() {
   document.addEventListener("click", (event) => {
     const toggle = event.target.closest("[data-exercise-toggle]");
     const addSetButton = event.target.closest("[data-add-set]");
+    const deleteSetButton = event.target.closest("[data-delete-set]");
     const addCustomExerciseButton = event.target.closest("[data-add-custom-exercise]");
     const removeCustomExerciseButton = event.target.closest("[data-remove-custom-exercise]");
 
@@ -1510,6 +1635,17 @@ function handleWorkoutInteractions() {
 
       if (logElement) {
         addSetRow(logElement);
+      }
+    }
+
+    if (deleteSetButton) {
+      const logElement = deleteSetButton.closest("[data-exercise-log]");
+      const setRow = deleteSetButton.closest("[data-set-row]");
+
+      if (logElement && setRow) {
+        setRow.remove();
+        renumberSetRows(logElement);
+        updateVisibleSetProgress(logElement);
       }
     }
 
@@ -1961,18 +2097,40 @@ async function saveTrainingLogRows(button, logElements, status, options = {}) {
     return { saved: false };
   }
 
-  const rows = logElements.flatMap(rowsForTrainingLog);
-
-  if (rows.length === 0) {
-    if (status) {
-      status.textContent = "Enter at least one weight.";
-    }
-    return { saved: false };
-  }
-
   button.disabled = true;
   if (status) {
     status.textContent = savingMessage;
+  }
+
+  const { deletedCount, error: deleteError } = await deleteRemovedTrainingLogRows(logElements);
+
+  if (deleteError) {
+    if (status) {
+      status.textContent = "Could not save yet.";
+    }
+    button.disabled = false;
+    return { saved: false, error: deleteError };
+  }
+
+  const rows = logElements.flatMap(rowsForTrainingLog);
+
+  if (rows.length === 0) {
+    if (deletedCount > 0) {
+      logElements.forEach(updateExerciseLogField);
+      renderClientTrainingLogs();
+
+      if (status) {
+        status.textContent = successMessage;
+      }
+      button.disabled = false;
+      return { saved: true, rows: [] };
+    }
+
+    if (status) {
+      status.textContent = "Enter at least one weight.";
+    }
+    button.disabled = false;
+    return { saved: false };
   }
 
   const { data, error } = await supabaseClient

@@ -256,6 +256,13 @@ to authenticated
 using (lower(auth.jwt() ->> 'email') = lower(client_email))
 with check (lower(auth.jwt() ->> 'email') = lower(client_email));
 
+drop policy if exists "Clients can delete their own workout logs" on public.client_workout_logs;
+create policy "Clients can delete their own workout logs"
+on public.client_workout_logs
+for delete
+to authenticated
+using (lower(auth.jwt() ->> 'email') = lower(client_email));
+
 drop policy if exists "Coach admins can read all workout logs" on public.client_workout_logs;
 create policy "Coach admins can read all workout logs"
 on public.client_workout_logs

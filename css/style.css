@@ -2190,9 +2190,20 @@ footer {
 .set-header,
 .set-row {
   display: grid;
-  grid-template-columns: 48px minmax(92px, 1fr) 22px minmax(76px, .7fr);
+  grid-template-columns: 48px minmax(92px, 1fr) 22px minmax(76px, .7fr) auto;
   gap: 12px;
   align-items: center;
+}
+
+.set-delete-button {
+  min-height: 46px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--muted);
+  font-size: .72rem;
+  font-weight: 900;
 }
 
 .set-header {
@@ -4268,6 +4279,22 @@ textarea:focus {
   .exercise-row .exercise-log,
   .mini-table .exercise-log {
     grid-template-columns: 1fr;
+  }
+
+  .set-row {
+    grid-template-columns: 34px minmax(0, 1fr) 18px minmax(0, 1fr) auto;
+    gap: 8px;
+  }
+
+  .set-header {
+    grid-template-columns: 34px minmax(0, 1fr) 18px minmax(0, 1fr) auto;
+    gap: 8px;
+  }
+
+  .set-delete-button {
+    min-height: 44px;
+    padding: 0 10px;
+    font-size: .68rem;
   }
 
   .exercise-card-summary {
