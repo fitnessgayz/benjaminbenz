@@ -999,6 +999,8 @@ async function saveProfileChangesFromForm(form, options = {}) {
   const id = form.elements.id.value;
   const currentProgram = programs.find((program) => program.id === id);
   const profile = profileFromForm(form);
+  const sheetUrl = formValue(form, "sheet_url") || null;
+  const hasSheetUrlChange = String(currentProgram?.sheet_url || "") !== String(sheetUrl || "");
   const shouldRefreshUi = options.refreshUi !== false;
 
   if (!id || !currentProgram) {
@@ -1042,7 +1044,22 @@ async function saveProfileChangesFromForm(form, options = {}) {
     return { error: { message: safeResult.error || safeResult.message || "Could not save profile changes." } };
   }
 
-  const updatedProgram = safeResult.program || { ...currentProgram, ...profile };
+  let updatedProgram = safeResult.program || { ...currentProgram, ...profile };
+
+  if (hasSheetUrlChange) {
+    const { data: sheetData, error: sheetError } = await coachSupabase
+      .from("client_programs")
+      .update({ sheet_url: sheetUrl })
+      .eq("id", id)
+      .select("*")
+      .single();
+
+    if (sheetError) {
+      return { error: sheetError };
+    }
+
+    updatedProgram = sheetData;
+  }
 
   programs = programs.map((program) => (
     normalizeEmail(program.client_email) === oldEmailKey
