@@ -15,7 +15,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=client-set-delete-2" />
+  <link rel="stylesheet" href="css/style.css?v=client-sessions-tab-3" />
 </head>
 <body class="dashboard-page is-loading">
   <header class="site-header dashboard-header">
@@ -55,6 +55,7 @@
         <nav class="client-dashboard-tabs" aria-label="Client dashboard sections">
           <button class="client-dashboard-tab is-active" type="button" data-client-dashboard-tab="workouts" aria-selected="true">Workouts</button>
           <button class="client-dashboard-tab" type="button" data-client-dashboard-tab="progress" aria-selected="false">Progress / check-ins</button>
+          <button class="client-dashboard-tab" type="button" data-client-dashboard-tab="sessions" aria-selected="false">Sessions</button>
           <button class="client-dashboard-tab" type="button" data-client-dashboard-tab="logs" aria-selected="false">Logs</button>
         </nav>
 
@@ -81,6 +82,36 @@
           <div class="progress-current" id="progress-current"></div>
           <div class="progress-chart" id="progress-chart" aria-label="Progress line graph"></div>
           <p class="progress-goal" id="progress-goal"></p>
+        </section>
+
+        <section class="progress-panel" data-client-dashboard-panel="sessions" aria-labelledby="client-sessions-title" hidden>
+          <div class="panel-heading">
+            <div>
+              <p class="kicker">Session sheet</p>
+              <h2 id="client-sessions-title">Sessions</h2>
+            </div>
+            <span class="status-pill" id="client-session-count-pill">No sheet linked</span>
+          </div>
+          <div class="session-sheet-summary">
+            <div class="session-sheet-count-card">
+              <span>Total sessions</span>
+              <strong id="client-session-count-value">--</strong>
+              <small id="client-session-count-status">Add a Google Sheet link to load the count.</small>
+            </div>
+            <a class="button button-dark" id="client-session-link" href="#" target="_blank" rel="noopener" hidden>Open session link</a>
+          </div>
+          <div class="session-date-history">
+            <div class="panel-heading">
+              <div>
+                <p class="kicker">Recent sessions</p>
+                <h3>Recent dates</h3>
+              </div>
+            </div>
+            <p id="client-session-dates-status">Recent session dates will appear here.</p>
+            <div class="session-date-list" id="client-session-date-list">
+              <p class="empty-state">No session dates yet.</p>
+            </div>
+          </div>
         </section>
 
         <section class="progress-panel" data-client-dashboard-panel="logs" aria-labelledby="client-logs-title" hidden>
@@ -118,6 +149,6 @@
   <script src="js/script.js?v=client-dashboard"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js"></script>
-  <script src="js/client-portal.js?v=client-set-delete-2"></script>
+  <script src="js/client-portal.js?v=client-sessions-tab-3"></script>
 </body>
 </html>
