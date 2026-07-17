@@ -19,6 +19,7 @@ let clientSessionSheetRequestId = 0;
 const clientSessionSheetCache = new Map();
 const dashboardRequestTimeout = 15000;
 const customWorkoutTitle = "Custom workout";
+const clientDashboardUrl = "client-dashboard.html?v=session-sheet-fix-1";
 
 function isCoachPortalEmail(email) {
   return coachPortalEmails.includes(String(email || "").toLowerCase());
@@ -113,6 +114,14 @@ function parseClientCsvRows(csvText) {
   return rows;
 }
 
+function clientToUtcIsoDateString(date) {
+  return [
+    date.getUTCFullYear(),
+    String(date.getUTCMonth() + 1).padStart(2, "0"),
+    String(date.getUTCDate()).padStart(2, "0")
+  ].join("-");
+}
+
 function normalizeClientSessionDate(value) {
   const text = String(value || "").trim();
 
@@ -135,13 +144,39 @@ function normalizeClientSessionDate(value) {
     return `${resolvedYear}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
   }
 
+  match = text.match(/^(\d{1,2})-(\d{1,2})-(\d{2,4})$/);
+
+  if (match) {
+    let [, month, day, year] = match;
+    const resolvedYear = year.length === 2 ? `20${year}` : year;
+    return `${resolvedYear}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+  }
+
+  if (/^\d+(\.\d+)?$/.test(text)) {
+    const serial = Number(text);
+
+    if (Number.isFinite(serial) && serial >= 20000 && serial <= 80000) {
+      const roundedSerial = Math.floor(serial);
+      const utcMs = Date.UTC(1899, 11, 30) + roundedSerial * 86400000;
+      const date = new Date(utcMs);
+
+      return clientToUtcIsoDateString(date);
+    }
+
+    return "";
+  }
+
+  if (!/[a-z]/i.test(text)) {
+    return "";
+  }
+
   const parsed = new Date(text);
 
   if (Number.isNaN(parsed.getTime())) {
     return "";
   }
 
-  return parsed.toLocaleDateString("en-CA", { timeZone: "UTC" });
+  return clientToUtcIsoDateString(parsed);
 }
 
 function firstClientSessionDateInRow(row) {
@@ -156,6 +191,16 @@ function firstClientSessionDateInRow(row) {
   return "";
 }
 
+function clientSessionIndexInRow(row) {
+  const firstValue = String(row?.[0] || "").trim();
+
+  if (!/^\d+$/.test(firstValue)) {
+    return 0;
+  }
+
+  return Number(firstValue);
+}
+
 function isLikelyClientHeaderRow(row) {
   const values = row.filter((value) => String(value || "").trim() !== "");
 
@@ -168,16 +213,18 @@ function clientSessionSummaryFromRows(rows) {
   const dataRows = populatedRows.length > 1 && isLikelyClientHeaderRow(populatedRows[0])
     ? populatedRows.slice(1)
     : populatedRows;
+  const datedRows = dataRows.map((row) => firstClientSessionDateInRow(row.slice(1).length > 0 ? row.slice(1) : row));
+  const completedCount = datedRows.filter(Boolean).length;
+  const totalCount = dataRows.reduce((max, row) => Math.max(max, clientSessionIndexInRow(row)), 0) || dataRows.length;
   const recentDates = Array.from(new Set(
-    dataRows
-      .map(firstClientSessionDateInRow)
-      .filter(Boolean)
+    datedRows.filter(Boolean)
   ))
     .sort((left, right) => right.localeCompare(left))
     .slice(0, 10);
 
   return {
-    count: dataRows.length,
+    count: completedCount,
+    totalCount,
     recentDates
   };
 }
@@ -195,7 +242,7 @@ function renderClientSessionSheetState(state = {}) {
   }
 
   if (countValue) {
-    countValue.textContent = String(state.count ?? "--");
+    countValue.textContent = String(state.countDisplay || state.count || "--");
   }
 
   if (countStatus) {
@@ -261,8 +308,10 @@ async function loadClientSessionSheetSummary(sheetUrl) {
 
     renderClientSessionSheetState({
       count: cached.count,
+      totalCount: cached.totalCount,
+      countDisplay: cached.totalCount > 0 ? `${cached.count}/${cached.totalCount}` : String(cached.count),
       recentDates: cached.recentDates,
-      pillMessage: `${cached.count} session${cached.count === 1 ? "" : "s"}`,
+      pillMessage: cached.totalCount > 0 ? `${cached.count}/${cached.totalCount}` : `${cached.count}`,
       countMessage: "Loaded from your linked session sheet.",
       datesMessage: cached.recentDates.length > 0 ? "Most recent dates found in the sheet." : "No dates were detected in the sheet.",
       emptyDatesMessage: "No dated sessions found yet.",
@@ -301,8 +350,10 @@ async function loadClientSessionSheetSummary(sheetUrl) {
 
     renderClientSessionSheetState({
       count: summary.count,
+      totalCount: summary.totalCount,
+      countDisplay: summary.totalCount > 0 ? `${summary.count}/${summary.totalCount}` : String(summary.count),
       recentDates: summary.recentDates,
-      pillMessage: `${summary.count} session${summary.count === 1 ? "" : "s"}`,
+      pillMessage: summary.totalCount > 0 ? `${summary.count}/${summary.totalCount}` : `${summary.count}`,
       countMessage: "Loaded from your linked session sheet.",
       datesMessage: summary.recentDates.length > 0 ? "Most recent dates found in the sheet." : "No dates were detected in the sheet.",
       emptyDatesMessage: "No dated sessions found yet.",
@@ -2115,7 +2166,7 @@ async function handleLogin() {
       return;
     }
 
-    window.location.href = "client-dashboard.html";
+    window.location.href = clientDashboardUrl;
   });
 
   if (status && supabaseClient) {

@@ -25,7 +25,7 @@
     </a>
     <nav class="nav-links" aria-label="Primary navigation">
       <a href="#clients">Clients</a>
-      <a href="client-dashboard.html">Client View</a>
+      <a href="client-dashboard.html?v=session-sheet-fix-1">Client View</a>
       <a href="client-login.html?v=manual-invite-copy-1">Client Login</a>
     </nav>
     <div class="header-actions">
@@ -179,6 +179,14 @@
               Starting bodyfat
               <input type="text" name="starting_bodyfat" placeholder="Not set" />
             </label>
+            <label>
+              Google Sheet link
+              <input type="url" name="sheet_url" placeholder="https://docs.google.com/..." />
+            </label>
+            <label class="readonly-output-field">
+              Session log count
+              <output id="program-session-count">Add a Google Sheet link to load the count.</output>
+            </label>
           </div>
           <div class="profile-actions-row">
             <p class="profile-save-status" id="admin-save-status" role="status">Ready.</p>
@@ -216,14 +224,6 @@
             <label>
               Focus target
               <input type="text" name="focus_target" placeholder="Chest" />
-            </label>
-            <label>
-              Google Sheet link
-              <input type="url" name="sheet_url" placeholder="https://docs.google.com/..." />
-            </label>
-            <label class="readonly-output-field">
-              Session log count
-              <output id="program-session-count">Add a Google Sheet link to load the count.</output>
             </label>
           </div>
           <label>
@@ -394,6 +394,6 @@
   <script src="js/script.js?v=coach-sessions-tab-4"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js?v=coach-sessions-tab-4"></script>
-  <script src="js/coach-admin.js?v=coach-sessions-tab-4"></script>
+  <script src="js/coach-admin.js?v=coach-session-link-sync-2"></script>
 </body>
 </html>

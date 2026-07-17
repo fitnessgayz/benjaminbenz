@@ -148,7 +148,7 @@ function handleInvitePassword() {
 
     setInviteStatus("Password saved. Opening dashboard...");
     await notifyPasswordCreated();
-    window.location.href = "client-dashboard.html";
+    window.location.href = "client-dashboard.html?v=session-sheet-fix-1";
   });
 }
 
