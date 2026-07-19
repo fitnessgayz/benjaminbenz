@@ -2210,6 +2210,11 @@ footer {
   display: grid;
 }
 
+.workout-warmup-card .exercise-detail,
+.workout-cardio-card .exercise-detail {
+  display: grid;
+}
+
 .exercise-name-field,
 .exercise-date,
 .exercise-notes {
