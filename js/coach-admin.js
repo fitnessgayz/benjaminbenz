@@ -953,10 +953,20 @@ function parseExercises(value) {
       const fifthFieldIsVideo = /^https?:\/\//i.test(musclesOrVideo) ||
         /^(www\.|m\.)?(youtube\.com|youtube-nocookie\.com|youtu\.be)\//i.test(musclesOrVideo);
       const muscles = fifthFieldIsVideo ? "" : musclesOrVideo;
-      const video = fifthFieldIsVideo ? musclesOrVideo : videoUrl;
+      const video = fifthFieldIsVideo ? musclesOrVideo : videoUrl || youtubeExerciseSearchUrl(name);
 
       return { code, name, prescription, rest, muscles, video };
     });
+}
+
+function youtubeExerciseSearchUrl(exerciseName) {
+  const name = String(exerciseName || "").trim();
+
+  if (!name) {
+    return "";
+  }
+
+  return `https://www.youtube.com/results?search_query=${encodeURIComponent(`${name} exercise demo`)}`;
 }
 
 function exercisesToText(exercises) {

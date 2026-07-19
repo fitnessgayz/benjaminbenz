@@ -495,6 +495,16 @@ function renderRest(rest) {
   return `<small>${escapeHtml(rest)}</small>`;
 }
 
+function youtubeExerciseSearchUrl(exerciseName) {
+  const name = String(exerciseName || "").trim();
+
+  if (!name) {
+    return "";
+  }
+
+  return `https://www.youtube.com/results?search_query=${encodeURIComponent(`${name} exercise demo`)}`;
+}
+
 function exerciseVideoUrl(exercise) {
   let rawUrl = String(
     exercise.video ||
@@ -505,7 +515,7 @@ function exerciseVideoUrl(exercise) {
   ).trim();
 
   if (!rawUrl) {
-    return "";
+    rawUrl = youtubeExerciseSearchUrl(exercise.name);
   }
 
   if (/^(www\.)?(youtube\.com|youtube-nocookie\.com|youtu\.be)\//i.test(rawUrl)) {
