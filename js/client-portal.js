@@ -19,7 +19,9 @@ let clientSessionSheetRequestId = 0;
 const clientSessionSheetCache = new Map();
 const dashboardRequestTimeout = 15000;
 const customWorkoutTitle = "Custom workout";
-const clientDashboardUrl = "client-dashboard.html?v=session-sheet-fix-1";
+const warmupExerciseCode = "WARMUP";
+const cardioExerciseCode = "CARDIO";
+const clientDashboardUrl = "client-dashboard.html?v=warmup-cardio-fields-1";
 
 function isCoachPortalEmail(email) {
   return coachPortalEmails.includes(String(email || "").toLowerCase());
@@ -963,6 +965,94 @@ function exerciseLogFields(exercise, workoutTitle, options = {}) {
   `;
 }
 
+function cardioLogFields(workoutTitle) {
+  return `
+    <section class="workout-cardio-card">
+      <div class="workout-cardio-heading">
+        <p class="kicker">Cardio</p>
+        <h3>Cardio log</h3>
+      </div>
+      <div class="exercise-detail cardio-log-detail"
+        data-exercise-log
+        data-cardio-log
+        data-workout-title="${escapeHtml(workoutTitle)}"
+        data-exercise-code="${cardioExerciseCode}"
+        data-exercise-name="Cardio"
+        data-prescribed-sets="0"
+      >
+        <label class="exercise-name-field">
+          <span>Cardio type</span>
+          <input type="text" value="Cardio" placeholder="Walk, run, bike, stairs" data-exercise-name-input data-cardio-type />
+        </label>
+        <label class="exercise-date">
+          <span>Date</span>
+          <input type="date" data-log-date />
+        </label>
+        <div class="cardio-field-grid">
+          <label>
+            <span>Duration</span>
+            <input type="number" min="0" step="1" placeholder="Minutes" data-cardio-duration />
+          </label>
+          <label>
+            <span>Distance</span>
+            <input type="number" min="0" step="0.01" placeholder="Miles" data-cardio-distance />
+          </label>
+          <label>
+            <span>Calories</span>
+            <input type="number" min="0" step="1" placeholder="Optional" data-cardio-calories />
+          </label>
+        </div>
+        <label class="exercise-notes">
+          <span>Notes</span>
+          <textarea placeholder="Pace, incline, intensity, or how it felt." data-log-notes></textarea>
+        </label>
+        <small data-log-status></small>
+        <div class="previous-weights" data-previous-weights>Previous: none</div>
+      </div>
+    </section>
+  `;
+}
+
+function warmupLogFields(workoutTitle) {
+  return `
+    <section class="workout-warmup-card">
+      <div class="workout-cardio-heading">
+        <p class="kicker">Warm up</p>
+        <h3>Warm-up log</h3>
+      </div>
+      <div class="exercise-detail cardio-log-detail"
+        data-exercise-log
+        data-warmup-log
+        data-workout-title="${escapeHtml(workoutTitle)}"
+        data-exercise-code="${warmupExerciseCode}"
+        data-exercise-name="Warm up"
+        data-prescribed-sets="0"
+      >
+        <label class="exercise-name-field">
+          <span>Warm-up type</span>
+          <input type="text" value="Warm up" placeholder="Mobility, treadmill, activation" data-exercise-name-input data-warmup-type />
+        </label>
+        <label class="exercise-date">
+          <span>Date</span>
+          <input type="date" data-log-date />
+        </label>
+        <div class="cardio-field-grid warmup-field-grid">
+          <label>
+            <span>Duration</span>
+            <input type="number" min="0" step="1" placeholder="Minutes" data-warmup-duration />
+          </label>
+        </div>
+        <label class="exercise-notes">
+          <span>Notes</span>
+          <textarea placeholder="What did you warm up with?" data-log-notes></textarea>
+        </label>
+        <small data-log-status></small>
+        <div class="previous-weights" data-previous-weights>Previous: none</div>
+      </div>
+    </section>
+  `;
+}
+
 function exerciseCard(exercise, workoutTitle, isOpen = false, workoutFocus = "") {
   const setCount = setCountFromPrescription(exercise.prescription);
 
@@ -1184,8 +1274,8 @@ function workoutExerciseMarkup(workout, workoutTitle) {
   return exerciseCardRows(workout.exercises, workoutTitle, "first", workout.focus);
 }
 
-function workoutActionsMarkup(workout) {
-  if (!Array.isArray(workout.exercises) || workout.exercises.length === 0) {
+function workoutActionsMarkup(workout, options = {}) {
+  if (!options.includeCardio && (!Array.isArray(workout.exercises) || workout.exercises.length === 0)) {
     return "";
   }
 
@@ -1244,7 +1334,6 @@ function customWorkoutListMarkup() {
 
 function customWorkoutPanelMarkup(index) {
   const exercises = customWorkoutExercises();
-  const hasExercises = exercises.length > 0;
 
   return `
     <section
@@ -1266,10 +1355,12 @@ function customWorkoutPanelMarkup(index) {
           <p>Add your own exercises here and save them into your workout log.</p>
           <button class="button button-ghost" type="button" data-add-custom-exercise>Add exercise</button>
         </div>
+        ${warmupLogFields(customWorkoutTitle)}
         <div class="workout-app-list custom-workout-list" data-custom-workout-list role="list" aria-label="Custom workout exercises">
           ${customWorkoutListMarkup()}
         </div>
-        ${hasExercises ? workoutActionsMarkup({ exercises }) : ""}
+        ${cardioLogFields(customWorkoutTitle)}
+        ${workoutActionsMarkup({ exercises }, { includeCardio: true })}
       </div>
     </section>
   `;
@@ -1351,8 +1442,10 @@ function renderClientWorkoutTabs(workouts = []) {
       </div>
       <div class="workout-format-pill">${escapeHtml(formatLabel(inferWorkoutFormat(workout)))}</div>
       <div class="workout-app-list" role="list" aria-label="${escapeHtml(title)} exercises">
+        ${warmupLogFields(title)}
         ${workoutExerciseMarkup(workout, title)}
-        ${workoutActionsMarkup(workout)}
+        ${cardioLogFields(title)}
+        ${workoutActionsMarkup(workout, { includeCardio: true })}
       </div>
     </section>
   `;
@@ -1377,6 +1470,69 @@ function logsForExercise(workoutTitle, exerciseCode) {
 
       return Number(a.set_number || 1) - Number(b.set_number || 1);
     });
+}
+
+function parseCardioNotes(notes = "") {
+  const text = String(notes || "");
+  const caloriesMatch = text.match(/(?:^|\n)Calories:\s*(\d+(?:\.\d+)?)/i);
+  const noteText = text
+    .replace(/(?:^|\n)Calories:\s*\d+(?:\.\d+)?\.?/i, "")
+    .trim();
+
+  return {
+    calories: caloriesMatch ? caloriesMatch[1] : "",
+    notes: noteText
+  };
+}
+
+function buildCardioNotes(calories, notes) {
+  const parts = [];
+  const caloriesText = String(calories || "").trim();
+  const notesText = String(notes || "").trim();
+
+  if (caloriesText) {
+    parts.push(`Calories: ${caloriesText}`);
+  }
+
+  if (notesText) {
+    parts.push(notesText);
+  }
+
+  return parts.join("\n");
+}
+
+function cardioDisplay(log) {
+  const parts = [];
+
+  if (log.weight_used !== null && log.weight_used !== undefined && log.weight_used !== "") {
+    parts.push(`${log.weight_used} min`);
+  }
+
+  if (log.reps !== null && log.reps !== undefined && log.reps !== "") {
+    parts.push(`${log.reps} mi`);
+  }
+
+  const parsedNotes = parseCardioNotes(log.notes);
+
+  if (parsedNotes.calories) {
+    parts.push(`${parsedNotes.calories} cal`);
+  }
+
+  return parts.join(" · ") || "Cardio saved";
+}
+
+function warmupDisplay(log) {
+  const parts = [];
+
+  if (log.weight_used !== null && log.weight_used !== undefined && log.weight_used !== "") {
+    parts.push(`${log.weight_used} min`);
+  }
+
+  if (log.notes) {
+    parts.push(log.notes);
+  }
+
+  return parts.join(" · ") || "Warm-up saved";
 }
 
 function formatLogDate(value) {
@@ -1416,6 +1572,85 @@ function updateExerciseLogField(logElement) {
     dateInput.value = todayDate();
   }
 
+  if (logElement.dataset.warmupLog !== undefined) {
+    const selectedLog = selectedLogs.find((log) => Number(log.set_number || 1) === 1);
+    const durationInput = logElement.querySelector("[data-warmup-duration]");
+
+    if (exerciseNameInput) {
+      exerciseNameInput.value = selectedLog?.exercise_name || logElement.dataset.exerciseName || "Warm up";
+    }
+
+    if (durationInput) {
+      durationInput.value = selectedLog?.weight_used ?? "";
+    }
+
+    if (notesInput) {
+      notesInput.value = selectedLog?.notes || "";
+    }
+
+    if (previous) {
+      const previousWarmups = logs
+        .filter((log) => log.entry_date !== selectedDate)
+        .slice(0, 4);
+
+      previous.innerHTML = previousWarmups.length === 0
+        ? "Previous: none"
+        : `
+          <strong>Previous</strong>
+          ${previousWarmups.map((log) => `
+            <span>${escapeHtml(formatLogDate(log.entry_date))} - ${escapeHtml(log.exercise_name || "Warm up")}: ${escapeHtml(warmupDisplay(log))}</span>
+          `).join("")}
+        `;
+    }
+
+    return;
+  }
+
+  if (logElement.dataset.cardioLog !== undefined) {
+    const selectedLog = selectedLogs.find((log) => Number(log.set_number || 1) === 1);
+    const durationInput = logElement.querySelector("[data-cardio-duration]");
+    const distanceInput = logElement.querySelector("[data-cardio-distance]");
+    const caloriesInput = logElement.querySelector("[data-cardio-calories]");
+    const parsedNotes = parseCardioNotes(selectedLog?.notes || "");
+
+    if (exerciseNameInput) {
+      exerciseNameInput.value = selectedLog?.exercise_name || logElement.dataset.exerciseName || "Cardio";
+    }
+
+    if (durationInput) {
+      durationInput.value = selectedLog?.weight_used ?? "";
+    }
+
+    if (distanceInput) {
+      distanceInput.value = selectedLog?.reps ?? "";
+    }
+
+    if (caloriesInput) {
+      caloriesInput.value = parsedNotes.calories;
+    }
+
+    if (notesInput) {
+      notesInput.value = parsedNotes.notes;
+    }
+
+    if (previous) {
+      const previousCardio = logs
+        .filter((log) => log.entry_date !== selectedDate)
+        .slice(0, 4);
+
+      previous.innerHTML = previousCardio.length === 0
+        ? "Previous: none"
+        : `
+          <strong>Previous</strong>
+          ${previousCardio.map((log) => `
+            <span>${escapeHtml(formatLogDate(log.entry_date))} - ${escapeHtml(log.exercise_name || "Cardio")}: ${escapeHtml(cardioDisplay(log))}</span>
+          `).join("")}
+        `;
+    }
+
+    return;
+  }
+
   ensureSetRows(logElement, Math.max(prescribedSets, highestLoggedSet));
 
   logElement.querySelectorAll("[data-set-row]").forEach((row) => {
@@ -1447,7 +1682,8 @@ function updateExerciseLogField(logElement) {
   const completedSets = selectedLogs.filter((log) => log.weight_used !== null && log.weight_used !== undefined).length;
 
   if (progress) {
-    progress.textContent = `${completedSets} / ${prescribedSets || completedSets || 0} sets completed`;
+    const setTarget = visibleSetTarget(logElement);
+    progress.textContent = `${completedSets} / ${setTarget || completedSets || 0} sets completed`;
   }
 
   if (!previous) {
@@ -1596,8 +1832,13 @@ function renderClientTrainingLogs() {
       log.entry_date || "",
       log.workout_title || "Workout"
     ].join("::");
-    const supersetMatch = String(log.exercise_code || "").match(/^([A-Za-z]+)/);
-    const supersetKey = supersetMatch ? supersetMatch[1].toUpperCase() : "OTHER";
+    const exerciseCode = String(log.exercise_code || "");
+    const supersetMatch = exerciseCode.match(/^([A-Za-z]+)/);
+    const supersetKey = exerciseCode === warmupExerciseCode
+      ? "WARMUP"
+      : exerciseCode === cardioExerciseCode
+        ? "CARDIO"
+        : supersetMatch ? supersetMatch[1].toUpperCase() : "OTHER";
 
     if (!workoutGroups.has(workoutKey)) {
       workoutGroups.set(workoutKey, {
@@ -1633,7 +1874,8 @@ function renderClientTrainingLogs() {
     supersetGroup.exercises.get(exerciseKey).sets.push({
       set_number: log.set_number,
       weight_used: log.weight_used,
-      reps: log.reps
+      reps: log.reps,
+      notes: log.notes
     });
   });
 
@@ -1666,10 +1908,28 @@ function renderClientTrainingLogs() {
 
             return `
               <section class="training-log-superset-group">
-                <div class="training-log-superset-heading">${escapeHtml(superset.key === "OTHER" ? "Other" : `Superset ${superset.key}`)}</div>
+                <div class="training-log-superset-heading">${escapeHtml(
+                  superset.key === "WARMUP"
+                    ? "Warm up"
+                    : superset.key === "CARDIO"
+                      ? "Cardio"
+                      : superset.key === "OTHER" ? "Other" : `Superset ${superset.key}`
+                )}</div>
                 <div class="training-log-exercise-list">
                   ${exercises.map((entry) => {
-                    const setSummary = entry.sets
+                    const setSummary = entry.exercise_code === warmupExerciseCode
+                      ? entry.sets
+                        .sort((a, b) => Number(a.set_number || 0) - Number(b.set_number || 0))
+                        .map((set) => warmupDisplay(set))
+                        .filter(Boolean)
+                        .join("  |  ")
+                      : entry.exercise_code === cardioExerciseCode
+                      ? entry.sets
+                        .sort((a, b) => Number(a.set_number || 0) - Number(b.set_number || 0))
+                        .map((set) => cardioDisplay(set))
+                        .filter(Boolean)
+                        .join("  |  ")
+                      : entry.sets
                       .sort((a, b) => Number(a.set_number || 0) - Number(b.set_number || 0))
                       .map((set) => {
                         const parts = [];
@@ -1692,7 +1952,11 @@ function renderClientTrainingLogs() {
                     return `
                       <article class="training-log-row training-log-row-compact training-log-row-nested">
                         <div class="training-log-row-main">
-                          <span>${escapeHtml(entry.exercise_code)} ${escapeHtml(entry.exercise_name)}</span>
+                          <span>${escapeHtml(
+                            entry.exercise_code === warmupExerciseCode || entry.exercise_code === cardioExerciseCode
+                              ? entry.exercise_name
+                              : `${entry.exercise_code} ${entry.exercise_name}`
+                          )}</span>
                           <em>${escapeHtml(setSummary || "Sets saved")}</em>
                         </div>
                       </article>
@@ -1738,6 +2002,7 @@ function addSetRow(logElement) {
 
   const nextSet = lastRow ? Number(lastRow.dataset.setNumber || 0) + 1 : 1;
   rows.insertAdjacentHTML("beforeend", setRowMarkup(nextSet, "0"));
+  syncVisibleSetTarget(logElement);
   updateVisibleSetProgress(logElement);
 }
 
@@ -1776,16 +2041,31 @@ function ensureSetRows(logElement, count) {
   }
 }
 
+function visibleSetTarget(logElement) {
+  const rowCount = logElement?.querySelectorAll("[data-set-row]").length || 0;
+  const prescribedSets = Number(logElement?.dataset.prescribedSets || 0);
+
+  return rowCount || prescribedSets;
+}
+
+function syncVisibleSetTarget(logElement) {
+  const rowCount = logElement?.querySelectorAll("[data-set-row]").length || 0;
+
+  if (logElement && rowCount > 0) {
+    logElement.dataset.prescribedSets = String(rowCount);
+  }
+}
+
 function updateVisibleSetProgress(logElement) {
   const card = logElement?.closest(".workout-exercise-card");
   const progress = card?.matches(".superset-card")
     ? logElement?.querySelector("[data-set-progress]")
     : card?.querySelector("[data-set-progress]");
   const completedSets = filledSetCount(logElement);
-  const prescribedSets = Number(logElement?.dataset.prescribedSets || 0);
+  const setTarget = visibleSetTarget(logElement);
 
   if (progress) {
-    progress.textContent = `${completedSets} / ${prescribedSets || completedSets || 0} sets completed`;
+    progress.textContent = `${completedSets} / ${setTarget || completedSets || 0} sets completed`;
   }
 }
 
@@ -1986,10 +2266,28 @@ function handleWorkoutInteractions() {
     if (deleteSetButton) {
       const logElement = deleteSetButton.closest("[data-exercise-log]");
       const setRow = deleteSetButton.closest("[data-set-row]");
+      const setRows = logElement?.querySelectorAll("[data-set-row]") || [];
 
       if (logElement && setRow) {
+        if (setRows.length <= 1) {
+          const weightInput = setRow.querySelector("[data-set-weight]");
+          const repsInput = setRow.querySelector("[data-set-reps]");
+
+          if (weightInput) {
+            weightInput.value = "";
+          }
+
+          if (repsInput) {
+            repsInput.value = "";
+          }
+
+          updateVisibleSetProgress(logElement);
+          return;
+        }
+
         setRow.remove();
         renumberSetRows(logElement);
+        syncVisibleSetTarget(logElement);
         updateVisibleSetProgress(logElement);
       }
     }
@@ -2380,6 +2678,48 @@ function rowsForTrainingLog(logElement) {
   const notes = logElement.querySelector("[data-log-notes]")?.value || "";
   const exerciseName = logElement.querySelector("[data-exercise-name-input]")?.value?.trim() || logElement.dataset.exerciseName;
 
+  if (logElement.dataset.cardioLog !== undefined) {
+    const duration = Number(logElement.querySelector("[data-cardio-duration]")?.value || 0);
+    const distanceInput = logElement.querySelector("[data-cardio-distance]")?.value;
+    const calories = logElement.querySelector("[data-cardio-calories]")?.value;
+
+    if (duration <= 0) {
+      return [];
+    }
+
+    return [{
+      client_email: activeClientEmail,
+      entry_date: dateInput.value || todayDate(),
+      workout_title: logElement.dataset.workoutTitle,
+      exercise_code: cardioExerciseCode,
+      exercise_name: exerciseName || "Cardio",
+      set_number: 1,
+      weight_used: duration,
+      reps: distanceInput ? Number(distanceInput) : null,
+      notes: buildCardioNotes(calories, notes)
+    }];
+  }
+
+  if (logElement.dataset.warmupLog !== undefined) {
+    const duration = Number(logElement.querySelector("[data-warmup-duration]")?.value || 0);
+
+    if (duration <= 0) {
+      return [];
+    }
+
+    return [{
+      client_email: activeClientEmail,
+      entry_date: dateInput.value || todayDate(),
+      workout_title: logElement.dataset.workoutTitle,
+      exercise_code: warmupExerciseCode,
+      exercise_name: exerciseName || "Warm up",
+      set_number: 1,
+      weight_used: duration,
+      reps: null,
+      notes
+    }];
+  }
+
   return Array.from(logElement.querySelectorAll("[data-set-row]"))
     .map((setRow) => ({
       client_email: activeClientEmail,
@@ -2411,13 +2751,17 @@ function currentExerciseLabel(logElement) {
 function incompleteWorkoutExercises(logElements) {
   return logElements.filter((logElement) => {
     const card = logElement.closest(".workout-exercise-card");
-    const prescribedSets = Number(logElement.dataset.prescribedSets || 0);
+    const setTarget = visibleSetTarget(logElement);
+
+    if (logElement.dataset.warmupLog !== undefined || logElement.dataset.cardioLog !== undefined) {
+      return false;
+    }
 
     if (card?.classList.contains("is-skipped")) {
       return false;
     }
 
-    return filledSetCount(logElement) < prescribedSets;
+    return filledSetCount(logElement) < setTarget;
   });
 }
 
@@ -2473,7 +2817,7 @@ async function saveTrainingLogRows(button, logElements, status, options = {}) {
     }
 
     if (status) {
-      status.textContent = "Enter at least one weight.";
+      status.textContent = "Enter at least one weight, warm-up duration, or cardio duration.";
     }
     button.disabled = false;
     return { saved: false };

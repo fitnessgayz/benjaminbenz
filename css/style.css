@@ -1952,6 +1952,60 @@ footer {
   max-width: 210px;
 }
 
+.workout-warmup-card,
+.workout-cardio-card {
+  display: grid;
+  gap: 14px;
+  padding: clamp(18px, 4vw, 28px);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #fbfbf8;
+}
+
+.workout-cardio-heading {
+  display: grid;
+  gap: 6px;
+}
+
+.workout-cardio-heading h3 {
+  margin: 0;
+  font-size: clamp(1.6rem, 4vw, 2.4rem);
+  line-height: .96;
+  text-transform: uppercase;
+}
+
+.cardio-log-detail {
+  display: grid;
+  gap: 16px;
+}
+
+.cardio-field-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.cardio-field-grid label {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  font-weight: 900;
+}
+
+.cardio-field-grid span {
+  color: var(--muted);
+  font-size: .8rem;
+  text-transform: uppercase;
+}
+
+.cardio-field-grid input {
+  width: 100%;
+}
+
+.warmup-field-grid {
+  grid-template-columns: minmax(0, 220px);
+}
+
 .workout-format-heading {
   display: flex;
   align-items: center;
@@ -4034,6 +4088,10 @@ textarea:focus {
     width: 100%;
   }
 
+  .cardio-field-grid {
+    grid-template-columns: 1fr;
+  }
+
   .client-gallery figcaption {
     font-size: .78rem;
   }
@@ -4375,6 +4433,8 @@ textarea:focus {
   }
 
   .set-delete-button {
+    grid-column: 2 / -1;
+    justify-self: stretch;
     min-height: 44px;
     padding: 0 10px;
     font-size: .68rem;

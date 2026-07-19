@@ -11,6 +11,8 @@ const coachSupabase = hasCoachConfig && window.supabase
   : null;
 const workoutSlots = [1, 2, 3, 4, 5, 6, 7];
 const coachLoginUrl = "client-login.html?v=manual-invite-copy-1";
+const warmupExerciseCode = "WARMUP";
+const cardioExerciseCode = "CARDIO";
 
 let programs = [];
 let selectedProgramId = "";
@@ -113,6 +115,53 @@ function escapeHtml(value) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
+}
+
+function parseCardioNotes(notes = "") {
+  const text = String(notes || "");
+  const caloriesMatch = text.match(/(?:^|\n)Calories:\s*(\d+(?:\.\d+)?)/i);
+  const noteText = text
+    .replace(/(?:^|\n)Calories:\s*\d+(?:\.\d+)?\.?/i, "")
+    .trim();
+
+  return {
+    calories: caloriesMatch ? caloriesMatch[1] : "",
+    notes: noteText
+  };
+}
+
+function cardioDisplay(log) {
+  const parts = [];
+
+  if (log.weight_used !== null && log.weight_used !== undefined && log.weight_used !== "") {
+    parts.push(`${log.weight_used} min`);
+  }
+
+  if (log.reps !== null && log.reps !== undefined && log.reps !== "") {
+    parts.push(`${log.reps} mi`);
+  }
+
+  const parsedNotes = parseCardioNotes(log.notes);
+
+  if (parsedNotes.calories) {
+    parts.push(`${parsedNotes.calories} cal`);
+  }
+
+  return parts.join(" · ") || "Cardio saved";
+}
+
+function warmupDisplay(log) {
+  const parts = [];
+
+  if (log.weight_used !== null && log.weight_used !== undefined && log.weight_used !== "") {
+    parts.push(`${log.weight_used} min`);
+  }
+
+  if (log.notes) {
+    parts.push(log.notes);
+  }
+
+  return parts.join(" · ") || "Warm-up saved";
 }
 
 function parseGoogleSheetReference(sheetUrl) {
@@ -1522,8 +1571,13 @@ function renderTrainingLogs() {
       log.entry_date || "",
       log.workout_title || "Workout"
     ].join("::");
-    const supersetMatch = String(log.exercise_code || "").match(/^([A-Za-z]+)/);
-    const supersetKey = supersetMatch ? supersetMatch[1].toUpperCase() : "OTHER";
+    const exerciseCode = String(log.exercise_code || "");
+    const supersetMatch = exerciseCode.match(/^([A-Za-z]+)/);
+    const supersetKey = exerciseCode === warmupExerciseCode
+      ? "WARMUP"
+      : exerciseCode === cardioExerciseCode
+        ? "CARDIO"
+        : supersetMatch ? supersetMatch[1].toUpperCase() : "OTHER";
 
     if (!workoutGroups.has(workoutKey)) {
       workoutGroups.set(workoutKey, {
@@ -1559,7 +1613,8 @@ function renderTrainingLogs() {
     supersetGroup.exercises.get(exerciseKey).sets.push({
       set_number: log.set_number,
       weight_used: log.weight_used,
-      reps: log.reps
+      reps: log.reps,
+      notes: log.notes
     });
   });
 
@@ -1588,10 +1643,28 @@ function renderTrainingLogs() {
 
             return `
               <section class="training-log-superset-group">
-                <div class="training-log-superset-heading">${escapeHtml(superset.key === "OTHER" ? "Other" : `Superset ${superset.key}`)}</div>
+                <div class="training-log-superset-heading">${escapeHtml(
+                  superset.key === "WARMUP"
+                    ? "Warm up"
+                    : superset.key === "CARDIO"
+                      ? "Cardio"
+                      : superset.key === "OTHER" ? "Other" : `Superset ${superset.key}`
+                )}</div>
                 <div class="training-log-exercise-list">
                   ${exercises.map((entry) => {
-                    const setSummary = entry.sets
+                    const setSummary = entry.exercise_code === warmupExerciseCode
+                      ? entry.sets
+                        .sort((a, b) => Number(a.set_number || 0) - Number(b.set_number || 0))
+                        .map((set) => warmupDisplay(set))
+                        .filter(Boolean)
+                        .join("  |  ")
+                      : entry.exercise_code === cardioExerciseCode
+                      ? entry.sets
+                        .sort((a, b) => Number(a.set_number || 0) - Number(b.set_number || 0))
+                        .map((set) => cardioDisplay(set))
+                        .filter(Boolean)
+                        .join("  |  ")
+                      : entry.sets
                       .sort((a, b) => Number(a.set_number || 0) - Number(b.set_number || 0))
                       .map((set) => {
                         const parts = [];
@@ -1614,7 +1687,11 @@ function renderTrainingLogs() {
                     return `
                       <article class="training-log-row training-log-row-compact training-log-row-nested">
                         <div class="training-log-row-main">
-                          <span>${escapeHtml(entry.exercise_code)} ${escapeHtml(entry.exercise_name)}</span>
+                          <span>${escapeHtml(
+                            entry.exercise_code === warmupExerciseCode || entry.exercise_code === cardioExerciseCode
+                              ? entry.exercise_name
+                              : `${entry.exercise_code} ${entry.exercise_name}`
+                          )}</span>
                           <em>${escapeHtml(setSummary || "Sets saved")}</em>
                         </div>
                       </article>
