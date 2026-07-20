@@ -1922,6 +1922,10 @@ footer {
   gap: 12px;
 }
 
+.custom-workout-add-bottom {
+  width: 100%;
+}
+
 .custom-workout-empty {
   padding-top: 0;
   border-top: 0;

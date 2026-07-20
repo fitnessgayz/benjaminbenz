@@ -21,7 +21,7 @@ const dashboardRequestTimeout = 15000;
 const customWorkoutTitle = "Custom workout";
 const warmupExerciseCode = "WARMUP";
 const cardioExerciseCode = "CARDIO";
-const clientDashboardUrl = "client-dashboard.html?v=warmup-cardio-fields-1";
+const clientDashboardUrl = "client-dashboard.html?v=custom-workout-default-1";
 
 function isCoachPortalEmail(email) {
   return coachPortalEmails.includes(String(email || "").toLowerCase());
@@ -1154,7 +1154,10 @@ function customExerciseCode(index = 0) {
 }
 
 function customWorkoutLogs() {
-  return trainingLogs.filter((log) => isCustomWorkoutTitle(log.workout_title));
+  return trainingLogs.filter((log) => (
+    isCustomWorkoutTitle(log.workout_title) &&
+    /^CW\d+/i.test(String(log.exercise_code || ""))
+  ));
 }
 
 function customWorkoutExercises() {
@@ -1179,7 +1182,16 @@ function customWorkoutExercises() {
     }
   });
 
-  return Array.from(grouped.values()).sort((left, right) => left.code.localeCompare(right.code, undefined, { numeric: true }));
+  const exercises = Array.from(grouped.values()).sort((left, right) => left.code.localeCompare(right.code, undefined, { numeric: true }));
+
+  return exercises.length > 0
+    ? exercises
+    : [{
+      code: customExerciseCode(0),
+      name: "Exercise 1",
+      prescription: "Custom sets",
+      rest: ""
+    }];
 }
 
 function nextCustomExerciseCode(container) {
@@ -1335,10 +1347,6 @@ function customWorkoutCardMarkup(exercise, workoutTitle) {
 function customWorkoutListMarkup() {
   const exercises = customWorkoutExercises();
 
-  if (exercises.length === 0) {
-    return '<p class="empty-state custom-workout-empty">Add an exercise to start a custom workout.</p>';
-  }
-
   return exercises.map((exercise) => customWorkoutCardMarkup(exercise, customWorkoutTitle)).join("");
 }
 
@@ -1363,12 +1371,12 @@ function customWorkoutPanelMarkup(index) {
       <div class="custom-workout-builder">
         <div class="custom-workout-header">
           <p>Add your own exercises here and save them into your workout log.</p>
-          <button class="button button-ghost" type="button" data-add-custom-exercise>Add exercise</button>
         </div>
         ${warmupLogFields(customWorkoutTitle)}
         <div class="workout-app-list custom-workout-list" data-custom-workout-list role="list" aria-label="Custom workout exercises">
           ${customWorkoutListMarkup()}
         </div>
+        <button class="button button-ghost custom-workout-add-bottom" type="button" data-add-custom-exercise>Add exercise</button>
         ${cardioLogFields(customWorkoutTitle)}
         ${workoutActionsMarkup({ exercises }, { includeCardio: true })}
       </div>
@@ -2309,9 +2317,7 @@ function handleWorkoutInteractions() {
       if (list) {
         const nextCode = nextCustomExerciseCode(list);
         const nextIndex = list.querySelectorAll("[data-custom-exercise-card]").length + 1;
-        const emptyState = list.querySelector(".custom-workout-empty");
 
-        emptyState?.remove();
         list.insertAdjacentHTML("beforeend", customWorkoutCardMarkup({
           code: nextCode,
           name: `Exercise ${nextIndex}`,
@@ -2320,11 +2326,6 @@ function handleWorkoutInteractions() {
         }, customWorkoutTitle));
 
         const newLogElement = list.querySelector("[data-custom-exercise-card]:last-child [data-exercise-log]");
-        const actionPanel = panel.querySelector(".custom-workout-builder");
-
-        if (!actionPanel.querySelector(".workout-actions")) {
-          actionPanel.insertAdjacentHTML("beforeend", workoutActionsMarkup({ exercises: [{ code: nextCode }] }));
-        }
 
         if (newLogElement) {
           updateExerciseLogField(newLogElement);
@@ -2341,8 +2342,16 @@ function handleWorkoutInteractions() {
       card?.remove();
 
       if (list && list.querySelectorAll("[data-custom-exercise-card]").length === 0) {
-        list.innerHTML = '<p class="empty-state custom-workout-empty">Add an exercise to start a custom workout.</p>';
-        panel?.querySelector(".workout-actions")?.remove();
+        list.innerHTML = customWorkoutCardMarkup({
+          code: customExerciseCode(0),
+          name: "Exercise 1",
+          prescription: "Custom sets",
+          rest: ""
+        }, customWorkoutTitle);
+        const defaultLogElement = list.querySelector("[data-exercise-log]");
+        if (defaultLogElement) {
+          updateExerciseLogField(defaultLogElement);
+        }
       }
     }
   });

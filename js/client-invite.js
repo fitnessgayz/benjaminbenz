@@ -148,7 +148,7 @@ function handleInvitePassword() {
 
     setInviteStatus("Password saved. Opening dashboard...");
     await notifyPasswordCreated();
-    window.location.href = "client-dashboard.html?v=warmup-cardio-fields-1";
+    window.location.href = "client-dashboard.html?v=custom-workout-default-1";
   });
 }
 
