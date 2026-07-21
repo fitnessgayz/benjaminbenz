@@ -603,6 +603,22 @@ function readableInviteMessage(message, manualInviteUrl = "") {
   return text;
 }
 
+function readableClientRequestError(error, fallbackMessage) {
+  const message = String(error?.message || error || "").trim();
+  const lowerMessage = message.toLowerCase();
+
+  if (
+    !message ||
+    lowerMessage === "load failed" ||
+    lowerMessage.includes("failed to fetch") ||
+    lowerMessage.includes("networkerror")
+  ) {
+    return fallbackMessage;
+  }
+
+  return message;
+}
+
 function inviteStatus(message, manualInviteUrl = "") {
   const status = document.getElementById("invite-status");
 
@@ -1266,6 +1282,9 @@ async function saveProgramFromForm(form) {
   const payload = programFromForm(form);
   const id = form.elements.id.value;
   const currentProgram = id ? programs.find((program) => program.id === id) : null;
+  const shouldSyncSheetUrl = Boolean(payload.sheet_url) || programs.some((program) => (
+    normalizeEmail(program.client_email) === payload.client_email && Boolean(program.sheet_url)
+  ));
 
   if (!payload.client_email) {
     return { error: { message: "Add the client email first." } };
@@ -1313,13 +1332,15 @@ async function saveProgramFromForm(form) {
     return { error };
   }
 
-  const sheetSyncResult = await syncSheetUrlForClient(payload.client_email, payload.sheet_url);
+  if (shouldSyncSheetUrl) {
+    const sheetSyncResult = await syncSheetUrlForClient(payload.client_email, payload.sheet_url);
 
-  if (sheetSyncResult.error) {
-    return { error: sheetSyncResult.error };
+    if (sheetSyncResult.error) {
+      return { error: sheetSyncResult.error };
+    }
+
+    data = sheetSyncResult.data.find((program) => program.id === data.id) || data;
   }
-
-  data = sheetSyncResult.data.find((program) => program.id === data.id) || data;
 
   const existingIndex = programs.findIndex((program) => program.id === data.id);
 
@@ -2353,7 +2374,7 @@ function handleSaveClientDetails() {
         withRequestTimeout(
           saveProgramFromForm(form),
           "Saving the client is taking too long. Check your connection and try again.",
-          20000
+          45000
         ),
         "Still saving client...",
         inviteStatus,
@@ -2370,8 +2391,13 @@ function handleSaveClientDetails() {
       inviteStatus("Client saved. Send invite link when ready.");
       adminStatus("Client saved.");
     } catch (error) {
-      inviteStatus(error.message || "Could not save client.");
-      adminStatus(error.message || "Could not save client.");
+      const message = readableClientRequestError(
+        error,
+        "Could not connect while saving. Refresh and check the client list before trying again."
+      );
+
+      inviteStatus(message);
+      adminStatus(message);
     } finally {
       setClientInviteBusy(false);
     }
@@ -3257,7 +3283,7 @@ async function handleSendInvite() {
         withRequestTimeout(
           saveProgramFromForm(form),
           "Saving the client is taking too long. Check your connection and try again.",
-          20000
+          45000
         ),
         "Still saving client before sending invite...",
         inviteStatus,
@@ -3295,7 +3321,7 @@ async function handleSendInvite() {
             redirectTo: inviteRedirectUrl()
           })
         },
-        20000
+        90000
       );
       const result = await response.json().catch(() => ({}));
       const safeResult = result && typeof result === "object" ? result : {};
@@ -3315,7 +3341,10 @@ async function handleSendInvite() {
         ? "Invite email is taking too long to send. The client was saved. Try sending the invite again."
         : error.message && error.message.includes("Saving the client")
           ? error.message
-          : `Could not reach the invite function: ${error.message}`;
+          : readableClientRequestError(
+            error,
+            "Client saved, but the invite email could not be sent from this connection. Try Send invite link again."
+          );
 
       inviteStatus(message);
     } finally {
