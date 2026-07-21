@@ -62,6 +62,35 @@ function withRequestTimeout(promise, message, timeoutMs = 15000) {
   });
 }
 
+async function fetchWithTimeout(url, options = {}, timeoutMs = 20000) {
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => {
+    controller.abort();
+  }, timeoutMs);
+
+  try {
+    return await fetch(url, {
+      ...options,
+      signal: controller.signal
+    });
+  } finally {
+    window.clearTimeout(timeoutId);
+  }
+}
+
+function setClientInviteBusy(isBusy) {
+  const saveButton = document.getElementById("save-client-button");
+  const inviteButton = document.getElementById("send-invite-button");
+
+  if (saveButton) {
+    saveButton.disabled = isBusy;
+  }
+
+  if (inviteButton) {
+    inviteButton.disabled = isBusy;
+  }
+}
+
 function errorMentionsMissingColumn(error, columnName) {
   const message = String(error?.message || error?.details || "");
 
@@ -2315,23 +2344,37 @@ function handleSaveClientDetails() {
       return;
     }
 
-    button.disabled = true;
+    setClientInviteBusy(true);
     inviteStatus("Saving client...");
     adminStatus("Saving client...");
 
-    const { error } = await saveProgramFromForm(form);
+    try {
+      const { error } = await withSlowStatus(
+        withRequestTimeout(
+          saveProgramFromForm(form),
+          "Saving the client is taking too long. Check your connection and try again.",
+          20000
+        ),
+        "Still saving client...",
+        inviteStatus,
+        8000
+      );
 
-    if (error) {
+      if (error) {
+        inviteStatus(error.message || "Could not save client.");
+        adminStatus(error.message || "Could not save client.");
+        return;
+      }
+
+      setAdminTab("clients");
+      inviteStatus("Client saved. Send invite link when ready.");
+      adminStatus("Client saved.");
+    } catch (error) {
       inviteStatus(error.message || "Could not save client.");
       adminStatus(error.message || "Could not save client.");
-      button.disabled = false;
-      return;
+    } finally {
+      setClientInviteBusy(false);
     }
-
-    setAdminTab("clients");
-    inviteStatus("Client saved. Send invite link when ready.");
-    adminStatus("Client saved.");
-    button.disabled = false;
   });
 }
 
@@ -3206,41 +3249,54 @@ async function handleSendInvite() {
       return;
     }
 
-    button.disabled = true;
+    setClientInviteBusy(true);
     inviteStatus("Saving client, then sending invite...");
 
-    const saveResult = await saveProgramFromForm(form);
-
-    if (saveResult.error) {
-      inviteStatus(saveResult.error.message || "Could not save this client before sending invite.");
-      button.disabled = false;
-      return;
-    }
-
-    const savedProgram = saveResult.data || {};
-    const inviteEmail = normalizeEmail(savedProgram.client_email || requestedEmail);
-    const clientName = String(savedProgram.client_name || formValue(form, "client_name")).trim();
-
-    if (!isValidEmail(inviteEmail)) {
-      inviteStatus("Saved client email is not valid. Fix it, save, then send the invite again.");
-      button.disabled = false;
-      return;
-    }
-
     try {
-      const response = await fetch(`${coachConfig.url}/functions/v1/invite-client`, {
-        method: "POST",
-        headers: {
-          "apikey": coachConfig.anonKey,
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json"
+      const saveResult = await withSlowStatus(
+        withRequestTimeout(
+          saveProgramFromForm(form),
+          "Saving the client is taking too long. Check your connection and try again.",
+          20000
+        ),
+        "Still saving client before sending invite...",
+        inviteStatus,
+        8000
+      );
+
+      if (saveResult.error) {
+        inviteStatus(saveResult.error.message || "Could not save this client before sending invite.");
+        return;
+      }
+
+      const savedProgram = saveResult.data || {};
+      const inviteEmail = normalizeEmail(savedProgram.client_email || requestedEmail);
+      const clientName = String(savedProgram.client_name || formValue(form, "client_name")).trim();
+
+      if (!isValidEmail(inviteEmail)) {
+        inviteStatus("Saved client email is not valid. Fix it, save, then send the invite again.");
+        return;
+      }
+
+      inviteStatus("Client saved. Sending invite email...");
+
+      const response = await fetchWithTimeout(
+        `${coachConfig.url}/functions/v1/invite-client`,
+        {
+          method: "POST",
+          headers: {
+            "apikey": coachConfig.anonKey,
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            email: inviteEmail,
+            clientName,
+            redirectTo: inviteRedirectUrl()
+          })
         },
-        body: JSON.stringify({
-          email: inviteEmail,
-          clientName,
-          redirectTo: inviteRedirectUrl()
-        })
-      });
+        20000
+      );
       const result = await response.json().catch(() => ({}));
       const safeResult = result && typeof result === "object" ? result : {};
       const manualInviteUrl = typeof safeResult.manualInviteUrl === "string" ? safeResult.manualInviteUrl : "";
@@ -3255,9 +3311,15 @@ async function handleSendInvite() {
 
       inviteStatus(safeResult.message || `Invite sent to ${inviteEmail}.`);
     } catch (error) {
-      inviteStatus(`Could not reach the invite function: ${error.message}`);
+      const message = error.name === "AbortError"
+        ? "Invite email is taking too long to send. The client was saved. Try sending the invite again."
+        : error.message && error.message.includes("Saving the client")
+          ? error.message
+          : `Could not reach the invite function: ${error.message}`;
+
+      inviteStatus(message);
     } finally {
-      button.disabled = false;
+      setClientInviteBusy(false);
     }
   });
 }

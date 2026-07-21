@@ -15,7 +15,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=mobile-headline-fix-1" />
+  <link rel="stylesheet" href="css/style.css?v=site-feedback-1" />
 </head>
 <body class="questionnaire-page">
   <header class="site-header">
@@ -50,7 +50,13 @@
         <label>Name <input type="text" name="name" required autocomplete="name"></label>
         <label>Date of Birth <input type="date" name="date_of_birth" id="date-of-birth"></label>
         <label>Phone Number <input type="tel" name="phone" autocomplete="tel"></label>
-        <label>Home Address <input type="text" name="home_address" autocomplete="street-address"></label>
+        <label>Home Address <input type="text" name="home_address" autocomplete="address-line1" placeholder="Street address"></label>
+        <label>Apartment, suite, or unit <input type="text" name="address_line_2" autocomplete="address-line2"></label>
+        <div class="form-grid-three">
+          <label>City <input type="text" name="address_city" autocomplete="address-level2"></label>
+          <label>State <input type="text" name="address_state" autocomplete="address-level1"></label>
+          <label>ZIP <input type="text" name="address_zip" autocomplete="postal-code"></label>
+        </div>
         <fieldset>
           <legend>Preferred Communication</legend>
           <label><input type="radio" name="preferred_communication" value="Email"> Email</label>
@@ -102,8 +108,8 @@
         <label>How long has it been since you were comfortable with your level of fitness? How did you feel at that time? <input type="text" name="comfortable_fitness_history"></label>
         <label>What are your fitness goals, and why? <textarea name="fitness_goals"></textarea></label>
         <label>How long have you been thinking about achieving these goals? <input type="text" name="goal_timeline"></label>
-        <label>Why have you waited? What is different this time? <textarea name="why_now"></textarea></label>
-        <label>What is your plan for achieving these goals? <textarea name="goal_plan"></textarea></label>
+        <label>What is motivating you to get started now? Do you have a timeframe for reaching your goals? <textarea name="why_now"></textarea></label>
+        <label>How many days a week were you thinking of training? How flexible is your diet? <textarea name="goal_plan"></textarea></label>
         <label>What’s your daily nutrition like? <textarea name="daily_nutrition" placeholder="Breakfast, lunch, dinner, snacks"></textarea></label>
         <label>Do you use fitness apps to keep track of your daily activities? If so, which apps? <input type="text" name="fitness_apps"></label>
         <label>On a scale from 1 to 5, how DTF, dedicated to fitness, are you? <input type="number" name="commitment_level" min="1" max="5"></label>
@@ -122,7 +128,7 @@
         <label>Does your occupation cause you anxiety or mental stress? <input type="text" name="work_stress"></label>
         <label>Do you partake in any recreational activities? <textarea name="recreational_activities" placeholder="Golf, tennis, skiing, etc."></textarea></label>
         <label>Do you have any hobbies? <textarea name="hobbies" placeholder="Reading, gardening, working on cars, exploring the Internet, etc."></textarea></label>
-        <label>Have you ever had any pain or injuries? <textarea name="pain_or_injuries" placeholder="Ankle, knee, hip, back, shoulder, etc."></textarea></label>
+        <label>Have you had pain or injuries in your ankles, knees, hips, back, shoulders, or elsewhere? <textarea name="pain_or_injuries" placeholder="List the area, what happened, and whether it still affects training."></textarea></label>
         <label>Have you ever had any surgeries? <textarea name="surgeries"></textarea></label>
         <label>What time do you go to bed? What time do you wake up? <input type="text" name="sleep_schedule"></label>
       </section>
@@ -136,7 +142,7 @@
         </fieldset>
         <label>What workout equipment do you have at home? <input type="text" name="home_equipment"></label>
         <fieldset>
-          <legend>Availability by day</legend>
+          <legend>Preferred days for training</legend>
           <label><input type="checkbox" name="availability_days" value="Monday"> Monday</label>
           <label><input type="checkbox" name="availability_days" value="Tuesday"> Tuesday</label>
           <label><input type="checkbox" name="availability_days" value="Wednesday"> Wednesday</label>
@@ -145,7 +151,7 @@
           <label><input type="checkbox" name="availability_days" value="Saturday"> Saturday</label>
           <label><input type="checkbox" name="availability_days" value="Sunday"> Sunday</label>
         </fieldset>
-        <label>Availability by time <textarea name="availability_times" placeholder="Please list times available for training"></textarea></label>
+        <label>Preferred days and times for training <textarea name="availability_times" placeholder="Example: Mondays after 5 PM, Wednesdays mornings, weekends flexible"></textarea></label>
         <label>Anything else I should know about you? <textarea name="additional_notes"></textarea></label>
       </section>
 

@@ -550,6 +550,7 @@ h3 {
 .editorial h2 {
   max-width: 1180px;
   margin-inline: auto;
+  font-size: clamp(3rem, 6.2vw, 6.4rem);
   line-height: .9;
 }
 
@@ -1047,6 +1048,16 @@ figcaption {
   object-position: center;
   border: 1px solid var(--line);
   border-radius: 10px;
+}
+
+.client-slide figcaption {
+  padding-top: 10px;
+  color: var(--muted);
+  background: transparent;
+  font-size: .82rem;
+  line-height: 1.1;
+  letter-spacing: .02em;
+  text-transform: uppercase;
 }
 
 .client-carousel-button {
@@ -3647,6 +3658,12 @@ footer {
   border-radius: 8px;
 }
 
+.form-grid-three {
+  display: grid;
+  grid-template-columns: 1fr 120px 140px;
+  gap: 14px;
+}
+
 .form-section h2 {
   margin-bottom: 26px;
   font-size: clamp(2.4rem, 5vw, 5.8rem);
@@ -4220,7 +4237,7 @@ textarea:focus {
   .home-panel[data-home-tab-panel="start"] .contact {
     width: 100%;
     margin: 0;
-    padding: 28px 22px 132px;
+    padding: 24px 18px 132px;
     gap: 26px;
     border-radius: 0;
   }
@@ -4243,13 +4260,19 @@ textarea:focus {
   }
 
   .home-panel[data-home-tab-panel="start"] .contact h2 {
-    max-width: 360px;
+    max-width: 12ch;
     margin-inline: 0;
+    font-size: clamp(2.15rem, 10vw, 3rem);
+    line-height: .9;
+  }
+
+  .home-panel[data-home-tab-panel="start"] .contact h3 {
+    font-size: clamp(1.85rem, 9vw, 2.4rem);
   }
 
   .home-panel[data-home-tab-panel="start"] .contact p:not(.kicker) {
-    max-width: 30ch;
-    font-size: 1.12rem;
+    max-width: 31ch;
+    font-size: 1.02rem;
     line-height: 1.28;
   }
 
@@ -4259,11 +4282,11 @@ textarea:focus {
   }
 
   .editorial h2 {
-    max-width: 280px;
-    font-size: clamp(1.5rem, 7vw, 2.2rem);
+    max-width: 330px;
+    font-size: clamp(1.8rem, 8vw, 2.55rem);
     line-height: .92;
     text-wrap: normal;
-    overflow-wrap: anywhere;
+    overflow-wrap: normal;
   }
 
   .hero-content h1 {
@@ -4303,7 +4326,7 @@ textarea:focus {
   }
 
   .editorial h2 span:last-child {
-    font-size: .84em;
+    font-size: 1em;
   }
 
   .access-intro h1 {
@@ -4336,6 +4359,10 @@ textarea:focus {
   .form-section,
   .form-submit-panel {
     padding: 22px;
+  }
+
+  .form-grid-three {
+    grid-template-columns: 1fr;
   }
 
   .form-section h2 {
