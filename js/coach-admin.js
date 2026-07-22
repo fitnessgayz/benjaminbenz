@@ -24,8 +24,6 @@ let showingArchivedClients = false;
 let clientSearchTerm = "";
 let activeAdminTab = "clients";
 let pendingProgramCopy = null;
-let sessionSheetRequestId = 0;
-const sessionSheetCache = new Map();
 
 function adminStatus(message) {
   const status = document.getElementById("admin-save-status");
@@ -211,103 +209,12 @@ function warmupDisplay(log) {
   return parts.join(" · ") || "Warm-up saved";
 }
 
-function parseGoogleSheetReference(sheetUrl) {
-  try {
-    const url = new URL(String(sheetUrl || "").trim());
-    const match = url.pathname.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
-
-    if (!match) {
-      return null;
-    }
-
-    const hash = new URLSearchParams((url.hash || "").replace(/^#/, ""));
-    const gid = url.searchParams.get("gid") || hash.get("gid") || "";
-
-    return {
-      sheetId: match[1],
-      gid
-    };
-  } catch {
-    return null;
-  }
-}
-
-function googleSheetCsvUrl(sheetUrl) {
-  const reference = parseGoogleSheetReference(sheetUrl);
-
-  if (!reference) {
-    return "";
-  }
-
-  return `https://docs.google.com/spreadsheets/d/${reference.sheetId}/export?format=csv${reference.gid ? `&gid=${reference.gid}` : ""}`;
-}
-
-function parseCsvRows(csvText) {
-  const rows = [];
-  let row = [];
-  let cell = "";
-  let inQuotes = false;
-
-  for (let index = 0; index < csvText.length; index += 1) {
-    const char = csvText[index];
-    const nextChar = csvText[index + 1];
-
-    if (char === "\"") {
-      if (inQuotes && nextChar === "\"") {
-        cell += "\"";
-        index += 1;
-      } else {
-        inQuotes = !inQuotes;
-      }
-      continue;
-    }
-
-    if (char === "," && !inQuotes) {
-      row.push(cell.trim());
-      cell = "";
-      continue;
-    }
-
-    if ((char === "\n" || char === "\r") && !inQuotes) {
-      if (char === "\r" && nextChar === "\n") {
-        index += 1;
-      }
-
-      row.push(cell.trim());
-      rows.push(row);
-      row = [];
-      cell = "";
-      continue;
-    }
-
-    cell += char;
-  }
-
-  if (cell || row.length > 0) {
-    row.push(cell.trim());
-    rows.push(row);
-  }
-
-  return rows;
-}
-
 function toUtcIsoDateString(date) {
   return [
     date.getUTCFullYear(),
     String(date.getUTCMonth() + 1).padStart(2, "0"),
     String(date.getUTCDate()).padStart(2, "0")
   ].join("-");
-}
-
-function nonEmptySheetRows(rows) {
-  return rows.filter((row) => row.some((value) => String(value || "").trim() !== ""));
-}
-
-function isLikelyHeaderRow(row) {
-  const values = row.filter((value) => String(value || "").trim() !== "");
-
-  return values.length > 0 &&
-    values.every((value) => !normalizeSessionDate(value) && Number.isNaN(Number(value)));
 }
 
 function normalizeSessionDate(value) {
@@ -367,28 +274,6 @@ function normalizeSessionDate(value) {
   return toUtcIsoDateString(parsed);
 }
 
-function firstSessionDateInRow(row) {
-  for (const value of row) {
-    const normalized = normalizeSessionDate(value);
-
-    if (normalized) {
-      return normalized;
-    }
-  }
-
-  return "";
-}
-
-function sessionIndexInRow(row) {
-  const firstValue = String(row?.[0] || "").trim();
-
-  if (!/^\d+$/.test(firstValue)) {
-    return 0;
-  }
-
-  return Number(firstValue);
-}
-
 function formatSessionDate(value) {
   const normalized = normalizeSessionDate(value);
 
@@ -407,223 +292,130 @@ function formatSessionDate(value) {
   });
 }
 
-function sessionSheetSummaryFromRows(rows) {
-  const populatedRows = nonEmptySheetRows(rows);
-  const dataRows = populatedRows.length > 1 && isLikelyHeaderRow(populatedRows[0])
-    ? populatedRows.slice(1)
-    : populatedRows;
-  const datedRows = dataRows.map((row) => firstSessionDateInRow(row.slice(1).length > 0 ? row.slice(1) : row));
-  const completedCount = datedRows.filter(Boolean).length;
-  const totalCount = dataRows.reduce((max, row) => Math.max(max, sessionIndexInRow(row)), 0) || dataRows.length;
-  const recentDates = Array.from(new Set(
-    datedRows.filter(Boolean)
-  ))
-    .sort((left, right) => right.localeCompare(left))
-    .slice(0, 10);
+function normalizeSessionCount(value) {
+  const number = Number(String(value ?? "").trim());
+
+  return Number.isFinite(number) && number >= 0 ? Math.floor(number) : 0;
+}
+
+function sessionDatesFromText(value) {
+  return Array.from(new Set(
+    String(value || "")
+      .split(/\n|;/)
+      .map((item) => normalizeSessionDate(item))
+      .filter(Boolean)
+  )).slice(0, 10);
+}
+
+function sessionDatesFromProgram(program = {}) {
+  if (!Array.isArray(program.session_dates)) {
+    return [];
+  }
+
+  return Array.from(new Set(
+    program.session_dates
+      .map((item) => normalizeSessionDate(item))
+      .filter(Boolean)
+  )).slice(0, 10);
+}
+
+function sessionDatesToText(dates) {
+  return (Array.isArray(dates) ? dates : [])
+    .map((date) => formatSessionDate(date) || String(date || "").trim())
+    .filter(Boolean)
+    .join("\n");
+}
+
+function sessionSummaryFromProgram(program = {}) {
+  const used = normalizeSessionCount(program.session_count_used);
+  const total = normalizeSessionCount(program.session_count_total);
+  const recentDates = sessionDatesFromProgram(program);
+  const countDisplay = total > 0 ? `${used}/${total}` : (used > 0 ? String(used) : "--");
 
   return {
-    count: completedCount,
-    totalCount,
+    used,
+    total,
+    countDisplay,
     recentDates
   };
 }
 
-function renderSessionSheetState(state = {}) {
+function syncSessionEditor(program = {}) {
+  const usedInput = document.getElementById("session-count-used-input");
+  const totalInput = document.getElementById("session-count-total-input");
+  const datesInput = document.getElementById("session-dates-input");
+
+  if (usedInput && document.activeElement !== usedInput) {
+    usedInput.value = program.session_count_used || "";
+  }
+
+  if (totalInput && document.activeElement !== totalInput) {
+    totalInput.value = program.session_count_total || "";
+  }
+
+  if (datesInput && document.activeElement !== datesInput) {
+    datesInput.value = sessionDatesToText(sessionDatesFromProgram(program));
+  }
+}
+
+function renderSessionManualState(program = {}, options = {}) {
+  const isExistingClient = options.isExistingClient !== false;
+  const summary = sessionSummaryFromProgram(program);
   const summaryCard = document.getElementById("selected-session-count");
   const summaryValue = document.getElementById("selected-session-count-value");
   const programCount = document.getElementById("program-session-count");
-  const panelLink = document.getElementById("sessions-panel-link");
-  const panelLinkCard = document.getElementById("session-sheet-link-card");
-  const panelLinkText = document.getElementById("session-sheet-link-text");
-  const panelUrlInput = document.getElementById("session-sheet-url-input");
   const panelCount = document.getElementById("session-sheet-count-value");
   const panelStatus = document.getElementById("session-sheet-count-status");
   const panelDatesStatus = document.getElementById("session-sheet-dates-status");
   const panelDateList = document.getElementById("session-sheet-date-list");
 
   if (summaryCard) {
-    summaryCard.hidden = !state.showSummary;
+    summaryCard.hidden = !isExistingClient || summary.countDisplay === "--";
   }
 
   if (summaryValue) {
-    summaryValue.textContent = state.showSummary ? String(state.countDisplay || state.count || "--") : "--";
+    summaryValue.textContent = isExistingClient ? summary.countDisplay : "--";
   }
 
   if (programCount) {
-    programCount.textContent = state.programMessage || "Add a Google Sheet link to load the count.";
-  }
-
-  if (panelLink) {
-    if (state.sheetUrl) {
-      panelLink.href = state.sheetUrl;
-      panelLink.hidden = false;
-      panelLink.textContent = "Open Google Sheet";
-    } else {
-      panelLink.removeAttribute("href");
-      panelLink.hidden = true;
-    }
-  }
-
-  if (panelLinkCard) {
-    panelLinkCard.hidden = !state.sheetUrl;
-  }
-
-  if (panelLinkText) {
-    if (state.sheetUrl) {
-      panelLinkText.href = state.sheetUrl;
-      panelLinkText.textContent = "Open linked Google Sheet";
-    } else {
-      panelLinkText.removeAttribute("href");
-      panelLinkText.textContent = "No Google Sheet linked yet.";
-    }
-  }
-
-  if (panelUrlInput && document.activeElement !== panelUrlInput) {
-    panelUrlInput.value = state.sheetUrl || "";
+    programCount.textContent = isExistingClient
+      ? (summary.countDisplay === "--" ? "No sessions entered yet." : `${summary.countDisplay} sessions`)
+      : "Save the client first, then add sessions.";
   }
 
   if (panelCount) {
-    panelCount.textContent = String(state.countDisplay || state.count || "--");
+    panelCount.textContent = isExistingClient ? summary.countDisplay : "--";
   }
 
   if (panelStatus) {
-    panelStatus.textContent = state.panelMessage || "Select a client with a Google Sheet link.";
+    if (!isExistingClient) {
+      panelStatus.textContent = "Save the client first to track sessions.";
+    } else if (summary.countDisplay === "--") {
+      panelStatus.textContent = "No sessions entered yet.";
+    } else if (summary.total > 0) {
+      panelStatus.textContent = `${summary.used} used out of ${summary.total} sessions.`;
+    } else {
+      panelStatus.textContent = `${summary.used} sessions used.`;
+    }
   }
 
   if (panelDatesStatus) {
-    panelDatesStatus.textContent = state.datesMessage || "Dates found in the linked session sheet.";
+    panelDatesStatus.textContent = summary.recentDates.length > 0
+      ? "Most recent session dates added manually."
+      : "Add recent session dates manually.";
   }
 
   if (panelDateList) {
-    if (Array.isArray(state.recentDates) && state.recentDates.length > 0) {
-      panelDateList.innerHTML = state.recentDates.map((date) => (
+    if (summary.recentDates.length > 0) {
+      panelDateList.innerHTML = summary.recentDates.map((date) => (
         `<span class="session-date-chip">${escapeHtml(formatSessionDate(date))}</span>`
       )).join("");
     } else {
-      panelDateList.innerHTML = `<p class="empty-state">${escapeHtml(state.emptyDatesMessage || "No session dates yet.")}</p>`;
+      panelDateList.innerHTML = `<p class="empty-state">${isExistingClient ? "No session dates yet." : "No client selected."}</p>`;
     }
   }
-}
 
-async function loadSessionSheetSummary(sheetUrl, options = {}) {
-  const isExistingClient = options.isExistingClient !== false;
-  const trimmedUrl = String(sheetUrl || "").trim();
-
-  if (!isExistingClient) {
-    renderSessionSheetState({
-      showSummary: false,
-      programMessage: "Save the client first, then add a Google Sheet link.",
-      panelMessage: "Save the client first to track session counts.",
-      datesMessage: "Recent session dates will appear after a sheet is linked.",
-      emptyDatesMessage: "No client selected.",
-      sheetUrl: ""
-    });
-    return;
-  }
-
-  if (!trimmedUrl) {
-    renderSessionSheetState({
-      showSummary: false,
-      programMessage: "Add a Google Sheet link to load the count.",
-      panelMessage: "Add a Google Sheet link for this client.",
-      datesMessage: "Recent session dates will appear after a sheet is linked.",
-      emptyDatesMessage: "No session sheet linked.",
-      sheetUrl: ""
-    });
-    return;
-  }
-
-  const csvUrl = googleSheetCsvUrl(trimmedUrl);
-
-  if (!csvUrl) {
-    renderSessionSheetState({
-      showSummary: false,
-      programMessage: "Use a Google Sheets link to load the count.",
-      panelMessage: "This link is not a Google Sheets URL.",
-      datesMessage: "Recent session dates require a Google Sheets link.",
-      emptyDatesMessage: "Session sheet format not supported yet.",
-      sheetUrl: trimmedUrl
-    });
-    return;
-  }
-
-  if (sessionSheetCache.has(csvUrl)) {
-    const cached = sessionSheetCache.get(csvUrl);
-
-    renderSessionSheetState({
-      showSummary: true,
-      count: cached.count,
-      totalCount: cached.totalCount,
-      countDisplay: cached.totalCount > 0 ? `${cached.count}/${cached.totalCount}` : String(cached.count),
-      recentDates: cached.recentDates,
-      programMessage: cached.totalCount > 0 ? `${cached.count}/${cached.totalCount} sessions logged` : `${cached.count} session${cached.count === 1 ? "" : "s"} found`,
-      panelMessage: `Loaded from linked session sheet.`,
-      pillMessage: cached.totalCount > 0 ? `${cached.count}/${cached.totalCount}` : `${cached.count}`,
-      datesMessage: cached.recentDates.length > 0 ? "Most recent dates found in the sheet." : "No dates were detected in the sheet.",
-      emptyDatesMessage: "No dated sessions found yet.",
-      sheetUrl: trimmedUrl
-    });
-    return;
-  }
-
-  const requestId = ++sessionSheetRequestId;
-
-  renderSessionSheetState({
-    showSummary: false,
-    count: "--",
-    recentDates: [],
-    programMessage: "Loading session count...",
-    panelMessage: "Loading linked session sheet...",
-    datesMessage: "Reading recent session dates...",
-    emptyDatesMessage: "Loading session dates...",
-    sheetUrl: trimmedUrl
-  });
-
-  try {
-    const response = await fetch(csvUrl);
-
-    if (!response.ok) {
-      throw new Error("Could not open the linked Google Sheet.");
-    }
-
-    const csvText = await response.text();
-    const summary = sessionSheetSummaryFromRows(parseCsvRows(csvText));
-
-    sessionSheetCache.set(csvUrl, summary);
-
-    if (requestId !== sessionSheetRequestId) {
-      return;
-    }
-
-    renderSessionSheetState({
-      showSummary: true,
-      count: summary.count,
-      totalCount: summary.totalCount,
-      countDisplay: summary.totalCount > 0 ? `${summary.count}/${summary.totalCount}` : String(summary.count),
-      recentDates: summary.recentDates,
-      programMessage: summary.totalCount > 0 ? `${summary.count}/${summary.totalCount} sessions logged` : `${summary.count} session${summary.count === 1 ? "" : "s"} found`,
-      panelMessage: "Loaded from linked session sheet.",
-      pillMessage: summary.totalCount > 0 ? `${summary.count}/${summary.totalCount}` : `${summary.count}`,
-      datesMessage: summary.recentDates.length > 0 ? "Most recent dates found in the sheet." : "No dates were detected in the sheet.",
-      emptyDatesMessage: "No dated sessions found yet.",
-      sheetUrl: trimmedUrl
-    });
-  } catch (error) {
-    if (requestId !== sessionSheetRequestId) {
-      return;
-    }
-
-    renderSessionSheetState({
-      showSummary: false,
-      count: "--",
-      recentDates: [],
-      programMessage: "Could not load session count.",
-      panelMessage: error.message || "Could not load the linked session sheet.",
-      datesMessage: "Recent session dates could not be loaded.",
-      emptyDatesMessage: "Session dates unavailable.",
-      sheetUrl: trimmedUrl
-    });
-  }
+  syncSessionEditor(program);
 }
 
 function isValidEmail(value) {
@@ -831,17 +623,20 @@ function updateSelectedClientSummary(program = selectedProgram()) {
   const name = document.getElementById("selected-client-name");
   const email = document.getElementById("selected-client-email");
   const meta = document.getElementById("selected-client-meta");
-  const sessionLink = document.getElementById("selected-session-link");
   const saveButton = document.getElementById("selected-save-profile-button");
   const profileArchiveButton = document.getElementById("profile-archive-client-button");
   const profileDeleteButton = document.getElementById("profile-delete-client-button");
   const clientName = formValue(form, "client_name") || program?.client_name || "Choose a client";
   const clientEmail = formValue(form, "client_email") || program?.client_email || "Search or create a client to start editing.";
   const clientPhone = formValue(form, "client_phone") || program?.client_phone || "";
-  const sheetUrl = sheetUrlForClientEmail(
-    formValue(form, "client_email") || program?.client_email || "",
-    formValue(form, "sheet_url") || program?.sheet_url || ""
-  );
+  const sessionProgram = {
+    ...program,
+    session_count_used: form?.elements.session_count_used?.value ?? program?.session_count_used,
+    session_count_total: form?.elements.session_count_total?.value ?? program?.session_count_total,
+    session_dates: form?.elements.session_dates
+      ? sessionDatesFromText(formValue(form, "session_dates"))
+      : sessionDatesFromProgram(program)
+  };
   const isExistingClient = Boolean(form?.elements.id?.value || program?.id);
   const isActive = form?.elements.active ? form.elements.active.checked : program?.active !== false;
   const status = program?.client_archived
@@ -882,16 +677,6 @@ function updateSelectedClientSummary(program = selectedProgram()) {
     saveButton.disabled = !isExistingClient;
   }
 
-  if (sessionLink) {
-    if (isExistingClient && sheetUrl) {
-      sessionLink.href = sheetUrl;
-      sessionLink.hidden = false;
-    } else {
-      sessionLink.removeAttribute("href");
-      sessionLink.hidden = true;
-    }
-  }
-
   if (profileArchiveButton) {
     profileArchiveButton.disabled = !isExistingClient;
     profileArchiveButton.textContent = program?.client_archived ? "Restore client" : "Archive client";
@@ -901,7 +686,7 @@ function updateSelectedClientSummary(program = selectedProgram()) {
     profileDeleteButton.disabled = !isExistingClient;
   }
 
-  void loadSessionSheetSummary(sheetUrl, { isExistingClient });
+  renderSessionManualState(sessionProgram, { isExistingClient });
 
   if (!isExistingClient) {
     profileManagementStatus("Save this client first, then archive or delete them.");
@@ -1140,7 +925,9 @@ function programFromForm(form) {
     initials: formValue(form, "initials") || initialsFromName(clientName || fallbackClientName),
     program_title: formValue(form, "program_title") || "Client Program",
     program_summary: formValue(form, "program_summary"),
-    sheet_url: formValue(form, "sheet_url") || null,
+    session_count_used: normalizeSessionCount(formValue(form, "session_count_used")),
+    session_count_total: normalizeSessionCount(formValue(form, "session_count_total")),
+    session_dates: sessionDatesFromText(formValue(form, "session_dates")),
     fitness_goal: formValue(form, "fitness_goal"),
     focus_target: formValue(form, "focus_target"),
     height: formValue(form, "height") || "Not set",
@@ -1166,48 +953,11 @@ function profileFromForm(form) {
     initials: (formValue(form, "initials") || initialsFromName(clientName || fallbackClientName)).slice(0, 4).toUpperCase(),
     height: formValue(form, "height") || "Not set",
     starting_weight: formValue(form, "starting_weight") || "Not set",
-    starting_bodyfat: formValue(form, "starting_bodyfat") || "Not set"
+    starting_bodyfat: formValue(form, "starting_bodyfat") || "Not set",
+    session_count_used: normalizeSessionCount(formValue(form, "session_count_used")),
+    session_count_total: normalizeSessionCount(formValue(form, "session_count_total")),
+    session_dates: sessionDatesFromText(formValue(form, "session_dates"))
   };
-}
-
-function sheetUrlForClientEmail(clientEmail, preferredUrl = "") {
-  if (preferredUrl) {
-    return preferredUrl;
-  }
-
-  const normalizedEmail = normalizeEmail(clientEmail);
-
-  if (!normalizedEmail) {
-    return "";
-  }
-
-  return programs.find((program) => normalizeEmail(program.client_email) === normalizedEmail && program.sheet_url)?.sheet_url || "";
-}
-
-async function syncSheetUrlForClient(clientEmail, sheetUrl) {
-  const normalizedEmail = normalizeEmail(clientEmail);
-
-  if (!coachSupabase || !normalizedEmail) {
-    return { data: [] };
-  }
-
-  const { data, error } = await coachSupabase
-    .from("client_programs")
-    .update({ sheet_url: sheetUrl || null })
-    .eq("client_email", normalizedEmail)
-    .select("*");
-
-  if (error) {
-    return { error };
-  }
-
-  const updates = new Map((data || []).map((program) => [program.id, program]));
-
-  if (updates.size > 0) {
-    programs = programs.map((program) => updates.get(program.id) || program);
-  }
-
-  return { data: data || [] };
 }
 
 async function coachSessionToken() {
@@ -1275,8 +1025,6 @@ async function saveProfileChangesFromForm(form, options = {}) {
   const id = form.elements.id.value;
   const currentProgram = programs.find((program) => program.id === id);
   const profile = profileFromForm(form);
-  const sheetUrl = formValue(form, "sheet_url") || null;
-  const hasSheetUrlChange = String(currentProgram?.sheet_url || "") !== String(sheetUrl || "");
   const shouldRefreshUi = options.refreshUi !== false;
 
   if (!id || !currentProgram) {
@@ -1320,17 +1068,7 @@ async function saveProfileChangesFromForm(form, options = {}) {
     return { error: { message: safeResult.error || safeResult.message || "Could not save profile changes." } };
   }
 
-  let updatedProgram = safeResult.program || { ...currentProgram, ...profile };
-
-  if (hasSheetUrlChange) {
-    const { data: sheetData, error: sheetError } = await syncSheetUrlForClient(profile.client_email, sheetUrl);
-
-    if (sheetError) {
-      return { error: sheetError };
-    }
-
-    updatedProgram = sheetData.find((program) => program.id === id) || updatedProgram;
-  }
+  const updatedProgram = safeResult.program || { ...currentProgram, ...profile };
 
   programs = programs.map((program) => (
     normalizeEmail(program.client_email) === oldEmailKey
@@ -1359,9 +1097,6 @@ async function saveProgramFromForm(form) {
   const payload = programFromForm(form);
   const id = form.elements.id.value;
   const currentProgram = id ? programs.find((program) => program.id === id) : null;
-  const shouldSyncSheetUrl = Boolean(payload.sheet_url) || programs.some((program) => (
-    normalizeEmail(program.client_email) === payload.client_email && Boolean(program.sheet_url)
-  ));
 
   if (!payload.client_email) {
     return { error: { message: "Add the client email first." } };
@@ -1403,20 +1138,10 @@ async function saveProgramFromForm(form) {
     ? coachSupabase.from("client_programs").update(payload).eq("id", id).select("*").single()
     : coachSupabase.from("client_programs").insert(payload).select("*").single();
 
-  let { data, error } = await query;
+  const { data, error } = await query;
 
   if (error) {
     return { error };
-  }
-
-  if (shouldSyncSheetUrl) {
-    const sheetSyncResult = await syncSheetUrlForClient(payload.client_email, payload.sheet_url);
-
-    if (sheetSyncResult.error) {
-      return { error: sheetSyncResult.error };
-    }
-
-    data = sheetSyncResult.data.find((program) => program.id === data.id) || data;
   }
 
   const existingIndex = programs.findIndex((program) => program.id === data.id);
@@ -1447,11 +1172,10 @@ async function saveTrainingBlockFromForm(form) {
     program_title: formValue(form, "program_title") || "Client Program",
     fitness_goal: formValue(form, "fitness_goal"),
     focus_target: formValue(form, "focus_target"),
-    sheet_url: formValue(form, "sheet_url") || null,
     program_summary: formValue(form, "program_summary")
   };
 
-  let { data, error } = await coachSupabase
+  const { data, error } = await coachSupabase
     .from("client_programs")
     .update(payload)
     .eq("id", id)
@@ -1461,14 +1185,6 @@ async function saveTrainingBlockFromForm(form) {
   if (error) {
     return { error };
   }
-
-  const sheetSyncResult = await syncSheetUrlForClient(data.client_email, payload.sheet_url);
-
-  if (sheetSyncResult.error) {
-    return { error: sheetSyncResult.error };
-  }
-
-  data = sheetSyncResult.data.find((program) => program.id === data.id) || data;
 
   const existingIndex = programs.findIndex((program) => program.id === data.id);
 
@@ -1488,7 +1204,9 @@ function clearProgramFields(form) {
   form.elements.program_title.value = "";
   form.elements.fitness_goal.value = "";
   form.elements.focus_target.value = "";
-  form.elements.sheet_url.value = "";
+  form.elements.session_count_used.value = "";
+  form.elements.session_count_total.value = "";
+  form.elements.session_dates.value = "";
   form.elements.program_summary.value = "";
   form.elements.coach_note_title.value = "";
   form.elements.coach_note_body.value = "";
@@ -1575,7 +1293,9 @@ function fillForm(program = {}) {
   form.elements.program_title.value = program.program_title || "";
   form.elements.fitness_goal.value = program.fitness_goal || "";
   form.elements.focus_target.value = program.focus_target || "";
-  form.elements.sheet_url.value = sheetUrlForClientEmail(program.client_email || "", program.sheet_url || "");
+  form.elements.session_count_used.value = program.session_count_used || "";
+  form.elements.session_count_total.value = program.session_count_total || "";
+  form.elements.session_dates.value = sessionDatesToText(sessionDatesFromProgram(program));
   form.elements.program_summary.value = program.program_summary || "";
   form.elements.coach_note_title.value = program.coach_note_title || "";
   form.elements.coach_note_body.value = program.coach_note_body || "";
@@ -2258,25 +1978,40 @@ function handleSelectedClientActions() {
   });
 }
 
-function handleSessionSheetEditor() {
+function handleSessionManualEditor() {
   const form = document.getElementById("program-editor");
-  const input = document.getElementById("session-sheet-url-input");
-  const button = document.getElementById("save-session-sheet-button");
+  const usedInput = document.getElementById("session-count-used-input");
+  const totalInput = document.getElementById("session-count-total-input");
+  const datesInput = document.getElementById("session-dates-input");
+  const button = document.getElementById("save-session-count-button");
   const status = document.getElementById("session-sheet-save-status");
 
-  if (!form || !input || !button) {
+  if (!form || !usedInput || !totalInput || !datesInput || !button) {
     return;
   }
 
-  input.addEventListener("input", () => {
-    if (form.elements.sheet_url) {
-      form.elements.sheet_url.value = input.value.trim();
+  const syncInputsToForm = () => {
+    if (form.elements.session_count_used) {
+      form.elements.session_count_used.value = usedInput.value;
     }
+
+    if (form.elements.session_count_total) {
+      form.elements.session_count_total.value = totalInput.value;
+    }
+
+    if (form.elements.session_dates) {
+      form.elements.session_dates.value = datesInput.value;
+    }
+
+    updateSelectedClientSummary(selectedProgram());
+  };
+
+  [usedInput, totalInput, datesInput].forEach((input) => {
+    input.addEventListener("input", syncInputsToForm);
   });
 
   button.addEventListener("click", async () => {
     const currentProgram = selectedProgram();
-    const sheetUrl = input.value.trim();
 
     if (!currentProgram?.id) {
       if (status) {
@@ -2286,15 +2021,13 @@ function handleSessionSheetEditor() {
       return;
     }
 
-    if (form.elements.sheet_url) {
-      form.elements.sheet_url.value = sheetUrl;
-    }
+    syncInputsToForm();
 
     button.disabled = true;
     if (status) {
-      status.textContent = "Saving sheet link...";
+      status.textContent = "Saving sessions...";
     }
-    adminStatus("Saving session sheet link...");
+    adminStatus("Saving sessions...");
 
     const { error } = await saveProfileChangesFromForm(form);
 
@@ -2307,16 +2040,10 @@ function handleSessionSheetEditor() {
       return;
     }
 
-    const csvUrl = googleSheetCsvUrl(sheetUrl);
-
-    if (csvUrl) {
-      sessionSheetCache.delete(csvUrl);
-    }
-
     if (status) {
-      status.textContent = sheetUrl ? "Session sheet link saved." : "Session sheet link removed.";
+      status.textContent = "Sessions saved.";
     }
-    adminStatus("Session sheet link saved.");
+    adminStatus("Sessions saved.");
     updateSelectedClientSummary(selectedProgram());
     button.disabled = false;
   });
@@ -2341,7 +2068,10 @@ function handleAdminLiveUpdates() {
       "client_name",
       "client_phone",
       "initials",
-      "program_title"
+      "program_title",
+      "session_count_used",
+      "session_count_total",
+      "session_dates"
     ].includes(name)) {
       updateSelectedClientSummary();
     }
@@ -2358,15 +2088,7 @@ function handleAdminLiveUpdates() {
       updateSelectedClientSummary();
     }
 
-    if (name === "sheet_url") {
-      const csvUrl = googleSheetCsvUrl(formValue(form, "sheet_url"));
-
-      if (csvUrl) {
-        sessionSheetCache.delete(csvUrl);
-      }
-
-      updateSelectedClientSummary();
-    }
+    updateSelectedClientSummary();
   });
 }
 
@@ -3063,7 +2785,9 @@ async function copyProgramToClient(program, button, targetEmail, options = {}) {
       initials: targetProfile?.initials || initialsFromName(targetName),
       program_title: program.program_title || "Client Program",
       program_summary: program.program_summary || "",
-      sheet_url: program.sheet_url || null,
+      session_count_used: normalizeSessionCount(targetProfile?.session_count_used),
+      session_count_total: normalizeSessionCount(targetProfile?.session_count_total),
+      session_dates: sessionDatesFromProgram(targetProfile),
       fitness_goal: program.fitness_goal || "",
       focus_target: program.focus_target || "",
       height: targetProfile?.height || "Not set",
@@ -3594,7 +3318,7 @@ async function bootCoachAdmin() {
   renderWorkoutFields();
   handleAdminTabs();
   handleSelectedClientActions();
-  handleSessionSheetEditor();
+  handleSessionManualEditor();
   handleAdminLiveUpdates();
   handleWorkoutCards();
   handleSaveProfileChanges();

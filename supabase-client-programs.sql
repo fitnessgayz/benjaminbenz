@@ -7,6 +7,9 @@ create table if not exists public.client_programs (
   program_title text not null,
   program_summary text not null default '',
   sheet_url text,
+  session_count_used integer not null default 0,
+  session_count_total integer not null default 0,
+  session_dates jsonb not null default '[]'::jsonb,
   fitness_goal text not null default '',
   focus_target text not null default '',
   height text not null default 'Not set',
@@ -26,6 +29,15 @@ add column if not exists client_phone text not null default '';
 
 alter table public.client_programs
 add column if not exists client_archived boolean not null default false;
+
+alter table public.client_programs
+add column if not exists session_count_used integer not null default 0;
+
+alter table public.client_programs
+add column if not exists session_count_total integer not null default 0;
+
+alter table public.client_programs
+add column if not exists session_dates jsonb not null default '[]'::jsonb;
 
 update public.client_programs cp
 set client_archived = true

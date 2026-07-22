@@ -15,13 +15,11 @@ let clientTrainingLogDateFilter = "";
 let activeClientDashboardTab = "workouts";
 let activeWorkoutTabIndex = 0;
 let currentProgram = null;
-let clientSessionSheetRequestId = 0;
-const clientSessionSheetCache = new Map();
 const dashboardRequestTimeout = 15000;
 const customWorkoutTitle = "Custom workout";
 const warmupExerciseCode = "WARMUP";
 const cardioExerciseCode = "CARDIO";
-const clientDashboardUrl = "client-dashboard.html?v=custom-workout-default-1";
+const clientDashboardUrl = "client-dashboard.html?v=manual-sessions-1";
 
 function isCoachPortalEmail(email) {
   return coachPortalEmails.includes(String(email || "").toLowerCase());
@@ -34,86 +32,6 @@ function escapeHtml(value) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
-}
-
-function parseClientGoogleSheetReference(sheetUrl) {
-  try {
-    const url = new URL(String(sheetUrl || "").trim());
-    const match = url.pathname.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
-
-    if (!match) {
-      return null;
-    }
-
-    const hash = new URLSearchParams((url.hash || "").replace(/^#/, ""));
-    const gid = url.searchParams.get("gid") || hash.get("gid") || "";
-
-    return {
-      sheetId: match[1],
-      gid
-    };
-  } catch {
-    return null;
-  }
-}
-
-function clientGoogleSheetCsvUrl(sheetUrl) {
-  const reference = parseClientGoogleSheetReference(sheetUrl);
-
-  if (!reference) {
-    return "";
-  }
-
-  return `https://docs.google.com/spreadsheets/d/${reference.sheetId}/export?format=csv${reference.gid ? `&gid=${reference.gid}` : ""}`;
-}
-
-function parseClientCsvRows(csvText) {
-  const rows = [];
-  let row = [];
-  let cell = "";
-  let inQuotes = false;
-
-  for (let index = 0; index < csvText.length; index += 1) {
-    const char = csvText[index];
-    const nextChar = csvText[index + 1];
-
-    if (char === "\"") {
-      if (inQuotes && nextChar === "\"") {
-        cell += "\"";
-        index += 1;
-      } else {
-        inQuotes = !inQuotes;
-      }
-      continue;
-    }
-
-    if (char === "," && !inQuotes) {
-      row.push(cell.trim());
-      cell = "";
-      continue;
-    }
-
-    if ((char === "\n" || char === "\r") && !inQuotes) {
-      if (char === "\r" && nextChar === "\n") {
-        index += 1;
-      }
-
-      row.push(cell.trim());
-      rows.push(row);
-      row = [];
-      cell = "";
-      continue;
-    }
-
-    cell += char;
-  }
-
-  if (cell || row.length > 0) {
-    row.push(cell.trim());
-    rows.push(row);
-  }
-
-  return rows;
 }
 
 function clientToUtcIsoDateString(date) {
@@ -181,200 +99,67 @@ function normalizeClientSessionDate(value) {
   return clientToUtcIsoDateString(parsed);
 }
 
-function firstClientSessionDateInRow(row) {
-  for (const value of row) {
-    const normalized = normalizeClientSessionDate(value);
+function normalizeClientSessionCount(value) {
+  const number = Number(String(value ?? "").trim());
 
-    if (normalized) {
-      return normalized;
-    }
+  return Number.isFinite(number) && number >= 0 ? Math.floor(number) : 0;
+}
+
+function clientSessionDatesFromProgram(program = {}) {
+  if (!Array.isArray(program.session_dates)) {
+    return [];
   }
 
-  return "";
+  return Array.from(new Set(
+    program.session_dates
+      .map((item) => normalizeClientSessionDate(item))
+      .filter(Boolean)
+  )).slice(0, 10);
 }
 
-function clientSessionIndexInRow(row) {
-  const firstValue = String(row?.[0] || "").trim();
-
-  if (!/^\d+$/.test(firstValue)) {
-    return 0;
-  }
-
-  return Number(firstValue);
-}
-
-function isLikelyClientHeaderRow(row) {
-  const values = row.filter((value) => String(value || "").trim() !== "");
-
-  return values.length > 0 &&
-    values.every((value) => !normalizeClientSessionDate(value) && Number.isNaN(Number(value)));
-}
-
-function clientSessionSummaryFromRows(rows) {
-  const populatedRows = rows.filter((row) => row.some((value) => String(value || "").trim() !== ""));
-  const dataRows = populatedRows.length > 1 && isLikelyClientHeaderRow(populatedRows[0])
-    ? populatedRows.slice(1)
-    : populatedRows;
-  const datedRows = dataRows.map((row) => firstClientSessionDateInRow(row.slice(1).length > 0 ? row.slice(1) : row));
-  const completedCount = datedRows.filter(Boolean).length;
-  const totalCount = dataRows.reduce((max, row) => Math.max(max, clientSessionIndexInRow(row)), 0) || dataRows.length;
-  const recentDates = Array.from(new Set(
-    datedRows.filter(Boolean)
-  ))
-    .sort((left, right) => right.localeCompare(left))
-    .slice(0, 10);
-
-  return {
-    count: completedCount,
-    totalCount,
-    recentDates
-  };
-}
-
-function renderClientSessionSheetState(state = {}) {
+function renderClientSessionManualState(program = {}) {
   const countPill = document.getElementById("client-session-count-pill");
   const countValue = document.getElementById("client-session-count-value");
   const countStatus = document.getElementById("client-session-count-status");
   const datesStatus = document.getElementById("client-session-dates-status");
   const dateList = document.getElementById("client-session-date-list");
-  const sessionLink = document.getElementById("client-session-link");
+  const used = normalizeClientSessionCount(program.session_count_used);
+  const total = normalizeClientSessionCount(program.session_count_total);
+  const recentDates = clientSessionDatesFromProgram(program);
+  const countDisplay = total > 0 ? `${used}/${total}` : (used > 0 ? String(used) : "--");
 
   if (countPill) {
-    countPill.textContent = state.pillMessage || "No sheet linked";
+    countPill.textContent = countDisplay === "--" ? "No sessions yet" : countDisplay;
   }
 
   if (countValue) {
-    countValue.textContent = String(state.countDisplay || state.count || "--");
+    countValue.textContent = countDisplay;
   }
 
   if (countStatus) {
-    countStatus.textContent = state.countMessage || "Add a Google Sheet link to load the count.";
+    if (countDisplay === "--") {
+      countStatus.textContent = "Your coach will update your session count.";
+    } else if (total > 0) {
+      countStatus.textContent = `${used} used out of ${total} sessions.`;
+    } else {
+      countStatus.textContent = `${used} sessions used.`;
+    }
   }
 
   if (datesStatus) {
-    datesStatus.textContent = state.datesMessage || "Recent session dates will appear here.";
+    datesStatus.textContent = recentDates.length > 0
+      ? "Most recent session dates."
+      : "Recent session dates will appear here.";
   }
 
   if (dateList) {
-    if (Array.isArray(state.recentDates) && state.recentDates.length > 0) {
-      dateList.innerHTML = state.recentDates.map((date) => (
+    if (recentDates.length > 0) {
+      dateList.innerHTML = recentDates.map((date) => (
         `<span class="session-date-chip">${escapeHtml(formatLogDate(date))}</span>`
       )).join("");
     } else {
-      dateList.innerHTML = `<p class="empty-state">${escapeHtml(state.emptyDatesMessage || "No session dates yet.")}</p>`;
+      dateList.innerHTML = '<p class="empty-state">No session dates yet.</p>';
     }
-  }
-
-  if (sessionLink) {
-    if (state.sheetUrl) {
-      sessionLink.href = state.sheetUrl;
-      sessionLink.hidden = false;
-    } else {
-      sessionLink.removeAttribute("href");
-      sessionLink.hidden = true;
-    }
-  }
-}
-
-async function loadClientSessionSheetSummary(sheetUrl) {
-  const trimmedUrl = String(sheetUrl || "").trim();
-
-  if (!trimmedUrl) {
-    renderClientSessionSheetState({
-      count: "--",
-      pillMessage: "No sheet linked",
-      countMessage: "No session sheet is linked to this client.",
-      datesMessage: "Recent session dates will appear here.",
-      emptyDatesMessage: "No session sheet linked.",
-      sheetUrl: ""
-    });
-    return;
-  }
-
-  const csvUrl = clientGoogleSheetCsvUrl(trimmedUrl);
-
-  if (!csvUrl) {
-    renderClientSessionSheetState({
-      count: "--",
-      pillMessage: "Unsupported link",
-      countMessage: "This session link is not a Google Sheets URL.",
-      datesMessage: "Recent session dates require a Google Sheets link.",
-      emptyDatesMessage: "Session sheet format not supported yet.",
-      sheetUrl: trimmedUrl
-    });
-    return;
-  }
-
-  if (clientSessionSheetCache.has(csvUrl)) {
-    const cached = clientSessionSheetCache.get(csvUrl);
-
-    renderClientSessionSheetState({
-      count: cached.count,
-      totalCount: cached.totalCount,
-      countDisplay: cached.totalCount > 0 ? `${cached.count}/${cached.totalCount}` : String(cached.count),
-      recentDates: cached.recentDates,
-      pillMessage: cached.totalCount > 0 ? `${cached.count}/${cached.totalCount}` : `${cached.count}`,
-      countMessage: "Loaded from your linked session sheet.",
-      datesMessage: cached.recentDates.length > 0 ? "Most recent dates found in the sheet." : "No dates were detected in the sheet.",
-      emptyDatesMessage: "No dated sessions found yet.",
-      sheetUrl: trimmedUrl
-    });
-    return;
-  }
-
-  const requestId = ++clientSessionSheetRequestId;
-
-  renderClientSessionSheetState({
-    count: "--",
-    recentDates: [],
-    pillMessage: "Loading...",
-    countMessage: "Loading session count...",
-    datesMessage: "Reading recent session dates...",
-    emptyDatesMessage: "Loading session dates...",
-    sheetUrl: trimmedUrl
-  });
-
-  try {
-    const response = await fetch(csvUrl);
-
-    if (!response.ok) {
-      throw new Error("Could not open the linked Google Sheet.");
-    }
-
-    const csvText = await response.text();
-    const summary = clientSessionSummaryFromRows(parseClientCsvRows(csvText));
-
-    clientSessionSheetCache.set(csvUrl, summary);
-
-    if (requestId !== clientSessionSheetRequestId) {
-      return;
-    }
-
-    renderClientSessionSheetState({
-      count: summary.count,
-      totalCount: summary.totalCount,
-      countDisplay: summary.totalCount > 0 ? `${summary.count}/${summary.totalCount}` : String(summary.count),
-      recentDates: summary.recentDates,
-      pillMessage: summary.totalCount > 0 ? `${summary.count}/${summary.totalCount}` : `${summary.count}`,
-      countMessage: "Loaded from your linked session sheet.",
-      datesMessage: summary.recentDates.length > 0 ? "Most recent dates found in the sheet." : "No dates were detected in the sheet.",
-      emptyDatesMessage: "No dated sessions found yet.",
-      sheetUrl: trimmedUrl
-    });
-  } catch (error) {
-    if (requestId !== clientSessionSheetRequestId) {
-      return;
-    }
-
-    renderClientSessionSheetState({
-      count: "--",
-      recentDates: [],
-      pillMessage: "Unavailable",
-      countMessage: error.message || "Could not load the linked session sheet.",
-      datesMessage: "Recent session dates could not be loaded.",
-      emptyDatesMessage: "Session dates unavailable.",
-      sheetUrl: trimmedUrl
-    });
   }
 }
 
@@ -2421,7 +2206,6 @@ function renderProgram(program) {
   currentProgram = { ...program };
   const displayProgram = displayProgramForCurrentView(program);
   const workouts = Array.isArray(program.workouts) ? program.workouts : [];
-  const sheetLink = document.getElementById("workout-sheet-link");
   const programTitle = displayProgram.program_title || "Your Program";
 
   document.title = `${programTitle} | Fitness with Benjamin`;
@@ -2430,19 +2214,9 @@ function renderProgram(program) {
   setText("#client-avatar", clientInitials(displayProgram));
   setText("#client-name", displayProgram.client_name || "Client");
 
-  if (sheetLink) {
-    if (program.sheet_url) {
-      sheetLink.href = program.sheet_url;
-      sheetLink.hidden = false;
-    } else {
-      sheetLink.removeAttribute("href");
-      sheetLink.hidden = true;
-    }
-  }
-
   renderMetrics(program);
   renderWorkoutInsights(program);
-  void loadClientSessionSheetSummary(program.sheet_url);
+  renderClientSessionManualState(program);
   renderClientWorkoutTabs(workouts);
   setClientDashboardTab(activeClientDashboardTab);
   showDashboardContent();

@@ -50,6 +50,24 @@ function normalizeEmail(value: unknown) {
   return stringValue(value).toLowerCase();
 }
 
+function numberValue(value: unknown) {
+  const number = Number(String(value ?? "").trim());
+
+  return Number.isFinite(number) && number >= 0 ? Math.floor(number) : 0;
+}
+
+function sessionDatesValue(value: unknown) {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return Array.from(new Set(
+    value
+      .map((item) => stringValue(item))
+      .filter(Boolean)
+  )).slice(0, 10);
+}
+
 function isValidEmail(value: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 }
@@ -155,6 +173,9 @@ serve(async (request) => {
   const height = stringValue(safeBody.height) || "Not set";
   const startingWeight = stringValue(safeBody.starting_weight) || "Not set";
   const startingBodyfat = stringValue(safeBody.starting_bodyfat) || "Not set";
+  const sessionCountUsed = numberValue(safeBody.session_count_used);
+  const sessionCountTotal = numberValue(safeBody.session_count_total);
+  const sessionDates = sessionDatesValue(safeBody.session_dates);
 
   if (!programId || !oldEmail) {
     return jsonResponse(request, { error: "Choose an existing client first." }, 400);
@@ -253,7 +274,10 @@ serve(async (request) => {
     initials,
     height,
     starting_weight: startingWeight,
-    starting_bodyfat: startingBodyfat
+    starting_bodyfat: startingBodyfat,
+    session_count_used: sessionCountUsed,
+    session_count_total: sessionCountTotal,
+    session_dates: sessionDates
   };
   const { error: programError } = await updateRowsById(adminClient, "client_programs", programIds, profilePayload);
 

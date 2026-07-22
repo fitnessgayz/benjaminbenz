@@ -3285,6 +3285,10 @@ footer {
   grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
 }
 
+.admin-field-full {
+  grid-column: 1 / -1;
+}
+
 .admin-card label {
   display: grid;
   gap: 9px;

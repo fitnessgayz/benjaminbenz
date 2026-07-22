@@ -15,7 +15,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=session-sheet-editor-1" />
+  <link rel="stylesheet" href="css/style.css?v=manual-sessions-1" />
 </head>
 <body class="dashboard-page coach-admin-page">
   <header class="site-header dashboard-header">
@@ -25,7 +25,7 @@
     </a>
     <nav class="nav-links" aria-label="Primary navigation">
       <a href="#clients">Clients</a>
-      <a href="client-dashboard.html?v=custom-workout-default-1">Client View</a>
+      <a href="client-dashboard.html?v=manual-sessions-1">Client View</a>
       <a href="client-login.html?v=manual-invite-copy-1">Client Login</a>
     </nav>
     <div class="header-actions">
@@ -60,7 +60,6 @@
               <span>Session count</span>
               <strong id="selected-session-count-value">--</strong>
             </div>
-            <a class="button button-dark" id="selected-session-link" href="#" target="_blank" rel="noopener" hidden>Open session link</a>
             <button class="button button-ghost" type="button" id="selected-save-profile-button">Save changes</button>
           </div>
         </section>
@@ -180,12 +179,20 @@
               <input type="text" name="starting_bodyfat" placeholder="Not set" />
             </label>
             <label>
-              Google Sheet link
-              <input type="url" name="sheet_url" placeholder="https://docs.google.com/..." />
+              Sessions used
+              <input type="number" name="session_count_used" min="0" inputmode="numeric" placeholder="18" />
+            </label>
+            <label>
+              Total sessions
+              <input type="number" name="session_count_total" min="0" inputmode="numeric" placeholder="20" />
+            </label>
+            <label class="admin-field-full">
+              Recent session dates
+              <textarea name="session_dates" placeholder="Jul 10, 2026&#10;Jul 8, 2026"></textarea>
             </label>
             <label class="readonly-output-field">
               Session log count
-              <output id="program-session-count">Add a Google Sheet link to load the count.</output>
+              <output id="program-session-count">Add sessions used and total sessions.</output>
             </label>
           </div>
           <div class="profile-actions-row">
@@ -289,34 +296,37 @@
         <section class="admin-card session-sheet-panel" data-admin-panel="sessions" hidden>
           <div class="admin-section-heading">
             <div>
-              <p class="kicker">Session sheet</p>
+              <p class="kicker">Sessions</p>
               <h2>Session count</h2>
             </div>
-            <a class="button button-dark" id="sessions-panel-link" href="#" target="_blank" rel="noopener" hidden>Open session link</a>
           </div>
           <div class="session-sheet-editor">
             <label>
-              Google Sheet link
-              <input type="url" id="session-sheet-url-input" placeholder="https://docs.google.com/spreadsheets/..." />
+              Sessions used
+              <input type="number" id="session-count-used-input" min="0" inputmode="numeric" placeholder="18" />
             </label>
-            <button class="button button-ghost" type="button" id="save-session-sheet-button">Save sheet link</button>
-            <p class="profile-save-status" id="session-sheet-save-status" role="status">Paste a Google Sheet link for this client.</p>
+            <label>
+              Total sessions
+              <input type="number" id="session-count-total-input" min="0" inputmode="numeric" placeholder="20" />
+            </label>
+            <label class="admin-field-full">
+              Recent session dates
+              <textarea id="session-dates-input" placeholder="Jul 10, 2026&#10;Jul 8, 2026"></textarea>
+            </label>
+            <button class="button button-ghost" type="button" id="save-session-count-button">Save sessions</button>
+            <p class="profile-save-status" id="session-sheet-save-status" role="status">Enter session count manually for this client.</p>
           </div>
           <div class="session-sheet-summary">
             <article class="session-sheet-count-card">
-              <span>Total sessions</span>
+              <span>Sessions used</span>
               <strong id="session-sheet-count-value">--</strong>
-              <small id="session-sheet-count-status">Select a client with a Google Sheet link.</small>
-            </article>
-            <article class="session-sheet-link-card" id="session-sheet-link-card" hidden>
-              <span>Google Sheet</span>
-              <a id="session-sheet-link-text" href="#" target="_blank" rel="noopener">Open Google Sheet</a>
+              <small id="session-sheet-count-status">Select a client to view sessions.</small>
             </article>
           </div>
           <div class="session-date-history">
             <div class="program-history-heading">
               <strong>Recent session dates</strong>
-              <span id="session-sheet-dates-status">Dates found in the linked session sheet.</span>
+              <span id="session-sheet-dates-status">Dates added manually for this client.</span>
             </div>
             <div class="session-date-list" id="session-sheet-date-list">
               <p class="empty-state">No session dates yet.</p>
@@ -403,9 +413,9 @@
     </section>
   </main>
 
-  <script src="js/script.js?v=coach-sessions-tab-4"></script>
+  <script src="js/script.js?v=manual-sessions-1"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/supabase-config.js?v=coach-sessions-tab-4"></script>
-  <script src="js/coach-admin.js?v=client-management-action-1"></script>
+  <script src="js/supabase-config.js?v=manual-sessions-1"></script>
+  <script src="js/coach-admin.js?v=manual-sessions-1"></script>
 </body>
 </html>

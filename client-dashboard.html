@@ -15,7 +15,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=custom-workout-default-1" />
+  <link rel="stylesheet" href="css/style.css?v=manual-sessions-1" />
 </head>
 <body class="dashboard-page is-loading">
   <header class="site-header dashboard-header">
@@ -87,18 +87,17 @@
         <section class="progress-panel" data-client-dashboard-panel="sessions" aria-labelledby="client-sessions-title" hidden>
           <div class="panel-heading">
             <div>
-              <p class="kicker">Session sheet</p>
+              <p class="kicker">Sessions</p>
               <h2 id="client-sessions-title">Sessions</h2>
             </div>
-            <span class="status-pill" id="client-session-count-pill">No sheet linked</span>
+            <span class="status-pill" id="client-session-count-pill">No sessions yet</span>
           </div>
           <div class="session-sheet-summary">
             <div class="session-sheet-count-card">
-              <span>Total sessions</span>
+              <span>Sessions used</span>
               <strong id="client-session-count-value">--</strong>
-              <small id="client-session-count-status">Add a Google Sheet link to load the count.</small>
+              <small id="client-session-count-status">Your coach will update your session count.</small>
             </div>
-            <a class="button button-dark" id="client-session-link" href="#" target="_blank" rel="noopener" hidden>Open session link</a>
           </div>
           <div class="session-date-history">
             <div class="panel-heading">
@@ -134,10 +133,6 @@
           </div>
         </section>
       </section>
-
-      <div class="dashboard-sheet-action">
-        <a class="button button-dark" id="workout-sheet-link" href="#" target="_blank" rel="noopener" hidden>Open workout sheet</a>
-      </div>
     </div>
   </main>
 
@@ -148,7 +143,7 @@
 
   <script src="js/script.js?v=client-dashboard"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/supabase-config.js?v=custom-workout-default-1"></script>
-  <script src="js/client-portal.js?v=custom-workout-default-1"></script>
+  <script src="js/supabase-config.js?v=manual-sessions-1"></script>
+  <script src="js/client-portal.js?v=manual-sessions-1"></script>
 </body>
 </html>
