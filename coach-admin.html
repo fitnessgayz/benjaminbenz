@@ -15,7 +15,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=session-package-history-1" />
+  <link rel="stylesheet" href="css/style.css?v=client-session-link-1" />
 </head>
 <body class="dashboard-page coach-admin-page">
   <header class="site-header dashboard-header">
@@ -189,7 +189,7 @@
               <input type="number" name="session_count_total" min="0" inputmode="numeric" placeholder="20" />
             </label>
             <label class="admin-field-full">
-              Recent session dates
+              Session dates
               <textarea name="session_dates" placeholder="Jul 10, 2026&#10;Jul 8, 2026"></textarea>
             </label>
             <label class="readonly-output-field">
@@ -312,7 +312,7 @@
               <input type="number" id="session-count-total-input" min="0" inputmode="numeric" placeholder="20" />
             </label>
             <label class="admin-field-full">
-              Recent session dates
+              Session dates
               <textarea id="session-dates-input" placeholder="Jul 10, 2026&#10;Jul 8, 2026"></textarea>
             </label>
             <label class="admin-field-full">
@@ -338,8 +338,8 @@
           </div>
           <div class="session-date-history">
             <div class="program-history-heading">
-              <strong>Recent session dates</strong>
-              <span id="session-sheet-dates-status">Dates added manually for this client.</span>
+              <strong>Session dates</strong>
+              <span id="session-sheet-dates-status">Session dates added manually for this client.</span>
             </div>
             <div class="session-date-list" id="session-sheet-date-list">
               <p class="empty-state">No session dates yet.</p>
@@ -435,9 +435,9 @@
     </section>
   </main>
 
-  <script src="js/script.js?v=session-package-history-1"></script>
+  <script src="js/script.js?v=client-session-link-1"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/supabase-config.js?v=session-package-history-1"></script>
-  <script src="js/coach-admin.js?v=session-package-history-1"></script>
+  <script src="js/supabase-config.js?v=client-session-link-1"></script>
+  <script src="js/coach-admin.js?v=client-session-link-1"></script>
 </body>
 </html>

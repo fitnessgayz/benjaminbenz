@@ -321,7 +321,7 @@ function sessionDatesFromText(value) {
       .split(/\n|;/)
       .map((item) => normalizeSessionDate(item))
       .filter(Boolean)
-  )).slice(0, 10);
+  ));
 }
 
 function sessionDatesFromProgram(program = {}) {
@@ -333,7 +333,16 @@ function sessionDatesFromProgram(program = {}) {
     program.session_dates
       .map((item) => normalizeSessionDate(item))
       .filter(Boolean)
-  )).slice(0, 10);
+  ));
+}
+
+function sessionPackageDatesFromText(value) {
+  return Array.from(new Set(
+    String(value || "")
+      .split(/\n|;/)
+      .map((item) => normalizeSessionDate(item))
+      .filter(Boolean)
+  ));
 }
 
 function sessionDatesToText(dates) {
@@ -355,7 +364,7 @@ function sessionPackageHistoryFromProgram(program = {}) {
       const total = normalizeSessionCount(source.total);
       const archivedAt = normalizeSessionDate(source.archived_at || source.archivedAt);
       const recentDates = Array.isArray(source.dates)
-        ? source.dates.map((date) => normalizeSessionDate(date)).filter(Boolean).slice(0, 10)
+        ? Array.from(new Set(source.dates.map((date) => normalizeSessionDate(date)).filter(Boolean)))
         : [];
 
       return {
@@ -470,8 +479,8 @@ function renderSessionManualState(program = {}, options = {}) {
 
   if (panelDatesStatus) {
     panelDatesStatus.textContent = summary.recentDates.length > 0
-      ? "Most recent session dates added manually."
-      : "Add recent session dates manually.";
+      ? "Session dates added manually."
+      : "Add session dates manually.";
   }
 
   if (panelDateList) {
@@ -2204,7 +2213,7 @@ function handleSessionManualEditor() {
     }
 
     const confirmed = window.confirm(
-      "Start a new package for this client? This will reset sessions used to 0 and clear recent session dates."
+      "Start a new package for this client? This will reset sessions used to 0 and clear session dates."
     );
 
     if (!confirmed) {
@@ -2213,7 +2222,7 @@ function handleSessionManualEditor() {
 
     const currentHistory = sessionPackageHistoryFromForm(form);
     const packageUsed = normalizeSessionCount(usedInput.value);
-    const packageDates = sessionDatesFromText(datesInput.value);
+    const packageDates = sessionPackageDatesFromText(datesInput.value);
     const archivedPackage = {
       label: `Package ${currentHistory.length + 1}`,
       used: packageUsed,

@@ -34,6 +34,23 @@ function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
+function trustedClientSheetUrl(value) {
+  const text = String(value || "").trim();
+
+  if (!text) {
+    return "";
+  }
+
+  try {
+    const url = new URL(text);
+    const isGoogleSheet = url.hostname === "docs.google.com" && url.pathname.startsWith("/spreadsheets/");
+
+    return isGoogleSheet ? url.toString() : "";
+  } catch (error) {
+    return "";
+  }
+}
+
 function clientToUtcIsoDateString(date) {
   return [
     date.getUTCFullYear(),
@@ -114,7 +131,7 @@ function clientSessionDatesFromProgram(program = {}) {
     program.session_dates
       .map((item) => normalizeClientSessionDate(item))
       .filter(Boolean)
-  )).slice(0, 10);
+  ));
 }
 
 function clientSessionPackageHistoryFromProgram(program = {}) {
@@ -129,7 +146,7 @@ function clientSessionPackageHistoryFromProgram(program = {}) {
       const total = normalizeClientSessionCount(source.total);
       const archivedAt = normalizeClientSessionDate(source.archived_at || source.archivedAt);
       const dates = Array.isArray(source.dates)
-        ? source.dates.map((date) => normalizeClientSessionDate(date)).filter(Boolean).slice(0, 10)
+        ? Array.from(new Set(source.dates.map((date) => normalizeClientSessionDate(date)).filter(Boolean)))
         : [];
 
       return {
@@ -150,12 +167,15 @@ function renderClientSessionManualState(program = {}) {
   const countStatus = document.getElementById("client-session-count-status");
   const datesStatus = document.getElementById("client-session-dates-status");
   const dateList = document.getElementById("client-session-date-list");
+  const sheetLinkCard = document.getElementById("client-session-sheet-link-card");
+  const sheetLink = document.getElementById("client-session-sheet-link-text");
   const packageStatus = document.getElementById("client-session-package-history-status");
   const packageList = document.getElementById("client-session-package-history-list");
   const used = normalizeClientSessionCount(program.session_count_used);
   const total = normalizeClientSessionCount(program.session_count_total);
   const recentDates = clientSessionDatesFromProgram(program);
   const packageHistory = clientSessionPackageHistoryFromProgram(program);
+  const sheetUrl = trustedClientSheetUrl(program.sheet_url);
   const countDisplay = total > 0 ? `${used}/${total}` : (used > 0 ? String(used) : "--");
 
   if (countPill) {
@@ -178,8 +198,8 @@ function renderClientSessionManualState(program = {}) {
 
   if (datesStatus) {
     datesStatus.textContent = recentDates.length > 0
-      ? "Most recent session dates."
-      : "Recent session dates will appear here.";
+      ? "Session dates saved for this package."
+      : "Session dates will appear here.";
   }
 
   if (dateList) {
@@ -190,6 +210,14 @@ function renderClientSessionManualState(program = {}) {
     } else {
       dateList.innerHTML = '<p class="empty-state">No session dates yet.</p>';
     }
+  }
+
+  if (sheetLinkCard) {
+    sheetLinkCard.hidden = !sheetUrl;
+  }
+
+  if (sheetLink && sheetUrl) {
+    sheetLink.href = sheetUrl;
   }
 
   if (packageStatus) {
@@ -2025,6 +2053,59 @@ function setClientDashboardTab(tabName) {
   });
 }
 
+function handleClientSummaryActions() {
+  document.addEventListener("click", async (event) => {
+    const sessionsButton = event.target.closest("#client-summary-sessions-button");
+    const resetButton = event.target.closest("#client-dashboard-reset-password-button");
+
+    if (sessionsButton) {
+      const sessionsPanel = document.querySelector('[data-client-dashboard-panel="sessions"]');
+
+      setClientDashboardTab("sessions");
+      sessionsPanel?.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
+
+    if (!resetButton) {
+      return;
+    }
+
+    const status = document.getElementById("client-dashboard-reset-status");
+    const email = String(activeClientEmail || currentProgram?.client_email || "").trim().toLowerCase();
+
+    if (!supabaseClient || !email) {
+      if (status) {
+        status.textContent = "Password reset is not connected yet.";
+      }
+      return;
+    }
+
+    resetButton.disabled = true;
+
+    if (status) {
+      status.textContent = "Sending reset link...";
+    }
+
+    const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+      redirectTo: passwordResetRedirectUrl()
+    });
+
+    if (error) {
+      if (status) {
+        status.textContent = error.message;
+      }
+      resetButton.disabled = false;
+      return;
+    }
+
+    if (status) {
+      status.textContent = "Password reset link sent.";
+    }
+
+    resetButton.disabled = false;
+  });
+}
+
 async function saveClientMetrics() {
   if (!supabaseClient || !currentProgram?.id) {
     return { error: new Error("Client profile is not connected yet.") };
@@ -2795,6 +2876,7 @@ handleSignOut();
 handleTrainingDateChange();
 handleClientTrainingLogDateFilter();
 handleClientDashboardTabs();
+handleClientSummaryActions();
 handleClientWorkoutTabs();
 handleWorkoutInteractions();
 handleSkipToggle();

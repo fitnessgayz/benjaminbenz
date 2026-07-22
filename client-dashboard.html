@@ -15,7 +15,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=session-package-history-1" />
+  <link rel="stylesheet" href="css/style.css?v=client-session-actions-1" />
 </head>
 <body class="dashboard-page is-loading">
   <header class="site-header dashboard-header">
@@ -50,6 +50,11 @@
           <h2 id="client-name"></h2>
           <p>Current training block</p>
           <div class="summary-metrics" id="summary-metrics"></div>
+          <div class="client-summary-actions">
+            <button class="button button-ghost" type="button" id="client-summary-sessions-button">Sessions</button>
+            <button class="password-reset-button client-dashboard-reset" type="button" id="client-dashboard-reset-password-button">Reset password</button>
+            <small id="client-dashboard-reset-status" role="status"></small>
+          </div>
         </aside>
 
         <nav class="client-dashboard-tabs" aria-label="Client dashboard sections">
@@ -98,15 +103,19 @@
               <strong id="client-session-count-value">--</strong>
               <small id="client-session-count-status">Your coach will update your session count.</small>
             </div>
+            <article class="session-sheet-link-card" id="client-session-sheet-link-card" hidden>
+              <span>Session sheet</span>
+              <a id="client-session-sheet-link-text" href="#" target="_blank" rel="noopener">Open Google Sheet</a>
+            </article>
           </div>
           <div class="session-date-history">
             <div class="panel-heading">
               <div>
-                <p class="kicker">Recent sessions</p>
-                <h3>Recent dates</h3>
+                <p class="kicker">Sessions</p>
+                <h3>Session dates</h3>
               </div>
             </div>
-            <p id="client-session-dates-status">Recent session dates will appear here.</p>
+            <p id="client-session-dates-status">Session dates will appear here.</p>
             <div class="session-date-list" id="client-session-date-list">
               <p class="empty-state">No session dates yet.</p>
             </div>
@@ -156,6 +165,6 @@
   <script src="js/script.js?v=client-dashboard"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js?v=manual-sessions-1"></script>
-  <script src="js/client-portal.js?v=session-package-history-1"></script>
+  <script src="js/client-portal.js?v=client-session-actions-1"></script>
 </body>
 </html>

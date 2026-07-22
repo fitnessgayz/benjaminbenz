@@ -1753,6 +1753,37 @@ footer {
   white-space: nowrap;
 }
 
+.client-summary-actions {
+  grid-column: 4;
+  display: grid;
+  gap: 8px;
+  min-width: 170px;
+  align-self: stretch;
+  align-content: center;
+}
+
+.client-summary-actions .button,
+.client-summary-actions .password-reset-button {
+  grid-column: auto;
+  width: 100%;
+}
+
+.client-dashboard-reset {
+  min-height: 0;
+  color: var(--muted);
+  text-align: center;
+  text-underline-offset: 4px;
+  text-decoration-thickness: 2px;
+}
+
+.client-summary-actions small {
+  min-height: 1.2em;
+  color: var(--muted);
+  font-size: .78rem;
+  font-weight: 900;
+  text-align: center;
+}
+
 .dashboard-sheet-action {
   display: flex;
   justify-content: center;
@@ -4464,8 +4495,13 @@ textarea:focus {
   }
 
   .summary-metrics,
-  .client-summary .button {
+  .client-summary .button,
+  .client-summary-actions {
     grid-column: 1 / -1;
+  }
+
+  .client-summary-actions {
+    min-width: 0;
   }
 
   .summary-metrics {

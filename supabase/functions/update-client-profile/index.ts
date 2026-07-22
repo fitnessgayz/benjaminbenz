@@ -65,7 +65,19 @@ function sessionDatesValue(value: unknown) {
     value
       .map((item) => stringValue(item))
       .filter(Boolean)
-  )).slice(0, 10);
+  ));
+}
+
+function sessionPackageDatesValue(value: unknown) {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return Array.from(new Set(
+    value
+      .map((item) => stringValue(item))
+      .filter(Boolean)
+  ));
 }
 
 function sessionPackageHistoryValue(value: unknown) {
@@ -78,7 +90,7 @@ function sessionPackageHistoryValue(value: unknown) {
       const source = item && typeof item === "object" ? item as Record<string, unknown> : {};
       const used = numberValue(source.used);
       const total = numberValue(source.total);
-      const dates = sessionDatesValue(source.dates);
+      const dates = sessionPackageDatesValue(source.dates);
       const archivedAt = stringValue(source.archived_at);
       const label = stringValue(source.label) || `Package ${index + 1}`;
 
