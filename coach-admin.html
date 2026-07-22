@@ -15,7 +15,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=manual-sessions-1" />
+  <link rel="stylesheet" href="css/style.css?v=session-package-history-1" />
 </head>
 <body class="dashboard-page coach-admin-page">
   <header class="site-header dashboard-header">
@@ -45,6 +45,8 @@
     <section class="admin-workspace" id="coach-admin-workspace" hidden>
       <form class="admin-editor" id="program-editor">
         <input type="hidden" name="id" />
+        <input type="hidden" name="sheet_url" />
+        <input type="hidden" name="session_package_history" />
 
         <section class="admin-card selected-client-panel" aria-label="Selected client">
           <div class="selected-client-copy">
@@ -313,7 +315,14 @@
               Recent session dates
               <textarea id="session-dates-input" placeholder="Jul 10, 2026&#10;Jul 8, 2026"></textarea>
             </label>
-            <button class="button button-ghost" type="button" id="save-session-count-button">Save sessions</button>
+            <label class="admin-field-full">
+              Google Sheet link
+              <input type="url" id="session-sheet-url-input" placeholder="https://docs.google.com/spreadsheets/..." />
+            </label>
+            <div class="session-package-actions">
+              <button class="button button-ghost" type="button" id="save-session-count-button">Save sessions</button>
+              <button class="button button-dark" type="button" id="start-new-session-package-button">Start new package</button>
+            </div>
             <p class="profile-save-status" id="session-sheet-save-status" role="status">Enter session count manually for this client.</p>
           </div>
           <div class="session-sheet-summary">
@@ -321,6 +330,10 @@
               <span>Sessions used</span>
               <strong id="session-sheet-count-value">--</strong>
               <small id="session-sheet-count-status">Select a client to view sessions.</small>
+            </article>
+            <article class="session-sheet-link-card" id="session-sheet-link-card" hidden>
+              <span>Google Sheet reference</span>
+              <a id="session-sheet-link-text" href="#" target="_blank" rel="noopener">Open Google Sheet</a>
             </article>
           </div>
           <div class="session-date-history">
@@ -330,6 +343,15 @@
             </div>
             <div class="session-date-list" id="session-sheet-date-list">
               <p class="empty-state">No session dates yet.</p>
+            </div>
+          </div>
+          <div class="session-package-history">
+            <div class="program-history-heading">
+              <strong>Archived packages</strong>
+              <span id="session-package-history-status">Old packages appear after starting a new package.</span>
+            </div>
+            <div class="session-package-history-list" id="session-package-history-list">
+              <p class="empty-state">No archived packages yet.</p>
             </div>
           </div>
         </section>
@@ -413,9 +435,9 @@
     </section>
   </main>
 
-  <script src="js/script.js?v=manual-sessions-1"></script>
+  <script src="js/script.js?v=session-package-history-1"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/supabase-config.js?v=manual-sessions-1"></script>
-  <script src="js/coach-admin.js?v=manual-sessions-1"></script>
+  <script src="js/supabase-config.js?v=session-package-history-1"></script>
+  <script src="js/coach-admin.js?v=session-package-history-1"></script>
 </body>
 </html>

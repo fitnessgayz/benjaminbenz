@@ -298,6 +298,23 @@ function normalizeSessionCount(value) {
   return Number.isFinite(number) && number >= 0 ? Math.floor(number) : 0;
 }
 
+function trustedSheetUrl(value) {
+  const text = String(value || "").trim();
+
+  if (!text) {
+    return "";
+  }
+
+  try {
+    const url = new URL(text);
+    const isGoogleSheet = url.hostname === "docs.google.com" && url.pathname.startsWith("/spreadsheets/");
+
+    return isGoogleSheet ? url.toString() : "";
+  } catch (error) {
+    return "";
+  }
+}
+
 function sessionDatesFromText(value) {
   return Array.from(new Set(
     String(value || "")
@@ -326,6 +343,47 @@ function sessionDatesToText(dates) {
     .join("\n");
 }
 
+function sessionPackageHistoryFromProgram(program = {}) {
+  if (!Array.isArray(program.session_package_history)) {
+    return [];
+  }
+
+  return program.session_package_history
+    .map((item, index) => {
+      const source = item && typeof item === "object" ? item : {};
+      const used = normalizeSessionCount(source.used);
+      const total = normalizeSessionCount(source.total);
+      const archivedAt = normalizeSessionDate(source.archived_at || source.archivedAt);
+      const recentDates = Array.isArray(source.dates)
+        ? source.dates.map((date) => normalizeSessionDate(date)).filter(Boolean).slice(0, 10)
+        : [];
+
+      return {
+        label: String(source.label || `Package ${index + 1}`).trim(),
+        used,
+        total,
+        dates: recentDates,
+        archived_at: archivedAt || new Date().toISOString().slice(0, 10)
+      };
+    })
+    .filter((item) => item.used > 0 || item.total > 0 || item.dates.length > 0)
+    .slice(0, 20);
+}
+
+function sessionPackageHistoryToFormValue(history) {
+  return JSON.stringify(sessionPackageHistoryFromProgram({ session_package_history: history }));
+}
+
+function sessionPackageHistoryFromForm(form) {
+  try {
+    return sessionPackageHistoryFromProgram({
+      session_package_history: JSON.parse(formValue(form, "session_package_history") || "[]")
+    });
+  } catch (error) {
+    return [];
+  }
+}
+
 function sessionSummaryFromProgram(program = {}) {
   const used = normalizeSessionCount(program.session_count_used);
   const total = normalizeSessionCount(program.session_count_total);
@@ -344,6 +402,7 @@ function syncSessionEditor(program = {}) {
   const usedInput = document.getElementById("session-count-used-input");
   const totalInput = document.getElementById("session-count-total-input");
   const datesInput = document.getElementById("session-dates-input");
+  const sheetUrlInput = document.getElementById("session-sheet-url-input");
 
   if (usedInput && document.activeElement !== usedInput) {
     usedInput.value = program.session_count_used || "";
@@ -355,6 +414,10 @@ function syncSessionEditor(program = {}) {
 
   if (datesInput && document.activeElement !== datesInput) {
     datesInput.value = sessionDatesToText(sessionDatesFromProgram(program));
+  }
+
+  if (sheetUrlInput && document.activeElement !== sheetUrlInput) {
+    sheetUrlInput.value = trustedSheetUrl(program.sheet_url);
   }
 }
 
@@ -368,6 +431,12 @@ function renderSessionManualState(program = {}, options = {}) {
   const panelStatus = document.getElementById("session-sheet-count-status");
   const panelDatesStatus = document.getElementById("session-sheet-dates-status");
   const panelDateList = document.getElementById("session-sheet-date-list");
+  const sheetLinkCard = document.getElementById("session-sheet-link-card");
+  const sheetLink = document.getElementById("session-sheet-link-text");
+  const historyStatus = document.getElementById("session-package-history-status");
+  const historyList = document.getElementById("session-package-history-list");
+  const sheetUrl = trustedSheetUrl(program.sheet_url);
+  const packageHistory = sessionPackageHistoryFromProgram(program);
 
   if (summaryCard) {
     summaryCard.hidden = !isExistingClient || summary.countDisplay === "--";
@@ -412,6 +481,48 @@ function renderSessionManualState(program = {}, options = {}) {
       )).join("");
     } else {
       panelDateList.innerHTML = `<p class="empty-state">${isExistingClient ? "No session dates yet." : "No client selected."}</p>`;
+    }
+  }
+
+  if (sheetLinkCard) {
+    sheetLinkCard.hidden = !isExistingClient || !sheetUrl;
+  }
+
+  if (sheetLink && sheetUrl) {
+    sheetLink.href = sheetUrl;
+  }
+
+  if (historyStatus) {
+    historyStatus.textContent = packageHistory.length > 0
+      ? `${packageHistory.length} old package${packageHistory.length === 1 ? "" : "s"} archived.`
+      : "Old packages appear after starting a new package.";
+  }
+
+  if (historyList) {
+    if (packageHistory.length > 0) {
+      historyList.innerHTML = packageHistory.map((item, index) => {
+        const count = item.total > 0 ? `${item.used}/${item.total}` : `${item.used} used`;
+        const dates = item.dates.length > 0
+          ? `<div class="session-date-list">${item.dates.map((date) => (
+            `<span class="session-date-chip">${escapeHtml(formatSessionDate(date))}</span>`
+          )).join("")}</div>`
+          : '<p class="empty-state">No dates archived for this package.</p>';
+
+        return `
+          <article class="session-package-history-card">
+            <header>
+              <div>
+                <strong>${escapeHtml(item.label || `Package ${index + 1}`)}</strong>
+                <small>Archived ${escapeHtml(formatSessionDate(item.archived_at))}</small>
+              </div>
+              <span>${escapeHtml(count)}</span>
+            </header>
+            ${dates}
+          </article>
+        `;
+      }).join("");
+    } else {
+      historyList.innerHTML = `<p class="empty-state">${isExistingClient ? "No archived packages yet." : "No client selected."}</p>`;
     }
   }
 
@@ -635,7 +746,11 @@ function updateSelectedClientSummary(program = selectedProgram()) {
     session_count_total: form?.elements.session_count_total?.value ?? program?.session_count_total,
     session_dates: form?.elements.session_dates
       ? sessionDatesFromText(formValue(form, "session_dates"))
-      : sessionDatesFromProgram(program)
+      : sessionDatesFromProgram(program),
+    sheet_url: form?.elements.sheet_url?.value ?? program?.sheet_url,
+    session_package_history: form?.elements.session_package_history?.value
+      ? sessionPackageHistoryFromForm(form)
+      : sessionPackageHistoryFromProgram(program)
   };
   const isExistingClient = Boolean(form?.elements.id?.value || program?.id);
   const isActive = form?.elements.active ? form.elements.active.checked : program?.active !== false;
@@ -928,6 +1043,8 @@ function programFromForm(form) {
     session_count_used: normalizeSessionCount(formValue(form, "session_count_used")),
     session_count_total: normalizeSessionCount(formValue(form, "session_count_total")),
     session_dates: sessionDatesFromText(formValue(form, "session_dates")),
+    sheet_url: trustedSheetUrl(formValue(form, "sheet_url")) || null,
+    session_package_history: sessionPackageHistoryFromForm(form),
     fitness_goal: formValue(form, "fitness_goal"),
     focus_target: formValue(form, "focus_target"),
     height: formValue(form, "height") || "Not set",
@@ -956,7 +1073,9 @@ function profileFromForm(form) {
     starting_bodyfat: formValue(form, "starting_bodyfat") || "Not set",
     session_count_used: normalizeSessionCount(formValue(form, "session_count_used")),
     session_count_total: normalizeSessionCount(formValue(form, "session_count_total")),
-    session_dates: sessionDatesFromText(formValue(form, "session_dates"))
+    session_dates: sessionDatesFromText(formValue(form, "session_dates")),
+    sheet_url: trustedSheetUrl(formValue(form, "sheet_url")) || null,
+    session_package_history: sessionPackageHistoryFromForm(form)
   };
 }
 
@@ -1018,7 +1137,12 @@ function profileChanged(program, profile) {
     String(program.initials || "") !== profile.initials ||
     String(program.height || "") !== profile.height ||
     String(program.starting_weight || "") !== profile.starting_weight ||
-    String(program.starting_bodyfat || "") !== profile.starting_bodyfat;
+    String(program.starting_bodyfat || "") !== profile.starting_bodyfat ||
+    normalizeSessionCount(program.session_count_used) !== profile.session_count_used ||
+    normalizeSessionCount(program.session_count_total) !== profile.session_count_total ||
+    JSON.stringify(sessionDatesFromProgram(program)) !== JSON.stringify(profile.session_dates) ||
+    trustedSheetUrl(program.sheet_url) !== profile.sheet_url ||
+    JSON.stringify(sessionPackageHistoryFromProgram(program)) !== JSON.stringify(profile.session_package_history);
 }
 
 async function saveProfileChangesFromForm(form, options = {}) {
@@ -1207,6 +1331,8 @@ function clearProgramFields(form) {
   form.elements.session_count_used.value = "";
   form.elements.session_count_total.value = "";
   form.elements.session_dates.value = "";
+  form.elements.sheet_url.value = "";
+  form.elements.session_package_history.value = "[]";
   form.elements.program_summary.value = "";
   form.elements.coach_note_title.value = "";
   form.elements.coach_note_body.value = "";
@@ -1296,6 +1422,8 @@ function fillForm(program = {}) {
   form.elements.session_count_used.value = program.session_count_used || "";
   form.elements.session_count_total.value = program.session_count_total || "";
   form.elements.session_dates.value = sessionDatesToText(sessionDatesFromProgram(program));
+  form.elements.sheet_url.value = trustedSheetUrl(program.sheet_url);
+  form.elements.session_package_history.value = sessionPackageHistoryToFormValue(program.session_package_history);
   form.elements.program_summary.value = program.program_summary || "";
   form.elements.coach_note_title.value = program.coach_note_title || "";
   form.elements.coach_note_body.value = program.coach_note_body || "";
@@ -1983,10 +2111,12 @@ function handleSessionManualEditor() {
   const usedInput = document.getElementById("session-count-used-input");
   const totalInput = document.getElementById("session-count-total-input");
   const datesInput = document.getElementById("session-dates-input");
+  const sheetUrlInput = document.getElementById("session-sheet-url-input");
   const button = document.getElementById("save-session-count-button");
+  const newPackageButton = document.getElementById("start-new-session-package-button");
   const status = document.getElementById("session-sheet-save-status");
 
-  if (!form || !usedInput || !totalInput || !datesInput || !button) {
+  if (!form || !usedInput || !totalInput || !datesInput || !sheetUrlInput || !button || !newPackageButton) {
     return;
   }
 
@@ -2003,10 +2133,14 @@ function handleSessionManualEditor() {
       form.elements.session_dates.value = datesInput.value;
     }
 
+    if (form.elements.sheet_url) {
+      form.elements.sheet_url.value = trustedSheetUrl(sheetUrlInput.value);
+    }
+
     updateSelectedClientSummary(selectedProgram());
   };
 
-  [usedInput, totalInput, datesInput].forEach((input) => {
+  [usedInput, totalInput, datesInput, sheetUrlInput].forEach((input) => {
     input.addEventListener("input", syncInputsToForm);
   });
 
@@ -2047,6 +2181,85 @@ function handleSessionManualEditor() {
     updateSelectedClientSummary(selectedProgram());
     button.disabled = false;
   });
+
+  newPackageButton.addEventListener("click", async () => {
+    const currentProgram = selectedProgram();
+    const packageTotal = normalizeSessionCount(totalInput.value);
+
+    if (!currentProgram?.id) {
+      if (status) {
+        status.textContent = "Choose a saved client first.";
+      }
+      adminStatus("Choose a saved client first.");
+      return;
+    }
+
+    if (packageTotal <= 0) {
+      if (status) {
+        status.textContent = "Add the total sessions for the new package first.";
+      }
+      adminStatus("Add the total sessions for the new package first.");
+      totalInput.focus();
+      return;
+    }
+
+    const confirmed = window.confirm(
+      "Start a new package for this client? This will reset sessions used to 0 and clear recent session dates."
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    const currentHistory = sessionPackageHistoryFromForm(form);
+    const packageUsed = normalizeSessionCount(usedInput.value);
+    const packageDates = sessionDatesFromText(datesInput.value);
+    const archivedPackage = {
+      label: `Package ${currentHistory.length + 1}`,
+      used: packageUsed,
+      total: packageTotal,
+      dates: packageDates,
+      archived_at: new Date().toISOString().slice(0, 10)
+    };
+
+    if (form.elements.session_package_history) {
+      form.elements.session_package_history.value = sessionPackageHistoryToFormValue([
+        archivedPackage,
+        ...currentHistory
+      ]);
+    }
+
+    usedInput.value = "0";
+    datesInput.value = "";
+    syncInputsToForm();
+
+    newPackageButton.disabled = true;
+    button.disabled = true;
+    if (status) {
+      status.textContent = "Starting new package...";
+    }
+    adminStatus("Starting new package...");
+
+    const { error } = await saveProfileChangesFromForm(form);
+
+    if (error) {
+      if (status) {
+        status.textContent = error.message;
+      }
+      adminStatus(error.message);
+      newPackageButton.disabled = false;
+      button.disabled = false;
+      return;
+    }
+
+    if (status) {
+      status.textContent = `New ${packageTotal}-session package started.`;
+    }
+    adminStatus(`New ${packageTotal}-session package started.`);
+    updateSelectedClientSummary(selectedProgram());
+    newPackageButton.disabled = false;
+    button.disabled = false;
+  });
 }
 
 function handleAdminLiveUpdates() {
@@ -2071,7 +2284,8 @@ function handleAdminLiveUpdates() {
       "program_title",
       "session_count_used",
       "session_count_total",
-      "session_dates"
+      "session_dates",
+      "sheet_url"
     ].includes(name)) {
       updateSelectedClientSummary();
     }
@@ -2788,6 +3002,8 @@ async function copyProgramToClient(program, button, targetEmail, options = {}) {
       session_count_used: normalizeSessionCount(targetProfile?.session_count_used),
       session_count_total: normalizeSessionCount(targetProfile?.session_count_total),
       session_dates: sessionDatesFromProgram(targetProfile),
+      sheet_url: trustedSheetUrl(targetProfile?.sheet_url) || null,
+      session_package_history: sessionPackageHistoryFromProgram(targetProfile),
       fitness_goal: program.fitness_goal || "",
       focus_target: program.focus_target || "",
       height: targetProfile?.height || "Not set",

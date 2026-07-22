@@ -3408,13 +3408,21 @@ footer {
 .session-sheet-summary,
 .session-sheet-editor,
 .session-date-history,
-.session-date-list {
+.session-date-list,
+.session-package-history,
+.session-package-history-list {
   display: grid;
   gap: 10px;
 }
 
 .session-sheet-editor {
   margin-bottom: 18px;
+}
+
+.session-package-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
 }
 
 .session-sheet-editor label {
@@ -3473,6 +3481,38 @@ footer {
   background: #fbfbf8;
   color: var(--black);
   font-size: .92rem;
+}
+
+.session-package-history-card {
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfbf8;
+}
+
+.session-package-history-card header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.session-package-history-card strong {
+  color: var(--black);
+  font-size: 1rem;
+  font-weight: 900;
+}
+
+.session-package-history-card span,
+.session-package-history-card small {
+  color: var(--muted);
+  font-weight: 900;
+}
+
+.session-package-history-card .session-date-list {
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
 }
 
 .training-log-workout-group {
@@ -4075,6 +4115,10 @@ textarea:focus {
 
   .profile-actions-row .button {
     width: 100%;
+  }
+
+  .session-package-actions {
+    grid-template-columns: 1fr;
   }
 
   .profile-management-row {

@@ -68,6 +68,32 @@ function sessionDatesValue(value: unknown) {
   )).slice(0, 10);
 }
 
+function sessionPackageHistoryValue(value: unknown) {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map((item, index) => {
+      const source = item && typeof item === "object" ? item as Record<string, unknown> : {};
+      const used = numberValue(source.used);
+      const total = numberValue(source.total);
+      const dates = sessionDatesValue(source.dates);
+      const archivedAt = stringValue(source.archived_at);
+      const label = stringValue(source.label) || `Package ${index + 1}`;
+
+      return {
+        label,
+        used,
+        total,
+        dates,
+        archived_at: archivedAt || new Date().toISOString().slice(0, 10)
+      };
+    })
+    .filter((item) => item.used > 0 || item.total > 0 || item.dates.length > 0)
+    .slice(0, 20);
+}
+
 function isValidEmail(value: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 }
@@ -176,6 +202,8 @@ serve(async (request) => {
   const sessionCountUsed = numberValue(safeBody.session_count_used);
   const sessionCountTotal = numberValue(safeBody.session_count_total);
   const sessionDates = sessionDatesValue(safeBody.session_dates);
+  const sessionPackageHistory = sessionPackageHistoryValue(safeBody.session_package_history);
+  const sheetUrl = stringValue(safeBody.sheet_url);
 
   if (!programId || !oldEmail) {
     return jsonResponse(request, { error: "Choose an existing client first." }, 400);
@@ -277,7 +305,9 @@ serve(async (request) => {
     starting_bodyfat: startingBodyfat,
     session_count_used: sessionCountUsed,
     session_count_total: sessionCountTotal,
-    session_dates: sessionDates
+    session_dates: sessionDates,
+    session_package_history: sessionPackageHistory,
+    sheet_url: sheetUrl || null
   };
   const { error: programError } = await updateRowsById(adminClient, "client_programs", programIds, profilePayload);
 

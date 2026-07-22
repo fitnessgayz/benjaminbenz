@@ -15,7 +15,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=manual-sessions-1" />
+  <link rel="stylesheet" href="css/style.css?v=session-package-history-1" />
 </head>
 <body class="dashboard-page is-loading">
   <header class="site-header dashboard-header">
@@ -111,6 +111,18 @@
               <p class="empty-state">No session dates yet.</p>
             </div>
           </div>
+          <div class="session-package-history">
+            <div class="panel-heading">
+              <div>
+                <p class="kicker">Package history</p>
+                <h3>Archived packages</h3>
+              </div>
+            </div>
+            <p id="client-session-package-history-status">Old packages will appear after your coach starts a new package.</p>
+            <div class="session-package-history-list" id="client-session-package-history-list">
+              <p class="empty-state">No archived packages yet.</p>
+            </div>
+          </div>
         </section>
 
         <section class="progress-panel" data-client-dashboard-panel="logs" aria-labelledby="client-logs-title" hidden>
@@ -144,6 +156,6 @@
   <script src="js/script.js?v=client-dashboard"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js?v=manual-sessions-1"></script>
-  <script src="js/client-portal.js?v=manual-sessions-1"></script>
+  <script src="js/client-portal.js?v=session-package-history-1"></script>
 </body>
 </html>

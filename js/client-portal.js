@@ -117,15 +117,45 @@ function clientSessionDatesFromProgram(program = {}) {
   )).slice(0, 10);
 }
 
+function clientSessionPackageHistoryFromProgram(program = {}) {
+  if (!Array.isArray(program.session_package_history)) {
+    return [];
+  }
+
+  return program.session_package_history
+    .map((item, index) => {
+      const source = item && typeof item === "object" ? item : {};
+      const used = normalizeClientSessionCount(source.used);
+      const total = normalizeClientSessionCount(source.total);
+      const archivedAt = normalizeClientSessionDate(source.archived_at || source.archivedAt);
+      const dates = Array.isArray(source.dates)
+        ? source.dates.map((date) => normalizeClientSessionDate(date)).filter(Boolean).slice(0, 10)
+        : [];
+
+      return {
+        label: String(source.label || `Package ${index + 1}`).trim(),
+        used,
+        total,
+        dates,
+        archived_at: archivedAt
+      };
+    })
+    .filter((item) => item.used > 0 || item.total > 0 || item.dates.length > 0)
+    .slice(0, 20);
+}
+
 function renderClientSessionManualState(program = {}) {
   const countPill = document.getElementById("client-session-count-pill");
   const countValue = document.getElementById("client-session-count-value");
   const countStatus = document.getElementById("client-session-count-status");
   const datesStatus = document.getElementById("client-session-dates-status");
   const dateList = document.getElementById("client-session-date-list");
+  const packageStatus = document.getElementById("client-session-package-history-status");
+  const packageList = document.getElementById("client-session-package-history-list");
   const used = normalizeClientSessionCount(program.session_count_used);
   const total = normalizeClientSessionCount(program.session_count_total);
   const recentDates = clientSessionDatesFromProgram(program);
+  const packageHistory = clientSessionPackageHistoryFromProgram(program);
   const countDisplay = total > 0 ? `${used}/${total}` : (used > 0 ? String(used) : "--");
 
   if (countPill) {
@@ -159,6 +189,41 @@ function renderClientSessionManualState(program = {}) {
       )).join("");
     } else {
       dateList.innerHTML = '<p class="empty-state">No session dates yet.</p>';
+    }
+  }
+
+  if (packageStatus) {
+    packageStatus.textContent = packageHistory.length > 0
+      ? `${packageHistory.length} old package${packageHistory.length === 1 ? "" : "s"} archived.`
+      : "Old packages will appear after your coach starts a new package.";
+  }
+
+  if (packageList) {
+    if (packageHistory.length > 0) {
+      packageList.innerHTML = packageHistory.map((item, index) => {
+        const count = item.total > 0 ? `${item.used}/${item.total}` : `${item.used} used`;
+        const archived = item.archived_at ? `Archived ${formatLogDate(item.archived_at)}` : "Archived package";
+        const dates = item.dates.length > 0
+          ? `<div class="session-date-list">${item.dates.map((date) => (
+            `<span class="session-date-chip">${escapeHtml(formatLogDate(date))}</span>`
+          )).join("")}</div>`
+          : '<p class="empty-state">No dates archived for this package.</p>';
+
+        return `
+          <article class="session-package-history-card">
+            <header>
+              <div>
+                <strong>${escapeHtml(item.label || `Package ${index + 1}`)}</strong>
+                <small>${escapeHtml(archived)}</small>
+              </div>
+              <span>${escapeHtml(count)}</span>
+            </header>
+            ${dates}
+          </article>
+        `;
+      }).join("");
+    } else {
+      packageList.innerHTML = '<p class="empty-state">No archived packages yet.</p>';
     }
   }
 }
