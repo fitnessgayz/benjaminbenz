@@ -1220,6 +1220,43 @@ async function coachSessionToken() {
   return data.session?.access_token || "";
 }
 
+async function manageClientProgram(program, action) {
+  const token = await coachSessionToken();
+
+  if (!token) {
+    return { error: { message: "Sign in as coach first." } };
+  }
+
+  if (!program?.id) {
+    return { error: { message: "Choose a saved client first." } };
+  }
+
+  const response = await fetch(`${coachConfig.url}/functions/v1/manage-client-program`, {
+    method: "POST",
+    headers: {
+      "apikey": coachConfig.anonKey,
+      "Authorization": `Bearer ${token}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      program_id: program.id,
+      action
+    })
+  });
+  const result = await response.json().catch(() => ({}));
+  const safeResult = result && typeof result === "object" ? result : {};
+
+  if (!response.ok) {
+    return {
+      error: {
+        message: safeResult.error || safeResult.message || "Could not update this client."
+      }
+    };
+  }
+
+  return { data: safeResult };
+}
+
 function profileChanged(program, profile) {
   if (!program) {
     return false;
@@ -2585,20 +2622,7 @@ async function archiveClientProgram(program, button) {
   adminStatus(`${shouldRestore ? "Restoring" : "Archiving"} client...`);
 
   const ids = clientProgramIds(program);
-
-  if (ids.length === 0) {
-    adminStatus("Could not find saved programs for this client.");
-    if (button) {
-      button.disabled = false;
-    }
-    return;
-  }
-
-  const { data: updatedRows, error } = await coachSupabase
-    .from("client_programs")
-    .update({ client_archived: !shouldRestore })
-    .in("id", ids)
-    .select("*");
+  const { data: actionData, error } = await manageClientProgram(program, shouldRestore ? "restore" : "archive");
 
   if (error) {
     adminStatus(error.message);
@@ -2608,34 +2632,8 @@ async function archiveClientProgram(program, button) {
     return;
   }
 
-  let restoredProgram = program;
-
-  if (shouldRestore && program.active === false) {
-    const hasActiveProgram = programs.some((item) => (
-      normalizeEmail(item.client_email) === normalizeEmail(program.client_email) && item.active !== false
-    ));
-
-    if (!hasActiveProgram) {
-      const { data: restoredData, error: restoreError } = await coachSupabase
-        .from("client_programs")
-        .update({ active: true, client_archived: false })
-        .eq("id", program.id)
-        .select("*")
-        .single();
-
-      if (restoreError) {
-        adminStatus(restoreError.message);
-        if (button) {
-          button.disabled = false;
-        }
-        return;
-      }
-
-      restoredProgram = restoredData;
-    }
-  }
-
-  const updatedById = new Map((updatedRows || []).map((item) => [item.id, item]));
+  const updatedRows = Array.isArray(actionData?.programs) ? actionData.programs : [];
+  const updatedById = new Map(updatedRows.map((item) => [item.id, item]));
   programs = programs.map((item) => (
     ids.includes(item.id)
       ? (updatedById.get(item.id) || {
@@ -2644,15 +2642,16 @@ async function archiveClientProgram(program, button) {
       })
       : item
   ));
-  programs = programs.map((item) => (
-    item.id === restoredProgram.id
-      ? { ...item, ...restoredProgram }
-      : item
-  ));
+  updatedRows.forEach((updatedProgram) => {
+    if (!programs.some((item) => item.id === updatedProgram.id)) {
+      programs.push(updatedProgram);
+    }
+  });
+  const selectedAfterAction = actionData?.selected_program;
   const nextProgram = programsForCurrentClientView()[0] || {};
 
-  selectedProgramId = nextProgram.id || "";
-  fillForm(nextProgram);
+  selectedProgramId = selectedAfterAction?.id || nextProgram.id || "";
+  fillForm(selectedAfterAction || nextProgram);
   renderClientList();
   adminStatus(`Client ${actionLabel}d.`);
   if (button) {
@@ -2682,20 +2681,7 @@ async function deleteArchivedClientProgram(program, button) {
     .filter((item) => item.client_archived === true)
     .map((item) => item.id)
     .filter(Boolean);
-
-  if (ids.length === 0) {
-    adminStatus("Could not find saved programs for this archived client.");
-    if (button) {
-      button.disabled = false;
-    }
-    return;
-  }
-
-  const { error } = await coachSupabase
-    .from("client_programs")
-    .delete()
-    .in("id", ids)
-    .eq("client_archived", true);
+  const { data: actionData, error } = await manageClientProgram(program, "delete_archived");
 
   if (error) {
     adminStatus(error.message);
@@ -2705,7 +2691,8 @@ async function deleteArchivedClientProgram(program, button) {
     return;
   }
 
-  programs = programs.filter((item) => !ids.includes(item.id));
+  const deletedIds = Array.isArray(actionData?.deleted_ids) ? actionData.deleted_ids : ids;
+  programs = programs.filter((item) => !deletedIds.includes(item.id));
   const nextProgram = programsForCurrentClientView()[0] || {};
 
   selectedProgramId = nextProgram.id || "";
@@ -2738,35 +2725,7 @@ async function deleteClientProgram(program, button) {
   profileManagementStatus("Deleting client...");
 
   const ids = clientProgramIds(program);
-
-  if (ids.length === 0) {
-    adminStatus("Could not find saved programs for this client.");
-    profileManagementStatus("Could not find saved programs for this client.");
-    if (button) {
-      button.disabled = false;
-    }
-    return;
-  }
-
-  const { error: archiveError } = await coachSupabase
-    .from("client_programs")
-    .update({ active: false, client_archived: true })
-    .in("id", ids);
-
-  if (archiveError) {
-    adminStatus(archiveError.message);
-    profileManagementStatus(archiveError.message);
-    if (button) {
-      button.disabled = false;
-    }
-    return;
-  }
-
-  const { error } = await coachSupabase
-    .from("client_programs")
-    .delete()
-    .in("id", ids)
-    .eq("client_archived", true);
+  const { data: actionData, error } = await manageClientProgram(program, "delete");
 
   if (error) {
     adminStatus(error.message);
@@ -2777,7 +2736,8 @@ async function deleteClientProgram(program, button) {
     return;
   }
 
-  programs = programs.filter((item) => !ids.includes(item.id));
+  const deletedIds = Array.isArray(actionData?.deleted_ids) ? actionData.deleted_ids : ids;
+  programs = programs.filter((item) => !deletedIds.includes(item.id));
   const nextProgram = programsForCurrentClientView()[0] || {};
 
   selectedProgramId = nextProgram.id || "";
