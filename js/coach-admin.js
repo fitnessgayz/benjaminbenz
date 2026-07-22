@@ -415,6 +415,8 @@ function renderSessionSheetState(state = {}) {
   const summaryValue = document.getElementById("selected-session-count-value");
   const programCount = document.getElementById("program-session-count");
   const panelLink = document.getElementById("sessions-panel-link");
+  const panelLinkCard = document.getElementById("session-sheet-link-card");
+  const panelLinkText = document.getElementById("session-sheet-link-text");
   const panelCount = document.getElementById("session-sheet-count-value");
   const panelStatus = document.getElementById("session-sheet-count-status");
   const panelDatesStatus = document.getElementById("session-sheet-dates-status");
@@ -436,9 +438,24 @@ function renderSessionSheetState(state = {}) {
     if (state.sheetUrl) {
       panelLink.href = state.sheetUrl;
       panelLink.hidden = false;
+      panelLink.textContent = "Open Google Sheet";
     } else {
       panelLink.removeAttribute("href");
       panelLink.hidden = true;
+    }
+  }
+
+  if (panelLinkCard) {
+    panelLinkCard.hidden = !state.sheetUrl;
+  }
+
+  if (panelLinkText) {
+    if (state.sheetUrl) {
+      panelLinkText.href = state.sheetUrl;
+      panelLinkText.textContent = "Open linked Google Sheet";
+    } else {
+      panelLinkText.removeAttribute("href");
+      panelLinkText.textContent = "No Google Sheet linked yet.";
     }
   }
 

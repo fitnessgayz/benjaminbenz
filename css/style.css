@@ -3408,7 +3408,8 @@ footer {
   gap: 10px;
 }
 
-.session-sheet-count-card {
+.session-sheet-count-card,
+.session-sheet-link-card {
   display: grid;
   gap: 6px;
   padding: 18px;
@@ -3419,9 +3420,19 @@ footer {
 
 .session-sheet-count-card span,
 .session-sheet-count-card small,
+.session-sheet-link-card span,
 .session-date-chip {
   color: var(--muted);
   font-weight: 900;
+}
+
+.session-sheet-link-card a {
+  color: var(--black);
+  font-weight: 900;
+  overflow-wrap: anywhere;
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
 }
 
 .session-sheet-count-card strong {
