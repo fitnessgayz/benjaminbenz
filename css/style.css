@@ -3402,10 +3402,22 @@ footer {
 }
 
 .session-sheet-summary,
+.session-sheet-editor,
 .session-date-history,
 .session-date-list {
   display: grid;
   gap: 10px;
+}
+
+.session-sheet-editor {
+  margin-bottom: 18px;
+}
+
+.session-sheet-editor label {
+  display: grid;
+  gap: 8px;
+  color: var(--black);
+  font-weight: 900;
 }
 
 .session-sheet-count-card,

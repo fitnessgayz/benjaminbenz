@@ -137,6 +137,24 @@ function normalizeEmail(value) {
   return String(value || "").trim().toLowerCase();
 }
 
+function programsForClientRecord(program) {
+  const normalizedEmail = normalizeEmail(program?.client_email);
+
+  if (!normalizedEmail) {
+    return program?.id ? [program] : [];
+  }
+
+  const matches = programs.filter((item) => normalizeEmail(item.client_email) === normalizedEmail);
+
+  return matches.length > 0 ? matches : (program?.id ? [program] : []);
+}
+
+function clientProgramIds(program) {
+  return programsForClientRecord(program)
+    .map((item) => item.id)
+    .filter(Boolean);
+}
+
 function escapeHtml(value) {
   return String(value ?? "")
     .replaceAll("&", "&amp;")
@@ -417,6 +435,7 @@ function renderSessionSheetState(state = {}) {
   const panelLink = document.getElementById("sessions-panel-link");
   const panelLinkCard = document.getElementById("session-sheet-link-card");
   const panelLinkText = document.getElementById("session-sheet-link-text");
+  const panelUrlInput = document.getElementById("session-sheet-url-input");
   const panelCount = document.getElementById("session-sheet-count-value");
   const panelStatus = document.getElementById("session-sheet-count-status");
   const panelDatesStatus = document.getElementById("session-sheet-dates-status");
@@ -457,6 +476,10 @@ function renderSessionSheetState(state = {}) {
       panelLinkText.removeAttribute("href");
       panelLinkText.textContent = "No Google Sheet linked yet.";
     }
+  }
+
+  if (panelUrlInput && document.activeElement !== panelUrlInput) {
+    panelUrlInput.value = state.sheetUrl || "";
   }
 
   if (panelCount) {
@@ -2198,6 +2221,70 @@ function handleSelectedClientActions() {
   });
 }
 
+function handleSessionSheetEditor() {
+  const form = document.getElementById("program-editor");
+  const input = document.getElementById("session-sheet-url-input");
+  const button = document.getElementById("save-session-sheet-button");
+  const status = document.getElementById("session-sheet-save-status");
+
+  if (!form || !input || !button) {
+    return;
+  }
+
+  input.addEventListener("input", () => {
+    if (form.elements.sheet_url) {
+      form.elements.sheet_url.value = input.value.trim();
+    }
+  });
+
+  button.addEventListener("click", async () => {
+    const currentProgram = selectedProgram();
+    const sheetUrl = input.value.trim();
+
+    if (!currentProgram?.id) {
+      if (status) {
+        status.textContent = "Choose a saved client first.";
+      }
+      adminStatus("Choose a saved client first.");
+      return;
+    }
+
+    if (form.elements.sheet_url) {
+      form.elements.sheet_url.value = sheetUrl;
+    }
+
+    button.disabled = true;
+    if (status) {
+      status.textContent = "Saving sheet link...";
+    }
+    adminStatus("Saving session sheet link...");
+
+    const { error } = await saveProfileChangesFromForm(form);
+
+    if (error) {
+      if (status) {
+        status.textContent = error.message;
+      }
+      adminStatus(error.message);
+      button.disabled = false;
+      return;
+    }
+
+    const csvUrl = googleSheetCsvUrl(sheetUrl);
+
+    if (csvUrl) {
+      sessionSheetCache.delete(csvUrl);
+    }
+
+    if (status) {
+      status.textContent = sheetUrl ? "Session sheet link saved." : "Session sheet link removed.";
+    }
+    adminStatus("Session sheet link saved.");
+    updateSelectedClientSummary(selectedProgram());
+    button.disabled = false;
+  });
+}
+
 function handleAdminLiveUpdates() {
   const form = document.getElementById("program-editor");
 
@@ -2497,10 +2584,21 @@ async function archiveClientProgram(program, button) {
   }
   adminStatus(`${shouldRestore ? "Restoring" : "Archiving"} client...`);
 
-  const { error } = await coachSupabase
+  const ids = clientProgramIds(program);
+
+  if (ids.length === 0) {
+    adminStatus("Could not find saved programs for this client.");
+    if (button) {
+      button.disabled = false;
+    }
+    return;
+  }
+
+  const { data: updatedRows, error } = await coachSupabase
     .from("client_programs")
     .update({ client_archived: !shouldRestore })
-    .eq("client_email", program.client_email);
+    .in("id", ids)
+    .select("*");
 
   if (error) {
     adminStatus(error.message);
@@ -2514,7 +2612,7 @@ async function archiveClientProgram(program, button) {
 
   if (shouldRestore && program.active === false) {
     const hasActiveProgram = programs.some((item) => (
-      item.client_email === program.client_email && item.active !== false
+      normalizeEmail(item.client_email) === normalizeEmail(program.client_email) && item.active !== false
     ));
 
     if (!hasActiveProgram) {
@@ -2537,14 +2635,18 @@ async function archiveClientProgram(program, button) {
     }
   }
 
+  const updatedById = new Map((updatedRows || []).map((item) => [item.id, item]));
   programs = programs.map((item) => (
-    item.client_email === program.client_email
-      ? {
+    ids.includes(item.id)
+      ? (updatedById.get(item.id) || {
         ...item,
-        client_archived: !shouldRestore,
-        active: item.id === restoredProgram.id ? restoredProgram.active : item.active,
-        ...(item.id === restoredProgram.id ? restoredProgram : {})
-      }
+        client_archived: !shouldRestore
+      })
+      : item
+  ));
+  programs = programs.map((item) => (
+    item.id === restoredProgram.id
+      ? { ...item, ...restoredProgram }
       : item
   ));
   const nextProgram = programsForCurrentClientView()[0] || {};
@@ -2576,10 +2678,23 @@ async function deleteArchivedClientProgram(program, button) {
   }
   adminStatus("Deleting archived client...");
 
+  const ids = programsForClientRecord(program)
+    .filter((item) => item.client_archived === true)
+    .map((item) => item.id)
+    .filter(Boolean);
+
+  if (ids.length === 0) {
+    adminStatus("Could not find saved programs for this archived client.");
+    if (button) {
+      button.disabled = false;
+    }
+    return;
+  }
+
   const { error } = await coachSupabase
     .from("client_programs")
     .delete()
-    .eq("client_email", program.client_email)
+    .in("id", ids)
     .eq("client_archived", true);
 
   if (error) {
@@ -2590,7 +2705,7 @@ async function deleteArchivedClientProgram(program, button) {
     return;
   }
 
-  programs = programs.filter((item) => item.client_email !== program.client_email);
+  programs = programs.filter((item) => !ids.includes(item.id));
   const nextProgram = programsForCurrentClientView()[0] || {};
 
   selectedProgramId = nextProgram.id || "";
@@ -2622,10 +2737,21 @@ async function deleteClientProgram(program, button) {
   adminStatus("Deleting client...");
   profileManagementStatus("Deleting client...");
 
+  const ids = clientProgramIds(program);
+
+  if (ids.length === 0) {
+    adminStatus("Could not find saved programs for this client.");
+    profileManagementStatus("Could not find saved programs for this client.");
+    if (button) {
+      button.disabled = false;
+    }
+    return;
+  }
+
   const { error: archiveError } = await coachSupabase
     .from("client_programs")
     .update({ active: false, client_archived: true })
-    .eq("client_email", program.client_email);
+    .in("id", ids);
 
   if (archiveError) {
     adminStatus(archiveError.message);
@@ -2639,7 +2765,7 @@ async function deleteClientProgram(program, button) {
   const { error } = await coachSupabase
     .from("client_programs")
     .delete()
-    .eq("client_email", program.client_email)
+    .in("id", ids)
     .eq("client_archived", true);
 
   if (error) {
@@ -2651,7 +2777,7 @@ async function deleteClientProgram(program, button) {
     return;
   }
 
-  programs = programs.filter((item) => item.client_email !== program.client_email);
+  programs = programs.filter((item) => !ids.includes(item.id));
   const nextProgram = programsForCurrentClientView()[0] || {};
 
   selectedProgramId = nextProgram.id || "";
@@ -3508,6 +3634,7 @@ async function bootCoachAdmin() {
   renderWorkoutFields();
   handleAdminTabs();
   handleSelectedClientActions();
+  handleSessionSheetEditor();
   handleAdminLiveUpdates();
   handleWorkoutCards();
   handleSaveProfileChanges();

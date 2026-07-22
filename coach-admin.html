@@ -15,7 +15,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=coach-session-sheet-link-1" />
+  <link rel="stylesheet" href="css/style.css?v=session-sheet-editor-1" />
 </head>
 <body class="dashboard-page coach-admin-page">
   <header class="site-header dashboard-header">
@@ -294,6 +294,14 @@
             </div>
             <a class="button button-dark" id="sessions-panel-link" href="#" target="_blank" rel="noopener" hidden>Open session link</a>
           </div>
+          <div class="session-sheet-editor">
+            <label>
+              Google Sheet link
+              <input type="url" id="session-sheet-url-input" placeholder="https://docs.google.com/spreadsheets/..." />
+            </label>
+            <button class="button button-ghost" type="button" id="save-session-sheet-button">Save sheet link</button>
+            <p class="profile-save-status" id="session-sheet-save-status" role="status">Paste a Google Sheet link for this client.</p>
+          </div>
           <div class="session-sheet-summary">
             <article class="session-sheet-count-card">
               <span>Total sessions</span>
@@ -398,6 +406,6 @@
   <script src="js/script.js?v=coach-sessions-tab-4"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js?v=coach-sessions-tab-4"></script>
-  <script src="js/coach-admin.js?v=coach-session-sheet-link-1"></script>
+  <script src="js/coach-admin.js?v=session-sheet-editor-1"></script>
 </body>
 </html>
