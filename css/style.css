@@ -3696,6 +3696,17 @@ footer {
   line-height: 1.35;
 }
 
+.training-log-notes {
+  color: var(--muted);
+  font-size: .86rem;
+  line-height: 1.35;
+  font-weight: 800;
+}
+
+.training-log-notes strong {
+  color: var(--black);
+}
+
 .toggle-label {
   display: inline-flex !important;
   align-items: center;

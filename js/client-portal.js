@@ -25,6 +25,21 @@ function isCoachPortalEmail(email) {
   return coachPortalEmails.includes(String(email || "").toLowerCase());
 }
 
+function normalizeClientEmail(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function dashboardClientEmailParam() {
+  try {
+    const value = new URLSearchParams(window.location.search).get("client");
+    const email = normalizeClientEmail(value);
+
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : "";
+  } catch (error) {
+    return "";
+  }
+}
+
 function escapeHtml(value) {
   return String(value ?? "")
     .replaceAll("&", "&amp;")
@@ -844,7 +859,7 @@ function exerciseLogFields(exercise, workoutTitle, options = {}) {
       </div>
       <label class="exercise-notes">
         <span>Notes</span>
-        <textarea placeholder="How did that set feel?" data-log-notes></textarea>
+        <textarea placeholder="Any exercise modifications?" data-log-notes></textarea>
       </label>
       ${showSubmit ? '<button class="complete-exercise-button" type="button" data-log-submit>Save Exercise</button>' : ""}
       <small data-log-status></small>
@@ -1813,6 +1828,10 @@ function renderClientTrainingLogs() {
                 )}</div>
                 <div class="training-log-exercise-list">
                   ${exercises.map((entry) => {
+                    const noteSummary = Array.from(new Set(entry.sets
+                      .map((set) => String(set.notes || "").trim())
+                      .filter(Boolean)))
+                      .join("  |  ");
                     const setSummary = entry.exercise_code === warmupExerciseCode
                       ? entry.sets
                         .sort((a, b) => Number(a.set_number || 0) - Number(b.set_number || 0))
@@ -1854,6 +1873,7 @@ function renderClientTrainingLogs() {
                               : `${entry.exercise_code} ${entry.exercise_name}`
                           )}</span>
                           <em>${escapeHtml(setSummary || "Sets saved")}</em>
+                          ${noteSummary ? `<small class="training-log-notes"><strong>Notes:</strong> ${escapeHtml(noteSummary)}</small>` : ""}
                         </div>
                       </article>
                     `;
@@ -2540,14 +2560,29 @@ async function loadDashboard() {
       return;
     }
 
-    const { data, error } = await withTimeout(
+    const signedInEmail = normalizeClientEmail(user.email);
+    const previewEmail = dashboardClientEmailParam();
+    const targetClientEmail = isCoachPortalEmail(signedInEmail) ? previewEmail : signedInEmail;
+
+    if (!targetClientEmail) {
+      setDashboardMessage(
+        "Choose a client",
+        "Open Client View from the coach admin after selecting a client."
+      );
+      return;
+    }
+
+    const { data: programRows, error } = await withTimeout(
       supabaseClient
         .from("client_programs")
         .select("*")
         .eq("active", true)
-        .maybeSingle(),
+        .ilike("client_email", targetClientEmail)
+        .order("updated_at", { ascending: false })
+        .limit(1),
       "Program request timed out."
     );
+    const data = Array.isArray(programRows) ? programRows[0] : null;
 
     if (error) {
       setDashboardMessage(
@@ -2565,7 +2600,7 @@ async function loadDashboard() {
       return;
     }
 
-    activeClientEmail = data.client_email || user.email;
+    activeClientEmail = data.client_email || targetClientEmail;
     renderProgram(data);
 
     const [progressResult, trainingLogResult] = await Promise.allSettled([
@@ -2573,6 +2608,7 @@ async function loadDashboard() {
         supabaseClient
           .from("client_progress")
           .select("*")
+          .ilike("client_email", activeClientEmail)
           .order("entry_date", { ascending: true }),
         "Progress request timed out."
       ),
@@ -2580,6 +2616,7 @@ async function loadDashboard() {
         supabaseClient
           .from("client_workout_logs")
           .select("*")
+          .ilike("client_email", activeClientEmail)
           .order("entry_date", { ascending: true })
           .limit(500),
         "Training log request timed out."

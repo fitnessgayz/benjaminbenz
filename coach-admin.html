@@ -12,6 +12,21 @@
     gtag('js', new Date());
     gtag('config', 'G-P3FPJMJ4PK');
   </script>
+  <link rel="shortcut icon" href="/favicon.ico" />
+  <link rel="icon" href="/favicon.ico" sizes="any" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <link rel="apple-touch-icon-precomposed" href="/apple-touch-icon-precomposed.png" />
+  <link rel="apple-touch-icon" sizes="120x120" href="/apple-touch-icon-120x120.png" />
+  <link rel="apple-touch-icon" sizes="152x152" href="/apple-touch-icon-152x152.png" />
+  <link rel="apple-touch-icon" sizes="167x167" href="/apple-touch-icon-167x167.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon-180x180.png" />
+  <link rel="manifest" href="/site.webmanifest" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="FWB" />
+  <meta name="application-name" content="FWB" />
+  <meta name="theme-color" content="#d6ff2f" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -25,7 +40,7 @@
     </a>
     <nav class="nav-links" aria-label="Primary navigation">
       <a href="#clients">Clients</a>
-      <a href="client-dashboard.html?v=manual-sessions-1">Client View</a>
+      <a href="client-dashboard.html?v=manual-sessions-1" id="client-view-link">Client View</a>
       <a href="client-login.html?v=manual-invite-copy-1">Client Login</a>
     </nav>
     <div class="header-actions">
@@ -73,8 +88,8 @@
           <button class="admin-tab" type="button" data-admin-tab="workouts" aria-selected="false">Workouts</button>
           <button class="admin-tab" type="button" data-admin-tab="progress" aria-selected="false">Progress</button>
           <button class="admin-tab" type="button" data-admin-tab="notes" aria-selected="false">Notes</button>
-          <button class="admin-tab" type="button" data-admin-tab="sessions" aria-selected="false">Sessions</button>
           <button class="admin-tab" type="button" data-admin-tab="logs" aria-selected="false">Logs</button>
+          <button class="admin-tab" type="button" data-admin-tab="sessions" aria-selected="false">Sessions</button>
         </nav>
 
         <section class="admin-card programming-heading-card" data-admin-panel="profile" hidden>

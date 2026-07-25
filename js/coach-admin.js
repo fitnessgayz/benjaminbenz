@@ -678,6 +678,24 @@ function selectedProgram() {
   return programs.find((program) => program.id === selectedProgramId);
 }
 
+function clientViewUrl(program = selectedProgram()) {
+  const email = normalizeEmail(program?.client_email);
+  const baseUrl = "client-dashboard.html?v=manual-sessions-1";
+
+  return email ? `${baseUrl}&client=${encodeURIComponent(email)}` : baseUrl;
+}
+
+function updateClientViewLink(program = selectedProgram()) {
+  const link = document.getElementById("client-view-link");
+
+  if (!link) {
+    return;
+  }
+
+  link.href = clientViewUrl(program);
+  link.setAttribute("aria-disabled", normalizeEmail(program?.client_email) ? "false" : "true");
+}
+
 function setAdminTab(tabName) {
   const nextTab = tabName || "profile";
 
@@ -771,6 +789,8 @@ function updateSelectedClientSummary(program = selectedProgram()) {
         ? "Active"
         : "Draft";
   const programTitle = formValue(form, "program_title") || program?.program_title || "No program title";
+
+  updateClientViewLink(program);
 
   if (name) {
     name.textContent = clientName;
@@ -1646,6 +1666,10 @@ function renderTrainingLogs() {
                 )}</div>
                 <div class="training-log-exercise-list">
                   ${exercises.map((entry) => {
+                    const noteSummary = Array.from(new Set(entry.sets
+                      .map((set) => String(set.notes || "").trim())
+                      .filter(Boolean)))
+                      .join("  |  ");
                     const setSummary = entry.exercise_code === warmupExerciseCode
                       ? entry.sets
                         .sort((a, b) => Number(a.set_number || 0) - Number(b.set_number || 0))
@@ -1687,6 +1711,7 @@ function renderTrainingLogs() {
                               : `${entry.exercise_code} ${entry.exercise_name}`
                           )}</span>
                           <em>${escapeHtml(setSummary || "Sets saved")}</em>
+                          ${noteSummary ? `<small class="training-log-notes"><strong>Notes:</strong> ${escapeHtml(noteSummary)}</small>` : ""}
                         </div>
                       </article>
                     `;
