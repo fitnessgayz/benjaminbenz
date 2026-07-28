@@ -1888,6 +1888,136 @@ function renderClientTrainingLogs() {
   }).join("");
 }
 
+function csvCell(value) {
+  const text = String(value ?? "");
+
+  if (/[",\n\r]/.test(text)) {
+    return `"${text.replaceAll('"', '""')}"`;
+  }
+
+  return text;
+}
+
+function csvSectionForLog(log) {
+  const code = String(log.exercise_code || "");
+
+  if (code === warmupExerciseCode) {
+    return "Warm up";
+  }
+
+  if (code === cardioExerciseCode) {
+    return "Cardio";
+  }
+
+  const supersetMatch = code.match(/^([A-Za-z]+)/);
+
+  return supersetMatch ? `Superset ${supersetMatch[1].toUpperCase()}` : "Other";
+}
+
+function sortedTrainingLogsForExport(logs = []) {
+  return [...logs].sort((a, b) => {
+    const left = [
+      b.entry_date || "",
+      b.workout_title || "",
+      b.exercise_code || "",
+      String(b.exercise_name || ""),
+      String(999 - Number(b.set_number || 0)).padStart(3, "0")
+    ].join("::");
+    const right = [
+      a.entry_date || "",
+      a.workout_title || "",
+      a.exercise_code || "",
+      String(a.exercise_name || ""),
+      String(999 - Number(a.set_number || 0)).padStart(3, "0")
+    ].join("::");
+
+    return left.localeCompare(right);
+  });
+}
+
+function workoutHistoryCsv(logs = []) {
+  const headers = [
+    "Date",
+    "Workout",
+    "Section",
+    "Exercise code",
+    "Exercise",
+    "Set",
+    "Weight (lbs)",
+    "Reps",
+    "Duration (min)",
+    "Distance",
+    "Notes"
+  ];
+  const rows = sortedTrainingLogsForExport(logs).map((log) => {
+    const isWarmup = log.exercise_code === warmupExerciseCode;
+    const isCardio = log.exercise_code === cardioExerciseCode;
+
+    return [
+      log.entry_date || "",
+      log.workout_title || "",
+      csvSectionForLog(log),
+      log.exercise_code || "",
+      log.exercise_name || "",
+      log.set_number || "",
+      isWarmup || isCardio ? "" : log.weight_used ?? "",
+      isWarmup || isCardio ? "" : log.reps ?? "",
+      isWarmup || isCardio ? log.weight_used ?? "" : "",
+      isCardio ? log.reps ?? "" : "",
+      log.notes || ""
+    ];
+  });
+
+  return [headers, ...rows]
+    .map((row) => row.map(csvCell).join(","))
+    .join("\n");
+}
+
+function clientWorkoutHistoryFileName() {
+  const clientName = currentProgram?.client_name || activeClientEmail || "client";
+  const safeName = String(clientName)
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "") || "client";
+
+  return `${safeName}-workout-history-${todayDate()}.csv`;
+}
+
+function handleClientWorkoutHistoryDownload() {
+  const button = document.getElementById("download-client-workout-history");
+  const status = document.getElementById("client-workout-history-download-status");
+
+  if (!button) {
+    return;
+  }
+
+  button.addEventListener("click", () => {
+    if (!trainingLogs.length) {
+      if (status) {
+        status.textContent = "No workout history to download yet.";
+      }
+      return;
+    }
+
+    const csv = workoutHistoryCsv(trainingLogs);
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = clientWorkoutHistoryFileName();
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+    if (status) {
+      status.textContent = "Workout history CSV downloaded.";
+    }
+  });
+}
+
 function handleClientTrainingLogDateFilter() {
   const input = document.getElementById("client-training-log-date-filter");
   const clearButton = document.getElementById("clear-client-training-log-date-filter");
@@ -2912,6 +3042,7 @@ loadDashboard();
 handleSignOut();
 handleTrainingDateChange();
 handleClientTrainingLogDateFilter();
+handleClientWorkoutHistoryDownload();
 handleClientDashboardTabs();
 handleClientSummaryActions();
 handleClientWorkoutTabs();

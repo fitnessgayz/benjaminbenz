@@ -3617,6 +3617,13 @@ footer {
   font-weight: 900;
 }
 
+.training-log-download-status {
+  min-height: 1.2em;
+  margin: -4px 0 14px;
+  color: var(--muted);
+  font-weight: 900;
+}
+
 .training-log-summary-list {
   display: grid;
   gap: 8px;

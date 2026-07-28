@@ -163,7 +163,9 @@
               <input type="date" id="client-training-log-date-filter" />
             </label>
             <button class="button button-ghost" type="button" id="clear-client-training-log-date-filter">Clear</button>
+            <button class="button button-dark" type="button" id="download-client-workout-history">Download CSV</button>
           </div>
+          <p class="training-log-download-status" id="client-workout-history-download-status" aria-live="polite"></p>
           <div class="training-log-history" id="client-training-log-history">
             <p class="empty-state">No weights logged yet.</p>
           </div>
@@ -180,6 +182,6 @@
   <script src="js/script.js?v=client-dashboard"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js?v=manual-sessions-1"></script>
-  <script src="js/client-portal.js?v=client-session-actions-1"></script>
+  <script src="js/client-portal.js?v=client-workout-history-csv-1"></script>
 </body>
 </html>
