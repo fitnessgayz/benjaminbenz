@@ -2008,6 +2008,21 @@ footer {
   background: #fbfbf8;
 }
 
+.workout-activity-card {
+  display: block;
+  gap: 0;
+  padding: 0;
+  background: var(--paper);
+}
+
+.workout-activity-card .exercise-card-summary {
+  padding-right: 54px;
+}
+
+.workout-activity-card .exercise-card-summary i {
+  right: 16px;
+}
+
 .workout-cardio-heading {
   display: grid;
   gap: 6px;
@@ -2256,8 +2271,8 @@ footer {
   display: grid;
 }
 
-.workout-warmup-card .exercise-detail,
-.workout-cardio-card .exercise-detail {
+.workout-warmup-card.is-open .exercise-detail,
+.workout-cardio-card.is-open .exercise-detail {
   display: grid;
 }
 

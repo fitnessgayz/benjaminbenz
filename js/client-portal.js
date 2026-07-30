@@ -1628,11 +1628,14 @@ function exerciseLogFields(exercise, workoutTitle, options = {}) {
 
 function cardioLogFields(workoutTitle) {
   return `
-    <section class="workout-cardio-card">
-      <div class="workout-cardio-heading">
-        <p class="kicker">Cardio</p>
-        <h3>Cardio log</h3>
-      </div>
+    <article class="workout-exercise-card workout-cardio-card workout-activity-card">
+      <button class="exercise-card-summary" type="button" data-exercise-toggle>
+        <span>
+          <strong>Cardio log</strong>
+          <em>Duration, distance, calories, and notes</em>
+        </span>
+        <i>›</i>
+      </button>
       <div class="exercise-detail cardio-log-detail"
         data-exercise-log
         data-cardio-log
@@ -1670,17 +1673,20 @@ function cardioLogFields(workoutTitle) {
         <small data-log-status></small>
         <div class="previous-weights" data-previous-weights>Previous: none</div>
       </div>
-    </section>
+    </article>
   `;
 }
 
 function warmupLogFields(workoutTitle) {
   return `
-    <section class="workout-warmup-card">
-      <div class="workout-cardio-heading">
-        <p class="kicker">Warm up</p>
-        <h3>Warm-up log</h3>
-      </div>
+    <article class="workout-exercise-card workout-warmup-card workout-activity-card">
+      <button class="exercise-card-summary" type="button" data-exercise-toggle>
+        <span>
+          <strong>Warm-up log</strong>
+          <em>Mobility, treadmill, activation, and notes</em>
+        </span>
+        <i>›</i>
+      </button>
       <div class="exercise-detail cardio-log-detail"
         data-exercise-log
         data-warmup-log
@@ -1710,7 +1716,7 @@ function warmupLogFields(workoutTitle) {
         <small data-log-status></small>
         <div class="previous-weights" data-previous-weights>Previous: none</div>
       </div>
-    </section>
+    </article>
   `;
 }
 
