@@ -106,6 +106,30 @@ function sessionPackageHistoryValue(value: unknown) {
     .slice(0, 20);
 }
 
+function nutritionPlanValue(value: unknown) {
+  const source = value && typeof value === "object" ? value as Record<string, unknown> : {};
+
+  return {
+    calories: stringValue(source.calories),
+    protein: stringValue(source.protein),
+    carbs: stringValue(source.carbs),
+    fat: stringValue(source.fat),
+    guide: stringValue(source.guide),
+    source: stringValue(source.source),
+    goal: stringValue(source.goal),
+    sex: stringValue(source.sex),
+    age: stringValue(source.age),
+    height: stringValue(source.height),
+    current_weight: stringValue(source.current_weight),
+    workouts_per_week: stringValue(source.workouts_per_week),
+    daily_movement: stringValue(source.daily_movement),
+    training_intensity: stringValue(source.training_intensity),
+    activity_factor: stringValue(source.activity_factor),
+    maintenance_calories: stringValue(source.maintenance_calories),
+    updated_at: stringValue(source.updated_at)
+  };
+}
+
 function isValidEmail(value: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 }
@@ -216,6 +240,7 @@ serve(async (request) => {
   const sessionDates = sessionDatesValue(safeBody.session_dates);
   const sessionPackageHistory = sessionPackageHistoryValue(safeBody.session_package_history);
   const sheetUrl = stringValue(safeBody.sheet_url);
+  const nutritionPlan = nutritionPlanValue(safeBody.nutrition_plan);
 
   if (!programId || !oldEmail) {
     return jsonResponse(request, { error: "Choose an existing client first." }, 400);
@@ -319,7 +344,8 @@ serve(async (request) => {
     session_count_total: sessionCountTotal,
     session_dates: sessionDates,
     session_package_history: sessionPackageHistory,
-    sheet_url: sheetUrl || null
+    sheet_url: sheetUrl || null,
+    nutrition_plan: nutritionPlan
   };
   const { error: programError } = await updateRowsById(adminClient, "client_programs", programIds, profilePayload);
 

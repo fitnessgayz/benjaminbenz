@@ -86,6 +86,7 @@
           <button class="admin-tab" type="button" data-admin-tab="profile" aria-selected="false">Profile</button>
           <button class="admin-tab" type="button" data-admin-tab="program" aria-selected="false">Program</button>
           <button class="admin-tab" type="button" data-admin-tab="workouts" aria-selected="false">Workouts</button>
+          <button class="admin-tab" type="button" data-admin-tab="nutrition" aria-selected="false">Nutrition</button>
           <button class="admin-tab" type="button" data-admin-tab="progress" aria-selected="false">Progress</button>
           <button class="admin-tab" type="button" data-admin-tab="notes" aria-selected="false">Notes</button>
           <button class="admin-tab" type="button" data-admin-tab="logs" aria-selected="false">Logs</button>
@@ -306,6 +307,71 @@
             </div>
             <div class="training-log-summary-list" id="progress-training-log-history">
               <p class="empty-state">Choose a client to view saved workouts.</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="admin-card nutrition-editor-card" data-admin-panel="nutrition" hidden>
+          <div class="admin-section-heading">
+            <div>
+              <p class="kicker">Nutrition</p>
+              <h2>Calories and macros</h2>
+            </div>
+          </div>
+          <div class="admin-field-grid nutrition-target-grid">
+            <label>
+              Daily calories
+              <input type="text" name="nutrition_calories" inputmode="decimal" placeholder="2,400 calories" />
+            </label>
+            <label>
+              Protein
+              <input type="text" name="nutrition_protein" inputmode="decimal" placeholder="180g" />
+            </label>
+            <label>
+              Carbs
+              <input type="text" name="nutrition_carbs" inputmode="decimal" placeholder="250g" />
+            </label>
+            <label>
+              Fat
+              <input type="text" name="nutrition_fat" inputmode="decimal" placeholder="75g" />
+            </label>
+          </div>
+          <div class="nutrition-coach-preview" aria-live="polite">
+            <div class="admin-section-heading compact-heading">
+              <div>
+                <p class="kicker">Coach override</p>
+                <h3>Client recommendation preview</h3>
+              </div>
+            </div>
+            <div class="nutrition-macro-grid" id="coach-nutrition-preview"></div>
+          </div>
+          <label>
+            Guide
+            <textarea name="nutrition_guide" placeholder="Simple guide for this client: protein at each meal, carbs around training, vegetables daily, hydration target, and any notes."></textarea>
+          </label>
+          <div class="nutrition-guide-preview">
+            <strong>Portion guide</strong>
+            <div class="nutrition-guide-list">
+              <span>Protein: palm-sized portions</span>
+              <span>Vegetables: fist-sized portions</span>
+              <span>Carbs: cupped-hand portions</span>
+              <span>Fats: thumb-sized portions</span>
+            </div>
+          </div>
+          <div class="nutrition-actions">
+            <p id="nutrition-save-status" role="status">Nutrition saves with this client profile.</p>
+            <button class="button button-dark" type="button" id="save-nutrition-button">Save nutrition</button>
+          </div>
+          <div class="coach-food-log-panel">
+            <div class="admin-section-heading compact-heading">
+              <div>
+                <p class="kicker">Food log</p>
+                <h2>Recent food entries</h2>
+              </div>
+            </div>
+            <div class="food-log-summary" id="coach-food-summary"></div>
+            <div class="food-log-list" id="coach-food-log-list">
+              <p class="empty-state">Choose a client to view food entries.</p>
             </div>
           </div>
         </section>

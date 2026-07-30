@@ -3373,7 +3373,8 @@ footer {
 
 .progress-actions,
 .notes-actions,
-.training-block-actions {
+.training-block-actions,
+.nutrition-actions {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -3386,7 +3387,8 @@ footer {
 
 .progress-actions p,
 .notes-actions p,
-.training-block-actions p {
+.training-block-actions p,
+.nutrition-actions p {
   margin: 0;
   color: var(--muted);
   font-weight: 900;
@@ -3394,8 +3396,276 @@ footer {
 
 .progress-actions .button,
 .notes-actions .button,
-.training-block-actions .button {
+.training-block-actions .button,
+.nutrition-actions .button {
   width: auto;
+}
+
+.nutrition-target-grid {
+  align-items: end;
+}
+
+.nutrition-coach-preview {
+  display: grid;
+  gap: 12px;
+  margin: 12px 0;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfbf8;
+}
+
+.nutrition-coach-preview .admin-section-heading {
+  margin: 0;
+}
+
+.nutrition-macro-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.nutrition-macro-card,
+.nutrition-calculator-card,
+.nutrition-client-guide,
+.nutrition-guide-preview,
+.nutrition-food-log-card,
+.coach-food-log-panel {
+  display: grid;
+  gap: 10px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfbf8;
+}
+
+.nutrition-macro-card span,
+.nutrition-guide-list span {
+  color: var(--muted);
+  font-weight: 900;
+}
+
+.nutrition-macro-card strong {
+  min-width: 0;
+  font-size: clamp(1.55rem, 3vw, 2.35rem);
+  line-height: .95;
+  overflow-wrap: anywhere;
+}
+
+.nutrition-client-guide p,
+.nutrition-guide-preview p {
+  margin: 0;
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.nutrition-calculator-card {
+  margin-top: 12px;
+}
+
+.nutrition-calculator-card h3 {
+  margin: 0;
+}
+
+.nutrition-setup-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.nutrition-setup-grid label {
+  display: grid;
+  gap: 6px;
+  color: var(--ink);
+  font-weight: 900;
+}
+
+.nutrition-setup-grid input,
+.nutrition-setup-grid select {
+  width: 100%;
+  min-width: 0;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 900;
+}
+
+.nutrition-calculator-card .button {
+  width: fit-content;
+}
+
+.nutrition-calculator-card small {
+  color: var(--muted);
+  font-weight: 900;
+}
+
+.nutrition-guide-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 8px;
+}
+
+.nutrition-guide-list span {
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--paper);
+}
+
+.nutrition-food-log-card,
+.coach-food-log-panel {
+  margin-top: 12px;
+}
+
+.food-entry-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.food-entry-grid label {
+  display: grid;
+  gap: 6px;
+  color: var(--ink);
+  font-weight: 900;
+}
+
+.food-entry-grid input,
+.food-entry-grid select,
+.food-entry-grid textarea {
+  width: 100%;
+  min-width: 0;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 900;
+}
+
+.food-entry-grid textarea {
+  min-height: 96px;
+  resize: vertical;
+}
+
+.food-search-field,
+.food-result-field,
+.food-notes-field {
+  grid-column: span 2;
+}
+
+.food-entry-grid #search-food-button {
+  align-self: end;
+}
+
+.food-log-actions {
+  margin-top: 4px;
+}
+
+.food-log-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.food-log-summary-card {
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+}
+
+.food-log-summary-card span {
+  color: var(--muted);
+  font-weight: 900;
+}
+
+.food-log-summary-card strong {
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+.food-log-list {
+  display: grid;
+  gap: 10px;
+}
+
+.food-log-day {
+  display: grid;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+
+.food-log-day-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-weight: 900;
+}
+
+.food-log-day-heading span {
+  color: var(--muted);
+}
+
+.food-log-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: start;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+}
+
+.food-log-row-main {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.food-log-row-main strong,
+.food-log-row-main em,
+.food-log-row-main small {
+  overflow-wrap: anywhere;
+}
+
+.food-log-row-main em,
+.food-log-row-main small {
+  color: var(--muted);
+  font-style: normal;
+  font-weight: 900;
+}
+
+.food-log-macros {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.food-log-macros span {
+  padding: 6px 9px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: .85rem;
+  font-weight: 900;
+}
+
+.food-log-delete {
+  width: auto;
+  min-height: 40px;
+  padding: 10px 14px;
+  border-color: #ffb4b4;
+  color: var(--red);
 }
 
 .progress-history {
@@ -4542,6 +4812,7 @@ textarea:focus {
   .progress-actions,
   .notes-actions,
   .training-block-actions,
+  .nutrition-actions,
   .progress-current,
   .progress-history-row {
     display: grid;
@@ -4550,8 +4821,43 @@ textarea:focus {
 
   .progress-actions .button,
   .notes-actions .button,
-  .training-block-actions .button {
+  .training-block-actions .button,
+  .nutrition-actions .button {
     width: 100%;
+  }
+
+  .nutrition-macro-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .nutrition-setup-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .nutrition-calculator-card .button {
+    width: 100%;
+  }
+
+  .food-entry-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .food-entry-grid #search-food-button,
+  .food-search-field,
+  .food-result-field,
+  .food-notes-field,
+  .food-log-actions,
+  .food-log-actions .button {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
+  .food-log-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .food-log-row {
+    grid-template-columns: 1fr;
   }
 
   .panel-heading {

@@ -18,6 +18,7 @@ let programs = [];
 let selectedProgramId = "";
 let progressEntries = [];
 let trainingLogs = [];
+let foodLogs = [];
 let recentTrainingLogs = [];
 let trainingLogDateFilter = "";
 let showingArchivedClients = false;
@@ -633,6 +634,14 @@ function trainingBlockStatus(message) {
   }
 }
 
+function nutritionStatus(message) {
+  const status = document.getElementById("nutrition-save-status");
+
+  if (status) {
+    status.textContent = message;
+  }
+}
+
 function workoutsStatus(message) {
   const status = document.getElementById("workouts-status");
 
@@ -722,6 +731,17 @@ function setAdminTab(tabName) {
       loadTrainingLogsForEmail(email);
     } else {
       renderSelectedClientTrainingLogs();
+    }
+  }
+
+  if (nextTab === "nutrition") {
+    const email = normalizeEmail(selectedProgram()?.client_email);
+
+    if (email) {
+      loadFoodLogsForEmail(email);
+    } else {
+      foodLogs = [];
+      renderCoachFoodLogs();
     }
   }
 }
@@ -1079,6 +1099,7 @@ function programFromForm(form) {
     height: formValue(form, "height") || "Not set",
     starting_weight: formValue(form, "starting_weight") || "Not set",
     starting_bodyfat: formValue(form, "starting_bodyfat") || "Not set",
+    nutrition_plan: nutritionPlanFromForm(form),
     coach_note_title: formValue(form, "coach_note_title"),
     coach_note_body: formValue(form, "coach_note_body"),
     workouts,
@@ -1104,8 +1125,62 @@ function profileFromForm(form) {
     session_count_total: normalizeSessionCount(formValue(form, "session_count_total")),
     session_dates: sessionDatesFromText(formValue(form, "session_dates")),
     sheet_url: trustedSheetUrl(formValue(form, "sheet_url")) || null,
-    session_package_history: sessionPackageHistoryFromForm(form)
+    session_package_history: sessionPackageHistoryFromForm(form),
+    nutrition_plan: nutritionPlanFromForm(form)
   };
+}
+
+function nutritionPlanFromProgram(program = {}) {
+  const source = program.nutrition_plan && typeof program.nutrition_plan === "object"
+    ? program.nutrition_plan
+    : {};
+
+  return {
+    calories: String(source.calories || "").trim(),
+    protein: String(source.protein || "").trim(),
+    carbs: String(source.carbs || "").trim(),
+    fat: String(source.fat || "").trim(),
+    guide: String(source.guide || "").trim()
+  };
+}
+
+function nutritionPlanFromForm(form) {
+  return {
+    calories: formValue(form, "nutrition_calories"),
+    protein: formValue(form, "nutrition_protein"),
+    carbs: formValue(form, "nutrition_carbs"),
+    fat: formValue(form, "nutrition_fat"),
+    guide: formValue(form, "nutrition_guide")
+  };
+}
+
+function nutritionTargetLabel(value, fallback = "Not set") {
+  const text = String(value || "").trim();
+
+  return text || fallback;
+}
+
+function renderCoachNutritionPreview(form = document.getElementById("program-editor")) {
+  const preview = document.getElementById("coach-nutrition-preview");
+
+  if (!preview || !form) {
+    return;
+  }
+
+  const nutritionPlan = nutritionPlanFromForm(form);
+  const targets = [
+    ["Calories", nutritionPlan.calories],
+    ["Protein", nutritionPlan.protein],
+    ["Carbs", nutritionPlan.carbs],
+    ["Fat", nutritionPlan.fat]
+  ];
+
+  preview.innerHTML = targets.map(([label, value]) => `
+    <article class="nutrition-macro-card">
+      <span>${escapeHtml(label)}</span>
+      <strong>${escapeHtml(nutritionTargetLabel(value))}</strong>
+    </article>
+  `).join("");
 }
 
 async function coachSessionToken() {
@@ -1171,7 +1246,8 @@ function profileChanged(program, profile) {
     normalizeSessionCount(program.session_count_total) !== profile.session_count_total ||
     JSON.stringify(sessionDatesFromProgram(program)) !== JSON.stringify(profile.session_dates) ||
     trustedSheetUrl(program.sheet_url) !== profile.sheet_url ||
-    JSON.stringify(sessionPackageHistoryFromProgram(program)) !== JSON.stringify(profile.session_package_history);
+    JSON.stringify(sessionPackageHistoryFromProgram(program)) !== JSON.stringify(profile.session_package_history) ||
+    JSON.stringify(nutritionPlanFromProgram(program)) !== JSON.stringify(profile.nutrition_plan);
 }
 
 async function saveProfileChangesFromForm(form, options = {}) {
@@ -1362,6 +1438,12 @@ function clearProgramFields(form) {
   form.elements.session_dates.value = "";
   form.elements.sheet_url.value = "";
   form.elements.session_package_history.value = "[]";
+  form.elements.nutrition_calories.value = "";
+  form.elements.nutrition_protein.value = "";
+  form.elements.nutrition_carbs.value = "";
+  form.elements.nutrition_fat.value = "";
+  form.elements.nutrition_guide.value = "";
+  renderCoachNutritionPreview(form);
   form.elements.program_summary.value = "";
   form.elements.coach_note_title.value = "";
   form.elements.coach_note_body.value = "";
@@ -1453,6 +1535,14 @@ function fillForm(program = {}) {
   form.elements.session_dates.value = sessionDatesToText(sessionDatesFromProgram(program));
   form.elements.sheet_url.value = trustedSheetUrl(program.sheet_url);
   form.elements.session_package_history.value = sessionPackageHistoryToFormValue(program.session_package_history);
+  const nutritionPlan = nutritionPlanFromProgram(program);
+
+  form.elements.nutrition_calories.value = nutritionPlan.calories;
+  form.elements.nutrition_protein.value = nutritionPlan.protein;
+  form.elements.nutrition_carbs.value = nutritionPlan.carbs;
+  form.elements.nutrition_fat.value = nutritionPlan.fat;
+  form.elements.nutrition_guide.value = nutritionPlan.guide;
+  renderCoachNutritionPreview(form);
   form.elements.program_summary.value = program.program_summary || "";
   form.elements.coach_note_title.value = program.coach_note_title || "";
   form.elements.coach_note_body.value = program.coach_note_body || "";
@@ -1474,14 +1564,17 @@ function fillForm(program = {}) {
     renderProgramHistory(program.client_email);
     loadProgressForEmail(program.client_email);
     loadTrainingLogsForEmail(program.client_email);
+    loadFoodLogsForEmail(program.client_email);
   } else {
     renderProgramHistory("");
     progressEntries = [];
     trainingLogs = [];
+    foodLogs = [];
     fillProgressForm();
     renderProgressHistory();
     renderTrainingLogs();
     renderSelectedClientTrainingLogs();
+    renderCoachFoodLogs();
     progressStatus("Save the client first, then add progress check-ins.");
   }
 }
@@ -1933,6 +2026,150 @@ function renderSelectedClientTrainingLogs() {
   });
 }
 
+function foodLogNumberLabel(value, suffix = "") {
+  const number = Number(value);
+
+  if (!Number.isFinite(number)) {
+    return "--";
+  }
+
+  return `${Math.round(number * 10) / 10}${suffix}`;
+}
+
+function foodLogTotals(logs) {
+  return logs.reduce((totals, log) => {
+    totals.calories += Number(log.calories || 0);
+    totals.protein += Number(log.protein || 0);
+    totals.carbs += Number(log.carbs || 0);
+    totals.fat += Number(log.fat || 0);
+    return totals;
+  }, {
+    calories: 0,
+    protein: 0,
+    carbs: 0,
+    fat: 0
+  });
+}
+
+function renderCoachFoodLogs() {
+  const summary = document.getElementById("coach-food-summary");
+  const list = document.getElementById("coach-food-log-list");
+  const program = selectedProgram();
+  const email = normalizeEmail(program?.client_email);
+
+  if (!summary || !list) {
+    return;
+  }
+
+  if (!email) {
+    summary.innerHTML = "";
+    list.innerHTML = '<p class="empty-state">Choose a client to view food entries.</p>';
+    return;
+  }
+
+  if (!foodLogs.length) {
+    summary.innerHTML = "";
+    list.innerHTML = '<p class="empty-state">No food entries for this client yet.</p>';
+    return;
+  }
+
+  const latestDate = foodLogs[0]?.entry_date || "";
+  const latestLogs = foodLogs.filter((log) => String(log.entry_date || "") === String(latestDate));
+  const totals = foodLogTotals(latestLogs);
+
+  summary.innerHTML = `
+    <article class="food-log-summary-card">
+      <span>${escapeHtml(formatAdminDate(latestDate))}</span>
+      <strong>${escapeHtml(foodLogNumberLabel(totals.calories))}</strong>
+      <small>calories</small>
+    </article>
+    <article class="food-log-summary-card">
+      <span>Protein</span>
+      <strong>${escapeHtml(foodLogNumberLabel(totals.protein, "g"))}</strong>
+    </article>
+    <article class="food-log-summary-card">
+      <span>Carbs</span>
+      <strong>${escapeHtml(foodLogNumberLabel(totals.carbs, "g"))}</strong>
+    </article>
+    <article class="food-log-summary-card">
+      <span>Fat</span>
+      <strong>${escapeHtml(foodLogNumberLabel(totals.fat, "g"))}</strong>
+    </article>
+  `;
+
+  const grouped = foodLogs.reduce((groups, log) => {
+    const date = log.entry_date || "";
+
+    if (!groups.has(date)) {
+      groups.set(date, []);
+    }
+
+    groups.get(date).push(log);
+    return groups;
+  }, new Map());
+
+  list.innerHTML = Array.from(grouped.entries()).slice(0, 7).map(([date, logs]) => {
+    const dateTotals = foodLogTotals(logs);
+
+    return `
+      <section class="food-log-day">
+        <div class="food-log-day-heading">
+          <strong>${escapeHtml(formatAdminDate(date))}</strong>
+          <span>${escapeHtml(foodLogNumberLabel(dateTotals.calories))} calories</span>
+        </div>
+        ${logs.map((log) => `
+          <article class="food-log-row">
+            <div class="food-log-row-main">
+              <strong>${escapeHtml(log.food_name || "Food")}</strong>
+              <em>${escapeHtml([log.meal, log.serving].filter(Boolean).join(" · "))}</em>
+              <div class="food-log-macros">
+                <span>${escapeHtml(foodLogNumberLabel(log.calories))} cal</span>
+                <span>${escapeHtml(foodLogNumberLabel(log.protein, "g"))} protein</span>
+                <span>${escapeHtml(foodLogNumberLabel(log.carbs, "g"))} carbs</span>
+                <span>${escapeHtml(foodLogNumberLabel(log.fat, "g"))} fat</span>
+              </div>
+              ${log.notes ? `<small>${escapeHtml(log.notes)}</small>` : ""}
+            </div>
+          </article>
+        `).join("")}
+      </section>
+    `;
+  }).join("");
+}
+
+async function loadFoodLogsForEmail(email) {
+  if (!coachSupabase || !email) {
+    foodLogs = [];
+    renderCoachFoodLogs();
+    return;
+  }
+
+  try {
+    const { data, error } = await withRequestTimeout(
+      coachSupabase
+        .from("client_food_logs")
+        .select("*")
+        .ilike("client_email", normalizeEmail(email))
+        .order("entry_date", { ascending: false })
+        .order("created_at", { ascending: false })
+        .limit(200),
+      "Could not load food entries right now. Please refresh and try again."
+    );
+
+    if (error) {
+      foodLogs = [];
+      renderCoachFoodLogs();
+      return;
+    }
+
+    foodLogs = data || [];
+    renderCoachFoodLogs();
+  } catch (error) {
+    foodLogs = [];
+    renderCoachFoodLogs();
+  }
+}
+
 async function loadRecentTrainingLogs() {
   if (!coachSupabase) {
     return;
@@ -2137,6 +2374,46 @@ function handleSelectedClientActions() {
   saveProfileButton?.addEventListener("click", () => {
     setAdminTab("profile");
     document.getElementById("save-profile-changes-button")?.click();
+  });
+}
+
+function handleNutritionEditor() {
+  const form = document.getElementById("program-editor");
+  const button = document.getElementById("save-nutrition-button");
+
+  ["nutrition_calories", "nutrition_protein", "nutrition_carbs", "nutrition_fat", "nutrition_guide"].forEach((name) => {
+    form?.elements[name]?.addEventListener("input", () => {
+      renderCoachNutritionPreview(form);
+    });
+  });
+
+  button?.addEventListener("click", async () => {
+    if (!form) {
+      return;
+    }
+
+    button.disabled = true;
+    nutritionStatus("Saving nutrition...");
+
+    const result = await saveProfileChangesFromForm(form);
+
+    if (result.error) {
+      nutritionStatus(result.error.message || "Could not save nutrition.");
+      button.disabled = false;
+      return;
+    }
+
+    nutritionStatus("Nutrition saved.");
+    const savedId = result.data?.id || form.elements.id.value;
+    const savedProgram = programs.find((program) => program.id === savedId);
+
+    if (savedProgram) {
+      fillForm(savedProgram);
+      updateSelectedClientSummary(savedProgram);
+    } else {
+      renderCoachNutritionPreview(form);
+    }
+    button.disabled = false;
   });
 }
 
@@ -3568,6 +3845,7 @@ async function bootCoachAdmin() {
   renderWorkoutFields();
   handleAdminTabs();
   handleSelectedClientActions();
+  handleNutritionEditor();
   handleSessionManualEditor();
   handleAdminLiveUpdates();
   handleWorkoutCards();

@@ -11,6 +11,8 @@ const supabaseClient = isConfigured && window.supabase
 const coachPortalEmails = ["benjaminbenz.fit@gmail.com"];
 let activeClientEmail = "";
 let trainingLogs = [];
+let foodLogs = [];
+let foodSearchResults = [];
 let clientTrainingLogDateFilter = "";
 let activeClientDashboardTab = "workouts";
 let activeWorkoutTabIndex = 0;
@@ -370,6 +372,680 @@ function renderMetrics(program) {
       <small id="client-metrics-status">Update these any time.</small>
     </div>
   `;
+}
+
+function nutritionPlanFromProgram(program = {}) {
+  const source = program.nutrition_plan && typeof program.nutrition_plan === "object"
+    ? program.nutrition_plan
+    : {};
+
+  return {
+    calories: String(source.calories || "").trim(),
+    protein: String(source.protein || "").trim(),
+    carbs: String(source.carbs || "").trim(),
+    fat: String(source.fat || "").trim(),
+    guide: String(source.guide || "").trim(),
+    source: String(source.source || "").trim(),
+    goal: String(source.goal || "").trim(),
+    sex: String(source.sex || "").trim(),
+    age: String(source.age || "").trim(),
+    height: String(source.height || "").trim(),
+    current_weight: String(source.current_weight || "").trim(),
+    workouts_per_week: String(source.workouts_per_week || "").trim(),
+    daily_movement: String(source.daily_movement || "").trim(),
+    training_intensity: String(source.training_intensity || "").trim(),
+    activity_factor: String(source.activity_factor || "").trim(),
+    maintenance_calories: String(source.maintenance_calories || "").trim(),
+    updated_at: String(source.updated_at || "").trim()
+  };
+}
+
+function nutritionTargetLabel(value) {
+  return value || "Not set";
+}
+
+function numberValue(value) {
+  const parsed = Number.parseFloat(String(value || "").replace(/[^0-9.]/g, ""));
+
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function roundToNearest(value, nearest) {
+  return Math.round(value / nearest) * nearest;
+}
+
+function nutritionHeightInches(value) {
+  const text = String(value || "").trim().toLowerCase();
+
+  if (!text) {
+    return 0;
+  }
+
+  const feetMatch = text.match(/^(\d+)\s*(?:'|ft|feet)\s*(\d+)?/);
+
+  if (feetMatch) {
+    return (Number(feetMatch[1]) * 12) + Number(feetMatch[2] || 0);
+  }
+
+  const plainNumber = numberValue(text);
+
+  if (!plainNumber) {
+    return 0;
+  }
+
+  return plainNumber <= 8 ? plainNumber * 12 : plainNumber;
+}
+
+function nutritionActivityFactor(workoutsPerWeek, movement, intensity) {
+  const movementBase = {
+    mostly_sitting: 1.2,
+    mixed: 1.35,
+    active_job: 1.5
+  };
+  const workoutNumber = Math.min(Math.max(Number.parseInt(workoutsPerWeek, 10) || 0, 0), 7);
+  const workoutBoost = workoutNumber === 0
+    ? 0
+    : workoutNumber <= 2
+      ? 0.1
+      : workoutNumber <= 4
+        ? 0.2
+        : workoutNumber <= 6
+          ? 0.3
+          : 0.35;
+  const intensityBoost = intensity === "hard" ? 0.05 : intensity === "light" ? -0.03 : 0;
+  const factor = (movementBase[movement] || movementBase.mixed) + workoutBoost + intensityBoost;
+
+  return Math.min(Math.max(factor, 1.2), 1.85);
+}
+
+function nutritionGoalMultiplier(goal) {
+  if (goal === "fat_loss") {
+    return 0.85;
+  }
+
+  if (goal === "muscle_gain") {
+    return 1.1;
+  }
+
+  if (goal === "recomposition") {
+    return 0.98;
+  }
+
+  return 1;
+}
+
+function nutritionProteinPerPound(goal) {
+  if (goal === "fat_loss" || goal === "recomposition") {
+    return 1;
+  }
+
+  if (goal === "muscle_gain") {
+    return 0.9;
+  }
+
+  return 0.8;
+}
+
+function nutritionGoalLabel(goal) {
+  const labels = {
+    fat_loss: "fat loss",
+    muscle_gain: "muscle gain",
+    recomposition: "building muscle and leaning out",
+    maintenance: "maintenance"
+  };
+
+  return labels[goal] || "your goal";
+}
+
+function calculateNutritionPlan(values) {
+  const age = Number.parseInt(values.age, 10) || 0;
+  const weightLbs = numberValue(values.current_weight);
+  const heightInches = nutritionHeightInches(values.height);
+
+  if (!age || !weightLbs || !heightInches || !values.sex) {
+    return { error: new Error("Add age, formula sex, height, and current weight first.") };
+  }
+
+  const weightKg = weightLbs * 0.45359237;
+  const heightCm = heightInches * 2.54;
+  const bmr = (10 * weightKg) + (6.25 * heightCm) - (5 * age) + (values.sex === "female" ? -161 : 5);
+  const activityFactor = nutritionActivityFactor(values.workouts_per_week, values.daily_movement, values.training_intensity);
+  const maintenanceCalories = roundToNearest(bmr * activityFactor, 25);
+  const calories = roundToNearest(maintenanceCalories * nutritionGoalMultiplier(values.goal), 25);
+  const protein = roundToNearest(weightLbs * nutritionProteinPerPound(values.goal), 5);
+  const fat = roundToNearest((calories * 0.25) / 9, 5);
+  const carbCalories = Math.max(calories - ((protein * 4) + (fat * 9)), 0);
+  const carbs = roundToNearest(carbCalories / 4, 5);
+
+  return {
+    plan: {
+      calories: `${calories} cal`,
+      protein: `${protein}g`,
+      carbs: `${carbs}g`,
+      fat: `${fat}g`,
+      guide: `Starting target for ${nutritionGoalLabel(values.goal)}. Review with Benjamin and adjust based on energy, hunger, performance, and progress.`,
+      source: "client_calculator",
+      goal: values.goal,
+      sex: values.sex,
+      age: String(age),
+      height: values.height,
+      current_weight: String(weightLbs),
+      workouts_per_week: String(values.workouts_per_week || "0"),
+      daily_movement: values.daily_movement,
+      training_intensity: values.training_intensity,
+      activity_factor: activityFactor.toFixed(2),
+      maintenance_calories: String(maintenanceCalories),
+      updated_at: new Date().toISOString()
+    }
+  };
+}
+
+function setSelectValue(select, value, fallback) {
+  if (!select) {
+    return;
+  }
+
+  select.value = value || fallback || "";
+}
+
+function fillClientNutritionSetup(program) {
+  const setup = document.getElementById("client-nutrition-setup");
+
+  if (!setup) {
+    return;
+  }
+
+  const nutrition = nutritionPlanFromProgram(program);
+  setSelectValue(setup.querySelector('[name="nutrition_goal"]'), nutrition.goal, "fat_loss");
+  setSelectValue(setup.querySelector('[name="nutrition_sex"]'), nutrition.sex, "");
+  setSelectValue(setup.querySelector('[name="nutrition_workouts"]'), nutrition.workouts_per_week, "3");
+  setSelectValue(setup.querySelector('[name="nutrition_movement"]'), nutrition.daily_movement, "mixed");
+  setSelectValue(setup.querySelector('[name="nutrition_intensity"]'), nutrition.training_intensity, "moderate");
+
+  const ageInput = setup.querySelector('[name="nutrition_age"]');
+  const heightInput = setup.querySelector('[name="nutrition_height"]');
+  const weightInput = setup.querySelector('[name="nutrition_weight"]');
+
+  if (ageInput) {
+    ageInput.value = nutrition.age || "";
+  }
+  if (heightInput) {
+    heightInput.value = nutrition.height || (program.height === "Not set" ? "" : (program.height || ""));
+  }
+  if (weightInput) {
+    weightInput.value = nutrition.current_weight || (program.starting_weight === "Not set" ? "" : (program.starting_weight || ""));
+  }
+}
+
+function renderClientNutrition(program) {
+  const targets = document.getElementById("client-nutrition-targets");
+  const guide = document.getElementById("client-nutrition-guide");
+  const status = document.getElementById("client-nutrition-status");
+  const nutrition = nutritionPlanFromProgram(program);
+  const hasTargets = Boolean(nutrition.calories || nutrition.protein || nutrition.carbs || nutrition.fat || nutrition.guide);
+
+  if (status) {
+    status.textContent = nutrition.source === "client_calculator" ? "Client setup" : hasTargets ? "Coach plan" : "Not set yet";
+  }
+
+  if (targets) {
+    targets.innerHTML = `
+      <article class="nutrition-macro-card">
+        <span>Calories</span>
+        <strong>${escapeHtml(nutritionTargetLabel(nutrition.calories))}</strong>
+      </article>
+      <article class="nutrition-macro-card">
+        <span>Protein</span>
+        <strong>${escapeHtml(nutritionTargetLabel(nutrition.protein))}</strong>
+      </article>
+      <article class="nutrition-macro-card">
+        <span>Carbs</span>
+        <strong>${escapeHtml(nutritionTargetLabel(nutrition.carbs))}</strong>
+      </article>
+      <article class="nutrition-macro-card">
+        <span>Fat</span>
+        <strong>${escapeHtml(nutritionTargetLabel(nutrition.fat))}</strong>
+      </article>
+    `;
+  }
+
+  if (guide) {
+    guide.textContent = nutrition.guide || "Your coach will add calories, macros, and nutrition notes here.";
+  }
+
+  fillClientNutritionSetup(program);
+}
+
+function foodLogNumber(value) {
+  const number = Number(value);
+
+  return Number.isFinite(number) && number >= 0 ? number : null;
+}
+
+function foodLogNumberLabel(value, suffix = "") {
+  const number = Number(value);
+
+  if (!Number.isFinite(number)) {
+    return "--";
+  }
+
+  return `${Math.round(number * 10) / 10}${suffix}`;
+}
+
+function foodEntryForm() {
+  return document.getElementById("client-food-entry-form");
+}
+
+function fillFoodEntryDefaults() {
+  const form = foodEntryForm();
+
+  if (!form) {
+    return;
+  }
+
+  const dateInput = form.querySelector('[name="food_entry_date"]');
+
+  if (dateInput && !dateInput.value) {
+    dateInput.value = todayDate();
+  }
+}
+
+function setFoodEntryStatus(message) {
+  const status = document.getElementById("food-entry-status");
+
+  if (status) {
+    status.textContent = message;
+  }
+}
+
+function foodLogTotals(logs) {
+  return logs.reduce((totals, log) => {
+    totals.calories += Number(log.calories || 0);
+    totals.protein += Number(log.protein || 0);
+    totals.carbs += Number(log.carbs || 0);
+    totals.fat += Number(log.fat || 0);
+    return totals;
+  }, {
+    calories: 0,
+    protein: 0,
+    carbs: 0,
+    fat: 0
+  });
+}
+
+function renderFoodLogSummary(logs) {
+  const summary = document.getElementById("client-food-day-summary");
+  const form = foodEntryForm();
+  const dateInput = form?.querySelector('[name="food_entry_date"]');
+  const activeDate = dateInput?.value || todayDate();
+
+  if (!summary) {
+    return;
+  }
+
+  const totals = foodLogTotals(logs.filter((log) => String(log.entry_date || "") === activeDate));
+
+  summary.innerHTML = `
+    <article class="food-log-summary-card">
+      <span>${escapeHtml(formatLogDate(activeDate))}</span>
+      <strong>${escapeHtml(foodLogNumberLabel(totals.calories))}</strong>
+      <small>calories</small>
+    </article>
+    <article class="food-log-summary-card">
+      <span>Protein</span>
+      <strong>${escapeHtml(foodLogNumberLabel(totals.protein, "g"))}</strong>
+    </article>
+    <article class="food-log-summary-card">
+      <span>Carbs</span>
+      <strong>${escapeHtml(foodLogNumberLabel(totals.carbs, "g"))}</strong>
+    </article>
+    <article class="food-log-summary-card">
+      <span>Fat</span>
+      <strong>${escapeHtml(foodLogNumberLabel(totals.fat, "g"))}</strong>
+    </article>
+  `;
+}
+
+function renderClientFoodLogs() {
+  const list = document.getElementById("client-food-log-list");
+  const count = document.getElementById("client-food-log-count");
+
+  if (!list) {
+    return;
+  }
+
+  renderFoodLogSummary(foodLogs);
+
+  if (count) {
+    count.textContent = foodLogs.length
+      ? `${foodLogs.length} ${foodLogs.length === 1 ? "entry" : "entries"}`
+      : "No food yet";
+  }
+
+  if (!foodLogs.length) {
+    list.innerHTML = '<p class="empty-state">No food logged yet.</p>';
+    return;
+  }
+
+  const grouped = foodLogs.reduce((groups, log) => {
+    const date = log.entry_date || "";
+
+    if (!groups.has(date)) {
+      groups.set(date, []);
+    }
+
+    groups.get(date).push(log);
+    return groups;
+  }, new Map());
+
+  list.innerHTML = Array.from(grouped.entries())
+    .sort(([left], [right]) => String(right).localeCompare(String(left)))
+    .slice(0, 7)
+    .map(([date, logs]) => {
+      const totals = foodLogTotals(logs);
+
+      return `
+        <section class="food-log-day">
+          <div class="food-log-day-heading">
+            <strong>${escapeHtml(formatLogDate(date))}</strong>
+            <span>${escapeHtml(foodLogNumberLabel(totals.calories))} calories</span>
+          </div>
+          ${logs.map((log) => `
+            <article class="food-log-row" data-food-log-id="${escapeHtml(log.id || "")}">
+              <div class="food-log-row-main">
+                <strong>${escapeHtml(log.food_name || "Food")}</strong>
+                <em>${escapeHtml([log.meal, log.serving].filter(Boolean).join(" · "))}</em>
+                <div class="food-log-macros">
+                  <span>${escapeHtml(foodLogNumberLabel(log.calories))} cal</span>
+                  <span>${escapeHtml(foodLogNumberLabel(log.protein, "g"))} protein</span>
+                  <span>${escapeHtml(foodLogNumberLabel(log.carbs, "g"))} carbs</span>
+                  <span>${escapeHtml(foodLogNumberLabel(log.fat, "g"))} fat</span>
+                </div>
+                ${log.notes ? `<small>${escapeHtml(log.notes)}</small>` : ""}
+              </div>
+              <button class="button food-log-delete" type="button" data-delete-food-log="${escapeHtml(log.id || "")}">Delete</button>
+            </article>
+          `).join("")}
+        </section>
+      `;
+    }).join("");
+}
+
+function populateFoodLogs(logs) {
+  foodLogs = Array.isArray(logs) ? logs : [];
+  renderClientFoodLogs();
+}
+
+function resetFoodSearchResults() {
+  foodSearchResults = [];
+  const resultField = document.querySelector(".food-result-field");
+  const resultSelect = document.getElementById("food-search-results");
+
+  if (resultField) {
+    resultField.hidden = true;
+  }
+
+  if (resultSelect) {
+    resultSelect.innerHTML = "";
+  }
+}
+
+function applyFoodResult(food) {
+  const form = foodEntryForm();
+
+  if (!form || !food) {
+    return;
+  }
+
+  const fields = {
+    food_name: food.description || "",
+    food_serving: food.serving || "",
+    food_calories: food.calories ?? "",
+    food_protein: food.protein ?? "",
+    food_carbs: food.carbs ?? "",
+    food_fat: food.fat ?? ""
+  };
+
+  Object.entries(fields).forEach(([name, value]) => {
+    const input = form.querySelector(`[name="${name}"]`);
+
+    if (input) {
+      input.value = value;
+    }
+  });
+
+  form.dataset.foodSource = "USDA FoodData Central";
+  form.dataset.fdcId = food.fdcId || "";
+}
+
+async function handleFoodSearch() {
+  const button = document.getElementById("search-food-button");
+
+  if (!button) {
+    return;
+  }
+
+  button.addEventListener("click", async () => {
+    const form = foodEntryForm();
+    const query = form?.querySelector('[name="food_search"]')?.value.trim() || "";
+
+    resetFoodSearchResults();
+
+    if (!query) {
+      setFoodEntryStatus("Enter a food to search, or fill the macros manually.");
+      return;
+    }
+
+    if (!supabaseClient) {
+      setFoodEntryStatus("Food lookup is not configured. You can enter food manually.");
+      return;
+    }
+
+    button.disabled = true;
+    setFoodEntryStatus("Searching foods...");
+
+    try {
+      const { data, error } = await supabaseClient.functions.invoke("food-search", {
+        body: { query }
+      });
+
+      if (error) {
+        setFoodEntryStatus(error.message || "Food lookup is not available. Enter food manually.");
+        return;
+      }
+
+      foodSearchResults = Array.isArray(data?.foods) ? data.foods : [];
+
+      if (!foodSearchResults.length) {
+        setFoodEntryStatus("No food matches found. Enter it manually.");
+        return;
+      }
+
+      const resultField = document.querySelector(".food-result-field");
+      const resultSelect = document.getElementById("food-search-results");
+
+      if (resultField && resultSelect) {
+        resultField.hidden = false;
+        resultSelect.innerHTML = foodSearchResults.map((food, index) => `
+          <option value="${escapeHtml(index)}">${escapeHtml([
+            food.description,
+            food.brandOwner,
+            food.serving
+          ].filter(Boolean).join(" · "))}</option>
+        `).join("");
+        resultSelect.value = "0";
+      }
+
+      applyFoodResult(foodSearchResults[0]);
+      setFoodEntryStatus("Pick the closest match, then adjust if needed.");
+    } catch (error) {
+      setFoodEntryStatus(error?.message || "Food lookup is not available. Enter food manually.");
+    } finally {
+      button.disabled = false;
+    }
+  });
+}
+
+function handleFoodResultSelect() {
+  const resultSelect = document.getElementById("food-search-results");
+
+  if (!resultSelect) {
+    return;
+  }
+
+  resultSelect.addEventListener("change", () => {
+    applyFoodResult(foodSearchResults[Number(resultSelect.value)] || null);
+  });
+}
+
+function foodEntryPayload() {
+  const form = foodEntryForm();
+
+  if (!form) {
+    return null;
+  }
+
+  return {
+    client_email: activeClientEmail,
+    entry_date: form.querySelector('[name="food_entry_date"]')?.value || todayDate(),
+    meal: form.querySelector('[name="food_meal"]')?.value || "Meal",
+    food_name: form.querySelector('[name="food_name"]')?.value.trim() || "",
+    serving: form.querySelector('[name="food_serving"]')?.value.trim() || "",
+    calories: foodLogNumber(form.querySelector('[name="food_calories"]')?.value),
+    protein: foodLogNumber(form.querySelector('[name="food_protein"]')?.value),
+    carbs: foodLogNumber(form.querySelector('[name="food_carbs"]')?.value),
+    fat: foodLogNumber(form.querySelector('[name="food_fat"]')?.value),
+    source: form.dataset.foodSource || "Manual",
+    fdc_id: form.dataset.fdcId || "",
+    notes: form.querySelector('[name="food_notes"]')?.value.trim() || ""
+  };
+}
+
+function resetFoodEntryForm() {
+  const form = foodEntryForm();
+
+  if (!form) {
+    return;
+  }
+
+  const dateValue = form.querySelector('[name="food_entry_date"]')?.value || todayDate();
+  const mealValue = form.querySelector('[name="food_meal"]')?.value || "Breakfast";
+  form.querySelectorAll("input, textarea").forEach((input) => {
+    input.value = "";
+  });
+  const dateInput = form.querySelector('[name="food_entry_date"]');
+  const mealInput = form.querySelector('[name="food_meal"]');
+
+  if (dateInput) {
+    dateInput.value = dateValue;
+  }
+
+  if (mealInput) {
+    mealInput.value = mealValue;
+  }
+
+  form.dataset.foodSource = "";
+  form.dataset.fdcId = "";
+  resetFoodSearchResults();
+}
+
+function handleFoodSave() {
+  const button = document.getElementById("save-food-entry-button");
+
+  if (!button) {
+    return;
+  }
+
+  button.addEventListener("click", async () => {
+    const payload = foodEntryPayload();
+
+    if (!payload?.food_name) {
+      setFoodEntryStatus("Add a food name first.");
+      return;
+    }
+
+    if (!supabaseClient || !activeClientEmail) {
+      setFoodEntryStatus("Could not save food yet. Refresh and try again.");
+      return;
+    }
+
+    button.disabled = true;
+    setFoodEntryStatus("Saving food...");
+
+    try {
+      const { data, error } = await supabaseClient
+        .from("client_food_logs")
+        .insert(payload)
+        .select("*")
+        .single();
+
+      if (error) {
+        setFoodEntryStatus(error.message || "Could not save food.");
+        return;
+      }
+
+      foodLogs = [data, ...foodLogs].sort((a, b) => String(b.entry_date || "").localeCompare(String(a.entry_date || "")));
+      renderClientFoodLogs();
+      resetFoodEntryForm();
+      setFoodEntryStatus("Food saved.");
+    } catch (error) {
+      setFoodEntryStatus(error?.message || "Could not save food.");
+    } finally {
+      button.disabled = false;
+    }
+  });
+}
+
+function handleFoodDelete() {
+  document.addEventListener("click", async (event) => {
+    const button = event.target.closest("[data-delete-food-log]");
+
+    if (!button) {
+      return;
+    }
+
+    const id = button.dataset.deleteFoodLog;
+
+    if (!id || !supabaseClient) {
+      return;
+    }
+
+    button.disabled = true;
+    setFoodEntryStatus("Deleting food...");
+
+    try {
+      const { error } = await supabaseClient
+        .from("client_food_logs")
+        .delete()
+        .eq("id", id);
+
+      if (error) {
+        setFoodEntryStatus(error.message || "Could not delete food.");
+        button.disabled = false;
+        return;
+      }
+
+      foodLogs = foodLogs.filter((log) => String(log.id) !== String(id));
+      renderClientFoodLogs();
+      setFoodEntryStatus("Food deleted.");
+    } catch (error) {
+      setFoodEntryStatus(error?.message || "Could not delete food.");
+      button.disabled = false;
+    }
+  });
+}
+
+function handleFoodEntryDateChange() {
+  const form = foodEntryForm();
+  const dateInput = form?.querySelector('[name="food_entry_date"]');
+
+  if (!dateInput) {
+    return;
+  }
+
+  dateInput.addEventListener("change", () => {
+    renderClientFoodLogs();
+  });
 }
 
 function formatProgressValue(value, suffix) {
@@ -2326,6 +3002,95 @@ function handleClientMetricSave() {
   });
 }
 
+function clientNutritionFormValues() {
+  const setup = document.getElementById("client-nutrition-setup");
+
+  if (!setup) {
+    return null;
+  }
+
+  return {
+    goal: setup.querySelector('[name="nutrition_goal"]')?.value || "fat_loss",
+    age: setup.querySelector('[name="nutrition_age"]')?.value.trim() || "",
+    sex: setup.querySelector('[name="nutrition_sex"]')?.value || "",
+    height: setup.querySelector('[name="nutrition_height"]')?.value.trim() || "",
+    current_weight: setup.querySelector('[name="nutrition_weight"]')?.value.trim() || "",
+    workouts_per_week: setup.querySelector('[name="nutrition_workouts"]')?.value || "0",
+    daily_movement: setup.querySelector('[name="nutrition_movement"]')?.value || "mixed",
+    training_intensity: setup.querySelector('[name="nutrition_intensity"]')?.value || "moderate"
+  };
+}
+
+async function saveClientNutritionPlan() {
+  if (!supabaseClient || !currentProgram?.id) {
+    return { error: new Error("Nutrition setup is not connected yet.") };
+  }
+
+  const values = clientNutritionFormValues();
+
+  if (!values) {
+    return { error: new Error("Nutrition fields are not available.") };
+  }
+
+  const { plan, error: calculationError } = calculateNutritionPlan(values);
+
+  if (calculationError) {
+    return { error: calculationError };
+  }
+
+  const { data, error } = await supabaseClient
+    .from("client_programs")
+    .update({ nutrition_plan: plan })
+    .eq("id", currentProgram.id)
+    .select("*")
+    .single();
+
+  if (error) {
+    return { error };
+  }
+
+  currentProgram = data;
+  renderClientNutrition(currentProgram);
+  return { data };
+}
+
+function handleClientNutritionSave() {
+  document.addEventListener("click", async (event) => {
+    const button = event.target.closest("#save-client-nutrition-button");
+
+    if (!button) {
+      return;
+    }
+
+    const status = document.getElementById("client-nutrition-save-status");
+    button.disabled = true;
+
+    if (status) {
+      status.textContent = "Calculating...";
+    }
+
+    const { error } = await saveClientNutritionPlan();
+
+    if (error) {
+      if (status) {
+        status.textContent = error.message || "Could not save nutrition yet.";
+      }
+      button.disabled = false;
+      return;
+    }
+
+    const nextStatus = document.getElementById("client-nutrition-save-status");
+    const nextButton = document.getElementById("save-client-nutrition-button");
+
+    if (nextStatus) {
+      nextStatus.textContent = "Nutrition target saved.";
+    }
+    if (nextButton) {
+      nextButton.disabled = false;
+    }
+  });
+}
+
 function handleClientDashboardTabs() {
   document.addEventListener("click", (event) => {
     const tab = event.target.closest("[data-client-dashboard-tab]");
@@ -2511,6 +3276,7 @@ function renderProgram(program) {
   setText("#client-name", displayProgram.client_name || "Client");
 
   renderMetrics(program);
+  renderClientNutrition(program);
   renderWorkoutInsights(program);
   renderClientSessionManualState(program);
   renderClientWorkoutTabs(workouts);
@@ -2733,7 +3499,7 @@ async function loadDashboard() {
     activeClientEmail = data.client_email || targetClientEmail;
     renderProgram(data);
 
-    const [progressResult, trainingLogResult] = await Promise.allSettled([
+    const [progressResult, trainingLogResult, foodLogResult] = await Promise.allSettled([
       withTimeout(
         supabaseClient
           .from("client_progress")
@@ -2750,6 +3516,16 @@ async function loadDashboard() {
           .order("entry_date", { ascending: true })
           .limit(500),
         "Training log request timed out."
+      ),
+      withTimeout(
+        supabaseClient
+          .from("client_food_logs")
+          .select("*")
+          .ilike("client_email", activeClientEmail)
+          .order("entry_date", { ascending: false })
+          .order("created_at", { ascending: false })
+          .limit(200),
+        "Food log request timed out."
       )
     ]);
 
@@ -2759,8 +3535,13 @@ async function loadDashboard() {
     const trainingLogData = trainingLogResult.status === "fulfilled" && !trainingLogResult.value.error
       ? trainingLogResult.value.data
       : [];
+    const foodLogData = foodLogResult.status === "fulfilled" && !foodLogResult.value.error
+      ? foodLogResult.value.data
+      : [];
 
     renderProgress(progressData || []);
+    fillFoodEntryDefaults();
+    populateFoodLogs(foodLogData || []);
     populateTrainingLogs(
       trainingLogData?.length || !shouldUseDemoTrainingLogs()
         ? trainingLogData || []
@@ -3050,3 +3831,9 @@ handleWorkoutInteractions();
 handleSkipToggle();
 handleTrainingLogSave();
 handleClientMetricSave();
+handleClientNutritionSave();
+handleFoodSearch();
+handleFoodResultSelect();
+handleFoodSave();
+handleFoodDelete();
+handleFoodEntryDateChange();

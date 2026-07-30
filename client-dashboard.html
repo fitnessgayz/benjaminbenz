@@ -74,6 +74,7 @@
 
         <nav class="client-dashboard-tabs" aria-label="Client dashboard sections">
           <button class="client-dashboard-tab is-active" type="button" data-client-dashboard-tab="workouts" aria-selected="true">Workouts</button>
+          <button class="client-dashboard-tab" type="button" data-client-dashboard-tab="nutrition" aria-selected="false">Nutrition</button>
           <button class="client-dashboard-tab" type="button" data-client-dashboard-tab="progress" aria-selected="false">Progress / check-ins</button>
           <button class="client-dashboard-tab" type="button" data-client-dashboard-tab="logs" aria-selected="false">Logs</button>
           <button class="client-dashboard-tab" type="button" data-client-dashboard-tab="sessions" aria-selected="false">Sessions</button>
@@ -89,6 +90,167 @@
           </div>
           <div class="client-workout-tabs" id="client-workout-tabs" role="tablist" aria-label="Workout sessions"></div>
           <div class="client-workout-panels" id="client-workout-panels"></div>
+        </section>
+
+        <section class="progress-panel nutrition-panel" data-client-dashboard-panel="nutrition" aria-labelledby="client-nutrition-title" hidden>
+          <div class="panel-heading">
+            <div>
+              <p class="kicker">Nutrition</p>
+              <h2 id="client-nutrition-title">Calories and macros</h2>
+            </div>
+            <span class="status-pill" id="client-nutrition-status">Coach plan</span>
+          </div>
+          <div class="nutrition-macro-grid" id="client-nutrition-targets"></div>
+          <div class="nutrition-calculator-card">
+            <div>
+              <p class="kicker">Setup</p>
+              <h3>Find your starting target</h3>
+            </div>
+            <div class="nutrition-setup-grid" id="client-nutrition-setup">
+              <label>
+                Goal
+                <select name="nutrition_goal">
+                  <option value="fat_loss">Fat loss</option>
+                  <option value="muscle_gain">Muscle gain</option>
+                  <option value="recomposition">Build muscle and lean out</option>
+                  <option value="maintenance">Maintain</option>
+                </select>
+              </label>
+              <label>
+                Age
+                <input type="number" name="nutrition_age" inputmode="numeric" min="13" max="100" placeholder="35" />
+              </label>
+              <label>
+                Formula sex
+                <select name="nutrition_sex">
+                  <option value="">Select</option>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                </select>
+              </label>
+              <label>
+                Height
+                <input type="text" name="nutrition_height" placeholder="5'10&quot;" />
+              </label>
+              <label>
+                Current weight
+                <input type="number" name="nutrition_weight" inputmode="decimal" min="60" max="700" placeholder="180" />
+              </label>
+              <label>
+                Workouts per week
+                <select name="nutrition_workouts">
+                  <option value="0">0</option>
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
+                  <option value="5">5</option>
+                  <option value="6">6</option>
+                  <option value="7">7+</option>
+                </select>
+              </label>
+              <label>
+                Daily movement
+                <select name="nutrition_movement">
+                  <option value="mostly_sitting">Mostly sitting</option>
+                  <option value="mixed">Mixed</option>
+                  <option value="active_job">Active job</option>
+                </select>
+              </label>
+              <label>
+                Training intensity
+                <select name="nutrition_intensity">
+                  <option value="light">Light</option>
+                  <option value="moderate">Moderate</option>
+                  <option value="hard">Hard</option>
+                </select>
+              </label>
+            </div>
+            <button class="button button-dark" type="button" id="save-client-nutrition-button">Calculate and save</button>
+            <small id="client-nutrition-save-status">Estimated targets are a starting point.</small>
+          </div>
+          <div class="nutrition-client-guide">
+            <div>
+              <p class="kicker">Guide</p>
+              <h3>Build your plate</h3>
+            </div>
+            <p id="client-nutrition-guide"></p>
+            <div class="nutrition-guide-list">
+              <span>Protein: palm-sized portions</span>
+              <span>Vegetables: fist-sized portions</span>
+              <span>Carbs: cupped-hand portions</span>
+              <span>Fats: thumb-sized portions</span>
+            </div>
+          </div>
+          <div class="nutrition-food-log-card">
+            <div class="panel-heading compact-heading">
+              <div>
+                <p class="kicker">Food log</p>
+                <h3>Food entry</h3>
+              </div>
+              <span class="status-pill" id="client-food-log-count">No food yet</span>
+            </div>
+            <div class="food-entry-grid" id="client-food-entry-form">
+              <label>
+                Date
+                <input type="date" name="food_entry_date" />
+              </label>
+              <label>
+                Meal
+                <select name="food_meal">
+                  <option value="Breakfast">Breakfast</option>
+                  <option value="Lunch">Lunch</option>
+                  <option value="Dinner">Dinner</option>
+                  <option value="Snack">Snack</option>
+                </select>
+              </label>
+              <label class="food-search-field">
+                Search food
+                <input type="search" name="food_search" placeholder="Chicken breast, rice, protein bar..." />
+              </label>
+              <button class="button" type="button" id="search-food-button">Search food</button>
+              <label class="food-result-field" hidden>
+                Pick a result
+                <select id="food-search-results"></select>
+              </label>
+              <label>
+                Food
+                <input type="text" name="food_name" placeholder="Food name" />
+              </label>
+              <label>
+                Serving
+                <input type="text" name="food_serving" placeholder="1 cup, 100g, 1 bar" />
+              </label>
+              <label>
+                Calories
+                <input type="number" name="food_calories" inputmode="decimal" min="0" step="0.1" placeholder="0" />
+              </label>
+              <label>
+                Protein
+                <input type="number" name="food_protein" inputmode="decimal" min="0" step="0.1" placeholder="0g" />
+              </label>
+              <label>
+                Carbs
+                <input type="number" name="food_carbs" inputmode="decimal" min="0" step="0.1" placeholder="0g" />
+              </label>
+              <label>
+                Fat
+                <input type="number" name="food_fat" inputmode="decimal" min="0" step="0.1" placeholder="0g" />
+              </label>
+              <label class="food-notes-field">
+                Notes
+                <textarea name="food_notes" placeholder="Anything useful about this meal?"></textarea>
+              </label>
+            </div>
+            <div class="nutrition-actions food-log-actions">
+              <p id="food-entry-status" role="status">Search food or enter calories manually.</p>
+              <button class="button button-dark" type="button" id="save-food-entry-button">Save food</button>
+            </div>
+            <div class="food-log-summary" id="client-food-day-summary"></div>
+            <div class="food-log-list" id="client-food-log-list">
+              <p class="empty-state">No food logged yet.</p>
+            </div>
+          </div>
         </section>
 
         <section class="progress-panel" data-client-dashboard-panel="progress" aria-labelledby="progress-title" hidden>
