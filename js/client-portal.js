@@ -818,6 +818,102 @@ function applyFoodResult(food) {
   form.dataset.fdcId = food.fdcId || "";
 }
 
+function foodSearchString(value) {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function foodSearchNutrientAmount(food, names) {
+  const nutrients = Array.isArray(food?.foodNutrients) ? food.foodNutrients : [];
+
+  for (const nutrient of nutrients) {
+    if (!nutrient || typeof nutrient !== "object") {
+      continue;
+    }
+
+    const nutrientName = String(nutrient.nutrientName || nutrient.name || "").toLowerCase();
+    const hasMatch = names.some((name) => nutrientName === name || nutrientName.includes(name));
+
+    if (!hasMatch) {
+      continue;
+    }
+
+    const value = Number(nutrient.value ?? nutrient.amount);
+
+    if (Number.isFinite(value)) {
+      return Math.round(value * 10) / 10;
+    }
+  }
+
+  return null;
+}
+
+function foodSearchServingLabel(food) {
+  const household = foodSearchString(food?.householdServingFullText);
+
+  if (household) {
+    return household;
+  }
+
+  const size = Number(food?.servingSize);
+  const unit = foodSearchString(food?.servingSizeUnit);
+
+  if (Number.isFinite(size) && unit) {
+    return `${size}${unit}`;
+  }
+
+  return "100g";
+}
+
+function normalizeFoodSearchResult(food) {
+  const source = food && typeof food === "object" ? food : {};
+
+  return {
+    fdcId: String(source.fdcId || ""),
+    description: foodSearchString(source.description),
+    brandOwner: foodSearchString(source.brandOwner || source.brandName),
+    serving: foodSearchServingLabel(source),
+    calories: foodSearchNutrientAmount(source, ["energy"]),
+    protein: foodSearchNutrientAmount(source, ["protein"]),
+    carbs: foodSearchNutrientAmount(source, ["carbohydrate"]),
+    fat: foodSearchNutrientAmount(source, ["total lipid", "fat"])
+  };
+}
+
+async function searchUsdaFoodsDirect(query) {
+  const response = await fetch("https://api.nal.usda.gov/fdc/v1/foods/search?api_key=DEMO_KEY", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      query,
+      pageSize: 8,
+      dataType: ["Foundation", "SR Legacy", "Survey (FNDDS)", "Branded"]
+    })
+  });
+
+  if (!response.ok) {
+    throw new Error("Food lookup is not available. Enter food manually.");
+  }
+
+  const payload = await response.json().catch(() => ({}));
+  const foods = Array.isArray(payload.foods) ? payload.foods : [];
+
+  return foods.map(normalizeFoodSearchResult).filter((food) => food.description);
+}
+
+async function searchFoods(query) {
+  if (supabaseClient) {
+    const { data, error } = await supabaseClient.functions.invoke("food-search", {
+      body: { query }
+    });
+
+    if (!error) {
+      return Array.isArray(data?.foods) ? data.foods : [];
+    }
+  }
+
+  return searchUsdaFoodsDirect(query);
+}
+
 async function handleFoodSearch() {
   const button = document.getElementById("search-food-button");
 
@@ -836,25 +932,11 @@ async function handleFoodSearch() {
       return;
     }
 
-    if (!supabaseClient) {
-      setFoodEntryStatus("Food lookup is not configured. You can enter food manually.");
-      return;
-    }
-
     button.disabled = true;
     setFoodEntryStatus("Searching foods...");
 
     try {
-      const { data, error } = await supabaseClient.functions.invoke("food-search", {
-        body: { query }
-      });
-
-      if (error) {
-        setFoodEntryStatus(error.message || "Food lookup is not available. Enter food manually.");
-        return;
-      }
-
-      foodSearchResults = Array.isArray(data?.foods) ? data.foods : [];
+      foodSearchResults = await searchFoods(query);
 
       if (!foodSearchResults.length) {
         setFoodEntryStatus("No food matches found. Enter it manually.");
@@ -877,7 +959,7 @@ async function handleFoodSearch() {
       }
 
       applyFoodResult(foodSearchResults[0]);
-      setFoodEntryStatus("Pick the closest match, then adjust if needed.");
+      setFoodEntryStatus("Pick the closest match, then adjust the serving if needed.");
     } catch (error) {
       setFoodEntryStatus(error?.message || "Food lookup is not available. Enter food manually.");
     } finally {
