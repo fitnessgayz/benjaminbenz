@@ -74,7 +74,7 @@
 
         <nav class="client-dashboard-tabs" aria-label="Client dashboard sections">
           <button class="client-dashboard-tab is-active" type="button" data-client-dashboard-tab="workouts" aria-selected="true">Workouts</button>
-          <button class="client-dashboard-tab" type="button" data-client-dashboard-tab="nutrition" aria-selected="false">Nutrition</button>
+          <button class="client-dashboard-tab" type="button" data-client-dashboard-tab="nutrition" aria-selected="false">Food</button>
           <button class="client-dashboard-tab" type="button" data-client-dashboard-tab="progress" aria-selected="false">Progress / check-ins</button>
           <button class="client-dashboard-tab" type="button" data-client-dashboard-tab="logs" aria-selected="false">Logs</button>
           <button class="client-dashboard-tab" type="button" data-client-dashboard-tab="sessions" aria-selected="false">Sessions</button>
@@ -314,8 +314,8 @@
         <section class="progress-panel" data-client-dashboard-panel="logs" aria-labelledby="client-logs-title" hidden>
           <div class="panel-heading">
             <div>
-              <p class="kicker">Training logs</p>
-              <h2 id="client-logs-title">Saved weights</h2>
+              <p class="kicker">Training and nutrition logs</p>
+              <h2 id="client-logs-title">Saved logs</h2>
             </div>
             <span class="status-pill" id="client-logs-count">No logs yet</span>
           </div>
@@ -329,7 +329,7 @@
           </div>
           <p class="training-log-download-status" id="client-workout-history-download-status" aria-live="polite"></p>
           <div class="training-log-history" id="client-training-log-history">
-            <p class="empty-state">No weights logged yet.</p>
+            <p class="empty-state">No workout or nutrition logs yet.</p>
           </div>
         </section>
       </section>

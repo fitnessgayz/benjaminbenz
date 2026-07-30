@@ -774,6 +774,7 @@ function renderClientFoodLogs() {
 function populateFoodLogs(logs) {
   foodLogs = Array.isArray(logs) ? logs : [];
   renderClientFoodLogs();
+  renderClientTrainingLogs();
 }
 
 function resetFoodSearchResults() {
@@ -1068,6 +1069,7 @@ function handleFoodSave() {
 
       foodLogs = [data, ...foodLogs].sort((a, b) => String(b.entry_date || "").localeCompare(String(a.entry_date || "")));
       renderClientFoodLogs();
+      renderClientTrainingLogs();
       resetFoodEntryForm();
       setFoodEntryStatus("Food saved.");
     } catch (error) {
@@ -1109,6 +1111,7 @@ function handleFoodDelete() {
 
       foodLogs = foodLogs.filter((log) => String(log.id) !== String(id));
       renderClientFoodLogs();
+      renderClientTrainingLogs();
       setFoodEntryStatus("Food deleted.");
     } catch (error) {
       setFoodEntryStatus(error?.message || "Could not delete food.");
@@ -2477,6 +2480,82 @@ function handleTrainingDateChange() {
   });
 }
 
+function sortedFoodLogDayGroups(logs = []) {
+  const grouped = logs.reduce((groups, log) => {
+    const date = log.entry_date || "";
+
+    if (!groups.has(date)) {
+      groups.set(date, []);
+    }
+
+    groups.get(date).push(log);
+    return groups;
+  }, new Map());
+
+  return Array.from(grouped.entries())
+    .sort(([left], [right]) => String(right).localeCompare(String(left)))
+    .map(([date, entries]) => ({
+      entry_date: date,
+      entries: [...entries].sort((a, b) => {
+        const left = [
+          b.entry_date || "",
+          b.created_at || "",
+          b.meal || "",
+          b.food_name || ""
+        ].join("::");
+        const right = [
+          a.entry_date || "",
+          a.created_at || "",
+          a.meal || "",
+          a.food_name || ""
+        ].join("::");
+
+        return left.localeCompare(right);
+      })
+    }));
+}
+
+function nutritionLogHistorySections(logs = []) {
+  return sortedFoodLogDayGroups(logs).map((day) => {
+    const totals = foodLogTotals(day.entries);
+    const macroSummary = [
+      `${foodLogNumberLabel(totals.calories)} cal`,
+      `${foodLogNumberLabel(totals.protein, "g")} protein`,
+      `${foodLogNumberLabel(totals.carbs, "g")} carbs`,
+      `${foodLogNumberLabel(totals.fat, "g")} fat`
+    ].join(" · ");
+
+    return {
+      sort_key: `${day.entry_date || ""}::nutrition`,
+      html: `
+        <section class="training-log-workout-group training-log-nutrition-group">
+          <div class="training-log-workout-heading">
+            <strong>${escapeHtml(formatLogDate(day.entry_date))}</strong>
+            <span>${escapeHtml(`Nutrition · ${macroSummary}`)}</span>
+          </div>
+          <div class="training-log-exercise-list">
+            ${day.entries.map((log) => `
+              <article class="training-log-row training-log-row-compact training-log-row-nested">
+                <div class="training-log-row-main">
+                  <span>${escapeHtml(log.food_name || "Food")}</span>
+                  <em>${escapeHtml([log.meal, log.serving].filter(Boolean).join(" · ") || "Food entry")}</em>
+                  <small class="training-log-notes">${escapeHtml([
+                    `${foodLogNumberLabel(log.calories)} cal`,
+                    `${foodLogNumberLabel(log.protein, "g")} protein`,
+                    `${foodLogNumberLabel(log.carbs, "g")} carbs`,
+                    `${foodLogNumberLabel(log.fat, "g")} fat`
+                  ].join(" · "))}</small>
+                  ${log.notes ? `<small class="training-log-notes"><strong>Notes:</strong> ${escapeHtml(log.notes)}</small>` : ""}
+                </div>
+              </article>
+            `).join("")}
+          </div>
+        </section>
+      `
+    };
+  });
+}
+
 function renderClientTrainingLogs() {
   const history = document.getElementById("client-training-log-history");
   const count = document.getElementById("client-logs-count");
@@ -2488,15 +2567,18 @@ function renderClientTrainingLogs() {
   const filteredLogs = clientTrainingLogDateFilter
     ? trainingLogs.filter((log) => String(log.entry_date || "") === clientTrainingLogDateFilter)
     : trainingLogs;
+  const filteredFoodLogs = clientTrainingLogDateFilter
+    ? foodLogs.filter((log) => String(log.entry_date || "") === clientTrainingLogDateFilter)
+    : foodLogs;
 
-  if (filteredLogs.length === 0) {
+  if (filteredLogs.length === 0 && filteredFoodLogs.length === 0) {
     if (count) {
       count.textContent = clientTrainingLogDateFilter ? "No logs for that date" : "No logs yet";
     }
 
     history.innerHTML = clientTrainingLogDateFilter
-      ? '<p class="empty-state">No workout logs for that date.</p>'
-      : '<p class="empty-state">No weights logged yet.</p>';
+      ? '<p class="empty-state">No workout or nutrition logs for that date.</p>'
+      : '<p class="empty-state">No workout or nutrition logs yet.</p>';
     return;
   }
 
@@ -2561,95 +2643,110 @@ function renderClientTrainingLogs() {
   });
 
   if (count) {
-    count.textContent = `${workoutSections.length} ${workoutSections.length === 1 ? "session" : "sessions"}`;
+    const nutritionDays = sortedFoodLogDayGroups(filteredFoodLogs).length;
+    const sessionLabel = `${workoutSections.length} ${workoutSections.length === 1 ? "session" : "sessions"}`;
+    const nutritionLabel = `${nutritionDays} nutrition ${nutritionDays === 1 ? "day" : "days"}`;
+
+    count.textContent = filteredFoodLogs.length
+      ? `${sessionLabel} · ${nutritionLabel}`
+      : sessionLabel;
   }
 
-  history.innerHTML = workoutSections.map((workout) => {
+  const workoutHistorySections = workoutSections.map((workout) => {
     const supersets = Array.from(workout.supersets.values()).sort((a, b) => a.key.localeCompare(b.key));
 
-    return `
-      <section class="training-log-workout-group">
-        <div class="training-log-workout-heading">
-          <strong>${escapeHtml(formatLogDate(workout.entry_date))}</strong>
-          <span>${escapeHtml(workout.workout_title)}</span>
-        </div>
-        <div class="training-log-superset-list">
-          ${supersets.map((superset) => {
-            const exercises = Array.from(superset.exercises.values()).sort((a, b) => {
-              const left = `${a.exercise_code} ${a.exercise_name}`;
-              const right = `${b.exercise_code} ${b.exercise_name}`;
-              return left.localeCompare(right);
-            });
+    return {
+      sort_key: `${workout.entry_date || ""}::workout::${workout.workout_title || ""}`,
+      html: `
+        <section class="training-log-workout-group">
+          <div class="training-log-workout-heading">
+            <strong>${escapeHtml(formatLogDate(workout.entry_date))}</strong>
+            <span>${escapeHtml(workout.workout_title)}</span>
+          </div>
+          <div class="training-log-superset-list">
+            ${supersets.map((superset) => {
+              const exercises = Array.from(superset.exercises.values()).sort((a, b) => {
+                const left = `${a.exercise_code} ${a.exercise_name}`;
+                const right = `${b.exercise_code} ${b.exercise_name}`;
+                return left.localeCompare(right);
+              });
 
-            return `
-              <section class="training-log-superset-group">
-                <div class="training-log-superset-heading">${escapeHtml(
-                  superset.key === "WARMUP"
-                    ? "Warm up"
-                    : superset.key === "CARDIO"
-                      ? "Cardio"
-                      : superset.key === "OTHER" ? "Other" : `Superset ${superset.key}`
-                )}</div>
-                <div class="training-log-exercise-list">
-                  ${exercises.map((entry) => {
-                    const noteSummary = Array.from(new Set(entry.sets
-                      .map((set) => String(set.notes || "").trim())
-                      .filter(Boolean)))
-                      .join("  |  ");
-                    const setSummary = entry.exercise_code === warmupExerciseCode
-                      ? entry.sets
+              return `
+                <section class="training-log-superset-group">
+                  <div class="training-log-superset-heading">${escapeHtml(
+                    superset.key === "WARMUP"
+                      ? "Warm up"
+                      : superset.key === "CARDIO"
+                        ? "Cardio"
+                        : superset.key === "OTHER" ? "Other" : `Superset ${superset.key}`
+                  )}</div>
+                  <div class="training-log-exercise-list">
+                    ${exercises.map((entry) => {
+                      const noteSummary = Array.from(new Set(entry.sets
+                        .map((set) => String(set.notes || "").trim())
+                        .filter(Boolean)))
+                        .join("  |  ");
+                      const setSummary = entry.exercise_code === warmupExerciseCode
+                        ? entry.sets
+                          .sort((a, b) => Number(a.set_number || 0) - Number(b.set_number || 0))
+                          .map((set) => warmupDisplay(set))
+                          .filter(Boolean)
+                          .join("  |  ")
+                        : entry.exercise_code === cardioExerciseCode
+                        ? entry.sets
+                          .sort((a, b) => Number(a.set_number || 0) - Number(b.set_number || 0))
+                          .map((set) => cardioDisplay(set))
+                          .filter(Boolean)
+                          .join("  |  ")
+                        : entry.sets
                         .sort((a, b) => Number(a.set_number || 0) - Number(b.set_number || 0))
-                        .map((set) => warmupDisplay(set))
+                        .map((set) => {
+                          const parts = [];
+
+                          if (set.set_number) {
+                            parts.push(`Set ${set.set_number}`);
+                          }
+
+                          if (set.weight_used !== null && set.weight_used !== undefined && set.weight_used !== "") {
+                            parts.push(`${set.weight_used} lb${set.reps ? ` x ${set.reps}` : ""}`);
+                          } else if (set.reps) {
+                            parts.push(`${set.reps} reps`);
+                          }
+
+                          return parts.join(": ");
+                        })
                         .filter(Boolean)
-                        .join("  |  ")
-                      : entry.exercise_code === cardioExerciseCode
-                      ? entry.sets
-                        .sort((a, b) => Number(a.set_number || 0) - Number(b.set_number || 0))
-                        .map((set) => cardioDisplay(set))
-                        .filter(Boolean)
-                        .join("  |  ")
-                      : entry.sets
-                      .sort((a, b) => Number(a.set_number || 0) - Number(b.set_number || 0))
-                      .map((set) => {
-                        const parts = [];
+                        .join("  |  ");
 
-                        if (set.set_number) {
-                          parts.push(`Set ${set.set_number}`);
-                        }
+                      return `
+                        <article class="training-log-row training-log-row-compact training-log-row-nested">
+                          <div class="training-log-row-main">
+                            <span>${escapeHtml(
+                              entry.exercise_code === warmupExerciseCode || entry.exercise_code === cardioExerciseCode
+                                ? entry.exercise_name
+                                : `${entry.exercise_code} ${entry.exercise_name}`
+                            )}</span>
+                            <em>${escapeHtml(setSummary || "Sets saved")}</em>
+                            ${noteSummary ? `<small class="training-log-notes"><strong>Notes:</strong> ${escapeHtml(noteSummary)}</small>` : ""}
+                          </div>
+                        </article>
+                      `;
+                    }).join("")}
+                  </div>
+                </section>
+              `;
+            }).join("")}
+          </div>
+        </section>
+      `
+    };
+  });
+  const nutritionHistorySections = nutritionLogHistorySections(filteredFoodLogs);
 
-                        if (set.weight_used !== null && set.weight_used !== undefined && set.weight_used !== "") {
-                          parts.push(`${set.weight_used} lb${set.reps ? ` x ${set.reps}` : ""}`);
-                        } else if (set.reps) {
-                          parts.push(`${set.reps} reps`);
-                        }
-
-                        return parts.join(": ");
-                      })
-                      .filter(Boolean)
-                      .join("  |  ");
-
-                    return `
-                      <article class="training-log-row training-log-row-compact training-log-row-nested">
-                        <div class="training-log-row-main">
-                          <span>${escapeHtml(
-                            entry.exercise_code === warmupExerciseCode || entry.exercise_code === cardioExerciseCode
-                              ? entry.exercise_name
-                              : `${entry.exercise_code} ${entry.exercise_name}`
-                          )}</span>
-                          <em>${escapeHtml(setSummary || "Sets saved")}</em>
-                          ${noteSummary ? `<small class="training-log-notes"><strong>Notes:</strong> ${escapeHtml(noteSummary)}</small>` : ""}
-                        </div>
-                      </article>
-                    `;
-                  }).join("")}
-                </div>
-              </section>
-            `;
-          }).join("")}
-        </div>
-      </section>
-    `;
-  }).join("");
+  history.innerHTML = [...workoutHistorySections, ...nutritionHistorySections]
+    .sort((a, b) => b.sort_key.localeCompare(a.sort_key))
+    .map((section) => section.html)
+    .join("");
 }
 
 function csvCell(value) {
