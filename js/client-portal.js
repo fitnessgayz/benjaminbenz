@@ -404,6 +404,21 @@ function nutritionTargetLabel(value) {
   return value || "Not set";
 }
 
+function editableNutritionTargetCard(label, name, value, placeholder) {
+  return `
+    <label class="nutrition-macro-card nutrition-macro-edit">
+      <span>${escapeHtml(label)}</span>
+      <input
+        type="text"
+        name="${escapeHtml(name)}"
+        value="${escapeHtml(value || "")}"
+        data-default-value="${escapeHtml(value || "")}"
+        placeholder="${escapeHtml(placeholder)}"
+      />
+    </label>
+  `;
+}
+
 function numberValue(value) {
   const parsed = Number.parseFloat(String(value || "").replace(/[^0-9.]/g, ""));
 
@@ -585,27 +600,21 @@ function renderClientNutrition(program) {
   const hasTargets = Boolean(nutrition.calories || nutrition.protein || nutrition.carbs || nutrition.fat || nutrition.guide);
 
   if (status) {
-    status.textContent = nutrition.source === "client_calculator" ? "Client setup" : hasTargets ? "Coach plan" : "Not set yet";
+    status.textContent = nutrition.source === "client_calculator"
+      ? "Client setup"
+      : nutrition.source === "client_manual"
+        ? "Client edited"
+        : hasTargets
+          ? "Coach plan"
+          : "Not set yet";
   }
 
   if (targets) {
     targets.innerHTML = `
-      <article class="nutrition-macro-card">
-        <span>Calories</span>
-        <strong>${escapeHtml(nutritionTargetLabel(nutrition.calories))}</strong>
-      </article>
-      <article class="nutrition-macro-card">
-        <span>Protein</span>
-        <strong>${escapeHtml(nutritionTargetLabel(nutrition.protein))}</strong>
-      </article>
-      <article class="nutrition-macro-card">
-        <span>Carbs</span>
-        <strong>${escapeHtml(nutritionTargetLabel(nutrition.carbs))}</strong>
-      </article>
-      <article class="nutrition-macro-card">
-        <span>Fat</span>
-        <strong>${escapeHtml(nutritionTargetLabel(nutrition.fat))}</strong>
-      </article>
+      ${editableNutritionTargetCard("Calories", "client_nutrition_calories", nutrition.calories, "2,400 cal")}
+      ${editableNutritionTargetCard("Protein", "client_nutrition_protein", nutrition.protein, "180g")}
+      ${editableNutritionTargetCard("Carbs", "client_nutrition_carbs", nutrition.carbs, "250g")}
+      ${editableNutritionTargetCard("Fat", "client_nutrition_fat", nutrition.fat, "75g")}
     `;
   }
 
@@ -1997,7 +2006,7 @@ function customWorkoutCardMarkup(exercise, workoutTitle) {
           rest: exercise.rest || ""
         }, workoutTitle, {
           panelClass: "custom-exercise-log",
-          showSubmit: false
+          showSubmit: true
         })}
       </div>
     </article>
@@ -3206,6 +3215,51 @@ function clientNutritionFormValues() {
   };
 }
 
+function clientNutritionTargetValues(options = {}) {
+  const targets = document.getElementById("client-nutrition-targets");
+
+  if (!targets) {
+    return {};
+  }
+
+  const targetValue = (name) => {
+    const input = targets.querySelector(`[name="${name}"]`);
+    const value = input?.value.trim() || "";
+
+    if (options.onlyChanged && value === (input?.dataset.defaultValue || "")) {
+      return "";
+    }
+
+    return value;
+  };
+
+  return {
+    calories: targetValue("client_nutrition_calories"),
+    protein: targetValue("client_nutrition_protein"),
+    carbs: targetValue("client_nutrition_carbs"),
+    fat: targetValue("client_nutrition_fat")
+  };
+}
+
+function manualNutritionPlan(values) {
+  const existing = nutritionPlanFromProgram(currentProgram);
+
+  return {
+    ...existing,
+    guide: existing.guide || "Review these targets with Benjamin and adjust based on energy, hunger, performance, and progress.",
+    source: "client_manual",
+    goal: values.goal,
+    sex: values.sex,
+    age: values.age,
+    height: values.height,
+    current_weight: values.current_weight,
+    workouts_per_week: values.workouts_per_week,
+    daily_movement: values.daily_movement,
+    training_intensity: values.training_intensity,
+    updated_at: new Date().toISOString()
+  };
+}
+
 async function saveClientNutritionPlan() {
   if (!supabaseClient || !currentProgram?.id) {
     return { error: new Error("Nutrition setup is not connected yet.") };
@@ -3217,15 +3271,30 @@ async function saveClientNutritionPlan() {
     return { error: new Error("Nutrition fields are not available.") };
   }
 
+  const targetValues = clientNutritionTargetValues();
+  const changedTargetValues = clientNutritionTargetValues({ onlyChanged: true });
+  const hasTargetValues = Object.values(targetValues).some(Boolean);
+  const hasChangedTargetValues = Object.values(changedTargetValues).some(Boolean);
   const { plan, error: calculationError } = calculateNutritionPlan(values);
 
-  if (calculationError) {
+  if (calculationError && !hasTargetValues) {
     return { error: calculationError };
   }
 
+  const basePlan = calculationError ? manualNutritionPlan(values) : plan;
+  const overrideValues = calculationError ? targetValues : changedTargetValues;
+  const editablePlan = {
+    ...basePlan,
+    calories: overrideValues.calories || basePlan.calories,
+    protein: overrideValues.protein || basePlan.protein,
+    carbs: overrideValues.carbs || basePlan.carbs,
+    fat: overrideValues.fat || basePlan.fat,
+    source: calculationError || hasChangedTargetValues ? "client_manual" : basePlan.source
+  };
+
   const { data, error } = await supabaseClient
     .from("client_programs")
-    .update({ nutrition_plan: plan })
+    .update({ nutrition_plan: editablePlan })
     .eq("id", currentProgram.id)
     .select("*")
     .single();

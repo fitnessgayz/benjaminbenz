@@ -3467,6 +3467,26 @@ footer {
   overflow-wrap: anywhere;
 }
 
+.nutrition-macro-edit input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+  color: var(--black);
+  font: inherit;
+  font-size: clamp(1.3rem, 2.6vw, 2rem);
+  font-weight: 900;
+  line-height: 1;
+  padding: 6px 0 4px;
+}
+
+.nutrition-macro-edit input:focus {
+  outline: 2px solid var(--acid);
+  outline-offset: 4px;
+}
+
 .nutrition-client-guide p,
 .nutrition-guide-preview p {
   margin: 0;
