@@ -7,6 +7,9 @@ verify_jwt = false
 [functions.manage-client-program]
 verify_jwt = false
 
+[functions.save-client-program]
+verify_jwt = false
+
 [functions.notify-client-password-set]
 verify_jwt = false
 

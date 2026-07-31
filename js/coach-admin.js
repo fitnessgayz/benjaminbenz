@@ -1230,6 +1230,39 @@ async function manageClientProgram(program, action) {
   return { data: safeResult };
 }
 
+async function saveClientProgramWithCoachAccess(payload, id = "") {
+  const token = await coachSessionToken();
+
+  if (!token) {
+    return { error: { message: "Sign in as coach first." } };
+  }
+
+  const response = await fetch(`${coachConfig.url}/functions/v1/save-client-program`, {
+    method: "POST",
+    headers: {
+      "apikey": coachConfig.anonKey,
+      "Authorization": `Bearer ${token}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      program_id: id,
+      program: payload
+    })
+  });
+  const result = await response.json().catch(() => ({}));
+  const safeResult = result && typeof result === "object" ? result : {};
+
+  if (!response.ok) {
+    return {
+      error: {
+        message: safeResult.error || safeResult.message || "Could not save client."
+      }
+    };
+  }
+
+  return { data: safeResult.program || safeResult.data };
+}
+
 function profileChanged(program, profile) {
   if (!program) {
     return false;
@@ -1339,38 +1372,18 @@ async function saveProgramFromForm(form) {
     }
   }
 
-  if (payload.active) {
-    let archiveQuery = coachSupabase
-      .from("client_programs")
-      .update({ active: false })
-      .eq("client_email", payload.client_email)
-      .eq("active", true);
-
-    if (id) {
-      archiveQuery = archiveQuery.neq("id", id);
-    }
-
-    const { error: archiveError } = await archiveQuery;
-
-    if (archiveError) {
-      return { error: archiveError };
-    }
-
-    programs = programs.map((program) => (
-      program.client_email === payload.client_email && program.id !== id
-        ? { ...program, active: false }
-        : program
-    ));
-  }
-
-  const query = id
-    ? coachSupabase.from("client_programs").update(payload).eq("id", id).select("*").single()
-    : coachSupabase.from("client_programs").insert(payload).select("*").single();
-
-  const { data, error } = await query;
+  const { data, error } = await saveClientProgramWithCoachAccess(payload, id);
 
   if (error) {
     return { error };
+  }
+
+  if (payload.active) {
+    programs = programs.map((program) => (
+      normalizeEmail(program.client_email) === payload.client_email && program.id !== data.id
+        ? { ...program, active: false }
+        : program
+    ));
   }
 
   const existingIndex = programs.findIndex((program) => program.id === data.id);
@@ -1391,41 +1404,7 @@ async function saveProgramFromForm(form) {
 }
 
 async function saveTrainingBlockFromForm(form) {
-  const id = form.elements.id.value;
-
-  if (!id) {
-    return saveProgramFromForm(form);
-  }
-
-  const payload = {
-    program_title: formValue(form, "program_title") || "Client Program",
-    fitness_goal: formValue(form, "fitness_goal"),
-    focus_target: formValue(form, "focus_target"),
-    program_summary: formValue(form, "program_summary")
-  };
-
-  const { data, error } = await coachSupabase
-    .from("client_programs")
-    .update(payload)
-    .eq("id", id)
-    .select("*")
-    .single();
-
-  if (error) {
-    return { error };
-  }
-
-  const existingIndex = programs.findIndex((program) => program.id === data.id);
-
-  if (existingIndex >= 0) {
-    programs[existingIndex] = data;
-  }
-
-  fillForm(data);
-  renderClientList();
-  renderProgramHistory(data.client_email);
-
-  return { data };
+  return saveProgramFromForm(form);
 }
 
 function clearProgramFields(form) {
