@@ -518,7 +518,7 @@ function calculateNutritionPlan(values) {
   const heightInches = nutritionHeightInches(values.height);
 
   if (!age || !weightLbs || !heightInches || !values.sex) {
-    return { error: new Error("Add age, formula sex, height, and current weight first.") };
+    return { error: new Error("Add age, sex, height, and current weight first.") };
   }
 
   const weightKg = weightLbs * 0.45359237;
@@ -2222,6 +2222,24 @@ function warmupDisplay(log) {
   return parts.join(" · ") || "Warm-up saved";
 }
 
+function exerciseNoteSummary(sets = []) {
+  const notes = sets
+    .map((set) => ({
+      setNumber: set.set_number,
+      note: String(set.notes || "").trim()
+    }))
+    .filter((set) => set.note);
+  const uniqueNotes = Array.from(new Set(notes.map((set) => set.note)));
+
+  if (uniqueNotes.length <= 1) {
+    return uniqueNotes[0] || "";
+  }
+
+  return notes
+    .map((set) => `${set.setNumber ? `Set ${set.setNumber}: ` : ""}${set.note}`)
+    .join("  |  ");
+}
+
 function formatLogDate(value) {
   if (!value) {
     return "";
@@ -2691,10 +2709,7 @@ function renderClientTrainingLogs() {
                   )}</div>
                   <div class="training-log-exercise-list">
                     ${exercises.map((entry) => {
-                      const noteSummary = Array.from(new Set(entry.sets
-                        .map((set) => String(set.notes || "").trim())
-                        .filter(Boolean)))
-                        .join("  |  ");
+                      const noteSummary = exerciseNoteSummary(entry.sets);
                       const setSummary = entry.exercise_code === warmupExerciseCode
                         ? entry.sets
                           .sort((a, b) => Number(a.set_number || 0) - Number(b.set_number || 0))
