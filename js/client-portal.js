@@ -14,6 +14,7 @@ let trainingLogs = [];
 let foodLogs = [];
 let foodSearchResults = [];
 let clientTrainingLogDateFilter = "";
+let clientTrainingLogSearchFilter = "";
 let activeClientDashboardTab = "workouts";
 let activeWorkoutTabIndex = 0;
 let currentProgram = null;
@@ -49,6 +50,40 @@ function escapeHtml(value) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
+}
+
+function normalizeLogSearch(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function clientTrainingLogMatchesSearch(log, query) {
+  const term = normalizeLogSearch(query);
+
+  if (!term) {
+    return true;
+  }
+
+  return [
+    log.workout_title,
+    log.exercise_code,
+    log.exercise_name,
+    log.notes
+  ].some((value) => normalizeLogSearch(value).includes(term));
+}
+
+function clientFoodLogMatchesSearch(log, query) {
+  const term = normalizeLogSearch(query);
+
+  if (!term) {
+    return true;
+  }
+
+  return [
+    log.meal,
+    log.food_name,
+    log.serving,
+    log.notes
+  ].some((value) => normalizeLogSearch(value).includes(term));
 }
 
 function trustedClientSheetUrl(value) {
@@ -2591,20 +2626,26 @@ function renderClientTrainingLogs() {
     return;
   }
 
-  const filteredLogs = clientTrainingLogDateFilter
-    ? trainingLogs.filter((log) => String(log.entry_date || "") === clientTrainingLogDateFilter)
-    : trainingLogs;
-  const filteredFoodLogs = clientTrainingLogDateFilter
-    ? foodLogs.filter((log) => String(log.entry_date || "") === clientTrainingLogDateFilter)
-    : foodLogs;
+  const filteredLogs = trainingLogs.filter((log) => {
+    const matchesDate = !clientTrainingLogDateFilter || String(log.entry_date || "") === clientTrainingLogDateFilter;
+
+    return matchesDate && clientTrainingLogMatchesSearch(log, clientTrainingLogSearchFilter);
+  });
+  const filteredFoodLogs = foodLogs.filter((log) => {
+    const matchesDate = !clientTrainingLogDateFilter || String(log.entry_date || "") === clientTrainingLogDateFilter;
+
+    return matchesDate && clientFoodLogMatchesSearch(log, clientTrainingLogSearchFilter);
+  });
 
   if (filteredLogs.length === 0 && filteredFoodLogs.length === 0) {
+    const hasFilter = clientTrainingLogDateFilter || clientTrainingLogSearchFilter;
+
     if (count) {
-      count.textContent = clientTrainingLogDateFilter ? "No logs for that date" : "No logs yet";
+      count.textContent = hasFilter ? "No matching logs" : "No logs yet";
     }
 
-    history.innerHTML = clientTrainingLogDateFilter
-      ? '<p class="empty-state">No workout or nutrition logs for that date.</p>'
+    history.innerHTML = hasFilter
+      ? '<p class="empty-state">No workout or nutrition logs match that search.</p>'
       : '<p class="empty-state">No workout or nutrition logs yet.</p>';
     return;
   }
@@ -2905,9 +2946,10 @@ function handleClientWorkoutHistoryDownload() {
 
 function handleClientTrainingLogDateFilter() {
   const input = document.getElementById("client-training-log-date-filter");
+  const searchInput = document.getElementById("client-training-log-search-filter");
   const clearButton = document.getElementById("clear-client-training-log-date-filter");
 
-  if (!input || !clearButton) {
+  if (!input || !searchInput || !clearButton) {
     return;
   }
 
@@ -2916,9 +2958,16 @@ function handleClientTrainingLogDateFilter() {
     renderClientTrainingLogs();
   });
 
+  searchInput.addEventListener("input", () => {
+    clientTrainingLogSearchFilter = searchInput.value || "";
+    renderClientTrainingLogs();
+  });
+
   clearButton.addEventListener("click", () => {
     clientTrainingLogDateFilter = "";
+    clientTrainingLogSearchFilter = "";
     input.value = "";
+    searchInput.value = "";
     renderClientTrainingLogs();
   });
 }

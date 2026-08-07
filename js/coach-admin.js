@@ -21,6 +21,7 @@ let trainingLogs = [];
 let foodLogs = [];
 let recentTrainingLogs = [];
 let trainingLogDateFilter = "";
+let trainingLogSearchFilter = "";
 let showingArchivedClients = false;
 let clientSearchTerm = "";
 let activeAdminTab = "clients";
@@ -161,6 +162,25 @@ function escapeHtml(value) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
+}
+
+function normalizeLogSearch(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function trainingLogMatchesSearch(log, query) {
+  const term = normalizeLogSearch(query);
+
+  if (!term) {
+    return true;
+  }
+
+  return [
+    log.workout_title,
+    log.exercise_code,
+    log.exercise_name,
+    log.notes
+  ].some((value) => normalizeLogSearch(value).includes(term));
 }
 
 function parseCardioNotes(notes = "") {
@@ -1657,13 +1677,15 @@ function renderTrainingLogs() {
     return;
   }
 
-  const filteredLogs = trainingLogDateFilter
-    ? trainingLogs.filter((log) => String(log.entry_date || "") === trainingLogDateFilter)
-    : trainingLogs;
+  const filteredLogs = trainingLogs.filter((log) => {
+    const matchesDate = !trainingLogDateFilter || String(log.entry_date || "") === trainingLogDateFilter;
+
+    return matchesDate && trainingLogMatchesSearch(log, trainingLogSearchFilter);
+  });
 
   if (filteredLogs.length === 0) {
-    history.innerHTML = trainingLogDateFilter
-      ? '<p class="empty-state">No workout logs for that date.</p>'
+    history.innerHTML = trainingLogDateFilter || trainingLogSearchFilter
+      ? '<p class="empty-state">No workout logs match that search.</p>'
       : '<p class="empty-state">No weights logged yet.</p>';
     return;
   }
@@ -1815,9 +1837,10 @@ function renderTrainingLogs() {
 
 function handleTrainingLogDateFilter() {
   const input = document.getElementById("training-log-date-filter");
+  const searchInput = document.getElementById("training-log-search-filter");
   const clearButton = document.getElementById("clear-training-log-date-filter");
 
-  if (!input || !clearButton) {
+  if (!input || !searchInput || !clearButton) {
     return;
   }
 
@@ -1826,9 +1849,16 @@ function handleTrainingLogDateFilter() {
     renderTrainingLogs();
   });
 
+  searchInput.addEventListener("input", () => {
+    trainingLogSearchFilter = searchInput.value || "";
+    renderTrainingLogs();
+  });
+
   clearButton.addEventListener("click", () => {
     trainingLogDateFilter = "";
+    trainingLogSearchFilter = "";
     input.value = "";
+    searchInput.value = "";
     renderTrainingLogs();
   });
 }
