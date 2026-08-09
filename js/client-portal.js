@@ -13,9 +13,10 @@ let activeClientEmail = "";
 let trainingLogs = [];
 let foodLogs = [];
 let foodSearchResults = [];
+let progressEntries = [];
 let clientTrainingLogDateFilter = "";
 let clientTrainingLogSearchFilter = "";
-let activeClientDashboardTab = "workouts";
+let activeClientDashboardTab = "home";
 let activeWorkoutTabIndex = 0;
 let currentProgram = null;
 const dashboardRequestTimeout = 15000;
@@ -56,34 +57,37 @@ function normalizeLogSearch(value) {
   return String(value || "").trim().toLowerCase();
 }
 
-function clientTrainingLogMatchesSearch(log, query) {
+function logFieldsMatchSearch(fields, query) {
   const term = normalizeLogSearch(query);
 
   if (!term) {
     return true;
   }
 
-  return [
+  const haystack = fields.map((value) => normalizeLogSearch(value)).join(" ");
+  const tokens = term.split(/\s+/).filter(Boolean);
+
+  return tokens.every((token) => haystack.includes(token));
+}
+
+function clientTrainingLogMatchesSearch(log, query) {
+  return logFieldsMatchSearch([
+    log.entry_date,
     log.workout_title,
     log.exercise_code,
     log.exercise_name,
     log.notes
-  ].some((value) => normalizeLogSearch(value).includes(term));
+  ], query);
 }
 
 function clientFoodLogMatchesSearch(log, query) {
-  const term = normalizeLogSearch(query);
-
-  if (!term) {
-    return true;
-  }
-
-  return [
+  return logFieldsMatchSearch([
+    log.entry_date,
     log.meal,
     log.food_name,
     log.serving,
     log.notes
-  ].some((value) => normalizeLogSearch(value).includes(term));
+  ], query);
 }
 
 function trustedClientSheetUrl(value) {
@@ -306,6 +310,8 @@ function renderClientSessionManualState(program = {}) {
       packageList.innerHTML = '<p class="empty-state">No archived packages yet.</p>';
     }
   }
+
+  renderClientHomeSummary();
 }
 
 function setText(selector, value) {
@@ -313,6 +319,115 @@ function setText(selector, value) {
 
   if (element) {
     element.textContent = value || "";
+  }
+}
+
+function latestWorkoutLogSummary() {
+  const workoutLogs = trainingLogs
+    .filter((log) => log.exercise_code !== warmupExerciseCode && log.exercise_code !== cardioExerciseCode)
+    .slice()
+    .sort((a, b) => {
+      const left = `${b.entry_date || ""} ${b.created_at || ""}`;
+      const right = `${a.entry_date || ""} ${a.created_at || ""}`;
+
+      return left.localeCompare(right);
+    });
+  const latest = workoutLogs[0];
+
+  if (!latest) {
+    return null;
+  }
+
+  const sameWorkoutLogs = workoutLogs.filter((log) => (
+    String(log.entry_date || "") === String(latest.entry_date || "") &&
+    String(log.workout_title || "") === String(latest.workout_title || "")
+  ));
+  const exerciseNames = new Set(sameWorkoutLogs.map((log) => log.exercise_name).filter(Boolean));
+
+  return {
+    date: latest.entry_date || "",
+    title: latest.workout_title || "Workout",
+    exerciseCount: exerciseNames.size
+  };
+}
+
+function renderClientHomeSummary() {
+  const homePanel = document.querySelector('[data-client-dashboard-panel="home"]');
+
+  if (!homePanel || !currentProgram) {
+    return;
+  }
+
+  const workouts = Array.isArray(currentProgram.workouts) ? currentProgram.workouts : [];
+  const nextWorkout = workouts[activeWorkoutTabIndex] || workouts[0] || {};
+  const used = normalizeClientSessionCount(currentProgram.session_count_used);
+  const total = normalizeClientSessionCount(currentProgram.session_count_total);
+  const todayFoodTotals = foodLogTotals(foodLogs.filter((log) => String(log.entry_date || "") === todayDate()));
+  const nutrition = nutritionPlanFromProgram(currentProgram);
+  const latestWorkout = latestWorkoutLogSummary();
+  const latestProgress = progressEntries[progressEntries.length - 1];
+  const noteTitle = String(currentProgram.coach_note_title || "").trim();
+  const noteBody = String(currentProgram.coach_note_body || "").trim();
+  const checklist = document.getElementById("client-home-checklist");
+
+  setText("#client-home-status", workouts.length ? "Ready" : "Setup");
+  setText("#client-home-workout-title", nextWorkout.title || "Workout");
+  setText("#client-home-workout-meta", [
+    nextWorkout.focus || "",
+    nextWorkout.format ? formatLabel(inferWorkoutFormat(nextWorkout)) : ""
+  ].filter(Boolean).join(" · ") || "Your training is ready.");
+  setText("#client-home-session-count", total > 0 ? `${used}/${total}` : (used > 0 ? `${used} used` : "--"));
+  setText("#client-home-session-meta", total > 0
+    ? `${Math.max(total - used, 0)} sessions remaining in this package.`
+    : "Your coach will update your sessions.");
+  setText("#client-home-latest-workout", latestWorkout ? latestWorkout.title : "No workout logged yet");
+  setText("#client-home-latest-workout-meta", latestWorkout
+    ? `${formatLogDate(latestWorkout.date)} · ${latestWorkout.exerciseCount || 0} exercises logged`
+    : "Finished workouts will appear here.");
+  setText("#client-home-food-total", `${foodLogNumberLabel(todayFoodTotals.calories)} calories`);
+  setText("#client-home-food-meta", [
+    `${foodLogNumberLabel(todayFoodTotals.protein, "g")} protein`,
+    nutrition.calories ? `Target ${nutrition.calories}` : ""
+  ].filter(Boolean).join(" · ") || "Log food to track calories and macros.");
+  setText("#client-home-progress", latestProgress ? "Latest check-in" : "Check-ins");
+  setText("#client-home-progress-meta", latestProgress
+    ? `${formatLogDate(latestProgress.entry_date)} · ${formatProgressValue(latestProgress.bodyweight, " lb")} bodyweight`
+    : "Track weight, photos, and notes over time.");
+  setText("#client-home-note-title", noteTitle || "No note yet");
+  setText("#client-home-note-body", noteBody || "Coach notes will appear here when Benjamin adds one.");
+
+  if (checklist) {
+    const todayFoodLogged = foodLogs.some((log) => String(log.entry_date || "") === todayDate());
+    const hasSessionCount = used > 0 || total > 0;
+    const items = [
+      {
+        done: workouts.length > 0,
+        label: workouts.length > 0 ? "Workout loaded" : "Waiting for workout"
+      },
+      {
+        done: Boolean(latestWorkout),
+        label: latestWorkout ? "Workout progress saved" : "Save workout progress"
+      },
+      {
+        done: todayFoodLogged,
+        label: todayFoodLogged ? "Food logged today" : "Log food today"
+      },
+      {
+        done: Boolean(latestProgress),
+        label: latestProgress ? "Check-in started" : "Add first check-in"
+      },
+      {
+        done: hasSessionCount,
+        label: hasSessionCount ? "Session package updated" : "Session package pending"
+      }
+    ];
+
+    checklist.innerHTML = items.map((item) => `
+      <li class="${item.done ? "is-done" : ""}">
+        <span>${item.done ? "Done" : "Next"}</span>
+        <strong>${escapeHtml(item.label)}</strong>
+      </li>
+    `).join("");
   }
 }
 
@@ -768,6 +883,7 @@ function renderClientFoodLogs() {
 
   if (!foodLogs.length) {
     list.innerHTML = '<p class="empty-state">No food logged yet.</p>';
+    renderClientHomeSummary();
     return;
   }
 
@@ -813,12 +929,15 @@ function renderClientFoodLogs() {
         </section>
       `;
     }).join("");
+
+  renderClientHomeSummary();
 }
 
 function populateFoodLogs(logs) {
   foodLogs = Array.isArray(logs) ? logs : [];
   renderClientFoodLogs();
   renderClientTrainingLogs();
+  renderClientHomeSummary();
 }
 
 function resetFoodSearchResults() {
@@ -1526,10 +1645,13 @@ function renderProgressGraph(entries) {
 }
 
 function renderProgress(entries) {
-  const latest = entries[entries.length - 1];
+  const safeEntries = Array.isArray(entries) ? entries : [];
+  progressEntries = safeEntries;
+  const latest = safeEntries[safeEntries.length - 1];
   const current = document.getElementById("progress-current");
 
   if (!current) {
+    renderClientHomeSummary();
     return;
   }
 
@@ -1538,6 +1660,7 @@ function renderProgress(entries) {
     current.innerHTML = '<p class="empty-state">No progress check-ins yet.</p>';
     setText("#progress-goal", "");
     renderProgressGraph([]);
+    renderClientHomeSummary();
     return;
   }
 
@@ -1547,7 +1670,8 @@ function renderProgress(entries) {
     <span><strong>Current bodyfat</strong> ${formatProgressValue(latest.bodyfat, "%")}</span>
   `;
   setText("#progress-goal", latest.goal_note ? `Updated goal: ${latest.goal_note}` : "");
-  renderProgressGraph(entries);
+  renderProgressGraph(safeEntries);
+  renderClientHomeSummary();
 }
 
 function setCountFromPrescription(prescription) {
@@ -2172,6 +2296,8 @@ function renderClientWorkoutTabs(workouts = []) {
     </section>
   `;
   }).join("");
+
+  renderClientHomeSummary();
 }
 
 function logKey(workoutTitle, exerciseCode) {
@@ -2468,6 +2594,7 @@ function populateTrainingLogs(logs) {
   });
 
   renderClientTrainingLogs();
+  renderClientHomeSummary();
 }
 
 function demoTrainingLogsForProgram(program) {
@@ -3119,7 +3246,7 @@ async function deleteRemovedTrainingLogRows(logElements) {
 }
 
 function setClientDashboardTab(tabName) {
-  const nextTab = tabName || "workouts";
+  const nextTab = tabName || "home";
   const tabs = document.querySelectorAll("[data-client-dashboard-tab]");
   const panels = document.querySelectorAll("[data-client-dashboard-panel]");
 
@@ -3140,13 +3267,15 @@ function setClientDashboardTab(tabName) {
 function handleClientSummaryActions() {
   document.addEventListener("click", async (event) => {
     const sessionsButton = event.target.closest("#client-summary-sessions-button");
+    const summaryTabButton = event.target.closest("[data-client-summary-go-tab]");
     const resetButton = event.target.closest("#client-dashboard-reset-password-button");
 
-    if (sessionsButton) {
-      const sessionsPanel = document.querySelector('[data-client-dashboard-panel="sessions"]');
+    if (sessionsButton || summaryTabButton) {
+      const tabName = summaryTabButton?.dataset.clientSummaryGoTab || "sessions";
+      const panel = document.querySelector(`[data-client-dashboard-panel="${tabName}"]`);
 
-      setClientDashboardTab("sessions");
-      sessionsPanel?.scrollIntoView({ behavior: "smooth", block: "start" });
+      setClientDashboardTab(tabName);
+      panel?.scrollIntoView({ behavior: "smooth", block: "start" });
       return;
     }
 

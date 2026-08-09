@@ -73,14 +73,68 @@
         </aside>
 
         <nav class="client-dashboard-tabs" aria-label="Client dashboard sections">
-          <button class="client-dashboard-tab is-active" type="button" data-client-dashboard-tab="workouts" aria-selected="true">Workouts</button>
+          <button class="client-dashboard-tab is-active" type="button" data-client-dashboard-tab="home" aria-selected="true">Home</button>
+          <button class="client-dashboard-tab" type="button" data-client-dashboard-tab="workouts" aria-selected="false">Workouts</button>
           <button class="client-dashboard-tab" type="button" data-client-dashboard-tab="nutrition" aria-selected="false">Food</button>
           <button class="client-dashboard-tab" type="button" data-client-dashboard-tab="progress" aria-selected="false">Progress / check-ins</button>
           <button class="client-dashboard-tab" type="button" data-client-dashboard-tab="logs" aria-selected="false">Logs</button>
           <button class="client-dashboard-tab" type="button" data-client-dashboard-tab="sessions" aria-selected="false">Sessions</button>
         </nav>
 
-        <section class="client-workouts-panel" id="client-workouts-panel" data-client-dashboard-panel="workouts" aria-labelledby="client-workouts-title">
+        <section class="progress-panel client-home-panel" data-client-dashboard-panel="home" aria-labelledby="client-home-title">
+          <div class="panel-heading">
+            <div>
+              <p class="kicker">Home</p>
+              <h2 id="client-home-title">Today</h2>
+            </div>
+            <span class="status-pill" id="client-home-status">Ready</span>
+          </div>
+          <div class="client-home-grid" id="client-home-grid">
+            <article class="client-home-card client-home-card-primary">
+              <p class="kicker">Next workout</p>
+              <h3 id="client-home-workout-title">Workout</h3>
+              <p id="client-home-workout-meta">Your training is ready.</p>
+              <button class="button button-dark" type="button" data-client-summary-go-tab="workouts">Start workout</button>
+            </article>
+            <article class="client-home-card client-home-card-note">
+              <p class="kicker">Coach note</p>
+              <h3 id="client-home-note-title">No note yet</h3>
+              <p id="client-home-note-body">Coach notes will appear here when Benjamin adds one.</p>
+            </article>
+            <article class="client-home-card">
+              <p class="kicker">Sessions</p>
+              <h3 id="client-home-session-count">--</h3>
+              <p id="client-home-session-meta">Your coach will update your sessions.</p>
+              <button class="button button-ghost" type="button" data-client-summary-go-tab="sessions">View sessions</button>
+            </article>
+            <article class="client-home-card">
+              <p class="kicker">Latest workout</p>
+              <h3 id="client-home-latest-workout">No workout logged yet</h3>
+              <p id="client-home-latest-workout-meta">Finished workouts will appear here.</p>
+              <button class="button button-ghost" type="button" data-client-summary-go-tab="logs">View logs</button>
+            </article>
+            <article class="client-home-card">
+              <p class="kicker">Food today</p>
+              <h3 id="client-home-food-total">0 calories</h3>
+              <p id="client-home-food-meta">Log food to track calories and macros.</p>
+              <button class="button button-ghost" type="button" data-client-summary-go-tab="nutrition">Log food</button>
+            </article>
+            <article class="client-home-card">
+              <p class="kicker">Progress</p>
+              <h3 id="client-home-progress">Check-ins</h3>
+              <p id="client-home-progress-meta">Track weight, photos, and notes over time.</p>
+              <button class="button button-ghost" type="button" data-client-summary-go-tab="progress">View progress</button>
+            </article>
+            <article class="client-home-card client-home-card-checklist">
+              <p class="kicker">Next steps</p>
+              <h3>Stay on track</h3>
+              <ul class="client-home-checklist" id="client-home-checklist" aria-label="Client dashboard next steps"></ul>
+              <a class="client-home-support" href="mailto:fwb@benjaminbenz.com?subject=Client%20dashboard%20help">Report an issue</a>
+            </article>
+          </div>
+        </section>
+
+        <section class="client-workouts-panel" id="client-workouts-panel" data-client-dashboard-panel="workouts" aria-labelledby="client-workouts-title" hidden>
           <div class="panel-heading">
             <div>
               <p class="kicker">Workouts</p>

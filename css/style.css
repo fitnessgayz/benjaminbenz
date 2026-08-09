@@ -1808,6 +1808,131 @@ footer {
   padding: 18px;
 }
 
+.client-home-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.client-home-card {
+  display: flex;
+  min-height: 190px;
+  flex-direction: column;
+  gap: 12px;
+  justify-content: space-between;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfbf8;
+}
+
+.client-home-card-primary {
+  grid-column: span 2;
+  color: var(--black);
+  background: var(--lime);
+  border-color: rgba(0, 0, 0, .18);
+}
+
+.client-home-card-note {
+  background: var(--black);
+  border-color: var(--black);
+}
+
+.client-home-card-note h3,
+.client-home-card-note p:not(.kicker) {
+  color: var(--white);
+}
+
+.client-home-card-note .kicker {
+  color: var(--lime);
+}
+
+.client-home-card-checklist {
+  grid-column: span 2;
+}
+
+.client-home-card .kicker {
+  margin: 0;
+}
+
+.client-home-card h3 {
+  margin: 0;
+  color: var(--black);
+  font-size: clamp(1.55rem, 2.8vw, 2.7rem);
+  line-height: .95;
+}
+
+.client-home-card p:not(.kicker) {
+  margin: 0;
+  color: var(--muted);
+  font-size: .98rem;
+  font-weight: 800;
+}
+
+.client-home-card-primary p:not(.kicker) {
+  color: rgba(0, 0, 0, .72);
+}
+
+.client-home-card .button {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 14px;
+  border-radius: 14px;
+}
+
+.client-home-checklist {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.client-home-checklist li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 9px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--white);
+}
+
+.client-home-checklist span {
+  flex: 0 0 auto;
+  padding: 4px 7px;
+  border-radius: 999px;
+  color: var(--muted);
+  background: #ecece7;
+  font-size: .68rem;
+  font-weight: 900;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.client-home-checklist strong {
+  min-width: 0;
+  color: var(--black);
+  font-size: .84rem;
+  line-height: 1.1;
+}
+
+.client-home-checklist li.is-done span {
+  color: var(--black);
+  background: var(--lime);
+}
+
+.client-home-support {
+  width: fit-content;
+  color: var(--black);
+  font-size: .92rem;
+  font-weight: 900;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
 .panel-heading {
   display: flex;
   align-items: start;
@@ -4229,6 +4354,10 @@ textarea:focus {
     gap: 8px;
   }
 
+  .client-home-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .training-subtab {
     min-height: 44px;
     padding: 0 16px;
@@ -4402,6 +4531,21 @@ textarea:focus {
 
   .client-gallery {
     gap: 8px;
+  }
+
+  .client-home-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .client-home-card,
+  .client-home-card-primary,
+  .client-home-card-checklist {
+    grid-column: auto;
+    min-height: 0;
+  }
+
+  .client-home-checklist {
+    grid-template-columns: 1fr;
   }
 
   .client-carousel-controls {
@@ -4811,6 +4955,70 @@ textarea:focus {
   .coach-panel,
   .lower-panel {
     gap: 10px;
+  }
+
+  .dashboard-page .dashboard-shell {
+    width: 100%;
+    max-width: 100%;
+    padding-inline: 8px;
+    box-sizing: border-box;
+    overflow-x: hidden;
+  }
+
+  .dashboard-page #dashboard-content,
+  .dashboard-page .dashboard-grid,
+  .dashboard-page .client-summary,
+  .dashboard-page .progress-panel,
+  .dashboard-page .client-workouts-panel,
+  .dashboard-page .client-home-panel,
+  .dashboard-page .client-home-grid,
+  .dashboard-page .client-home-card {
+    min-width: 0;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  .client-dashboard-tabs {
+    width: 100%;
+    max-width: 100%;
+    gap: 6px;
+    padding: 8px;
+    scrollbar-width: none;
+  }
+
+  .client-dashboard-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .client-dashboard-tab {
+    flex: 0 0 auto;
+    min-width: min(42vw, 160px);
+    padding-inline: 12px;
+    text-align: center;
+  }
+
+  .client-dashboard-tab[data-client-dashboard-tab="progress"] {
+    min-width: min(58vw, 220px);
+  }
+
+  .client-home-card {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  .dashboard-page .client-home-card .button,
+  .dashboard-page .client-summary-actions .button {
+    width: 100%;
+    max-width: 100%;
+    align-self: stretch;
+    justify-self: stretch;
+    box-sizing: border-box;
+  }
+
+  .dashboard-page .client-home-card p:not(.kicker),
+  .dashboard-page .client-home-card h3 {
+    overflow-wrap: anywhere;
   }
 
   .client-summary {

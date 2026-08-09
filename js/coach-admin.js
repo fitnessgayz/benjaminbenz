@@ -168,19 +168,27 @@ function normalizeLogSearch(value) {
   return String(value || "").trim().toLowerCase();
 }
 
-function trainingLogMatchesSearch(log, query) {
+function logFieldsMatchSearch(fields, query) {
   const term = normalizeLogSearch(query);
 
   if (!term) {
     return true;
   }
 
-  return [
+  const haystack = fields.map((value) => normalizeLogSearch(value)).join(" ");
+  const tokens = term.split(/\s+/).filter(Boolean);
+
+  return tokens.every((token) => haystack.includes(token));
+}
+
+function trainingLogMatchesSearch(log, query) {
+  return logFieldsMatchSearch([
+    log.entry_date,
     log.workout_title,
     log.exercise_code,
     log.exercise_name,
     log.notes
-  ].some((value) => normalizeLogSearch(value).includes(term));
+  ], query);
 }
 
 function parseCardioNotes(notes = "") {
