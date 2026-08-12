@@ -1,0 +1,4 @@
+interface:
+  display_name: "Coach with Benjamin"
+  short_description: "Personal progress coaching in Benjamin’s style"
+  default_prompt: "Use $coach-with-benjamin to review my recent progress and help me choose my next step."

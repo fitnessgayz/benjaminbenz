@@ -3766,7 +3766,9 @@ async function handleLogin() {
       return;
     }
 
-    window.location.href = clientDashboardUrl;
+    const returnTo = new URLSearchParams(window.location.search).get("return_to");
+    const isSafeLocalReturn = returnTo && returnTo.startsWith("/") && !returnTo.startsWith("//");
+    window.location.href = isSafeLocalReturn ? returnTo : clientDashboardUrl;
   });
 
   if (status && supabaseClient) {

@@ -1,0 +1,31 @@
+{
+  "name": "benjamin-ai-coach",
+  "version": "0.2.0",
+  "description": "Private progress coaching for Fitness with Benjamin clients in ChatGPT.",
+  "author": {
+    "name": "Benjamin Benz",
+    "email": "fwb@benjaminbenz.com",
+    "url": "https://benjaminbenz.com"
+  },
+  "homepage": "https://benjaminbenz.com/ai-coach.html",
+  "keywords": ["fitness", "coaching", "progress", "check-ins", "personal-training"],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "Benjamin AI Coach",
+    "shortDescription": "Private progress coaching in Benjamin’s style.",
+    "longDescription": "Connect your Fitness with Benjamin account to discuss your program and progress, record check-ins, and request Benjamin’s review from ChatGPT.",
+    "developerName": "Benjamin Benz",
+    "category": "Lifestyle",
+    "capabilities": ["Interactive", "Read", "Write"],
+    "websiteURL": "https://benjaminbenz.com/ai-coach.html",
+    "privacyPolicyURL": "https://benjaminbenz.com/ai-coach-privacy.html",
+    "termsOfServiceURL": "https://benjaminbenz.com/ai-coach-terms.html",
+    "defaultPrompt": [
+      "Review my recent progress with me.",
+      "Help me reflect on this week’s training.",
+      "Record a check-in and share my next step."
+    ],
+    "brandColor": "#050505"
+  }
+}

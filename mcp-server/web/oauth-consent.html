@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Connect Benjamin AI Coach</title>
+    <meta name="robots" content="noindex" />
+    <style>
+      :root { color-scheme: dark; font-family: Inter, system-ui, sans-serif; }
+      body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #050505; color: #fff; }
+      main { width: min(560px, calc(100% - 32px)); padding: 32px; border: 1px solid #2b2b2b; border-radius: 20px; background: #111; }
+      h1 { margin-top: 0; font-size: clamp(1.8rem, 7vw, 3rem); line-height: 1; }
+      p, li { color: #c9c9c9; line-height: 1.55; }
+      .actions { display: flex; gap: 12px; margin-top: 24px; }
+      button { border: 0; border-radius: 999px; padding: 12px 18px; font: inherit; font-weight: 700; cursor: pointer; }
+      button:disabled { cursor: wait; opacity: .55; }
+      #approve { background: #fff; color: #050505; }
+      #deny { background: #292929; color: #fff; }
+      #status { min-height: 1.5em; color: #ffcc66; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p>Fitness with Benjamin</p>
+      <h1>Connect Benjamin AI Coach?</h1>
+      <p id="client-name">ChatGPT is requesting access to your coaching account.</p>
+      <ul>
+        <li>Read your coaching profile, active program, and progress.</li>
+        <li>Save check-ins or progress notes only when you ask.</li>
+        <li>Queue a message for Benjamin only when you ask.</li>
+      </ul>
+      <p id="requested-scopes" hidden></p>
+      <p>The AI coach is not Benjamin, medical care, or an emergency service.</p>
+      <p id="status" role="status" aria-live="polite"></p>
+      <div class="actions">
+        <button id="approve" type="button">Connect account</button>
+        <button id="deny" type="button">Cancel</button>
+      </div>
+    </main>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="/js/supabase-config.js"></script>
+    <script type="module" src="/js/oauth-consent.js"></script>
+  </body>
+</html>

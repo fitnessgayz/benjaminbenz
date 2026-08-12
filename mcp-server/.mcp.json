@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "benjamin-ai-coach": {
+      "type": "http",
+      "url": "https://mcp.benjaminbenz.com/mcp"
+    }
+  }
+}
