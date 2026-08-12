@@ -1,4 +1,4 @@
-+-- Additive schema for the Benjamin AI Coach MCP integration.
+-- Additive schema for the Benjamin AI Coach MCP integration.
 -- Reuses the live client_programs, client_progress, and client_workout_logs tables.
 
 create extension if not exists pgcrypto;
@@ -9,7 +9,7 @@ language sql
 stable
 set search_path = ''
 as $$
-  select lower(coalesce((select auth.jwt() ->> 'email'), '')) =
+  select lower(coalesce((select auth.jwt()) ->> 'email', '')) =
     lower('benjaminbenz.fit@gmail.com');
 $$;
 
@@ -99,7 +99,7 @@ on public.client_progress_notes
 for select
 to authenticated
 using (
-  lower(coalesce((select auth.jwt() ->> 'email'), '')) = lower(client_email)
+  lower(coalesce((select auth.jwt()) ->> 'email', '')) = lower(client_email)
   or (select public.is_coach_admin())
 );
 
@@ -109,7 +109,7 @@ on public.client_progress_notes
 for insert
 to authenticated
 with check (
-  lower(coalesce((select auth.jwt() ->> 'email'), '')) = lower(client_email)
+  lower(coalesce((select auth.jwt()) ->> 'email', '')) = lower(client_email)
   and source = 'chatgpt_plugin'
 );
 
@@ -119,7 +119,7 @@ on public.client_check_ins
 for select
 to authenticated
 using (
-  lower(coalesce((select auth.jwt() ->> 'email'), '')) = lower(client_email)
+  lower(coalesce((select auth.jwt()) ->> 'email', '')) = lower(client_email)
   or (select public.is_coach_admin())
 );
 
@@ -129,7 +129,7 @@ on public.client_check_ins
 for insert
 to authenticated
 with check (
-  lower(coalesce((select auth.jwt() ->> 'email'), '')) = lower(client_email)
+  lower(coalesce((select auth.jwt()) ->> 'email', '')) = lower(client_email)
   and source = 'chatgpt_plugin'
 );
 
@@ -139,7 +139,7 @@ on public.coach_requests
 for select
 to authenticated
 using (
-  lower(coalesce((select auth.jwt() ->> 'email'), '')) = lower(client_email)
+  lower(coalesce((select auth.jwt()) ->> 'email', '')) = lower(client_email)
   or (select public.is_coach_admin())
 );
 
@@ -149,7 +149,7 @@ on public.coach_requests
 for insert
 to authenticated
 with check (
-  lower(coalesce((select auth.jwt() ->> 'email'), '')) = lower(client_email)
+  lower(coalesce((select auth.jwt()) ->> 'email', '')) = lower(client_email)
   and source = 'chatgpt_plugin'
 );
 
@@ -168,7 +168,7 @@ on public.client_programs
 for select
 to authenticated
 using (
-  lower(coalesce((select auth.jwt() ->> 'email'), '')) = lower(client_email)
+  lower(coalesce((select auth.jwt()) ->> 'email', '')) = lower(client_email)
   and active
   and client_archived = false
 );
@@ -179,12 +179,12 @@ on public.client_programs
 for update
 to authenticated
 using (
-  lower(coalesce((select auth.jwt() ->> 'email'), '')) = lower(client_email)
+  lower(coalesce((select auth.jwt()) ->> 'email', '')) = lower(client_email)
   and active = true
   and client_archived = false
 )
 with check (
-  lower(coalesce((select auth.jwt() ->> 'email'), '')) = lower(client_email)
+  lower(coalesce((select auth.jwt()) ->> 'email', '')) = lower(client_email)
   and active = true
   and client_archived = false
 );
@@ -197,12 +197,12 @@ to authenticated
 using (
   active is true
   and coalesce(client_archived, false) is false
-  and lower(client_email) = lower(coalesce((select auth.jwt() ->> 'email'), ''))
+  and lower(client_email) = lower(coalesce((select auth.jwt()) ->> 'email', ''))
 )
 with check (
   active is true
   and coalesce(client_archived, false) is false
-  and lower(client_email) = lower(coalesce((select auth.jwt() ->> 'email'), ''))
+  and lower(client_email) = lower(coalesce((select auth.jwt()) ->> 'email', ''))
 );
 
 drop policy if exists "Clients can read their own progress" on public.client_progress;
@@ -210,26 +210,26 @@ create policy "Clients can read their own progress"
 on public.client_progress
 for select
 to authenticated
-using (lower(coalesce((select auth.jwt() ->> 'email'), '')) = lower(client_email));
+using (lower(coalesce((select auth.jwt()) ->> 'email', '')) = lower(client_email));
 
 drop policy if exists "Clients can read their own workout logs" on public.client_workout_logs;
 create policy "Clients can read their own workout logs"
 on public.client_workout_logs
 for select
 to authenticated
-using (lower(coalesce((select auth.jwt() ->> 'email'), '')) = lower(client_email));
+using (lower(coalesce((select auth.jwt()) ->> 'email', '')) = lower(client_email));
 
 drop policy if exists "Clients can create their own workout logs" on public.client_workout_logs;
 create policy "Clients can create their own workout logs"
 on public.client_workout_logs
 for insert
 to authenticated
-with check (lower(coalesce((select auth.jwt() ->> 'email'), '')) = lower(client_email));
+with check (lower(coalesce((select auth.jwt()) ->> 'email', '')) = lower(client_email));
 
 drop policy if exists "Clients can update their own workout logs" on public.client_workout_logs;
 create policy "Clients can update their own workout logs"
 on public.client_workout_logs
 for update
 to authenticated
-using (lower(coalesce((select auth.jwt() ->> 'email'), '')) = lower(client_email))
-with check (lower(coalesce((select auth.jwt() ->> 'email'), '')) = lower(client_email));
+using (lower(coalesce((select auth.jwt()) ->> 'email', '')) = lower(client_email))
+with check (lower(coalesce((select auth.jwt()) ->> 'email', '')) = lower(client_email));

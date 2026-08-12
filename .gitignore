@@ -1,0 +1,4 @@
+.DS_Store
+.supabase/
+supabase/.temp/
+supabase/.branches/

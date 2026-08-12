@@ -11,6 +11,9 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc -p tsconfig.build.json",
     "start": "node dist/index.js",
+    "supabase:start": "supabase start --workdir .. --exclude edge-runtime",
+    "supabase:stop": "supabase stop --workdir ..",
+    "test:db": "node scripts/test-local-db.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -25,6 +28,7 @@
   "devDependencies": {
     "@types/express": "5.0.6",
     "@types/node": "26.2.0",
+    "supabase": "2.114.0",
     "tsx": "4.23.12",
     "typescript": "7.0.2",
     "vitest": "4.1.10"

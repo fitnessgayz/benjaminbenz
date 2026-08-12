@@ -16,13 +16,25 @@ The server deliberately does not store full ChatGPT conversations. It writes onl
 
 ## Local verification
 
+Docker Desktop must be installed and running. From this `mcp-server` directory:
+
 ```bash
 cp .env.example .env
+npm run supabase:start
+npm run test:db
 npm run check
 npm run dev
 ```
 
-The server is wired for the existing FWB Supabase data model. Validate its additive migration on a development branch with synthetic accounts before production.
+`npm run supabase:start` excludes the unused Edge Functions runtime and starts a free local Supabase environment. The local bootstrap and seed files contain only synthetic `example.test` clients; they never copy production rows. `npm run test:db` runs 15 database and RLS assertions covering client isolation, allowed writes, blocked impersonation, and coach access.
+
+When finished, stop the local services without deleting the local database:
+
+```bash
+npm run supabase:stop
+```
+
+The server is wired for the existing FWB Supabase data model. Validate the additive migration locally before any production deployment.
 
 ## Launch order
 
