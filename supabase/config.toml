@@ -1,3 +1,21 @@
+[auth]
+site_url = "https://benjaminbenz.com"
+additional_redirect_urls = ["https://benjaminbenz.com/client-invite.html"]
+
+[auth.oauth_server]
+enabled = true
+authorization_url_path = "/oauth-consent.html"
+allow_dynamic_registration = true
+
+[auth.mfa.totp]
+enroll_enabled = true
+verify_enabled = true
+
+[auth.email]
+enable_confirmations = true
+max_frequency = "1m"
+otp_length = 8
+
 [functions.invite-client]
 verify_jwt = false
 
