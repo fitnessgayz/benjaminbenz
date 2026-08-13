@@ -6,6 +6,9 @@ const environmentSchema = z.object({
   SUPABASE_URL: z.url().transform((value) => value.replace(/\/$/, "")),
   SUPABASE_PUBLISHABLE_KEY: z.string().min(20),
   SUPABASE_AUTH_SERVER_URL: z.url().transform((value) => value.replace(/\/$/, "")),
+  OPENAI_APPS_CHALLENGE_TOKEN: z
+    .string()
+    .default("8RLIA207YSfsa7f_yYYTI5zb0vGhB-2YNBvI9d7Pz4U"),
   ADDITIONAL_ALLOWED_HOSTS: z
     .string()
     .default("")

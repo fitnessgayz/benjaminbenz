@@ -39,6 +39,10 @@ export function createApp(config: AppConfig): Express {
     response.json({ status: "ok", service: "benjamin-ai-coach", version: "0.2.0" });
   });
 
+  app.get("/.well-known/openai-apps-challenge", (_request, response) => {
+    response.type("text/plain").send(config.OPENAI_APPS_CHALLENGE_TOKEN);
+  });
+
   app.get("/.well-known/oauth-protected-resource", (_request, response) => {
     response.json({
       resource: `${config.PUBLIC_BASE_URL}/mcp`,
