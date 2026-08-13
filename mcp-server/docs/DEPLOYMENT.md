@@ -47,10 +47,12 @@ Point the `mcp.benjaminbenz.com` DNS record at the hosting provider, then verify
 ```bash
 curl https://mcp.benjaminbenz.com/health
 curl https://mcp.benjaminbenz.com/.well-known/oauth-protected-resource
+curl https://qukdfjeupjhpthfbaonv.supabase.co/.well-known/oauth-authorization-server/auth/v1
+curl https://qukdfjeupjhpthfbaonv.supabase.co/auth/v1/.well-known/openid-configuration
 curl -i https://mcp.benjaminbenz.com/mcp
 ```
 
-The final request should return `405` for GET. An unauthenticated POST should return `401` with a `WWW-Authenticate` resource-metadata link.
+Both Supabase discovery requests should return valid OAuth/OIDC metadata. The final MCP request should return `405` for GET. An unauthenticated POST should return `401` with a `WWW-Authenticate` resource-metadata link.
 
 ## 4. Production checks
 
