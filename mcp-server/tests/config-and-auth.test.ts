@@ -11,11 +11,13 @@ describe("configuration and bearer parsing", () => {
       SUPABASE_URL: "https://example.supabase.co/",
       SUPABASE_PUBLISHABLE_KEY: "sb_publishable_abcdefghijklmnopqrstuvwxyz",
       SUPABASE_AUTH_SERVER_URL: "https://example.supabase.co/auth/v1/",
+      ADDITIONAL_ALLOWED_HOSTS: " preview.example.com,PREVIEW.example.com ",
     });
 
     expect(config.PORT).toBe(4000);
     expect(config.PUBLIC_BASE_URL).toBe("https://mcp.benjaminbenz.com");
     expect(config.SUPABASE_AUTH_SERVER_URL).toBe("https://example.supabase.co/auth/v1");
+    expect(config.ADDITIONAL_ALLOWED_HOSTS).toEqual(["preview.example.com"]);
   });
 
   it("accepts a bearer token and rejects other authorization schemes", () => {

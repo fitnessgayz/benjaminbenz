@@ -6,6 +6,19 @@ const environmentSchema = z.object({
   SUPABASE_URL: z.url().transform((value) => value.replace(/\/$/, "")),
   SUPABASE_PUBLISHABLE_KEY: z.string().min(20),
   SUPABASE_AUTH_SERVER_URL: z.url().transform((value) => value.replace(/\/$/, "")),
+  ADDITIONAL_ALLOWED_HOSTS: z
+    .string()
+    .default("")
+    .transform((value) =>
+      Array.from(
+        new Set(
+          value
+            .split(",")
+            .map((host) => host.trim().toLowerCase())
+            .filter(Boolean),
+        ),
+      ),
+    ),
 });
 
 export type AppConfig = z.infer<typeof environmentSchema>;

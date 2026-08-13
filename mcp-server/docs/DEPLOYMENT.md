@@ -40,6 +40,7 @@ PUBLIC_BASE_URL=https://mcp.benjaminbenz.com
 SUPABASE_URL=https://PROJECT_REF.supabase.co
 SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
 SUPABASE_AUTH_SERVER_URL=https://PROJECT_REF.supabase.co/auth/v1
+ADDITIONAL_ALLOWED_HOSTS=benjamin-ai-coach.benjaminbenz.deno.net
 ```
 
 Never set a Supabase service-role or secret key in this service. The publishable key plus each user's OAuth bearer token is intentional: database operations must remain subject to RLS.

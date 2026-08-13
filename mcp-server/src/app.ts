@@ -17,7 +17,12 @@ function jsonRpcError(response: Response, status: number, message: string) {
 
 export function createApp(config: AppConfig): Express {
   const publicUrl = new URL(config.PUBLIC_BASE_URL);
-  const allowedHosts = [publicUrl.hostname, "localhost", "127.0.0.1"];
+  const allowedHosts = [
+    publicUrl.hostname,
+    ...config.ADDITIONAL_ALLOWED_HOSTS,
+    "localhost",
+    "127.0.0.1",
+  ];
   const app = createMcpExpressApp({ host: "0.0.0.0", allowedHosts });
   app.disable("x-powered-by");
   const authenticate = createAuthenticator(config);
