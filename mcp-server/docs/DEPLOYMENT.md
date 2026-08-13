@@ -30,7 +30,9 @@ Use an asymmetric Supabase JWT signing key such as RS256 or ES256 before enablin
 
 ## 3. Deploy the MCP server
 
-Deploy the included Docker image to a service that supports HTTPS. Configure:
+The production service is configured for Deno Deploy through `deno.json`. Deno installs the npm dependencies, runs the TypeScript build, and starts `dist/index.js` as a dynamic application. The included Docker image remains available for another HTTPS host if needed.
+
+Create the Deno application from the `mcp-server` directory and configure:
 
 ```text
 PORT=3000
@@ -42,7 +44,7 @@ SUPABASE_AUTH_SERVER_URL=https://PROJECT_REF.supabase.co/auth/v1
 
 Never set a Supabase service-role or secret key in this service. The publishable key plus each user's OAuth bearer token is intentional: database operations must remain subject to RLS.
 
-Point the `mcp.benjaminbenz.com` DNS record at the hosting provider, then verify:
+Attach `mcp.benjaminbenz.com` as the Deno application's custom domain, add the exact DNS record Deno provides at the registrar, and wait for managed TLS to become active. Then verify:
 
 ```bash
 curl https://mcp.benjaminbenz.com/health
