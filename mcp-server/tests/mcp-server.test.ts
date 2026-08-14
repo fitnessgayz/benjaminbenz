@@ -80,6 +80,25 @@ describe("Benjamin MCP server", () => {
     ]);
   });
 
+  it("advertises Benjamin's coaching prompt for MCP clients", async () => {
+    const prompts = await client.listPrompts();
+    expect(prompts.prompts).toEqual([
+      expect.objectContaining({
+        name: "coach_with_benjamin",
+        title: "Coach with Benjamin",
+      }),
+    ]);
+
+    const prompt = await client.getPrompt({ name: "coach_with_benjamin" });
+    expect(prompt.messages[0]).toMatchObject({
+      role: "user",
+      content: expect.objectContaining({ type: "text" }),
+    });
+    expect(prompt.messages[0]?.content).toMatchObject({
+      text: expect.stringContaining("never claim to be Benjamin"),
+    });
+  });
+
   it("returns structured progress data", async () => {
     const result = await client.callTool({ name: "get_my_recent_progress", arguments: { days: 30 } });
     expect(result.isError).not.toBe(true);
