@@ -3,7 +3,7 @@
   "version": "0.2.0",
   "private": true,
   "type": "module",
-  "description": "Authenticated MCP server for the Benjamin AI Coach ChatGPT plugin.",
+  "description": "Authenticated MCP server for the FWB Coach ChatGPT app.",
   "engines": {
     "node": ">=22"
   },

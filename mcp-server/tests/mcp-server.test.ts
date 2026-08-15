@@ -110,7 +110,7 @@ describe("Benjamin MCP server", () => {
     expect(prompts.prompts).toEqual([
       expect.objectContaining({
         name: "coach_with_benjamin",
-        title: "Coach with Benjamin",
+        title: "FWB Coach",
       }),
     ]);
 

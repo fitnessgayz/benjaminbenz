@@ -19,9 +19,9 @@ Do not create the final review submission until every item below is complete:
 
 ## Info
 
-- **Plugin name:** Benjamin AI Coach
+- **Plugin name:** FWB Coach
 - **Short description:** Private progress coaching for Fitness with Benjamin clients.
-- **Long description:** Connect your Fitness with Benjamin account to reflect on your current program and recent progress, save a check-in or progress note when you explicitly ask, and queue a message for Benjamin's review. Benjamin AI Coach uses Benjamin's mindful, direct, encouraging coaching style while clearly identifying itself as an AI assistant. It is not medical care or an emergency service.
+- **Long description:** Connect your Fitness with Benjamin account to reflect on your current program and recent progress, save a check-in or progress note when you explicitly ask, and queue a message for Benjamin's review. FWB Coach uses Benjamin's mindful, direct, encouraging coaching style while clearly identifying itself as an AI assistant. It is not medical care or an emergency service.
 - **Category:** Lifestyle
 - **Developer identity:** Verified Benjamin Benz individual or business identity
 - **Logo:** `fwb-home-icon-512.png`
@@ -127,7 +127,7 @@ Do not create the final review submission until every item below is complete:
 
 ## Release notes
 
-Initial submission of Benjamin AI Coach, an authenticated MCP-backed plugin for active Fitness with Benjamin clients. It reads the signed-in client's coaching profile, active program, recent progress, and open coach requests. It writes only an explicit structured check-in, progress note, or queued request for Benjamin. Full ChatGPT conversations are not stored. Reviewer credentials contain synthetic data and require no MFA.
+Initial submission of FWB Coach, an authenticated MCP-backed plugin for active Fitness with Benjamin clients. It reads the signed-in client's coaching profile, active program, recent progress, and open coach requests. It writes only an explicit structured check-in, progress note, or queued request for Benjamin. Full ChatGPT conversations are not stored. Reviewer credentials contain synthetic data and require no MFA.
 
 ## Final submission
 

@@ -55,7 +55,7 @@ export function createApp(config: AppConfig): Express {
 
   app.get("/docs", (_request, response) => {
     response.json({
-      name: "Benjamin AI Coach",
+      name: "FWB Coach",
       purpose: "Private progress coaching for authenticated Fitness with Benjamin clients.",
       mcp_endpoint: `${config.PUBLIC_BASE_URL}/mcp`,
       privacy: "The server does not store full ChatGPT conversations. Writes require explicit client intent.",
