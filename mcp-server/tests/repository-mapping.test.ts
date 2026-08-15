@@ -5,9 +5,16 @@ import {
   mapCheckIns,
   mapLiveProgram,
   mapWorkoutProgress,
+  maskEmail,
 } from "../src/repository.js";
 
 describe("live portal mapping", () => {
+  it("masks connected-account emails without revealing the full address", () => {
+    expect(maskEmail("benjamin@gmail.com")).toBe("b***@gmail.com");
+    expect(maskEmail("x@example.com")).toBe("x***@example.com");
+    expect(maskEmail("invalid-address")).toBe("Hidden");
+  });
+
   it("maps the active client program into the MCP profile and program shapes", () => {
     const result = mapLiveProgram({
       id: "program-1",

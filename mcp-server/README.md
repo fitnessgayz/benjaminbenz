@@ -4,7 +4,7 @@ Production-oriented MVP for an authenticated ChatGPT plugin that lets Fitness wi
 
 ## What is included
 
-- Streamable HTTP MCP server with seven narrowly scoped tools.
+- Streamable HTTP MCP server with eight narrowly scoped tools.
 - Supabase OAuth token verification without a service-role key.
 - Compatibility with the live Benjaminbenz.com portal tables plus additive RLS-protected check-in, progress-note, and coach-request tables.
 - `coach-with-benjamin` skill for voice, workflow, privacy, and safety boundaries.

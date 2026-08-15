@@ -29,6 +29,11 @@ export type ClientProfile = {
   training_experience: string | null;
 };
 
+export type ConnectedAccount = {
+  display_name: string | null;
+  masked_email: string;
+};
+
 export type ProgramExercise = {
   code: string | null;
   name: string;

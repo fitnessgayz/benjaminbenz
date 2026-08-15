@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   type CheckInInput,
   type ClientProfile,
+  type ConnectedAccount,
   type CoachRequest,
   type CoachRequestInput,
   type ProgressCategory,
@@ -15,6 +16,7 @@ import {
 } from "./domain.js";
 
 export interface CoachingRepository {
+  getConnectedAccount(): Promise<ConnectedAccount>;
   getProfile(): Promise<ClientProfile | null>;
   getActiveProgram(): Promise<TrainingProgram | null>;
   listProgress(days: number, category?: ProgressCategory): Promise<ProgressEntry[]>;
@@ -22,6 +24,13 @@ export interface CoachingRepository {
   addProgressNote(input: ProgressNoteInput): Promise<ProgressEntry>;
   createCoachRequest(input: CoachRequestInput): Promise<CoachRequest>;
   listOpenCoachRequests(): Promise<CoachRequest[]>;
+}
+
+export function maskEmail(email: string): string {
+  const separator = email.lastIndexOf("@");
+  if (separator <= 0 || separator === email.length - 1) return "Hidden";
+
+  return `${email.slice(0, 1)}***${email.slice(separator)}`;
 }
 
 type LiveProgramRow = {
@@ -263,6 +272,14 @@ export class SupabaseCoachingRepository implements CoachingRepository {
       .order("updated_at", { ascending: false })
       .limit(1)
       .maybeSingle();
+  }
+
+  async getConnectedAccount(): Promise<ConnectedAccount> {
+    const profile = await this.getProfile();
+    return {
+      display_name: profile?.display_name ?? null,
+      masked_email: maskEmail(this.clientEmail),
+    };
   }
 
   async getProfile(): Promise<ClientProfile | null> {

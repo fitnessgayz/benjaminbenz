@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type {
   CheckInInput,
   ClientProfile,
+  ConnectedAccount,
   CoachRequest,
   CoachRequestInput,
   ProgressCategory,
@@ -17,6 +18,10 @@ import type { CoachingRepository } from "../src/repository.js";
 
 class FakeRepository implements CoachingRepository {
   progressWrites: ProgressNoteInput[] = [];
+
+  async getConnectedAccount(): Promise<ConnectedAccount> {
+    return { display_name: "Test Client", masked_email: "t***@example.com" };
+  }
 
   async getProfile(): Promise<ClientProfile> {
     return { display_name: "Test Client", goals: "Build strength", coaching_preferences: null, training_experience: "Intermediate" };
@@ -95,6 +100,7 @@ describe("Benjamin MCP server", () => {
   it("advertises the expected client-safe tools", async () => {
     const result = await client.listTools();
     expect(result.tools.map((tool) => tool.name)).toEqual([
+      "get_my_connected_account",
       "get_my_coaching_profile",
       "get_my_active_program",
       "get_my_recent_progress",
@@ -103,6 +109,23 @@ describe("Benjamin MCP server", () => {
       "contact_benjamin",
       "get_my_open_coach_requests",
     ]);
+  });
+
+  it("returns only a masked connected-account email", async () => {
+    const result = await client.callTool({ name: "get_my_connected_account" });
+    expect(result.isError).not.toBe(true);
+    expect(result.structuredContent).toMatchObject({
+      account: { display_name: "Test Client", masked_email: "t***@example.com" },
+    });
+    expect(result.content).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: "text",
+          text: expect.stringContaining("Email: t***@example.com"),
+        }),
+      ]),
+    );
+    expect(JSON.stringify(result)).not.toContain("test@example.com");
   });
 
   it("advertises Benjamin's coaching prompt for MCP clients", async () => {

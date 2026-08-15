@@ -14,7 +14,7 @@ Do not create the final review submission until every item below is complete:
 - [ ] The website, support, privacy, and terms URLs below return `200` over HTTPS.
 - [ ] The privacy notice and terms have been approved for publication and no longer say that they are drafts.
 - [ ] Domain verification returns only the exact portal token from `/.well-known/openai-apps-challenge`.
-- [ ] OpenAI's **Scan Tools** check passes for all seven tools and their annotations.
+- [ ] OpenAI's **Scan Tools** check passes for all eight tools and their annotations.
 - [ ] The five positive and three negative test cases pass in ChatGPT developer mode.
 
 ## Info
@@ -47,6 +47,7 @@ Do not create the final review submission until every item below is complete:
 
 | Tool | Read only | Destructive | Open world | Purpose |
 | --- | --- | --- | --- | --- |
+| `get_my_connected_account` | Yes | No | No | Confirm the authenticated client's profile name and masked email. |
 | `get_my_coaching_profile` | Yes | No | No | Read the authenticated client's goals and coaching preferences. |
 | `get_my_active_program` | Yes | No | No | Read the authenticated client's current program summary. |
 | `get_my_recent_progress` | Yes | No | No | Read recent progress entries with optional date and category filters. |
