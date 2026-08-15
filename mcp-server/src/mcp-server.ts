@@ -6,6 +6,10 @@ import {
   PROGRESS_CATEGORIES,
   isoDateOrToday,
   summarizeProgress,
+  type ClientProfile,
+  type CoachRequest,
+  type ProgressEntry,
+  type TrainingProgram,
 } from "./domain.js";
 import type { CoachingRepository } from "./repository.js";
 
@@ -21,11 +25,93 @@ Do not save ordinary conversation. Use a write tool only after the client explic
 
 Do not diagnose injuries, prescribe treatment, recommend medication or supplements, independently rewrite a training program, or encourage disordered eating, unsafe restriction, dehydration, extreme exercise, or training through concerning pain. For severe or sudden symptoms, difficulty breathing, chest pain, loss of consciousness, signs of stroke, uncontrolled bleeding, suicidal intent, or immediate danger, stop fitness coaching and encourage urgent professional or emergency help. For non-emergency pain, injury, dizziness, unexplained symptoms, pregnancy-related concerns, eating-disorder signals, medication questions, supplement questions, or a material program change, encourage appropriate qualified help and offer to queue a message with contact_benjamin if the client explicitly agrees. Make clear that Benjamin's queue is not real-time or emergency communication.`;
 
-function success(summary: string, data: Record<string, unknown>) {
+function success(summary: string, data: Record<string, unknown>, readableText = summary) {
   return {
-    content: [{ type: "text" as const, text: summary }],
+    content: [{ type: "text" as const, text: readableText }],
     structuredContent: data,
   };
+}
+
+function formatProfile(profile: ClientProfile | null): string {
+  if (!profile) return "No coaching profile is on file yet.";
+
+  return [
+    "Coaching profile",
+    `Name: ${profile.display_name ?? "Not set"}`,
+    `Goals: ${profile.goals ?? "Not set"}`,
+    `Coaching focus: ${profile.coaching_preferences ?? "Not set"}`,
+    `Coach note: ${profile.training_experience ?? "None"}`,
+  ].join("\n");
+}
+
+function formatProgram(program: TrainingProgram | null): string {
+  if (!program) return "No active training program is on file.";
+
+  const lines = [
+    `Active program: ${program.title}`,
+    `Focus: ${program.focus ?? "Not set"}`,
+    `Summary: ${program.client_summary ?? "No summary is on file."}`,
+    `Started: ${program.start_date ?? "Not set"}`,
+    `Workouts: ${program.workouts.length}`,
+  ];
+
+  for (const workout of program.workouts) {
+    const details = [workout.focus, workout.format].filter(Boolean).join(" · ");
+    lines.push("", `${workout.title}${details ? ` — ${details}` : ""}`);
+
+    if (!workout.exercises.length) {
+      lines.push("- No exercises are listed.");
+      continue;
+    }
+
+    for (const exercise of workout.exercises) {
+      const label = [exercise.code, exercise.name].filter(Boolean).join(" — ");
+      const prescription = exercise.prescription ? `: ${exercise.prescription}` : "";
+      const extras = [
+        exercise.rest ? `Rest: ${exercise.rest}` : null,
+        exercise.muscles ? `Targets: ${exercise.muscles}` : null,
+        exercise.video_url ? `Demo: ${exercise.video_url}` : null,
+      ].filter(Boolean);
+      lines.push(`- ${label}${prescription}${extras.length ? ` · ${extras.join(" · ")}` : ""}`);
+    }
+  }
+
+  return lines.join("\n");
+}
+
+function formatProgress(entries: ProgressEntry[], days: number, category?: string): string {
+  if (!entries.length) {
+    return `No progress entries were found in the last ${days} days${category ? ` for ${category}` : ""}.`;
+  }
+
+  const lines = [
+    `Recent progress — last ${days} days${category ? ` · ${category}` : ""}`,
+    `Entries: ${entries.length}`,
+  ];
+
+  for (const entry of entries) {
+    const measurement = entry.numeric_value === null
+      ? null
+      : `${entry.numeric_value}${entry.unit ? ` ${entry.unit}` : ""}`;
+    const subject = entry.metric_name ?? entry.category.replaceAll("_", " ");
+    lines.push(
+      `- ${entry.occurred_on} — ${subject}${measurement ? `: ${measurement}` : ""} — ${entry.note}`,
+    );
+  }
+
+  return lines.join("\n");
+}
+
+function formatCoachRequests(requests: CoachRequest[]): string {
+  if (!requests.length) return "You have no open messages waiting for Benjamin.";
+
+  return [
+    `Open messages for Benjamin: ${requests.length}`,
+    ...requests.map(
+      (request) =>
+        `- ${request.created_at} — ${request.request_type.replaceAll("_", " ")} · ${request.urgency} · ${request.status}: ${request.message}`,
+    ),
+  ].join("\n");
 }
 
 function failure(error: unknown) {
@@ -72,9 +158,11 @@ export function createBenjaminMcpServer(repository: CoachingRepository): McpServ
     async () => {
       try {
         const profile = await repository.getProfile();
-        return success(profile ? "Loaded your coaching profile." : "No coaching profile is on file yet.", {
-          profile,
-        });
+        return success(
+          profile ? "Loaded your coaching profile." : "No coaching profile is on file yet.",
+          { profile },
+          formatProfile(profile),
+        );
       } catch (error) {
         return failure(error);
       }
@@ -86,7 +174,7 @@ export function createBenjaminMcpServer(repository: CoachingRepository): McpServ
     {
       title: "Get my active training program",
       description:
-        "Load the authenticated client's current program summary. Use before discussing program focus, exercise intent, or requested changes.",
+        "Load the authenticated client's active program, including workouts, exercises, prescriptions, rest guidance, target muscles, and demo links. Use before discussing program focus, exercise intent, or requested changes.",
       annotations: {
         title: "Get my active training program",
         readOnlyHint: true,
@@ -98,9 +186,11 @@ export function createBenjaminMcpServer(repository: CoachingRepository): McpServ
     async () => {
       try {
         const program = await repository.getActiveProgram();
-        return success(program ? "Loaded your active training program." : "No active program is on file.", {
-          program,
-        });
+        return success(
+          program ? "Loaded your active training program." : "No active program is on file.",
+          { program },
+          formatProgram(program),
+        );
       } catch (error) {
         return failure(error);
       }
@@ -128,12 +218,16 @@ export function createBenjaminMcpServer(repository: CoachingRepository): McpServ
     async ({ days, category }) => {
       try {
         const entries = await repository.listProgress(days, category);
-        return success(`Loaded ${entries.length} progress ${entries.length === 1 ? "entry" : "entries"}.`, {
-          window_days: days,
-          category: category ?? null,
-          summary: summarizeProgress(entries),
-          entries,
-        });
+        return success(
+          `Loaded ${entries.length} progress ${entries.length === 1 ? "entry" : "entries"}.`,
+          {
+            window_days: days,
+            category: category ?? null,
+            summary: summarizeProgress(entries),
+            entries,
+          },
+          formatProgress(entries, days, category),
+        );
       } catch (error) {
         return failure(error);
       }
@@ -274,9 +368,11 @@ export function createBenjaminMcpServer(repository: CoachingRepository): McpServ
     async () => {
       try {
         const requests = await repository.listOpenCoachRequests();
-        return success(`You have ${requests.length} open ${requests.length === 1 ? "request" : "requests"}.`, {
-          requests,
-        });
+        return success(
+          `You have ${requests.length} open ${requests.length === 1 ? "request" : "requests"}.`,
+          { requests },
+          formatCoachRequests(requests),
+        );
       } catch (error) {
         return failure(error);
       }

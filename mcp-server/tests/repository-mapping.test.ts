@@ -18,6 +18,23 @@ describe("live portal mapping", () => {
       focus_target: "Clean mechanics",
       coach_note_title: "This week",
       coach_note_body: "Keep the tempo steady",
+      workouts: [
+        {
+          title: "Lower A",
+          focus: "Strength",
+          format: "single",
+          exercises: [
+            {
+              code: "A",
+              name: "Back Squat",
+              prescription: "5 reps x 4 sets",
+              rest: "2 minutes",
+              muscles: "quads, glutes",
+              video: "https://example.com/squat",
+            },
+          ],
+        },
+      ],
       created_at: "2026-08-01T12:00:00Z",
       updated_at: "2026-08-12T12:00:00Z",
     });
@@ -31,6 +48,14 @@ describe("live portal mapping", () => {
       title: "Strength Base",
       status: "active",
       start_date: "2026-08-01",
+      workouts: [
+        expect.objectContaining({
+          title: "Lower A",
+          exercises: [
+            expect.objectContaining({ name: "Back Squat", prescription: "5 reps x 4 sets" }),
+          ],
+        }),
+      ],
     });
   });
 

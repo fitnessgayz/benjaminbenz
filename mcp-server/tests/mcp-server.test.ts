@@ -23,7 +23,32 @@ class FakeRepository implements CoachingRepository {
   }
 
   async getActiveProgram(): Promise<TrainingProgram> {
-    return { id: "program", title: "Strength Base", focus: "Clean mechanics", status: "active", start_date: "2026-08-01", end_date: null, client_summary: "Three sessions weekly" };
+    return {
+      id: "program",
+      title: "Strength Base",
+      focus: "Clean mechanics",
+      status: "active",
+      start_date: "2026-08-01",
+      end_date: null,
+      client_summary: "Three sessions weekly",
+      workouts: [
+        {
+          title: "Lower A",
+          focus: "Strength",
+          format: "single",
+          exercises: [
+            {
+              code: "A",
+              name: "Back Squat",
+              prescription: "5 reps x 4 sets",
+              rest: "2 minutes",
+              muscles: "quads, glutes",
+              video_url: null,
+            },
+          ],
+        },
+      ],
+    };
   }
 
   async listProgress(_days: number, _category?: ProgressCategory): Promise<ProgressEntry[]> {
@@ -106,6 +131,33 @@ describe("Benjamin MCP server", () => {
       window_days: 30,
       summary: { entry_count: 1 },
     });
+    expect(result.content).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: "text",
+          text: expect.stringContaining("squat: 185 lb"),
+        }),
+      ]),
+    );
+  });
+
+  it("returns the full active program as readable text", async () => {
+    const result = await client.callTool({ name: "get_my_active_program" });
+    expect(result.isError).not.toBe(true);
+    expect(result.structuredContent).toMatchObject({
+      program: {
+        title: "Strength Base",
+        workouts: [expect.objectContaining({ title: "Lower A" })],
+      },
+    });
+    expect(result.content).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: "text",
+          text: expect.stringContaining("Back Squat: 5 reps x 4 sets"),
+        }),
+      ]),
+    );
   });
 
   it("validates and records an explicit progress write", async () => {

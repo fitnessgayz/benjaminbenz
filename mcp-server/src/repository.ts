@@ -8,6 +8,8 @@ import {
   type ProgressCategory,
   type ProgressEntry,
   type ProgressNoteInput,
+  type ProgramExercise,
+  type ProgramWorkout,
   type TrainingProgram,
   startDateForWindow,
 } from "./domain.js";
@@ -31,6 +33,7 @@ type LiveProgramRow = {
   focus_target: string;
   coach_note_title: string;
   coach_note_body: string;
+  workouts: unknown;
   created_at: string;
   updated_at: string;
 };
@@ -82,6 +85,53 @@ function numberOrNull(value: number | string | null): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+function objectValue(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
+function stringOrNull(value: unknown): string | null {
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+function mapProgramExercise(value: unknown): ProgramExercise | null {
+  const exercise = objectValue(value);
+  const name = stringOrNull(exercise.name);
+  if (!name) return null;
+
+  return {
+    code: stringOrNull(exercise.code),
+    name,
+    prescription: stringOrNull(exercise.prescription),
+    rest: stringOrNull(exercise.rest),
+    muscles: stringOrNull(exercise.muscles ?? exercise.targets),
+    video_url: stringOrNull(
+      exercise.video ?? exercise.videoUrl ?? exercise.video_url ?? exercise.youtube_url,
+    ),
+  };
+}
+
+function mapProgramWorkouts(value: unknown): ProgramWorkout[] {
+  if (!Array.isArray(value)) return [];
+
+  return value.map((candidate, index) => {
+    const workout = objectValue(candidate);
+    const exercises = Array.isArray(workout.exercises)
+      ? workout.exercises
+          .map(mapProgramExercise)
+          .filter((exercise): exercise is ProgramExercise => exercise !== null)
+      : [];
+
+    return {
+      title: stringOrNull(workout.title) ?? `Workout ${index + 1}`,
+      focus: stringOrNull(workout.focus),
+      format: stringOrNull(workout.format),
+      exercises,
+    };
+  });
+}
+
 export function mapLiveProgram(row: LiveProgramRow): {
   profile: ClientProfile;
   program: TrainingProgram;
@@ -102,6 +152,7 @@ export function mapLiveProgram(row: LiveProgramRow): {
       start_date: row.created_at.slice(0, 10),
       end_date: null,
       client_summary: row.program_summary || coachingNote,
+      workouts: mapProgramWorkouts(row.workouts),
     },
   };
 }
@@ -204,7 +255,7 @@ export class SupabaseCoachingRepository implements CoachingRepository {
     return this.client
       .from("client_programs")
       .select(
-        "id, client_name, program_title, program_summary, fitness_goal, focus_target, coach_note_title, coach_note_body, created_at, updated_at",
+        "id, client_name, program_title, program_summary, fitness_goal, focus_target, coach_note_title, coach_note_body, workouts, created_at, updated_at",
       )
       .eq("client_email", this.clientEmail)
       .eq("active", true)

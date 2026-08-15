@@ -29,6 +29,22 @@ export type ClientProfile = {
   training_experience: string | null;
 };
 
+export type ProgramExercise = {
+  code: string | null;
+  name: string;
+  prescription: string | null;
+  rest: string | null;
+  muscles: string | null;
+  video_url: string | null;
+};
+
+export type ProgramWorkout = {
+  title: string;
+  focus: string | null;
+  format: string | null;
+  exercises: ProgramExercise[];
+};
+
 export type TrainingProgram = {
   id: string;
   title: string;
@@ -37,6 +53,7 @@ export type TrainingProgram = {
   start_date: string | null;
   end_date: string | null;
   client_summary: string | null;
+  workouts: ProgramWorkout[];
 };
 
 export type ProgressEntry = {
