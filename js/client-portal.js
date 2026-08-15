@@ -10,6 +10,8 @@ const supabaseClient = isConfigured && window.supabase
   : null;
 const coachPortalEmails = ["benjaminbenz.fit@gmail.com"];
 let activeClientEmail = "";
+let signedInDashboardEmail = "";
+let isCoachDashboardPreview = false;
 let trainingLogs = [];
 let foodLogs = [];
 let foodSearchResults = [];
@@ -24,6 +26,9 @@ const customWorkoutTitle = "Custom workout";
 const warmupExerciseCode = "WARMUP";
 const cardioExerciseCode = "CARDIO";
 const clientDashboardUrl = "client-dashboard.html?v=manual-sessions-1";
+const fitbitOauthStateKey = "fwb_fitbit_oauth_state";
+const fitbitOauthVerifierKey = "fwb_fitbit_oauth_verifier";
+let fitbitConnection = { loaded: false, connected: false };
 
 function isCoachPortalEmail(email) {
   return coachPortalEmails.includes(String(email || "").toLowerCase());
@@ -791,6 +796,12 @@ function foodLogNumberLabel(value, suffix = "") {
   return `${Math.round(number * 10) / 10}${suffix}`;
 }
 
+function progressNumber(value) {
+  const number = Number(value);
+
+  return Number.isFinite(number) && number >= 0 ? number : null;
+}
+
 function foodEntryForm() {
   return document.getElementById("client-food-entry-form");
 }
@@ -1304,6 +1315,73 @@ function formatProgressValue(value, suffix) {
   return `${escapeHtml(value)}${suffix}`;
 }
 
+function progressMeasurements(entry = {}) {
+  return entry && typeof entry.measurements === "object" && !Array.isArray(entry.measurements)
+    ? entry.measurements
+    : {};
+}
+
+function measurementRows(entry = {}) {
+  const measurements = progressMeasurements(entry);
+  const rows = [
+    ["Chest", measurements.chest],
+    ["Waist", measurements.waist],
+    ["Hips / glutes", measurements.hips],
+    ["Arms", measurements.arms],
+    ["Thighs", measurements.thighs]
+  ];
+
+  return rows.filter(([, value]) => value !== null && value !== undefined && value !== "");
+}
+
+function measurementSummary(entry = {}) {
+  const rows = measurementRows(entry);
+
+  if (rows.length === 0) {
+    return "No measurements";
+  }
+
+  return rows.map(([label, value]) => `${label}: ${value} in`).join(" · ");
+}
+
+function fillClientProgressForm(entry = {}) {
+  const form = document.getElementById("client-checkin-form");
+
+  if (!form) {
+    return;
+  }
+
+  const measurements = progressMeasurements(entry);
+  form.elements.progress_date.value = entry.entry_date || new Date().toISOString().slice(0, 10);
+  form.elements.progress_bodyweight.value = entry.bodyweight ?? "";
+  form.elements.progress_bodyfat.value = entry.bodyfat ?? "";
+  form.elements.progress_muscle_mass.value = entry.muscle_mass ?? "";
+  form.elements.progress_chest.value = measurements.chest ?? "";
+  form.elements.progress_waist.value = measurements.waist ?? "";
+  form.elements.progress_hips.value = measurements.hips ?? "";
+  form.elements.progress_arms.value = measurements.arms ?? "";
+  form.elements.progress_thighs.value = measurements.thighs ?? "";
+  form.elements.progress_goal.value = entry.goal_note || "";
+}
+
+function clientProgressPayload(form, email) {
+  return {
+    client_email: email,
+    entry_date: form.elements.progress_date.value || todayDate(),
+    bodyweight: progressNumber(form.elements.progress_bodyweight.value),
+    bodyfat: progressNumber(form.elements.progress_bodyfat.value),
+    muscle_mass: progressNumber(form.elements.progress_muscle_mass.value),
+    measurements: {
+      chest: progressNumber(form.elements.progress_chest.value),
+      waist: progressNumber(form.elements.progress_waist.value),
+      hips: progressNumber(form.elements.progress_hips.value),
+      arms: progressNumber(form.elements.progress_arms.value),
+      thighs: progressNumber(form.elements.progress_thighs.value)
+    },
+    goal_note: form.elements.progress_goal.value.trim()
+  };
+}
+
 function renderRest(rest) {
   if (!rest) {
     return "";
@@ -1623,15 +1701,18 @@ function renderProgressGraph(entries) {
   const padding = 34;
   const weightPoints = pointsFor(entries, "bodyweight", width, height, padding);
   const bodyfatPoints = pointsFor(entries, "bodyfat", width, height, padding);
+  const muscleMassPoints = pointsFor(entries, "muscle_mass", width, height, padding);
 
   chart.innerHTML = `
-    <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Bodyweight and bodyfat progress">
+    <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Bodyweight, bodyfat, and muscle mass progress">
       <line x1="${padding}" y1="${height - padding}" x2="${width - padding}" y2="${height - padding}" />
       <line x1="${padding}" y1="${padding}" x2="${padding}" y2="${height - padding}" />
       ${weightPoints ? `<polyline class="weight-line" points="${weightPoints}" />` : ""}
       ${bodyfatPoints ? `<polyline class="bodyfat-line" points="${bodyfatPoints}" />` : ""}
+      ${muscleMassPoints ? `<polyline class="musclemass-line" points="${muscleMassPoints}" />` : ""}
       ${circlesFor(weightPoints, "weight-dot")}
       ${circlesFor(bodyfatPoints, "bodyfat-dot")}
+      ${circlesFor(muscleMassPoints, "musclemass-dot")}
       ${entries.map((entry, index) => {
         const x = padding + (entries.length === 1 ? width - padding * 2 : (index / (entries.length - 1)) * (width - padding * 2));
         return `<text x="${x}" y="${height - 8}" text-anchor="middle">${escapeHtml(entry.entry_date.slice(5))}</text>`;
@@ -1640,6 +1721,7 @@ function renderProgressGraph(entries) {
     <div class="chart-legend">
       <span><i class="weight-key"></i> Bodyweight</span>
       <span><i class="bodyfat-key"></i> Bodyfat</span>
+      <span><i class="musclemass-key"></i> Muscle mass</span>
     </div>
   `;
 }
@@ -1649,6 +1731,7 @@ function renderProgress(entries) {
   progressEntries = safeEntries;
   const latest = safeEntries[safeEntries.length - 1];
   const current = document.getElementById("progress-current");
+  const history = document.getElementById("client-progress-history");
 
   if (!current) {
     renderClientHomeSummary();
@@ -1657,19 +1740,41 @@ function renderProgress(entries) {
 
   if (!latest) {
     setText("#progress-date", "");
+    fillClientProgressForm();
     current.innerHTML = '<p class="empty-state">No progress check-ins yet.</p>';
     setText("#progress-goal", "");
+    if (history) {
+      history.innerHTML = '<p class="empty-state">No saved check-ins yet.</p>';
+    }
     renderProgressGraph([]);
     renderClientHomeSummary();
     return;
   }
 
   setText("#progress-date", latest.entry_date);
+  fillClientProgressForm(latest);
   current.innerHTML = `
     <span><strong>Current bodyweight</strong> ${formatProgressValue(latest.bodyweight, " lb")}</span>
     <span><strong>Current bodyfat</strong> ${formatProgressValue(latest.bodyfat, "%")}</span>
+    <span><strong>Muscle mass</strong> ${formatProgressValue(latest.muscle_mass, " lb")}</span>
+    <span><strong>Measurements</strong> ${escapeHtml(measurementSummary(latest))}</span>
   `;
   setText("#progress-goal", latest.goal_note ? `Updated goal: ${latest.goal_note}` : "");
+  if (history) {
+    history.innerHTML = safeEntries
+      .slice()
+      .reverse()
+      .map((entry) => `
+        <button class="progress-history-row client-progress-history-row" type="button" data-client-progress-id="${entry.id}">
+          <strong>${escapeHtml(entry.entry_date)}</strong>
+          <span>${formatProgressValue(entry.bodyweight, " lb")}</span>
+          <span>${formatProgressValue(entry.bodyfat, "%")} bodyfat</span>
+          <span>${formatProgressValue(entry.muscle_mass, " lb")} muscle</span>
+          <em>${escapeHtml(measurementSummary(entry))}</em>
+        </button>
+      `)
+      .join("");
+  }
   renderProgressGraph(safeEntries);
   renderClientHomeSummary();
 }
@@ -3389,6 +3494,97 @@ function handleClientMetricSave() {
   });
 }
 
+function handleClientProgressHistorySelect() {
+  document.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-client-progress-id]");
+
+    if (!button) {
+      return;
+    }
+
+    const entry = progressEntries.find((item) => String(item.id) === button.dataset.clientProgressId);
+
+    if (!entry) {
+      return;
+    }
+
+    fillClientProgressForm(entry);
+    setText("#client-progress-save-status", "Editing selected check-in.");
+  });
+}
+
+function handleClientProgressSave() {
+  document.addEventListener("submit", async (event) => {
+    const form = event.target.closest("#client-checkin-form");
+
+    if (!form) {
+      return;
+    }
+
+    event.preventDefault();
+
+    if (!supabaseClient) {
+      setText("#client-progress-save-status", "Client portal is not connected.");
+      return;
+    }
+
+    const email = normalizeClientEmail(activeClientEmail || currentProgram?.client_email);
+
+    if (!email) {
+      setText("#client-progress-save-status", "Client profile is not loaded yet.");
+      return;
+    }
+
+    const button = document.getElementById("client-save-progress-button");
+
+    if (button) {
+      button.disabled = true;
+    }
+
+    setText("#client-progress-save-status", "Saving check-in...");
+
+    const payload = clientProgressPayload(form, email);
+    const { error } = await withTimeout(
+      supabaseClient
+        .from("client_progress")
+        .upsert(payload, { onConflict: "client_email,entry_date" }),
+      "Progress save timed out."
+    );
+
+    if (error) {
+      setText("#client-progress-save-status", error.message || "Could not save check-in.");
+      if (button) {
+        button.disabled = false;
+      }
+      return;
+    }
+
+    const { data, error: loadError } = await withTimeout(
+      supabaseClient
+        .from("client_progress")
+        .select("*")
+        .ilike("client_email", email)
+        .order("entry_date", { ascending: true }),
+      "Progress reload timed out."
+    );
+
+    if (loadError) {
+      setText("#client-progress-save-status", "Check-in saved. Refresh to reload history.");
+      if (button) {
+        button.disabled = false;
+      }
+      return;
+    }
+
+    renderProgress(data || []);
+    setText("#client-progress-save-status", "Check-in saved.");
+
+    if (button) {
+      button.disabled = false;
+    }
+  });
+}
+
 function clientNutritionFormValues() {
   const setup = document.getElementById("client-nutrition-setup");
 
@@ -3727,8 +3923,239 @@ function renderProgram(program) {
   renderWorkoutInsights(program);
   renderClientSessionManualState(program);
   renderClientWorkoutTabs(workouts);
+  renderFitbitStatus();
   setClientDashboardTab(activeClientDashboardTab);
   showDashboardContent();
+}
+
+function fitbitUi() {
+  return {
+    card: document.getElementById("client-fitbit-card"),
+    status: document.getElementById("client-fitbit-status"),
+    message: document.getElementById("client-fitbit-message"),
+    connectButton: document.getElementById("client-fitbit-connect-button"),
+    disconnectButton: document.getElementById("client-fitbit-disconnect-button")
+  };
+}
+
+function setFitbitMessage(message) {
+  const { message: messageElement } = fitbitUi();
+
+  if (messageElement) {
+    messageElement.textContent = message;
+  }
+}
+
+function renderFitbitStatus(message = "") {
+  const { card, status, connectButton, disconnectButton } = fitbitUi();
+
+  if (!card) {
+    return;
+  }
+
+  if (!supabaseClient || !signedInDashboardEmail || isCoachDashboardPreview) {
+    card.hidden = true;
+    return;
+  }
+
+  card.hidden = false;
+
+  if (status) {
+    status.textContent = fitbitConnection.connected ? "Connected" : "Not connected";
+  }
+
+  if (connectButton) {
+    connectButton.hidden = fitbitConnection.connected;
+    connectButton.disabled = false;
+  }
+
+  if (disconnectButton) {
+    disconnectButton.hidden = !fitbitConnection.connected;
+    disconnectButton.disabled = false;
+  }
+
+  if (message) {
+    setFitbitMessage(message);
+  }
+}
+
+async function invokeFitbit(action, body = {}) {
+  if (!supabaseClient) {
+    return { data: null, error: { message: "Fitbit sync is not connected yet." } };
+  }
+
+  const { data, error } = await supabaseClient.functions.invoke("fitbit-auth", {
+    body: { action, ...body }
+  });
+
+  return { data, error };
+}
+
+function cleanFitbitCallbackUrl() {
+  const url = new URL(window.location.href);
+  url.searchParams.delete("code");
+  url.searchParams.delete("state");
+  url.searchParams.delete("scope");
+  window.history.replaceState({}, document.title, `${url.pathname}${url.search}${url.hash}`);
+}
+
+async function handleFitbitOAuthCallback() {
+  if (!document.querySelector(".dashboard-page") || isCoachDashboardPreview) {
+    return;
+  }
+
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get("code");
+  const state = params.get("state");
+
+  if (!code || !state) {
+    return;
+  }
+
+  const expectedState = window.localStorage.getItem(fitbitOauthStateKey);
+  const codeVerifier = window.localStorage.getItem(fitbitOauthVerifierKey);
+
+  if (!expectedState || state !== expectedState || !codeVerifier) {
+    cleanFitbitCallbackUrl();
+    renderFitbitStatus("Fitbit login could not be verified. Try connecting again.");
+    return;
+  }
+
+  setFitbitMessage("Connecting Fitbit...");
+  const { data, error } = await invokeFitbit("callback", { code, codeVerifier });
+  window.localStorage.removeItem(fitbitOauthStateKey);
+  window.localStorage.removeItem(fitbitOauthVerifierKey);
+  cleanFitbitCallbackUrl();
+
+  if (error || data?.error) {
+    renderFitbitStatus(error?.message || data?.error || "Could not connect Fitbit.");
+    return;
+  }
+
+  fitbitConnection = { loaded: true, connected: true };
+  renderFitbitStatus("Fitbit connected. Finished workouts will sync.");
+}
+
+async function loadFitbitStatus() {
+  if (!document.querySelector(".dashboard-page") || isCoachDashboardPreview) {
+    renderFitbitStatus();
+    return;
+  }
+
+  const { data, error } = await invokeFitbit("status");
+
+  if (error || data?.error) {
+    fitbitConnection = { loaded: true, connected: false };
+    renderFitbitStatus(error?.message || data?.error || "Fitbit status unavailable.");
+    return;
+  }
+
+  fitbitConnection = {
+    loaded: true,
+    connected: Boolean(data?.connected),
+    fitbitUserId: data?.fitbitUserId || "",
+    expiresAt: data?.expiresAt || ""
+  };
+  renderFitbitStatus(
+    fitbitConnection.connected
+      ? "Finished workouts will sync to Fitbit."
+      : "Sync finished workouts to Fitbit."
+  );
+}
+
+function fitbitWorkoutSummary(rows) {
+  const workoutRows = rows.filter((row) => row.exercise_code !== warmupExerciseCode);
+  const firstRow = workoutRows[0] || rows[0] || {};
+  const entryDate = firstRow.entry_date || todayDate();
+  const workoutTitle = firstRow.workout_title || "Strength Training";
+  const strengthExerciseCount = new Set(
+    rows
+      .filter((row) => row.exercise_code !== warmupExerciseCode && row.exercise_code !== cardioExerciseCode)
+      .map((row) => row.exercise_code || row.exercise_name)
+      .filter(Boolean)
+  ).size;
+  const cardioMinutes = rows
+    .filter((row) => row.exercise_code === cardioExerciseCode)
+    .reduce((total, row) => total + Number(row.weight_used || 0), 0);
+  const warmupMinutes = rows
+    .filter((row) => row.exercise_code === warmupExerciseCode)
+    .reduce((total, row) => total + Number(row.weight_used || 0), 0);
+  const estimatedMinutes = Math.max(20, Math.min(180, (strengthExerciseCount * 8) + cardioMinutes + warmupMinutes));
+
+  return {
+    entryDate,
+    workoutTitle,
+    durationMinutes: estimatedMinutes,
+    startTime: "12:00"
+  };
+}
+
+async function syncFinishedWorkoutToFitbit(rows, status) {
+  if (!fitbitConnection.connected || !Array.isArray(rows) || rows.length === 0) {
+    return;
+  }
+
+  const previousText = status?.textContent || "";
+
+  if (status) {
+    status.textContent = "Workout finished. Syncing to Fitbit...";
+  }
+
+  const { data, error } = await invokeFitbit("sync-workout", fitbitWorkoutSummary(rows));
+
+  if (error || data?.error) {
+    if (status) {
+      status.textContent = `${previousText || "Workout finished."} Fitbit sync failed: ${error?.message || data?.error}`;
+    }
+    return;
+  }
+
+  if (status) {
+    status.textContent = data?.alreadySynced
+      ? "Workout finished. Fitbit already had this workout."
+      : "Workout finished and synced to Fitbit.";
+  }
+}
+
+function handleFitbitActions() {
+  document.addEventListener("click", async (event) => {
+    const connectButton = event.target.closest("#client-fitbit-connect-button");
+    const disconnectButton = event.target.closest("#client-fitbit-disconnect-button");
+
+    if (!connectButton && !disconnectButton) {
+      return;
+    }
+
+    if (connectButton) {
+      connectButton.disabled = true;
+      setFitbitMessage("Opening Fitbit...");
+      const { data, error } = await invokeFitbit("start");
+
+      if (error || data?.error || !data?.authorizationUrl || !data?.codeVerifier || !data?.state) {
+        connectButton.disabled = false;
+        renderFitbitStatus(error?.message || data?.error || "Could not start Fitbit login.");
+        return;
+      }
+
+      window.localStorage.setItem(fitbitOauthStateKey, data.state);
+      window.localStorage.setItem(fitbitOauthVerifierKey, data.codeVerifier);
+      window.location.href = data.authorizationUrl;
+      return;
+    }
+
+    disconnectButton.disabled = true;
+    setFitbitMessage("Disconnecting Fitbit...");
+    const { data, error } = await invokeFitbit("disconnect");
+
+    if (error || data?.error) {
+      disconnectButton.disabled = false;
+      renderFitbitStatus(error?.message || data?.error || "Could not disconnect Fitbit.");
+      return;
+    }
+
+    fitbitConnection = { loaded: true, connected: false };
+    renderFitbitStatus("Fitbit disconnected.");
+  });
 }
 
 async function handleLogin() {
@@ -3908,6 +4335,8 @@ async function loadDashboard() {
     const signedInEmail = normalizeClientEmail(user.email);
     const previewEmail = dashboardClientEmailParam();
     const targetClientEmail = isCoachPortalEmail(signedInEmail) ? previewEmail : signedInEmail;
+    signedInDashboardEmail = signedInEmail;
+    isCoachDashboardPreview = isCoachPortalEmail(signedInEmail) && Boolean(previewEmail);
 
     if (!targetClientEmail) {
       setDashboardMessage(
@@ -3947,6 +4376,8 @@ async function loadDashboard() {
 
     activeClientEmail = data.client_email || targetClientEmail;
     renderProgram(data);
+    await handleFitbitOAuthCallback();
+    await loadFitbitStatus();
 
     const [progressResult, trainingLogResult, foodLogResult] = await Promise.allSettled([
       withTimeout(
@@ -4228,10 +4659,14 @@ async function handleTrainingLogSave() {
         }
       }
 
-      await saveTrainingLogRows(workoutButton, logElements, status, {
+      const saveResult = await saveTrainingLogRows(workoutButton, logElements, status, {
         savingMessage: finishWorkoutButton ? "Finishing workout..." : "Saving workout...",
         successMessage: finishWorkoutButton ? "Workout finished." : "Workout progress saved."
       });
+
+      if (finishWorkoutButton && saveResult.saved) {
+        await syncFinishedWorkoutToFitbit(saveResult.rows || [], status);
+      }
       return;
     }
 
@@ -4279,7 +4714,10 @@ handleClientWorkoutTabs();
 handleWorkoutInteractions();
 handleSkipToggle();
 handleTrainingLogSave();
+handleFitbitActions();
 handleClientMetricSave();
+handleClientProgressHistorySelect();
+handleClientProgressSave();
 handleClientNutritionSave();
 handleFoodSearch();
 handleFoodResultSelect();

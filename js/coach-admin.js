@@ -1105,6 +1105,39 @@ function numberOrNull(value) {
   return Number.isFinite(number) ? number : null;
 }
 
+function progressMeasurements(entry = {}) {
+  return entry && typeof entry.measurements === "object" && !Array.isArray(entry.measurements)
+    ? entry.measurements
+    : {};
+}
+
+function progressMeasurementPayload(form) {
+  return {
+    chest: numberOrNull(formValue(form, "progress_chest")),
+    waist: numberOrNull(formValue(form, "progress_waist")),
+    hips: numberOrNull(formValue(form, "progress_hips")),
+    arms: numberOrNull(formValue(form, "progress_arms")),
+    thighs: numberOrNull(formValue(form, "progress_thighs"))
+  };
+}
+
+function progressMeasurementSummary(entry = {}) {
+  const measurements = progressMeasurements(entry);
+  const rows = [
+    ["Chest", measurements.chest],
+    ["Waist", measurements.waist],
+    ["Hips / glutes", measurements.hips],
+    ["Arms", measurements.arms],
+    ["Thighs", measurements.thighs]
+  ].filter(([, value]) => value !== null && value !== undefined && value !== "");
+
+  if (rows.length === 0) {
+    return "No measurements";
+  }
+
+  return rows.map(([label, value]) => `${label}: ${value} in`).join(" · ");
+}
+
 function buildWorkoutFromForm(form, number) {
   return {
     title: formValue(form, `workout_${number}_title`) || `Workout ${number}`,
@@ -1611,9 +1644,16 @@ function fillProgressForm(entry = {}) {
     return;
   }
 
+  const measurements = progressMeasurements(entry);
   form.elements.progress_date.value = entry.entry_date || todayDate();
   form.elements.progress_bodyweight.value = entry.bodyweight ?? "";
   form.elements.progress_bodyfat.value = entry.bodyfat ?? "";
+  form.elements.progress_muscle_mass.value = entry.muscle_mass ?? "";
+  form.elements.progress_chest.value = measurements.chest ?? "";
+  form.elements.progress_waist.value = measurements.waist ?? "";
+  form.elements.progress_hips.value = measurements.hips ?? "";
+  form.elements.progress_arms.value = measurements.arms ?? "";
+  form.elements.progress_thighs.value = measurements.thighs ?? "";
   form.elements.progress_goal.value = entry.goal_note || "";
 }
 
@@ -1634,17 +1674,19 @@ function renderProgressHistory() {
     .reverse()
     .map((entry) => `
       <button class="progress-history-row" type="button" data-progress-id="${entry.id}">
-        <strong>${entry.entry_date}</strong>
-        <span>${entry.bodyweight ?? "Not set"} lb</span>
-        <span>${entry.bodyfat ?? "Not set"}% bodyfat</span>
-        <em>${entry.goal_note || "No goal note"}</em>
+        <strong>${escapeHtml(entry.entry_date)}</strong>
+        <span>${escapeHtml(entry.bodyweight ?? "Not set")} lb</span>
+        <span>${escapeHtml(entry.bodyfat ?? "Not set")}% bodyfat</span>
+        <span>${escapeHtml(entry.muscle_mass ?? "Not set")} lb muscle</span>
+        <em>${escapeHtml(progressMeasurementSummary(entry))}</em>
+        <small>${escapeHtml(entry.goal_note || "No check-in notes")}</small>
       </button>
     `)
     .join("");
 
   history.querySelectorAll("[data-progress-id]").forEach((button) => {
     button.addEventListener("click", () => {
-      const entry = progressEntries.find((item) => item.id === button.dataset.progressId);
+      const entry = progressEntries.find((item) => String(item.id) === button.dataset.progressId);
 
       fillProgressForm(entry);
       progressStatus("Editing selected check-in.");
@@ -3769,6 +3811,8 @@ async function handleSaveProgress() {
       entry_date: entryDate,
       bodyweight: numberOrNull(formValue(form, "progress_bodyweight")),
       bodyfat: numberOrNull(formValue(form, "progress_bodyfat")),
+      muscle_mass: numberOrNull(formValue(form, "progress_muscle_mass")),
+      measurements: progressMeasurementPayload(form),
       goal_note: formValue(form, "progress_goal")
     };
 

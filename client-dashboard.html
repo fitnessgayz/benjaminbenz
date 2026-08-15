@@ -30,7 +30,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=client-session-actions-1" />
+  <link rel="stylesheet" href="css/style.css?v=fitbit-sync-1" />
 </head>
 <body class="dashboard-page is-loading">
   <header class="site-header dashboard-header">
@@ -69,6 +69,15 @@
             <button class="button button-ghost" type="button" id="client-summary-sessions-button">Sessions</button>
             <button class="password-reset-button client-dashboard-reset" type="button" id="client-dashboard-reset-password-button">Reset password</button>
             <small id="client-dashboard-reset-status" role="status"></small>
+            <div class="fitbit-sync-card" id="client-fitbit-card" hidden>
+              <span>Fitbit sync</span>
+              <strong id="client-fitbit-status">Not connected</strong>
+              <div class="fitbit-sync-actions">
+                <button class="button button-ghost" type="button" id="client-fitbit-connect-button">Connect Fitbit</button>
+                <button class="password-reset-button" type="button" id="client-fitbit-disconnect-button" hidden>Disconnect</button>
+              </div>
+              <small id="client-fitbit-message" role="status">Sync finished workouts to Fitbit.</small>
+            </div>
           </div>
         </aside>
 
@@ -315,9 +324,60 @@
             </div>
             <span class="status-pill" id="progress-date"></span>
           </div>
+          <form class="client-checkin-form" id="client-checkin-form">
+            <div class="admin-field-grid">
+              <label>
+                Date
+                <input type="date" name="progress_date" />
+              </label>
+              <label>
+                Bodyweight
+                <input type="number" name="progress_bodyweight" placeholder="154" step="0.1" min="0" />
+              </label>
+              <label>
+                Bodyfat %
+                <input type="number" name="progress_bodyfat" placeholder="18" step="0.1" min="0" />
+              </label>
+              <label>
+                Muscle mass
+                <input type="number" name="progress_muscle_mass" placeholder="110" step="0.1" min="0" />
+              </label>
+            </div>
+            <div class="admin-field-grid checkin-measurements-grid">
+              <label>
+                Chest
+                <input type="number" name="progress_chest" placeholder="Inches" step="0.1" min="0" />
+              </label>
+              <label>
+                Waist
+                <input type="number" name="progress_waist" placeholder="Inches" step="0.1" min="0" />
+              </label>
+              <label>
+                Hips / glutes
+                <input type="number" name="progress_hips" placeholder="Inches" step="0.1" min="0" />
+              </label>
+              <label>
+                Arms
+                <input type="number" name="progress_arms" placeholder="Inches" step="0.1" min="0" />
+              </label>
+              <label>
+                Thighs
+                <input type="number" name="progress_thighs" placeholder="Inches" step="0.1" min="0" />
+              </label>
+            </div>
+            <label>
+              Check-in notes
+              <textarea name="progress_goal" placeholder="Energy, sleep, goal changes, photos taken, or anything Benjamin should know."></textarea>
+            </label>
+            <div class="progress-actions">
+              <p id="client-progress-save-status" role="status">Save today's check-in or edit a previous date.</p>
+              <button class="button button-dark" type="submit" id="client-save-progress-button">Save check-in</button>
+            </div>
+          </form>
           <div class="progress-current" id="progress-current"></div>
           <div class="progress-chart" id="progress-chart" aria-label="Progress line graph"></div>
           <p class="progress-goal" id="progress-goal"></p>
+          <div class="progress-history" id="client-progress-history"></div>
         </section>
 
         <section class="progress-panel" data-client-dashboard-panel="sessions" aria-labelledby="client-sessions-title" hidden>
@@ -402,6 +462,6 @@
   <script src="js/script.js?v=client-dashboard"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js?v=manual-sessions-1"></script>
-  <script src="js/client-portal.js?v=client-workout-history-csv-1"></script>
+  <script src="js/client-portal.js?v=fitbit-sync-1"></script>
 </body>
 </html>
