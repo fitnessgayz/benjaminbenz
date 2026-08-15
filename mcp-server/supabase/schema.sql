@@ -212,6 +212,24 @@ for select
 to authenticated
 using (lower(coalesce((select auth.jwt() ->> 'email'), '')) = lower(client_email));
 
+alter table public.client_workout_logs
+add column if not exists workout_session_id uuid;
+
+alter table public.client_workout_logs
+add column if not exists source text not null default 'website';
+
+alter table public.client_workout_logs
+add column if not exists exercise_code text not null default '';
+
+alter table public.client_workout_logs
+alter column weight_used drop not null;
+
+create index if not exists client_workout_logs_client_session_idx
+on public.client_workout_logs (lower(client_email), workout_session_id)
+where workout_session_id is not null;
+
+grant select, insert, update, delete on public.client_workout_logs to authenticated;
+
 drop policy if exists "Clients can read their own workout logs" on public.client_workout_logs;
 create policy "Clients can read their own workout logs"
 on public.client_workout_logs
@@ -225,6 +243,13 @@ on public.client_workout_logs
 for insert
 to authenticated
 with check (lower(coalesce((select auth.jwt() ->> 'email'), '')) = lower(client_email));
+
+drop policy if exists "Clients can delete their own workout logs" on public.client_workout_logs;
+create policy "Clients can delete their own workout logs"
+on public.client_workout_logs
+for delete
+to authenticated
+using (lower(coalesce((select auth.jwt() ->> 'email'), '')) = lower(client_email));
 drop policy if exists "Clients can update their own workout logs" on public.client_workout_logs;
 create policy "Clients can update their own workout logs"
 on public.client_workout_logs

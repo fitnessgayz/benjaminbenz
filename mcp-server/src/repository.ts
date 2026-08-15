@@ -12,6 +12,10 @@ import {
   type ProgramExercise,
   type ProgramWorkout,
   type TrainingProgram,
+  type WorkoutCorrectionInput,
+  type WorkoutInput,
+  type WorkoutLogEntry,
+  type WorkoutUndoResult,
   startDateForWindow,
 } from "./domain.js";
 
@@ -22,6 +26,9 @@ export interface CoachingRepository {
   listProgress(days: number, category?: ProgressCategory): Promise<ProgressEntry[]>;
   recordCheckIn(input: CheckInInput): Promise<{ id: string; created_at: string }>;
   addProgressNote(input: ProgressNoteInput): Promise<ProgressEntry>;
+  recordWorkout(input: WorkoutInput): Promise<WorkoutLogEntry[]>;
+  correctWorkout(input: WorkoutCorrectionInput): Promise<WorkoutLogEntry[]>;
+  undoLastWorkout(): Promise<WorkoutUndoResult>;
   createCoachRequest(input: CoachRequestInput): Promise<CoachRequest>;
   listOpenCoachRequests(): Promise<CoachRequest[]>;
 }
@@ -57,13 +64,16 @@ type LiveBodyProgressRow = {
 
 type LiveWorkoutLogRow = {
   id: string;
+  workout_session_id?: string | null;
   entry_date: string;
   workout_title: string;
+  exercise_code?: string;
   exercise_name: string;
   set_number: number;
-  weight_used: number | string;
+  weight_used: number | string | null;
   reps: number | string | null;
   notes: string | null;
+  created_at?: string;
 };
 
 type LiveCheckInRow = {
@@ -92,6 +102,38 @@ function numberOrNull(value: number | string | null): number | null {
   if (value === null || value === "") return null;
   const parsed = typeof value === "number" ? value : Number(value);
   return Number.isFinite(parsed) ? parsed : null;
+}
+
+function workoutLogEntry(row: LiveWorkoutLogRow): WorkoutLogEntry {
+  if (!row.workout_session_id || !row.created_at) {
+    throw new Error("The saved workout is missing its session information.");
+  }
+
+  return {
+    id: row.id,
+    workout_session_id: row.workout_session_id,
+    entry_date: row.entry_date,
+    workout_title: row.workout_title,
+    exercise_code: row.exercise_code ?? "",
+    exercise_name: row.exercise_name,
+    set_number: row.set_number,
+    weight_used: numberOrNull(row.weight_used),
+    reps: numberOrNull(row.reps),
+    notes: row.notes,
+    created_at: row.created_at,
+  };
+}
+
+export function availableWorkoutTitle(baseTitle: string, existingTitles: string[]): string {
+  const used = new Set(existingTitles.map((title) => title.toLocaleLowerCase()));
+  if (!used.has(baseTitle.toLocaleLowerCase())) return baseTitle;
+
+  for (let suffix = 2; suffix <= 100; suffix += 1) {
+    const candidate = `${baseTitle} (${suffix})`;
+    if (!used.has(candidate.toLocaleLowerCase())) return candidate;
+  }
+
+  throw new Error("Too many workouts with this title are already logged for that date.");
 }
 
 function objectValue(value: unknown): Record<string, unknown> {
@@ -210,6 +252,7 @@ export function mapBodyProgress(rows: LiveBodyProgressRow[]): ProgressEntry[] {
 
 export function mapWorkoutProgress(rows: LiveWorkoutLogRow[]): ProgressEntry[] {
   return rows.map((row) => {
+    const weightUsed = numberOrNull(row.weight_used);
     const detail = [
       row.reps === null ? null : `${row.reps} reps`,
       row.notes,
@@ -222,8 +265,8 @@ export function mapWorkoutProgress(rows: LiveWorkoutLogRow[]): ProgressEntry[] {
       occurred_on: row.entry_date,
       category: "strength",
       metric_name: row.exercise_name,
-      numeric_value: numberOrNull(row.weight_used),
-      unit: "lb",
+      numeric_value: weightUsed,
+      unit: weightUsed === null ? null : "lb",
       note: detail,
     };
   });
@@ -379,6 +422,133 @@ export class SupabaseCoachingRepository implements CoachingRepository {
       .select("id, occurred_on, category, metric_name, numeric_value, unit, note")
       .single();
     return requireData(data as ProgressEntry | null, error);
+  }
+
+  async recordWorkout(input: WorkoutInput): Promise<WorkoutLogEntry[]> {
+    const existingResult = await this.client
+      .from("client_workout_logs")
+      .select("workout_title")
+      .eq("client_email", this.clientEmail)
+      .eq("entry_date", input.occurredOn)
+      .limit(200);
+    if (existingResult.error) {
+      throw new Error(`Could not prepare the workout log: ${existingResult.error.message}`);
+    }
+
+    const workoutTitle = availableWorkoutTitle(
+      input.workoutTitle,
+      (existingResult.data ?? []).map((row) => String(row.workout_title ?? "")),
+    );
+    const workoutSessionId = crypto.randomUUID();
+    const rows = input.sets.map((set) => ({
+      client_email: this.clientEmail,
+      workout_session_id: workoutSessionId,
+      entry_date: input.occurredOn,
+      workout_title: workoutTitle,
+      exercise_code: set.exerciseCode,
+      exercise_name: set.exerciseName,
+      set_number: set.setNumber,
+      weight_used: set.weightUsed,
+      reps: set.reps,
+      notes: set.notes,
+      source: "mcp",
+    }));
+    const { data, error } = await this.client
+      .from("client_workout_logs")
+      .insert(rows)
+      .select(
+        "id, workout_session_id, entry_date, workout_title, exercise_code, exercise_name, set_number, weight_used, reps, notes, created_at",
+      );
+    if (error) throw new Error(`Could not save the workout: ${error.message}`);
+    if (data?.length !== rows.length) {
+      throw new Error("The workout was not saved completely.");
+    }
+    return (data as LiveWorkoutLogRow[]).map(workoutLogEntry);
+  }
+
+  async correctWorkout(input: WorkoutCorrectionInput): Promise<WorkoutLogEntry[]> {
+    let lookup = this.client
+      .from("client_workout_logs")
+      .select(
+        "id, workout_session_id, entry_date, workout_title, exercise_code, exercise_name, set_number, weight_used, reps, notes, created_at",
+      )
+      .eq("client_email", this.clientEmail)
+      .eq("source", "mcp")
+      .not("workout_session_id", "is", null)
+      .order("created_at", { ascending: false })
+      .limit(200);
+    if (input.occurredOn) lookup = lookup.eq("entry_date", input.occurredOn);
+
+    const { data: candidateData, error: candidateError } = await lookup;
+    if (candidateError) {
+      throw new Error(`Could not find the workout to correct: ${candidateError.message}`);
+    }
+
+    const normalizedName = input.exerciseName.toLocaleLowerCase();
+    const normalizedTitle = input.workoutTitle?.toLocaleLowerCase();
+    const candidate = ((candidateData ?? []) as LiveWorkoutLogRow[]).find(
+      (row) =>
+        row.exercise_name.toLocaleLowerCase() === normalizedName &&
+        (!normalizedTitle ||
+          row.workout_title.toLocaleLowerCase() === normalizedTitle ||
+          row.workout_title.toLocaleLowerCase().startsWith(`${normalizedTitle} (`)) &&
+        (input.setNumber === undefined || row.set_number === input.setNumber),
+    );
+    if (!candidate?.workout_session_id) {
+      throw new Error("No matching MCP-recorded workout set was found to correct.");
+    }
+
+    const changes: Record<string, number | string | null> = {};
+    if (input.weightUsed !== undefined) changes.weight_used = input.weightUsed;
+    if (input.reps !== undefined) changes.reps = input.reps;
+    if (input.notes !== undefined) changes.notes = input.notes;
+
+    let update = this.client
+      .from("client_workout_logs")
+      .update(changes)
+      .eq("client_email", this.clientEmail)
+      .eq("workout_session_id", candidate.workout_session_id)
+      .eq("exercise_name", candidate.exercise_name);
+    if (input.setNumber !== undefined) update = update.eq("set_number", input.setNumber);
+
+    const { data, error } = await update.select(
+      "id, workout_session_id, entry_date, workout_title, exercise_code, exercise_name, set_number, weight_used, reps, notes, created_at",
+    );
+    if (error) throw new Error(`Could not correct the workout: ${error.message}`);
+    if (!data?.length) throw new Error("No workout sets were changed.");
+    return (data as LiveWorkoutLogRow[]).map(workoutLogEntry);
+  }
+
+  async undoLastWorkout(): Promise<WorkoutUndoResult> {
+    const { data: latest, error: latestError } = await this.client
+      .from("client_workout_logs")
+      .select("workout_session_id, entry_date, workout_title")
+      .eq("client_email", this.clientEmail)
+      .eq("source", "mcp")
+      .not("workout_session_id", "is", null)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (latestError) throw new Error(`Could not find the last workout: ${latestError.message}`);
+    if (!latest?.workout_session_id) {
+      throw new Error("There is no MCP-recorded workout available to undo.");
+    }
+
+    const { data, error } = await this.client
+      .from("client_workout_logs")
+      .delete()
+      .eq("client_email", this.clientEmail)
+      .eq("workout_session_id", latest.workout_session_id)
+      .select("id");
+    if (error) throw new Error(`Could not undo the last workout: ${error.message}`);
+    if (!data?.length) throw new Error("No workout sets were removed.");
+
+    return {
+      workout_session_id: latest.workout_session_id,
+      entry_date: latest.entry_date,
+      workout_title: latest.workout_title,
+      deleted_sets: data.length,
+    };
   }
 
   async createCoachRequest(input: CoachRequestInput): Promise<CoachRequest> {

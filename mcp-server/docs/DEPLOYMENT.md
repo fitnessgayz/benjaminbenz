@@ -4,7 +4,7 @@
 
 Create a development branch or separate development project with synthetic client data. Do not connect the Supabase developer MCP server to production client records.
 
-The MCP server reuses `client_programs`, `client_progress`, and `client_workout_logs`. Its migration adds `client_progress_notes`, `client_check_ins`, and `coach_requests`. Confirm the three additions are exposed to the Data API, their explicit `authenticated` grants are present, and RLS remains enabled.
+The MCP server reuses `client_programs`, `client_progress`, and `client_workout_logs`. Its migrations add `client_progress_notes`, `client_check_ins`, and `coach_requests`, plus grouped MCP workout-session metadata and a client-owned delete policy on `client_workout_logs`. Confirm the additions are exposed to the Data API, their explicit least-privilege `authenticated` grants are present, and RLS remains enabled.
 
 Apply the schema during development and review the Supabase security and performance advisors. The website repository already contains the CLI-generated migration; do not apply the standalone schema separately in production.
 

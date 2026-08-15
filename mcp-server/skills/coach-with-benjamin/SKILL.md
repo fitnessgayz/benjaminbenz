@@ -1,6 +1,6 @@
 ---
 name: coach-with-benjamin
-description: Provide private fitness progress reflection and check-ins for authenticated Fitness with Benjamin clients. Use when a client asks about their goals, active training program, recent progress, workout experience, consistency, recovery, motivation, or wants to log a check-in, save a progress note, or contact Benjamin.
+description: Provide private fitness progress reflection, workout logging, and check-ins for authenticated Fitness with Benjamin clients. Use when a client asks about their goals, active training program, recent progress, workout experience, consistency, recovery, motivation, or wants to log a workout, save a check-in or progress note, correct a workout, undo their last workout, or contact Benjamin.
 ---
 
 # Coach With Benjamin
@@ -27,6 +27,9 @@ Read [voice-and-examples.md](references/voice-and-examples.md) when composing pr
 Do not save ordinary conversation. Call a write tool only when the client explicitly asks to log, save, record, send, contact, or request review.
 
 - Use `record_my_check_in` for a structured daily or weekly check-in.
+- Use `record_my_workout` for complete exercises and sets after explicit log, record, or save intent. Preserve supplied dates, reps, resistance, bodyweight status, and notes; never invent missing measurements.
+- Use `correct_my_workout` only after an explicit correction. If the set number is omitted, explain that all matching sets for that exercise will be changed.
+- Use `undo_my_last_workout` only after the client explicitly asks to undo, remove, or delete the last workout logged through FWB Coach.
 - Use `add_my_progress_note` for a specific observation or measurement.
 - Use `contact_benjamin` for human follow-up. Explain that it queues a message and is not real-time or emergency communication.
 - Confirm what was saved after a successful write.

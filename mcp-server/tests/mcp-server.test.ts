@@ -12,12 +12,18 @@ import type {
   ProgressEntry,
   ProgressNoteInput,
   TrainingProgram,
+  WorkoutCorrectionInput,
+  WorkoutInput,
+  WorkoutLogEntry,
+  WorkoutUndoResult,
 } from "../src/domain.js";
 import { createBenjaminMcpServer } from "../src/mcp-server.js";
 import type { CoachingRepository } from "../src/repository.js";
 
 class FakeRepository implements CoachingRepository {
   progressWrites: ProgressNoteInput[] = [];
+  workoutWrites: WorkoutInput[] = [];
+  workoutCorrections: WorkoutCorrectionInput[] = [];
 
   async getConnectedAccount(): Promise<ConnectedAccount> {
     return { display_name: "Test Client", masked_email: "t***@example.com" };
@@ -69,6 +75,49 @@ class FakeRepository implements CoachingRepository {
     return { id: "new-progress", occurred_on: input.occurredOn, category: input.category, metric_name: input.metricName, numeric_value: input.numericValue, unit: input.unit, note: input.note };
   }
 
+  async recordWorkout(input: WorkoutInput): Promise<WorkoutLogEntry[]> {
+    this.workoutWrites.push(input);
+    return input.sets.map((set, index) => ({
+      id: `workout-${index + 1}`,
+      workout_session_id: "session-1",
+      entry_date: input.occurredOn,
+      workout_title: input.workoutTitle,
+      exercise_code: set.exerciseCode,
+      exercise_name: set.exerciseName,
+      set_number: set.setNumber,
+      weight_used: set.weightUsed,
+      reps: set.reps,
+      notes: set.notes,
+      created_at: "2026-08-15T12:00:00Z",
+    }));
+  }
+
+  async correctWorkout(input: WorkoutCorrectionInput): Promise<WorkoutLogEntry[]> {
+    this.workoutCorrections.push(input);
+    return [{
+      id: "workout-1",
+      workout_session_id: "session-1",
+      entry_date: input.occurredOn ?? "2026-08-15",
+      workout_title: input.workoutTitle ?? "Strength Day",
+      exercise_code: "A",
+      exercise_name: input.exerciseName,
+      set_number: input.setNumber ?? 1,
+      weight_used: input.weightUsed ?? null,
+      reps: input.reps ?? 10,
+      notes: input.notes ?? null,
+      created_at: "2026-08-15T12:00:00Z",
+    }];
+  }
+
+  async undoLastWorkout(): Promise<WorkoutUndoResult> {
+    return {
+      workout_session_id: "session-1",
+      entry_date: "2026-08-15",
+      workout_title: "Strength Day",
+      deleted_sets: 4,
+    };
+  }
+
   async createCoachRequest(input: CoachRequestInput): Promise<CoachRequest> {
     return { id: "request", request_type: input.requestType, urgency: input.urgency, message: input.message, status: "open", created_at: "2026-08-12T12:00:00Z" };
   }
@@ -105,6 +154,9 @@ describe("Benjamin MCP server", () => {
       "get_my_active_program",
       "get_my_recent_progress",
       "record_my_check_in",
+      "record_my_workout",
+      "correct_my_workout",
+      "undo_my_last_workout",
       "add_my_progress_note",
       "contact_benjamin",
       "get_my_open_coach_requests",
@@ -199,6 +251,97 @@ describe("Benjamin MCP server", () => {
     expect(result.isError).not.toBe(true);
     expect(repository.progressWrites).toHaveLength(1);
     expect(repository.progressWrites[0]).toMatchObject({ category: "strength", numericValue: 190 });
+  });
+
+  it("records multiple workout sets and preserves bodyweight movements", async () => {
+    const result = await client.callTool({
+      name: "record_my_workout",
+      arguments: {
+        occurred_on: "2026-08-15",
+        workout_title: "Strength Day",
+        exercises: [
+          {
+            name: "Bench Press",
+            sets: [
+              { weight_lb: 135, reps: 10 },
+              { weight_lb: 135, reps: 10 },
+            ],
+          },
+          {
+            name: "Push-up",
+            sets: [{ bodyweight: true, reps: 15, notes: "Clean reps" }],
+          },
+        ],
+      },
+    });
+
+    expect(result.isError).not.toBe(true);
+    expect(repository.workoutWrites).toHaveLength(1);
+    expect(repository.workoutWrites[0]?.sets).toHaveLength(3);
+    expect(repository.workoutWrites[0]?.sets[2]).toMatchObject({
+      exerciseName: "Push-up",
+      weightUsed: null,
+      reps: 15,
+      notes: "Bodyweight · Clean reps",
+    });
+    expect(result.structuredContent).toMatchObject({ exercise_count: 2, set_count: 3 });
+  });
+
+  it("rejects duplicate set numbers before saving a workout", async () => {
+    const result = await client.callTool({
+      name: "record_my_workout",
+      arguments: {
+        workout_title: "Strength Day",
+        exercises: [{
+          name: "Bench Press",
+          sets: [
+            { set_number: 1, weight_lb: 135, reps: 10 },
+            { set_number: 1, weight_lb: 145, reps: 8 },
+          ],
+        }],
+      },
+    });
+
+    expect(result.isError).toBe(true);
+    expect(repository.workoutWrites).toHaveLength(0);
+  });
+
+  it("corrects a selected workout set after explicit correction intent", async () => {
+    const result = await client.callTool({
+      name: "correct_my_workout",
+      arguments: {
+        workout_title: "Strength Day",
+        exercise_name: "Bench Press",
+        set_number: 2,
+        weight_lb: 145,
+      },
+    });
+
+    expect(result.isError).not.toBe(true);
+    expect(repository.workoutCorrections[0]).toMatchObject({
+      workoutTitle: "Strength Day",
+      exerciseName: "Bench Press",
+      setNumber: 2,
+      weightUsed: 145,
+    });
+  });
+
+  it("refuses an empty workout correction", async () => {
+    const result = await client.callTool({
+      name: "correct_my_workout",
+      arguments: { exercise_name: "Bench Press" },
+    });
+
+    expect(result.isError).toBe(true);
+    expect(repository.workoutCorrections).toHaveLength(0);
+  });
+
+  it("undoes the last complete FWB Coach workout", async () => {
+    const result = await client.callTool({ name: "undo_my_last_workout" });
+    expect(result.isError).not.toBe(true);
+    expect(result.structuredContent).toMatchObject({
+      undone_workout: { workout_title: "Strength Day", deleted_sets: 4 },
+    });
   });
 
   it("rejects out-of-range check-in values before the repository is called", async () => {

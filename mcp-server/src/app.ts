@@ -36,7 +36,7 @@ export function createApp(config: AppConfig): Express {
   });
 
   app.get("/health", (_request, response) => {
-    response.json({ status: "ok", service: "benjamin-ai-coach", version: "0.2.0" });
+    response.json({ status: "ok", service: "fwb-coach", version: "0.3.0" });
   });
 
   app.get("/.well-known/openai-apps-challenge", (_request, response) => {

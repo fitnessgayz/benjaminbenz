@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  availableWorkoutTitle,
   mapBodyProgress,
   mapCheckIns,
   mapLiveProgram,
@@ -13,6 +14,14 @@ describe("live portal mapping", () => {
     expect(maskEmail("benjamin@gmail.com")).toBe("b***@gmail.com");
     expect(maskEmail("x@example.com")).toBe("x***@example.com");
     expect(maskEmail("invalid-address")).toBe("Hidden");
+  });
+
+  it("keeps same-day workout titles distinct", () => {
+    expect(availableWorkoutTitle("Strength Day", [])).toBe("Strength Day");
+    expect(availableWorkoutTitle("Strength Day", ["Strength Day"])).toBe("Strength Day (2)");
+    expect(availableWorkoutTitle("Strength Day", ["strength day", "Strength Day (2)"])).toBe(
+      "Strength Day (3)",
+    );
   });
 
   it("maps the active client program into the MCP profile and program shapes", () => {
@@ -92,6 +101,24 @@ describe("live portal mapping", () => {
     expect(bodyEntries[0]).toMatchObject({ category: "body_composition", numeric_value: 185.5, unit: "lb" });
     expect(workoutEntries[0]).toMatchObject({ category: "strength", numeric_value: 205, metric_name: "Squat" });
     expect(workoutEntries[0]?.note).toContain("5 reps");
+  });
+
+  it("represents bodyweight workout sets without a fake zero-pound measurement", () => {
+    const [entry] = mapWorkoutProgress([
+      {
+        id: "bodyweight-set",
+        entry_date: "2026-08-15",
+        workout_title: "Bodyweight Day",
+        exercise_name: "Push-up",
+        set_number: 1,
+        weight_used: null,
+        reps: 15,
+        notes: "Bodyweight",
+      },
+    ]);
+
+    expect(entry).toMatchObject({ numeric_value: null, unit: null, metric_name: "Push-up" });
+    expect(entry?.note).toContain("Bodyweight");
   });
 
   it("summarizes a structured check-in without storing a conversation", () => {

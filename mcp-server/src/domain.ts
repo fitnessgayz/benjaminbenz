@@ -106,6 +106,52 @@ export type CoachRequest = {
   created_at: string;
 };
 
+export type WorkoutSetInput = {
+  exerciseCode: string;
+  exerciseName: string;
+  setNumber: number;
+  weightUsed: number | null;
+  reps: number | null;
+  notes: string | null;
+};
+
+export type WorkoutInput = {
+  occurredOn: string;
+  workoutTitle: string;
+  sets: WorkoutSetInput[];
+};
+
+export type WorkoutLogEntry = {
+  id: string;
+  workout_session_id: string;
+  entry_date: string;
+  workout_title: string;
+  exercise_code: string;
+  exercise_name: string;
+  set_number: number;
+  weight_used: number | null;
+  reps: number | null;
+  notes: string | null;
+  created_at: string;
+};
+
+export type WorkoutCorrectionInput = {
+  occurredOn?: string;
+  workoutTitle?: string;
+  exerciseName: string;
+  setNumber?: number;
+  weightUsed?: number | null;
+  reps?: number | null;
+  notes?: string | null;
+};
+
+export type WorkoutUndoResult = {
+  workout_session_id: string;
+  entry_date: string;
+  workout_title: string;
+  deleted_sets: number;
+};
+
 export function isoDateOrToday(value?: string): string {
   return value ?? new Date().toISOString().slice(0, 10);
 }

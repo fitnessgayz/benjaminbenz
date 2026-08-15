@@ -14,14 +14,14 @@ Do not create the final review submission until every item below is complete:
 - [ ] The website, support, privacy, and terms URLs below return `200` over HTTPS.
 - [ ] The privacy notice and terms have been approved for publication and no longer say that they are drafts.
 - [ ] Domain verification returns only the exact portal token from `/.well-known/openai-apps-challenge`.
-- [ ] OpenAI's **Scan Tools** check passes for all eight tools and their annotations.
-- [ ] The five positive and three negative test cases pass in ChatGPT developer mode.
+- [ ] OpenAI's **Scan Tools** check passes for all eleven tools and their annotations.
+- [ ] The six positive and three negative test cases pass in ChatGPT developer mode.
 
 ## Info
 
 - **Plugin name:** FWB Coach
 - **Short description:** Private progress coaching for Fitness with Benjamin clients.
-- **Long description:** Connect your Fitness with Benjamin account to reflect on your current program and recent progress, save a check-in or progress note when you explicitly ask, and queue a message for Benjamin's review. FWB Coach uses Benjamin's mindful, direct, encouraging coaching style while clearly identifying itself as an AI assistant. It is not medical care or an emergency service.
+- **Long description:** Connect your Fitness with Benjamin account to reflect on your current program and recent progress, log complete workouts, correct or undo FWB Coach workout entries, save a check-in or progress note when you explicitly ask, and queue a message for Benjamin's review. FWB Coach uses Benjamin's mindful, direct, encouraging coaching style while clearly identifying itself as an AI assistant. It is not medical care or an emergency service.
 - **Category:** Lifestyle
 - **Developer identity:** Verified Benjamin Benz individual or business identity
 - **Logo:** `fwb-home-icon-512.png`
@@ -52,6 +52,9 @@ Do not create the final review submission until every item below is complete:
 | `get_my_active_program` | Yes | No | No | Read the authenticated client's current program summary. |
 | `get_my_recent_progress` | Yes | No | No | Read recent progress entries with optional date and category filters. |
 | `record_my_check_in` | No | No | No | Create one structured check-in after explicit user intent. |
+| `record_my_workout` | No | No | No | Save a complete workout after explicit log, record, or save intent. |
+| `correct_my_workout` | No | Yes | No | Correct matching sets in the most recent selected FWB Coach workout. |
+| `undo_my_last_workout` | No | Yes | No | Delete only the latest complete workout recorded through FWB Coach. |
 | `add_my_progress_note` | No | No | No | Create one progress note after explicit user intent. |
 | `contact_benjamin` | No | No | Yes | Queue a message for human review outside ChatGPT. |
 | `get_my_open_coach_requests` | Yes | No | No | Read the authenticated client's open coach requests. |
@@ -63,6 +66,7 @@ Do not create the final review submission until every item below is complete:
 3. Record a weekly check-in for me.
 4. Log a progress note from today's workout.
 5. Ask Benjamin to review part of my program.
+6. Log today's workout: bench press, 3 sets of 10 at 135 pounds.
 
 ## Positive test cases
 
@@ -99,6 +103,13 @@ Do not create the final review submission until every item below is complete:
 - **Prompt:** “Ask Benjamin to review my Friday workout.”
 - **Expected tool behavior:** Call `contact_benjamin` once with routine urgency and program-review type.
 - **Expected result:** One queued coach request; clearly state that it is not real-time or emergency messaging.
+
+### 6. Save, correct, and undo a workout
+
+- **Prompt:** “Log today's workout: bench press, 3 sets of 10 at 135 pounds, and push-ups, 2 sets of 15 bodyweight reps.”
+- **Expected tool behavior:** Call `record_my_workout` once with five sets, null weight for push-ups, and no invented values. A later explicit correction uses `correct_my_workout`; an explicit undo uses `undo_my_last_workout`.
+- **Expected result:** The complete workout appears in the authenticated client's website history. Corrections affect only the selected FWB Coach workout, and undo removes only the latest complete FWB Coach workout.
+- **Fixture:** Reviewer client can insert, update, select, and delete only their own workout-log rows.
 - **Fixture:** Reviewer client is authenticated and can create and read its own coach requests.
 
 ## Negative test cases
@@ -128,7 +139,7 @@ Do not create the final review submission until every item below is complete:
 
 ## Release notes
 
-Initial submission of FWB Coach, an authenticated MCP-backed plugin for active Fitness with Benjamin clients. It reads the signed-in client's coaching profile, active program, recent progress, and open coach requests. It writes only an explicit structured check-in, progress note, or queued request for Benjamin. Full ChatGPT conversations are not stored. Reviewer credentials contain synthetic data and require no MFA.
+Initial submission of FWB Coach, an authenticated MCP-backed plugin for active Fitness with Benjamin clients. It reads the signed-in client's coaching profile, active program, recent progress, and open coach requests. It writes only an explicitly requested workout, structured check-in, progress note, or queued request for Benjamin. Workout corrections and undo actions are restricted to the authenticated client's FWB Coach records. Full ChatGPT conversations are not stored. Reviewer credentials contain synthetic data and require no MFA.
 
 ## Final submission
 

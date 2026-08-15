@@ -1,11 +1,13 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(15);
+select plan(20);
 
 select has_table('public', 'client_progress_notes', 'progress notes table exists');
 select has_table('public', 'client_check_ins', 'check-ins table exists');
 select has_table('public', 'coach_requests', 'coach requests table exists');
+select has_column('public', 'client_workout_logs', 'workout_session_id', 'workout session IDs are available');
+select has_column('public', 'client_workout_logs', 'source', 'workout log sources are available');
 select is(
   (select relrowsecurity from pg_class where oid = 'public.client_check_ins'::regclass),
   true,
@@ -33,6 +35,34 @@ select is(
   (select count(*)::integer from public.client_workout_logs),
   1,
   'a client sees only their own workout logs'
+);
+
+select lives_ok(
+  $$insert into public.client_workout_logs (
+      client_email, entry_date, workout_title, exercise_code, exercise_name,
+      set_number, weight_used, reps, workout_session_id, source
+    ) values (
+      'alex.client@example.test', current_date, 'MCP Bodyweight Test', 'A', 'Push-up',
+      1, null, 12, '50000000-0000-4000-8000-000000000005', 'mcp'
+    )$$,
+  'a client can save their own MCP bodyweight workout set'
+);
+select throws_ok(
+  $$insert into public.client_workout_logs (
+      client_email, entry_date, workout_title, exercise_code, exercise_name,
+      set_number, weight_used, reps, workout_session_id, source
+    ) values (
+      'riley.client@example.test', current_date, 'MCP Other Client Test', 'A', 'Push-up',
+      1, null, 12, '60000000-0000-4000-8000-000000000006', 'mcp'
+    )$$,
+  '42501',
+  null,
+  'a client cannot save a workout for another client'
+);
+select lives_ok(
+  $$delete from public.client_workout_logs
+    where workout_session_id = '50000000-0000-4000-8000-000000000005'$$,
+  'a client can undo their own MCP workout'
 );
 
 select lives_ok(

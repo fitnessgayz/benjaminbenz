@@ -1,10 +1,10 @@
 # FWB Coach
 
-Production-oriented MVP for an authenticated ChatGPT plugin that lets Fitness with Benjamin clients discuss their program and progress, save explicit check-ins, and queue human follow-up.
+Production-oriented MVP for an authenticated ChatGPT plugin that lets Fitness with Benjamin clients discuss their program and progress, log complete workouts, save explicit check-ins, and queue human follow-up.
 
 ## What is included
 
-- Streamable HTTP MCP server with eight narrowly scoped tools.
+- Streamable HTTP MCP server with eleven narrowly scoped tools.
 - Supabase OAuth token verification without a service-role key.
 - Compatibility with the live Benjaminbenz.com portal tables plus additive RLS-protected check-in, progress-note, and coach-request tables.
 - `coach-with-benjamin` skill for voice, workflow, privacy, and safety boundaries.
@@ -12,7 +12,7 @@ Production-oriented MVP for an authenticated ChatGPT plugin that lets Fitness wi
 - Public policy-page drafts and plugin submission materials.
 - Unit and MCP integration tests.
 
-The server deliberately does not store full ChatGPT conversations. It writes only an explicit structured check-in, progress note, or coach request.
+The server deliberately does not store full ChatGPT conversations. It writes only an explicit workout, structured check-in, progress note, or coach request. Workout corrections and undo actions are limited to authenticated client-owned records.
 
 ## Local verification
 
@@ -26,7 +26,7 @@ npm run check
 npm run dev
 ```
 
-`npm run supabase:start` excludes the unused Edge Functions runtime and starts a free local Supabase environment. The local bootstrap and seed files contain only synthetic `example.test` clients; they never copy production rows. `npm run test:db` runs 15 database and RLS assertions covering client isolation, allowed writes, blocked impersonation, and coach access.
+`npm run supabase:start` excludes the unused Edge Functions runtime and starts a free local Supabase environment. The local bootstrap and seed files contain only synthetic `example.test` clients; they never copy production rows. `npm run test:db` runs 20 database and RLS assertions covering client isolation, workout logging and undo, allowed writes, blocked impersonation, and coach access.
 
 When finished, stop the local services without deleting the local database:
 
