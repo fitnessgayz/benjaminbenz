@@ -1853,6 +1853,7 @@ function exerciseLogFields(exercise, workoutTitle, options = {}) {
   const panelClass = options.panelClass || "exercise-detail";
   const showSubmit = options.showSubmit !== false;
   const showInlineHeader = Boolean(options.showInlineHeader);
+  const suggestionListAttr = options.suggestExerciseNames ? ' list="custom-exercise-suggestions"' : "";
 
   return `
     <div class="${panelClass}"
@@ -1871,7 +1872,7 @@ function exerciseLogFields(exercise, workoutTitle, options = {}) {
       ` : ""}
       <label class="exercise-name-field">
         <span>Exercise</span>
-        <input type="text" value="${escapeHtml(exercise.name)}" placeholder="Exercise name" data-exercise-name-input />
+        <input type="text" value="${escapeHtml(exercise.name)}" placeholder="Exercise name"${suggestionListAttr} data-exercise-name-input />
       </label>
       ${exerciseVideoMarkup(exercise)}
       <label class="exercise-date">
@@ -2127,6 +2128,45 @@ function customWorkoutExercises() {
     }];
 }
 
+function exerciseSuggestionNames() {
+  const suggestions = new Map();
+  const addSuggestion = (value) => {
+    const name = String(value || "").trim();
+    const key = name.toLowerCase();
+
+    if (name && !suggestions.has(key)) {
+      suggestions.set(key, name);
+    }
+  };
+
+  const workouts = Array.isArray(currentProgram?.workouts) ? currentProgram.workouts : [];
+  workouts.forEach((workout) => {
+    (Array.isArray(workout.exercises) ? workout.exercises : []).forEach((exercise) => {
+      addSuggestion(exercise.name);
+    });
+  });
+
+  trainingLogs.forEach((log) => {
+    const code = String(log.exercise_code || "").trim().toUpperCase();
+
+    if (code === warmupExerciseCode || code === cardioExerciseCode) {
+      return;
+    }
+
+    addSuggestion(log.exercise_name);
+  });
+
+  return Array.from(suggestions.values()).sort((left, right) => left.localeCompare(right));
+}
+
+function exerciseSuggestionsDatalist() {
+  return `
+    <datalist id="custom-exercise-suggestions">
+      ${exerciseSuggestionNames().map((name) => `<option value="${escapeHtml(name)}"></option>`).join("")}
+    </datalist>
+  `;
+}
+
 function nextCustomExerciseCode(container) {
   const codes = Array.from(container?.querySelectorAll("[data-exercise-log]") || [])
     .map((element) => String(element.dataset.exerciseCode || "").match(/\d+/)?.[0])
@@ -2270,7 +2310,8 @@ function customWorkoutCardMarkup(exercise, workoutTitle) {
           rest: exercise.rest || ""
         }, workoutTitle, {
           panelClass: "custom-exercise-log",
-          showSubmit: true
+          showSubmit: true,
+          suggestExerciseNames: true
         })}
       </div>
     </article>
@@ -2305,6 +2346,7 @@ function customWorkoutPanelMarkup(index) {
         <div class="custom-workout-header">
           <p>Add your own exercises here and save them into your workout log.</p>
         </div>
+        ${exerciseSuggestionsDatalist()}
         ${warmupLogFields(customWorkoutTitle)}
         <div class="workout-app-list custom-workout-list" data-custom-workout-list role="list" aria-label="Custom workout exercises">
           ${customWorkoutListMarkup()}
