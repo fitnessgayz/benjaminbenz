@@ -589,16 +589,35 @@ function roundToNearest(value, nearest) {
 }
 
 function nutritionHeightInches(value) {
-  const text = String(value || "").trim().toLowerCase();
+  const text = String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[’‘`]/g, "'")
+    .replace(/[“”]/g, '"');
 
   if (!text) {
     return 0;
   }
 
+  const cmMatch = text.match(/^(\d+(?:\.\d+)?)\s*cm\b/);
+
+  if (cmMatch) {
+    const inches = Number(cmMatch[1]) / 2.54;
+    return inches >= 48 && inches <= 96 ? inches : 0;
+  }
+
   const feetMatch = text.match(/^(\d+)\s*(?:'|ft|feet)\s*(\d+)?/);
 
   if (feetMatch) {
-    return (Number(feetMatch[1]) * 12) + Number(feetMatch[2] || 0);
+    const inches = (Number(feetMatch[1]) * 12) + Number(feetMatch[2] || 0);
+    return inches >= 48 && inches <= 96 ? inches : 0;
+  }
+
+  const separatedFeetMatch = text.match(/^(\d)\s*(?:-|\.|\s)\s*(\d{1,2})\s*(?:in|")?$/);
+
+  if (separatedFeetMatch) {
+    const inches = (Number(separatedFeetMatch[1]) * 12) + Number(separatedFeetMatch[2] || 0);
+    return inches >= 48 && inches <= 96 ? inches : 0;
   }
 
   const plainNumber = numberValue(text);
@@ -607,7 +626,9 @@ function nutritionHeightInches(value) {
     return 0;
   }
 
-  return plainNumber <= 8 ? plainNumber * 12 : plainNumber;
+  const inches = plainNumber <= 8 ? plainNumber * 12 : plainNumber;
+
+  return inches >= 48 && inches <= 96 ? inches : 0;
 }
 
 function nutritionActivityFactor(workoutsPerWeek, movement, intensity) {
