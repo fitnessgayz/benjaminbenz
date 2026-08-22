@@ -2460,6 +2460,13 @@ footer {
   background: var(--paper);
 }
 
+.manual-exercise-hint {
+  color: var(--muted);
+  font-size: .78rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
 .exercise-date {
   max-width: 210px;
 }

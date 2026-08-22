@@ -2222,7 +2222,8 @@ function exerciseLogFields(exercise, workoutTitle, options = {}) {
       ` : ""}
       <label class="exercise-name-field">
         <span>Exercise</span>
-        <input type="text" value="${escapeHtml(exercise.name)}" placeholder="Exercise name"${suggestionListAttr} data-exercise-name-input />
+        <input type="text" value="${escapeHtml(exercise.name)}" placeholder="Type or search any exercise name"${suggestionListAttr} data-exercise-name-input />
+        ${options.suggestExerciseNames ? '<small class="manual-exercise-hint">Choose a suggestion or type your own name or short description. Exact wording is not required.</small>' : ""}
       </label>
       ${exerciseVideoMarkup(exercise)}
       <label class="exercise-date">
