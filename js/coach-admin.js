@@ -27,6 +27,9 @@ let showingArchivedClients = false;
 let clientSearchTerm = "";
 let activeAdminTab = "clients";
 let pendingProgramCopy = null;
+let exerciseLibraryRecords = [];
+let selectedExerciseLibraryId = "";
+let exerciseLibrarySearchTerm = "";
 
 function adminStatus(message) {
   const status = document.getElementById("admin-save-status");
@@ -769,6 +772,10 @@ function setAdminTab(tabName) {
 
   if (nextTab === "clients") {
     loadRecentTrainingLogs();
+  }
+
+  if (nextTab === "library") {
+    renderExerciseLibrary();
   }
 
   if (nextTab === "progress") {
@@ -2487,6 +2494,226 @@ async function loadPrograms() {
   adminStatus("Ready.");
 }
 
+function exerciseLibraryStatus(message) {
+  const status = document.getElementById("exercise-library-status");
+
+  if (status) {
+    status.textContent = message;
+  }
+}
+
+function exerciseLibraryLabel(value) {
+  return String(value || "")
+    .replaceAll("_", " ")
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function exerciseLibraryList(value) {
+  return String(value || "")
+    .split(",")
+    .map((item) => item.trim().toLowerCase())
+    .filter(Boolean)
+    .filter((item, index, items) => items.indexOf(item) === index);
+}
+
+function fillExerciseLibraryEditor(record = null) {
+  const values = record || {
+    name: "",
+    primary_muscle: "chest",
+    equipment: "bodyweight",
+    difficulty: "beginner",
+    secondary_muscles: [],
+    aliases: [],
+    movement_pattern: "",
+    substitution_group: "",
+    default_sets: 3,
+    default_reps: "8–12",
+    default_rest_seconds: 90,
+    demo_url: "",
+    instructions: "",
+    is_approved: true,
+    is_active: true
+  };
+
+  selectedExerciseLibraryId = record?.id || "";
+  document.getElementById("exercise-library-name").value = values.name || "";
+  document.getElementById("exercise-library-primary").value = values.primary_muscle || "chest";
+  document.getElementById("exercise-library-equipment").value = values.equipment || "bodyweight";
+  document.getElementById("exercise-library-difficulty").value = values.difficulty || "beginner";
+  document.getElementById("exercise-library-secondary").value = (values.secondary_muscles || []).join(", ");
+  document.getElementById("exercise-library-aliases").value = (values.aliases || []).join(", ");
+  document.getElementById("exercise-library-pattern").value = values.movement_pattern || "";
+  document.getElementById("exercise-library-substitution").value = values.substitution_group || "";
+  document.getElementById("exercise-library-sets").value = values.default_sets || 3;
+  document.getElementById("exercise-library-reps").value = values.default_reps || "8–12";
+  document.getElementById("exercise-library-rest").value = Number.isFinite(Number(values.default_rest_seconds))
+    ? Number(values.default_rest_seconds)
+    : 90;
+  document.getElementById("exercise-library-demo").value = values.demo_url || "";
+  document.getElementById("exercise-library-instructions").value = values.instructions || "";
+  document.getElementById("exercise-library-approved").checked = values.is_approved !== false;
+  document.getElementById("exercise-library-active").checked = values.is_active !== false;
+  exerciseLibraryStatus(record ? `Editing ${record.name}.` : "New exercise ready.");
+}
+
+function exerciseLibraryPayload() {
+  const name = document.getElementById("exercise-library-name").value.trim();
+  const demoUrl = document.getElementById("exercise-library-demo").value.trim();
+  const defaultSets = Number(document.getElementById("exercise-library-sets").value || 3);
+  const restSeconds = Number(document.getElementById("exercise-library-rest").value || 0);
+
+  if (!name) {
+    throw new Error("Add an exercise name before saving.");
+  }
+
+  if (demoUrl && !/^https:\/\/(www\.)?(youtube\.com|youtu\.be)\//i.test(demoUrl)) {
+    throw new Error("The demo link must be a YouTube URL.");
+  }
+
+  return {
+    name,
+    aliases: exerciseLibraryList(document.getElementById("exercise-library-aliases").value),
+    primary_muscle: document.getElementById("exercise-library-primary").value,
+    secondary_muscles: exerciseLibraryList(document.getElementById("exercise-library-secondary").value),
+    equipment: document.getElementById("exercise-library-equipment").value,
+    difficulty: document.getElementById("exercise-library-difficulty").value,
+    movement_pattern: document.getElementById("exercise-library-pattern").value.trim().toLowerCase(),
+    default_sets: Math.min(10, Math.max(1, defaultSets)),
+    default_reps: document.getElementById("exercise-library-reps").value.trim() || "8–12",
+    default_rest_seconds: Math.min(600, Math.max(0, restSeconds)),
+    substitution_group: document.getElementById("exercise-library-substitution").value.trim().toLowerCase(),
+    demo_url: demoUrl || null,
+    instructions: document.getElementById("exercise-library-instructions").value.trim(),
+    is_approved: document.getElementById("exercise-library-approved").checked,
+    is_active: document.getElementById("exercise-library-active").checked,
+    updated_at: new Date().toISOString()
+  };
+}
+
+function renderExerciseLibrary() {
+  const list = document.getElementById("exercise-library-list");
+  const count = document.getElementById("exercise-library-count");
+
+  if (!list || !count) {
+    return;
+  }
+
+  const term = exerciseLibrarySearchTerm.trim().toLowerCase();
+  const visible = exerciseLibraryRecords.filter((record) => {
+    if (!term) {
+      return true;
+    }
+
+    return [
+      record.name,
+      record.primary_muscle,
+      record.equipment,
+      record.difficulty,
+      record.movement_pattern,
+      ...(record.aliases || [])
+    ].join(" ").toLowerCase().includes(term);
+  });
+
+  count.textContent = `${visible.length} of ${exerciseLibraryRecords.length} exercises`;
+  list.innerHTML = visible.length > 0
+    ? visible.map((record) => `
+      <button class="exercise-library-row${record.id === selectedExerciseLibraryId ? " is-selected" : ""}" type="button" data-exercise-library-id="${escapeHtml(record.id)}">
+        <span>
+          <strong>${escapeHtml(record.name)}</strong>
+          <small>${escapeHtml(exerciseLibraryLabel(record.primary_muscle))} · ${escapeHtml(exerciseLibraryLabel(record.equipment))}</small>
+        </span>
+        <span class="exercise-library-badges">
+          ${record.is_approved ? '<small class="is-approved">Approved</small>' : '<small>Hidden</small>'}
+          ${record.is_active ? "" : '<small>Archived</small>'}
+        </span>
+      </button>
+    `).join("")
+    : '<p class="exercise-library-empty">No exercises match that search.</p>';
+}
+
+async function loadExerciseLibrary() {
+  const count = document.getElementById("exercise-library-count");
+
+  if (!coachSupabase || !count) {
+    return;
+  }
+
+  count.textContent = "Loading exercises…";
+  const { data, error } = await coachSupabase
+    .from("exercise_library")
+    .select("*")
+    .order("sort_order", { ascending: true })
+    .order("name", { ascending: true });
+
+  if (error) {
+    count.textContent = "Exercise library unavailable.";
+    exerciseLibraryStatus(error.message);
+    return;
+  }
+
+  exerciseLibraryRecords = data || [];
+  renderExerciseLibrary();
+}
+
+function handleExerciseLibraryEditor() {
+  const saveButton = document.getElementById("save-exercise-library");
+  const clearButton = document.getElementById("clear-exercise-library");
+  const searchInput = document.getElementById("exercise-library-search");
+  const list = document.getElementById("exercise-library-list");
+
+  if (!saveButton || !clearButton || !searchInput || !list) {
+    return;
+  }
+
+  clearButton.addEventListener("click", () => {
+    fillExerciseLibraryEditor();
+    renderExerciseLibrary();
+    document.getElementById("exercise-library-name").focus();
+  });
+
+  searchInput.addEventListener("input", () => {
+    exerciseLibrarySearchTerm = searchInput.value;
+    renderExerciseLibrary();
+  });
+
+  list.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-exercise-library-id]");
+    const record = exerciseLibraryRecords.find((item) => item.id === button?.dataset.exerciseLibraryId);
+
+    if (record) {
+      fillExerciseLibraryEditor(record);
+      renderExerciseLibrary();
+    }
+  });
+
+  saveButton.addEventListener("click", async () => {
+    saveButton.disabled = true;
+    exerciseLibraryStatus("Saving exercise…");
+
+    try {
+      const payload = exerciseLibraryPayload();
+      const request = selectedExerciseLibraryId
+        ? coachSupabase.from("exercise_library").update(payload).eq("id", selectedExerciseLibraryId)
+        : coachSupabase.from("exercise_library").insert(payload);
+      const { data, error } = await request.select("*").single();
+
+      if (error) {
+        throw error;
+      }
+
+      selectedExerciseLibraryId = data.id;
+      await loadExerciseLibrary();
+      fillExerciseLibraryEditor(data);
+      renderExerciseLibrary();
+      exerciseLibraryStatus(`${data.name} is saved and shared with clients.`);
+    } catch (error) {
+      exerciseLibraryStatus(error.message || "The exercise could not be saved.");
+    } finally {
+      saveButton.disabled = false;
+    }
+  });
+}
+
 async function showAdminWorkspace(user) {
   const workspace = document.getElementById("coach-admin-workspace");
   const signOutButton = document.querySelector("[data-coach-sign-out]");
@@ -2508,7 +2735,7 @@ async function showAdminWorkspace(user) {
     signOutButton.hidden = false;
   }
 
-  await loadPrograms();
+  await Promise.all([loadPrograms(), loadExerciseLibrary()]);
 }
 
 function handleAdminTabs() {
@@ -4021,6 +4248,7 @@ async function bootCoachAdmin() {
 
   renderWorkoutFields();
   handleAdminTabs();
+  handleExerciseLibraryEditor();
   handleSelectedClientActions();
   handleNutritionEditor();
   handleSessionManualEditor();

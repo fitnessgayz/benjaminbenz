@@ -30,7 +30,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=progress-profile-1" />
+  <link rel="stylesheet" href="css/style.css?v=exercise-library-1" />
 </head>
 <body class="dashboard-page coach-admin-page">
   <header class="site-header dashboard-header">
@@ -86,6 +86,7 @@
           <button class="admin-tab" type="button" data-admin-tab="profile" aria-selected="false">Profile</button>
           <button class="admin-tab" type="button" data-admin-tab="program" aria-selected="false">Program</button>
           <button class="admin-tab" type="button" data-admin-tab="workouts" aria-selected="false">Workouts</button>
+          <button class="admin-tab" type="button" data-admin-tab="library" aria-selected="false">Exercise library</button>
           <button class="admin-tab" type="button" data-admin-tab="nutrition" aria-selected="false">Food</button>
           <button class="admin-tab" type="button" data-admin-tab="progress" aria-selected="false">Progress &amp; stats</button>
           <button class="admin-tab" type="button" data-admin-tab="notes" aria-selected="false">Notes</button>
@@ -517,6 +518,118 @@
           </div>
         </section>
 
+        <section class="admin-card exercise-library-panel" data-admin-panel="library" hidden>
+          <div class="admin-section-heading exercise-library-heading">
+            <div>
+              <p class="kicker">Shared catalog</p>
+              <h2>Exercise library</h2>
+              <p>Approve exercises once, then use the same searchable list on the website and iPhone app.</p>
+            </div>
+            <button class="button button-ghost" type="button" id="clear-exercise-library">New exercise</button>
+          </div>
+
+          <div class="exercise-library-layout">
+            <div class="exercise-library-editor">
+              <label class="exercise-library-name-field">
+                Exercise name
+                <input type="text" id="exercise-library-name" placeholder="Dumbbell bench press" autocomplete="off" />
+              </label>
+              <label>
+                Primary muscle
+                <select id="exercise-library-primary">
+                  <option value="chest">Chest</option>
+                  <option value="back">Back</option>
+                  <option value="lats">Lats</option>
+                  <option value="shoulders">Shoulders</option>
+                  <option value="biceps">Biceps</option>
+                  <option value="triceps">Triceps</option>
+                  <option value="quads">Quads</option>
+                  <option value="hamstrings">Hamstrings</option>
+                  <option value="glutes">Glutes</option>
+                  <option value="calves">Calves</option>
+                  <option value="core">Core</option>
+                  <option value="adductors">Adductors</option>
+                  <option value="full_body">Full body</option>
+                </select>
+              </label>
+              <label>
+                Equipment
+                <select id="exercise-library-equipment">
+                  <option value="bodyweight">Bodyweight</option>
+                  <option value="dumbbell">Dumbbell</option>
+                  <option value="barbell">Barbell</option>
+                  <option value="cable">Cable</option>
+                  <option value="machine">Machine</option>
+                  <option value="smith_machine">Smith machine</option>
+                  <option value="bench">Bench</option>
+                  <option value="other">Other</option>
+                </select>
+              </label>
+              <label>
+                Difficulty
+                <select id="exercise-library-difficulty">
+                  <option value="beginner">Beginner</option>
+                  <option value="intermediate">Intermediate</option>
+                  <option value="advanced">Advanced</option>
+                </select>
+              </label>
+              <label>
+                Secondary muscles
+                <input type="text" id="exercise-library-secondary" placeholder="triceps, shoulders" autocomplete="off" />
+              </label>
+              <label>
+                Search aliases
+                <input type="text" id="exercise-library-aliases" placeholder="DB bench, flat dumbbell press" autocomplete="off" />
+              </label>
+              <label>
+                Movement pattern
+                <input type="text" id="exercise-library-pattern" placeholder="horizontal_push" autocomplete="off" />
+              </label>
+              <label>
+                Substitution group
+                <input type="text" id="exercise-library-substitution" placeholder="horizontal_press" autocomplete="off" />
+              </label>
+              <label>
+                Default sets
+                <input type="number" id="exercise-library-sets" min="1" max="10" value="3" inputmode="numeric" />
+              </label>
+              <label>
+                Default reps
+                <input type="text" id="exercise-library-reps" value="8–12" autocomplete="off" />
+              </label>
+              <label>
+                Rest (seconds)
+                <input type="number" id="exercise-library-rest" min="0" max="600" value="90" inputmode="numeric" />
+              </label>
+              <label class="exercise-library-demo-field">
+                YouTube demo link
+                <input type="url" id="exercise-library-demo" placeholder="https://www.youtube.com/watch?v=..." autocomplete="url" />
+              </label>
+              <label class="exercise-library-instructions-field">
+                Coaching instructions
+                <textarea id="exercise-library-instructions" maxlength="2000" placeholder="Add the cues clients should see."></textarea>
+              </label>
+              <div class="exercise-library-toggles">
+                <label><input type="checkbox" id="exercise-library-approved" checked /> Approved for clients</label>
+                <label><input type="checkbox" id="exercise-library-active" checked /> Active</label>
+              </div>
+              <div class="exercise-library-actions">
+                <p id="exercise-library-status" role="status">Choose an exercise to edit or add a new one.</p>
+                <button class="button button-dark" type="button" id="save-exercise-library">Save exercise</button>
+              </div>
+            </div>
+
+            <div class="exercise-library-browser">
+              <label>
+                Search library
+                <input type="search" id="exercise-library-search" placeholder="Name, muscle, equipment..." autocomplete="off" />
+              </label>
+              <p id="exercise-library-count" class="exercise-library-count">Loading exercises…</p>
+              <div id="exercise-library-list" class="exercise-library-list" aria-live="polite"></div>
+            </div>
+          </div>
+        </section>
+
         <section class="workout-tab-panel" data-admin-panel="workouts" hidden>
           <div class="admin-card workout-tab-heading">
             <div class="admin-section-heading">
@@ -559,6 +672,6 @@
   <script src="js/script.js?v=client-session-link-1"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js?v=client-session-link-1"></script>
-  <script src="js/coach-admin.js?v=progress-profile-1"></script>
+  <script src="js/coach-admin.js?v=exercise-library-1"></script>
 </body>
 </html>

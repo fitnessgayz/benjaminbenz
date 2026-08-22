@@ -32,6 +32,7 @@ const clientDashboardUrl = "client-dashboard.html?v=manual-sessions-1";
 const fitbitOauthStateKey = "fwb_fitbit_oauth_state";
 const fitbitOauthVerifierKey = "fwb_fitbit_oauth_verifier";
 let fitbitConnection = { loaded: false, connected: false };
+let exerciseLibraryEntries = [];
 
 function isCoachPortalEmail(email) {
   return coachPortalEmails.includes(String(email || "").toLowerCase());
@@ -1425,12 +1426,27 @@ function youtubeExerciseSearchUrl(exerciseName) {
   return `https://www.youtube.com/results?search_query=${encodeURIComponent(`${name} exercise demo`)}`;
 }
 
+function approvedExerciseForName(exerciseName) {
+  const normalizedName = String(exerciseName || "").trim().toLowerCase();
+
+  if (!normalizedName) {
+    return null;
+  }
+
+  return exerciseLibraryEntries.find((exercise) => (
+    String(exercise.name || "").trim().toLowerCase() === normalizedName
+    || (exercise.aliases || []).some((alias) => String(alias).trim().toLowerCase() === normalizedName)
+  )) || null;
+}
+
 function exerciseVideoUrl(exercise) {
+  const approvedExercise = approvedExerciseForName(exercise.name);
   let rawUrl = String(
     exercise.video ||
     exercise.videoUrl ||
     exercise.video_url ||
     exercise.youtube_url ||
+    approvedExercise?.demo_url ||
     ""
   ).trim();
 
@@ -2473,6 +2489,11 @@ function exerciseSuggestionNames() {
     }
   };
 
+  exerciseLibraryEntries.forEach((exercise) => {
+    addSuggestion(exercise.name);
+    (exercise.aliases || []).forEach(addSuggestion);
+  });
+
   const workouts = Array.isArray(currentProgram?.workouts) ? currentProgram.workouts : [];
   workouts.forEach((workout) => {
     (Array.isArray(workout.exercises) ? workout.exercises : []).forEach((exercise) => {
@@ -2491,6 +2512,16 @@ function exerciseSuggestionNames() {
   });
 
   return Array.from(suggestions.values()).sort((left, right) => left.localeCompare(right));
+}
+
+function refreshExerciseSuggestionsDatalist() {
+  const options = exerciseSuggestionNames()
+    .map((name) => `<option value="${escapeHtml(name)}"></option>`)
+    .join("");
+
+  document.querySelectorAll("#custom-exercise-suggestions").forEach((datalist) => {
+    datalist.innerHTML = options;
+  });
 }
 
 function exerciseSuggestionsDatalist() {
@@ -4757,7 +4788,7 @@ async function loadDashboard() {
     await handleFitbitOAuthCallback();
     await loadFitbitStatus();
 
-    const [progressResult, progressPhotoResult, trainingLogResult, foodLogResult] = await Promise.allSettled([
+    const [progressResult, progressPhotoResult, trainingLogResult, foodLogResult, exerciseLibraryResult] = await Promise.allSettled([
       withTimeout(
         supabaseClient
           .from("client_progress")
@@ -4793,6 +4824,16 @@ async function loadDashboard() {
           .order("created_at", { ascending: false })
           .limit(200),
         "Food log request timed out."
+      ),
+      withTimeout(
+        supabaseClient
+          .from("exercise_library")
+          .select("id,name,aliases,primary_muscle,secondary_muscles,equipment,difficulty,movement_pattern,default_sets,default_reps,default_rest_seconds,substitution_group,demo_url,instructions")
+          .eq("is_active", true)
+          .eq("is_approved", true)
+          .order("sort_order", { ascending: true })
+          .order("name", { ascending: true }),
+        "Exercise library request timed out."
       )
     ]);
 
@@ -4808,6 +4849,11 @@ async function loadDashboard() {
     const foodLogData = foodLogResult.status === "fulfilled" && !foodLogResult.value.error
       ? foodLogResult.value.data
       : [];
+    const exerciseLibraryData = exerciseLibraryResult.status === "fulfilled" && !exerciseLibraryResult.value.error
+      ? exerciseLibraryResult.value.data
+      : [];
+
+    exerciseLibraryEntries = exerciseLibraryData || [];
 
     renderProgress(progressData || []);
     renderClientProgressPhotos(await signedProgressPhotoRecords(progressPhotoData || []));
@@ -4822,6 +4868,7 @@ async function loadDashboard() {
         ? trainingLogData || []
         : demoTrainingLogsForProgram(data)
     );
+    refreshExerciseSuggestionsDatalist();
   } catch (error) {
     setDashboardMessage(
       "Could not load dashboard",
