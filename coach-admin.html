@@ -30,7 +30,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=client-session-link-1" />
+  <link rel="stylesheet" href="css/style.css?v=progress-profile-1" />
 </head>
 <body class="dashboard-page coach-admin-page">
   <header class="site-header dashboard-header">
@@ -87,7 +87,7 @@
           <button class="admin-tab" type="button" data-admin-tab="program" aria-selected="false">Program</button>
           <button class="admin-tab" type="button" data-admin-tab="workouts" aria-selected="false">Workouts</button>
           <button class="admin-tab" type="button" data-admin-tab="nutrition" aria-selected="false">Food</button>
-          <button class="admin-tab" type="button" data-admin-tab="progress" aria-selected="false">Progress</button>
+          <button class="admin-tab" type="button" data-admin-tab="progress" aria-selected="false">Progress &amp; stats</button>
           <button class="admin-tab" type="button" data-admin-tab="notes" aria-selected="false">Notes</button>
           <button class="admin-tab" type="button" data-admin-tab="logs" aria-selected="false">Logs</button>
           <button class="admin-tab" type="button" data-admin-tab="sessions" aria-selected="false">Sessions</button>
@@ -271,8 +271,8 @@
         <section class="admin-card progress-editor-card" data-admin-panel="progress" hidden>
           <div class="admin-section-heading">
             <div>
-              <p class="kicker">Progress</p>
-              <h2>Check-ins</h2>
+              <p class="kicker">Client profile</p>
+              <h2>Stats &amp; measurements</h2>
             </div>
           </div>
           <div class="admin-field-grid">
@@ -290,27 +290,27 @@
             </label>
             <label>
               Muscle mass
-              <input type="number" name="progress_muscle_mass" placeholder="110" step="0.1" min="0" />
+              <input type="number" name="progress_muscle_mass" placeholder="140" step="0.1" min="0" />
             </label>
             <label>
-              Chest
-              <input type="number" name="progress_chest" placeholder="Inches" step="0.1" min="0" />
+              Chest (in)
+              <input type="number" name="progress_chest" placeholder="42" step="0.1" min="0" />
             </label>
             <label>
-              Waist
-              <input type="number" name="progress_waist" placeholder="Inches" step="0.1" min="0" />
+              Waist (in)
+              <input type="number" name="progress_waist" placeholder="32" step="0.1" min="0" />
             </label>
             <label>
-              Hips / glutes
-              <input type="number" name="progress_hips" placeholder="Inches" step="0.1" min="0" />
+              Hips (in)
+              <input type="number" name="progress_hips" placeholder="40" step="0.1" min="0" />
             </label>
             <label>
-              Arms
-              <input type="number" name="progress_arms" placeholder="Inches" step="0.1" min="0" />
+              Arm (in)
+              <input type="number" name="progress_arm" placeholder="15" step="0.1" min="0" />
             </label>
             <label>
-              Thighs
-              <input type="number" name="progress_thighs" placeholder="Inches" step="0.1" min="0" />
+              Thigh (in)
+              <input type="number" name="progress_thigh" placeholder="23" step="0.1" min="0" />
             </label>
           </div>
           <label>
@@ -322,6 +322,18 @@
             <button class="button button-dark" type="button" id="save-progress-button">Save check-in</button>
           </div>
           <div class="progress-history" id="progress-history"></div>
+          <div class="coach-progress-photo-panel">
+            <div class="admin-section-heading compact-heading">
+              <div>
+                <p class="kicker">Private progress photos</p>
+                <h2>Client gallery</h2>
+              </div>
+            </div>
+            <p id="coach-progress-photo-status">Clients upload photos from their profile. Only the client and coach can view them.</p>
+            <div class="progress-photo-gallery" id="coach-progress-photo-gallery">
+              <p class="empty-state">Choose a client to view progress photos.</p>
+            </div>
+          </div>
           <div class="progress-training-log-panel">
             <div class="admin-section-heading compact-heading">
               <div>
@@ -547,6 +559,6 @@
   <script src="js/script.js?v=client-session-link-1"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js?v=client-session-link-1"></script>
-  <script src="js/coach-admin.js?v=client-session-link-1"></script>
+  <script src="js/coach-admin.js?v=progress-profile-1"></script>
 </body>
 </html>

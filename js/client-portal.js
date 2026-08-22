@@ -16,6 +16,9 @@ let trainingLogs = [];
 let foodLogs = [];
 let foodSearchResults = [];
 let progressEntries = [];
+let progressPhotos = [];
+let activeDashboardUser = null;
+let activeProgressMetric = "bodyweight";
 let clientTrainingLogDateFilter = "";
 let clientTrainingLogSearchFilter = "";
 let activeClientDashboardTab = "home";
@@ -797,7 +800,13 @@ function foodLogNumberLabel(value, suffix = "") {
 }
 
 function progressNumber(value) {
-  const number = Number(value);
+  const text = String(value ?? "").trim();
+
+  if (!text) {
+    return null;
+  }
+
+  const number = Number(text);
 
   return Number.isFinite(number) && number >= 0 ? number : null;
 }
@@ -1316,9 +1325,15 @@ function formatProgressValue(value, suffix) {
 }
 
 function progressMeasurements(entry = {}) {
-  return entry && typeof entry.measurements === "object" && !Array.isArray(entry.measurements)
+  const measurements = entry && typeof entry.measurements === "object" && !Array.isArray(entry.measurements)
     ? entry.measurements
     : {};
+
+  return {
+    ...measurements,
+    arm: measurements.arm ?? measurements.arms ?? null,
+    thigh: measurements.thigh ?? measurements.thighs ?? null
+  };
 }
 
 function measurementRows(entry = {}) {
@@ -1327,8 +1342,8 @@ function measurementRows(entry = {}) {
     ["Chest", measurements.chest],
     ["Waist", measurements.waist],
     ["Hips / glutes", measurements.hips],
-    ["Arms", measurements.arms],
-    ["Thighs", measurements.thighs]
+    ["Arm", measurements.arm],
+    ["Thigh", measurements.thigh]
   ];
 
   return rows.filter(([, value]) => value !== null && value !== undefined && value !== "");
@@ -1359,26 +1374,36 @@ function fillClientProgressForm(entry = {}) {
   form.elements.progress_chest.value = measurements.chest ?? "";
   form.elements.progress_waist.value = measurements.waist ?? "";
   form.elements.progress_hips.value = measurements.hips ?? "";
-  form.elements.progress_arms.value = measurements.arms ?? "";
-  form.elements.progress_thighs.value = measurements.thighs ?? "";
+  form.elements.progress_arm.value = measurements.arm ?? "";
+  form.elements.progress_thigh.value = measurements.thigh ?? "";
   form.elements.progress_goal.value = entry.goal_note || "";
 }
 
 function clientProgressPayload(form, email) {
+  const entryDate = form.elements.progress_date.value || todayDate();
+  const existing = progressEntries.find((entry) => entry.entry_date === entryDate) || {};
+  const existingMeasurements = progressMeasurements(existing);
+  const nextNumber = (fieldName, current) => {
+    const raw = String(form.elements[fieldName]?.value || "").trim();
+    return raw ? progressNumber(raw) : current ?? null;
+  };
+  const note = form.elements.progress_goal.value.trim();
+
   return {
     client_email: email,
-    entry_date: form.elements.progress_date.value || todayDate(),
-    bodyweight: progressNumber(form.elements.progress_bodyweight.value),
-    bodyfat: progressNumber(form.elements.progress_bodyfat.value),
-    muscle_mass: progressNumber(form.elements.progress_muscle_mass.value),
+    entry_date: entryDate,
+    bodyweight: nextNumber("progress_bodyweight", existing.bodyweight),
+    bodyfat: nextNumber("progress_bodyfat", existing.bodyfat),
+    muscle_mass: nextNumber("progress_muscle_mass", existing.muscle_mass),
     measurements: {
-      chest: progressNumber(form.elements.progress_chest.value),
-      waist: progressNumber(form.elements.progress_waist.value),
-      hips: progressNumber(form.elements.progress_hips.value),
-      arms: progressNumber(form.elements.progress_arms.value),
-      thighs: progressNumber(form.elements.progress_thighs.value)
+      ...existingMeasurements,
+      chest: nextNumber("progress_chest", existingMeasurements.chest),
+      waist: nextNumber("progress_waist", existingMeasurements.waist),
+      hips: nextNumber("progress_hips", existingMeasurements.hips),
+      arm: nextNumber("progress_arm", existingMeasurements.arm),
+      thigh: nextNumber("progress_thigh", existingMeasurements.thigh)
     },
-    goal_note: form.elements.progress_goal.value.trim()
+    goal_note: note || existing.goal_note || ""
   };
 }
 
@@ -1642,10 +1667,43 @@ function dateDaysAgo(days) {
   return date.toISOString().slice(0, 10);
 }
 
+function progressMetricValue(entry, key) {
+  if (["chest", "waist", "hips", "arm", "thigh"].includes(key)) {
+    return progressMeasurements(entry)[key];
+  }
+
+  return entry?.[key];
+}
+
+function progressMetricDetails(key) {
+  return {
+    bodyweight: { label: "Bodyweight", suffix: " lb" },
+    bodyfat: { label: "Body fat", suffix: "%" },
+    muscle_mass: { label: "Muscle mass", suffix: " lb" },
+    chest: { label: "Chest", suffix: " in" },
+    waist: { label: "Waist", suffix: " in" },
+    hips: { label: "Hips", suffix: " in" },
+    arm: { label: "Arm", suffix: " in" },
+    thigh: { label: "Thigh", suffix: " in" }
+  }[key] || { label: "Progress", suffix: "" };
+}
+
+function progressMetricNumber(entry, key) {
+  const raw = progressMetricValue(entry, key);
+
+  if (raw === null || raw === undefined || raw === "") {
+    return null;
+  }
+
+  const number = Number(raw);
+
+  return Number.isFinite(number) ? number : null;
+}
+
 function pointsFor(entries, key, width, height, padding) {
   const values = entries
-    .map((entry) => Number(entry[key]))
-    .filter((value) => Number.isFinite(value));
+    .map((entry) => progressMetricNumber(entry, key))
+    .filter((value) => value !== null);
 
   if (values.length === 0) {
     return "";
@@ -1658,9 +1716,9 @@ function pointsFor(entries, key, width, height, padding) {
   const usableHeight = height - padding * 2;
 
   return entries.map((entry, index) => {
-    const value = Number(entry[key]);
+    const value = progressMetricNumber(entry, key);
     const x = padding + (entries.length === 1 ? usableWidth : (index / (entries.length - 1)) * usableWidth);
-    const y = Number.isFinite(value)
+    const y = value !== null
       ? padding + ((max - value) / range) * usableHeight
       : height - padding;
 
@@ -1691,39 +1749,70 @@ function renderProgressGraph(entries) {
     return;
   }
 
-  if (!Array.isArray(entries) || entries.length === 0) {
-    chart.innerHTML = '<p class="empty-state">Progress graph will appear after your first check-in.</p>';
+  const metric = progressMetricDetails(activeProgressMetric);
+  const chartEntries = Array.isArray(entries)
+    ? entries.filter((entry) => progressMetricNumber(entry, activeProgressMetric) !== null)
+    : [];
+
+  if (chartEntries.length === 0) {
+    chart.innerHTML = `<p class="empty-state">${escapeHtml(metric.label)} will appear after it is added to a measurement entry.</p>`;
     return;
   }
 
   const width = 680;
   const height = 260;
   const padding = 34;
-  const weightPoints = pointsFor(entries, "bodyweight", width, height, padding);
-  const bodyfatPoints = pointsFor(entries, "bodyfat", width, height, padding);
-  const muscleMassPoints = pointsFor(entries, "muscle_mass", width, height, padding);
+  const metricPoints = pointsFor(chartEntries, activeProgressMetric, width, height, padding);
+  const values = chartEntries.map((entry) => progressMetricNumber(entry, activeProgressMetric));
+  const latestValue = values[values.length - 1];
 
   chart.innerHTML = `
-    <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Bodyweight, bodyfat, and muscle mass progress">
+    <div class="progress-chart-summary"><span>${escapeHtml(metric.label)}</span><strong>${escapeHtml(latestValue)}${escapeHtml(metric.suffix)}</strong></div>
+    <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="${escapeHtml(metric.label)} progress">
       <line x1="${padding}" y1="${height - padding}" x2="${width - padding}" y2="${height - padding}" />
       <line x1="${padding}" y1="${padding}" x2="${padding}" y2="${height - padding}" />
-      ${weightPoints ? `<polyline class="weight-line" points="${weightPoints}" />` : ""}
-      ${bodyfatPoints ? `<polyline class="bodyfat-line" points="${bodyfatPoints}" />` : ""}
-      ${muscleMassPoints ? `<polyline class="musclemass-line" points="${muscleMassPoints}" />` : ""}
-      ${circlesFor(weightPoints, "weight-dot")}
-      ${circlesFor(bodyfatPoints, "bodyfat-dot")}
-      ${circlesFor(muscleMassPoints, "musclemass-dot")}
-      ${entries.map((entry, index) => {
-        const x = padding + (entries.length === 1 ? width - padding * 2 : (index / (entries.length - 1)) * (width - padding * 2));
+      <polyline class="progress-metric-line" points="${metricPoints}" />
+      ${circlesFor(metricPoints, "progress-metric-dot")}
+      ${chartEntries.map((entry, index) => {
+        const x = padding + (chartEntries.length === 1 ? width - padding * 2 : (index / (chartEntries.length - 1)) * (width - padding * 2));
         return `<text x="${x}" y="${height - 8}" text-anchor="middle">${escapeHtml(entry.entry_date.slice(5))}</text>`;
       }).join("")}
     </svg>
-    <div class="chart-legend">
-      <span><i class="weight-key"></i> Bodyweight</span>
-      <span><i class="bodyfat-key"></i> Bodyfat</span>
-      <span><i class="musclemass-key"></i> Muscle mass</span>
-    </div>
   `;
+}
+
+function renderClientProgressHistory(entries) {
+  const history = document.getElementById("client-progress-history");
+
+  if (!history) {
+    return;
+  }
+
+  if (!entries.length) {
+    history.innerHTML = '<p class="empty-state">No measurements yet.</p>';
+    return;
+  }
+
+  history.innerHTML = entries.slice().reverse().map((entry) => {
+    const measurements = progressMeasurements(entry);
+    const values = [
+      ["Weight", entry.bodyweight, "lb"],
+      ["Body fat", entry.bodyfat, "%"],
+      ["Muscle", entry.muscle_mass, "lb"],
+      ["Chest", measurements.chest, "in"],
+      ["Waist", measurements.waist, "in"],
+      ["Hips", measurements.hips, "in"],
+      ["Arm", measurements.arm, "in"],
+      ["Thigh", measurements.thigh, "in"]
+    ].filter(([, value]) => value !== null && value !== undefined && value !== "");
+
+    return `
+      <button class="client-progress-history-row" type="button" data-client-progress-id="${escapeHtml(entry.id)}">
+        <div><strong>${escapeHtml(entry.entry_date)}</strong>${entry.goal_note ? `<p>${escapeHtml(entry.goal_note)}</p>` : ""}</div>
+        <div class="client-progress-history-values">${values.map(([label, value, unit]) => `<span><small>${escapeHtml(label)}</small><strong>${escapeHtml(value)}${escapeHtml(unit)}</strong></span>`).join("") || '<span class="empty-state">No values recorded.</span>'}</div>
+      </button>
+    `;
+  }).join("");
 }
 
 function renderProgress(entries) {
@@ -1731,7 +1820,6 @@ function renderProgress(entries) {
   progressEntries = safeEntries;
   const latest = safeEntries[safeEntries.length - 1];
   const current = document.getElementById("progress-current");
-  const history = document.getElementById("client-progress-history");
 
   if (!current) {
     renderClientHomeSummary();
@@ -1740,13 +1828,11 @@ function renderProgress(entries) {
 
   if (!latest) {
     setText("#progress-date", "");
-    fillClientProgressForm();
     current.innerHTML = '<p class="empty-state">No progress check-ins yet.</p>';
     setText("#progress-goal", "");
-    if (history) {
-      history.innerHTML = '<p class="empty-state">No saved check-ins yet.</p>';
-    }
     renderProgressGraph([]);
+    renderClientProgressHistory([]);
+    fillClientProgressForm();
     renderClientHomeSummary();
     return;
   }
@@ -1757,26 +1843,274 @@ function renderProgress(entries) {
     <span><strong>Current bodyweight</strong> ${formatProgressValue(latest.bodyweight, " lb")}</span>
     <span><strong>Current bodyfat</strong> ${formatProgressValue(latest.bodyfat, "%")}</span>
     <span><strong>Muscle mass</strong> ${formatProgressValue(latest.muscle_mass, " lb")}</span>
-    <span><strong>Measurements</strong> ${escapeHtml(measurementSummary(latest))}</span>
+    <span><strong>Waist</strong> ${formatProgressValue(progressMeasurements(latest).waist, " in")}</span>
   `;
   setText("#progress-goal", latest.goal_note ? `Updated goal: ${latest.goal_note}` : "");
-  if (history) {
-    history.innerHTML = safeEntries
-      .slice()
-      .reverse()
-      .map((entry) => `
-        <button class="progress-history-row client-progress-history-row" type="button" data-client-progress-id="${entry.id}">
-          <strong>${escapeHtml(entry.entry_date)}</strong>
-          <span>${formatProgressValue(entry.bodyweight, " lb")}</span>
-          <span>${formatProgressValue(entry.bodyfat, "%")} bodyfat</span>
-          <span>${formatProgressValue(entry.muscle_mass, " lb")} muscle</span>
-          <em>${escapeHtml(measurementSummary(entry))}</em>
-        </button>
-      `)
-      .join("");
-  }
   renderProgressGraph(safeEntries);
+  renderClientProgressHistory(safeEntries);
+  fillClientProgressForm(safeEntries.find((entry) => entry.entry_date === todayDate()) || {});
   renderClientHomeSummary();
+}
+
+function setClientProgressStatus(message) {
+  setText("#client-progress-save-status", message);
+}
+
+function setClientProgressPhotoStatus(message) {
+  setText("#client-progress-photo-status", message);
+}
+
+function configureClientProgressAccess() {
+  const coachPreview = isCoachPortalEmail(activeDashboardUser?.email);
+  const controls = document.querySelectorAll(
+    "#client-checkin-form input, #client-checkin-form textarea, #client-save-progress-button, #client-progress-photo-date, #client-progress-photo-file, #client-progress-photo-note, #upload-client-progress-photo-button"
+  );
+
+  controls.forEach((control) => {
+    control.disabled = coachPreview;
+  });
+
+  if (coachPreview) {
+    setClientProgressStatus("Client measurements are read-only here. Use Coach Admin to make changes.");
+    setClientProgressPhotoStatus("Client progress photos are read-only in Coach View.");
+  }
+}
+
+async function signedProgressPhotoRecords(records) {
+  if (!supabaseClient || !records.length) {
+    return records;
+  }
+
+  const signedRecords = await Promise.all(records.map(async (record) => {
+    const { data, error } = await supabaseClient.storage
+      .from("progress-photos")
+      .createSignedUrl(record.storage_path, 3600);
+
+    return {
+      ...record,
+      signed_url: error ? "" : data?.signedUrl || data?.signed_url || ""
+    };
+  }));
+
+  return signedRecords;
+}
+
+function renderClientProgressPhotos(records) {
+  progressPhotos = Array.isArray(records) ? records : [];
+  const gallery = document.getElementById("client-progress-photo-gallery");
+
+  if (!gallery) {
+    return;
+  }
+
+  if (!progressPhotos.length) {
+    gallery.innerHTML = '<p class="empty-state">No progress photos yet.</p>';
+    return;
+  }
+
+  const canDelete = !isCoachPortalEmail(activeDashboardUser?.email);
+  gallery.innerHTML = progressPhotos.map((photo) => `
+    <article class="progress-photo-card">
+      ${photo.signed_url
+        ? `<img src="${escapeHtml(photo.signed_url)}" alt="Private progress photo from ${escapeHtml(photo.captured_on)}" loading="lazy" />`
+        : '<div class="progress-photo-unavailable">Photo unavailable</div>'}
+      <div>
+        <strong>${escapeHtml(photo.captured_on)}</strong>
+        ${photo.note ? `<p>${escapeHtml(photo.note)}</p>` : ""}
+        ${canDelete ? `<button type="button" class="progress-photo-delete" data-progress-photo-id="${escapeHtml(photo.id)}">Remove</button>` : ""}
+      </div>
+    </article>
+  `).join("");
+}
+
+async function loadClientProgressPhotos(email = activeClientEmail) {
+  if (!supabaseClient || !email) {
+    renderClientProgressPhotos([]);
+    return;
+  }
+
+  const { data, error } = await supabaseClient
+    .from("client_progress_photos")
+    .select("id, client_email, storage_path, captured_on, note, created_at")
+    .ilike("client_email", email)
+    .order("captured_on", { ascending: false })
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    renderClientProgressPhotos([]);
+    setClientProgressPhotoStatus("Progress photos could not be loaded.");
+    return;
+  }
+
+  renderClientProgressPhotos(await signedProgressPhotoRecords(data || []));
+}
+
+function handleClientProgressMetricTabs() {
+  const tabs = document.getElementById("progress-metric-tabs");
+
+  tabs?.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-progress-metric]");
+
+    if (!button) {
+      return;
+    }
+
+    activeProgressMetric = button.dataset.progressMetric;
+    tabs.querySelectorAll("[data-progress-metric]").forEach((tab) => {
+      const active = tab === button;
+      tab.classList.toggle("is-active", active);
+      tab.setAttribute("aria-pressed", String(active));
+    });
+    renderProgressGraph(progressEntries);
+  });
+}
+
+function handleClientProgressDateChange() {
+  const dateInput = document.querySelector('[name="progress_date"]');
+
+  dateInput?.addEventListener("change", () => {
+    const entry = progressEntries.find((item) => item.entry_date === dateInput.value);
+    fillClientProgressForm(entry || { entry_date: dateInput.value });
+    setClientProgressStatus(entry ? "Loaded this measurement entry for editing." : "Ready for a new measurement entry.");
+  });
+}
+
+async function progressPhotoJpeg(file) {
+  if (!file?.type?.startsWith("image/")) {
+    throw new Error("Choose an image first.");
+  }
+
+  const imageUrl = URL.createObjectURL(file);
+
+  try {
+    const image = new Image();
+    image.src = imageUrl;
+    await image.decode();
+    const maxDimension = 1800;
+    const scale = Math.min(1, maxDimension / Math.max(image.naturalWidth, image.naturalHeight));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+    canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+    canvas.getContext("2d").drawImage(image, 0, 0, canvas.width, canvas.height);
+    const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.84));
+
+    if (!blob) {
+      throw new Error("This photo could not be prepared for upload.");
+    }
+
+    if (blob.size > 6 * 1024 * 1024) {
+      throw new Error("This photo is still over 6 MB. Choose a smaller image.");
+    }
+
+    return blob;
+  } finally {
+    URL.revokeObjectURL(imageUrl);
+  }
+}
+
+function handleClientProgressPhotoUpload() {
+  const button = document.getElementById("upload-client-progress-photo-button");
+  const fileInput = document.getElementById("client-progress-photo-file");
+  const dateInput = document.getElementById("client-progress-photo-date");
+  const noteInput = document.getElementById("client-progress-photo-note");
+
+  if (dateInput) {
+    dateInput.value = todayDate();
+  }
+
+  button?.addEventListener("click", async () => {
+    const file = fileInput?.files?.[0];
+
+    if (!supabaseClient || !activeDashboardUser || !activeClientEmail || isCoachPortalEmail(activeDashboardUser.email)) {
+      return;
+    }
+
+    if (!file) {
+      setClientProgressPhotoStatus("Choose a photo first.");
+      return;
+    }
+
+    button.disabled = true;
+    setClientProgressPhotoStatus("Preparing private photo...");
+    let storagePath = "";
+
+    try {
+      const blob = await progressPhotoJpeg(file);
+      const photoId = window.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+      const capturedOn = dateInput?.value || todayDate();
+      storagePath = `${activeDashboardUser.id}/${capturedOn}-${photoId}.jpg`;
+      const { error: uploadError } = await supabaseClient.storage
+        .from("progress-photos")
+        .upload(storagePath, blob, { contentType: "image/jpeg", cacheControl: "3600", upsert: false });
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      const { error: recordError } = await supabaseClient
+        .from("client_progress_photos")
+        .insert({
+          client_email: activeClientEmail,
+          storage_path: storagePath,
+          captured_on: capturedOn,
+          note: String(noteInput?.value || "").trim()
+        });
+
+      if (recordError) {
+        await supabaseClient.storage.from("progress-photos").remove([storagePath]);
+        throw recordError;
+      }
+
+      fileInput.value = "";
+      noteInput.value = "";
+      await loadClientProgressPhotos();
+      setClientProgressPhotoStatus("Private photo uploaded. It is now available in the iOS app and Coach Admin.");
+    } catch (error) {
+      setClientProgressPhotoStatus(error?.message || "Photo upload failed.");
+    } finally {
+      button.disabled = false;
+    }
+  });
+}
+
+function handleClientProgressPhotoDelete() {
+  document.getElementById("client-progress-photo-gallery")?.addEventListener("click", async (event) => {
+    const button = event.target.closest("[data-progress-photo-id]");
+
+    if (!button || !supabaseClient || isCoachPortalEmail(activeDashboardUser?.email)) {
+      return;
+    }
+
+    const photo = progressPhotos.find((item) => item.id === button.dataset.progressPhotoId);
+
+    if (!photo || !window.confirm("Remove this private progress photo?")) {
+      return;
+    }
+
+    button.disabled = true;
+    setClientProgressPhotoStatus("Removing photo...");
+    const { error: storageError } = await supabaseClient.storage.from("progress-photos").remove([photo.storage_path]);
+
+    if (storageError) {
+      setClientProgressPhotoStatus(storageError.message);
+      button.disabled = false;
+      return;
+    }
+
+    const { error: recordError } = await supabaseClient
+      .from("client_progress_photos")
+      .delete()
+      .eq("id", photo.id);
+
+    if (recordError) {
+      setClientProgressPhotoStatus(recordError.message);
+      button.disabled = false;
+      return;
+    }
+
+    await loadClientProgressPhotos();
+    setClientProgressPhotoStatus("Photo removed.");
+  });
 }
 
 function setCountFromPrescription(prescription) {
@@ -3619,7 +3953,7 @@ function handleClientProgressSave() {
     }
 
     renderProgress(data || []);
-    setText("#client-progress-save-status", "Check-in saved.");
+    setText("#client-progress-save-status", "Measurements saved. They are now available in the iOS app and Coach Admin.");
 
     if (button) {
       button.disabled = false;
@@ -4374,6 +4708,8 @@ async function loadDashboard() {
       return;
     }
 
+    activeDashboardUser = user;
+
     const signedInEmail = normalizeClientEmail(user.email);
     const previewEmail = dashboardClientEmailParam();
     const targetClientEmail = isCoachPortalEmail(signedInEmail) ? previewEmail : signedInEmail;
@@ -4421,7 +4757,7 @@ async function loadDashboard() {
     await handleFitbitOAuthCallback();
     await loadFitbitStatus();
 
-    const [progressResult, trainingLogResult, foodLogResult] = await Promise.allSettled([
+    const [progressResult, progressPhotoResult, trainingLogResult, foodLogResult] = await Promise.allSettled([
       withTimeout(
         supabaseClient
           .from("client_progress")
@@ -4429,6 +4765,15 @@ async function loadDashboard() {
           .ilike("client_email", activeClientEmail)
           .order("entry_date", { ascending: true }),
         "Progress request timed out."
+      ),
+      withTimeout(
+        supabaseClient
+          .from("client_progress_photos")
+          .select("id, client_email, storage_path, captured_on, note, created_at")
+          .ilike("client_email", activeClientEmail)
+          .order("captured_on", { ascending: false })
+          .order("created_at", { ascending: false }),
+        "Progress photo request timed out."
       ),
       withTimeout(
         supabaseClient
@@ -4454,6 +4799,9 @@ async function loadDashboard() {
     const progressData = progressResult.status === "fulfilled" && !progressResult.value.error
       ? progressResult.value.data
       : [];
+    const progressPhotoData = progressPhotoResult.status === "fulfilled" && !progressPhotoResult.value.error
+      ? progressPhotoResult.value.data
+      : [];
     const trainingLogData = trainingLogResult.status === "fulfilled" && !trainingLogResult.value.error
       ? trainingLogResult.value.data
       : [];
@@ -4462,6 +4810,11 @@ async function loadDashboard() {
       : [];
 
     renderProgress(progressData || []);
+    renderClientProgressPhotos(await signedProgressPhotoRecords(progressPhotoData || []));
+    if (progressPhotoResult.status !== "fulfilled" || progressPhotoResult.value.error) {
+      setClientProgressPhotoStatus("Progress photos could not be loaded. Refresh and try again.");
+    }
+    configureClientProgressAccess();
     fillFoodEntryDefaults();
     populateFoodLogs(foodLogData || []);
     populateTrainingLogs(
@@ -4766,3 +5119,7 @@ handleFoodResultSelect();
 handleFoodSave();
 handleFoodDelete();
 handleFoodEntryDateChange();
+handleClientProgressMetricTabs();
+handleClientProgressDateChange();
+handleClientProgressPhotoUpload();
+handleClientProgressPhotoDelete();

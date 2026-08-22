@@ -17,6 +17,7 @@ const cardioExerciseCode = "CARDIO";
 let programs = [];
 let selectedProgramId = "";
 let progressEntries = [];
+let progressPhotos = [];
 let trainingLogs = [];
 let foodLogs = [];
 let recentTrainingLogs = [];
@@ -1106,9 +1107,15 @@ function numberOrNull(value) {
 }
 
 function progressMeasurements(entry = {}) {
-  return entry && typeof entry.measurements === "object" && !Array.isArray(entry.measurements)
+  const measurements = entry && typeof entry.measurements === "object" && !Array.isArray(entry.measurements)
     ? entry.measurements
     : {};
+
+  return {
+    ...measurements,
+    arm: measurements.arm ?? measurements.arms ?? null,
+    thigh: measurements.thigh ?? measurements.thighs ?? null
+  };
 }
 
 function progressMeasurementPayload(form) {
@@ -1116,8 +1123,8 @@ function progressMeasurementPayload(form) {
     chest: numberOrNull(formValue(form, "progress_chest")),
     waist: numberOrNull(formValue(form, "progress_waist")),
     hips: numberOrNull(formValue(form, "progress_hips")),
-    arms: numberOrNull(formValue(form, "progress_arms")),
-    thighs: numberOrNull(formValue(form, "progress_thighs"))
+    arm: numberOrNull(formValue(form, "progress_arm")),
+    thigh: numberOrNull(formValue(form, "progress_thigh"))
   };
 }
 
@@ -1127,8 +1134,8 @@ function progressMeasurementSummary(entry = {}) {
     ["Chest", measurements.chest],
     ["Waist", measurements.waist],
     ["Hips / glutes", measurements.hips],
-    ["Arms", measurements.arms],
-    ["Thighs", measurements.thighs]
+    ["Arm", measurements.arm],
+    ["Thigh", measurements.thigh]
   ].filter(([, value]) => value !== null && value !== undefined && value !== "");
 
   if (rows.length === 0) {
@@ -1626,10 +1633,12 @@ function fillForm(program = {}) {
   } else {
     renderProgramHistory("");
     progressEntries = [];
+    progressPhotos = [];
     trainingLogs = [];
     foodLogs = [];
     fillProgressForm();
     renderProgressHistory();
+    renderCoachProgressPhotos();
     renderTrainingLogs();
     renderSelectedClientTrainingLogs();
     renderCoachFoodLogs();
@@ -1652,8 +1661,8 @@ function fillProgressForm(entry = {}) {
   form.elements.progress_chest.value = measurements.chest ?? "";
   form.elements.progress_waist.value = measurements.waist ?? "";
   form.elements.progress_hips.value = measurements.hips ?? "";
-  form.elements.progress_arms.value = measurements.arms ?? "";
-  form.elements.progress_thighs.value = measurements.thighs ?? "";
+  form.elements.progress_arm.value = measurements.arm ?? "";
+  form.elements.progress_thigh.value = measurements.thigh ?? "";
   form.elements.progress_goal.value = entry.goal_note || "";
 }
 
@@ -1672,16 +1681,27 @@ function renderProgressHistory() {
   history.innerHTML = progressEntries
     .slice()
     .reverse()
-    .map((entry) => `
+    .map((entry) => {
+      const measurements = progressMeasurements(entry);
+      const values = [
+        ["Weight", entry.bodyweight, "lb"],
+        ["Body fat", entry.bodyfat, "%"],
+        ["Muscle", entry.muscle_mass, "lb"],
+        ["Chest", measurements.chest, "in"],
+        ["Waist", measurements.waist, "in"],
+        ["Hips", measurements.hips, "in"],
+        ["Arm", measurements.arm, "in"],
+        ["Thigh", measurements.thigh, "in"]
+      ].filter(([, value]) => value !== null && value !== undefined && value !== "");
+
+      return `
       <button class="progress-history-row" type="button" data-progress-id="${entry.id}">
         <strong>${escapeHtml(entry.entry_date)}</strong>
-        <span>${escapeHtml(entry.bodyweight ?? "Not set")} lb</span>
-        <span>${escapeHtml(entry.bodyfat ?? "Not set")}% bodyfat</span>
-        <span>${escapeHtml(entry.muscle_mass ?? "Not set")} lb muscle</span>
-        <em>${escapeHtml(progressMeasurementSummary(entry))}</em>
-        <small>${escapeHtml(entry.goal_note || "No check-in notes")}</small>
+        <span class="coach-progress-history-values">${values.map(([label, value, unit]) => `<i>${escapeHtml(label)} ${escapeHtml(value)}${escapeHtml(unit)}</i>`).join("") || "No measurements"}</span>
+        <em>${escapeHtml(entry.goal_note || "No goal note")}</em>
       </button>
-    `)
+    `;
+    })
     .join("");
 
   history.querySelectorAll("[data-progress-id]").forEach((button) => {
@@ -1694,6 +1714,52 @@ function renderProgressHistory() {
   });
 }
 
+async function signedCoachProgressPhotos(records) {
+  if (!coachSupabase || !records.length) {
+    return records;
+  }
+
+  return Promise.all(records.map(async (record) => {
+    const { data, error } = await coachSupabase.storage
+      .from("progress-photos")
+      .createSignedUrl(record.storage_path, 3600);
+
+    return {
+      ...record,
+      signed_url: error ? "" : data?.signedUrl || data?.signed_url || ""
+    };
+  }));
+}
+
+function renderCoachProgressPhotos() {
+  const gallery = document.getElementById("coach-progress-photo-gallery");
+  const status = document.getElementById("coach-progress-photo-status");
+
+  if (!gallery) {
+    return;
+  }
+
+  if (!progressPhotos.length) {
+    gallery.innerHTML = '<p class="empty-state">No private progress photos yet.</p>';
+    if (status) {
+      status.textContent = "Clients upload photos from their profile. Only the client and coach can view them.";
+    }
+    return;
+  }
+
+  gallery.innerHTML = progressPhotos.map((photo) => `
+    <article class="progress-photo-card">
+      ${photo.signed_url
+        ? `<img src="${escapeHtml(photo.signed_url)}" alt="Private client progress photo from ${escapeHtml(photo.captured_on)}" loading="lazy" />`
+        : '<div class="progress-photo-unavailable">Photo unavailable</div>'}
+      <div><strong>${escapeHtml(photo.captured_on)}</strong>${photo.note ? `<p>${escapeHtml(photo.note)}</p>` : ""}</div>
+    </article>
+  `).join("");
+  if (status) {
+    status.textContent = `${progressPhotos.length} private progress photo${progressPhotos.length === 1 ? "" : "s"}.`;
+  }
+}
+
 async function loadProgressForEmail(email) {
   if (!coachSupabase || !email) {
     return;
@@ -1701,21 +1767,40 @@ async function loadProgressForEmail(email) {
 
   progressStatus("Loading progress...");
 
-  const { data, error } = await coachSupabase
-    .from("client_progress")
-    .select("*")
-    .eq("client_email", email)
-    .order("entry_date", { ascending: true });
+  const [progressResult, photoResult] = await Promise.all([
+    coachSupabase
+      .from("client_progress")
+      .select("*")
+      .eq("client_email", email)
+      .order("entry_date", { ascending: true }),
+    coachSupabase
+      .from("client_progress_photos")
+      .select("id, client_email, storage_path, captured_on, note, created_at")
+      .eq("client_email", email)
+      .order("captured_on", { ascending: false })
+      .order("created_at", { ascending: false })
+  ]);
+  const { data, error } = progressResult;
 
   if (error) {
     progressEntries = [];
+    progressPhotos = [];
     renderProgressHistory();
+    renderCoachProgressPhotos();
     progressStatus("Could not load progress. Run the progress SQL in Supabase.");
     return;
   }
 
   progressEntries = data || [];
+  progressPhotos = photoResult.error ? [] : await signedCoachProgressPhotos(photoResult.data || []);
   renderProgressHistory();
+  renderCoachProgressPhotos();
+  if (photoResult.error) {
+    const photoStatus = document.getElementById("coach-progress-photo-status");
+    if (photoStatus) {
+      photoStatus.textContent = "Private progress photos could not be loaded. Refresh and try again.";
+    }
+  }
   fillProgressForm();
   progressStatus("Ready for a new check-in.");
 }
@@ -3806,14 +3891,30 @@ async function handleSaveProgress() {
     button.disabled = true;
     progressStatus("Saving check-in...");
 
+    const existing = progressEntries.find((entry) => entry.entry_date === entryDate) || {};
+    const nextNumber = (fieldName, current) => {
+      const raw = formValue(form, fieldName);
+      return raw ? numberOrNull(raw) : current ?? null;
+    };
+    const existingMeasurements = progressMeasurements(existing);
+    const measurements = {
+      ...existingMeasurements,
+      chest: nextNumber("progress_chest", existingMeasurements.chest),
+      waist: nextNumber("progress_waist", existingMeasurements.waist),
+      hips: nextNumber("progress_hips", existingMeasurements.hips),
+      arm: nextNumber("progress_arm", existingMeasurements.arm),
+      thigh: nextNumber("progress_thigh", existingMeasurements.thigh)
+    };
+    const goalNote = formValue(form, "progress_goal");
+
     const payload = {
       client_email: email,
       entry_date: entryDate,
-      bodyweight: numberOrNull(formValue(form, "progress_bodyweight")),
-      bodyfat: numberOrNull(formValue(form, "progress_bodyfat")),
-      muscle_mass: numberOrNull(formValue(form, "progress_muscle_mass")),
-      measurements: progressMeasurementPayload(form),
-      goal_note: formValue(form, "progress_goal")
+      bodyweight: nextNumber("progress_bodyweight", existing.bodyweight),
+      bodyfat: nextNumber("progress_bodyfat", existing.bodyfat),
+      muscle_mass: nextNumber("progress_muscle_mass", existing.muscle_mass),
+      measurements,
+      goal_note: goalNote || existing.goal_note || ""
     };
 
     const { error } = await coachSupabase
