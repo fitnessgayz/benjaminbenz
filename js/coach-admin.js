@@ -23,6 +23,9 @@ let foodLogs = [];
 let recentTrainingLogs = [];
 let trainingLogDateFilter = "";
 let trainingLogSearchFilter = "";
+let workoutAnalysis = null;
+let workoutAnalysisStatusText = "Choose a client to analyze workout logs.";
+let isWorkoutAnalysisLoading = false;
 let showingArchivedClients = false;
 let clientSearchTerm = "";
 let activeAdminTab = "clients";
@@ -708,6 +711,15 @@ function trainingLogStatus(message) {
   }
 }
 
+function workoutAnalysisStatus(message) {
+  workoutAnalysisStatusText = message;
+  const status = document.getElementById("workout-analysis-status");
+
+  if (status) {
+    status.textContent = message;
+  }
+}
+
 function profileManagementStatus(message) {
   const status = document.getElementById("profile-management-status");
 
@@ -785,6 +797,20 @@ function setAdminTab(tabName) {
       loadTrainingLogsForEmail(email);
     } else {
       renderSelectedClientTrainingLogs();
+    }
+  }
+
+  if (nextTab === "logs") {
+    const email = normalizeEmail(selectedProgram()?.client_email);
+
+    if (email) {
+      loadTrainingLogsForEmail(email);
+    } else {
+      trainingLogs = [];
+      workoutAnalysis = null;
+      workoutAnalysisStatus("Choose a client to analyze workout logs.");
+      renderTrainingLogs();
+      renderWorkoutAnalysisPanel();
     }
   }
 
@@ -1812,6 +1838,159 @@ async function loadProgressForEmail(email) {
   progressStatus("Ready for a new check-in.");
 }
 
+function workoutLogsForAnalysis() {
+  return trainingLogs
+    .filter((log) => log && typeof log === "object")
+    .slice(0, 120)
+    .map((log) => ({
+      entry_date: log.entry_date || "",
+      workout_title: log.workout_title || "Workout",
+      exercise_code: log.exercise_code || "",
+      exercise_name: log.exercise_name || "",
+      set_number: log.set_number || "",
+      weight_used: log.weight_used ?? "",
+      reps: log.reps ?? "",
+      notes: log.notes || ""
+    }));
+}
+
+function renderWorkoutAnalysisPanel() {
+  const button = document.getElementById("analyze-workout-button");
+  const result = document.getElementById("workout-analysis-result");
+  const email = normalizeEmail(selectedProgram()?.client_email);
+  const logs = workoutLogsForAnalysis();
+
+  if (button) {
+    button.disabled = isWorkoutAnalysisLoading || !coachSupabase || !email || logs.length === 0;
+    button.textContent = isWorkoutAnalysisLoading ? "Analyzing..." : "Analyze workouts";
+  }
+
+  workoutAnalysisStatus(workoutAnalysisStatusText);
+
+  if (!result) {
+    return;
+  }
+
+  if (!workoutAnalysis?.analysis_text) {
+    result.innerHTML = '<p class="empty-state">Latest workout analysis will appear here.</p>';
+    return;
+  }
+
+  const createdAt = workoutAnalysis.created_at ? formatAdminDate(workoutAnalysis.created_at) : "";
+  const usageCount = Number(workoutAnalysis.usage_count);
+  const usageLimit = Number(workoutAnalysis.usage_limit);
+  const usageLabel = Number.isFinite(usageCount) && Number.isFinite(usageLimit)
+    ? `AI uses this month: ${usageCount}/${usageLimit}`
+    : "";
+  const paragraphs = String(workoutAnalysis.analysis_text || "")
+    .split(/\n+/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => `<p>${escapeHtml(line)}</p>`)
+    .join("");
+
+  result.innerHTML = `
+    <div class="workout-analysis-meta">
+      ${createdAt ? `<span class="workout-analysis-chip">Analyzed ${escapeHtml(createdAt)}</span>` : ""}
+      ${usageLabel ? `<span class="workout-analysis-chip">${escapeHtml(usageLabel)}</span>` : ""}
+    </div>
+    ${paragraphs || '<p class="empty-state">No recommendation text was saved.</p>'}
+  `;
+}
+
+async function loadLatestWorkoutAnalysisForEmail(email) {
+  if (!coachSupabase || !email) {
+    workoutAnalysis = null;
+    workoutAnalysisStatus("Choose a client to analyze workout logs.");
+    renderWorkoutAnalysisPanel();
+    return;
+  }
+
+  try {
+    const data = await invokeWorkoutAnalysisFunction({
+      action: "latest",
+      client_email: normalizeEmail(email)
+    }, 15000);
+
+    workoutAnalysis = data?.analysis || null;
+    workoutAnalysisStatus(workoutAnalysis
+      ? "Latest saved AI workout review."
+      : "Ready to analyze this client's recent workout logs.");
+    renderWorkoutAnalysisPanel();
+  } catch (error) {
+    workoutAnalysis = null;
+    workoutAnalysisStatus(error?.message || "Could not load the latest AI analysis right now.");
+    renderWorkoutAnalysisPanel();
+  }
+}
+
+async function invokeWorkoutAnalysisFunction(body, timeoutMs = 20000) {
+  if (!coachSupabase || !coachConfig.url || !coachConfig.anonKey) {
+    throw new Error("AI workout analysis is not set up yet.");
+  }
+
+  const { data } = await coachSupabase.auth.getSession();
+  const accessToken = data?.session?.access_token;
+
+  if (!accessToken) {
+    throw new Error("Sign in as coach before using AI workout analysis.");
+  }
+
+  const functionUrl = `${coachConfig.url.replace(/\/$/, "")}/functions/v1/analyze-workout`;
+  const response = await fetchWithTimeout(functionUrl, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+      "apikey": coachConfig.anonKey
+    },
+    body: JSON.stringify(body)
+  }, timeoutMs);
+  const payload = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(payload?.error || "AI workout analysis is unavailable right now.");
+  }
+
+  return payload;
+}
+
+async function runWorkoutAnalysis() {
+  const program = selectedProgram();
+  const email = normalizeEmail(program?.client_email);
+  const logs = workoutLogsForAnalysis();
+
+  if (!coachSupabase || !email || logs.length === 0 || isWorkoutAnalysisLoading) {
+    renderWorkoutAnalysisPanel();
+    return;
+  }
+
+  isWorkoutAnalysisLoading = true;
+  workoutAnalysisStatus("Analyzing recent workout logs...");
+  renderWorkoutAnalysisPanel();
+
+  try {
+    const data = await invokeWorkoutAnalysisFunction({
+      action: "analyze",
+      client_email: email,
+      client_name: program?.client_name || "",
+      program_title: program?.program_title || "",
+      logs
+    }, 45000);
+
+    workoutAnalysis = data?.analysis || null;
+    const usageCount = data?.usage_count || workoutAnalysis?.usage_count;
+    const usageLimit = data?.usage_limit || workoutAnalysis?.usage_limit;
+    const usageLabel = usageCount && usageLimit ? ` ${usageCount}/${usageLimit} analyses used this month.` : "";
+    workoutAnalysisStatus(`Workout analysis saved.${usageLabel}`);
+  } catch (error) {
+    workoutAnalysisStatus(error?.message || "Could not analyze workouts right now.");
+  } finally {
+    isWorkoutAnalysisLoading = false;
+    renderWorkoutAnalysisPanel();
+  }
+}
+
 function renderTrainingLogs() {
   const history = document.getElementById("training-log-history");
 
@@ -2005,16 +2184,33 @@ function handleTrainingLogDateFilter() {
   });
 }
 
+function handleWorkoutAnalysis() {
+  const button = document.getElementById("analyze-workout-button");
+
+  if (!button) {
+    return;
+  }
+
+  button.addEventListener("click", runWorkoutAnalysis);
+  renderWorkoutAnalysisPanel();
+}
+
 async function loadTrainingLogsForEmail(email) {
   if (!coachSupabase || !email) {
     trainingLogs = [];
+    workoutAnalysis = null;
+    workoutAnalysisStatus("Choose a client to analyze workout logs.");
     renderTrainingLogs();
+    renderWorkoutAnalysisPanel();
     renderSelectedClientTrainingLogs();
     return;
   }
 
   const normalizedEmail = normalizeEmail(email);
   trainingLogStatus("Loading weights...");
+  workoutAnalysis = null;
+  workoutAnalysisStatus("Loading workout logs...");
+  renderWorkoutAnalysisPanel();
 
   try {
     const { data, error } = await withRequestTimeout(
@@ -2033,16 +2229,26 @@ async function loadTrainingLogsForEmail(email) {
     if (error) {
       trainingLogs = [];
       trainingLogStatus("Could not load weights. Please refresh and try again.");
+      workoutAnalysisStatus("Load workout logs first, then run an analysis.");
+      renderWorkoutAnalysisPanel();
       renderSelectedClientTrainingLogs();
       return;
     }
 
     trainingLogs = data || [];
     renderTrainingLogs();
+    if (activeAdminTab === "logs") {
+      await loadLatestWorkoutAnalysisForEmail(normalizedEmail);
+    } else {
+      workoutAnalysisStatus("Ready to analyze this client's recent workout logs.");
+      renderWorkoutAnalysisPanel();
+    }
     renderSelectedClientTrainingLogs();
   } catch (error) {
     trainingLogs = [];
     trainingLogStatus(error?.message || "Could not load weights. Please refresh and try again.");
+    workoutAnalysisStatus("Could not load workout logs for AI analysis.");
+    renderWorkoutAnalysisPanel();
     renderSelectedClientTrainingLogs();
   }
 }
@@ -4271,6 +4477,7 @@ async function bootCoachAdmin() {
   handleSendInvite();
   handleSaveProgress();
   handleTrainingLogDateFilter();
+  handleWorkoutAnalysis();
   handleCoachSignOut();
   handleNewClient();
   handleStartNewProgram();

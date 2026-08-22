@@ -4245,6 +4245,73 @@ footer {
   gap: 8px;
 }
 
+.workout-analysis-panel {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfbf8;
+}
+
+.workout-analysis-heading {
+  align-items: end;
+  gap: 12px;
+}
+
+.workout-analysis-heading h3 {
+  margin: 0;
+  color: var(--black);
+  font-size: clamp(1.35rem, 3vw, 2rem);
+  font-weight: 900;
+  line-height: .95;
+  text-transform: uppercase;
+}
+
+.workout-analysis-status {
+  min-height: 1.2em;
+  margin: 0;
+  color: var(--muted);
+  font-weight: 900;
+}
+
+.workout-analysis-result {
+  display: grid;
+  gap: 8px;
+}
+
+.workout-analysis-result p {
+  margin: 0;
+  color: var(--muted);
+  font-weight: 800;
+  line-height: 1.45;
+}
+
+.workout-analysis-result strong {
+  color: var(--black);
+  font-weight: 900;
+}
+
+.workout-analysis-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.workout-analysis-chip {
+  display: inline-flex;
+  min-height: 34px;
+  align-items: center;
+  padding: 7px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--black);
+  font-size: .82rem;
+  font-weight: 900;
+}
+
 .session-sheet-summary,
 .session-sheet-editor,
 .session-date-history,
@@ -5562,6 +5629,14 @@ textarea:focus {
 
   .training-log-row {
     grid-template-columns: 1fr;
+  }
+
+  .workout-analysis-heading {
+    grid-template-columns: 1fr;
+  }
+
+  .workout-analysis-heading .button {
+    width: 100%;
   }
 
   .training-log-summary-row {
