@@ -1,0 +1,1105 @@
+import Charts
+import PhotosUI
+import Supabase
+import SwiftUI
+import UIKit
+
+private let progressPhotosBucket = "progress-photos"
+
+struct ClientMeasurementEntry: Decodable, Identifiable, Equatable {
+    let id: UUID
+    let clientEmail: String
+    let entryDate: String
+    let bodyweight: Double?
+    let bodyfat: Double?
+    let muscleMass: Double?
+    let measurements: [String: Double]
+    let goalNote: String
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case clientEmail = "client_email"
+        case entryDate = "entry_date"
+        case bodyweight
+        case bodyfat
+        case muscleMass = "muscle_mass"
+        case measurements
+        case goalNote = "goal_note"
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        clientEmail = try container.decode(String.self, forKey: .clientEmail)
+        entryDate = try container.decode(String.self, forKey: .entryDate)
+        bodyweight = try container.decodeIfPresent(Double.self, forKey: .bodyweight)
+        bodyfat = try container.decodeIfPresent(Double.self, forKey: .bodyfat)
+        muscleMass = try container.decodeIfPresent(Double.self, forKey: .muscleMass)
+        measurements = try container.decodeIfPresent([String: Double].self, forKey: .measurements) ?? [:]
+        goalNote = try container.decodeIfPresent(String.self, forKey: .goalNote) ?? ""
+    }
+}
+
+private struct ClientMeasurementPayload: Encodable {
+    let clientEmail: String
+    let entryDate: String
+    let bodyweight: Double?
+    let bodyfat: Double?
+    let muscleMass: Double?
+    let measurements: [String: Double]
+    let goalNote: String
+
+    enum CodingKeys: String, CodingKey {
+        case clientEmail = "client_email"
+        case entryDate = "entry_date"
+        case bodyweight
+        case bodyfat
+        case muscleMass = "muscle_mass"
+        case measurements
+        case goalNote = "goal_note"
+    }
+}
+
+struct ClientProgressPhotoRecord: Decodable, Identifiable, Equatable {
+    let id: UUID
+    let clientEmail: String
+    let storagePath: String
+    let capturedOn: String
+    let note: String
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case clientEmail = "client_email"
+        case storagePath = "storage_path"
+        case capturedOn = "captured_on"
+        case note
+    }
+}
+
+private struct ClientProgressPhotoPayload: Encodable {
+    let clientEmail: String
+    let storagePath: String
+    let capturedOn: String
+    let note: String
+
+    enum CodingKeys: String, CodingKey {
+        case clientEmail = "client_email"
+        case storagePath = "storage_path"
+        case capturedOn = "captured_on"
+        case note
+    }
+}
+
+struct ClientProgressPhoto: Identifiable, Equatable {
+    let record: ClientProgressPhotoRecord
+    let signedURL: URL?
+
+    var id: UUID { record.id }
+}
+
+struct ClientMeasurementDraft {
+    let entryDate: Date
+    let bodyweight: Double?
+    let bodyfat: Double?
+    let muscleMass: Double?
+    let chest: Double?
+    let waist: Double?
+    let hips: Double?
+    let arm: Double?
+    let thigh: Double?
+    let note: String
+
+    var hasMeasurement: Bool {
+        [bodyweight, bodyfat, muscleMass, chest, waist, hips, arm, thigh].contains { $0 != nil }
+    }
+}
+
+@MainActor
+final class ClientStatsStore: ObservableObject {
+    enum LoadState: Equatable {
+        case idle
+        case loading
+        case loaded
+        case failed(String)
+    }
+
+    @Published private(set) var state: LoadState = .idle
+    @Published private(set) var measurements: [ClientMeasurementEntry] = []
+    @Published private(set) var photos: [ClientProgressPhoto] = []
+    @Published private(set) var isSavingMeasurement = false
+    @Published private(set) var isUploadingPhoto = false
+    @Published var message: String?
+
+    private let client: SupabaseClient
+
+    init(client: SupabaseClient = AppConfiguration.supabase) {
+        self.client = client
+    }
+
+    func loadIfNeeded(email: String) async {
+        guard state == .idle else { return }
+        await reload(email: email)
+    }
+
+    func reload(email: String) async {
+        let normalizedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard !normalizedEmail.isEmpty else {
+            state = .failed("Your account email is missing. Sign in again and retry.")
+            return
+        }
+
+        state = .loading
+        message = nil
+
+        do {
+            let measurementRows: [ClientMeasurementEntry] = try await client
+                .from("client_progress")
+                .select("id,client_email,entry_date,bodyweight,bodyfat,muscle_mass,measurements,goal_note")
+                .eq("client_email", value: normalizedEmail)
+                .order("entry_date", ascending: false)
+                .limit(365)
+                .execute()
+                .value
+
+            let photoRows: [ClientProgressPhotoRecord] = try await client
+                .from("client_progress_photos")
+                .select("id,client_email,storage_path,captured_on,note")
+                .eq("client_email", value: normalizedEmail)
+                .order("captured_on", ascending: false)
+                .limit(100)
+                .execute()
+                .value
+
+            var signedPhotos: [ClientProgressPhoto] = []
+            for record in photoRows {
+                let signedURL = try? await client.storage
+                    .from(progressPhotosBucket)
+                    .createSignedURL(path: record.storagePath, expiresIn: 3_600)
+                signedPhotos.append(ClientProgressPhoto(record: record, signedURL: signedURL))
+            }
+
+            guard !Task.isCancelled else { return }
+            measurements = measurementRows
+            photos = signedPhotos
+            state = .loaded
+        } catch is CancellationError {
+            return
+        } catch {
+            state = .failed("Your stats could not be loaded. Check your connection and try again.")
+        }
+    }
+
+    func saveMeasurement(email: String, draft: ClientMeasurementDraft) async -> Bool {
+        guard draft.hasMeasurement else {
+            message = "Enter at least one measurement before saving."
+            return false
+        }
+
+        let normalizedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        let entryDate = Self.apiDateFormatter.string(from: draft.entryDate)
+        let existing = measurements.first { $0.entryDate == entryDate }
+        var detailMeasurements = existing?.measurements ?? [:]
+        Self.set(draft.chest, for: "chest", in: &detailMeasurements)
+        Self.set(draft.waist, for: "waist", in: &detailMeasurements)
+        Self.set(draft.hips, for: "hips", in: &detailMeasurements)
+        Self.set(draft.arm, for: "arm", in: &detailMeasurements)
+        Self.set(draft.thigh, for: "thigh", in: &detailMeasurements)
+
+        let payload = ClientMeasurementPayload(
+            clientEmail: normalizedEmail,
+            entryDate: entryDate,
+            bodyweight: draft.bodyweight ?? existing?.bodyweight,
+            bodyfat: draft.bodyfat ?? existing?.bodyfat,
+            muscleMass: draft.muscleMass ?? existing?.muscleMass,
+            measurements: detailMeasurements,
+            goalNote: draft.note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                ? (existing?.goalNote ?? "")
+                : draft.note.trimmingCharacters(in: .whitespacesAndNewlines)
+        )
+
+        isSavingMeasurement = true
+        message = nil
+        defer { isSavingMeasurement = false }
+
+        do {
+            let saved: ClientMeasurementEntry = try await client
+                .from("client_progress")
+                .upsert(payload, onConflict: "client_email,entry_date")
+                .select("id,client_email,entry_date,bodyweight,bodyfat,muscle_mass,measurements,goal_note")
+                .single()
+                .execute()
+                .value
+
+            measurements.removeAll { $0.id == saved.id || $0.entryDate == saved.entryDate }
+            measurements.append(saved)
+            measurements.sort { $0.entryDate > $1.entryDate }
+            message = "Measurements saved."
+            return true
+        } catch is CancellationError {
+            return false
+        } catch {
+            message = "Your measurements could not be saved. Check your connection and try again."
+            return false
+        }
+    }
+
+    func uploadPhoto(
+        account: SignedInAccount,
+        imageData: Data,
+        capturedOn: Date,
+        note: String
+    ) async -> Bool {
+        guard let jpegData = ProgressPhotoProcessor.jpegData(from: imageData) else {
+            message = "That photo could not be prepared. Try another image."
+            return false
+        }
+
+        let date = Self.apiDateFormatter.string(from: capturedOn)
+        let path = "\(account.id.uuidString.lowercased())/\(date)-\(UUID().uuidString.lowercased()).jpg"
+        let payload = ClientProgressPhotoPayload(
+            clientEmail: account.email.lowercased(),
+            storagePath: path,
+            capturedOn: date,
+            note: String(note.trimmingCharacters(in: .whitespacesAndNewlines).prefix(300))
+        )
+
+        isUploadingPhoto = true
+        message = nil
+        defer { isUploadingPhoto = false }
+
+        do {
+            try await client.storage
+                .from(progressPhotosBucket)
+                .upload(
+                    path,
+                    data: jpegData,
+                    options: FileOptions(cacheControl: "3600", contentType: "image/jpeg", upsert: false)
+                )
+
+            do {
+                let record: ClientProgressPhotoRecord = try await client
+                    .from("client_progress_photos")
+                    .insert(payload)
+                    .select("id,client_email,storage_path,captured_on,note")
+                    .single()
+                    .execute()
+                    .value
+
+                let signedURL = try? await client.storage
+                    .from(progressPhotosBucket)
+                    .createSignedURL(path: path, expiresIn: 3_600)
+                photos.insert(ClientProgressPhoto(record: record, signedURL: signedURL), at: 0)
+                message = "Progress photo added."
+                return true
+            } catch {
+                _ = try? await client.storage.from(progressPhotosBucket).remove(paths: [path])
+                throw error
+            }
+        } catch is CancellationError {
+            return false
+        } catch {
+            message = "Your photo could not be uploaded. Check your connection and try again."
+            return false
+        }
+    }
+
+    private static func set(_ value: Double?, for key: String, in measurements: inout [String: Double]) {
+        if let value {
+            measurements[key] = value
+        }
+    }
+
+    static let apiDateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone(secondsFromGMT: 0)
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter
+    }()
+}
+
+private enum ProgressPhotoProcessor {
+    static func jpegData(from data: Data, maximumDimension: CGFloat = 1_800) -> Data? {
+        guard let image = UIImage(data: data) else { return nil }
+        let longestSide = max(image.size.width, image.size.height)
+        guard longestSide > 0 else { return nil }
+
+        let scale = min(1, maximumDimension / longestSide)
+        let targetSize = CGSize(width: image.size.width * scale, height: image.size.height * scale)
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        format.opaque = true
+        let resized = UIGraphicsImageRenderer(size: targetSize, format: format).image { _ in
+            UIColor.black.setFill()
+            UIRectFill(CGRect(origin: .zero, size: targetSize))
+            image.draw(in: CGRect(origin: .zero, size: targetSize))
+        }
+        return resized.jpegData(compressionQuality: 0.84)
+    }
+}
+
+private enum ClientStatsSheet: String, Identifiable {
+    case measurement
+    case photo
+
+    var id: String { rawValue }
+}
+
+private enum ClientStatsMetric: String, CaseIterable, Identifiable {
+    case bodyweight
+    case bodyfat
+    case muscleMass
+    case waist
+    case chest
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .bodyweight: "Body weight"
+        case .bodyfat: "Body fat"
+        case .muscleMass: "Muscle mass"
+        case .waist: "Waist"
+        case .chest: "Chest"
+        }
+    }
+
+    var shortTitle: String {
+        switch self {
+        case .bodyweight: "Weight"
+        case .bodyfat: "Body fat"
+        case .muscleMass: "Muscle"
+        case .waist: "Waist"
+        case .chest: "Chest"
+        }
+    }
+
+    var unit: String {
+        switch self {
+        case .bodyweight, .muscleMass: "lb"
+        case .bodyfat: "%"
+        case .waist, .chest: "in"
+        }
+    }
+
+    func value(in entry: ClientMeasurementEntry) -> Double? {
+        switch self {
+        case .bodyweight: entry.bodyweight
+        case .bodyfat: entry.bodyfat
+        case .muscleMass: entry.muscleMass
+        case .waist: entry.measurements["waist"]
+        case .chest: entry.measurements["chest"]
+        }
+    }
+}
+
+private struct ClientStatsPoint: Identifiable {
+    let entry: ClientMeasurementEntry
+    let date: Date
+    let value: Double
+
+    var id: UUID { entry.id }
+}
+
+struct ClientStatsView: View {
+    let account: SignedInAccount
+
+    @StateObject private var store = ClientStatsStore()
+    @State private var selectedMetric: ClientStatsMetric = .bodyweight
+    @State private var presentedSheet: ClientStatsSheet?
+
+    private var chartPoints: [ClientStatsPoint] {
+        store.measurements.compactMap { entry in
+            guard let date = ClientStatsStore.apiDateFormatter.date(from: entry.entryDate),
+                  let value = selectedMetric.value(in: entry) else { return nil }
+            return ClientStatsPoint(entry: entry, date: date, value: value)
+        }
+        .sorted { $0.date < $1.date }
+    }
+
+    var body: some View {
+        ZStack {
+            Color.fwbBackground.ignoresSafeArea()
+
+            Group {
+                switch store.state {
+                case .idle, .loading:
+                    ProgressView("Loading client stats…")
+                        .tint(.fwbLime)
+                        .foregroundStyle(Color.fwbMuted)
+                case .failed(let message):
+                    StatsLoadErrorView(message: message) {
+                        Task { await store.reload(email: account.email) }
+                    }
+                case .loaded:
+                    statsContent
+                }
+            }
+        }
+        .navigationTitle("Stats & Measurements")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(Color.fwbBackground, for: .navigationBar)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Menu {
+                    Button {
+                        presentedSheet = .measurement
+                    } label: {
+                        Label("Log measurements", systemImage: "ruler")
+                    }
+
+                    Button {
+                        presentedSheet = .photo
+                    } label: {
+                        Label("Add progress photo", systemImage: "photo.badge.plus")
+                    }
+                } label: {
+                    Image(systemName: "plus")
+                        .font(.headline.bold())
+                        .foregroundStyle(Color.fwbLime)
+                }
+                .accessibilityLabel("Add client stat")
+            }
+        }
+        .sheet(item: $presentedSheet) { sheet in
+            switch sheet {
+            case .measurement:
+                MeasurementEntrySheet(account: account, store: store)
+            case .photo:
+                ProgressPhotoEntrySheet(account: account, store: store)
+            }
+        }
+        .task {
+            await store.loadIfNeeded(email: account.email)
+        }
+    }
+
+    private var statsContent: some View {
+        ScrollView {
+            LazyVStack(alignment: .leading, spacing: 20) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("CLIENT PROFILE")
+                        .font(.footnote.bold())
+                        .tracking(1.4)
+                        .foregroundStyle(Color.fwbLime)
+                    Text("TRACK\nYOUR PROGRESS")
+                        .font(.system(size: 42, weight: .black))
+                        .fontWidth(.condensed)
+                        .foregroundStyle(Color.fwbWarmWhite)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Text("Save measurements and private progress photos in one place.")
+                        .font(.subheadline)
+                        .foregroundStyle(Color.fwbMuted)
+                }
+
+                if let message = store.message {
+                    Text(message)
+                        .font(.footnote.weight(.semibold))
+                        .foregroundStyle(message.contains("could not") ? Color.fwbRed : Color.fwbLime)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(12)
+                        .background(Color.fwbCard, in: Rectangle())
+                        .overlay { Rectangle().stroke(Color.fwbLine, lineWidth: 1) }
+                }
+
+                progressPhotosSection
+                measurementChartSection
+                measurementHistorySection
+            }
+            .padding(20)
+        }
+        .refreshable {
+            await store.reload(email: account.email)
+        }
+    }
+
+    private var progressPhotosSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .firstTextBaseline) {
+                SectionHeading(kicker: "PRIVATE", title: "PROGRESS PHOTOS")
+                Spacer()
+                Button("Add Photo") {
+                    presentedSheet = .photo
+                }
+                .font(.footnote.weight(.black))
+                .foregroundStyle(Color.fwbLime)
+            }
+
+            if store.photos.isEmpty {
+                Button {
+                    presentedSheet = .photo
+                } label: {
+                    VStack(spacing: 12) {
+                        Image(systemName: "photo.badge.plus")
+                            .font(.system(size: 30, weight: .semibold))
+                        Text("ADD YOUR FIRST PROGRESS PHOTO")
+                            .font(.subheadline.weight(.black))
+                            .fontWidth(.condensed)
+                        Text("Photos are private and visible only to your authenticated account and coach.")
+                            .font(.footnote)
+                            .foregroundStyle(Color.fwbMuted)
+                            .multilineTextAlignment(.center)
+                    }
+                    .foregroundStyle(Color.fwbLime)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 26)
+                    .background(Color.fwbCard, in: Rectangle())
+                    .overlay { Rectangle().stroke(Color.fwbLine, lineWidth: 1) }
+                }
+                .buttonStyle(.plain)
+            } else {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    LazyHStack(spacing: 12) {
+                        ForEach(store.photos) { photo in
+                            ProgressPhotoCard(photo: photo)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private var measurementChartSection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(alignment: .firstTextBaseline) {
+                SectionHeading(kicker: "TRENDS", title: selectedMetric.title.uppercased())
+                Spacer()
+                Button("Log Stats") {
+                    presentedSheet = .measurement
+                }
+                .font(.footnote.weight(.black))
+                .foregroundStyle(Color.fwbLime)
+            }
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(ClientStatsMetric.allCases) { metric in
+                        Button(metric.shortTitle) {
+                            selectedMetric = metric
+                        }
+                        .font(.footnote.weight(.bold))
+                        .foregroundStyle(selectedMetric == metric ? Color.black : Color.fwbWarmWhite)
+                        .padding(.horizontal, 13)
+                        .padding(.vertical, 8)
+                        .frame(minHeight: 36)
+                        .background(selectedMetric == metric ? Color.fwbAccentFill : Color.fwbCard, in: Rectangle())
+                        .overlay { Rectangle().stroke(selectedMetric == metric ? Color.fwbAccentFill : Color.fwbLine, lineWidth: 1) }
+                    }
+                }
+            }
+
+            if chartPoints.isEmpty {
+                VStack(spacing: 10) {
+                    Image(systemName: "chart.xyaxis.line")
+                        .font(.title)
+                        .foregroundStyle(Color.fwbLime)
+                    Text("No \(selectedMetric.title.lowercased()) entries yet")
+                        .font(.subheadline.weight(.bold))
+                    Text("Log a measurement to start your trend line.")
+                        .font(.footnote)
+                        .foregroundStyle(Color.fwbMuted)
+                }
+                .frame(maxWidth: .infinity)
+                .frame(height: 190)
+                .background(Color.fwbCard, in: Rectangle())
+                .overlay { Rectangle().stroke(Color.fwbLine, lineWidth: 1) }
+            } else {
+                VStack(alignment: .leading, spacing: 12) {
+                    if let latest = chartPoints.last {
+                        HStack(alignment: .firstTextBaseline, spacing: 5) {
+                            Text(latest.value.formatted(.number.precision(.fractionLength(0...1))))
+                                .font(.system(size: 36, weight: .black))
+                                .fontWidth(.condensed)
+                            Text(selectedMetric.unit)
+                                .font(.subheadline.weight(.bold))
+                                .foregroundStyle(Color.fwbMuted)
+                        }
+                    }
+
+                    Chart(chartPoints) { point in
+                        LineMark(
+                            x: .value("Date", point.date),
+                            y: .value(selectedMetric.title, point.value)
+                        )
+                        .foregroundStyle(Color.fwbLime)
+                        .lineStyle(StrokeStyle(lineWidth: 3))
+                        .interpolationMethod(.catmullRom)
+
+                        PointMark(
+                            x: .value("Date", point.date),
+                            y: .value(selectedMetric.title, point.value)
+                        )
+                        .foregroundStyle(Color.fwbLime)
+                        .symbolSize(42)
+                    }
+                    .chartXAxis {
+                        AxisMarks(values: .automatic(desiredCount: 4)) { _ in
+                            AxisGridLine().foregroundStyle(Color.fwbLine.opacity(0.45))
+                            AxisValueLabel(format: .dateTime.month(.abbreviated).day())
+                                .foregroundStyle(Color.fwbMuted)
+                        }
+                    }
+                    .chartYAxis {
+                        AxisMarks(position: .leading) { _ in
+                            AxisGridLine().foregroundStyle(Color.fwbLine.opacity(0.45))
+                            AxisValueLabel().foregroundStyle(Color.fwbMuted)
+                        }
+                    }
+                    .frame(height: 210)
+                }
+                .padding(18)
+                .background(Color.fwbCard, in: Rectangle())
+                .overlay { Rectangle().stroke(Color.fwbLine, lineWidth: 1) }
+            }
+        }
+    }
+
+    private var measurementHistorySection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            SectionHeading(kicker: "LATEST", title: "MEASUREMENT HISTORY")
+
+            if store.measurements.isEmpty {
+                Text("Your saved measurements will appear here.")
+                    .font(.subheadline)
+                    .foregroundStyle(Color.fwbMuted)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .fwbCard()
+            } else {
+                LazyVStack(spacing: 0) {
+                    ForEach(Array(store.measurements.prefix(12).enumerated()), id: \.element.id) { index, entry in
+                        MeasurementHistoryRow(entry: entry)
+                        if index < min(store.measurements.count, 12) - 1 {
+                            Divider().overlay(Color.fwbLine.opacity(0.7))
+                        }
+                    }
+                }
+                .background(Color.fwbCard, in: Rectangle())
+                .overlay { Rectangle().stroke(Color.fwbLine, lineWidth: 1) }
+            }
+        }
+    }
+}
+
+private struct ProgressPhotoCard: View {
+    let photo: ClientProgressPhoto
+
+    var body: some View {
+        ZStack(alignment: .bottomLeading) {
+            AsyncImage(url: photo.signedURL) { phase in
+                switch phase {
+                case .success(let image):
+                    image.resizable().scaledToFill()
+                case .failure:
+                    photoPlaceholder(systemName: "exclamationmark.triangle")
+                case .empty:
+                    ZStack {
+                        Color.fwbSurface
+                        ProgressView().tint(.fwbLime)
+                    }
+                @unknown default:
+                    photoPlaceholder(systemName: "photo")
+                }
+            }
+            .frame(width: 164, height: 220)
+            .clipped()
+
+            LinearGradient(
+                colors: [.clear, .black.opacity(0.84)],
+                startPoint: .center,
+                endPoint: .bottom
+            )
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(ClientStatsStore.apiDateFormatter.date(from: photo.record.capturedOn)?.formatted(date: .abbreviated, time: .omitted) ?? photo.record.capturedOn)
+                    .font(.footnote.weight(.black))
+                    .foregroundStyle(.white)
+                if !photo.record.note.isEmpty {
+                    Text(photo.record.note)
+                        .font(.footnote)
+                        .foregroundStyle(Color.white.opacity(0.78))
+                        .lineLimit(2)
+                }
+            }
+            .padding(12)
+        }
+        .frame(width: 164, height: 220)
+        .overlay { Rectangle().stroke(Color.fwbLine, lineWidth: 1) }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Progress photo from \(photo.record.capturedOn)")
+    }
+
+    private func photoPlaceholder(systemName: String) -> some View {
+        ZStack {
+            Color.fwbSurface
+            Image(systemName: systemName)
+                .font(.title)
+                .foregroundStyle(Color.fwbMuted)
+        }
+    }
+}
+
+private struct MeasurementHistoryRow: View {
+    let entry: ClientMeasurementEntry
+
+    private var summary: String {
+        var parts: [String] = []
+        if let value = entry.bodyweight { parts.append("\(value.formatted(.number.precision(.fractionLength(0...1)))) lb") }
+        if let value = entry.bodyfat { parts.append("\(value.formatted(.number.precision(.fractionLength(0...1))))% body fat") }
+        if let value = entry.measurements["waist"] { parts.append("\(value.formatted(.number.precision(.fractionLength(0...1)))) in waist") }
+        return parts.isEmpty ? "Detailed measurements saved" : parts.joined(separator: "  •  ")
+    }
+
+    var body: some View {
+        HStack(spacing: 14) {
+            Image(systemName: "ruler")
+                .font(.headline)
+                .foregroundStyle(Color.fwbLime)
+                .frame(width: 30)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(ClientStatsStore.apiDateFormatter.date(from: entry.entryDate)?.formatted(date: .abbreviated, time: .omitted) ?? entry.entryDate)
+                    .font(.subheadline.weight(.bold))
+                    .foregroundStyle(Color.fwbWarmWhite)
+                Text(summary)
+                    .font(.footnote)
+                    .foregroundStyle(Color.fwbMuted)
+                    .lineLimit(2)
+            }
+            Spacer()
+        }
+        .padding(16)
+        .accessibilityElement(children: .combine)
+    }
+}
+
+private struct MeasurementEntrySheet: View {
+    let account: SignedInAccount
+    @ObservedObject var store: ClientStatsStore
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var entryDate = Date()
+    @State private var bodyweight = ""
+    @State private var bodyfat = ""
+    @State private var muscleMass = ""
+    @State private var chest = ""
+    @State private var waist = ""
+    @State private var hips = ""
+    @State private var arm = ""
+    @State private var thigh = ""
+    @State private var note = ""
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 18) {
+                    Text("MEASUREMENT ENTRY")
+                        .font(.footnote.bold())
+                        .tracking(1.3)
+                        .foregroundStyle(Color.fwbLime)
+                    Text("LOG TODAY'S\nCLIENT STATS")
+                        .font(.system(size: 34, weight: .black))
+                        .fontWidth(.condensed)
+                        .foregroundStyle(Color.fwbWarmWhite)
+
+                    entrySection(title: "ENTRY") {
+                        HStack {
+                            Text("Date")
+                            Spacer()
+                            DatePicker("Date", selection: $entryDate, in: ...Date(), displayedComponents: .date)
+                                .labelsHidden()
+                                .datePickerStyle(.compact)
+                        }
+                        .padding(16)
+                    }
+
+                    entrySection(title: "BODY COMPOSITION") {
+                        VStack(spacing: 0) {
+                            measurementField("Body weight", unit: "lb", text: $bodyweight)
+                            measurementDivider
+                            measurementField("Body fat", unit: "%", text: $bodyfat)
+                            measurementDivider
+                            measurementField("Muscle mass", unit: "lb", text: $muscleMass)
+                        }
+                    }
+
+                    entrySection(title: "TAPE MEASUREMENTS") {
+                        VStack(spacing: 0) {
+                            measurementField("Chest", unit: "in", text: $chest)
+                            measurementDivider
+                            measurementField("Waist", unit: "in", text: $waist)
+                            measurementDivider
+                            measurementField("Hips", unit: "in", text: $hips)
+                            measurementDivider
+                            measurementField("Arm", unit: "in", text: $arm)
+                            measurementDivider
+                            measurementField("Thigh", unit: "in", text: $thigh)
+                        }
+                    }
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("NOTE")
+                            .font(.footnote.weight(.black))
+                            .foregroundStyle(Color.fwbMuted)
+                        TextField("Optional progress note", text: $note, axis: .vertical)
+                            .lineLimit(2...5)
+                            .padding(14)
+                            .background(Color.fwbSurface, in: Rectangle())
+                            .overlay { Rectangle().stroke(Color.fwbLine, lineWidth: 1) }
+                    }
+
+                if let message = store.message, message.contains("Enter at least") || message.contains("could not") {
+                    Text(message)
+                        .font(.footnote.weight(.semibold))
+                        .foregroundStyle(Color.fwbRed)
+                }
+
+                    Button {
+                        save()
+                    } label: {
+                        if store.isSavingMeasurement {
+                            ProgressView().tint(.black)
+                        } else {
+                            Label("Save Measurements", systemImage: "checkmark")
+                        }
+                    }
+                    .buttonStyle(FWBPrimaryButtonStyle())
+                    .disabled(store.isSavingMeasurement)
+                }
+                .padding(20)
+            }
+            .background(Color.fwbBackground)
+            .navigationTitle("Log Measurements")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(Color.fwbBackground, for: .navigationBar)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                        .foregroundStyle(Color.fwbMuted)
+                }
+            }
+        }
+    }
+
+    private func measurementField(_ title: String, unit: String, text: Binding<String>) -> some View {
+        HStack {
+            Text(title)
+                .lineLimit(2)
+                .minimumScaleFactor(0.8)
+            Spacer()
+            TextField("—", text: text)
+                .keyboardType(.decimalPad)
+                .multilineTextAlignment(.trailing)
+                .frame(minWidth: 56, maxWidth: 90)
+            Text(unit)
+                .font(.footnote.weight(.bold))
+                .foregroundStyle(Color.fwbMuted)
+                .lineLimit(1)
+                .frame(minWidth: 20, alignment: .leading)
+        }
+        .padding(16)
+    }
+
+    private var measurementDivider: some View {
+        Divider()
+            .overlay(Color.fwbLine.opacity(0.65))
+            .padding(.leading, 16)
+    }
+
+    private func entrySection<Content: View>(
+        title: String,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title)
+                .font(.footnote.weight(.black))
+                .foregroundStyle(Color.fwbMuted)
+            content()
+                .background(Color.fwbCard, in: Rectangle())
+                .overlay { Rectangle().stroke(Color.fwbLine, lineWidth: 1) }
+        }
+    }
+
+    private func save() {
+        Task {
+            let saved = await store.saveMeasurement(
+                email: account.email,
+                draft: ClientMeasurementDraft(
+                    entryDate: entryDate,
+                    bodyweight: numeric(bodyweight),
+                    bodyfat: numeric(bodyfat),
+                    muscleMass: numeric(muscleMass),
+                    chest: numeric(chest),
+                    waist: numeric(waist),
+                    hips: numeric(hips),
+                    arm: numeric(arm),
+                    thigh: numeric(thigh),
+                    note: note
+                )
+            )
+            if saved { dismiss() }
+        }
+    }
+
+    private func numeric(_ value: String) -> Double? {
+        Double(value.replacingOccurrences(of: ",", with: ".").trimmingCharacters(in: .whitespacesAndNewlines))
+    }
+}
+
+private struct ProgressPhotoEntrySheet: View {
+    let account: SignedInAccount
+    @ObservedObject var store: ClientStatsStore
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var selectedItem: PhotosPickerItem?
+    @State private var selectedData: Data?
+    @State private var capturedOn = Date()
+    @State private var note = ""
+    @State private var localMessage: String?
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 18) {
+                    Text("PROGRESS PHOTO")
+                        .font(.footnote.bold())
+                        .tracking(1.3)
+                        .foregroundStyle(Color.fwbLime)
+                    Text("ADD A PRIVATE\nCHECK-IN PHOTO")
+                        .font(.system(size: 34, weight: .black))
+                        .fontWidth(.condensed)
+                        .foregroundStyle(Color.fwbWarmWhite)
+
+                    PhotosPicker(selection: $selectedItem, matching: .images) {
+                        Group {
+                            if let selectedData, let image = UIImage(data: selectedData) {
+                                Image(uiImage: image)
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(maxWidth: .infinity)
+                                    .frame(maxHeight: 420)
+                                    .background(Color.black)
+                            } else {
+                                VStack(spacing: 12) {
+                                    Image(systemName: "photo.badge.plus")
+                                        .font(.system(size: 36, weight: .semibold))
+                                    Text("CHOOSE PHOTO")
+                                        .font(.headline.weight(.black))
+                                    Text("Select a front, side, or back progress photo from your library.")
+                                        .font(.footnote)
+                                        .foregroundStyle(Color.fwbMuted)
+                                        .multilineTextAlignment(.center)
+                                }
+                                .foregroundStyle(Color.fwbLime)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 230)
+                            }
+                        }
+                        .background(Color.fwbCard, in: Rectangle())
+                        .overlay { Rectangle().stroke(Color.fwbLine, lineWidth: 1) }
+                    }
+                    .buttonStyle(.plain)
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("PHOTO DATE")
+                            .font(.footnote.weight(.black))
+                            .foregroundStyle(Color.fwbMuted)
+                        DatePicker("Photo date", selection: $capturedOn, in: ...Date(), displayedComponents: .date)
+                            .labelsHidden()
+                            .datePickerStyle(.compact)
+                    }
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("NOTE")
+                            .font(.footnote.weight(.black))
+                            .foregroundStyle(Color.fwbMuted)
+                        TextField("Optional: front, side, week 4…", text: $note, axis: .vertical)
+                            .lineLimit(2...4)
+                            .padding(14)
+                            .background(Color.fwbSurface, in: Rectangle())
+                            .overlay { Rectangle().stroke(Color.fwbLine, lineWidth: 1) }
+                    }
+
+                    if let message = localMessage ?? (store.message?.contains("could not") == true ? store.message : nil) {
+                        Text(message)
+                            .font(.footnote.weight(.semibold))
+                            .foregroundStyle(Color.fwbRed)
+                    }
+
+                    Button {
+                        guard let selectedData else {
+                            localMessage = "Choose a photo before uploading."
+                            return
+                        }
+                        Task {
+                            let uploaded = await store.uploadPhoto(
+                                account: account,
+                                imageData: selectedData,
+                                capturedOn: capturedOn,
+                                note: note
+                            )
+                            if uploaded { dismiss() }
+                        }
+                    } label: {
+                        if store.isUploadingPhoto {
+                            ProgressView().tint(.black)
+                        } else {
+                            Label("Add Progress Photo", systemImage: "lock.fill")
+                        }
+                    }
+                    .buttonStyle(FWBPrimaryButtonStyle())
+                    .disabled(store.isUploadingPhoto)
+
+                    Label("Stored privately. Photos use short-lived secure links inside the app.", systemImage: "lock.shield.fill")
+                        .font(.footnote)
+                        .foregroundStyle(Color.fwbMuted)
+                }
+                .padding(20)
+            }
+            .background(Color.fwbBackground)
+            .navigationTitle("Add Photo")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(Color.fwbBackground, for: .navigationBar)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                        .foregroundStyle(Color.fwbMuted)
+                }
+            }
+            .onChange(of: selectedItem) { item in
+                guard let item else { return }
+                localMessage = nil
+                Task {
+                    do {
+                        selectedData = try await item.loadTransferable(type: Data.self)
+                        if selectedData == nil {
+                            localMessage = "That photo could not be loaded. Try another image."
+                        }
+                    } catch {
+                        localMessage = "That photo could not be loaded. Try another image."
+                    }
+                }
+            }
+        }
+    }
+}
+
+private struct StatsLoadErrorView: View {
+    let message: String
+    let retry: () -> Void
+
+    var body: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.largeTitle)
+                .foregroundStyle(Color.fwbRed)
+            Text(message)
+                .font(.subheadline)
+                .foregroundStyle(Color.fwbMuted)
+                .multilineTextAlignment(.center)
+            Button("Try Again", action: retry)
+                .buttonStyle(FWBSecondaryButtonStyle())
+        }
+        .padding(24)
+    }
+}

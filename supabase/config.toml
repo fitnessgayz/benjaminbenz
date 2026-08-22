@@ -1,0 +1,2 @@
+[functions.analyze-workout]
+verify_jwt = true

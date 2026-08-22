@@ -1,0 +1,9 @@
+.DS_Store
+DerivedData/
+DerivedData-*/
+SourcePackages/
+Artifacts/
+*.xcarchive
+*.ipa
+*.xcuserstate
+xcuserdata/
