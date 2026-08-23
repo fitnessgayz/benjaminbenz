@@ -2433,6 +2433,8 @@ footer {
 .workout-exercise-card {
   position: relative;
   overflow: hidden;
+  max-width: 100%;
+  min-width: 0;
   background: var(--paper);
   border: 1px solid rgba(0, 0, 0, .09);
   border-radius: 18px;
@@ -2536,6 +2538,8 @@ footer {
 .exercise-detail {
   display: none;
   gap: 16px;
+  max-width: 100%;
+  min-width: 0;
   padding: 16px;
   border-top: 1px solid var(--line);
 }
@@ -2607,6 +2611,8 @@ footer {
 .set-table {
   display: grid;
   gap: 10px;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .set-header,
@@ -2615,6 +2621,15 @@ footer {
   grid-template-columns: 48px minmax(92px, 1fr) 22px minmax(76px, .7fr) auto;
   gap: 12px;
   align-items: center;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.set-table [data-set-rows] {
+  display: grid;
+  gap: 10px;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .set-delete-button {
@@ -2640,8 +2655,13 @@ footer {
   font-weight: 900;
 }
 
+.set-row > span {
+  min-width: 0;
+}
+
 .set-row input {
   width: 100%;
+  min-width: 0;
   min-height: 58px;
   padding: 10px 12px;
   border-color: rgba(0, 0, 0, .08);
@@ -2655,6 +2675,7 @@ footer {
 .set-row b {
   color: var(--black);
   text-align: center;
+  min-width: 0;
 }
 
 .add-set-button {
@@ -5763,18 +5784,24 @@ textarea:focus {
   }
 
   .set-row {
-    grid-template-columns: 34px minmax(0, 1fr) 18px minmax(0, 1fr) auto;
+    grid-template-columns: 30px minmax(0, 1fr) 16px minmax(0, 1fr);
     gap: 8px;
   }
 
   .set-header {
-    grid-template-columns: 34px minmax(0, 1fr) 18px minmax(0, 1fr) auto;
+    grid-template-columns: 30px minmax(0, 1fr) 16px minmax(0, 1fr);
     gap: 8px;
+  }
+
+  .set-header span:last-child {
+    display: none;
   }
 
   .set-delete-button {
     grid-column: 2 / -1;
     justify-self: stretch;
+    width: 100%;
+    min-width: 0;
     min-height: 44px;
     padding: 0 10px;
     font-size: .68rem;
