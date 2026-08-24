@@ -2177,10 +2177,16 @@ function repsFromPrescription(prescription) {
 function setRowMarkup(setNumber, repPlaceholder = "") {
   return `
     <div class="set-row" data-set-row data-set-number="${setNumber}">
-      <span>${setNumber}</span>
-      <input type="number" min="0" step="0.5" placeholder="0" data-set-weight />
-      <b>x</b>
-      <input type="number" min="0" step="1" placeholder="${escapeHtml(repPlaceholder)}" data-set-reps />
+      <span class="set-number">${setNumber}</span>
+      <label class="set-input-field">
+        <em>Weight</em>
+        <input type="number" min="0" step="0.5" placeholder="0" data-set-weight />
+      </label>
+      <b class="set-times">x</b>
+      <label class="set-input-field">
+        <em>Reps</em>
+        <input type="number" min="0" step="1" placeholder="${escapeHtml(repPlaceholder)}" data-set-reps />
+      </label>
       <button class="set-delete-button" type="button" data-delete-set aria-label="Delete set ${setNumber}">Delete</button>
     </div>
   `;

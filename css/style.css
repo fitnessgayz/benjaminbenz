@@ -2659,6 +2659,21 @@ footer {
   min-width: 0;
 }
 
+.set-input-field {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.set-input-field em {
+  display: none;
+  color: var(--muted);
+  font-size: .66rem;
+  font-style: normal;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
 .set-row input {
   width: 100%;
   min-width: 0;
@@ -5783,22 +5798,43 @@ textarea:focus {
     grid-template-columns: 1fr;
   }
 
-  .set-row {
-    grid-template-columns: 30px minmax(0, 1fr) 16px minmax(0, 1fr);
-    gap: 8px;
-  }
-
   .set-header {
-    grid-template-columns: 30px minmax(0, 1fr) 16px minmax(0, 1fr);
-    gap: 8px;
-  }
-
-  .set-header span:last-child {
     display: none;
   }
 
+  .set-row {
+    grid-template-columns: 30px minmax(0, 1fr);
+    gap: 10px 12px;
+    align-items: start;
+  }
+
+  .set-number {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+    align-self: end;
+    padding-bottom: 16px;
+  }
+
+  .set-times {
+    display: none;
+  }
+
+  .set-input-field {
+    grid-column: 2;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .set-input-field em {
+    display: block;
+  }
+
+  .set-row input[data-set-reps] {
+    grid-column: auto;
+  }
+
   .set-delete-button {
-    grid-column: 2 / -1;
+    grid-column: 2;
     justify-self: stretch;
     width: 100%;
     min-width: 0;
@@ -5826,6 +5862,13 @@ textarea:focus {
   .set-row input {
     min-height: 48px;
     padding: 8px;
+  }
+
+  .add-set-button,
+  .complete-exercise-button {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
   }
 
   .mini-table div {
