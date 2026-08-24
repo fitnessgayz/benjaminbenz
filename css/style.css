@@ -6165,6 +6165,10 @@ textarea:focus {
 }
 
 /* Uniform sharper interface */
+:root {
+  --ui-radius: 6px;
+}
+
 .button,
 button,
 input,
@@ -6173,9 +6177,18 @@ textarea,
 .hero-cta,
 .quick-link,
 .tab-button,
+.home-tab,
+.training-subtab,
+.client-dashboard-tab,
 .client-tab-button,
 .client-workout-tab,
 .coach-subtab-button,
+.admin-tab,
+.status-pill,
+.service-pill,
+.metric-pill,
+.session-date-pill,
+.workout-format-pill,
 .service-card,
 .credential-card,
 .review-card,
@@ -6184,21 +6197,35 @@ textarea,
 .client-card,
 .client-profile-card,
 .dashboard-card,
+.summary-metric,
 .exercise-card,
 .workout-exercise-card,
 .exercise-detail,
+.exercise-name-field,
 .set-delete-button,
 .add-set-button,
 .complete-exercise-button,
 .floating-tabbar,
 .bottom-tabs,
 .nutrition-card,
+.nutrition-macro-card,
 .session-card,
+.session-package-card,
 .food-log-card,
 .coach-card,
 .form-card,
-.questionnaire-card {
-  border-radius: 6px;
+.questionnaire-card,
+.access-panel,
+.access-demo,
+.client-summary,
+.progress-panel,
+.notes-panel,
+.training-log-row,
+.training-log-day,
+.training-log-exercise-group,
+.saved-log-card,
+.coaching-option-card {
+  border-radius: var(--ui-radius) !important;
 }
 
 .brand span,
@@ -6210,11 +6237,76 @@ textarea,
 }
 
 @media (max-width: 620px) {
+  html,
+  body {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  .client-access {
+    width: 100%;
+    max-width: 100%;
+    padding: 32px 12px;
+    box-sizing: border-box;
+    overflow-x: hidden;
+  }
+
+  .access-intro,
+  .access-panel,
+  .access-options,
+  .access-card {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  .access-intro h1,
+  .password-access-page .access-intro h1 {
+    width: 100%;
+    max-width: 100%;
+    font-size: clamp(2.15rem, 12.5vw, 3.15rem);
+    line-height: .9;
+    overflow-wrap: break-word;
+    word-break: normal;
+  }
+
+  .password-access-page .access-intro p:not(.kicker) {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .questionnaire-shell,
+  .questionnaire-hero,
+  .questionnaire-hero h1,
+  .questionnaire-hero p:not(.kicker) {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  .questionnaire-hero h1 {
+    font-size: clamp(2.05rem, 10vw, 2.55rem);
+    line-height: .92;
+    overflow-wrap: anywhere;
+  }
+
+  .questionnaire-hero p:not(.kicker) {
+    font-size: .96rem;
+    line-height: 1.32;
+    overflow-wrap: break-word;
+  }
+
   .dashboard-page,
   .dashboard-shell,
   #dashboard-content,
+  .dashboard-grid,
+  .client-workout-panels,
+  .client-workout-panel,
   .client-workouts-panel,
   .workout-format-group,
+  .workout-app-list,
   .workout-exercise-card,
   .exercise-detail,
   .set-table,
@@ -6223,25 +6315,34 @@ textarea,
   .exercise-notes textarea {
     max-width: 100%;
     min-width: 0;
-    overflow-x: clip;
+    box-sizing: border-box;
+    overflow-x: hidden;
   }
 
   .exercise-detail {
-    padding: 12px 10px;
+    padding: 12px;
   }
 
   .set-table {
     gap: 8px;
+    width: 100%;
+  }
+
+  .set-header,
+  .set-times {
+    display: none;
   }
 
   .set-row {
     position: relative;
     display: grid;
-    grid-template-columns: 24px minmax(0, 1fr);
-    gap: 8px 10px;
+    grid-template-columns: 22px minmax(0, 1fr);
+    gap: 8px;
     width: 100%;
     max-width: 100%;
-    overflow: hidden;
+    min-width: 0;
+    box-sizing: border-box;
+    overflow: visible;
   }
 
   .set-number {
@@ -6255,32 +6356,44 @@ textarea,
   .set-input-field,
   .set-delete-button {
     grid-column: 2;
-    width: min(100%, 240px);
-    max-width: min(100%, 240px);
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
     justify-self: stretch;
+    box-sizing: border-box;
   }
 
   .set-input-field em {
-    font-size: .58rem;
+    display: block;
+    font-size: .62rem;
   }
 
   .set-row input {
-    min-height: 42px;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    min-height: 40px;
     padding: 6px 8px;
-    font-size: .92rem;
+    box-sizing: border-box;
+    font-size: .9rem;
   }
 
   .set-delete-button {
-    min-height: 36px;
+    min-height: 34px;
     padding: 0 8px;
-    font-size: .6rem;
+    font-size: .62rem;
+    white-space: normal;
   }
 
   .add-set-button,
-  .complete-exercise-button {
+  .complete-exercise-button,
+  .workout-actions .button,
+  .workout-actions button {
     justify-self: stretch;
-    width: min(100%, 280px);
-    max-width: min(100%, 280px);
+    width: 100%;
+    max-width: 100%;
     min-width: 0;
+    box-sizing: border-box;
+    white-space: normal;
   }
 }

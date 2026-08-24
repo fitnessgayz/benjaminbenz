@@ -45,6 +45,20 @@
     width: min(100% - 32px, 560px);
   }
 
+  .access-intro h1 {
+    width: 100%;
+    max-width: 100%;
+    font-size: clamp(1.9rem, 8.6vw, 2.25rem);
+    line-height: .92;
+    overflow-wrap: anywhere;
+  }
+
+  .access-intro p:not(.kicker) {
+    width: 100%;
+    max-width: 100%;
+    overflow-wrap: break-word;
+  }
+
   .access-options {
     grid-template-columns: 1fr;
   }
