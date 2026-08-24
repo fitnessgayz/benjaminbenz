@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Exercise Group Layout Mockups | Fitness with Benjamin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --ink: #050505;
+      --paper: #f4f5f1;
+      --white: #fff;
+      --line: #d9d9d2;
+      --muted: #6f706a;
+      --red: #ff3c38;
+      --lime: #d6ff26;
+      --green: #18a83a;
+      --blue-soft: #eef4ff;
+      --blue-line: #c8d8f7;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: Inter, Arial, sans-serif;
+    }
+
+    .shell {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 28px 18px 72px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 900;
+    }
+
+    .brand-mark {
+      display: grid;
+      width: 44px;
+      height: 44px;
+      place-items: center;
+      border-radius: 50%;
+      background: var(--lime);
+      font-size: 15px;
+    }
+
+    .jump-links {
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+      padding-bottom: 2px;
+    }
+
+    .jump-links a {
+      flex: 0 0 auto;
+      color: inherit;
+      text-decoration: none;
+      display: inline-flex;
+      min-height: 42px;
+      align-items: center;
+      justify-content: center;
+      padding: 0 16px;
+      border: 1px solid var(--line);
+      background: var(--white);
+      font-weight: 900;
+    }
+
+    .intro {
+      padding: 42px 0 18px;
+    }
+
+    .kicker {
+      margin: 0 0 12px;
+      color: var(--red);
+      font-size: 13px;
+      font-weight: 900;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin-top: 0;
+    }
+
+    h1 {
+      max-width: 980px;
+      margin-bottom: 16px;
+      font-size: clamp(48px, 9vw, 108px);
+      line-height: 0.9;
+      text-transform: uppercase;
+    }
+
+    .intro p {
+      max-width: 720px;
+      color: var(--muted);
+      font-size: clamp(18px, 2vw, 23px);
+      line-height: 1.36;
+      font-weight: 750;
+    }
+
+    .mockup {
+      margin-top: 32px;
+      border: 1px solid var(--line);
+      background: var(--white);
+    }
+
+    .mockup-header {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 16px;
+      align-items: end;
+      padding: 24px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .mockup-header h2 {
+      margin-bottom: 8px;
+      font-size: clamp(30px, 5vw, 58px);
+      line-height: 0.94;
+      text-transform: uppercase;
+    }
+
+    .mockup-header p {
+      max-width: 540px;
+      margin-bottom: 0;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.45;
+      font-weight: 760;
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 38px;
+      padding: 0 15px;
+      border: 1px solid var(--ink);
+      background: var(--lime);
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .phone-preview {
+      max-width: 430px;
+      margin: 0 auto;
+      padding: 22px;
+      background: #fbfbf8;
+    }
+
+    .workout-title {
+      margin: 0 0 18px;
+      font-size: 38px;
+      line-height: 0.95;
+      text-transform: uppercase;
+    }
+
+    .focus-pill {
+      margin: 0 0 22px;
+      padding: 13px 16px;
+      background: var(--lime);
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .group-card {
+      border: 1px solid var(--line);
+      background: var(--white);
+      margin-bottom: 16px;
+    }
+
+    .group-card.is-active {
+      border-color: var(--ink);
+    }
+
+    .group-head {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: center;
+      padding: 18px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .group-head h3 {
+      margin: 0 0 5px;
+      font-size: 25px;
+      line-height: 1;
+    }
+
+    .group-head p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.3;
+      font-weight: 850;
+    }
+
+    .group-type {
+      display: inline-flex;
+      justify-content: center;
+      min-width: 76px;
+      padding: 8px 10px;
+      border: 1px solid var(--blue-line);
+      background: var(--blue-soft);
+      color: #1a1a1a;
+      font-size: 12px;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .exercise-list {
+      display: grid;
+      gap: 12px;
+      padding: 16px;
+    }
+
+    .exercise-row {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      gap: 12px;
+      align-items: start;
+      padding: 14px;
+      border: 1px solid var(--line);
+      background: #fff;
+    }
+
+    .exercise-row strong {
+      display: block;
+      margin-bottom: 5px;
+      font-size: 19px;
+      line-height: 1.05;
+    }
+
+    .exercise-row span {
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 850;
+    }
+
+    .badge {
+      display: grid;
+      width: 42px;
+      height: 42px;
+      place-items: center;
+      border: 1px solid var(--ink);
+      background: var(--lime);
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .rest-note {
+      margin: 0 16px 16px;
+      padding: 12px 14px;
+      border-left: 5px solid var(--lime);
+      background: #f5f6f1;
+      color: var(--muted);
+      font-weight: 850;
+    }
+
+    .timeline {
+      position: relative;
+      display: grid;
+      gap: 0;
+      padding: 16px;
+    }
+
+    .timeline::before {
+      content: "";
+      position: absolute;
+      top: 38px;
+      bottom: 38px;
+      left: 37px;
+      width: 2px;
+      background: var(--ink);
+    }
+
+    .timeline-row {
+      position: relative;
+      display: grid;
+      grid-template-columns: 42px minmax(0, 1fr);
+      gap: 14px;
+      padding: 10px 0;
+    }
+
+    .timeline-dot {
+      z-index: 1;
+      display: grid;
+      width: 42px;
+      height: 42px;
+      place-items: center;
+      border: 1px solid var(--ink);
+      background: var(--lime);
+      font-weight: 900;
+    }
+
+    .timeline-body {
+      padding: 14px;
+      border: 1px solid var(--line);
+      background: var(--white);
+    }
+
+    .round-grid {
+      display: grid;
+      gap: 10px;
+      padding: 16px;
+    }
+
+    .round-row {
+      display: grid;
+      grid-template-columns: 84px minmax(0, 1fr);
+      border: 1px solid var(--line);
+    }
+
+    .round-label {
+      display: grid;
+      place-items: center;
+      border-right: 1px solid var(--line);
+      background: var(--lime);
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .round-body {
+      display: grid;
+      gap: 8px;
+      padding: 12px;
+    }
+
+    .mini-exercise {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      color: var(--muted);
+      font-weight: 850;
+    }
+
+    .mini-exercise strong {
+      color: var(--ink);
+    }
+
+    .lane-layout {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      padding: 16px;
+    }
+
+    .lane {
+      border: 1px solid var(--line);
+      background: #fff;
+    }
+
+    .lane-title {
+      padding: 12px;
+      border-bottom: 1px solid var(--line);
+      background: var(--lime);
+      font-size: 15px;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .lane .exercise-row {
+      border-width: 0 0 1px;
+    }
+
+    .lane .exercise-row:last-child {
+      border-bottom: 0;
+    }
+
+    .decision-note {
+      margin-top: 16px;
+      padding: 16px;
+      border: 1px solid var(--line);
+      background: #f8f8f5;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.45;
+      font-weight: 800;
+    }
+
+    @media (max-width: 720px) {
+      .shell {
+        padding-inline: 12px;
+      }
+
+      .topbar {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .mockup-header {
+        grid-template-columns: 1fr;
+        padding: 18px;
+      }
+
+      .phone-preview {
+        max-width: none;
+        padding: 16px 10px;
+      }
+
+      .workout-title {
+        font-size: 32px;
+      }
+
+      .group-head {
+        grid-template-columns: 1fr;
+      }
+
+      .lane-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark">FWB</div>
+        <span>Fitness with Benjamin</span>
+      </div>
+      <nav class="jump-links" aria-label="Mockup options">
+        <a href="#option-1">Option 1</a>
+        <a href="#option-2">Option 2</a>
+        <a href="#option-3">Option 3</a>
+        <a href="#option-4">Option 4</a>
+      </nav>
+    </header>
+
+    <section class="intro">
+      <p class="kicker">Workout Grouping</p>
+      <h1>Clear Supersets and Circuits.</h1>
+      <p>Four layout directions for showing clients which exercises belong together, what order to follow, and when to rest.</p>
+    </section>
+
+    <section class="mockup" id="option-1">
+      <div class="mockup-header">
+        <div>
+          <p class="kicker">Option 1</p>
+          <h2>Compact Group Card</h2>
+          <p>Best if you want the current workout page to stay familiar, but make grouped exercises much clearer.</p>
+        </div>
+        <span class="tag">Recommended</span>
+      </div>
+      <div class="phone-preview">
+        <h3 class="workout-title">Workout A - Chest and Glutes</h3>
+        <div class="focus-pill">Chest + Glute Focus</div>
+        <article class="group-card is-active">
+          <div class="group-head">
+            <div>
+              <h3>Superset A</h3>
+              <p>Do A1, then A2. Repeat for 3 rounds.</p>
+            </div>
+            <span class="group-type">Superset</span>
+          </div>
+          <div class="exercise-list">
+            <div class="exercise-row">
+              <span class="badge">A1</span>
+              <div><strong>Dumbbell Bench Press</strong><span>3 sets x 8-10 reps</span></div>
+            </div>
+            <div class="exercise-row">
+              <span class="badge">A2</span>
+              <div><strong>Hip Thrust</strong><span>3 sets x 8-10 reps</span></div>
+            </div>
+          </div>
+          <p class="rest-note">Rest 75-90 sec after A2, then start the next round.</p>
+        </article>
+        <article class="group-card">
+          <div class="group-head">
+            <div>
+              <h3>Straight Set B</h3>
+              <p>Finish all sets before moving on.</p>
+            </div>
+            <span class="group-type">Single</span>
+          </div>
+          <div class="exercise-list">
+            <div class="exercise-row">
+              <span class="badge">B</span>
+              <div><strong>Incline Cable Fly</strong><span>3 sets x 10-12 reps</span></div>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="mockup" id="option-2">
+      <div class="mockup-header">
+        <div>
+          <p class="kicker">Option 2</p>
+          <h2>Step Timeline</h2>
+          <p>Best for circuits because clients can follow the order from top to bottom without guessing.</p>
+        </div>
+        <span class="tag">Clear Order</span>
+      </div>
+      <div class="phone-preview">
+        <h3 class="workout-title">Lower Body Circuit</h3>
+        <div class="focus-pill">Circuit x 4 Rounds</div>
+        <article class="group-card">
+          <div class="group-head">
+            <div>
+              <h3>Circuit A</h3>
+              <p>Move down the list, rest, then repeat.</p>
+            </div>
+            <span class="group-type">Circuit</span>
+          </div>
+          <div class="timeline">
+            <div class="timeline-row">
+              <span class="timeline-dot">1</span>
+              <div class="timeline-body"><strong>Goblet Squat</strong><br><span>12 reps</span></div>
+            </div>
+            <div class="timeline-row">
+              <span class="timeline-dot">2</span>
+              <div class="timeline-body"><strong>Walking Lunge</strong><br><span>10/side</span></div>
+            </div>
+            <div class="timeline-row">
+              <span class="timeline-dot">3</span>
+              <div class="timeline-body"><strong>Cable Kickback</strong><br><span>15/side</span></div>
+            </div>
+            <div class="timeline-row">
+              <span class="timeline-dot">4</span>
+              <div class="timeline-body"><strong>Plank</strong><br><span>45 sec</span></div>
+            </div>
+          </div>
+          <p class="rest-note">Rest 90 sec after exercise 4.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="mockup" id="option-3">
+      <div class="mockup-header">
+        <div>
+          <p class="kicker">Option 3</p>
+          <h2>Round Builder</h2>
+          <p>Best if clients think in rounds. Each row tells them exactly what to complete before moving on.</p>
+        </div>
+        <span class="tag">Round Based</span>
+      </div>
+      <div class="phone-preview">
+        <h3 class="workout-title">Upper Body Superset</h3>
+        <div class="focus-pill">3 Total Rounds</div>
+        <article class="group-card">
+          <div class="group-head">
+            <div>
+              <h3>Superset A</h3>
+              <p>Complete one row at a time.</p>
+            </div>
+            <span class="group-type">Superset</span>
+          </div>
+          <div class="round-grid">
+            <div class="round-row">
+              <div class="round-label">Round 1</div>
+              <div class="round-body">
+                <div class="mini-exercise"><strong>A1 Bench Press</strong><span>8 reps</span></div>
+                <div class="mini-exercise"><strong>A2 Chest-Supported Row</strong><span>10 reps</span></div>
+              </div>
+            </div>
+            <div class="round-row">
+              <div class="round-label">Round 2</div>
+              <div class="round-body">
+                <div class="mini-exercise"><strong>A1 Bench Press</strong><span>8 reps</span></div>
+                <div class="mini-exercise"><strong>A2 Chest-Supported Row</strong><span>10 reps</span></div>
+              </div>
+            </div>
+            <div class="round-row">
+              <div class="round-label">Round 3</div>
+              <div class="round-body">
+                <div class="mini-exercise"><strong>A1 Bench Press</strong><span>8 reps</span></div>
+                <div class="mini-exercise"><strong>A2 Chest-Supported Row</strong><span>10 reps</span></div>
+              </div>
+            </div>
+          </div>
+          <p class="rest-note">This makes the “pairing” obvious, but may add more repeated text.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="mockup" id="option-4">
+      <div class="mockup-header">
+        <div>
+          <p class="kicker">Option 4</p>
+          <h2>Side By Side Lanes</h2>
+          <p>Best on wider screens. On mobile, each lane stacks so the workout still fits the phone.</p>
+        </div>
+        <span class="tag">Web Friendly</span>
+      </div>
+      <div class="phone-preview">
+        <h3 class="workout-title">Full Body Day</h3>
+        <div class="focus-pill">Strength + Conditioning</div>
+        <article class="group-card">
+          <div class="group-head">
+            <div>
+              <h3>Today’s Blocks</h3>
+              <p>Each lane is one group. Finish the left lane before starting the right lane.</p>
+            </div>
+            <span class="group-type">Blocks</span>
+          </div>
+          <div class="lane-layout">
+            <div class="lane">
+              <div class="lane-title">Superset A</div>
+              <div class="exercise-row">
+                <span class="badge">A1</span>
+                <div><strong>Chest Press</strong><span>4 x 8</span></div>
+              </div>
+              <div class="exercise-row">
+                <span class="badge">A2</span>
+                <div><strong>Glute Bridge</strong><span>4 x 10</span></div>
+              </div>
+            </div>
+            <div class="lane">
+              <div class="lane-title">Circuit B</div>
+              <div class="exercise-row">
+                <span class="badge">B1</span>
+                <div><strong>Step-Up</strong><span>3 x 10/side</span></div>
+              </div>
+              <div class="exercise-row">
+                <span class="badge">B2</span>
+                <div><strong>Push-Up</strong><span>3 x max</span></div>
+              </div>
+              <div class="exercise-row">
+                <span class="badge">B3</span>
+                <div><strong>Farmer Carry</strong><span>3 x 40 sec</span></div>
+              </div>
+            </div>
+          </div>
+        </article>
+        <p class="decision-note">My pick: Option 1 for the live app. It keeps the current flow, makes supersets obvious, and should be the easiest to use on mobile.</p>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

@@ -2252,6 +2252,7 @@ function exerciseLogFields(exercise, workoutTitle, options = {}) {
         <input type="text" value="${escapeHtml(exercise.name)}" placeholder="Type or search any exercise name"${suggestionListAttr} data-exercise-name-input />
         ${options.suggestExerciseNames ? '<small class="manual-exercise-hint">Choose a suggestion or type your own name or short description. Exact wording is not required.</small>' : ""}
       </label>
+      ${exerciseLogActions()}
       ${exerciseVideoMarkup(exercise)}
       <label class="exercise-date">
         <span>Date</span>
@@ -2576,6 +2577,15 @@ function skipControl() {
       <input type="checkbox" data-skip-card />
       <span>Skip</span>
     </label>
+  `;
+}
+
+function exerciseLogActions() {
+  return `
+    <div class="exercise-log-actions">
+      <button class="exercise-skip-button" type="button" data-skip-exercise aria-pressed="false">Skip exercise</button>
+      <button class="exercise-delete-button" type="button" data-delete-exercise>Delete exercise</button>
+    </div>
   `;
 }
 
@@ -3085,12 +3095,7 @@ function updateExerciseLogField(logElement) {
     syncExerciseNamePreview(logElement, nextName);
   }
 
-  const completedSets = selectedLogs.filter((log) => log.weight_used !== null && log.weight_used !== undefined).length;
-
-  if (progress) {
-    const setTarget = visibleSetTarget(logElement);
-    progress.textContent = `${completedSets} / ${setTarget || completedSets || 0} sets completed`;
-  }
+  updateVisibleSetProgress(logElement);
 
   if (!previous) {
     return;
@@ -4181,13 +4186,118 @@ function handleClientDashboardTabs() {
   });
 }
 
+function setExerciseSkipped(logElement, skipped, options = {}) {
+  if (!logElement) {
+    return;
+  }
+
+  const card = logElement.closest(".workout-exercise-card");
+  const logCount = card?.querySelectorAll("[data-exercise-log]").length || 0;
+  const skipButton = logElement.querySelector("[data-skip-exercise]");
+
+  if (skipped) {
+    logElement.dataset.exerciseSkipped = "true";
+  } else {
+    delete logElement.dataset.exerciseSkipped;
+  }
+
+  logElement.classList.toggle("is-exercise-skipped", skipped);
+  logElement.querySelectorAll("input, textarea, [data-add-set], [data-delete-set], [data-log-submit]").forEach((control) => {
+    control.disabled = skipped;
+  });
+
+  if (skipButton) {
+    skipButton.textContent = skipped ? "Use exercise" : "Skip exercise";
+    skipButton.setAttribute("aria-pressed", skipped ? "true" : "false");
+  }
+
+  if (options.syncCard !== false && card && logCount <= 1) {
+    card.classList.toggle("is-skipped", skipped);
+    card.classList.toggle("is-open", !skipped);
+    const skipInput = card.querySelector("[data-skip-card]");
+
+    if (skipInput) {
+      skipInput.checked = skipped;
+    }
+  }
+
+  updateVisibleSetProgress(logElement);
+}
+
+function ensureDefaultCustomExercise(panel) {
+  const list = panel?.querySelector("[data-custom-workout-list]");
+
+  if (!list || list.querySelector("[data-custom-exercise-card]")) {
+    return;
+  }
+
+  list.innerHTML = customWorkoutCardMarkup({
+    code: customExerciseCode(0),
+    name: "Exercise 1",
+    prescription: "Custom sets",
+    rest: ""
+  }, customWorkoutTitle);
+
+  const defaultLogElement = list.querySelector("[data-exercise-log]");
+  if (defaultLogElement) {
+    updateExerciseLogField(defaultLogElement);
+  }
+}
+
+function updateSupersetSummaryCount(card) {
+  if (!card?.matches("[data-superset-card]")) {
+    return;
+  }
+
+  const count = card.querySelectorAll("[data-exercise-log]").length;
+  const summaryMeta = card.querySelector(".exercise-card-summary em");
+
+  if (summaryMeta) {
+    summaryMeta.textContent = `${count} exercise${count === 1 ? "" : "s"} · log each round`;
+  }
+}
+
+function removeExerciseLog(logElement) {
+  const card = logElement?.closest(".workout-exercise-card");
+  const panel = card?.closest(".client-workout-panel-custom");
+  const logCount = card?.querySelectorAll("[data-exercise-log]").length || 0;
+
+  if (!logElement || !card) {
+    return;
+  }
+
+  if (logCount <= 1) {
+    card.remove();
+  } else {
+    logElement.remove();
+    updateSupersetSummaryCount(card);
+  }
+
+  ensureDefaultCustomExercise(panel);
+}
+
 function handleWorkoutInteractions() {
   document.addEventListener("click", (event) => {
     const toggle = event.target.closest("[data-exercise-toggle]");
     const addSetButton = event.target.closest("[data-add-set]");
     const deleteSetButton = event.target.closest("[data-delete-set]");
+    const skipExerciseButton = event.target.closest("[data-skip-exercise]");
+    const deleteExerciseButton = event.target.closest("[data-delete-exercise]");
     const addCustomExerciseButton = event.target.closest("[data-add-custom-exercise]");
     const removeCustomExerciseButton = event.target.closest("[data-remove-custom-exercise]");
+
+    if (skipExerciseButton) {
+      const logElement = skipExerciseButton.closest("[data-exercise-log]");
+      const isSkipped = logElement?.dataset.exerciseSkipped === "true";
+
+      setExerciseSkipped(logElement, !isSkipped);
+      return;
+    }
+
+    if (deleteExerciseButton) {
+      removeExerciseLog(deleteExerciseButton.closest("[data-exercise-log]"));
+      return;
+    }
 
     if (toggle) {
       const card = toggle.closest(".workout-exercise-card");
@@ -4261,27 +4371,19 @@ function handleWorkoutInteractions() {
     if (removeCustomExerciseButton) {
       const panel = removeCustomExerciseButton.closest(".client-workout-panel-custom");
       const card = removeCustomExerciseButton.closest("[data-custom-exercise-card]");
-      const list = panel?.querySelector("[data-custom-workout-list]");
 
       card?.remove();
-
-      if (list && list.querySelectorAll("[data-custom-exercise-card]").length === 0) {
-        list.innerHTML = customWorkoutCardMarkup({
-          code: customExerciseCode(0),
-          name: "Exercise 1",
-          prescription: "Custom sets",
-          rest: ""
-        }, customWorkoutTitle);
-        const defaultLogElement = list.querySelector("[data-exercise-log]");
-        if (defaultLogElement) {
-          updateExerciseLogField(defaultLogElement);
-        }
-      }
+      ensureDefaultCustomExercise(panel);
     }
   });
 
   document.addEventListener("input", (event) => {
     const exerciseNameInput = event.target.closest("[data-exercise-name-input]");
+    const setInput = event.target.closest("[data-set-weight], [data-set-reps]");
+
+    if (setInput) {
+      updateVisibleSetProgress(setInput.closest("[data-exercise-log]"));
+    }
 
     if (!exerciseNameInput) {
       return;
@@ -4336,6 +4438,9 @@ function handleSkipToggle() {
       return;
     }
 
+    card.querySelectorAll("[data-exercise-log]").forEach((logElement) => {
+      setExerciseSkipped(logElement, skipInput.checked, { syncCard: false });
+    });
     card.classList.toggle("is-skipped", skipInput.checked);
     card.classList.toggle("is-open", !skipInput.checked);
   });
@@ -4912,6 +5017,10 @@ function rowsForTrainingLog(logElement) {
     return [];
   }
 
+  if (logElement.dataset.exerciseSkipped === "true" || logElement.closest(".workout-exercise-card")?.classList.contains("is-skipped")) {
+    return [];
+  }
+
   const notes = logElement.querySelector("[data-log-notes]")?.value || "";
   const exerciseName = logElement.querySelector("[data-exercise-name-input]")?.value?.trim() || logElement.dataset.exerciseName;
 
@@ -4958,25 +5067,48 @@ function rowsForTrainingLog(logElement) {
   }
 
   return Array.from(logElement.querySelectorAll("[data-set-row]"))
-    .map((setRow) => ({
-      client_email: activeClientEmail,
-      entry_date: dateInput.value || todayDate(),
-      workout_title: logElement.dataset.workoutTitle,
-      exercise_code: logElement.dataset.exerciseCode,
-      exercise_name: exerciseName,
-      set_number: Number(setRow.dataset.setNumber || 1),
-      weight_used: Number(setRow.querySelector("[data-set-weight]")?.value || 0),
-      reps: setRow.querySelector("[data-set-reps]")?.value
-        ? Number(setRow.querySelector("[data-set-reps]").value)
-        : null,
-      notes
-    }))
-    .filter((row) => row.weight_used > 0);
+    .map((setRow) => {
+      const values = setRowInputValues(setRow);
+
+      return {
+        is_logged: isSetRowLogged(setRow),
+        row: {
+          client_email: activeClientEmail,
+          entry_date: dateInput.value || todayDate(),
+          workout_title: logElement.dataset.workoutTitle,
+          exercise_code: logElement.dataset.exerciseCode,
+          exercise_name: exerciseName,
+          set_number: Number(setRow.dataset.setNumber || 1),
+          weight_used: values.weightRaw === "" ? 0 : values.weightValue,
+          reps: values.repsRaw === "" ? null : values.repsValue,
+          notes
+        }
+      };
+    })
+    .filter(({ is_logged }) => is_logged)
+    .map(({ row }) => row);
+}
+
+function setRowInputValues(setRow) {
+  const weightRaw = setRow.querySelector("[data-set-weight]")?.value?.trim() || "";
+  const repsRaw = setRow.querySelector("[data-set-reps]")?.value?.trim() || "";
+  const weightValue = weightRaw === "" ? null : Number(weightRaw);
+  const repsValue = repsRaw === "" ? null : Number(repsRaw);
+
+  return { weightRaw, repsRaw, weightValue, repsValue };
+}
+
+function isSetRowLogged(setRow) {
+  const { weightRaw, repsRaw, weightValue, repsValue } = setRowInputValues(setRow);
+  const hasWeight = weightRaw !== "" && Number.isFinite(weightValue) && weightValue >= 0;
+  const hasReps = repsRaw !== "" && Number.isFinite(repsValue) && repsValue > 0;
+
+  return hasWeight || hasReps;
 }
 
 function filledSetCount(logElement) {
   return Array.from(logElement.querySelectorAll("[data-set-row]"))
-    .filter((setRow) => Number(setRow.querySelector("[data-set-weight]")?.value || 0) > 0)
+    .filter(isSetRowLogged)
     .length;
 }
 
@@ -4995,6 +5127,10 @@ function incompleteWorkoutExercises(logElements) {
     }
 
     if (card?.classList.contains("is-skipped")) {
+      return false;
+    }
+
+    if (logElement.dataset.exerciseSkipped === "true") {
       return false;
     }
 
@@ -5054,7 +5190,7 @@ async function saveTrainingLogRows(button, logElements, status, options = {}) {
     }
 
     if (status) {
-      status.textContent = "Enter at least one weight, warm-up duration, or cardio duration.";
+      status.textContent = "Enter at least one weight or rep count, warm-up duration, or cardio duration.";
     }
     button.disabled = false;
     return { saved: false };
