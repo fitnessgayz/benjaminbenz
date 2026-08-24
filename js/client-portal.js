@@ -2458,6 +2458,103 @@ function formatLabel(format) {
   return "Single exercises";
 }
 
+function groupRoundCount(exercises = []) {
+  return exercises.reduce((max, exercise) => Math.max(max, setCountFromPrescription(exercise.prescription)), 0) || 3;
+}
+
+function groupTypeLabel(type) {
+  if (type === "circuit") {
+    return "Circuit";
+  }
+
+  if (type === "superset") {
+    return "Superset";
+  }
+
+  return "Single";
+}
+
+function groupDisplayCode(exercise, group, index) {
+  return String(exercise.code || "").trim() || (group.exercises.length > 1 ? `${group.key}${index + 1}` : group.key);
+}
+
+function compactGroupKeyLabel(group) {
+  const key = String(group?.key || "").trim();
+  return key.replace(/^Group\s+/i, "") || "1";
+}
+
+function groupDisplayTitle(group, type) {
+  if (type === "circuit") {
+    return "Circuit";
+  }
+
+  if (type === "superset") {
+    return `Superset ${compactGroupKeyLabel(group)}`;
+  }
+
+  return `Straight Set ${compactGroupKeyLabel(group)}`;
+}
+
+function groupInstruction(group, type) {
+  const rounds = groupRoundCount(group.exercises);
+
+  if (type === "circuit") {
+    return `Move through each exercise in order. Repeat for ${rounds} rounds.`;
+  }
+
+  if (type === "superset") {
+    const sequence = group.exercises
+      .map((exercise, index) => groupDisplayCode(exercise, group, index))
+      .join(", then ");
+
+    return `Do ${sequence}. Repeat for ${rounds} rounds.`;
+  }
+
+  return "Finish all sets before moving on.";
+}
+
+function groupRestCue(group, type) {
+  if (type === "single") {
+    return "";
+  }
+
+  const lastExercise = group.exercises[group.exercises.length - 1];
+  const lastCode = groupDisplayCode(lastExercise || {}, group, Math.max(group.exercises.length - 1, 0));
+  const rest = group.exercises.map((exercise) => String(exercise.rest || "").trim()).filter(Boolean).pop();
+
+  if (rest) {
+    return `${rest.replace(/\.$/, "")} after ${lastCode}, then start the next round.`;
+  }
+
+  return `Rest after ${lastCode}, then start the next round.`;
+}
+
+function compactWorkoutGroupOverview(group, type) {
+  const cue = groupRestCue(group, type);
+
+  return `
+    <span class="compact-workout-group-card">
+      <span class="compact-workout-group-copy">
+        <strong>${escapeHtml(groupDisplayTitle(group, type))}</strong>
+        <span>${escapeHtml(groupInstruction(group, type))}</span>
+      </span>
+      <span class="compact-workout-group-type">${escapeHtml(groupTypeLabel(type))}</span>
+      <span class="compact-workout-exercise-list">
+        ${group.exercises.map((exercise, index) => `
+          <span class="compact-workout-exercise-row">
+            <span class="compact-workout-exercise-code">${escapeHtml(groupDisplayCode(exercise, group, index))}</span>
+            <span class="compact-workout-exercise-copy">
+              <strong>${escapeHtml(exercise.name || "Exercise")}</strong>
+              <em>${escapeHtml(exercise.prescription || "Custom sets")}</em>
+            </span>
+          </span>
+        `).join("")}
+      </span>
+      ${cue ? `<span class="compact-workout-group-cue">${escapeHtml(cue)}</span>` : ""}
+    </span>
+  `;
+}
+
 function isCustomWorkoutTitle(value) {
   return String(value || "").trim().toLowerCase() === customWorkoutTitle;
 }
@@ -2590,16 +2687,11 @@ function exerciseLogActions() {
 }
 
 function supersetCard(group, workoutTitle, workoutFocus = "") {
-  const countLabel = `${group.exercises.length} exercise${group.exercises.length === 1 ? "" : "s"}`;
-
   return `
-    <article class="workout-exercise-card superset-card is-open" data-superset-card>
+    <article class="workout-exercise-card superset-card compact-workout-group is-open" data-superset-card>
       ${skipControl()}
-      <button class="exercise-card-summary" type="button" data-exercise-toggle>
-        <span>
-          <strong>Superset ${escapeHtml(group.key)}</strong>
-          <em>${countLabel} · log both exercises each round</em>
-        </span>
+      <button class="exercise-card-summary compact-group-summary" type="button" data-exercise-toggle>
+        ${compactWorkoutGroupOverview(group, "superset")}
         <i>›</i>
       </button>
       <div class="exercise-detail superset-detail">
@@ -2621,15 +2713,11 @@ function supersetRows(workout, workoutTitle) {
 
   return groups.map((group, groupIndex) => {
     const isPair = group.exercises.length > 1;
-    const countLabel = `${group.exercises.length} exercise${group.exercises.length === 1 ? "" : "s"}`;
 
     return isPair ? supersetCard(group, workoutTitle, workout.focus) : `
-      <section class="workout-format-group">
-        <div class="workout-format-heading">
-          <div>
-            <strong>${isPair ? "Superset" : "Exercise"} ${escapeHtml(group.key)}</strong>
-            <span>${countLabel}${isPair ? " · log both exercises each round" : ""}</span>
-          </div>
+      <section class="workout-format-group compact-workout-group">
+        <div class="compact-static-group-card">
+          ${compactWorkoutGroupOverview(group, "single")}
         </div>
         ${exerciseCardRows(group.exercises, workoutTitle, "all", workout.focus)}
       </section>
@@ -2639,19 +2727,29 @@ function supersetRows(workout, workoutTitle) {
 
 function circuitRows(workout, workoutTitle) {
   const exercises = Array.isArray(workout.exercises) ? workout.exercises : [];
-  const roundCount = exercises.reduce((max, exercise) => Math.max(max, setCountFromPrescription(exercise.prescription)), 0) || 3;
+  const group = { key: "Circuit", exercises };
 
   return `
-    <section class="workout-format-group circuit-group">
-      <div class="workout-format-heading">
-        <div>
-          <strong>Circuit</strong>
-          <span>${roundCount} rounds · move through each exercise in order</span>
-        </div>
+    <section class="workout-format-group circuit-group compact-workout-group">
+      <div class="compact-static-group-card">
+        ${compactWorkoutGroupOverview(group, "circuit")}
       </div>
       ${exerciseCardRows(exercises, workoutTitle, "first", workout.focus)}
     </section>
   `;
+}
+
+function straightSetRows(workout, workoutTitle) {
+  const groups = groupedExercises(workout.exercises || []);
+
+  return groups.map((group) => `
+    <section class="workout-format-group compact-workout-group straight-set-group">
+      <div class="compact-static-group-card">
+        ${compactWorkoutGroupOverview(group, "single")}
+      </div>
+      ${exerciseCardRows(group.exercises, workoutTitle, "all", workout.focus)}
+    </section>
+  `).join("");
 }
 
 function workoutExerciseMarkup(workout, workoutTitle) {
@@ -2669,7 +2767,7 @@ function workoutExerciseMarkup(workout, workoutTitle) {
     return circuitRows(workout, workoutTitle);
   }
 
-  return exerciseCardRows(workout.exercises, workoutTitle, "first", workout.focus);
+  return straightSetRows(workout, workoutTitle);
 }
 
 function workoutActionsMarkup(workout, options = {}) {
