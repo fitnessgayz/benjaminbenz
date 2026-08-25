@@ -4038,8 +4038,8 @@ footer {
   top: 64px;
   z-index: 8;
   display: flex;
-  gap: 8px;
-  padding: 10px;
+  gap: 6px;
+  padding: 7px;
   overflow-x: auto;
   background: rgba(255, 255, 255, .92);
   border: 1px solid var(--line);
@@ -4049,14 +4049,14 @@ footer {
 
 .admin-tab {
   flex: 1 0 auto;
-  min-height: 42px;
-  padding: 10px 14px;
+  min-height: 38px;
+  padding: 7px 11px;
   border: 1px solid transparent;
   border-radius: 999px;
   color: var(--muted);
   background: transparent;
   font: inherit;
-  font-size: .78rem;
+  font-size: .72rem;
   font-weight: 900;
   cursor: pointer;
 }
@@ -5451,12 +5451,13 @@ textarea:focus {
   .admin-tabs {
     top: 64px;
     margin-inline: -2px;
-    padding: 8px;
+    gap: 4px;
+    padding: 5px;
   }
 
   .admin-tab {
     flex-basis: auto;
-    min-width: 104px;
+    min-width: 88px;
   }
 
   .selected-client-actions {
@@ -7073,8 +7074,8 @@ textarea,
     display: none !important;
   }
 
-  .dashboard-page :where(.set-table, .set-table [data-set-rows], .set-row),
-  .coach-admin-page :where(.set-table, .set-table [data-set-rows], .set-row) {
+  .dashboard-page :where(.set-table, .set-table [data-set-rows]),
+  .coach-admin-page :where(.set-table, .set-table [data-set-rows]) {
     display: grid !important;
     grid-template-columns: minmax(0, 1fr) !important;
     gap: 8px !important;
@@ -7084,9 +7085,20 @@ textarea,
     overflow-x: hidden !important;
   }
 
+  .dashboard-page .set-row,
+  .coach-admin-page .set-row {
+    display: grid !important;
+    grid-template-columns: 24px repeat(2, minmax(0, 1fr)) auto !important;
+    gap: 6px !important;
+    align-items: end !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    overflow-x: hidden !important;
+  }
+
   .dashboard-page .set-row > *,
   .coach-admin-page .set-row > * {
-    grid-column: 1 / -1 !important;
     width: 100% !important;
     max-width: 100% !important;
     min-width: 0 !important;
@@ -7095,20 +7107,31 @@ textarea,
 
   .dashboard-page .set-number,
   .coach-admin-page .set-number {
-    width: auto !important;
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+    align-self: center !important;
+    width: 24px !important;
+    max-width: 24px !important;
     padding: 0 !important;
-    text-align: left !important;
-  }
-
-  .dashboard-page .set-number::before,
-  .coach-admin-page .set-number::before {
-    content: "Set ";
+    text-align: center !important;
   }
 
   .dashboard-page .set-input-field,
   .coach-admin-page .set-input-field {
     display: grid !important;
     gap: 4px !important;
+  }
+
+  .dashboard-page .set-row > .set-input-field:nth-of-type(1),
+  .coach-admin-page .set-row > .set-input-field:nth-of-type(1) {
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+  }
+
+  .dashboard-page .set-row > .set-input-field:nth-of-type(2),
+  .coach-admin-page .set-row > .set-input-field:nth-of-type(2) {
+    grid-column: 3 !important;
+    grid-row: 1 !important;
   }
 
   .dashboard-page .set-input-field em,
@@ -7119,6 +7142,13 @@ textarea,
   .dashboard-page .set-row b,
   .coach-admin-page .set-row b {
     display: none !important;
+  }
+
+  .dashboard-page .set-row input,
+  .coach-admin-page .set-row input {
+    min-height: 40px !important;
+    padding: 6px 8px !important;
+    font-size: .9rem !important;
   }
 
   .dashboard-page :where(input, select, textarea, button, .button, .set-row input, .exercise-name-field input, .exercise-date input, .exercise-notes textarea),
@@ -7135,8 +7165,8 @@ textarea,
     text-overflow: ellipsis !important;
   }
 
-  .dashboard-page :where(.set-delete-button, .add-set-button, .complete-exercise-button, .workout-save-button, .workout-finish-button, .workout-actions button, .nutrition-panel button, .nutrition-editor-card button, .progress-panel button),
-  .coach-admin-page :where(.set-delete-button, .add-set-button, .complete-exercise-button, .workout-save-button, .workout-finish-button, .workout-actions button, .nutrition-panel button, .nutrition-editor-card button, .progress-panel button) {
+  .dashboard-page :where(.add-set-button, .complete-exercise-button, .workout-save-button, .workout-finish-button, .workout-actions button, .nutrition-panel button, .nutrition-editor-card button, .progress-panel button),
+  .coach-admin-page :where(.add-set-button, .complete-exercise-button, .workout-save-button, .workout-finish-button, .workout-actions button, .nutrition-panel button, .nutrition-editor-card button, .progress-panel button) {
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
@@ -7151,6 +7181,33 @@ textarea,
     overflow-wrap: anywhere !important;
     text-align: center !important;
     transform: none !important;
+  }
+
+  .dashboard-page .set-delete-button,
+  .coach-admin-page .set-delete-button {
+    grid-column: 4 !important;
+    grid-row: 1 !important;
+    width: auto !important;
+    inline-size: auto !important;
+    min-width: 0 !important;
+    min-height: 40px !important;
+    padding: 6px 8px !important;
+    font-size: .62rem !important;
+    white-space: nowrap !important;
+  }
+
+  .coach-admin-page .admin-tab {
+    flex: 0 0 auto !important;
+    width: auto !important;
+    inline-size: auto !important;
+    min-width: 88px !important;
+    min-height: 38px !important;
+    padding: 7px 10px !important;
+    font-size: .72rem !important;
+    line-height: 1.1 !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    white-space: nowrap !important;
   }
 
   .dashboard-page .skip-toggle input,
