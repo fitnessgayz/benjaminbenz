@@ -6,6 +6,8 @@ const allowedOrigins = new Set([
   "https://www.benjaminbenz.com"
 ]);
 
+const googleHealthScope = "https://www.googleapis.com/auth/googlehealth.activity_and_fitness.writeonly";
+
 function allowedOriginFor(request: Request) {
   const origin = request.headers.get("Origin") || "https://benjaminbenz.com";
 
@@ -40,24 +42,23 @@ function stringValue(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
 }
 
-function fitbitErrorMessage(payload: unknown) {
+function normalizeEmail(value: unknown) {
+  return stringValue(value).toLowerCase();
+}
+
+function googleErrorMessage(payload: unknown) {
   if (!payload || typeof payload !== "object") {
     return "";
   }
 
   const record = payload as Record<string, unknown>;
-  const errors = Array.isArray(record.errors) ? record.errors : [];
-  const firstError = errors[0];
+  const nestedError = record.error;
 
-  if (firstError && typeof firstError === "object") {
-    return stringValue((firstError as Record<string, unknown>).message);
+  if (nestedError && typeof nestedError === "object") {
+    return stringValue((nestedError as Record<string, unknown>).message);
   }
 
   return stringValue(record.error_description) || stringValue(record.error);
-}
-
-function normalizeEmail(value: unknown) {
-  return stringValue(value).toLowerCase();
 }
 
 function base64Url(bytes: Uint8Array) {
@@ -78,29 +79,18 @@ function randomToken(byteLength = 48) {
   return base64Url(bytes);
 }
 
-async function codeChallenge(verifier: string) {
-  const bytes = new TextEncoder().encode(verifier);
-  const digest = await crypto.subtle.digest("SHA-256", bytes);
-  return base64Url(new Uint8Array(digest));
-}
-
-function fitbitEnv(request: Request) {
-  const clientId = Deno.env.get("FITBIT_CLIENT_ID") || "";
-  const clientSecret = Deno.env.get("FITBIT_CLIENT_SECRET") || "";
-  const redirectUri = Deno.env.get("FITBIT_REDIRECT_URI") || `${allowedOriginFor(request)}/client-dashboard.html`;
+function googleHealthEnv(request: Request) {
+  const clientId = Deno.env.get("GOOGLE_HEALTH_CLIENT_ID") || "";
+  const clientSecret = Deno.env.get("GOOGLE_HEALTH_CLIENT_SECRET") || "";
+  const redirectUri = Deno.env.get("GOOGLE_HEALTH_REDIRECT_URI") || `${allowedOriginFor(request)}/client-dashboard.html`;
 
   return { clientId, clientSecret, redirectUri };
 }
 
-function tokenAuthHeader(clientId: string, clientSecret: string) {
-  return `Basic ${btoa(`${clientId}:${clientSecret}`)}`;
-}
-
-async function tokenRequest(params: URLSearchParams, clientId: string, clientSecret: string) {
-  return fetch("https://api.fitbit.com/oauth2/token", {
+async function tokenRequest(params: URLSearchParams) {
+  return fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
     headers: {
-      "Authorization": tokenAuthHeader(clientId, clientSecret),
       "Content-Type": "application/x-www-form-urlencoded"
     },
     body: params.toString()
@@ -129,44 +119,48 @@ async function getAuthenticatedEmail(request: Request, supabaseUrl: string, anon
 }
 
 async function refreshConnection(adminClient: ReturnType<typeof createClient>, connection: Record<string, unknown>, request: Request) {
-  const { clientId, clientSecret } = fitbitEnv(request);
+  const { clientId, clientSecret } = googleHealthEnv(request);
   const clientEmail = normalizeEmail(connection.client_email);
   const refreshToken = stringValue(connection.refresh_token);
 
   if (!clientId || !clientSecret || !refreshToken || !clientEmail) {
-    return { connection, error: "Fitbit sync is not configured yet." };
+    return { connection, error: "Google Health sync is not configured yet." };
   }
 
   const response = await tokenRequest(new URLSearchParams({
+    client_id: clientId,
+    client_secret: clientSecret,
     grant_type: "refresh_token",
     refresh_token: refreshToken
-  }), clientId, clientSecret);
-
+  }));
   const payload = await response.json().catch(() => ({}));
 
   if (!response.ok) {
-    return { connection, error: fitbitErrorMessage(payload) || "Fitbit login expired. Reconnect Fitbit." };
+    return {
+      connection,
+      error: googleErrorMessage(payload) || "Google Health login expired. Reconnect Google Health."
+    };
   }
 
-  const expiresIn = Number(payload.expires_in || 28800);
+  const expiresIn = Number(payload.expires_in || 3600);
   const nextConnection = {
     client_email: clientEmail,
-    fitbit_user_id: stringValue(payload.user_id) || stringValue(connection.fitbit_user_id),
     access_token: stringValue(payload.access_token),
     refresh_token: stringValue(payload.refresh_token) || refreshToken,
     scope: stringValue(payload.scope) || stringValue(connection.scope),
+    token_type: stringValue(payload.token_type) || stringValue(connection.token_type) || "Bearer",
     expires_at: new Date(Date.now() + (expiresIn * 1000)).toISOString(),
     updated_at: new Date().toISOString()
   };
 
   const { data, error } = await adminClient
-    .from("client_fitbit_connections")
+    .from("client_google_health_connections")
     .upsert(nextConnection, { onConflict: "client_email" })
     .select("*")
     .single();
 
   if (error) {
-    return { connection, error: "Could not refresh Fitbit login." };
+    return { connection, error: "Could not refresh Google Health login." };
   }
 
   return { connection: data, error: "" };
@@ -174,7 +168,7 @@ async function refreshConnection(adminClient: ReturnType<typeof createClient>, c
 
 async function currentConnection(adminClient: ReturnType<typeof createClient>, email: string, request: Request) {
   const { data, error } = await adminClient
-    .from("client_fitbit_connections")
+    .from("client_google_health_connections")
     .select("*")
     .eq("client_email", email)
     .maybeSingle();
@@ -197,38 +191,70 @@ function normalizedWorkoutDate(value: unknown) {
   return /^\d{4}-\d{2}-\d{2}$/.test(text) ? text : new Date().toISOString().slice(0, 10);
 }
 
-function normalizedStartTime(value: unknown) {
-  const text = stringValue(value);
-  return /^\d{2}:\d{2}$/.test(text) ? text : "12:00";
-}
-
-function normalizedDurationMillis(value: unknown) {
+function normalizedDurationSeconds(value: unknown) {
   const minutes = Number(value);
   const safeMinutes = Number.isFinite(minutes) && minutes > 0 ? Math.min(minutes, 360) : 45;
-  return Math.round(safeMinutes * 60 * 1000);
+  return Math.max(60, Math.round(safeMinutes * 60));
 }
 
-async function createFitbitActivity(accessToken: string, body: Record<string, unknown>) {
-  const activityName = stringValue(body.workoutTitle) || "Strength Training";
-  const params = new URLSearchParams({
-    activityName,
-    date: normalizedWorkoutDate(body.entryDate),
-    startTime: normalizedStartTime(body.startTime),
-    durationMillis: String(normalizedDurationMillis(body.durationMinutes))
-  });
-  const calories = Number(body.calories);
+function normalizedUtcOffsetSeconds(value: unknown) {
+  const seconds = Number(value);
 
-  if (Number.isFinite(calories) && calories > 0) {
-    params.set("manualCalories", String(Math.round(calories)));
+  if (!Number.isFinite(seconds)) {
+    return 0;
   }
 
-  return fetch("https://api.fitbit.com/1/user/-/activities.json", {
+  return Math.max(-64800, Math.min(64800, Math.round(seconds)));
+}
+
+function workoutInterval(body: Record<string, unknown>) {
+  const durationSeconds = normalizedDurationSeconds(body.durationMinutes);
+  const providedStart = Date.parse(stringValue(body.startTime));
+  const startTime = Number.isFinite(providedStart)
+    ? new Date(providedStart)
+    : new Date(`${normalizedWorkoutDate(body.entryDate)}T12:00:00.000Z`);
+  const endTime = new Date(startTime.getTime() + (durationSeconds * 1000));
+  const utcOffset = `${normalizedUtcOffsetSeconds(body.utcOffsetSeconds)}s`;
+
+  return {
+    durationSeconds,
+    interval: {
+      startTime: startTime.toISOString(),
+      startUtcOffset: utcOffset,
+      endTime: endTime.toISOString(),
+      endUtcOffset: utcOffset
+    }
+  };
+}
+
+async function createGoogleHealthWorkout(accessToken: string, body: Record<string, unknown>) {
+  const workoutTitle = stringValue(body.workoutTitle) || "Strength Training";
+  const { durationSeconds, interval } = workoutInterval(body);
+  const calories = Number(body.calories);
+  const metricsSummary: Record<string, unknown> = {};
+
+  if (Number.isFinite(calories) && calories > 0) {
+    metricsSummary.caloriesKcal = calories;
+  }
+
+  return fetch("https://health.googleapis.com/v4/users/me/dataTypes/exercise/dataPoints", {
     method: "POST",
     headers: {
       "Authorization": `Bearer ${accessToken}`,
-      "Content-Type": "application/x-www-form-urlencoded"
+      "Content-Type": "application/json"
     },
-    body: params.toString()
+    body: JSON.stringify({
+      dataSource: {
+        recordingMethod: "MANUAL"
+      },
+      exercise: {
+        interval,
+        exerciseType: "OTHER",
+        displayName: workoutTitle,
+        activeDuration: `${durationSeconds}s`,
+        metricsSummary
+      }
+    })
   });
 }
 
@@ -246,7 +272,7 @@ serve(async (request) => {
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
   if (!supabaseUrl || !anonKey || !serviceRoleKey) {
-    return jsonResponse(request, { error: "Fitbit sync is missing Supabase secrets." }, 500);
+    return jsonResponse(request, { error: "Google Health sync is missing Supabase secrets." }, 500);
   }
 
   const { email, error: authError } = await getAuthenticatedEmail(request, supabaseUrl, anonKey);
@@ -263,73 +289,107 @@ serve(async (request) => {
   });
 
   if (action === "start") {
-    const { clientId, redirectUri } = fitbitEnv(request);
+    const { clientId, redirectUri } = googleHealthEnv(request);
 
     if (!clientId) {
-      return jsonResponse(request, { error: "Fitbit client ID is not configured yet." }, 500);
+      return jsonResponse(request, { error: "Google Health client ID is not configured yet." }, 500);
     }
 
-    const codeVerifier = randomToken(64);
-    const authorizationUrl = new URL("https://www.fitbit.com/oauth2/authorize");
     const state = randomToken(32);
+    const expiresAt = new Date(Date.now() + (10 * 60 * 1000)).toISOString();
+    await adminClient
+      .from("client_google_health_oauth_states")
+      .delete()
+      .eq("client_email", email);
+    const { error: stateError } = await adminClient
+      .from("client_google_health_oauth_states")
+      .insert({ state, client_email: email, expires_at: expiresAt });
 
+    if (stateError) {
+      return jsonResponse(request, { error: "Could not begin Google Health login." }, 500);
+    }
+
+    const authorizationUrl = new URL("https://accounts.google.com/o/oauth2/v2/auth");
     authorizationUrl.searchParams.set("response_type", "code");
     authorizationUrl.searchParams.set("client_id", clientId);
     authorizationUrl.searchParams.set("redirect_uri", redirectUri);
-    authorizationUrl.searchParams.set("scope", "activity profile");
-    authorizationUrl.searchParams.set("code_challenge", await codeChallenge(codeVerifier));
-    authorizationUrl.searchParams.set("code_challenge_method", "S256");
+    authorizationUrl.searchParams.set("scope", googleHealthScope);
+    authorizationUrl.searchParams.set("access_type", "offline");
+    authorizationUrl.searchParams.set("include_granted_scopes", "true");
+    authorizationUrl.searchParams.set("prompt", "consent");
     authorizationUrl.searchParams.set("state", state);
 
     return jsonResponse(request, {
       authorizationUrl: authorizationUrl.toString(),
-      codeVerifier,
       state
     });
   }
 
   if (action === "callback") {
-    const { clientId, clientSecret, redirectUri } = fitbitEnv(request);
+    const { clientId, clientSecret, redirectUri } = googleHealthEnv(request);
     const code = stringValue(safeBody.code);
-    const codeVerifier = stringValue(safeBody.codeVerifier);
+    const state = stringValue(safeBody.state);
 
     if (!clientId || !clientSecret) {
-      return jsonResponse(request, { error: "Fitbit credentials are not configured yet." }, 500);
+      return jsonResponse(request, { error: "Google Health credentials are not configured yet." }, 500);
     }
 
-    if (!code || !codeVerifier) {
-      return jsonResponse(request, { error: "Fitbit login is missing the authorization code." }, 400);
+    if (!code || !state) {
+      return jsonResponse(request, { error: "Google Health login is missing required information." }, 400);
+    }
+
+    const { data: consumedState, error: stateError } = await adminClient
+      .from("client_google_health_oauth_states")
+      .delete()
+      .eq("state", state)
+      .eq("client_email", email)
+      .gt("expires_at", new Date().toISOString())
+      .select("state")
+      .maybeSingle();
+
+    if (stateError || !consumedState) {
+      return jsonResponse(request, { error: "Google Health login could not be verified. Try connecting again." }, 400);
     }
 
     const response = await tokenRequest(new URLSearchParams({
+      client_id: clientId,
+      client_secret: clientSecret,
       grant_type: "authorization_code",
       code,
-      redirect_uri: redirectUri,
-      code_verifier: codeVerifier
-    }), clientId, clientSecret);
+      redirect_uri: redirectUri
+    }));
     const payload = await response.json().catch(() => ({}));
 
     if (!response.ok) {
       return jsonResponse(request, {
-        error: fitbitErrorMessage(payload) || "Could not connect Fitbit."
+        error: googleErrorMessage(payload) || "Could not connect Google Health."
       }, 400);
     }
 
-    const expiresIn = Number(payload.expires_in || 28800);
+    const accessToken = stringValue(payload.access_token);
+    const refreshToken = stringValue(payload.refresh_token);
+
+    if (!accessToken || !refreshToken) {
+      return jsonResponse(request, {
+        error: "Google did not provide long-term access. Reconnect and approve access again."
+      }, 400);
+    }
+
+    const expiresIn = Number(payload.expires_in || 3600);
     const { error } = await adminClient
-      .from("client_fitbit_connections")
+      .from("client_google_health_connections")
       .upsert({
         client_email: email,
-        fitbit_user_id: stringValue(payload.user_id),
-        access_token: stringValue(payload.access_token),
-        refresh_token: stringValue(payload.refresh_token),
-        scope: stringValue(payload.scope),
+        access_token: accessToken,
+        refresh_token: refreshToken,
+        scope: stringValue(payload.scope) || googleHealthScope,
+        token_type: stringValue(payload.token_type) || "Bearer",
         expires_at: new Date(Date.now() + (expiresIn * 1000)).toISOString(),
         updated_at: new Date().toISOString()
       }, { onConflict: "client_email" });
 
     if (error) {
-      return jsonResponse(request, { error: "Could not save Fitbit connection." }, 500);
+      return jsonResponse(request, { error: "Could not save Google Health connection." }, 500);
     }
 
     return jsonResponse(request, { connected: true });
@@ -339,24 +399,20 @@ serve(async (request) => {
     const { connection, error } = await currentConnection(adminClient, email, request);
 
     if (error) {
-      return jsonResponse(request, {
-        connected: false,
-        error
-      }, 400);
+      return jsonResponse(request, { connected: false, error }, 400);
     }
 
     return jsonResponse(request, {
       connected: Boolean(connection),
-      fitbitUserId: connection ? stringValue(connection.fitbit_user_id) : "",
       expiresAt: connection ? stringValue(connection.expires_at) : ""
     });
   }
 
   if (action === "disconnect") {
-    await adminClient
-      .from("client_fitbit_connections")
-      .delete()
-      .eq("client_email", email);
+    await Promise.all([
+      adminClient.from("client_google_health_connections").delete().eq("client_email", email),
+      adminClient.from("client_google_health_oauth_states").delete().eq("client_email", email)
+    ]);
 
     return jsonResponse(request, { connected: false });
   }
@@ -365,8 +421,8 @@ serve(async (request) => {
     const entryDate = normalizedWorkoutDate(safeBody.entryDate);
     const workoutTitle = stringValue(safeBody.workoutTitle) || "Strength Training";
     const { data: existingSync } = await adminClient
-      .from("client_fitbit_activity_syncs")
-      .select("fitbit_log_id")
+      .from("client_google_health_activity_syncs")
+      .select("google_health_data_point_name")
       .eq("client_email", email)
       .eq("entry_date", entryDate)
       .eq("workout_title", workoutTitle)
@@ -383,10 +439,10 @@ serve(async (request) => {
     }
 
     if (!connection) {
-      return jsonResponse(request, { synced: false, skipped: true, message: "Fitbit is not connected." });
+      return jsonResponse(request, { synced: false, skipped: true, message: "Google Health is not connected." });
     }
 
-    let response = await createFitbitActivity(stringValue(connection.access_token), {
+    let response = await createGoogleHealthWorkout(stringValue(connection.access_token), {
       ...safeBody,
       entryDate,
       workoutTitle
@@ -400,7 +456,7 @@ serve(async (request) => {
       }
 
       const refreshedConnection = refreshed.connection as Record<string, unknown>;
-      response = await createFitbitActivity(stringValue(refreshedConnection.access_token), {
+      response = await createGoogleHealthWorkout(stringValue(refreshedConnection.access_token), {
         ...safeBody,
         entryDate,
         workoutTitle
@@ -411,26 +467,32 @@ serve(async (request) => {
 
     if (!response.ok) {
       return jsonResponse(request, {
-        error: fitbitErrorMessage(payload) || "Fitbit could not save this workout."
+        error: googleErrorMessage(payload) || "Google Health could not save this workout."
       }, 502);
     }
 
-    const fitbitLogId = stringValue(payload.activityLog?.logId || payload.logId);
+    const payloadRecord = payload && typeof payload === "object" ? payload as Record<string, unknown> : {};
+    const responseRecord = payloadRecord.response && typeof payloadRecord.response === "object"
+      ? payloadRecord.response as Record<string, unknown>
+      : {};
+    const dataPointName = stringValue(responseRecord.name) || stringValue(payloadRecord.name);
     const { error: insertError } = await adminClient
-      .from("client_fitbit_activity_syncs")
+      .from("client_google_health_activity_syncs")
       .insert({
         client_email: email,
         entry_date: entryDate,
         workout_title: workoutTitle,
-        fitbit_log_id: fitbitLogId || null
+        google_health_data_point_name: dataPointName || null
       });
 
     if (insertError && insertError.code !== "23505") {
-      return jsonResponse(request, { error: "Fitbit synced, but the sync record could not be saved." }, 500);
+      return jsonResponse(request, {
+        error: "Google Health synced, but the sync record could not be saved."
+      }, 500);
     }
 
-    return jsonResponse(request, { synced: true, fitbitLogId });
+    return jsonResponse(request, { synced: true, dataPointName });
   }
 
-  return jsonResponse(request, { error: "Unknown Fitbit action." }, 400);
+  return jsonResponse(request, { error: "Unknown Google Health action." }, 400);
 });
