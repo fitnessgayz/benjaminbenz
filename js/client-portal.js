@@ -2252,7 +2252,7 @@ function exerciseLogFields(exercise, workoutTitle, options = {}) {
         <input type="text" value="${escapeHtml(exercise.name)}" placeholder="Type or search any exercise name"${suggestionListAttr} data-exercise-name-input />
         ${options.suggestExerciseNames ? '<small class="manual-exercise-hint">Choose a suggestion or type your own name or short description. Exact wording is not required.</small>' : ""}
       </label>
-      ${exerciseLogActions()}
+      ${exerciseLogActions({ showSkip: options.showSkipAction !== false })}
       ${exerciseVideoMarkup(exercise)}
       <label class="exercise-date">
         <span>Date</span>
@@ -2390,7 +2390,7 @@ function exerciseCard(exercise, workoutTitle, isOpen = false, workoutFocus = "")
         </span>
         <i>›</i>
       </button>
-      ${exerciseLogFields(exercise, workoutTitle, { workoutFocus })}
+      ${exerciseLogFields(exercise, workoutTitle, { workoutFocus, showSkipAction: false })}
     </article>
   `;
 }
@@ -2677,10 +2677,12 @@ function skipControl() {
   `;
 }
 
-function exerciseLogActions() {
+function exerciseLogActions(options = {}) {
+  const showSkip = options.showSkip !== false;
+
   return `
-    <div class="exercise-log-actions">
-      <button class="exercise-skip-button" type="button" data-skip-exercise aria-pressed="false">Skip exercise</button>
+    <div class="exercise-log-actions${showSkip ? "" : " exercise-log-actions-single"}">
+      ${showSkip ? '<button class="exercise-skip-button" type="button" data-skip-exercise aria-pressed="false">Skip exercise</button>' : ""}
       <button class="exercise-delete-button" type="button" data-delete-exercise>Delete exercise</button>
     </div>
   `;

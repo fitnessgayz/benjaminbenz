@@ -2630,6 +2630,10 @@ footer {
   margin: 14px 0 18px;
 }
 
+.exercise-log-actions-single {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .exercise-log-actions button {
   min-width: 0;
   min-height: 44px;
@@ -7149,6 +7153,13 @@ textarea,
     min-height: 40px !important;
     padding: 6px 8px !important;
     font-size: .9rem !important;
+  }
+
+  .dashboard-page .exercise-date,
+  .coach-admin-page .exercise-date {
+    width: min(100%, 210px) !important;
+    max-width: 210px !important;
+    justify-self: start !important;
   }
 
   .dashboard-page :where(input, select, textarea, button, .button, .set-row input, .exercise-name-field input, .exercise-date input, .exercise-notes textarea),
