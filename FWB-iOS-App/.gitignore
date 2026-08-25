@@ -2,9 +2,9 @@
 DerivedData/
 DerivedData-*/
 SourcePackages/
-supabase/.temp/
 Artifacts/
 *.xcarchive
 *.ipa
 *.xcuserstate
 xcuserdata/
+supabase/.temp/
