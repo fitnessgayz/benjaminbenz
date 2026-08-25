@@ -48,6 +48,11 @@ const fitbitOauthVerifierKey = "fwb_fitbit_oauth_verifier";
 let fitbitConnection = { loaded: false, connected: false };
 let exerciseLibraryEntries = [];
 let activeCustomWorkoutFormat = "single";
+let restTimerDurationSeconds = 60;
+let restTimerRemainingSeconds = 60;
+let restTimerEndsAt = 0;
+let restTimerIntervalId = null;
+let restTimerReturnFocus = null;
 
 function isCoachPortalEmail(email) {
   return coachPortalEmails.includes(String(email || "").toLowerCase());
@@ -75,6 +80,16 @@ function escapeHtml(value) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
+}
+
+function truncateText(value, maxLength = 90) {
+  const text = String(value || "").trim();
+
+  if (text.length <= maxLength) {
+    return text;
+  }
+
+  return `${text.slice(0, Math.max(maxLength - 1, 0)).trimEnd()}...`;
 }
 
 function normalizeLogSearch(value) {
@@ -390,6 +405,7 @@ function renderClientHomeSummary() {
   const nutrition = nutritionPlanFromProgram(currentProgram);
   const latestWorkout = latestWorkoutLogSummary();
   const latestProgress = progressEntries[progressEntries.length - 1];
+  const latestMood = latestMoodEntry();
   const noteTitle = String(currentProgram.coach_note_title || "").trim();
   const noteBody = String(currentProgram.coach_note_body || "").trim();
   const checklist = document.getElementById("client-home-checklist");
@@ -413,10 +429,10 @@ function renderClientHomeSummary() {
     `${foodLogNumberLabel(todayFoodTotals.protein, "g")} protein`,
     nutrition.calories ? `Target ${nutrition.calories}` : ""
   ].filter(Boolean).join(" · ") || "Log food to track calories and macros.");
-  setText("#client-home-progress", latestProgress ? "Latest check-in" : "Check-ins");
-  setText("#client-home-progress-meta", latestProgress
-    ? `${formatLogDate(latestProgress.entry_date)} · ${formatProgressValue(latestProgress.bodyweight, " lb")} bodyweight`
-    : "Track weight, photos, and notes over time.");
+  setText("#client-home-mood", latestMood ? "Latest mood" : "How are you feeling?");
+  setText("#client-home-mood-meta", latestMood
+    ? `${formatLogDate(latestMood.entry_date)} · ${truncateText(String(latestMood.goal_note || "").trim(), 90)}`
+    : "Log mood, energy, or anything Benjamin should know today.");
   setText("#client-home-note-title", noteTitle || "No note yet");
   setText("#client-home-note-body", noteBody || "Coach notes will appear here when Benjamin adds one.");
 
@@ -437,8 +453,8 @@ function renderClientHomeSummary() {
         label: todayFoodLogged ? "Food logged today" : "Log food today"
       },
       {
-        done: Boolean(latestProgress),
-        label: latestProgress ? "Check-in started" : "Add first check-in"
+        done: Boolean(latestMood || latestProgress),
+        label: latestMood ? "Mood check-in saved" : (latestProgress ? "Check-in started" : "Add mood check-in")
       },
       {
         done: hasSessionCount,
@@ -1396,6 +1412,31 @@ function measurementSummary(entry = {}) {
   return rows.map(([label, value]) => `${label}: ${value} in`).join(" · ");
 }
 
+function latestMoodEntry() {
+  return [...progressEntries].reverse().find((entry) => String(entry.goal_note || "").trim());
+}
+
+function homeMoodNote(form) {
+  const mood = String(form.elements.home_mood?.value || "").trim();
+  const energy = String(form.elements.home_energy?.value || "").trim();
+  const note = String(form.elements.home_mood_note?.value || "").trim();
+  const pieces = [];
+
+  if (mood) {
+    pieces.push(`Mood: ${mood}`);
+  }
+
+  if (energy) {
+    pieces.push(`Energy: ${energy}/5`);
+  }
+
+  if (note) {
+    pieces.push(`Note: ${note}`);
+  }
+
+  return pieces.join(" · ");
+}
+
 function fillClientProgressForm(entry = {}) {
   const form = document.getElementById("client-checkin-form");
 
@@ -2202,7 +2243,7 @@ function setRowMarkup(setNumber, repPlaceholder = "") {
         <em>Reps</em>
         <input type="number" min="0" step="1" placeholder="${escapeHtml(repPlaceholder)}" data-set-reps />
       </label>
-      <button class="set-delete-button" type="button" data-delete-set aria-label="Delete set ${setNumber}">Delete</button>
+      <button class="set-complete-button" type="button" data-complete-set aria-label="Complete set ${setNumber}" aria-pressed="false">Complete</button>
     </div>
   `;
 }
@@ -2284,7 +2325,10 @@ function exerciseLogFields(exercise, workoutTitle, options = {}) {
         <div data-set-rows>
           ${setRows(exercise)}
         </div>
-        <button class="add-set-button" type="button" data-add-set>+ Add Set</button>
+        <div class="set-table-actions">
+          <button class="add-set-button" type="button" data-add-set>+ Add Set</button>
+          <button class="set-delete-last-button" type="button" data-delete-last-set>Delete Set</button>
+        </div>
       </div>
       <label class="exercise-notes">
         <span>Notes</span>
@@ -2775,10 +2819,166 @@ function exerciseLogActions(options = {}) {
 
   return `
     <div class="exercise-log-actions${showSkip ? "" : " exercise-log-actions-single"}">
-      ${showSkip ? '<button class="exercise-skip-button" type="button" data-skip-exercise aria-pressed="false">Skip exercise</button>' : ""}
-      <button class="exercise-delete-button" type="button" data-delete-exercise>Delete exercise</button>
+      ${showSkip ? '<button class="exercise-skip-button" type="button" data-skip-exercise aria-pressed="false">Skip</button>' : ""}
+      <button class="exercise-delete-button" type="button" data-delete-exercise>Delete</button>
     </div>
   `;
+}
+
+function restTimerTimeLabel(seconds) {
+  const safeSeconds = Math.max(0, Math.round(Number(seconds) || 0));
+  const minutes = Math.floor(safeSeconds / 60);
+  const remainingSeconds = safeSeconds % 60;
+
+  return `${String(minutes).padStart(2, "0")}:${String(remainingSeconds).padStart(2, "0")}`;
+}
+
+function restTimerMarkup() {
+  return `
+    <div class="rest-timer-overlay" data-rest-timer-overlay hidden>
+      <section class="rest-timer-sheet" role="dialog" aria-modal="true" aria-labelledby="rest-timer-title">
+        <header class="rest-timer-heading">
+          <div>
+            <small>Workout timer</small>
+            <strong id="rest-timer-title">Rest timer</strong>
+          </div>
+          <button class="rest-timer-close" type="button" data-rest-timer-close aria-label="Close timer">×</button>
+        </header>
+        <output class="rest-timer-display" data-rest-timer-display aria-live="polite">01:00</output>
+        <p class="rest-timer-status" data-rest-timer-status>Ready</p>
+        <div class="rest-timer-presets" role="group" aria-label="Timer duration">
+          ${[30, 60, 90].map((seconds) => `
+            <button type="button" data-rest-timer-preset="${seconds}" aria-pressed="${seconds === 60 ? "true" : "false"}">${seconds} sec</button>
+          `).join("")}
+        </div>
+        <div class="rest-timer-actions">
+          <button class="rest-timer-start" type="button" data-rest-timer-start>Start</button>
+          <button class="rest-timer-reset" type="button" data-rest-timer-reset>Reset</button>
+        </div>
+      </section>
+    </div>
+  `;
+}
+
+function ensureRestTimer() {
+  let overlay = document.querySelector("[data-rest-timer-overlay]");
+
+  if (!overlay) {
+    document.body.insertAdjacentHTML("beforeend", restTimerMarkup());
+    overlay = document.querySelector("[data-rest-timer-overlay]");
+  }
+
+  return overlay;
+}
+
+function clearRestTimerInterval() {
+  if (restTimerIntervalId) {
+    window.clearInterval(restTimerIntervalId);
+    restTimerIntervalId = null;
+  }
+}
+
+function syncRestTimerRemaining() {
+  if (!restTimerEndsAt) {
+    return;
+  }
+
+  restTimerRemainingSeconds = Math.max(0, Math.ceil((restTimerEndsAt - Date.now()) / 1000));
+
+  if (restTimerRemainingSeconds === 0) {
+    restTimerEndsAt = 0;
+    clearRestTimerInterval();
+
+    if (typeof navigator.vibrate === "function") {
+      navigator.vibrate([200, 100, 200]);
+    }
+  }
+}
+
+function renderRestTimer() {
+  const overlay = ensureRestTimer();
+  const display = overlay?.querySelector("[data-rest-timer-display]");
+  const status = overlay?.querySelector("[data-rest-timer-status]");
+  const startButton = overlay?.querySelector("[data-rest-timer-start]");
+
+  syncRestTimerRemaining();
+  const isRunning = restTimerEndsAt > 0;
+
+  if (display) {
+    display.textContent = restTimerTimeLabel(restTimerRemainingSeconds);
+  }
+  if (status) {
+    status.textContent = isRunning ? "Running" : restTimerRemainingSeconds === 0 ? "Time's up" : "Ready";
+  }
+  if (startButton) {
+    startButton.textContent = isRunning ? "Pause" : restTimerRemainingSeconds === 0 ? "Start again" : "Start";
+  }
+
+  overlay?.querySelectorAll("[data-rest-timer-preset]").forEach((button) => {
+    const isActive = Number(button.dataset.restTimerPreset) === restTimerDurationSeconds;
+
+    button.classList.toggle("is-active", isActive);
+    button.setAttribute("aria-pressed", isActive ? "true" : "false");
+  });
+}
+
+function tickRestTimer() {
+  syncRestTimerRemaining();
+  renderRestTimer();
+}
+
+function startOrPauseRestTimer() {
+  if (restTimerEndsAt) {
+    syncRestTimerRemaining();
+    restTimerEndsAt = 0;
+    clearRestTimerInterval();
+    renderRestTimer();
+    return;
+  }
+
+  if (restTimerRemainingSeconds === 0) {
+    restTimerRemainingSeconds = restTimerDurationSeconds;
+  }
+
+  restTimerEndsAt = Date.now() + restTimerRemainingSeconds * 1000;
+  clearRestTimerInterval();
+  restTimerIntervalId = window.setInterval(tickRestTimer, 250);
+  renderRestTimer();
+}
+
+function resetRestTimer() {
+  restTimerEndsAt = 0;
+  restTimerRemainingSeconds = restTimerDurationSeconds;
+  clearRestTimerInterval();
+  renderRestTimer();
+}
+
+function setRestTimerDuration(seconds) {
+  restTimerDurationSeconds = Math.max(1, Math.round(Number(seconds) || 60));
+  resetRestTimer();
+}
+
+function openRestTimer(button) {
+  const overlay = ensureRestTimer();
+
+  restTimerReturnFocus = button || null;
+  overlay.hidden = false;
+  document.body.classList.add("rest-timer-open");
+  renderRestTimer();
+  overlay.querySelector("[data-rest-timer-start]")?.focus();
+}
+
+function closeRestTimer() {
+  const overlay = document.querySelector("[data-rest-timer-overlay]");
+
+  if (!overlay) {
+    return;
+  }
+
+  overlay.hidden = true;
+  document.body.classList.remove("rest-timer-open");
+  restTimerReturnFocus?.focus();
+  restTimerReturnFocus = null;
 }
 
 function supersetCard(group, workoutTitle, workoutFocus = "") {
@@ -2898,7 +3098,6 @@ function customWorkoutCardMarkup(exercise, workoutTitle, index = 0) {
       <div class="exercise-detail custom-workout-detail">
         <div class="custom-workout-card-actions">
           <span class="status-pill" data-custom-workout-format-marker>${escapeHtml(marker)}</span>
-          <button class="button button-ghost danger-button" type="button" data-remove-custom-exercise>Remove</button>
         </div>
         ${exerciseLogFields({
           code: exercise.code,
@@ -3907,14 +4106,14 @@ function renumberSetRows(logElement) {
     const setNumber = index + 1;
     row.dataset.setNumber = String(setNumber);
     const numberCell = row.querySelector("span");
-    const deleteButton = row.querySelector("[data-delete-set]");
+    const completeButton = row.querySelector("[data-complete-set]");
 
     if (numberCell) {
       numberCell.textContent = String(setNumber);
     }
 
-    if (deleteButton) {
-      deleteButton.setAttribute("aria-label", `Delete set ${setNumber}`);
+    if (completeButton) {
+      completeButton.setAttribute("aria-label", `Complete set ${setNumber}`);
     }
   });
 }
@@ -4199,6 +4398,98 @@ function handleClientProgressHistorySelect() {
 
 function handleClientProgressSave() {
   document.addEventListener("submit", async (event) => {
+    const form = event.target.closest("#client-home-mood-form");
+
+    if (!form) {
+      return;
+    }
+
+    event.preventDefault();
+
+    if (!supabaseClient) {
+      setText("#client-home-mood-status", "Client portal is not connected.");
+      return;
+    }
+
+    const email = normalizeClientEmail(activeClientEmail || currentProgram?.client_email);
+
+    if (!email) {
+      setText("#client-home-mood-status", "Client profile is not loaded yet.");
+      return;
+    }
+
+    const note = homeMoodNote(form);
+
+    if (!note) {
+      setText("#client-home-mood-status", "Choose a mood, energy level, or add a quick note.");
+      return;
+    }
+
+    const button = document.getElementById("client-home-save-mood-button");
+
+    if (button) {
+      button.disabled = true;
+    }
+
+    setText("#client-home-mood-status", "Saving mood check-in...");
+
+    const entryDate = todayDate();
+    const existing = progressEntries.find((entry) => entry.entry_date === entryDate) || {};
+    const payload = {
+      client_email: email,
+      entry_date: entryDate,
+      bodyweight: existing.bodyweight ?? null,
+      bodyfat: existing.bodyfat ?? null,
+      muscle_mass: existing.muscle_mass ?? null,
+      measurements: progressMeasurements(existing),
+      goal_note: note
+    };
+    const { error } = await withTimeout(
+      supabaseClient
+        .from("client_progress")
+        .upsert(payload, { onConflict: "client_email,entry_date" }),
+      "Mood check-in save timed out."
+    );
+
+    if (error) {
+      setText("#client-home-mood-status", error.message || "Could not save mood check-in.");
+
+      if (button) {
+        button.disabled = false;
+      }
+
+      return;
+    }
+
+    const { data, error: loadError } = await withTimeout(
+      supabaseClient
+        .from("client_progress")
+        .select("*")
+        .ilike("client_email", email)
+        .order("entry_date", { ascending: true }),
+      "Mood check-in reload timed out."
+    );
+
+    if (loadError) {
+      setText("#client-home-mood-status", "Mood saved. Refresh to reload it.");
+
+      if (button) {
+        button.disabled = false;
+      }
+
+      return;
+    }
+
+    renderProgress(data || []);
+    form.reset();
+    setText("#client-home-mood-status", "Mood check-in saved for today.");
+
+    if (button) {
+      button.disabled = false;
+    }
+  });
+
+  document.addEventListener("submit", async (event) => {
     const form = event.target.closest("#client-checkin-form");
 
     if (!form) {
@@ -4446,12 +4737,12 @@ function setExerciseSkipped(logElement, skipped, options = {}) {
   }
 
   logElement.classList.toggle("is-exercise-skipped", skipped);
-  logElement.querySelectorAll("input, textarea, [data-add-set], [data-delete-set], [data-log-submit]").forEach((control) => {
+  logElement.querySelectorAll("input, textarea, [data-add-set], [data-delete-last-set], [data-complete-set], [data-log-submit]").forEach((control) => {
     control.disabled = skipped;
   });
 
   if (skipButton) {
-    skipButton.textContent = skipped ? "Use exercise" : "Skip exercise";
+    skipButton.textContent = skipped ? "Use" : "Skip";
     skipButton.setAttribute("aria-pressed", skipped ? "true" : "false");
   }
 
@@ -4525,12 +4816,47 @@ function handleWorkoutInteractions() {
   document.addEventListener("click", (event) => {
     const toggle = event.target.closest("[data-exercise-toggle]");
     const addSetButton = event.target.closest("[data-add-set]");
-    const deleteSetButton = event.target.closest("[data-delete-set]");
+    const deleteLastSetButton = event.target.closest("[data-delete-last-set]");
+    const completeSetButton = event.target.closest("[data-complete-set]");
     const skipExerciseButton = event.target.closest("[data-skip-exercise]");
     const deleteExerciseButton = event.target.closest("[data-delete-exercise]");
     const addCustomExerciseButton = event.target.closest("[data-add-custom-exercise]");
-    const removeCustomExerciseButton = event.target.closest("[data-remove-custom-exercise]");
     const customWorkoutFormatButton = event.target.closest("[data-custom-workout-format-option]");
+    const closeRestTimerButton = event.target.closest("[data-rest-timer-close]");
+    const restTimerPresetButton = event.target.closest("[data-rest-timer-preset]");
+    const restTimerStartButton = event.target.closest("[data-rest-timer-start]");
+    const restTimerResetButton = event.target.closest("[data-rest-timer-reset]");
+
+    if (completeSetButton) {
+      const setRow = completeSetButton.closest("[data-set-row]");
+
+      setRow?.classList.add("is-complete");
+      completeSetButton.setAttribute("aria-pressed", "true");
+      resetRestTimer();
+      openRestTimer(completeSetButton);
+      startOrPauseRestTimer();
+      return;
+    }
+
+    if (closeRestTimerButton || event.target.matches("[data-rest-timer-overlay]")) {
+      closeRestTimer();
+      return;
+    }
+
+    if (restTimerPresetButton) {
+      setRestTimerDuration(restTimerPresetButton.dataset.restTimerPreset);
+      return;
+    }
+
+    if (restTimerStartButton) {
+      startOrPauseRestTimer();
+      return;
+    }
+
+    if (restTimerResetButton) {
+      resetRestTimer();
+      return;
+    }
 
     if (customWorkoutFormatButton) {
       updateCustomWorkoutFormat(
@@ -4569,10 +4895,10 @@ function handleWorkoutInteractions() {
       }
     }
 
-    if (deleteSetButton) {
-      const logElement = deleteSetButton.closest("[data-exercise-log]");
-      const setRow = deleteSetButton.closest("[data-set-row]");
-      const setRows = logElement?.querySelectorAll("[data-set-row]") || [];
+    if (deleteLastSetButton) {
+      const logElement = deleteLastSetButton.closest("[data-exercise-log]");
+      const setRows = Array.from(logElement?.querySelectorAll("[data-set-row]") || []);
+      const setRow = setRows[setRows.length - 1];
 
       if (logElement && setRow) {
         if (setRows.length <= 1) {
@@ -4586,6 +4912,9 @@ function handleWorkoutInteractions() {
           if (repsInput) {
             repsInput.value = "";
           }
+
+          setRow.classList.remove("is-complete");
+          setRow.querySelector("[data-complete-set]")?.setAttribute("aria-pressed", "false");
 
           updateVisibleSetProgress(logElement);
           return;
@@ -4623,15 +4952,6 @@ function handleWorkoutInteractions() {
         syncCustomWorkoutFormatMarkers(panel);
       }
     }
-
-    if (removeCustomExerciseButton) {
-      const panel = removeCustomExerciseButton.closest(".client-workout-panel-custom");
-      const card = removeCustomExerciseButton.closest("[data-custom-exercise-card]");
-
-      card?.remove();
-      ensureDefaultCustomExercise(panel);
-      syncCustomWorkoutFormatMarkers(panel);
-    }
   });
 
   document.addEventListener("input", (event) => {
@@ -4650,6 +4970,18 @@ function handleWorkoutInteractions() {
       exerciseNameInput.closest("[data-exercise-log]"),
       exerciseNameInput.value
     );
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !document.querySelector("[data-rest-timer-overlay]")?.hidden) {
+      closeRestTimer();
+    }
+  });
+
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden && restTimerEndsAt) {
+      tickRestTimer();
+    }
   });
 }
 

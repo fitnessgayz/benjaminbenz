@@ -99,6 +99,47 @@
             <span class="status-pill" id="client-home-status">Ready</span>
           </div>
           <div class="client-home-grid" id="client-home-grid">
+            <article class="client-home-card client-home-card-mood">
+              <form class="client-home-mood-form" id="client-home-mood-form">
+                <div>
+                  <p class="kicker">Mood check-in</p>
+                  <h3 id="client-home-mood">How are you feeling?</h3>
+                  <p id="client-home-mood-meta">Log mood, energy, or anything Benjamin should know today.</p>
+                </div>
+                <div class="client-home-mood-grid">
+                  <label>
+                    Mood
+                    <select name="home_mood">
+                      <option value="">Choose</option>
+                      <option value="Strong">Strong</option>
+                      <option value="Good">Good</option>
+                      <option value="Okay">Okay</option>
+                      <option value="Low">Low</option>
+                      <option value="Sore">Sore</option>
+                    </select>
+                  </label>
+                  <label>
+                    Energy
+                    <select name="home_energy">
+                      <option value="">Choose</option>
+                      <option value="1">1 / 5</option>
+                      <option value="2">2 / 5</option>
+                      <option value="3">3 / 5</option>
+                      <option value="4">4 / 5</option>
+                      <option value="5">5 / 5</option>
+                    </select>
+                  </label>
+                </div>
+                <label class="client-home-mood-note">
+                  Note
+                  <textarea name="home_mood_note" placeholder="Sleep, soreness, stress, wins, or anything to adjust today."></textarea>
+                </label>
+                <div class="client-home-mood-actions">
+                  <p id="client-home-mood-status" role="status">Quick check-in saves to today.</p>
+                  <button class="button button-ghost" type="submit" id="client-home-save-mood-button">Save mood</button>
+                </div>
+              </form>
+            </article>
             <article class="client-home-card client-home-card-primary">
               <p class="kicker">Next workout</p>
               <h3 id="client-home-workout-title">Workout</h3>
@@ -127,12 +168,6 @@
               <h3 id="client-home-food-total">0 calories</h3>
               <p id="client-home-food-meta">Log food to track calories and macros.</p>
               <button class="button button-ghost" type="button" data-client-summary-go-tab="nutrition">Log food</button>
-            </article>
-            <article class="client-home-card">
-              <p class="kicker">Progress</p>
-              <h3 id="client-home-progress">Check-ins</h3>
-              <p id="client-home-progress-meta">Track weight, photos, and notes over time.</p>
-              <button class="button button-ghost" type="button" data-client-summary-go-tab="progress">View progress</button>
             </article>
             <article class="client-home-card client-home-card-checklist">
               <p class="kicker">Next steps</p>
