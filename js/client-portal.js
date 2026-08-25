@@ -1419,6 +1419,8 @@ function latestMoodEntry() {
 function homeMoodNote(form) {
   const mood = String(form.elements.home_mood?.value || "").trim();
   const energy = String(form.elements.home_energy?.value || "").trim();
+  const sleep = String(form.elements.home_sleep?.value || "").trim();
+  const eating = String(form.elements.home_eating?.value || "").trim();
   const note = String(form.elements.home_mood_note?.value || "").trim();
   const pieces = [];
 
@@ -1428,6 +1430,14 @@ function homeMoodNote(form) {
 
   if (energy) {
     pieces.push(`Energy: ${energy}/5`);
+  }
+
+  if (sleep) {
+    pieces.push(`Sleep: ${sleep}/5`);
+  }
+
+  if (eating) {
+    pieces.push(`Eating: ${eating}`);
   }
 
   if (note) {
