@@ -53,6 +53,7 @@ let restTimerRemainingSeconds = 60;
 let restTimerEndsAt = 0;
 let restTimerIntervalId = null;
 let restTimerReturnFocus = null;
+let restTimerSetRow = null;
 
 function isCoachPortalEmail(email) {
   return coachPortalEmails.includes(String(email || "").toLowerCase());
@@ -2266,7 +2267,9 @@ function syncExerciseNamePreview(logElement, nextName) {
     return;
   }
 
-  const safeName = String(nextName || "").trim() || logElement.dataset.exerciseName || "";
+  const safeName = String(nextName || "").trim() ||
+    logElement.dataset.exerciseName ||
+    (logElement.closest("[data-custom-exercise-card]") ? "Custom exercise" : "");
   const displayName = exerciseDisplayName(logElement.dataset.exerciseCode || "", safeName);
   const card = logElement.closest(".workout-exercise-card");
   const summaryTitle = card?.querySelector("[data-exercise-title]");
@@ -2717,7 +2720,7 @@ function customWorkoutExercises() {
     if (!grouped.has(code)) {
       grouped.set(code, {
         code,
-        name: exerciseName || `Exercise ${grouped.size + 1}`,
+        name: exerciseName,
         prescription: "Custom sets",
         rest: ""
       });
@@ -2735,7 +2738,7 @@ function customWorkoutExercises() {
     ? exercises
     : [{
       code: customExerciseCode(0),
-      name: "Exercise 1",
+      name: "",
       prescription: "Custom sets",
       rest: ""
     }];
@@ -2846,6 +2849,15 @@ function restTimerMarkup() {
         </header>
         <output class="rest-timer-display" data-rest-timer-display aria-live="polite">01:00</output>
         <p class="rest-timer-status" data-rest-timer-status>Ready</p>
+        <section class="rest-timer-effort" aria-labelledby="rest-timer-effort-question">
+          <strong id="rest-timer-effort-question">How many more reps could you have done?</strong>
+          <div class="rest-timer-effort-options" role="group" aria-label="Reps in reserve">
+            ${[0, 1, 2, 3, 4].map((reps) => `
+              <button type="button" data-reps-in-reserve="${reps}" aria-pressed="false">${reps === 4 ? "4+" : reps}</button>
+            `).join("")}
+          </div>
+          <small>Optional · saved with this set</small>
+        </section>
         <div class="rest-timer-presets" role="group" aria-label="Timer duration">
           ${[30, 60, 90].map((seconds) => `
             <button type="button" data-rest-timer-preset="${seconds}" aria-pressed="${seconds === 60 ? "true" : "false"}">${seconds} sec</button>
@@ -2920,6 +2932,14 @@ function renderRestTimer() {
     button.classList.toggle("is-active", isActive);
     button.setAttribute("aria-pressed", isActive ? "true" : "false");
   });
+
+  const selectedRir = restTimerSetRow?.dataset.repsInReserve;
+  overlay?.querySelectorAll("[data-reps-in-reserve]").forEach((button) => {
+    const isSelected = button.dataset.repsInReserve === selectedRir;
+
+    button.classList.toggle("is-active", isSelected);
+    button.setAttribute("aria-pressed", isSelected ? "true" : "false");
+  });
 }
 
 function tickRestTimer() {
@@ -2962,6 +2982,7 @@ function openRestTimer(button) {
   const overlay = ensureRestTimer();
 
   restTimerReturnFocus = button || null;
+  restTimerSetRow = button?.closest("[data-set-row]") || null;
   overlay.hidden = false;
   document.body.classList.add("rest-timer-open");
   renderRestTimer();
@@ -2979,6 +3000,7 @@ function closeRestTimer() {
   document.body.classList.remove("rest-timer-open");
   restTimerReturnFocus?.focus();
   restTimerReturnFocus = null;
+  restTimerSetRow = null;
 }
 
 function supersetCard(group, workoutTitle, workoutFocus = "") {
@@ -3082,14 +3104,15 @@ function workoutActionsMarkup(workout, options = {}) {
 }
 
 function customWorkoutCardMarkup(exercise, workoutTitle, index = 0) {
-  const exerciseName = String(exercise.name || "").trim() || "Custom exercise";
+  const exerciseName = String(exercise.name || "").trim();
+  const exerciseTitle = exerciseName || "Custom exercise";
   const marker = customWorkoutFormatMarker(activeCustomWorkoutFormat, index);
 
   return `
     <article class="workout-exercise-card custom-workout-card is-open" data-custom-exercise-card>
       <button class="exercise-card-summary" type="button" data-exercise-toggle>
         <span>
-          <strong data-exercise-title>${escapeHtml(exerciseDisplayName(exercise.code, exerciseName))}</strong>
+          <strong data-exercise-title>${escapeHtml(exerciseDisplayName(exercise.code, exerciseTitle))}</strong>
           <em>Log sets, weight, and notes.</em>
           <small data-set-progress>0 / 3 sets completed</small>
         </span>
@@ -3517,6 +3540,8 @@ function updateExerciseLogField(logElement) {
     const selectedLog = selectedLogs.find((log) => Number(log.set_number || 1) === setNumber);
     const weightInput = row.querySelector("[data-set-weight]");
     const repsInput = row.querySelector("[data-set-reps]");
+    const completeButton = row.querySelector("[data-complete-set]");
+    const savedRir = Number(selectedLog?.effort_value);
 
     if (weightInput) {
       weightInput.value = selectedLog?.weight_used ?? "";
@@ -3525,6 +3550,15 @@ function updateExerciseLogField(logElement) {
     if (repsInput) {
       repsInput.value = selectedLog?.reps ?? "";
     }
+
+    if (selectedLog?.effort_scale === "rir" && Number.isInteger(savedRir) && savedRir >= 0 && savedRir <= 4) {
+      row.dataset.repsInReserve = String(savedRir);
+    } else {
+      delete row.dataset.repsInReserve;
+    }
+
+    row.classList.toggle("is-complete", Boolean(selectedLog));
+    completeButton?.setAttribute("aria-pressed", selectedLog ? "true" : "false");
   });
 
   if (notesInput) {
@@ -4768,7 +4802,7 @@ function ensureDefaultCustomExercise(panel) {
 
   list.innerHTML = customWorkoutCardMarkup({
     code: customExerciseCode(0),
-    name: "Exercise 1",
+    name: "",
     prescription: "Custom sets",
     rest: ""
   }, customWorkoutTitle);
@@ -4826,6 +4860,7 @@ function handleWorkoutInteractions() {
     const restTimerPresetButton = event.target.closest("[data-rest-timer-preset]");
     const restTimerStartButton = event.target.closest("[data-rest-timer-start]");
     const restTimerResetButton = event.target.closest("[data-rest-timer-reset]");
+    const repsInReserveButton = event.target.closest("[data-reps-in-reserve]");
 
     if (completeSetButton) {
       const setRow = completeSetButton.closest("[data-set-row]");
@@ -4855,6 +4890,12 @@ function handleWorkoutInteractions() {
 
     if (restTimerResetButton) {
       resetRestTimer();
+      return;
+    }
+
+    if (repsInReserveButton && restTimerSetRow) {
+      restTimerSetRow.dataset.repsInReserve = repsInReserveButton.dataset.repsInReserve;
+      renderRestTimer();
       return;
     }
 
@@ -4914,6 +4955,7 @@ function handleWorkoutInteractions() {
           }
 
           setRow.classList.remove("is-complete");
+          delete setRow.dataset.repsInReserve;
           setRow.querySelector("[data-complete-set]")?.setAttribute("aria-pressed", "false");
 
           updateVisibleSetProgress(logElement);
@@ -4937,7 +4979,7 @@ function handleWorkoutInteractions() {
 
         list.insertAdjacentHTML("beforeend", customWorkoutCardMarkup({
           code: nextCode,
-          name: `Exercise ${nextIndex}`,
+          name: "",
           prescription: "Custom sets",
           rest: ""
         }, customWorkoutTitle, nextIndex - 1));
@@ -5701,6 +5743,10 @@ function rowsForTrainingLog(logElement) {
           set_number: Number(setRow.dataset.setNumber || 1),
           weight_used: values.weightRaw === "" ? 0 : values.weightValue,
           reps: values.repsRaw === "" ? null : values.repsValue,
+          ...(setRow.dataset.repsInReserve === undefined ? {} : {
+            effort_scale: "rir",
+            effort_value: Number(setRow.dataset.repsInReserve)
+          }),
           notes
         }
       };

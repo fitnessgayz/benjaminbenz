@@ -59,9 +59,17 @@ create table if not exists public.client_workout_logs (
   set_number integer not null default 1,
   weight_used numeric not null default 0,
   reps numeric,
+  effort_scale text,
+  effort_value numeric,
   notes text,
   created_at timestamptz not null default now()
 );
+
+alter table public.client_workout_logs
+add column if not exists effort_scale text;
+
+alter table public.client_workout_logs
+add column if not exists effort_value numeric;
 
 alter table public.client_programs enable row level security;
 alter table public.client_progress enable row level security;

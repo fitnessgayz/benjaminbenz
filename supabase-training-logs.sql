@@ -26,6 +26,8 @@ create table if not exists public.client_workout_logs (
   set_number integer not null default 1,
   weight_used numeric not null,
   reps numeric,
+  effort_scale text,
+  effort_value numeric,
   notes text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
@@ -37,6 +39,12 @@ add column if not exists set_number integer not null default 1;
 
 alter table public.client_workout_logs
 add column if not exists reps numeric;
+
+alter table public.client_workout_logs
+add column if not exists effort_scale text;
+
+alter table public.client_workout_logs
+add column if not exists effort_value numeric;
 
 alter table public.client_workout_logs
 add column if not exists notes text;
