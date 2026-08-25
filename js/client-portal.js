@@ -45,6 +45,8 @@ const cardioExerciseCode = "CARDIO";
 const clientDashboardUrl = "client-dashboard.html?v=manual-sessions-1";
 const fitbitOauthStateKey = "fwb_fitbit_oauth_state";
 const fitbitOauthVerifierKey = "fwb_fitbit_oauth_verifier";
+const restTimerSoundPreferenceKey = "fwb_rest_timer_sound_enabled";
+const restTimerHapticsPreferenceKey = "fwb_rest_timer_haptics_enabled";
 let fitbitConnection = { loaded: false, connected: false };
 let exerciseLibraryEntries = [];
 let activeCustomWorkoutFormat = "single";
@@ -53,6 +55,9 @@ let restTimerRemainingSeconds = 60;
 let restTimerEndsAt = 0;
 let restTimerIntervalId = null;
 let restTimerReturnFocus = null;
+let restTimerSoundEnabled = storedRestTimerSoundPreference();
+let restTimerHapticsEnabled = storedRestTimerHapticsPreference();
+let restTimerAudioContext = null;
 
 function isCoachPortalEmail(email) {
   return coachPortalEmails.includes(String(email || "").toLowerCase());
@@ -2833,6 +2838,149 @@ function restTimerTimeLabel(seconds) {
   return `${String(minutes).padStart(2, "0")}:${String(remainingSeconds).padStart(2, "0")}`;
 }
 
+function storedRestTimerSoundPreference() {
+  try {
+    return window.localStorage.getItem(restTimerSoundPreferenceKey) !== "false";
+  } catch (error) {
+    return true;
+  }
+}
+
+function storedRestTimerHapticsPreference() {
+  try {
+    return window.localStorage.getItem(restTimerHapticsPreferenceKey) !== "false";
+  } catch (error) {
+    return true;
+  }
+}
+
+function restTimerHapticsAvailable() {
+  return typeof navigator.vibrate === "function";
+}
+
+function fireRestTimerHaptics(preview = false) {
+  if (!restTimerHapticsEnabled || !restTimerHapticsAvailable()) {
+    return;
+  }
+
+  navigator.vibrate(preview ? 60 : [200, 100, 200]);
+}
+
+function getRestTimerAudioContext() {
+  const AudioContextConstructor = window.AudioContext || window.webkitAudioContext;
+
+  if (!AudioContextConstructor) {
+    return null;
+  }
+
+  if (!restTimerAudioContext || restTimerAudioContext.state === "closed") {
+    restTimerAudioContext = new AudioContextConstructor();
+  }
+
+  return restTimerAudioContext;
+}
+
+function primeRestTimerSound() {
+  if (!restTimerSoundEnabled) {
+    return;
+  }
+
+  const audioContext = getRestTimerAudioContext();
+
+  if (audioContext?.state === "suspended") {
+    Promise.resolve(audioContext.resume()).catch(() => {});
+  }
+}
+
+function scheduleRestTimerTones(audioContext, preview = false) {
+  if (!audioContext || audioContext.state !== "running") {
+    return;
+  }
+
+  const startAt = audioContext.currentTime + 0.02;
+  const tones = preview
+    ? [{ delay: 0, frequency: 880, duration: 0.1 }]
+    : [
+        { delay: 0, frequency: 784, duration: 0.14 },
+        { delay: 0.2, frequency: 988, duration: 0.14 },
+        { delay: 0.4, frequency: 1175, duration: 0.22 }
+      ];
+
+  tones.forEach(({ delay, frequency, duration }) => {
+    const oscillator = audioContext.createOscillator();
+    const gain = audioContext.createGain();
+    const toneStart = startAt + delay;
+    const toneEnd = toneStart + duration;
+
+    oscillator.type = "square";
+    oscillator.frequency.setValueAtTime(frequency, toneStart);
+    gain.gain.setValueAtTime(0.0001, toneStart);
+    gain.gain.exponentialRampToValueAtTime(preview ? 0.06 : 0.1, toneStart + 0.015);
+    gain.gain.exponentialRampToValueAtTime(0.0001, toneEnd);
+    oscillator.connect(gain);
+    gain.connect(audioContext.destination);
+    oscillator.start(toneStart);
+    oscillator.stop(toneEnd + 0.02);
+  });
+}
+
+function playRestTimerSound(preview = false) {
+  if (!restTimerSoundEnabled) {
+    return;
+  }
+
+  const audioContext = getRestTimerAudioContext();
+
+  if (!audioContext) {
+    return;
+  }
+
+  const play = () => scheduleRestTimerTones(audioContext, preview);
+
+  if (audioContext.state === "suspended") {
+    Promise.resolve(audioContext.resume()).then(play).catch(() => {});
+    return;
+  }
+
+  play();
+}
+
+function toggleRestTimerSound() {
+  restTimerSoundEnabled = !restTimerSoundEnabled;
+
+  try {
+    window.localStorage.setItem(restTimerSoundPreferenceKey, String(restTimerSoundEnabled));
+  } catch (error) {
+    // Keep the preference active for this visit if browser storage is unavailable.
+  }
+
+  if (restTimerSoundEnabled) {
+    playRestTimerSound(true);
+  }
+
+  renderRestTimer();
+}
+
+function toggleRestTimerHaptics() {
+  if (!restTimerHapticsAvailable()) {
+    return;
+  }
+
+  restTimerHapticsEnabled = !restTimerHapticsEnabled;
+
+  try {
+    window.localStorage.setItem(restTimerHapticsPreferenceKey, String(restTimerHapticsEnabled));
+  } catch (error) {
+    // Keep the preference active for this visit if browser storage is unavailable.
+  }
+
+  if (restTimerHapticsEnabled) {
+    fireRestTimerHaptics(true);
+  }
+
+  renderRestTimer();
+}
+
 function restTimerMarkup() {
   return `
     <div class="rest-timer-overlay" data-rest-timer-overlay hidden>
@@ -2850,6 +2998,29 @@ function restTimerMarkup() {
           ${[30, 60, 90].map((seconds) => `
             <button type="button" data-rest-timer-preset="${seconds}" aria-pressed="${seconds === 60 ? "true" : "false"}">${seconds} sec</button>
           `).join("")}
+        </div>
+        <div class="rest-timer-feedback-controls" aria-label="Timer alerts">
+          <button
+            class="rest-timer-feedback-toggle${restTimerSoundEnabled ? " is-on" : ""}"
+            type="button"
+            data-rest-timer-sound
+            aria-pressed="${restTimerSoundEnabled ? "true" : "false"}"
+          >
+            <span data-rest-timer-sound-icon aria-hidden="true">${restTimerSoundEnabled ? "🔊" : "🔇"}</span>
+            <span>Sound</span>
+            <strong data-rest-timer-sound-label>${restTimerSoundEnabled ? "On" : "Off"}</strong>
+          </button>
+          <button
+            class="rest-timer-feedback-toggle${restTimerHapticsEnabled && restTimerHapticsAvailable() ? " is-on" : ""}"
+            type="button"
+            data-rest-timer-haptics
+            aria-pressed="${restTimerHapticsEnabled && restTimerHapticsAvailable() ? "true" : "false"}"
+            ${restTimerHapticsAvailable() ? "" : "disabled"}
+          >
+            <span aria-hidden="true">〰</span>
+            <span>Haptics</span>
+            <strong data-rest-timer-haptics-label>${restTimerHapticsAvailable() ? (restTimerHapticsEnabled ? "On" : "Off") : "Unavailable"}</strong>
+          </button>
         </div>
         <div class="rest-timer-actions">
           <button class="rest-timer-start" type="button" data-rest-timer-start>Start</button>
@@ -2889,9 +3060,8 @@ function syncRestTimerRemaining() {
     restTimerEndsAt = 0;
     clearRestTimerInterval();
 
-    if (typeof navigator.vibrate === "function") {
-      navigator.vibrate([200, 100, 200]);
-    }
+    fireRestTimerHaptics();
+    playRestTimerSound();
   }
 }
 
@@ -2900,6 +3070,11 @@ function renderRestTimer() {
   const display = overlay?.querySelector("[data-rest-timer-display]");
   const status = overlay?.querySelector("[data-rest-timer-status]");
   const startButton = overlay?.querySelector("[data-rest-timer-start]");
+  const soundButton = overlay?.querySelector("[data-rest-timer-sound]");
+  const soundLabel = overlay?.querySelector("[data-rest-timer-sound-label]");
+  const soundIcon = overlay?.querySelector("[data-rest-timer-sound-icon]");
+  const hapticsButton = overlay?.querySelector("[data-rest-timer-haptics]");
+  const hapticsLabel = overlay?.querySelector("[data-rest-timer-haptics-label]");
 
   syncRestTimerRemaining();
   const isRunning = restTimerEndsAt > 0;
@@ -2912,6 +3087,26 @@ function renderRestTimer() {
   }
   if (startButton) {
     startButton.textContent = isRunning ? "Pause" : restTimerRemainingSeconds === 0 ? "Start again" : "Start";
+  }
+  if (soundButton) {
+    soundButton.classList.toggle("is-on", restTimerSoundEnabled);
+    soundButton.setAttribute("aria-pressed", restTimerSoundEnabled ? "true" : "false");
+  }
+  if (soundLabel) {
+    soundLabel.textContent = restTimerSoundEnabled ? "On" : "Off";
+  }
+  if (soundIcon) {
+    soundIcon.textContent = restTimerSoundEnabled ? "🔊" : "🔇";
+  }
+  if (hapticsButton) {
+    const isAvailable = restTimerHapticsAvailable();
+
+    hapticsButton.classList.toggle("is-on", isAvailable && restTimerHapticsEnabled);
+    hapticsButton.disabled = !isAvailable;
+    hapticsButton.setAttribute("aria-pressed", isAvailable && restTimerHapticsEnabled ? "true" : "false");
+  }
+  if (hapticsLabel) {
+    hapticsLabel.textContent = restTimerHapticsAvailable() ? (restTimerHapticsEnabled ? "On" : "Off") : "Unavailable";
   }
 
   overlay?.querySelectorAll("[data-rest-timer-preset]").forEach((button) => {
@@ -2940,6 +3135,7 @@ function startOrPauseRestTimer() {
     restTimerRemainingSeconds = restTimerDurationSeconds;
   }
 
+  primeRestTimerSound();
   restTimerEndsAt = Date.now() + restTimerRemainingSeconds * 1000;
   clearRestTimerInterval();
   restTimerIntervalId = window.setInterval(tickRestTimer, 250);
@@ -4826,6 +5022,8 @@ function handleWorkoutInteractions() {
     const restTimerPresetButton = event.target.closest("[data-rest-timer-preset]");
     const restTimerStartButton = event.target.closest("[data-rest-timer-start]");
     const restTimerResetButton = event.target.closest("[data-rest-timer-reset]");
+    const restTimerSoundButton = event.target.closest("[data-rest-timer-sound]");
+    const restTimerHapticsButton = event.target.closest("[data-rest-timer-haptics]");
 
     if (completeSetButton) {
       const setRow = completeSetButton.closest("[data-set-row]");
@@ -4845,6 +5043,16 @@ function handleWorkoutInteractions() {
 
     if (restTimerPresetButton) {
       setRestTimerDuration(restTimerPresetButton.dataset.restTimerPreset);
+      return;
+    }
+
+    if (restTimerSoundButton) {
+      toggleRestTimerSound();
+      return;
+    }
+
+    if (restTimerHapticsButton) {
+      toggleRestTimerHaptics();
       return;
     }
 

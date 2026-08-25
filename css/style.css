@@ -3177,6 +3177,51 @@ footer {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.rest-timer-feedback-controls {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.rest-timer-feedback-toggle {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 9px;
+  min-height: 46px;
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  color: var(--black);
+  background: var(--paper);
+  font: inherit;
+  font-size: .78rem;
+  font-weight: 900;
+  text-align: left;
+  cursor: pointer;
+}
+
+.rest-timer-feedback-toggle.is-on {
+  border-color: var(--black);
+  background: rgba(215, 255, 63, .18);
+}
+
+.rest-timer-feedback-toggle strong {
+  grid-column: 2;
+  color: var(--muted);
+  font-size: .68rem;
+  text-transform: uppercase;
+}
+
+.rest-timer-feedback-toggle.is-on strong {
+  color: var(--black);
+}
+
+.rest-timer-feedback-toggle:disabled {
+  cursor: not-allowed;
+  opacity: .58;
+}
+
 .rest-timer-actions {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
