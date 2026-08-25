@@ -26,6 +26,20 @@ let activeWorkoutTabIndex = 0;
 let currentProgram = null;
 const dashboardRequestTimeout = 15000;
 const customWorkoutTitle = "Custom workout";
+const customWorkoutFormats = {
+  single: {
+    label: "Straight sets",
+    guide: "Finish all sets of one exercise before moving to the next."
+  },
+  superset: {
+    label: "Superset",
+    guide: "Alternate exercises in pairs, then repeat each pair for your remaining sets."
+  },
+  circuit: {
+    label: "Circuit",
+    guide: "Complete one set of every exercise in order, then begin the next round."
+  }
+};
 const warmupExerciseCode = "WARMUP";
 const cardioExerciseCode = "CARDIO";
 const clientDashboardUrl = "client-dashboard.html?v=manual-sessions-1";
@@ -33,6 +47,7 @@ const fitbitOauthStateKey = "fwb_fitbit_oauth_state";
 const fitbitOauthVerifierKey = "fwb_fitbit_oauth_verifier";
 let fitbitConnection = { loaded: false, connected: false };
 let exerciseLibraryEntries = [];
+let activeCustomWorkoutFormat = "single";
 
 function isCoachPortalEmail(email) {
   return coachPortalEmails.includes(String(email || "").toLowerCase());
@@ -2559,6 +2574,84 @@ function isCustomWorkoutTitle(value) {
   return String(value || "").trim().toLowerCase() === customWorkoutTitle;
 }
 
+function normalizeCustomWorkoutFormat(value) {
+  return Object.hasOwn(customWorkoutFormats, value) ? value : "single";
+}
+
+function customWorkoutFormatPreferenceKey() {
+  const programId = String(currentProgram?.id || "").trim();
+
+  return programId ? `fwb_custom_workout_format:${programId}` : "";
+}
+
+function storedCustomWorkoutFormat() {
+  const key = customWorkoutFormatPreferenceKey();
+
+  if (!key) {
+    return "single";
+  }
+
+  try {
+    return normalizeCustomWorkoutFormat(window.localStorage.getItem(key));
+  } catch (_) {
+    return "single";
+  }
+}
+
+function storeCustomWorkoutFormat(format) {
+  const key = customWorkoutFormatPreferenceKey();
+
+  if (!key) {
+    return;
+  }
+
+  try {
+    window.localStorage.setItem(key, normalizeCustomWorkoutFormat(format));
+  } catch (_) {
+    // The selected format still applies for this page when storage is unavailable.
+  }
+}
+
+function customWorkoutFormatMarker(format, index) {
+  if (format === "superset") {
+    const pair = Math.floor(index / 2) + 1;
+    const position = index % 2 === 0 ? "A" : "B";
+
+    return `Superset ${pair}${position}`;
+  }
+
+  if (format === "circuit") {
+    return `Station ${index + 1}`;
+  }
+
+  return `Exercise ${index + 1}`;
+}
+
+function customWorkoutFormatPickerMarkup() {
+  const format = normalizeCustomWorkoutFormat(activeCustomWorkoutFormat);
+  const config = customWorkoutFormats[format];
+
+  return `
+    <section class="custom-workout-format-picker" aria-labelledby="custom-workout-format-title">
+      <div class="custom-workout-format-heading">
+        <strong id="custom-workout-format-title">Choose a format</strong>
+        <span>Applies to this custom workout</span>
+      </div>
+      <div class="custom-workout-format-options" role="group" aria-label="Custom workout format">
+        ${Object.entries(customWorkoutFormats).map(([value, option]) => `
+          <button
+            class="custom-workout-format-button${value === format ? " is-active" : ""}"
+            type="button"
+            data-custom-workout-format-option="${value}"
+            aria-pressed="${value === format ? "true" : "false"}"
+          >${escapeHtml(option.label)}</button>
+        `).join("")}
+      </div>
+      <p data-custom-workout-format-guide>${escapeHtml(config.guide)}</p>
+    </section>
+  `;
+}
+
 function customExerciseCode(index = 0) {
   return `CW${String(index + 1).padStart(2, "0")}`;
 }
@@ -2788,8 +2881,9 @@ function workoutActionsMarkup(workout, options = {}) {
   `;
 }
 
-function customWorkoutCardMarkup(exercise, workoutTitle) {
+function customWorkoutCardMarkup(exercise, workoutTitle, index = 0) {
   const exerciseName = String(exercise.name || "").trim() || "Custom exercise";
+  const marker = customWorkoutFormatMarker(activeCustomWorkoutFormat, index);
 
   return `
     <article class="workout-exercise-card custom-workout-card is-open" data-custom-exercise-card>
@@ -2803,7 +2897,7 @@ function customWorkoutCardMarkup(exercise, workoutTitle) {
       </button>
       <div class="exercise-detail custom-workout-detail">
         <div class="custom-workout-card-actions">
-          <span class="status-pill">Custom exercise</span>
+          <span class="status-pill" data-custom-workout-format-marker>${escapeHtml(marker)}</span>
           <button class="button button-ghost danger-button" type="button" data-remove-custom-exercise>Remove</button>
         </div>
         ${exerciseLogFields({
@@ -2824,16 +2918,19 @@ function customWorkoutCardMarkup(exercise, workoutTitle) {
 function customWorkoutListMarkup() {
   const exercises = customWorkoutExercises();
 
-  return exercises.map((exercise) => customWorkoutCardMarkup(exercise, customWorkoutTitle)).join("");
+  return exercises.map((exercise, index) => customWorkoutCardMarkup(exercise, customWorkoutTitle, index)).join("");
 }
 
 function customWorkoutPanelMarkup(index) {
   const exercises = customWorkoutExercises();
+  const format = normalizeCustomWorkoutFormat(activeCustomWorkoutFormat);
+  const formatConfig = customWorkoutFormats[format];
 
   return `
     <section
       class="client-workout-panel client-workout-panel-custom${index === activeWorkoutTabIndex ? " is-active" : ""}"
       id="client-workout-panel-${index}"
+      data-custom-workout-format="${format}"
       role="tabpanel"
       aria-labelledby="client-workout-tab-${index}"
       ${index === activeWorkoutTabIndex ? "" : "hidden"}
@@ -2844,14 +2941,15 @@ function customWorkoutPanelMarkup(index) {
         </div>
         <span class="status-pill">Build your own</span>
       </div>
-      <div class="workout-format-pill">${escapeHtml(formatLabel("custom"))}</div>
+      <div class="workout-format-pill" data-custom-workout-format-pill>${escapeHtml(formatConfig.label)}</div>
       <div class="custom-workout-builder">
         <div class="custom-workout-header">
           <p>Add your own exercises here and save them into your workout log.</p>
         </div>
+        ${customWorkoutFormatPickerMarkup()}
         ${exerciseSuggestionsDatalist()}
         ${warmupLogFields(customWorkoutTitle)}
-        <div class="workout-app-list custom-workout-list" data-custom-workout-list role="list" aria-label="Custom workout exercises">
+        <div class="workout-app-list custom-workout-list" data-custom-workout-list data-custom-workout-format="${format}" role="list" aria-label="Custom workout exercises">
           ${customWorkoutListMarkup()}
         </div>
         <button class="button button-ghost custom-workout-add-bottom" type="button" data-add-custom-exercise>Add exercise</button>
@@ -2860,6 +2958,52 @@ function customWorkoutPanelMarkup(index) {
       </div>
     </section>
   `;
+}
+
+function syncCustomWorkoutFormatMarkers(panel) {
+  const format = normalizeCustomWorkoutFormat(panel?.dataset.customWorkoutFormat || activeCustomWorkoutFormat);
+
+  panel?.querySelectorAll("[data-custom-exercise-card]").forEach((card, index) => {
+    const marker = card.querySelector("[data-custom-workout-format-marker]");
+
+    if (marker) {
+      marker.textContent = customWorkoutFormatMarker(format, index);
+    }
+  });
+}
+
+function updateCustomWorkoutFormat(panel, value) {
+  if (!panel) {
+    return;
+  }
+
+  const format = normalizeCustomWorkoutFormat(value);
+  const config = customWorkoutFormats[format];
+  const list = panel.querySelector("[data-custom-workout-list]");
+  const pill = panel.querySelector("[data-custom-workout-format-pill]");
+  const guide = panel.querySelector("[data-custom-workout-format-guide]");
+
+  activeCustomWorkoutFormat = format;
+  panel.dataset.customWorkoutFormat = format;
+  storeCustomWorkoutFormat(format);
+
+  panel.querySelectorAll("[data-custom-workout-format-option]").forEach((button) => {
+    const isActive = button.dataset.customWorkoutFormatOption === format;
+    button.classList.toggle("is-active", isActive);
+    button.setAttribute("aria-pressed", isActive ? "true" : "false");
+  });
+
+  if (list) {
+    list.dataset.customWorkoutFormat = format;
+  }
+  if (pill) {
+    pill.textContent = config.label;
+  }
+  if (guide) {
+    guide.textContent = config.guide;
+  }
+
+  syncCustomWorkoutFormatMarkers(panel);
 }
 
 function renderClientWorkoutTabs(workouts = []) {
@@ -4374,6 +4518,7 @@ function removeExerciseLog(logElement) {
   }
 
   ensureDefaultCustomExercise(panel);
+  syncCustomWorkoutFormatMarkers(panel);
 }
 
 function handleWorkoutInteractions() {
@@ -4385,6 +4530,15 @@ function handleWorkoutInteractions() {
     const deleteExerciseButton = event.target.closest("[data-delete-exercise]");
     const addCustomExerciseButton = event.target.closest("[data-add-custom-exercise]");
     const removeCustomExerciseButton = event.target.closest("[data-remove-custom-exercise]");
+    const customWorkoutFormatButton = event.target.closest("[data-custom-workout-format-option]");
+
+    if (customWorkoutFormatButton) {
+      updateCustomWorkoutFormat(
+        customWorkoutFormatButton.closest(".client-workout-panel-custom"),
+        customWorkoutFormatButton.dataset.customWorkoutFormatOption
+      );
+      return;
+    }
 
     if (skipExerciseButton) {
       const logElement = skipExerciseButton.closest("[data-exercise-log]");
@@ -4457,7 +4611,7 @@ function handleWorkoutInteractions() {
           name: `Exercise ${nextIndex}`,
           prescription: "Custom sets",
           rest: ""
-        }, customWorkoutTitle));
+        }, customWorkoutTitle, nextIndex - 1));
 
         const newLogElement = list.querySelector("[data-custom-exercise-card]:last-child [data-exercise-log]");
 
@@ -4465,6 +4619,8 @@ function handleWorkoutInteractions() {
           updateExerciseLogField(newLogElement);
           newLogElement.querySelector("[data-exercise-name-input]")?.focus();
         }
+
+        syncCustomWorkoutFormatMarkers(panel);
       }
     }
 
@@ -4474,6 +4630,7 @@ function handleWorkoutInteractions() {
 
       card?.remove();
       ensureDefaultCustomExercise(panel);
+      syncCustomWorkoutFormatMarkers(panel);
     }
   });
 
@@ -4548,6 +4705,7 @@ function handleSkipToggle() {
 
 function renderProgram(program) {
   currentProgram = { ...program };
+  activeCustomWorkoutFormat = storedCustomWorkoutFormat();
   const displayProgram = displayProgramForCurrentView(program);
   const workouts = Array.isArray(program.workouts) ? program.workouts : [];
   const programTitle = displayProgram.program_title || "Your Program";

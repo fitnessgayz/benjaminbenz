@@ -2255,8 +2255,87 @@ footer {
   font-weight: 800;
 }
 
+.custom-workout-format-picker {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #fbfbf8;
+}
+
+.custom-workout-format-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.custom-workout-format-heading strong {
+  color: var(--black);
+  font-size: .92rem;
+  font-weight: 900;
+}
+
+.custom-workout-format-heading span,
+.custom-workout-format-picker p {
+  color: var(--muted);
+  font-size: .72rem;
+  font-weight: 800;
+}
+
+.custom-workout-format-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.custom-workout-format-button {
+  min-width: 0;
+  min-height: 42px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  background: var(--paper);
+  font: inherit;
+  font-size: .72rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.custom-workout-format-button.is-active {
+  color: var(--black);
+  background: var(--lime);
+  border-color: var(--black);
+}
+
+.custom-workout-format-button:focus-visible {
+  outline: 2px solid var(--black);
+  outline-offset: 2px;
+}
+
+.custom-workout-format-picker p {
+  margin: 0;
+  line-height: 1.35;
+}
+
 .custom-workout-list {
   gap: 12px;
+}
+
+.custom-workout-list[data-custom-workout-format="superset"] {
+  padding: 10px;
+  border: 1px solid rgba(40, 120, 255, .2);
+  border-left: 4px solid var(--blue);
+  background: #f5f8ff;
+}
+
+.custom-workout-list[data-custom-workout-format="circuit"] {
+  padding: 10px;
+  border: 1px solid rgba(31, 166, 55, .24);
+  border-left: 4px solid #21a637;
+  background: #f5faf4;
 }
 
 .custom-workout-add-bottom {
@@ -7160,6 +7239,17 @@ textarea,
     width: min(100%, 210px) !important;
     max-width: 210px !important;
     justify-self: start !important;
+  }
+
+  .dashboard-page .custom-workout-format-button,
+  .coach-admin-page .custom-workout-format-button {
+    min-height: 42px !important;
+    padding: 7px 6px !important;
+    font-size: .68rem !important;
+    line-height: 1.1 !important;
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
   }
 
   .dashboard-page :where(input, select, textarea, button, .button, .set-row input, .exercise-name-field input, .exercise-date input, .exercise-notes textarea),
