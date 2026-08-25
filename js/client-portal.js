@@ -3345,6 +3345,34 @@ function logsForExercise(workoutTitle, exerciseCode) {
     });
 }
 
+function normalizeExerciseHistoryName(value) {
+  return String(value || "").trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+function currentExerciseHistoryName(logElement) {
+  return normalizeExerciseHistoryName(
+    logElement?.querySelector("[data-exercise-name-input]")?.value ||
+    logElement?.dataset.exerciseName ||
+    ""
+  );
+}
+
+function logsForExerciseDisplay(logElement) {
+  const logs = logsForExercise(logElement.dataset.workoutTitle, logElement.dataset.exerciseCode);
+
+  if (!logElement.closest("[data-custom-exercise-card]")) {
+    return logs;
+  }
+
+  const exerciseName = currentExerciseHistoryName(logElement);
+
+  if (!exerciseName) {
+    return [];
+  }
+
+  return logs.filter((log) => normalizeExerciseHistoryName(log.exercise_name) === exerciseName);
+}
+
 function parseCardioNotes(notes = "") {
   const text = String(notes || "");
   const caloriesMatch = text.match(/(?:^|\n)Calories:\s*(\d+(?:\.\d+)?)/i);
@@ -3442,6 +3470,39 @@ function formatLogDate(value) {
   });
 }
 
+function renderPreviousExerciseWeights(logElement, logs = logsForExerciseDisplay(logElement)) {
+  const previous = logElement.querySelector("[data-previous-weights]");
+
+  if (!previous) {
+    return;
+  }
+
+  if (logs.length === 0) {
+    previous.textContent = "Previous: none";
+    return;
+  }
+
+  const logsByDate = logs.reduce((groups, log) => {
+    if (!groups.has(log.entry_date)) {
+      groups.set(log.entry_date, []);
+    }
+
+    groups.get(log.entry_date).push(log);
+    return groups;
+  }, new Map());
+
+  previous.innerHTML = `
+    <strong>Previous</strong>
+    ${Array.from(logsByDate.entries()).slice(0, 4).map(([date, dateLogs]) => `
+      <span>${escapeHtml(formatLogDate(date))} - ${dateLogs.map((log) => {
+        const reps = log.reps ? ` x ${log.reps}` : "";
+
+        return `${escapeHtml(log.weight_used)} lb${escapeHtml(reps)}`;
+      }).join(", ")}</span>
+    `).join("")}
+  `;
+}
+
 function updateExerciseLogField(logElement) {
   const dateInput = logElement.querySelector("[data-log-date]");
   const exerciseNameInput = logElement.querySelector("[data-exercise-name-input]");
@@ -3451,7 +3512,7 @@ function updateExerciseLogField(logElement) {
   const progress = card?.matches(".superset-card")
     ? logElement.querySelector("[data-set-progress]")
     : card?.querySelector("[data-set-progress]");
-  const logs = logsForExercise(logElement.dataset.workoutTitle, logElement.dataset.exerciseCode);
+  const logs = logsForExerciseDisplay(logElement);
   const selectedDate = dateInput?.value || todayDate();
   const selectedLogs = logs.filter((log) => log.entry_date === selectedDate);
   const prescribedSets = Number(logElement.dataset.prescribedSets || 0);
@@ -3582,35 +3643,7 @@ function updateExerciseLogField(logElement) {
   }
 
   updateVisibleSetProgress(logElement);
-
-  if (!previous) {
-    return;
-  }
-
-  if (logs.length === 0) {
-    previous.textContent = "Previous: none";
-    return;
-  }
-
-  const logsByDate = logs.reduce((groups, log) => {
-    if (!groups.has(log.entry_date)) {
-      groups.set(log.entry_date, []);
-    }
-
-    groups.get(log.entry_date).push(log);
-    return groups;
-  }, new Map());
-
-  previous.innerHTML = `
-    <strong>Previous</strong>
-    ${Array.from(logsByDate.entries()).slice(0, 4).map(([date, dateLogs]) => `
-      <span>${escapeHtml(formatLogDate(date))} - ${dateLogs.map((log) => {
-        const reps = log.reps ? ` x ${log.reps}` : "";
-
-        return `${escapeHtml(log.weight_used)} lb${escapeHtml(reps)}`;
-      }).join(", ")}</span>
-    `).join("")}
-  `;
+  renderPreviousExerciseWeights(logElement, logs);
 }
 
 function populateTrainingLogs(logs) {
@@ -5017,10 +5050,17 @@ function handleWorkoutInteractions() {
       return;
     }
 
-    syncExerciseNamePreview(
-      exerciseNameInput.closest("[data-exercise-log]"),
-      exerciseNameInput.value
-    );
+    const logElement = exerciseNameInput.closest("[data-exercise-log]");
+
+    syncExerciseNamePreview(logElement, exerciseNameInput.value);
+
+    if (
+      logElement &&
+      logElement.dataset.cardioLog === undefined &&
+      logElement.dataset.warmupLog === undefined
+    ) {
+      renderPreviousExerciseWeights(logElement);
+    }
   });
 
   document.addEventListener("keydown", (event) => {
