@@ -4626,7 +4626,37 @@ async function invokeFitbit(action, body = {}) {
     body: { action, ...body }
   });
 
-  return { data, error };
+  if (!error) {
+    return { data, error };
+  }
+
+  let message = error.message || "Fitbit sync failed.";
+
+  try {
+    const response = error.context?.clone ? error.context.clone() : null;
+
+    if (response) {
+      const contentType = response.headers?.get("content-type") || "";
+
+      if (contentType.includes("application/json")) {
+        const payload = await response.json();
+        message = payload?.error || payload?.message || message;
+      } else {
+        const text = await response.text();
+        message = text || message;
+      }
+    }
+  } catch (_) {
+    // Keep the Supabase message if the response body has already been consumed.
+  }
+
+  return {
+    data,
+    error: {
+      ...error,
+      message
+    }
+  };
 }
 
 function cleanFitbitCallbackUrl() {
