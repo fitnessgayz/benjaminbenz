@@ -2296,7 +2296,7 @@ function setRowMarkup(setNumber, repPlaceholder = "", setType = workingSetType) 
         <em>Reps</em>
         <input type="number" min="0" step="1" placeholder="${escapeHtml(repPlaceholder)}" data-set-reps />
       </label>
-      <button class="set-complete-button" type="button" data-complete-set aria-label="Complete ${normalizedType === warmUpSetType ? `warm-up set ${warmUpOrdinal(setNumber)}` : `set ${Number(setNumber) || 1}`}" aria-pressed="false">Complete</button>
+      <button class="set-complete-button" type="button" data-complete-set aria-label="Complete ${normalizedType === warmUpSetType ? `warm-up set ${warmUpOrdinal(setNumber)}` : `set ${Number(setNumber) || 1}`}" aria-pressed="false"><span aria-hidden="true">✓</span></button>
     </div>
   `;
 }
@@ -2370,10 +2370,6 @@ function exerciseLogFields(exercise, workoutTitle, options = {}) {
         <input type="date" data-log-date />
       </label>
       <div class="set-table" aria-label="${escapeHtml(exercise.name)} set tracker">
-      <div class="set-type-tools">
-        <button type="button" data-mark-first-warm-up>Mark first 2 warm-up</button>
-        <small>Warm-up sets stay in history but do not count toward working-set progress or RIR.</small>
-      </div>
       <div class="set-header">
         <span>Set</span>
         <span>Type</span>
@@ -4336,18 +4332,6 @@ function renumberSetRows(logElement) {
   });
 }
 
-function markFirstTwoSetsWarmUp(logElement) {
-  const firstTwoRows = Array.from(logElement?.querySelectorAll("[data-set-row]") || []).slice(0, 2);
-
-  firstTwoRows.forEach((row) => {
-    row.dataset.setType = warmUpSetType;
-    delete row.dataset.repsInReserve;
-  });
-  renumberSetRows(logElement);
-  syncVisibleSetTarget(logElement);
-  updateVisibleSetProgress(logElement);
-}
-
 function ensureSetRows(logElement, count) {
   const rows = logElement?.querySelector("[data-set-rows]");
 
@@ -4380,15 +4364,9 @@ function syncVisibleSetTarget(logElement) {
   const rowCount = Array.from(logElement?.querySelectorAll("[data-set-row]") || [])
     .filter((row) => setTypeForRow(row) !== warmUpSetType)
     .length;
-  const warmUpButton = logElement?.querySelector("[data-mark-first-warm-up]");
-  const totalRowCount = logElement?.querySelectorAll("[data-set-row]").length || 0;
 
   if (logElement && rowCount > 0) {
     logElement.dataset.prescribedSets = String(rowCount);
-  }
-
-  if (warmUpButton) {
-    warmUpButton.disabled = totalRowCount < 2;
   }
 }
 
@@ -4978,7 +4956,7 @@ function setExerciseSkipped(logElement, skipped, options = {}) {
   }
 
   logElement.classList.toggle("is-exercise-skipped", skipped);
-  logElement.querySelectorAll("input, select, textarea, [data-add-set], [data-delete-last-set], [data-mark-first-warm-up], [data-complete-set], [data-log-submit]").forEach((control) => {
+  logElement.querySelectorAll("input, select, textarea, [data-add-set], [data-delete-last-set], [data-complete-set], [data-log-submit]").forEach((control) => {
     control.disabled = skipped;
   });
 
@@ -5058,7 +5036,6 @@ function handleWorkoutInteractions() {
     const toggle = event.target.closest("[data-exercise-toggle]");
     const addSetButton = event.target.closest("[data-add-set]");
     const deleteLastSetButton = event.target.closest("[data-delete-last-set]");
-    const markFirstWarmUpButton = event.target.closest("[data-mark-first-warm-up]");
     const completeSetButton = event.target.closest("[data-complete-set]");
     const skipExerciseButton = event.target.closest("[data-skip-exercise]");
     const deleteExerciseButton = event.target.closest("[data-delete-exercise]");
@@ -5069,11 +5046,6 @@ function handleWorkoutInteractions() {
     const restTimerStartButton = event.target.closest("[data-rest-timer-start]");
     const restTimerResetButton = event.target.closest("[data-rest-timer-reset]");
     const repsInReserveButton = event.target.closest("[data-reps-in-reserve]");
-
-    if (markFirstWarmUpButton) {
-      markFirstTwoSetsWarmUp(markFirstWarmUpButton.closest("[data-exercise-log]"));
-      return;
-    }
 
     if (completeSetButton) {
       const setRow = completeSetButton.closest("[data-set-row]");

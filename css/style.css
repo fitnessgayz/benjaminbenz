@@ -3070,13 +3070,17 @@ footer {
 }
 
 .set-complete-button {
-  min-height: 46px;
-  padding: 0 10px;
+  width: 58px;
+  min-width: 58px;
+  height: 58px;
+  min-height: 58px;
+  padding: 0;
   border: 1px solid var(--black);
-  border-radius: 999px;
+  border-radius: 14px;
   color: var(--black);
   background: var(--lime);
-  font-size: .68rem;
+  font-size: 1.3rem;
+  line-height: 1;
   font-weight: 900;
   cursor: pointer;
 }
@@ -7304,37 +7308,6 @@ textarea,
 }
 
 /* Warm-up set classification shared with the iOS workout logger. */
-.set-type-tools {
-  display: grid;
-  grid-template-columns: max-content minmax(0, 1fr);
-  gap: 12px;
-  align-items: center;
-  padding: 10px 0 2px;
-}
-
-.set-type-tools button {
-  min-height: 42px;
-  padding: 9px 14px;
-  border: 1px solid var(--lime);
-  border-radius: 0;
-  color: var(--black);
-  background: var(--lime);
-  font: inherit;
-  font-size: .72rem;
-  font-weight: 900;
-  letter-spacing: .04em;
-  text-transform: uppercase;
-  cursor: pointer;
-}
-
-.set-type-tools small {
-  min-width: 0;
-  color: var(--muted);
-  font-size: .72rem;
-  font-weight: 700;
-  line-height: 1.35;
-}
-
 .set-header,
 .set-row {
   grid-template-columns: 48px minmax(94px, .7fr) minmax(92px, 1fr) 22px minmax(76px, .7fr) auto;
@@ -7391,18 +7364,6 @@ textarea,
 }
 
 @media (max-width: 760px) {
-  .set-type-tools {
-    grid-template-columns: minmax(0, 1fr) !important;
-    gap: 7px !important;
-  }
-
-  .set-type-tools button {
-    width: 100% !important;
-    max-width: 100% !important;
-    min-height: 44px !important;
-    white-space: normal !important;
-  }
-
   .dashboard-page .set-row,
   .coach-admin-page .set-row {
     grid-template-columns: 30px repeat(2, minmax(0, 1fr)) auto !important;
@@ -7748,6 +7709,10 @@ textarea,
   .coach-admin-page :is(.set-delete-button, .set-complete-button) {
     grid-column: 4 !important;
     grid-row: 1 !important;
+  }
+
+  .dashboard-page .set-delete-button,
+  .coach-admin-page .set-delete-button {
     width: auto !important;
     inline-size: auto !important;
     min-width: 0 !important;
@@ -7755,6 +7720,21 @@ textarea,
     padding: 6px !important;
     font-size: .62rem !important;
     white-space: nowrap !important;
+  }
+
+  .dashboard-page .set-complete-button,
+  .coach-admin-page .set-complete-button {
+    align-self: end !important;
+    width: 40px !important;
+    inline-size: 40px !important;
+    min-width: 40px !important;
+    max-width: 40px !important;
+    height: 40px !important;
+    min-height: 40px !important;
+    padding: 0 !important;
+    border-radius: 10px !important;
+    font-size: 1rem !important;
+    line-height: 1 !important;
   }
 
   .coach-admin-page .admin-tab {
