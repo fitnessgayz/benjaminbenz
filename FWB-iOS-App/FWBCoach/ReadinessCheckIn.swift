@@ -15,6 +15,7 @@ struct ReadinessCheckIn: Codable, Equatable, Identifiable {
     var energy: Int
     var soreness: Int
     var sleepRecovery: Int
+    var hasEatenToday: Bool?
     var note: String
     var updatedAt: Date
     var syncState: SyncState
@@ -26,6 +27,7 @@ struct ReadinessCheckIn: Codable, Equatable, Identifiable {
         energy: Int,
         soreness: Int,
         sleepRecovery: Int,
+        hasEatenToday: Bool? = nil,
         note: String,
         updatedAt: Date = Date(),
         syncState: SyncState = .queued
@@ -36,6 +38,7 @@ struct ReadinessCheckIn: Codable, Equatable, Identifiable {
         self.energy = Self.validatedRating(energy)
         self.soreness = Self.validatedRating(soreness)
         self.sleepRecovery = Self.validatedRating(sleepRecovery)
+        self.hasEatenToday = hasEatenToday
         self.note = String(note.trimmingCharacters(in: .whitespacesAndNewlines).prefix(300))
         self.updatedAt = updatedAt
         self.syncState = syncState
@@ -176,6 +179,7 @@ actor ReadinessCheckInRepository {
                 energy: remote.energy,
                 soreness: remote.soreness,
                 sleepRecovery: remote.sleepRecovery,
+                hasEatenToday: remote.hasEatenToday,
                 note: remote.note,
                 updatedAt: remote.updatedAt,
                 syncState: .synced
@@ -239,6 +243,7 @@ private struct ReadinessCheckInPayload: Encodable {
     let energy: Int
     let soreness: Int
     let sleepRecovery: Int
+    let hasEatenToday: Bool?
     let note: String?
     let source = "ios_app"
     let sourceVersion = ContinuitySync.sourceVersion
@@ -251,6 +256,7 @@ private struct ReadinessCheckInPayload: Encodable {
         energy = checkIn.energy
         soreness = checkIn.soreness
         sleepRecovery = checkIn.sleepRecovery
+        hasEatenToday = checkIn.hasEatenToday
         note = checkIn.note.isEmpty ? nil : checkIn.note
         updatedAt = ReadinessDateCoding.string(from: checkIn.updatedAt)
     }
@@ -262,6 +268,7 @@ private struct ReadinessCheckInPayload: Encodable {
         case energy
         case soreness
         case sleepRecovery = "sleep_recovery"
+        case hasEatenToday = "has_eaten_today"
         case note
         case source
         case sourceVersion = "source_version"
@@ -308,6 +315,7 @@ private struct ReadinessRemoteRecord: Decodable {
     let energy: Int?
     let soreness: Int?
     let sleepRecovery: Int?
+    let hasEatenToday: Bool?
     let stress: Int?
     let note: String?
     let createdAt: String
@@ -320,6 +328,7 @@ private struct ReadinessRemoteRecord: Decodable {
         case energy
         case soreness
         case sleepRecovery = "sleep_recovery"
+        case hasEatenToday = "has_eaten_today"
         case stress
         case note
         case createdAt = "created_at"
@@ -337,6 +346,7 @@ private struct ReadinessRemoteRecord: Decodable {
             energy: energy ?? 3,
             soreness: soreness ?? 3,
             sleepRecovery: sleepRecovery ?? stress.map { 6 - $0 } ?? 3,
+            hasEatenToday: hasEatenToday,
             note: note ?? "",
             updatedAt: ReadinessDateCoding.date(from: updatedAt)
                 ?? ReadinessDateCoding.date(from: createdAt)
@@ -429,7 +439,7 @@ final class ReadinessSyncStore: ObservableObject {
         do {
             let records: [ReadinessRemoteRecord] = try await client
                 .from("client_check_ins")
-                .select("id,client_email,occurred_on,energy,soreness,sleep_recovery,stress,note,created_at,updated_at")
+                .select("id,client_email,occurred_on,energy,soreness,sleep_recovery,has_eaten_today,stress,note,created_at,updated_at")
                 .eq("client_email", value: normalizedEmail)
                 .eq("occurred_on", value: ReadinessCheckIn.localDateKey())
                 .order("updated_at", ascending: false)
@@ -559,13 +569,20 @@ final class DailyReadinessStore: ObservableObject {
     }
 
     @discardableResult
-    func save(energy: Int, soreness: Int, sleepRecovery: Int, note: String) async -> Bool {
+    func save(
+        energy: Int,
+        soreness: Int,
+        sleepRecovery: Int,
+        hasEatenToday: Bool,
+        note: String
+    ) async -> Bool {
         let checkIn = ReadinessCheckIn(
             id: today?.id ?? UUID(),
             clientEmail: clientEmail,
             energy: energy,
             soreness: soreness,
             sleepRecovery: sleepRecovery,
+            hasEatenToday: hasEatenToday,
             note: note
         )
 
@@ -646,7 +663,7 @@ struct ReadinessDashboardCard: View {
 
     private var incompleteContent: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("Log energy, soreness, and sleep before today’s training.")
+            Text("Log energy, soreness, sleep quality, and whether you’ve eaten before today’s training.")
                 .font(.subheadline)
                 .foregroundStyle(Color.fwbMuted)
 
@@ -714,6 +731,7 @@ struct ReadinessCheckInView: View {
     @State private var energy: Int
     @State private var soreness: Int
     @State private var sleepRecovery: Int
+    @State private var hasEatenToday: Bool?
     @State private var note: String
     @State private var isSaving = false
 
@@ -722,6 +740,7 @@ struct ReadinessCheckInView: View {
         _energy = State(initialValue: store.today?.energy ?? 3)
         _soreness = State(initialValue: store.today?.soreness ?? 3)
         _sleepRecovery = State(initialValue: store.today?.sleepRecovery ?? 3)
+        _hasEatenToday = State(initialValue: store.today?.hasEatenToday)
         _note = State(initialValue: store.today?.note ?? "")
     }
 
@@ -731,6 +750,7 @@ struct ReadinessCheckInView: View {
             energy: energy,
             soreness: soreness,
             sleepRecovery: sleepRecovery,
+            hasEatenToday: hasEatenToday,
             note: note
         )
     }
@@ -760,12 +780,14 @@ struct ReadinessCheckInView: View {
                     )
 
                     ReadinessScale(
-                        title: "SLEEP + RECOVERY",
-                        prompt: "How recovered do you feel?",
+                        title: "SLEEP QUALITY",
+                        prompt: "How well did you sleep last night?",
                         lowLabel: "POOR",
                         highLabel: "GREAT",
                         selection: $sleepRecovery
                     )
+
+                    FoodTodayQuestion(selection: $hasEatenToday)
 
                     notesCard
                     ReadinessResultCard(result: draft.result)
@@ -780,7 +802,7 @@ struct ReadinessCheckInView: View {
                         }
                     }
                     .buttonStyle(FWBPrimaryButtonStyle())
-                    .disabled(isSaving)
+                    .disabled(isSaving || hasEatenToday == nil)
                     .accessibilityIdentifier("readiness.save")
 
                     if case .failed(let message) = store.state {
@@ -839,15 +861,68 @@ struct ReadinessCheckInView: View {
 
     private func save() async {
         guard !isSaving else { return }
+        guard let hasEatenToday else { return }
         isSaving = true
         let didSave = await store.save(
             energy: energy,
             soreness: soreness,
             sleepRecovery: sleepRecovery,
+            hasEatenToday: hasEatenToday,
             note: note
         )
         isSaving = false
         if didSave { dismiss() }
+    }
+}
+
+private struct FoodTodayQuestion: View {
+    @Binding var selection: Bool?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("FUEL")
+                    .font(.footnote.bold())
+                    .tracking(1)
+                    .foregroundStyle(Color.fwbLime)
+                Text("Have you eaten today?")
+                    .font(.headline)
+                    .foregroundStyle(Color.fwbWarmWhite)
+            }
+
+            HStack(spacing: 10) {
+                answerButton(title: "YES", value: true, icon: "checkmark")
+                answerButton(title: "NOT YET", value: false, icon: "clock")
+            }
+
+            Text("You can update this check-in later today.")
+                .font(.footnote)
+                .foregroundStyle(Color.fwbMuted)
+        }
+        .fwbCard()
+    }
+
+    private func answerButton(title: String, value: Bool, icon: String) -> some View {
+        Button {
+            selection = value
+        } label: {
+            Label(title, systemImage: icon)
+                .font(.subheadline.weight(.black))
+                .tracking(0.5)
+                .foregroundStyle(selection == value ? Color.black : Color.fwbWarmWhite)
+                .frame(maxWidth: .infinity, minHeight: 48)
+                .background(selection == value ? Color.fwbAccentFill : Color.fwbSurface, in: Rectangle())
+                .overlay {
+                    Rectangle().stroke(
+                        selection == value ? Color.fwbAccentFill : Color.fwbLine,
+                        lineWidth: 1
+                    )
+                }
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(value ? "Yes, I have eaten today" : "No, I have not eaten yet")
+        .accessibilityAddTraits(selection == value ? .isSelected : [])
+        .accessibilityIdentifier(value ? "readiness.food.yes" : "readiness.food.notYet")
     }
 }
 

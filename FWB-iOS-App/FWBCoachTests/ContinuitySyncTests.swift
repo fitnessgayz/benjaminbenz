@@ -93,4 +93,39 @@ final class ContinuitySyncTests: XCTestCase {
         XCTAssertEqual(pending.first?.bodyweight, 151)
         XCTAssertEqual(pending.first?.goalNote, "Replacement")
     }
+
+    func testReadinessFoodAnswerSurvivesOfflineRoundTrip() throws {
+        let checkIn = ReadinessCheckIn(
+            clientEmail: "client@example.com",
+            energy: 4,
+            soreness: 2,
+            sleepRecovery: 5,
+            hasEatenToday: false,
+            note: "Breakfast after training"
+        )
+
+        let data = try JSONEncoder().encode(checkIn)
+        let restored = try JSONDecoder().decode(ReadinessCheckIn.self, from: data)
+
+        XCTAssertEqual(restored.hasEatenToday, false)
+        XCTAssertEqual(restored.sleepRecovery, 5)
+    }
+
+    func testLegacyReadinessWithoutFoodAnswerStillDecodes() throws {
+        let checkIn = ReadinessCheckIn(
+            clientEmail: "client@example.com",
+            energy: 3,
+            soreness: 3,
+            sleepRecovery: 3,
+            note: ""
+        )
+        let data = try JSONEncoder().encode(checkIn)
+        var object = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        object.removeValue(forKey: "hasEatenToday")
+
+        let legacyData = try JSONSerialization.data(withJSONObject: object)
+        let restored = try JSONDecoder().decode(ReadinessCheckIn.self, from: legacyData)
+
+        XCTAssertNil(restored.hasEatenToday)
+    }
 }
