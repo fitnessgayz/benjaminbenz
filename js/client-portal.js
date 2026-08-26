@@ -432,7 +432,7 @@ function renderClientHomeSummary() {
   setText("#client-home-mood", latestMood ? "Latest mood" : "How are you feeling?");
   setText("#client-home-mood-meta", latestMood
     ? `${formatLogDate(latestMood.entry_date)} · ${truncateText(String(latestMood.goal_note || "").trim(), 90)}`
-    : "Log mood, energy, or anything Benjamin should know today.");
+    : "Log mood, energy, body readiness, or anything Benjamin should know today.");
   setText("#client-home-note-title", noteTitle || "No note yet");
   setText("#client-home-note-body", noteBody || "Coach notes will appear here when Benjamin adds one.");
 
@@ -1421,6 +1421,7 @@ function homeMoodNote(form) {
   const energy = String(form.elements.home_energy?.value || "").trim();
   const sleep = String(form.elements.home_sleep?.value || "").trim();
   const eating = String(form.elements.home_eating?.value || "").trim();
+  const bodyFeeling = String(form.elements.home_body_feeling?.value || "").trim();
   const note = String(form.elements.home_mood_note?.value || "").trim();
   const pieces = [];
 
@@ -1438,6 +1439,10 @@ function homeMoodNote(form) {
 
   if (eating) {
     pieces.push(`Eating: ${eating}`);
+  }
+
+  if (bodyFeeling) {
+    pieces.push(`Body: ${bodyFeeling}`);
   }
 
   if (note) {
@@ -4497,7 +4502,7 @@ function handleClientProgressSave() {
     const note = homeMoodNote(form);
 
     if (!note) {
-      setText("#client-home-mood-status", "Choose a mood, energy level, or add a quick note.");
+      setText("#client-home-mood-status", "Choose a mood, energy level, body feeling, or add a quick note.");
       return;
     }
 

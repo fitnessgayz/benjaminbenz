@@ -2072,6 +2072,10 @@ footer {
   gap: 10px;
 }
 
+.client-home-body-feeling {
+  grid-column: 1 / -1;
+}
+
 .client-home-mood-note {
   grid-column: 1 / -1;
 }
