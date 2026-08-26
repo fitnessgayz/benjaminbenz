@@ -228,6 +228,12 @@ alter table public.client_workout_logs
 add column if not exists effort_value numeric;
 
 alter table public.client_workout_logs
+add column if not exists set_type text not null default 'working';
+
+alter table public.client_workout_logs
+add column if not exists duration_seconds numeric;
+
+alter table public.client_workout_logs
 alter column weight_used drop not null;
 
 create index if not exists client_workout_logs_client_session_idx

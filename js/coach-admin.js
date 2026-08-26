@@ -13,6 +13,18 @@ const workoutSlots = [1, 2, 3, 4, 5, 6, 7];
 const coachLoginUrl = "client-login.html?v=manual-invite-copy-1";
 const warmupExerciseCode = "WARMUP";
 const cardioExerciseCode = "CARDIO";
+const warmUpSetNumberBase = 1000;
+
+function isWarmUpWorkoutSet(set) {
+  return set?.set_type === "warm_up" || (!set?.set_type && Number(set?.set_number) > warmUpSetNumberBase);
+}
+
+function workoutSetLabel(set) {
+  if (isWarmUpWorkoutSet(set)) {
+    return `Warm-up W${Math.max(1, Number(set?.set_number || 0) - warmUpSetNumberBase)}`;
+  }
+  return `Set ${Number(set?.set_number || 1)}`;
+}
 
 let programs = [];
 let selectedProgramId = "";
@@ -2059,6 +2071,7 @@ function renderTrainingLogs() {
 
     supersetGroup.exercises.get(exerciseKey).sets.push({
       set_number: log.set_number,
+      set_type: log.set_type,
       weight_used: log.weight_used,
       reps: log.reps,
       notes: log.notes
@@ -2113,12 +2126,17 @@ function renderTrainingLogs() {
                         .filter(Boolean)
                         .join("  |  ")
                       : entry.sets
-                      .sort((a, b) => Number(a.set_number || 0) - Number(b.set_number || 0))
+                      .sort((a, b) => {
+                        if (isWarmUpWorkoutSet(a) !== isWarmUpWorkoutSet(b)) {
+                          return isWarmUpWorkoutSet(a) ? -1 : 1;
+                        }
+                        return Number(a.set_number || 0) - Number(b.set_number || 0);
+                      })
                       .map((set) => {
                         const parts = [];
 
                         if (set.set_number) {
-                          parts.push(`Set ${set.set_number}`);
+                          parts.push(workoutSetLabel(set));
                         }
 
                         if (set.weight_used !== null && set.weight_used !== undefined && set.weight_used !== "") {

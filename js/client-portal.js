@@ -42,6 +42,9 @@ const customWorkoutFormats = {
 };
 const warmupExerciseCode = "WARMUP";
 const cardioExerciseCode = "CARDIO";
+const warmUpSetNumberBase = 1000;
+const workingSetType = "working";
+const warmUpSetType = "warm_up";
 const clientDashboardUrl = "client-dashboard.html?v=manual-sessions-1";
 const fitbitOauthStateKey = "fwb_google_health_oauth_state";
 let fitbitConnection = { loaded: false, connected: false };
@@ -2245,10 +2248,45 @@ function repsFromPrescription(prescription) {
   return repTargetsFromPrescription(prescription)[0] || "";
 }
 
-function setRowMarkup(setNumber, repPlaceholder = "") {
+function normalizedSetType(value, setNumber = 0) {
+  if (value === warmUpSetType) {
+    return warmUpSetType;
+  }
+  if (value === workingSetType) {
+    return workingSetType;
+  }
+  return Number(setNumber) > warmUpSetNumberBase ? warmUpSetType : workingSetType;
+}
+
+function warmUpOrdinal(setNumber) {
+  const ordinal = Number(setNumber) - warmUpSetNumberBase;
+  return ordinal > 0 ? ordinal : 1;
+}
+
+function setNumberLabel(setNumber, setType) {
+  return normalizedSetType(setType, setNumber) === warmUpSetType
+    ? `W${warmUpOrdinal(setNumber)}`
+    : String(Number(setNumber) || 1);
+}
+
+function setTypeForRow(row) {
+  return normalizedSetType(row?.dataset.setType, row?.dataset.setNumber);
+}
+
+function setRowMarkup(setNumber, repPlaceholder = "", setType = workingSetType) {
+  const normalizedType = normalizedSetType(setType, setNumber);
+  const label = setNumberLabel(setNumber, normalizedType);
+
   return `
-    <div class="set-row" data-set-row data-set-number="${setNumber}">
-      <span class="set-number">${setNumber}</span>
+    <div class="set-row${normalizedType === warmUpSetType ? " is-warm-up" : ""}" data-set-row data-set-number="${setNumber}" data-set-type="${normalizedType}">
+      <span class="set-number">${label}</span>
+      <div class="set-type-field">
+        <em>Type</em>
+        <select data-set-type-select aria-label="${normalizedType === warmUpSetType ? `Warm-up set ${warmUpOrdinal(setNumber)}` : `Working set ${Number(setNumber) || 1}`} type">
+          <option value="${workingSetType}"${normalizedType === workingSetType ? " selected" : ""}>Working</option>
+          <option value="${warmUpSetType}"${normalizedType === warmUpSetType ? " selected" : ""}>Warm-up</option>
+        </select>
+      </div>
       <label class="set-input-field">
         <em>Weight</em>
         <input type="number" min="0" step="0.5" placeholder="0" data-set-weight />
@@ -2258,7 +2296,7 @@ function setRowMarkup(setNumber, repPlaceholder = "") {
         <em>Reps</em>
         <input type="number" min="0" step="1" placeholder="${escapeHtml(repPlaceholder)}" data-set-reps />
       </label>
-      <button class="set-complete-button" type="button" data-complete-set aria-label="Complete set ${setNumber}" aria-pressed="false">Complete</button>
+      <button class="set-complete-button" type="button" data-complete-set aria-label="Complete ${normalizedType === warmUpSetType ? `warm-up set ${warmUpOrdinal(setNumber)}` : `set ${Number(setNumber) || 1}`}" aria-pressed="false">Complete</button>
     </div>
   `;
 }
@@ -2332,8 +2370,13 @@ function exerciseLogFields(exercise, workoutTitle, options = {}) {
         <input type="date" data-log-date />
       </label>
       <div class="set-table" aria-label="${escapeHtml(exercise.name)} set tracker">
+      <div class="set-type-tools">
+        <button type="button" data-mark-first-warm-up>Mark first 2 warm-up</button>
+        <small>Warm-up sets stay in history but do not count toward working-set progress or RIR.</small>
+      </div>
       <div class="set-header">
         <span>Set</span>
+        <span>Type</span>
         <span>Weight (lbs)</span>
         <span></span>
         <span>Reps</span>
@@ -2926,6 +2969,8 @@ function renderRestTimer() {
   const display = overlay?.querySelector("[data-rest-timer-display]");
   const status = overlay?.querySelector("[data-rest-timer-status]");
   const startButton = overlay?.querySelector("[data-rest-timer-start]");
+  const effortQuestion = overlay?.querySelector(".rest-timer-effort");
+  const isWarmUpSet = setTypeForRow(restTimerSetRow) === warmUpSetType;
 
   syncRestTimerRemaining();
   const isRunning = restTimerEndsAt > 0;
@@ -2938,6 +2983,12 @@ function renderRestTimer() {
   }
   if (startButton) {
     startButton.textContent = isRunning ? "Pause" : restTimerRemainingSeconds === 0 ? "Start again" : "Start";
+  }
+  if (effortQuestion) {
+    effortQuestion.hidden = isWarmUpSet;
+  }
+  if (isWarmUpSet && restTimerSetRow) {
+    delete restTimerSetRow.dataset.repsInReserve;
   }
 
   overlay?.querySelectorAll("[data-rest-timer-preset]").forEach((button) => {
@@ -3501,11 +3552,52 @@ function renderPreviousExerciseWeights(logElement, logs = logsForExerciseDisplay
     ${Array.from(logsByDate.entries()).slice(0, 4).map(([date, dateLogs]) => `
       <span>${escapeHtml(formatLogDate(date))} - ${dateLogs.map((log) => {
         const reps = log.reps ? ` x ${log.reps}` : "";
+        const setLabel = setNumberLabel(log.set_number, log.set_type);
+        const typeLabel = normalizedSetType(log.set_type, log.set_number) === warmUpSetType ? "Warm-up" : "Set";
 
-        return `${escapeHtml(log.weight_used)} lb${escapeHtml(reps)}`;
+        return `${typeLabel} ${setLabel}: ${escapeHtml(log.weight_used)} lb${escapeHtml(reps)}`;
       }).join(", ")}</span>
     `).join("")}
   `;
+}
+
+function savedStrengthSetSpecs(selectedLogs, prescribedSets) {
+  const warmUps = selectedLogs
+    .filter((log) => normalizedSetType(log.set_type, log.set_number) === warmUpSetType)
+    .sort((a, b) => Number(a.set_number || 0) - Number(b.set_number || 0));
+  const workingLogs = selectedLogs
+    .filter((log) => normalizedSetType(log.set_type, log.set_number) !== warmUpSetType)
+    .sort((a, b) => Number(a.set_number || 0) - Number(b.set_number || 0));
+  const highestWorkingSet = workingLogs.reduce((max, log) => Math.max(max, Number(log.set_number || 0)), 0);
+  const workingCount = Math.max(highestWorkingSet, Number(prescribedSets || 0) - warmUps.length, 0);
+
+  return [
+    ...warmUps.map((log, index) => ({
+      setNumber: Number(log.set_number) > warmUpSetNumberBase
+        ? Number(log.set_number)
+        : warmUpSetNumberBase + index + 1,
+      setType: warmUpSetType
+    })),
+    ...Array.from({ length: workingCount }, (_, index) => ({
+      setNumber: index + 1,
+      setType: workingSetType
+    }))
+  ];
+}
+
+function restoreStrengthSetRows(logElement, selectedLogs, prescribedSets) {
+  const rows = logElement?.querySelector("[data-set-rows]");
+
+  if (!rows) {
+    return;
+  }
+
+  const specs = savedStrengthSetSpecs(selectedLogs, prescribedSets);
+  const safeSpecs = specs.length > 0 ? specs : [{ setNumber: 1, setType: workingSetType }];
+
+  rows.innerHTML = safeSpecs
+    .map(({ setNumber, setType }) => setRowMarkup(setNumber, "0", setType))
+    .join("");
 }
 
 function updateExerciseLogField(logElement) {
@@ -3521,9 +3613,6 @@ function updateExerciseLogField(logElement) {
   const selectedDate = dateInput?.value || todayDate();
   const selectedLogs = logs.filter((log) => log.entry_date === selectedDate);
   const prescribedSets = Number(logElement.dataset.prescribedSets || 0);
-  const highestLoggedSet = selectedLogs.reduce((max, log) => (
-    Math.max(max, Number(log.set_number || 0))
-  ), 0);
 
   if (dateInput && !dateInput.value) {
     dateInput.value = todayDate();
@@ -3608,7 +3697,7 @@ function updateExerciseLogField(logElement) {
     return;
   }
 
-  ensureSetRows(logElement, Math.max(prescribedSets, highestLoggedSet));
+  restoreStrengthSetRows(logElement, selectedLogs, prescribedSets);
 
   logElement.querySelectorAll("[data-set-row]").forEach((row) => {
     const setNumber = Number(row.dataset.setNumber || 1);
@@ -3626,7 +3715,7 @@ function updateExerciseLogField(logElement) {
       repsInput.value = selectedLog?.reps ?? "";
     }
 
-    if (selectedLog?.effort_scale === "rir" && Number.isInteger(savedRir) && savedRir >= 0 && savedRir <= 4) {
+    if (setTypeForRow(row) !== warmUpSetType && selectedLog?.effort_scale === "rir" && Number.isInteger(savedRir) && savedRir >= 0 && savedRir <= 4) {
       row.dataset.repsInReserve = String(savedRir);
     } else {
       delete row.dataset.repsInReserve;
@@ -3894,6 +3983,7 @@ function renderClientTrainingLogs() {
 
     supersetGroup.exercises.get(exerciseKey).sets.push({
       set_number: log.set_number,
+      set_type: log.set_type,
       weight_used: log.weight_used,
       reps: log.reps,
       notes: log.notes
@@ -3960,12 +4050,22 @@ function renderClientTrainingLogs() {
                           .filter(Boolean)
                           .join("  |  ")
                         : entry.sets
-                        .sort((a, b) => Number(a.set_number || 0) - Number(b.set_number || 0))
+                        .sort((a, b) => {
+                          const leftWarmUp = normalizedSetType(a.set_type, a.set_number) === warmUpSetType;
+                          const rightWarmUp = normalizedSetType(b.set_type, b.set_number) === warmUpSetType;
+                          if (leftWarmUp !== rightWarmUp) {
+                            return leftWarmUp ? -1 : 1;
+                          }
+                          return Number(a.set_number || 0) - Number(b.set_number || 0);
+                        })
                         .map((set) => {
                           const parts = [];
 
                           if (set.set_number) {
-                            parts.push(`Set ${set.set_number}`);
+                            const isWarmUpSet = normalizedSetType(set.set_type, set.set_number) === warmUpSetType;
+                            parts.push(isWarmUpSet
+                              ? `Warm-up ${setNumberLabel(set.set_number, set.set_type)}`
+                              : `Set ${setNumberLabel(set.set_number, set.set_type)}`);
                           }
 
                           if (set.weight_used !== null && set.weight_used !== undefined && set.weight_used !== "") {
@@ -4065,6 +4165,7 @@ function workoutHistoryCsv(logs = []) {
     "Exercise code",
     "Exercise",
     "Set",
+    "Set type",
     "Weight (lbs)",
     "Reps",
     "Duration (min)",
@@ -4081,7 +4182,10 @@ function workoutHistoryCsv(logs = []) {
       csvSectionForLog(log),
       log.exercise_code || "",
       log.exercise_name || "",
-      log.set_number || "",
+      setNumberLabel(log.set_number, log.set_type),
+      isWarmup || isCardio
+        ? "Activity"
+        : normalizedSetType(log.set_type, log.set_number) === warmUpSetType ? "Warm-up" : "Working",
       isWarmup || isCardio ? "" : log.weight_used ?? "",
       isWarmup || isCardio ? "" : log.reps ?? "",
       isWarmup || isCardio ? log.weight_used ?? "" : "",
@@ -4170,33 +4274,78 @@ function handleClientTrainingLogDateFilter() {
 
 function addSetRow(logElement) {
   const rows = logElement.querySelector("[data-set-rows]");
-  const lastRow = rows?.querySelector("[data-set-row]:last-child");
 
   if (!rows) {
     return;
   }
 
-  const nextSet = lastRow ? Number(lastRow.dataset.setNumber || 0) + 1 : 1;
-  rows.insertAdjacentHTML("beforeend", setRowMarkup(nextSet, "0"));
+  const nextSet = Array.from(rows.querySelectorAll("[data-set-row]"))
+    .filter((row) => setTypeForRow(row) !== warmUpSetType)
+    .length + 1;
+  rows.insertAdjacentHTML("beforeend", setRowMarkup(nextSet, "0", workingSetType));
+  renumberSetRows(logElement);
   syncVisibleSetTarget(logElement);
   updateVisibleSetProgress(logElement);
 }
 
 function renumberSetRows(logElement) {
-  logElement?.querySelectorAll("[data-set-row]").forEach((row, index) => {
-    const setNumber = index + 1;
+  let warmUpIndex = 0;
+  let workingIndex = 0;
+  const rowsContainer = logElement?.querySelector("[data-set-rows]");
+  const currentRows = Array.from(rowsContainer?.querySelectorAll("[data-set-row]") || []);
+  const orderedRows = [
+    ...currentRows.filter((row) => setTypeForRow(row) === warmUpSetType),
+    ...currentRows.filter((row) => setTypeForRow(row) !== warmUpSetType)
+  ];
+
+  orderedRows.forEach((row) => rowsContainer?.appendChild(row));
+
+  orderedRows.forEach((row) => {
+    const setType = setTypeForRow(row);
+    const isWarmUp = setType === warmUpSetType;
+    const setNumber = isWarmUp
+      ? warmUpSetNumberBase + (warmUpIndex += 1)
+      : (workingIndex += 1);
     row.dataset.setNumber = String(setNumber);
-    const numberCell = row.querySelector("span");
+    row.dataset.setType = setType;
+    row.classList.toggle("is-warm-up", isWarmUp);
+    const numberCell = row.querySelector(".set-number");
+    const typeSelect = row.querySelector("[data-set-type-select]");
     const completeButton = row.querySelector("[data-complete-set]");
 
     if (numberCell) {
-      numberCell.textContent = String(setNumber);
+      numberCell.textContent = setNumberLabel(setNumber, setType);
+    }
+
+    if (typeSelect) {
+      typeSelect.value = setType;
+      typeSelect.setAttribute("aria-label", isWarmUp
+        ? `Warm-up set ${warmUpIndex} type`
+        : `Working set ${workingIndex} type`);
     }
 
     if (completeButton) {
-      completeButton.setAttribute("aria-label", `Complete set ${setNumber}`);
+      completeButton.setAttribute("aria-label", isWarmUp
+        ? `Complete warm-up set ${warmUpIndex}`
+        : `Complete set ${workingIndex}`);
+    }
+
+    if (isWarmUp) {
+      delete row.dataset.repsInReserve;
     }
   });
+}
+
+function markFirstTwoSetsWarmUp(logElement) {
+  const firstTwoRows = Array.from(logElement?.querySelectorAll("[data-set-row]") || []).slice(0, 2);
+
+  firstTwoRows.forEach((row) => {
+    row.dataset.setType = warmUpSetType;
+    delete row.dataset.repsInReserve;
+  });
+  renumberSetRows(logElement);
+  syncVisibleSetTarget(logElement);
+  updateVisibleSetProgress(logElement);
 }
 
 function ensureSetRows(logElement, count) {
@@ -4213,22 +4362,33 @@ function ensureSetRows(logElement, count) {
   }
 
   for (let index = existingCount; index < count; index += 1) {
-    rows.insertAdjacentHTML("beforeend", setRowMarkup(index + 1, "0"));
+    rows.insertAdjacentHTML("beforeend", setRowMarkup(index + 1, "0", workingSetType));
   }
+  renumberSetRows(logElement);
 }
 
 function visibleSetTarget(logElement) {
-  const rowCount = logElement?.querySelectorAll("[data-set-row]").length || 0;
+  const rowCount = Array.from(logElement?.querySelectorAll("[data-set-row]") || [])
+    .filter((row) => setTypeForRow(row) !== warmUpSetType)
+    .length;
   const prescribedSets = Number(logElement?.dataset.prescribedSets || 0);
 
   return rowCount || prescribedSets;
 }
 
 function syncVisibleSetTarget(logElement) {
-  const rowCount = logElement?.querySelectorAll("[data-set-row]").length || 0;
+  const rowCount = Array.from(logElement?.querySelectorAll("[data-set-row]") || [])
+    .filter((row) => setTypeForRow(row) !== warmUpSetType)
+    .length;
+  const warmUpButton = logElement?.querySelector("[data-mark-first-warm-up]");
+  const totalRowCount = logElement?.querySelectorAll("[data-set-row]").length || 0;
 
   if (logElement && rowCount > 0) {
     logElement.dataset.prescribedSets = String(rowCount);
+  }
+
+  if (warmUpButton) {
+    warmUpButton.disabled = totalRowCount < 2;
   }
 }
 
@@ -4241,7 +4401,7 @@ function updateVisibleSetProgress(logElement) {
   const setTarget = visibleSetTarget(logElement);
 
   if (progress) {
-    progress.textContent = `${completedSets} / ${setTarget || completedSets || 0} sets completed`;
+    progress.textContent = `${completedSets} / ${setTarget || completedSets || 0} working sets completed`;
   }
 }
 
@@ -4818,7 +4978,7 @@ function setExerciseSkipped(logElement, skipped, options = {}) {
   }
 
   logElement.classList.toggle("is-exercise-skipped", skipped);
-  logElement.querySelectorAll("input, textarea, [data-add-set], [data-delete-last-set], [data-complete-set], [data-log-submit]").forEach((control) => {
+  logElement.querySelectorAll("input, select, textarea, [data-add-set], [data-delete-last-set], [data-mark-first-warm-up], [data-complete-set], [data-log-submit]").forEach((control) => {
     control.disabled = skipped;
   });
 
@@ -4898,6 +5058,7 @@ function handleWorkoutInteractions() {
     const toggle = event.target.closest("[data-exercise-toggle]");
     const addSetButton = event.target.closest("[data-add-set]");
     const deleteLastSetButton = event.target.closest("[data-delete-last-set]");
+    const markFirstWarmUpButton = event.target.closest("[data-mark-first-warm-up]");
     const completeSetButton = event.target.closest("[data-complete-set]");
     const skipExerciseButton = event.target.closest("[data-skip-exercise]");
     const deleteExerciseButton = event.target.closest("[data-delete-exercise]");
@@ -4908,6 +5069,11 @@ function handleWorkoutInteractions() {
     const restTimerStartButton = event.target.closest("[data-rest-timer-start]");
     const restTimerResetButton = event.target.closest("[data-rest-timer-reset]");
     const repsInReserveButton = event.target.closest("[data-reps-in-reserve]");
+
+    if (markFirstWarmUpButton) {
+      markFirstTwoSetsWarmUp(markFirstWarmUpButton.closest("[data-exercise-log]"));
+      return;
+    }
 
     if (completeSetButton) {
       const setRow = completeSetButton.closest("[data-set-row]");
@@ -5066,6 +5232,26 @@ function handleWorkoutInteractions() {
     ) {
       renderPreviousExerciseWeights(logElement);
     }
+  });
+
+  document.addEventListener("change", (event) => {
+    const typeSelect = event.target.closest("[data-set-type-select]");
+
+    if (!typeSelect) {
+      return;
+    }
+
+    const row = typeSelect.closest("[data-set-row]");
+    const logElement = typeSelect.closest("[data-exercise-log]");
+
+    if (!row || !logElement) {
+      return;
+    }
+
+    row.dataset.setType = normalizedSetType(typeSelect.value, row.dataset.setNumber);
+    renumberSetRows(logElement);
+    syncVisibleSetTarget(logElement);
+    updateVisibleSetProgress(logElement);
   });
 
   document.addEventListener("keydown", (event) => {
@@ -5801,6 +5987,7 @@ function rowsForTrainingLog(logElement) {
   return Array.from(logElement.querySelectorAll("[data-set-row]"))
     .map((setRow) => {
       const values = setRowInputValues(setRow);
+      const setType = setTypeForRow(setRow);
 
       return {
         is_logged: isSetRowLogged(setRow),
@@ -5811,9 +5998,10 @@ function rowsForTrainingLog(logElement) {
           exercise_code: logElement.dataset.exerciseCode,
           exercise_name: exerciseName,
           set_number: Number(setRow.dataset.setNumber || 1),
+          set_type: setType,
           weight_used: values.weightRaw === "" ? 0 : values.weightValue,
           reps: values.repsRaw === "" ? null : values.repsValue,
-          ...(setRow.dataset.repsInReserve === undefined ? {} : {
+          ...(setType === warmUpSetType || setRow.dataset.repsInReserve === undefined ? {} : {
             effort_scale: "rir",
             effort_value: Number(setRow.dataset.repsInReserve)
           }),
@@ -5844,6 +6032,7 @@ function isSetRowLogged(setRow) {
 
 function filledSetCount(logElement) {
   return Array.from(logElement.querySelectorAll("[data-set-row]"))
+    .filter((row) => setTypeForRow(row) !== warmUpSetType)
     .filter(isSetRowLogged)
     .length;
 }

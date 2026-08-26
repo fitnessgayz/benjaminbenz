@@ -221,6 +221,8 @@ create table if not exists public.client_workout_logs (
   reps numeric,
   effort_scale text,
   effort_value numeric,
+  set_type text not null default 'working' check (set_type in ('working', 'warm_up', 'drop', 'failure', 'timed')),
+  duration_seconds numeric,
   notes text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
@@ -238,6 +240,12 @@ add column if not exists effort_scale text;
 
 alter table public.client_workout_logs
 add column if not exists effort_value numeric;
+
+alter table public.client_workout_logs
+add column if not exists set_type text not null default 'working';
+
+alter table public.client_workout_logs
+add column if not exists duration_seconds numeric;
 
 alter table public.client_workout_logs
 add column if not exists notes text;
