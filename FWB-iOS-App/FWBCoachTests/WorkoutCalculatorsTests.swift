@@ -112,6 +112,14 @@ final class WorkoutCalculatorsTests: XCTestCase {
         XCTAssertEqual(working.setNumber, 1)
     }
 
+    func testZeroWeightBodyweightSetCountsAsAnEntry() {
+        let exercise = Exercise(code: "BW01", name: "Push-up")
+        let draft = WorkoutSetDraft(exercise: exercise, setNumber: 1, weight: "0", reps: "")
+
+        XCTAssertTrue(draft.containsEntry)
+        XCTAssertEqual(draft.weightValue, 0)
+    }
+
     func testWarmUpsStayOutOfWorkingHistoryMetrics() {
         let records = [
             WorkoutHistoryRecord(

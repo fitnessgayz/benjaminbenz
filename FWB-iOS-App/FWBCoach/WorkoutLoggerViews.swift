@@ -492,9 +492,6 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
             onInsertWarmUps: { plans in
                 insertWarmUps(plans, for: exercise)
             },
-            onMarkFirstTwoWarmUps: {
-                markFirstTwoWarmUps(for: exercise)
-            },
             onSetTypeChanged: { draftID, setType in
                 updateSetType(setType, for: draftID, in: exercise)
             },
@@ -882,28 +879,6 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
                     setType: .warmUp
                 )
             })
-        }
-    }
-
-    private func markFirstTwoWarmUps(for exercise: Exercise) {
-        focusedField = nil
-        let firstTwoIDs = drafts
-            .filter { matches($0, exercise) }
-            .sorted { left, right in
-                if left.isWarmUp != right.isWarmUp { return left.isWarmUp }
-                return left.setNumber < right.setNumber
-            }
-            .prefix(2)
-            .map(\.id)
-
-        withAnimation(.easeOut(duration: 0.18)) {
-            for id in firstTwoIDs {
-                guard let index = drafts.firstIndex(where: { $0.id == id }) else { continue }
-                drafts[index].setType = .warmUp
-                drafts[index].effortScale = nil
-                drafts[index].effort = ""
-            }
-            renumberSets(for: exercise)
         }
     }
 
@@ -1650,7 +1625,6 @@ private struct WorkoutExerciseLogCard: View {
     let onDraftEdited: (UUID) -> Void
     let onSetCompletionChanged: (WorkoutSetDraft, Bool) -> Void
     let onInsertWarmUps: ([WarmUpSetPlan]) -> Void
-    let onMarkFirstTwoWarmUps: () -> Void
     let onSetTypeChanged: (UUID, WorkoutSetType) -> Void
     let onSubstituteExercise: () -> Void
     let onRevertSubstitution: () -> Void
@@ -1690,7 +1664,6 @@ private struct WorkoutExerciseLogCard: View {
         onDraftEdited: @escaping (UUID) -> Void,
         onSetCompletionChanged: @escaping (WorkoutSetDraft, Bool) -> Void,
         onInsertWarmUps: @escaping ([WarmUpSetPlan]) -> Void,
-        onMarkFirstTwoWarmUps: @escaping () -> Void,
         onSetTypeChanged: @escaping (UUID, WorkoutSetType) -> Void,
         onSubstituteExercise: @escaping () -> Void,
         onRevertSubstitution: @escaping () -> Void,
@@ -1723,7 +1696,6 @@ private struct WorkoutExerciseLogCard: View {
         self.onDraftEdited = onDraftEdited
         self.onSetCompletionChanged = onSetCompletionChanged
         self.onInsertWarmUps = onInsertWarmUps
-        self.onMarkFirstTwoWarmUps = onMarkFirstTwoWarmUps
         self.onSetTypeChanged = onSetTypeChanged
         self.onSubstituteExercise = onSubstituteExercise
         self.onRevertSubstitution = onRevertSubstitution
@@ -1835,16 +1807,6 @@ private struct WorkoutExerciseLogCard: View {
                 )
 
                 copyLastWorkoutControl
-
-                if entryStyle == .strength {
-                    Button(action: onMarkFirstTwoWarmUps) {
-                        Label("MARK FIRST 2 WARM-UP", systemImage: "flame.fill")
-                    }
-                    .buttonStyle(FWBSecondaryButtonStyle())
-                    .disabled(exerciseDrafts.count < 2)
-                    .accessibilityHint("Keeps the first two sets in history but excludes them from working-set totals and effort ratings")
-                    .accessibilityIdentifier("workout.markFirstTwoWarmUps.\(accessibilityExerciseID)")
-                }
 
                 if entryStyle == .strength && exercise.supportsBarbellCalculators {
                     calculatorTools
