@@ -2423,11 +2423,11 @@ footer {
   border-top: 0;
 }
 
-.custom-workout-card .exercise-card-summary {
+.workout-entry-card .exercise-card-summary {
   padding-right: 52px;
 }
 
-.custom-workout-card .exercise-card-summary i {
+.workout-entry-card .exercise-card-summary i {
   right: 16px;
 }
 
@@ -3029,6 +3029,11 @@ footer {
   font-weight: 800;
 }
 
+.set-row input::placeholder {
+  color: #92928c;
+  opacity: 1;
+}
+
 .set-row b {
   color: var(--black);
   text-align: center;
@@ -3086,8 +3091,8 @@ footer {
 }
 
 .set-row.is-complete .set-complete-button {
-  color: var(--paper);
-  background: #1fa637;
+  color: #1fa637;
+  background: var(--paper);
   border-color: #1fa637;
 }
 

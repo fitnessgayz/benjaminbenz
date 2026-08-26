@@ -2273,10 +2273,9 @@ function setTypeForRow(row) {
   return normalizedSetType(row?.dataset.setType, row?.dataset.setNumber);
 }
 
-function setRowMarkup(setNumber, repPlaceholder = "", setType = workingSetType) {
+function setRowMarkup(setNumber, repPlaceholder = "", setType = workingSetType, weightPlaceholder = "0") {
   const normalizedType = normalizedSetType(setType, setNumber);
   const label = setNumberLabel(setNumber, normalizedType);
-
   return `
     <div class="set-row${normalizedType === warmUpSetType ? " is-warm-up" : ""}" data-set-row data-set-number="${setNumber}" data-set-type="${normalizedType}">
       <span class="set-number">${label}</span>
@@ -2289,12 +2288,12 @@ function setRowMarkup(setNumber, repPlaceholder = "", setType = workingSetType) 
       </div>
       <label class="set-input-field">
         <em>Weight</em>
-        <input type="number" min="0" step="0.5" placeholder="0" data-set-weight />
+        <input type="number" min="0" step="0.5" placeholder="${escapeHtml(weightPlaceholder)}" data-default-placeholder="${escapeHtml(weightPlaceholder)}" data-set-weight />
       </label>
       <b class="set-times">x</b>
       <label class="set-input-field">
         <em>Reps</em>
-        <input type="number" min="0" step="1" placeholder="${escapeHtml(repPlaceholder)}" data-set-reps />
+        <input type="number" min="0" step="1" placeholder="${escapeHtml(repPlaceholder)}" data-default-placeholder="${escapeHtml(repPlaceholder)}" data-set-reps />
       </label>
       <button class="set-complete-button" type="button" data-complete-set aria-label="Complete ${normalizedType === warmUpSetType ? `warm-up set ${warmUpOrdinal(setNumber)}` : `set ${Number(setNumber) || 1}`}" aria-pressed="false"><span aria-hidden="true">✓</span></button>
     </div>
@@ -2302,12 +2301,9 @@ function setRowMarkup(setNumber, repPlaceholder = "", setType = workingSetType) 
 }
 
 function setRows(exercise) {
-  const setCount = setCountFromPrescription(exercise.prescription);
   const repTargets = repTargetsFromPrescription(exercise.prescription);
 
-  return Array.from({ length: setCount }, (_, index) => (
-    setRowMarkup(index + 1, repTargets[index] || repTargets[0] || "")
-  )).join("");
+  return setRowMarkup(1, repTargets[0] || "");
 }
 
 function exerciseDisplayName(code, name) {
@@ -2337,9 +2333,8 @@ function syncExerciseNamePreview(logElement, nextName) {
 }
 
 function exerciseLogFields(exercise, workoutTitle, options = {}) {
-  const setCount = setCountFromPrescription(exercise.prescription);
+  const setCount = Number(options.setCount) || setCountFromPrescription(exercise.prescription);
   const panelClass = options.panelClass || "exercise-detail";
-  const showSubmit = options.showSubmit !== false;
   const showInlineHeader = Boolean(options.showInlineHeader);
   const suggestionListAttr = options.suggestExerciseNames ? ' list="custom-exercise-suggestions"' : "";
 
@@ -2350,6 +2345,7 @@ function exerciseLogFields(exercise, workoutTitle, options = {}) {
       data-exercise-code="${escapeHtml(exercise.code)}"
       data-exercise-name="${escapeHtml(exercise.name)}"
       data-prescribed-sets="${setCount}"
+      data-set-target-mode="${options.userManagedSets ? "visible" : "prescribed"}"
     >
       ${showInlineHeader ? `
         <div class="superset-exercise-heading">
@@ -2390,7 +2386,6 @@ function exerciseLogFields(exercise, workoutTitle, options = {}) {
         <span>Notes</span>
         <textarea placeholder="Any exercise modifications?" data-log-notes></textarea>
       </label>
-      ${showSubmit ? '<button class="complete-exercise-button" type="button" data-log-submit>Save Exercise</button>' : ""}
       <small data-log-status></small>
       <div class="previous-weights" data-previous-weights>Previous: none</div>
     </div>
@@ -2495,8 +2490,7 @@ function exerciseCard(exercise, workoutTitle, isOpen = false, workoutFocus = "")
   const setCount = setCountFromPrescription(exercise.prescription);
 
   return `
-    <article class="workout-exercise-card${isOpen ? " is-open" : ""}">
-      ${skipControl()}
+    <article class="workout-exercise-card workout-entry-card${isOpen ? " is-open" : ""}">
       <button class="exercise-card-summary" type="button" data-exercise-toggle>
         <span>
           <strong data-exercise-title>${escapeHtml(exerciseDisplayName(exercise.code, exercise.name))}</strong>
@@ -2505,7 +2499,7 @@ function exerciseCard(exercise, workoutTitle, isOpen = false, workoutFocus = "")
         </span>
         <i>›</i>
       </button>
-      ${exerciseLogFields(exercise, workoutTitle, { workoutFocus, showSkipAction: false })}
+      ${exerciseLogFields(exercise, workoutTitle, { workoutFocus })}
     </article>
   `;
 }
@@ -2756,6 +2750,55 @@ function customExerciseCode(index = 0) {
   return `CW${String(index + 1).padStart(2, "0")}`;
 }
 
+function customWorkoutDraftKey() {
+  const programId = String(currentProgram?.id || "").trim();
+  const clientEmail = String(currentProgram?.client_email || activeClientEmail || "").trim().toLowerCase();
+
+  if (!programId && !clientEmail) {
+    return "";
+  }
+
+  return `fwb_custom_workout_draft:${clientEmail || "client"}:${programId || "program"}`;
+}
+
+function readCustomWorkoutDraft() {
+  const key = customWorkoutDraftKey();
+
+  if (!key) {
+    return null;
+  }
+
+  try {
+    const draft = JSON.parse(window.localStorage.getItem(key) || "null");
+    return draft && typeof draft === "object" ? draft : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+function storeCustomWorkoutDraft(draft) {
+  const key = customWorkoutDraftKey();
+
+  if (!key) {
+    return;
+  }
+
+  try {
+    window.localStorage.setItem(key, JSON.stringify({
+      version: 1,
+      updatedAt: new Date().toISOString(),
+      ...draft
+    }));
+  } catch (_) {
+    // Draft persistence is best-effort only.
+  }
+}
+
+function customWorkoutDraftExercises() {
+  const exercises = readCustomWorkoutDraft()?.exercises;
+  return Array.isArray(exercises) ? exercises : [];
+}
+
 function customWorkoutLogs() {
   return trainingLogs.filter((log) => (
     isCustomWorkoutTitle(log.workout_title) &&
@@ -2785,6 +2828,25 @@ function customWorkoutExercises() {
     }
   });
 
+  customWorkoutDraftExercises().forEach((draftExercise, index) => {
+    const code = String(draftExercise?.code || customExerciseCode(index)).trim().toUpperCase();
+    const exerciseName = String(draftExercise?.name || "").trim();
+
+    if (!grouped.has(code)) {
+      grouped.set(code, {
+        code,
+        name: exerciseName,
+        prescription: "Custom sets",
+        rest: ""
+      });
+      return;
+    }
+
+    if (exerciseName) {
+      grouped.get(code).name = exerciseName;
+    }
+  });
+
   const exercises = Array.from(grouped.values()).sort((left, right) => left.code.localeCompare(right.code, undefined, { numeric: true }));
 
   return exercises.length > 0
@@ -2795,6 +2857,165 @@ function customWorkoutExercises() {
       prescription: "Custom sets",
       rest: ""
     }];
+}
+
+function serializeSetRowDraft(row) {
+  const completeButton = row.querySelector("[data-complete-set]");
+
+  return {
+    weight: row.querySelector("[data-set-weight]")?.value || "",
+    reps: row.querySelector("[data-set-reps]")?.value || "",
+    setType: setTypeForRow(row),
+    complete: row.classList.contains("is-complete") || completeButton?.getAttribute("aria-pressed") === "true"
+  };
+}
+
+function serializeCustomExerciseDraft(logElement, index) {
+  if (
+    !logElement ||
+    logElement.dataset.cardioLog !== undefined ||
+    logElement.dataset.warmupLog !== undefined
+  ) {
+    return null;
+  }
+
+  const code = String(logElement.dataset.exerciseCode || customExerciseCode(index)).trim().toUpperCase();
+
+  return {
+    code,
+    name: logElement.querySelector("[data-exercise-name-input]")?.value || logElement.dataset.exerciseName || "",
+    date: logElement.querySelector("[data-log-date]")?.value || "",
+    notes: logElement.querySelector("[data-log-notes]")?.value || "",
+    skipped: logElement.dataset.exerciseSkipped === "true",
+    sets: Array.from(logElement.querySelectorAll("[data-set-row]")).map(serializeSetRowDraft)
+  };
+}
+
+function customWorkoutPanelDraft(panel) {
+  const logElements = Array.from(panel?.querySelectorAll("[data-exercise-log]") || []);
+
+  return {
+    format: normalizeCustomWorkoutFormat(panel?.dataset.customWorkoutFormat || activeCustomWorkoutFormat),
+    exercises: logElements
+      .map((logElement, index) => serializeCustomExerciseDraft(logElement, index))
+      .filter(Boolean)
+  };
+}
+
+function persistCustomWorkoutDraftFromPanel(panel) {
+  if (!panel || !panel.classList.contains("client-workout-panel-custom")) {
+    return;
+  }
+
+  storeCustomWorkoutDraft(customWorkoutPanelDraft(panel));
+}
+
+function persistCustomWorkoutDraftForElement(element) {
+  const panel = element?.closest?.(".client-workout-panel-custom");
+  persistCustomWorkoutDraftFromPanel(panel);
+}
+
+function applyCustomSetDraft(row, draftSet) {
+  const weightInput = row.querySelector("[data-set-weight]");
+  const repsInput = row.querySelector("[data-set-reps]");
+  const typeSelect = row.querySelector("[data-set-type-select]");
+  const completeButton = row.querySelector("[data-complete-set]");
+  const complete = Boolean(draftSet?.complete);
+  const setType = normalizedSetType(draftSet?.setType, row.dataset.setNumber);
+
+  row.dataset.setType = setType;
+  if (typeSelect) {
+    typeSelect.value = setType;
+  }
+
+  if (weightInput) {
+    weightInput.value = draftSet?.weight || "";
+  }
+
+  if (repsInput) {
+    repsInput.value = draftSet?.reps || "";
+  }
+
+  row.classList.toggle("is-complete", complete);
+
+  if (completeButton) {
+    completeButton.setAttribute("aria-pressed", complete ? "true" : "false");
+  }
+}
+
+function applyCustomExerciseDraft(logElement, exerciseDraft) {
+  if (!logElement || !exerciseDraft) {
+    return;
+  }
+
+  const rows = logElement.querySelector("[data-set-rows]");
+  const draftSets = Array.isArray(exerciseDraft.sets) ? exerciseDraft.sets : [];
+  const targetRows = Math.max(draftSets.length, 1);
+  const nameInput = logElement.querySelector("[data-exercise-name-input]");
+  const dateInput = logElement.querySelector("[data-log-date]");
+  const notesInput = logElement.querySelector("[data-log-notes]");
+
+  ensureSetRows(logElement, targetRows);
+
+  if (rows) {
+    Array.from(rows.querySelectorAll("[data-set-row]")).forEach((row, index) => {
+      if (index >= targetRows) {
+        row.remove();
+      }
+    });
+    renumberSetRows(logElement);
+    Array.from(rows.querySelectorAll("[data-set-row]")).forEach((row, index) => {
+      applyCustomSetDraft(row, draftSets[index]);
+    });
+    renumberSetRows(logElement);
+  }
+
+  if (nameInput) {
+    nameInput.value = exerciseDraft.name || "";
+  }
+
+  if (dateInput && exerciseDraft.date) {
+    dateInput.value = exerciseDraft.date;
+  }
+
+  if (notesInput) {
+    notesInput.value = exerciseDraft.notes || "";
+  }
+
+  syncExerciseNamePreview(logElement, exerciseDraft.name || "");
+  setExerciseSkipped(logElement, Boolean(exerciseDraft.skipped), { skipDraft: true });
+  syncVisibleSetTarget(logElement);
+  updateVisibleSetProgress(logElement);
+  renderPreviousExerciseWeights(logElement);
+}
+
+function applyCustomWorkoutDraft(panel) {
+  const draft = readCustomWorkoutDraft();
+  const exercises = Array.isArray(draft?.exercises) ? draft.exercises : [];
+
+  if (!panel || !draft) {
+    return;
+  }
+
+  if (draft.format) {
+    updateCustomWorkoutFormat(panel, draft.format, { skipDraft: true });
+  }
+
+  const draftsByCode = new Map(exercises.map((exercise) => [
+    String(exercise?.code || "").trim().toUpperCase(),
+    exercise
+  ]));
+
+  panel.querySelectorAll("[data-exercise-log]").forEach((logElement) => {
+    const code = String(logElement.dataset.exerciseCode || "").trim().toUpperCase();
+    applyCustomExerciseDraft(logElement, draftsByCode.get(code));
+  });
+
+  syncCustomWorkoutFormatMarkers(panel);
+}
+
+function restoreCustomWorkoutDrafts() {
+  document.querySelectorAll(".client-workout-panel-custom").forEach(applyCustomWorkoutDraft);
 }
 
 function exerciseSuggestionNames() {
@@ -3170,12 +3391,12 @@ function customWorkoutCardMarkup(exercise, workoutTitle, index = 0) {
   const marker = customWorkoutFormatMarker(activeCustomWorkoutFormat, index);
 
   return `
-    <article class="workout-exercise-card custom-workout-card is-open" data-custom-exercise-card>
+    <article class="workout-exercise-card workout-entry-card custom-workout-card is-open" data-custom-exercise-card>
       <button class="exercise-card-summary" type="button" data-exercise-toggle>
         <span>
           <strong data-exercise-title>${escapeHtml(exerciseDisplayName(exercise.code, exerciseTitle))}</strong>
           <em>Log sets, weight, and notes.</em>
-          <small data-set-progress>0 / 3 sets completed</small>
+          <small data-set-progress>0 / 1 sets completed</small>
         </span>
         <i>›</i>
       </button>
@@ -3190,8 +3411,10 @@ function customWorkoutCardMarkup(exercise, workoutTitle, index = 0) {
           rest: exercise.rest || ""
         }, workoutTitle, {
           panelClass: "custom-exercise-log",
-          showSubmit: true,
-          suggestExerciseNames: true
+          showSubmit: false,
+          suggestExerciseNames: true,
+          setCount: 1,
+          userManagedSets: true
         })}
       </div>
     </article>
@@ -3255,7 +3478,7 @@ function syncCustomWorkoutFormatMarkers(panel) {
   });
 }
 
-function updateCustomWorkoutFormat(panel, value) {
+function updateCustomWorkoutFormat(panel, value, options = {}) {
   if (!panel) {
     return;
   }
@@ -3287,6 +3510,9 @@ function updateCustomWorkoutFormat(panel, value) {
   }
 
   syncCustomWorkoutFormatMarkers(panel);
+  if (!options.skipDraft) {
+    persistCustomWorkoutDraftFromPanel(panel);
+  }
 }
 
 function renderClientWorkoutTabs(workouts = []) {
@@ -3523,6 +3749,7 @@ function formatLogDate(value) {
 }
 
 function renderPreviousExerciseWeights(logElement, logs = logsForExerciseDisplay(logElement)) {
+  updateSetHistoryPlaceholders(logElement, logs);
   const previous = logElement.querySelector("[data-previous-weights]");
 
   if (!previous) {
@@ -3557,7 +3784,7 @@ function renderPreviousExerciseWeights(logElement, logs = logsForExerciseDisplay
   `;
 }
 
-function savedStrengthSetSpecs(selectedLogs, prescribedSets) {
+function savedStrengthSetSpecs(selectedLogs) {
   const warmUps = selectedLogs
     .filter((log) => normalizedSetType(log.set_type, log.set_number) === warmUpSetType)
     .sort((a, b) => Number(a.set_number || 0) - Number(b.set_number || 0));
@@ -3565,7 +3792,7 @@ function savedStrengthSetSpecs(selectedLogs, prescribedSets) {
     .filter((log) => normalizedSetType(log.set_type, log.set_number) !== warmUpSetType)
     .sort((a, b) => Number(a.set_number || 0) - Number(b.set_number || 0));
   const highestWorkingSet = workingLogs.reduce((max, log) => Math.max(max, Number(log.set_number || 0)), 0);
-  const workingCount = Math.max(highestWorkingSet, Number(prescribedSets || 0) - warmUps.length, 0);
+  const workingCount = Math.max(highestWorkingSet, 1);
 
   return [
     ...warmUps.map((log, index) => ({
@@ -3581,19 +3808,66 @@ function savedStrengthSetSpecs(selectedLogs, prescribedSets) {
   ];
 }
 
-function restoreStrengthSetRows(logElement, selectedLogs, prescribedSets) {
+function restoreStrengthSetRows(logElement, selectedLogs) {
   const rows = logElement?.querySelector("[data-set-rows]");
 
   if (!rows) {
     return;
   }
 
-  const specs = savedStrengthSetSpecs(selectedLogs, prescribedSets);
-  const safeSpecs = specs.length > 0 ? specs : [{ setNumber: 1, setType: workingSetType }];
+  const defaultReps = rows.querySelector("[data-set-reps]")?.dataset.defaultPlaceholder || "0";
+  const specs = savedStrengthSetSpecs(selectedLogs);
 
-  rows.innerHTML = safeSpecs
-    .map(({ setNumber, setType }) => setRowMarkup(setNumber, "0", setType))
+  rows.innerHTML = specs
+    .map(({ setNumber, setType }) => setRowMarkup(setNumber, defaultReps, setType))
     .join("");
+}
+
+function latestPreviousSetLogs(logs, selectedDate) {
+  const previousDate = logs.reduce((latestDate, log) => {
+    const entryDate = String(log.entry_date || "");
+
+    return entryDate < selectedDate && entryDate > latestDate ? entryDate : latestDate;
+  }, "");
+
+  if (!previousDate) {
+    return [];
+  }
+
+  return logs
+    .filter((log) => log.entry_date === previousDate)
+    .sort((left, right) => Number(left.set_number || 1) - Number(right.set_number || 1));
+}
+
+function historyPlaceholder(value, fallback = "") {
+  return value === null || value === undefined || value === "" ? fallback : String(value);
+}
+
+function updateSetHistoryPlaceholders(logElement, logs = logsForExerciseDisplay(logElement)) {
+  const selectedDate = logElement?.querySelector("[data-log-date]")?.value || todayDate();
+  const previousLogs = latestPreviousSetLogs(logs, selectedDate);
+
+  logElement?.querySelectorAll("[data-set-row]").forEach((row, index) => {
+    const setNumber = Number(row.dataset.setNumber || index + 1);
+    const previousLog = previousLogs.find((log) => Number(log.set_number || 1) === setNumber) ||
+      previousLogs[Math.min(index, Math.max(previousLogs.length - 1, 0))];
+    const weightInput = row.querySelector("[data-set-weight]");
+    const repsInput = row.querySelector("[data-set-reps]");
+
+    if (weightInput) {
+      weightInput.placeholder = historyPlaceholder(
+        previousLog?.weight_used,
+        weightInput.dataset.defaultPlaceholder || "0"
+      );
+    }
+
+    if (repsInput) {
+      repsInput.placeholder = historyPlaceholder(
+        previousLog?.reps,
+        repsInput.dataset.defaultPlaceholder || ""
+      );
+    }
+  });
 }
 
 function updateExerciseLogField(logElement) {
@@ -3608,7 +3882,6 @@ function updateExerciseLogField(logElement) {
   const logs = logsForExerciseDisplay(logElement);
   const selectedDate = dateInput?.value || todayDate();
   const selectedLogs = logs.filter((log) => log.entry_date === selectedDate);
-  const prescribedSets = Number(logElement.dataset.prescribedSets || 0);
 
   if (dateInput && !dateInput.value) {
     dateInput.value = todayDate();
@@ -3693,7 +3966,7 @@ function updateExerciseLogField(logElement) {
     return;
   }
 
-  restoreStrengthSetRows(logElement, selectedLogs, prescribedSets);
+  restoreStrengthSetRows(logElement, selectedLogs);
 
   logElement.querySelectorAll("[data-set-row]").forEach((row) => {
     const setNumber = Number(row.dataset.setNumber || 1);
@@ -3747,6 +4020,7 @@ function populateTrainingLogs(logs) {
     updateExerciseLogField(logElement);
   });
 
+  restoreCustomWorkoutDrafts();
   renderClientTrainingLogs();
   renderClientHomeSummary();
 }
@@ -4268,20 +4542,42 @@ function handleClientTrainingLogDateFilter() {
   });
 }
 
-function addSetRow(logElement) {
+function addSetRow(logElement, options = {}) {
   const rows = logElement.querySelector("[data-set-rows]");
 
   if (!rows) {
     return;
   }
 
-  const nextSet = Array.from(rows.querySelectorAll("[data-set-row]"))
-    .filter((row) => setTypeForRow(row) !== warmUpSetType)
-    .length + 1;
-  rows.insertAdjacentHTML("beforeend", setRowMarkup(nextSet, "0", workingSetType));
+  const workingRows = Array.from(rows.querySelectorAll("[data-set-row]"))
+    .filter((row) => setTypeForRow(row) !== warmUpSetType);
+  const lastRow = workingRows[workingRows.length - 1] || rows.querySelector("[data-set-row]:last-child");
+  const nextSet = workingRows.length + 1;
+  const previousWeight = lastRow?.querySelector("[data-set-weight]")?.value || "";
+  const previousReps = lastRow?.querySelector("[data-set-reps]")?.value || "";
+  const defaultReps = lastRow?.querySelector("[data-set-reps]")?.dataset.defaultPlaceholder || "0";
+
+  rows.insertAdjacentHTML("beforeend", setRowMarkup(nextSet, defaultReps, workingSetType));
+
+  const nextRow = rows.querySelector("[data-set-row]:last-child");
+  const nextWeightInput = nextRow?.querySelector("[data-set-weight]");
+  const nextRepsInput = nextRow?.querySelector("[data-set-reps]");
+
+  if (nextWeightInput && previousWeight) {
+    nextWeightInput.value = previousWeight;
+  }
+
+  if (nextRepsInput && previousReps) {
+    nextRepsInput.value = previousReps;
+  }
+
   renumberSetRows(logElement);
+  updateSetHistoryPlaceholders(logElement);
   syncVisibleSetTarget(logElement);
   updateVisibleSetProgress(logElement);
+  if (!options.skipDraft) {
+    persistCustomWorkoutDraftForElement(logElement);
+  }
 }
 
 function renumberSetRows(logElement) {
@@ -4345,8 +4641,10 @@ function ensureSetRows(logElement, count) {
     return;
   }
 
+  const defaultReps = rows.querySelector("[data-set-reps]")?.dataset.defaultPlaceholder || "0";
+
   for (let index = existingCount; index < count; index += 1) {
-    rows.insertAdjacentHTML("beforeend", setRowMarkup(index + 1, "0", workingSetType));
+    rows.insertAdjacentHTML("beforeend", setRowMarkup(index + 1, defaultReps, workingSetType));
   }
   renumberSetRows(logElement);
 }
@@ -4357,7 +4655,9 @@ function visibleSetTarget(logElement) {
     .length;
   const prescribedSets = Number(logElement?.dataset.prescribedSets || 0);
 
-  return rowCount || prescribedSets;
+  return logElement?.dataset.setTargetMode === "visible"
+    ? rowCount
+    : Math.max(rowCount, prescribedSets);
 }
 
 function syncVisibleSetTarget(logElement) {
@@ -4365,7 +4665,7 @@ function syncVisibleSetTarget(logElement) {
     .filter((row) => setTypeForRow(row) !== warmUpSetType)
     .length;
 
-  if (logElement && rowCount > 0) {
+  if (logElement?.dataset.setTargetMode === "visible" && rowCount > 0) {
     logElement.dataset.prescribedSets = String(rowCount);
   }
 }
@@ -4956,7 +5256,7 @@ function setExerciseSkipped(logElement, skipped, options = {}) {
   }
 
   logElement.classList.toggle("is-exercise-skipped", skipped);
-  logElement.querySelectorAll("input, select, textarea, [data-add-set], [data-delete-last-set], [data-complete-set], [data-log-submit]").forEach((control) => {
+  logElement.querySelectorAll("input, select, textarea, [data-add-set], [data-delete-last-set], [data-complete-set]").forEach((control) => {
     control.disabled = skipped;
   });
 
@@ -4967,7 +5267,9 @@ function setExerciseSkipped(logElement, skipped, options = {}) {
 
   if (options.syncCard !== false && card && logCount <= 1) {
     card.classList.toggle("is-skipped", skipped);
-    card.classList.toggle("is-open", !skipped);
+    if (!skipButton) {
+      card.classList.toggle("is-open", !skipped);
+    }
     const skipInput = card.querySelector("[data-skip-card]");
 
     if (skipInput) {
@@ -4976,6 +5278,9 @@ function setExerciseSkipped(logElement, skipped, options = {}) {
   }
 
   updateVisibleSetProgress(logElement);
+  if (!options.skipDraft) {
+    persistCustomWorkoutDraftForElement(logElement);
+  }
 }
 
 function ensureDefaultCustomExercise(panel) {
@@ -5029,6 +5334,7 @@ function removeExerciseLog(logElement) {
 
   ensureDefaultCustomExercise(panel);
   syncCustomWorkoutFormatMarkers(panel);
+  persistCustomWorkoutDraftFromPanel(panel);
 }
 
 function handleWorkoutInteractions() {
@@ -5049,9 +5355,15 @@ function handleWorkoutInteractions() {
 
     if (completeSetButton) {
       const setRow = completeSetButton.closest("[data-set-row]");
+      const logElement = completeSetButton.closest("[data-exercise-log]");
 
       setRow?.classList.add("is-complete");
       completeSetButton.setAttribute("aria-pressed", "true");
+      if (logElement) {
+        updateVisibleSetProgress(logElement);
+        persistCustomWorkoutDraftForElement(logElement);
+        scheduleTrainingLogAutosave(logElement);
+      }
       resetRestTimer();
       openRestTimer(completeSetButton);
       startOrPauseRestTimer();
@@ -5097,11 +5409,15 @@ function handleWorkoutInteractions() {
       const isSkipped = logElement?.dataset.exerciseSkipped === "true";
 
       setExerciseSkipped(logElement, !isSkipped);
+      scheduleTrainingLogAutosave(logElement);
       return;
     }
 
     if (deleteExerciseButton) {
-      removeExerciseLog(deleteExerciseButton.closest("[data-exercise-log]"));
+      const logElement = deleteExerciseButton.closest("[data-exercise-log]");
+
+      removeExerciseLog(logElement);
+      scheduleTrainingLogAutosave(logElement);
       return;
     }
 
@@ -5144,6 +5460,8 @@ function handleWorkoutInteractions() {
           setRow.querySelector("[data-complete-set]")?.setAttribute("aria-pressed", "false");
 
           updateVisibleSetProgress(logElement);
+          persistCustomWorkoutDraftForElement(logElement);
+          scheduleTrainingLogAutosave(logElement);
           return;
         }
 
@@ -5151,6 +5469,8 @@ function handleWorkoutInteractions() {
         renumberSetRows(logElement);
         syncVisibleSetTarget(logElement);
         updateVisibleSetProgress(logElement);
+        persistCustomWorkoutDraftForElement(logElement);
+        scheduleTrainingLogAutosave(logElement);
       }
     }
 
@@ -5177,6 +5497,7 @@ function handleWorkoutInteractions() {
         }
 
         syncCustomWorkoutFormatMarkers(panel);
+        persistCustomWorkoutDraftFromPanel(panel);
       }
     }
   });
@@ -5184,9 +5505,29 @@ function handleWorkoutInteractions() {
   document.addEventListener("input", (event) => {
     const exerciseNameInput = event.target.closest("[data-exercise-name-input]");
     const setInput = event.target.closest("[data-set-weight], [data-set-reps]");
+    const notesInput = event.target.closest("[data-log-notes]");
+    const timedLogInput = event.target.closest("[data-warmup-duration], [data-cardio-duration], [data-cardio-distance], [data-cardio-calories]");
 
     if (setInput) {
-      updateVisibleSetProgress(setInput.closest("[data-exercise-log]"));
+      const logElement = setInput.closest("[data-exercise-log]");
+
+      updateVisibleSetProgress(logElement);
+      persistCustomWorkoutDraftForElement(logElement);
+      scheduleTrainingLogAutosave(logElement);
+    }
+
+    if (notesInput) {
+      const logElement = notesInput.closest("[data-exercise-log]");
+
+      persistCustomWorkoutDraftForElement(logElement || notesInput);
+      scheduleTrainingLogAutosave(logElement);
+    }
+
+    if (timedLogInput) {
+      const logElement = timedLogInput.closest("[data-exercise-log]");
+
+      persistCustomWorkoutDraftForElement(logElement || timedLogInput);
+      scheduleTrainingLogAutosave(logElement);
     }
 
     if (!exerciseNameInput) {
@@ -5203,6 +5544,19 @@ function handleWorkoutInteractions() {
       logElement.dataset.warmupLog === undefined
     ) {
       renderPreviousExerciseWeights(logElement);
+    }
+    persistCustomWorkoutDraftForElement(logElement);
+    scheduleTrainingLogAutosave(logElement);
+  });
+
+  document.addEventListener("change", (event) => {
+    const dateInput = event.target.closest("[data-log-date]");
+
+    if (dateInput) {
+      const logElement = dateInput.closest("[data-exercise-log]");
+
+      persistCustomWorkoutDraftForElement(logElement || dateInput);
+      scheduleTrainingLogAutosave(logElement);
     }
   });
 
@@ -5224,6 +5578,8 @@ function handleWorkoutInteractions() {
     renumberSetRows(logElement);
     syncVisibleSetTarget(logElement);
     updateVisibleSetProgress(logElement);
+    persistCustomWorkoutDraftForElement(logElement);
+    scheduleTrainingLogAutosave(logElement);
   });
 
   document.addEventListener("keydown", (event) => {
@@ -6039,6 +6395,74 @@ function workoutSectionForButton(button) {
   return button.closest(".client-workout-panel, .today-panel, .lower-panel, .extra-workout-panel");
 }
 
+const trainingLogAutosaveTimers = new WeakMap();
+
+function trainingLogHasAutosavePayload(logElement) {
+  if (!logElement) {
+    return false;
+  }
+
+  if (rowsForTrainingLog(logElement).length > 0) {
+    return true;
+  }
+
+  const dateInput = logElement.querySelector("[data-log-date]");
+  const entryDate = dateInput?.value || todayDate();
+  const workoutTitle = logElement.dataset.workoutTitle || "";
+  const exerciseCode = logElement.dataset.exerciseCode || "";
+
+  if (!activeClientEmail || !entryDate || !workoutTitle || !exerciseCode) {
+    return false;
+  }
+
+  return trainingLogs.some((log) => (
+    String(log.client_email || "").toLowerCase() === String(activeClientEmail).toLowerCase() &&
+    log.entry_date === entryDate &&
+    log.workout_title === workoutTitle &&
+    log.exercise_code === exerciseCode
+  ));
+}
+
+function scheduleTrainingLogAutosave(logElement) {
+  if (!logElement || !supabaseClient || !activeClientEmail || !trainingLogHasAutosavePayload(logElement)) {
+    return;
+  }
+
+  const status = logElement.querySelector("[data-log-status]");
+
+  const existingTimer = trainingLogAutosaveTimers.get(logElement);
+
+  if (existingTimer) {
+    window.clearTimeout(existingTimer);
+  }
+
+  const timer = window.setTimeout(async () => {
+    trainingLogAutosaveTimers.delete(logElement);
+
+    if (!document.body.contains(logElement) || !trainingLogHasAutosavePayload(logElement)) {
+      return;
+    }
+
+    if (logElement.dataset.autosaveInFlight === "true") {
+      scheduleTrainingLogAutosave(logElement);
+      return;
+    }
+
+    logElement.dataset.autosaveInFlight = "true";
+
+    try {
+      await saveTrainingLogRows(null, [logElement], status, {
+        savingMessage: "Autosaving...",
+        successMessage: "Autosaved."
+      });
+    } finally {
+      delete logElement.dataset.autosaveInFlight;
+    }
+  }, 900);
+
+  trainingLogAutosaveTimers.set(logElement, timer);
+}
+
 async function saveTrainingLogRows(button, logElements, status, options = {}) {
   const savingMessage = options.savingMessage || "Saving...";
   const successMessage = options.successMessage || "Saved.";
@@ -6057,7 +6481,9 @@ async function saveTrainingLogRows(button, logElements, status, options = {}) {
     return { saved: false };
   }
 
-  button.disabled = true;
+  if (button) {
+    button.disabled = true;
+  }
   if (status) {
     status.textContent = savingMessage;
   }
@@ -6068,7 +6494,9 @@ async function saveTrainingLogRows(button, logElements, status, options = {}) {
     if (status) {
       status.textContent = "Could not save yet.";
     }
-    button.disabled = false;
+    if (button) {
+      button.disabled = false;
+    }
     return { saved: false, error: deleteError };
   }
 
@@ -6082,14 +6510,18 @@ async function saveTrainingLogRows(button, logElements, status, options = {}) {
       if (status) {
         status.textContent = successMessage;
       }
-      button.disabled = false;
+        if (button) {
+          button.disabled = false;
+        }
       return { saved: true, rows: [] };
     }
 
     if (status) {
       status.textContent = "Enter at least one weight or rep count, warm-up duration, or cardio duration.";
     }
-    button.disabled = false;
+    if (button) {
+      button.disabled = false;
+    }
     return { saved: false };
   }
 
@@ -6102,7 +6534,9 @@ async function saveTrainingLogRows(button, logElements, status, options = {}) {
     if (status) {
       status.textContent = "Could not save yet.";
     }
-    button.disabled = false;
+    if (button) {
+      button.disabled = false;
+    }
     return { saved: false, error };
   }
 
@@ -6113,7 +6547,9 @@ async function saveTrainingLogRows(button, logElements, status, options = {}) {
   if (status) {
     status.textContent = successMessage;
   }
-  button.disabled = false;
+  if (button) {
+    button.disabled = false;
+  }
   return { saved: true, rows: data || rows };
 }
 
@@ -6122,9 +6558,8 @@ async function handleTrainingLogSave() {
     const saveWorkoutButton = event.target.closest("[data-workout-save]");
     const finishWorkoutButton = event.target.closest("[data-workout-finish]");
     const supersetButton = event.target.closest("[data-superset-submit]");
-    const exerciseButton = event.target.closest("[data-log-submit]");
     const workoutButton = saveWorkoutButton || finishWorkoutButton;
-    const button = workoutButton || supersetButton || exerciseButton;
+    const button = workoutButton || supersetButton;
 
     if (!button) {
       return;
@@ -6182,10 +6617,6 @@ async function handleTrainingLogSave() {
       return;
     }
 
-    const logElement = exerciseButton.closest("[data-exercise-log]");
-    const status = logElement?.querySelector("[data-log-status]");
-
-    await saveTrainingLogRows(button, logElement ? [logElement] : [], status);
   });
 }
 
