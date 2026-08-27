@@ -3662,10 +3662,8 @@ function currentExerciseHistoryName(logElement) {
 }
 
 function logsForExerciseDisplay(logElement) {
-  const logs = logsForExercise(logElement.dataset.workoutTitle, logElement.dataset.exerciseCode);
-
   if (!logElement.closest("[data-custom-exercise-card]")) {
-    return logs;
+    return logsForExercise(logElement.dataset.workoutTitle, logElement.dataset.exerciseCode);
   }
 
   const exerciseName = currentExerciseHistoryName(logElement);
@@ -3674,7 +3672,16 @@ function logsForExerciseDisplay(logElement) {
     return [];
   }
 
-  return logs.filter((log) => normalizeExerciseHistoryName(log.exercise_name) === exerciseName);
+  return trainingLogs
+    .filter((log) => (
+      log.workout_title === logElement.dataset.workoutTitle &&
+      normalizeExerciseHistoryName(log.exercise_name) === exerciseName
+    ))
+    .sort((left, right) => {
+      const dateCompare = String(right.entry_date).localeCompare(String(left.entry_date));
+
+      return dateCompare || Number(left.set_number || 1) - Number(right.set_number || 1);
+    });
 }
 
 function parseCardioNotes(notes = "") {
@@ -3865,6 +3872,29 @@ function latestPreviousSetLogs(logs, selectedDate) {
     .sort((left, right) => Number(left.set_number || 1) - Number(right.set_number || 1));
 }
 
+function heaviestPreviousSetLog(logs, selectedDate) {
+  return logs.reduce((heaviestLog, log) => {
+    const rawWeight = log.weight_used;
+    const weight = Number(rawWeight);
+    const isPreviousWorkingSet = String(log.entry_date || "") < selectedDate &&
+      normalizedSetType(log.set_type, log.set_number) !== warmUpSetType;
+
+    if (
+      !isPreviousWorkingSet ||
+      rawWeight === null ||
+      rawWeight === undefined ||
+      rawWeight === "" ||
+      !Number.isFinite(weight)
+    ) {
+      return heaviestLog;
+    }
+
+    return !heaviestLog || weight > Number(heaviestLog.weight_used)
+      ? log
+      : heaviestLog;
+  }, null);
+}
+
 function historyPlaceholder(value, fallback = "") {
   return value === null || value === undefined || value === "" ? fallback : String(value);
 }
@@ -3872,10 +3902,14 @@ function historyPlaceholder(value, fallback = "") {
 function updateSetHistoryPlaceholders(logElement, logs = logsForExerciseDisplay(logElement)) {
   const selectedDate = logElement?.querySelector("[data-log-date]")?.value || todayDate();
   const previousLogs = latestPreviousSetLogs(logs, selectedDate);
+  const customHeaviestLog = logElement?.closest("[data-custom-exercise-card]")
+    ? heaviestPreviousSetLog(logs, selectedDate)
+    : null;
 
   logElement?.querySelectorAll("[data-set-row]").forEach((row, index) => {
     const setNumber = Number(row.dataset.setNumber || index + 1);
-    const previousLog = previousLogs.find((log) => Number(log.set_number || 1) === setNumber) ||
+    const previousLog = customHeaviestLog ||
+      previousLogs.find((log) => Number(log.set_number || 1) === setNumber) ||
       previousLogs[Math.min(index, Math.max(previousLogs.length - 1, 0))];
     const weightInput = row.querySelector("[data-set-weight]");
     const repsInput = row.querySelector("[data-set-reps]");
