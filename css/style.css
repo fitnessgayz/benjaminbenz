@@ -2942,6 +2942,16 @@ footer {
   max-width: 210px;
 }
 
+.exercise-date input[type="date"] {
+  border: 0;
+  background-clip: padding-box;
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+.exercise-date input[type="date"]:focus {
+  box-shadow: inset 0 0 0 1px var(--black);
+}
+
 .set-table {
   display: grid;
   gap: 10px;
