@@ -2310,20 +2310,30 @@ function exerciseDisplayName(code, name) {
   return code ? `${code} ${name}` : name;
 }
 
+function exerciseNameInputForLog(logElement) {
+  return logElement?.querySelector("[data-exercise-name-input]") ||
+    logElement?.closest(".workout-exercise-card")?.querySelector("[data-exercise-name-input]") ||
+    null;
+}
+
 function syncExerciseNamePreview(logElement, nextName) {
   if (!logElement) {
     return;
   }
 
-  const safeName = String(nextName || "").trim() ||
+  const editedName = String(nextName || "").trim();
+  const safeName = editedName ||
     logElement.dataset.exerciseName ||
     (logElement.closest("[data-custom-exercise-card]") ? "Custom exercise" : "");
   const displayName = exerciseDisplayName(logElement.dataset.exerciseCode || "", safeName);
   const card = logElement.closest(".workout-exercise-card");
   const summaryTitle = card?.querySelector("[data-exercise-title]");
+  const summaryTitleName = summaryTitle?.querySelector("[data-exercise-title-name]");
   const detailTitle = logElement.querySelector("[data-exercise-heading]");
 
-  if (summaryTitle) {
+  if (summaryTitleName) {
+    summaryTitleName.value = editedName;
+  } else if (summaryTitle) {
     summaryTitle.textContent = displayName;
   }
 
@@ -2354,11 +2364,13 @@ function exerciseLogFields(exercise, workoutTitle, options = {}) {
           <small data-set-progress>0 / ${setCount} sets completed</small>
         </div>
       ` : ""}
-      <label class="exercise-name-field">
-        <span>Exercise</span>
-        <input type="text" value="${escapeHtml(exercise.name)}" placeholder="Type or search any exercise name"${suggestionListAttr} data-exercise-name-input />
-        ${options.suggestExerciseNames ? '<small class="manual-exercise-hint">Choose a suggestion or type your own name or short description. Exact wording is not required.</small>' : ""}
-      </label>
+      ${options.showExerciseNameField === false ? "" : `
+        <label class="exercise-name-field">
+          <span>Exercise</span>
+          <input type="text" value="${escapeHtml(exercise.name)}" placeholder="Type or search any exercise name"${suggestionListAttr} data-exercise-name-input />
+          ${options.suggestExerciseNames ? '<small class="manual-exercise-hint">Choose a suggestion or type your own name or short description. Exact wording is not required.</small>' : ""}
+        </label>
+      `}
       ${exerciseLogActions({ showSkip: options.showSkipAction !== false })}
       ${exerciseVideoMarkup(exercise)}
       <label class="exercise-date">
@@ -2883,7 +2895,7 @@ function serializeCustomExerciseDraft(logElement, index) {
 
   return {
     code,
-    name: logElement.querySelector("[data-exercise-name-input]")?.value || logElement.dataset.exerciseName || "",
+    name: exerciseNameInputForLog(logElement)?.value || logElement.dataset.exerciseName || "",
     date: logElement.querySelector("[data-log-date]")?.value || "",
     notes: logElement.querySelector("[data-log-notes]")?.value || "",
     skipped: logElement.dataset.exerciseSkipped === "true",
@@ -2951,7 +2963,7 @@ function applyCustomExerciseDraft(logElement, exerciseDraft) {
   const rows = logElement.querySelector("[data-set-rows]");
   const draftSets = Array.isArray(exerciseDraft.sets) ? exerciseDraft.sets : [];
   const targetRows = Math.max(draftSets.length, 1);
-  const nameInput = logElement.querySelector("[data-exercise-name-input]");
+  const nameInput = exerciseNameInputForLog(logElement);
   const dateInput = logElement.querySelector("[data-log-date]");
   const notesInput = logElement.querySelector("[data-log-notes]");
 
@@ -3392,18 +3404,28 @@ function customWorkoutCardMarkup(exercise, workoutTitle, index = 0) {
 
   return `
     <article class="workout-exercise-card workout-entry-card custom-workout-card is-open" data-custom-exercise-card>
-      <button class="exercise-card-summary" type="button" data-exercise-toggle>
+      <div class="exercise-card-summary custom-workout-card-summary">
         <span>
-          <strong data-exercise-title>${escapeHtml(exerciseDisplayName(exercise.code, exerciseTitle))}</strong>
+          <span class="status-pill" data-custom-workout-format-marker>${escapeHtml(marker)}</span>
+          <strong class="custom-workout-editable-title" data-exercise-title>
+            <span class="custom-workout-exercise-code">${escapeHtml(exercise.code)}</span>
+            <input
+              type="text"
+              value="${escapeHtml(exerciseName)}"
+              placeholder="${escapeHtml(exerciseTitle)}"
+              list="custom-exercise-suggestions"
+              aria-label="Exercise ${index + 1} name"
+              autocomplete="off"
+              data-exercise-title-name
+              data-exercise-name-input
+            />
+          </strong>
           <em>Log sets, weight, and notes.</em>
           <small data-set-progress>0 / 1 sets completed</small>
         </span>
-        <i>›</i>
-      </button>
+        <button class="custom-workout-card-toggle" type="button" data-exercise-toggle aria-label="Toggle exercise ${index + 1}"><i>›</i></button>
+      </div>
       <div class="exercise-detail custom-workout-detail">
-        <div class="custom-workout-card-actions">
-          <span class="status-pill" data-custom-workout-format-marker>${escapeHtml(marker)}</span>
-        </div>
         ${exerciseLogFields({
           code: exercise.code,
           name: exerciseName,
@@ -3413,6 +3435,7 @@ function customWorkoutCardMarkup(exercise, workoutTitle, index = 0) {
           panelClass: "custom-exercise-log",
           showSubmit: false,
           suggestExerciseNames: true,
+          showExerciseNameField: false,
           setCount: 1,
           userManagedSets: true
         })}
@@ -3629,7 +3652,7 @@ function normalizeExerciseHistoryName(value) {
 
 function currentExerciseHistoryName(logElement) {
   return normalizeExerciseHistoryName(
-    logElement?.querySelector("[data-exercise-name-input]")?.value ||
+    exerciseNameInputForLog(logElement)?.value ||
     logElement?.dataset.exerciseName ||
     ""
   );
@@ -3872,7 +3895,7 @@ function updateSetHistoryPlaceholders(logElement, logs = logsForExerciseDisplay(
 
 function updateExerciseLogField(logElement) {
   const dateInput = logElement.querySelector("[data-log-date]");
-  const exerciseNameInput = logElement.querySelector("[data-exercise-name-input]");
+  const exerciseNameInput = exerciseNameInputForLog(logElement);
   const notesInput = logElement.querySelector("[data-log-notes]");
   const previous = logElement.querySelector("[data-previous-weights]");
   const card = logElement.closest(".workout-exercise-card");
@@ -5259,6 +5282,10 @@ function setExerciseSkipped(logElement, skipped, options = {}) {
   logElement.querySelectorAll("input, select, textarea, [data-add-set], [data-delete-last-set], [data-complete-set]").forEach((control) => {
     control.disabled = skipped;
   });
+  const exerciseNameInput = exerciseNameInputForLog(logElement);
+  if (exerciseNameInput) {
+    exerciseNameInput.disabled = skipped;
+  }
 
   if (skipButton) {
     skipButton.textContent = skipped ? "Use" : "Skip";
@@ -5493,7 +5520,7 @@ function handleWorkoutInteractions() {
 
         if (newLogElement) {
           updateExerciseLogField(newLogElement);
-          newLogElement.querySelector("[data-exercise-name-input]")?.focus();
+          exerciseNameInputForLog(newLogElement)?.focus();
         }
 
         syncCustomWorkoutFormatMarkers(panel);
@@ -5534,7 +5561,8 @@ function handleWorkoutInteractions() {
       return;
     }
 
-    const logElement = exerciseNameInput.closest("[data-exercise-log]");
+    const logElement = exerciseNameInput.closest("[data-exercise-log]") ||
+      exerciseNameInput.closest(".workout-exercise-card")?.querySelector("[data-exercise-log]");
 
     syncExerciseNamePreview(logElement, exerciseNameInput.value);
 
@@ -6268,7 +6296,7 @@ function rowsForTrainingLog(logElement) {
   }
 
   const notes = logElement.querySelector("[data-log-notes]")?.value || "";
-  const exerciseName = logElement.querySelector("[data-exercise-name-input]")?.value?.trim() || logElement.dataset.exerciseName;
+  const exerciseName = exerciseNameInputForLog(logElement)?.value?.trim() || logElement.dataset.exerciseName;
 
   if (logElement.dataset.cardioLog !== undefined) {
     const duration = Number(logElement.querySelector("[data-cardio-duration]")?.value || 0);
@@ -6366,7 +6394,7 @@ function filledSetCount(logElement) {
 }
 
 function currentExerciseLabel(logElement) {
-  const editedName = logElement?.querySelector("[data-exercise-name-input]")?.value?.trim();
+  const editedName = exerciseNameInputForLog(logElement)?.value?.trim();
   return editedName || logElement?.dataset.exerciseName || "";
 }
 

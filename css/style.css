@@ -2431,14 +2431,6 @@ footer {
   right: 16px;
 }
 
-.custom-workout-card-actions {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
 .custom-exercise-log {
   display: grid;
   gap: 16px;
@@ -6391,13 +6383,11 @@ textarea:focus {
     display: grid;
   }
 
-  .custom-workout-header,
-  .custom-workout-card-actions {
+  .custom-workout-header {
     display: grid;
   }
 
-  .custom-workout-header .button,
-  .custom-workout-card-actions .button {
+  .custom-workout-header .button {
     width: 100%;
   }
 
@@ -7955,5 +7945,113 @@ textarea,
   .coach-admin-page :where(.panel-heading h1, .panel-heading h2, .admin-section-heading h2, .nutrition-panel h2, .nutrition-editor-card h2, .workout-title, .client-dashboard-title) {
     font-size: clamp(1.55rem, 9vw, 2.3rem) !important;
     line-height: .98 !important;
+  }
+}
+
+/* Custom exercise title editing lives in the card header to avoid a duplicate name field. */
+.custom-workout-card-summary {
+  cursor: default;
+}
+
+.custom-workout-card-summary > span {
+  display: grid;
+  gap: 5px;
+}
+
+.custom-workout-card-summary .status-pill {
+  width: fit-content;
+  margin-bottom: 5px;
+}
+
+.custom-workout-editable-title {
+  display: flex !important;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  margin-bottom: 0 !important;
+}
+
+.custom-workout-exercise-code {
+  flex: 0 0 auto;
+}
+
+.custom-workout-editable-title input {
+  width: 100%;
+  min-width: 0;
+  min-height: 34px;
+  padding: 3px 6px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--black);
+  font: inherit;
+  font-weight: inherit;
+}
+
+.custom-workout-editable-title input:hover,
+.custom-workout-editable-title input:focus {
+  border-color: var(--line);
+  background: #fbfbf8;
+  outline: none;
+}
+
+.custom-workout-card-toggle {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  display: grid;
+  width: 38px;
+  height: 38px;
+  min-height: 38px;
+  padding: 0;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: var(--black);
+  cursor: pointer;
+  transform: translateY(-50%);
+}
+
+.custom-workout-card-toggle i {
+  position: static;
+  display: block;
+  line-height: 1;
+  transform: none;
+}
+
+.custom-workout-card.is-open .custom-workout-card-toggle i {
+  transform: rotate(90deg);
+}
+
+@media (max-width: 760px) {
+  .dashboard-page .custom-workout-card > .custom-workout-card-summary,
+  .coach-admin-page .custom-workout-card > .custom-workout-card-summary {
+    padding: 12px 56px 12px 12px !important;
+  }
+
+  .dashboard-page .custom-workout-card .custom-workout-card-toggle,
+  .coach-admin-page .custom-workout-card .custom-workout-card-toggle {
+    position: absolute !important;
+    top: 50% !important;
+    right: 10px !important;
+    width: 38px !important;
+    inline-size: 38px !important;
+    max-width: 38px !important;
+    max-inline-size: 38px !important;
+    min-width: 38px !important;
+    min-height: 38px !important;
+    padding: 0 !important;
+    transform: translateY(-50%) !important;
+  }
+
+  .dashboard-page .custom-workout-card .custom-workout-card-toggle i,
+  .coach-admin-page .custom-workout-card .custom-workout-card-toggle i {
+    position: static !important;
+    transform: none !important;
+  }
+
+  .dashboard-page .custom-workout-card.is-open .custom-workout-card-toggle i,
+  .coach-admin-page .custom-workout-card.is-open .custom-workout-card-toggle i {
+    transform: rotate(90deg) !important;
   }
 }
