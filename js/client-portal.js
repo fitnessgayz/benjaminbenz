@@ -2321,7 +2321,8 @@ function syncExerciseNamePreview(logElement, nextName) {
     return;
   }
 
-  const editedName = String(nextName || "").trim();
+  const rawName = String(nextName || "");
+  const editedName = rawName.trim();
   const safeName = editedName ||
     logElement.dataset.exerciseName ||
     (logElement.closest("[data-custom-exercise-card]") ? "Custom exercise" : "");
@@ -2332,7 +2333,9 @@ function syncExerciseNamePreview(logElement, nextName) {
   const detailTitle = logElement.querySelector("[data-exercise-heading]");
 
   if (summaryTitleName) {
-    summaryTitleName.value = editedName;
+    if (summaryTitleName.value !== rawName) {
+      summaryTitleName.value = rawName;
+    }
   } else if (summaryTitle) {
     summaryTitle.textContent = displayName;
   }
