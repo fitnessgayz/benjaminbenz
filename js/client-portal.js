@@ -6427,6 +6427,7 @@ function workoutSectionForButton(button) {
 }
 
 const trainingLogAutosaveTimers = new WeakMap();
+const trainingLogAutosaveDelayMs = 10000;
 
 function trainingLogHasAutosavePayload(logElement) {
   if (!logElement) {
@@ -6489,7 +6490,7 @@ function scheduleTrainingLogAutosave(logElement) {
     } finally {
       delete logElement.dataset.autosaveInFlight;
     }
-  }, 900);
+  }, trainingLogAutosaveDelayMs);
 
   trainingLogAutosaveTimers.set(logElement, timer);
 }
