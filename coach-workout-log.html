@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Coach Workout Logger | Fitness with Benjamin</title>
+  <meta name="description" content="Private coach-only workout logger for Fitness with Benjamin." />
+  <meta name="robots" content="noindex, nofollow, noarchive" />
+  <link rel="shortcut icon" href="/favicon.ico" />
+  <link rel="icon" href="/favicon.ico" sizes="any" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+  <link rel="apple-touch-icon" href="/fwb-home-icon-180.png" />
+  <meta name="theme-color" content="#050505" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css?v=coach-workout-page-1" />
+</head>
+<body class="dashboard-page coach-workout-log-page">
+  <header class="site-header dashboard-header">
+    <a class="brand" href="index.html#top" aria-label="Fitness with Benjamin home">
+      <span>FWB</span>
+      <strong>Fitness with Benjamin</strong>
+    </a>
+    <div class="header-actions">
+      <a class="login-link" href="coach-admin.html">Coach Admin</a>
+      <button class="login-link is-current sign-out-button" type="button" data-coach-workout-sign-out hidden>Sign Out</button>
+    </div>
+  </header>
+
+  <main class="admin-shell coach-workout-log-shell">
+    <section class="dashboard-hero coach-workout-log-hero" aria-labelledby="coach-workout-page-title">
+      <div>
+        <p class="kicker">Coach only</p>
+        <h1 id="coach-workout-page-title">Session workout logger</h1>
+        <p>Record a client’s exercises after your session and save them directly to their Custom workout history.</p>
+      </div>
+      <a class="button button-ghost" href="coach-admin.html">Back to Coach Admin</a>
+    </section>
+
+    <section class="admin-card coach-workout-access-status" id="coach-workout-access-status" role="status">
+      Confirming coach access…
+    </section>
+
+    <form class="coach-workout-logger" id="coach-workout-log-form" hidden>
+      <section class="admin-card coach-workout-session-details" aria-labelledby="coach-workout-session-title">
+        <div class="admin-section-heading compact-heading">
+          <div>
+            <p class="kicker">Session</p>
+            <h2 id="coach-workout-session-title">Workout details</h2>
+          </div>
+          <span class="status-pill">Private</span>
+        </div>
+        <div class="coach-workout-session-grid">
+          <label>
+            Client
+            <select id="coach-workout-client" required autocomplete="off">
+              <option value="">Choose a client</option>
+            </select>
+          </label>
+          <label>
+            Workout date
+            <input type="date" id="coach-workout-date" required />
+          </label>
+        </div>
+        <fieldset class="coach-workout-format-fieldset">
+          <legend>Workout format</legend>
+          <div class="coach-workout-format-options">
+            <label>
+              <input type="radio" name="coach_workout_format" value="single" checked required />
+              <span><strong>Straight sets</strong><small>Complete one exercise at a time.</small></span>
+            </label>
+            <label>
+              <input type="radio" name="coach_workout_format" value="superset" required />
+              <span><strong>Superset</strong><small>Alternate paired exercises.</small></span>
+            </label>
+            <label>
+              <input type="radio" name="coach_workout_format" value="circuit" required />
+              <span><strong>Circuit</strong><small>Move through every station each round.</small></span>
+            </label>
+          </div>
+        </fieldset>
+      </section>
+
+      <section class="admin-card coach-workout-exercise-section" aria-labelledby="coach-workout-exercises-title">
+        <div class="admin-section-heading">
+          <div>
+            <p class="kicker">Required</p>
+            <h2 id="coach-workout-exercises-title">Exercises, reps, and weight</h2>
+          </div>
+          <button class="button button-ghost" type="button" id="coach-workout-add-exercise">Add exercise</button>
+        </div>
+        <p class="coach-workout-field-guide">Use one number for every set, or commas when sets differ—for example, <strong>45, 75, 75</strong>.</p>
+        <datalist id="coach-workout-exercise-suggestions"></datalist>
+        <div class="coach-workout-exercise-list" id="coach-workout-exercises" aria-live="polite"></div>
+      </section>
+
+      <section class="admin-card coach-workout-submit-panel">
+        <p id="coach-workout-status" role="status">Choose a client and add the exercises completed today.</p>
+        <div>
+          <button class="button button-ghost" type="button" id="coach-workout-reset">Clear form</button>
+          <button class="button button-dark" type="submit" id="coach-workout-save">Save to Custom workout</button>
+        </div>
+      </section>
+    </form>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase-config.js?v=client-session-link-1"></script>
+  <script src="js/coach-workout-log.js?v=coach-workout-page-1"></script>
+</body>
+</html>

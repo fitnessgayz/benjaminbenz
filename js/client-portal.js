@@ -6448,7 +6448,10 @@ async function handleCoachPortalLogin() {
       return;
     }
 
-    window.location.href = "coach-admin.html?v=invite-list-layout-fix-1";
+    const returnTo = new URLSearchParams(window.location.search).get("return_to");
+    const isSafeLocalReturn = returnTo && returnTo.startsWith("/") && !returnTo.startsWith("//");
+
+    window.location.href = isSafeLocalReturn ? returnTo : "coach-admin.html?v=invite-list-layout-fix-1";
   });
 }
 
