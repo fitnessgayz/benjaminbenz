@@ -2286,12 +2286,14 @@ function setTypeForRow(row) {
 function setRowMarkup(setNumber, repPlaceholder = "", setType = workingSetType, weightPlaceholder = "0") {
   const normalizedType = normalizedSetType(setType, setNumber);
   const ordinal = warmUpOrdinal(setNumber);
-  const label = normalizedType === warmUpSetType ? (ordinal === 1 ? "W" : `W${ordinal}`) : String(Number(setNumber) || 1);
+  const isWarmUp = normalizedType === warmUpSetType;
+  const label = isWarmUp ? "" : String(Number(setNumber) || 1);
+  const labelAria = isWarmUp ? `Warm-up set ${ordinal} label` : `Set label ${label}`;
   return `
     <div class="set-row${normalizedType === warmUpSetType ? " is-warm-up" : ""}" data-set-row data-set-number="${setNumber}" data-set-type="${normalizedType}">
       <label class="set-label-field">
         <em>Set</em>
-        <input type="text" value="${label}" maxlength="3" inputmode="text" autocomplete="off" data-set-label aria-label="Set label ${label}" />
+        <input type="text" value="${label}" maxlength="3" inputmode="text" autocomplete="off" data-set-label aria-label="${labelAria}" />
       </label>
       <label class="set-input-field">
         <em>Weight</em>
@@ -3004,7 +3006,9 @@ function applyCustomSetDraft(row, draftSet) {
   const setType = normalizedSetType(draftSet?.setType, row.dataset.setNumber);
 
   row.dataset.setType = setType;
-  if (labelInput && draftSet?.label) {
+  if (labelInput && setType === warmUpSetType) {
+    labelInput.value = "";
+  } else if (labelInput && draftSet?.label) {
     labelInput.value = draftSet.label;
   }
 
@@ -5320,11 +5324,14 @@ function addSetRow(logElement, options = {}) {
 function updateSetTypeFromLabel(row) {
   const labelInput = row?.querySelector("[data-set-label]");
   const normalizedLabel = String(labelInput?.value || "").trim().toUpperCase();
+  const wasWarmUp = setTypeForRow(row) === warmUpSetType;
 
   if (labelInput) {
     labelInput.value = normalizedLabel.replace(/[^W0-9]/g, "").slice(0, 3);
   }
-  row.dataset.setType = normalizedLabel.startsWith("W") ? warmUpSetType : workingSetType;
+  row.dataset.setType = normalizedLabel.startsWith("W") || (!normalizedLabel && wasWarmUp)
+    ? warmUpSetType
+    : workingSetType;
 }
 
 function renumberSetRows(logElement) {
@@ -5351,11 +5358,11 @@ function renumberSetRows(logElement) {
     row.dataset.setType = setType;
     row.classList.toggle("is-warm-up", isWarmUp);
     const labelInput = row.querySelector("[data-set-label]");
-    const setLabel = isWarmUp ? (warmUpIndex === 1 ? "W" : `W${warmUpIndex}`) : String(workingIndex);
+    const setLabel = isWarmUp ? "" : String(workingIndex);
 
     if (labelInput) {
       labelInput.value = setLabel;
-      labelInput.setAttribute("aria-label", `Set label ${setLabel}`);
+      labelInput.setAttribute("aria-label", isWarmUp ? `Warm-up set ${warmUpIndex} label` : `Set label ${setLabel}`);
     }
 
     const friendlyName = isWarmUp ? `warm-up set ${warmUpIndex}` : `set ${workingIndex}`;
