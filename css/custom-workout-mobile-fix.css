@@ -33,7 +33,32 @@
 
   .dashboard-page .custom-workout-card-marker-row,
   .coach-admin-page .custom-workout-card-marker-row {
-    padding-right: 44px !important;
+    display: inline-flex !important;
+    width: fit-content !important;
+    inline-size: fit-content !important;
+    max-width: calc(100% - 44px) !important;
+    padding-right: 0 !important;
+    align-items: center !important;
+    gap: 8px !important;
+  }
+
+  .dashboard-page .custom-workout-card-marker-row .status-pill,
+  .coach-admin-page .custom-workout-card-marker-row .status-pill {
+    flex: 0 0 auto !important;
+  }
+
+  .dashboard-page .custom-workout-delete-icon,
+  .coach-admin-page .custom-workout-delete-icon {
+    display: grid !important;
+    flex: 0 0 36px !important;
+    width: 36px !important;
+    inline-size: 36px !important;
+    min-width: 36px !important;
+    max-width: 36px !important;
+    height: 36px !important;
+    min-height: 36px !important;
+    padding: 7px !important;
+    place-items: center !important;
   }
 
   .dashboard-page .custom-workout-card .custom-workout-card-toggle,
@@ -41,5 +66,35 @@
     top: 10px !important;
     right: 8px !important;
     transform: none !important;
+  }
+
+  .dashboard-page .custom-workout-card .set-header,
+  .coach-admin-page .custom-workout-card .set-header {
+    display: grid !important;
+    grid-template-columns: minmax(34px, .45fr) minmax(62px, 1fr) minmax(54px, .82fr) minmax(44px, .58fr) 44px !important;
+    gap: 4px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    padding: 0 !important;
+    font-size: .58rem !important;
+  }
+
+  .dashboard-page .custom-workout-card .set-header > span,
+  .coach-admin-page .custom-workout-card .set-header > span {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    text-align: center !important;
+    white-space: nowrap !important;
+    overflow-wrap: normal !important;
+    word-break: normal !important;
+  }
+
+  .dashboard-page .custom-workout-card .set-input-field em,
+  .coach-admin-page .custom-workout-card .set-input-field em,
+  .dashboard-page .custom-workout-card .set-rir-button span,
+  .coach-admin-page .custom-workout-card .set-rir-button span {
+    display: none !important;
   }
 }
