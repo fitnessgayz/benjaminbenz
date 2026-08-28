@@ -60,6 +60,8 @@ let restTimerReturnFocus = null;
 let restTimerSetRow = null;
 let workoutElapsedTimerState = null;
 let workoutElapsedTimerIntervalId = null;
+let activeRirButton = null;
+let pendingRirValue = null;
 
 function isCoachPortalEmail(email) {
   return coachPortalEmails.includes(String(email || "").toLowerCase());
@@ -2279,27 +2281,32 @@ function setTypeForRow(row) {
 
 function setRowMarkup(setNumber, repPlaceholder = "", setType = workingSetType, weightPlaceholder = "0") {
   const normalizedType = normalizedSetType(setType, setNumber);
-  const label = setNumberLabel(setNumber, normalizedType);
+  const ordinal = warmUpOrdinal(setNumber);
+  const label = normalizedType === warmUpSetType ? (ordinal === 1 ? "W" : `W${ordinal}`) : String(Number(setNumber) || 1);
   return `
     <div class="set-row${normalizedType === warmUpSetType ? " is-warm-up" : ""}" data-set-row data-set-number="${setNumber}" data-set-type="${normalizedType}">
-      <span class="set-number">${label}</span>
-      <div class="set-type-field">
-        <em>Type</em>
-        <select data-set-type-select aria-label="${normalizedType === warmUpSetType ? `Warm-up set ${warmUpOrdinal(setNumber)}` : `Working set ${Number(setNumber) || 1}`} type">
-          <option value="${workingSetType}"${normalizedType === workingSetType ? " selected" : ""}>Working</option>
-          <option value="${warmUpSetType}"${normalizedType === warmUpSetType ? " selected" : ""}>Warm-up</option>
-        </select>
-      </div>
+      <label class="set-label-field">
+        <em>Set</em>
+        <input type="text" value="${label}" maxlength="3" inputmode="text" autocomplete="off" data-set-label aria-label="Set label ${label}" />
+      </label>
       <label class="set-input-field">
         <em>Weight</em>
         <input type="number" min="0" step="0.5" placeholder="${escapeHtml(weightPlaceholder)}" data-default-placeholder="${escapeHtml(weightPlaceholder)}" data-set-weight />
       </label>
-      <b class="set-times">x</b>
       <label class="set-input-field">
         <em>Reps</em>
         <input type="number" min="0" step="1" placeholder="${escapeHtml(repPlaceholder)}" data-default-placeholder="${escapeHtml(repPlaceholder)}" data-set-reps />
       </label>
-      <button class="set-complete-button" type="button" data-complete-set aria-label="Complete ${normalizedType === warmUpSetType ? `warm-up set ${warmUpOrdinal(setNumber)}` : `set ${Number(setNumber) || 1}`}" aria-pressed="false"><span aria-hidden="true">✓</span></button>
+      <button class="set-rir-button" type="button" data-set-rir aria-label="Choose reps in reserve for ${normalizedType === warmUpSetType ? `warm-up set ${ordinal}` : `set ${Number(setNumber) || 1}`}">
+        <span>RIR</span>
+        <strong data-set-rir-value>—</strong>
+      </button>
+      <button class="set-rest-button" type="button" data-set-rest aria-label="Start rest timer after ${normalizedType === warmUpSetType ? `warm-up set ${ordinal}` : `set ${Number(setNumber) || 1}`}">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="12" r="8.5"></circle>
+          <path d="M12 7.5v5l3.5 2"></path>
+        </svg>
+      </button>
     </div>
   `;
 }
@@ -2354,6 +2361,9 @@ function exerciseLogFields(exercise, workoutTitle, options = {}) {
   const panelClass = options.panelClass || "exercise-detail";
   const showInlineHeader = Boolean(options.showInlineHeader);
   const suggestionListAttr = options.suggestExerciseNames ? ' list="custom-exercise-suggestions"' : "";
+  const dateMarkup = options.showDate === false
+    ? `<input type="hidden" value="${todayDate()}" data-log-date />`
+    : '<label class="exercise-date"><span>Date</span><input type="date" data-log-date /></label>';
 
   return `
     <div class="${panelClass}"
@@ -2380,18 +2390,14 @@ function exerciseLogFields(exercise, workoutTitle, options = {}) {
       `}
       ${options.showActions === false ? "" : exerciseLogActions({ showSkip: options.showSkipAction !== false })}
       ${exerciseVideoMarkup(exercise)}
-      <label class="exercise-date">
-        <span>Date</span>
-        <input type="date" data-log-date />
-      </label>
+      ${dateMarkup}
       <div class="set-table" aria-label="${escapeHtml(exercise.name)} set tracker">
       <div class="set-header">
         <span>Set</span>
-        <span>Type</span>
-        <span>Weight (lbs)</span>
-        <span></span>
+        <span>Weight</span>
         <span>Reps</span>
-        <span></span>
+        <span>RIR</span>
+        <span>Rest</span>
       </div>
         <div data-set-rows>
           ${setRows(exercise)}
@@ -2411,7 +2417,11 @@ function exerciseLogFields(exercise, workoutTitle, options = {}) {
   `;
 }
 
-function cardioLogFields(workoutTitle) {
+function cardioLogFields(workoutTitle, options = {}) {
+  const dateMarkup = options.showDate === false
+    ? `<input type="hidden" value="${todayDate()}" data-log-date />`
+    : '<label class="exercise-date"><span>Date</span><input type="date" data-log-date /></label>';
+
   return `
     <article class="workout-exercise-card workout-cardio-card workout-activity-card">
       <button class="exercise-card-summary" type="button" data-exercise-toggle>
@@ -2433,10 +2443,7 @@ function cardioLogFields(workoutTitle) {
           <span>Cardio type</span>
           <input type="text" value="Cardio" placeholder="Walk, run, bike, stairs" data-exercise-name-input data-cardio-type />
         </label>
-        <label class="exercise-date">
-          <span>Date</span>
-          <input type="date" data-log-date />
-        </label>
+        ${dateMarkup}
         <div class="cardio-field-grid">
           <label>
             <span>Duration</span>
@@ -2462,7 +2469,11 @@ function cardioLogFields(workoutTitle) {
   `;
 }
 
-function warmupLogFields(workoutTitle) {
+function warmupLogFields(workoutTitle, options = {}) {
+  const dateMarkup = options.showDate === false
+    ? `<input type="hidden" value="${todayDate()}" data-log-date />`
+    : '<label class="exercise-date"><span>Date</span><input type="date" data-log-date /></label>';
+
   return `
     <article class="workout-exercise-card workout-warmup-card workout-activity-card">
       <button class="exercise-card-summary" type="button" data-exercise-toggle>
@@ -2484,10 +2495,7 @@ function warmupLogFields(workoutTitle) {
           <span>Warm-up type</span>
           <input type="text" value="Warm up" placeholder="Mobility, treadmill, activation" data-exercise-name-input data-warmup-type />
         </label>
-        <label class="exercise-date">
-          <span>Date</span>
-          <input type="date" data-log-date />
-        </label>
+        ${dateMarkup}
         <div class="cardio-field-grid warmup-field-grid">
           <label>
             <span>Duration</span>
@@ -2518,7 +2526,7 @@ function exerciseCard(exercise, workoutTitle, isOpen = false, workoutFocus = "")
         </span>
         <i>›</i>
       </button>
-      ${exerciseLogFields(exercise, workoutTitle, { workoutFocus })}
+      ${exerciseLogFields(exercise, workoutTitle, { workoutFocus, showDate: false })}
     </article>
   `;
 }
@@ -2879,13 +2887,12 @@ function customWorkoutExercises() {
 }
 
 function serializeSetRowDraft(row) {
-  const completeButton = row.querySelector("[data-complete-set]");
-
   return {
+    label: row.querySelector("[data-set-label]")?.value || "",
     weight: row.querySelector("[data-set-weight]")?.value || "",
     reps: row.querySelector("[data-set-reps]")?.value || "",
     setType: setTypeForRow(row),
-    complete: row.classList.contains("is-complete") || completeButton?.getAttribute("aria-pressed") === "true"
+    rir: row.dataset.repsInReserve || ""
   };
 }
 
@@ -2915,6 +2922,7 @@ function customWorkoutPanelDraft(panel) {
 
   return {
     format: normalizeCustomWorkoutFormat(panel?.dataset.customWorkoutFormat || activeCustomWorkoutFormat),
+    date: panel?.querySelector("[data-workout-date]")?.value || todayDate(),
     exercises: logElements
       .map((logElement, index) => serializeCustomExerciseDraft(logElement, index))
       .filter(Boolean)
@@ -2935,16 +2943,14 @@ function persistCustomWorkoutDraftForElement(element) {
 }
 
 function applyCustomSetDraft(row, draftSet) {
+  const labelInput = row.querySelector("[data-set-label]");
   const weightInput = row.querySelector("[data-set-weight]");
   const repsInput = row.querySelector("[data-set-reps]");
-  const typeSelect = row.querySelector("[data-set-type-select]");
-  const completeButton = row.querySelector("[data-complete-set]");
-  const complete = Boolean(draftSet?.complete);
   const setType = normalizedSetType(draftSet?.setType, row.dataset.setNumber);
 
   row.dataset.setType = setType;
-  if (typeSelect) {
-    typeSelect.value = setType;
+  if (labelInput && draftSet?.label) {
+    labelInput.value = draftSet.label;
   }
 
   if (weightInput) {
@@ -2955,11 +2961,12 @@ function applyCustomSetDraft(row, draftSet) {
     repsInput.value = draftSet?.reps || "";
   }
 
-  row.classList.toggle("is-complete", complete);
-
-  if (completeButton) {
-    completeButton.setAttribute("aria-pressed", complete ? "true" : "false");
+  if (draftSet?.rir !== undefined && draftSet?.rir !== "") {
+    row.dataset.repsInReserve = String(draftSet.rir);
+  } else {
+    delete row.dataset.repsInReserve;
   }
+  renderSetRirValue(row);
 }
 
 function applyCustomExerciseDraft(logElement, exerciseDraft) {
@@ -3030,6 +3037,7 @@ function applyCustomWorkoutDraft(panel) {
     applyCustomExerciseDraft(logElement, draftsByCode.get(code));
   });
 
+  syncWorkoutPanelDate(panel, draft.date || exercises[0]?.date || todayDate(), false);
   syncCustomWorkoutFormatMarkers(panel);
 }
 
@@ -3261,7 +3269,6 @@ function renderRestTimer() {
   const status = overlay?.querySelector("[data-rest-timer-status]");
   const startButton = overlay?.querySelector("[data-rest-timer-start]");
   const effortQuestion = overlay?.querySelector(".rest-timer-effort");
-  const isWarmUpSet = setTypeForRow(restTimerSetRow) === warmUpSetType;
 
   syncRestTimerRemaining();
   const isRunning = restTimerEndsAt > 0;
@@ -3276,10 +3283,7 @@ function renderRestTimer() {
     startButton.textContent = isRunning ? "Pause" : restTimerRemainingSeconds === 0 ? "Start again" : "Start";
   }
   if (effortQuestion) {
-    effortQuestion.hidden = isWarmUpSet;
-  }
-  if (isWarmUpSet && restTimerSetRow) {
-    delete restTimerSetRow.dataset.repsInReserve;
+    effortQuestion.hidden = false;
   }
 
   overlay?.querySelectorAll("[data-rest-timer-preset]").forEach((button) => {
@@ -3357,6 +3361,123 @@ function closeRestTimer() {
   restTimerReturnFocus?.focus();
   restTimerReturnFocus = null;
   restTimerSetRow = null;
+}
+
+function renderSetRirValue(setRow) {
+  const button = setRow?.querySelector("[data-set-rir]");
+  const value = button?.querySelector("[data-set-rir-value]");
+  const rawValue = String(setRow?.dataset.repsInReserve || "").trim();
+
+  if (value) {
+    value.textContent = rawValue === "4" ? "4+" : rawValue || "—";
+  }
+  button?.classList.toggle("has-value", rawValue !== "");
+}
+
+function rirDialogMarkup() {
+  const options = [
+    [0, "None"],
+    [1, "One more"],
+    [2, "Two more"],
+    [3, "Three more"],
+    [4, "Four or more"]
+  ];
+
+  return `
+    <div class="rir-overlay" data-rir-overlay hidden>
+      <section class="rir-sheet" role="dialog" aria-modal="true" aria-labelledby="rir-dialog-title">
+        <header class="rir-heading">
+          <div>
+            <small>Set effort</small>
+            <strong id="rir-dialog-title">How many more reps?</strong>
+          </div>
+          <button class="rir-close" type="button" data-rir-close aria-label="Close RIR choices">×</button>
+        </header>
+        <p class="rir-question">If you kept going, how many more good-form reps could you have completed?</p>
+        <div class="rir-options" role="radiogroup" aria-label="Reps in reserve">
+          ${options.map(([value, label]) => `
+            <button type="button" role="radio" data-rir-option="${value}" aria-checked="false">
+              <strong>${value}${value === 4 ? "+" : ""}</strong>
+              <span>${label}</span>
+            </button>
+          `).join("")}
+        </div>
+        <aside class="rir-explanation">
+          <strong>RIR means reps in reserve</strong>
+          <span>It estimates how many additional reps you could have completed with good form.</span>
+        </aside>
+        <button class="rir-save" type="button" data-rir-save disabled>Save RIR</button>
+      </section>
+    </div>
+  `;
+}
+
+function ensureRirDialog() {
+  let overlay = document.querySelector("[data-rir-overlay]");
+
+  if (!overlay) {
+    document.body.insertAdjacentHTML("beforeend", rirDialogMarkup());
+    overlay = document.querySelector("[data-rir-overlay]");
+  }
+
+  return overlay;
+}
+
+function renderRirDialog() {
+  const overlay = ensureRirDialog();
+
+  overlay?.querySelectorAll("[data-rir-option]").forEach((button) => {
+    const isSelected = Number(button.dataset.rirOption) === pendingRirValue;
+    button.classList.toggle("is-selected", isSelected);
+    button.setAttribute("aria-checked", isSelected ? "true" : "false");
+  });
+
+  const saveButton = overlay?.querySelector("[data-rir-save]");
+  if (saveButton) {
+    saveButton.disabled = pendingRirValue === null;
+  }
+}
+
+function openRirDialog(button) {
+  const overlay = ensureRirDialog();
+  const setRow = button?.closest("[data-set-row]");
+  const currentValue = String(setRow?.dataset.repsInReserve || "").trim();
+
+  activeRirButton = button || null;
+  pendingRirValue = currentValue === "" ? null : Number(currentValue);
+  overlay.hidden = false;
+  document.body.classList.add("rir-open");
+  renderRirDialog();
+  overlay.querySelector("[data-rir-option]")?.focus();
+}
+
+function closeRirDialog() {
+  const overlay = document.querySelector("[data-rir-overlay]");
+
+  if (!overlay) {
+    return;
+  }
+
+  overlay.hidden = true;
+  document.body.classList.remove("rir-open");
+  activeRirButton?.focus();
+  activeRirButton = null;
+  pendingRirValue = null;
+}
+
+function saveRirSelection() {
+  const setRow = activeRirButton?.closest("[data-set-row]");
+  const logElement = activeRirButton?.closest("[data-exercise-log]");
+
+  if (!setRow || pendingRirValue === null) {
+    return;
+  }
+
+  setRow.dataset.repsInReserve = String(pendingRirValue);
+  renderSetRirValue(setRow);
+  persistCustomWorkoutDraftForElement(logElement);
+  scheduleTrainingLogAutosave(logElement);
+  closeRirDialog();
 }
 
 function workoutElapsedTimerMarkup() {
@@ -3590,6 +3711,7 @@ function supersetCard(group, workoutTitle, workoutFocus = "") {
           panelClass: "superset-exercise-log",
           showInlineHeader: true,
           showSubmit: false,
+          showDate: false,
           workoutFocus
         })).join("")}
         <button class="complete-exercise-button" type="button" data-superset-submit>Save Superset</button>
@@ -3734,6 +3856,7 @@ function customWorkoutCardMarkup(exercise, workoutTitle, index = 0) {
           suggestExerciseNames: true,
           showExerciseNameField: false,
           showActions: false,
+          showDate: false,
           setCount: 1,
           userManagedSets: true
         })}
@@ -3768,22 +3891,43 @@ function customWorkoutPanelMarkup(index) {
         </div>
         <span class="status-pill">Build your own</span>
       </div>
+      <label class="custom-workout-session-date workout-session-date">
+        <span>Workout date</span>
+        <input type="date" value="${todayDate()}" data-workout-date />
+        <small>This date applies to every exercise in this custom workout.</small>
+      </label>
       <div class="workout-format-pill" data-custom-workout-format-pill>${escapeHtml(formatConfig.label)}</div>
       <div class="custom-workout-builder">
         <div class="custom-workout-header">
           <p>Add your own exercises here and save them into your workout log.</p>
         </div>
         ${customWorkoutFormatPickerMarkup()}
-        ${warmupLogFields(customWorkoutTitle)}
+        ${warmupLogFields(customWorkoutTitle, { showDate: false })}
         <div class="workout-app-list custom-workout-list" data-custom-workout-list data-custom-workout-format="${format}" role="list" aria-label="Custom workout exercises">
           ${customWorkoutListMarkup()}
         </div>
         <button class="button button-ghost custom-workout-add-bottom" type="button" data-add-custom-exercise>Add exercise</button>
-        ${cardioLogFields(customWorkoutTitle)}
+        ${cardioLogFields(customWorkoutTitle, { showDate: false })}
         ${workoutActionsMarkup({ exercises }, { includeCardio: true })}
       </div>
     </section>
   `;
+}
+
+function syncWorkoutPanelDate(panel, value, refresh = true) {
+  const date = value || todayDate();
+  const picker = panel?.querySelector("[data-workout-date]");
+
+  if (picker && picker.value !== date) {
+    picker.value = date;
+  }
+
+  panel?.querySelectorAll("[data-exercise-log] [data-log-date]").forEach((input) => {
+    input.value = date;
+    if (refresh) {
+      updateExerciseLogField(input.closest("[data-exercise-log]"));
+    }
+  });
 }
 
 function syncCustomWorkoutFormatMarkers(panel) {
@@ -3901,7 +4045,7 @@ function renderClientWorkoutTabs(workouts = []) {
 
     return `
       <section
-        class="client-workout-panel${isActive ? " is-active" : ""}"
+        class="client-workout-panel client-workout-panel-assigned${isActive ? " is-active" : ""}"
         id="client-workout-panel-${index}"
         role="tabpanel"
         aria-labelledby="client-workout-tab-${index}"
@@ -3913,11 +4057,16 @@ function renderClientWorkoutTabs(workouts = []) {
         </div>
         <span class="status-pill">${escapeHtml(workout.focus || "")}</span>
       </div>
+      <label class="custom-workout-session-date workout-session-date">
+        <span>Workout date</span>
+        <input type="date" value="${todayDate()}" data-workout-date />
+        <small>This date applies to every exercise in this workout.</small>
+      </label>
       <div class="workout-format-pill">${escapeHtml(formatLabel(inferWorkoutFormat(workout)))}</div>
       <div class="workout-app-list" role="list" aria-label="${escapeHtml(title)} exercises">
-        ${warmupLogFields(title)}
+        ${warmupLogFields(title, { showDate: false })}
         ${workoutExerciseMarkup(workout, title)}
-        ${cardioLogFields(title)}
+        ${cardioLogFields(title, { showDate: false })}
         ${workoutActionsMarkup(workout, { includeCardio: true })}
       </div>
     </section>
@@ -4115,7 +4264,7 @@ function renderPreviousExerciseWeights(logElement, logs = logsForExerciseDisplay
   `;
 }
 
-function savedStrengthSetSpecs(selectedLogs) {
+function savedStrengthSetSpecs(selectedLogs, workingMinimum = 1) {
   const warmUps = selectedLogs
     .filter((log) => normalizedSetType(log.set_type, log.set_number) === warmUpSetType)
     .sort((a, b) => Number(a.set_number || 0) - Number(b.set_number || 0));
@@ -4123,7 +4272,7 @@ function savedStrengthSetSpecs(selectedLogs) {
     .filter((log) => normalizedSetType(log.set_type, log.set_number) !== warmUpSetType)
     .sort((a, b) => Number(a.set_number || 0) - Number(b.set_number || 0));
   const highestWorkingSet = workingLogs.reduce((max, log) => Math.max(max, Number(log.set_number || 0)), 0);
-  const workingCount = Math.max(highestWorkingSet, 1);
+  const workingCount = Math.max(highestWorkingSet, Number(workingMinimum) || 1);
 
   return [
     ...warmUps.map((log, index) => ({
@@ -4147,7 +4296,10 @@ function restoreStrengthSetRows(logElement, selectedLogs) {
   }
 
   const defaultReps = rows.querySelector("[data-set-reps]")?.dataset.defaultPlaceholder || "0";
-  const specs = savedStrengthSetSpecs(selectedLogs);
+  const workingMinimum = logElement.dataset.setTargetMode === "visible"
+    ? 1
+    : Math.max(Number(logElement.dataset.prescribedSets || 1), 1);
+  const specs = savedStrengthSetSpecs(selectedLogs, workingMinimum);
 
   rows.innerHTML = specs
     .map(({ setNumber, setType }) => setRowMarkup(setNumber, defaultReps, setType))
@@ -4331,7 +4483,6 @@ function updateExerciseLogField(logElement) {
     const selectedLog = selectedLogs.find((log) => Number(log.set_number || 1) === setNumber);
     const weightInput = row.querySelector("[data-set-weight]");
     const repsInput = row.querySelector("[data-set-reps]");
-    const completeButton = row.querySelector("[data-complete-set]");
     const savedRir = Number(selectedLog?.effort_value);
 
     if (weightInput) {
@@ -4342,14 +4493,13 @@ function updateExerciseLogField(logElement) {
       repsInput.value = selectedLog?.reps ?? "";
     }
 
-    if (setTypeForRow(row) !== warmUpSetType && selectedLog?.effort_scale === "rir" && Number.isInteger(savedRir) && savedRir >= 0 && savedRir <= 4) {
+    if (selectedLog?.effort_scale === "rir" && Number.isInteger(savedRir) && savedRir >= 0 && savedRir <= 4) {
       row.dataset.repsInReserve = String(savedRir);
     } else {
       delete row.dataset.repsInReserve;
     }
 
-    row.classList.toggle("is-complete", Boolean(selectedLog));
-    completeButton?.setAttribute("aria-pressed", selectedLog ? "true" : "false");
+    renderSetRirValue(row);
   });
 
   if (notesInput) {
@@ -4373,6 +4523,10 @@ function populateTrainingLogs(logs) {
   if (currentProgram) {
     renderClientWorkoutTabs(Array.isArray(currentProgram.workouts) ? currentProgram.workouts : []);
   }
+
+  document.querySelectorAll(".client-workout-panel").forEach((panel) => {
+    syncWorkoutPanelDate(panel, panel.querySelector("[data-workout-date]")?.value || todayDate(), false);
+  });
 
   document.querySelectorAll("[data-exercise-log]").forEach((logElement) => {
     updateExerciseLogField(logElement);
@@ -4441,6 +4595,15 @@ function upsertLocalTrainingLog(savedLog) {
 
 function handleTrainingDateChange() {
   document.addEventListener("change", (event) => {
+    const workoutDate = event.target.closest("[data-workout-date]");
+
+    if (workoutDate) {
+      const panel = workoutDate.closest(".client-workout-panel");
+      syncWorkoutPanelDate(panel, workoutDate.value || todayDate());
+      persistCustomWorkoutDraftFromPanel(panel);
+      return;
+    }
+
     const dateInput = event.target.closest("[data-log-date]");
 
     if (!dateInput) {
@@ -4938,11 +5101,23 @@ function addSetRow(logElement, options = {}) {
   }
 }
 
+function updateSetTypeFromLabel(row) {
+  const labelInput = row?.querySelector("[data-set-label]");
+  const normalizedLabel = String(labelInput?.value || "").trim().toUpperCase();
+
+  if (labelInput) {
+    labelInput.value = normalizedLabel.replace(/[^W0-9]/g, "").slice(0, 3);
+  }
+  row.dataset.setType = normalizedLabel.startsWith("W") ? warmUpSetType : workingSetType;
+}
+
 function renumberSetRows(logElement) {
   let warmUpIndex = 0;
   let workingIndex = 0;
   const rowsContainer = logElement?.querySelector("[data-set-rows]");
   const currentRows = Array.from(rowsContainer?.querySelectorAll("[data-set-row]") || []);
+
+  currentRows.forEach(updateSetTypeFromLabel);
   const orderedRows = [
     ...currentRows.filter((row) => setTypeForRow(row) === warmUpSetType),
     ...currentRows.filter((row) => setTypeForRow(row) !== warmUpSetType)
@@ -4959,30 +5134,18 @@ function renumberSetRows(logElement) {
     row.dataset.setNumber = String(setNumber);
     row.dataset.setType = setType;
     row.classList.toggle("is-warm-up", isWarmUp);
-    const numberCell = row.querySelector(".set-number");
-    const typeSelect = row.querySelector("[data-set-type-select]");
-    const completeButton = row.querySelector("[data-complete-set]");
+    const labelInput = row.querySelector("[data-set-label]");
+    const setLabel = isWarmUp ? (warmUpIndex === 1 ? "W" : `W${warmUpIndex}`) : String(workingIndex);
 
-    if (numberCell) {
-      numberCell.textContent = setNumberLabel(setNumber, setType);
+    if (labelInput) {
+      labelInput.value = setLabel;
+      labelInput.setAttribute("aria-label", `Set label ${setLabel}`);
     }
 
-    if (typeSelect) {
-      typeSelect.value = setType;
-      typeSelect.setAttribute("aria-label", isWarmUp
-        ? `Warm-up set ${warmUpIndex} type`
-        : `Working set ${workingIndex} type`);
-    }
-
-    if (completeButton) {
-      completeButton.setAttribute("aria-label", isWarmUp
-        ? `Complete warm-up set ${warmUpIndex}`
-        : `Complete set ${workingIndex}`);
-    }
-
-    if (isWarmUp) {
-      delete row.dataset.repsInReserve;
-    }
+    const friendlyName = isWarmUp ? `warm-up set ${warmUpIndex}` : `set ${workingIndex}`;
+    row.querySelector("[data-set-rir]")?.setAttribute("aria-label", `Choose reps in reserve for ${friendlyName}`);
+    row.querySelector("[data-set-rest]")?.setAttribute("aria-label", `Start rest timer after ${friendlyName}`);
+    renderSetRirValue(row);
   });
 }
 
@@ -5619,7 +5782,7 @@ function setExerciseSkipped(logElement, skipped, options = {}) {
   }
 
   logElement.classList.toggle("is-exercise-skipped", skipped);
-  logElement.querySelectorAll("input, select, textarea, [data-add-set], [data-delete-last-set], [data-complete-set]").forEach((control) => {
+  logElement.querySelectorAll("input, select, textarea, [data-add-set], [data-delete-last-set], [data-set-rir], [data-set-rest]").forEach((control) => {
     control.disabled = skipped;
   });
   const exerciseNameInput = exerciseNameInputForLog(logElement);
@@ -5710,7 +5873,8 @@ function handleWorkoutInteractions() {
     const toggle = event.target.closest("[data-exercise-toggle]");
     const addSetButton = event.target.closest("[data-add-set]");
     const deleteLastSetButton = event.target.closest("[data-delete-last-set]");
-    const completeSetButton = event.target.closest("[data-complete-set]");
+    const setRirButton = event.target.closest("[data-set-rir]");
+    const setRestButton = event.target.closest("[data-set-rest]");
     const skipExerciseButton = event.target.closest("[data-skip-exercise]");
     const deleteExerciseButton = event.target.closest("[data-delete-exercise]");
     const addCustomExerciseButton = event.target.closest("[data-add-custom-exercise]");
@@ -5720,6 +5884,9 @@ function handleWorkoutInteractions() {
     const restTimerStartButton = event.target.closest("[data-rest-timer-start]");
     const restTimerResetButton = event.target.closest("[data-rest-timer-reset]");
     const repsInReserveButton = event.target.closest("[data-reps-in-reserve]");
+    const rirOptionButton = event.target.closest("[data-rir-option]");
+    const rirSaveButton = event.target.closest("[data-rir-save]");
+    const rirCloseButton = event.target.closest("[data-rir-close]");
     const workoutElapsedToggleButton = event.target.closest("[data-workout-elapsed-toggle]");
 
     if (workoutElapsedToggleButton) {
@@ -5743,23 +5910,35 @@ function handleWorkoutInteractions() {
       return;
     }
 
-    if (completeSetButton) {
-      const setRow = completeSetButton.closest("[data-set-row]");
-      const logElement = completeSetButton.closest("[data-exercise-log]");
-
+    if (setRestButton) {
+      const logElement = setRestButton.closest("[data-exercise-log]");
       if (!workoutElapsedTimerState) {
         startWorkoutElapsedTimer(logElement?.dataset.workoutTitle || activeWorkoutElapsedTitle());
       }
-      setRow?.classList.add("is-complete");
-      completeSetButton.setAttribute("aria-pressed", "true");
-      if (logElement) {
-        updateVisibleSetProgress(logElement);
-        persistCustomWorkoutDraftForElement(logElement);
-        scheduleTrainingLogAutosave(logElement);
-      }
       resetRestTimer();
-      openRestTimer(completeSetButton);
+      openRestTimer(setRestButton);
       startOrPauseRestTimer();
+      return;
+    }
+
+    if (setRirButton) {
+      openRirDialog(setRirButton);
+      return;
+    }
+
+    if (rirOptionButton) {
+      pendingRirValue = Number(rirOptionButton.dataset.rirOption);
+      renderRirDialog();
+      return;
+    }
+
+    if (rirSaveButton) {
+      saveRirSelection();
+      return;
+    }
+
+    if (rirCloseButton || event.target.matches("[data-rir-overlay]")) {
+      closeRirDialog();
       return;
     }
 
@@ -5785,6 +5964,10 @@ function handleWorkoutInteractions() {
 
     if (repsInReserveButton && restTimerSetRow) {
       restTimerSetRow.dataset.repsInReserve = repsInReserveButton.dataset.repsInReserve;
+      renderSetRirValue(restTimerSetRow);
+      const logElement = restTimerSetRow.closest("[data-exercise-log]");
+      persistCustomWorkoutDraftForElement(logElement);
+      scheduleTrainingLogAutosave(logElement);
       renderRestTimer();
       return;
     }
@@ -5851,7 +6034,7 @@ function handleWorkoutInteractions() {
 
           setRow.classList.remove("is-complete");
           delete setRow.dataset.repsInReserve;
-          setRow.querySelector("[data-complete-set]")?.setAttribute("aria-pressed", "false");
+          renderSetRirValue(setRow);
 
           updateVisibleSetProgress(logElement);
           persistCustomWorkoutDraftForElement(logElement);
@@ -5886,6 +6069,11 @@ function handleWorkoutInteractions() {
         const newLogElement = list.querySelector("[data-custom-exercise-card]:last-child [data-exercise-log]");
 
         if (newLogElement) {
+          const sharedDate = panel.querySelector("[data-workout-date]")?.value || todayDate();
+          const hiddenDate = newLogElement.querySelector("[data-log-date]");
+          if (hiddenDate) {
+            hiddenDate.value = sharedDate;
+          }
           updateExerciseLogField(newLogElement);
           exerciseNameInputForLog(newLogElement)?.focus();
         }
@@ -5898,12 +6086,18 @@ function handleWorkoutInteractions() {
 
   document.addEventListener("input", (event) => {
     const exerciseNameInput = event.target.closest("[data-exercise-name-input]");
-    const setInput = event.target.closest("[data-set-weight], [data-set-reps]");
+    const setInput = event.target.closest("[data-set-label], [data-set-weight], [data-set-reps]");
     const notesInput = event.target.closest("[data-log-notes]");
     const timedLogInput = event.target.closest("[data-warmup-duration], [data-cardio-duration], [data-cardio-distance], [data-cardio-calories]");
 
     if (setInput) {
       const logElement = setInput.closest("[data-exercise-log]");
+
+      if (setInput.matches("[data-set-label]")) {
+        updateSetTypeFromLabel(setInput.closest("[data-set-row]"));
+        renumberSetRows(logElement);
+        syncVisibleSetTarget(logElement);
+      }
 
       updateVisibleSetProgress(logElement);
       persistCustomWorkoutDraftForElement(logElement);
@@ -5958,28 +6152,6 @@ function handleWorkoutInteractions() {
     }
   });
 
-  document.addEventListener("change", (event) => {
-    const typeSelect = event.target.closest("[data-set-type-select]");
-
-    if (!typeSelect) {
-      return;
-    }
-
-    const row = typeSelect.closest("[data-set-row]");
-    const logElement = typeSelect.closest("[data-exercise-log]");
-
-    if (!row || !logElement) {
-      return;
-    }
-
-    row.dataset.setType = normalizedSetType(typeSelect.value, row.dataset.setNumber);
-    renumberSetRows(logElement);
-    syncVisibleSetTarget(logElement);
-    updateVisibleSetProgress(logElement);
-    persistCustomWorkoutDraftForElement(logElement);
-    scheduleTrainingLogAutosave(logElement);
-  });
-
   document.addEventListener("focusin", (event) => {
     const exerciseNameInput = event.target.closest("[data-exercise-title-name]");
 
@@ -5989,6 +6161,10 @@ function handleWorkoutInteractions() {
   });
 
   document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !document.querySelector("[data-rir-overlay]")?.hidden) {
+      closeRirDialog();
+      return;
+    }
     if (event.key === "Escape" && event.target.closest(".custom-workout-name-editor")) {
       closeCustomExerciseSuggestions();
     }
@@ -6747,7 +6923,7 @@ function rowsForTrainingLog(logElement) {
           set_type: setType,
           weight_used: values.weightRaw === "" ? 0 : values.weightValue,
           reps: values.repsRaw === "" ? null : values.repsValue,
-          ...(setType === warmUpSetType || setRow.dataset.repsInReserve === undefined ? {} : {
+          ...(setRow.dataset.repsInReserve === undefined ? {} : {
             effort_scale: "rir",
             effort_value: Number(setRow.dataset.repsInReserve)
           }),

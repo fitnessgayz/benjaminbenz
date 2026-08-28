@@ -11,6 +11,335 @@
   --max: 1320px;
 }
 
+/* Unified workout logger: editable set label, RIR picker, and rest timer. */
+.set-header,
+.set-row {
+  grid-template-columns: minmax(42px, .48fr) minmax(68px, 1fr) minmax(60px, .78fr) minmax(48px, .56fr) 48px;
+  gap: 6px;
+}
+
+.set-table,
+.set-table [data-set-rows] {
+  gap: 6px;
+}
+
+.set-row {
+  padding: 6px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.set-label-field,
+.set-input-field {
+  display: grid;
+  min-width: 0;
+}
+
+.set-label-field em,
+.set-input-field em {
+  display: none;
+}
+
+.set-row :is(input, .set-rir-button, .set-rest-button) {
+  min-height: 48px;
+  border: 1px solid rgba(0, 0, 0, .12);
+  border-radius: 8px;
+  background: #fbfbfb;
+  color: var(--black);
+  box-sizing: border-box;
+}
+
+.set-row input {
+  padding: 6px;
+  font-size: .95rem;
+  text-align: center;
+}
+
+.set-label-field input {
+  text-transform: uppercase;
+}
+
+.set-rir-button,
+.set-rest-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 5px;
+  font: inherit;
+  cursor: pointer;
+}
+
+.set-rir-button {
+  flex-direction: column;
+  gap: 1px;
+}
+
+.set-rir-button span {
+  color: var(--muted);
+  font-size: .54rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.set-rir-button strong {
+  font-size: .92rem;
+  line-height: 1;
+}
+
+.set-rir-button.has-value {
+  border-color: var(--black);
+}
+
+.set-rest-button svg {
+  width: 24px;
+  height: 24px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
+.rir-open {
+  overflow: hidden;
+}
+
+.rir-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 140;
+  display: grid;
+  align-items: end;
+  padding: 16px;
+  background: rgba(0, 0, 0, .58);
+}
+
+.rir-overlay[hidden] {
+  display: none;
+}
+
+.rir-sheet {
+  display: grid;
+  width: min(480px, 100%);
+  max-height: min(92dvh, 760px);
+  gap: 12px;
+  margin: 0 auto;
+  padding: 18px;
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  border-radius: 12px 12px 0 0;
+  background: var(--paper);
+}
+
+.rir-heading {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.rir-heading div {
+  display: grid;
+  gap: 3px;
+}
+
+.rir-heading small,
+.rir-heading strong,
+.rir-explanation strong {
+  text-transform: uppercase;
+}
+
+.rir-heading small {
+  color: var(--muted);
+  font-size: .68rem;
+  font-weight: 900;
+}
+
+.rir-heading strong {
+  color: var(--black);
+  font-size: clamp(1.35rem, 6vw, 2rem);
+  font-weight: 900;
+  line-height: .98;
+}
+
+.rir-close {
+  flex: 0 0 42px;
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--paper);
+  color: var(--black);
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+
+.rir-question {
+  margin: 0;
+  color: var(--black);
+  font-size: .9rem;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.rir-options {
+  display: grid;
+  gap: 6px;
+}
+
+.rir-options button {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  align-items: center;
+  min-height: 48px;
+  padding: 7px 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--paper);
+  color: var(--black);
+  text-align: left;
+  cursor: pointer;
+}
+
+.rir-options button.is-selected {
+  border-color: var(--black);
+  background: var(--lime);
+}
+
+.rir-options button strong {
+  font-size: 1.15rem;
+  font-weight: 900;
+}
+
+.rir-options button span {
+  font-size: .86rem;
+  font-weight: 800;
+}
+
+.rir-explanation {
+  display: grid;
+  gap: 3px;
+  padding: 11px;
+  border: 1px solid var(--line);
+  background: #fbfbf8;
+}
+
+.rir-explanation strong {
+  color: var(--black);
+  font-size: .72rem;
+  font-weight: 900;
+}
+
+.rir-explanation span {
+  color: var(--muted);
+  font-size: .75rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.rir-save {
+  min-height: 48px;
+  border: 1px solid var(--black);
+  border-radius: 6px;
+  background: var(--lime);
+  color: var(--black);
+  font: inherit;
+  font-size: .85rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.rir-save:disabled {
+  cursor: not-allowed;
+  opacity: .4;
+}
+
+.workout-session-date {
+  display: grid;
+  width: min(100%, 300px);
+  gap: 5px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fbfbf8;
+}
+
+.workout-session-date span {
+  color: var(--black);
+  font-size: .78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.workout-session-date input {
+  min-height: 46px;
+  border-radius: 7px;
+  background: var(--paper);
+  font-weight: 900;
+}
+
+.workout-session-date small {
+  color: var(--muted);
+  font-size: .7rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+@media (max-width: 760px) {
+  .dashboard-page .set-header,
+  .coach-admin-page .set-header,
+  .dashboard-page .set-row,
+  .coach-admin-page .set-row {
+    display: grid !important;
+    grid-template-columns: minmax(38px, .45fr) minmax(62px, 1fr) minmax(54px, .78fr) minmax(44px, .55fr) 44px !important;
+    gap: 4px !important;
+  }
+
+  .dashboard-page .set-header,
+  .coach-admin-page .set-header {
+    font-size: .58rem !important;
+  }
+
+  .dashboard-page .set-row,
+  .coach-admin-page .set-row {
+    align-items: center !important;
+    padding: 5px 0 !important;
+    overflow: visible !important;
+  }
+
+  .dashboard-page .set-row > *,
+  .coach-admin-page .set-row > * {
+    grid-row: 1 !important;
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .dashboard-page .set-label-field,
+  .coach-admin-page .set-label-field { grid-column: 1 !important; }
+  .dashboard-page .set-row > .set-input-field:nth-of-type(2),
+  .coach-admin-page .set-row > .set-input-field:nth-of-type(2) { grid-column: 2 !important; }
+  .dashboard-page .set-row > .set-input-field:nth-of-type(3),
+  .coach-admin-page .set-row > .set-input-field:nth-of-type(3) { grid-column: 3 !important; }
+  .dashboard-page .set-rir-button,
+  .coach-admin-page .set-rir-button { grid-column: 4 !important; }
+  .dashboard-page .set-rest-button,
+  .coach-admin-page .set-rest-button { grid-column: 5 !important; }
+
+  .dashboard-page .set-row :is(input, .set-rir-button, .set-rest-button),
+  .coach-admin-page .set-row :is(input, .set-rir-button, .set-rest-button) {
+    min-height: 46px !important;
+    height: 46px !important;
+    padding: 4px !important;
+    border-radius: 7px !important;
+  }
+
+  .workout-session-date {
+    width: 100%;
+  }
+}
+
 * {
   box-sizing: border-box;
 }
@@ -8516,6 +8845,96 @@ textarea,
   }
 
   .coach-workout-submit-panel .button {
+    width: 100%;
+  }
+}
+
+/* Final cascade for the client workout logger. */
+.dashboard-page .set-header,
+.dashboard-page .set-row,
+.coach-admin-page .set-header,
+.coach-admin-page .set-row {
+  grid-template-columns: minmax(42px, .48fr) minmax(68px, 1fr) minmax(60px, .78fr) minmax(48px, .56fr) 48px;
+  gap: 6px;
+}
+
+.dashboard-page .set-header,
+.coach-admin-page .set-header {
+  display: grid;
+}
+
+.dashboard-page .set-row,
+.coach-admin-page .set-row {
+  display: grid;
+  align-items: center;
+  padding: 6px 0;
+}
+
+.dashboard-page .set-row > *,
+.coach-admin-page .set-row > * {
+  width: 100%;
+  min-width: 0;
+}
+
+.dashboard-page .set-row :is(input, .set-rir-button, .set-rest-button),
+.coach-admin-page .set-row :is(input, .set-rir-button, .set-rest-button) {
+  min-height: 48px;
+  height: 48px;
+  padding: 5px;
+  border: 1px solid rgba(0, 0, 0, .12);
+  border-radius: 8px;
+  background: #fbfbfb;
+}
+
+@media (max-width: 760px) {
+  .dashboard-page .set-header,
+  .dashboard-page .set-row,
+  .coach-admin-page .set-header,
+  .coach-admin-page .set-row {
+    display: grid !important;
+    grid-template-columns: minmax(38px, .45fr) minmax(62px, 1fr) minmax(54px, .78fr) minmax(44px, .55fr) 44px !important;
+    gap: 4px !important;
+  }
+
+  .dashboard-page .set-header,
+  .coach-admin-page .set-header {
+    font-size: .58rem !important;
+  }
+
+  .dashboard-page .set-row,
+  .coach-admin-page .set-row {
+    align-items: center !important;
+    padding: 5px 0 !important;
+    overflow: visible !important;
+  }
+
+  .dashboard-page .set-row > *,
+  .coach-admin-page .set-row > * {
+    grid-row: 1 !important;
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .dashboard-page .set-label-field,
+  .coach-admin-page .set-label-field { grid-column: 1 !important; }
+  .dashboard-page .set-row > .set-input-field:nth-of-type(2),
+  .coach-admin-page .set-row > .set-input-field:nth-of-type(2) { grid-column: 2 !important; }
+  .dashboard-page .set-row > .set-input-field:nth-of-type(3),
+  .coach-admin-page .set-row > .set-input-field:nth-of-type(3) { grid-column: 3 !important; }
+  .dashboard-page .set-rir-button,
+  .coach-admin-page .set-rir-button { grid-column: 4 !important; }
+  .dashboard-page .set-rest-button,
+  .coach-admin-page .set-rest-button { grid-column: 5 !important; }
+
+  .dashboard-page .set-row :is(input, .set-rir-button, .set-rest-button),
+  .coach-admin-page .set-row :is(input, .set-rir-button, .set-rest-button) {
+    min-height: 46px !important;
+    height: 46px !important;
+    padding: 4px !important;
+    border-radius: 7px !important;
+  }
+
+  .workout-session-date {
     width: 100%;
   }
 }
