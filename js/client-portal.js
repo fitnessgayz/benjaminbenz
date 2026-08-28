@@ -2528,7 +2528,12 @@ function exerciseCard(exercise, workoutTitle, isOpen = false, workoutFocus = "")
         </span>
         <i>›</i>
       </button>
-      ${exerciseLogFields(exercise, workoutTitle, { workoutFocus, showDate: false })}
+      ${exerciseLogFields(exercise, workoutTitle, {
+        workoutFocus,
+        showDate: false,
+        showExerciseNameField: false,
+        showActions: false
+      })}
     </article>
   `;
 }
@@ -3698,6 +3703,8 @@ function supersetCard(group, workoutTitle, workoutFocus = "") {
           showInlineHeader: true,
           showSubmit: false,
           showDate: false,
+          showExerciseNameField: false,
+          showActions: false,
           workoutFocus
         })).join("")}
         <button class="complete-exercise-button" type="button" data-superset-submit>Save Superset</button>
