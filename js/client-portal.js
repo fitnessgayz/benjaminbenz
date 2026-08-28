@@ -3869,7 +3869,9 @@ function customWorkoutPanelMarkup(index) {
       </div>
       <label class="custom-workout-session-date workout-session-date">
         <span>Workout date</span>
-        <input type="date" value="${todayDate()}" data-workout-date />
+        <span class="workout-session-date-control">
+          <input type="date" value="${todayDate()}" data-workout-date />
+        </span>
         <small>This date applies to every exercise in this custom workout.</small>
       </label>
       <div class="workout-format-pill" data-custom-workout-format-pill>${escapeHtml(formatConfig.label)}</div>
@@ -4035,7 +4037,9 @@ function renderClientWorkoutTabs(workouts = []) {
       </div>
       <label class="custom-workout-session-date workout-session-date">
         <span>Workout date</span>
-        <input type="date" value="${todayDate()}" data-workout-date />
+        <span class="workout-session-date-control">
+          <input type="date" value="${todayDate()}" data-workout-date />
+        </span>
         <small>This date applies to every exercise in this workout.</small>
       </label>
       <div class="workout-format-pill">${escapeHtml(formatLabel(inferWorkoutFormat(workout)))}</div>
