@@ -2374,7 +2374,7 @@ function exerciseLogFields(exercise, workoutTitle, options = {}) {
           ${options.suggestExerciseNames ? '<small class="manual-exercise-hint">Choose a suggestion or type your own name or short description. Exact wording is not required.</small>' : ""}
         </label>
       `}
-      ${exerciseLogActions({ showSkip: options.showSkipAction !== false })}
+      ${options.showActions === false ? "" : exerciseLogActions({ showSkip: options.showSkipAction !== false })}
       ${exerciseVideoMarkup(exercise)}
       <label class="exercise-date">
         <span>Date</span>
@@ -2998,7 +2998,7 @@ function applyCustomExerciseDraft(logElement, exerciseDraft) {
   }
 
   syncExerciseNamePreview(logElement, exerciseDraft.name || "");
-  setExerciseSkipped(logElement, Boolean(exerciseDraft.skipped), { skipDraft: true });
+  setExerciseSkipped(logElement, false, { skipDraft: true });
   syncVisibleSetTarget(logElement);
   updateVisibleSetProgress(logElement);
   renderPreviousExerciseWeights(logElement);
@@ -3067,6 +3067,61 @@ function exerciseSuggestionNames() {
   });
 
   return Array.from(suggestions.values()).sort((left, right) => left.localeCompare(right));
+}
+
+function customExerciseSuggestionMatches(value) {
+  const query = String(value || "").trim().toLowerCase();
+
+  return exerciseSuggestionNames()
+    .filter((name) => !query || name.toLowerCase().includes(query))
+    .sort((left, right) => {
+      const leftStartsWithQuery = query && left.toLowerCase().startsWith(query);
+      const rightStartsWithQuery = query && right.toLowerCase().startsWith(query);
+
+      if (leftStartsWithQuery !== rightStartsWithQuery) {
+        return leftStartsWithQuery ? -1 : 1;
+      }
+
+      return left.localeCompare(right);
+    })
+    .slice(0, 12);
+}
+
+function closeCustomExerciseSuggestions(exceptEditor = null) {
+  document.querySelectorAll("[data-custom-exercise-suggestions]").forEach((menu) => {
+    const editor = menu.closest(".custom-workout-name-editor");
+
+    if (exceptEditor && editor === exceptEditor) {
+      return;
+    }
+
+    menu.hidden = true;
+    editor?.closest("[data-custom-exercise-card]")?.classList.remove("is-showing-suggestions");
+    editor?.querySelector("[data-exercise-title-name]")?.setAttribute("aria-expanded", "false");
+  });
+}
+
+function renderCustomExerciseSuggestions(input) {
+  const editor = input?.closest(".custom-workout-name-editor");
+  const menu = editor?.querySelector("[data-custom-exercise-suggestions]");
+
+  if (!editor || !menu) {
+    return;
+  }
+
+  const matches = customExerciseSuggestionMatches(input.value);
+
+  menu.innerHTML = matches.map((name) => `
+    <button
+      type="button"
+      role="option"
+      data-custom-exercise-suggestion="${escapeHtml(name)}"
+    >${escapeHtml(name)}</button>
+  `).join("");
+  menu.hidden = matches.length === 0;
+  input.setAttribute("aria-expanded", matches.length > 0 ? "true" : "false");
+  editor.closest("[data-custom-exercise-card]")?.classList.toggle("is-showing-suggestions", matches.length > 0);
+  closeCustomExerciseSuggestions(editor);
 }
 
 function refreshExerciseSuggestionsDatalist() {
@@ -3430,28 +3485,45 @@ function workoutActionsMarkup(workout, options = {}) {
 
 function customWorkoutCardMarkup(exercise, workoutTitle, index = 0) {
   const exerciseName = String(exercise.name || "").trim();
-  const exerciseTitle = exerciseName || "Custom exercise";
   const marker = customWorkoutFormatMarker(activeCustomWorkoutFormat, index);
+  const suggestionMenuId = `custom-exercise-options-${String(exercise.code || index + 1).toLowerCase().replace(/[^a-z0-9-]/g, "-")}`;
 
   return `
     <article class="workout-exercise-card workout-entry-card custom-workout-card is-open" data-custom-exercise-card>
       <div class="exercise-card-summary custom-workout-card-summary">
         <span>
-          <span class="status-pill" data-custom-workout-format-marker>${escapeHtml(marker)}</span>
+          <span class="custom-workout-card-marker-row">
+            <span class="status-pill" data-custom-workout-format-marker>${escapeHtml(marker)}</span>
+            <button class="custom-workout-delete-icon" type="button" data-delete-exercise aria-label="Delete exercise ${index + 1}">
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M4 7h16M9 7V4h6v3m-9 0 1 13h10l1-13M10 11v5m4-5v5" />
+              </svg>
+            </button>
+          </span>
           <strong class="custom-workout-editable-title" data-exercise-title>
             <span class="custom-workout-exercise-code">${escapeHtml(exercise.code)}</span>
-            <input
-              type="text"
-              value="${escapeHtml(exerciseName)}"
-              placeholder="${escapeHtml(exerciseTitle)}"
-              list="custom-exercise-suggestions"
-              aria-label="Exercise ${index + 1} name"
-              autocomplete="off"
-              data-exercise-title-name
-              data-exercise-name-input
-            />
+            <span class="custom-workout-name-editor">
+              <input
+                type="text"
+                value="${escapeHtml(exerciseName)}"
+                placeholder="Input exercise name here"
+                aria-label="Exercise ${index + 1} name"
+                aria-autocomplete="list"
+                aria-controls="${suggestionMenuId}"
+                aria-expanded="false"
+                autocomplete="off"
+                data-exercise-title-name
+                data-exercise-name-input
+              />
+              <span
+                class="custom-workout-suggestion-menu"
+                id="${suggestionMenuId}"
+                role="listbox"
+                data-custom-exercise-suggestions
+                hidden
+              ></span>
+            </span>
           </strong>
-          <em>Log sets, weight, and notes.</em>
           <small data-set-progress>0 / 1 sets completed</small>
         </span>
         <button class="custom-workout-card-toggle" type="button" data-exercise-toggle aria-label="Toggle exercise ${index + 1}"><i>›</i></button>
@@ -3467,6 +3539,7 @@ function customWorkoutCardMarkup(exercise, workoutTitle, index = 0) {
           showSubmit: false,
           suggestExerciseNames: true,
           showExerciseNameField: false,
+          showActions: false,
           setCount: 1,
           userManagedSets: true
         })}
@@ -3507,7 +3580,6 @@ function customWorkoutPanelMarkup(index) {
           <p>Add your own exercises here and save them into your workout log.</p>
         </div>
         ${customWorkoutFormatPickerMarkup()}
-        ${exerciseSuggestionsDatalist()}
         ${warmupLogFields(customWorkoutTitle)}
         <div class="workout-app-list custom-workout-list" data-custom-workout-list data-custom-workout-format="${format}" role="list" aria-label="Custom workout exercises">
           ${customWorkoutListMarkup()}
@@ -3529,6 +3601,10 @@ function syncCustomWorkoutFormatMarkers(panel) {
     if (marker) {
       marker.textContent = customWorkoutFormatMarker(format, index);
     }
+
+    card.querySelector("[data-exercise-title-name]")?.setAttribute("aria-label", `Exercise ${index + 1} name`);
+    card.querySelector("[data-exercise-toggle]")?.setAttribute("aria-label", `Toggle exercise ${index + 1}`);
+    card.querySelector("[data-delete-exercise]")?.setAttribute("aria-label", `Delete exercise ${index + 1}`);
   });
 }
 
@@ -5431,6 +5507,7 @@ function removeExerciseLog(logElement) {
 
 function handleWorkoutInteractions() {
   document.addEventListener("click", (event) => {
+    const exerciseSuggestionButton = event.target.closest("[data-custom-exercise-suggestion]");
     const toggle = event.target.closest("[data-exercise-toggle]");
     const addSetButton = event.target.closest("[data-add-set]");
     const deleteLastSetButton = event.target.closest("[data-delete-last-set]");
@@ -5445,6 +5522,22 @@ function handleWorkoutInteractions() {
     const restTimerAddButton = event.target.closest("[data-rest-timer-add]");
     const restTimerResetButton = event.target.closest("[data-rest-timer-reset]");
     const repsInReserveButton = event.target.closest("[data-reps-in-reserve]");
+
+    if (!event.target.closest(".custom-workout-name-editor")) {
+      closeCustomExerciseSuggestions();
+    }
+
+    if (exerciseSuggestionButton) {
+      const editor = exerciseSuggestionButton.closest(".custom-workout-name-editor");
+      const input = editor?.querySelector("[data-exercise-title-name]");
+
+      if (input) {
+        input.value = exerciseSuggestionButton.dataset.customExerciseSuggestion || "";
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+        closeCustomExerciseSuggestions();
+      }
+      return;
+    }
 
     if (completeSetButton) {
       const setRow = completeSetButton.closest("[data-set-row]");
@@ -5512,7 +5605,8 @@ function handleWorkoutInteractions() {
     }
 
     if (deleteExerciseButton) {
-      const logElement = deleteExerciseButton.closest("[data-exercise-log]");
+      const logElement = deleteExerciseButton.closest("[data-exercise-log]") ||
+        deleteExerciseButton.closest("[data-custom-exercise-card]")?.querySelector("[data-exercise-log]");
 
       removeExerciseLog(logElement);
       scheduleTrainingLogAutosave(logElement);
@@ -5644,6 +5738,9 @@ function handleWorkoutInteractions() {
     ) {
       renderPreviousExerciseWeights(logElement);
     }
+    if (exerciseNameInput.matches("[data-exercise-title-name]")) {
+      renderCustomExerciseSuggestions(exerciseNameInput);
+    }
     persistCustomWorkoutDraftForElement(logElement);
     scheduleTrainingLogAutosave(logElement);
   });
@@ -5681,7 +5778,18 @@ function handleWorkoutInteractions() {
     scheduleTrainingLogAutosave(logElement);
   });
 
+  document.addEventListener("focusin", (event) => {
+    const exerciseNameInput = event.target.closest("[data-exercise-title-name]");
+
+    if (exerciseNameInput) {
+      renderCustomExerciseSuggestions(exerciseNameInput);
+    }
+  });
+
   document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && event.target.closest(".custom-workout-name-editor")) {
+      closeCustomExerciseSuggestions();
+    }
     if (event.key === "Escape" && !document.querySelector("[data-rest-timer-overlay]")?.hidden) {
       closeRestTimer();
     }

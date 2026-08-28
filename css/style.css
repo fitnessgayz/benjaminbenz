@@ -7984,17 +7984,59 @@ textarea,
 
 /* Custom exercise title editing lives in the card header to avoid a duplicate name field. */
 .custom-workout-card-summary {
+  min-height: 0;
+  padding: 12px 56px 12px 14px;
   cursor: default;
 }
 
 .custom-workout-card-summary > span {
   display: grid;
-  gap: 5px;
+  gap: 3px;
 }
 
-.custom-workout-card-summary .status-pill {
+.custom-workout-card-marker-row {
+  display: flex;
   width: fit-content;
-  margin-bottom: 5px;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 3px;
+}
+
+.custom-workout-card-marker-row .status-pill {
+  width: fit-content;
+  margin: 0;
+}
+
+.custom-workout-delete-icon {
+  display: grid;
+  width: 36px;
+  min-width: 36px;
+  height: 36px;
+  min-height: 36px;
+  padding: 7px;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--red);
+  cursor: pointer;
+}
+
+.custom-workout-delete-icon:hover,
+.custom-workout-delete-icon:focus-visible {
+  border-color: #ffaba8;
+  background: #fff7f6;
+  outline: none;
+}
+
+.custom-workout-delete-icon svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .custom-workout-editable-title {
@@ -8009,24 +8051,91 @@ textarea,
   flex: 0 0 auto;
 }
 
+.custom-workout-name-editor {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
 .custom-workout-editable-title input {
   width: 100%;
   min-width: 0;
-  min-height: 34px;
-  padding: 3px 6px;
-  border: 1px solid transparent;
-  border-radius: 6px;
-  background: transparent;
+  min-height: 42px;
+  padding: 7px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
   color: var(--black);
   font: inherit;
   font-weight: inherit;
 }
 
+.custom-workout-editable-title input::placeholder {
+  color: #92928d;
+  font-weight: 700;
+  opacity: 1;
+}
+
 .custom-workout-editable-title input:hover,
 .custom-workout-editable-title input:focus {
-  border-color: var(--line);
-  background: #fbfbf8;
+  border-color: var(--black);
+  background: var(--paper);
+  outline: 2px solid var(--lime);
+  outline-offset: 1px;
+}
+
+.custom-workout-suggestion-menu {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 4px);
+  right: 0;
+  left: 0;
+  max-height: 210px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, .16);
+}
+
+.custom-workout-suggestion-menu[hidden] {
+  display: none;
+}
+
+.custom-workout-suggestion-menu button {
+  display: block;
+  width: 100%;
+  min-height: 42px;
+  padding: 9px 11px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: var(--paper);
+  color: var(--black);
+  font: inherit;
+  font-size: .86rem;
+  font-weight: 800;
+  text-align: left;
+  cursor: pointer;
+}
+
+.custom-workout-suggestion-menu button:last-child {
+  border-bottom: 0;
+}
+
+.custom-workout-suggestion-menu button:hover,
+.custom-workout-suggestion-menu button:focus-visible {
+  background: #f4f4ef;
   outline: none;
+}
+
+.custom-workout-card.is-showing-suggestions {
+  z-index: 10;
+  overflow: visible;
+}
+
+.custom-workout-card.is-showing-suggestions .custom-workout-card-summary {
+  z-index: 3;
 }
 
 .custom-workout-card-toggle {
@@ -8060,7 +8169,7 @@ textarea,
 @media (max-width: 760px) {
   .dashboard-page .custom-workout-card > .custom-workout-card-summary,
   .coach-admin-page .custom-workout-card > .custom-workout-card-summary {
-    padding: 12px 56px 12px 12px !important;
+    padding: 10px 56px 10px 12px !important;
   }
 
   .dashboard-page .custom-workout-card .custom-workout-card-toggle,
