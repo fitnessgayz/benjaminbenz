@@ -2393,7 +2393,7 @@ function exerciseLogFields(exercise, workoutTitle, options = {}) {
         </label>
       `}
       ${options.showActions === false ? "" : exerciseLogActions({ showSkip: options.showSkipAction !== false })}
-      ${exerciseVideoMarkup(exercise)}
+      ${options.showDemo === false ? "" : exerciseVideoMarkup(exercise)}
       ${dateMarkup}
       <div class="set-table" aria-label="${escapeHtml(exercise.name)} set tracker">
       <div class="set-header">
@@ -4040,6 +4040,7 @@ function customWorkoutCardMarkup(exercise, workoutTitle, index = 0) {
           showExerciseNameField: false,
           showActions: false,
           showDate: false,
+          showDemo: false,
           setCount: 1,
           userManagedSets: true
         })}
