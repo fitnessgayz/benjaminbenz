@@ -25,15 +25,16 @@
 
 .dashboard-page .workout-session-date,
 .coach-admin-page .workout-session-date {
-  overflow: visible !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
 }
 
 .dashboard-page .workout-session-date-control,
 .coach-admin-page .workout-session-date-control {
   display: grid !important;
   grid-template-columns: minmax(0, 1fr) !important;
-  width: auto !important;
-  inline-size: auto !important;
+  width: 100% !important;
+  inline-size: 100% !important;
   max-width: 100% !important;
   min-width: 0 !important;
   color: inherit !important;
