@@ -2269,9 +2269,12 @@ function warmUpOrdinal(setNumber) {
 }
 
 function setNumberLabel(setNumber, setType) {
-  return normalizedSetType(setType, setNumber) === warmUpSetType
-    ? `W${warmUpOrdinal(setNumber)}`
-    : String(Number(setNumber) || 1);
+  if (normalizedSetType(setType, setNumber) === warmUpSetType) {
+    const ordinal = warmUpOrdinal(setNumber);
+    return ordinal === 1 ? "W" : `W${ordinal}`;
+  }
+
+  return String(Number(setNumber) || 1);
 }
 
 function setTypeForRow(row) {
@@ -2313,7 +2316,7 @@ function setRowMarkup(setNumber, repPlaceholder = "", setType = workingSetType, 
 function setRows(exercise) {
   const repTargets = repTargetsFromPrescription(exercise.prescription);
 
-  return setRowMarkup(1, repTargets[0] || "");
+  return setRowMarkup(warmUpSetNumberBase + 1, repTargets[0] || "", warmUpSetType);
 }
 
 function exerciseDisplayName(code, name) {
@@ -2974,7 +2977,14 @@ function applyCustomExerciseDraft(logElement, exerciseDraft) {
   }
 
   const rows = logElement.querySelector("[data-set-rows]");
-  const draftSets = Array.isArray(exerciseDraft.sets) ? exerciseDraft.sets : [];
+  const savedDraftSets = Array.isArray(exerciseDraft.sets) ? exerciseDraft.sets : [];
+  const hasWarmUpDraft = savedDraftSets.some((set, index) => (
+    normalizedSetType(set?.setType, index + 1) === warmUpSetType ||
+    String(set?.label || "").trim().toUpperCase().startsWith("W")
+  ));
+  const draftSets = hasWarmUpDraft
+    ? savedDraftSets
+    : [{ label: "W", weight: "", reps: "", setType: warmUpSetType, rir: "" }, ...savedDraftSets];
   const targetRows = Math.max(draftSets.length, 1);
   const nameInput = exerciseNameInputForLog(logElement);
   const dateInput = logElement.querySelector("[data-log-date]");
@@ -4252,15 +4262,18 @@ function savedStrengthSetSpecs(selectedLogs, workingMinimum = 1) {
     .filter((log) => normalizedSetType(log.set_type, log.set_number) !== warmUpSetType)
     .sort((a, b) => Number(a.set_number || 0) - Number(b.set_number || 0));
   const highestWorkingSet = workingLogs.reduce((max, log) => Math.max(max, Number(log.set_number || 0)), 0);
-  const workingCount = Math.max(highestWorkingSet, Number(workingMinimum) || 1);
-
-  return [
-    ...warmUps.map((log, index) => ({
+  const workingCount = Math.max(highestWorkingSet, Math.max(Number(workingMinimum) || 0, 0));
+  const warmUpSpecs = warmUps.length > 0
+    ? warmUps.map((log, index) => ({
       setNumber: Number(log.set_number) > warmUpSetNumberBase
         ? Number(log.set_number)
         : warmUpSetNumberBase + index + 1,
       setType: warmUpSetType
-    })),
+    }))
+    : [{ setNumber: warmUpSetNumberBase + 1, setType: warmUpSetType }];
+
+  return [
+    ...warmUpSpecs,
     ...Array.from({ length: workingCount }, (_, index) => ({
       setNumber: index + 1,
       setType: workingSetType
@@ -4277,7 +4290,7 @@ function restoreStrengthSetRows(logElement, selectedLogs) {
 
   const defaultReps = rows.querySelector("[data-set-reps]")?.dataset.defaultPlaceholder || "0";
   const workingMinimum = logElement.dataset.setTargetMode === "visible"
-    ? 1
+    ? 0
     : Math.max(Number(logElement.dataset.prescribedSets || 1), 1);
   const specs = savedStrengthSetSpecs(selectedLogs, workingMinimum);
 
@@ -5156,9 +5169,7 @@ function visibleSetTarget(logElement) {
     .length;
   const prescribedSets = Number(logElement?.dataset.prescribedSets || 0);
 
-  return logElement?.dataset.setTargetMode === "visible"
-    ? rowCount
-    : Math.max(rowCount, prescribedSets);
+  return Math.max(rowCount, prescribedSets);
 }
 
 function syncVisibleSetTarget(logElement) {
