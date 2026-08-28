@@ -3573,6 +3573,31 @@ function workoutElapsedTimeLabel(milliseconds) {
     : `${minuteLabel}:${secondLabel}`;
 }
 
+function workoutCompletionFields(now = Date.now()) {
+  const elapsedMilliseconds = workoutElapsedTimerState
+    ? workoutElapsedMilliseconds(now)
+    : 0;
+
+  return {
+    workout_duration_seconds: Math.max(1, Math.round(elapsedMilliseconds / 1000)),
+    completed_at: new Date(now).toISOString()
+  };
+}
+
+function workoutHistoryDurationLabel(seconds) {
+  if (seconds === null || seconds === undefined || seconds === "") {
+    return "";
+  }
+
+  const durationSeconds = Number(seconds);
+
+  if (!Number.isFinite(durationSeconds) || durationSeconds < 0) {
+    return "";
+  }
+
+  return `Workout time ${workoutElapsedTimeLabel(durationSeconds * 1000)}`;
+}
+
 function activeWorkoutElapsedTitle() {
   const panelTitle = document
     .querySelector(".client-workout-panel.is-active:not([hidden]) .panel-heading h2")
@@ -3784,8 +3809,7 @@ function workoutActionsMarkup(workout, options = {}) {
   return `
     <div class="workout-actions">
       <div>
-        <button class="workout-save-button" type="button" data-workout-save>Save progress</button>
-        <button class="workout-finish-button" type="button" data-workout-finish>Finish and save workout</button>
+        <button class="workout-finish-button" type="button" data-workout-finish>Finish workout</button>
       </div>
       <small data-workout-status></small>
     </div>
@@ -4745,11 +4769,27 @@ function renderClientTrainingLogs() {
       workoutGroups.set(workoutKey, {
         entry_date: log.entry_date || "",
         workout_title: log.workout_title || "Workout",
+        workout_duration_seconds: null,
+        completed_at: "",
         supersets: new Map()
       });
     }
 
     const workoutGroup = workoutGroups.get(workoutKey);
+    const hasWorkoutDuration = log.workout_duration_seconds !== null &&
+      log.workout_duration_seconds !== undefined &&
+      log.workout_duration_seconds !== "";
+    const durationSeconds = Number(log.workout_duration_seconds);
+
+    if (hasWorkoutDuration && Number.isFinite(durationSeconds) && durationSeconds >= 0) {
+      workoutGroup.workout_duration_seconds = Math.max(
+        Number(workoutGroup.workout_duration_seconds) || 0,
+        durationSeconds
+      );
+    }
+    if (log.completed_at) {
+      workoutGroup.completed_at = String(log.completed_at);
+    }
 
     if (!workoutGroup.supersets.has(supersetKey)) {
       workoutGroup.supersets.set(supersetKey, {
@@ -4799,6 +4839,8 @@ function renderClientTrainingLogs() {
 
   const workoutHistorySections = workoutSections.map((workout) => {
     const supersets = Array.from(workout.supersets.values()).sort((a, b) => a.key.localeCompare(b.key));
+    const workoutDuration = workoutHistoryDurationLabel(workout.workout_duration_seconds);
+    const workoutHeading = [workout.workout_title, workoutDuration].filter(Boolean).join(" · ");
 
     return {
       sort_key: `${workout.entry_date || ""}::workout::${workout.workout_title || ""}`,
@@ -4806,7 +4848,7 @@ function renderClientTrainingLogs() {
         <section class="training-log-workout-group">
           <div class="training-log-workout-heading">
             <strong>${escapeHtml(formatLogDate(workout.entry_date))}</strong>
-            <span>${escapeHtml(workout.workout_title)}</span>
+            <span>${escapeHtml(workoutHeading)}</span>
           </div>
           <div class="training-log-superset-list">
             ${supersets.map((superset) => {
@@ -4959,6 +5001,8 @@ function workoutHistoryCsv(logs = []) {
     "Set type",
     "Weight (lbs)",
     "Reps",
+    "Workout time (seconds)",
+    "Workout finished at",
     "Duration (min)",
     "Distance",
     "Notes"
@@ -4979,6 +5023,8 @@ function workoutHistoryCsv(logs = []) {
         : normalizedSetType(log.set_type, log.set_number) === warmUpSetType ? "Warm-up" : "Working",
       isWarmup || isCardio ? "" : log.weight_used ?? "",
       isWarmup || isCardio ? "" : log.reps ?? "",
+      log.workout_duration_seconds ?? "",
+      log.completed_at || "",
       isWarmup || isCardio ? log.weight_used ?? "" : "",
       isCardio ? log.reps ?? "" : "",
       log.notes || ""
@@ -7082,7 +7128,11 @@ async function saveTrainingLogRows(button, logElements, status, options = {}) {
     return { saved: false, error: deleteError };
   }
 
-  const rows = logElements.flatMap(rowsForTrainingLog);
+  const rows = logElements
+    .flatMap(rowsForTrainingLog)
+    .map((row) => options.workoutCompletion
+      ? { ...row, ...options.workoutCompletion }
+      : row);
 
   if (rows.length === 0) {
     if (deletedCount > 0) {
@@ -7137,10 +7187,9 @@ async function saveTrainingLogRows(button, logElements, status, options = {}) {
 
 async function handleTrainingLogSave() {
   document.addEventListener("click", async (event) => {
-    const saveWorkoutButton = event.target.closest("[data-workout-save]");
     const finishWorkoutButton = event.target.closest("[data-workout-finish]");
     const supersetButton = event.target.closest("[data-superset-submit]");
-    const workoutButton = saveWorkoutButton || finishWorkoutButton;
+    const workoutButton = finishWorkoutButton;
     const button = workoutButton || supersetButton;
 
     if (!button) {
@@ -7152,39 +7201,42 @@ async function handleTrainingLogSave() {
       const logElements = Array.from(section?.querySelectorAll("[data-exercise-log]") || []);
       const status = section?.querySelector("[data-workout-status]");
 
-      if (finishWorkoutButton) {
-        const incompleteExercises = incompleteWorkoutExercises(logElements);
+      const incompleteExercises = incompleteWorkoutExercises(logElements);
 
-        if (incompleteExercises.length > 0) {
-          const saveResult = await saveTrainingLogRows(finishWorkoutButton, logElements, status, {
-            savingMessage: "Saving progress...",
-            successMessage: "Workout progress saved."
-          });
+      if (incompleteExercises.length > 0) {
+        const saveResult = await saveTrainingLogRows(finishWorkoutButton, logElements, status, {
+          savingMessage: "Saving progress...",
+          successMessage: "Workout progress saved."
+        });
 
-          if (!saveResult.saved) {
-            return;
-          }
-
-          const names = incompleteExercises
-            .slice(0, 3)
-            .map((logElement) => currentExerciseLabel(logElement))
-            .filter(Boolean)
-            .join(", ");
-          const extra = incompleteExercises.length > 3 ? ` and ${incompleteExercises.length - 3} more` : "";
-
-          if (status) {
-            status.textContent = `Workout progress saved. Finish still needs all sets logged${names ? `: ${names}${extra}.` : "."}`;
-          }
+        if (!saveResult.saved) {
           return;
         }
+
+        const names = incompleteExercises
+          .slice(0, 3)
+          .map((logElement) => currentExerciseLabel(logElement))
+          .filter(Boolean)
+          .join(", ");
+        const extra = incompleteExercises.length > 3 ? ` and ${incompleteExercises.length - 3} more` : "";
+
+        if (status) {
+          status.textContent = `Workout progress saved. Finish still needs all sets logged${names ? `: ${names}${extra}.` : "."}`;
+        }
+        return;
       }
 
+      if (!workoutElapsedTimerState) {
+        startWorkoutElapsedTimer(logElements[0]?.dataset.workoutTitle || activeWorkoutElapsedTitle());
+      }
+      const workoutCompletion = workoutCompletionFields();
       const saveResult = await saveTrainingLogRows(workoutButton, logElements, status, {
-        savingMessage: finishWorkoutButton ? "Finishing workout..." : "Saving workout...",
-        successMessage: finishWorkoutButton ? "Workout finished." : "Workout progress saved."
+        savingMessage: "Finishing workout...",
+        successMessage: "Workout finished.",
+        workoutCompletion
       });
 
-      if (finishWorkoutButton && saveResult.saved) {
+      if (saveResult.saved) {
         finishWorkoutElapsedTimer();
         await syncFinishedWorkoutToFitbit(saveResult.rows || [], status);
       }

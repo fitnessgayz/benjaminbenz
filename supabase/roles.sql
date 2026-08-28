@@ -79,6 +79,12 @@ add column if not exists set_type text not null default 'working';
 alter table public.client_workout_logs
 add column if not exists duration_seconds numeric;
 
+alter table public.client_workout_logs
+add column if not exists workout_duration_seconds integer;
+
+alter table public.client_workout_logs
+add column if not exists completed_at timestamptz;
+
 alter table public.client_programs enable row level security;
 alter table public.client_progress enable row level security;
 alter table public.client_workout_logs enable row level security;
