@@ -1,0 +1,45 @@
+/* Loaded after style.css so older portal containment rules cannot reposition
+   the editable custom-workout header or layer suggestions over the form. */
+.dashboard-page .custom-workout-suggestion-menu,
+.coach-admin-page .custom-workout-suggestion-menu {
+  position: static !important;
+  inset: auto !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  margin-top: 4px !important;
+  overflow-y: auto !important;
+  box-shadow: none !important;
+}
+
+.dashboard-page .custom-workout-card .custom-workout-card-toggle,
+.coach-admin-page .custom-workout-card .custom-workout-card-toggle {
+  top: 12px !important;
+  transform: none !important;
+}
+
+.dashboard-page .custom-workout-card.is-open .custom-workout-card-toggle i,
+.coach-admin-page .custom-workout-card.is-open .custom-workout-card-toggle i {
+  transform: rotate(90deg) !important;
+}
+
+@media (max-width: 760px) {
+  .dashboard-page .custom-workout-card > .custom-workout-card-summary,
+  .coach-admin-page .custom-workout-card > .custom-workout-card-summary {
+    display: block !important;
+    padding: 12px !important;
+    overflow: visible !important;
+  }
+
+  .dashboard-page .custom-workout-card-marker-row,
+  .coach-admin-page .custom-workout-card-marker-row {
+    padding-right: 44px !important;
+  }
+
+  .dashboard-page .custom-workout-card .custom-workout-card-toggle,
+  .coach-admin-page .custom-workout-card .custom-workout-card-toggle {
+    top: 10px !important;
+    right: 8px !important;
+    transform: none !important;
+  }
+}
