@@ -3098,55 +3098,60 @@ footer {
   border-color: #1fa637;
 }
 
-.rest-timer-open {
-  overflow: hidden;
-}
-
 .rest-timer-overlay {
   position: fixed;
-  inset: 0;
+  inset: auto 0 max(12px, env(safe-area-inset-bottom)) 0;
   z-index: 100;
-  display: grid;
-  align-items: end;
-  padding: 16px;
-  background: rgba(0, 0, 0, .58);
+  display: flex;
+  justify-content: center;
+  padding: 0 12px;
+  pointer-events: none;
 }
 
 .rest-timer-sheet {
   display: grid;
-  width: min(440px, 100%);
-  gap: 16px;
-  margin: 0 auto;
-  padding: 20px;
-  border: 1px solid var(--line);
-  border-radius: 24px;
+  width: min(560px, 100%);
+  max-height: min(78dvh, 620px);
+  gap: 10px;
+  padding: 14px;
+  overflow-y: auto;
+  border: 2px solid var(--black);
+  border-radius: 4px;
   background: var(--paper);
-  box-shadow: 0 24px 70px rgba(0, 0, 0, .28);
+  box-shadow: 0 14px 42px rgba(0, 0, 0, .32);
+  pointer-events: auto;
 }
 
 .rest-timer-heading {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: center;
-  justify-content: space-between;
   gap: 12px;
 }
 
 .rest-timer-heading div {
   display: grid;
+  min-width: 0;
   gap: 3px;
 }
 
 .rest-timer-heading small {
-  color: var(--muted);
+  color: #568000;
   font-size: .7rem;
   font-weight: 900;
+  letter-spacing: .08em;
   text-transform: uppercase;
 }
 
 .rest-timer-heading strong {
+  display: block;
+  max-width: 250px;
+  overflow: hidden;
   color: var(--black);
-  font-size: 1.35rem;
+  font-size: 1rem;
   font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .rest-timer-close {
@@ -3156,7 +3161,7 @@ footer {
   height: 42px;
   padding: 0;
   border: 1px solid var(--line);
-  border-radius: 50%;
+  border-radius: 2px;
   color: var(--black);
   background: var(--paper);
   font: inherit;
@@ -3166,20 +3171,39 @@ footer {
 
 .rest-timer-display {
   color: var(--black);
-  font-size: clamp(4.5rem, 24vw, 7rem);
+  font-size: clamp(2rem, 9vw, 3rem);
   font-variant-numeric: tabular-nums;
   font-weight: 900;
-  line-height: .9;
+  line-height: 1;
   text-align: center;
 }
 
 .rest-timer-status {
-  margin: -6px 0 0;
+  margin: -5px 54px 0 0;
   color: var(--muted);
-  font-size: .8rem;
+  font-size: .68rem;
   font-weight: 900;
-  text-align: center;
+  text-align: right;
   text-transform: uppercase;
+}
+
+.rest-timer-options {
+  border-top: 1px solid var(--line);
+}
+
+.rest-timer-options summary {
+  padding: 9px 2px 2px;
+  color: var(--black);
+  font-size: .72rem;
+  font-weight: 900;
+  cursor: pointer;
+  text-transform: uppercase;
+}
+
+.rest-timer-options-body {
+  display: grid;
+  gap: 10px;
+  padding-top: 10px;
 }
 
 .rest-timer-effort {
@@ -3242,7 +3266,7 @@ footer {
 }
 
 .rest-timer-actions {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .rest-timer-presets button,

@@ -3128,34 +3128,40 @@ function restTimerTimeLabel(seconds) {
 function restTimerMarkup() {
   return `
     <div class="rest-timer-overlay" data-rest-timer-overlay hidden>
-      <section class="rest-timer-sheet" role="dialog" aria-modal="true" aria-labelledby="rest-timer-title">
+      <section class="rest-timer-sheet" role="region" aria-labelledby="rest-timer-title">
         <header class="rest-timer-heading">
           <div>
-            <small>Workout timer</small>
-            <strong id="rest-timer-title">Rest timer</strong>
+            <small id="rest-timer-title">Rest timer</small>
+            <strong data-rest-timer-exercise>Between sets</strong>
           </div>
-          <button class="rest-timer-close" type="button" data-rest-timer-close aria-label="Close timer">×</button>
+          <output class="rest-timer-display" data-rest-timer-display aria-live="polite">01:00</output>
+          <button class="rest-timer-close" type="button" data-rest-timer-close aria-label="Dismiss timer">×</button>
         </header>
-        <output class="rest-timer-display" data-rest-timer-display aria-live="polite">01:00</output>
         <p class="rest-timer-status" data-rest-timer-status>Ready</p>
-        <section class="rest-timer-effort" aria-labelledby="rest-timer-effort-question">
-          <strong id="rest-timer-effort-question">How many more reps could you have done?</strong>
-          <div class="rest-timer-effort-options" role="group" aria-label="Reps in reserve">
-            ${[0, 1, 2, 3, 4].map((reps) => `
-              <button type="button" data-reps-in-reserve="${reps}" aria-pressed="false">${reps === 4 ? "4+" : reps}</button>
-            `).join("")}
-          </div>
-          <small>Optional · saved with this set</small>
-        </section>
-        <div class="rest-timer-presets" role="group" aria-label="Timer duration">
-          ${[30, 60, 90].map((seconds) => `
-            <button type="button" data-rest-timer-preset="${seconds}" aria-pressed="${seconds === 60 ? "true" : "false"}">${seconds} sec</button>
-          `).join("")}
-        </div>
         <div class="rest-timer-actions">
           <button class="rest-timer-start" type="button" data-rest-timer-start>Start</button>
+          <button type="button" data-rest-timer-add="30">+30 sec</button>
           <button class="rest-timer-reset" type="button" data-rest-timer-reset>Reset</button>
         </div>
+        <details class="rest-timer-options">
+          <summary>Timer options</summary>
+          <div class="rest-timer-options-body">
+            <section class="rest-timer-effort" aria-labelledby="rest-timer-effort-question">
+              <strong id="rest-timer-effort-question">How many more reps could you have done?</strong>
+              <div class="rest-timer-effort-options" role="group" aria-label="Reps in reserve">
+                ${[0, 1, 2, 3, 4].map((reps) => `
+                  <button type="button" data-reps-in-reserve="${reps}" aria-pressed="false">${reps === 4 ? "4+" : reps}</button>
+                `).join("")}
+              </div>
+              <small>Optional · saved with this set</small>
+            </section>
+            <div class="rest-timer-presets" role="group" aria-label="Timer duration">
+              ${[30, 60, 90].map((seconds) => `
+                <button type="button" data-rest-timer-preset="${seconds}" aria-pressed="${seconds === 60 ? "true" : "false"}">${seconds} sec</button>
+              `).join("")}
+            </div>
+          </div>
+        </details>
       </section>
     </div>
   `;
@@ -3201,8 +3207,13 @@ function renderRestTimer() {
   const display = overlay?.querySelector("[data-rest-timer-display]");
   const status = overlay?.querySelector("[data-rest-timer-status]");
   const startButton = overlay?.querySelector("[data-rest-timer-start]");
+  const exerciseLabel = overlay?.querySelector("[data-rest-timer-exercise]");
   const effortQuestion = overlay?.querySelector(".rest-timer-effort");
   const isWarmUpSet = setTypeForRow(restTimerSetRow) === warmUpSetType;
+  const exerciseLog = restTimerSetRow?.closest("[data-exercise-log]");
+  const exerciseName = exerciseNameInputForLog(exerciseLog)?.value.trim() ||
+    exerciseLog?.dataset.exerciseName ||
+    "Between sets";
 
   syncRestTimerRemaining();
   const isRunning = restTimerEndsAt > 0;
@@ -3215,6 +3226,9 @@ function renderRestTimer() {
   }
   if (startButton) {
     startButton.textContent = isRunning ? "Pause" : restTimerRemainingSeconds === 0 ? "Start again" : "Start";
+  }
+  if (exerciseLabel) {
+    exerciseLabel.textContent = exerciseName;
   }
   if (effortQuestion) {
     effortQuestion.hidden = isWarmUpSet;
@@ -3267,6 +3281,20 @@ function resetRestTimer() {
   restTimerEndsAt = 0;
   restTimerRemainingSeconds = restTimerDurationSeconds;
   clearRestTimerInterval();
+  renderRestTimer();
+}
+
+function addRestTimerSeconds(seconds = 30) {
+  const extraSeconds = Math.max(1, Math.round(Number(seconds) || 30));
+
+  restTimerRemainingSeconds += extraSeconds;
+  if (restTimerEndsAt) {
+    restTimerEndsAt += extraSeconds * 1000;
+  } else if (restTimerRemainingSeconds === extraSeconds) {
+    restTimerEndsAt = Date.now() + extraSeconds * 1000;
+    clearRestTimerInterval();
+    restTimerIntervalId = window.setInterval(tickRestTimer, 250);
+  }
   renderRestTimer();
 }
 
@@ -5414,6 +5442,7 @@ function handleWorkoutInteractions() {
     const closeRestTimerButton = event.target.closest("[data-rest-timer-close]");
     const restTimerPresetButton = event.target.closest("[data-rest-timer-preset]");
     const restTimerStartButton = event.target.closest("[data-rest-timer-start]");
+    const restTimerAddButton = event.target.closest("[data-rest-timer-add]");
     const restTimerResetButton = event.target.closest("[data-rest-timer-reset]");
     const repsInReserveButton = event.target.closest("[data-reps-in-reserve]");
 
@@ -5446,6 +5475,11 @@ function handleWorkoutInteractions() {
 
     if (restTimerStartButton) {
       startOrPauseRestTimer();
+      return;
+    }
+
+    if (restTimerAddButton) {
+      addRestTimerSeconds(restTimerAddButton.dataset.restTimerAdd);
       return;
     }
 
