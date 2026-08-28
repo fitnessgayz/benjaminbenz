@@ -47,6 +47,8 @@ const workingSetType = "working";
 const warmUpSetType = "warm_up";
 const clientDashboardUrl = "client-dashboard.html?v=manual-sessions-1";
 const fitbitOauthStateKey = "fwb_google_health_oauth_state";
+const workoutElapsedTimerStorageKey = "fwb_workout_elapsed_timer_v1";
+const workoutElapsedTimerMaximumMilliseconds = 24 * 60 * 60 * 1000;
 let fitbitConnection = { loaded: false, connected: false };
 let exerciseLibraryEntries = [];
 let activeCustomWorkoutFormat = "single";
@@ -56,6 +58,8 @@ let restTimerEndsAt = 0;
 let restTimerIntervalId = null;
 let restTimerReturnFocus = null;
 let restTimerSetRow = null;
+let workoutElapsedTimerState = null;
+let workoutElapsedTimerIntervalId = null;
 
 function isCoachPortalEmail(email) {
   return coachPortalEmails.includes(String(email || "").toLowerCase());
@@ -3183,40 +3187,34 @@ function restTimerTimeLabel(seconds) {
 function restTimerMarkup() {
   return `
     <div class="rest-timer-overlay" data-rest-timer-overlay hidden>
-      <section class="rest-timer-sheet" role="region" aria-labelledby="rest-timer-title">
+      <section class="rest-timer-sheet" role="dialog" aria-modal="true" aria-labelledby="rest-timer-title">
         <header class="rest-timer-heading">
           <div>
-            <small id="rest-timer-title">Rest timer</small>
-            <strong data-rest-timer-exercise>Between sets</strong>
+            <small>Between sets</small>
+            <strong id="rest-timer-title">Rest timer</strong>
           </div>
-          <output class="rest-timer-display" data-rest-timer-display aria-live="polite">01:00</output>
-          <button class="rest-timer-close" type="button" data-rest-timer-close aria-label="Dismiss timer">×</button>
+          <button class="rest-timer-close" type="button" data-rest-timer-close aria-label="Close timer">×</button>
         </header>
+        <output class="rest-timer-display" data-rest-timer-display aria-live="polite">01:00</output>
         <p class="rest-timer-status" data-rest-timer-status>Ready</p>
+        <section class="rest-timer-effort" aria-labelledby="rest-timer-effort-question">
+          <strong id="rest-timer-effort-question">How many more reps could you have done?</strong>
+          <div class="rest-timer-effort-options" role="group" aria-label="Reps in reserve">
+            ${[0, 1, 2, 3, 4].map((reps) => `
+              <button type="button" data-reps-in-reserve="${reps}" aria-pressed="false">${reps === 4 ? "4+" : reps}</button>
+            `).join("")}
+          </div>
+          <small>Optional · saved with this set</small>
+        </section>
+        <div class="rest-timer-presets" role="group" aria-label="Timer duration">
+          ${[30, 60, 90].map((seconds) => `
+            <button type="button" data-rest-timer-preset="${seconds}" aria-pressed="${seconds === 60 ? "true" : "false"}">${seconds} sec</button>
+          `).join("")}
+        </div>
         <div class="rest-timer-actions">
           <button class="rest-timer-start" type="button" data-rest-timer-start>Start</button>
-          <button type="button" data-rest-timer-add="30">+30 sec</button>
           <button class="rest-timer-reset" type="button" data-rest-timer-reset>Reset</button>
         </div>
-        <details class="rest-timer-options">
-          <summary>Timer options</summary>
-          <div class="rest-timer-options-body">
-            <section class="rest-timer-effort" aria-labelledby="rest-timer-effort-question">
-              <strong id="rest-timer-effort-question">How many more reps could you have done?</strong>
-              <div class="rest-timer-effort-options" role="group" aria-label="Reps in reserve">
-                ${[0, 1, 2, 3, 4].map((reps) => `
-                  <button type="button" data-reps-in-reserve="${reps}" aria-pressed="false">${reps === 4 ? "4+" : reps}</button>
-                `).join("")}
-              </div>
-              <small>Optional · saved with this set</small>
-            </section>
-            <div class="rest-timer-presets" role="group" aria-label="Timer duration">
-              ${[30, 60, 90].map((seconds) => `
-                <button type="button" data-rest-timer-preset="${seconds}" aria-pressed="${seconds === 60 ? "true" : "false"}">${seconds} sec</button>
-              `).join("")}
-            </div>
-          </div>
-        </details>
       </section>
     </div>
   `;
@@ -3262,13 +3260,8 @@ function renderRestTimer() {
   const display = overlay?.querySelector("[data-rest-timer-display]");
   const status = overlay?.querySelector("[data-rest-timer-status]");
   const startButton = overlay?.querySelector("[data-rest-timer-start]");
-  const exerciseLabel = overlay?.querySelector("[data-rest-timer-exercise]");
   const effortQuestion = overlay?.querySelector(".rest-timer-effort");
   const isWarmUpSet = setTypeForRow(restTimerSetRow) === warmUpSetType;
-  const exerciseLog = restTimerSetRow?.closest("[data-exercise-log]");
-  const exerciseName = exerciseNameInputForLog(exerciseLog)?.value.trim() ||
-    exerciseLog?.dataset.exerciseName ||
-    "Between sets";
 
   syncRestTimerRemaining();
   const isRunning = restTimerEndsAt > 0;
@@ -3281,9 +3274,6 @@ function renderRestTimer() {
   }
   if (startButton) {
     startButton.textContent = isRunning ? "Pause" : restTimerRemainingSeconds === 0 ? "Start again" : "Start";
-  }
-  if (exerciseLabel) {
-    exerciseLabel.textContent = exerciseName;
   }
   if (effortQuestion) {
     effortQuestion.hidden = isWarmUpSet;
@@ -3339,20 +3329,6 @@ function resetRestTimer() {
   renderRestTimer();
 }
 
-function addRestTimerSeconds(seconds = 30) {
-  const extraSeconds = Math.max(1, Math.round(Number(seconds) || 30));
-
-  restTimerRemainingSeconds += extraSeconds;
-  if (restTimerEndsAt) {
-    restTimerEndsAt += extraSeconds * 1000;
-  } else if (restTimerRemainingSeconds === extraSeconds) {
-    restTimerEndsAt = Date.now() + extraSeconds * 1000;
-    clearRestTimerInterval();
-    restTimerIntervalId = window.setInterval(tickRestTimer, 250);
-  }
-  renderRestTimer();
-}
-
 function setRestTimerDuration(seconds) {
   restTimerDurationSeconds = Math.max(1, Math.round(Number(seconds) || 60));
   resetRestTimer();
@@ -3381,6 +3357,224 @@ function closeRestTimer() {
   restTimerReturnFocus?.focus();
   restTimerReturnFocus = null;
   restTimerSetRow = null;
+}
+
+function workoutElapsedTimerMarkup() {
+  return `
+    <aside class="workout-elapsed-timer" data-workout-elapsed-timer hidden aria-label="Workout duration">
+      <div class="workout-elapsed-timer-copy">
+        <small>Workout time</small>
+        <strong data-workout-elapsed-title>Workout in progress</strong>
+      </div>
+      <output data-workout-elapsed-display role="timer" aria-live="off">00:00</output>
+      <button type="button" data-workout-elapsed-toggle aria-label="Pause workout timer">Pause</button>
+    </aside>
+  `;
+}
+
+function ensureWorkoutElapsedTimer() {
+  let timer = document.querySelector("[data-workout-elapsed-timer]");
+
+  if (!timer) {
+    document.body.insertAdjacentHTML("beforeend", workoutElapsedTimerMarkup());
+    timer = document.querySelector("[data-workout-elapsed-timer]");
+  }
+
+  return timer;
+}
+
+function workoutElapsedTimerClientEmail() {
+  return String(activeClientEmail || signedInDashboardEmail || "").trim().toLowerCase();
+}
+
+function readWorkoutElapsedTimerState() {
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(workoutElapsedTimerStorageKey) || "null");
+
+    if (!parsed || typeof parsed !== "object") {
+      return null;
+    }
+
+    const state = {
+      clientEmail: String(parsed.clientEmail || "").trim().toLowerCase(),
+      workoutTitle: String(parsed.workoutTitle || "Workout").trim() || "Workout",
+      accumulatedMilliseconds: Math.max(0, Number(parsed.accumulatedMilliseconds) || 0),
+      startedAt: Math.max(0, Number(parsed.startedAt) || 0),
+      running: Boolean(parsed.running)
+    };
+    const activeMilliseconds = state.running && state.startedAt
+      ? Math.max(0, Date.now() - state.startedAt)
+      : 0;
+
+    if (state.accumulatedMilliseconds + activeMilliseconds > workoutElapsedTimerMaximumMilliseconds) {
+      window.localStorage.removeItem(workoutElapsedTimerStorageKey);
+      return null;
+    }
+
+    return state;
+  } catch (_error) {
+    return null;
+  }
+}
+
+function persistWorkoutElapsedTimerState() {
+  if (!workoutElapsedTimerState) {
+    return;
+  }
+
+  try {
+    window.localStorage.setItem(workoutElapsedTimerStorageKey, JSON.stringify(workoutElapsedTimerState));
+  } catch (_error) {
+    // The timer still works for this page view when storage is unavailable.
+  }
+}
+
+function clearWorkoutElapsedTimerInterval() {
+  if (workoutElapsedTimerIntervalId) {
+    window.clearInterval(workoutElapsedTimerIntervalId);
+    workoutElapsedTimerIntervalId = null;
+  }
+}
+
+function workoutElapsedMilliseconds(now = Date.now()) {
+  if (!workoutElapsedTimerState) {
+    return 0;
+  }
+
+  const activeMilliseconds = workoutElapsedTimerState.running && workoutElapsedTimerState.startedAt
+    ? Math.max(0, now - workoutElapsedTimerState.startedAt)
+    : 0;
+
+  return workoutElapsedTimerState.accumulatedMilliseconds + activeMilliseconds;
+}
+
+function workoutElapsedTimeLabel(milliseconds) {
+  const totalSeconds = Math.max(0, Math.floor((Number(milliseconds) || 0) / 1000));
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  const minuteLabel = String(minutes).padStart(2, "0");
+  const secondLabel = String(seconds).padStart(2, "0");
+
+  return hours > 0
+    ? `${hours}:${minuteLabel}:${secondLabel}`
+    : `${minuteLabel}:${secondLabel}`;
+}
+
+function activeWorkoutElapsedTitle() {
+  const panelTitle = document
+    .querySelector(".client-workout-panel.is-active:not([hidden]) .panel-heading h2")
+    ?.textContent
+    ?.trim();
+  const homeTitle = document.getElementById("client-home-workout-title")?.textContent?.trim();
+
+  return panelTitle || homeTitle || "Workout";
+}
+
+function renderWorkoutElapsedTimer() {
+  const timer = ensureWorkoutElapsedTimer();
+
+  if (!workoutElapsedTimerState) {
+    timer.hidden = true;
+    return;
+  }
+
+  const display = timer.querySelector("[data-workout-elapsed-display]");
+  const title = timer.querySelector("[data-workout-elapsed-title]");
+  const toggleButton = timer.querySelector("[data-workout-elapsed-toggle]");
+
+  timer.hidden = false;
+  if (display) {
+    display.textContent = workoutElapsedTimeLabel(workoutElapsedMilliseconds());
+  }
+  if (title) {
+    title.textContent = workoutElapsedTimerState.workoutTitle || "Workout";
+  }
+  if (toggleButton) {
+    toggleButton.textContent = workoutElapsedTimerState.running ? "Pause" : "Resume";
+    toggleButton.setAttribute(
+      "aria-label",
+      workoutElapsedTimerState.running ? "Pause workout timer" : "Resume workout timer"
+    );
+  }
+}
+
+function runWorkoutElapsedTimer() {
+  clearWorkoutElapsedTimerInterval();
+  if (workoutElapsedTimerState?.running) {
+    workoutElapsedTimerIntervalId = window.setInterval(renderWorkoutElapsedTimer, 1000);
+  }
+  renderWorkoutElapsedTimer();
+}
+
+function startWorkoutElapsedTimer(workoutTitle = "") {
+  const clientEmail = workoutElapsedTimerClientEmail();
+  const storedState = readWorkoutElapsedTimerState();
+  const canResumeStoredState = storedState && (!storedState.clientEmail || storedState.clientEmail === clientEmail);
+
+  workoutElapsedTimerState = canResumeStoredState
+    ? storedState
+    : {
+        clientEmail,
+        workoutTitle: String(workoutTitle || activeWorkoutElapsedTitle()).trim() || "Workout",
+        accumulatedMilliseconds: 0,
+        startedAt: Date.now(),
+        running: true
+      };
+
+  workoutElapsedTimerState.clientEmail = clientEmail;
+  workoutElapsedTimerState.workoutTitle = String(
+    workoutTitle || workoutElapsedTimerState.workoutTitle || activeWorkoutElapsedTitle()
+  ).trim() || "Workout";
+
+  if (!workoutElapsedTimerState.running) {
+    workoutElapsedTimerState.startedAt = Date.now();
+    workoutElapsedTimerState.running = true;
+  }
+
+  persistWorkoutElapsedTimerState();
+  runWorkoutElapsedTimer();
+}
+
+function restoreWorkoutElapsedTimer() {
+  const storedState = readWorkoutElapsedTimerState();
+  const clientEmail = workoutElapsedTimerClientEmail();
+
+  if (!storedState || (storedState.clientEmail && storedState.clientEmail !== clientEmail)) {
+    return;
+  }
+
+  workoutElapsedTimerState = storedState;
+  runWorkoutElapsedTimer();
+}
+
+function toggleWorkoutElapsedTimer() {
+  if (!workoutElapsedTimerState) {
+    return;
+  }
+
+  if (workoutElapsedTimerState.running) {
+    workoutElapsedTimerState.accumulatedMilliseconds = workoutElapsedMilliseconds();
+    workoutElapsedTimerState.startedAt = 0;
+    workoutElapsedTimerState.running = false;
+  } else {
+    workoutElapsedTimerState.startedAt = Date.now();
+    workoutElapsedTimerState.running = true;
+  }
+
+  persistWorkoutElapsedTimerState();
+  runWorkoutElapsedTimer();
+}
+
+function finishWorkoutElapsedTimer() {
+  workoutElapsedTimerState = null;
+  clearWorkoutElapsedTimerInterval();
+  try {
+    window.localStorage.removeItem(workoutElapsedTimerStorageKey);
+  } catch (_error) {
+    // Nothing else is required when storage is unavailable.
+  }
+  renderWorkoutElapsedTimer();
 }
 
 function supersetCard(group, workoutTitle, workoutFocus = "") {
@@ -4945,6 +5139,11 @@ function handleClientSummaryActions() {
       const tabName = summaryTabButton?.dataset.clientSummaryGoTab || "sessions";
       const panel = document.querySelector(`[data-client-dashboard-panel="${tabName}"]`);
 
+      if (tabName === "workouts") {
+        startWorkoutElapsedTimer(
+          document.getElementById("client-home-workout-title")?.textContent || activeWorkoutElapsedTitle()
+        );
+      }
       setClientDashboardTab(tabName);
       panel?.scrollIntoView({ behavior: "smooth", block: "start" });
       return;
@@ -5519,9 +5718,14 @@ function handleWorkoutInteractions() {
     const closeRestTimerButton = event.target.closest("[data-rest-timer-close]");
     const restTimerPresetButton = event.target.closest("[data-rest-timer-preset]");
     const restTimerStartButton = event.target.closest("[data-rest-timer-start]");
-    const restTimerAddButton = event.target.closest("[data-rest-timer-add]");
     const restTimerResetButton = event.target.closest("[data-rest-timer-reset]");
     const repsInReserveButton = event.target.closest("[data-reps-in-reserve]");
+    const workoutElapsedToggleButton = event.target.closest("[data-workout-elapsed-toggle]");
+
+    if (workoutElapsedToggleButton) {
+      toggleWorkoutElapsedTimer();
+      return;
+    }
 
     if (!event.target.closest(".custom-workout-name-editor")) {
       closeCustomExerciseSuggestions();
@@ -5543,6 +5747,9 @@ function handleWorkoutInteractions() {
       const setRow = completeSetButton.closest("[data-set-row]");
       const logElement = completeSetButton.closest("[data-exercise-log]");
 
+      if (!workoutElapsedTimerState) {
+        startWorkoutElapsedTimer(logElement?.dataset.workoutTitle || activeWorkoutElapsedTitle());
+      }
       setRow?.classList.add("is-complete");
       completeSetButton.setAttribute("aria-pressed", "true");
       if (logElement) {
@@ -5568,11 +5775,6 @@ function handleWorkoutInteractions() {
 
     if (restTimerStartButton) {
       startOrPauseRestTimer();
-      return;
-    }
-
-    if (restTimerAddButton) {
-      addRestTimerSeconds(restTimerAddButton.dataset.restTimerAdd);
       return;
     }
 
@@ -5799,6 +6001,9 @@ function handleWorkoutInteractions() {
     if (!document.hidden && restTimerEndsAt) {
       tickRestTimer();
     }
+    if (!document.hidden && workoutElapsedTimerState) {
+      renderWorkoutElapsedTimer();
+    }
   });
 }
 
@@ -5872,6 +6077,9 @@ function renderProgram(program) {
   renderClientWorkoutTabs(workouts);
   renderFitbitStatus();
   setClientDashboardTab(activeClientDashboardTab);
+  if (!workoutElapsedTimerState) {
+    restoreWorkoutElapsedTimer();
+  }
   showDashboardContent();
 }
 
@@ -6811,6 +7019,7 @@ async function handleTrainingLogSave() {
       });
 
       if (finishWorkoutButton && saveResult.saved) {
+        finishWorkoutElapsedTimer();
         await syncFinishedWorkoutToFitbit(saveResult.rows || [], status);
       }
       return;
