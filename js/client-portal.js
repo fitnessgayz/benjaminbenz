@@ -2517,38 +2517,84 @@ function warmupLogFields(workoutTitle, options = {}) {
   `;
 }
 
-function exerciseCard(exercise, workoutTitle, isOpen = false, workoutFocus = "") {
-  const setCount = setCountFromPrescription(exercise.prescription);
+function exerciseCard(exercise, workoutTitle, isOpen = false, workoutFocus = "", options = {}) {
+  const setCount = Number(exercise.clientSetCount) || setCountFromPrescription(exercise.prescription);
+  const exerciseIndex = Number(options.exerciseIndex) || 0;
+  const format = normalizeCustomWorkoutFormat(options.format || "single");
+  const marker = options.marker || customWorkoutFormatMarker(format, exerciseIndex);
+  const exerciseName = String(exercise.name || "").trim();
+  const suggestionMenuId = `assigned-exercise-options-${String(exercise.code || exerciseIndex + 1).toLowerCase().replace(/[^a-z0-9-]/g, "-")}-${exerciseIndex + 1}`;
+  const clientAdded = Boolean(exercise.clientAdded);
 
   return `
-    <article class="workout-exercise-card workout-entry-card${isOpen ? " is-open" : ""}">
-      <button class="exercise-card-summary" type="button" data-exercise-toggle>
+    <article class="workout-exercise-card workout-entry-card custom-workout-card assigned-workout-card${isOpen ? " is-open" : ""}" data-custom-exercise-card data-assigned-exercise-card${clientAdded ? " data-client-added-exercise" : ""}>
+      <div class="exercise-card-summary custom-workout-card-summary">
         <span>
-          <strong data-exercise-title>${escapeHtml(exerciseDisplayName(exercise.code, exercise.name))}</strong>
-          <em>${escapeHtml(exercise.prescription)}${exercise.rest ? ` · ${escapeHtml(exercise.rest)}` : ""}</em>
-          <small data-set-progress>0 / ${setCount} sets completed</small>
+          <span class="custom-workout-card-marker-row">
+            <span class="status-pill" data-assigned-workout-format-marker>${escapeHtml(marker)}</span>
+            <button class="custom-workout-delete-icon" type="button" data-delete-exercise aria-label="Delete ${marker}">
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M4 7h16M9 7V4h6v3m-9 0 1 13h10l1-13M10 11v5m4-5v5" />
+              </svg>
+            </button>
+          </span>
+          <strong class="custom-workout-editable-title" data-exercise-title>
+            <span class="custom-workout-exercise-code">${escapeHtml(exercise.code)}</span>
+            <span class="custom-workout-name-editor">
+              <input
+                type="text"
+                value="${escapeHtml(exerciseName)}"
+                placeholder="Input exercise name here"
+                aria-label="${escapeHtml(marker)} name"
+                aria-autocomplete="list"
+                aria-controls="${suggestionMenuId}"
+                aria-expanded="false"
+                autocomplete="off"
+                data-exercise-title-name
+                data-exercise-name-input
+              />
+              <span
+                class="custom-workout-suggestion-menu"
+                id="${suggestionMenuId}"
+                role="listbox"
+                data-custom-exercise-suggestions
+                hidden
+              ></span>
+            </span>
+          </strong>
+          <small data-set-progress>0 / ${setCount} working sets completed</small>
         </span>
-        <i>›</i>
-      </button>
-      ${exerciseLogFields(exercise, workoutTitle, {
-        workoutFocus,
-        showDate: false,
-        showExerciseNameField: false,
-        showActions: false
-      })}
+        <button class="custom-workout-card-toggle" type="button" data-exercise-toggle aria-label="Toggle ${marker}"><i>›</i></button>
+      </div>
+      <div class="exercise-detail custom-workout-detail">
+        ${exerciseLogFields(exercise, workoutTitle, {
+          panelClass: "assigned-exercise-log",
+          workoutFocus,
+          showDate: false,
+          showExerciseNameField: false,
+          showActions: false,
+          suggestExerciseNames: true,
+          setCount,
+          userManagedSets: clientAdded
+        })}
+      </div>
     </article>
   `;
 }
 
-function exerciseCardRows(exercises, workoutTitle, openMode = "first", workoutFocus = "") {
+function exerciseCardRows(exercises, workoutTitle, openMode = "first", workoutFocus = "", options = {}) {
   if (!Array.isArray(exercises) || exercises.length === 0) {
     return '<p class="empty-state">Workout details will appear here when your coach adds them.</p>';
   }
 
   return exercises.map((exercise, index) => {
     const isOpen = openMode === "all" || (openMode === "first" && index === 0);
+    const exerciseIndex = (Number(options.startIndex) || 0) + index;
 
-    return exerciseCard(exercise, workoutTitle, isOpen, workoutFocus);
+    return exerciseCard(exercise, workoutTitle, isOpen, workoutFocus, {
+      exerciseIndex,
+      format: options.format || "single"
+    });
   }).join("");
 }
 
@@ -3180,6 +3226,33 @@ function nextCustomExerciseCode(container) {
   return customExerciseCode(nextNumber - 1);
 }
 
+function nextAssignedExerciseCode(container) {
+  const codes = Array.from(container?.querySelectorAll("[data-assigned-exercise-card] [data-exercise-log]") || [])
+    .map((element) => String(element.dataset.exerciseCode || "").match(/^ADD(\d+)$/i)?.[1])
+    .map((value) => Number(value))
+    .filter((value) => Number.isFinite(value));
+  const nextNumber = codes.length > 0 ? Math.max(...codes) + 1 : 1;
+
+  return `ADD${String(nextNumber).padStart(2, "0")}`;
+}
+
+function syncAssignedWorkoutMarkers(panel) {
+  const format = normalizeCustomWorkoutFormat(panel?.dataset.assignedWorkoutFormat || "single");
+
+  panel?.querySelectorAll("[data-assigned-exercise-card]").forEach((card, index) => {
+    const markerLabel = customWorkoutFormatMarker(format, index);
+    const marker = card.querySelector("[data-assigned-workout-format-marker]");
+
+    if (marker) {
+      marker.textContent = markerLabel;
+    }
+
+    card.querySelector("[data-exercise-title-name]")?.setAttribute("aria-label", `${markerLabel} name`);
+    card.querySelector("[data-exercise-toggle]")?.setAttribute("aria-label", `Toggle ${markerLabel}`);
+    card.querySelector("[data-delete-exercise]")?.setAttribute("aria-label", `Delete ${markerLabel}`);
+  });
+}
+
 function skipControl() {
   return `
     <label class="skip-toggle">
@@ -3772,43 +3845,23 @@ function finishWorkoutElapsedTimer() {
   renderWorkoutElapsedTimer();
 }
 
-function supersetCard(group, workoutTitle, workoutFocus = "") {
-  return `
-    <article class="workout-exercise-card superset-card compact-workout-group is-open" data-superset-card>
-      ${skipControl()}
-      <button class="exercise-card-summary compact-group-summary" type="button" data-exercise-toggle>
-        ${compactWorkoutGroupOverview(group, "superset")}
-        <i>›</i>
-      </button>
-      <div class="exercise-detail superset-detail">
-        ${group.exercises.map((exercise) => exerciseLogFields(exercise, workoutTitle, {
-          panelClass: "superset-exercise-log",
-          showInlineHeader: true,
-          showSubmit: false,
-          showDate: false,
-          showExerciseNameField: false,
-          showActions: false,
-          workoutFocus
-        })).join("")}
-        <button class="complete-exercise-button" type="button" data-superset-submit>Save Superset</button>
-        <small data-superset-status></small>
-      </div>
-    </article>
-  `;
-}
-
 function supersetRows(workout, workoutTitle) {
   const groups = groupedExercises(workout.exercises || []);
+  let exerciseOffset = 0;
 
-  return groups.map((group, groupIndex) => {
-    const isPair = group.exercises.length > 1;
+  return groups.map((group) => {
+    const startIndex = exerciseOffset;
+    exerciseOffset += group.exercises.length;
 
-    return isPair ? supersetCard(group, workoutTitle, workout.focus) : `
-      <section class="workout-format-group compact-workout-group">
+    return `
+      <section class="workout-format-group compact-workout-group superset-group">
         <div class="compact-static-group-card">
-          ${compactWorkoutGroupOverview(group, "single")}
+          ${compactWorkoutGroupOverview(group, group.exercises.length > 1 ? "superset" : "single")}
         </div>
-        ${exerciseCardRows(group.exercises, workoutTitle, "all", workout.focus)}
+        ${exerciseCardRows(group.exercises, workoutTitle, "all", workout.focus, {
+          format: group.exercises.length > 1 ? "superset" : "single",
+          startIndex
+        })}
       </section>
     `;
   }).join("");
@@ -3823,40 +3876,95 @@ function circuitRows(workout, workoutTitle) {
       <div class="compact-static-group-card">
         ${compactWorkoutGroupOverview(group, "circuit")}
       </div>
-      ${exerciseCardRows(exercises, workoutTitle, "first", workout.focus)}
+      ${exerciseCardRows(exercises, workoutTitle, "all", workout.focus, { format: "circuit" })}
     </section>
   `;
 }
 
 function straightSetRows(workout, workoutTitle) {
   const groups = groupedExercises(workout.exercises || []);
+  let exerciseOffset = 0;
 
-  return groups.map((group) => `
-    <section class="workout-format-group compact-workout-group straight-set-group">
-      <div class="compact-static-group-card">
-        ${compactWorkoutGroupOverview(group, "single")}
-      </div>
-      ${exerciseCardRows(group.exercises, workoutTitle, "all", workout.focus)}
-    </section>
-  `).join("");
+  return groups.map((group) => {
+    const startIndex = exerciseOffset;
+    exerciseOffset += group.exercises.length;
+
+    return exerciseCardRows(group.exercises, workoutTitle, "all", workout.focus, {
+      format: "single",
+      startIndex
+    });
+  }).join("");
+}
+
+function assignedWorkoutExercises(workout, workoutTitle) {
+  const assignedExercises = Array.isArray(workout.exercises) ? workout.exercises : [];
+  const assignedCodes = new Set(assignedExercises.map((exercise) => String(exercise.code || "").trim().toUpperCase()));
+  const loggedExtras = new Map();
+
+  trainingLogs
+    .filter((log) => (
+      String(log.workout_title || "") === String(workoutTitle || "") &&
+      ![warmupExerciseCode, cardioExerciseCode].includes(String(log.exercise_code || "").trim().toUpperCase()) &&
+      !assignedCodes.has(String(log.exercise_code || "").trim().toUpperCase())
+    ))
+    .forEach((log) => {
+      const code = String(log.exercise_code || "").trim().toUpperCase();
+
+      if (!code) {
+        return;
+      }
+
+      if (!loggedExtras.has(code)) {
+        loggedExtras.set(code, {
+          code,
+          name: String(log.exercise_name || "").trim(),
+          prescription: "Custom sets",
+          rest: "",
+          clientAdded: true,
+          workingSets: new Set()
+        });
+      }
+
+      const extra = loggedExtras.get(code);
+      if (log.exercise_name) {
+        extra.name = String(log.exercise_name).trim();
+      }
+      if (normalizedSetType(log.set_type, log.set_number) !== warmUpSetType) {
+        extra.workingSets.add(Number(log.set_number) || 1);
+      }
+    });
+
+  const extras = Array.from(loggedExtras.values())
+    .map(({ workingSets, ...exercise }) => ({
+      ...exercise,
+      clientSetCount: Math.max(workingSets.size, 1)
+    }))
+    .sort((left, right) => left.code.localeCompare(right.code, undefined, { numeric: true }));
+
+  return [...assignedExercises, ...extras];
 }
 
 function workoutExerciseMarkup(workout, workoutTitle) {
   const format = inferWorkoutFormat(workout);
+  const displayWorkout = {
+    ...workout,
+    format,
+    exercises: assignedWorkoutExercises(workout, workoutTitle)
+  };
 
-  if (!Array.isArray(workout.exercises) || workout.exercises.length === 0) {
+  if (displayWorkout.exercises.length === 0) {
     return '<p class="empty-state">Workout details will appear here when your coach adds them.</p>';
   }
 
   if (format === "superset") {
-    return supersetRows(workout, workoutTitle);
+    return supersetRows(displayWorkout, workoutTitle);
   }
 
   if (format === "circuit") {
-    return circuitRows(workout, workoutTitle);
+    return circuitRows(displayWorkout, workoutTitle);
   }
 
-  return straightSetRows(workout, workoutTitle);
+  return straightSetRows(displayWorkout, workoutTitle);
 }
 
 function workoutActionsMarkup(workout, options = {}) {
@@ -4119,11 +4227,13 @@ function renderClientWorkoutTabs(workouts = []) {
 
     const title = workout.title || `Workout ${index + 1}`;
     const isActive = index === activeWorkoutTabIndex;
+    const workoutFormat = inferWorkoutFormat(workout);
 
     return `
       <section
         class="client-workout-panel client-workout-panel-assigned${isActive ? " is-active" : ""}"
         id="client-workout-panel-${index}"
+        data-assigned-workout-format="${escapeHtml(workoutFormat)}"
         role="tabpanel"
         aria-labelledby="client-workout-tab-${index}"
         ${isActive ? "" : "hidden"}
@@ -4141,10 +4251,11 @@ function renderClientWorkoutTabs(workouts = []) {
         </span>
         <small>This date applies to every exercise in this workout.</small>
       </label>
-      <div class="workout-format-pill">${escapeHtml(formatLabel(inferWorkoutFormat(workout)))}</div>
-      <div class="workout-app-list" role="list" aria-label="${escapeHtml(title)} exercises">
+      <div class="workout-format-pill">${escapeHtml(formatLabel(workoutFormat))}</div>
+      <div class="workout-app-list" data-assigned-workout-list role="list" aria-label="${escapeHtml(title)} exercises">
         ${warmupLogFields(title, { showDate: false })}
         ${workoutExerciseMarkup(workout, title)}
+        <button class="button button-ghost custom-workout-add-bottom" type="button" data-add-assigned-exercise>Add exercise</button>
         ${cardioLogFields(title, { showDate: false })}
         ${workoutActionsMarkup(workout, { includeCardio: true })}
       </div>
@@ -5950,7 +6061,8 @@ function updateSupersetSummaryCount(card) {
 
 function removeExerciseLog(logElement) {
   const card = logElement?.closest(".workout-exercise-card");
-  const panel = card?.closest(".client-workout-panel-custom");
+  const customPanel = card?.closest(".client-workout-panel-custom");
+  const assignedPanel = card?.closest(".client-workout-panel-assigned");
   const logCount = card?.querySelectorAll("[data-exercise-log]").length || 0;
 
   if (!logElement || !card) {
@@ -5964,9 +6076,10 @@ function removeExerciseLog(logElement) {
     updateSupersetSummaryCount(card);
   }
 
-  ensureDefaultCustomExercise(panel);
-  syncCustomWorkoutFormatMarkers(panel);
-  persistCustomWorkoutDraftFromPanel(panel);
+  ensureDefaultCustomExercise(customPanel);
+  syncCustomWorkoutFormatMarkers(customPanel);
+  persistCustomWorkoutDraftFromPanel(customPanel);
+  syncAssignedWorkoutMarkers(assignedPanel);
 }
 
 function handleWorkoutInteractions() {
@@ -5980,6 +6093,7 @@ function handleWorkoutInteractions() {
     const skipExerciseButton = event.target.closest("[data-skip-exercise]");
     const deleteExerciseButton = event.target.closest("[data-delete-exercise]");
     const addCustomExerciseButton = event.target.closest("[data-add-custom-exercise]");
+    const addAssignedExerciseButton = event.target.closest("[data-add-assigned-exercise]");
     const customWorkoutFormatButton = event.target.closest("[data-custom-workout-format-option]");
     const closeRestTimerButton = event.target.closest("[data-rest-timer-close]");
     const restTimerPresetButton = event.target.closest("[data-rest-timer-preset]");
@@ -6177,6 +6291,45 @@ function handleWorkoutInteractions() {
 
         syncCustomWorkoutFormatMarkers(panel);
         persistCustomWorkoutDraftFromPanel(panel);
+      }
+      return;
+    }
+
+    if (addAssignedExerciseButton) {
+      const panel = addAssignedExerciseButton.closest(".client-workout-panel-assigned");
+      const list = panel?.querySelector("[data-assigned-workout-list]");
+
+      if (list) {
+        const nextCode = nextAssignedExerciseCode(list);
+        const nextIndex = list.querySelectorAll("[data-assigned-exercise-card]").length;
+        const format = normalizeCustomWorkoutFormat(panel.dataset.assignedWorkoutFormat || "single");
+        const cardMarkup = exerciseCard({
+          code: nextCode,
+          name: "",
+          prescription: "Custom sets",
+          rest: "",
+          clientAdded: true,
+          clientSetCount: 1
+        }, panel.querySelector(".panel-heading h2")?.textContent || "Workout", true, "", {
+          exerciseIndex: nextIndex,
+          format
+        });
+
+        addAssignedExerciseButton.insertAdjacentHTML("beforebegin", cardMarkup);
+        const newCard = addAssignedExerciseButton.previousElementSibling;
+        const newLogElement = newCard?.querySelector("[data-exercise-log]");
+
+        if (newLogElement) {
+          const sharedDate = panel.querySelector("[data-workout-date]")?.value || todayDate();
+          const hiddenDate = newLogElement.querySelector("[data-log-date]");
+          if (hiddenDate) {
+            hiddenDate.value = sharedDate;
+          }
+          updateExerciseLogField(newLogElement);
+          exerciseNameInputForLog(newLogElement)?.focus();
+        }
+
+        syncAssignedWorkoutMarkers(panel);
       }
     }
   });

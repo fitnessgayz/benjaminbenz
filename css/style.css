@@ -2990,6 +2990,13 @@ footer {
   gap: 16px;
 }
 
+.assigned-exercise-log {
+  display: grid;
+  gap: 16px;
+  max-width: 100%;
+  min-width: 0;
+}
+
 .custom-exercise-log .exercise-date {
   max-width: 210px;
 }
