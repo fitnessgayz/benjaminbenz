@@ -57,7 +57,6 @@ let restTimerRemainingSeconds = 60;
 let restTimerEndsAt = 0;
 let restTimerIntervalId = null;
 let restTimerReturnFocus = null;
-let restTimerSetRow = null;
 let workoutElapsedTimerState = null;
 let workoutElapsedTimerIntervalId = null;
 let activeRirButton = null;
@@ -3205,15 +3204,6 @@ function restTimerMarkup() {
         </header>
         <output class="rest-timer-display" data-rest-timer-display aria-live="polite">01:00</output>
         <p class="rest-timer-status" data-rest-timer-status>Ready</p>
-        <section class="rest-timer-effort" aria-labelledby="rest-timer-effort-question">
-          <strong id="rest-timer-effort-question">How many more reps could you have done?</strong>
-          <div class="rest-timer-effort-options" role="group" aria-label="Reps in reserve">
-            ${[0, 1, 2, 3, 4].map((reps) => `
-              <button type="button" data-reps-in-reserve="${reps}" aria-pressed="false">${reps === 4 ? "4+" : reps}</button>
-            `).join("")}
-          </div>
-          <small>Optional · saved with this set</small>
-        </section>
         <div class="rest-timer-presets" role="group" aria-label="Timer duration">
           ${[30, 60, 90].map((seconds) => `
             <button type="button" data-rest-timer-preset="${seconds}" aria-pressed="${seconds === 60 ? "true" : "false"}">${seconds} sec</button>
@@ -3268,7 +3258,6 @@ function renderRestTimer() {
   const display = overlay?.querySelector("[data-rest-timer-display]");
   const status = overlay?.querySelector("[data-rest-timer-status]");
   const startButton = overlay?.querySelector("[data-rest-timer-start]");
-  const effortQuestion = overlay?.querySelector(".rest-timer-effort");
 
   syncRestTimerRemaining();
   const isRunning = restTimerEndsAt > 0;
@@ -3282,10 +3271,6 @@ function renderRestTimer() {
   if (startButton) {
     startButton.textContent = isRunning ? "Pause" : restTimerRemainingSeconds === 0 ? "Start again" : "Start";
   }
-  if (effortQuestion) {
-    effortQuestion.hidden = false;
-  }
-
   overlay?.querySelectorAll("[data-rest-timer-preset]").forEach((button) => {
     const isActive = Number(button.dataset.restTimerPreset) === restTimerDurationSeconds;
 
@@ -3293,13 +3278,6 @@ function renderRestTimer() {
     button.setAttribute("aria-pressed", isActive ? "true" : "false");
   });
 
-  const selectedRir = restTimerSetRow?.dataset.repsInReserve;
-  overlay?.querySelectorAll("[data-reps-in-reserve]").forEach((button) => {
-    const isSelected = button.dataset.repsInReserve === selectedRir;
-
-    button.classList.toggle("is-active", isSelected);
-    button.setAttribute("aria-pressed", isSelected ? "true" : "false");
-  });
 }
 
 function tickRestTimer() {
@@ -3342,7 +3320,6 @@ function openRestTimer(button) {
   const overlay = ensureRestTimer();
 
   restTimerReturnFocus = button || null;
-  restTimerSetRow = button?.closest("[data-set-row]") || null;
   overlay.hidden = false;
   document.body.classList.add("rest-timer-open");
   renderRestTimer();
@@ -3360,7 +3337,6 @@ function closeRestTimer() {
   document.body.classList.remove("rest-timer-open");
   restTimerReturnFocus?.focus();
   restTimerReturnFocus = null;
-  restTimerSetRow = null;
 }
 
 function renderSetRirValue(setRow) {
@@ -5883,7 +5859,6 @@ function handleWorkoutInteractions() {
     const restTimerPresetButton = event.target.closest("[data-rest-timer-preset]");
     const restTimerStartButton = event.target.closest("[data-rest-timer-start]");
     const restTimerResetButton = event.target.closest("[data-rest-timer-reset]");
-    const repsInReserveButton = event.target.closest("[data-reps-in-reserve]");
     const rirOptionButton = event.target.closest("[data-rir-option]");
     const rirSaveButton = event.target.closest("[data-rir-save]");
     const rirCloseButton = event.target.closest("[data-rir-close]");
@@ -5959,16 +5934,6 @@ function handleWorkoutInteractions() {
 
     if (restTimerResetButton) {
       resetRestTimer();
-      return;
-    }
-
-    if (repsInReserveButton && restTimerSetRow) {
-      restTimerSetRow.dataset.repsInReserve = repsInReserveButton.dataset.repsInReserve;
-      renderSetRirValue(restTimerSetRow);
-      const logElement = restTimerSetRow.closest("[data-exercise-log]");
-      persistCustomWorkoutDraftForElement(logElement);
-      scheduleTrainingLogAutosave(logElement);
-      renderRestTimer();
       return;
     }
 
