@@ -48,6 +48,7 @@ const warmUpSetType = "warm_up";
 const clientDashboardUrl = "client-dashboard.html?v=manual-sessions-1";
 const fitbitOauthStateKey = "fwb_google_health_oauth_state";
 const workoutElapsedTimerStorageKey = "fwb_workout_elapsed_timer_v1";
+const workoutElapsedTimerCompactStorageKey = "fwb_workout_elapsed_timer_compact_v1";
 const workoutElapsedTimerMaximumMilliseconds = 24 * 60 * 60 * 1000;
 let fitbitConnection = { loaded: false, connected: false };
 let exerciseLibraryEntries = [];
@@ -59,6 +60,7 @@ let restTimerIntervalId = null;
 let restTimerReturnFocus = null;
 let workoutElapsedTimerState = null;
 let workoutElapsedTimerIntervalId = null;
+let workoutElapsedTimerIsCompact = null;
 let activeRirButton = null;
 let pendingRirValue = null;
 
@@ -3474,6 +3476,9 @@ function saveRirSelection() {
 function workoutElapsedTimerMarkup() {
   return `
     <aside class="workout-elapsed-timer" data-workout-elapsed-timer hidden aria-label="Workout duration">
+      <button class="workout-elapsed-compact-toggle" type="button" data-workout-elapsed-compact aria-expanded="true" aria-label="Minimize workout timer">
+        <span data-workout-elapsed-compact-icon aria-hidden="true">−</span>
+      </button>
       <div class="workout-elapsed-timer-copy">
         <small>Workout time</small>
         <strong data-workout-elapsed-title>Workout in progress</strong>
@@ -3493,6 +3498,45 @@ function ensureWorkoutElapsedTimer() {
   }
 
   return timer;
+}
+
+function workoutElapsedTimerCompactPreference() {
+  if (typeof workoutElapsedTimerIsCompact === "boolean") {
+    return workoutElapsedTimerIsCompact;
+  }
+
+  try {
+    const storedPreference = window.localStorage.getItem(workoutElapsedTimerCompactStorageKey);
+
+    if (storedPreference === "true" || storedPreference === "false") {
+      workoutElapsedTimerIsCompact = storedPreference === "true";
+      return workoutElapsedTimerIsCompact;
+    }
+  } catch (_error) {
+    // Fall back to the phone-sized default when storage is unavailable.
+  }
+
+  workoutElapsedTimerIsCompact = Boolean(window.matchMedia?.("(max-width: 760px)").matches);
+  return workoutElapsedTimerIsCompact;
+}
+
+function setWorkoutElapsedTimerCompact(isCompact) {
+  workoutElapsedTimerIsCompact = Boolean(isCompact);
+
+  try {
+    window.localStorage.setItem(
+      workoutElapsedTimerCompactStorageKey,
+      String(workoutElapsedTimerIsCompact)
+    );
+  } catch (_error) {
+    // The timer can still collapse for this page view without storage.
+  }
+
+  renderWorkoutElapsedTimer();
+}
+
+function toggleWorkoutElapsedTimerCompact() {
+  setWorkoutElapsedTimerCompact(!workoutElapsedTimerCompactPreference());
 }
 
 function workoutElapsedTimerClientEmail() {
@@ -3619,8 +3663,12 @@ function renderWorkoutElapsedTimer() {
   const display = timer.querySelector("[data-workout-elapsed-display]");
   const title = timer.querySelector("[data-workout-elapsed-title]");
   const toggleButton = timer.querySelector("[data-workout-elapsed-toggle]");
+  const compactButton = timer.querySelector("[data-workout-elapsed-compact]");
+  const compactIcon = timer.querySelector("[data-workout-elapsed-compact-icon]");
+  const isCompact = workoutElapsedTimerCompactPreference();
 
   timer.hidden = false;
+  timer.classList.toggle("is-compact", isCompact);
   if (display) {
     display.textContent = workoutElapsedTimeLabel(workoutElapsedMilliseconds());
   }
@@ -3633,6 +3681,16 @@ function renderWorkoutElapsedTimer() {
       "aria-label",
       workoutElapsedTimerState.running ? "Pause workout timer" : "Resume workout timer"
     );
+  }
+  if (compactButton) {
+    compactButton.setAttribute("aria-expanded", isCompact ? "false" : "true");
+    compactButton.setAttribute(
+      "aria-label",
+      isCompact ? "Expand workout timer" : "Minimize workout timer"
+    );
+  }
+  if (compactIcon) {
+    compactIcon.textContent = isCompact ? "+" : "−";
   }
 }
 
@@ -5931,6 +5989,12 @@ function handleWorkoutInteractions() {
     const rirSaveButton = event.target.closest("[data-rir-save]");
     const rirCloseButton = event.target.closest("[data-rir-close]");
     const workoutElapsedToggleButton = event.target.closest("[data-workout-elapsed-toggle]");
+    const workoutElapsedCompactButton = event.target.closest("[data-workout-elapsed-compact]");
+
+    if (workoutElapsedCompactButton) {
+      toggleWorkoutElapsedTimerCompact();
+      return;
+    }
 
     if (workoutElapsedToggleButton) {
       toggleWorkoutElapsedTimer();
