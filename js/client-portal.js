@@ -2293,7 +2293,7 @@ function setRowMarkup(setNumber, repPlaceholder = "", setType = workingSetType, 
     <div class="set-row${normalizedType === warmUpSetType ? " is-warm-up" : ""}" data-set-row data-set-number="${setNumber}" data-set-type="${normalizedType}">
       <label class="set-label-field">
         <em>Set</em>
-        <input type="text" value="${label}" maxlength="3" inputmode="text" autocomplete="off" data-set-label aria-label="${labelAria}" />
+        <input type="text" value="${label}" placeholder="${isWarmUp ? "W" : label}" maxlength="3" inputmode="text" autocomplete="off" data-set-label aria-label="${labelAria}" />
       </label>
       <label class="set-input-field">
         <em>Weight</em>
@@ -2312,6 +2312,7 @@ function setRowMarkup(setNumber, repPlaceholder = "", setType = workingSetType, 
           <circle cx="12" cy="12" r="8.5"></circle>
           <path d="M12 7.5v5l3.5 2"></path>
         </svg>
+        <span class="set-rest-button-label">Start rest</span>
       </button>
     </div>
   `;
@@ -2878,39 +2879,27 @@ function storeCustomWorkoutDraft(draft) {
   }
 }
 
+function clearCustomWorkoutDraft() {
+  const key = customWorkoutDraftKey();
+
+  if (!key) {
+    return;
+  }
+
+  try {
+    window.localStorage.removeItem(key);
+  } catch (_) {
+    // Draft persistence is best-effort only.
+  }
+}
+
 function customWorkoutDraftExercises() {
   const exercises = readCustomWorkoutDraft()?.exercises;
   return Array.isArray(exercises) ? exercises : [];
 }
 
-function customWorkoutLogs() {
-  return trainingLogs.filter((log) => (
-    isCustomWorkoutTitle(log.workout_title) &&
-    /^CW\d+/i.test(String(log.exercise_code || ""))
-  ));
-}
-
 function customWorkoutExercises() {
   const grouped = new Map();
-
-  customWorkoutLogs().forEach((log) => {
-    const code = String(log.exercise_code || "").trim() || customExerciseCode(grouped.size);
-    const exerciseName = String(log.exercise_name || "").trim();
-
-    if (!grouped.has(code)) {
-      grouped.set(code, {
-        code,
-        name: exerciseName,
-        prescription: "Custom sets",
-        rest: ""
-      });
-      return;
-    }
-
-    if (exerciseName) {
-      grouped.get(code).name = exerciseName;
-    }
-  });
 
   customWorkoutDraftExercises().forEach((draftExercise, index) => {
     const code = String(draftExercise?.code || customExerciseCode(index)).trim().toUpperCase();
@@ -3992,7 +3981,7 @@ function customWorkoutCardMarkup(exercise, workoutTitle, index = 0) {
   const suggestionMenuId = `custom-exercise-options-${String(exercise.code || index + 1).toLowerCase().replace(/[^a-z0-9-]/g, "-")}`;
 
   return `
-    <article class="workout-exercise-card workout-entry-card custom-workout-card is-open" data-custom-exercise-card>
+    <article class="workout-exercise-card workout-entry-card custom-workout-card custom-workout-coach-flow is-open" data-custom-exercise-card>
       <div class="exercise-card-summary custom-workout-card-summary">
         <span>
           <span class="custom-workout-card-marker-row">
@@ -4009,7 +3998,7 @@ function customWorkoutCardMarkup(exercise, workoutTitle, index = 0) {
               <input
                 type="text"
                 value="${escapeHtml(exerciseName)}"
-                placeholder="Input exercise name here"
+                placeholder="enter exercise name"
                 aria-label="Exercise ${index + 1} name"
                 aria-autocomplete="list"
                 aria-controls="${suggestionMenuId}"
@@ -4027,7 +4016,6 @@ function customWorkoutCardMarkup(exercise, workoutTitle, index = 0) {
               ></span>
             </span>
           </strong>
-          <small data-set-progress>0 / 1 sets completed</small>
         </span>
         <button class="custom-workout-card-toggle" type="button" data-exercise-toggle aria-label="Toggle exercise ${index + 1}"><i>›</i></button>
       </div>
@@ -7463,6 +7451,9 @@ async function handleTrainingLogSave() {
 
       if (saveResult.saved) {
         finishWorkoutElapsedTimer();
+        if (section?.classList.contains("client-workout-panel-custom")) {
+          clearCustomWorkoutDraft();
+        }
         await syncFinishedWorkoutToFitbit(saveResult.rows || [], status);
       }
       return;
