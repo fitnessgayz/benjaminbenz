@@ -2521,6 +2521,22 @@ function warmupLogFields(workoutTitle, options = {}) {
   `;
 }
 
+function workoutStartControlMarkup(workoutTitle) {
+  return `
+    <div class="workout-start-control" data-workout-start-control>
+      <button
+        class="workout-start-button"
+        type="button"
+        data-workout-start
+        data-workout-title="${escapeHtml(workoutTitle)}"
+      >
+        <span data-workout-start-label>Start workout</span>
+        <small data-workout-start-note>Starts the workout timer</small>
+      </button>
+    </div>
+  `;
+}
+
 function exerciseCard(exercise, workoutTitle, isOpen = false, workoutFocus = "", options = {}) {
   const setCount = Number(exercise.clientSetCount) || setCountFromPrescription(exercise.prescription);
   const exerciseIndex = Number(options.exerciseIndex) || 0;
@@ -3742,8 +3758,42 @@ function activeWorkoutElapsedTitle() {
   return panelTitle || homeTitle || "Workout";
 }
 
+function normalizedWorkoutElapsedTitle(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function renderWorkoutStartButtons() {
+  const activeTitle = normalizedWorkoutElapsedTitle(workoutElapsedTimerState?.workoutTitle);
+
+  document.querySelectorAll("[data-workout-start]").forEach((button) => {
+    const buttonTitle = normalizedWorkoutElapsedTitle(button.dataset.workoutTitle);
+    const isActiveWorkout = Boolean(workoutElapsedTimerState && buttonTitle === activeTitle);
+    const isAnotherWorkoutActive = Boolean(workoutElapsedTimerState && !isActiveWorkout);
+    const label = button.querySelector("[data-workout-start-label]");
+    const note = button.querySelector("[data-workout-start-note]");
+
+    button.disabled = Boolean(workoutElapsedTimerState);
+    button.classList.toggle("is-active", isActiveWorkout);
+    button.classList.toggle("is-blocked", isAnotherWorkoutActive);
+    button.setAttribute("aria-pressed", isActiveWorkout ? "true" : "false");
+
+    if (label) {
+      label.textContent = isActiveWorkout
+        ? (workoutElapsedTimerState.running ? "Workout started" : "Workout paused")
+        : (isAnotherWorkoutActive ? "Workout already running" : "Start workout");
+    }
+    if (note) {
+      note.textContent = isActiveWorkout
+        ? (workoutElapsedTimerState.running ? "Timer is running" : "Resume from the floating timer")
+        : (isAnotherWorkoutActive ? "Finish the current workout first" : "Starts the workout timer");
+    }
+  });
+}
+
 function renderWorkoutElapsedTimer() {
   const timer = ensureWorkoutElapsedTimer();
+
+  renderWorkoutStartButtons();
 
   if (!workoutElapsedTimerState) {
     timer.hidden = true;
@@ -4106,6 +4156,7 @@ function customWorkoutPanelMarkup(index) {
         </div>
         ${customWorkoutFormatPickerMarkup()}
         ${warmupLogFields(customWorkoutTitle, { showDate: false })}
+        ${workoutStartControlMarkup(customWorkoutTitle)}
         <div class="workout-app-list custom-workout-list" data-custom-workout-list data-custom-workout-format="${format}" role="list" aria-label="Custom workout exercises">
           ${customWorkoutListMarkup()}
         </div>
@@ -4272,6 +4323,7 @@ function renderClientWorkoutTabs(workouts = []) {
       <div class="workout-format-pill">${escapeHtml(formatLabel(workoutFormat))}</div>
       <div class="workout-app-list" data-assigned-workout-list role="list" aria-label="${escapeHtml(title)} exercises">
         ${warmupLogFields(title, { showDate: false })}
+        ${workoutStartControlMarkup(title)}
         ${workoutExerciseMarkup(workout, title)}
         <button class="button button-ghost custom-workout-add-bottom" type="button" data-add-assigned-exercise>Add exercise</button>
         ${cardioLogFields(title, { showDate: false })}
@@ -4281,6 +4333,7 @@ function renderClientWorkoutTabs(workouts = []) {
   `;
   }).join("");
 
+  renderWorkoutStartButtons();
   renderClientHomeSummary();
 }
 
@@ -6125,6 +6178,16 @@ function handleWorkoutInteractions() {
     const rirCloseButton = event.target.closest("[data-rir-close]");
     const workoutElapsedToggleButton = event.target.closest("[data-workout-elapsed-toggle]");
     const workoutElapsedCompactButton = event.target.closest("[data-workout-elapsed-compact]");
+    const workoutStartButton = event.target.closest("[data-workout-start]");
+
+    if (workoutStartButton) {
+      if (!workoutElapsedTimerState) {
+        startWorkoutElapsedTimer(workoutStartButton.dataset.workoutTitle || activeWorkoutElapsedTitle());
+      } else {
+        renderWorkoutStartButtons();
+      }
+      return;
+    }
 
     if (workoutElapsedCompactButton) {
       toggleWorkoutElapsedTimerCompact();

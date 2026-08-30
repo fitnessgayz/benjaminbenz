@@ -3894,6 +3894,68 @@ footer {
   min-height: 44px !important;
 }
 
+.workout-start-control {
+  display: grid;
+  width: 100%;
+  margin: 8px 0 14px;
+}
+
+.workout-start-button {
+  display: grid;
+  width: 100%;
+  min-height: 64px;
+  gap: 3px;
+  align-content: center;
+  justify-items: center;
+  padding: 10px 16px;
+  border: 2px solid var(--black);
+  border-radius: 4px;
+  color: var(--black);
+  background: var(--lime);
+  font: inherit;
+  cursor: pointer;
+  text-align: center;
+}
+
+.workout-start-button > span {
+  font-size: 1rem;
+  font-weight: 900;
+  letter-spacing: .04em;
+  line-height: 1.05;
+  text-transform: uppercase;
+}
+
+.workout-start-button > small {
+  color: inherit;
+  font-size: .7rem;
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.workout-start-button:hover:not(:disabled),
+.workout-start-button:focus-visible:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, .12);
+}
+
+.workout-start-button.is-active {
+  border-color: var(--lime);
+  color: var(--paper);
+  background: #1d201d;
+  cursor: default;
+}
+
+.workout-start-button.is-blocked {
+  color: var(--muted);
+  background: #efefe9;
+  border-color: var(--line);
+  cursor: not-allowed;
+}
+
+.workout-start-button:disabled {
+  opacity: 1;
+}
+
 .exercise-notes textarea {
   min-height: 92px;
   border-radius: 14px;
