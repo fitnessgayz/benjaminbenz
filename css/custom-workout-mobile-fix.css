@@ -37,6 +37,11 @@
   inline-size: 100% !important;
   max-width: 100% !important;
   min-width: 0 !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+  border: 1px solid var(--line) !important;
+  border-radius: var(--ui-radius) !important;
+  background: var(--paper) !important;
   color: inherit !important;
   font: inherit !important;
   text-transform: none !important;
@@ -50,6 +55,9 @@
   max-width: 100% !important;
   min-width: 0 !important;
   margin: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
   box-sizing: border-box !important;
 }
 
@@ -129,8 +137,7 @@
   }
 }
 
-/* Prevent accidental iOS focus and double-tap zoom without disabling the
-   browser's accessibility pinch-to-zoom gesture. */
+/* Prevent accidental iOS focus and double-tap zoom on workout controls. */
 @media (max-width: 760px) {
   .dashboard-page :where(input, select, textarea),
   .coach-admin-page :where(input, select, textarea) {

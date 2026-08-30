@@ -1761,7 +1761,9 @@ function renderWorkoutInsights(program) {
 }
 
 function todayDate() {
-  return new Date().toISOString().slice(0, 10);
+  const now = new Date();
+  const localDate = new Date(now.getTime() - (now.getTimezoneOffset() * 60 * 1000));
+  return localDate.toISOString().slice(0, 10);
 }
 
 function passwordResetRedirectUrl() {
@@ -2878,39 +2880,50 @@ function storeCustomWorkoutDraft(draft) {
   }
 }
 
-function customWorkoutDraftExercises() {
-  const exercises = readCustomWorkoutDraft()?.exercises;
-  return Array.isArray(exercises) ? exercises : [];
+function clearCustomWorkoutDraft() {
+  const key = customWorkoutDraftKey();
+
+  if (!key) {
+    return;
+  }
+
+  try {
+    window.localStorage.removeItem(key);
+  } catch (_) {
+    // Draft persistence is best-effort only.
+  }
 }
 
-function customWorkoutLogs() {
-  return trainingLogs.filter((log) => (
-    isCustomWorkoutTitle(log.workout_title) &&
-    /^CW\d+/i.test(String(log.exercise_code || ""))
-  ));
+function activeCustomWorkoutDraft() {
+  const draft = readCustomWorkoutDraft();
+  const updatedAt = new Date(draft?.updatedAt || "");
+
+  if (!draft || Number.isNaN(updatedAt.getTime())) {
+    if (draft) {
+      clearCustomWorkoutDraft();
+    }
+    return null;
+  }
+
+  const localUpdatedAt = new Date(updatedAt.getTime() - (updatedAt.getTimezoneOffset() * 60 * 1000))
+    .toISOString()
+    .slice(0, 10);
+
+  if (localUpdatedAt !== todayDate()) {
+    clearCustomWorkoutDraft();
+    return null;
+  }
+
+  return draft;
+}
+
+function customWorkoutDraftExercises() {
+  const exercises = activeCustomWorkoutDraft()?.exercises;
+  return Array.isArray(exercises) ? exercises : [];
 }
 
 function customWorkoutExercises() {
   const grouped = new Map();
-
-  customWorkoutLogs().forEach((log) => {
-    const code = String(log.exercise_code || "").trim() || customExerciseCode(grouped.size);
-    const exerciseName = String(log.exercise_name || "").trim();
-
-    if (!grouped.has(code)) {
-      grouped.set(code, {
-        code,
-        name: exerciseName,
-        prescription: "Custom sets",
-        rest: ""
-      });
-      return;
-    }
-
-    if (exerciseName) {
-      grouped.get(code).name = exerciseName;
-    }
-  });
 
   customWorkoutDraftExercises().forEach((draftExercise, index) => {
     const code = String(draftExercise?.code || customExerciseCode(index)).trim().toUpperCase();
@@ -3082,7 +3095,7 @@ function applyCustomExerciseDraft(logElement, exerciseDraft) {
 }
 
 function applyCustomWorkoutDraft(panel) {
-  const draft = readCustomWorkoutDraft();
+  const draft = activeCustomWorkoutDraft();
   const exercises = Array.isArray(draft?.exercises) ? draft.exercises : [];
 
   if (!panel || !draft) {
@@ -7463,6 +7476,9 @@ async function handleTrainingLogSave() {
 
       if (saveResult.saved) {
         finishWorkoutElapsedTimer();
+        if (section?.classList.contains("client-workout-panel-custom")) {
+          clearCustomWorkoutDraft();
+        }
         await syncFinishedWorkoutToFitbit(saveResult.rows || [], status);
       }
       return;
@@ -7494,6 +7510,22 @@ async function handleSignOut() {
   });
 }
 
+function disableClientDashboardZoom() {
+  const preventGestureZoom = (event) => {
+    event.preventDefault();
+  };
+
+  document.addEventListener("gesturestart", preventGestureZoom, { passive: false });
+  document.addEventListener("gesturechange", preventGestureZoom, { passive: false });
+  document.addEventListener("gestureend", preventGestureZoom, { passive: false });
+  document.addEventListener("touchmove", (event) => {
+    if (event.touches.length > 1) {
+      event.preventDefault();
+    }
+  }, { passive: false });
+}
+
+disableClientDashboardZoom();
 handleLogin();
 handleCoachPortalLogin();
 handlePasswordResetRequests();
