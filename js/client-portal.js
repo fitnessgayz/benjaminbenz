@@ -46,11 +46,9 @@ const warmUpSetNumberBase = 1000;
 const workingSetType = "working";
 const warmUpSetType = "warm_up";
 const clientDashboardUrl = "client-dashboard.html?v=manual-sessions-1";
-const fitbitOauthStateKey = "fwb_google_health_oauth_state";
 const workoutElapsedTimerStorageKey = "fwb_workout_elapsed_timer_v1";
 const workoutElapsedTimerCompactStorageKey = "fwb_workout_elapsed_timer_compact_v1";
 const workoutElapsedTimerMaximumMilliseconds = 24 * 60 * 60 * 1000;
-let fitbitConnection = { loaded: false, connected: false };
 let exerciseLibraryEntries = [];
 let activeCustomWorkoutFormat = "single";
 let restTimerDurationSeconds = 60;
@@ -6585,288 +6583,11 @@ function renderProgram(program) {
   renderWorkoutInsights(program);
   renderClientSessionManualState(program);
   renderClientWorkoutTabs(workouts);
-  renderFitbitStatus();
   setClientDashboardTab(activeClientDashboardTab);
   if (!workoutElapsedTimerState) {
     restoreWorkoutElapsedTimer();
   }
   showDashboardContent();
-}
-
-function fitbitUi() {
-  return {
-    card: document.getElementById("client-fitbit-card"),
-    status: document.getElementById("client-fitbit-status"),
-    message: document.getElementById("client-fitbit-message"),
-    connectButton: document.getElementById("client-fitbit-connect-button"),
-    disconnectButton: document.getElementById("client-fitbit-disconnect-button")
-  };
-}
-
-function setFitbitMessage(message) {
-  const { message: messageElement } = fitbitUi();
-
-  if (messageElement) {
-    messageElement.textContent = message;
-  }
-}
-
-function renderFitbitStatus(message = "") {
-  const { card, status, connectButton, disconnectButton } = fitbitUi();
-
-  if (!card) {
-    return;
-  }
-
-  if (!supabaseClient || !signedInDashboardEmail || isCoachDashboardPreview) {
-    card.hidden = true;
-    return;
-  }
-
-  card.hidden = false;
-
-  if (status) {
-    status.textContent = fitbitConnection.connected ? "Connected" : "Not connected";
-  }
-
-  if (connectButton) {
-    connectButton.hidden = fitbitConnection.connected;
-    connectButton.disabled = false;
-  }
-
-  if (disconnectButton) {
-    disconnectButton.hidden = !fitbitConnection.connected;
-    disconnectButton.disabled = false;
-  }
-
-  if (message) {
-    setFitbitMessage(message);
-  }
-}
-
-async function invokeFitbit(action, body = {}) {
-  if (!supabaseClient) {
-    return { data: null, error: { message: "Google Health sync is not connected yet." } };
-  }
-
-  const { data, error } = await supabaseClient.functions.invoke("fitbit-auth", {
-    body: { action, ...body }
-  });
-
-  if (!error) {
-    return { data, error };
-  }
-
-  let message = error.message || "Google Health sync failed.";
-
-  try {
-    const response = error.context?.clone ? error.context.clone() : null;
-
-    if (response) {
-      const contentType = response.headers?.get("content-type") || "";
-
-      if (contentType.includes("application/json")) {
-        const payload = await response.json();
-        message = payload?.error || payload?.message || message;
-      } else {
-        const text = await response.text();
-        message = text || message;
-      }
-    }
-  } catch (_) {
-    // Keep the Supabase message if the response body has already been consumed.
-  }
-
-  return {
-    data,
-    error: {
-      ...error,
-      message
-    }
-  };
-}
-
-function cleanFitbitCallbackUrl() {
-  const url = new URL(window.location.href);
-  url.searchParams.delete("code");
-  url.searchParams.delete("state");
-  url.searchParams.delete("scope");
-  url.searchParams.delete("error");
-  url.searchParams.delete("error_description");
-  url.searchParams.delete("authuser");
-  url.searchParams.delete("prompt");
-  window.history.replaceState({}, document.title, `${url.pathname}${url.search}${url.hash}`);
-}
-
-async function handleFitbitOAuthCallback() {
-  if (!document.querySelector(".dashboard-page") || isCoachDashboardPreview) {
-    return;
-  }
-
-  const params = new URLSearchParams(window.location.search);
-  const code = params.get("code");
-  const state = params.get("state");
-  const oauthError = params.get("error");
-
-  if (oauthError) {
-    window.localStorage.removeItem(fitbitOauthStateKey);
-    cleanFitbitCallbackUrl();
-    renderFitbitStatus(oauthError === "access_denied"
-      ? "Google Health access was not approved."
-      : "Google Health login did not finish. Try connecting again.");
-    return;
-  }
-
-  if (!code || !state) {
-    return;
-  }
-
-  const expectedState = window.localStorage.getItem(fitbitOauthStateKey);
-
-  if (!expectedState || state !== expectedState) {
-    cleanFitbitCallbackUrl();
-    renderFitbitStatus("Google Health login could not be verified. Try connecting again.");
-    return;
-  }
-
-  setFitbitMessage("Connecting Google Health...");
-  const { data, error } = await invokeFitbit("callback", { code, state });
-  window.localStorage.removeItem(fitbitOauthStateKey);
-  cleanFitbitCallbackUrl();
-
-  if (error || data?.error) {
-    renderFitbitStatus(error?.message || data?.error || "Could not connect Google Health.");
-    return;
-  }
-
-  fitbitConnection = { loaded: true, connected: true };
-  renderFitbitStatus("Google Health connected. Finished workouts will sync.");
-}
-
-async function loadFitbitStatus() {
-  if (!document.querySelector(".dashboard-page") || isCoachDashboardPreview) {
-    renderFitbitStatus();
-    return;
-  }
-
-  const { data, error } = await invokeFitbit("status");
-
-  if (error || data?.error) {
-    fitbitConnection = { loaded: true, connected: false };
-    renderFitbitStatus(error?.message || data?.error || "Google Health status unavailable.");
-    return;
-  }
-
-  fitbitConnection = {
-    loaded: true,
-    connected: Boolean(data?.connected),
-    expiresAt: data?.expiresAt || ""
-  };
-  renderFitbitStatus(
-    fitbitConnection.connected
-      ? "Finished workouts will sync to Google Health and supported Fitbit devices."
-      : "Sync finished workouts to Google Health and supported Fitbit devices."
-  );
-}
-
-function fitbitWorkoutSummary(rows) {
-  const workoutRows = rows.filter((row) => row.exercise_code !== warmupExerciseCode);
-  const firstRow = workoutRows[0] || rows[0] || {};
-  const entryDate = firstRow.entry_date || todayDate();
-  const workoutTitle = firstRow.workout_title || "Strength Training";
-  const strengthExerciseCount = new Set(
-    rows
-      .filter((row) => row.exercise_code !== warmupExerciseCode && row.exercise_code !== cardioExerciseCode)
-      .map((row) => row.exercise_code || row.exercise_name)
-      .filter(Boolean)
-  ).size;
-  const cardioMinutes = rows
-    .filter((row) => row.exercise_code === cardioExerciseCode)
-    .reduce((total, row) => total + Number(row.weight_used || 0), 0);
-  const warmupMinutes = rows
-    .filter((row) => row.exercise_code === warmupExerciseCode)
-    .reduce((total, row) => total + Number(row.weight_used || 0), 0);
-  const estimatedMinutes = Math.max(20, Math.min(180, (strengthExerciseCount * 8) + cardioMinutes + warmupMinutes));
-  const now = new Date();
-  const isToday = entryDate === todayDate();
-  const startDate = isToday
-    ? new Date(now.getTime() - (estimatedMinutes * 60 * 1000))
-    : new Date(`${entryDate}T12:00:00`);
-
-  return {
-    entryDate,
-    workoutTitle,
-    durationMinutes: estimatedMinutes,
-    startTime: startDate.toISOString(),
-    utcOffsetSeconds: -startDate.getTimezoneOffset() * 60
-  };
-}
-
-async function syncFinishedWorkoutToFitbit(rows, status) {
-  if (!fitbitConnection.connected || !Array.isArray(rows) || rows.length === 0) {
-    return;
-  }
-
-  const previousText = status?.textContent || "";
-
-  if (status) {
-    status.textContent = "Workout finished. Syncing to Google Health...";
-  }
-
-  const { data, error } = await invokeFitbit("sync-workout", fitbitWorkoutSummary(rows));
-
-  if (error || data?.error) {
-    if (status) {
-      status.textContent = `${previousText || "Workout finished."} Google Health sync failed: ${error?.message || data?.error}`;
-    }
-    return;
-  }
-
-  if (status) {
-    status.textContent = data?.alreadySynced
-      ? "Workout finished. Google Health already had this workout."
-      : "Workout finished and synced to Google Health.";
-  }
-}
-
-function handleFitbitActions() {
-  document.addEventListener("click", async (event) => {
-    const connectButton = event.target.closest("#client-fitbit-connect-button");
-    const disconnectButton = event.target.closest("#client-fitbit-disconnect-button");
-
-    if (!connectButton && !disconnectButton) {
-      return;
-    }
-
-    if (connectButton) {
-      connectButton.disabled = true;
-      setFitbitMessage("Opening Google Health...");
-      const { data, error } = await invokeFitbit("start");
-
-      if (error || data?.error || !data?.authorizationUrl || !data?.state) {
-        connectButton.disabled = false;
-        renderFitbitStatus(error?.message || data?.error || "Could not start Google Health login.");
-        return;
-      }
-
-      window.localStorage.setItem(fitbitOauthStateKey, data.state);
-      window.location.href = data.authorizationUrl;
-      return;
-    }
-
-    disconnectButton.disabled = true;
-    setFitbitMessage("Disconnecting Google Health...");
-    const { data, error } = await invokeFitbit("disconnect");
-
-    if (error || data?.error) {
-      disconnectButton.disabled = false;
-      renderFitbitStatus(error?.message || data?.error || "Could not disconnect Google Health.");
-      return;
-    }
-
-    fitbitConnection = { loaded: true, connected: false };
-    renderFitbitStatus("Google Health disconnected.");
-  });
 }
 
 async function handleLogin() {
@@ -7092,9 +6813,6 @@ async function loadDashboard() {
 
     activeClientEmail = data.client_email || targetClientEmail;
     renderProgram(data);
-    await handleFitbitOAuthCallback();
-    await loadFitbitStatus();
-
     const [progressResult, progressPhotoResult, trainingLogResult, foodLogResult, exerciseLibraryResult] = await Promise.allSettled([
       withTimeout(
         supabaseClient
@@ -7542,7 +7260,6 @@ async function handleTrainingLogSave() {
         if (section?.classList.contains("client-workout-panel-custom")) {
           clearCustomWorkoutDraft();
         }
-        await syncFinishedWorkoutToFitbit(saveResult.rows || [], status);
       }
       return;
     }
@@ -7603,7 +7320,6 @@ handleClientWorkoutTabs();
 handleWorkoutInteractions();
 handleSkipToggle();
 handleTrainingLogSave();
-handleFitbitActions();
 handleClientMetricSave();
 handleClientProgressHistorySelect();
 handleClientProgressSave();

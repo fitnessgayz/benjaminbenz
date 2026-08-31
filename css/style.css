@@ -2471,43 +2471,6 @@ footer {
   text-align: center;
 }
 
-.fitbit-sync-card {
-  display: grid;
-  gap: 8px;
-  padding: 12px;
-  border: 1px solid rgba(0, 0, 0, .14);
-  border-radius: 14px;
-  background: rgba(255, 255, 255, .72);
-}
-
-.fitbit-sync-card span {
-  color: var(--muted);
-  font-size: .78rem;
-  font-weight: 900;
-  text-transform: uppercase;
-}
-
-.fitbit-sync-card strong {
-  color: var(--ink);
-  font-size: .95rem;
-  font-weight: 900;
-}
-
-.fitbit-sync-actions {
-  display: grid;
-  gap: 6px;
-}
-
-.fitbit-sync-card .button {
-  min-height: 42px;
-  padding: 8px 12px;
-}
-
-.fitbit-sync-card .password-reset-button {
-  min-height: 0;
-  color: var(--muted);
-}
-
 .dashboard-sheet-action {
   display: flex;
   justify-content: center;
