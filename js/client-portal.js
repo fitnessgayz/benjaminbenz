@@ -4658,10 +4658,11 @@ function bindCustomWorkoutCarousel(panel) {
 
   carousel.dataset.carouselBound = "true";
   let frame = 0;
+  let touchSwipe = null;
   list.addEventListener("scroll", () => {
     window.cancelAnimationFrame(frame);
     frame = window.requestAnimationFrame(() => {
-      if (carousel.dataset.carouselEnabled !== "true") return;
+      if (carousel.dataset.carouselEnabled !== "true" || list.classList.contains("is-touch-swiping")) return;
       const cards = customWorkoutCarouselCards(panel);
       const firstOffset = cards[0]?.offsetLeft || 0;
       const index = cards.reduce((closest, card, cardIndex) => (
@@ -4676,6 +4677,65 @@ function bindCustomWorkoutCarousel(panel) {
       }
     });
   }, { passive: true });
+
+  list.addEventListener("touchstart", (event) => {
+    if (
+      carousel.dataset.carouselEnabled !== "true" ||
+      event.touches.length !== 1 ||
+      event.target.closest("input, select, textarea")
+    ) {
+      touchSwipe = null;
+      return;
+    }
+
+    const touch = event.touches[0];
+    touchSwipe = {
+      startX: touch.clientX,
+      startY: touch.clientY,
+      lastX: touch.clientX,
+      startScrollLeft: list.scrollLeft,
+      startIndex: Number(carousel.dataset.activeIndex) || 0,
+      direction: ""
+    };
+  }, { passive: true });
+
+  list.addEventListener("touchmove", (event) => {
+    if (!touchSwipe || event.touches.length !== 1) return;
+
+    const touch = event.touches[0];
+    const deltaX = touch.clientX - touchSwipe.startX;
+    const deltaY = touch.clientY - touchSwipe.startY;
+    touchSwipe.lastX = touch.clientX;
+
+    if (!touchSwipe.direction && Math.max(Math.abs(deltaX), Math.abs(deltaY)) >= 8) {
+      touchSwipe.direction = Math.abs(deltaX) > Math.abs(deltaY) * 1.15 ? "horizontal" : "vertical";
+      if (touchSwipe.direction === "horizontal") {
+        list.classList.add("is-touch-swiping");
+      }
+    }
+
+    if (touchSwipe.direction !== "horizontal") return;
+    event.preventDefault();
+    list.scrollLeft = touchSwipe.startScrollLeft - deltaX;
+  }, { passive: false });
+
+  const finishTouchSwipe = (cancelled = false) => {
+    if (!touchSwipe) return;
+
+    const deltaX = touchSwipe.lastX - touchSwipe.startX;
+    const threshold = Math.min(54, list.clientWidth * .14);
+    const wasHorizontal = touchSwipe.direction === "horizontal";
+    const startIndex = touchSwipe.startIndex;
+    touchSwipe = null;
+    list.classList.remove("is-touch-swiping");
+
+    if (!wasHorizontal) return;
+    const direction = !cancelled && Math.abs(deltaX) >= threshold ? (deltaX < 0 ? 1 : -1) : 0;
+    moveCustomWorkoutCarousel(panel, startIndex + direction);
+  };
+
+  list.addEventListener("touchend", () => finishTouchSwipe(), { passive: true });
+  list.addEventListener("touchcancel", () => finishTouchSwipe(true), { passive: true });
 
   list.addEventListener("keydown", (event) => {
     if (event.target.closest("input, select, textarea, button")) return;

@@ -228,8 +228,12 @@
     overscroll-behavior-inline: contain;
     scroll-snap-type: inline mandatory;
     scrollbar-width: none;
-    touch-action: pan-x pan-y;
+    touch-action: pan-y;
     -webkit-overflow-scrolling: touch;
+  }
+
+  .dashboard-page .custom-workout-carousel[data-carousel-enabled="true"] .custom-workout-list.is-touch-swiping {
+    scroll-snap-type: none;
   }
 
   .dashboard-page .custom-workout-carousel[data-carousel-enabled="true"] .custom-workout-list::-webkit-scrollbar {
