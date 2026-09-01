@@ -177,6 +177,16 @@
   display: none;
 }
 
+.custom-workout-carousel-stack,
+.custom-workout-add-actions {
+  display: grid;
+  gap: 16px;
+}
+
+.custom-workout-add-actions > [hidden] {
+  display: none !important;
+}
+
 @media (max-width: 760px) {
   .dashboard-page .custom-workout-carousel[data-carousel-enabled="true"] {
     min-width: 0;
