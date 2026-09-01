@@ -61,6 +61,8 @@ let workoutElapsedTimerIntervalId = null;
 let workoutElapsedTimerIsCompact = null;
 let activeRirButton = null;
 let pendingRirValue = null;
+let nextExercisePromptPanel = null;
+let nextExercisePromptReturnFocus = null;
 
 function isCoachPortalEmail(email) {
   return coachPortalEmails.includes(String(email || "").toLowerCase());
@@ -2362,11 +2364,22 @@ function syncExerciseNamePreview(logElement, nextName) {
   }
 }
 
+function renderExerciseNotesState(logElement) {
+  const notesInput = logElement?.querySelector("[data-log-notes]");
+  const notesState = logElement?.querySelector("[data-exercise-notes-state]");
+  const hasNotes = Boolean(String(notesInput?.value || "").trim());
+
+  if (notesState) {
+    notesState.textContent = hasNotes ? "Added" : "";
+  }
+}
+
 function exerciseLogFields(exercise, workoutTitle, options = {}) {
   const setCount = Number(options.setCount) || setCountFromPrescription(exercise.prescription);
   const panelClass = options.panelClass || "exercise-detail";
   const showInlineHeader = Boolean(options.showInlineHeader);
   const suggestionListAttr = options.suggestExerciseNames ? ' list="custom-exercise-suggestions"' : "";
+  const notesContentId = `exercise-notes-${String(`${workoutTitle}-${exercise.code}`).toLowerCase().replace(/[^a-z0-9-]/g, "-")}`;
   const dateMarkup = options.showDate === false
     ? `<input type="hidden" value="${todayDate()}" data-log-date />`
     : '<label class="exercise-date"><span>Date</span><input type="date" data-log-date /></label>';
@@ -2411,12 +2424,20 @@ function exerciseLogFields(exercise, workoutTitle, options = {}) {
         <div class="set-table-actions">
           <button class="add-set-button" type="button" data-add-set>+ Add Set</button>
           <button class="set-delete-last-button" type="button" data-delete-last-set>Delete Set</button>
+          <button class="set-finished-button" type="button" data-finish-set>Set Finished</button>
         </div>
       </div>
-      <label class="exercise-notes">
-        <span>Notes</span>
-        <textarea placeholder="Any exercise modifications?" data-log-notes></textarea>
-      </label>
+      <div class="exercise-notes exercise-notes-disclosure">
+        <button class="exercise-notes-toggle" type="button" data-exercise-notes-toggle aria-expanded="false" aria-controls="${notesContentId}">
+          <span>Notes</span>
+          <small data-exercise-notes-state></small>
+          <i data-exercise-notes-icon aria-hidden="true">+</i>
+        </button>
+        <label class="exercise-notes-content" id="${notesContentId}" hidden>
+          <span class="sr-only">Exercise notes</span>
+          <textarea aria-label="Exercise notes" placeholder="Any exercise modifications?" data-log-notes></textarea>
+        </label>
+      </div>
       <small data-log-status></small>
       <div class="previous-weights" data-previous-weights>Previous: none</div>
     </div>
@@ -2521,16 +2542,13 @@ function warmupLogFields(workoutTitle, options = {}) {
 
 function workoutStartControlMarkup(workoutTitle) {
   return `
-    <div class="workout-start-control" data-workout-start-control>
+    <div class="workout-start-control">
       <button
-        class="workout-start-button"
+        class="button button-dark workout-start-button"
         type="button"
         data-workout-start
         data-workout-title="${escapeHtml(workoutTitle)}"
-      >
-        <span data-workout-start-label>Start workout</span>
-        <small data-workout-start-note>Starts the workout timer</small>
-      </button>
+      >Start workout</button>
     </div>
   `;
 }
@@ -2557,7 +2575,6 @@ function exerciseCard(exercise, workoutTitle, isOpen = false, workoutFocus = "",
             </button>
           </span>
           <strong class="custom-workout-editable-title" data-exercise-title>
-            <span class="custom-workout-exercise-code">${escapeHtml(exercise.code)}</span>
             <span class="custom-workout-name-editor">
               <input
                 type="text"
@@ -3101,6 +3118,7 @@ function applyCustomExerciseDraft(logElement, exerciseDraft) {
     notesInput.value = exerciseDraft.notes || "";
   }
 
+  renderExerciseNotesState(logElement);
   syncExerciseNamePreview(logElement, exerciseDraft.name || "");
   setExerciseSkipped(logElement, false, { skipDraft: true });
   syncVisibleSetTarget(logElement);
@@ -3577,16 +3595,71 @@ function saveRirSelection() {
   closeRirDialog();
 }
 
+function nextExercisePromptMarkup() {
+  return `
+    <div class="next-exercise-overlay" data-next-exercise-overlay hidden>
+      <section class="next-exercise-sheet" role="dialog" aria-modal="true" aria-labelledby="next-exercise-title">
+        <header class="rir-heading">
+          <div>
+            <small>Exercise finished</small>
+            <strong id="next-exercise-title">Start a new exercise?</strong>
+          </div>
+          <button class="rir-close" type="button" data-next-exercise-close aria-label="Close new exercise prompt">×</button>
+        </header>
+        <p>Would you like to add another exercise to this workout?</p>
+        <div class="next-exercise-actions">
+          <button class="next-exercise-decline" type="button" data-next-exercise-no>Not now</button>
+          <button class="next-exercise-confirm" type="button" data-next-exercise-yes>Start New Exercise</button>
+        </div>
+      </section>
+    </div>
+  `;
+}
+
+function ensureNextExercisePrompt() {
+  let overlay = document.querySelector("[data-next-exercise-overlay]");
+
+  if (!overlay) {
+    document.body.insertAdjacentHTML("beforeend", nextExercisePromptMarkup());
+    overlay = document.querySelector("[data-next-exercise-overlay]");
+  }
+
+  return overlay;
+}
+
+function openNextExercisePrompt(panel, returnFocus) {
+  const overlay = ensureNextExercisePrompt();
+
+  nextExercisePromptPanel = panel || null;
+  nextExercisePromptReturnFocus = returnFocus || null;
+  overlay.hidden = false;
+  document.body.classList.add("next-exercise-open");
+  overlay.querySelector("[data-next-exercise-yes]")?.focus();
+}
+
+function closeNextExercisePrompt(options = {}) {
+  const overlay = document.querySelector("[data-next-exercise-overlay]");
+  const returnFocus = nextExercisePromptReturnFocus;
+
+  if (overlay) {
+    overlay.hidden = true;
+  }
+  document.body.classList.remove("next-exercise-open");
+  nextExercisePromptPanel = null;
+  nextExercisePromptReturnFocus = null;
+
+  if (options.restoreFocus !== false) {
+    returnFocus?.focus();
+  }
+}
+
 function workoutElapsedTimerMarkup() {
   return `
     <aside class="workout-elapsed-timer" data-workout-elapsed-timer hidden aria-label="Workout duration">
       <button class="workout-elapsed-compact-toggle" type="button" data-workout-elapsed-compact aria-expanded="true" aria-label="Minimize workout timer">
         <span data-workout-elapsed-compact-icon aria-hidden="true">−</span>
+        <small data-workout-elapsed-compact-label>Minimize</small>
       </button>
-      <div class="workout-elapsed-timer-copy">
-        <small>Workout time</small>
-        <strong data-workout-elapsed-title>Workout in progress</strong>
-      </div>
       <output data-workout-elapsed-display role="timer" aria-live="off">00:00</output>
       <button type="button" data-workout-elapsed-toggle aria-label="Pause workout timer">Pause</button>
     </aside>
@@ -3756,62 +3829,26 @@ function activeWorkoutElapsedTitle() {
   return panelTitle || homeTitle || "Workout";
 }
 
-function normalizedWorkoutElapsedTitle(value) {
-  return String(value || "").trim().toLowerCase();
-}
-
-function renderWorkoutStartButtons() {
-  const activeTitle = normalizedWorkoutElapsedTitle(workoutElapsedTimerState?.workoutTitle);
-
-  document.querySelectorAll("[data-workout-start]").forEach((button) => {
-    const buttonTitle = normalizedWorkoutElapsedTitle(button.dataset.workoutTitle);
-    const isActiveWorkout = Boolean(workoutElapsedTimerState && buttonTitle === activeTitle);
-    const isAnotherWorkoutActive = Boolean(workoutElapsedTimerState && !isActiveWorkout);
-    const label = button.querySelector("[data-workout-start-label]");
-    const note = button.querySelector("[data-workout-start-note]");
-
-    button.disabled = Boolean(workoutElapsedTimerState);
-    button.classList.toggle("is-active", isActiveWorkout);
-    button.classList.toggle("is-blocked", isAnotherWorkoutActive);
-    button.setAttribute("aria-pressed", isActiveWorkout ? "true" : "false");
-
-    if (label) {
-      label.textContent = isActiveWorkout
-        ? (workoutElapsedTimerState.running ? "Workout started" : "Workout paused")
-        : (isAnotherWorkoutActive ? "Workout already running" : "Start workout");
-    }
-    if (note) {
-      note.textContent = isActiveWorkout
-        ? (workoutElapsedTimerState.running ? "Timer is running" : "Resume from the floating timer")
-        : (isAnotherWorkoutActive ? "Finish the current workout first" : "Starts the workout timer");
-    }
-  });
-}
-
 function renderWorkoutElapsedTimer() {
   const timer = ensureWorkoutElapsedTimer();
 
-  renderWorkoutStartButtons();
-
   if (!workoutElapsedTimerState) {
     timer.hidden = true;
+    syncWorkoutStartButtons();
     return;
   }
 
   const display = timer.querySelector("[data-workout-elapsed-display]");
-  const title = timer.querySelector("[data-workout-elapsed-title]");
   const toggleButton = timer.querySelector("[data-workout-elapsed-toggle]");
   const compactButton = timer.querySelector("[data-workout-elapsed-compact]");
   const compactIcon = timer.querySelector("[data-workout-elapsed-compact-icon]");
+  const compactLabel = timer.querySelector("[data-workout-elapsed-compact-label]");
   const isCompact = workoutElapsedTimerCompactPreference();
 
   timer.hidden = false;
   timer.classList.toggle("is-compact", isCompact);
   if (display) {
     display.textContent = workoutElapsedTimeLabel(workoutElapsedMilliseconds());
-  }
-  if (title) {
-    title.textContent = workoutElapsedTimerState.workoutTitle || "Workout";
   }
   if (toggleButton) {
     toggleButton.textContent = workoutElapsedTimerState.running ? "Pause" : "Resume";
@@ -3830,6 +3867,31 @@ function renderWorkoutElapsedTimer() {
   if (compactIcon) {
     compactIcon.textContent = isCompact ? "+" : "−";
   }
+  if (compactLabel) {
+    compactLabel.textContent = isCompact ? "Expand" : "Minimize";
+  }
+  syncWorkoutStartButtons();
+}
+
+function syncWorkoutStartButtons() {
+  document.querySelectorAll("[data-workout-start]").forEach((button) => {
+    const workoutTitle = String(button.dataset.workoutTitle || "").trim();
+    const isActiveWorkout = Boolean(
+      workoutElapsedTimerState &&
+      workoutTitle === String(workoutElapsedTimerState.workoutTitle || "").trim()
+    );
+
+    button.disabled = Boolean(workoutElapsedTimerState && !isActiveWorkout);
+    button.classList.toggle("is-active", isActiveWorkout);
+
+    if (!workoutElapsedTimerState) {
+      button.textContent = "Start workout";
+    } else if (!isActiveWorkout) {
+      button.textContent = "Workout timer active";
+    } else {
+      button.textContent = workoutElapsedTimerState.running ? "Pause workout" : "Resume workout";
+    }
+  });
 }
 
 function runWorkoutElapsedTimer() {
@@ -4065,7 +4127,6 @@ function customWorkoutCardMarkup(exercise, workoutTitle, index = 0) {
             </button>
           </span>
           <strong class="custom-workout-editable-title" data-exercise-title>
-            <span class="custom-workout-exercise-code">${escapeHtml(exercise.code)}</span>
             <span class="custom-workout-name-editor">
               <input
                 type="text"
@@ -4331,8 +4392,8 @@ function renderClientWorkoutTabs(workouts = []) {
   `;
   }).join("");
 
-  renderWorkoutStartButtons();
   renderClientHomeSummary();
+  syncWorkoutStartButtons();
 }
 
 function logKey(workoutTitle, exerciseCode) {
@@ -4767,6 +4828,8 @@ function updateExerciseLogField(logElement) {
   if (notesInput) {
     notesInput.value = selectedLogs.find((log) => log.notes)?.notes || "";
   }
+
+  renderExerciseNotesState(logElement);
 
   if (exerciseNameInput) {
     const loggedExerciseName = selectedLogs.find((log) => log.exercise_name)?.exercise_name || "";
@@ -6067,7 +6130,7 @@ function setExerciseSkipped(logElement, skipped, options = {}) {
   }
 
   logElement.classList.toggle("is-exercise-skipped", skipped);
-  logElement.querySelectorAll("input, select, textarea, [data-add-set], [data-delete-last-set], [data-set-rir], [data-set-rest]").forEach((control) => {
+  logElement.querySelectorAll("input, select, textarea, [data-add-set], [data-delete-last-set], [data-finish-set], [data-set-rir], [data-set-rest], [data-exercise-notes-toggle]").forEach((control) => {
     control.disabled = skipped;
   });
   const exerciseNameInput = exerciseNameInputForLog(logElement);
@@ -6155,11 +6218,13 @@ function removeExerciseLog(logElement) {
 }
 
 function handleWorkoutInteractions() {
-  document.addEventListener("click", (event) => {
+  document.addEventListener("click", async (event) => {
     const exerciseSuggestionButton = event.target.closest("[data-custom-exercise-suggestion]");
     const toggle = event.target.closest("[data-exercise-toggle]");
     const addSetButton = event.target.closest("[data-add-set]");
     const deleteLastSetButton = event.target.closest("[data-delete-last-set]");
+    const finishSetButton = event.target.closest("[data-finish-set]");
+    const exerciseNotesToggle = event.target.closest("[data-exercise-notes-toggle]");
     const setRirButton = event.target.closest("[data-set-rir]");
     const setRestButton = event.target.closest("[data-set-rest]");
     const skipExerciseButton = event.target.closest("[data-skip-exercise]");
@@ -6174,15 +6239,59 @@ function handleWorkoutInteractions() {
     const rirOptionButton = event.target.closest("[data-rir-option]");
     const rirSaveButton = event.target.closest("[data-rir-save]");
     const rirCloseButton = event.target.closest("[data-rir-close]");
+    const nextExerciseYesButton = event.target.closest("[data-next-exercise-yes]");
+    const nextExerciseNoButton = event.target.closest("[data-next-exercise-no]");
+    const nextExerciseCloseButton = event.target.closest("[data-next-exercise-close]");
+    const workoutStartButton = event.target.closest("[data-workout-start]");
     const workoutElapsedToggleButton = event.target.closest("[data-workout-elapsed-toggle]");
     const workoutElapsedCompactButton = event.target.closest("[data-workout-elapsed-compact]");
-    const workoutStartButton = event.target.closest("[data-workout-start]");
+
+    if (exerciseNotesToggle) {
+      const notesContent = exerciseNotesToggle.closest(".exercise-notes")?.querySelector(".exercise-notes-content");
+      const isExpanded = exerciseNotesToggle.getAttribute("aria-expanded") === "true";
+
+      exerciseNotesToggle.setAttribute("aria-expanded", String(!isExpanded));
+      if (notesContent) {
+        notesContent.hidden = isExpanded;
+      }
+      const icon = exerciseNotesToggle.querySelector("[data-exercise-notes-icon]");
+      if (icon) {
+        icon.textContent = isExpanded ? "+" : "−";
+      }
+      if (!isExpanded) {
+        notesContent?.querySelector("[data-log-notes]")?.focus();
+      }
+      return;
+    }
+
+    if (nextExerciseYesButton) {
+      const panel = nextExercisePromptPanel;
+
+      closeNextExercisePrompt({ restoreFocus: false });
+      panel?.querySelector("[data-add-custom-exercise], [data-add-assigned-exercise]")?.click();
+      return;
+    }
+
+    if (
+      nextExerciseNoButton ||
+      nextExerciseCloseButton ||
+      event.target.matches("[data-next-exercise-overlay]")
+    ) {
+      closeNextExercisePrompt();
+      return;
+    }
 
     if (workoutStartButton) {
-      if (!workoutElapsedTimerState) {
-        startWorkoutElapsedTimer(workoutStartButton.dataset.workoutTitle || activeWorkoutElapsedTitle());
-      } else {
-        renderWorkoutStartButtons();
+      const workoutTitle = String(workoutStartButton.dataset.workoutTitle || activeWorkoutElapsedTitle()).trim();
+      const isActiveWorkout = Boolean(
+        workoutElapsedTimerState &&
+        workoutTitle === String(workoutElapsedTimerState.workoutTitle || "").trim()
+      );
+
+      if (isActiveWorkout) {
+        toggleWorkoutElapsedTimer();
+      } else if (!workoutElapsedTimerState) {
+        startWorkoutElapsedTimer(workoutTitle);
       }
       return;
     }
@@ -6221,6 +6330,48 @@ function handleWorkoutInteractions() {
       resetRestTimer();
       openRestTimer(setRestButton);
       startOrPauseRestTimer();
+      return;
+    }
+
+    if (finishSetButton) {
+      const logElement = finishSetButton.closest("[data-exercise-log]");
+      const card = finishSetButton.closest(".workout-exercise-card");
+      const status = logElement?.querySelector("[data-log-status]");
+
+      if (!logElement) {
+        return;
+      }
+
+      const completedSets = filledSetCount(logElement);
+      const setTarget = visibleSetTarget(logElement);
+
+      if (completedSets < setTarget) {
+        if (status) {
+          status.textContent = `Enter all ${setTarget} working set${setTarget === 1 ? "" : "s"} before finishing this exercise.`;
+        }
+        return;
+      }
+
+      const saveResult = await saveTrainingLogRows(finishSetButton, [logElement], status, {
+        savingMessage: "Finishing exercise...",
+        successMessage: "Exercise finished."
+      });
+
+      if (saveResult.saved) {
+        const cardLogCount = card?.querySelectorAll("[data-exercise-log]").length || 0;
+
+        logElement.classList.add("is-exercise-complete");
+        if (cardLogCount <= 1) {
+          card?.classList.add("is-exercise-complete");
+          card?.classList.remove("is-open");
+        }
+        finishSetButton.textContent = "Finished ✓";
+        finishSetButton.setAttribute("aria-pressed", "true");
+        openNextExercisePrompt(
+          card?.closest(".client-workout-panel-custom, .client-workout-panel-assigned"),
+          finishSetButton
+        );
+      }
       return;
     }
 
@@ -6439,6 +6590,7 @@ function handleWorkoutInteractions() {
     if (notesInput) {
       const logElement = notesInput.closest("[data-exercise-log]");
 
+      renderExerciseNotesState(logElement);
       persistCustomWorkoutDraftForElement(logElement || notesInput);
       scheduleTrainingLogAutosave(logElement);
     }

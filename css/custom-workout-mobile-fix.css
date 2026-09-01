@@ -61,12 +61,39 @@
   box-sizing: border-box !important;
 }
 
+.dashboard-page .workout-start-control,
+.coach-admin-page .workout-start-control {
+  display: grid;
+  width: 100%;
+  margin: -2px 0 4px;
+}
+
+.dashboard-page .workout-start-button,
+.coach-admin-page .workout-start-button {
+  width: 100%;
+  min-height: 52px;
+  border-radius: var(--ui-radius) !important;
+  font-weight: 900;
+}
+
+.dashboard-page .workout-start-button.is-active,
+.coach-admin-page .workout-start-button.is-active {
+  border-color: var(--black);
+  background: var(--lime);
+  color: var(--black);
+}
+
 @media (max-width: 760px) {
   .dashboard-page .custom-workout-card > .custom-workout-card-summary,
   .coach-admin-page .custom-workout-card > .custom-workout-card-summary {
     display: block !important;
-    padding: 12px !important;
+    padding: 10px 54px 10px 10px !important;
     overflow: visible !important;
+  }
+
+  .dashboard-page .custom-workout-card-summary > span,
+  .coach-admin-page .custom-workout-card-summary > span {
+    gap: 6px !important;
   }
 
   .dashboard-page .custom-workout-card-marker-row,
@@ -78,6 +105,12 @@
     padding-right: 0 !important;
     align-items: center !important;
     gap: 8px !important;
+    margin-bottom: 0 !important;
+  }
+
+  .dashboard-page .custom-workout-editable-title,
+  .coach-admin-page .custom-workout-editable-title {
+    margin: 0 !important;
   }
 
   .dashboard-page .custom-workout-card-marker-row .status-pill,
