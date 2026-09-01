@@ -408,7 +408,12 @@ function renderClientHomeSummary() {
   }
 
   const workouts = Array.isArray(currentProgram.workouts) ? currentProgram.workouts : [];
-  const nextWorkout = workouts[activeWorkoutTabIndex] || workouts[0] || {};
+  const hasAssignedWorkout = workouts.length > 0;
+  const nextWorkout = workouts[activeWorkoutTabIndex] || workouts[0] || {
+    title: customWorkoutTitle,
+    focus: "Build your own",
+    format: "custom"
+  };
   const used = normalizeClientSessionCount(currentProgram.session_count_used);
   const total = normalizeClientSessionCount(currentProgram.session_count_total);
   const todayFoodTotals = foodLogTotals(foodLogs.filter((log) => String(log.entry_date || "") === todayDate()));
@@ -420,7 +425,7 @@ function renderClientHomeSummary() {
   const noteBody = String(currentProgram.coach_note_body || "").trim();
   const checklist = document.getElementById("client-home-checklist");
 
-  setText("#client-home-status", workouts.length ? "Ready" : "Setup");
+  setText("#client-home-status", "Ready");
   setText("#client-home-workout-title", nextWorkout.title || "Workout");
   setText("#client-home-workout-meta", [
     nextWorkout.focus || "",
@@ -451,8 +456,8 @@ function renderClientHomeSummary() {
     const hasSessionCount = used > 0 || total > 0;
     const items = [
       {
-        done: workouts.length > 0,
-        label: workouts.length > 0 ? "Workout loaded" : "Waiting for workout"
+        done: true,
+        label: hasAssignedWorkout ? "Workout loaded" : "Custom workout available"
       },
       {
         done: Boolean(latestWorkout),
@@ -4314,7 +4319,9 @@ function renderClientWorkoutTabs(workouts = []) {
   }];
 
   if (count) {
-    count.textContent = `${scheduledWorkouts.length} workout${scheduledWorkouts.length === 1 ? "" : "s"}`;
+    count.textContent = scheduledWorkouts.length > 0
+      ? `${scheduledWorkouts.length} workout${scheduledWorkouts.length === 1 ? "" : "s"}`
+      : "Custom workout";
   }
 
   if (availableWorkouts.length === 0) {
@@ -6945,7 +6952,7 @@ async function loadDashboard() {
         .limit(1),
       "Program request timed out."
     );
-    const data = Array.isArray(programRows) ? programRows[0] : null;
+    const assignedProgram = Array.isArray(programRows) ? programRows[0] : null;
 
     if (error) {
       setDashboardMessage(
@@ -6955,13 +6962,13 @@ async function loadDashboard() {
       return;
     }
 
-    if (!data) {
-      setDashboardMessage(
-        "No active program yet",
-        "You are signed in, but your workout has not been added to this dashboard yet."
-      );
-      return;
-    }
+    const data = assignedProgram || {
+      client_email: targetClientEmail,
+      client_name: "Client",
+      program_title: "Custom Workout",
+      program_summary: "Build and log your own workout.",
+      workouts: []
+    };
 
     activeClientEmail = data.client_email || targetClientEmail;
     renderProgram(data);
