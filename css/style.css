@@ -4299,6 +4299,116 @@ footer {
   font-weight: 900;
 }
 
+.progress-exercise-section {
+  display: grid;
+  gap: 14px;
+  margin-top: 24px;
+  padding: 20px;
+  border: 1px solid var(--black);
+  background: #fbfbf8;
+}
+
+.progress-exercise-intro {
+  max-width: 62ch;
+  margin: 0;
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.progress-exercise-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.progress-exercise-card {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--line);
+  background: var(--paper);
+}
+
+.progress-exercise-card-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.progress-exercise-card-heading > div {
+  min-width: 0;
+}
+
+.progress-exercise-card-heading span,
+.progress-exercise-comparison small {
+  color: var(--muted);
+  font-size: .68rem;
+  font-weight: 900;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.progress-exercise-card-heading h4 {
+  margin: 3px 0 0;
+  font-size: 1.05rem;
+  line-height: 1.05;
+  overflow-wrap: anywhere;
+}
+
+.progress-exercise-change {
+  flex: 0 0 auto;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  color: var(--black);
+  background: #f2f2ee;
+  font-size: .75rem;
+  white-space: nowrap;
+}
+
+.progress-exercise-change.is-positive {
+  border-color: var(--black);
+  background: var(--lime);
+}
+
+.progress-exercise-change.is-negative {
+  color: var(--red);
+}
+
+.progress-exercise-comparison {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+}
+
+.progress-exercise-comparison span {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.progress-exercise-comparison strong {
+  font-size: 1.25rem;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.progress-exercise-comparison em {
+  color: var(--muted);
+  font-size: .72rem;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.progress-exercise-comparison > i {
+  color: var(--black);
+  font-size: 1.2rem;
+  font-style: normal;
+  font-weight: 900;
+}
+
 .client-progress-intro {
   max-width: 760px;
   margin: -4px 0 20px;
@@ -7343,6 +7453,14 @@ textarea:focus {
 }
 
 @media (max-width: 620px) {
+  .progress-exercise-section {
+    padding: 16px;
+  }
+
+  .progress-exercise-list {
+    grid-template-columns: 1fr;
+  }
+
   .progress-entry-card,
   .progress-gallery-section,
   .progress-history-section {

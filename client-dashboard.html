@@ -30,7 +30,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=assigned-card-rebuild-1" />
+  <link rel="stylesheet" href="css/style.css?v=exercise-progress-1" />
   <link rel="stylesheet" href="css/custom-workout-mobile-fix.css?v=compact-exercise-card-2" />
 </head>
 <body class="dashboard-page is-loading">
@@ -397,6 +397,16 @@
           </div>
           <div class="progress-chart" id="progress-chart" aria-label="Progress line graph"></div>
           <p class="progress-goal" id="progress-goal"></p>
+          <section class="progress-exercise-section" aria-labelledby="client-exercise-progress-title">
+            <div class="progress-card-heading">
+              <div>
+                <p class="kicker">Exercise progress</p>
+                <h3 id="client-exercise-progress-title">Where you started vs. now</h3>
+              </div>
+            </div>
+            <p class="progress-exercise-intro">Compare your first logged working result with your most recent performance.</p>
+            <div class="progress-exercise-list" id="client-exercise-progress"><p class="empty-state">Log the same exercise in another workout to see how far you’ve come.</p></div>
+          </section>
           <div class="progress-profile-grid">
             <section class="progress-entry-card" aria-labelledby="client-progress-entry-title">
               <div class="progress-card-heading">
@@ -546,6 +556,6 @@
   <script src="js/script.js?v=client-dashboard"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js?v=manual-sessions-1"></script>
-  <script src="js/client-portal.js?v=custom-workout-fallback-1"></script>
+  <script src="js/client-portal.js?v=exercise-progress-1"></script>
 </body>
 </html>

@@ -1940,6 +1940,127 @@ function renderClientProgressHistory(entries) {
   }).join("");
 }
 
+function exerciseProgressNumber(value) {
+  const number = Number(value) || 0;
+
+  return Number.isInteger(number) ? String(number) : number.toFixed(1);
+}
+
+function exerciseProgressRecords(logs = []) {
+  const grouped = new Map();
+
+  logs.forEach((log) => {
+    const code = String(log.exercise_code || "").trim().toUpperCase();
+    const name = String(log.exercise_name || "").trim();
+    const normalizedName = name.toLowerCase();
+    const date = String(log.entry_date || "");
+
+    if (
+      !date ||
+      [warmupExerciseCode, cardioExerciseCode].includes(code) ||
+      normalizedSetType(log.set_type, log.set_number) === warmUpSetType
+    ) {
+      return;
+    }
+
+    const weight = Number(log.weight_used) || 0;
+    const reps = Number(log.reps) || 0;
+
+    if (weight <= 0 && reps <= 0) {
+      return;
+    }
+
+    const key = normalizedName || code.toLowerCase();
+    if (!key) {
+      return;
+    }
+
+    if (!grouped.has(key)) {
+      grouped.set(key, {
+        id: key,
+        code,
+        name: name || code || "Exercise",
+        dates: new Map()
+      });
+    }
+
+    const exercise = grouped.get(key);
+    if (!exercise.dates.has(date)) {
+      exercise.dates.set(date, { date, maxWeight: 0, maxReps: 0 });
+    }
+
+    const point = exercise.dates.get(date);
+    point.maxWeight = Math.max(point.maxWeight, weight);
+    point.maxReps = Math.max(point.maxReps, reps);
+  });
+
+  return Array.from(grouped.values()).map((exercise) => {
+    const points = Array.from(exercise.dates.values()).sort((left, right) => left.date.localeCompare(right.date));
+    const tracksWeight = points.some((point) => point.maxWeight > 0);
+    const comparablePoints = points.filter((point) => tracksWeight ? point.maxWeight > 0 : point.maxReps > 0);
+    const started = comparablePoints[0];
+    const current = comparablePoints[comparablePoints.length - 1];
+    const valueKey = tracksWeight ? "maxWeight" : "maxReps";
+
+    return {
+      ...exercise,
+      started,
+      current,
+      unit: tracksWeight ? "lb" : "reps",
+      change: started && current ? current[valueKey] - started[valueKey] : 0,
+      startingValue: started?.[valueKey] || 0,
+      currentValue: current?.[valueKey] || 0
+    };
+  })
+    .filter((exercise) => exercise.started && exercise.current)
+    .sort((left, right) => right.current.date.localeCompare(left.current.date));
+}
+
+function renderClientExerciseProgress(logs = trainingLogs) {
+  const container = document.getElementById("client-exercise-progress");
+
+  if (!container) {
+    return;
+  }
+
+  const records = exerciseProgressRecords(logs);
+
+  if (records.length === 0) {
+    container.innerHTML = '<p class="empty-state">Log the same exercise in another workout to see how far you’ve come.</p>';
+    return;
+  }
+
+  container.innerHTML = records.map((record) => {
+    const changePrefix = record.change > 0 ? "+" : "";
+    const changeClass = record.change > 0 ? " is-positive" : record.change < 0 ? " is-negative" : "";
+
+    return `
+      <article class="progress-exercise-card">
+        <div class="progress-exercise-card-heading">
+          <div>
+            ${record.code ? `<span>${escapeHtml(record.code)}</span>` : ""}
+            <h4>${escapeHtml(record.name)}</h4>
+          </div>
+          <strong class="progress-exercise-change${changeClass}">${escapeHtml(changePrefix)}${escapeHtml(exerciseProgressNumber(record.change))} ${escapeHtml(record.unit)}</strong>
+        </div>
+        <div class="progress-exercise-comparison">
+          <span>
+            <small>Started</small>
+            <strong>${escapeHtml(exerciseProgressNumber(record.startingValue))} ${escapeHtml(record.unit)}</strong>
+            <em>${escapeHtml(formatLogDate(record.started.date))}</em>
+          </span>
+          <i aria-hidden="true">→</i>
+          <span>
+            <small>Now</small>
+            <strong>${escapeHtml(exerciseProgressNumber(record.currentValue))} ${escapeHtml(record.unit)}</strong>
+            <em>${escapeHtml(formatLogDate(record.current.date))}</em>
+          </span>
+        </div>
+      </article>
+    `;
+  }).join("");
+}
+
 function renderProgress(entries) {
   const safeEntries = Array.isArray(entries) ? entries : [];
   progressEntries = safeEntries;
@@ -5027,6 +5148,7 @@ function nutritionLogHistorySections(logs = []) {
 }
 
 function renderClientTrainingLogs() {
+  renderClientExerciseProgress(trainingLogs);
   const history = document.getElementById("client-training-log-history");
   const count = document.getElementById("client-logs-count");
 
