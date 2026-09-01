@@ -3827,6 +3827,7 @@ function workoutDifficultyPromptMarkup() {
           </div>
           <button class="rir-close" type="button" data-workout-difficulty-close aria-label="Close workout difficulty prompt">×</button>
         </header>
+        <p class="workout-difficulty-congratulations">Congratulations for completing the workout!</p>
         <p class="workout-difficulty-question">Choose the rating that best describes the workout overall.</p>
         <div class="workout-difficulty-options" role="radiogroup" aria-label="Overall workout difficulty">
           ${workoutDifficultyOptions().map(([value, label]) => `

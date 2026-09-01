@@ -157,6 +157,18 @@
   line-height: 1.4;
 }
 
+.workout-difficulty-congratulations {
+  margin: 0;
+  padding: 11px 12px;
+  border: 1px solid var(--black);
+  border-radius: 8px;
+  background: var(--lime);
+  color: var(--black);
+  font-size: .9rem;
+  font-weight: 900;
+  line-height: 1.35;
+}
+
 .workout-difficulty-options {
   display: grid;
   gap: 7px;
