@@ -41,6 +41,16 @@ const customWorkoutFormats = {
     guide: "Complete one set of every exercise in order, then begin the next round."
   }
 };
+const workoutCompletionMessages = [
+  "Congratulations for completing the workout!",
+  "Workout complete—great work!",
+  "You did it! Another workout finished.",
+  "Strong work—you showed up and finished!",
+  "Nice job! Your workout is complete.",
+  "That’s a wrap—way to finish strong!",
+  "Great effort! You completed today’s workout.",
+  "Mission accomplished—workout complete!"
+];
 const warmupExerciseCode = "WARMUP";
 const cardioExerciseCode = "CARDIO";
 const warmUpSetNumberBase = 1000;
@@ -65,6 +75,7 @@ let pendingRirValue = null;
 let workoutDifficultyPromptResolve = null;
 let workoutDifficultyReturnFocus = null;
 let pendingWorkoutDifficulty = null;
+let lastWorkoutCompletionMessageIndex = -1;
 let nextExercisePromptPanel = null;
 let nextExercisePromptReturnFocus = null;
 
@@ -3735,6 +3746,21 @@ function workoutDifficultyOptions() {
   ];
 }
 
+function randomWorkoutCompletionMessage() {
+  if (workoutCompletionMessages.length === 0) {
+    return "Congratulations for completing the workout!";
+  }
+
+  let index = Math.floor(Math.random() * workoutCompletionMessages.length);
+
+  if (workoutCompletionMessages.length > 1 && index === lastWorkoutCompletionMessageIndex) {
+    index = (index + 1) % workoutCompletionMessages.length;
+  }
+
+  lastWorkoutCompletionMessageIndex = index;
+  return workoutCompletionMessages[index];
+}
+
 function workoutDifficultyLabel(value) {
   const difficulty = Number(value);
 
@@ -3877,6 +3903,10 @@ function requestWorkoutDifficulty(returnFocus) {
   const overlay = ensureWorkoutDifficultyPrompt();
   workoutDifficultyReturnFocus = returnFocus || null;
   pendingWorkoutDifficulty = null;
+  const congratulations = overlay.querySelector(".workout-difficulty-congratulations");
+  if (congratulations) {
+    congratulations.textContent = randomWorkoutCompletionMessage();
+  }
   overlay.hidden = false;
   document.body.classList.add("workout-difficulty-open");
   renderWorkoutDifficultyPrompt();
