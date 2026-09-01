@@ -3291,6 +3291,7 @@ function applyCustomWorkoutDraft(panel) {
 
   syncWorkoutPanelDate(panel, draft.date || exercises[0]?.date || todayDate(), false);
   syncCustomWorkoutFormatMarkers(panel);
+  syncCustomWorkoutCarousel(panel, { scrollToActive: true, instant: true });
 }
 
 function restoreCustomWorkoutDrafts() {
@@ -4527,6 +4528,189 @@ function customWorkoutListMarkup() {
   return exercises.map((exercise, index) => customWorkoutCardMarkup(exercise, customWorkoutTitle, index)).join("");
 }
 
+function customWorkoutCarouselMarkup(format) {
+  return `
+    <section class="custom-workout-carousel" data-custom-workout-carousel data-custom-workout-format="${escapeHtml(format)}" aria-label="Custom workout exercise carousel">
+      <div class="custom-workout-carousel-heading" data-custom-workout-carousel-status aria-live="polite"></div>
+      <div class="workout-app-list custom-workout-list" data-custom-workout-list data-custom-workout-format="${escapeHtml(format)}" role="list" aria-label="Custom workout exercises" tabindex="0">
+        ${customWorkoutListMarkup()}
+      </div>
+      <div class="custom-workout-carousel-footer" data-custom-workout-carousel-controls hidden>
+        <button class="custom-workout-carousel-arrow" type="button" data-custom-workout-carousel-previous aria-label="Previous exercise">←</button>
+        <div class="custom-workout-carousel-dots" data-custom-workout-carousel-dots aria-label="Choose exercise"></div>
+        <button class="custom-workout-carousel-arrow" type="button" data-custom-workout-carousel-next aria-label="Next exercise">→</button>
+      </div>
+      <p class="custom-workout-carousel-cue" data-custom-workout-carousel-cue hidden></p>
+    </section>
+  `;
+}
+
+function customWorkoutCarouselCards(panel) {
+  return Array.from(panel?.querySelectorAll("[data-custom-workout-list] > [data-custom-exercise-card]") || []);
+}
+
+function customWorkoutCarouselMeta(format, index, total) {
+  if (format === "superset") {
+    const pair = Math.floor(index / 2) + 1;
+    const position = index % 2 === 0 ? "A1" : "A2";
+    return {
+      title: `Superset ${pair} · ${position}`,
+      count: `Exercise ${index + 1} of ${total}`,
+      cue: index % 2 === 0 && index + 1 < total
+        ? "Next: complete the paired exercise."
+        : "Rest, then repeat this pair."
+    };
+  }
+
+  return {
+    title: `Circuit · Station ${index + 1}`,
+    count: `${index + 1} of ${total}`,
+    cue: index + 1 < total
+      ? `Next: move to station ${index + 2}.`
+      : "Rest, then restart the circuit."
+  };
+}
+
+function renderCustomWorkoutCarousel(panel) {
+  const carousel = panel?.querySelector("[data-custom-workout-carousel]");
+  const cards = customWorkoutCarouselCards(panel);
+  const format = normalizeCustomWorkoutFormat(panel?.dataset.customWorkoutFormat || activeCustomWorkoutFormat);
+  const mobile = window.matchMedia("(max-width: 760px)").matches;
+  const enabled = mobile && format !== "single" && cards.length > 1;
+  const activeIndex = Math.min(Math.max(Number(carousel?.dataset.activeIndex) || 0, 0), Math.max(cards.length - 1, 0));
+  const status = carousel?.querySelector("[data-custom-workout-carousel-status]");
+  const controls = carousel?.querySelector("[data-custom-workout-carousel-controls]");
+  const dots = carousel?.querySelector("[data-custom-workout-carousel-dots]");
+  const cue = carousel?.querySelector("[data-custom-workout-carousel-cue]");
+
+  if (!carousel) {
+    return;
+  }
+
+  carousel.dataset.customWorkoutFormat = format;
+  carousel.dataset.carouselEnabled = enabled ? "true" : "false";
+  carousel.dataset.activeIndex = String(activeIndex);
+  if (controls) controls.hidden = !enabled;
+  if (cue) cue.hidden = !enabled;
+  if (status) status.hidden = !enabled;
+
+  cards.forEach((card, index) => {
+    card.classList.toggle("is-carousel-active", enabled && index === activeIndex);
+    card.setAttribute("aria-roledescription", enabled ? "slide" : "exercise");
+    card.setAttribute("aria-label", `Exercise ${index + 1} of ${cards.length}`);
+  });
+
+  if (!enabled) {
+    if (dots) dots.innerHTML = "";
+    return;
+  }
+
+  const meta = customWorkoutCarouselMeta(format, activeIndex, cards.length);
+  if (status) {
+    status.innerHTML = `<strong>${escapeHtml(meta.title)}</strong><span>${escapeHtml(meta.count)}</span>`;
+  }
+  if (cue) cue.textContent = meta.cue;
+  if (dots) {
+    dots.innerHTML = cards.map((card, index) => `
+      <button
+        type="button"
+        class="custom-workout-carousel-dot${index === activeIndex ? " is-active" : ""}"
+        data-custom-workout-carousel-dot="${index}"
+        aria-label="Show exercise ${index + 1}"
+        ${index === activeIndex ? 'aria-current="true"' : ""}
+      ></button>
+    `).join("");
+  }
+
+  const previous = carousel.querySelector("[data-custom-workout-carousel-previous]");
+  const next = carousel.querySelector("[data-custom-workout-carousel-next]");
+  if (previous) previous.disabled = activeIndex === 0;
+  if (next) next.disabled = activeIndex === cards.length - 1;
+}
+
+function moveCustomWorkoutCarousel(panel, nextIndex, options = {}) {
+  const carousel = panel?.querySelector("[data-custom-workout-carousel]");
+  const list = panel?.querySelector("[data-custom-workout-list]");
+  const cards = customWorkoutCarouselCards(panel);
+
+  if (!carousel || !list || cards.length === 0) {
+    return;
+  }
+
+  const index = Math.min(Math.max(Number(nextIndex) || 0, 0), cards.length - 1);
+  const firstOffset = cards[0]?.offsetLeft || 0;
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  carousel.dataset.activeIndex = String(index);
+  renderCustomWorkoutCarousel(panel);
+  list.scrollTo({
+    left: Math.max((cards[index]?.offsetLeft || 0) - firstOffset, 0),
+    behavior: options.instant || reduceMotion ? "auto" : "smooth"
+  });
+}
+
+function bindCustomWorkoutCarousel(panel) {
+  const carousel = panel?.querySelector("[data-custom-workout-carousel]");
+  const list = panel?.querySelector("[data-custom-workout-list]");
+
+  if (!carousel || !list || carousel.dataset.carouselBound === "true") {
+    return;
+  }
+
+  carousel.dataset.carouselBound = "true";
+  let frame = 0;
+  list.addEventListener("scroll", () => {
+    window.cancelAnimationFrame(frame);
+    frame = window.requestAnimationFrame(() => {
+      if (carousel.dataset.carouselEnabled !== "true") return;
+      const cards = customWorkoutCarouselCards(panel);
+      const firstOffset = cards[0]?.offsetLeft || 0;
+      const index = cards.reduce((closest, card, cardIndex) => (
+        Math.abs((card.offsetLeft - firstOffset) - list.scrollLeft) <
+        Math.abs((cards[closest]?.offsetLeft - firstOffset) - list.scrollLeft)
+          ? cardIndex
+          : closest
+      ), 0);
+      if (String(index) !== carousel.dataset.activeIndex) {
+        carousel.dataset.activeIndex = String(index);
+        renderCustomWorkoutCarousel(panel);
+      }
+    });
+  }, { passive: true });
+
+  list.addEventListener("keydown", (event) => {
+    if (event.target.closest("input, select, textarea, button")) return;
+    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+    event.preventDefault();
+    const direction = event.key === "ArrowRight" ? 1 : -1;
+    moveCustomWorkoutCarousel(panel, (Number(carousel.dataset.activeIndex) || 0) + direction);
+  });
+}
+
+function syncCustomWorkoutCarousel(panel, options = {}) {
+  const carousel = panel?.querySelector("[data-custom-workout-carousel]");
+  if (!carousel) return;
+  bindCustomWorkoutCarousel(panel);
+  if (options.activeIndex !== undefined) {
+    carousel.dataset.activeIndex = String(options.activeIndex);
+  }
+  renderCustomWorkoutCarousel(panel);
+  if (options.scrollToActive) {
+    moveCustomWorkoutCarousel(panel, Number(carousel.dataset.activeIndex) || 0, { instant: options.instant });
+  }
+}
+
+function syncCustomWorkoutCarousels() {
+  document.querySelectorAll(".client-workout-panel-custom").forEach((panel) => syncCustomWorkoutCarousel(panel));
+  if (!syncCustomWorkoutCarousels.resizeBound) {
+    syncCustomWorkoutCarousels.resizeBound = true;
+    window.addEventListener("resize", () => {
+      document.querySelectorAll(".client-workout-panel-custom").forEach((panel) => {
+        syncCustomWorkoutCarousel(panel, { scrollToActive: true, instant: true });
+      });
+    });
+  }
+}
+
 function customWorkoutPanelMarkup(index) {
   const exercises = customWorkoutExercises();
   const format = normalizeCustomWorkoutFormat(activeCustomWorkoutFormat);
@@ -4562,9 +4746,7 @@ function customWorkoutPanelMarkup(index) {
         ${customWorkoutFormatPickerMarkup()}
         ${warmupLogFields(customWorkoutTitle, { showDate: false })}
         ${workoutStartControlMarkup(customWorkoutTitle)}
-        <div class="workout-app-list custom-workout-list" data-custom-workout-list data-custom-workout-format="${format}" role="list" aria-label="Custom workout exercises">
-          ${customWorkoutListMarkup()}
-        </div>
+        ${customWorkoutCarouselMarkup(format)}
         <button class="button button-ghost custom-workout-add-bottom" type="button" data-add-custom-exercise>Add exercise</button>
         ${cardioLogFields(customWorkoutTitle, { showDate: false })}
         ${workoutActionsMarkup({ exercises }, { includeCardio: true })}
@@ -4637,6 +4819,7 @@ function updateCustomWorkoutFormat(panel, value, options = {}) {
   }
 
   syncCustomWorkoutFormatMarkers(panel);
+  syncCustomWorkoutCarousel(panel, { activeIndex: 0, scrollToActive: true, instant: true });
   if (!options.skipDraft) {
     persistCustomWorkoutDraftFromPanel(panel);
   }
@@ -4742,6 +4925,7 @@ function renderClientWorkoutTabs(workouts = []) {
 
   renderClientHomeSummary();
   syncWorkoutStartButtons();
+  syncCustomWorkoutCarousels();
 }
 
 function logKey(workoutTitle, exerciseCode) {
@@ -6536,6 +6720,7 @@ function ensureDefaultCustomExercise(panel) {
   if (defaultLogElement) {
     updateExerciseLogField(defaultLogElement);
   }
+  syncCustomWorkoutCarousel(panel, { activeIndex: 0, scrollToActive: true, instant: true });
 }
 
 function updateSupersetSummaryCount(card) {
@@ -6570,6 +6755,7 @@ function removeExerciseLog(logElement) {
 
   ensureDefaultCustomExercise(customPanel);
   syncCustomWorkoutFormatMarkers(customPanel);
+  syncCustomWorkoutCarousel(customPanel, { scrollToActive: true, instant: true });
   persistCustomWorkoutDraftFromPanel(customPanel);
   syncAssignedWorkoutMarkers(assignedPanel);
 }
@@ -6589,6 +6775,9 @@ function handleWorkoutInteractions() {
     const addCustomExerciseButton = event.target.closest("[data-add-custom-exercise]");
     const addAssignedExerciseButton = event.target.closest("[data-add-assigned-exercise]");
     const customWorkoutFormatButton = event.target.closest("[data-custom-workout-format-option]");
+    const customWorkoutCarouselPrevious = event.target.closest("[data-custom-workout-carousel-previous]");
+    const customWorkoutCarouselNext = event.target.closest("[data-custom-workout-carousel-next]");
+    const customWorkoutCarouselDot = event.target.closest("[data-custom-workout-carousel-dot]");
     const closeRestTimerButton = event.target.closest("[data-rest-timer-close]");
     const restTimerPresetButton = event.target.closest("[data-rest-timer-preset]");
     const restTimerStartButton = event.target.closest("[data-rest-timer-start]");
@@ -6803,6 +6992,18 @@ function handleWorkoutInteractions() {
       return;
     }
 
+    if (customWorkoutCarouselPrevious || customWorkoutCarouselNext || customWorkoutCarouselDot) {
+      const panel = event.target.closest(".client-workout-panel-custom");
+      const carousel = panel?.querySelector("[data-custom-workout-carousel]");
+      const current = Number(carousel?.dataset.activeIndex) || 0;
+      const nextIndex = customWorkoutCarouselDot
+        ? Number(customWorkoutCarouselDot.dataset.customWorkoutCarouselDot)
+        : current + (customWorkoutCarouselNext ? 1 : -1);
+
+      moveCustomWorkoutCarousel(panel, nextIndex);
+      return;
+    }
+
     if (skipExerciseButton) {
       const logElement = skipExerciseButton.closest("[data-exercise-log]");
       const isSkipped = logElement?.dataset.exerciseSkipped === "true";
@@ -6898,10 +7099,11 @@ function handleWorkoutInteractions() {
             hiddenDate.value = sharedDate;
           }
           updateExerciseLogField(newLogElement);
-          exerciseNameInputForLog(newLogElement)?.focus();
         }
 
         syncCustomWorkoutFormatMarkers(panel);
+        syncCustomWorkoutCarousel(panel, { activeIndex: nextIndex - 1, scrollToActive: true });
+        exerciseNameInputForLog(newLogElement)?.focus();
         persistCustomWorkoutDraftFromPanel(panel);
       }
       return;
