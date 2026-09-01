@@ -118,6 +118,98 @@
   display: none;
 }
 
+.workout-difficulty-open {
+  overflow: hidden;
+}
+
+.workout-difficulty-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 145;
+  display: grid;
+  align-items: end;
+  padding: 16px;
+  background: rgba(0, 0, 0, .62);
+}
+
+.workout-difficulty-overlay[hidden] {
+  display: none;
+}
+
+.workout-difficulty-sheet {
+  display: grid;
+  width: min(480px, 100%);
+  max-height: min(92dvh, 760px);
+  gap: 14px;
+  margin: 0 auto;
+  padding: 18px;
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  border-radius: 12px 12px 0 0;
+  background: var(--paper);
+}
+
+.workout-difficulty-question {
+  margin: 0;
+  color: var(--muted);
+  font-size: .88rem;
+  font-weight: 800;
+  line-height: 1.4;
+}
+
+.workout-difficulty-options {
+  display: grid;
+  gap: 7px;
+}
+
+.workout-difficulty-options button {
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr);
+  align-items: center;
+  min-height: 52px;
+  padding: 7px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+  color: var(--black);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.workout-difficulty-options button.is-selected {
+  border-color: var(--black);
+  background: var(--lime);
+}
+
+.workout-difficulty-options button strong {
+  font-size: 1.25rem;
+  font-weight: 900;
+}
+
+.workout-difficulty-options button span {
+  font-size: .88rem;
+  font-weight: 900;
+}
+
+.workout-difficulty-save {
+  min-height: 50px;
+  border: 1px solid var(--black);
+  border-radius: 8px;
+  background: var(--black);
+  color: var(--lime);
+  font: inherit;
+  font-size: .82rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.workout-difficulty-save:disabled {
+  cursor: not-allowed;
+  opacity: .38;
+}
+
 .next-exercise-open {
   overflow: hidden;
 }

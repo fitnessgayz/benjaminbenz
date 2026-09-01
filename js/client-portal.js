@@ -13,6 +13,7 @@ let activeClientEmail = "";
 let signedInDashboardEmail = "";
 let isCoachDashboardPreview = false;
 let trainingLogs = [];
+let workoutSessionFeedback = [];
 let foodLogs = [];
 let foodSearchResults = [];
 let progressEntries = [];
@@ -61,6 +62,9 @@ let workoutElapsedTimerIntervalId = null;
 let workoutElapsedTimerIsCompact = null;
 let activeRirButton = null;
 let pendingRirValue = null;
+let workoutDifficultyPromptResolve = null;
+let workoutDifficultyReturnFocus = null;
+let pendingWorkoutDifficulty = null;
 let nextExercisePromptPanel = null;
 let nextExercisePromptReturnFocus = null;
 
@@ -3721,6 +3725,191 @@ function saveRirSelection() {
   closeRirDialog();
 }
 
+function workoutDifficultyOptions() {
+  return [
+    [1, "Very easy"],
+    [2, "Easy"],
+    [3, "Moderate"],
+    [4, "Hard"],
+    [5, "Very hard"]
+  ];
+}
+
+function workoutDifficultyLabel(value) {
+  const difficulty = Number(value);
+
+  return workoutDifficultyOptions().find(([option]) => option === difficulty)?.[1] || "";
+}
+
+function workoutHistoryDifficultyLabel(value) {
+  const difficulty = Number(value);
+  const label = workoutDifficultyLabel(difficulty);
+
+  return label ? `Difficulty ${difficulty}/5 (${label})` : "";
+}
+
+function workoutFeedbackSessionId(record) {
+  return String(record?.session_id || record?.workout_session_id || "").trim().toLowerCase();
+}
+
+function workoutDifficultyForLog(log) {
+  const sessionId = workoutFeedbackSessionId(log);
+
+  if (!sessionId) {
+    return null;
+  }
+
+  const feedback = workoutSessionFeedback.find((entry) => workoutFeedbackSessionId(entry) === sessionId);
+  const rating = Number(feedback?.difficulty_rating);
+
+  return workoutDifficultyLabel(rating) ? rating : null;
+}
+
+function upsertLocalWorkoutSessionFeedback(feedback) {
+  const sessionId = workoutFeedbackSessionId(feedback);
+
+  if (!sessionId) {
+    return;
+  }
+
+  const index = workoutSessionFeedback.findIndex((entry) => workoutFeedbackSessionId(entry) === sessionId);
+
+  if (index >= 0) {
+    workoutSessionFeedback[index] = { ...workoutSessionFeedback[index], ...feedback };
+  } else {
+    workoutSessionFeedback.push(feedback);
+  }
+}
+
+async function saveWorkoutDifficultyFeedback(rows, difficultyRating) {
+  const workoutRow = (rows || []).find((row) => workoutFeedbackSessionId(row));
+  const sessionId = workoutFeedbackSessionId(workoutRow);
+  const rating = Number(difficultyRating);
+
+  if (!supabaseClient || !workoutRow || !sessionId || !workoutDifficultyLabel(rating)) {
+    return { saved: false };
+  }
+
+  const now = new Date().toISOString();
+  const payload = {
+    session_id: sessionId,
+    client_email: activeClientEmail,
+    workout_template_id: workoutRow.workout_template_id || null,
+    entry_date: workoutRow.entry_date,
+    workout_title: workoutRow.workout_title,
+    difficulty_rating: rating,
+    source: "website",
+    source_version: 1,
+    client_updated_at: now
+  };
+  const { data, error } = await supabaseClient
+    .from("workout_session_feedback")
+    .upsert(payload, { onConflict: "session_id" })
+    .select()
+    .single();
+
+  if (error) {
+    return { saved: false, error };
+  }
+
+  upsertLocalWorkoutSessionFeedback(data || payload);
+  return { saved: true, feedback: data || payload };
+}
+
+function workoutDifficultyPromptMarkup() {
+  return `
+    <div class="workout-difficulty-overlay" data-workout-difficulty-overlay hidden>
+      <section class="workout-difficulty-sheet" role="dialog" aria-modal="true" aria-labelledby="workout-difficulty-title">
+        <header class="rir-heading">
+          <div>
+            <small>Workout complete</small>
+            <strong id="workout-difficulty-title">How hard was this workout?</strong>
+          </div>
+          <button class="rir-close" type="button" data-workout-difficulty-close aria-label="Close workout difficulty prompt">×</button>
+        </header>
+        <p class="workout-difficulty-question">Choose the rating that best describes the workout overall.</p>
+        <div class="workout-difficulty-options" role="radiogroup" aria-label="Overall workout difficulty">
+          ${workoutDifficultyOptions().map(([value, label]) => `
+            <button type="button" role="radio" data-workout-difficulty-option="${value}" aria-checked="false">
+              <strong>${value}</strong>
+              <span>${label}</span>
+            </button>
+          `).join("")}
+        </div>
+        <button class="workout-difficulty-save" type="button" data-workout-difficulty-save disabled>Save and finish workout</button>
+      </section>
+    </div>
+  `;
+}
+
+function ensureWorkoutDifficultyPrompt() {
+  let overlay = document.querySelector("[data-workout-difficulty-overlay]");
+
+  if (!overlay) {
+    document.body.insertAdjacentHTML("beforeend", workoutDifficultyPromptMarkup());
+    overlay = document.querySelector("[data-workout-difficulty-overlay]");
+  }
+
+  return overlay;
+}
+
+function renderWorkoutDifficultyPrompt() {
+  const overlay = ensureWorkoutDifficultyPrompt();
+
+  overlay?.querySelectorAll("[data-workout-difficulty-option]").forEach((button) => {
+    const isSelected = Number(button.dataset.workoutDifficultyOption) === pendingWorkoutDifficulty;
+    button.classList.toggle("is-selected", isSelected);
+    button.setAttribute("aria-checked", isSelected ? "true" : "false");
+  });
+
+  const saveButton = overlay?.querySelector("[data-workout-difficulty-save]");
+  if (saveButton) {
+    saveButton.disabled = pendingWorkoutDifficulty === null;
+  }
+}
+
+function requestWorkoutDifficulty(returnFocus) {
+  if (workoutDifficultyPromptResolve) {
+    return Promise.resolve(null);
+  }
+
+  const overlay = ensureWorkoutDifficultyPrompt();
+  workoutDifficultyReturnFocus = returnFocus || null;
+  pendingWorkoutDifficulty = null;
+  overlay.hidden = false;
+  document.body.classList.add("workout-difficulty-open");
+  renderWorkoutDifficultyPrompt();
+  overlay.querySelector("[data-workout-difficulty-option]")?.focus();
+
+  return new Promise((resolve) => {
+    workoutDifficultyPromptResolve = resolve;
+  });
+}
+
+function closeWorkoutDifficultyPrompt(value = null) {
+  const overlay = document.querySelector("[data-workout-difficulty-overlay]");
+  const resolve = workoutDifficultyPromptResolve;
+  const returnFocus = workoutDifficultyReturnFocus;
+
+  if (overlay) {
+    overlay.hidden = true;
+  }
+  document.body.classList.remove("workout-difficulty-open");
+  workoutDifficultyPromptResolve = null;
+  workoutDifficultyReturnFocus = null;
+  pendingWorkoutDifficulty = null;
+  returnFocus?.focus();
+  resolve?.(value);
+}
+
+function saveWorkoutDifficultySelection() {
+  if (pendingWorkoutDifficulty === null) {
+    return;
+  }
+
+  closeWorkoutDifficultyPrompt(pendingWorkoutDifficulty);
+}
+
 function nextExercisePromptMarkup() {
   return `
     <div class="next-exercise-overlay" data-next-exercise-overlay hidden>
@@ -5183,7 +5372,7 @@ function renderClientTrainingLogs() {
   const workoutGroups = new Map();
 
   filteredLogs.forEach((log) => {
-    const workoutKey = [
+    const workoutKey = workoutFeedbackSessionId(log) || [
       log.entry_date || "",
       log.workout_title || "Workout"
     ].join("::");
@@ -5200,6 +5389,7 @@ function renderClientTrainingLogs() {
         entry_date: log.entry_date || "",
         workout_title: log.workout_title || "Workout",
         workout_duration_seconds: null,
+        workout_difficulty: null,
         completed_at: "",
         supersets: new Map()
       });
@@ -5219,6 +5409,10 @@ function renderClientTrainingLogs() {
     }
     if (log.completed_at) {
       workoutGroup.completed_at = String(log.completed_at);
+    }
+    const difficultyRating = workoutDifficultyForLog(log);
+    if (difficultyRating) {
+      workoutGroup.workout_difficulty = difficultyRating;
     }
 
     if (!workoutGroup.supersets.has(supersetKey)) {
@@ -5270,7 +5464,8 @@ function renderClientTrainingLogs() {
   const workoutHistorySections = workoutSections.map((workout) => {
     const supersets = Array.from(workout.supersets.values()).sort((a, b) => a.key.localeCompare(b.key));
     const workoutDuration = workoutHistoryDurationLabel(workout.workout_duration_seconds);
-    const workoutHeading = [workout.workout_title, workoutDuration].filter(Boolean).join(" · ");
+    const workoutDifficulty = workoutHistoryDifficultyLabel(workout.workout_difficulty);
+    const workoutHeading = [workout.workout_title, workoutDuration, workoutDifficulty].filter(Boolean).join(" · ");
 
     return {
       sort_key: `${workout.entry_date || ""}::workout::${workout.workout_title || ""}`,
@@ -5432,6 +5627,7 @@ function workoutHistoryCsv(logs = []) {
     "Weight (lbs)",
     "Reps",
     "Workout time (seconds)",
+    "Workout difficulty (1-5)",
     "Workout finished at",
     "Duration (min)",
     "Distance",
@@ -5454,6 +5650,7 @@ function workoutHistoryCsv(logs = []) {
       isWarmup || isCardio ? "" : log.weight_used ?? "",
       isWarmup || isCardio ? "" : log.reps ?? "",
       log.workout_duration_seconds ?? "",
+      workoutDifficultyForLog(log) ?? "",
       log.completed_at || "",
       isWarmup || isCardio ? log.weight_used ?? "" : "",
       isCardio ? log.reps ?? "" : "",
@@ -6368,6 +6565,9 @@ function handleWorkoutInteractions() {
     const rirOptionButton = event.target.closest("[data-rir-option]");
     const rirSaveButton = event.target.closest("[data-rir-save]");
     const rirCloseButton = event.target.closest("[data-rir-close]");
+    const workoutDifficultyOptionButton = event.target.closest("[data-workout-difficulty-option]");
+    const workoutDifficultySaveButton = event.target.closest("[data-workout-difficulty-save]");
+    const workoutDifficultyCloseButton = event.target.closest("[data-workout-difficulty-close]");
     const nextExerciseYesButton = event.target.closest("[data-next-exercise-yes]");
     const nextExerciseNoButton = event.target.closest("[data-next-exercise-no]");
     const nextExerciseCloseButton = event.target.closest("[data-next-exercise-close]");
@@ -6522,6 +6722,25 @@ function handleWorkoutInteractions() {
 
     if (rirCloseButton || event.target.matches("[data-rir-overlay]")) {
       closeRirDialog();
+      return;
+    }
+
+    if (workoutDifficultyOptionButton) {
+      pendingWorkoutDifficulty = Number(workoutDifficultyOptionButton.dataset.workoutDifficultyOption);
+      renderWorkoutDifficultyPrompt();
+      return;
+    }
+
+    if (workoutDifficultySaveButton) {
+      saveWorkoutDifficultySelection();
+      return;
+    }
+
+    if (
+      workoutDifficultyCloseButton ||
+      event.target.matches("[data-workout-difficulty-overlay]")
+    ) {
+      closeWorkoutDifficultyPrompt();
       return;
     }
 
@@ -6774,14 +6993,18 @@ function handleWorkoutInteractions() {
   });
 
   document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape" && !document.querySelector("[data-rir-overlay]")?.hidden) {
+    if (event.key === "Escape" && document.querySelector("[data-rir-overlay]")?.hidden === false) {
       closeRirDialog();
+      return;
+    }
+    if (event.key === "Escape" && document.querySelector("[data-workout-difficulty-overlay]")?.hidden === false) {
+      closeWorkoutDifficultyPrompt();
       return;
     }
     if (event.key === "Escape" && event.target.closest(".custom-workout-name-editor")) {
       closeCustomExerciseSuggestions();
     }
-    if (event.key === "Escape" && !document.querySelector("[data-rest-timer-overlay]")?.hidden) {
+    if (event.key === "Escape" && document.querySelector("[data-rest-timer-overlay]")?.hidden === false) {
       closeRestTimer();
     }
   });
@@ -7094,7 +7317,7 @@ async function loadDashboard() {
 
     activeClientEmail = data.client_email || targetClientEmail;
     renderProgram(data);
-    const [progressResult, progressPhotoResult, trainingLogResult, foodLogResult, exerciseLibraryResult] = await Promise.allSettled([
+    const [progressResult, progressPhotoResult, trainingLogResult, workoutFeedbackResult, foodLogResult, exerciseLibraryResult] = await Promise.allSettled([
       withTimeout(
         supabaseClient
           .from("client_progress")
@@ -7120,6 +7343,15 @@ async function loadDashboard() {
           .order("entry_date", { ascending: true })
           .limit(500),
         "Training log request timed out."
+      ),
+      withTimeout(
+        supabaseClient
+          .from("workout_session_feedback")
+          .select("session_id,client_email,workout_template_id,entry_date,workout_title,difficulty_rating,source,source_version,client_updated_at")
+          .ilike("client_email", activeClientEmail)
+          .order("entry_date", { ascending: true })
+          .limit(500),
+        "Workout feedback request timed out."
       ),
       withTimeout(
         supabaseClient
@@ -7152,6 +7384,9 @@ async function loadDashboard() {
     const trainingLogData = trainingLogResult.status === "fulfilled" && !trainingLogResult.value.error
       ? trainingLogResult.value.data
       : [];
+    const workoutFeedbackData = workoutFeedbackResult.status === "fulfilled" && !workoutFeedbackResult.value.error
+      ? workoutFeedbackResult.value.data
+      : [];
     const foodLogData = foodLogResult.status === "fulfilled" && !foodLogResult.value.error
       ? foodLogResult.value.data
       : [];
@@ -7160,6 +7395,7 @@ async function loadDashboard() {
       : [];
 
     exerciseLibraryEntries = exerciseLibraryData || [];
+    workoutSessionFeedback = workoutFeedbackData || [];
 
     renderProgress(progressData || []);
     renderClientProgressPhotos(await signedProgressPhotoRecords(progressPhotoData || []));
@@ -7529,14 +7765,34 @@ async function handleTrainingLogSave() {
       if (!workoutElapsedTimerState) {
         startWorkoutElapsedTimer(logElements[0]?.dataset.workoutTitle || activeWorkoutElapsedTitle());
       }
+      const workoutDifficulty = await requestWorkoutDifficulty(finishWorkoutButton);
+
+      if (workoutDifficulty === null) {
+        return;
+      }
+
       const workoutCompletion = workoutCompletionFields();
+      const difficultySummary = workoutHistoryDifficultyLabel(workoutDifficulty);
       const saveResult = await saveTrainingLogRows(workoutButton, logElements, status, {
         savingMessage: "Finishing workout...",
-        successMessage: "Workout finished.",
+        successMessage: "Workout saved. Saving difficulty...",
         workoutCompletion
       });
 
       if (saveResult.saved) {
+        const feedbackResult = await saveWorkoutDifficultyFeedback(saveResult.rows, workoutDifficulty);
+
+        if (!feedbackResult.saved) {
+          if (status) {
+            status.textContent = "Workout saved, but the difficulty rating could not be saved. Tap Finish workout to try again.";
+          }
+          return;
+        }
+
+        renderClientTrainingLogs();
+        if (status) {
+          status.textContent = `Workout finished · ${difficultySummary}.`;
+        }
         finishWorkoutElapsedTimer();
         if (section?.classList.contains("client-workout-panel-custom")) {
           clearCustomWorkoutDraft();
