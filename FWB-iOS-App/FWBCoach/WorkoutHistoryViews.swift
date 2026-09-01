@@ -10,6 +10,7 @@ struct WorkoutHistoryView: View {
     let clientEmail: String
 
     @StateObject private var store = WorkoutHistoryStore()
+    @StateObject private var exerciseLibraryStore = ExerciseLibraryStore()
     @State private var exerciseSearch = ""
 
     var body: some View {
@@ -32,7 +33,9 @@ struct WorkoutHistoryView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(Color.fwbBackground, for: .navigationBar)
         .task {
-            await store.loadIfNeeded(email: clientEmail)
+            async let historyLoad: Void = store.loadIfNeeded(email: clientEmail)
+            async let libraryLoad: Void = exerciseLibraryStore.loadIfNeeded()
+            _ = await (historyLoad, libraryLoad)
         }
         .onReceive(NotificationCenter.default.publisher(for: .fwbForegroundRefresh)) { _ in
             Task { await store.reload(email: clientEmail) }
@@ -100,7 +103,7 @@ struct WorkoutHistoryView: View {
     }
 
     private var normalizedExerciseSearch: String {
-        exerciseSearch.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        ExerciseNameIdentity.key(for: exerciseSearch)
     }
 
     private var exerciseSearchResults: [WorkoutExerciseSearchResult] {
@@ -112,21 +115,32 @@ struct WorkoutHistoryView: View {
             }
         }
         .filter { occurrence in
-            occurrence.exercise.name.lowercased().contains(normalizedExerciseSearch)
-                || occurrence.exercise.code.lowercased().contains(normalizedExerciseSearch)
+            let canonicalName = ExerciseNameIdentity.canonicalName(
+                for: occurrence.exercise.name,
+                approvedExercises: exerciseLibraryStore.exercises
+            )
+            return ExerciseNameIdentity.key(for: canonicalName).contains(normalizedExerciseSearch)
+                || ExerciseNameIdentity.key(for: occurrence.exercise.code).contains(normalizedExerciseSearch)
         }
 
         let grouped = Dictionary(grouping: occurrences) { occurrence in
-            let normalizedName = occurrence.exercise.name
-                .trimmingCharacters(in: .whitespacesAndNewlines)
-                .lowercased()
-            return normalizedName.isEmpty ? occurrence.exercise.code.lowercased() : normalizedName
+            let canonicalName = ExerciseNameIdentity.canonicalName(
+                for: occurrence.exercise.name,
+                approvedExercises: exerciseLibraryStore.exercises
+            )
+            let normalizedName = ExerciseNameIdentity.key(for: canonicalName)
+            return normalizedName.isEmpty
+                ? ExerciseNameIdentity.key(for: occurrence.exercise.code)
+                : normalizedName
         }
 
         return grouped.compactMap { _, occurrences in
             guard let first = occurrences.first else { return nil }
             return WorkoutExerciseSearchResult(
-                name: first.exercise.name.isEmpty ? "Exercise" : first.exercise.name,
+                name: ExerciseNameIdentity.canonicalName(
+                    for: first.exercise.name,
+                    approvedExercises: exerciseLibraryStore.exercises
+                ),
                 code: first.exercise.code,
                 occurrences: occurrences.sorted { $0.session.entryDate > $1.session.entryDate }
             )
@@ -223,7 +237,7 @@ private struct WorkoutExerciseSearchResultCard: View {
                         .tracking(0.8)
                         .foregroundStyle(Color.fwbLime)
                 }
-                Text(result.name)
+                Text(result.name.fwbTitleCased)
                     .font(.title3.weight(.black))
                     .fontWidth(.condensed)
                     .foregroundStyle(Color.fwbWarmWhite)
@@ -263,7 +277,7 @@ private struct WorkoutExerciseHistoryDetailView: View {
                             .font(.footnote.bold())
                             .tracking(1.2)
                             .foregroundStyle(Color.fwbLime)
-                        Text(result.name)
+                        Text(result.name.fwbTitleCased)
                             .font(.largeTitle.weight(.black))
                             .fontWidth(.condensed)
                             .foregroundStyle(Color.fwbWarmWhite)
@@ -509,7 +523,7 @@ private struct WorkoutExerciseOccurrenceCard: View {
                     .font(.footnote.bold())
                     .tracking(0.9)
                     .foregroundStyle(Color.fwbLime)
-                Text(occurrence.session.workoutTitle)
+                Text(occurrence.session.workoutTitle.fwbTitleCased)
                     .font(.headline.weight(.black))
                     .fontWidth(.condensed)
                     .foregroundStyle(Color.fwbWarmWhite)
@@ -572,7 +586,7 @@ private struct WorkoutHistorySessionCard: View {
                         .font(.footnote.bold())
                         .tracking(0.9)
                         .foregroundStyle(Color.fwbLime)
-                    Text(session.workoutTitle)
+                    Text(session.workoutTitle.fwbTitleCased)
                         .font(.title3.weight(.black))
                         .fontWidth(.condensed)
                         .foregroundStyle(Color.fwbWarmWhite)
@@ -644,7 +658,7 @@ struct WorkoutHistoryDetailView: View {
                             .font(.footnote.bold())
                             .tracking(1.2)
                             .foregroundStyle(Color.fwbLime)
-                        Text(session.workoutTitle)
+                        Text(session.workoutTitle.fwbTitleCased)
                             .font(.largeTitle.weight(.black))
                             .fontWidth(.condensed)
                             .foregroundStyle(Color.fwbWarmWhite)
@@ -717,7 +731,7 @@ private struct WorkoutHistoryExerciseCard: View {
                         .tracking(0.8)
                         .foregroundStyle(Color.fwbLime)
                 }
-                Text(exercise.name.isEmpty ? "Exercise" : exercise.name)
+                Text(exercise.name.isEmpty ? "Exercise" : exercise.name.fwbTitleCased)
                     .font(.title3.weight(.black))
                     .fontWidth(.condensed)
                     .foregroundStyle(Color.fwbWarmWhite)

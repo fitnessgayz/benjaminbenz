@@ -80,6 +80,7 @@ private struct ProgressDashboardContent: View {
                 ProgressSharePanel(summary: shareSummary)
                 ProgressOverviewGrid(snapshot: snapshot)
                 TrainingVolumeCard(points: snapshot.volumePoints)
+                ExerciseProgressSection(records: snapshot.exerciseRecords)
                 PersonalRecordsSection(records: snapshot.exerciseRecords)
                 AchievementSection(achievements: snapshot.achievements)
             }
@@ -303,6 +304,126 @@ private struct TrainingVolumeCard: View {
     }
 }
 
+private struct ExerciseProgressSection: View {
+    let records: [ProgressExerciseRecord]
+
+    private var progressRecords: [ProgressExerciseRecord] {
+        records
+            .filter { $0.startingProgressPoint != nil && $0.latestProgressPoint != nil }
+            .sorted { $0.latestDate > $1.latestDate }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            ProgressSectionHeading(
+                kicker: "EXERCISE PROGRESS",
+                title: "Where you started vs. now",
+                detail: "Compare your first logged result with your most recent performance."
+            )
+
+            if progressRecords.isEmpty {
+                Text("Log the same exercise in another workout to see how far you’ve come.")
+                    .font(.subheadline)
+                    .foregroundStyle(Color.fwbMuted)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .fwbCard()
+            } else {
+                ForEach(progressRecords) { record in
+                    NavigationLink {
+                        ProgressExerciseDetailView(record: record)
+                    } label: {
+                        ExerciseProgressComparisonCard(record: record)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+    }
+}
+
+private struct ExerciseProgressComparisonCard: View {
+    let record: ProgressExerciseRecord
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(alignment: .firstTextBaseline, spacing: 10) {
+                Text(record.name.fwbTitleCased)
+                    .font(.headline.weight(.black))
+                    .fontWidth(.condensed)
+                    .foregroundStyle(Color.fwbWarmWhite)
+                    .lineLimit(2)
+
+                Spacer(minLength: 4)
+
+                Text(record.progressChangeDescription)
+                    .font(.footnote.weight(.black))
+                    .foregroundStyle(record.progressChange > 0 ? Color.black : Color.fwbWarmWhite)
+                    .padding(.horizontal, 9)
+                    .padding(.vertical, 6)
+                    .background(record.progressChange > 0 ? Color.fwbAccentFill : Color.fwbSurface)
+                    .overlay { Rectangle().stroke(Color.fwbLine, lineWidth: 1) }
+            }
+
+            HStack(alignment: .center, spacing: 12) {
+                ExerciseProgressValue(
+                    label: "STARTED",
+                    value: record.startingProgressDescription,
+                    date: record.startingProgressPoint.map(\.date)
+                )
+
+                Image(systemName: "arrow.right")
+                    .font(.footnote.weight(.black))
+                    .foregroundStyle(Color.fwbLime)
+                    .accessibilityHidden(true)
+
+                ExerciseProgressValue(
+                    label: "NOW",
+                    value: record.latestProgressDescription,
+                    date: record.latestProgressPoint.map(\.date)
+                )
+
+                Image(systemName: "chevron.right")
+                    .font(.footnote.bold())
+                    .foregroundStyle(Color.fwbMuted)
+                    .accessibilityHidden(true)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .fwbCard()
+        .accessibilityElement(children: .combine)
+        .accessibilityHint("Shows complete exercise progress")
+    }
+}
+
+private struct ExerciseProgressValue: View {
+    let label: String
+    let value: String
+    let date: Date?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(label)
+                .font(.caption2.bold())
+                .tracking(0.8)
+                .foregroundStyle(Color.fwbMuted)
+            Text(value)
+                .font(.title3.weight(.black))
+                .fontWidth(.condensed)
+                .foregroundStyle(Color.fwbWarmWhite)
+                .lineLimit(1)
+                .minimumScaleFactor(0.72)
+            if let date {
+                Text(ProgressFormat.displayDate(date))
+                    .font(.caption)
+                    .foregroundStyle(Color.fwbMuted)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
 private struct PersonalRecordsSection: View {
     let records: [ProgressExerciseRecord]
 
@@ -346,7 +467,7 @@ private struct PersonalRecordCard: View {
                 .background(Color.fwbAccentFill, in: Rectangle())
 
             VStack(alignment: .leading, spacing: 4) {
-                Text(record.name)
+                Text(record.name.fwbTitleCased)
                     .font(.headline.weight(.black))
                     .fontWidth(.condensed)
                     .foregroundStyle(Color.fwbWarmWhite)
@@ -490,7 +611,7 @@ private struct ProgressExerciseDetailView: View {
                             .font(.footnote.bold())
                             .tracking(1.2)
                             .foregroundStyle(Color.fwbLime)
-                        Text(record.name)
+                        Text(record.name.fwbTitleCased)
                             .font(.largeTitle.weight(.black))
                             .fontWidth(.condensed)
                             .foregroundStyle(Color.fwbWarmWhite)
@@ -638,7 +759,7 @@ private struct ProgressPerformanceRow: View {
             .background(Color.fwbSurface, in: Rectangle())
 
             VStack(alignment: .leading, spacing: 4) {
-                Text(point.workoutTitle)
+                Text(point.workoutTitle.fwbTitleCased)
                     .font(.headline.weight(.black))
                     .fontWidth(.condensed)
                     .foregroundStyle(Color.fwbWarmWhite)
@@ -931,6 +1052,47 @@ private struct ProgressExerciseRecord: Identifiable {
     var workoutCount: Int { points.count }
     var strengthScore: Double {
         points.map(\.estimatedOneRepMax).max() ?? 0
+    }
+
+    private var tracksWeight: Bool {
+        points.contains { $0.maxWeight > 0 }
+    }
+
+    private var comparablePoints: [ProgressExercisePoint] {
+        points.filter { tracksWeight ? $0.maxWeight > 0 : $0.bestReps > 0 }
+    }
+
+    var startingProgressPoint: ProgressExercisePoint? { comparablePoints.first }
+    var latestProgressPoint: ProgressExercisePoint? { comparablePoints.last }
+
+    var progressChange: Double {
+        guard let startingProgressPoint, let latestProgressPoint else { return 0 }
+        return progressValue(for: latestProgressPoint) - progressValue(for: startingProgressPoint)
+    }
+
+    var startingProgressDescription: String {
+        guard let startingProgressPoint else { return "—" }
+        return progressDescription(for: startingProgressPoint)
+    }
+
+    var latestProgressDescription: String {
+        guard let latestProgressPoint else { return "—" }
+        return progressDescription(for: latestProgressPoint)
+    }
+
+    var progressChangeDescription: String {
+        let prefix = progressChange > 0 ? "+" : ""
+        let unit = tracksWeight ? " lb" : " reps"
+        return "\(prefix)\(ProgressFormat.number(progressChange))\(unit)"
+    }
+
+    private func progressValue(for point: ProgressExercisePoint) -> Double {
+        tracksWeight ? point.maxWeight : point.bestReps
+    }
+
+    private func progressDescription(for point: ProgressExercisePoint) -> String {
+        let unit = tracksWeight ? " lb" : " reps"
+        return "\(ProgressFormat.number(progressValue(for: point)))\(unit)"
     }
 }
 

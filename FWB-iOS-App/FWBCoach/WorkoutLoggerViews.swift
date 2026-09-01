@@ -1,6 +1,7 @@
 import SwiftUI
 
 private enum WorkoutLogFocus: Hashable {
+    case set(UUID)
     case weight(UUID)
     case reps(UUID)
     case effort(UUID)
@@ -421,13 +422,22 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
     }
 
     private var suggestionNames: [String] {
-        ExerciseSuggestionLibrary.merged([
+        let rawNames = [
             exerciseLibraryStore.suggestionNames,
             ExerciseLibrary.names,
             suggestedExercises.map(\.name),
             exercises.map(\.name),
             suggestionStore.historyNames
-        ])
+        ]
+        .flatMap { $0 }
+        .map {
+            ExerciseNameIdentity.canonicalName(
+                for: $0,
+                approvedExercises: exerciseLibraryStore.exercises
+            )
+        }
+
+        return ExerciseSuggestionLibrary.merged([rawNames])
     }
 
     private var sequenceSections: [WorkoutSequenceSection] {
@@ -495,6 +505,12 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
             onSetTypeChanged: { draftID, setType in
                 updateSetType(setType, for: draftID, in: exercise)
             },
+            onSetLabelChanged: { draftID, label in
+                updateSetLabel(label, for: draftID, in: exercise)
+            },
+            onStartRestTimer: {
+                startRestTimer(for: exercise)
+            },
             onSubstituteExercise: {
                 exerciseEditorRequest = ExerciseEditorRequest(mode: .substitute(exercise))
             },
@@ -505,7 +521,7 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
                 pendingExerciseRemoval = exercise
             },
             onSaveProgress: {
-                saveWorkout(intent: .progress, exerciseID: exercise.id)
+                saveExerciseProgress(for: exercise)
             },
             onSendFormCheck: {
                 formCheckContext = FormCheckContext(
@@ -747,6 +763,22 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
         focusedField = .weight(draft.id)
     }
 
+    private func saveExerciseProgress(for exercise: Exercise) {
+        for index in drafts.indices where matches(drafts[index], exercise) && drafts[index].containsEntry {
+            drafts[index].isCompleted = true
+        }
+        saveWorkout(intent: .progress, exerciseID: exercise.id)
+    }
+
+    private func startRestTimer(for exercise: Exercise) {
+        focusedField = nil
+        restTimerStore.start(
+            seconds: RestDurationParser.seconds(from: exercise.rest),
+            exerciseName: exercise.name.isEmpty ? "Exercise" : exercise.name,
+            hapticsEnabled: restTimerHapticsEnabled
+        )
+    }
+
     private func handleSetCompletion(
         for exercise: Exercise,
         draft: WorkoutSetDraft,
@@ -895,6 +927,46 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
         }
     }
 
+    private func updateSetLabel(_ label: String, for draftID: UUID, in exercise: Exercise) {
+        focusedField = nil
+        let normalized = label
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .uppercased()
+
+        withAnimation(.easeOut(duration: 0.18)) {
+            guard let index = drafts.firstIndex(where: { $0.id == draftID }) else { return }
+
+            if normalized.hasPrefix("W") {
+                let requestedOrdinal = Int(normalized.dropFirst())
+                let usedOrdinals = Set(
+                    drafts
+                        .filter { matches($0, exercise) && $0.id != draftID && $0.isWarmUp }
+                        .compactMap(\.warmUpOrdinal)
+                )
+                let ordinal = requestedOrdinal.flatMap { usedOrdinals.contains($0) ? nil : max($0, 1) }
+                    ?? (1...12).first(where: { !usedOrdinals.contains($0) })
+                    ?? 1
+                drafts[index].setType = .warmUp
+                drafts[index].setNumber = WorkoutSetNumber.warmUp(ordinal)
+                drafts[index].effortScale = nil
+                drafts[index].effort = ""
+                return
+            }
+
+            guard let requestedNumber = Int(normalized), requestedNumber > 0 else { return }
+            let usedNumbers = Set(
+                drafts
+                    .filter { matches($0, exercise) && $0.id != draftID && !$0.isWarmUp }
+                    .map(\.setNumber)
+            )
+            let number = usedNumbers.contains(requestedNumber)
+                ? (1...99).first(where: { !usedNumbers.contains($0) }) ?? requestedNumber
+                : min(requestedNumber, 99)
+            drafts[index].setType = .working
+            drafts[index].setNumber = number
+        }
+    }
+
     private func deleteExercise(_ exercise: Exercise) {
         focusedField = nil
         withAnimation(.easeOut(duration: 0.18)) {
@@ -930,7 +1002,7 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
 
     private func insertCustomExercise(code: String, name: String) {
         let approvedExercise = approvedExercise(matching: name)
-        let resolvedName = approvedExercise?.name ?? name
+        let resolvedName = (approvedExercise?.name ?? name).fwbTitleCased
         let template = suggestedExercises.first {
             $0.name.caseInsensitiveCompare(resolvedName) == .orderedSame
                 || $0.name.caseInsensitiveCompare(name) == .orderedSame
@@ -953,7 +1025,9 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
         guard let exerciseIndex = exercises.firstIndex(where: { $0.id == exercise.id }) else { return }
 
         let approvedExercise = approvedExercise(matching: name)
-        let replacementName = (approvedExercise?.name ?? name).trimmingCharacters(in: .whitespacesAndNewlines)
+        let replacementName = (approvedExercise?.name ?? name)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .fwbTitleCased
         guard !replacementName.isEmpty else { return }
 
         if let original = substitutionOriginals[exercise.code],
@@ -990,12 +1064,12 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
     }
 
     private func approvedExercise(matching name: String) -> ApprovedExercise? {
-        let normalizedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        let normalizedName = ExerciseNameIdentity.key(for: name)
 
         return exerciseLibraryStore.exercises.first { exercise in
-            exercise.name.caseInsensitiveCompare(normalizedName) == .orderedSame
+            ExerciseNameIdentity.key(for: exercise.name) == normalizedName
                 || exercise.aliases.contains {
-                    $0.caseInsensitiveCompare(normalizedName) == .orderedSame
+                    ExerciseNameIdentity.key(for: $0) == normalizedName
                 }
         }
     }
@@ -1035,10 +1109,11 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
     private func nameBinding(for snapshot: Exercise) -> Binding<String> {
         Binding(
             get: {
-                exercises.first(where: { $0.code == snapshot.code })?.name ?? snapshot.name
+                (exercises.first(where: { $0.code == snapshot.code })?.name ?? snapshot.name)
+                    .fwbTitleCased
             },
             set: { nextName in
-                renameExercise(code: snapshot.code, to: nextName)
+                renameExercise(code: snapshot.code, to: nextName.fwbTitleCased)
             }
         )
     }
@@ -1274,7 +1349,7 @@ private struct EmbeddedWorkoutHeader: View {
                 .tracking(1.1)
                 .foregroundStyle(Color.fwbLime)
 
-            Text(workout.title.uppercased())
+            Text(workout.title.fwbTitleCased)
                 .font(.title.weight(.black))
                 .fontWidth(.condensed)
                 .foregroundStyle(Color.fwbWarmWhite)
@@ -1393,7 +1468,7 @@ private struct GuidedSequenceBanner: View {
                     .font(.footnote.weight(.black))
                     .tracking(0.8)
                     .foregroundStyle(Color.fwbLime)
-                Text(step.exerciseName)
+                Text(step.exerciseName.fwbTitleCased)
                     .font(.title3.weight(.black))
                     .fontWidth(.condensed)
                     .foregroundStyle(Color.fwbWarmWhite)
@@ -1468,7 +1543,7 @@ private struct WorkoutSequenceEditorView: View {
                     ForEach(exercises) { exercise in
                         HStack(spacing: 12) {
                             VStack(alignment: .leading, spacing: 3) {
-                                Text(exercise.name)
+                                Text(exercise.name.fwbTitleCased)
                                     .font(.headline.weight(.bold))
                                     .foregroundStyle(Color.fwbWarmWhite)
                                 Text(exercise.code.uppercased())
@@ -1626,6 +1701,8 @@ private struct WorkoutExerciseLogCard: View {
     let onSetCompletionChanged: (WorkoutSetDraft, Bool) -> Void
     let onInsertWarmUps: ([WarmUpSetPlan]) -> Void
     let onSetTypeChanged: (UUID, WorkoutSetType) -> Void
+    let onSetLabelChanged: (UUID, String) -> Void
+    let onStartRestTimer: () -> Void
     let onSubstituteExercise: () -> Void
     let onRevertSubstitution: () -> Void
     let onDeleteExercise: () -> Void
@@ -1665,6 +1742,8 @@ private struct WorkoutExerciseLogCard: View {
         onSetCompletionChanged: @escaping (WorkoutSetDraft, Bool) -> Void,
         onInsertWarmUps: @escaping ([WarmUpSetPlan]) -> Void,
         onSetTypeChanged: @escaping (UUID, WorkoutSetType) -> Void,
+        onSetLabelChanged: @escaping (UUID, String) -> Void,
+        onStartRestTimer: @escaping () -> Void,
         onSubstituteExercise: @escaping () -> Void,
         onRevertSubstitution: @escaping () -> Void,
         onDeleteExercise: @escaping () -> Void,
@@ -1697,6 +1776,8 @@ private struct WorkoutExerciseLogCard: View {
         self.onSetCompletionChanged = onSetCompletionChanged
         self.onInsertWarmUps = onInsertWarmUps
         self.onSetTypeChanged = onSetTypeChanged
+        self.onSetLabelChanged = onSetLabelChanged
+        self.onStartRestTimer = onStartRestTimer
         self.onSubstituteExercise = onSubstituteExercise
         self.onRevertSubstitution = onRevertSubstitution
         self.onDeleteExercise = onDeleteExercise
@@ -1721,7 +1802,7 @@ private struct WorkoutExerciseLogCard: View {
                                     .tracking(0.8)
                                     .foregroundStyle(Color.fwbLime)
                             }
-                            Text(exercise.name.isEmpty ? "Exercise" : exercise.name)
+                            Text(exercise.name.isEmpty ? "Exercise" : exercise.name.fwbTitleCased)
                                 .font(.title3.weight(.black))
                                 .fontWidth(.condensed)
                                 .foregroundStyle(Color.fwbWarmWhite)
@@ -1819,39 +1900,40 @@ private struct WorkoutExerciseLogCard: View {
                 .accessibilityHint("Choose a private photo or short video for your coach to review")
                 .accessibilityIdentifier("formCheck.open.\(accessibilityExerciseID)")
 
-                HStack(spacing: 0) {
-                    TableHeading(text: "SET", width: 46)
-                    TableHeading(
-                        text: entryStyle == .strength ? "LOAD / TIME" : entryStyle.firstHeading,
-                        width: nil
-                    )
-                    TableHeading(
-                        text: entryStyle == .strength ? "REPS / LOAD" : entryStyle.secondHeading,
-                        width: nil
-                    )
-                    TableHeading(text: "", width: 40)
-                }
-
                 let matchingDrafts = exerciseDrafts
-                ForEach(matchingDrafts) { draft in
-                    WorkoutSetLogRow(
-                        draft: binding(for: draft),
-                        focusedField: $focusedField,
-                        entryStyle: entryStyle,
-                        preferredEffortScale: preferredEffortScale,
-                        previousResult: previousSets[draft.setNumber],
-                        isPreviousHistoryLoading: isPreviousHistoryLoading,
-                        canCopyPreviousSet: previousDraft(for: draft)?.containsEntry == true,
-                        wasCopied: copiedDraftIDs.contains(draft.id),
-                        onCompletionChanged: { isCompleted in
-                            onSetCompletionChanged(draft, isCompleted)
-                        },
-                        onSetTypeChanged: { setType in
-                            onSetTypeChanged(draft.id, setType)
-                        },
-                        onCopyPreviousSet: { requestCopyPreviousSet(draft) },
-                        onDelete: { onDeleteSet(draft.id) }
-                    )
+                VStack(spacing: 6) {
+                    HStack(spacing: 4) {
+                        TableHeading(text: "SET", width: 42)
+                        TableHeading(text: entryStyle.firstHeading, width: nil)
+                        TableHeading(text: entryStyle.secondHeading, width: 66)
+                        TableHeading(text: "RIR", width: 48)
+                        TableHeading(text: "REST", width: 44)
+                    }
+
+                    ForEach(matchingDrafts) { draft in
+                        WorkoutSetLogRow(
+                            draft: binding(for: draft),
+                            focusedField: $focusedField,
+                            entryStyle: entryStyle,
+                            preferredEffortScale: preferredEffortScale,
+                            previousResult: previousSets[draft.setNumber],
+                            isPreviousHistoryLoading: isPreviousHistoryLoading,
+                            canCopyPreviousSet: previousDraft(for: draft)?.containsEntry == true,
+                            wasCopied: copiedDraftIDs.contains(draft.id),
+                            onCompletionChanged: { isCompleted in
+                                onSetCompletionChanged(draft, isCompleted)
+                            },
+                            onSetTypeChanged: { setType in
+                                onSetTypeChanged(draft.id, setType)
+                            },
+                            onSetLabelChanged: { label in
+                                onSetLabelChanged(draft.id, label)
+                            },
+                            onStartRestTimer: onStartRestTimer,
+                            onCopyPreviousSet: { requestCopyPreviousSet(draft) },
+                            onDelete: { onDeleteSet(draft.id) }
+                        )
+                    }
                 }
 
                 if matchingDrafts.isEmpty {
@@ -2299,8 +2381,6 @@ private struct TableHeading: View {
 }
 
 private struct WorkoutSetLogRow: View {
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
-
     @Binding var draft: WorkoutSetDraft
     @FocusState.Binding var focusedField: WorkoutLogFocus?
     let entryStyle: WorkoutEntryStyle
@@ -2311,32 +2391,21 @@ private struct WorkoutSetLogRow: View {
     let wasCopied: Bool
     let onCompletionChanged: (Bool) -> Void
     let onSetTypeChanged: (WorkoutSetType) -> Void
+    let onSetLabelChanged: (String) -> Void
+    let onStartRestTimer: () -> Void
     let onCopyPreviousSet: () -> Void
     let onDelete: () -> Void
+    @State private var rirRequest: WorkoutRIRRequest?
 
     var body: some View {
-        VStack(spacing: 0) {
-            HStack(spacing: 0) {
-                Button {
-                    draft.isCompleted.toggle()
-                    onCompletionChanged(draft.isCompleted)
-                } label: {
-                    Group {
-                        if draft.isCompleted {
-                            Image(systemName: "checkmark")
-                        } else {
-                            Text(draft.isWarmUp ? "W\(draft.warmUpOrdinal ?? 1)" : "\(draft.setNumber)")
-                        }
-                    }
-                    .font(.subheadline.weight(.black))
-                    .foregroundStyle(draft.isCompleted ? .black : .white)
-                    .frame(width: 46, height: 50)
-                    .background(draft.isCompleted ? Color.fwbAccentFill : Color.fwbSurface)
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(completionAccessibilityLabel)
-
-                Rectangle().fill(Color.fwbLine).frame(width: 1, height: 50)
+        VStack(spacing: 4) {
+            HStack(spacing: 4) {
+                EditableSetLabelField(
+                    draft: $draft,
+                    focus: $focusedField,
+                    onCommit: onSetLabelChanged
+                )
+                .frame(width: 42)
 
                 if entryStyle == .strength && draft.setType == .timed {
                     NumericLogField(
@@ -2356,8 +2425,6 @@ private struct WorkoutSetLogRow: View {
                     )
                 }
 
-                Rectangle().fill(Color.fwbLine).frame(width: 1, height: 50)
-
                 if entryStyle == .strength && draft.setType == .timed {
                     NumericLogField(
                         placeholder: "0",
@@ -2366,6 +2433,7 @@ private struct WorkoutSetLogRow: View {
                         focus: $focusedField,
                         focusValue: .weight(draft.id)
                     )
+                    .frame(width: 66)
                 } else {
                     NumericLogField(
                         placeholder: "0",
@@ -2374,9 +2442,54 @@ private struct WorkoutSetLogRow: View {
                         focus: $focusedField,
                         focusValue: .reps(draft.id)
                     )
+                    .frame(width: 66)
                 }
 
-                Rectangle().fill(Color.fwbLine).frame(width: 1, height: 50)
+                Button {
+                    focusedField = nil
+                    rirRequest = WorkoutRIRRequest(id: draft.id)
+                } label: {
+                    VStack(spacing: 1) {
+                        Text("RIR")
+                            .font(.caption2.weight(.black))
+                            .foregroundStyle(Color.fwbMuted)
+                        Text(rirDisplayValue)
+                            .font(.subheadline.weight(.black))
+                            .foregroundStyle(Color.fwbWarmWhite)
+                    }
+                    .frame(width: 48, height: 48)
+                    .background(Color.fwbCard, in: Rectangle())
+                    .overlay { Rectangle().stroke(Color.fwbLine, lineWidth: 1) }
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Choose reps in reserve for \(setAccessibilityName.lowercased())")
+                .accessibilityValue(draft.effortScale == .rir && !draft.effort.isEmpty ? rirDisplayValue : "Not selected")
+                .accessibilityHint(WorkoutEffortScale.rir.explanation)
+                .accessibilityIdentifier("workout.rir.\(draft.id)")
+
+                Button(action: onStartRestTimer) {
+                    Image(systemName: "clock")
+                        .font(.headline.weight(.semibold))
+                        .foregroundStyle(Color.fwbWarmWhite)
+                        .frame(width: 44, height: 48)
+                        .background(Color.fwbCard, in: Rectangle())
+                        .overlay { Rectangle().stroke(Color.fwbLine, lineWidth: 1) }
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Start rest timer after \(setAccessibilityName.lowercased())")
+                .accessibilityIdentifier("workout.rest.\(draft.id)")
+            }
+
+            if previousResult != nil || isPreviousHistoryLoading {
+                PreviousSetResultView(
+                    result: previousResult,
+                    entryStyle: entryStyle,
+                    isLoading: isPreviousHistoryLoading
+                )
+            }
+
+            HStack(spacing: 4) {
+                setNoteField
 
                 Menu {
                     Button(action: onCopyPreviousSet) {
@@ -2391,84 +2504,11 @@ private struct WorkoutSetLogRow: View {
                     Image(systemName: "ellipsis")
                         .font(.subheadline.bold())
                         .foregroundStyle(Color.fwbWarmWhite)
-                        .frame(width: 40, height: 50)
+                        .frame(width: 40, height: 38)
+                        .background(Color.fwbSurface, in: Rectangle())
+                        .overlay { Rectangle().stroke(Color.fwbLine, lineWidth: 1) }
                 }
                 .accessibilityLabel("\(setAccessibilityName) options")
-            }
-
-            if draft.isWarmUp {
-                HStack(spacing: 6) {
-                    Image(systemName: "flame.fill")
-                    Text("WARM-UP SET")
-                }
-                .font(.caption2.weight(.black))
-                .tracking(0.6)
-                .foregroundStyle(Color.fwbLime)
-                .padding(.horizontal, 12)
-                .padding(.top, 7)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color.fwbSurface)
-            }
-
-            PreviousSetResultView(
-                result: previousResult,
-                entryStyle: entryStyle,
-                isLoading: isPreviousHistoryLoading
-            )
-
-            if entryStyle == .strength && dynamicTypeSize.isAccessibilitySize {
-                VStack(spacing: 0) {
-                    SetTypeMenu(
-                        selection: draft.setType,
-                        setID: draft.id,
-                        setNumber: draft.setNumber,
-                        onSelect: { setType in
-                            draft.setType = setType
-                            onSetTypeChanged(setType)
-                        },
-                        onSelectTimed: { focusedField = .duration(draft.id) }
-                    )
-                    Rectangle().fill(Color.fwbLine).frame(height: 1)
-                    setNoteField
-                    if !draft.isWarmUp {
-                        Rectangle().fill(Color.fwbLine).frame(height: 1)
-                        WorkoutEffortLogField(
-                            draft: $draft,
-                            preferredScale: preferredEffortScale,
-                            focus: $focusedField
-                        )
-                    }
-                }
-            } else {
-                HStack(spacing: 0) {
-                    if entryStyle == .strength {
-                        SetTypeMenu(
-                            selection: draft.setType,
-                            setID: draft.id,
-                            setNumber: draft.setNumber,
-                            onSelect: { setType in
-                                draft.setType = setType
-                                onSetTypeChanged(setType)
-                            },
-                            onSelectTimed: { focusedField = .duration(draft.id) }
-                        )
-                        .frame(width: 108)
-
-                        Rectangle().fill(Color.fwbLine).frame(width: 1)
-                    }
-
-                    setNoteField
-
-                    if entryStyle == .strength && !draft.isWarmUp {
-                        Rectangle().fill(Color.fwbLine).frame(width: 1)
-                        WorkoutEffortLogField(
-                            draft: $draft,
-                            preferredScale: preferredEffortScale,
-                            focus: $focusedField
-                        )
-                        .frame(width: 124)
-                    }
-                }
             }
 
             if let message = draft.effortValidationMessage {
@@ -2498,6 +2538,11 @@ private struct WorkoutSetLogRow: View {
         .overlay {
             Rectangle().stroke(wasCopied ? Color.fwbLime : Color.fwbLine, lineWidth: wasCopied ? 2 : 1)
         }
+        .sheet(item: $rirRequest) { _ in
+            WorkoutRIRSelectionSheet(draft: $draft)
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+        }
     }
 
     private var setNoteField: some View {
@@ -2507,19 +2552,210 @@ private struct WorkoutSetLogRow: View {
             .foregroundStyle(Color.fwbWarmWhite)
             .focused($focusedField, equals: .note(draft.id))
             .padding(.horizontal, 12)
-            .padding(.vertical, 7)
+            .padding(.vertical, 5)
             .frame(maxWidth: .infinity)
-            .frame(minHeight: 42)
+            .frame(minHeight: 38)
             .background(Color.fwbSurface)
+    }
+
+    private var rirDisplayValue: String {
+        guard draft.effortScale == .rir,
+              let value = Double(draft.effort.trimmingCharacters(in: .whitespacesAndNewlines)) else {
+            return "—"
+        }
+        return value >= 4 ? "4+" : WorkoutEffortScale.rir.formatted(value)
     }
 
     private var setAccessibilityName: String {
         draft.isWarmUp ? "Warm-up set \(draft.warmUpOrdinal ?? 1)" : "Set \(draft.setNumber)"
     }
 
-    private var completionAccessibilityLabel: String {
-        draft.isCompleted ? "\(setAccessibilityName) complete" : "Complete \(setAccessibilityName.lowercased())"
+}
+
+private struct WorkoutRIRRequest: Identifiable {
+    let id: UUID
+}
+
+private struct EditableSetLabelField: View {
+    @Binding var draft: WorkoutSetDraft
+    @FocusState.Binding var focus: WorkoutLogFocus?
+    let onCommit: (String) -> Void
+    @State private var label: String
+
+    init(
+        draft: Binding<WorkoutSetDraft>,
+        focus: FocusState<WorkoutLogFocus?>.Binding,
+        onCommit: @escaping (String) -> Void
+    ) {
+        _draft = draft
+        _focus = focus
+        self.onCommit = onCommit
+        _label = State(initialValue: Self.displayLabel(for: draft.wrappedValue))
     }
+
+    var body: some View {
+        TextField("SET", text: $label)
+            .textInputAutocapitalization(.characters)
+            .autocorrectionDisabled()
+            .multilineTextAlignment(.center)
+            .font(.subheadline.weight(.black))
+            .foregroundStyle(Color.fwbWarmWhite)
+            .focused($focus, equals: .set(draft.id))
+            .frame(height: 48)
+            .background(Color.fwbCard, in: Rectangle())
+            .overlay { Rectangle().stroke(Color.fwbLine, lineWidth: 1) }
+            .submitLabel(.done)
+            .onSubmit(commit)
+            .onChange(of: label) { nextValue in
+                let sanitized = Self.sanitized(nextValue)
+                if sanitized != nextValue {
+                    label = sanitized
+                }
+            }
+            .onChange(of: focus) { nextFocus in
+                if nextFocus != .set(draft.id) {
+                    commit()
+                }
+            }
+            .onChange(of: draft.setNumber) { _ in
+                guard focus != .set(draft.id) else { return }
+                label = Self.displayLabel(for: draft)
+            }
+            .accessibilityLabel("Set label")
+            .accessibilityHint("Enter W for warm-up or a number for a working set")
+            .accessibilityIdentifier("workout.setLabel.\(draft.id)")
+    }
+
+    private func commit() {
+        guard !label.isEmpty else {
+            label = Self.displayLabel(for: draft)
+            return
+        }
+        onCommit(label)
+    }
+
+    private static func displayLabel(for draft: WorkoutSetDraft) -> String {
+        guard draft.isWarmUp else { return String(draft.setNumber) }
+        let ordinal = draft.warmUpOrdinal ?? 1
+        return ordinal > 1 ? "W\(ordinal)" : "W"
+    }
+
+    private static func sanitized(_ value: String) -> String {
+        let normalized = value.uppercased()
+        if normalized.contains("W") {
+            return "W" + String(normalized.filter(\.isNumber).prefix(2))
+        }
+        return String(normalized.filter(\.isNumber).prefix(2))
+    }
+}
+
+private struct WorkoutRIRSelectionSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @Binding var draft: WorkoutSetDraft
+    @State private var selection: Int?
+
+    init(draft: Binding<WorkoutSetDraft>) {
+        _draft = draft
+        let value = draft.wrappedValue.effortScale == .rir
+            ? Int(Double(draft.wrappedValue.effort) ?? -1)
+            : nil
+        _selection = State(initialValue: value.map { min(max($0, 0), 4) })
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(alignment: .top, spacing: 12) {
+                VStack(alignment: .leading, spacing: 5) {
+                    Text("SET EFFORT")
+                        .font(.footnote.weight(.black))
+                        .tracking(1)
+                        .foregroundStyle(Color.fwbLime)
+                    Text("HOW MANY MORE REPS?")
+                        .font(.title.weight(.black))
+                        .fontWidth(.condensed)
+                        .foregroundStyle(Color.fwbWarmWhite)
+                }
+                Spacer(minLength: 8)
+                Button {
+                    dismiss()
+                } label: {
+                    Image(systemName: "xmark")
+                        .font(.headline.weight(.bold))
+                        .frame(width: 40, height: 40)
+                        .background(Color.fwbSurface, in: Circle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Close RIR choices")
+            }
+
+            Text("If you kept going, how many more good-form reps could you have completed?")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(Color.fwbMuted)
+                .fixedSize(horizontal: false, vertical: true)
+
+            VStack(spacing: 6) {
+                ForEach(Self.options, id: \.value) { option in
+                    Button {
+                        selection = option.value
+                    } label: {
+                        HStack(spacing: 14) {
+                            Text(option.value == 4 ? "4+" : String(option.value))
+                                .font(.title3.weight(.black))
+                                .frame(width: 34, alignment: .leading)
+                            Text(option.label)
+                                .font(.subheadline.weight(.bold))
+                            Spacer()
+                            if selection == option.value {
+                                Image(systemName: "checkmark")
+                                    .font(.headline.weight(.black))
+                            }
+                        }
+                        .foregroundStyle(selection == option.value ? Color.black : Color.fwbWarmWhite)
+                        .padding(.horizontal, 12)
+                        .frame(minHeight: 48)
+                        .background(selection == option.value ? Color.fwbAccentFill : Color.fwbSurface, in: Rectangle())
+                        .overlay { Rectangle().stroke(selection == option.value ? Color.fwbLime : Color.fwbLine, lineWidth: 1) }
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("\(option.value == 4 ? "Four or more" : option.label) reps in reserve")
+                }
+            }
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text("RIR MEANS REPS IN RESERVE")
+                    .font(.footnote.weight(.black))
+                    .tracking(0.5)
+                    .foregroundStyle(Color.fwbLime)
+                Text("It estimates how many additional reps you could have completed with good form.")
+                    .font(.footnote)
+                    .foregroundStyle(Color.fwbMuted)
+            }
+            .padding(12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.fwbSurface, in: Rectangle())
+            .overlay { Rectangle().stroke(Color.fwbLine, lineWidth: 1) }
+
+            Button("SAVE RIR") {
+                guard let selection else { return }
+                draft.effortScale = .rir
+                draft.effort = String(selection)
+                dismiss()
+            }
+            .buttonStyle(FWBPrimaryButtonStyle())
+            .disabled(selection == nil)
+            .accessibilityIdentifier("workout.rir.save")
+        }
+        .padding(20)
+        .background(Color.fwbBackground.ignoresSafeArea())
+    }
+
+    private static let options: [(value: Int, label: String)] = [
+        (0, "None"),
+        (1, "One more"),
+        (2, "Two more"),
+        (3, "Three more"),
+        (4, "Four or more")
+    ]
 }
 
 private struct WorkoutEffortLogField: View {
@@ -2783,23 +3019,18 @@ private struct NumericLogField: View {
     let focusValue: WorkoutLogFocus
 
     var body: some View {
-        HStack(spacing: 4) {
-            TextField(placeholder, text: $text)
-                .keyboardType(.decimalPad)
-                .multilineTextAlignment(.trailing)
-                .font(.headline.weight(.bold))
-                .foregroundStyle(Color.fwbWarmWhite)
-                .focused($focus, equals: focusValue)
-            Text(suffix)
-                .font(.footnote.bold())
-                .foregroundStyle(Color.fwbMuted)
-                .lineLimit(1)
-                .minimumScaleFactor(0.65)
-        }
-        .padding(.horizontal, 8)
+        TextField(placeholder, text: $text)
+            .keyboardType(.decimalPad)
+            .multilineTextAlignment(.center)
+            .font(.headline.weight(.bold))
+            .foregroundStyle(Color.fwbWarmWhite)
+            .focused($focus, equals: focusValue)
+            .padding(.horizontal, 5)
         .frame(maxWidth: .infinity)
-        .frame(minHeight: 50)
+        .frame(minHeight: 48)
         .background(Color.fwbCard)
+        .overlay { Rectangle().stroke(Color.fwbLine, lineWidth: 1) }
+        .accessibilityHint(suffix)
     }
 }
 
@@ -3078,7 +3309,7 @@ private struct ExercisePickerSheet: View {
                                                     .background(Color.fwbAccentFill, in: Rectangle())
 
                                                 VStack(alignment: .leading, spacing: 3) {
-                                                    Text(suggestion)
+                                                    Text(suggestion.fwbTitleCased)
                                                         .font(.subheadline.weight(.bold))
                                                         .foregroundStyle(Color.fwbWarmWhite)
                                                         .multilineTextAlignment(.leading)
@@ -3270,7 +3501,7 @@ private struct ExerciseNameAutocompleteField: View {
                             HStack(spacing: 10) {
                                 Image(systemName: "figure.strengthtraining.traditional")
                                     .foregroundStyle(Color.fwbLime)
-                                Text(suggestion)
+                                Text(suggestion.fwbTitleCased)
                                     .font(.subheadline.weight(.semibold))
                                     .foregroundStyle(Color.fwbWarmWhite)
                                 Spacer()

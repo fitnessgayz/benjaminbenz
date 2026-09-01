@@ -1,6 +1,37 @@
 import SwiftUI
 import UIKit
 
+extension String {
+    /// Capitalizes the first letter of each displayed word without lowercasing
+    /// the rest of the word, so exercise acronyms such as RDL and TRX survive.
+    var fwbTitleCased: String {
+        var result = ""
+        var shouldCapitalize = true
+
+        for character in self {
+            let scalars = character.unicodeScalars
+            let isLetter = scalars.contains { CharacterSet.letters.contains($0) }
+            let isNumber = scalars.contains { CharacterSet.decimalDigits.contains($0) }
+
+            if shouldCapitalize && isLetter {
+                result.append(contentsOf: String(character).uppercased())
+            } else {
+                result.append(character)
+            }
+
+            if isLetter || isNumber {
+                shouldCapitalize = false
+            } else if character == "'" || character == "’" {
+                shouldCapitalize = false
+            } else {
+                shouldCapitalize = true
+            }
+        }
+
+        return result
+    }
+}
+
 extension Color {
     // Fitness with Benjamin web palette.
     static let fwbAccentFill = Color(red: 0.843, green: 1.0, blue: 0.247)

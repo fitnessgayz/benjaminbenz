@@ -520,7 +520,7 @@ struct WorkoutDifficultyPromptView: View {
                             .foregroundStyle(Color.fwbWarmWhite)
                             .fixedSize(horizontal: false, vertical: true)
 
-                        Text(request.workoutTitle)
+                        Text(request.workoutTitle.fwbTitleCased)
                             .font(.headline.weight(.bold))
                             .foregroundStyle(Color.fwbMuted)
                             .fixedSize(horizontal: false, vertical: true)
@@ -681,7 +681,7 @@ struct WorkoutCelebrationView: View {
 
     private var summaryCard: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text(celebration.workoutTitle.uppercased())
+            Text(celebration.workoutTitle.fwbTitleCased)
                 .font(.footnote.weight(.black))
                 .tracking(1)
                 .foregroundStyle(Color.fwbLime)

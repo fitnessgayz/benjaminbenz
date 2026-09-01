@@ -609,12 +609,12 @@ struct FormCheckSubmissionSheet: View {
                         .tracking(0.8)
                         .foregroundStyle(Color.fwbLime)
                 }
-                Text(context.exerciseName)
+                Text(context.exerciseName.fwbTitleCased)
                     .font(.headline.weight(.black))
                     .foregroundStyle(Color.fwbWarmWhite)
                     .fixedSize(horizontal: false, vertical: true)
                 if !context.workoutTitle.isEmpty {
-                    Text(context.workoutTitle)
+                    Text(context.workoutTitle.fwbTitleCased)
                         .font(.footnote)
                         .foregroundStyle(Color.fwbMuted)
                 }
@@ -992,13 +992,13 @@ private struct FormCheckHistoryCard: View {
                 .background(Color.fwbAccentFill, in: Rectangle())
 
             VStack(alignment: .leading, spacing: 7) {
-                Text(submission.exerciseName)
+                Text(submission.exerciseName.fwbTitleCased)
                     .font(.headline.weight(.black))
                     .foregroundStyle(Color.fwbWarmWhite)
                     .fixedSize(horizontal: false, vertical: true)
 
                 if !submission.workoutTitle.isEmpty {
-                    Text(submission.workoutTitle)
+                    Text(submission.workoutTitle.fwbTitleCased)
                         .font(.footnote)
                         .foregroundStyle(Color.fwbMuted)
                 }
@@ -1136,13 +1136,13 @@ private struct FormCheckSubmissionDetailView: View {
 
     private var submissionSummary: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text(submission.exerciseName)
+            Text(submission.exerciseName.fwbTitleCased)
                 .font(.title2.weight(.black))
                 .fontWidth(.condensed)
                 .foregroundStyle(Color.fwbWarmWhite)
 
             if !submission.workoutTitle.isEmpty {
-                Text(submission.workoutTitle)
+                Text(submission.workoutTitle.fwbTitleCased)
                     .font(.subheadline)
                     .foregroundStyle(Color.fwbMuted)
             }

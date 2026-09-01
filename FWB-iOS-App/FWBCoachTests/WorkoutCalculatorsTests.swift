@@ -203,4 +203,51 @@ final class WorkoutCalculatorsTests: XCTestCase {
         XCTAssertNil(restored.difficultyRating)
         XCTAssertEqual(restored.restoredDrafts.first?.weight, "135")
     }
+
+    func testExerciseSuggestionsConsolidateCaseSpacingAndPunctuationDuplicates() {
+        let names = ExerciseSuggestionLibrary.merged([[
+            "Push-Up",
+            "push up",
+            "  PUSH   UP  ",
+            "Romanian Deadlift"
+        ]])
+
+        XCTAssertEqual(names.count, 2)
+        XCTAssertTrue(names.contains("Push-Up"))
+        XCTAssertTrue(names.contains("Romanian Deadlift"))
+    }
+
+    func testWorkoutHistoryConsolidatesDuplicateExerciseNamesWithoutLosingSets() {
+        let records = [
+            WorkoutHistoryRecord(
+                entryDate: "2026-08-21",
+                workoutTitle: "Upper Body",
+                exerciseCode: "A1",
+                exerciseName: "Dumbbell Bench Press",
+                setNumber: 1,
+                weightUsed: 50,
+                reps: 10,
+                notes: nil
+            ),
+            WorkoutHistoryRecord(
+                entryDate: "2026-08-21",
+                workoutTitle: "Upper Body",
+                exerciseCode: "B2",
+                exerciseName: "dumbbell-bench press",
+                setNumber: 2,
+                weightUsed: 55,
+                reps: 8,
+                notes: nil
+            )
+        ]
+        let session = WorkoutHistorySession(
+            entryDate: "2026-08-21",
+            workoutTitle: "Upper Body",
+            records: records
+        )
+
+        XCTAssertEqual(session.exercises.count, 1)
+        XCTAssertEqual(session.exercises.first?.records.count, 2)
+        XCTAssertEqual(session.exercises.first?.name, "Dumbbell Bench Press")
+    }
 }

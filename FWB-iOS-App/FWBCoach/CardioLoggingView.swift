@@ -512,7 +512,7 @@ private struct CardioPreviousResultView: View {
                     .foregroundStyle(Color.fwbLime)
 
                 if let result {
-                    Text(result.exerciseName.uppercased())
+                    Text(result.exerciseName.fwbTitleCased)
                         .font(.caption2.weight(.bold))
                         .foregroundStyle(Color.fwbWarmWhite)
                         .lineLimit(1)

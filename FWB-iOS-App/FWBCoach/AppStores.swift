@@ -349,11 +349,7 @@ final class ExerciseLibraryStore: ObservableObject {
     }
 
     var suggestionNames: [String] {
-        ExerciseSuggestionLibrary.merged(
-            exercises.map { exercise in
-                [exercise.name] + exercise.aliases
-            }
-        )
+        ExerciseSuggestionLibrary.merged([exercises.map(\.name)])
     }
 
     func loadIfNeeded() async {

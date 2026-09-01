@@ -176,7 +176,7 @@ struct RestTimerBanner: View {
                         .font(.footnote.bold())
                         .tracking(1)
                         .foregroundStyle(Color.fwbLime)
-                    Text(store.exerciseName)
+                    Text(store.exerciseName.fwbTitleCased)
                         .font(.footnote.weight(.semibold))
                         .foregroundStyle(Color.fwbMuted)
                         .lineLimit(1)

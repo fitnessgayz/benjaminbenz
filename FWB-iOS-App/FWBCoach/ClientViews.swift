@@ -248,7 +248,7 @@ private struct ProgramOverviewCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             VStack(alignment: .leading, spacing: 7) {
-                Text(program.programTitle)
+                Text(program.programTitle.fwbTitleCased)
                     .font(.title2.weight(.black))
                     .fontWidth(.condensed)
                 if !program.programSummary.isEmpty {
@@ -633,7 +633,7 @@ struct WorkoutCard: View {
 
     private var workoutText: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(workout.title)
+            Text(workout.title.fwbTitleCased)
                 .font(.headline)
                 .foregroundStyle(Color.fwbWarmWhite)
                 .multilineTextAlignment(.leading)

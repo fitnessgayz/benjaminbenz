@@ -542,6 +542,48 @@ struct ExerciseNameRecord: Decodable {
     }
 }
 
+enum ExerciseNameIdentity {
+    static func key(for name: String) -> String {
+        let folded = name
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .folding(
+                options: [.caseInsensitive, .diacriticInsensitive, .widthInsensitive],
+                locale: Locale(identifier: "en_US_POSIX")
+            )
+            .replacingOccurrences(of: "&", with: " and ")
+
+        return folded
+            .components(separatedBy: CharacterSet.alphanumerics.inverted)
+            .filter { !$0.isEmpty }
+            .joined(separator: " ")
+    }
+
+    static func canonicalName(
+        for name: String,
+        approvedExercises: [ApprovedExercise] = []
+    ) -> String {
+        let identity = key(for: name)
+        guard !identity.isEmpty else { return "Exercise" }
+
+        if let approved = approvedExercises.first(where: { exercise in
+            key(for: exercise.name) == identity
+                || exercise.aliases.contains { key(for: $0) == identity }
+        }) {
+            return approved.name.fwbTitleCased
+        }
+
+        if let libraryExercise = ExerciseLibrary.items.first(where: {
+            key(for: $0.exercise.name) == identity
+        })?.exercise {
+            return libraryExercise.name.fwbTitleCased
+        }
+
+        return name
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .fwbTitleCased
+    }
+}
+
 struct ApprovedExercise: Decodable, Identifiable, Equatable {
     let id: UUID
     let name: String
@@ -582,9 +624,9 @@ enum ExerciseSuggestionLibrary {
 
         for name in groups.flatMap({ $0 }) {
             let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-            let key = trimmed.lowercased()
+            let key = ExerciseNameIdentity.key(for: trimmed)
             guard !trimmed.isEmpty, namesByKey[key] == nil else { continue }
-            namesByKey[key] = trimmed
+            namesByKey[key] = trimmed.fwbTitleCased
         }
 
         return namesByKey.values.sorted { $0.localizedCaseInsensitiveCompare($1) == .orderedAscending }
@@ -592,17 +634,17 @@ enum ExerciseSuggestionLibrary {
 
     static func matches(query: String, within names: [String], limit: Int = 6) -> [String] {
         let trimmedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
-        let normalizedQuery = trimmedQuery.lowercased()
+        let normalizedQuery = ExerciseNameIdentity.key(for: trimmedQuery)
 
         return names
             .filter { candidate in
-                let normalizedCandidate = candidate.lowercased()
+                let normalizedCandidate = ExerciseNameIdentity.key(for: candidate)
                 guard normalizedCandidate != normalizedQuery else { return false }
                 return normalizedQuery.isEmpty || normalizedCandidate.contains(normalizedQuery)
             }
             .sorted { left, right in
-                let leftStartsWithQuery = left.lowercased().hasPrefix(normalizedQuery)
-                let rightStartsWithQuery = right.lowercased().hasPrefix(normalizedQuery)
+                let leftStartsWithQuery = ExerciseNameIdentity.key(for: left).hasPrefix(normalizedQuery)
+                let rightStartsWithQuery = ExerciseNameIdentity.key(for: right).hasPrefix(normalizedQuery)
                 if leftStartsWithQuery != rightStartsWithQuery {
                     return leftStartsWithQuery
                 }
@@ -1130,14 +1172,25 @@ struct WorkoutHistorySession: Identifiable, Equatable {
     }
 
     var exercises: [WorkoutHistoryExercise] {
-        let grouped = Dictionary(grouping: records) { record in
-            WorkoutHistoryExercise.Key(code: record.exerciseCode, name: record.exerciseName)
+        let grouped = Dictionary(grouping: records) { record -> String in
+            let nameKey = ExerciseNameIdentity.key(for: record.exerciseName)
+            if !nameKey.isEmpty {
+                return "name:\(nameKey)"
+            }
+            return "code:\(ExerciseNameIdentity.key(for: record.exerciseCode))"
         }
 
-        return grouped.map { key, records in
-            WorkoutHistoryExercise(
-                code: key.code,
-                name: key.name,
+        return grouped.compactMap { _, records in
+            guard let representative = records.min(by: { left, right in
+                let leftOrder = left.exerciseOrder ?? Int.max
+                let rightOrder = right.exerciseOrder ?? Int.max
+                if leftOrder != rightOrder { return leftOrder < rightOrder }
+                return left.setNumber < right.setNumber
+            }) else { return nil }
+
+            return WorkoutHistoryExercise(
+                code: representative.exerciseCode,
+                name: ExerciseNameIdentity.canonicalName(for: representative.exerciseName),
                 order: records.compactMap(\.exerciseOrder).min(),
                 records: records.sorted { left, right in
                     if left.isWarmUp != right.isWarmUp { return left.isWarmUp }

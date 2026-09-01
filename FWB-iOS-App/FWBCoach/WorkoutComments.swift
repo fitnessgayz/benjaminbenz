@@ -412,7 +412,7 @@ struct WorkoutCommentsView: View {
 
     private var threadHeader: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(context.workoutTitle.uppercased())
+            Text(context.workoutTitle.fwbTitleCased)
                 .font(.title2.weight(.black))
                 .fontWidth(.condensed)
                 .foregroundStyle(Color.fwbWarmWhite)
