@@ -2450,12 +2450,6 @@ function setRowMarkup(setNumber, repPlaceholder = "", setType = workingSetType, 
         <span>RIR</span>
         <strong data-set-rir-value>—</strong>
       </button>
-      <button class="set-rest-button" type="button" data-set-rest aria-label="Start rest timer after ${normalizedType === warmUpSetType ? `warm-up set ${ordinal}` : `set ${Number(setNumber) || 1}`}">
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <circle cx="12" cy="12" r="8.5"></circle>
-          <path d="M12 7.5v5l3.5 2"></path>
-        </svg>
-      </button>
     </div>
   `;
 }
@@ -2558,7 +2552,6 @@ function exerciseLogFields(exercise, workoutTitle, options = {}) {
         <span>Weight</span>
         <span>Reps</span>
         <span>RIR</span>
-        <span>Rest</span>
       </div>
         <div data-set-rows>
           ${setRows(exercise)}

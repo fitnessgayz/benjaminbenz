@@ -11,10 +11,10 @@
   --max: 1320px;
 }
 
-/* Unified workout logger: editable set label, RIR picker, and rest timer. */
+/* Unified workout logger: editable set label and RIR picker. */
 .set-header,
 .set-row {
-  grid-template-columns: minmax(42px, .48fr) minmax(68px, 1fr) minmax(60px, .78fr) minmax(48px, .56fr) 48px;
+  grid-template-columns: minmax(42px, .48fr) minmax(68px, 1fr) minmax(60px, .78fr) minmax(48px, .56fr);
   gap: 6px;
 }
 
@@ -462,7 +462,7 @@
   .dashboard-page .set-row,
   .coach-admin-page .set-row {
     display: grid !important;
-    grid-template-columns: minmax(38px, .45fr) minmax(62px, 1fr) minmax(54px, .78fr) minmax(44px, .55fr) 44px !important;
+    grid-template-columns: minmax(38px, .45fr) minmax(62px, 1fr) minmax(54px, .78fr) minmax(44px, .55fr) !important;
     gap: 4px !important;
   }
 
@@ -9433,7 +9433,7 @@ textarea,
 .dashboard-page .set-row,
 .coach-admin-page .set-header,
 .coach-admin-page .set-row {
-  grid-template-columns: minmax(42px, .48fr) minmax(68px, 1fr) minmax(60px, .78fr) minmax(48px, .56fr) 48px;
+  grid-template-columns: minmax(42px, .48fr) minmax(68px, 1fr) minmax(60px, .78fr) minmax(48px, .56fr);
   gap: 6px;
 }
 
@@ -9471,7 +9471,7 @@ textarea,
   .coach-admin-page .set-header,
   .coach-admin-page .set-row {
     display: grid !important;
-    grid-template-columns: minmax(38px, .45fr) minmax(62px, 1fr) minmax(54px, .78fr) minmax(44px, .55fr) 44px !important;
+    grid-template-columns: minmax(38px, .45fr) minmax(62px, 1fr) minmax(54px, .78fr) minmax(44px, .55fr) !important;
     gap: 4px !important;
   }
 
