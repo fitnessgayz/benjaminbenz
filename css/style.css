@@ -14,7 +14,7 @@
 /* Unified workout logger: editable set label and RIR picker. */
 .set-header,
 .set-row {
-  grid-template-columns: minmax(42px, .48fr) minmax(68px, 1fr) minmax(60px, .78fr) minmax(48px, .56fr);
+  grid-template-columns: 52px minmax(0, 1fr) minmax(0, 1fr) 60px;
   gap: 6px;
 }
 
@@ -462,7 +462,7 @@
   .dashboard-page .set-row,
   .coach-admin-page .set-row {
     display: grid !important;
-    grid-template-columns: minmax(38px, .45fr) minmax(62px, 1fr) minmax(54px, .78fr) minmax(44px, .55fr) !important;
+    grid-template-columns: 44px minmax(0, 1fr) minmax(0, 1fr) 56px !important;
     gap: 4px !important;
   }
 
@@ -3761,6 +3761,14 @@ footer {
   font-size: .78rem;
   font-weight: 900;
   cursor: pointer;
+}
+
+.set-table-actions.has-add-superset-action {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.set-table-actions [data-add-superset] {
+  grid-column: 1 / -1;
 }
 
 .set-delete-last-button {
@@ -9433,7 +9441,7 @@ textarea,
 .dashboard-page .set-row,
 .coach-admin-page .set-header,
 .coach-admin-page .set-row {
-  grid-template-columns: minmax(42px, .48fr) minmax(68px, 1fr) minmax(60px, .78fr) minmax(48px, .56fr);
+  grid-template-columns: 52px minmax(0, 1fr) minmax(0, 1fr) 60px;
   gap: 6px;
 }
 
@@ -9471,7 +9479,7 @@ textarea,
   .coach-admin-page .set-header,
   .coach-admin-page .set-row {
     display: grid !important;
-    grid-template-columns: minmax(38px, .45fr) minmax(62px, 1fr) minmax(54px, .78fr) minmax(44px, .55fr) !important;
+    grid-template-columns: 44px minmax(0, 1fr) minmax(0, 1fr) 56px !important;
     gap: 4px !important;
   }
 

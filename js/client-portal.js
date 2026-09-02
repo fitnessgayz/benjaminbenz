@@ -2514,6 +2514,7 @@ function exerciseLogFields(exercise, workoutTitle, options = {}) {
   const panelClass = options.panelClass || "exercise-detail";
   const showInlineHeader = Boolean(options.showInlineHeader);
   const finishButtonLabel = String(options.finishButtonLabel || "Set Finished");
+  const addsSupersetExercise = options.finishButtonAction === "add-superset";
   const suggestionListAttr = options.suggestExerciseNames ? ' list="custom-exercise-suggestions"' : "";
   const notesContentId = `exercise-notes-${String(`${workoutTitle}-${exercise.code}`).toLowerCase().replace(/[^a-z0-9-]/g, "-")}`;
   const dateMarkup = options.showDate === false
@@ -2556,10 +2557,10 @@ function exerciseLogFields(exercise, workoutTitle, options = {}) {
         <div data-set-rows>
           ${setRows(exercise)}
         </div>
-        <div class="set-table-actions">
+        <div class="set-table-actions${addsSupersetExercise ? " has-add-superset-action" : ""}">
           <button class="add-set-button" type="button" data-add-set>+ Add Set</button>
           <button class="set-delete-last-button" type="button" data-delete-last-set>Delete Set</button>
-          <button class="set-finished-button" type="button" data-finish-set>${escapeHtml(finishButtonLabel)}</button>
+          <button class="set-finished-button" type="button" data-finish-set${addsSupersetExercise ? " data-add-superset" : ""}>${escapeHtml(finishButtonLabel)}</button>
         </div>
       </div>
       <div class="exercise-notes exercise-notes-disclosure">
@@ -4520,7 +4521,8 @@ function customWorkoutCardMarkup(exercise, workoutTitle, index = 0) {
           showDemo: false,
           setCount: 1,
           userManagedSets: true,
-          finishButtonLabel: isFirstSupersetExercise ? "Add Superset" : "Set Finished"
+          finishButtonLabel: isFirstSupersetExercise ? "Add Superset" : "Set Finished",
+          finishButtonAction: isFirstSupersetExercise ? "add-superset" : "finish-set"
         })}
       </div>
     </article>
@@ -4986,8 +4988,18 @@ function syncCustomWorkoutFormatMarkers(panel) {
     }
 
     const finishButton = card.querySelector("[data-finish-set]");
+    const setActions = finishButton?.closest(".set-table-actions");
+    const addsSupersetExercise = format === "superset" && index % 2 === 0;
+    if (finishButton) {
+      if (addsSupersetExercise) {
+        finishButton.setAttribute("data-add-superset", "");
+      } else {
+        finishButton.removeAttribute("data-add-superset");
+      }
+    }
+    setActions?.classList.toggle("has-add-superset-action", addsSupersetExercise);
     if (finishButton && finishButton.getAttribute("aria-pressed") !== "true") {
-      finishButton.textContent = format === "superset" && index % 2 === 0
+      finishButton.textContent = addsSupersetExercise
         ? "Add Superset"
         : "Set Finished";
     }
@@ -6949,6 +6961,59 @@ function ensureDefaultCustomExercise(panel) {
   syncCustomWorkoutCarousel(panel, { activeIndex: 0, scrollToActive: true, instant: true });
 }
 
+function addOrOpenSupersetExercise(button) {
+  const card = button?.closest("[data-custom-exercise-card]");
+  const carousel = card?.closest("[data-custom-workout-carousel]");
+  const panel = card?.closest(".client-workout-panel-custom");
+  const list = carousel?.querySelector("[data-custom-workout-list]");
+  const carouselCards = customWorkoutCarouselCards(carousel);
+  const carouselIndex = carouselCards.indexOf(card);
+
+  if (!card || !carousel || !panel || !list || carouselIndex < 0) {
+    return;
+  }
+
+  const existingSecondExercise = carouselCards[carouselIndex + 1];
+  if (existingSecondExercise) {
+    moveCustomWorkoutCarousel(carousel, carouselIndex + 1);
+    window.requestAnimationFrame(() => {
+      existingSecondExercise.querySelector("[data-exercise-title-name]")?.focus();
+    });
+    return;
+  }
+
+  const allCards = Array.from(panel.querySelectorAll("[data-custom-exercise-card]"));
+  const currentIndex = Math.max(allCards.indexOf(card), 0);
+  const groupIndex = Math.max(Number(carousel.dataset.customWorkoutGroup) || 0, 0);
+
+  list.insertAdjacentHTML("beforeend", customWorkoutCardMarkup({
+    code: nextCustomExerciseCode(panel),
+    name: "",
+    group: groupIndex,
+    prescription: "Custom sets",
+    rest: ""
+  }, customWorkoutTitle, currentIndex + 1));
+
+  const newCard = list.querySelector("[data-custom-exercise-card]:last-child");
+  const newLogElement = newCard?.querySelector("[data-exercise-log]");
+  const sharedDate = panel.querySelector("[data-workout-date]")?.value || todayDate();
+  const hiddenDate = newLogElement?.querySelector("[data-log-date]");
+
+  if (hiddenDate) {
+    hiddenDate.value = sharedDate;
+  }
+  if (newLogElement) {
+    updateExerciseLogField(newLogElement);
+  }
+
+  syncCustomWorkoutFormatMarkers(panel);
+  syncCustomWorkoutCarousel(panel, { focusCard: newCard });
+  persistCustomWorkoutDraftFromPanel(panel);
+  window.requestAnimationFrame(() => {
+    newCard?.querySelector("[data-exercise-title-name]")?.focus();
+  });
+}
+
 function updateSupersetSummaryCount(card) {
   if (!card?.matches("[data-superset-card]")) {
     return;
@@ -6992,6 +7057,7 @@ function handleWorkoutInteractions() {
     const toggle = event.target.closest("[data-exercise-toggle]");
     const addSetButton = event.target.closest("[data-add-set]");
     const deleteLastSetButton = event.target.closest("[data-delete-last-set]");
+    const addSupersetButton = event.target.closest("[data-add-superset]");
     const finishSetButton = event.target.closest("[data-finish-set]");
     const exerciseNotesToggle = event.target.closest("[data-exercise-notes-toggle]");
     const setRirButton = event.target.closest("[data-set-rir]");
@@ -7105,6 +7171,11 @@ function handleWorkoutInteractions() {
       resetRestTimer();
       openRestTimer(setRestButton);
       startOrPauseRestTimer();
+      return;
+    }
+
+    if (addSupersetButton) {
+      addOrOpenSupersetExercise(addSupersetButton);
       return;
     }
 
