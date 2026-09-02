@@ -4012,6 +4012,7 @@ function workoutElapsedTimerMarkup() {
       </button>
       <output data-workout-elapsed-display role="timer" aria-live="off">00:00</output>
       <button type="button" data-workout-elapsed-toggle aria-label="Pause workout timer">Pause</button>
+      <button type="button" data-workout-elapsed-reset aria-label="Reset workout timer">Reset</button>
     </aside>
   `;
 }
@@ -4307,6 +4308,17 @@ function toggleWorkoutElapsedTimer() {
     workoutElapsedTimerState.running = true;
   }
 
+  persistWorkoutElapsedTimerState();
+  runWorkoutElapsedTimer();
+}
+
+function resetWorkoutElapsedTimer() {
+  if (!workoutElapsedTimerState) {
+    return;
+  }
+
+  workoutElapsedTimerState.accumulatedMilliseconds = 0;
+  workoutElapsedTimerState.startedAt = workoutElapsedTimerState.running ? Date.now() : 0;
   persistWorkoutElapsedTimerState();
   runWorkoutElapsedTimer();
 }
@@ -7092,6 +7104,7 @@ function handleWorkoutInteractions() {
     const nextExerciseCloseButton = event.target.closest("[data-next-exercise-close]");
     const workoutStartButton = event.target.closest("[data-workout-start]");
     const workoutElapsedToggleButton = event.target.closest("[data-workout-elapsed-toggle]");
+    const workoutElapsedResetButton = event.target.closest("[data-workout-elapsed-reset]");
     const workoutElapsedCompactButton = event.target.closest("[data-workout-elapsed-compact]");
 
     if (exerciseNotesToggle) {
@@ -7151,6 +7164,11 @@ function handleWorkoutInteractions() {
 
     if (workoutElapsedToggleButton) {
       toggleWorkoutElapsedTimer();
+      return;
+    }
+
+    if (workoutElapsedResetButton) {
+      resetWorkoutElapsedTimer();
       return;
     }
 

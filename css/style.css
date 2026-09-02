@@ -3944,7 +3944,7 @@ footer {
   left: 12px;
   z-index: 90;
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
   align-items: center;
   width: min(560px, calc(100% - 24px));
   min-height: 76px;
@@ -4025,7 +4025,10 @@ footer {
   border-radius: 999px;
 }
 
-.workout-elapsed-timer.is-compact [data-workout-elapsed-toggle] {
+.workout-elapsed-timer.is-compact :is(
+  [data-workout-elapsed-toggle],
+  [data-workout-elapsed-reset]
+) {
   display: none;
 }
 
