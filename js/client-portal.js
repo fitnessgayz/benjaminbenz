@@ -4464,6 +4464,7 @@ function customWorkoutCardMarkup(exercise, workoutTitle, index = 0) {
   const groupIndex = Math.max(Number(exercise.group) || 0, 0);
   const marker = customWorkoutFormatMarker(activeCustomWorkoutFormat, index);
   const isFirstSupersetExercise = activeCustomWorkoutFormat === "superset" && index % 2 === 0;
+  const isSecondSupersetExercise = activeCustomWorkoutFormat === "superset" && index % 2 === 1;
   const suggestionMenuId = `custom-exercise-options-${String(exercise.code || index + 1).toLowerCase().replace(/[^a-z0-9-]/g, "-")}`;
 
   return `
@@ -4521,7 +4522,9 @@ function customWorkoutCardMarkup(exercise, workoutTitle, index = 0) {
           showDemo: false,
           setCount: 1,
           userManagedSets: true,
-          finishButtonLabel: isFirstSupersetExercise ? "Add Superset" : "Set Finished",
+          finishButtonLabel: isFirstSupersetExercise
+            ? "Add Superset"
+            : (isSecondSupersetExercise ? "Superset Completed" : "Set Finished"),
           finishButtonAction: isFirstSupersetExercise ? "add-superset" : "finish-set"
         })}
       </div>
@@ -5001,7 +5004,7 @@ function syncCustomWorkoutFormatMarkers(panel) {
     if (finishButton && finishButton.getAttribute("aria-pressed") !== "true") {
       finishButton.textContent = addsSupersetExercise
         ? "Add Superset"
-        : "Set Finished";
+        : (format === "superset" ? "Superset Completed" : "Set Finished");
     }
 
     card.querySelector("[data-exercise-title-name]")?.setAttribute("aria-label", `Exercise ${index + 1} name`);
