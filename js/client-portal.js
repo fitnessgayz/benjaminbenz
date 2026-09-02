@@ -4687,13 +4687,13 @@ function moveCustomWorkoutCarousel(carousel, nextIndex, options = {}) {
 
   const index = Math.min(Math.max(Number(nextIndex) || 0, 0), cards.length - 1);
   const firstOffset = cards[0]?.offsetLeft || 0;
-  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const targetLeft = Math.max((cards[index]?.offsetLeft || 0) - firstOffset, 0);
   carousel.dataset.activeIndex = String(index);
   renderCustomWorkoutCarousel(carousel);
-  list.scrollTo({
-    left: Math.max((cards[index]?.offsetLeft || 0) - firstOffset, 0),
-    behavior: options.instant || reduceMotion ? "auto" : "smooth"
-  });
+
+  // Direct assignment works consistently in iOS/Android webviews and avoids a
+  // smooth-scroll race where the scroll listener could restore the old slide.
+  list.scrollLeft = targetLeft;
 }
 
 function bindCustomWorkoutCarousel(carousel) {
@@ -4706,6 +4706,23 @@ function bindCustomWorkoutCarousel(carousel) {
   carousel.dataset.carouselBound = "true";
   let frame = 0;
   let touchSwipe = null;
+  carousel.addEventListener("click", (event) => {
+    const target = event.target instanceof Element ? event.target : null;
+    const previous = target?.closest("[data-custom-workout-carousel-previous]");
+    const next = target?.closest("[data-custom-workout-carousel-next]");
+    const dot = target?.closest("[data-custom-workout-carousel-dot]");
+
+    if (!previous && !next && !dot) return;
+    event.preventDefault();
+    event.stopPropagation();
+
+    const current = Number(carousel.dataset.activeIndex) || 0;
+    const nextIndex = dot
+      ? Number(dot.dataset.customWorkoutCarouselDot)
+      : current + (next ? 1 : -1);
+    moveCustomWorkoutCarousel(carousel, nextIndex);
+  });
+
   list.addEventListener("scroll", () => {
     window.cancelAnimationFrame(frame);
     frame = window.requestAnimationFrame(() => {
