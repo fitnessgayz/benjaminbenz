@@ -4640,6 +4640,10 @@ function renderCustomWorkoutCarousel(carousel) {
   carousel.dataset.customWorkoutFormat = format;
   carousel.dataset.carouselEnabled = enabled ? "true" : "false";
   carousel.dataset.activeIndex = String(activeIndex);
+  carousel.classList.toggle(
+    "is-superset-complete",
+    format === "superset" && cards.length > 1 && cards[cards.length - 1].classList.contains("is-exercise-complete")
+  );
   if (controls) controls.hidden = !enabled;
   if (cue) cue.hidden = !enabled;
   if (status) status.hidden = !enabled;
@@ -7216,6 +7220,10 @@ function handleWorkoutInteractions() {
         }
         finishSetButton.textContent = "Finished ✓";
         finishSetButton.setAttribute("aria-pressed", "true");
+        const customWorkoutCarousel = card?.closest("[data-custom-workout-carousel]");
+        if (customWorkoutCarousel) {
+          renderCustomWorkoutCarousel(customWorkoutCarousel);
+        }
         openNextExercisePrompt(
           card?.closest(".client-workout-panel-custom, .client-workout-panel-assigned"),
           finishSetButton
