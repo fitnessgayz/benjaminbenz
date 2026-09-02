@@ -228,12 +228,14 @@
     grid-auto-columns: 100%;
     grid-template-columns: none !important;
     align-items: start;
-    gap: 0 !important;
+    gap: 10px !important;
     width: 100%;
     max-width: 100%;
     min-width: 0;
     margin: 0 !important;
-    padding: 0 0 8px !important;
+    /* The right padding reduces each slide's content box while preserving the
+       full carousel width, leaving a clear preview of the next exercise. */
+    padding: 0 44px 8px 0 !important;
     overflow-x: auto !important;
     overflow-y: hidden;
     overscroll-behavior-inline: contain;
