@@ -2519,6 +2519,7 @@ function exerciseLogFields(exercise, workoutTitle, options = {}) {
   const setCount = Number(options.setCount) || setCountFromPrescription(exercise.prescription);
   const panelClass = options.panelClass || "exercise-detail";
   const showInlineHeader = Boolean(options.showInlineHeader);
+  const finishButtonLabel = String(options.finishButtonLabel || "Set Finished");
   const suggestionListAttr = options.suggestExerciseNames ? ' list="custom-exercise-suggestions"' : "";
   const notesContentId = `exercise-notes-${String(`${workoutTitle}-${exercise.code}`).toLowerCase().replace(/[^a-z0-9-]/g, "-")}`;
   const dateMarkup = options.showDate === false
@@ -2565,7 +2566,7 @@ function exerciseLogFields(exercise, workoutTitle, options = {}) {
         <div class="set-table-actions">
           <button class="add-set-button" type="button" data-add-set>+ Add Set</button>
           <button class="set-delete-last-button" type="button" data-delete-last-set>Delete Set</button>
-          <button class="set-finished-button" type="button" data-finish-set>Set Finished</button>
+          <button class="set-finished-button" type="button" data-finish-set>${escapeHtml(finishButtonLabel)}</button>
         </div>
       </div>
       <div class="exercise-notes exercise-notes-disclosure">
@@ -4468,6 +4469,7 @@ function customWorkoutCardMarkup(exercise, workoutTitle, index = 0) {
   const exerciseName = String(exercise.name || "").trim();
   const groupIndex = Math.max(Number(exercise.group) || 0, 0);
   const marker = customWorkoutFormatMarker(activeCustomWorkoutFormat, index);
+  const isFirstSupersetExercise = activeCustomWorkoutFormat === "superset" && index % 2 === 0;
   const suggestionMenuId = `custom-exercise-options-${String(exercise.code || index + 1).toLowerCase().replace(/[^a-z0-9-]/g, "-")}`;
 
   return `
@@ -4524,7 +4526,8 @@ function customWorkoutCardMarkup(exercise, workoutTitle, index = 0) {
           showDate: false,
           showDemo: false,
           setCount: 1,
-          userManagedSets: true
+          userManagedSets: true,
+          finishButtonLabel: isFirstSupersetExercise ? "Add Superset" : "Set Finished"
         })}
       </div>
     </article>
@@ -4987,6 +4990,13 @@ function syncCustomWorkoutFormatMarkers(panel) {
 
     if (marker) {
       marker.textContent = format === "circuit" ? `Station ${circuitPosition}` : customWorkoutFormatMarker(format, index);
+    }
+
+    const finishButton = card.querySelector("[data-finish-set]");
+    if (finishButton && finishButton.getAttribute("aria-pressed") !== "true") {
+      finishButton.textContent = format === "superset" && index % 2 === 0
+        ? "Add Superset"
+        : "Set Finished";
     }
 
     card.querySelector("[data-exercise-title-name]")?.setAttribute("aria-label", `Exercise ${index + 1} name`);
