@@ -274,6 +274,10 @@
     opacity: 1;
   }
 
+  .dashboard-page .custom-workout-carousel[data-carousel-enabled="true"] .custom-workout-card:not(:first-child) {
+    scroll-margin-inline-start: 44px;
+  }
+
   .dashboard-page .custom-workout-carousel[data-carousel-enabled="true"] :is(
     .custom-workout-delete-icon,
     .custom-workout-card-toggle
