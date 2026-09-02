@@ -3109,9 +3109,17 @@ footer {
 
 .custom-workout-list[data-custom-workout-format="circuit"] {
   padding: 10px;
-  border: 1px solid rgba(31, 166, 55, .24);
-  border-left: 4px solid #21a637;
+  border: 1px solid rgba(40, 120, 255, .2);
+  border-left: 4px solid var(--blue);
+  background: #f5f8ff;
+  transition: border-color 180ms ease, background-color 180ms ease, box-shadow 180ms ease;
+}
+
+.custom-workout-carousel.is-circuit-complete .custom-workout-list[data-custom-workout-format="circuit"] {
+  border-color: #21a637;
+  border-left-color: #21a637;
   background: #f5faf4;
+  box-shadow: 0 0 0 2px rgba(33, 166, 55, .14);
 }
 
 .custom-workout-add-bottom {

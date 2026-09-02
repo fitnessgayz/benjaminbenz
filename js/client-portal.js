@@ -4656,6 +4656,10 @@ function renderCustomWorkoutCarousel(carousel) {
     "is-superset-complete",
     format === "superset" && cards.length > 1 && cards[cards.length - 1].classList.contains("is-exercise-complete")
   );
+  carousel.classList.toggle(
+    "is-circuit-complete",
+    format === "circuit" && cards.length > 0 && cards.every((card) => card.classList.contains("is-exercise-complete"))
+  );
   if (controls) controls.hidden = !enabled;
   if (cue) cue.hidden = !enabled;
   if (status) status.hidden = !enabled;
