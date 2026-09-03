@@ -250,4 +250,57 @@ final class WorkoutCalculatorsTests: XCTestCase {
         XCTAssertEqual(session.exercises.first?.records.count, 2)
         XCTAssertEqual(session.exercises.first?.name, "Dumbbell Bench Press")
     }
+
+    func testCustomSupersetFormatPairsExercisesInOrder() {
+        let exercises = [
+            Exercise(code: "CW01", name: "Bench Press"),
+            Exercise(code: "CW02", name: "Row"),
+            Exercise(code: "CW03", name: "Curl"),
+            Exercise(code: "CW04", name: "Triceps Extension"),
+            Exercise(code: "CW05", name: "Lateral Raise")
+        ]
+
+        let assignments = WorkoutSequencePlanner.customAssignments(
+            for: .superset,
+            exercises: exercises
+        )
+
+        XCTAssertEqual(assignments[exercises[0].id]?.label, "Superset 1")
+        XCTAssertEqual(assignments[exercises[1].id]?.id, assignments[exercises[0].id]?.id)
+        XCTAssertEqual(assignments[exercises[2].id]?.label, "Superset 2")
+        XCTAssertEqual(assignments[exercises[3].id]?.id, assignments[exercises[2].id]?.id)
+        XCTAssertEqual(assignments[exercises[4].id]?.label, "Superset 3")
+    }
+
+    func testCustomCircuitFormatGroupsEveryExercise() {
+        let exercises = [
+            Exercise(code: "CW01", name: "Squat"),
+            Exercise(code: "CW02", name: "Push-up"),
+            Exercise(code: "CW03", name: "Row")
+        ]
+
+        let assignments = WorkoutSequencePlanner.customAssignments(
+            for: .circuit,
+            exercises: exercises
+        )
+
+        XCTAssertEqual(Set(assignments.values.map(\.id)), Set(["CUSTOM_CIRCUIT_1"]))
+        XCTAssertEqual(WorkoutSequencePlanner.customFormat(from: assignments), .circuit)
+    }
+
+    func testNextCustomCircuitUsesTheNextAvailableNumber() {
+        let exercise = Exercise(code: "CW01", name: "Squat")
+        let assignments = [
+            exercise.id: WorkoutGroupAssignment(
+                id: "CUSTOM_CIRCUIT_3",
+                kind: .circuit,
+                label: "Circuit 3"
+            )
+        ]
+
+        let next = WorkoutSequencePlanner.nextCustomCircuitAssignment(assignments: assignments)
+
+        XCTAssertEqual(next.id, "CUSTOM_CIRCUIT_4")
+        XCTAssertEqual(next.label, "Circuit 4")
+    }
 }

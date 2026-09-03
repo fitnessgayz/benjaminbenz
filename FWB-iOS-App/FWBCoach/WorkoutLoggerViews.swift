@@ -24,9 +24,14 @@ private enum WorkoutEntryStyle {
     var secondSuffix: String { self == .mobility ? "rounds" : "reps" }
 }
 
+private enum CustomExercisePlacement: Equatable {
+    case currentGroup
+    case newCircuit
+}
+
 private struct ExerciseEditorRequest: Identifiable {
     enum Mode {
-        case add
+        case add(CustomExercisePlacement)
         case substitute(Exercise)
     }
 
@@ -82,6 +87,7 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
     @State private var exercises: [Exercise]
     @State private var drafts: [WorkoutSetDraft]
     @State private var groupAssignments: [String: WorkoutGroupAssignment]
+    @State private var customWorkoutFormat: CustomWorkoutFormat
     @State private var startedAt = Date()
     @State private var sessionID = UUID()
     @State private var baseRemoteUpdatedAt: Date?
@@ -119,6 +125,9 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
         _exercises = State(initialValue: workout.exercises)
         _drafts = State(initialValue: Self.makeDrafts(for: workout.exercises))
         _groupAssignments = State(initialValue: WorkoutSequencePlanner.inferredAssignments(for: workout))
+        _customWorkoutFormat = State(
+            initialValue: Self.savedCustomWorkoutFormat(for: clientEmail)
+        )
     }
 
     var body: some View {
@@ -136,20 +145,27 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
                         WorkoutSessionHeader(title: workout.title, startedAt: startedAt)
                     }
                     workoutDateCard
+
+                    if isCustomWorkout {
+                        CustomWorkoutFormatPicker(selection: customWorkoutFormatBinding)
+                    }
+
                     WorkoutCommentSummaryCard(store: commentStore, context: commentContext)
 
                     if let guidedStep {
                         GuidedSequenceBanner(step: guidedStep)
                     }
 
-                    Button {
-                        sequenceEditorRequest = SequenceEditorRequest()
-                    } label: {
-                        Label("EDIT SEQUENCE & GROUPS", systemImage: "arrow.up.arrow.down.square")
+                    if !isCustomWorkout {
+                        Button {
+                            sequenceEditorRequest = SequenceEditorRequest()
+                        } label: {
+                            Label("EDIT SEQUENCE & GROUPS", systemImage: "arrow.up.arrow.down.square")
+                        }
+                        .buttonStyle(FWBSecondaryButtonStyle())
+                        .disabled(exercises.isEmpty)
+                        .accessibilityIdentifier("workout.editSequence")
                     }
-                    .buttonStyle(FWBSecondaryButtonStyle())
-                    .disabled(exercises.isEmpty)
-                    .accessibilityIdentifier("workout.editSequence")
 
                     ForEach(sequenceSections) { section in
                         if section.isGroup, let assignment = section.assignment {
@@ -171,17 +187,11 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
                         }
                     }
 
-                    if exercises.isEmpty {
+                    if exercises.isEmpty && !isCustomWorkout {
                         LoggerEmptyState()
                     }
 
-                    Button {
-                        exerciseEditorRequest = ExerciseEditorRequest(mode: .add)
-                    } label: {
-                        Label("ADD EXERCISE", systemImage: "plus")
-                    }
-                    .buttonStyle(FWBSecondaryButtonStyle())
-                    .accessibilityIdentifier("workout.addExercise")
+                    customExerciseActions
 
                     WorkoutSessionSummary(
                         entryStyle: entryStyle,
@@ -431,6 +441,37 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
 
     private var isCustomWorkout: Bool {
         workout.format.lowercased() == "custom"
+    }
+
+    private var customWorkoutFormatBinding: Binding<CustomWorkoutFormat> {
+        Binding(
+            get: { customWorkoutFormat },
+            set: { updateCustomWorkoutFormat($0) }
+        )
+    }
+
+    @ViewBuilder
+    private var customExerciseActions: some View {
+        if isCustomWorkout {
+            CustomExerciseNameComposer(
+                suggestions: suggestionNames,
+                format: customWorkoutFormat
+            ) { exerciseName, placement in
+                insertCustomExercise(
+                    code: nextAddedExerciseCode(),
+                    name: exerciseName,
+                    placement: placement
+                )
+            }
+        } else {
+            Button {
+                exerciseEditorRequest = ExerciseEditorRequest(mode: .add(.currentGroup))
+            } label: {
+                Label("ADD EXERCISE", systemImage: "plus")
+            }
+            .buttonStyle(FWBSecondaryButtonStyle())
+            .accessibilityIdentifier("workout.addExercise")
+        }
     }
 
     private var entryStyle: WorkoutEntryStyle {
@@ -1045,18 +1086,29 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
             copiedDraftIDs.subtract(drafts.filter { matches($0, exercise) }.map(\.id))
             drafts.removeAll { matches($0, exercise) }
             groupAssignments.removeValue(forKey: exercise.id)
-            groupAssignments = WorkoutSequencePlanner.normalizedAssignments(
-                exercises: exercises,
-                assignments: groupAssignments
-            )
+            if isCustomWorkout && customWorkoutFormat == .superset {
+                groupAssignments = WorkoutSequencePlanner.customAssignments(
+                    for: .superset,
+                    exercises: exercises
+                )
+            } else if !isCustomWorkout || customWorkoutFormat == .single {
+                groupAssignments = WorkoutSequencePlanner.normalizedAssignments(
+                    exercises: exercises,
+                    assignments: groupAssignments
+                )
+            }
             substitutionOriginals.removeValue(forKey: exercise.code)
         }
     }
 
     private func applyExerciseEdit(_ request: ExerciseEditorRequest, exerciseName: String) {
         switch request.mode {
-        case .add:
-            insertCustomExercise(code: nextAddedExerciseCode(), name: exerciseName)
+        case .add(let placement):
+            insertCustomExercise(
+                code: nextAddedExerciseCode(),
+                name: exerciseName,
+                placement: placement
+            )
         case .substitute(let exercise):
             substituteExercise(exercise, with: exerciseName)
         }
@@ -1071,7 +1123,11 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
         return String(format: "ADD%02d", (currentNumbers.max() ?? 0) + 1)
     }
 
-    private func insertCustomExercise(code: String, name: String) {
+    private func insertCustomExercise(
+        code: String,
+        name: String,
+        placement: CustomExercisePlacement
+    ) {
         let approvedExercise = approvedExercise(matching: name)
         let resolvedName = (approvedExercise?.name ?? name).fwbTitleCased
         let template = suggestedExercises.first {
@@ -1087,9 +1143,73 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
             video: template?.video ?? ""
         )
         exercises.append(exercise)
-        drafts.append(contentsOf: (1...3).map {
-            WorkoutSetDraft(exercise: exercise, setNumber: $0)
-        })
+        drafts.append(WorkoutSetDraft(exercise: exercise, setNumber: 1))
+
+        guard isCustomWorkout else { return }
+        switch customWorkoutFormat {
+        case .single:
+            groupAssignments.removeValue(forKey: exercise.id)
+        case .superset:
+            groupAssignments = WorkoutSequencePlanner.customAssignments(
+                for: .superset,
+                exercises: exercises
+            )
+        case .circuit:
+            let assignment: WorkoutGroupAssignment
+            if placement == .newCircuit {
+                assignment = WorkoutSequencePlanner.nextCustomCircuitAssignment(
+                    assignments: groupAssignments
+                )
+            } else if let lastExercise = exercises.dropLast().last,
+                      let currentAssignment = groupAssignments[lastExercise.id],
+                      currentAssignment.kind == .circuit {
+                assignment = currentAssignment
+            } else {
+                assignment = WorkoutSequencePlanner.nextCustomCircuitAssignment(
+                    assignments: groupAssignments
+                )
+                if let lastExercise = exercises.dropLast().last {
+                    groupAssignments[lastExercise.id] = assignment
+                }
+            }
+            groupAssignments[exercise.id] = assignment
+        }
+    }
+
+    private func updateCustomWorkoutFormat(_ format: CustomWorkoutFormat) {
+        guard isCustomWorkout else { return }
+        customWorkoutFormat = format
+        Self.saveCustomWorkoutFormat(format, for: clientEmail)
+        withAnimation(.easeInOut(duration: 0.22)) {
+            groupAssignments = WorkoutSequencePlanner.customAssignments(
+                for: format,
+                exercises: exercises
+            )
+        }
+    }
+
+    private static func savedCustomWorkoutFormat(for clientEmail: String) -> CustomWorkoutFormat {
+        let rawValue = UserDefaults.standard.string(
+            forKey: customWorkoutFormatPreferenceKey(for: clientEmail)
+        )
+        return CustomWorkoutFormat(rawValue: rawValue ?? "") ?? .single
+    }
+
+    private static func saveCustomWorkoutFormat(
+        _ format: CustomWorkoutFormat,
+        for clientEmail: String
+    ) {
+        UserDefaults.standard.set(
+            format.rawValue,
+            forKey: customWorkoutFormatPreferenceKey(for: clientEmail)
+        )
+    }
+
+    private static func customWorkoutFormatPreferenceKey(for clientEmail: String) -> String {
+        let normalizedEmail = clientEmail
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .lowercased()
+        return "fwb.customWorkout.format.\(normalizedEmail)"
     }
 
     private func substituteExercise(_ exercise: Exercise, with name: String) {
@@ -1312,10 +1432,16 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
             baseRemoteUpdatedAt = recovered.baseRemoteUpdatedAt ?? baseRemoteUpdatedAt
             exercises = recovered.restoredExercises
             drafts = recovered.restoredDrafts
-            let recoveredAssignments = WorkoutSequencePlanner.normalizedAssignments(
-                exercises: exercises,
-                assignments: recovered.restoredGroupAssignments
-            )
+            let validExerciseIDs = Set(exercises.map(\.id))
+            let validRecoveredAssignments = recovered.restoredGroupAssignments.filter {
+                validExerciseIDs.contains($0.key)
+            }
+            let recoveredAssignments = isCustomWorkout
+                ? validRecoveredAssignments
+                : WorkoutSequencePlanner.normalizedAssignments(
+                    exercises: exercises,
+                    assignments: validRecoveredAssignments
+                )
             groupAssignments = recoveredAssignments.isEmpty
                 ? WorkoutSequencePlanner.inferredAssignments(
                     for: Workout(
@@ -1338,6 +1464,18 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
             }
 
             restoredPersistenceToken = draftPersistenceToken
+        }
+
+        if isCustomWorkout {
+            if let restoredFormat = WorkoutSequencePlanner.customFormat(from: groupAssignments) {
+                customWorkoutFormat = restoredFormat
+                Self.saveCustomWorkoutFormat(restoredFormat, for: clientEmail)
+            } else {
+                groupAssignments = WorkoutSequencePlanner.customAssignments(
+                    for: customWorkoutFormat,
+                    exercises: exercises
+                )
+            }
         }
     }
 
@@ -1557,6 +1695,289 @@ private struct GuidedSequenceBanner: View {
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Next, \(step.exerciseName), round \(step.round) of \(step.roundCount), exercise \(step.position) of \(step.exerciseCount)")
         .accessibilityIdentifier("workout.guidedSequence")
+    }
+}
+
+private struct CustomExerciseNameComposer: View {
+    let suggestions: [String]
+    let format: CustomWorkoutFormat
+    let onAdd: (String, CustomExercisePlacement) -> Void
+
+    @State private var exerciseName = ""
+    @State private var placement: CustomExercisePlacement = .currentGroup
+    @FocusState private var isFocused: Bool
+
+    private var trimmedExerciseName: String {
+        exerciseName.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var matches: [String] {
+        guard !trimmedExerciseName.isEmpty else { return [] }
+        return ExerciseSuggestionLibrary.matches(
+            query: trimmedExerciseName,
+            within: suggestions
+        )
+    }
+
+    private var hasExactMatch: Bool {
+        suggestions.contains {
+            $0.caseInsensitiveCompare(trimmedExerciseName) == .orderedSame
+        }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("EXERCISE NAME")
+                    .font(.headline.weight(.black))
+                    .fontWidth(.condensed)
+                    .foregroundStyle(Color.fwbWarmWhite)
+                Text("Start typing to see suggestions, or enter your own exercise name.")
+                    .font(.footnote)
+                    .foregroundStyle(Color.fwbMuted)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            if format == .circuit {
+                HStack(spacing: 8) {
+                    placementButton(
+                        title: "CURRENT CIRCUIT",
+                        systemImage: "plus",
+                        value: .currentGroup
+                    )
+                    placementButton(
+                        title: "NEW CIRCUIT",
+                        systemImage: "plus.rectangle.on.rectangle",
+                        value: .newCircuit
+                    )
+                }
+            }
+
+            HStack(spacing: 10) {
+                Image(systemName: "magnifyingglass")
+                    .foregroundStyle(Color.fwbLime)
+                TextField("Type an exercise name", text: $exerciseName)
+                    .textInputAutocapitalization(.words)
+                    .autocorrectionDisabled()
+                    .submitLabel(.done)
+                    .focused($isFocused)
+                    .foregroundStyle(Color.fwbWarmWhite)
+                    .tint(Color.fwbLime)
+                    .onSubmit { addExercise(named: trimmedExerciseName) }
+                    .accessibilityIdentifier("customWorkout.exerciseName")
+
+                if !exerciseName.isEmpty {
+                    Button {
+                        exerciseName = ""
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundStyle(Color.fwbMuted)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Clear exercise name")
+                }
+            }
+            .padding(.horizontal, 14)
+            .frame(minHeight: 50)
+            .background(Color.fwbSurface, in: Rectangle())
+            .overlay { Rectangle().stroke(Color.fwbLine, lineWidth: 1) }
+
+            if isFocused && !trimmedExerciseName.isEmpty {
+                VStack(spacing: 0) {
+                    ForEach(matches, id: \.self) { suggestion in
+                        suggestionButton(suggestion)
+                        if suggestion != matches.last || !hasExactMatch {
+                            FWBRule()
+                        }
+                    }
+
+                    if !hasExactMatch {
+                        Button {
+                            addExercise(named: trimmedExerciseName)
+                        } label: {
+                            HStack(spacing: 10) {
+                                Image(systemName: "pencil.line")
+                                    .foregroundStyle(Color.fwbLime)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("ADD MANUAL EXERCISE")
+                                        .font(.caption.weight(.black))
+                                        .tracking(0.45)
+                                        .foregroundStyle(Color.fwbMuted)
+                                    Text(trimmedExerciseName.fwbTitleCased)
+                                        .font(.subheadline.weight(.bold))
+                                        .foregroundStyle(Color.fwbWarmWhite)
+                                }
+                                Spacer(minLength: 8)
+                                Image(systemName: "plus")
+                                    .font(.footnote.weight(.black))
+                                    .foregroundStyle(Color.fwbLime)
+                            }
+                            .padding(.horizontal, 12)
+                            .frame(minHeight: 50)
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("Add \(trimmedExerciseName) as a manual exercise")
+                        .accessibilityIdentifier("customWorkout.addManualExercise")
+                    }
+                }
+                .background(Color.fwbSurface, in: Rectangle())
+                .overlay { Rectangle().stroke(Color.fwbLine, lineWidth: 1) }
+                .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .fwbCard()
+        .animation(.easeOut(duration: 0.16), value: matches)
+        .onChange(of: format) { nextFormat in
+            if nextFormat != .circuit {
+                placement = .currentGroup
+            }
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("customWorkout.exerciseComposer")
+    }
+
+    private func placementButton(
+        title: String,
+        systemImage: String,
+        value: CustomExercisePlacement
+    ) -> some View {
+        Button {
+            placement = value
+            isFocused = true
+        } label: {
+            Label(title, systemImage: systemImage)
+                .font(.caption.weight(.black))
+                .fontWidth(.condensed)
+                .foregroundStyle(placement == value ? Color.black : Color.fwbWarmWhite)
+                .frame(maxWidth: .infinity, minHeight: 42)
+                .background(placement == value ? Color.fwbAccentFill : Color.fwbSurface)
+                .overlay {
+                    Rectangle().stroke(placement == value ? Color.fwbLime : Color.fwbLine, lineWidth: 1)
+                }
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(placement == value ? .isSelected : [])
+    }
+
+    private func suggestionButton(_ suggestion: String) -> some View {
+        Button {
+            addExercise(named: suggestion)
+        } label: {
+            HStack(spacing: 10) {
+                Image(systemName: "figure.strengthtraining.traditional")
+                    .foregroundStyle(Color.fwbLime)
+                Text(suggestion.fwbTitleCased)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Color.fwbWarmWhite)
+                    .multilineTextAlignment(.leading)
+                Spacer(minLength: 8)
+                Image(systemName: "plus")
+                    .font(.footnote.weight(.black))
+                    .foregroundStyle(Color.fwbLime)
+            }
+            .padding(.horizontal, 12)
+            .frame(minHeight: 46)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Add \(suggestion)")
+        .accessibilityIdentifier("customWorkout.suggestion.\(suggestionIdentifier(suggestion))")
+    }
+
+    private func addExercise(named name: String) {
+        let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedName.isEmpty else { return }
+        onAdd(trimmedName, placement)
+        exerciseName = ""
+        placement = .currentGroup
+        isFocused = true
+    }
+
+    private func suggestionIdentifier(_ suggestion: String) -> String {
+        suggestion
+            .lowercased()
+            .replacingOccurrences(of: "[^a-z0-9]+", with: "-", options: .regularExpression)
+            .trimmingCharacters(in: CharacterSet(charactersIn: "-"))
+    }
+}
+
+private struct CustomWorkoutFormatPicker: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    @Binding var selection: CustomWorkoutFormat
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("CHOOSE A FORMAT")
+                    .font(.headline.weight(.black))
+                    .fontWidth(.condensed)
+                    .foregroundStyle(Color.fwbWarmWhite)
+                Text("Applies to this custom workout")
+                    .font(.subheadline)
+                    .foregroundStyle(Color.fwbMuted)
+            }
+
+            Group {
+                if dynamicTypeSize.isAccessibilitySize {
+                    VStack(spacing: 8) {
+                        formatButtons
+                    }
+                } else {
+                    HStack(spacing: 8) {
+                        formatButtons
+                    }
+                }
+            }
+
+            Label(selection.guide, systemImage: selection.systemImage)
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(Color.fwbMuted)
+                .fixedSize(horizontal: false, vertical: true)
+                .contentTransition(.opacity)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .fwbCard()
+        .animation(.easeInOut(duration: 0.2), value: selection)
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("customWorkout.formatPicker")
+    }
+
+    @ViewBuilder
+    private var formatButtons: some View {
+        ForEach(CustomWorkoutFormat.allCases) { format in
+            Button {
+                selection = format
+            } label: {
+                VStack(spacing: 7) {
+                    Image(systemName: format.systemImage)
+                        .font(.headline.weight(.bold))
+                    Text(format.title.uppercased())
+                        .font(.caption.weight(.black))
+                        .fontWidth(.condensed)
+                        .lineLimit(2)
+                        .minimumScaleFactor(0.8)
+                        .multilineTextAlignment(.center)
+                }
+                .foregroundStyle(selection == format ? Color.black : Color.fwbWarmWhite)
+                .frame(maxWidth: .infinity)
+                .frame(minHeight: dynamicTypeSize.isAccessibilitySize ? 64 : 70)
+                .padding(.horizontal, 6)
+                .background(selection == format ? Color.fwbAccentFill : Color.fwbSurface)
+                .overlay {
+                    Rectangle()
+                        .stroke(selection == format ? Color.fwbLime : Color.fwbLine, lineWidth: 1)
+                }
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(format.title)
+            .accessibilityValue(selection == format ? "Selected" : "Not selected")
+            .accessibilityHint(format.guide)
+            .accessibilityAddTraits(selection == format ? .isSelected : [])
+            .accessibilityIdentifier("customWorkout.format.\(format.rawValue)")
+        }
     }
 }
 
@@ -3775,7 +4196,8 @@ private struct ExerciseNameAutocompleteField: View {
     @FocusState private var isFocused: Bool
 
     private var matches: [String] {
-        ExerciseSuggestionLibrary.matches(query: text, within: suggestions)
+        guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return [] }
+        return ExerciseSuggestionLibrary.matches(query: text, within: suggestions)
     }
 
     var body: some View {
