@@ -182,6 +182,7 @@ struct CardioLoggingView<WorkoutSelector: View>: View {
                     .frame(minHeight: 50)
                     .background(Color.fwbSurface, in: Rectangle())
                     .overlay { Rectangle().stroke(Color.fwbLine, lineWidth: 1) }
+                    .accessibilityLabel("Cardio type")
                     .accessibilityIdentifier("cardio.type")
 
                 ScrollView(.horizontal, showsIndicators: false) {
@@ -257,6 +258,7 @@ struct CardioLoggingView<WorkoutSelector: View>: View {
                     .padding(14)
                     .background(Color.fwbSurface, in: Rectangle())
                     .overlay { Rectangle().stroke(Color.fwbLine, lineWidth: 1) }
+                    .accessibilityLabel("Cardio notes")
                     .accessibilityIdentifier("cardio.notes")
             }
         }
@@ -647,6 +649,7 @@ private struct CardioNumberField: View {
                     .font(.subheadline.weight(.bold))
                     .foregroundStyle(Color.fwbWarmWhite)
                     .tint(Color.fwbLime)
+                    .accessibilityLabel("\(title.capitalized), \(suffix)")
                 if !value.isEmpty {
                     Text(suffix)
                         .font(.footnote.weight(.bold))

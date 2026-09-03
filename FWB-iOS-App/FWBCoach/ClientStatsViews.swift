@@ -1220,6 +1220,8 @@ private struct MeasurementEntrySheet: View {
                             .padding(14)
                             .background(Color.fwbSurface, in: Rectangle())
                             .overlay { Rectangle().stroke(Color.fwbLine, lineWidth: 1) }
+                            .accessibilityLabel("Progress note")
+                            .accessibilityIdentifier("stats.measurement.note")
                     }
 
                 if let message = store.message, message.contains("Enter at least") || message.contains("could not") {
@@ -1265,6 +1267,10 @@ private struct MeasurementEntrySheet: View {
                 .keyboardType(.decimalPad)
                 .multilineTextAlignment(.trailing)
                 .frame(minWidth: 56, maxWidth: 90)
+                .accessibilityLabel("\(title), \(unit)")
+                .accessibilityIdentifier(
+                    "stats.measurement.\(title.lowercased().replacingOccurrences(of: " ", with: "-"))"
+                )
             Text(unit)
                 .font(.footnote.weight(.bold))
                 .foregroundStyle(Color.fwbMuted)

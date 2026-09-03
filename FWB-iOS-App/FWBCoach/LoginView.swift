@@ -77,6 +77,7 @@ struct LoginView: View {
                     .focused($focusedField, equals: .email)
                     .submitLabel(.next)
                     .onSubmit { focusedField = .password }
+                    .accessibilityLabel("Email")
                     .accessibilityIdentifier("login.email")
 
                 SecureField("Password", text: $password)
@@ -84,6 +85,7 @@ struct LoginView: View {
                     .focused($focusedField, equals: .password)
                     .submitLabel(.go)
                     .onSubmit { signIn() }
+                    .accessibilityLabel("Password")
                     .accessibilityIdentifier("login.password")
             }
             .textFieldStyle(FWBTextFieldStyle())
