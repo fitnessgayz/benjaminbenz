@@ -2769,6 +2769,32 @@ function exerciseCardRows(exercises, workoutTitle, openMode = "first", workoutFo
   }).join("");
 }
 
+function assignedWorkoutCarouselMarkup(exercises, workoutTitle, workoutFocus, format, groupIndex = 0, startIndex = 0) {
+  const label = format === "superset" ? `Superset ${groupIndex + 1}` : "Circuit";
+
+  return `
+    <section
+      class="custom-workout-carousel assigned-workout-carousel"
+      data-custom-workout-carousel
+      data-assigned-workout-carousel
+      data-custom-workout-group="${groupIndex}"
+      data-custom-workout-format="${escapeHtml(format)}"
+      aria-label="${escapeHtml(label)} exercise carousel"
+    >
+      <div class="custom-workout-carousel-heading" data-custom-workout-carousel-status aria-live="polite"></div>
+      <div class="workout-app-list custom-workout-list assigned-workout-carousel-list" data-custom-workout-list data-custom-workout-format="${escapeHtml(format)}" role="list" aria-label="${escapeHtml(label)} exercises" tabindex="0">
+        ${exercises.length > 0 ? exerciseCardRows(exercises, workoutTitle, "all", workoutFocus, { format, startIndex }) : ""}
+      </div>
+      <div class="custom-workout-carousel-footer" data-custom-workout-carousel-controls hidden>
+        <button class="custom-workout-carousel-arrow" type="button" data-custom-workout-carousel-previous aria-label="Previous exercise">←</button>
+        <div class="custom-workout-carousel-dots" data-custom-workout-carousel-dots aria-label="Choose exercise"></div>
+        <button class="custom-workout-carousel-arrow" type="button" data-custom-workout-carousel-next aria-label="Next exercise">→</button>
+      </div>
+      <p class="custom-workout-carousel-cue" data-custom-workout-carousel-cue hidden></p>
+    </section>
+  `;
+}
+
 function groupKeyForExercise(exercise, index) {
   const match = String(exercise.code || "").match(/^([A-Za-z]+)/);
 
@@ -4338,7 +4364,7 @@ function supersetRows(workout, workoutTitle) {
   const groups = groupedExercises(workout.exercises || []);
   let exerciseOffset = 0;
 
-  return groups.map((group) => {
+  return groups.map((group, groupIndex) => {
     const startIndex = exerciseOffset;
     exerciseOffset += group.exercises.length;
 
@@ -4347,10 +4373,14 @@ function supersetRows(workout, workoutTitle) {
         <div class="compact-static-group-card">
           ${compactWorkoutGroupOverview(group, group.exercises.length > 1 ? "superset" : "single")}
         </div>
-        ${exerciseCardRows(group.exercises, workoutTitle, "all", workout.focus, {
-          format: group.exercises.length > 1 ? "superset" : "single",
+        ${assignedWorkoutCarouselMarkup(
+          group.exercises,
+          workoutTitle,
+          workout.focus,
+          group.exercises.length > 1 ? "superset" : "single",
+          groupIndex,
           startIndex
-        })}
+        )}
       </section>
     `;
   }).join("");
@@ -4365,7 +4395,7 @@ function circuitRows(workout, workoutTitle) {
       <div class="compact-static-group-card">
         ${compactWorkoutGroupOverview(group, "circuit")}
       </div>
-      ${exerciseCardRows(exercises, workoutTitle, "all", workout.focus, { format: "circuit" })}
+      ${assignedWorkoutCarouselMarkup(exercises, workoutTitle, workout.focus, "circuit")}
     </section>
   `;
 }
@@ -4633,9 +4663,14 @@ function customWorkoutCarouselMeta(format, index, total, groupIndex = 0) {
 }
 
 function renderCustomWorkoutCarousel(carousel) {
-  const panel = carousel?.closest(".client-workout-panel-custom");
+  const panel = carousel?.closest(".client-workout-panel-custom, .client-workout-panel-assigned");
   const cards = customWorkoutCarouselCards(carousel);
-  const format = normalizeCustomWorkoutFormat(panel?.dataset.customWorkoutFormat || activeCustomWorkoutFormat);
+  const format = normalizeCustomWorkoutFormat(
+    carousel?.dataset.customWorkoutFormat ||
+    panel?.dataset.customWorkoutFormat ||
+    panel?.dataset.assignedWorkoutFormat ||
+    activeCustomWorkoutFormat
+  );
   const groupIndex = Number(carousel?.dataset.customWorkoutGroup) || 0;
   const mobile = window.matchMedia("(max-width: 760px)").matches;
   const enabled = mobile && format !== "single" && cards.length > 1;
@@ -4929,8 +4964,20 @@ function syncCustomWorkoutCarousels() {
       document.querySelectorAll(".client-workout-panel-custom").forEach((panel) => {
         syncCustomWorkoutCarousel(panel, { scrollToActive: true, instant: true });
       });
+      syncAssignedWorkoutCarousels();
     });
   }
+}
+
+function syncAssignedWorkoutCarousels(panel = null) {
+  const panels = panel ? [panel] : Array.from(document.querySelectorAll(".client-workout-panel-assigned"));
+
+  panels.forEach((assignedPanel) => {
+    assignedPanel.querySelectorAll("[data-assigned-workout-carousel]").forEach((carousel) => {
+      bindCustomWorkoutCarousel(carousel);
+      renderCustomWorkoutCarousel(carousel);
+    });
+  });
 }
 
 function customWorkoutPanelMarkup(index) {
@@ -5187,6 +5234,7 @@ function renderClientWorkoutTabs(workouts = []) {
   renderClientHomeSummary();
   syncWorkoutStartButtons();
   syncCustomWorkoutCarousels();
+  syncAssignedWorkoutCarousels();
 }
 
 function logKey(workoutTitle, exerciseCode) {
@@ -7072,6 +7120,7 @@ function removeExerciseLog(logElement) {
   syncCustomWorkoutCarousel(customPanel, { scrollToActive: true, instant: true });
   persistCustomWorkoutDraftFromPanel(customPanel);
   syncAssignedWorkoutMarkers(assignedPanel);
+  syncAssignedWorkoutCarousels(assignedPanel);
 }
 
 function handleWorkoutInteractions() {
@@ -7463,6 +7512,29 @@ function handleWorkoutInteractions() {
         const nextCode = nextAssignedExerciseCode(list);
         const nextIndex = list.querySelectorAll("[data-assigned-exercise-card]").length;
         const format = normalizeCustomWorkoutFormat(panel.dataset.assignedWorkoutFormat || "single");
+        const workoutTitle = panel.querySelector(".panel-heading h2")?.textContent || "Workout";
+        let targetList = list;
+
+        if (format === "circuit") {
+          targetList = panel.querySelector("[data-assigned-workout-carousel] [data-custom-workout-list]") || list;
+        } else if (format === "superset") {
+          let carousels = Array.from(panel.querySelectorAll("[data-assigned-workout-carousel]"));
+          let targetCarousel = carousels[carousels.length - 1];
+
+          if (!targetCarousel || customWorkoutCarouselCards(targetCarousel).length >= 2) {
+            const groupIndex = carousels.length;
+            addAssignedExerciseButton.insertAdjacentHTML("beforebegin", `
+              <section class="workout-format-group compact-workout-group superset-group client-added-workout-group">
+                ${assignedWorkoutCarouselMarkup([], workoutTitle, "", "superset", groupIndex, nextIndex)}
+              </section>
+            `);
+            carousels = Array.from(panel.querySelectorAll("[data-assigned-workout-carousel]"));
+            targetCarousel = carousels[carousels.length - 1];
+          }
+
+          targetList = targetCarousel?.querySelector("[data-custom-workout-list]") || list;
+        }
+
         const cardMarkup = exerciseCard({
           code: nextCode,
           name: "",
@@ -7470,13 +7542,13 @@ function handleWorkoutInteractions() {
           rest: "",
           clientAdded: true,
           clientSetCount: 1
-        }, panel.querySelector(".panel-heading h2")?.textContent || "Workout", true, "", {
+        }, workoutTitle, true, "", {
           exerciseIndex: nextIndex,
           format
         });
 
-        addAssignedExerciseButton.insertAdjacentHTML("beforebegin", cardMarkup);
-        const newCard = addAssignedExerciseButton.previousElementSibling;
+        targetList.insertAdjacentHTML("beforeend", cardMarkup);
+        const newCard = targetList.querySelector("[data-assigned-exercise-card]:last-child");
         const newLogElement = newCard?.querySelector("[data-exercise-log]");
 
         if (newLogElement) {
@@ -7490,6 +7562,11 @@ function handleWorkoutInteractions() {
         }
 
         syncAssignedWorkoutMarkers(panel);
+        syncAssignedWorkoutCarousels(panel);
+        const targetCarousel = newCard?.closest("[data-assigned-workout-carousel]");
+        if (targetCarousel) {
+          moveCustomWorkoutCarousel(targetCarousel, customWorkoutCarouselCards(targetCarousel).indexOf(newCard));
+        }
       }
     }
   });
