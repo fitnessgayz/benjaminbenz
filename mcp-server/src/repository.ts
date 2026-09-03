@@ -76,6 +76,16 @@ type LiveWorkoutLogRow = {
   created_at?: string;
 };
 
+type LiveProgressNoteRow = {
+  id: string;
+  occurred_on: string;
+  category: ProgressCategory;
+  metric_name: string | null;
+  numeric_value: number | string | null;
+  unit: string | null;
+  note: string;
+};
+
 type LiveCheckInRow = {
   id: string;
   occurred_on: string;
@@ -102,6 +112,16 @@ function numberOrNull(value: number | string | null): number | null {
   if (value === null || value === "") return null;
   const parsed = typeof value === "number" ? value : Number(value);
   return Number.isFinite(parsed) ? parsed : null;
+}
+
+// RLS policies on client_email compare case-insensitively (lower(client_email)),
+// but client_email is business-entered data and isn't guaranteed to be stored
+// lowercase. Match that convention here so a client whose stored casing differs
+// from their login email can still see and write their own rows. `ilike` is used
+// instead of `eq` for this, with `%`/`_` escaped so the email is matched literally
+// rather than as a wildcard pattern.
+function emailFilterValue(email: string): string {
+  return email.replace(/[\\%_]/g, (char) => `\\${char}`);
 }
 
 function workoutLogEntry(row: LiveWorkoutLogRow): WorkoutLogEntry {
@@ -272,6 +292,18 @@ export function mapWorkoutProgress(rows: LiveWorkoutLogRow[]): ProgressEntry[] {
   });
 }
 
+export function mapProgressNotes(rows: LiveProgressNoteRow[]): ProgressEntry[] {
+  return rows.map((row) => ({
+    id: row.id,
+    occurred_on: row.occurred_on,
+    category: row.category,
+    metric_name: row.metric_name,
+    numeric_value: numberOrNull(row.numeric_value),
+    unit: row.unit,
+    note: row.note,
+  }));
+}
+
 export function mapCheckIns(rows: LiveCheckInRow[]): ProgressEntry[] {
   return rows.map((row) => {
     const ratings = [
@@ -309,7 +341,7 @@ export class SupabaseCoachingRepository implements CoachingRepository {
       .select(
         "id, client_name, program_title, program_summary, fitness_goal, focus_target, coach_note_title, coach_note_body, workouts, created_at, updated_at",
       )
-      .eq("client_email", this.clientEmail)
+      .ilike("client_email", emailFilterValue(this.clientEmail))
       .eq("active", true)
       .eq("client_archived", false)
       .order("updated_at", { ascending: false })
@@ -343,28 +375,28 @@ export class SupabaseCoachingRepository implements CoachingRepository {
       this.client
         .from("client_progress")
         .select("id, entry_date, bodyweight, bodyfat, goal_note")
-        .eq("client_email", this.clientEmail)
+        .ilike("client_email", emailFilterValue(this.clientEmail))
         .gte("entry_date", startDate)
         .order("entry_date", { ascending: false })
         .limit(100),
       this.client
         .from("client_workout_logs")
         .select("id, entry_date, workout_title, exercise_name, set_number, weight_used, reps, notes")
-        .eq("client_email", this.clientEmail)
+        .ilike("client_email", emailFilterValue(this.clientEmail))
         .gte("entry_date", startDate)
         .order("entry_date", { ascending: false })
         .limit(100),
       this.client
         .from("client_progress_notes")
         .select("id, occurred_on, category, metric_name, numeric_value, unit, note")
-        .eq("client_email", this.clientEmail)
+        .ilike("client_email", emailFilterValue(this.clientEmail))
         .gte("occurred_on", startDate)
         .order("occurred_on", { ascending: false })
         .limit(100),
       this.client
         .from("client_check_ins")
         .select("id, occurred_on, energy, sleep_hours, stress, soreness, win, challenge, note")
-        .eq("client_email", this.clientEmail)
+        .ilike("client_email", emailFilterValue(this.clientEmail))
         .gte("occurred_on", startDate)
         .order("occurred_on", { ascending: false })
         .limit(100),
@@ -376,7 +408,7 @@ export class SupabaseCoachingRepository implements CoachingRepository {
     const entries = [
       ...mapBodyProgress((bodyResult.data ?? []) as LiveBodyProgressRow[]),
       ...mapWorkoutProgress((workoutResult.data ?? []) as LiveWorkoutLogRow[]),
-      ...((noteResult.data ?? []) as ProgressEntry[]),
+      ...mapProgressNotes((noteResult.data ?? []) as LiveProgressNoteRow[]),
       ...mapCheckIns((checkInResult.data ?? []) as LiveCheckInRow[]),
     ]
       .filter((entry) => !category || entry.category === category)
@@ -421,14 +453,15 @@ export class SupabaseCoachingRepository implements CoachingRepository {
       })
       .select("id, occurred_on, category, metric_name, numeric_value, unit, note")
       .single();
-    return requireData(data as ProgressEntry | null, error);
+    const row = requireData(data as LiveProgressNoteRow | null, error);
+    return { ...row, numeric_value: numberOrNull(row.numeric_value) };
   }
 
   async recordWorkout(input: WorkoutInput): Promise<WorkoutLogEntry[]> {
     const existingResult = await this.client
       .from("client_workout_logs")
       .select("workout_title")
-      .eq("client_email", this.clientEmail)
+      .ilike("client_email", emailFilterValue(this.clientEmail))
       .eq("entry_date", input.occurredOn)
       .limit(200);
     if (existingResult.error) {
@@ -472,7 +505,7 @@ export class SupabaseCoachingRepository implements CoachingRepository {
       .select(
         "id, workout_session_id, entry_date, workout_title, exercise_code, exercise_name, set_number, weight_used, reps, notes, created_at",
       )
-      .eq("client_email", this.clientEmail)
+      .ilike("client_email", emailFilterValue(this.clientEmail))
       .eq("source", "mcp")
       .not("workout_session_id", "is", null)
       .order("created_at", { ascending: false })
@@ -489,9 +522,7 @@ export class SupabaseCoachingRepository implements CoachingRepository {
     const candidate = ((candidateData ?? []) as LiveWorkoutLogRow[]).find(
       (row) =>
         row.exercise_name.toLocaleLowerCase() === normalizedName &&
-        (!normalizedTitle ||
-          row.workout_title.toLocaleLowerCase() === normalizedTitle ||
-          row.workout_title.toLocaleLowerCase().startsWith(`${normalizedTitle} (`)) &&
+        (!normalizedTitle || row.workout_title.toLocaleLowerCase() === normalizedTitle) &&
         (input.setNumber === undefined || row.set_number === input.setNumber),
     );
     if (!candidate?.workout_session_id) {
@@ -506,7 +537,7 @@ export class SupabaseCoachingRepository implements CoachingRepository {
     let update = this.client
       .from("client_workout_logs")
       .update(changes)
-      .eq("client_email", this.clientEmail)
+      .ilike("client_email", emailFilterValue(this.clientEmail))
       .eq("workout_session_id", candidate.workout_session_id)
       .eq("exercise_name", candidate.exercise_name);
     if (input.setNumber !== undefined) update = update.eq("set_number", input.setNumber);
@@ -523,7 +554,7 @@ export class SupabaseCoachingRepository implements CoachingRepository {
     const { data: latest, error: latestError } = await this.client
       .from("client_workout_logs")
       .select("workout_session_id, entry_date, workout_title")
-      .eq("client_email", this.clientEmail)
+      .ilike("client_email", emailFilterValue(this.clientEmail))
       .eq("source", "mcp")
       .not("workout_session_id", "is", null)
       .order("created_at", { ascending: false })
@@ -537,7 +568,7 @@ export class SupabaseCoachingRepository implements CoachingRepository {
     const { data, error } = await this.client
       .from("client_workout_logs")
       .delete()
-      .eq("client_email", this.clientEmail)
+      .ilike("client_email", emailFilterValue(this.clientEmail))
       .eq("workout_session_id", latest.workout_session_id)
       .select("id");
     if (error) throw new Error(`Could not undo the last workout: ${error.message}`);
@@ -570,7 +601,7 @@ export class SupabaseCoachingRepository implements CoachingRepository {
     const { data, error } = await this.client
       .from("coach_requests")
       .select("id, request_type, urgency, message, status, created_at")
-      .eq("client_email", this.clientEmail)
+      .ilike("client_email", emailFilterValue(this.clientEmail))
       .in("status", ["open", "in_review"])
       .order("created_at", { ascending: false })
       .limit(20);

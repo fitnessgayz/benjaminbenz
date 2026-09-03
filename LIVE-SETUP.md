@@ -31,6 +31,14 @@ Set this secret in Supabase functions:
 COACH_ADMIN_EMAILS=benjaminbenz.fit@gmail.com
 ```
 
+To add another coach later, add their email to `COACH_ADMIN_EMAILS` above
+**and** insert it into the `public.coach_admins` table (the database's own
+admin check doesn't read the env var):
+
+```sql
+insert into public.coach_admins (email) values (lower('new-coach@example.com'));
+```
+
 The function already allows:
 
 - `https://benjaminbenz.com`

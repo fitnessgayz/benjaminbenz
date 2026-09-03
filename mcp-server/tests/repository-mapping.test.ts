@@ -5,6 +5,7 @@ import {
   mapBodyProgress,
   mapCheckIns,
   mapLiveProgram,
+  mapProgressNotes,
   mapWorkoutProgress,
   maskEmail,
 } from "../src/repository.js";
@@ -119,6 +120,22 @@ describe("live portal mapping", () => {
 
     expect(entry).toMatchObject({ numeric_value: null, unit: null, metric_name: "Push-up" });
     expect(entry?.note).toContain("Bodyweight");
+  });
+
+  it("coerces a numeric progress note value returned as a string by Postgres", () => {
+    const [entry] = mapProgressNotes([
+      {
+        id: "note-1",
+        occurred_on: "2026-08-12",
+        category: "strength",
+        metric_name: "squat_1rm",
+        numeric_value: "205",
+        unit: "lb",
+        note: "New PR",
+      },
+    ]);
+
+    expect(entry).toMatchObject({ numeric_value: 205, metric_name: "squat_1rm" });
   });
 
   it("summarizes a structured check-in without storing a conversation", () => {

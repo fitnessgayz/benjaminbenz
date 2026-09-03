@@ -4689,7 +4689,7 @@ function renderCustomWorkoutCarousel(carousel) {
   carousel.dataset.activeIndex = String(activeIndex);
   carousel.classList.toggle(
     "is-superset-complete",
-    format === "superset" && cards.length > 1 && cards[cards.length - 1].classList.contains("is-exercise-complete")
+    format === "superset" && cards.length > 1 && cards.every((card) => card.classList.contains("is-exercise-complete"))
   );
   carousel.classList.toggle(
     "is-circuit-complete",
