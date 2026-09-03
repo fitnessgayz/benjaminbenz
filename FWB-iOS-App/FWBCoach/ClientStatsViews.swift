@@ -1,4 +1,5 @@
 import Charts
+import OSLog
 import PhotosUI
 import Supabase
 import SwiftUI
@@ -41,7 +42,14 @@ struct ClientMeasurementEntry: Decodable, Identifiable, Equatable {
         bodyweight = try container.decodeIfPresent(Double.self, forKey: .bodyweight)
         bodyfat = try container.decodeIfPresent(Double.self, forKey: .bodyfat)
         muscleMass = try container.decodeIfPresent(Double.self, forKey: .muscleMass)
-        measurements = try container.decodeIfPresent([String: Double].self, forKey: .measurements) ?? [:]
+        // The web client stores unfilled tape-measurement fields as JSON null.
+        // Treat those as absent values while continuing to reject genuinely
+        // malformed (for example, string-valued) measurements.
+        let nullableMeasurements = try container.decodeIfPresent(
+            [String: Double?].self,
+            forKey: .measurements
+        ) ?? [:]
+        measurements = nullableMeasurements.compactMapValues { $0 }
         goalNote = try container.decodeIfPresent(String.self, forKey: .goalNote) ?? ""
         source = try container.decodeIfPresent(String.self, forKey: .source) ?? "legacy"
         sourceVersion = try container.decodeIfPresent(Int.self, forKey: .sourceVersion) ?? 0
@@ -206,12 +214,36 @@ struct ClientMeasurementDraft {
     }
 }
 
+enum ClientStatsErrorClassifier {
+    private static let connectivityCodes: Set<Int> = [
+        URLError.notConnectedToInternet.rawValue,
+        URLError.networkConnectionLost.rawValue,
+        URLError.dataNotAllowed.rawValue,
+        URLError.internationalRoamingOff.rawValue
+    ]
+
+    static func isConnectivityFailure(_ error: Error) -> Bool {
+        var candidate: NSError? = error as NSError
+        var inspected = Set<ObjectIdentifier>()
+
+        while let current = candidate, inspected.insert(ObjectIdentifier(current)).inserted {
+            if current.domain == NSURLErrorDomain, connectivityCodes.contains(current.code) {
+                return true
+            }
+            candidate = current.userInfo[NSUnderlyingErrorKey] as? NSError
+        }
+
+        return false
+    }
+}
+
 @MainActor
 final class ClientStatsStore: ObservableObject {
     enum LoadState: Equatable {
         case idle
         case loading
         case loaded
+        case offline(String)
         case failed(String)
     }
 
@@ -220,12 +252,36 @@ final class ClientStatsStore: ObservableObject {
     @Published private(set) var photos: [ClientProgressPhoto] = []
     @Published private(set) var isSavingMeasurement = false
     @Published private(set) var isUploadingPhoto = false
+    @Published private(set) var photoLoadError: String?
     @Published var message: String?
 
     private let client: SupabaseClient
+    private let measurementLoaderOverride: ((String) async throws -> [ClientMeasurementEntry])?
+    private let photoLoaderOverride: ((String) async throws -> [ClientProgressPhotoRecord])?
+    private let signedPhotoURLLoaderOverride: ((String) async throws -> URL)?
+    private let measurementSynchronizerOverride: ((PendingMeasurementMutation) async throws -> ClientMeasurementEntry?)?
+    private let retriesPendingMeasurements: Bool
+    private var hasLoadedOnce = false
 
-    init(client: SupabaseClient = AppConfiguration.supabase) {
+    private static let logger = Logger(
+        subsystem: "com.benjaminbenz.fwbcoach",
+        category: "ClientStats"
+    )
+
+    init(
+        client: SupabaseClient = AppConfiguration.supabase,
+        measurementLoader: ((String) async throws -> [ClientMeasurementEntry])? = nil,
+        photoLoader: ((String) async throws -> [ClientProgressPhotoRecord])? = nil,
+        signedPhotoURLLoader: ((String) async throws -> URL)? = nil,
+        measurementSynchronizer: ((PendingMeasurementMutation) async throws -> ClientMeasurementEntry?)? = nil,
+        retriesPendingMeasurements: Bool = true
+    ) {
         self.client = client
+        measurementLoaderOverride = measurementLoader
+        photoLoaderOverride = photoLoader
+        signedPhotoURLLoaderOverride = signedPhotoURLLoader
+        measurementSynchronizerOverride = measurementSynchronizer
+        self.retriesPendingMeasurements = retriesPendingMeasurements
     }
 
     func loadIfNeeded(email: String) async {
@@ -240,38 +296,44 @@ final class ClientStatsStore: ObservableObject {
             return
         }
 
+        let wasLoaded = hasLoadedOnce
         state = .loading
         message = nil
+        photoLoadError = nil
 
         do {
-            await retryPendingMeasurements(email: normalizedEmail)
-            let measurementRows = try await loadMeasurements(email: normalizedEmail)
-
-            let photoRows: [ClientProgressPhotoRecord] = try await client
-                .from("client_progress_photos")
-                .select("id,client_email,storage_path,captured_on,note")
-                .eq("client_email", value: normalizedEmail)
-                .order("captured_on", ascending: false)
-                .limit(100)
-                .execute()
-                .value
-
-            var signedPhotos: [ClientProgressPhoto] = []
-            for record in photoRows {
-                let signedURL = try? await client.storage
-                    .from(progressPhotosBucket)
-                    .createSignedURL(path: record.storagePath, expiresIn: 3_600)
-                signedPhotos.append(ClientProgressPhoto(record: record, signedURL: signedURL))
+            if retriesPendingMeasurements {
+                await retryPendingMeasurements(email: normalizedEmail)
             }
-
-            guard !Task.isCancelled else { return }
+            let measurementRows = try await loadMeasurements(email: normalizedEmail)
+            guard !Task.isCancelled else {
+                state = wasLoaded ? .loaded : .idle
+                return
+            }
             measurements = measurementRows
-            photos = signedPhotos
+            await loadPhotos(email: normalizedEmail)
+            guard !Task.isCancelled else {
+                state = wasLoaded ? .loaded : .idle
+                return
+            }
+            hasLoadedOnce = true
             state = .loaded
         } catch is CancellationError {
+            state = wasLoaded ? .loaded : .idle
             return
         } catch {
-            state = .failed("Your stats could not be loaded. Check your connection and try again.")
+            Self.logger.error("Stats load failed: \(String(describing: error), privacy: .private)")
+            let isOffline = ClientStatsErrorClassifier.isConnectivityFailure(error)
+            let failureMessage = isOffline
+                ? "You’re offline. Reconnect to load your latest stats."
+                : "Your stats could not be loaded. Try again. If this continues, contact support."
+
+            if wasLoaded {
+                state = .loaded
+                message = failureMessage
+            } else {
+                state = isOffline ? .offline(failureMessage) : .failed(failureMessage)
+            }
         }
     }
 
@@ -282,6 +344,10 @@ final class ClientStatsStore: ObservableObject {
         }
 
         let normalizedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard !normalizedEmail.isEmpty else {
+            message = "Your account email is missing. Sign in again before saving."
+            return false
+        }
         let entryDate = Self.apiDateFormatter.string(from: draft.entryDate)
         let existing = measurements.first { $0.entryDate == entryDate }
         var detailMeasurements = existing?.measurements ?? [:]
@@ -331,6 +397,12 @@ final class ClientStatsStore: ObservableObject {
         } catch is CancellationError {
             return false
         } catch {
+            guard ClientStatsErrorClassifier.isConnectivityFailure(error) else {
+                Self.logger.error("Measurement save failed: \(String(describing: error), privacy: .private)")
+                message = "Your measurements could not be saved. Try again. If this continues, contact support."
+                return false
+            }
+
             do {
                 try await ContinuityOutbox.shared.enqueue(mutation)
                 let local = ClientMeasurementEntry(id: existing?.id ?? mutation.id, mutation: mutation)
@@ -347,24 +419,69 @@ final class ClientStatsStore: ObservableObject {
     }
 
     private func loadMeasurements(email: String) async throws -> [ClientMeasurementEntry] {
+        if let measurementLoaderOverride {
+            return try await measurementLoaderOverride(email)
+        }
+
+        return try await client
+            .from("client_progress")
+            .select("id,client_email,entry_date,bodyweight,bodyfat,muscle_mass,measurements,goal_note,source,source_version,updated_at")
+            .eq("client_email", value: email)
+            .order("entry_date", ascending: false)
+            .limit(365)
+            .execute()
+            .value
+    }
+
+    private func loadPhotos(email: String) async {
         do {
-            return try await client
-                .from("client_progress")
-                .select("id,client_email,entry_date,bodyweight,bodyfat,muscle_mass,measurements,goal_note,source,source_version,updated_at")
-                .eq("client_email", value: email)
-                .order("entry_date", ascending: false)
-                .limit(365)
-                .execute()
-                .value
+            let photoRows: [ClientProgressPhotoRecord]
+            if let photoLoaderOverride {
+                photoRows = try await photoLoaderOverride(email)
+            } else {
+                photoRows = try await client
+                    .from("client_progress_photos")
+                    .select("id,client_email,storage_path,captured_on,note")
+                    .eq("client_email", value: email)
+                    .order("captured_on", ascending: false)
+                    .limit(100)
+                    .execute()
+                    .value
+            }
+
+            var signedPhotos: [ClientProgressPhoto] = []
+            var signedURLFailureCount = 0
+            for record in photoRows {
+                let signedURL: URL?
+                do {
+                    if let signedPhotoURLLoaderOverride {
+                        signedURL = try await signedPhotoURLLoaderOverride(record.storagePath)
+                    } else {
+                        signedURL = try await client.storage
+                            .from(progressPhotosBucket)
+                            .createSignedURL(path: record.storagePath, expiresIn: 3_600)
+                    }
+                } catch {
+                    signedURL = nil
+                    signedURLFailureCount += 1
+                    Self.logger.error("Progress photo URL creation failed: \(String(describing: error), privacy: .private)")
+                }
+                signedPhotos.append(ClientProgressPhoto(record: record, signedURL: signedURL))
+            }
+
+            photos = signedPhotos
+            if signedURLFailureCount > 0 {
+                photoLoadError = signedURLFailureCount == 1
+                    ? "One progress photo could not be opened. Try again."
+                    : "Some progress photos could not be opened. Try again."
+            }
+        } catch is CancellationError {
+            return
         } catch {
-            return try await client
-                .from("client_progress")
-                .select("id,client_email,entry_date,bodyweight,bodyfat,muscle_mass,measurements,goal_note")
-                .eq("client_email", value: email)
-                .order("entry_date", ascending: false)
-                .limit(365)
-                .execute()
-                .value
+            Self.logger.error("Progress photos load failed: \(String(describing: error), privacy: .private)")
+            photoLoadError = ClientStatsErrorClassifier.isConnectivityFailure(error)
+                ? "Progress photos are unavailable while you’re offline."
+                : "Progress photos could not be loaded. Try again."
         }
     }
 
@@ -380,6 +497,10 @@ final class ClientStatsStore: ObservableObject {
     }
 
     private func synchronizeMeasurement(_ mutation: PendingMeasurementMutation) async throws -> ClientMeasurementEntry? {
+        if let measurementSynchronizerOverride {
+            return try await measurementSynchronizerOverride(mutation)
+        }
+
         let currentRows = try await loadMeasurements(email: mutation.clientEmail)
         if let remote = currentRows.first(where: { $0.entryDate == mutation.entryDate }),
            let remoteUpdatedAt = remote.updatedAt,
@@ -511,7 +632,10 @@ final class ClientStatsStore: ObservableObject {
         let formatter = DateFormatter()
         formatter.calendar = Calendar(identifier: .gregorian)
         formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.timeZone = TimeZone(secondsFromGMT: 0)
+        // Postgres `date` values are calendar dates, not UTC instants. Parsing
+        // them in UTC and then formatting in the device zone shifts them back
+        // one day in the Americas.
+        formatter.timeZone = .autoupdatingCurrent
         formatter.dateFormat = "yyyy-MM-dd"
         return formatter
     }()
@@ -600,12 +724,23 @@ private struct ClientStatsPoint: Identifiable {
     var id: UUID { entry.id }
 }
 
+@MainActor
 struct ClientStatsView: View {
     let account: SignedInAccount
 
-    @StateObject private var store = ClientStatsStore()
+    @StateObject private var store: ClientStatsStore
     @State private var selectedMetric: ClientStatsMetric = .bodyweight
     @State private var presentedSheet: ClientStatsSheet?
+
+    init(account: SignedInAccount) {
+        self.account = account
+        _store = StateObject(wrappedValue: ClientStatsStore())
+    }
+
+    init(account: SignedInAccount, store: ClientStatsStore) {
+        self.account = account
+        _store = StateObject(wrappedValue: store)
+    }
 
     private var chartPoints: [ClientStatsPoint] {
         store.measurements.compactMap { entry in
@@ -626,6 +761,14 @@ struct ClientStatsView: View {
                     ProgressView("Loading client stats…")
                         .tint(.fwbLime)
                         .foregroundStyle(Color.fwbMuted)
+                case .offline(let message):
+                    StatsLoadErrorView(
+                        message: message,
+                        systemImage: "wifi.slash",
+                        accentColor: .fwbMuted
+                    ) {
+                        Task { await store.reload(email: account.email) }
+                    }
                 case .failed(let message):
                     StatsLoadErrorView(message: message) {
                         Task { await store.reload(email: account.email) }
@@ -697,7 +840,7 @@ struct ClientStatsView: View {
                 if let message = store.message {
                     Text(message)
                         .font(.footnote.weight(.semibold))
-                        .foregroundStyle(message.contains("could not") ? Color.fwbRed : Color.fwbLime)
+                        .foregroundStyle(statusColor(for: message))
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(12)
                         .background(Color.fwbCard, in: Rectangle())
@@ -727,28 +870,49 @@ struct ClientStatsView: View {
                 .foregroundStyle(Color.fwbLime)
             }
 
-            if store.photos.isEmpty {
-                Button {
-                    presentedSheet = .photo
-                } label: {
-                    VStack(spacing: 12) {
-                        Image(systemName: "photo.badge.plus")
-                            .font(.system(size: 30, weight: .semibold))
-                        Text("ADD YOUR FIRST PROGRESS PHOTO")
-                            .font(.subheadline.weight(.black))
-                            .fontWidth(.condensed)
-                        Text("Photos are private and visible only to your authenticated account and coach.")
-                            .font(.footnote)
-                            .foregroundStyle(Color.fwbMuted)
-                            .multilineTextAlignment(.center)
+            if let photoLoadError = store.photoLoadError {
+                HStack(alignment: .top, spacing: 10) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundStyle(Color.fwbRed)
+                    Text(photoLoadError)
+                        .font(.footnote.weight(.semibold))
+                        .foregroundStyle(Color.fwbMuted)
+                    Spacer(minLength: 8)
+                    Button("Retry") {
+                        Task { await store.reload(email: account.email) }
                     }
+                    .font(.footnote.weight(.black))
                     .foregroundStyle(Color.fwbLime)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 26)
-                    .background(Color.fwbCard, in: Rectangle())
-                    .overlay { Rectangle().stroke(Color.fwbLine, lineWidth: 1) }
                 }
-                .buttonStyle(.plain)
+                .padding(12)
+                .background(Color.fwbCard, in: Rectangle())
+                .overlay { Rectangle().stroke(Color.fwbLine, lineWidth: 1) }
+            }
+
+            if store.photos.isEmpty {
+                if store.photoLoadError == nil {
+                    Button {
+                        presentedSheet = .photo
+                    } label: {
+                        VStack(spacing: 12) {
+                            Image(systemName: "photo.badge.plus")
+                                .font(.system(size: 30, weight: .semibold))
+                            Text("ADD YOUR FIRST PROGRESS PHOTO")
+                                .font(.subheadline.weight(.black))
+                                .fontWidth(.condensed)
+                            Text("Photos are private and visible only to your authenticated account and coach.")
+                                .font(.footnote)
+                                .foregroundStyle(Color.fwbMuted)
+                                .multilineTextAlignment(.center)
+                        }
+                        .foregroundStyle(Color.fwbLime)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 26)
+                        .background(Color.fwbCard, in: Rectangle())
+                        .overlay { Rectangle().stroke(Color.fwbLine, lineWidth: 1) }
+                    }
+                    .buttonStyle(.plain)
+                }
             } else {
                 ScrollView(.horizontal, showsIndicators: false) {
                     LazyHStack(spacing: 12) {
@@ -758,6 +922,15 @@ struct ClientStatsView: View {
                     }
                 }
             }
+        }
+    }
+
+    private func statusColor(for message: String) -> Color {
+        switch message {
+        case "Measurements saved.", "Progress photo added.":
+            Color.fwbLime
+        default:
+            message.hasPrefix("Measurements saved on this iPhone") ? Color.fwbLime : Color.fwbRed
         }
     }
 
@@ -1287,13 +1460,15 @@ private struct ProgressPhotoEntrySheet: View {
 
 private struct StatsLoadErrorView: View {
     let message: String
+    var systemImage = "exclamationmark.triangle.fill"
+    var accentColor = Color.fwbRed
     let retry: () -> Void
 
     var body: some View {
         VStack(spacing: 16) {
-            Image(systemName: "exclamationmark.triangle.fill")
+            Image(systemName: systemImage)
                 .font(.largeTitle)
-                .foregroundStyle(Color.fwbRed)
+                .foregroundStyle(accentColor)
             Text(message)
                 .font(.subheadline)
                 .foregroundStyle(Color.fwbMuted)
@@ -1304,3 +1479,49 @@ private struct StatsLoadErrorView: View {
         .padding(24)
     }
 }
+
+#if DEBUG
+@MainActor
+struct ClientStatsSmokeHarness: View {
+    private let account = SignedInAccount(
+        id: UUID(uuidString: "c0a7f519-d71a-4d9f-bb4e-63a77e402dde")!,
+        email: "stats-smoke@example.invalid"
+    )
+    @StateObject private var store: ClientStatsStore
+
+    init() {
+        let initialMutation = PendingMeasurementMutation(
+            clientEmail: "stats-smoke@example.invalid",
+            entryDate: "2026-08-25",
+            bodyweight: 160,
+            bodyfat: 12,
+            muscleMass: nil,
+            measurements: ["waist": 31.5],
+            goalNote: "",
+            expectedRemoteUpdatedAt: nil
+        )
+        let initialEntry = ClientMeasurementEntry(
+            id: UUID(uuidString: "ba2146f1-eb5e-41ae-9c38-131d5a4f55cc")!,
+            mutation: initialMutation
+        )
+
+        _store = StateObject(
+            wrappedValue: ClientStatsStore(
+                measurementLoader: { _ in [initialEntry] },
+                photoLoader: { _ in [] },
+                signedPhotoURLLoader: { _ in URL(string: "https://example.invalid/photo.jpg")! },
+                measurementSynchronizer: { mutation in
+                    ClientMeasurementEntry(id: mutation.id, mutation: mutation)
+                },
+                retriesPendingMeasurements: false
+            )
+        )
+    }
+
+    var body: some View {
+        NavigationStack {
+            ClientStatsView(account: account, store: store)
+        }
+    }
+}
+#endif
