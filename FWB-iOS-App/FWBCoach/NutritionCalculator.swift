@@ -118,7 +118,7 @@ enum NutritionCalculatorError: LocalizedError {
         case .invalidAge:
             "Enter an age between 13 and 100."
         case .invalidHeight:
-            "Enter height like 5'10\" or total inches."
+            "Enter a height from 3 ft 0 in to 8 ft 0 in. Inches must be 0–11."
         case .invalidWeight:
             "Enter a current weight between 60 and 700 pounds."
         }
@@ -142,8 +142,9 @@ enum NutritionCalculator {
             throw NutritionCalculatorError.invalidAge
         }
 
-        let heightInches = parseHeightInches(trimmedHeight)
-        guard heightInches >= 36, heightInches <= 96 else {
+        guard let heightInches = parseHeightInches(trimmedHeight),
+              heightInches >= 36,
+              heightInches <= 96 else {
             throw NutritionCalculatorError.invalidHeight
         }
 
@@ -185,7 +186,7 @@ enum NutritionCalculator {
             goal: input.goal.rawValue,
             sex: sex.rawValue,
             age: String(age),
-            height: trimmedHeight,
+            height: formattedHeight(heightInches),
             currentWeight: formattedNumber(weightPounds),
             workoutsPerWeek: String(min(max(input.workoutsPerWeek, 0), 7)),
             dailyMovement: input.dailyMovement.rawValue,
@@ -196,23 +197,99 @@ enum NutritionCalculator {
         )
     }
 
-    static func parseHeightInches(_ value: String) -> Double {
-        let normalized = value
+    static func parseHeightInches(_ value: String) -> Double? {
+        var normalized = value
+            .trimmingCharacters(in: .whitespacesAndNewlines)
             .lowercased()
-            .replacingOccurrences(of: "feet", with: "'")
-            .replacingOccurrences(of: "foot", with: "'")
-            .replacingOccurrences(of: "ft", with: "'")
 
-        if let apostrophe = normalized.firstIndex(of: "'") {
-            let feetText = String(normalized[..<apostrophe])
-            let inchesText = String(normalized[normalized.index(after: apostrophe)...])
-            guard let feet = numericValue(feetText) else { return 0 }
-            let inches = numericValue(inchesText) ?? 0
-            return (feet * 12) + inches
+        for mark in ["‘", "’", "′", "`"] {
+            normalized = normalized.replacingOccurrences(of: mark, with: "'")
+        }
+        for mark in ["“", "”", "″"] {
+            normalized = normalized.replacingOccurrences(of: mark, with: "\"")
+        }
+        for (word, mark) in [
+            ("inches", "\""), ("inch", "\""), ("in.", "\""), ("in", "\""),
+            ("feet", "'"), ("foot", "'"), ("ft.", "'"), ("ft", "'")
+        ] {
+            normalized = normalized.replacingOccurrences(of: word, with: mark)
         }
 
-        guard let number = numericValue(normalized) else { return 0 }
+        let whitespaceParts = normalized.split(whereSeparator: { $0.isWhitespace })
+        if !normalized.contains("'"),
+           !normalized.contains("\""),
+           whitespaceParts.count == 2,
+           let feet = strictNumber(String(whitespaceParts[0])),
+           let inches = strictNumber(String(whitespaceParts[1])) {
+            return combinedHeight(feet: feet, inches: inches)
+        }
+
+        normalized.removeAll(where: { $0.isWhitespace })
+
+        if let feetMark = normalized.firstIndex(of: "'") {
+            guard normalized[normalized.index(after: feetMark)...].firstIndex(of: "'") == nil else {
+                return nil
+            }
+
+            let feetText = String(normalized[..<feetMark])
+            var inchesText = String(normalized[normalized.index(after: feetMark)...])
+            if inchesText.hasSuffix("\"") {
+                inchesText.removeLast()
+            }
+            guard !inchesText.contains("\""),
+                  let feet = strictNumber(feetText) else {
+                return nil
+            }
+
+            let inches: Double
+            if inchesText.isEmpty {
+                inches = 0
+            } else if let parsedInches = strictNumber(inchesText) {
+                inches = parsedInches
+            } else {
+                return nil
+            }
+            return combinedHeight(feet: feet, inches: inches)
+        }
+
+        if normalized.hasSuffix("\"") {
+            normalized.removeLast()
+        }
+        guard !normalized.contains("\""),
+              let number = strictNumber(normalized) else {
+            return nil
+        }
+
+        // Preserve the existing convenience where a bare value up to 8 means feet;
+        // larger bare values are treated as total inches.
         return number <= 8 ? number * 12 : number
+    }
+
+    private static func combinedHeight(feet: Double, inches: Double) -> Double? {
+        guard feet >= 0,
+              feet.rounded() == feet,
+              inches >= 0,
+              inches < 12 else {
+            return nil
+        }
+        return (feet * 12) + inches
+    }
+
+    private static func strictNumber(_ value: String) -> Double? {
+        guard !value.isEmpty,
+              value.allSatisfy({ $0.isNumber || $0 == "." }),
+              value.filter({ $0 == "." }).count <= 1,
+              let number = Double(value),
+              number.isFinite else {
+            return nil
+        }
+        return number
+    }
+
+    private static func formattedHeight(_ totalInches: Double) -> String {
+        let feet = Int(totalInches / 12)
+        let inches = totalInches - (Double(feet) * 12)
+        return "\(feet)'\(formattedNumber(inches))\""
     }
 
     private static func numericValue(_ value: String) -> Double? {

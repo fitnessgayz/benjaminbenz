@@ -145,7 +145,8 @@ private struct NutritionTargetCard: View {
 private struct NutritionCalculatorCard: View {
     private enum Field: Hashable {
         case age
-        case height
+        case heightFeet
+        case heightInches
         case currentWeight
     }
 
@@ -156,7 +157,8 @@ private struct NutritionCalculatorCard: View {
     @State private var goal: NutritionGoal
     @State private var age: String
     @State private var sex: NutritionSex?
-    @State private var height: String
+    @State private var heightFeet: String
+    @State private var heightInches: String
     @State private var currentWeight: String
     @State private var workoutsPerWeek: Int
     @State private var dailyMovement: DailyMovement
@@ -170,7 +172,15 @@ private struct NutritionCalculatorCard: View {
         _goal = State(initialValue: NutritionGoal(rawValue: plan.goal) ?? .fatLoss)
         _age = State(initialValue: plan.age)
         _sex = State(initialValue: NutritionSex(rawValue: plan.sex))
-        _height = State(initialValue: plan.height)
+        if let totalInches = NutritionCalculator.parseHeightInches(plan.height) {
+            let feet = Int(totalInches / 12)
+            let inches = totalInches - (Double(feet) * 12)
+            _heightFeet = State(initialValue: String(feet))
+            _heightInches = State(initialValue: Self.heightComponentText(inches))
+        } else {
+            _heightFeet = State(initialValue: "")
+            _heightInches = State(initialValue: "")
+        }
         _currentWeight = State(initialValue: plan.currentWeight)
         _workoutsPerWeek = State(initialValue: min(max(Int(plan.workoutsPerWeek) ?? 3, 0), 7))
         _dailyMovement = State(initialValue: DailyMovement(rawValue: plan.dailyMovement) ?? .mixed)
@@ -220,13 +230,29 @@ private struct NutritionCalculatorCard: View {
                 }
 
                 NutritionFormField(title: "Height") {
-                    TextField("5'10\"", text: $height)
-                        .keyboardType(.numbersAndPunctuation)
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled()
-                        .focused($focusedField, equals: .height)
-                        .nutritionInputSurface()
-                        .accessibilityIdentifier("nutrition.height")
+                    HStack(spacing: 7) {
+                        TextField("5", text: $heightFeet)
+                            .keyboardType(.numberPad)
+                            .multilineTextAlignment(.trailing)
+                            .focused($focusedField, equals: .heightFeet)
+                            .accessibilityLabel("Height in feet")
+                            .accessibilityIdentifier("nutrition.height.feet")
+
+                        Text("ft")
+                            .foregroundStyle(Color.fwbMuted)
+
+                        TextField("11", text: $heightInches)
+                            .keyboardType(.numberPad)
+                            .multilineTextAlignment(.trailing)
+                            .focused($focusedField, equals: .heightInches)
+                            .accessibilityLabel("Additional inches")
+                            .accessibilityIdentifier("nutrition.height.inches")
+
+                        Text("in")
+                            .foregroundStyle(Color.fwbMuted)
+                    }
+                    .nutritionInputSurface()
+                    .accessibilityIdentifier("nutrition.height")
                 }
 
                 NutritionFormField(title: "Current weight") {
@@ -343,7 +369,7 @@ private struct NutritionCalculatorCard: View {
                     goal: goal,
                     age: age,
                     sex: sex,
-                    height: height,
+                    height: heightInput,
                     currentWeight: currentWeight,
                     workoutsPerWeek: workoutsPerWeek,
                     dailyMovement: dailyMovement,
@@ -355,6 +381,17 @@ private struct NutritionCalculatorCard: View {
         } catch {
             validationMessage = error.localizedDescription
         }
+    }
+
+    private var heightInput: String {
+        let feet = heightFeet.trimmingCharacters(in: .whitespacesAndNewlines)
+        let inches = heightInches.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !feet.isEmpty || !inches.isEmpty else { return "" }
+        return "\(feet)'\(inches)\""
+    }
+
+    private static func heightComponentText(_ value: Double) -> String {
+        value.rounded() == value ? String(Int(value)) : String(format: "%g", value)
     }
 }
 

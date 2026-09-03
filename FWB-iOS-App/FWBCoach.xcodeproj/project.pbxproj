@@ -39,6 +39,7 @@
 		T10000000000000000000002 /* WorkoutCalculatorsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T20000000000000000000003 /* WorkoutCalculatorsTests.swift */; };
 		H10000000000000000000001 /* WorkoutComments.swift in Sources */ = {isa = PBXBuildFile; fileRef = H20000000000000000000001 /* WorkoutComments.swift */; };
 		H10000000000000000000002 /* WorkoutCommentStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = H20000000000000000000002 /* WorkoutCommentStoreTests.swift */; };
+		N10000000000000000000001 /* NutritionCalculatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = N20000000000000000000001 /* NutritionCalculatorTests.swift */; };
 		F1000000000000000000000E /* FormCheckSubmissions.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000000000000000000000E /* FormCheckSubmissions.swift */; };
 		F1000000000000000000000F /* WeeklyCoachCheckIn.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000000000000000000000F /* WeeklyCoachCheckIn.swift */; };
 		F10000000000000000000010 /* NotificationsFeature.swift in Sources */ = {isa = PBXBuildFile; fileRef = F20000000000000000000010 /* NotificationsFeature.swift */; };
@@ -93,6 +94,7 @@
 		T20000000000000000000003 /* WorkoutCalculatorsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutCalculatorsTests.swift; sourceTree = "<group>"; };
 		H20000000000000000000001 /* WorkoutComments.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutComments.swift; sourceTree = "<group>"; };
 		H20000000000000000000002 /* WorkoutCommentStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutCommentStoreTests.swift; sourceTree = "<group>"; };
+		N20000000000000000000001 /* NutritionCalculatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NutritionCalculatorTests.swift; sourceTree = "<group>"; };
 		F2000000000000000000000E /* FormCheckSubmissions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FormCheckSubmissions.swift; sourceTree = "<group>"; };
 		F2000000000000000000000F /* WeeklyCoachCheckIn.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyCoachCheckIn.swift; sourceTree = "<group>"; };
 		F20000000000000000000010 /* NotificationsFeature.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationsFeature.swift; sourceTree = "<group>"; };
@@ -143,6 +145,7 @@
 				T20000000000000000000001 /* ContinuitySyncTests.swift */,
 				T20000000000000000000003 /* WorkoutCalculatorsTests.swift */,
 				H20000000000000000000002 /* WorkoutCommentStoreTests.swift */,
+				N20000000000000000000001 /* NutritionCalculatorTests.swift */,
 			);
 			path = FWBCoachTests;
 			sourceTree = "<group>";
@@ -349,6 +352,7 @@
 				T10000000000000000000001 /* ContinuitySyncTests.swift in Sources */,
 				T10000000000000000000002 /* WorkoutCalculatorsTests.swift in Sources */,
 				H10000000000000000000002 /* WorkoutCommentStoreTests.swift in Sources */,
+				N10000000000000000000001 /* NutritionCalculatorTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
