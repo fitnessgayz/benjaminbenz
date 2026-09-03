@@ -1,54 +1,6 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
-
-const allowedOrigins = new Set([
-  "https://benjaminbenz.com",
-  "https://www.benjaminbenz.com",
-  "http://127.0.0.1:4177",
-  "http://localhost:4177",
-  "http://127.0.0.1:4191",
-  "http://localhost:4191",
-  "http://127.0.0.1:4196",
-  "http://localhost:4196"
-]);
-
-function corsHeaders(request: Request) {
-  const origin = request.headers.get("Origin") || "https://benjaminbenz.com";
-  const allowedOrigin = allowedOrigins.has(origin) ? origin : "https://benjaminbenz.com";
-
-  return {
-    "Access-Control-Allow-Origin": allowedOrigin,
-    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Vary": "Origin"
-  };
-}
-
-function jsonResponse(request: Request, body: Record<string, unknown>, status = 200) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: {
-      ...corsHeaders(request),
-      "Content-Type": "application/json",
-      "Cache-Control": "no-store"
-    }
-  });
-}
-
-function coachEmails() {
-  return (Deno.env.get("COACH_ADMIN_EMAILS") || "benjaminbenz.fit@gmail.com")
-    .split(",")
-    .map((email) => email.trim().toLowerCase())
-    .filter(Boolean);
-}
-
-function stringValue(value: unknown) {
-  return typeof value === "string" ? value.trim() : "";
-}
-
-function normalizeEmail(value: unknown) {
-  return stringValue(value).toLowerCase();
-}
+import { coachEmails, corsHeaders, jsonResponse, normalizeEmail, stringValue, validEmail } from "../_shared/http.ts";
 
 function numberValue(value: unknown) {
   const number = Number(String(value ?? "").trim());
@@ -128,10 +80,6 @@ function nutritionPlanValue(value: unknown) {
     maintenance_calories: stringValue(source.maintenance_calories),
     updated_at: stringValue(source.updated_at)
   };
-}
-
-function isValidEmail(value: string) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 }
 
 async function findAuthUserByEmail(adminClient: ReturnType<typeof createClient>, email: string) {
@@ -246,7 +194,7 @@ serve(async (request) => {
     return jsonResponse(request, { error: "Choose an existing client first." }, 400);
   }
 
-  if (!isValidEmail(nextEmail)) {
+  if (!validEmail(nextEmail)) {
     return jsonResponse(request, { error: "Add a valid client email." }, 400);
   }
 

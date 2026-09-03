@@ -4,12 +4,12 @@ Use this for the first live test client account.
 
 ## 1. Run the database setup
 
-In Supabase:
+Apply the versioned schema in `supabase/migrations/` to the live project:
 
-1. Open the project.
-2. Go to SQL Editor.
-3. Paste the contents of `supabase-live-setup.sql`.
-4. Run it.
+```sh
+supabase link --project-ref <your-project-ref>
+supabase db push
+```
 
 This creates:
 
@@ -17,7 +17,9 @@ This creates:
 - Progress check-ins
 - Workout logs
 - Coach-only permissions
-- The starter Benjamin test program for `benzzzzy@gmail.com`
+
+Then, in the Supabase SQL Editor, paste and run `supabase/seed-first-live-client.sql`
+to create the starter Benjamin test program for `benzzzzy@gmail.com`.
 
 ## 2. Deploy the invite function
 
