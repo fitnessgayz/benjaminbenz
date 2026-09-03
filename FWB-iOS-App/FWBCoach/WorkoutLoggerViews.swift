@@ -89,6 +89,8 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
     @State private var activeExerciseSaveID: String?
     @State private var lastSuccessfulSave: WorkoutSaveIntent?
     @State private var lastSavedExerciseID: String?
+    @State private var activeAutosaveToken: String?
+    @State private var lastAutosavedPersistenceToken: String?
     @State private var exerciseEditorRequest: ExerciseEditorRequest?
     @State private var sequenceEditorRequest: SequenceEditorRequest?
     @State private var formCheckContext: FormCheckContext?
@@ -151,23 +153,17 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
 
                     ForEach(sequenceSections) { section in
                         if section.isGroup, let assignment = section.assignment {
-                            VStack(alignment: .leading, spacing: 12) {
-                                WorkoutGroupHeader(
-                                    assignment: assignment,
-                                    exerciseCount: section.exercises.count,
-                                    roundCount: roundCount(for: section),
-                                    restText: roundRestText(for: section)
-                                )
-
-                                ForEach(section.exercises) { exercise in
-                                    exerciseCard(for: exercise)
-                                }
+                            WorkoutGroupCarousel(
+                                assignment: assignment,
+                                exercises: section.exercises,
+                                roundCount: roundCount(for: section),
+                                restText: roundRestText(for: section),
+                                guidedExerciseID: guidedStep?.sectionID == section.id
+                                    ? guidedStep?.exerciseID
+                                    : nil
+                            ) { exercise in
+                                exerciseCard(for: exercise, initiallyExpanded: true)
                             }
-                            .padding(12)
-                            .background(Color.fwbSurface.opacity(0.55), in: Rectangle())
-                            .overlay { Rectangle().stroke(Color.fwbLime.opacity(0.72), lineWidth: 1) }
-                            .accessibilityElement(children: .contain)
-                            .accessibilityLabel(assignment.label)
                         } else {
                             ForEach(section.exercises) { exercise in
                                 exerciseCard(for: exercise)
@@ -257,6 +253,7 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
             didLoadSession = false
             restoredPersistenceToken = nil
             await loadSavedSets()
+            lastAutosavedPersistenceToken = draftPersistenceToken
             didLoadSession = true
         }
         .task(id: commentContext) {
@@ -287,6 +284,15 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
                     entryDate: dateString
                 )
             }
+        }
+        .task(id: autosaveTaskID) {
+            guard didLoadSession,
+                  shouldAutosaveProgress,
+                  draftPersistenceToken != lastAutosavedPersistenceToken else { return }
+            try? await Task.sleep(nanoseconds: 1_250_000_000)
+            guard !Task.isCancelled,
+                  shouldAutosaveProgress else { return }
+            await autosaveProgress(expectedToken: draftPersistenceToken)
         }
         .task {
             await suggestionStore.load(email: clientEmail)
@@ -408,9 +414,19 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
     }
 
     private var webSyncLabel: some View {
-        Label("WEB SYNC", systemImage: "arrow.triangle.2.circlepath")
+        VStack(alignment: .trailing, spacing: 3) {
+            Label(
+                isAutosaving ? "AUTOSAVING…" : "AUTOSAVE ON",
+                systemImage: isAutosaving ? "arrow.triangle.2.circlepath" : "checkmark.circle.fill"
+            )
             .font(.footnote.bold())
             .foregroundStyle(Color.fwbLime)
+
+            Text("WEB + IPHONE")
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(Color.fwbMuted)
+        }
+        .accessibilityElement(children: .combine)
     }
 
     private var isCustomWorkout: Bool {
@@ -452,7 +468,7 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
     }
 
     @ViewBuilder
-    private func exerciseCard(for exercise: Exercise) -> some View {
+    private func exerciseCard(for exercise: Exercise, initiallyExpanded: Bool? = nil) -> some View {
         let index = exercises.firstIndex(where: { $0.id == exercise.id }) ?? 0
         let step = guidedStep
         WorkoutExerciseLogCard(
@@ -475,7 +491,8 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
             isCopyHistoryLoading: achievementHistoryStore.state == .idle
                 || achievementHistoryStore.state == .loading,
             copiedDraftIDs: copiedDraftIDs,
-            initiallyExpanded: isCustomWorkout || index == 0 || step?.exerciseID == exercise.id,
+            initiallyExpanded: initiallyExpanded
+                ?? (isCustomWorkout || index == 0 || step?.exerciseID == exercise.id),
             guidedRoundText: step?.exerciseID == exercise.id
                 ? "Round \(step?.round ?? 1) · exercise \(step?.position ?? 1) of \(step?.exerciseCount ?? 1)"
                 : nil,
@@ -647,6 +664,14 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
         "\(didLoadSession)|\(dateString)|\(draftPersistenceToken)"
     }
 
+    private var autosaveTaskID: String {
+        "autosave|\(didLoadSession)|\(dateString)|\(draftPersistenceToken)"
+    }
+
+    private var isAutosaving: Bool {
+        activeAutosaveToken != nil
+    }
+
     private var draftPersistenceToken: String {
         let exercisePart = exercises.map {
             [
@@ -690,12 +715,57 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
             drafts.count != Self.makeDrafts(for: exercises).count
     }
 
+    private var shouldAutosaveProgress: Bool {
+        guard activeSaveIntent == nil,
+              activeExerciseSaveID == nil,
+              drafts.contains(where: \.containsEntry),
+              !drafts.contains(where: { $0.effortValidationMessage != nil }) else { return false }
+
+        return !drafts.contains {
+            $0.setType == .timed &&
+                $0.containsEntry &&
+                (Double($0.duration) ?? 0) <= 0
+        }
+    }
+
+    private func autosaveProgress(expectedToken: String) async {
+        guard expectedToken == draftPersistenceToken,
+              shouldAutosaveProgress else { return }
+
+        activeAutosaveToken = expectedToken
+        defer {
+            if activeAutosaveToken == expectedToken {
+                activeAutosaveToken = nil
+            }
+        }
+
+        let result = await offlineSyncStore.save(
+            email: clientEmail,
+            sessionID: sessionID,
+            workoutTemplateID: workout.id,
+            workoutTitle: workout.title,
+            entryDate: dateString,
+            exercises: exercises,
+            drafts: drafts,
+            groupAssignments: groupAssignments,
+            baseRemoteUpdatedAt: baseRemoteUpdatedAt,
+            isFinished: false
+        )
+
+        guard !Task.isCancelled else { return }
+        if result == .synced || result == .queued {
+            lastAutosavedPersistenceToken = expectedToken
+            lastSuccessfulSave = .progress
+        }
+    }
+
     private func saveWorkout(
         intent: WorkoutSaveIntent,
         exerciseID: String? = nil,
         difficultyRating: Int? = nil
     ) {
         focusedField = nil
+        let persistenceTokenAtSave = draftPersistenceToken
         activeSaveIntent = exerciseID == nil ? intent : nil
         activeExerciseSaveID = exerciseID
         Task {
@@ -718,6 +788,7 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
             guard result == .synced || result == .queued else { return }
             lastSuccessfulSave = intent
             lastSavedExerciseID = exerciseID
+            lastAutosavedPersistenceToken = persistenceTokenAtSave
 
             if intent == .finish {
                 let celebration = WorkoutPraiseEvaluator.strength(
@@ -1520,6 +1591,235 @@ private struct WorkoutGroupHeader: View {
             Spacer(minLength: 0)
         }
         .accessibilityElement(children: .combine)
+    }
+}
+
+private struct WorkoutGroupCarousel<Content: View>: View {
+    let assignment: WorkoutGroupAssignment
+    let exercises: [Exercise]
+    let roundCount: Int
+    let restText: String
+    let guidedExerciseID: String?
+
+    private let content: (Exercise) -> Content
+
+    @State private var selectedExerciseID: String
+    @State private var navigationDirection = 1
+    @State private var dragTranslation: CGFloat = 0
+
+    init(
+        assignment: WorkoutGroupAssignment,
+        exercises: [Exercise],
+        roundCount: Int,
+        restText: String,
+        guidedExerciseID: String?,
+        @ViewBuilder content: @escaping (Exercise) -> Content
+    ) {
+        self.assignment = assignment
+        self.exercises = exercises
+        self.roundCount = roundCount
+        self.restText = restText
+        self.guidedExerciseID = guidedExerciseID
+        self.content = content
+
+        let initialExerciseID = exercises.contains { $0.id == guidedExerciseID }
+            ? guidedExerciseID
+            : exercises.first?.id
+        _selectedExerciseID = State(initialValue: initialExerciseID ?? "")
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            WorkoutGroupHeader(
+                assignment: assignment,
+                exerciseCount: exercises.count,
+                roundCount: roundCount,
+                restText: restText
+            )
+
+            if let selectedExercise {
+                carouselNavigation(for: selectedExercise)
+
+                ZStack(alignment: .top) {
+                    content(selectedExercise)
+                        .id(selectedExercise.id)
+                        .offset(x: dragTranslation)
+                        .transition(pageTransition)
+                }
+                .frame(maxWidth: .infinity, alignment: .top)
+                .contentShape(Rectangle())
+                .simultaneousGesture(swipeGesture)
+
+                pageIndicators
+
+                Label(
+                    "REST AFTER \(lastExerciseCode) · \(restText.uppercased())",
+                    systemImage: "timer"
+                )
+                .font(.footnote.weight(.black))
+                .tracking(0.55)
+                .foregroundStyle(Color.fwbLime)
+                .frame(maxWidth: .infinity, alignment: .center)
+                .accessibilityLabel("Rest after \(lastExerciseCode), \(restText)")
+            }
+        }
+        .padding(12)
+        .background(Color.fwbSurface.opacity(0.55), in: Rectangle())
+        .overlay { Rectangle().stroke(Color.fwbLime.opacity(0.72), lineWidth: 1) }
+        .accessibilityElement(children: .contain)
+        .onChange(of: guidedExerciseID) { exerciseID in
+            guard let exerciseID,
+                  let index = exercises.firstIndex(where: { $0.id == exerciseID }) else { return }
+            move(to: index)
+        }
+        .onChange(of: exerciseIDs) { _ in
+            guard !exercises.contains(where: { $0.id == selectedExerciseID }) else { return }
+            selectedExerciseID = exercises.first?.id ?? ""
+        }
+    }
+
+    private var selectedIndex: Int {
+        exercises.firstIndex(where: { $0.id == selectedExerciseID }) ?? 0
+    }
+
+    private var selectedExercise: Exercise? {
+        guard exercises.indices.contains(selectedIndex) else { return nil }
+        return exercises[selectedIndex]
+    }
+
+    private var exerciseIDs: [String] {
+        exercises.map(\.id)
+    }
+
+    private var lastExerciseCode: String {
+        guard let exercise = exercises.last else { return "THE LAST EXERCISE" }
+        let code = exercise.code.trimmingCharacters(in: .whitespacesAndNewlines)
+        return code.isEmpty ? exercise.name.uppercased() : code.uppercased()
+    }
+
+    private var pageTransition: AnyTransition {
+        let insertionEdge: Edge = navigationDirection > 0 ? .trailing : .leading
+        let removalEdge: Edge = navigationDirection > 0 ? .leading : .trailing
+        return .asymmetric(
+            insertion: .move(edge: insertionEdge).combined(with: .opacity),
+            removal: .move(edge: removalEdge).combined(with: .opacity)
+        )
+    }
+
+    @ViewBuilder
+    private func carouselNavigation(for exercise: Exercise) -> some View {
+        HStack(spacing: 10) {
+            carouselArrow(
+                systemName: "chevron.left",
+                label: "Previous exercise",
+                isDisabled: selectedIndex == exercises.startIndex
+            ) {
+                move(to: selectedIndex - 1)
+            }
+
+            VStack(spacing: 3) {
+                Text(positionLabel(for: exercise))
+                    .font(.headline.weight(.black))
+                    .fontWidth(.condensed)
+                    .foregroundStyle(Color.fwbLime)
+                Label("SWIPE BETWEEN EXERCISES", systemImage: "hand.draw")
+                    .font(.caption2.weight(.bold))
+                    .tracking(0.4)
+                    .foregroundStyle(Color.fwbMuted)
+            }
+            .frame(maxWidth: .infinity)
+            .accessibilityElement(children: .combine)
+
+            carouselArrow(
+                systemName: "chevron.right",
+                label: "Next exercise",
+                isDisabled: selectedIndex == exercises.index(before: exercises.endIndex)
+            ) {
+                move(to: selectedIndex + 1)
+            }
+        }
+    }
+
+    private func carouselArrow(
+        systemName: String,
+        label: String,
+        isDisabled: Bool,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            Image(systemName: systemName)
+                .font(.headline.weight(.black))
+                .foregroundStyle(isDisabled ? Color.fwbMuted.opacity(0.45) : Color.fwbWarmWhite)
+                .frame(width: 42, height: 42)
+                .background(Color.fwbSurface, in: Rectangle())
+                .overlay { Rectangle().stroke(Color.fwbLine, lineWidth: 1) }
+        }
+        .buttonStyle(.plain)
+        .disabled(isDisabled)
+        .accessibilityLabel(label)
+    }
+
+    private var pageIndicators: some View {
+        HStack(spacing: 10) {
+            ForEach(Array(exercises.enumerated()), id: \.element.id) { index, exercise in
+                Button {
+                    move(to: index)
+                } label: {
+                    Rectangle()
+                        .fill(index == selectedIndex ? Color.fwbAccentFill : Color.clear)
+                        .frame(width: 13, height: 13)
+                        .overlay { Rectangle().stroke(Color.fwbLine, lineWidth: 1) }
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Show \(exercise.name), exercise \(index + 1) of \(exercises.count)")
+                .accessibilityAddTraits(index == selectedIndex ? .isSelected : [])
+            }
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    private var swipeGesture: some Gesture {
+        DragGesture(minimumDistance: 24)
+            .onChanged { value in
+                let horizontal = value.translation.width
+                let vertical = value.translation.height
+                guard abs(horizontal) > abs(vertical) * 1.2 else { return }
+                dragTranslation = horizontal * 0.18
+            }
+            .onEnded { value in
+                let horizontal = value.predictedEndTranslation.width
+                let vertical = value.predictedEndTranslation.height
+                let targetIndex: Int?
+
+                if abs(horizontal) > abs(vertical) * 1.2, abs(horizontal) > 72 {
+                    targetIndex = selectedIndex + (horizontal < 0 ? 1 : -1)
+                } else {
+                    targetIndex = nil
+                }
+
+                withAnimation(.easeOut(duration: 0.16)) {
+                    dragTranslation = 0
+                }
+
+                if let targetIndex {
+                    move(to: targetIndex)
+                }
+            }
+    }
+
+    private func positionLabel(for exercise: Exercise) -> String {
+        let code = exercise.code.trimmingCharacters(in: .whitespacesAndNewlines)
+        let name = code.isEmpty ? "EXERCISE" : code.uppercased()
+        return "\(name) · \(selectedIndex + 1) OF \(exercises.count)"
+    }
+
+    private func move(to index: Int) {
+        guard exercises.indices.contains(index), index != selectedIndex else { return }
+        navigationDirection = index > selectedIndex ? 1 : -1
+        withAnimation(.easeInOut(duration: 0.22)) {
+            selectedExerciseID = exercises[index].id
+            dragTranslation = 0
+        }
     }
 }
 
