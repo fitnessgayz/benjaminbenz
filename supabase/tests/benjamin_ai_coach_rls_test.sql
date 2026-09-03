@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(20);
+select plan(22);
 
 select has_table('public', 'client_progress_notes', 'progress notes table exists');
 select has_table('public', 'client_check_ins', 'check-ins table exists');
@@ -119,6 +119,16 @@ select is(
 select lives_ok(
   $$update public.coach_requests set status = 'in_review' where client_email = 'alex.client@example.test'$$,
   'Benjamin can update a coach request'
+);
+select is(
+  (select count(*)::integer from public.client_progress),
+  1,
+  'Benjamin can see client body progress'
+);
+select is(
+  (select count(*)::integer from public.client_workout_logs),
+  1,
+  'Benjamin can see client workout logs'
 );
 
 select * from finish();

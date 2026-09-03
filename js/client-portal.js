@@ -1490,7 +1490,7 @@ function fillClientProgressForm(entry = {}) {
   }
 
   const measurements = progressMeasurements(entry);
-  form.elements.progress_date.value = entry.entry_date || new Date().toISOString().slice(0, 10);
+  form.elements.progress_date.value = entry.entry_date || todayDate();
   form.elements.progress_bodyweight.value = entry.bodyweight ?? "";
   form.elements.progress_bodyfat.value = entry.bodyfat ?? "";
   form.elements.progress_muscle_mass.value = entry.muscle_mass ?? "";
@@ -8172,7 +8172,7 @@ function setRowInputValues(setRow) {
 function isSetRowLogged(setRow) {
   const { weightRaw, repsRaw, weightValue, repsValue } = setRowInputValues(setRow);
   const hasWeight = weightRaw !== "" && Number.isFinite(weightValue) && weightValue >= 0;
-  const hasReps = repsRaw !== "" && Number.isFinite(repsValue) && repsValue > 0;
+  const hasReps = repsRaw !== "" && Number.isFinite(repsValue) && repsValue >= 0;
 
   return hasWeight || hasReps;
 }
