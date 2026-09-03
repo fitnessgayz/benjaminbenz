@@ -184,6 +184,48 @@ final class WorkoutCalculatorsTests: XCTestCase {
         XCTAssertEqual(restored.difficultyRating, 4)
     }
 
+    func testDecimalWeightsPersistAcrossStraightSupersetAndCircuitSessions() throws {
+        let exercise = Exercise(code: "A1", name: "Hip Thrust")
+        let formats: [(name: String, assignment: WorkoutGroupAssignment?)] = [
+            ("Straight Sets", nil),
+            (
+                "Superset",
+                WorkoutGroupAssignment(id: "SUPERSET_1", kind: .superset, label: "Superset 1")
+            ),
+            (
+                "Circuit",
+                WorkoutGroupAssignment(id: "CIRCUIT_1", kind: .circuit, label: "Circuit 1")
+            )
+        ]
+
+        for format in formats {
+            let draft = WorkoutSetDraft(
+                exercise: exercise,
+                setNumber: 1,
+                weight: "137.5",
+                reps: "8"
+            )
+            let assignments = format.assignment.map { [exercise.id: $0] } ?? [:]
+            let session = OfflineWorkoutSession(
+                clientEmail: "client@example.com",
+                entryDate: "2026-09-03",
+                workoutTitle: format.name,
+                exercises: [exercise],
+                drafts: [draft],
+                groupAssignments: assignments
+            )
+
+            let data = try JSONEncoder().encode(session)
+            let restored = try JSONDecoder().decode(OfflineWorkoutSession.self, from: data)
+            let restoredDraft = try XCTUnwrap(restored.restoredDrafts.first)
+
+            XCTAssertEqual(restored.sets.first?.weight, "137.5", format.name)
+            XCTAssertEqual(restoredDraft.weight, "137.5", format.name)
+            XCTAssertEqual(restoredDraft.weightValue, 137.5, accuracy: 0.001, format.name)
+            XCTAssertEqual(restored.restoredGroupAssignments[exercise.id], format.assignment, format.name)
+        }
+    }
+
     func testLegacyOfflineWorkoutWithoutDifficultyStillDecodes() throws {
         let exercise = Exercise(code: "SQ01", name: "Back Squat")
         let session = OfflineWorkoutSession(

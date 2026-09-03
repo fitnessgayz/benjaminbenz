@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 private enum WorkoutLogFocus: Hashable {
     case set(UUID)
@@ -7,6 +8,17 @@ private enum WorkoutLogFocus: Hashable {
     case effort(UUID)
     case duration(UUID)
     case note(UUID)
+
+    var accessibilityIdentifier: String {
+        switch self {
+        case .set(let id): "workout.setLabel.\(id.uuidString)"
+        case .weight(let id): "workout.weight.\(id.uuidString)"
+        case .reps(let id): "workout.reps.\(id.uuidString)"
+        case .effort(let id): "workout.effort.\(id.uuidString)"
+        case .duration(let id): "workout.duration.\(id.uuidString)"
+        case .note(let id): "workout.note.\(id.uuidString)"
+        }
+    }
 }
 
 private enum WorkoutSaveIntent: Equatable {
@@ -256,7 +268,15 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
         .toolbar {
             ToolbarItemGroup(placement: .keyboard) {
                 Spacer()
-                Button("Done") { focusedField = nil }
+                Button("Done") {
+                    focusedField = nil
+                    UIApplication.shared.sendAction(
+                        #selector(UIResponder.resignFirstResponder),
+                        to: nil,
+                        from: nil,
+                        for: nil
+                    )
+                }
             }
         }
         .task(id: dateString) {
@@ -3738,6 +3758,7 @@ private struct NumericLogField: View {
     @Binding var text: String
     @FocusState.Binding var focus: WorkoutLogFocus?
     let focusValue: WorkoutLogFocus
+    @FocusState private var isFocused: Bool
 
     var body: some View {
         TextField(placeholder, text: $text)
@@ -3745,13 +3766,32 @@ private struct NumericLogField: View {
             .multilineTextAlignment(.center)
             .font(.headline.weight(.bold))
             .foregroundStyle(Color.fwbWarmWhite)
-            .focused($focus, equals: focusValue)
+            .focused($isFocused)
             .padding(.horizontal, 5)
         .frame(maxWidth: .infinity)
         .frame(minHeight: 48)
         .background(Color.fwbCard)
         .overlay { Rectangle().stroke(Color.fwbLine, lineWidth: 1) }
+        .accessibilityIdentifier(focusValue.accessibilityIdentifier)
         .accessibilityHint(suffix)
+        .onAppear {
+            isFocused = focus == focusValue
+        }
+        .onChange(of: focus) { nextFocus in
+            let shouldFocus = nextFocus == focusValue
+            if isFocused != shouldFocus {
+                isFocused = shouldFocus
+            }
+        }
+        .onChange(of: isFocused) { nextIsFocused in
+            if nextIsFocused {
+                if focus != focusValue {
+                    focus = focusValue
+                }
+            } else if focus == focusValue {
+                focus = nil
+            }
+        }
     }
 }
 

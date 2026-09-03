@@ -37,7 +37,9 @@ struct CoachAppView: View {
     var body: some View {
         Group {
 #if DEBUG
-            if ProcessInfo.processInfo.environment["FWB_NOTIFICATIONS_PREVIEW"] == "1" {
+            if ProcessInfo.processInfo.arguments.contains("--workout-input-audit") {
+                WorkoutInputAuditRootView()
+            } else if ProcessInfo.processInfo.environment["FWB_NOTIFICATIONS_PREVIEW"] == "1" {
                 NotificationFeatureDebugRootView()
             } else if ProcessInfo.processInfo.environment["FWB_UI_AUDIT"] == "1"
                 || ProcessInfo.processInfo.arguments.contains("--ui-audit") {
@@ -97,6 +99,31 @@ struct CoachAppView: View {
         }
     }
 }
+
+#if DEBUG
+private struct WorkoutInputAuditRootView: View {
+    private let workout = Workout(
+        id: UUID(uuidString: "4D7E2631-9462-424D-9795-25A2E0BD2A55")!,
+        title: "Workout Input Audit",
+        focus: "Input regression",
+        format: "custom",
+        exercises: [
+            Exercise(code: "A1", name: "Hip Thrust", prescription: "3 x 8-12")
+        ]
+    )
+
+    var body: some View {
+        NavigationStack {
+            WorkoutLoggingView(
+                workout: workout,
+                clientEmail: "preview.client@example.com"
+            )
+            .navigationTitle("Input Audit")
+            .navigationBarTitleDisplayMode(.inline)
+        }
+    }
+}
+#endif
 
 #if DEBUG
 private struct ClientFeatureAuditRootView: View {
