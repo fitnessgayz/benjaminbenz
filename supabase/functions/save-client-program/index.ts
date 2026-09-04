@@ -1,65 +1,6 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
-
-const productionOrigins = new Set([
-  "https://benjaminbenz.com",
-  "https://www.benjaminbenz.com"
-]);
-
-function allowedOriginFor(request: Request) {
-  const origin = request.headers.get("Origin") || "https://benjaminbenz.com";
-
-  try {
-    const url = new URL(origin);
-
-    if (
-      productionOrigins.has(origin) ||
-      url.hostname === "127.0.0.1" ||
-      url.hostname === "localhost"
-    ) {
-      return origin;
-    }
-  } catch {
-    return "https://benjaminbenz.com";
-  }
-
-  return "https://benjaminbenz.com";
-}
-
-function corsHeaders(request: Request) {
-  return {
-    "Access-Control-Allow-Origin": allowedOriginFor(request),
-    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Vary": "Origin"
-  };
-}
-
-function jsonResponse(request: Request, body: Record<string, unknown>, status = 200) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: {
-      ...corsHeaders(request),
-      "Content-Type": "application/json",
-      "Cache-Control": "no-store"
-    }
-  });
-}
-
-function coachEmails() {
-  return (Deno.env.get("COACH_ADMIN_EMAILS") || "benjaminbenz.fit@gmail.com")
-    .split(",")
-    .map((email) => email.trim().toLowerCase())
-    .filter(Boolean);
-}
-
-function stringValue(value: unknown) {
-  return typeof value === "string" ? value.trim() : "";
-}
-
-function normalizeEmail(value: unknown) {
-  return stringValue(value).toLowerCase();
-}
+import { coachEmails, corsHeaders, jsonResponse, normalizeEmail, stringValue, validEmail } from "../_shared/http.ts";
 
 function booleanValue(value: unknown, fallback = true) {
   return typeof value === "boolean" ? value : fallback;
@@ -148,7 +89,7 @@ serve(async (request) => {
   const programId = stringValue(safeBody.program_id);
   const payload = cleanProgramPayload(safeBody.program);
 
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(payload.client_email)) {
+  if (!validEmail(payload.client_email)) {
     return jsonResponse(request, { error: "Add a valid client email." }, 400);
   }
 

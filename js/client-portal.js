@@ -1491,7 +1491,7 @@ function fillClientProgressForm(entry = {}) {
   }
 
   const measurements = progressMeasurements(entry);
-  form.elements.progress_date.value = entry.entry_date || new Date().toISOString().slice(0, 10);
+  form.elements.progress_date.value = entry.entry_date || todayDate();
   form.elements.progress_bodyweight.value = entry.bodyweight ?? "";
   form.elements.progress_bodyfat.value = entry.bodyfat ?? "";
   form.elements.progress_muscle_mass.value = entry.muscle_mass ?? "";
@@ -4853,7 +4853,7 @@ function renderCustomWorkoutCarousel(carousel) {
   carousel.dataset.activeIndex = String(activeIndex);
   carousel.classList.toggle(
     "is-superset-complete",
-    format === "superset" && cards.length > 1 && cards[cards.length - 1].classList.contains("is-exercise-complete")
+    format === "superset" && cards.length > 1 && cards.every((card) => card.classList.contains("is-exercise-complete"))
   );
   carousel.classList.toggle(
     "is-circuit-complete",
@@ -8426,7 +8426,7 @@ function setRowInputValues(setRow) {
 function isSetRowLogged(setRow) {
   const { weightRaw, repsRaw, weightValue, repsValue } = setRowInputValues(setRow);
   const hasWeight = weightRaw !== "" && Number.isFinite(weightValue) && weightValue >= 0;
-  const hasReps = repsRaw !== "" && Number.isFinite(repsValue) && repsValue > 0;
+  const hasReps = repsRaw !== "" && Number.isFinite(repsValue) && repsValue >= 0;
 
   return hasWeight || hasReps;
 }

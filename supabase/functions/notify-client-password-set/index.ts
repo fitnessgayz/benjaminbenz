@@ -1,46 +1,6 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
-
-const allowedOrigins = new Set([
-  "https://benjaminbenz.com",
-  "https://www.benjaminbenz.com",
-  "http://127.0.0.1:4177",
-  "http://localhost:4177",
-  "http://127.0.0.1:4191",
-  "http://localhost:4191",
-  "http://127.0.0.1:4192",
-  "http://localhost:4192"
-]);
-
-function corsHeaders(request: Request) {
-  const origin = request.headers.get("Origin") || "https://benjaminbenz.com";
-  const allowedOrigin = allowedOrigins.has(origin) ? origin : "https://benjaminbenz.com";
-
-  return {
-    "Access-Control-Allow-Origin": allowedOrigin,
-    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Vary": "Origin"
-  };
-}
-
-function jsonResponse(request: Request, body: Record<string, unknown>, status = 200) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: {
-      ...corsHeaders(request),
-      "Content-Type": "application/json",
-      "Cache-Control": "no-store"
-    }
-  });
-}
-
-function emailList(value: string) {
-  return value
-    .split(",")
-    .map((email) => email.trim())
-    .filter(Boolean);
-}
+import { corsHeaders, emailList, jsonResponse } from "../_shared/http.ts";
 
 serve(async (request) => {
   if (request.method === "OPTIONS") {
