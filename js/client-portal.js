@@ -8,6 +8,7 @@ const isConfigured = Boolean(
 const supabaseClient = isConfigured && window.supabase
   ? window.supabase.createClient(config.url, config.anonKey)
   : null;
+const exerciseNameMatcher = window.FWB_EXERCISE_NAME_MATCHER || null;
 const coachPortalEmails = ["benjaminbenz.fit@gmail.com"];
 let activeClientEmail = "";
 let signedInDashboardEmail = "";
@@ -1549,15 +1550,16 @@ function youtubeExerciseSearchUrl(exerciseName) {
 }
 
 function approvedExerciseForName(exerciseName) {
-  const normalizedName = String(exerciseName || "").trim().toLowerCase();
+  const normalizeName = exerciseNameMatcher?.normalizeName || ((value) => String(value || "").trim().toLowerCase());
+  const normalizedName = normalizeName(exerciseName);
 
   if (!normalizedName) {
     return null;
   }
 
   return exerciseLibraryEntries.find((exercise) => (
-    String(exercise.name || "").trim().toLowerCase() === normalizedName
-    || (exercise.aliases || []).some((alias) => String(alias).trim().toLowerCase() === normalizedName)
+    normalizeName(exercise.name) === normalizedName
+    || (exercise.aliases || []).some((alias) => normalizeName(alias) === normalizedName)
   )) || null;
 }
 
@@ -2527,6 +2529,7 @@ function exerciseLogFields(exercise, workoutTitle, options = {}) {
       data-workout-title="${escapeHtml(workoutTitle)}"
       data-exercise-code="${escapeHtml(exercise.code)}"
       data-exercise-name="${escapeHtml(exercise.name)}"
+      data-exercise-rest="${escapeHtml(exercise.rest || "")}"
       data-prescribed-sets="${setCount}"
       data-set-target-mode="${options.userManagedSets ? "visible" : "prescribed"}"
     >
@@ -2781,6 +2784,7 @@ function assignedWorkoutCarouselMarkup(exercises, workoutTitle, workoutFocus, fo
       data-custom-workout-format="${escapeHtml(format)}"
       aria-label="${escapeHtml(label)} exercise carousel"
     >
+      <div class="workout-group-progress" data-workout-group-progress aria-live="polite"></div>
       <div class="custom-workout-carousel-heading" data-custom-workout-carousel-status aria-live="polite"></div>
       <div class="workout-app-list custom-workout-list assigned-workout-carousel-list" data-custom-workout-list data-custom-workout-format="${escapeHtml(format)}" role="list" aria-label="${escapeHtml(label)} exercises" tabindex="0">
         ${exercises.length > 0 ? exerciseCardRows(exercises, workoutTitle, "all", workoutFocus, { format, startIndex }) : ""}
@@ -2790,7 +2794,10 @@ function assignedWorkoutCarouselMarkup(exercises, workoutTitle, workoutFocus, fo
         <div class="custom-workout-carousel-dots" data-custom-workout-carousel-dots aria-label="Choose exercise"></div>
         <button class="custom-workout-carousel-arrow" type="button" data-custom-workout-carousel-next aria-label="Next exercise">→</button>
       </div>
-      <p class="custom-workout-carousel-cue" data-custom-workout-carousel-cue hidden></p>
+      <div class="workout-group-primary-action" data-workout-group-primary-action hidden>
+        <button type="button" data-workout-group-log-set></button>
+        <p class="custom-workout-carousel-cue" data-custom-workout-carousel-cue></p>
+      </div>
     </section>
   `;
 }
@@ -3327,20 +3334,35 @@ function restoreCustomWorkoutDrafts() {
   document.querySelectorAll(".client-workout-panel-custom").forEach(applyCustomWorkoutDraft);
 }
 
-function exerciseSuggestionNames() {
+function exerciseSuggestionRecords() {
   const suggestions = new Map();
-  const addSuggestion = (value) => {
+  const addSuggestion = (value, libraryEntry = null) => {
     const name = String(value || "").trim();
-    const key = name.toLowerCase();
+    const approvedExercise = libraryEntry || approvedExerciseForName(name);
+    const canonicalName = String(approvedExercise?.name || name).trim();
+    const key = canonicalName.toLowerCase();
 
-    if (name && !suggestions.has(key)) {
-      suggestions.set(key, name);
+    if (!canonicalName) {
+      return;
     }
+
+    if (!suggestions.has(key)) {
+      suggestions.set(key, {
+        name: canonicalName,
+        aliases: new Set(),
+        libraryEntry: approvedExercise || null
+      });
+    }
+
+    const record = suggestions.get(key);
+    if (name && name.toLowerCase() !== canonicalName.toLowerCase()) {
+      record.aliases.add(name);
+    }
+    (approvedExercise?.aliases || []).forEach((alias) => record.aliases.add(alias));
   };
 
   exerciseLibraryEntries.forEach((exercise) => {
-    addSuggestion(exercise.name);
-    (exercise.aliases || []).forEach(addSuggestion);
+    addSuggestion(exercise.name, exercise);
   });
 
   const workouts = Array.isArray(currentProgram?.workouts) ? currentProgram.workouts : [];
@@ -3360,25 +3382,60 @@ function exerciseSuggestionNames() {
     addSuggestion(log.exercise_name);
   });
 
-  return Array.from(suggestions.values()).sort((left, right) => left.localeCompare(right));
+  return Array.from(suggestions.values())
+    .map((record) => ({ ...record, aliases: Array.from(record.aliases) }))
+    .sort((left, right) => left.name.localeCompare(right.name));
+}
+
+function exerciseSuggestionNames() {
+  return exerciseSuggestionRecords().map((record) => record.name);
 }
 
 function customExerciseSuggestionMatches(value) {
-  const query = String(value || "").trim().toLowerCase();
+  const query = String(value || "").trim();
+  const normalizedQuery = exerciseNameMatcher?.normalizeName(query) || query.toLowerCase();
+  const recommendation = exerciseNameMatcher?.recommendedLibraryMatch(query, exerciseLibraryEntries) || null;
+  const recommendationName = recommendation?.exercise?.name || "";
+  const records = exerciseSuggestionRecords();
+  const scored = records.map((record) => {
+    const labels = [record.name, ...record.aliases];
+    const substringMatch = !normalizedQuery || labels.some((label) => {
+      const normalizedLabel = exerciseNameMatcher?.normalizeName(label) || label.toLowerCase();
+      return normalizedLabel.includes(normalizedQuery);
+    });
+    const score = query && exerciseNameMatcher
+      ? Math.max(...labels.map((label) => exerciseNameMatcher.nameSimilarity(query, label, record.libraryEntry || {})))
+      : 0;
+    const startsWithQuery = Boolean(normalizedQuery) && labels.some((label) => {
+      const normalizedLabel = exerciseNameMatcher?.normalizeName(label) || label.toLowerCase();
+      return normalizedLabel.startsWith(normalizedQuery);
+    });
 
-  return exerciseSuggestionNames()
-    .filter((name) => !query || name.toLowerCase().includes(query))
+    return { ...record, substringMatch, score, startsWithQuery };
+  });
+  const matches = scored
+    .filter((record) => !query || record.substringMatch || record.score >= 0.58)
+    .filter((record) => record.name !== recommendationName)
     .sort((left, right) => {
-      const leftStartsWithQuery = query && left.toLowerCase().startsWith(query);
-      const rightStartsWithQuery = query && right.toLowerCase().startsWith(query);
-
-      if (leftStartsWithQuery !== rightStartsWithQuery) {
-        return leftStartsWithQuery ? -1 : 1;
+      if (left.startsWithQuery !== right.startsWithQuery) {
+        return left.startsWithQuery ? -1 : 1;
       }
 
-      return left.localeCompare(right);
+      return right.score - left.score || left.name.localeCompare(right.name);
     })
-    .slice(0, 12);
+    .slice(0, recommendation ? 11 : 12)
+    .map((record) => ({ name: record.name, recommended: false }));
+
+  if (recommendation) {
+    matches.unshift({
+      name: recommendationName,
+      recommended: true,
+      matchedLabel: recommendation.matchedLabel,
+      score: recommendation.score
+    });
+  }
+
+  return matches;
 }
 
 function closeCustomExerciseSuggestions(exceptEditor = null) {
@@ -3405,12 +3462,19 @@ function renderCustomExerciseSuggestions(input) {
 
   const matches = customExerciseSuggestionMatches(input.value);
 
-  menu.innerHTML = matches.map((name) => `
+  menu.innerHTML = matches.map((match) => `
     <button
+      class="${match.recommended ? "is-recommended" : ""}"
       type="button"
       role="option"
-      data-custom-exercise-suggestion="${escapeHtml(name)}"
-    >${escapeHtml(name)}</button>
+      data-custom-exercise-suggestion="${escapeHtml(match.name)}"
+    >
+      ${match.recommended ? `
+        <small>Did you mean?</small>
+        <strong>${escapeHtml(match.name)}</strong>
+        <span>Use the library name to keep progress together.</span>
+      ` : escapeHtml(match.name)}
+    </button>
   `).join("");
   menu.hidden = matches.length === 0;
   input.setAttribute("aria-expanded", matches.length > 0 ? "true" : "false");
@@ -4370,9 +4434,6 @@ function supersetRows(workout, workoutTitle) {
 
     return `
       <section class="workout-format-group compact-workout-group superset-group">
-        <div class="compact-static-group-card">
-          ${compactWorkoutGroupOverview(group, group.exercises.length > 1 ? "superset" : "single")}
-        </div>
         ${assignedWorkoutCarouselMarkup(
           group.exercises,
           workoutTitle,
@@ -4392,9 +4453,6 @@ function circuitRows(workout, workoutTitle) {
 
   return `
     <section class="workout-format-group circuit-group compact-workout-group">
-      <div class="compact-static-group-card">
-        ${compactWorkoutGroupOverview(group, "circuit")}
-      </div>
       ${assignedWorkoutCarouselMarkup(exercises, workoutTitle, workout.focus, "circuit")}
     </section>
   `;
@@ -4589,6 +4647,7 @@ function customWorkoutCarouselGroupMarkup(format, exercises, groupIndex = 0, sta
 
   return `
     <section class="custom-workout-carousel" data-custom-workout-carousel data-custom-workout-group="${groupIndex}" data-custom-workout-format="${escapeHtml(format)}" aria-label="${escapeHtml(label)} exercise carousel">
+      <div class="workout-group-progress" data-workout-group-progress aria-live="polite"></div>
       <div class="custom-workout-carousel-heading" data-custom-workout-carousel-status aria-live="polite"></div>
       <div class="workout-app-list custom-workout-list" data-custom-workout-list data-custom-workout-format="${escapeHtml(format)}" role="list" aria-label="Custom workout exercises" tabindex="0">
         ${exercises.map((exercise, index) => customWorkoutCardMarkup(exercise, customWorkoutTitle, startIndex + index)).join("")}
@@ -4598,7 +4657,10 @@ function customWorkoutCarouselGroupMarkup(format, exercises, groupIndex = 0, sta
         <div class="custom-workout-carousel-dots" data-custom-workout-carousel-dots aria-label="Choose exercise"></div>
         <button class="custom-workout-carousel-arrow" type="button" data-custom-workout-carousel-next aria-label="Next exercise">→</button>
       </div>
-      <p class="custom-workout-carousel-cue" data-custom-workout-carousel-cue hidden></p>
+      <div class="workout-group-primary-action" data-workout-group-primary-action hidden>
+        <button type="button" data-workout-group-log-set></button>
+        <p class="custom-workout-carousel-cue" data-custom-workout-carousel-cue></p>
+      </div>
     </section>
   `;
 }
@@ -4641,9 +4703,108 @@ function customWorkoutCarouselCards(carousel) {
   return Array.from(list?.children || []).filter((element) => element.matches("[data-custom-exercise-card]"));
 }
 
+function workoutCarouselExerciseCode(format, groupIndex, cardIndex) {
+  if (format === "circuit") {
+    return `C${cardIndex + 1}`;
+  }
+
+  const groupLetter = String.fromCharCode(65 + Math.min(Math.max(Number(groupIndex) || 0, 0), 25));
+  return `${groupLetter}${cardIndex + 1}`;
+}
+
+function workoutCarouselProgress(carousel, cards, format, groupIndex) {
+  const exercises = cards.map((card, index) => {
+    const logElement = card.querySelector("[data-exercise-log]");
+    const name = currentExerciseLabel(logElement) || `Exercise ${index + 1}`;
+    if (logElement && logElement.dataset.groupLoggedSets === undefined) {
+      logElement.dataset.groupLoggedSets = String(filledSetCount(logElement));
+    }
+    return {
+      card,
+      logElement,
+      name,
+      code: workoutCarouselExerciseCode(format, groupIndex, index),
+      completed: Math.max(Number(logElement?.dataset.groupLoggedSets) || 0, 0),
+      target: Math.max(logElement ? visibleSetTarget(logElement) : 0, 1)
+    };
+  });
+  const roundCount = Math.max(...exercises.map((exercise) => exercise.target), 1);
+  let current = null;
+
+  for (let round = 1; round <= roundCount && !current; round += 1) {
+    const index = exercises.findIndex((exercise) => exercise.completed < Math.min(round, exercise.target));
+    if (index >= 0) {
+      current = { round, index, exercise: exercises[index] };
+    }
+  }
+
+  const isComplete = current === null && exercises.length > 0;
+  const displayRound = current?.round || roundCount;
+  const nextIndex = !current
+    ? -1
+    : current.index + 1 < exercises.length
+      ? current.index + 1
+      : current.round < roundCount ? 0 : -1;
+
+  return { exercises, roundCount, current, displayRound, nextIndex, isComplete };
+}
+
+function workoutCarouselSaveLabel(carousel) {
+  switch (carousel?.dataset.autosaveState) {
+    case "saving": return "↻ SAVING…";
+    case "issue": return "! CHECK SAVE";
+    case "saved": return "☁ AUTOSAVED";
+    default: return "☁ AUTOSAVE ON";
+  }
+}
+
+function setWorkoutCarouselAutosaveState(logElement, state) {
+  const carousel = logElement?.closest("[data-custom-workout-carousel]");
+  if (!carousel) return;
+  carousel.dataset.autosaveState = state;
+  renderCustomWorkoutCarousel(carousel);
+}
+
+function workoutCarouselRestSeconds(value) {
+  const text = String(value || "").trim().toLowerCase();
+  const number = Number(text.match(/[\d.]+/)?.[0]);
+  if (!Number.isFinite(number) || number <= 0) return 60;
+  return text.includes("min") ? Math.max(1, Math.round(number * 60)) : Math.max(1, Math.round(number));
+}
+
+function workoutCarouselProgressMarkup(carousel, progress, format, groupIndex) {
+  const groupTitle = format === "circuit" ? `Circuit ${groupIndex + 1}` : `Superset ${groupIndex + 1}`;
+  const roundTitle = progress.isComplete
+    ? "All rounds complete"
+    : `Round ${progress.displayRound} of ${progress.roundCount}`;
+
+  return `
+    <div class="workout-group-progress-heading">
+      <span>
+        <small>${escapeHtml(groupTitle)}</small>
+        <strong>${escapeHtml(roundTitle)}</strong>
+      </span>
+      <em>${escapeHtml(workoutCarouselSaveLabel(carousel))}</em>
+    </div>
+    <div class="workout-group-sequence" role="list" aria-label="${escapeHtml(groupTitle)} sequence">
+      ${progress.exercises.map((exercise, index) => {
+        const isDone = progress.isComplete || exercise.completed >= Math.min(progress.displayRound, exercise.target);
+        const isNext = !isDone && progress.current?.index === index;
+        const status = isDone ? "Done" : isNext ? "Next" : "Wait";
+        return `
+          <span class="workout-group-sequence-item${isDone ? " is-done" : ""}${isNext ? " is-next" : ""}" role="listitem">
+            <strong>${escapeHtml(exercise.code)} · ${status}</strong>
+            <span>${escapeHtml(exercise.name)}</span>
+          </span>
+        `;
+      }).join("")}
+    </div>
+  `;
+}
+
 function customWorkoutCarouselMeta(format, index, total, groupIndex = 0) {
   if (format === "superset") {
-    const position = index % 2 === 0 ? "A1" : "A2";
+    const position = workoutCarouselExerciseCode(format, groupIndex, index);
     return {
       title: `Superset ${groupIndex + 1} · ${position}`,
       count: `Exercise ${index + 1} of ${total}`,
@@ -4679,6 +4840,9 @@ function renderCustomWorkoutCarousel(carousel) {
   const controls = carousel?.querySelector("[data-custom-workout-carousel-controls]");
   const dots = carousel?.querySelector("[data-custom-workout-carousel-dots]");
   const cue = carousel?.querySelector("[data-custom-workout-carousel-cue]");
+  const progressHeader = carousel?.querySelector("[data-workout-group-progress]");
+  const primaryAction = carousel?.querySelector("[data-workout-group-primary-action]");
+  const logSetButton = carousel?.querySelector("[data-workout-group-log-set]");
 
   if (!carousel) {
     return;
@@ -4696,8 +4860,9 @@ function renderCustomWorkoutCarousel(carousel) {
     format === "circuit" && cards.length > 0 && cards.every((card) => card.classList.contains("is-exercise-complete"))
   );
   if (controls) controls.hidden = !enabled;
-  if (cue) cue.hidden = !enabled;
   if (status) status.hidden = !enabled;
+  if (progressHeader) progressHeader.hidden = !enabled;
+  if (primaryAction) primaryAction.hidden = !enabled;
 
   cards.forEach((card, index) => {
     card.classList.toggle("is-carousel-active", enabled && index === activeIndex);
@@ -4711,10 +4876,25 @@ function renderCustomWorkoutCarousel(carousel) {
   }
 
   const meta = customWorkoutCarouselMeta(format, activeIndex, cards.length, groupIndex);
+  const progress = workoutCarouselProgress(carousel, cards, format, groupIndex);
+  if (progressHeader) {
+    progressHeader.innerHTML = workoutCarouselProgressMarkup(carousel, progress, format, groupIndex);
+  }
   if (status) {
     status.innerHTML = `<strong>${escapeHtml(meta.title)}</strong><span>${escapeHtml(meta.count)}</span>`;
   }
-  if (cue) cue.textContent = meta.cue;
+  if (cue) {
+    cue.textContent = progress.isComplete
+      ? `${groupTypeLabel(format)} complete. All rounds are saved.`
+      : `No rest until the full ${groupTypeLabel(format).toLowerCase()} round is complete.`;
+  }
+  if (logSetButton) {
+    const nextCode = progress.nextIndex >= 0 ? progress.exercises[progress.nextIndex]?.code : "";
+    logSetButton.textContent = progress.isComplete
+      ? `${groupTypeLabel(format)} complete ✓`
+      : nextCode ? `Log set · Next: ${nextCode}` : "Log set · Finish group";
+    logSetButton.disabled = progress.isComplete;
+  }
   if (dots) {
     dots.innerHTML = cards.map((card, index) => `
       <button
@@ -4758,6 +4938,67 @@ function moveCustomWorkoutCarousel(carousel, nextIndex, options = {}) {
   // Direct assignment works consistently in iOS/Android webviews and avoids a
   // smooth-scroll race where the scroll listener could restore the old slide.
   list.scrollLeft = targetLeft;
+}
+
+async function logCurrentWorkoutCarouselSet(button) {
+  const carousel = button?.closest("[data-custom-workout-carousel]");
+  const cards = customWorkoutCarouselCards(carousel);
+  const panel = carousel?.closest(".client-workout-panel-custom, .client-workout-panel-assigned");
+  const format = normalizeCustomWorkoutFormat(
+    carousel?.dataset.customWorkoutFormat ||
+    panel?.dataset.customWorkoutFormat ||
+    panel?.dataset.assignedWorkoutFormat ||
+    activeCustomWorkoutFormat
+  );
+  const groupIndex = Number(carousel?.dataset.customWorkoutGroup) || 0;
+  const progress = workoutCarouselProgress(carousel, cards, format, groupIndex);
+  const current = progress.current;
+  const logElement = current?.exercise?.logElement;
+  const status = logElement?.querySelector("[data-log-status]");
+
+  if (!carousel || !current || !logElement) return;
+
+  if (filledSetCount(logElement) < current.round) {
+    if (status) {
+      status.textContent = `Enter weight or reps for ${current.exercise.code}, set ${current.round}, before logging it.`;
+    }
+    const workingRows = Array.from(logElement.querySelectorAll("[data-set-row]"))
+      .filter((row) => setTypeForRow(row) !== warmUpSetType);
+    workingRows[Math.max(current.round - 1, 0)]
+      ?.querySelector("[data-set-weight], [data-set-reps]")
+      ?.focus();
+    return;
+  }
+
+  setWorkoutCarouselAutosaveState(logElement, "saving");
+  const result = await saveTrainingLogRows(button, [logElement], status, {
+    savingMessage: "Logging set...",
+    successMessage: "Set logged and autosaved."
+  });
+
+  if (!result.saved) {
+    setWorkoutCarouselAutosaveState(logElement, "issue");
+    return;
+  }
+
+  logElement.dataset.groupLoggedSets = String(Math.max(current.exercise.completed, current.round));
+  setWorkoutCarouselAutosaveState(logElement, "saved");
+  const nextProgress = workoutCarouselProgress(carousel, cards, format, groupIndex);
+  const completedRound = current.index === cards.length - 1 &&
+    (nextProgress.isComplete || (nextProgress.current?.round || current.round) > current.round);
+
+  if (completedRound && !nextProgress.isComplete) {
+    const restValue = current.exercise.logElement?.dataset.exerciseRest || "";
+    setRestTimerDuration(workoutCarouselRestSeconds(restValue));
+    openRestTimer(button);
+    startOrPauseRestTimer();
+  }
+
+  if (nextProgress.current) {
+    moveCustomWorkoutCarousel(carousel, nextProgress.current.index);
+  } else {
+    renderCustomWorkoutCarousel(carousel);
+  }
 }
 
 function bindCustomWorkoutCarousel(carousel) {
@@ -5698,7 +5939,13 @@ function populateTrainingLogs(logs) {
     updateExerciseLogField(logElement);
   });
 
+  document.querySelectorAll("[data-custom-workout-carousel] [data-exercise-log]").forEach((logElement) => {
+    logElement.dataset.groupLoggedSets = String(filledSetCount(logElement));
+  });
+
   restoreCustomWorkoutDrafts();
+  syncCustomWorkoutCarousels();
+  syncAssignedWorkoutCarousels();
   renderClientTrainingLogs();
   renderClientHomeSummary();
 }
@@ -7142,6 +7389,7 @@ function handleWorkoutInteractions() {
     const customWorkoutCarouselPrevious = event.target.closest("[data-custom-workout-carousel-previous]");
     const customWorkoutCarouselNext = event.target.closest("[data-custom-workout-carousel-next]");
     const customWorkoutCarouselDot = event.target.closest("[data-custom-workout-carousel-dot]");
+    const workoutGroupLogSetButton = event.target.closest("[data-workout-group-log-set]");
     const closeRestTimerButton = event.target.closest("[data-rest-timer-close]");
     const restTimerPresetButton = event.target.closest("[data-rest-timer-preset]");
     const restTimerStartButton = event.target.closest("[data-rest-timer-start]");
@@ -7284,6 +7532,7 @@ function handleWorkoutInteractions() {
       if (saveResult.saved) {
         const cardLogCount = card?.querySelectorAll("[data-exercise-log]").length || 0;
 
+        logElement.dataset.groupLoggedSets = String(filledSetCount(logElement));
         logElement.classList.add("is-exercise-complete");
         if (cardLogCount <= 1) {
           card?.classList.add("is-exercise-complete");
@@ -7368,6 +7617,11 @@ function handleWorkoutInteractions() {
         customWorkoutFormatButton.closest(".client-workout-panel-custom"),
         customWorkoutFormatButton.dataset.customWorkoutFormatOption
       );
+      return;
+    }
+
+    if (workoutGroupLogSetButton) {
+      await logCurrentWorkoutCarouselSet(workoutGroupLogSetButton);
       return;
     }
 
@@ -8256,6 +8510,8 @@ function scheduleTrainingLogAutosave(logElement) {
     window.clearTimeout(existingTimer);
   }
 
+  setWorkoutCarouselAutosaveState(logElement, "saving");
+
   const timer = window.setTimeout(async () => {
     trainingLogAutosaveTimers.delete(logElement);
 
@@ -8271,10 +8527,11 @@ function scheduleTrainingLogAutosave(logElement) {
     logElement.dataset.autosaveInFlight = "true";
 
     try {
-      await saveTrainingLogRows(null, [logElement], status, {
+      const result = await saveTrainingLogRows(null, [logElement], status, {
         savingMessage: "Autosaving...",
         successMessage: "Autosaved."
       });
+      setWorkoutCarouselAutosaveState(logElement, result.saved ? "saved" : "issue");
     } finally {
       delete logElement.dataset.autosaveInFlight;
     }
