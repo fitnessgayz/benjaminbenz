@@ -74,7 +74,34 @@ CONTACT_MESSAGE_EMAILS=fwb@benjaminbenz.com
 
 Set `CONTACT_MESSAGE_EMAILS` to the inbox that should receive website contact form messages.
 
-## 5. Create the first login
+## 5. Deploy the coach calendar function (optional)
+
+Deploy `supabase/functions/coach-calendar-auth` to show today's booked
+sessions on `/coach-overview.html`, pulled from a Google Calendar.
+
+In Google Cloud Console, enable the **Google Calendar API** on the same
+project used for Google Health (or a new one), and add
+`https://www.googleapis.com/auth/calendar.readonly` to the OAuth consent
+screen's scopes. You can reuse the existing `GOOGLE_HEALTH_CLIENT_ID` /
+`GOOGLE_HEALTH_CLIENT_SECRET` if that project already covers this scope, or
+set dedicated ones:
+
+```text
+GOOGLE_CALENDAR_CLIENT_ID=your OAuth client ID
+GOOGLE_CALENDAR_CLIENT_SECRET=your OAuth client secret
+GOOGLE_CALENDAR_ID=the calendar ID to read sessions from (defaults to "primary")
+```
+
+`GOOGLE_CALENDAR_REDIRECT_URI` is optional — it defaults to
+`<site origin>/coach-overview.html`, which is where the OAuth flow lands
+back after the coach approves access.
+
+A calendar event counts as a client session when its title contains the
+word "training" (case-insensitive) — e.g. "Alex training". The event's
+first non-coach attendee email is matched against `client_programs` to show
+the client's name; unmatched attendees show the raw email instead.
+
+## 6. Create the first login
 
 Use Supabase Authentication to invite or create the coach admin:
 
@@ -96,7 +123,7 @@ Use the test client login for:
 
 - Client dashboard: `/client-login.html`
 
-## 6. Test the loop
+## 7. Test the loop
 
 1. Sign in as the client.
 2. Open Workout 1.

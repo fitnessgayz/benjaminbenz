@@ -69,9 +69,11 @@
         <div class="overview-today-card" aria-label="Today's sessions">
           <div class="overview-today-heading">
             <h2>Today's sessions</h2>
-            <span class="overview-today-badge">Not connected yet</span>
+            <span class="overview-today-badge" id="overview-calendar-badge">Not connected yet</span>
           </div>
-          <p>Connect Google Calendar to see today's booked sessions here. Until then, check your calendar directly.</p>
+          <p id="overview-calendar-message">Connect Google Calendar to see today's booked sessions here. Until then, check your calendar directly.</p>
+          <button type="button" class="overview-calendar-connect" id="overview-calendar-connect">Connect Google Calendar</button>
+          <div class="overview-today-sessions" id="overview-today-sessions" hidden></div>
         </div>
 
         <div class="overview-stat-grid">

@@ -9923,3 +9923,55 @@ textarea,
     margin-top: 4px;
   }
 }
+
+.overview-calendar-connect {
+  align-self: flex-start;
+  min-height: 40px;
+  padding: 9px 18px;
+  margin-top: 4px;
+  border: 1px solid var(--black);
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--black);
+  font: inherit;
+  font-size: .8rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.overview-calendar-connect[hidden] {
+  display: none;
+}
+
+.overview-today-sessions {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  margin-top: 14px;
+  padding-bottom: 2px;
+}
+
+.overview-today-sessions[hidden] {
+  display: none;
+}
+
+.overview-session-card {
+  flex: 0 0 200px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--paper);
+}
+
+.overview-session-card p {
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-size: .76rem;
+  font-weight: 800;
+}
+
+.overview-session-card strong {
+  display: block;
+  font-size: .95rem;
+  font-weight: 900;
+}

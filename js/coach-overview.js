@@ -367,6 +367,162 @@ function renderOverviewRoster(clients, lastWorkoutByEmail) {
   });
 }
 
+async function overviewSessionToken() {
+  if (!overviewSupabase) {
+    return "";
+  }
+
+  const { data } = await overviewSupabase.auth.getSession();
+
+  return data.session?.access_token || "";
+}
+
+async function callCalendarFunction(action, extra = {}) {
+  const token = await overviewSessionToken();
+
+  if (!token) {
+    return { error: "Sign in as coach first." };
+  }
+
+  let response;
+
+  try {
+    response = await fetch(`${overviewConfig.url}/functions/v1/coach-calendar-auth`, {
+      method: "POST",
+      headers: {
+        "apikey": overviewConfig.anonKey,
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ action, ...extra })
+    });
+  } catch (error) {
+    console.error("Could not reach the calendar function.", error);
+    return { error: "Could not reach Google Calendar." };
+  }
+
+  const result = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    return { error: (result && result.error) || "Could not reach Google Calendar." };
+  }
+
+  return result;
+}
+
+function formatSessionTime(value) {
+  if (!value) {
+    return "All day";
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  return date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+}
+
+function renderTodaySessions(state) {
+  const badge = document.getElementById("overview-calendar-badge");
+  const message = document.getElementById("overview-calendar-message");
+  const connectButton = document.getElementById("overview-calendar-connect");
+  const sessionsContainer = document.getElementById("overview-today-sessions");
+
+  if (!badge || !message || !connectButton || !sessionsContainer) {
+    return;
+  }
+
+  sessionsContainer.querySelectorAll(".overview-session-card").forEach((node) => node.remove());
+
+  if (!state.connected) {
+    badge.textContent = "Not connected yet";
+    message.hidden = false;
+    message.textContent = state.error ||
+      "Connect Google Calendar to see today's booked sessions here. Until then, check your calendar directly.";
+    connectButton.hidden = false;
+    sessionsContainer.hidden = true;
+    return;
+  }
+
+  connectButton.hidden = true;
+
+  const sessions = state.sessions || [];
+
+  if (sessions.length === 0) {
+    badge.textContent = "Connected";
+    message.hidden = false;
+    message.textContent = state.error || "No client sessions on the calendar today.";
+    sessionsContainer.hidden = true;
+    return;
+  }
+
+  badge.textContent = `${sessions.length} today`;
+  message.hidden = true;
+  sessionsContainer.hidden = false;
+
+  sessions.forEach((session) => {
+    const card = document.createElement("div");
+    card.className = "overview-session-card";
+
+    const time = document.createElement("p");
+    time.textContent = formatSessionTime(session.start);
+    card.appendChild(time);
+
+    const name = document.createElement("strong");
+    name.textContent = session.client_name || session.attendee_email || session.summary || "Session";
+    card.appendChild(name);
+
+    sessionsContainer.appendChild(card);
+  });
+}
+
+function handleCalendarConnectClick() {
+  const button = document.getElementById("overview-calendar-connect");
+
+  if (!button) {
+    return;
+  }
+
+  button.addEventListener("click", async () => {
+    button.disabled = true;
+    const result = await callCalendarFunction("start");
+
+    if (result.authorizationUrl) {
+      window.location.href = result.authorizationUrl;
+      return;
+    }
+
+    button.disabled = false;
+    renderTodaySessions({ connected: false, error: result.error || "Could not start Google Calendar connection." });
+  });
+}
+
+async function completeCalendarConnectIfNeeded() {
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get("code");
+  const state = params.get("state");
+
+  if (!code || !state) {
+    return;
+  }
+
+  await callCalendarFunction("callback", { code, state });
+
+  params.delete("code");
+  params.delete("state");
+  params.delete("scope");
+  const query = params.toString();
+  const nextUrl = `${window.location.pathname}${query ? `?${query}` : ""}`;
+  window.history.replaceState({}, "", nextUrl);
+}
+
+async function loadTodaySessions() {
+  const result = await callCalendarFunction("today");
+  renderTodaySessions(result);
+}
+
 function handleOverviewSignOut() {
   const button = document.querySelector("[data-coach-sign-out]");
 
@@ -426,7 +582,9 @@ async function bootOverview() {
   }
 
   renderOverviewGreeting();
-  await loadOverviewData();
+  handleCalendarConnectClick();
+  await completeCalendarConnectIfNeeded();
+  await Promise.all([loadOverviewData(), loadTodaySessions()]);
 }
 
 bootOverview();
