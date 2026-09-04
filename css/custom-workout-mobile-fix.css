@@ -173,7 +173,9 @@
 /* Custom workout supersets and circuits become swipeable exercise cards on mobile. */
 .custom-workout-carousel-heading,
 .custom-workout-carousel-footer,
-.custom-workout-carousel-cue {
+.custom-workout-carousel-cue,
+.workout-group-progress,
+.workout-group-primary-action {
   display: none;
 }
 
@@ -190,9 +192,108 @@
 @media (max-width: 760px) {
   .dashboard-page .custom-workout-carousel[data-carousel-enabled="true"] {
     min-width: 0;
-    border-top: 2px solid var(--line, #5b5f59);
-    border-bottom: 2px solid var(--line, #5b5f59);
-    padding: 14px 0 16px;
+    border: 1px solid #4f554f;
+    padding: 0 0 16px;
+    background: #151915;
+    color: #f7f7f2;
+  }
+
+  .dashboard-page .custom-workout-carousel[data-carousel-enabled="true"] .workout-group-progress {
+    display: grid;
+    gap: 14px;
+    padding: 18px 18px 14px;
+    border-bottom: 1px solid #3c423c;
+  }
+
+  .dashboard-page .workout-group-progress-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .dashboard-page .workout-group-progress-heading > span {
+    display: grid;
+    gap: 4px;
+    min-width: 0;
+  }
+
+  .dashboard-page .workout-group-progress-heading small {
+    color: #caff31;
+    font-size: 14px;
+    font-weight: 850;
+    letter-spacing: .09em;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .dashboard-page .workout-group-progress-heading strong {
+    color: #f7f7f2;
+    font-family: Impact, "Arial Narrow", sans-serif;
+    font-size: clamp(26px, 8vw, 34px);
+    font-weight: 400;
+    letter-spacing: .03em;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .dashboard-page .workout-group-progress-heading em {
+    flex: 0 0 auto;
+    color: #aeb4ad;
+    font-size: 13px;
+    font-style: normal;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+
+  .dashboard-page .workout-group-sequence {
+    display: flex;
+    gap: 8px;
+    max-width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .dashboard-page .workout-group-sequence::-webkit-scrollbar {
+    display: none;
+  }
+
+  .dashboard-page .workout-group-sequence-item {
+    display: grid;
+    flex: 1 0 min(42%, 150px);
+    gap: 5px;
+    min-width: 0;
+    padding-top: 9px;
+    border-top: 3px solid #535953;
+    color: #aeb4ad;
+  }
+
+  .dashboard-page .workout-group-sequence-item.is-done {
+    border-color: #4fd072;
+    color: #f7f7f2;
+  }
+
+  .dashboard-page .workout-group-sequence-item.is-next {
+    border-color: #caff31;
+    color: #caff31;
+  }
+
+  .dashboard-page .workout-group-sequence-item strong,
+  .dashboard-page .workout-group-sequence-item span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .dashboard-page .workout-group-sequence-item strong {
+    font-size: 14px;
+    font-weight: 850;
+    text-transform: uppercase;
+  }
+
+  .dashboard-page .workout-group-sequence-item span {
+    font-size: 15px;
+    font-weight: 700;
   }
 
   .dashboard-page .custom-workout-carousel[data-carousel-enabled="true"] .custom-workout-carousel-heading {
@@ -201,7 +302,8 @@
     align-items: baseline;
     gap: 12px;
     min-height: 28px;
-    padding: 0 4px 12px;
+    padding: 12px 18px;
+    border-bottom: 1px solid #3c423c;
     color: var(--ink, #f5f5ef);
   }
 
@@ -235,7 +337,10 @@
     margin: 0 !important;
     /* The right padding reduces each slide's content box while preserving the
        full carousel width, leaving a clear preview of the next exercise. */
-    padding: 0 44px 8px 0 !important;
+    padding: 12px 44px 8px 12px !important;
+    border: 0 !important;
+    border-left: 0 !important;
+    background: transparent !important;
     overflow-x: auto !important;
     overflow-y: hidden;
     overscroll-behavior-inline: contain;
@@ -268,6 +373,30 @@
     scroll-snap-align: start;
     scroll-snap-stop: always;
     transition: opacity 180ms ease, transform 180ms ease;
+    border-color: #555c55 !important;
+    border-radius: 0 !important;
+    background: #202420 !important;
+    box-shadow: none !important;
+  }
+
+  .dashboard-page .custom-workout-carousel[data-carousel-enabled="true"] .custom-workout-card :is(
+    .custom-workout-editable-title,
+    .custom-workout-card-summary,
+    .superset-exercise-heading strong,
+    .exercise-notes-toggle,
+    .previous-weights
+  ) {
+    color: #f7f7f2;
+  }
+
+  .dashboard-page .custom-workout-carousel[data-carousel-enabled="true"] .custom-workout-card :is(
+    input,
+    textarea,
+    .set-rir-button
+  ) {
+    border-color: #555c55 !important;
+    background: #181c18 !important;
+    color: #f7f7f2 !important;
   }
 
   .dashboard-page .custom-workout-carousel[data-carousel-enabled="true"] .custom-workout-card.is-carousel-active {
@@ -339,7 +468,7 @@
     width: 100%;
     max-width: 100%;
     min-width: 0;
-    padding-top: 8px;
+    padding: 8px 12px 0;
   }
 
   .dashboard-page .custom-workout-carousel-arrow {
@@ -418,6 +547,33 @@
     font-size: 16px;
     font-weight: 650;
     line-height: 1.45;
+  }
+
+  .dashboard-page .custom-workout-carousel[data-carousel-enabled="true"] .workout-group-primary-action {
+    display: grid;
+    gap: 8px;
+    padding: 10px 12px 0;
+  }
+
+  .dashboard-page .workout-group-primary-action [data-workout-group-log-set] {
+    width: 100%;
+    min-height: 50px;
+    padding: 12px 14px;
+    border: 1px solid #caff31;
+    border-radius: 0;
+    background: #caff31;
+    color: #111411;
+    font: inherit;
+    font-size: 15px;
+    font-weight: 900;
+    letter-spacing: .035em;
+    text-transform: uppercase;
+  }
+
+  .dashboard-page .workout-group-primary-action [data-workout-group-log-set]:disabled {
+    border-color: #535953;
+    background: #2b302b;
+    color: #aeb4ad;
   }
 }
 
