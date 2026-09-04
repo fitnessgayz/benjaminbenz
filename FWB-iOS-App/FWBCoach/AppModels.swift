@@ -773,8 +773,9 @@ enum ExerciseLibrary {
 
         add("Upper Body", [
             "Barbell Bench Press", "Dumbbell Bench Press", "Incline Dumbbell Press",
-            "Push-Up", "Cable Chest Fly", "Overhead Press", "Dumbbell Shoulder Press",
-            "Lateral Raise", "Rear Delt Fly", "Pull-Up", "Chin-Up", "Lat Pulldown",
+            "Push-Up", "Cable Chest Fly", "Dumbbell Chest Fly", "Pec Deck Chest Fly",
+            "Overhead Press", "Seated Dumbbell Shoulder Press", "Standing Dumbbell Shoulder Press",
+            "Lateral Raise", "Rear Delt Fly", "Dumbbell Reverse Fly", "Pull-Up", "Chin-Up", "Lat Pulldown",
             "Barbell Row", "One-Arm Dumbbell Row", "Seated Cable Row", "Face Pull",
             "Barbell Curl", "Dumbbell Curl", "Hammer Curl", "Cable Triceps Pushdown",
             "Overhead Triceps Extension", "Assisted Dip"
@@ -788,7 +789,7 @@ enum ExerciseLibrary {
         ])
         add("Core", [
             "Dead Bug", "Bird Dog", "Front Plank", "Side Plank", "Pallof Press",
-            "Cable Chop", "Hanging Knee Raise", "Reverse Crunch", "Ab Wheel Rollout",
+            "Cable Chop", "Hanging Knee Raise", "Lying Leg Raise", "Reverse Crunch", "Ab Wheel Rollout",
             "Farmer Carry", "Suitcase Carry"
         ])
         add("Bodyweight", [

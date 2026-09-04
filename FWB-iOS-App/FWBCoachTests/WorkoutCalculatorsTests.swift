@@ -284,6 +284,21 @@ final class WorkoutCalculatorsTests: XCTestCase {
         )
     }
 
+    func testGenericDBShoulderPressOffersSeatedAndStandingChoices() {
+        let matches = ExerciseSuggestionLibrary.matches(
+            query: "DB Shoulder Press",
+            within: [
+                "Seated Dumbbell Shoulder Press",
+                "Standing Dumbbell Shoulder Press",
+                "Machine Shoulder Press"
+            ]
+        )
+
+        XCTAssertTrue(matches.contains("Seated Dumbbell Shoulder Press"))
+        XCTAssertTrue(matches.contains("Standing Dumbbell Shoulder Press"))
+        XCTAssertFalse(matches.contains("Machine Shoulder Press"))
+    }
+
     func testExerciseSuggestionsKeepEquipmentAndAngleVariantsSeparate() {
         XCTAssertFalse(
             ExerciseSuggestionLibrary.matches(
