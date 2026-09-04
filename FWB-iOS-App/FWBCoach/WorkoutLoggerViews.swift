@@ -73,6 +73,15 @@ private struct SequenceEditorRequest: Identifiable {
     let id = UUID()
 }
 
+private struct WorkoutHistoryCopyPromptRequest: Identifiable {
+    let exercise: Exercise
+    let source: WorkoutExerciseCopySource
+
+    var id: String {
+        "\(exercise.id)|\(source.entryDate)|\(source.workoutTitle)"
+    }
+}
+
 struct WorkoutLoggingView<WorkoutSelector: View>: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.scenePhase) private var scenePhase
@@ -120,6 +129,8 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
     @State private var praiseBanner: WorkoutPraiseBannerItem?
     @State private var difficultyPrompt: WorkoutDifficultyPromptRequest?
     @State private var completionCelebration: WorkoutCelebration?
+    @State private var historyCopyPrompt: WorkoutHistoryCopyPromptRequest?
+    @State private var pendingHistoryCopyExerciseID: String?
     @FocusState private var focusedField: WorkoutLogFocus?
 
     init(
@@ -343,6 +354,21 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
                 await commentStore.refresh(context: commentContext)
             }
         }
+        .onChange(of: achievementHistoryStore.state) { state in
+            guard let exerciseID = pendingHistoryCopyExerciseID else { return }
+            switch state {
+            case .loaded:
+                if let exercise = exercises.first(where: { $0.id == exerciseID }) {
+                    scheduleHistoryCopyPrompt(for: exercise)
+                } else {
+                    pendingHistoryCopyExerciseID = nil
+                }
+            case .failed:
+                pendingHistoryCopyExerciseID = nil
+            case .idle, .loading:
+                break
+            }
+        }
         .sheet(item: $exerciseEditorRequest) { request in
             ExercisePickerSheet(
                 request: request,
@@ -374,6 +400,13 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
                 if !embedded {
                     dismiss()
                 }
+            }
+            .presentationDetents([.large])
+            .presentationDragIndicator(.hidden)
+        }
+        .sheet(item: $historyCopyPrompt) { request in
+            WorkoutHistoryCopyPromptView(request: request) {
+                copyLastWorkout(request.source, to: request.exercise)
             }
             .presentationDetents([.large])
             .presentationDragIndicator(.hidden)
@@ -477,11 +510,12 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
                 suggestions: suggestionNames,
                 format: customWorkoutFormat
             ) { exerciseName, placement in
-                insertCustomExercise(
+                let exercise = insertCustomExercise(
                     code: nextAddedExerciseCode(),
                     name: exerciseName,
                     placement: placement
                 )
+                offerHistoryCopy(for: exercise)
             }
         } else {
             Button {
@@ -586,8 +620,10 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
             onSetLabelChanged: { draftID, label in
                 updateSetLabel(label, for: draftID, in: exercise)
             },
-            onStartRestTimer: {
-                startRestTimer(for: exercise)
+            onExerciseNameSuggestionSelected: {
+                if let renamedExercise = exercises.first(where: { $0.code == exercise.code }) {
+                    offerHistoryCopy(for: renamedExercise)
+                }
             },
             onSubstituteExercise: {
                 exerciseEditorRequest = ExerciseEditorRequest(mode: .substitute(exercise))
@@ -902,15 +938,6 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
         saveWorkout(intent: .progress, exerciseID: exercise.id)
     }
 
-    private func startRestTimer(for exercise: Exercise) {
-        focusedField = nil
-        restTimerStore.start(
-            seconds: RestDurationParser.seconds(from: exercise.rest),
-            exerciseName: exercise.name.isEmpty ? "Exercise" : exercise.name,
-            hapticsEnabled: restTimerHapticsEnabled
-        )
-    }
-
     private func handleSetCompletion(
         for exercise: Exercise,
         draft: WorkoutSetDraft,
@@ -1124,13 +1151,17 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
     private func applyExerciseEdit(_ request: ExerciseEditorRequest, exerciseName: String) {
         switch request.mode {
         case .add(let placement):
-            insertCustomExercise(
+            let exercise = insertCustomExercise(
                 code: nextAddedExerciseCode(),
                 name: exerciseName,
                 placement: placement
             )
+            offerHistoryCopy(for: exercise)
         case .substitute(let exercise):
             substituteExercise(exercise, with: exerciseName)
+            if let replacement = exercises.first(where: { $0.code == exercise.code }) {
+                offerHistoryCopy(for: replacement)
+            }
         }
     }
 
@@ -1147,7 +1178,7 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
         code: String,
         name: String,
         placement: CustomExercisePlacement
-    ) {
+    ) -> Exercise {
         let approvedExercise = approvedExercise(matching: name)
         let resolvedName = (approvedExercise?.name ?? name).fwbTitleCased
         let template = suggestedExercises.first {
@@ -1165,7 +1196,7 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
         exercises.append(exercise)
         drafts.append(WorkoutSetDraft(exercise: exercise, setNumber: 1))
 
-        guard isCustomWorkout else { return }
+        guard isCustomWorkout else { return exercise }
         switch customWorkoutFormat {
         case .single:
             groupAssignments.removeValue(forKey: exercise.id)
@@ -1194,6 +1225,36 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
             }
             groupAssignments[exercise.id] = assignment
         }
+        return exercise
+    }
+
+    private func offerHistoryCopy(for exercise: Exercise) {
+        pendingHistoryCopyExerciseID = exercise.id
+        switch achievementHistoryStore.state {
+        case .idle, .loading:
+            break
+        case .loaded, .failed:
+            scheduleHistoryCopyPrompt(for: exercise)
+        }
+    }
+
+    private func scheduleHistoryCopyPrompt(for exercise: Exercise) {
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 300_000_000)
+            guard !Task.isCancelled,
+                  pendingHistoryCopyExerciseID == exercise.id,
+                  let currentExercise = exercises.first(where: { $0.id == exercise.id }) else { return }
+            presentHistoryCopyPrompt(for: currentExercise)
+        }
+    }
+
+    private func presentHistoryCopyPrompt(for exercise: Exercise) {
+        pendingHistoryCopyExerciseID = nil
+        guard let source = copySource(for: exercise) else { return }
+        historyCopyPrompt = WorkoutHistoryCopyPromptRequest(
+            exercise: exercise,
+            source: source
+        )
     }
 
     private func updateCustomWorkoutFormat(_ format: CustomWorkoutFormat) {
@@ -2081,11 +2142,22 @@ private struct WorkoutGroupCarousel<Content: View>: View {
             if let selectedExercise {
                 carouselNavigation(for: selectedExercise)
 
-                ZStack(alignment: .top) {
-                    content(selectedExercise)
-                        .id(selectedExercise.id)
-                        .offset(x: dragTranslation)
-                        .transition(pageTransition)
+                HStack(alignment: .top, spacing: 10) {
+                    if adjacentPreviewAppearsBefore, let adjacentPreview {
+                        carouselPeek(for: adjacentPreview)
+                    }
+
+                    ZStack(alignment: .top) {
+                        content(selectedExercise)
+                            .id(selectedExercise.id)
+                            .offset(x: dragTranslation)
+                            .transition(pageTransition)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .top)
+
+                    if !adjacentPreviewAppearsBefore, let adjacentPreview {
+                        carouselPeek(for: adjacentPreview)
+                    }
                 }
                 .frame(maxWidth: .infinity, alignment: .top)
                 .contentShape(Rectangle())
@@ -2130,6 +2202,18 @@ private struct WorkoutGroupCarousel<Content: View>: View {
 
     private var exerciseIDs: [String] {
         exercises.map(\.id)
+    }
+
+    private var adjacentPreview: Exercise? {
+        if exercises.indices.contains(selectedIndex + 1) {
+            return exercises[selectedIndex + 1]
+        }
+        guard selectedIndex > 0 else { return nil }
+        return exercises[selectedIndex - 1]
+    }
+
+    private var adjacentPreviewAppearsBefore: Bool {
+        selectedIndex == exercises.index(before: exercises.endIndex) && selectedIndex > 0
     }
 
     private var lastExerciseCode: String {
@@ -2217,6 +2301,47 @@ private struct WorkoutGroupCarousel<Content: View>: View {
             }
         }
         .frame(maxWidth: .infinity)
+    }
+
+    private func carouselPeek(for exercise: Exercise) -> some View {
+        let index = exercises.firstIndex(where: { $0.id == exercise.id }) ?? 0
+        return Button {
+            move(to: index)
+        } label: {
+            VStack(spacing: 12) {
+                Image(systemName: adjacentPreviewAppearsBefore ? "chevron.left" : "chevron.right")
+                    .font(.headline.weight(.black))
+                    .foregroundStyle(Color.fwbLime)
+
+                Text(exercise.code.isEmpty ? "EXERCISE" : exercise.code.uppercased())
+                    .font(.caption.weight(.black))
+                    .tracking(0.45)
+                    .foregroundStyle(Color.fwbLime)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.center)
+
+                Text(exercise.name.fwbTitleCased)
+                    .font(.caption2.weight(.bold))
+                    .foregroundStyle(Color.fwbWarmWhite)
+                    .lineLimit(4)
+                    .multilineTextAlignment(.center)
+
+                Spacer(minLength: 0)
+
+                Text("\(index + 1)/\(exercises.count)")
+                    .font(.caption2.weight(.black))
+                    .foregroundStyle(Color.fwbMuted)
+            }
+            .padding(.vertical, 14)
+            .padding(.horizontal, 6)
+            .frame(width: 72)
+            .frame(minHeight: 260)
+            .background(Color.fwbCard, in: Rectangle())
+            .overlay { Rectangle().stroke(Color.fwbLime.opacity(0.7), lineWidth: 1) }
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Show \(exercise.name), exercise \(index + 1) of \(exercises.count)")
+        .accessibilityHint("Previews the adjacent \(assignment.kind.title.lowercased()) exercise")
     }
 
     private var swipeGesture: some Gesture {
@@ -2413,6 +2538,149 @@ private enum WorkoutCopyRequest: Identifiable {
     }
 }
 
+private struct WorkoutHistoryCopyPromptView: View {
+    @Environment(\.dismiss) private var dismiss
+
+    let request: WorkoutHistoryCopyPromptRequest
+    let onCopy: () -> Void
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                HStack(alignment: .top, spacing: 12) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("EXERCISE HISTORY")
+                            .font(.footnote.weight(.black))
+                            .tracking(1.3)
+                            .foregroundStyle(Color.fwbLime)
+                        Text("COPY LAST WORKOUT?")
+                            .font(.largeTitle.weight(.black))
+                            .fontWidth(.condensed)
+                            .foregroundStyle(Color.fwbWarmWhite)
+                    }
+
+                    Spacer(minLength: 0)
+
+                    Button {
+                        dismiss()
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(.headline.weight(.black))
+                            .foregroundStyle(Color.fwbWarmWhite)
+                            .frame(width: 42, height: 42)
+                            .background(Color.fwbSurface, in: Rectangle())
+                            .overlay { Rectangle().stroke(Color.fwbLine, lineWidth: 1) }
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Start fresh")
+                }
+
+                Text("You logged \(request.exercise.name.fwbTitleCased) before. Copy those set values into today’s workout?")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Color.fwbMuted)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                VStack(alignment: .leading, spacing: 12) {
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(Self.formattedDate(request.source.entryDate).uppercased())
+                            .font(.headline.weight(.black))
+                            .fontWidth(.condensed)
+                            .foregroundStyle(Color.fwbWarmWhite)
+                        Text(request.source.workoutTitle.uppercased())
+                            .font(.caption.weight(.bold))
+                            .tracking(0.5)
+                            .foregroundStyle(Color.fwbMuted)
+                            .lineLimit(2)
+                    }
+
+                    HStack(spacing: 6) {
+                        promptHeading("SET", width: 48)
+                        promptHeading("WEIGHT", width: nil)
+                        promptHeading("REPS", width: 66)
+                        promptHeading("RIR", width: 54)
+                    }
+
+                    VStack(spacing: 6) {
+                        ForEach(Array(request.source.records.enumerated()), id: \.offset) { _, record in
+                            HStack(spacing: 6) {
+                                promptValue(Self.setLabel(for: record), width: 48)
+                                promptValue(Self.formatted(record.weightUsed), width: nil)
+                                promptValue(record.reps.map(Self.formatted) ?? "—", width: 66)
+                                promptValue(Self.rirValue(for: record), width: 54)
+                            }
+                        }
+                    }
+                }
+                .padding(14)
+                .background(Color.fwbCard, in: Rectangle())
+                .overlay { Rectangle().stroke(Color.fwbLime.opacity(0.65), lineWidth: 1) }
+
+                Button("COPY LAST WORKOUT") {
+                    onCopy()
+                    dismiss()
+                }
+                .buttonStyle(FWBPrimaryButtonStyle())
+                .accessibilityIdentifier("workout.historyCopy.copy")
+
+                Button("START FRESH") {
+                    dismiss()
+                }
+                .buttonStyle(FWBSecondaryButtonStyle())
+                .accessibilityIdentifier("workout.historyCopy.fresh")
+
+                Text("You can edit every copied value before finishing the workout.")
+                    .font(.caption)
+                    .foregroundStyle(Color.fwbMuted)
+                    .frame(maxWidth: .infinity, alignment: .center)
+            }
+            .padding(20)
+        }
+        .background(Color.fwbBackground.ignoresSafeArea())
+    }
+
+    private func promptHeading(_ text: String, width: CGFloat?) -> some View {
+        Text(text)
+            .font(.caption2.weight(.black))
+            .tracking(0.55)
+            .foregroundStyle(Color.fwbMuted)
+            .frame(maxWidth: width == nil ? .infinity : nil)
+            .frame(width: width)
+    }
+
+    private func promptValue(_ text: String, width: CGFloat?) -> some View {
+        Text(text)
+            .font(.subheadline.weight(.black))
+            .foregroundStyle(Color.fwbWarmWhite)
+            .frame(maxWidth: width == nil ? .infinity : nil)
+            .frame(width: width)
+            .frame(minHeight: 48)
+            .background(Color.fwbSurface, in: Rectangle())
+            .overlay { Rectangle().stroke(Color.fwbLine, lineWidth: 1) }
+    }
+
+    private static func setLabel(for record: WorkoutHistoryRecord) -> String {
+        record.resolvedSetType == .warmUp ? "W" : String(record.setNumber)
+    }
+
+    private static func rirValue(for record: WorkoutHistoryRecord) -> String {
+        guard record.effortScale == .rir, let value = record.effortValue else { return "—" }
+        return formatted(value)
+    }
+
+    private static func formatted(_ value: Double) -> String {
+        value.rounded() == value ? String(Int(value)) : String(format: "%.1f", value)
+    }
+
+    private static func formattedDate(_ entryDate: String) -> String {
+        let parser = DateFormatter()
+        parser.calendar = Calendar(identifier: .gregorian)
+        parser.locale = Locale(identifier: "en_US_POSIX")
+        parser.dateFormat = "yyyy-MM-dd"
+        guard let date = parser.date(from: entryDate) else { return entryDate }
+        return date.formatted(date: .abbreviated, time: .omitted)
+    }
+}
+
 private struct WorkoutExerciseLogCard: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
@@ -2443,7 +2711,7 @@ private struct WorkoutExerciseLogCard: View {
     let onInsertWarmUps: ([WarmUpSetPlan]) -> Void
     let onSetTypeChanged: (UUID, WorkoutSetType) -> Void
     let onSetLabelChanged: (UUID, String) -> Void
-    let onStartRestTimer: () -> Void
+    let onExerciseNameSuggestionSelected: () -> Void
     let onSubstituteExercise: () -> Void
     let onRevertSubstitution: () -> Void
     let onDeleteExercise: () -> Void
@@ -2484,7 +2752,7 @@ private struct WorkoutExerciseLogCard: View {
         onInsertWarmUps: @escaping ([WarmUpSetPlan]) -> Void,
         onSetTypeChanged: @escaping (UUID, WorkoutSetType) -> Void,
         onSetLabelChanged: @escaping (UUID, String) -> Void,
-        onStartRestTimer: @escaping () -> Void,
+        onExerciseNameSuggestionSelected: @escaping () -> Void,
         onSubstituteExercise: @escaping () -> Void,
         onRevertSubstitution: @escaping () -> Void,
         onDeleteExercise: @escaping () -> Void,
@@ -2518,7 +2786,7 @@ private struct WorkoutExerciseLogCard: View {
         self.onInsertWarmUps = onInsertWarmUps
         self.onSetTypeChanged = onSetTypeChanged
         self.onSetLabelChanged = onSetLabelChanged
-        self.onStartRestTimer = onStartRestTimer
+        self.onExerciseNameSuggestionSelected = onExerciseNameSuggestionSelected
         self.onSubstituteExercise = onSubstituteExercise
         self.onRevertSubstitution = onRevertSubstitution
         self.onDeleteExercise = onDeleteExercise
@@ -2617,6 +2885,7 @@ private struct WorkoutExerciseLogCard: View {
                     ExerciseNameAutocompleteField(
                         text: editableName,
                         suggestions: suggestions,
+                        onSuggestionSelected: onExerciseNameSuggestionSelected,
                         accessibilityIdentifier: "customWorkout.exercise.\(exercise.code)"
                     )
                 }
@@ -2647,8 +2916,7 @@ private struct WorkoutExerciseLogCard: View {
                         TableHeading(text: "SET", width: 42)
                         TableHeading(text: entryStyle.firstHeading, width: nil)
                         TableHeading(text: entryStyle.secondHeading, width: 66)
-                        TableHeading(text: "RIR", width: 48)
-                        TableHeading(text: "REST", width: 44)
+                        TableHeading(text: "RIR", width: 56)
                     }
 
                     ForEach(matchingDrafts) { draft in
@@ -2670,7 +2938,6 @@ private struct WorkoutExerciseLogCard: View {
                             onSetLabelChanged: { label in
                                 onSetLabelChanged(draft.id, label)
                             },
-                            onStartRestTimer: onStartRestTimer,
                             onCopyPreviousSet: { requestCopyPreviousSet(draft) },
                             onDelete: { onDeleteSet(draft.id) }
                         )
@@ -2685,15 +2952,25 @@ private struct WorkoutExerciseLogCard: View {
                         .padding(.vertical, 14)
                 }
 
-                Button(action: onAddSet) {
-                    Label("Add Set", systemImage: "plus")
-                        .font(.subheadline.weight(.bold))
-                        .foregroundStyle(Color.fwbLime)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.vertical, 8)
+                HStack(spacing: 10) {
+                    Button(action: onAddSet) {
+                        Label("ADD SET", systemImage: "plus")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(WorkoutSetActionButtonStyle(color: Color.blue))
+                    .accessibilityIdentifier("workout.addSet.\(exercise.id)")
+
+                    Button(role: .destructive) {
+                        guard let lastDraft = matchingDrafts.last else { return }
+                        onDeleteSet(lastDraft.id)
+                    } label: {
+                        Text("DELETE SET")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(WorkoutSetActionButtonStyle(color: Color.fwbRed))
+                    .disabled(matchingDrafts.isEmpty)
+                    .accessibilityIdentifier("workout.deleteLastSet.\(exercise.id)")
                 }
-                .buttonStyle(.plain)
-                .accessibilityIdentifier("workout.addSet.\(exercise.id)")
 
                 FWBRule()
 
@@ -2732,6 +3009,7 @@ private struct WorkoutExerciseLogCard: View {
                 .buttonStyle(FWBSecondaryButtonStyle())
                 .disabled(saveProgressDisabled || !hasExerciseEntry)
                 .accessibilityIdentifier("workout.saveProgress.\(exercise.id)")
+
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -3121,6 +3399,21 @@ private struct TableHeading: View {
     }
 }
 
+private struct WorkoutSetActionButtonStyle: ButtonStyle {
+    let color: Color
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.subheadline.weight(.black))
+            .tracking(0.25)
+            .foregroundStyle(color)
+            .frame(minHeight: 50)
+            .background(Color.fwbCard.opacity(configuration.isPressed ? 0.72 : 1), in: Rectangle())
+            .overlay { Rectangle().stroke(color.opacity(0.9), lineWidth: 1) }
+            .opacity(configuration.isPressed ? 0.82 : 1)
+    }
+}
+
 private struct WorkoutSetLogRow: View {
     @Binding var draft: WorkoutSetDraft
     @FocusState.Binding var focusedField: WorkoutLogFocus?
@@ -3133,7 +3426,6 @@ private struct WorkoutSetLogRow: View {
     let onCompletionChanged: (Bool) -> Void
     let onSetTypeChanged: (WorkoutSetType) -> Void
     let onSetLabelChanged: (String) -> Void
-    let onStartRestTimer: () -> Void
     let onCopyPreviousSet: () -> Void
     let onDelete: () -> Void
     @State private var rirRequest: WorkoutRIRRequest?
@@ -3198,7 +3490,7 @@ private struct WorkoutSetLogRow: View {
                             .font(.subheadline.weight(.black))
                             .foregroundStyle(Color.fwbWarmWhite)
                     }
-                    .frame(width: 48, height: 48)
+                    .frame(width: 56, height: 48)
                     .background(Color.fwbCard, in: Rectangle())
                     .overlay { Rectangle().stroke(Color.fwbLine, lineWidth: 1) }
                 }
@@ -3208,17 +3500,6 @@ private struct WorkoutSetLogRow: View {
                 .accessibilityHint(WorkoutEffortScale.rir.explanation)
                 .accessibilityIdentifier("workout.rir.\(draft.id)")
 
-                Button(action: onStartRestTimer) {
-                    Image(systemName: "clock")
-                        .font(.headline.weight(.semibold))
-                        .foregroundStyle(Color.fwbWarmWhite)
-                        .frame(width: 44, height: 48)
-                        .background(Color.fwbCard, in: Rectangle())
-                        .overlay { Rectangle().stroke(Color.fwbLine, lineWidth: 1) }
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Start rest timer after \(setAccessibilityName.lowercased())")
-                .accessibilityIdentifier("workout.rest.\(draft.id)")
             }
 
             if previousResult != nil || isPreviousHistoryLoading {
@@ -4231,6 +4512,7 @@ private struct ExerciseNameAutocompleteField: View {
     @Binding var text: String
     let suggestions: [String]
     var autoFocus = false
+    var onSuggestionSelected: () -> Void = {}
     let accessibilityIdentifier: String
 
     @FocusState private var isFocused: Bool
@@ -4258,6 +4540,7 @@ private struct ExerciseNameAutocompleteField: View {
                     ForEach(matches, id: \.self) { suggestion in
                         Button {
                             text = suggestion
+                            onSuggestionSelected()
                             isFocused = false
                         } label: {
                             HStack(spacing: 10) {
