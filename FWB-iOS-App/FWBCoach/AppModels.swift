@@ -543,18 +543,31 @@ struct ExerciseNameRecord: Decodable {
 }
 
 enum ExerciseNameIdentity {
-    static func key(for name: String) -> String {
-        let folded = name
+    private static let tokenAliases: [String: String] = [
+        "db": "dumbbell",
+        "dumbell": "dumbbell",
+        "bb": "barbell",
+        "asst": "assisted"
+    ]
+
+    static func displayKey(for name: String) -> String {
+        name
             .trimmingCharacters(in: .whitespacesAndNewlines)
             .folding(
                 options: [.caseInsensitive, .diacriticInsensitive, .widthInsensitive],
                 locale: Locale(identifier: "en_US_POSIX")
             )
             .replacingOccurrences(of: "&", with: " and ")
-
-        return folded
             .components(separatedBy: CharacterSet.alphanumerics.inverted)
             .filter { !$0.isEmpty }
+            .joined(separator: " ")
+    }
+
+    static func key(for name: String) -> String {
+        displayKey(for: name)
+            .split(separator: " ")
+            .map(String.init)
+            .map { tokenAliases[$0] ?? $0 }
             .joined(separator: " ")
     }
 
@@ -635,23 +648,100 @@ enum ExerciseSuggestionLibrary {
     static func matches(query: String, within names: [String], limit: Int = 6) -> [String] {
         let trimmedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
         let normalizedQuery = ExerciseNameIdentity.key(for: trimmedQuery)
+        let displayQuery = ExerciseNameIdentity.displayKey(for: trimmedQuery)
 
         return names
-            .filter { candidate in
+            .compactMap { candidate -> (name: String, score: Double)? in
                 let normalizedCandidate = ExerciseNameIdentity.key(for: candidate)
-                guard normalizedCandidate != normalizedQuery else { return false }
-                return normalizedQuery.isEmpty || normalizedCandidate.contains(normalizedQuery)
+                let displayCandidate = ExerciseNameIdentity.displayKey(for: candidate)
+
+                guard displayCandidate != displayQuery else { return nil }
+                guard !normalizedQuery.isEmpty else { return (candidate, 0) }
+
+                let score = similarityScore(normalizedQuery, normalizedCandidate)
+                return score >= 0.64 ? (candidate, score) : nil
             }
             .sorted { left, right in
-                let leftStartsWithQuery = ExerciseNameIdentity.key(for: left).hasPrefix(normalizedQuery)
-                let rightStartsWithQuery = ExerciseNameIdentity.key(for: right).hasPrefix(normalizedQuery)
+                let leftStartsWithQuery = ExerciseNameIdentity.key(for: left.name).hasPrefix(normalizedQuery)
+                let rightStartsWithQuery = ExerciseNameIdentity.key(for: right.name).hasPrefix(normalizedQuery)
                 if leftStartsWithQuery != rightStartsWithQuery {
                     return leftStartsWithQuery
                 }
-                return left.localizedCaseInsensitiveCompare(right) == .orderedAscending
+                if left.score != right.score {
+                    return left.score > right.score
+                }
+                return left.name.localizedCaseInsensitiveCompare(right.name) == .orderedAscending
             }
             .prefix(limit)
-            .map { $0 }
+            .map(\.name)
+    }
+
+    private static func similarityScore(_ query: String, _ candidate: String) -> Double {
+        if query == candidate { return 1 }
+        if hasConflictingModifier(query, candidate) { return 0 }
+        if candidate.hasPrefix(query) { return 0.96 }
+        if candidate.contains(query) || query.contains(candidate) { return 0.88 }
+
+        let queryTokens = Set(query.split(separator: " ").map(String.init))
+        let candidateTokens = Set(candidate.split(separator: " ").map(String.init))
+        let union = queryTokens.union(candidateTokens).count
+        let tokenOverlap = union == 0
+            ? 0
+            : Double(queryTokens.intersection(candidateTokens).count) / Double(union)
+        let longestNameLength = max(max(query.count, candidate.count), 1)
+        let editSimilarity = 1 - Double(editDistance(query, candidate)) / Double(longestNameLength)
+        return max(tokenOverlap, (tokenOverlap * 0.55) + (editSimilarity * 0.45))
+    }
+
+    private static func hasConflictingModifier(_ query: String, _ candidate: String) -> Bool {
+        let groups = [
+            ["incline", "decline", "flat"],
+            ["abduction", "adduction"],
+            ["chest", "reverse"],
+            ["seated", "standing", "lying"]
+        ]
+        let queryTokens = Set(query.split(separator: " ").map(String.init))
+        let candidateTokens = Set(candidate.split(separator: " ").map(String.init))
+
+        if groups.contains(where: { group in
+            let queryModifier = group.first(where: queryTokens.contains)
+            let candidateModifier = group.first(where: candidateTokens.contains)
+            return queryModifier != nil && candidateModifier != nil && queryModifier != candidateModifier
+        }) {
+            return true
+        }
+
+        let equipment = Set(["dumbbell", "barbell", "cable", "machine", "smith"])
+        let queryEquipment = queryTokens.intersection(equipment)
+        let candidateEquipment = candidateTokens.intersection(equipment)
+        if !queryEquipment.isEmpty, !candidateEquipment.isEmpty, queryEquipment != candidateEquipment {
+            return true
+        }
+
+        let queryWithoutEquipment = queryTokens.subtracting(equipment)
+        let candidateWithoutEquipment = candidateTokens.subtracting(equipment)
+        return queryWithoutEquipment == candidateWithoutEquipment
+            && queryEquipment != candidateEquipment
+    }
+
+    private static func editDistance(_ left: String, _ right: String) -> Int {
+        let leftCharacters = Array(left)
+        let rightCharacters = Array(right)
+        var previous = Array(0...rightCharacters.count)
+
+        for (leftIndex, leftCharacter) in leftCharacters.enumerated() {
+            var current = [leftIndex + 1]
+            for (rightIndex, rightCharacter) in rightCharacters.enumerated() {
+                current.append(min(
+                    current[rightIndex] + 1,
+                    previous[rightIndex + 1] + 1,
+                    previous[rightIndex] + (leftCharacter == rightCharacter ? 0 : 1)
+                ))
+            }
+            previous = current
+        }
+
+        return previous.last ?? 0
     }
 }
 

@@ -259,6 +259,42 @@ final class WorkoutCalculatorsTests: XCTestCase {
         XCTAssertTrue(names.contains("Romanian Deadlift"))
     }
 
+    func testExerciseSuggestionsExpandDBToDumbbell() {
+        XCTAssertEqual(
+            ExerciseNameIdentity.key(for: "DB Bench Press"),
+            ExerciseNameIdentity.key(for: "Dumbbell Bench Press")
+        )
+
+        XCTAssertEqual(
+            ExerciseSuggestionLibrary.matches(
+                query: "DB Bench Press",
+                within: ["Dumbbell Bench Press", "Barbell Bench Press"]
+            ).first,
+            "Dumbbell Bench Press"
+        )
+    }
+
+    func testExerciseSuggestionsKeepEquipmentAndAngleVariantsSeparate() {
+        XCTAssertFalse(
+            ExerciseSuggestionLibrary.matches(
+                query: "Barbell Bench Press",
+                within: ["Dumbbell Bench Press"]
+            ).contains("Dumbbell Bench Press")
+        )
+        XCTAssertFalse(
+            ExerciseSuggestionLibrary.matches(
+                query: "Decline Dumbbell Press",
+                within: ["Incline Dumbbell Press"]
+            ).contains("Incline Dumbbell Press")
+        )
+        XCTAssertFalse(
+            ExerciseSuggestionLibrary.matches(
+                query: "Hip Thrust Machine",
+                within: ["Hip Thrust"]
+            ).contains("Hip Thrust")
+        )
+    }
+
     func testWorkoutHistoryConsolidatesDuplicateExerciseNamesWithoutLosingSets() {
         let records = [
             WorkoutHistoryRecord(
