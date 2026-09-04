@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Coach Overview | Fitness with Benjamin</title>
+  <meta name="description" content="Fitness with Benjamin coach overview: clients, requests, and training activity at a glance." />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-P3FPJMJ4PK"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-P3FPJMJ4PK');
+  </script>
+  <link rel="shortcut icon" href="/favicon.ico" />
+  <link rel="icon" href="/favicon.ico" sizes="any" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+  <link rel="apple-touch-icon" href="/fwb-home-icon-180.png" />
+  <link rel="apple-touch-icon-precomposed" href="/fwb-home-icon-180.png" />
+  <link rel="apple-touch-icon" sizes="120x120" href="/apple-touch-icon-120x120.png" />
+  <link rel="apple-touch-icon" sizes="152x152" href="/apple-touch-icon-152x152.png" />
+  <link rel="apple-touch-icon" sizes="167x167" href="/apple-touch-icon-167x167.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/fwb-home-icon-180.png" />
+  <link rel="manifest" href="/site.webmanifest" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="FWB" />
+  <meta name="application-name" content="FWB" />
+  <meta name="theme-color" content="#050505" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css?v=coach-overview-1" />
+</head>
+<body class="dashboard-page coach-overview-page">
+  <header class="site-header dashboard-header">
+    <a class="brand" href="index.html#top" aria-label="Fitness with Benjamin home">
+      <span>FWB</span>
+      <strong>Fitness with Benjamin</strong>
+    </a>
+    <nav class="nav-links" aria-label="Primary navigation">
+      <a href="coach-admin.html">Coach Admin</a>
+      <a href="client-login.html?v=manual-invite-copy-1">Client Login</a>
+    </nav>
+    <div class="header-actions">
+      <button class="login-link is-current sign-out-button" type="button" data-coach-sign-out hidden>Sign Out</button>
+    </div>
+  </header>
+
+  <main class="overview-shell">
+    <p class="overview-config-warning" id="overview-config-warning" hidden>The private coach portal is not configured.</p>
+
+    <div class="overview-workspace" id="overview-workspace" hidden>
+
+      <nav class="overview-nav" aria-label="Coach overview sections">
+        <span class="overview-nav-item is-active">Overview</span>
+        <a class="overview-nav-item" href="coach-admin.html">Clients</a>
+        <a class="overview-nav-item" href="#overview-requests">Requests</a>
+        <a class="overview-nav-item" href="coach-admin.html">Exercise library</a>
+      </nav>
+
+      <div class="overview-content">
+
+        <div class="overview-greeting">
+          <p class="kicker" id="overview-date"></p>
+          <h1 id="overview-greeting-title">Welcome back</h1>
+        </div>
+
+        <div class="overview-today-card" aria-label="Today's sessions">
+          <div class="overview-today-heading">
+            <h2>Today's sessions</h2>
+            <span class="overview-today-badge">Not connected yet</span>
+          </div>
+          <p>Connect Google Calendar to see today's booked sessions here. Until then, check your calendar directly.</p>
+        </div>
+
+        <div class="overview-stat-grid">
+          <div class="overview-stat-tile">
+            <p>Active clients</p>
+            <strong id="overview-stat-clients">—</strong>
+          </div>
+          <div class="overview-stat-tile">
+            <p>Open requests</p>
+            <strong id="overview-stat-requests" class="is-alert">—</strong>
+          </div>
+          <div class="overview-stat-tile">
+            <p>Workouts logged this week</p>
+            <strong id="overview-stat-workouts">—</strong>
+          </div>
+        </div>
+
+        <section id="overview-requests" aria-labelledby="overview-requests-title">
+          <div class="overview-section-heading">
+            <h2 id="overview-requests-title">Needs your attention</h2>
+          </div>
+          <div class="overview-request-list" id="overview-request-list">
+            <p class="overview-empty-state" id="overview-requests-empty" hidden>No open requests right now.</p>
+          </div>
+        </section>
+
+        <section aria-labelledby="overview-clients-title">
+          <div class="overview-section-heading">
+            <h2 id="overview-clients-title">Clients</h2>
+            <a class="text-link" href="coach-admin.html">Open Coach Admin</a>
+          </div>
+          <div class="overview-roster" id="overview-roster">
+            <div class="overview-roster-head">
+              <span>Client</span>
+              <span>Program</span>
+              <span>Sessions</span>
+              <span>Last workout</span>
+            </div>
+            <p class="overview-empty-state" id="overview-roster-empty" hidden>No active clients yet.</p>
+          </div>
+        </section>
+
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <span>© <span id="year"></span> Fitness with Benjamin</span>
+    <span>San Francisco · fwb@benjaminbenz.com</span>
+  </footer>
+
+  <script src="js/script.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase-config.js"></script>
+  <script src="js/coach-overview.js"></script>
+</body>
+</html>
