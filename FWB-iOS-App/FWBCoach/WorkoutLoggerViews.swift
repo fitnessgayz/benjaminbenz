@@ -26,6 +26,28 @@ private enum WorkoutSaveIntent: Equatable {
     case finish
 }
 
+private enum WorkoutGroupSaveStatus: Equatable {
+    case pending
+    case saving
+    case saved
+
+    var title: String {
+        switch self {
+        case .pending: "AUTOSAVE ON"
+        case .saving: "SAVING…"
+        case .saved: "AUTOSAVED"
+        }
+    }
+
+    var systemImage: String {
+        switch self {
+        case .pending: "icloud"
+        case .saving: "arrow.triangle.2.circlepath.icloud"
+        case .saved: "checkmark.icloud"
+        }
+    }
+}
+
 private enum WorkoutEntryStyle {
     case strength
     case mobility
@@ -175,10 +197,6 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
 
                     WorkoutCommentSummaryCard(store: commentStore, context: commentContext)
 
-                    if let guidedStep {
-                        GuidedSequenceBanner(step: guidedStep)
-                    }
-
                     if !isCustomWorkout {
                         Button {
                             sequenceEditorRequest = SequenceEditorRequest()
@@ -197,9 +215,13 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
                                 exercises: section.exercises,
                                 roundCount: roundCount(for: section),
                                 restText: roundRestText(for: section),
-                                guidedExerciseID: guidedStep?.sectionID == section.id
-                                    ? guidedStep?.exerciseID
-                                    : nil
+                                guidedStep: guidedStep?.sectionID == section.id ? guidedStep : nil,
+                                completedRounds: completedRounds(for: section),
+                                roundTargets: roundTargets(for: section),
+                                saveStatus: groupSaveStatus,
+                                roundRestStatus: roundRestStatus(for: section),
+                                canLogCurrentSet: canLogGuidedSet(in: section),
+                                onLogCurrentSet: logGuidedSet
                             ) { exercise in
                                 exerciseCard(for: exercise, initiallyExpanded: true)
                             }
@@ -651,6 +673,62 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
         section.exercises.reduce(0) { result, exercise in
             max(result, drafts.filter { matches($0, exercise) }.map(\.setNumber).max() ?? 0)
         }
+    }
+
+    private func completedRounds(for section: WorkoutSequenceSection) -> [String: Int] {
+        Dictionary(uniqueKeysWithValues: section.exercises.map { exercise in
+            let completed = drafts.filter {
+                matches($0, exercise) && !$0.isWarmUp && $0.isCompleted
+            }.count
+            return (exercise.id, completed)
+        })
+    }
+
+    private func roundTargets(for section: WorkoutSequenceSection) -> [String: Int] {
+        Dictionary(uniqueKeysWithValues: section.exercises.map { exercise in
+            let target = drafts.filter {
+                matches($0, exercise) && !$0.isWarmUp
+            }.map(\.setNumber).max() ?? 0
+            return (exercise.id, target)
+        })
+    }
+
+    private var groupSaveStatus: WorkoutGroupSaveStatus {
+        if isAutosaving || isSyncing { return .saving }
+        if lastAutosavedPersistenceToken == draftPersistenceToken { return .saved }
+        return .pending
+    }
+
+    private func roundRestStatus(for section: WorkoutSequenceSection) -> String? {
+        guard restTimerStore.isVisible,
+              restTimerStore.exerciseName == "\(section.label) · between rounds" else { return nil }
+        if restTimerStore.phase == .complete { return "REST COMPLETE" }
+        return "REST \(restTimerStore.timeLabel)"
+    }
+
+    private func canLogGuidedSet(in section: WorkoutSequenceSection) -> Bool {
+        guard let step = guidedStep,
+              step.sectionID == section.id,
+              roundRestStatus(for: section) == nil,
+              let exercise = section.exercises.first(where: { $0.id == step.exerciseID }),
+              let draft = drafts.first(where: {
+                  matches($0, exercise) && !$0.isWarmUp && $0.setNumber == step.round
+              }) else { return false }
+        return draft.containsEntry && draft.effortValidationMessage == nil
+    }
+
+    private func logGuidedSet(_ step: GuidedWorkoutStep) {
+        guard let exercise = exercises.first(where: { $0.id == step.exerciseID }),
+              let index = drafts.firstIndex(where: {
+                  matches($0, exercise) && !$0.isWarmUp && $0.setNumber == step.round
+              }),
+              drafts[index].containsEntry,
+              drafts[index].effortValidationMessage == nil else { return }
+
+        focusedField = nil
+        drafts[index].isCompleted = true
+        let completedDraft = drafts[index]
+        handleSetCompletion(for: exercise, draft: completedDraft, isCompleted: true)
     }
 
     private func copySource(for exercise: Exercise) -> WorkoutExerciseCopySource? {
@@ -1739,46 +1817,6 @@ private struct WorkoutSessionHeader: View {
     }
 }
 
-private struct GuidedSequenceBanner: View {
-    let step: GuidedWorkoutStep
-
-    var body: some View {
-        HStack(alignment: .top, spacing: 14) {
-            ZStack {
-                Rectangle()
-                    .fill(Color.fwbAccentFill)
-                    .frame(width: 44, height: 44)
-                Text("\(step.position)")
-                    .font(.headline.weight(.black))
-                    .foregroundStyle(Color.black)
-            }
-
-            VStack(alignment: .leading, spacing: 4) {
-                Text("\(step.groupLabel.uppercased()) · ROUND \(step.round)/\(step.roundCount)")
-                    .font(.footnote.weight(.black))
-                    .tracking(0.8)
-                    .foregroundStyle(Color.fwbLime)
-                Text(step.exerciseName.fwbTitleCased)
-                    .font(.title3.weight(.black))
-                    .fontWidth(.condensed)
-                    .foregroundStyle(Color.fwbWarmWhite)
-                Text("Exercise \(step.position) of \(step.exerciseCount). Move directly to the next exercise; rest after the full round.")
-                    .font(.footnote)
-                    .foregroundStyle(Color.fwbMuted)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-
-            Spacer(minLength: 0)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .fwbCard()
-        .overlay { Rectangle().stroke(Color.fwbLime, lineWidth: 2) }
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("Next, \(step.exerciseName), round \(step.round) of \(step.roundCount), exercise \(step.position) of \(step.exerciseCount)")
-        .accessibilityIdentifier("workout.guidedSequence")
-    }
-}
-
 private struct CustomExerciseNameComposer: View {
     let suggestions: [String]
     let format: CustomWorkoutFormat
@@ -2064,35 +2102,194 @@ private struct CustomWorkoutFormatPicker: View {
 
 private struct WorkoutGroupHeader: View {
     let assignment: WorkoutGroupAssignment
-    let exerciseCount: Int
+    let exercises: [Exercise]
     let roundCount: Int
-    let restText: String
+    let guidedStep: GuidedWorkoutStep?
+    let completedRounds: [String: Int]
+    let roundTargets: [String: Int]
+    let saveStatus: WorkoutGroupSaveStatus
+    let roundRestStatus: String?
 
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            Image(systemName: assignment.kind == .circuit ? "repeat" : "link")
-                .font(.headline.weight(.black))
-                .foregroundStyle(Color.black)
-                .frame(width: 38, height: 38)
-                .background(Color.fwbAccentFill, in: Rectangle())
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(alignment: .center, spacing: 12) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(assignment.label.uppercased())
+                        .font(.footnote.weight(.black))
+                        .tracking(1.2)
+                        .foregroundStyle(Color.fwbLime)
+                    Text(roundTitle)
+                        .font(.title2.weight(.black))
+                        .fontWidth(.condensed)
+                        .foregroundStyle(Color.fwbWarmWhite)
+                }
 
-            VStack(alignment: .leading, spacing: 3) {
-                Text(assignment.label.uppercased())
-                    .font(.headline.weight(.black))
-                    .fontWidth(.condensed)
-                    .foregroundStyle(Color.fwbWarmWhite)
-                Text("\(roundCount) rounds · \(exerciseCount) exercises")
-                    .font(.footnote.weight(.semibold))
-                    .foregroundStyle(Color.fwbLime)
-                Text("No rest between exercises · Round rest: \(restText)")
-                    .font(.footnote)
+                Spacer(minLength: 8)
+
+                Label(saveStatus.title, systemImage: saveStatus.systemImage)
+                    .font(.footnote.weight(.bold))
                     .foregroundStyle(Color.fwbMuted)
-                    .fixedSize(horizontal: false, vertical: true)
+                    .lineLimit(1)
+            }
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(Array(exercises.enumerated()), id: \.element.id) { index, exercise in
+                        sequenceItem(exercise: exercise, index: index)
+                    }
+                }
+            }
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("workout.groupProgress")
+    }
+
+    private var displayRound: Int {
+        if roundRestStatus != nil, let guidedStep {
+            return max(guidedStep.round - 1, 1)
+        }
+        return guidedStep?.round ?? max(roundCount, 1)
+    }
+
+    private var groupIsComplete: Bool {
+        guard roundCount > 0 else { return false }
+        return exercises.allSatisfy {
+            completedRounds[$0.id, default: 0] >= roundTargets[$0.id, default: roundCount]
+        }
+    }
+
+    private var roundTitle: String {
+        if groupIsComplete { return "ALL ROUNDS COMPLETE" }
+        if roundRestStatus != nil { return "ROUND \(displayRound) COMPLETE" }
+        return "ROUND \(displayRound) OF \(max(roundCount, 1))"
+    }
+
+    private func sequenceItem(exercise: Exercise, index: Int) -> some View {
+        let target = roundTargets[exercise.id, default: roundCount]
+        let isDone = completedRounds[exercise.id, default: 0] >= min(displayRound, target)
+        let isNext = guidedStep?.exerciseID == exercise.id && roundRestStatus == nil
+        let status = groupIsComplete || isDone ? "DONE" : isNext ? "NEXT" : "WAIT"
+        let color = groupIsComplete || isDone ? Color.green : isNext ? Color.fwbLime : Color.fwbMuted
+
+        return VStack(alignment: .leading, spacing: 5) {
+            Rectangle()
+                .fill(color)
+                .frame(height: 3)
+
+            Text("\(displayCode(for: exercise, index: index)) · \(status)")
+                .font(.footnote.weight(.black))
+                .tracking(0.45)
+                .foregroundStyle(color)
+                .lineLimit(1)
+
+            Text(exercise.name.isEmpty ? "Exercise" : exercise.name.fwbTitleCased)
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(groupIsComplete || isDone || isNext ? Color.fwbWarmWhite : Color.fwbMuted)
+                .lineLimit(1)
+        }
+        .frame(width: exercises.count == 2 ? 142 : 126, alignment: .leading)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(displayCode(for: exercise, index: index)), \(exercise.name), \(status.lowercased())")
+    }
+
+    private func displayCode(for exercise: Exercise, index: Int) -> String {
+        let rawCode = exercise.code.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+        if !rawCode.isEmpty, !rawCode.hasPrefix("CW"), !rawCode.hasPrefix("ADD") {
+            return rawCode
+        }
+        if assignment.kind == .circuit { return "C\(index + 1)" }
+        let number = Int(assignment.label.split(separator: " ").last ?? "1") ?? 1
+        let scalar = UnicodeScalar(64 + min(max(number, 1), 26)).map(String.init) ?? "A"
+        return "\(scalar)\(index + 1)"
+    }
+}
+
+private struct WorkoutRoundRestCallout: View {
+    let status: String
+    let restText: String
+    let firstExerciseCode: String
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "timer")
+                .font(.headline.weight(.black))
+                .foregroundStyle(Color.fwbLime)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(status)
+                    .font(.footnote.weight(.black))
+                    .tracking(0.7)
+                    .foregroundStyle(Color.fwbLime)
+                Text("Rest \(restText), then return to \(firstExerciseCode).")
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(Color.fwbWarmWhite)
             }
 
             Spacer(minLength: 0)
         }
+        .padding(12)
+        .background(Color.fwbCard, in: Rectangle())
+        .overlay { Rectangle().stroke(Color.fwbLime, lineWidth: 1) }
         .accessibilityElement(children: .combine)
+    }
+}
+
+private struct WorkoutGroupFooter: View {
+    let assignment: WorkoutGroupAssignment
+    let exercises: [Exercise]
+    let guidedStep: GuidedWorkoutStep?
+    let canLogCurrentSet: Bool
+    let onLogCurrentSet: (GuidedWorkoutStep) -> Void
+
+    var body: some View {
+        VStack(spacing: 8) {
+            if let guidedStep {
+                Button {
+                    onLogCurrentSet(guidedStep)
+                } label: {
+                    Text(actionTitle(for: guidedStep))
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(FWBPrimaryButtonStyle())
+                .disabled(!canLogCurrentSet)
+                .accessibilityHint(canLogCurrentSet ? "Logs this set and opens the next exercise" : "Enter weight or reps for the current set first")
+                .accessibilityIdentifier("workout.group.logSet")
+
+                Text("No rest until the full \(assignment.kind.title.lowercased()) round is complete.")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Color.fwbMuted)
+                    .multilineTextAlignment(.center)
+            } else {
+                Text(assignment.label.uppercased())
+                    .font(.footnote.weight(.black))
+                    .tracking(0.7)
+                    .foregroundStyle(Color.fwbLime)
+            }
+        }
+    }
+
+    private func actionTitle(for step: GuidedWorkoutStep) -> String {
+        let nextLabel: String
+        if step.position < exercises.count {
+            nextLabel = displayCode(index: step.position)
+        } else if step.round < step.roundCount {
+            nextLabel = displayCode(index: 0)
+        } else {
+            return "LOG SET · FINISH GROUP"
+        }
+        return "LOG SET · NEXT: \(nextLabel)"
+    }
+
+    private func displayCode(index: Int) -> String {
+        guard exercises.indices.contains(index) else { return "NEXT" }
+        let rawCode = exercises[index].code.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+        if !rawCode.isEmpty, !rawCode.hasPrefix("CW"), !rawCode.hasPrefix("ADD") {
+            return rawCode
+        }
+        if assignment.kind == .circuit { return "C\(index + 1)" }
+        let number = Int(assignment.label.split(separator: " ").last ?? "1") ?? 1
+        let scalar = UnicodeScalar(64 + min(max(number, 1), 26)).map(String.init) ?? "A"
+        return "\(scalar)\(index + 1)"
     }
 }
 
@@ -2101,7 +2298,13 @@ private struct WorkoutGroupCarousel<Content: View>: View {
     let exercises: [Exercise]
     let roundCount: Int
     let restText: String
-    let guidedExerciseID: String?
+    let guidedStep: GuidedWorkoutStep?
+    let completedRounds: [String: Int]
+    let roundTargets: [String: Int]
+    let saveStatus: WorkoutGroupSaveStatus
+    let roundRestStatus: String?
+    let canLogCurrentSet: Bool
+    let onLogCurrentSet: (GuidedWorkoutStep) -> Void
 
     private let content: (Exercise) -> Content
 
@@ -2114,18 +2317,30 @@ private struct WorkoutGroupCarousel<Content: View>: View {
         exercises: [Exercise],
         roundCount: Int,
         restText: String,
-        guidedExerciseID: String?,
+        guidedStep: GuidedWorkoutStep?,
+        completedRounds: [String: Int],
+        roundTargets: [String: Int],
+        saveStatus: WorkoutGroupSaveStatus,
+        roundRestStatus: String?,
+        canLogCurrentSet: Bool,
+        onLogCurrentSet: @escaping (GuidedWorkoutStep) -> Void,
         @ViewBuilder content: @escaping (Exercise) -> Content
     ) {
         self.assignment = assignment
         self.exercises = exercises
         self.roundCount = roundCount
         self.restText = restText
-        self.guidedExerciseID = guidedExerciseID
+        self.guidedStep = guidedStep
+        self.completedRounds = completedRounds
+        self.roundTargets = roundTargets
+        self.saveStatus = saveStatus
+        self.roundRestStatus = roundRestStatus
+        self.canLogCurrentSet = canLogCurrentSet
+        self.onLogCurrentSet = onLogCurrentSet
         self.content = content
 
-        let initialExerciseID = exercises.contains { $0.id == guidedExerciseID }
-            ? guidedExerciseID
+        let initialExerciseID = exercises.contains { $0.id == guidedStep?.exerciseID }
+            ? guidedStep?.exerciseID
             : exercises.first?.id
         _selectedExerciseID = State(initialValue: initialExerciseID ?? "")
     }
@@ -2134,9 +2349,13 @@ private struct WorkoutGroupCarousel<Content: View>: View {
         VStack(alignment: .leading, spacing: 12) {
             WorkoutGroupHeader(
                 assignment: assignment,
-                exerciseCount: exercises.count,
+                exercises: exercises,
                 roundCount: roundCount,
-                restText: restText
+                guidedStep: guidedStep,
+                completedRounds: completedRounds,
+                roundTargets: roundTargets,
+                saveStatus: saveStatus,
+                roundRestStatus: roundRestStatus
             )
 
             if let selectedExercise {
@@ -2165,22 +2384,28 @@ private struct WorkoutGroupCarousel<Content: View>: View {
 
                 pageIndicators
 
-                Label(
-                    "REST AFTER \(lastExerciseCode) · \(restText.uppercased())",
-                    systemImage: "timer"
-                )
-                .font(.footnote.weight(.black))
-                .tracking(0.55)
-                .foregroundStyle(Color.fwbLime)
-                .frame(maxWidth: .infinity, alignment: .center)
-                .accessibilityLabel("Rest after \(lastExerciseCode), \(restText)")
+                if let roundRestStatus {
+                    WorkoutRoundRestCallout(
+                        status: roundRestStatus,
+                        restText: restText,
+                        firstExerciseCode: firstExerciseCode
+                    )
+                } else {
+                    WorkoutGroupFooter(
+                        assignment: assignment,
+                        exercises: exercises,
+                        guidedStep: guidedStep,
+                        canLogCurrentSet: canLogCurrentSet,
+                        onLogCurrentSet: onLogCurrentSet
+                    )
+                }
             }
         }
         .padding(12)
         .background(Color.fwbSurface.opacity(0.55), in: Rectangle())
         .overlay { Rectangle().stroke(Color.fwbLime.opacity(0.72), lineWidth: 1) }
         .accessibilityElement(children: .contain)
-        .onChange(of: guidedExerciseID) { exerciseID in
+        .onChange(of: guidedStep?.exerciseID) { exerciseID in
             guard let exerciseID,
                   let index = exercises.firstIndex(where: { $0.id == exerciseID }) else { return }
             move(to: index)
@@ -2218,6 +2443,12 @@ private struct WorkoutGroupCarousel<Content: View>: View {
 
     private var lastExerciseCode: String {
         guard let exercise = exercises.last else { return "THE LAST EXERCISE" }
+        let code = exercise.code.trimmingCharacters(in: .whitespacesAndNewlines)
+        return code.isEmpty ? exercise.name.uppercased() : code.uppercased()
+    }
+
+    private var firstExerciseCode: String {
+        guard let exercise = exercises.first else { return "THE FIRST EXERCISE" }
         let code = exercise.code.trimmingCharacters(in: .whitespacesAndNewlines)
         return code.isEmpty ? exercise.name.uppercased() : code.uppercased()
     }
