@@ -659,7 +659,7 @@ enum ExerciseSuggestionLibrary {
                 guard !normalizedQuery.isEmpty else { return (candidate, 0) }
 
                 let score = similarityScore(normalizedQuery, normalizedCandidate)
-                return score >= 0.64 ? (candidate, score) : nil
+                return score >= 0.60 ? (candidate, score) : nil
             }
             .sorted { left, right in
                 let leftStartsWithQuery = ExerciseNameIdentity.key(for: left.name).hasPrefix(normalizedQuery)

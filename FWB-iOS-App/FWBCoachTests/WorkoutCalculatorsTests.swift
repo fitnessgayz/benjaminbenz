@@ -274,6 +274,16 @@ final class WorkoutCalculatorsTests: XCTestCase {
         )
     }
 
+    func testExerciseSuggestionsOfferCanonicalChestPressSynonym() {
+        XCTAssertEqual(
+            ExerciseSuggestionLibrary.matches(
+                query: "Dumbbell Chest Press",
+                within: ["Dumbbell Bench Press"]
+            ).first,
+            "Dumbbell Bench Press"
+        )
+    }
+
     func testExerciseSuggestionsKeepEquipmentAndAngleVariantsSeparate() {
         XCTAssertFalse(
             ExerciseSuggestionLibrary.matches(
