@@ -8,6 +8,7 @@ const isConfigured = Boolean(
 const supabaseClient = isConfigured && window.supabase
   ? window.supabase.createClient(config.url, config.anonKey)
   : null;
+const exerciseNameMatcher = window.FWB_EXERCISE_NAME_MATCHER || null;
 const coachPortalEmails = ["benjaminbenz.fit@gmail.com"];
 let activeClientEmail = "";
 let signedInDashboardEmail = "";
@@ -1549,15 +1550,16 @@ function youtubeExerciseSearchUrl(exerciseName) {
 }
 
 function approvedExerciseForName(exerciseName) {
-  const normalizedName = String(exerciseName || "").trim().toLowerCase();
+  const normalizeName = exerciseNameMatcher?.normalizeName || ((value) => String(value || "").trim().toLowerCase());
+  const normalizedName = normalizeName(exerciseName);
 
   if (!normalizedName) {
     return null;
   }
 
   return exerciseLibraryEntries.find((exercise) => (
-    String(exercise.name || "").trim().toLowerCase() === normalizedName
-    || (exercise.aliases || []).some((alias) => String(alias).trim().toLowerCase() === normalizedName)
+    normalizeName(exercise.name) === normalizedName
+    || (exercise.aliases || []).some((alias) => normalizeName(alias) === normalizedName)
   )) || null;
 }
 
@@ -3327,20 +3329,35 @@ function restoreCustomWorkoutDrafts() {
   document.querySelectorAll(".client-workout-panel-custom").forEach(applyCustomWorkoutDraft);
 }
 
-function exerciseSuggestionNames() {
+function exerciseSuggestionRecords() {
   const suggestions = new Map();
-  const addSuggestion = (value) => {
+  const addSuggestion = (value, libraryEntry = null) => {
     const name = String(value || "").trim();
-    const key = name.toLowerCase();
+    const approvedExercise = libraryEntry || approvedExerciseForName(name);
+    const canonicalName = String(approvedExercise?.name || name).trim();
+    const key = canonicalName.toLowerCase();
 
-    if (name && !suggestions.has(key)) {
-      suggestions.set(key, name);
+    if (!canonicalName) {
+      return;
     }
+
+    if (!suggestions.has(key)) {
+      suggestions.set(key, {
+        name: canonicalName,
+        aliases: new Set(),
+        libraryEntry: approvedExercise || null
+      });
+    }
+
+    const record = suggestions.get(key);
+    if (name && name.toLowerCase() !== canonicalName.toLowerCase()) {
+      record.aliases.add(name);
+    }
+    (approvedExercise?.aliases || []).forEach((alias) => record.aliases.add(alias));
   };
 
   exerciseLibraryEntries.forEach((exercise) => {
-    addSuggestion(exercise.name);
-    (exercise.aliases || []).forEach(addSuggestion);
+    addSuggestion(exercise.name, exercise);
   });
 
   const workouts = Array.isArray(currentProgram?.workouts) ? currentProgram.workouts : [];
@@ -3360,25 +3377,60 @@ function exerciseSuggestionNames() {
     addSuggestion(log.exercise_name);
   });
 
-  return Array.from(suggestions.values()).sort((left, right) => left.localeCompare(right));
+  return Array.from(suggestions.values())
+    .map((record) => ({ ...record, aliases: Array.from(record.aliases) }))
+    .sort((left, right) => left.name.localeCompare(right.name));
+}
+
+function exerciseSuggestionNames() {
+  return exerciseSuggestionRecords().map((record) => record.name);
 }
 
 function customExerciseSuggestionMatches(value) {
-  const query = String(value || "").trim().toLowerCase();
+  const query = String(value || "").trim();
+  const normalizedQuery = exerciseNameMatcher?.normalizeName(query) || query.toLowerCase();
+  const recommendation = exerciseNameMatcher?.recommendedLibraryMatch(query, exerciseLibraryEntries) || null;
+  const recommendationName = recommendation?.exercise?.name || "";
+  const records = exerciseSuggestionRecords();
+  const scored = records.map((record) => {
+    const labels = [record.name, ...record.aliases];
+    const substringMatch = !normalizedQuery || labels.some((label) => {
+      const normalizedLabel = exerciseNameMatcher?.normalizeName(label) || label.toLowerCase();
+      return normalizedLabel.includes(normalizedQuery);
+    });
+    const score = query && exerciseNameMatcher
+      ? Math.max(...labels.map((label) => exerciseNameMatcher.nameSimilarity(query, label, record.libraryEntry || {})))
+      : 0;
+    const startsWithQuery = Boolean(normalizedQuery) && labels.some((label) => {
+      const normalizedLabel = exerciseNameMatcher?.normalizeName(label) || label.toLowerCase();
+      return normalizedLabel.startsWith(normalizedQuery);
+    });
 
-  return exerciseSuggestionNames()
-    .filter((name) => !query || name.toLowerCase().includes(query))
+    return { ...record, substringMatch, score, startsWithQuery };
+  });
+  const matches = scored
+    .filter((record) => !query || record.substringMatch || record.score >= 0.58)
+    .filter((record) => record.name !== recommendationName)
     .sort((left, right) => {
-      const leftStartsWithQuery = query && left.toLowerCase().startsWith(query);
-      const rightStartsWithQuery = query && right.toLowerCase().startsWith(query);
-
-      if (leftStartsWithQuery !== rightStartsWithQuery) {
-        return leftStartsWithQuery ? -1 : 1;
+      if (left.startsWithQuery !== right.startsWithQuery) {
+        return left.startsWithQuery ? -1 : 1;
       }
 
-      return left.localeCompare(right);
+      return right.score - left.score || left.name.localeCompare(right.name);
     })
-    .slice(0, 12);
+    .slice(0, recommendation ? 11 : 12)
+    .map((record) => ({ name: record.name, recommended: false }));
+
+  if (recommendation) {
+    matches.unshift({
+      name: recommendationName,
+      recommended: true,
+      matchedLabel: recommendation.matchedLabel,
+      score: recommendation.score
+    });
+  }
+
+  return matches;
 }
 
 function closeCustomExerciseSuggestions(exceptEditor = null) {
@@ -3405,12 +3457,19 @@ function renderCustomExerciseSuggestions(input) {
 
   const matches = customExerciseSuggestionMatches(input.value);
 
-  menu.innerHTML = matches.map((name) => `
+  menu.innerHTML = matches.map((match) => `
     <button
+      class="${match.recommended ? "is-recommended" : ""}"
       type="button"
       role="option"
-      data-custom-exercise-suggestion="${escapeHtml(name)}"
-    >${escapeHtml(name)}</button>
+      data-custom-exercise-suggestion="${escapeHtml(match.name)}"
+    >
+      ${match.recommended ? `
+        <small>Did you mean?</small>
+        <strong>${escapeHtml(match.name)}</strong>
+        <span>Use the library name to keep progress together.</span>
+      ` : escapeHtml(match.name)}
+    </button>
   `).join("");
   menu.hidden = matches.length === 0;
   input.setAttribute("aria-expanded", matches.length > 0 ? "true" : "false");

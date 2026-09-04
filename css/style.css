@@ -9116,6 +9116,32 @@ textarea,
   border-bottom: 0;
 }
 
+.custom-workout-suggestion-menu button.is-recommended {
+  display: grid;
+  gap: 2px;
+  border-bottom: 2px solid var(--black);
+  background: var(--lime);
+  color: var(--black);
+}
+
+.custom-workout-suggestion-menu button.is-recommended small {
+  color: inherit;
+  font-size: .68rem;
+  font-weight: 900;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.custom-workout-suggestion-menu button.is-recommended strong {
+  font-size: .94rem;
+}
+
+.custom-workout-suggestion-menu button.is-recommended span {
+  font-size: .7rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
 .custom-workout-suggestion-menu button:hover,
 .custom-workout-suggestion-menu button:focus-visible {
   background: #f4f4ef;
