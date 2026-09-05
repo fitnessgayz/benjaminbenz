@@ -60,7 +60,7 @@ const warmUpSetType = "warm_up";
 const clientDashboardUrl = "client-dashboard.html?v=manual-sessions-1";
 const workoutElapsedTimerStorageKey = "fwb_workout_elapsed_timer_v1";
 const workoutElapsedTimerCompactStorageKey = "fwb_workout_elapsed_timer_compact_v1";
-const workoutElapsedTimerPositionStorageKey = "fwb_workout_elapsed_timer_position_v1";
+const workoutElapsedTimerPositionStorageKey = "fwb_workout_elapsed_timer_position_v2";
 const workoutElapsedTimerMaximumMilliseconds = 24 * 60 * 60 * 1000;
 let exerciseLibraryEntries = [];
 let activeCustomWorkoutFormat = "single";
@@ -4068,6 +4068,7 @@ function workoutElapsedTimerMarkup() {
       <output data-workout-elapsed-display role="timer" aria-live="off">00:00</output>
       <button type="button" data-workout-elapsed-toggle aria-label="Pause workout timer">Pause</button>
       <button type="button" data-workout-elapsed-reset aria-label="Reset workout timer">Reset</button>
+      <button class="workout-elapsed-close" type="button" data-workout-elapsed-close aria-label="Hide workout timer" title="Hide timer">×</button>
     </aside>
   `;
 }
@@ -4108,7 +4109,7 @@ function workoutElapsedTimerPositionPreference() {
     // Use the top-right default when storage is unavailable or invalid.
   }
 
-  workoutElapsedTimerPosition = { edge: "right", topRatio: 0 };
+  workoutElapsedTimerPosition = { edge: "right", topRatio: 1 };
   return workoutElapsedTimerPosition;
 }
 
@@ -4128,13 +4129,19 @@ function workoutElapsedTimerDragBounds(timer) {
   const viewportWidth = Math.max(document.documentElement.clientWidth, window.innerWidth || 0);
   const viewportHeight = Math.max(document.documentElement.clientHeight, window.innerHeight || 0);
   const rect = timer.getBoundingClientRect();
+  const navigation = document.querySelector(".client-dashboard-tabs");
+  const navigationRect = navigation?.getBoundingClientRect();
+  const viewportMaxTop = Math.max(gap, viewportHeight - rect.height - gap);
+  const navigationMaxTop = navigationRect?.height > 0
+    ? navigationRect.top - rect.height - gap
+    : viewportMaxTop;
 
   return {
     gap,
     width: rect.width,
     height: rect.height,
     maxLeft: Math.max(gap, viewportWidth - rect.width - gap),
-    maxTop: Math.max(gap, viewportHeight - rect.height - gap)
+    maxTop: Math.max(gap, Math.min(viewportMaxTop, navigationMaxTop))
   };
 }
 
@@ -4288,7 +4295,8 @@ function readWorkoutElapsedTimerState() {
       workoutTitle: String(parsed.workoutTitle || "Workout").trim() || "Workout",
       accumulatedMilliseconds: Math.max(0, Number(parsed.accumulatedMilliseconds) || 0),
       startedAt: Math.max(0, Number(parsed.startedAt) || 0),
-      running: Boolean(parsed.running)
+      running: Boolean(parsed.running),
+      dismissed: Boolean(parsed.dismissed)
     };
     const activeMilliseconds = state.running && state.startedAt
       ? Math.max(0, Date.now() - state.startedAt)
@@ -4386,11 +4394,11 @@ function activeWorkoutElapsedTitle() {
 
 function renderWorkoutElapsedTimer() {
   const timer = ensureWorkoutElapsedTimer();
-  const timerIsVisible = Boolean(workoutElapsedTimerState);
+  const timerIsVisible = Boolean(workoutElapsedTimerState && !workoutElapsedTimerState.dismissed);
 
   document.body.classList.toggle("workout-elapsed-timer-visible", timerIsVisible);
 
-  if (!workoutElapsedTimerState) {
+  if (!timerIsVisible) {
     document.body.classList.remove("workout-elapsed-timer-compact");
     timer.hidden = true;
     syncWorkoutStartButtons();
@@ -4449,6 +4457,8 @@ function syncWorkoutStartButtons() {
       button.textContent = "Start workout";
     } else if (!isActiveWorkout) {
       button.textContent = "Workout timer active";
+    } else if (workoutElapsedTimerState.dismissed) {
+      button.textContent = "Show workout timer";
     } else {
       button.textContent = workoutElapsedTimerState.running ? "Pause workout" : "Resume workout";
     }
@@ -4475,7 +4485,8 @@ function startWorkoutElapsedTimer(workoutTitle = "") {
         workoutTitle: String(workoutTitle || activeWorkoutElapsedTitle()).trim() || "Workout",
         accumulatedMilliseconds: 0,
         startedAt: Date.now(),
-        running: true
+        running: true,
+        dismissed: false
       };
 
   workoutElapsedTimerState.clientEmail = clientEmail;
@@ -4531,6 +4542,26 @@ function resetWorkoutElapsedTimer() {
   workoutElapsedTimerState.startedAt = workoutElapsedTimerState.running ? Date.now() : 0;
   persistWorkoutElapsedTimerState();
   runWorkoutElapsedTimer();
+}
+
+function hideWorkoutElapsedTimer() {
+  if (!workoutElapsedTimerState) {
+    return;
+  }
+
+  workoutElapsedTimerState.dismissed = true;
+  persistWorkoutElapsedTimerState();
+  renderWorkoutElapsedTimer();
+}
+
+function showWorkoutElapsedTimer() {
+  if (!workoutElapsedTimerState) {
+    return;
+  }
+
+  workoutElapsedTimerState.dismissed = false;
+  persistWorkoutElapsedTimerState();
+  renderWorkoutElapsedTimer();
 }
 
 function finishWorkoutElapsedTimer() {
@@ -7591,6 +7622,7 @@ function handleWorkoutInteractions() {
     const workoutElapsedToggleButton = event.target.closest("[data-workout-elapsed-toggle]");
     const workoutElapsedResetButton = event.target.closest("[data-workout-elapsed-reset]");
     const workoutElapsedCompactButton = event.target.closest("[data-workout-elapsed-compact]");
+    const workoutElapsedCloseButton = event.target.closest("[data-workout-elapsed-close]");
 
     if (exerciseNotesToggle) {
       const notesContent = exerciseNotesToggle.closest(".exercise-notes")?.querySelector(".exercise-notes-content");
@@ -7634,7 +7666,9 @@ function handleWorkoutInteractions() {
         workoutTitle === String(workoutElapsedTimerState.workoutTitle || "").trim()
       );
 
-      if (isActiveWorkout) {
+      if (isActiveWorkout && workoutElapsedTimerState.dismissed) {
+        showWorkoutElapsedTimer();
+      } else if (isActiveWorkout) {
         toggleWorkoutElapsedTimer();
       } else if (!workoutElapsedTimerState) {
         startWorkoutElapsedTimer(workoutTitle);
@@ -7644,6 +7678,11 @@ function handleWorkoutInteractions() {
 
     if (workoutElapsedCompactButton) {
       toggleWorkoutElapsedTimerCompact();
+      return;
+    }
+
+    if (workoutElapsedCloseButton) {
+      hideWorkoutElapsedTimer();
       return;
     }
 

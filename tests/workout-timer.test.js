@@ -20,3 +20,12 @@ test("workout timer drag position is snapped, constrained, and persisted", () =>
   assert.match(portalSource, /persistWorkoutElapsedTimerPosition\(\)/);
   assert.match(portalSource, /window\.addEventListener\("resize", \(\) => applyWorkoutElapsedTimerPosition\(\)\)/);
 });
+
+test("workout timer starts above navigation and can be hidden without clearing elapsed time", () => {
+  assert.match(portalSource, /workoutElapsedTimerPosition = \{ edge: "right", topRatio: 1 \}/);
+  assert.match(portalSource, /navigationRect\.top - rect\.height - gap/);
+  assert.match(portalSource, /data-workout-elapsed-close/);
+  assert.match(portalSource, /workoutElapsedTimerState\.dismissed = true/);
+  assert.match(portalSource, /button\.textContent = "Show workout timer"/);
+  assert.match(styleSource, /background:\s*rgba\(29, 32, 29, \.84\)/);
+});

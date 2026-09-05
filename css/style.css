@@ -4083,7 +4083,7 @@ footer {
   left: 12px;
   z-index: 90;
   display: grid;
-  grid-template-columns: auto auto minmax(0, 1fr) auto auto;
+  grid-template-columns: auto auto minmax(0, 1fr) auto auto auto;
   align-items: center;
   width: min(560px, calc(100% - 24px));
   min-height: 76px;
@@ -4093,8 +4093,10 @@ footer {
   border: 2px solid var(--lime);
   border-radius: 4px;
   color: var(--paper);
-  background: #1d201d;
+  background: rgba(29, 32, 29, .84);
   box-shadow: 0 14px 42px rgba(0, 0, 0, .36);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   transition: top .18s ease, left .18s ease, right .18s ease;
 }
 
@@ -4210,18 +4212,19 @@ footer {
 .workout-elapsed-timer.is-compact {
   right: 12px;
   left: auto;
-  grid-template-columns: auto auto auto;
+  grid-template-columns: auto auto auto auto;
   width: auto;
-  min-height: 50px;
-  gap: 8px;
+  min-height: 42px;
+  gap: 5px;
   margin: 0;
-  padding: 5px 8px 5px 5px;
+  padding: 4px 5px 4px 3px;
   border-radius: 999px;
 }
 
 .workout-elapsed-timer.is-compact .workout-elapsed-drag-handle {
-  min-width: 24px !important;
-  width: 24px;
+  min-width: 20px !important;
+  width: 20px;
+  min-height: 34px !important;
 }
 
 .workout-elapsed-timer.is-compact :is(
@@ -4232,17 +4235,39 @@ footer {
 }
 
 .workout-elapsed-timer.is-compact output {
-  min-width: 64px;
-  font-size: 1.25rem;
+  min-width: 56px;
+  font-size: 1.05rem;
   text-align: center;
 }
 
 .workout-elapsed-timer.is-compact .workout-elapsed-compact-toggle {
-  min-width: 44px !important;
-  width: 44px;
-  min-height: 44px !important;
+  min-width: 34px !important;
+  width: 34px;
+  min-height: 34px !important;
   padding: 0 !important;
   border-radius: 50% !important;
+}
+
+.workout-elapsed-close {
+  display: grid !important;
+  min-width: 36px !important;
+  width: 36px;
+  min-height: 36px !important;
+  place-items: center;
+  padding: 0 !important;
+  border-color: rgba(255, 255, 255, .55) !important;
+  border-radius: 50% !important;
+  color: var(--paper) !important;
+  background: rgba(0, 0, 0, .24) !important;
+  font-size: 1.1rem !important;
+  line-height: 1;
+}
+
+.workout-elapsed-timer.is-compact .workout-elapsed-close {
+  min-width: 30px !important;
+  width: 30px;
+  min-height: 30px !important;
+  font-size: .95rem !important;
 }
 
 .workout-elapsed-timer.is-compact .workout-elapsed-compact-toggle small {
@@ -9909,21 +9934,6 @@ body.dashboard-page {
   display: none !important;
 }
 
-.dashboard-page .workout-elapsed-timer {
-  top: calc(10px + env(safe-area-inset-top));
-  bottom: auto;
-}
-
-body.dashboard-page.workout-elapsed-timer-visible .dashboard-header {
-  top: calc(96px + env(safe-area-inset-top));
-  margin-top: calc(96px + env(safe-area-inset-top));
-}
-
-body.dashboard-page.workout-elapsed-timer-visible.workout-elapsed-timer-compact .dashboard-header {
-  top: calc(70px + env(safe-area-inset-top));
-  margin-top: calc(70px + env(safe-area-inset-top));
-}
-
 @media (max-width: 420px) {
   body.dashboard-page {
     padding-bottom: calc(88px + env(safe-area-inset-bottom));
@@ -9954,8 +9964,4 @@ body.dashboard-page.workout-elapsed-timer-visible.workout-elapsed-timer-compact 
     left: 6px;
   }
 
-  .dashboard-page .workout-elapsed-timer {
-    top: calc(6px + env(safe-area-inset-top));
-    bottom: auto;
-  }
 }
