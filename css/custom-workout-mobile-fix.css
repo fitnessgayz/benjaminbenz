@@ -201,6 +201,34 @@
   }
 }
 
+/* Custom cards use a compact action cluster instead of repeating the group badge. */
+.dashboard-page .client-workout-panel-custom .custom-workout-card > .custom-workout-card-summary {
+  padding-right: 98px !important;
+}
+
+.dashboard-page .client-workout-panel-custom .custom-workout-card-actions {
+  position: absolute;
+  top: 10px;
+  right: 8px;
+  z-index: 2;
+  display: flex;
+  width: auto;
+  align-items: center;
+  gap: 4px;
+}
+
+.dashboard-page .client-workout-panel-custom .custom-workout-card-actions .custom-workout-delete-icon,
+.dashboard-page .client-workout-panel-custom .custom-workout-card-actions .custom-workout-card-toggle {
+  position: static !important;
+  inset: auto !important;
+  flex: 0 0 38px !important;
+  width: 38px !important;
+  min-width: 38px !important;
+  height: 38px !important;
+  min-height: 38px !important;
+  transform: none !important;
+}
+
 /* Custom workout supersets and circuits become swipeable exercise cards on mobile. */
 .custom-workout-carousel-heading,
 .custom-workout-carousel-footer,

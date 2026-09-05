@@ -4719,7 +4719,6 @@ function workoutActionsMarkup(workout, options = {}) {
 function customWorkoutCardMarkup(exercise, workoutTitle, index = 0) {
   const exerciseName = String(exercise.name || "").trim();
   const groupIndex = Math.max(Number(exercise.group) || 0, 0);
-  const marker = customWorkoutFormatMarker(activeCustomWorkoutFormat, index);
   const isFirstSupersetExercise = activeCustomWorkoutFormat === "superset" && index % 2 === 0;
   const isSecondSupersetExercise = activeCustomWorkoutFormat === "superset" && index % 2 === 1;
   const suggestionMenuId = `custom-exercise-options-${String(exercise.code || index + 1).toLowerCase().replace(/[^a-z0-9-]/g, "-")}`;
@@ -4728,14 +4727,6 @@ function customWorkoutCardMarkup(exercise, workoutTitle, index = 0) {
     <article class="workout-exercise-card workout-entry-card custom-workout-card is-open" data-custom-exercise-card data-custom-workout-group="${groupIndex}">
       <div class="exercise-card-summary custom-workout-card-summary">
         <span>
-          <span class="custom-workout-card-marker-row">
-            <span class="status-pill" data-custom-workout-format-marker>${escapeHtml(marker)}</span>
-            <button class="custom-workout-delete-icon" type="button" data-delete-exercise aria-label="Delete exercise ${index + 1}">
-              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                <path d="M4 7h16M9 7V4h6v3m-9 0 1 13h10l1-13M10 11v5m4-5v5" />
-              </svg>
-            </button>
-          </span>
           <strong class="custom-workout-editable-title" data-exercise-title>
             <span class="custom-workout-name-editor">
               <input
@@ -4761,7 +4752,14 @@ function customWorkoutCardMarkup(exercise, workoutTitle, index = 0) {
           </strong>
           <small data-set-progress>0 / 1 sets completed</small>
         </span>
-        <button class="custom-workout-card-toggle" type="button" data-exercise-toggle aria-label="Toggle exercise ${index + 1}"><i>›</i></button>
+        <div class="custom-workout-card-actions">
+            <button class="custom-workout-delete-icon" type="button" data-delete-exercise aria-label="Delete exercise ${index + 1}">
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M4 7h16M9 7V4h6v3m-9 0 1 13h10l1-13M10 11v5m4-5v5" />
+              </svg>
+            </button>
+          <button class="custom-workout-card-toggle" type="button" data-exercise-toggle aria-label="Toggle exercise ${index + 1}"><i>›</i></button>
+        </div>
       </div>
       <div class="exercise-detail custom-workout-detail">
         ${exerciseLogFields({
