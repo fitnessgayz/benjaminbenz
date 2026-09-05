@@ -237,10 +237,8 @@
   }
 
   .dashboard-page .workout-group-progress-heading {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
+    position: relative;
+    display: block;
   }
 
   .dashboard-page .workout-group-progress-heading > span {
@@ -250,6 +248,7 @@
   }
 
   .dashboard-page .workout-group-progress-heading small {
+    padding-right: 120px;
     color: #287800;
     font-size: 14px;
     font-weight: 850;
@@ -261,17 +260,20 @@
   .dashboard-page .workout-group-progress-heading strong {
     color: #111411;
     font-family: Impact, "Arial Narrow", sans-serif;
-    font-size: clamp(26px, 8vw, 34px);
+    font-size: clamp(24px, 7vw, 34px);
     font-weight: 400;
-    letter-spacing: .03em;
+    letter-spacing: .015em;
     line-height: 1;
+    white-space: nowrap;
     text-transform: uppercase;
   }
 
   .dashboard-page .workout-group-progress-heading em {
-    flex: 0 0 auto;
+    position: absolute;
+    top: 0;
+    right: 0;
     color: #676b65;
-    font-size: 13px;
+    font-size: clamp(11px, 3vw, 13px);
     font-style: normal;
     font-weight: 800;
     white-space: nowrap;
@@ -451,6 +453,16 @@
 
   .dashboard-page .custom-workout-carousel[data-carousel-enabled="true"] .custom-workout-card:not(:first-child) {
     scroll-margin-inline-start: 44px;
+  }
+
+  /* Custom workouts show one full-width exercise at a time. */
+  .dashboard-page .client-workout-panel-custom .custom-workout-carousel[data-carousel-enabled="true"] .custom-workout-list {
+    gap: 12px !important;
+    padding: 12px !important;
+  }
+
+  .dashboard-page .client-workout-panel-custom .custom-workout-carousel[data-carousel-enabled="true"] .custom-workout-card:not(:first-child) {
+    scroll-margin-inline-start: 0;
   }
 
   .dashboard-page .custom-workout-carousel[data-carousel-enabled="true"] :is(

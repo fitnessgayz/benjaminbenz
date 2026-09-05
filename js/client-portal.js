@@ -5082,10 +5082,10 @@ function moveCustomWorkoutCarousel(carousel, nextIndex, options = {}) {
   const firstOffset = cards[0]?.offsetLeft || 0;
   const card = cards[index];
   const cardOffset = Math.max((card?.offsetLeft || 0) - firstOffset, 0);
-  // The first exercise exposes the next card on the right. Once clients move
-  // forward, keep the same inset on the left so the previous exercise remains
-  // visible as a navigation cue instead of leaving an empty strip on the right.
-  const previousCardPeek = index > 0
+  // Assigned programs retain an adjacent-card navigation cue. Custom workouts
+  // use the full width and rely on their arrows and dots for navigation.
+  const allowsAdjacentCardPeek = carousel.matches("[data-assigned-workout-carousel]");
+  const previousCardPeek = allowsAdjacentCardPeek && index > 0
     ? Math.max(list.clientWidth - (card?.offsetWidth || list.clientWidth), 0)
     : 0;
   const targetLeft = Math.max(cardOffset - previousCardPeek, 0);
