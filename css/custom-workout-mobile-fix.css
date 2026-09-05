@@ -31,6 +31,7 @@
 
 .dashboard-page .workout-session-date-control,
 .coach-admin-page .workout-session-date-control {
+  position: relative !important;
   display: grid !important;
   grid-template-columns: minmax(0, 1fr) !important;
   width: 100% !important;
@@ -47,36 +48,42 @@
   text-transform: none !important;
 }
 
+.dashboard-page .workout-session-date-value,
+.coach-admin-page .workout-session-date-value {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  padding-inline: 44px;
+  color: var(--black);
+  font-size: 1rem;
+  font-weight: 900;
+  line-height: 1;
+  pointer-events: none;
+  text-align: center;
+  text-transform: none;
+}
+
 .dashboard-page .workout-session-date-control input[type="date"],
 .coach-admin-page .workout-session-date-control input[type="date"] {
   position: relative !important;
+  z-index: 2;
   display: block !important;
   width: 100% !important;
   inline-size: 100% !important;
   max-width: 100% !important;
   min-width: 0 !important;
   margin: 0 !important;
-  padding-inline: 44px !important;
+  padding-inline: 0 !important;
   border: 0 !important;
   border-radius: 0 !important;
+  background: transparent !important;
   box-shadow: none !important;
   box-sizing: border-box !important;
-  text-align: center !important;
-  text-align-last: center !important;
-}
-
-.dashboard-page .workout-session-date-control input[type="date"]::-webkit-date-and-time-value,
-.coach-admin-page .workout-session-date-control input[type="date"]::-webkit-date-and-time-value {
-  width: 100%;
-  margin: 0;
-  text-align: center;
-}
-
-.dashboard-page .workout-session-date-control input[type="date"]::-webkit-datetime-edit,
-.coach-admin-page .workout-session-date-control input[type="date"]::-webkit-datetime-edit {
-  display: flex;
-  width: 100%;
-  justify-content: center;
+  color: transparent !important;
+  -webkit-text-fill-color: transparent !important;
+  caret-color: transparent !important;
 }
 
 .dashboard-page .workout-session-date-control input[type="date"]::-webkit-calendar-picker-indicator,

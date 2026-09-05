@@ -5401,6 +5401,7 @@ function customWorkoutPanelMarkup(index) {
       <label class="custom-workout-session-date workout-session-date">
         <span>Workout date</span>
         <span class="workout-session-date-control">
+          <span class="workout-session-date-value" data-workout-date-value aria-hidden="true">${escapeHtml(formatLogDate(todayDate()))}</span>
           <input type="date" value="${todayDate()}" data-workout-date />
         </span>
         <small>This date applies to every exercise in this custom workout.</small>
@@ -5428,9 +5429,13 @@ function customWorkoutPanelMarkup(index) {
 function syncWorkoutPanelDate(panel, value, refresh = true) {
   const date = value || todayDate();
   const picker = panel?.querySelector("[data-workout-date]");
+  const display = panel?.querySelector("[data-workout-date-value]");
 
   if (picker && picker.value !== date) {
     picker.value = date;
+  }
+  if (display) {
+    display.textContent = formatLogDate(date);
   }
 
   panel?.querySelectorAll("[data-exercise-log] [data-log-date]").forEach((input) => {
@@ -5613,6 +5618,7 @@ function renderClientWorkoutTabs(workouts = []) {
       <label class="custom-workout-session-date workout-session-date">
         <span>Workout date</span>
         <span class="workout-session-date-control">
+          <span class="workout-session-date-value" data-workout-date-value aria-hidden="true">${escapeHtml(formatLogDate(todayDate()))}</span>
           <input type="date" value="${todayDate()}" data-workout-date />
         </span>
         <small>This date applies to every exercise in this workout.</small>
