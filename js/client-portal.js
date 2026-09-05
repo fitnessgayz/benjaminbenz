@@ -4231,8 +4231,12 @@ function activeWorkoutElapsedTitle() {
 
 function renderWorkoutElapsedTimer() {
   const timer = ensureWorkoutElapsedTimer();
+  const timerIsVisible = Boolean(workoutElapsedTimerState);
+
+  document.body.classList.toggle("workout-elapsed-timer-visible", timerIsVisible);
 
   if (!workoutElapsedTimerState) {
+    document.body.classList.remove("workout-elapsed-timer-compact");
     timer.hidden = true;
     syncWorkoutStartButtons();
     return;
@@ -4245,6 +4249,7 @@ function renderWorkoutElapsedTimer() {
   const compactLabel = timer.querySelector("[data-workout-elapsed-compact-label]");
   const isCompact = workoutElapsedTimerCompactPreference();
 
+  document.body.classList.toggle("workout-elapsed-timer-compact", isCompact);
   timer.hidden = false;
   timer.classList.toggle("is-compact", isCompact);
   if (display) {

@@ -30,7 +30,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=progress-collapse-2" />
+  <link rel="stylesheet" href="css/style.css?v=floating-icon-nav-3" />
   <link rel="stylesheet" href="css/custom-workout-mobile-fix.css?v=group-contrast-1" />
 </head>
 <body class="dashboard-page is-loading">
@@ -62,12 +62,24 @@
 
       <section class="dashboard-grid" aria-label="Client program dashboard">
         <nav class="client-dashboard-tabs" aria-label="Client dashboard sections">
-          <button class="client-dashboard-tab is-active" type="button" data-client-dashboard-tab="home" aria-selected="true">Home</button>
-          <button class="client-dashboard-tab" type="button" data-client-dashboard-tab="workouts" aria-selected="false">Workouts</button>
-          <button class="client-dashboard-tab" type="button" data-client-dashboard-tab="nutrition" aria-selected="false">Food</button>
-          <button class="client-dashboard-tab" type="button" data-client-dashboard-tab="progress" aria-selected="false">Profile &amp; progress</button>
-          <button class="client-dashboard-tab" type="button" data-client-dashboard-tab="logs" aria-selected="false">Logs</button>
-          <button class="client-dashboard-tab" type="button" data-client-dashboard-tab="sessions" aria-selected="false">Sessions</button>
+          <button class="client-dashboard-tab is-active" type="button" data-client-dashboard-tab="home" aria-selected="true" aria-label="Home">
+            <svg class="client-dashboard-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10.5V20h14v-9.5"/><path d="M9 20v-6h6v6"/></svg>
+          </button>
+          <button class="client-dashboard-tab" type="button" data-client-dashboard-tab="workouts" aria-selected="false" aria-label="Workouts">
+            <svg class="client-dashboard-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 7v10M3.5 9v6M18 7v10M20.5 9v6M6 12h12"/></svg>
+          </button>
+          <button class="client-dashboard-tab" type="button" data-client-dashboard-tab="nutrition" aria-selected="false" aria-label="Food">
+            <svg class="client-dashboard-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3v8M4 3v5a3 3 0 0 0 6 0V3M7 11v10M16 3v18M16 3c3 2 4 5 4 8h-4"/></svg>
+          </button>
+          <button class="client-dashboard-tab" type="button" data-client-dashboard-tab="progress" aria-selected="false" aria-label="Profile and progress">
+            <svg class="client-dashboard-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V5M4 20h16"/><path d="m7 15 4-4 3 3 5-7"/></svg>
+          </button>
+          <button class="client-dashboard-tab" type="button" data-client-dashboard-tab="logs" aria-selected="false" aria-label="Logs">
+            <svg class="client-dashboard-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-3"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M8 12h8M8 16h8"/></svg>
+          </button>
+          <button class="client-dashboard-tab" type="button" data-client-dashboard-tab="sessions" aria-selected="false" aria-label="Sessions">
+            <svg class="client-dashboard-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></svg>
+          </button>
         </nav>
 
         <section class="progress-panel client-home-panel" data-client-dashboard-panel="home" aria-labelledby="client-home-title">
@@ -580,6 +592,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js?v=manual-sessions-1"></script>
   <script src="js/exercise-name-matcher.js?v=exercise-consolidation-1"></script>
-  <script src="js/client-portal.js?v=progress-collapse-2"></script>
+  <script src="js/client-portal.js?v=floating-icon-nav-3"></script>
 </body>
 </html>
