@@ -30,7 +30,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=exercise-color-1" />
+  <link rel="stylesheet" href="css/style.css?v=progress-collapse-2" />
   <link rel="stylesheet" href="css/custom-workout-mobile-fix.css?v=group-contrast-1" />
 </head>
 <body class="dashboard-page is-loading">
@@ -389,16 +389,6 @@
           </div>
           <div class="progress-chart" id="progress-chart" aria-label="Progress line graph"></div>
           <p class="progress-goal" id="progress-goal"></p>
-          <section class="progress-exercise-section" aria-labelledby="client-exercise-progress-title">
-            <div class="progress-card-heading">
-              <div>
-                <p class="kicker">Exercise progress</p>
-                <h3 id="client-exercise-progress-title">Where you started vs. now</h3>
-              </div>
-            </div>
-            <p class="progress-exercise-intro">Compare your first logged working result with your most recent performance.</p>
-            <div class="progress-exercise-list" id="client-exercise-progress"><p class="empty-state">Log the same exercise in another workout to see how far you’ve come.</p></div>
-          </section>
           <div class="progress-profile-grid">
             <section class="progress-entry-card" aria-labelledby="client-progress-entry-title">
               <div class="progress-card-heading">
@@ -406,23 +396,29 @@
                   <p class="kicker">New entry</p>
                   <h3 id="client-progress-entry-title">Update your stats</h3>
                 </div>
+                <button class="progress-section-toggle" type="button" data-progress-section-toggle aria-expanded="true" aria-controls="client-progress-entry-content">
+                  <span data-progress-toggle-label>Minimize</span>
+                  <span class="progress-section-toggle-icon" aria-hidden="true">−</span>
+                </button>
               </div>
-              <form class="progress-entry-grid" id="client-checkin-form">
-                <label>Date<input type="date" name="progress_date" /></label>
-                <label>Bodyweight (lb)<input type="number" name="progress_bodyweight" step="0.1" min="0" inputmode="decimal" /></label>
-                <label>Body fat (%)<input type="number" name="progress_bodyfat" step="0.1" min="0" inputmode="decimal" /></label>
-                <label>Muscle mass (lb)<input type="number" name="progress_muscle_mass" step="0.1" min="0" inputmode="decimal" /></label>
-                <label>Chest (in)<input type="number" name="progress_chest" step="0.1" min="0" inputmode="decimal" /></label>
-                <label>Waist (in)<input type="number" name="progress_waist" step="0.1" min="0" inputmode="decimal" /></label>
-                <label>Hips (in)<input type="number" name="progress_hips" step="0.1" min="0" inputmode="decimal" /></label>
-                <label>Arm (in)<input type="number" name="progress_arm" step="0.1" min="0" inputmode="decimal" /></label>
-                <label>Thigh (in)<input type="number" name="progress_thigh" step="0.1" min="0" inputmode="decimal" /></label>
-                <label class="progress-note-field">Goal or note<textarea name="progress_goal" placeholder="How are you feeling or what are you working toward?"></textarea></label>
-                <div class="progress-actions progress-form-actions">
-                  <p id="client-progress-save-status" role="status">Add any stats you want to track.</p>
-                  <button class="button button-dark" type="submit" id="client-save-progress-button">Save measurements</button>
-                </div>
-              </form>
+              <div class="progress-section-body" id="client-progress-entry-content" data-progress-section-content>
+                <form class="progress-entry-grid" id="client-checkin-form">
+                  <label>Date<input type="date" name="progress_date" /></label>
+                  <label>Bodyweight (lb)<input type="number" name="progress_bodyweight" step="0.1" min="0" inputmode="decimal" /></label>
+                  <label>Body fat (%)<input type="number" name="progress_bodyfat" step="0.1" min="0" inputmode="decimal" /></label>
+                  <label>Muscle mass (lb)<input type="number" name="progress_muscle_mass" step="0.1" min="0" inputmode="decimal" /></label>
+                  <label>Chest (in)<input type="number" name="progress_chest" step="0.1" min="0" inputmode="decimal" /></label>
+                  <label>Waist (in)<input type="number" name="progress_waist" step="0.1" min="0" inputmode="decimal" /></label>
+                  <label>Hips (in)<input type="number" name="progress_hips" step="0.1" min="0" inputmode="decimal" /></label>
+                  <label>Arm (in)<input type="number" name="progress_arm" step="0.1" min="0" inputmode="decimal" /></label>
+                  <label>Thigh (in)<input type="number" name="progress_thigh" step="0.1" min="0" inputmode="decimal" /></label>
+                  <label class="progress-note-field">Goal or note<textarea name="progress_goal" placeholder="How are you feeling or what are you working toward?"></textarea></label>
+                  <div class="progress-actions progress-form-actions">
+                    <p id="client-progress-save-status" role="status">Add any stats you want to track.</p>
+                    <button class="button button-dark" type="submit" id="client-save-progress-button">Save measurements</button>
+                  </div>
+                </form>
+              </div>
             </section>
 
             <section class="progress-entry-card" aria-labelledby="client-progress-photo-title">
@@ -431,38 +427,73 @@
                   <p class="kicker">Private photos</p>
                   <h3 id="client-progress-photo-title">Add a progress photo</h3>
                 </div>
+                <button class="progress-section-toggle" type="button" data-progress-section-toggle aria-expanded="true" aria-controls="client-progress-photo-content">
+                  <span data-progress-toggle-label>Minimize</span>
+                  <span class="progress-section-toggle-icon" aria-hidden="true">−</span>
+                </button>
               </div>
-              <p class="progress-photo-privacy">Visible only to you and your coach.</p>
-              <div class="progress-photo-uploader">
-                <label>Photo date<input type="date" id="client-progress-photo-date" /></label>
-                <label>Photo<input type="file" id="client-progress-photo-file" accept="image/*" /></label>
-                <label>Optional note<textarea id="client-progress-photo-note" maxlength="300" placeholder="Front, side, week 6..."></textarea></label>
-              </div>
-              <div class="progress-actions">
-                <p id="client-progress-photo-status" role="status">JPG or iPhone photo, up to 6 MB after upload.</p>
-                <button class="button button-dark" type="button" id="upload-client-progress-photo-button">Upload private photo</button>
+              <div class="progress-section-body" id="client-progress-photo-content" data-progress-section-content>
+                <p class="progress-photo-privacy">Visible only to you and your coach.</p>
+                <div class="progress-photo-uploader">
+                  <label>Photo date<input type="date" id="client-progress-photo-date" /></label>
+                  <label>Photo<input type="file" id="client-progress-photo-file" accept="image/*" /></label>
+                  <label>Optional note<textarea id="client-progress-photo-note" maxlength="300" placeholder="Front, side, week 6..."></textarea></label>
+                </div>
+                <div class="progress-actions">
+                  <p id="client-progress-photo-status" role="status">JPG or iPhone photo, up to 6 MB after upload.</p>
+                  <button class="button button-dark" type="button" id="upload-client-progress-photo-button">Upload private photo</button>
+                </div>
               </div>
             </section>
           </div>
 
+          <section class="progress-exercise-section" aria-labelledby="client-exercise-progress-title">
+            <div class="progress-card-heading">
+              <div>
+                <p class="kicker">Exercise progress</p>
+                <h3 id="client-exercise-progress-title">Where you started vs. now</h3>
+              </div>
+              <button class="progress-section-toggle" type="button" data-progress-section-toggle aria-expanded="true" aria-controls="client-exercise-progress-content">
+                <span data-progress-toggle-label>Minimize</span>
+                <span class="progress-section-toggle-icon" aria-hidden="true">−</span>
+              </button>
+            </div>
+            <div class="progress-section-body" id="client-exercise-progress-content" data-progress-section-content>
+              <p class="progress-exercise-intro">Compare your first logged working result with your most recent performance.</p>
+              <div class="progress-exercise-list" id="client-exercise-progress"><p class="empty-state">Log the same exercise in another workout to see how far you’ve come.</p></div>
+            </div>
+          </section>
+
           <section class="progress-gallery-section" aria-labelledby="client-progress-gallery-title">
             <div class="progress-card-heading">
               <div>
-                <p class="kicker">Progress photos</p>
-                <h3 id="client-progress-gallery-title">Your private gallery</h3>
+                  <p class="kicker">Progress photos</p>
+                  <h3 id="client-progress-gallery-title">Your private gallery</h3>
+                </div>
+                <button class="progress-section-toggle" type="button" data-progress-section-toggle aria-expanded="true" aria-controls="client-progress-gallery-content">
+                  <span data-progress-toggle-label>Minimize</span>
+                  <span class="progress-section-toggle-icon" aria-hidden="true">−</span>
+                </button>
               </div>
+            <div class="progress-section-body" id="client-progress-gallery-content" data-progress-section-content>
+              <div class="progress-photo-gallery" id="client-progress-photo-gallery"><p class="empty-state">No progress photos yet.</p></div>
             </div>
-            <div class="progress-photo-gallery" id="client-progress-photo-gallery"><p class="empty-state">No progress photos yet.</p></div>
           </section>
 
           <section class="progress-history-section" aria-labelledby="client-progress-history-title">
             <div class="progress-card-heading">
               <div>
-                <p class="kicker">History</p>
-                <h3 id="client-progress-history-title">Measurement log</h3>
+                  <p class="kicker">History</p>
+                  <h3 id="client-progress-history-title">Measurement log</h3>
+                </div>
+                <button class="progress-section-toggle" type="button" data-progress-section-toggle aria-expanded="true" aria-controls="client-progress-history-content">
+                  <span data-progress-toggle-label>Minimize</span>
+                  <span class="progress-section-toggle-icon" aria-hidden="true">−</span>
+                </button>
               </div>
+            <div class="progress-section-body" id="client-progress-history-content" data-progress-section-content>
+              <div class="client-progress-history" id="client-progress-history"><p class="empty-state">No measurements yet.</p></div>
             </div>
-            <div class="client-progress-history" id="client-progress-history"><p class="empty-state">No measurements yet.</p></div>
           </section>
         </section>
 
@@ -549,6 +580,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js?v=manual-sessions-1"></script>
   <script src="js/exercise-name-matcher.js?v=exercise-consolidation-1"></script>
-  <script src="js/client-portal.js?v=home-account-1"></script>
+  <script src="js/client-portal.js?v=progress-collapse-2"></script>
 </body>
 </html>

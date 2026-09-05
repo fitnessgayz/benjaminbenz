@@ -7099,6 +7099,39 @@ function handleClientDashboardTabs() {
   });
 }
 
+function handleProgressSectionToggles() {
+  document.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-progress-section-toggle]");
+
+    if (!button) {
+      return;
+    }
+
+    const contentId = button.getAttribute("aria-controls");
+    const content = contentId ? document.getElementById(contentId) : null;
+
+    if (!content) {
+      return;
+    }
+
+    const willExpand = button.getAttribute("aria-expanded") !== "true";
+    const label = button.querySelector("[data-progress-toggle-label]");
+    const icon = button.querySelector(".progress-section-toggle-icon");
+    const section = button.closest(".progress-entry-card, .progress-exercise-section, .progress-gallery-section, .progress-history-section");
+
+    button.setAttribute("aria-expanded", willExpand ? "true" : "false");
+    content.hidden = !willExpand;
+    section?.classList.toggle("is-collapsed", !willExpand);
+
+    if (label) {
+      label.textContent = willExpand ? "Minimize" : "Expand";
+    }
+    if (icon) {
+      icon.textContent = willExpand ? "−" : "+";
+    }
+  });
+}
+
 function setExerciseSkipped(logElement, skipped, options = {}) {
   if (!logElement) {
     return;
@@ -8649,6 +8682,7 @@ handleTrainingDateChange();
 handleClientTrainingLogDateFilter();
 handleClientWorkoutHistoryDownload();
 handleClientDashboardTabs();
+handleProgressSectionToggles();
 handleClientSummaryActions();
 handleClientWorkoutTabs();
 handleWorkoutInteractions();

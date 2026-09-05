@@ -4682,13 +4682,71 @@ footer {
   display: flex;
   align-items: end;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: 16px;
+}
+
+.progress-card-heading > div {
+  min-width: 0;
 }
 
 .progress-card-heading h3 {
   margin: 2px 0 0;
   font-size: clamp(1.35rem, 3vw, 2.25rem);
   line-height: .95;
+}
+
+.progress-section-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  gap: 8px;
+  min-width: 112px;
+  min-height: 44px;
+  padding: 9px 12px;
+  border: 1px solid var(--black);
+  border-radius: 0;
+  color: var(--black);
+  background: var(--lime);
+  font: inherit;
+  font-size: .78rem;
+  font-weight: 900;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.progress-section-toggle:hover {
+  color: var(--paper);
+  background: var(--black);
+}
+
+.progress-section-toggle:focus-visible {
+  outline: 3px solid var(--blue);
+  outline-offset: 3px;
+}
+
+.progress-section-toggle-icon {
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.progress-section-body {
+  display: grid;
+  min-width: 0;
+  gap: 16px;
+}
+
+.progress-section-body[hidden] {
+  display: none;
+}
+
+.progress-entry-card.is-collapsed,
+.progress-exercise-section.is-collapsed,
+.progress-gallery-section.is-collapsed,
+.progress-history-section.is-collapsed {
+  gap: 0;
 }
 
 .progress-entry-grid {
