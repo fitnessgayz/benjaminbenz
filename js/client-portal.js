@@ -6703,6 +6703,107 @@ function setClientDashboardTab(tabName) {
   });
 }
 
+function setClientHomeCarouselSlide(carousel, nextIndex) {
+  const slides = Array.from(carousel?.querySelectorAll("[data-client-home-carousel-slide]") || []);
+
+  if (!carousel || slides.length === 0) {
+    return;
+  }
+
+  const index = ((Number(nextIndex) || 0) % slides.length + slides.length) % slides.length;
+  const dots = Array.from(carousel.querySelectorAll("[data-client-home-carousel-dot]"));
+  const status = carousel.querySelector("[data-client-home-carousel-status]");
+
+  carousel.dataset.activeIndex = String(index);
+  slides.forEach((slide, slideIndex) => {
+    const isActive = slideIndex === index;
+
+    slide.hidden = !isActive;
+    slide.classList.toggle("is-active", isActive);
+    slide.setAttribute("aria-hidden", isActive ? "false" : "true");
+  });
+  dots.forEach((dot, dotIndex) => {
+    const isActive = dotIndex === index;
+
+    dot.classList.toggle("is-active", isActive);
+    dot.setAttribute("aria-pressed", isActive ? "true" : "false");
+  });
+
+  if (status) {
+    status.textContent = `${index + 1} / ${slides.length}`;
+  }
+}
+
+function handleClientHomeCarousel() {
+  document.querySelectorAll("[data-client-home-carousel]").forEach((carousel) => {
+    let touchStartX = null;
+    let touchStartY = null;
+
+    setClientHomeCarouselSlide(carousel, Number(carousel.dataset.activeIndex) || 0);
+    carousel.addEventListener("touchstart", (event) => {
+      const touch = event.touches[0];
+
+      if (!touch || event.touches.length !== 1) {
+        return;
+      }
+      touchStartX = touch.clientX;
+      touchStartY = touch.clientY;
+    }, { passive: true });
+    carousel.addEventListener("touchend", (event) => {
+      const touch = event.changedTouches[0];
+
+      if (!touch || touchStartX === null || touchStartY === null) {
+        touchStartX = null;
+        touchStartY = null;
+        return;
+      }
+
+      const deltaX = touch.clientX - touchStartX;
+      const deltaY = touch.clientY - touchStartY;
+      touchStartX = null;
+      touchStartY = null;
+
+      if (Math.abs(deltaX) < 45 || Math.abs(deltaX) <= Math.abs(deltaY) * 1.2) {
+        return;
+      }
+
+      const current = Number(carousel.dataset.activeIndex) || 0;
+      setClientHomeCarouselSlide(carousel, current + (deltaX < 0 ? 1 : -1));
+    }, { passive: true });
+  });
+
+  document.addEventListener("click", (event) => {
+    const previous = event.target.closest("[data-client-home-carousel-previous]");
+    const next = event.target.closest("[data-client-home-carousel-next]");
+    const dot = event.target.closest("[data-client-home-carousel-dot]");
+    const control = previous || next || dot;
+    const carousel = control?.closest("[data-client-home-carousel]");
+
+    if (!carousel) {
+      return;
+    }
+
+    const current = Number(carousel.dataset.activeIndex) || 0;
+    const targetIndex = dot
+      ? Number(dot.dataset.clientHomeCarouselDot)
+      : current + (next ? 1 : -1);
+
+    setClientHomeCarouselSlide(carousel, targetIndex);
+  });
+
+  document.addEventListener("keydown", (event) => {
+    const carousel = event.target.closest("[data-client-home-carousel]");
+
+    if (!carousel || !["ArrowLeft", "ArrowRight"].includes(event.key)) {
+      return;
+    }
+
+    event.preventDefault();
+    const current = Number(carousel.dataset.activeIndex) || 0;
+    setClientHomeCarouselSlide(carousel, current + (event.key === "ArrowRight" ? 1 : -1));
+  });
+}
+
 function handleClientSummaryActions() {
   document.addEventListener("click", async (event) => {
     const summaryTabButton = event.target.closest("[data-client-summary-go-tab]");
@@ -8690,6 +8791,7 @@ handleClientTrainingLogDateFilter();
 handleClientWorkoutHistoryDownload();
 handleClientDashboardTabs();
 handleProgressSectionToggles();
+handleClientHomeCarousel();
 handleClientSummaryActions();
 handleClientWorkoutTabs();
 handleWorkoutInteractions();
