@@ -60,6 +60,7 @@ const warmUpSetType = "warm_up";
 const clientDashboardUrl = "client-dashboard.html?v=manual-sessions-1";
 const workoutElapsedTimerStorageKey = "fwb_workout_elapsed_timer_v1";
 const workoutElapsedTimerCompactStorageKey = "fwb_workout_elapsed_timer_compact_v1";
+const workoutElapsedTimerPositionStorageKey = "fwb_workout_elapsed_timer_position_v1";
 const workoutElapsedTimerMaximumMilliseconds = 24 * 60 * 60 * 1000;
 let exerciseLibraryEntries = [];
 let activeCustomWorkoutFormat = "single";
@@ -71,6 +72,7 @@ let restTimerReturnFocus = null;
 let workoutElapsedTimerState = null;
 let workoutElapsedTimerIntervalId = null;
 let workoutElapsedTimerIsCompact = null;
+let workoutElapsedTimerPosition = null;
 let activeRirButton = null;
 let pendingRirValue = null;
 let workoutDifficultyPromptResolve = null;
@@ -4056,6 +4058,9 @@ function closeNextExercisePrompt(options = {}) {
 function workoutElapsedTimerMarkup() {
   return `
     <aside class="workout-elapsed-timer" data-workout-elapsed-timer hidden aria-label="Workout duration">
+      <button class="workout-elapsed-drag-handle" type="button" data-workout-elapsed-drag aria-label="Move workout timer" title="Drag to move timer">
+        <span aria-hidden="true"></span>
+      </button>
       <button class="workout-elapsed-compact-toggle" type="button" data-workout-elapsed-compact aria-expanded="true" aria-label="Minimize workout timer">
         <span data-workout-elapsed-compact-icon aria-hidden="true">−</span>
         <small data-workout-elapsed-compact-label>Minimize</small>
@@ -4075,7 +4080,156 @@ function ensureWorkoutElapsedTimer() {
     timer = document.querySelector("[data-workout-elapsed-timer]");
   }
 
+  bindWorkoutElapsedTimerDragging(timer);
+
   return timer;
+}
+
+function workoutElapsedTimerPositionPreference() {
+  if (workoutElapsedTimerPosition) {
+    return workoutElapsedTimerPosition;
+  }
+
+  try {
+    const storedPosition = JSON.parse(
+      window.localStorage.getItem(workoutElapsedTimerPositionStorageKey) || "null"
+    );
+    const edge = storedPosition?.edge === "left" ? "left" : "right";
+    const topRatio = Number(storedPosition?.topRatio);
+
+    if (Number.isFinite(topRatio)) {
+      workoutElapsedTimerPosition = {
+        edge,
+        topRatio: Math.min(1, Math.max(0, topRatio))
+      };
+      return workoutElapsedTimerPosition;
+    }
+  } catch (_error) {
+    // Use the top-right default when storage is unavailable or invalid.
+  }
+
+  workoutElapsedTimerPosition = { edge: "right", topRatio: 0 };
+  return workoutElapsedTimerPosition;
+}
+
+function persistWorkoutElapsedTimerPosition() {
+  try {
+    window.localStorage.setItem(
+      workoutElapsedTimerPositionStorageKey,
+      JSON.stringify(workoutElapsedTimerPositionPreference())
+    );
+  } catch (_error) {
+    // Dragging still works for this page view when storage is unavailable.
+  }
+}
+
+function workoutElapsedTimerDragBounds(timer) {
+  const gap = 8;
+  const viewportWidth = Math.max(document.documentElement.clientWidth, window.innerWidth || 0);
+  const viewportHeight = Math.max(document.documentElement.clientHeight, window.innerHeight || 0);
+  const rect = timer.getBoundingClientRect();
+
+  return {
+    gap,
+    width: rect.width,
+    height: rect.height,
+    maxLeft: Math.max(gap, viewportWidth - rect.width - gap),
+    maxTop: Math.max(gap, viewportHeight - rect.height - gap)
+  };
+}
+
+function applyWorkoutElapsedTimerPosition(timer = document.querySelector("[data-workout-elapsed-timer]")) {
+  if (!timer || timer.hidden || timer.classList.contains("is-dragging")) {
+    return;
+  }
+
+  const position = workoutElapsedTimerPositionPreference();
+  const bounds = workoutElapsedTimerDragBounds(timer);
+  const usableTop = Math.max(0, bounds.maxTop - bounds.gap);
+  const top = bounds.gap + (usableTop * position.topRatio);
+
+  timer.style.top = `${Math.round(top)}px`;
+  timer.style.bottom = "auto";
+  timer.style.left = position.edge === "left" ? `${bounds.gap}px` : "auto";
+  timer.style.right = position.edge === "right" ? `${bounds.gap}px` : "auto";
+}
+
+function bindWorkoutElapsedTimerDragging(timer) {
+  const handle = timer?.querySelector("[data-workout-elapsed-drag]");
+
+  if (!timer || !handle || timer.dataset.dragBound === "true") {
+    return;
+  }
+
+  timer.dataset.dragBound = "true";
+  let dragState = null;
+
+  handle.addEventListener("pointerdown", (event) => {
+    if (event.button !== undefined && event.button !== 0) {
+      return;
+    }
+
+    const rect = timer.getBoundingClientRect();
+    dragState = {
+      pointerId: event.pointerId,
+      offsetX: event.clientX - rect.left,
+      offsetY: event.clientY - rect.top
+    };
+    timer.classList.add("is-dragging");
+    timer.style.left = `${Math.round(rect.left)}px`;
+    timer.style.right = "auto";
+    timer.style.top = `${Math.round(rect.top)}px`;
+    timer.style.bottom = "auto";
+    handle.setPointerCapture?.(event.pointerId);
+    event.preventDefault();
+  });
+
+  handle.addEventListener("pointermove", (event) => {
+    if (!dragState || dragState.pointerId !== event.pointerId) {
+      return;
+    }
+
+    const bounds = workoutElapsedTimerDragBounds(timer);
+    const left = Math.min(bounds.maxLeft, Math.max(bounds.gap, event.clientX - dragState.offsetX));
+    const top = Math.min(bounds.maxTop, Math.max(bounds.gap, event.clientY - dragState.offsetY));
+
+    timer.style.left = `${Math.round(left)}px`;
+    timer.style.top = `${Math.round(top)}px`;
+    event.preventDefault();
+  });
+
+  const finishDragging = (event) => {
+    if (!dragState || dragState.pointerId !== event.pointerId) {
+      return;
+    }
+
+    const bounds = workoutElapsedTimerDragBounds(timer);
+    const rect = timer.getBoundingClientRect();
+    const viewportMidpoint = Math.max(document.documentElement.clientWidth, window.innerWidth || 0) / 2;
+    const usableTop = Math.max(1, bounds.maxTop - bounds.gap);
+
+    workoutElapsedTimerPosition = {
+      edge: rect.left + (rect.width / 2) < viewportMidpoint ? "left" : "right",
+      topRatio: Math.min(1, Math.max(0, (rect.top - bounds.gap) / usableTop))
+    };
+    persistWorkoutElapsedTimerPosition();
+    dragState = null;
+    timer.classList.remove("is-dragging");
+    try {
+      handle.releasePointerCapture?.(event.pointerId);
+    } catch (_error) {
+      // Pointer capture may already be released when the browser cancels a drag.
+    }
+    applyWorkoutElapsedTimerPosition(timer);
+  };
+
+  handle.addEventListener("pointerup", finishDragging);
+  handle.addEventListener("pointercancel", finishDragging);
+
+  if (!bindWorkoutElapsedTimerDragging.resizeBound) {
+    bindWorkoutElapsedTimerDragging.resizeBound = true;
+    window.addEventListener("resize", () => applyWorkoutElapsedTimerPosition());
+  }
 }
 
 function workoutElapsedTimerCompactPreference() {
@@ -4276,6 +4430,7 @@ function renderWorkoutElapsedTimer() {
   if (compactLabel) {
     compactLabel.textContent = isCompact ? "Expand" : "Minimize";
   }
+  window.requestAnimationFrame(() => applyWorkoutElapsedTimerPosition(timer));
   syncWorkoutStartButtons();
 }
 

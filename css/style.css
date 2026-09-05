@@ -4083,7 +4083,7 @@ footer {
   left: 12px;
   z-index: 90;
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  grid-template-columns: auto auto minmax(0, 1fr) auto auto;
   align-items: center;
   width: min(560px, calc(100% - 24px));
   min-height: 76px;
@@ -4095,6 +4095,61 @@ footer {
   color: var(--paper);
   background: #1d201d;
   box-shadow: 0 14px 42px rgba(0, 0, 0, .36);
+  transition: top .18s ease, left .18s ease, right .18s ease;
+}
+
+.workout-elapsed-timer.is-dragging {
+  user-select: none;
+  transition: none;
+}
+
+.workout-elapsed-drag-handle {
+  display: grid !important;
+  min-width: 28px !important;
+  width: 28px;
+  min-height: 44px !important;
+  place-items: center;
+  padding: 0 !important;
+  border: 0 !important;
+  color: var(--paper) !important;
+  background: transparent !important;
+  cursor: grab !important;
+  touch-action: none;
+}
+
+.workout-elapsed-drag-handle:active {
+  cursor: grabbing !important;
+}
+
+.workout-elapsed-drag-handle span,
+.workout-elapsed-drag-handle span::before,
+.workout-elapsed-drag-handle span::after {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 8px 0 currentColor;
+}
+
+.workout-elapsed-drag-handle span {
+  position: relative;
+  display: block;
+  margin-right: 8px;
+}
+
+.workout-elapsed-drag-handle span::before,
+.workout-elapsed-drag-handle span::after {
+  content: "";
+  position: absolute;
+  left: 0;
+}
+
+.workout-elapsed-drag-handle span::before {
+  top: -8px;
+}
+
+.workout-elapsed-drag-handle span::after {
+  top: 8px;
 }
 
 .workout-elapsed-compact-toggle {
@@ -4155,13 +4210,18 @@ footer {
 .workout-elapsed-timer.is-compact {
   right: 12px;
   left: auto;
-  grid-template-columns: auto auto;
+  grid-template-columns: auto auto auto;
   width: auto;
   min-height: 50px;
   gap: 8px;
   margin: 0;
   padding: 5px 8px 5px 5px;
   border-radius: 999px;
+}
+
+.workout-elapsed-timer.is-compact .workout-elapsed-drag-handle {
+  min-width: 24px !important;
+  width: 24px;
 }
 
 .workout-elapsed-timer.is-compact :is(
