@@ -4058,25 +4058,32 @@ footer {
 
 .workout-elapsed-timer {
   position: fixed;
-  right: 12px;
+  right: 8px;
   bottom: max(12px, env(safe-area-inset-bottom));
-  left: 12px;
+  left: auto;
   z-index: 90;
   display: grid;
-  grid-template-columns: auto auto minmax(0, 1fr) auto auto auto;
+  grid-template-columns: 20px 40px minmax(0, 1fr) 40px 40px 36px;
   align-items: center;
-  width: min(560px, calc(100% - 24px));
-  min-height: 76px;
-  gap: 12px;
-  margin: 0 auto;
-  padding: 12px 14px;
+  width: min(320px, calc(100% - 16px));
+  max-width: calc(100% - 16px);
+  min-height: 44px;
+  gap: 5px;
+  margin: 0;
+  padding: 4px 5px 4px 3px;
   border: 2px solid var(--lime);
   border-radius: 4px;
-  color: var(--paper);
-  background: rgba(29, 32, 29, .84);
-  box-shadow: 0 14px 42px rgba(0, 0, 0, .36);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  color: var(--black);
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, .82),
+    rgba(228, 232, 224, .7)
+  );
+  box-shadow:
+    0 12px 34px rgba(0, 0, 0, .2),
+    inset 0 1px 0 rgba(255, 255, 255, .82);
+  backdrop-filter: blur(18px) saturate(135%);
+  -webkit-backdrop-filter: blur(18px) saturate(135%);
   transition: top .18s ease, left .18s ease, right .18s ease;
 }
 
@@ -4087,13 +4094,13 @@ footer {
 
 .workout-elapsed-drag-handle {
   display: grid !important;
-  min-width: 28px !important;
-  width: 28px;
-  min-height: 44px !important;
+  min-width: 20px !important;
+  width: 20px;
+  min-height: 34px !important;
   place-items: center;
   padding: 0 !important;
   border: 0 !important;
-  color: var(--paper) !important;
+  color: var(--black) !important;
   background: transparent !important;
   cursor: grab !important;
   touch-action: none;
@@ -4136,15 +4143,14 @@ footer {
 
 .workout-elapsed-compact-toggle {
   display: grid !important;
-  min-width: 68px !important;
-  width: 68px;
-  min-height: 52px !important;
-  gap: 1px;
+  min-width: 40px !important;
+  width: 40px;
+  min-height: 40px !important;
   align-content: center;
   justify-items: center;
-  padding: 5px 6px !important;
-  border: 2px solid var(--lime) !important;
-  border-radius: 10px !important;
+  padding: 0 !important;
+  border: 1px solid var(--lime) !important;
+  border-radius: 50% !important;
   color: var(--black) !important;
   background: var(--lime) !important;
   line-height: 1;
@@ -4155,56 +4161,60 @@ footer {
   line-height: .7;
 }
 
-.workout-elapsed-compact-toggle small {
-  color: inherit;
-  font-size: .55rem;
-  font-weight: 900;
-  letter-spacing: .04em;
-  line-height: 1;
-  text-transform: uppercase;
-}
-
 .workout-elapsed-timer output {
-  min-width: 82px;
-  color: var(--paper);
-  font-size: clamp(1.8rem, 8vw, 2.6rem);
+  min-width: 0;
+  color: var(--black);
+  font-size: clamp(.9rem, 4.8vw, 1.1rem);
   font-variant-numeric: tabular-nums;
   font-weight: 900;
   line-height: 1;
   text-align: right;
+  white-space: nowrap;
 }
 
 .workout-elapsed-timer button {
-  min-width: 72px;
-  min-height: 44px;
-  padding: 8px 10px;
+  display: grid;
+  min-width: 40px;
+  width: 40px;
+  min-height: 40px;
+  place-items: center;
+  padding: 0;
   border: 1px solid var(--lime);
-  border-radius: 2px;
+  border-radius: 50%;
   color: var(--black);
   background: var(--lime);
   font: inherit;
-  font-size: .72rem;
+  font-size: 1rem;
   font-weight: 900;
   cursor: pointer;
   text-transform: uppercase;
 }
 
+.workout-elapsed-timer button svg {
+  width: 17px;
+  height: 17px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.25;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.workout-elapsed-timer [data-workout-elapsed-toggle] svg path[d$="Z"] {
+  fill: currentColor;
+  stroke: currentColor;
+}
+
 .workout-elapsed-timer.is-compact {
-  right: 12px;
+  right: 8px;
   left: auto;
   grid-template-columns: auto auto auto auto;
   width: auto;
-  min-height: 42px;
+  min-height: 44px;
   gap: 5px;
   margin: 0;
   padding: 4px 5px 4px 3px;
   border-radius: 999px;
-}
-
-.workout-elapsed-timer.is-compact .workout-elapsed-drag-handle {
-  min-width: 20px !important;
-  width: 20px;
-  min-height: 34px !important;
 }
 
 .workout-elapsed-timer.is-compact :is(
@@ -4215,17 +4225,9 @@ footer {
 }
 
 .workout-elapsed-timer.is-compact output {
-  min-width: 56px;
-  font-size: 1.05rem;
+  min-width: 58px;
+  font-size: 1.1rem;
   text-align: center;
-}
-
-.workout-elapsed-timer.is-compact .workout-elapsed-compact-toggle {
-  min-width: 34px !important;
-  width: 34px;
-  min-height: 34px !important;
-  padding: 0 !important;
-  border-radius: 50% !important;
 }
 
 .workout-elapsed-close {
@@ -4235,10 +4237,10 @@ footer {
   min-height: 36px !important;
   place-items: center;
   padding: 0 !important;
-  border-color: rgba(255, 255, 255, .55) !important;
+  border-color: rgba(17, 17, 17, .32) !important;
   border-radius: 50% !important;
-  color: var(--paper) !important;
-  background: rgba(0, 0, 0, .24) !important;
+  color: var(--black) !important;
+  background: rgba(255, 255, 255, .46) !important;
   font-size: 1.1rem !important;
   line-height: 1;
 }
@@ -4248,10 +4250,6 @@ footer {
   width: 30px;
   min-height: 30px !important;
   font-size: .95rem !important;
-}
-
-.workout-elapsed-timer.is-compact .workout-elapsed-compact-toggle small {
-  display: none;
 }
 
 .workout-start-control {

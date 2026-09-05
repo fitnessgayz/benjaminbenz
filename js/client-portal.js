@@ -4044,6 +4044,17 @@ function closeNextExercisePrompt(options = {}) {
   }
 }
 
+function workoutElapsedTimerControlIcon(icon) {
+  const icons = {
+    pause: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M7 5v14M17 5v14" /></svg>',
+    play: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m8 5 11 7-11 7Z" /></svg>',
+    reset: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 4v6h6M5.5 15a7 7 0 1 0 .8-7.8L4 10" /></svg>',
+    close: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m6 6 12 12M18 6 6 18" /></svg>'
+  };
+
+  return icons[icon] || "";
+}
+
 function workoutElapsedTimerMarkup() {
   return `
     <aside class="workout-elapsed-timer" data-workout-elapsed-timer hidden aria-label="Workout duration">
@@ -4052,12 +4063,14 @@ function workoutElapsedTimerMarkup() {
       </button>
       <button class="workout-elapsed-compact-toggle" type="button" data-workout-elapsed-compact aria-expanded="true" aria-label="Minimize workout timer">
         <span data-workout-elapsed-compact-icon aria-hidden="true">−</span>
-        <small data-workout-elapsed-compact-label>Minimize</small>
       </button>
       <output data-workout-elapsed-display role="timer" aria-live="off">00:00</output>
-      <button type="button" data-workout-elapsed-toggle aria-label="Pause workout timer">Pause</button>
-      <button type="button" data-workout-elapsed-reset aria-label="Reset workout timer">Reset</button>
-      <button class="workout-elapsed-close" type="button" data-workout-elapsed-close aria-label="Hide workout timer" title="Hide timer">×</button>
+      <button type="button" data-workout-elapsed-toggle aria-label="Pause workout timer" title="Pause timer">
+        <span data-workout-elapsed-pause-icon>${workoutElapsedTimerControlIcon("pause")}</span>
+        <span data-workout-elapsed-play-icon hidden>${workoutElapsedTimerControlIcon("play")}</span>
+      </button>
+      <button type="button" data-workout-elapsed-reset aria-label="Reset workout timer" title="Reset timer">${workoutElapsedTimerControlIcon("reset")}</button>
+      <button class="workout-elapsed-close" type="button" data-workout-elapsed-close aria-label="Hide workout timer" title="Hide timer">${workoutElapsedTimerControlIcon("close")}</button>
     </aside>
   `;
 }
@@ -4398,7 +4411,6 @@ function renderWorkoutElapsedTimer() {
   const toggleButton = timer.querySelector("[data-workout-elapsed-toggle]");
   const compactButton = timer.querySelector("[data-workout-elapsed-compact]");
   const compactIcon = timer.querySelector("[data-workout-elapsed-compact-icon]");
-  const compactLabel = timer.querySelector("[data-workout-elapsed-compact-label]");
   const isCompact = workoutElapsedTimerCompactPreference();
 
   document.body.classList.toggle("workout-elapsed-timer-compact", isCompact);
@@ -4408,10 +4420,18 @@ function renderWorkoutElapsedTimer() {
     display.textContent = workoutElapsedTimeLabel(workoutElapsedMilliseconds());
   }
   if (toggleButton) {
-    toggleButton.textContent = workoutElapsedTimerState.running ? "Pause" : "Resume";
+    const pauseIcon = toggleButton.querySelector("[data-workout-elapsed-pause-icon]");
+    const playIcon = toggleButton.querySelector("[data-workout-elapsed-play-icon]");
+
+    if (pauseIcon) pauseIcon.hidden = !workoutElapsedTimerState.running;
+    if (playIcon) playIcon.hidden = workoutElapsedTimerState.running;
     toggleButton.setAttribute(
       "aria-label",
       workoutElapsedTimerState.running ? "Pause workout timer" : "Resume workout timer"
+    );
+    toggleButton.setAttribute(
+      "title",
+      workoutElapsedTimerState.running ? "Pause timer" : "Resume timer"
     );
   }
   if (compactButton) {
@@ -4423,9 +4443,6 @@ function renderWorkoutElapsedTimer() {
   }
   if (compactIcon) {
     compactIcon.textContent = isCompact ? "+" : "−";
-  }
-  if (compactLabel) {
-    compactLabel.textContent = isCompact ? "Expand" : "Minimize";
   }
   window.requestAnimationFrame(() => applyWorkoutElapsedTimerPosition(timer));
   syncWorkoutStartButtons();

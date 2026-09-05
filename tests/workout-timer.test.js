@@ -27,5 +27,15 @@ test("workout timer starts above navigation and can be hidden without clearing e
   assert.match(portalSource, /data-workout-elapsed-close/);
   assert.match(portalSource, /workoutElapsedTimerState\.dismissed = true/);
   assert.match(portalSource, /button\.textContent = "Show workout timer"/);
-  assert.match(styleSource, /background:\s*rgba\(29, 32, 29, \.84\)/);
+  assert.match(styleSource, /rgba\(255, 255, 255, \.82\)/);
+  assert.match(styleSource, /backdrop-filter:\s*blur\(18px\) saturate\(135%\)/);
+});
+
+test("expanded workout timer uses compact icon controls without overflow", () => {
+  assert.match(portalSource, /workoutElapsedTimerControlIcon/);
+  assert.match(portalSource, /data-workout-elapsed-toggle[^>]*aria-label="Pause workout timer"/);
+  assert.match(portalSource, /data-workout-elapsed-reset[^>]*aria-label="Reset workout timer"/);
+  assert.match(styleSource, /grid-template-columns:\s*20px 40px minmax\(0, 1fr\) 40px 40px 36px/);
+  assert.match(styleSource, /max-width:\s*calc\(100% - 16px\)/);
+  assert.match(styleSource, /\.workout-elapsed-timer button svg/);
 });
