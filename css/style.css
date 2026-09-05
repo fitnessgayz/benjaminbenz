@@ -3136,14 +3136,6 @@ footer {
   transition: border-color 180ms ease, background-color 180ms ease, box-shadow 180ms ease;
 }
 
-/* Keep grouped exercise cards visually connected to their custom-workout group. */
-.custom-workout-list[data-custom-workout-format="superset"] .custom-workout-card,
-.custom-workout-list[data-custom-workout-format="superset"] .custom-workout-card-summary,
-.custom-workout-list[data-custom-workout-format="circuit"] .custom-workout-card,
-.custom-workout-list[data-custom-workout-format="circuit"] .custom-workout-card-summary {
-  background: transparent;
-}
-
 .custom-workout-carousel.is-circuit-complete .custom-workout-list[data-custom-workout-format="circuit"] {
   border-color: #21a637;
   border-left-color: #21a637;

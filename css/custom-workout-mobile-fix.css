@@ -192,17 +192,17 @@
 @media (max-width: 760px) {
   .dashboard-page .custom-workout-carousel[data-carousel-enabled="true"] {
     min-width: 0;
-    border: 1px solid #4f554f;
+    border: 1px solid rgba(40, 120, 255, .2);
     padding: 0 0 16px;
-    background: #151915;
-    color: #f7f7f2;
+    background: #f5f8ff;
+    color: #111411;
   }
 
   .dashboard-page .custom-workout-carousel[data-carousel-enabled="true"] .workout-group-progress {
     display: grid;
     gap: 14px;
     padding: 18px 18px 14px;
-    border-bottom: 1px solid #3c423c;
+    border-bottom: 1px solid #d9dad4;
   }
 
   .dashboard-page .workout-group-progress-heading {
@@ -219,7 +219,7 @@
   }
 
   .dashboard-page .workout-group-progress-heading small {
-    color: #caff31;
+    color: #287800;
     font-size: 14px;
     font-weight: 850;
     letter-spacing: .09em;
@@ -228,7 +228,7 @@
   }
 
   .dashboard-page .workout-group-progress-heading strong {
-    color: #f7f7f2;
+    color: #111411;
     font-family: Impact, "Arial Narrow", sans-serif;
     font-size: clamp(26px, 8vw, 34px);
     font-weight: 400;
@@ -239,7 +239,7 @@
 
   .dashboard-page .workout-group-progress-heading em {
     flex: 0 0 auto;
-    color: #e1e5df;
+    color: #676b65;
     font-size: 13px;
     font-style: normal;
     font-weight: 800;
@@ -264,18 +264,18 @@
     gap: 5px;
     min-width: 0;
     padding-top: 9px;
-    border-top: 3px solid #535953;
-    color: #d1d7d0;
+    border-top: 3px solid #c9ccc6;
+    color: #676b65;
   }
 
   .dashboard-page .workout-group-sequence-item.is-done {
     border-color: #4fd072;
-    color: #f7f7f2;
+    color: #111411;
   }
 
   .dashboard-page .workout-group-sequence-item.is-next {
     border-color: #caff31;
-    color: #caff31;
+    color: #111411;
   }
 
   .dashboard-page .workout-group-sequence-item strong,
@@ -303,8 +303,8 @@
     gap: 12px;
     min-height: 28px;
     padding: 12px 18px;
-    border-bottom: 1px solid #3c423c;
-    color: #f7f7f2;
+    border-bottom: 1px solid #d9dad4;
+    color: #111411;
   }
 
   .dashboard-page .custom-workout-carousel-heading strong {
@@ -318,7 +318,7 @@
 
   .dashboard-page .custom-workout-carousel-heading span {
     flex: 0 0 auto;
-    color: #d9ded7;
+    color: #676b65;
     font-size: 16px;
     font-weight: 700;
     line-height: 1.25;
@@ -373,9 +373,9 @@
     scroll-snap-align: start;
     scroll-snap-stop: always;
     transition: opacity 180ms ease, transform 180ms ease;
-    border-color: #555c55 !important;
+    border-color: #d9dad4 !important;
     border-radius: 0 !important;
-    background: #202420 !important;
+    background: #fff !important;
     box-shadow: none !important;
   }
 
@@ -386,7 +386,7 @@
     .exercise-notes-toggle,
     .previous-weights
   ) {
-    color: #f7f7f2;
+    color: #111411;
   }
 
   .dashboard-page .custom-workout-carousel[data-carousel-enabled="true"] .custom-workout-card :is(
@@ -396,7 +396,7 @@
     [data-log-status],
     .manual-exercise-hint
   ) {
-    color: #d9ded7 !important;
+    color: #676b65 !important;
   }
 
   .dashboard-page .custom-workout-carousel[data-carousel-enabled="true"] .custom-workout-card :is(
@@ -404,13 +404,13 @@
     textarea,
     .set-rir-button
   ) {
-    border-color: #555c55 !important;
-    background: #181c18 !important;
-    color: #f7f7f2 !important;
+    border-color: #d9dad4 !important;
+    background: #fff !important;
+    color: #111411 !important;
   }
 
   .dashboard-page .custom-workout-carousel[data-carousel-enabled="true"] .custom-workout-card :is(input, textarea)::placeholder {
-    color: #d0d5ce !important;
+    color: #858982 !important;
     opacity: 1;
   }
 
@@ -494,10 +494,10 @@
     min-height: 44px;
     padding: 0;
     place-items: center;
-    border: 2px solid #727a72;
+    border: 2px solid #8a8e87;
     border-radius: 0;
     background: transparent;
-    color: #f7f7f2;
+    color: #111411;
     font: inherit;
     font-size: 22px;
     font-weight: 900;
@@ -558,7 +558,7 @@
     display: block;
     min-height: 24px;
     margin: 8px 4px 0;
-    color: #d1d7d0;
+    color: #676b65;
     font-size: 16px;
     font-weight: 650;
     line-height: 1.45;
@@ -586,9 +586,9 @@
   }
 
   .dashboard-page .workout-group-primary-action [data-workout-group-log-set]:disabled {
-    border-color: #687068;
-    background: #303530;
-    color: #d1d7d0;
+    border-color: #c9ccc6;
+    background: #e5e7e1;
+    color: #676b65;
   }
 }
 
