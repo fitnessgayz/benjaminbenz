@@ -239,7 +239,7 @@
 
   .dashboard-page .workout-group-progress-heading em {
     flex: 0 0 auto;
-    color: #aeb4ad;
+    color: #e1e5df;
     font-size: 13px;
     font-style: normal;
     font-weight: 800;
@@ -265,7 +265,7 @@
     min-width: 0;
     padding-top: 9px;
     border-top: 3px solid #535953;
-    color: #aeb4ad;
+    color: #d1d7d0;
   }
 
   .dashboard-page .workout-group-sequence-item.is-done {
@@ -304,7 +304,7 @@
     min-height: 28px;
     padding: 12px 18px;
     border-bottom: 1px solid #3c423c;
-    color: var(--ink, #f5f5ef);
+    color: #f7f7f2;
   }
 
   .dashboard-page .custom-workout-carousel-heading strong {
@@ -318,7 +318,7 @@
 
   .dashboard-page .custom-workout-carousel-heading span {
     flex: 0 0 auto;
-    color: var(--muted, #a5a79f);
+    color: #d9ded7;
     font-size: 16px;
     font-weight: 700;
     line-height: 1.25;
@@ -369,7 +369,7 @@
     max-width: 100% !important;
     margin: 0 !important;
     overflow: hidden !important;
-    opacity: .54;
+    opacity: .76;
     scroll-snap-align: start;
     scroll-snap-stop: always;
     transition: opacity 180ms ease, transform 180ms ease;
@@ -390,6 +390,16 @@
   }
 
   .dashboard-page .custom-workout-carousel[data-carousel-enabled="true"] .custom-workout-card :is(
+    .set-header,
+    .set-label-field em,
+    .set-input-field em,
+    [data-log-status],
+    .manual-exercise-hint
+  ) {
+    color: #d9ded7 !important;
+  }
+
+  .dashboard-page .custom-workout-carousel[data-carousel-enabled="true"] .custom-workout-card :is(
     input,
     textarea,
     .set-rir-button
@@ -397,6 +407,11 @@
     border-color: #555c55 !important;
     background: #181c18 !important;
     color: #f7f7f2 !important;
+  }
+
+  .dashboard-page .custom-workout-carousel[data-carousel-enabled="true"] .custom-workout-card :is(input, textarea)::placeholder {
+    color: #d0d5ce !important;
+    opacity: 1;
   }
 
   .dashboard-page .custom-workout-carousel[data-carousel-enabled="true"] .custom-workout-card.is-carousel-active {
@@ -479,10 +494,10 @@
     min-height: 44px;
     padding: 0;
     place-items: center;
-    border: 2px solid var(--line, #5b5f59);
+    border: 2px solid #727a72;
     border-radius: 0;
     background: transparent;
-    color: var(--ink, #f5f5ef);
+    color: #f7f7f2;
     font: inherit;
     font-size: 22px;
     font-weight: 900;
@@ -528,7 +543,7 @@
     left: 50%;
     width: 9px;
     height: 9px;
-    border: 1px solid var(--muted, #a5a79f);
+    border: 1px solid #c4cac3;
     background: transparent;
     content: "";
     transform: translate(-50%, -50%);
@@ -543,7 +558,7 @@
     display: block;
     min-height: 24px;
     margin: 8px 4px 0;
-    color: var(--muted, #a5a79f);
+    color: #d1d7d0;
     font-size: 16px;
     font-weight: 650;
     line-height: 1.45;
@@ -571,9 +586,9 @@
   }
 
   .dashboard-page .workout-group-primary-action [data-workout-group-log-set]:disabled {
-    border-color: #535953;
-    background: #2b302b;
-    color: #aeb4ad;
+    border-color: #687068;
+    background: #303530;
+    color: #d1d7d0;
   }
 }
 
