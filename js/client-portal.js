@@ -427,12 +427,6 @@ function renderClientHomeSummary() {
 
   const workouts = Array.isArray(currentProgram.workouts) ? currentProgram.workouts : [];
   const hasAssignedWorkout = workouts.length > 0;
-  const selectedAssignedWorkoutIndex = activeWorkoutTabIndex - 1;
-  const nextWorkout = (selectedAssignedWorkoutIndex >= 0 ? workouts[selectedAssignedWorkoutIndex] : workouts[0]) || {
-    title: customWorkoutTitle,
-    focus: "Build your own",
-    format: "custom"
-  };
   const used = normalizeClientSessionCount(currentProgram.session_count_used);
   const total = normalizeClientSessionCount(currentProgram.session_count_total);
   const todayFoodTotals = foodLogTotals(foodLogs.filter((log) => String(log.entry_date || "") === todayDate()));
@@ -445,11 +439,6 @@ function renderClientHomeSummary() {
   const checklist = document.getElementById("client-home-checklist");
 
   setText("#client-home-status", "Ready");
-  setText("#client-home-workout-title", nextWorkout.title || "Workout");
-  setText("#client-home-workout-meta", [
-    nextWorkout.focus || "",
-    nextWorkout.format ? formatLabel(inferWorkoutFormat(nextWorkout)) : ""
-  ].filter(Boolean).join(" · ") || "Your training is ready.");
   setText("#client-home-session-count", total > 0 ? `${used}/${total}` : (used > 0 ? `${used} used` : "--"));
   setText("#client-home-session-meta", total > 0
     ? `${Math.max(total - used, 0)} sessions remaining in this package.`
@@ -6916,7 +6905,8 @@ function setClientHomeCarouselSlide(carousel, nextIndex) {
   });
 
   if (status) {
-    status.textContent = `${index + 1} / ${slides.length}`;
+    const slideLabel = slides[index].getAttribute("aria-label") || `Slide ${index + 1}`;
+    status.textContent = `${slideLabel} · ${index + 1} / ${slides.length}`;
   }
 }
 

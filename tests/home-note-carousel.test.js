@@ -14,19 +14,21 @@ test("moves the program overview into the home coach-note carousel", () => {
 
   const programIndex = dashboard.indexOf('id="dashboard-program-title"');
   const noteIndex = dashboard.indexOf('id="client-home-note-title"');
-  const workoutIndex = dashboard.indexOf('id="client-home-workout-title"');
 
   assert.ok(programIndex >= 0);
   assert.ok(noteIndex > programIndex);
-  assert.ok(workoutIndex > noteIndex);
+  assert.doesNotMatch(dashboard, /id="client-home-workout-title"/);
+  assert.doesNotMatch(dashboard, />Next workout</i);
 });
 
-test("carousel exposes accessible arrows, dots, and two slides", () => {
+test("carousel exposes two compact accessible arrows and two slides", () => {
   assert.equal((dashboard.match(/data-client-home-carousel-slide/g) || []).length, 2);
   assert.match(dashboard, /data-client-home-carousel-previous aria-label="Previous slide"/);
   assert.match(dashboard, /data-client-home-carousel-next aria-label="Next slide"/);
-  assert.equal((dashboard.match(/data-client-home-carousel-dot="[01]"/g) || []).length, 2);
+  assert.doesNotMatch(dashboard, /data-client-home-carousel-dot=/);
   assert.match(dashboard, /aria-roledescription="carousel"/);
+  assert.match(styles, /\.dashboard-page \.client-home-carousel-controls \.client-home-carousel-arrow\s*\{[\s\S]*?width:\s*44px\s*!important;/);
+  assert.match(styles, /\.dashboard-page \.client-home-carousel-controls \.client-home-carousel-arrow\s*\{[\s\S]*?max-inline-size:\s*44px\s*!important;/);
 });
 
 test("carousel uses light grey and supports buttons, keyboard, and touch swipes", () => {

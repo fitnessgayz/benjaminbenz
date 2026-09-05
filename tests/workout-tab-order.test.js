@@ -15,7 +15,8 @@ test("keeps assigned workout numbering independent of tab position", () => {
   assert.match(portal, /`Workout \$\{assignedWorkoutIndex \+ 1\}`/);
 });
 
-test("maps the selected tab back to the correct assigned workout", () => {
-  assert.match(portal, /const selectedAssignedWorkoutIndex = activeWorkoutTabIndex - 1;/);
-  assert.match(portal, /workouts\[selectedAssignedWorkoutIndex\]/);
+test("activates the workout panel matching the selected tab", () => {
+  assert.match(portal, /activeWorkoutTabIndex = nextIndex;/);
+  assert.match(portal, /panels\.forEach\(\(panel, index\) => \{/);
+  assert.match(portal, /const isActive = index === nextIndex;/);
 });
