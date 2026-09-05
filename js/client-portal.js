@@ -554,47 +554,6 @@ function showDashboardContent() {
   }
 }
 
-function clientInitials(program) {
-  if (program.initials) {
-    return program.initials;
-  }
-
-  return String(program.client_name || "Client")
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part.charAt(0))
-    .join("")
-    .toUpperCase();
-}
-
-function renderMetrics(program) {
-  const metrics = document.getElementById("summary-metrics");
-
-  if (!metrics) {
-    return;
-  }
-
-  metrics.innerHTML = `
-    <label class="summary-metric">
-      <strong>Height</strong>
-      <input type="text" name="height" value="${escapeHtml(program.height === "Not set" ? "" : (program.height || ""))}" placeholder="Not set" />
-    </label>
-    <label class="summary-metric">
-      <strong>Starting weight</strong>
-      <input type="text" name="starting_weight" value="${escapeHtml(program.starting_weight === "Not set" ? "" : (program.starting_weight || ""))}" placeholder="Not set" />
-    </label>
-    <label class="summary-metric">
-      <strong>Starting bodyfat</strong>
-      <input type="text" name="starting_bodyfat" value="${escapeHtml(program.starting_bodyfat === "Not set" ? "" : (program.starting_bodyfat || ""))}" placeholder="Not set" />
-    </label>
-    <div class="summary-metric-actions">
-      <button class="button button-ghost" type="button" id="save-client-metrics-button">Save</button>
-      <small id="client-metrics-status">Update these any time.</small>
-    </div>
-  `;
-}
-
 function nutritionPlanFromProgram(program = {}) {
   const source = program.nutrition_plan && typeof program.nutrition_plan === "object"
     ? program.nutrition_plan
@@ -6739,12 +6698,11 @@ function setClientDashboardTab(tabName) {
 
 function handleClientSummaryActions() {
   document.addEventListener("click", async (event) => {
-    const sessionsButton = event.target.closest("#client-summary-sessions-button");
     const summaryTabButton = event.target.closest("[data-client-summary-go-tab]");
     const resetButton = event.target.closest("#client-dashboard-reset-password-button");
 
-    if (sessionsButton || summaryTabButton) {
-      const tabName = summaryTabButton?.dataset.clientSummaryGoTab || "sessions";
+    if (summaryTabButton) {
+      const tabName = summaryTabButton.dataset.clientSummaryGoTab;
       const panel = document.querySelector(`[data-client-dashboard-panel="${tabName}"]`);
 
       if (tabName === "workouts") {
@@ -6794,76 +6752,6 @@ function handleClientSummaryActions() {
     }
 
     resetButton.disabled = false;
-  });
-}
-
-async function saveClientMetrics() {
-  if (!supabaseClient || !currentProgram?.id) {
-    return { error: new Error("Client profile is not connected yet.") };
-  }
-
-  const metrics = document.getElementById("summary-metrics");
-
-  if (!metrics) {
-    return { error: new Error("Profile fields are not available.") };
-  }
-
-  const payload = {
-    height: metrics.querySelector('[name="height"]')?.value.trim() || "Not set",
-    starting_weight: metrics.querySelector('[name="starting_weight"]')?.value.trim() || "Not set",
-    starting_bodyfat: metrics.querySelector('[name="starting_bodyfat"]')?.value.trim() || "Not set"
-  };
-
-  const { data, error } = await supabaseClient
-    .from("client_programs")
-    .update(payload)
-    .eq("id", currentProgram.id)
-    .select("*")
-    .single();
-
-  if (error) {
-    return { error };
-  }
-
-  currentProgram = data;
-  renderMetrics(currentProgram);
-  return { data };
-}
-
-function handleClientMetricSave() {
-  document.addEventListener("click", async (event) => {
-    const button = event.target.closest("#save-client-metrics-button");
-
-    if (!button) {
-      return;
-    }
-
-    const status = document.getElementById("client-metrics-status");
-    button.disabled = true;
-
-    if (status) {
-      status.textContent = "Saving...";
-    }
-
-    const { error } = await saveClientMetrics();
-
-    if (error) {
-      if (status) {
-        status.textContent = error.message || "Could not save yet.";
-      }
-      button.disabled = false;
-      return;
-    }
-
-    const nextStatus = document.getElementById("client-metrics-status");
-    const nextButton = document.getElementById("save-client-metrics-button");
-
-    if (nextStatus) {
-      nextStatus.textContent = "Saved.";
-    }
-    if (nextButton) {
-      nextButton.disabled = false;
-    }
   });
 }
 
@@ -7989,10 +7877,6 @@ function renderProgram(program) {
   document.title = `${programTitle} | Fitness with Benjamin`;
   setText("#dashboard-program-title", programTitle);
   setText("#dashboard-program-summary", displayProgram.program_summary || "Your current training block is ready.");
-  setText("#client-avatar", clientInitials(displayProgram));
-  setText("#client-name", displayProgram.client_name || "Client");
-
-  renderMetrics(program);
   renderClientNutrition(program);
   renderWorkoutInsights(program);
   renderClientSessionManualState(program);
@@ -8770,7 +8654,6 @@ handleClientWorkoutTabs();
 handleWorkoutInteractions();
 handleSkipToggle();
 handleTrainingLogSave();
-handleClientMetricSave();
 handleClientProgressHistorySelect();
 handleClientProgressSave();
 handleClientNutritionSave();

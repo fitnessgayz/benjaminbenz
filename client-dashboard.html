@@ -30,7 +30,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=circuit-complete-1" />
+  <link rel="stylesheet" href="css/style.css?v=home-account-1" />
   <link rel="stylesheet" href="css/custom-workout-mobile-fix.css?v=assigned-carousel-1" />
 </head>
 <body class="dashboard-page is-loading">
@@ -61,18 +61,6 @@
       </section>
 
       <section class="dashboard-grid" aria-label="Client program dashboard">
-        <aside class="client-summary">
-          <div class="client-avatar" id="client-avatar"></div>
-          <h2 id="client-name"></h2>
-          <p>Current training block</p>
-          <div class="summary-metrics" id="summary-metrics"></div>
-          <div class="client-summary-actions">
-            <button class="button button-ghost" type="button" id="client-summary-sessions-button">Sessions</button>
-            <button class="password-reset-button client-dashboard-reset" type="button" id="client-dashboard-reset-password-button">Reset password</button>
-            <small id="client-dashboard-reset-status" role="status"></small>
-          </div>
-        </aside>
-
         <nav class="client-dashboard-tabs" aria-label="Client dashboard sections">
           <button class="client-dashboard-tab is-active" type="button" data-client-dashboard-tab="home" aria-selected="true">Home</button>
           <button class="client-dashboard-tab" type="button" data-client-dashboard-tab="workouts" aria-selected="false">Workouts</button>
@@ -197,7 +185,11 @@
               <p class="kicker">Next steps</p>
               <h3>Stay on track</h3>
               <ul class="client-home-checklist" id="client-home-checklist" aria-label="Client dashboard next steps"></ul>
-              <a class="client-home-support" href="mailto:fwb@benjaminbenz.com?subject=Client%20dashboard%20help">Report an issue</a>
+              <div class="client-home-support-actions">
+                <a class="client-home-support" href="mailto:fwb@benjaminbenz.com?subject=Client%20dashboard%20help">Report an issue</a>
+                <button class="password-reset-button client-home-reset" type="button" id="client-dashboard-reset-password-button">Reset password</button>
+                <small id="client-dashboard-reset-status" role="status"></small>
+              </div>
             </article>
           </div>
         </section>
@@ -557,6 +549,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js?v=manual-sessions-1"></script>
   <script src="js/exercise-name-matcher.js?v=exercise-consolidation-1"></script>
-  <script src="js/client-portal.js?v=exercise-consolidation-1"></script>
+  <script src="js/client-portal.js?v=home-account-1"></script>
 </body>
 </html>

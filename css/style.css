@@ -2865,6 +2865,27 @@ footer {
   text-underline-offset: 4px;
 }
 
+.client-home-support-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 18px;
+}
+
+.client-home-reset {
+  color: var(--black);
+  font-size: .92rem;
+  text-underline-offset: 4px;
+}
+
+.client-home-support-actions small {
+  flex-basis: 100%;
+  min-height: 1.2em;
+  color: var(--muted);
+  font-size: .78rem;
+  font-weight: 900;
+}
+
 .panel-heading {
   display: flex;
   align-items: start;
