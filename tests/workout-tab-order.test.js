@@ -33,7 +33,7 @@ test("renders the approved compact icon workout selector", () => {
   assert.match(styles, /\.client-workout-tab \{[\s\S]*?min-height: 62px;[\s\S]*?grid-template-columns: 36px minmax\(0, 1fr\)/);
   assert.match(styles, /\.client-workout-selection-summary \{[\s\S]*?background: #171a16;/);
   assert.match(dashboard, /css\/style\.css\?v=workout-selector-icons-1/);
-  assert.match(dashboard, /js\/client-portal\.js\?v=workout-selector-icons-1/);
+  assert.match(dashboard, /js\/client-portal\.js\?v=assigned-card-layout-1/);
 });
 
 test("shows a workout day separately from its training target", () => {

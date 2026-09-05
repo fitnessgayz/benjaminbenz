@@ -2656,14 +2656,6 @@ function exerciseCard(exercise, workoutTitle, isOpen = false, workoutFocus = "",
     <article class="workout-exercise-card workout-entry-card custom-workout-card assigned-workout-card${isOpen ? " is-open" : ""}" data-custom-exercise-card data-assigned-exercise-card${clientAdded ? " data-client-added-exercise" : ""}>
       <div class="exercise-card-summary custom-workout-card-summary">
         <span>
-          <span class="custom-workout-card-marker-row">
-            <span class="status-pill" data-assigned-workout-format-marker>${escapeHtml(marker)}</span>
-            <button class="custom-workout-delete-icon" type="button" data-delete-exercise aria-label="Delete ${marker}">
-              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                <path d="M4 7h16M9 7V4h6v3m-9 0 1 13h10l1-13M10 11v5m4-5v5" />
-              </svg>
-            </button>
-          </span>
           <strong class="custom-workout-editable-title" data-exercise-title>
             <span class="custom-workout-name-editor">
               <input
@@ -2689,7 +2681,14 @@ function exerciseCard(exercise, workoutTitle, isOpen = false, workoutFocus = "",
           </strong>
           <small data-set-progress>0 / ${setCount} working sets completed</small>
         </span>
-        <button class="custom-workout-card-toggle" type="button" data-exercise-toggle aria-label="Toggle ${marker}"><i>›</i></button>
+        <div class="custom-workout-card-actions">
+            <button class="custom-workout-delete-icon" type="button" data-delete-exercise aria-label="Delete ${marker}">
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M4 7h16M9 7V4h6v3m-9 0 1 13h10l1-13M10 11v5m4-5v5" />
+              </svg>
+            </button>
+          <button class="custom-workout-card-toggle" type="button" data-exercise-toggle aria-label="Toggle ${marker}"><i>›</i></button>
+        </div>
       </div>
       <div class="exercise-detail custom-workout-detail">
         ${exerciseLogFields(exercise, workoutTitle, {
@@ -5080,13 +5079,9 @@ function moveCustomWorkoutCarousel(carousel, nextIndex, options = {}) {
   const firstOffset = cards[0]?.offsetLeft || 0;
   const card = cards[index];
   const cardOffset = Math.max((card?.offsetLeft || 0) - firstOffset, 0);
-  // Assigned programs retain an adjacent-card navigation cue. Custom workouts
-  // use the full width and rely on their arrows and dots for navigation.
-  const allowsAdjacentCardPeek = carousel.matches("[data-assigned-workout-carousel]");
-  const previousCardPeek = allowsAdjacentCardPeek && index > 0
-    ? Math.max(list.clientWidth - (card?.offsetWidth || list.clientWidth), 0)
-    : 0;
-  const targetLeft = Math.max(cardOffset - previousCardPeek, 0);
+  // Both custom and assigned workouts show one complete card at a time. Arrows,
+  // dots, and swipe gestures provide the navigation cue without clipping cards.
+  const targetLeft = cardOffset;
   carousel.dataset.activeIndex = String(index);
   renderCustomWorkoutCarousel(carousel);
 

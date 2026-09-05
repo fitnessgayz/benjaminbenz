@@ -201,12 +201,12 @@
   }
 }
 
-/* Custom cards use a compact action cluster instead of repeating the group badge. */
-.dashboard-page .client-workout-panel-custom .custom-workout-card > .custom-workout-card-summary {
+/* Workout cards use a compact action cluster instead of repeating the group badge. */
+.dashboard-page :is(.client-workout-panel-custom, .client-workout-panel-assigned) .custom-workout-card > .custom-workout-card-summary {
   padding-right: 98px !important;
 }
 
-.dashboard-page .client-workout-panel-custom .custom-workout-card-actions {
+.dashboard-page :is(.client-workout-panel-custom, .client-workout-panel-assigned) .custom-workout-card-actions {
   position: absolute;
   top: 10px;
   right: 8px;
@@ -217,8 +217,8 @@
   gap: 4px;
 }
 
-.dashboard-page .client-workout-panel-custom .custom-workout-card-actions .custom-workout-delete-icon,
-.dashboard-page .client-workout-panel-custom .custom-workout-card-actions .custom-workout-card-toggle {
+.dashboard-page :is(.client-workout-panel-custom, .client-workout-panel-assigned) .custom-workout-card-actions .custom-workout-delete-icon,
+.dashboard-page :is(.client-workout-panel-custom, .client-workout-panel-assigned) .custom-workout-card-actions .custom-workout-card-toggle {
   position: static !important;
   inset: auto !important;
   flex: 0 0 38px !important;
@@ -391,20 +391,19 @@
     grid-auto-columns: 100%;
     grid-template-columns: none !important;
     align-items: start;
-    gap: 10px !important;
+    gap: 12px !important;
     width: 100%;
     max-width: 100%;
     min-width: 0;
     margin: 0 !important;
-    /* The right padding reduces each slide's content box while preserving the
-       full carousel width, leaving a clear preview of the next exercise. */
-    padding: 12px 44px 8px 12px !important;
+    padding: 12px !important;
     border: 0 !important;
     border-left: 0 !important;
     background: transparent !important;
     overflow-x: auto !important;
     overflow-y: hidden;
     overscroll-behavior-inline: contain;
+    scroll-padding-inline: 12px;
     scroll-snap-type: inline mandatory;
     scrollbar-width: none;
     touch-action: pan-y;
@@ -480,16 +479,6 @@
   }
 
   .dashboard-page .custom-workout-carousel[data-carousel-enabled="true"] .custom-workout-card:not(:first-child) {
-    scroll-margin-inline-start: 44px;
-  }
-
-  /* Custom workouts show one full-width exercise at a time. */
-  .dashboard-page .client-workout-panel-custom .custom-workout-carousel[data-carousel-enabled="true"] .custom-workout-list {
-    gap: 12px !important;
-    padding: 12px !important;
-  }
-
-  .dashboard-page .client-workout-panel-custom .custom-workout-carousel[data-carousel-enabled="true"] .custom-workout-card:not(:first-child) {
     scroll-margin-inline-start: 0;
   }
 
