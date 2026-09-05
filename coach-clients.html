@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Coach Clients | Fitness with Benjamin</title>
+  <meta name="description" content="Fitness with Benjamin coach client list: search and browse all clients." />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-P3FPJMJ4PK"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-P3FPJMJ4PK');
+  </script>
+  <link rel="shortcut icon" href="/favicon.ico" />
+  <link rel="icon" href="/favicon.ico" sizes="any" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+  <link rel="apple-touch-icon" href="/fwb-home-icon-180.png" />
+  <link rel="apple-touch-icon-precomposed" href="/fwb-home-icon-180.png" />
+  <link rel="apple-touch-icon" sizes="120x120" href="/apple-touch-icon-120x120.png" />
+  <link rel="apple-touch-icon" sizes="152x152" href="/apple-touch-icon-152x152.png" />
+  <link rel="apple-touch-icon" sizes="167x167" href="/apple-touch-icon-167x167.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/fwb-home-icon-180.png" />
+  <link rel="manifest" href="/site.webmanifest" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="FWB" />
+  <meta name="application-name" content="FWB" />
+  <meta name="theme-color" content="#050505" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css?v=coach-overview-1" />
+</head>
+<body class="dashboard-page coach-clients-page">
+  <header class="site-header dashboard-header">
+    <a class="brand" href="index.html#top" aria-label="Fitness with Benjamin home">
+      <span>FWB</span>
+      <strong>Fitness with Benjamin</strong>
+    </a>
+    <nav class="nav-links" aria-label="Primary navigation">
+      <a href="coach-admin.html">Coach Admin</a>
+      <a href="client-login.html?v=manual-invite-copy-1">Client Login</a>
+    </nav>
+    <div class="header-actions">
+      <button class="login-link is-current sign-out-button" type="button" data-coach-sign-out hidden>Sign Out</button>
+    </div>
+  </header>
+
+  <main class="overview-shell">
+    <p class="overview-config-warning" id="clients-config-warning" hidden>The private coach portal is not configured.</p>
+
+    <div class="overview-workspace" id="clients-workspace" hidden>
+
+      <nav class="overview-nav" aria-label="Coach overview sections">
+        <a class="overview-nav-item" href="coach-overview.html">Overview</a>
+        <span class="overview-nav-item is-active">Clients</span>
+        <a class="overview-nav-item" href="coach-overview.html#overview-requests">Requests</a>
+        <a class="overview-nav-item" href="coach-admin.html">Exercise library</a>
+      </nav>
+
+      <div class="overview-content">
+
+        <div class="overview-greeting">
+          <p class="kicker">Clients</p>
+          <h1>All clients</h1>
+        </div>
+
+        <div class="clients-toolbar">
+          <input type="search" id="clients-search" class="clients-search" placeholder="Search by name or email" autocomplete="off" />
+          <div class="clients-filter-toggle" role="group" aria-label="Filter clients">
+            <button type="button" class="clients-filter-button is-active" data-clients-filter="active">Active</button>
+            <button type="button" class="clients-filter-button" data-clients-filter="archived">Archived</button>
+            <button type="button" class="clients-filter-button" data-clients-filter="all">All</button>
+          </div>
+        </div>
+
+        <div class="overview-roster" id="clients-roster">
+          <div class="overview-roster-head overview-roster-head-wide">
+            <span>Client</span>
+            <span>Email</span>
+            <span>Program</span>
+            <span>Sessions</span>
+            <span>Last workout</span>
+            <span></span>
+          </div>
+          <p class="overview-empty-state" id="clients-empty" hidden>No clients match this search.</p>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <span>© <span id="year"></span> Fitness with Benjamin</span>
+    <span>San Francisco · fwb@benjaminbenz.com</span>
+  </footer>
+
+  <script src="js/script.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase-config.js"></script>
+  <script src="js/coach-clients.js"></script>
+</body>
+</html>
