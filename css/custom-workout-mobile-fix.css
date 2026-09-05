@@ -49,16 +49,40 @@
 
 .dashboard-page .workout-session-date-control input[type="date"],
 .coach-admin-page .workout-session-date-control input[type="date"] {
+  position: relative !important;
   display: block !important;
   width: 100% !important;
   inline-size: 100% !important;
   max-width: 100% !important;
   min-width: 0 !important;
   margin: 0 !important;
+  padding-inline: 44px !important;
   border: 0 !important;
   border-radius: 0 !important;
   box-shadow: none !important;
   box-sizing: border-box !important;
+  text-align: center !important;
+  text-align-last: center !important;
+}
+
+.dashboard-page .workout-session-date-control input[type="date"]::-webkit-date-and-time-value,
+.coach-admin-page .workout-session-date-control input[type="date"]::-webkit-date-and-time-value {
+  width: 100%;
+  margin: 0;
+  text-align: center;
+}
+
+.dashboard-page .workout-session-date-control input[type="date"]::-webkit-datetime-edit,
+.coach-admin-page .workout-session-date-control input[type="date"]::-webkit-datetime-edit {
+  display: flex;
+  width: 100%;
+  justify-content: center;
+}
+
+.dashboard-page .workout-session-date-control input[type="date"]::-webkit-calendar-picker-indicator,
+.coach-admin-page .workout-session-date-control input[type="date"]::-webkit-calendar-picker-indicator {
+  position: absolute;
+  right: 14px;
 }
 
 .dashboard-page .workout-start-control,
