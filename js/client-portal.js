@@ -425,7 +425,8 @@ function renderClientHomeSummary() {
 
   const workouts = Array.isArray(currentProgram.workouts) ? currentProgram.workouts : [];
   const hasAssignedWorkout = workouts.length > 0;
-  const nextWorkout = workouts[activeWorkoutTabIndex] || workouts[0] || {
+  const selectedAssignedWorkoutIndex = activeWorkoutTabIndex - 1;
+  const nextWorkout = (selectedAssignedWorkoutIndex >= 0 ? workouts[selectedAssignedWorkoutIndex] : workouts[0]) || {
     title: customWorkoutTitle,
     focus: "Build your own",
     format: "custom"
@@ -5348,12 +5349,12 @@ function renderClientWorkoutTabs(workouts = []) {
   }
 
   const scheduledWorkouts = Array.isArray(workouts) ? workouts : [];
-  const availableWorkouts = [...scheduledWorkouts, {
+  const availableWorkouts = [{
     title: customWorkoutTitle,
     focus: "Build your own",
     format: "custom",
     isCustom: true
-  }];
+  }, ...scheduledWorkouts];
 
   if (count) {
     count.textContent = scheduledWorkouts.length > 0
@@ -5374,7 +5375,8 @@ function renderClientWorkoutTabs(workouts = []) {
   tabs.innerHTML = availableWorkouts.map((workout, index) => {
     const title = workout.title || `Workout ${index + 1}`;
     const isActive = index === activeWorkoutTabIndex;
-    const label = workout.isCustom ? "Custom" : `Workout ${index + 1}`;
+    const assignedWorkoutIndex = scheduledWorkouts.indexOf(workout);
+    const label = workout.isCustom ? "Custom" : `Workout ${assignedWorkoutIndex + 1}`;
 
     return `
       <button
