@@ -144,25 +144,31 @@ function coachWorkoutExerciseMarkup(values = {}) {
   return `
     <article class="coach-workout-exercise" data-coach-workout-exercise>
       <div class="coach-workout-exercise-heading">
-        <span class="status-pill" data-coach-workout-marker>Exercise</span>
-        <button class="coach-workout-remove-exercise" type="button" data-coach-workout-remove aria-label="Remove exercise">Remove</button>
+        <div class="coach-workout-exercise-title">
+          <span class="status-pill" data-coach-workout-marker>Exercise</span>
+          <label class="coach-workout-exercise-name">
+            <span>Exercise name</span>
+            <input type="text" value="${escapeCoachWorkoutHtml(values.name || "")}" list="coach-workout-exercise-suggestions" placeholder="Input exercise name here" autocomplete="off" data-coach-workout-name required />
+          </label>
+        </div>
+        <button class="coach-workout-remove-exercise" type="button" data-coach-workout-remove aria-label="Remove exercise">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M4 7h16M9 7V4h6v3m-9 0 1 13h10l1-13M10 11v5m4-5v5" />
+          </svg>
+        </button>
       </div>
       <div class="coach-workout-exercise-grid">
-        <label class="coach-workout-exercise-name">
-          Exercise
-          <input type="text" value="${escapeCoachWorkoutHtml(values.name || "")}" list="coach-workout-exercise-suggestions" placeholder="Exercise name" autocomplete="off" data-coach-workout-name required />
-        </label>
         <label>
           Sets
           <input type="number" value="${escapeCoachWorkoutHtml(values.sets || 3)}" min="1" max="10" step="1" inputmode="numeric" data-coach-workout-sets required />
         </label>
         <label>
-          Reps / range
-          <input type="text" value="${escapeCoachWorkoutHtml(values.reps || "")}" placeholder="15 or 10–12" inputmode="numeric" data-coach-workout-reps required />
-        </label>
-        <label>
           Weight (lb)
           <input type="text" value="${escapeCoachWorkoutHtml(values.weight || "")}" placeholder="40 or 45, 75, 75" inputmode="decimal" data-coach-workout-weight required />
+        </label>
+        <label>
+          Reps / range
+          <input type="text" value="${escapeCoachWorkoutHtml(values.reps || "")}" placeholder="15 or 10–12" inputmode="numeric" data-coach-workout-reps required />
         </label>
         <label class="coach-workout-exercise-notes">
           Notes <span>optional</span>
