@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=coach-workout-card-2" />
+  <link rel="stylesheet" href="css/style.css?v=coach-workout-suggestions-4" />
 </head>
 <body class="dashboard-page coach-workout-log-page">
   <header class="site-header dashboard-header">
@@ -88,11 +88,17 @@
             <p class="kicker">Required</p>
             <h2 id="coach-workout-exercises-title">Exercises, reps, and weight</h2>
           </div>
-          <button class="button button-ghost" type="button" id="coach-workout-add-exercise">Add exercise</button>
         </div>
-        <p class="coach-workout-field-guide">Use one number for every set, or commas when sets differ—for example, <strong>45, 75, 75</strong>.</p>
-        <datalist id="coach-workout-exercise-suggestions"></datalist>
-        <div class="coach-workout-exercise-list" id="coach-workout-exercises" aria-live="polite"></div>
+        <div class="coach-workout-carousel" id="coach-workout-carousel" data-coach-workout-format="single">
+          <div class="coach-workout-carousel-status" id="coach-workout-carousel-status" aria-live="polite" hidden></div>
+          <div class="coach-workout-exercise-list" id="coach-workout-exercises" aria-live="polite"></div>
+          <div class="coach-workout-carousel-controls" id="coach-workout-carousel-controls" hidden>
+            <button type="button" data-coach-workout-previous aria-label="Previous exercise">←</button>
+            <div id="coach-workout-carousel-dots" aria-label="Choose exercise"></div>
+            <button type="button" data-coach-workout-next aria-label="Next exercise">→</button>
+          </div>
+        </div>
+        <button class="button button-ghost coach-workout-add-exercise" type="button" id="coach-workout-add-exercise">Add exercise</button>
       </section>
 
       <section class="admin-card coach-workout-submit-panel">
@@ -107,6 +113,6 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js?v=client-session-link-1"></script>
-  <script src="js/coach-workout-log.js?v=coach-workout-card-2"></script>
+  <script src="js/coach-workout-log.js?v=coach-workout-suggestions-4"></script>
 </body>
 </html>

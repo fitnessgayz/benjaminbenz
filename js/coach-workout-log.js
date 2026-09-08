@@ -13,6 +13,7 @@ const coachWorkoutSupabase = hasCoachWorkoutConfig && window.supabase
 
 let coachWorkoutPrograms = [];
 let coachWorkoutExerciseLibrary = [];
+let coachWorkoutExerciseId = 0;
 
 function normalizeCoachWorkoutEmail(value) {
   return String(value || "").trim().toLowerCase();
@@ -109,16 +110,46 @@ function renderCoachWorkoutClients() {
     : "";
 }
 
-function renderCoachWorkoutSuggestions() {
-  const datalist = document.getElementById("coach-workout-exercise-suggestions");
+function closeCoachWorkoutSuggestions(exceptInput = null) {
+  document.querySelectorAll("[data-coach-workout-suggestions]").forEach((menu) => {
+    const input = menu.closest("[data-coach-workout-exercise]")?.querySelector("[data-coach-workout-name]");
 
-  if (!datalist) {
+    if (input === exceptInput) {
+      return;
+    }
+
+    menu.hidden = true;
+    input?.setAttribute("aria-expanded", "false");
+  });
+}
+
+function renderCoachWorkoutSuggestions(input) {
+  const exercise = input?.closest("[data-coach-workout-exercise]");
+  const menu = exercise?.querySelector("[data-coach-workout-suggestions]");
+
+  if (!input || !menu) {
     return;
   }
 
-  datalist.replaceChildren(...coachWorkoutExerciseLibrary
-    .filter((exercise) => exercise.is_active !== false)
-    .map((exercise) => new Option(exercise.name, exercise.name)));
+  const query = input.value.trim().toLowerCase();
+  const matches = coachWorkoutExerciseLibrary
+    .filter((item) => item.is_active !== false && (!query || String(item.name || "").toLowerCase().includes(query)))
+    .sort((a, b) => {
+      const aName = String(a.name || "").toLowerCase();
+      const bName = String(b.name || "").toLowerCase();
+      const aStarts = query && aName.startsWith(query) ? 0 : 1;
+      const bStarts = query && bName.startsWith(query) ? 0 : 1;
+
+      return aStarts - bStarts || aName.localeCompare(bName);
+    })
+    .slice(0, 16);
+
+  menu.innerHTML = matches.map((item) => `
+    <button type="button" role="option" data-coach-workout-suggestion="${escapeCoachWorkoutHtml(item.name)}">${escapeCoachWorkoutHtml(item.name)}</button>
+  `).join("");
+  menu.hidden = matches.length === 0;
+  input.setAttribute("aria-expanded", String(matches.length > 0));
+  closeCoachWorkoutSuggestions(input);
 }
 
 function coachWorkoutFormatValue() {
@@ -140,121 +171,225 @@ function coachWorkoutFormatMarker(format, index) {
   return `Exercise ${index + 1}`;
 }
 
-function coachWorkoutExerciseMarkup(values = {}) {
+function coachWorkoutSetMarkup(values = {}, index = 0) {
+  const setLabel = index === 0 ? "" : String(index);
+  const rir = String(values.rir ?? "");
+
   return `
-    <article class="coach-workout-exercise" data-coach-workout-exercise>
+    <div class="coach-workout-set-row" data-coach-workout-set-row>
+      <label class="coach-workout-set-label">
+        <span>Set</span>
+        <input type="text" value="${setLabel}" tabindex="-1" aria-label="Set ${index + 1}" readonly />
+      </label>
+      <label>
+        <span>Weight</span>
+        <input type="number" value="${escapeCoachWorkoutHtml(values.weight ?? "")}" min="0" step="0.5" inputmode="decimal" placeholder="0" data-coach-workout-weight />
+      </label>
+      <label>
+        <span>Reps</span>
+        <input type="number" value="${escapeCoachWorkoutHtml(values.reps ?? "")}" min="1" step="1" inputmode="numeric" placeholder="0" data-coach-workout-reps />
+      </label>
+      <label>
+        <span>RIR</span>
+        <select data-coach-workout-rir aria-label="Reps in reserve">
+          <option value=""${rir === "" ? " selected" : ""}>—</option>
+          ${[0, 1, 2, 3, 4].map((value) => `<option value="${value}"${rir === String(value) ? " selected" : ""}>${value}</option>`).join("")}
+        </select>
+      </label>
+    </div>
+  `;
+}
+
+function coachWorkoutExerciseMarkup(values = {}) {
+  const id = `coach-workout-exercise-${++coachWorkoutExerciseId}`;
+  const suggestionsId = `${id}-suggestions`;
+  const sets = Array.isArray(values.sets) && values.sets.length > 0 ? values.sets : [{}];
+
+  return `
+    <article class="coach-workout-exercise is-open" data-coach-workout-exercise>
       <div class="coach-workout-exercise-heading">
-        <div class="coach-workout-exercise-title">
-          <span class="status-pill" data-coach-workout-marker>Exercise</span>
-          <label class="coach-workout-exercise-name">
-            <span>Exercise name</span>
-            <input type="text" value="${escapeCoachWorkoutHtml(values.name || "")}" list="coach-workout-exercise-suggestions" placeholder="Input exercise name here" autocomplete="off" data-coach-workout-name required />
-          </label>
-        </div>
+        <label class="coach-workout-exercise-name">
+          <span class="sr-only">Exercise name</span>
+          <input type="text" value="${escapeCoachWorkoutHtml(values.name || "")}" placeholder="Input exercise name here" autocomplete="off" role="combobox" aria-autocomplete="list" aria-controls="${suggestionsId}" aria-expanded="false" data-coach-workout-name required />
+        </label>
         <button class="coach-workout-remove-exercise" type="button" data-coach-workout-remove aria-label="Remove exercise">
           <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
             <path d="M4 7h16M9 7V4h6v3m-9 0 1 13h10l1-13M10 11v5m4-5v5" />
           </svg>
         </button>
+        <button class="coach-workout-exercise-toggle" type="button" data-coach-workout-toggle aria-expanded="true" aria-controls="${id}" aria-label="Collapse exercise">
+          <span aria-hidden="true">›</span>
+        </button>
+        <div class="coach-workout-suggestion-menu" id="${suggestionsId}" role="listbox" data-coach-workout-suggestions hidden></div>
       </div>
-      <div class="coach-workout-exercise-grid">
-        <label>
-          Sets
-          <input type="number" value="${escapeCoachWorkoutHtml(values.sets || 3)}" min="1" max="10" step="1" inputmode="numeric" data-coach-workout-sets required />
-        </label>
-        <label>
-          Weight (lb)
-          <input type="text" value="${escapeCoachWorkoutHtml(values.weight || "")}" placeholder="40 or 45, 75, 75" inputmode="decimal" data-coach-workout-weight required />
-        </label>
-        <label>
-          Reps / range
-          <input type="text" value="${escapeCoachWorkoutHtml(values.reps || "")}" placeholder="15 or 10–12" inputmode="numeric" data-coach-workout-reps required />
-        </label>
-        <label class="coach-workout-exercise-notes">
-          Notes <span>optional</span>
-          <textarea rows="2" placeholder="Tempo, setup, or coaching note" data-coach-workout-notes>${escapeCoachWorkoutHtml(values.notes || "")}</textarea>
-        </label>
+      <p class="coach-workout-set-progress" data-coach-workout-progress>0 / ${sets.length} working sets completed</p>
+      <div class="coach-workout-exercise-detail" id="${id}">
+        <div class="coach-workout-set-table">
+          <div class="coach-workout-set-header" aria-hidden="true">
+            <span>Set</span><span>Weight</span><span>Reps</span><span>RIR</span>
+          </div>
+          <div class="coach-workout-set-rows" data-coach-workout-set-rows>
+            ${sets.map((set, index) => coachWorkoutSetMarkup(set, index)).join("")}
+          </div>
+          <div class="coach-workout-set-actions">
+            <button type="button" data-coach-workout-add-set>+ Add Set</button>
+            <button type="button" data-coach-workout-delete-set>Delete Set</button>
+          </div>
+          <button class="coach-workout-add-superset" type="button" data-coach-workout-add-superset hidden>Add Superset</button>
+        </div>
+        <div class="coach-workout-notes">
+          <button type="button" data-coach-workout-notes-toggle aria-expanded="false" aria-controls="${id}-notes">
+            <strong>Notes</strong><small data-coach-workout-notes-state></small><span aria-hidden="true">+</span>
+          </button>
+          <label id="${id}-notes" hidden>
+            <span class="sr-only">Exercise notes</span>
+            <textarea rows="3" placeholder="Any exercise modifications?" data-coach-workout-notes>${escapeCoachWorkoutHtml(values.notes || "")}</textarea>
+          </label>
+        </div>
+        <p class="coach-workout-previous" data-coach-workout-previous>Previous: none</p>
       </div>
     </article>
   `;
 }
 
+function coachWorkoutExerciseElements() {
+  return Array.from(document.querySelectorAll("[data-coach-workout-exercise]"));
+}
+
+function updateCoachWorkoutSetRows(exercise) {
+  const rows = Array.from(exercise?.querySelectorAll("[data-coach-workout-set-row]") || []);
+  let completed = 0;
+
+  rows.forEach((row, index) => {
+    const label = row.querySelector(".coach-workout-set-label input");
+    const weight = row.querySelector("[data-coach-workout-weight]")?.value.trim() || "";
+    const reps = row.querySelector("[data-coach-workout-reps]")?.value.trim() || "";
+
+    if (label) {
+      label.value = index === 0 ? "" : String(index);
+      label.setAttribute("aria-label", `Set ${index + 1}`);
+    }
+
+    if (weight !== "" && reps !== "") {
+      completed += 1;
+    }
+  });
+
+  const progress = exercise?.querySelector("[data-coach-workout-progress]");
+  const deleteSet = exercise?.querySelector("[data-coach-workout-delete-set]");
+
+  if (progress) {
+    progress.textContent = `${completed} / ${rows.length} working sets completed`;
+  }
+
+  if (deleteSet) {
+    deleteSet.disabled = rows.length <= 1;
+  }
+}
+
+function coachWorkoutCarouselEnabled() {
+  return coachWorkoutFormatValue() !== "single" && coachWorkoutExerciseElements().length > 1;
+}
+
+function renderCoachWorkoutCarousel(preferredIndex) {
+  const carousel = document.getElementById("coach-workout-carousel");
+  const controls = document.getElementById("coach-workout-carousel-controls");
+  const status = document.getElementById("coach-workout-carousel-status");
+  const dots = document.getElementById("coach-workout-carousel-dots");
+  const exercises = coachWorkoutExerciseElements();
+  const format = coachWorkoutFormatValue();
+  const enabled = format !== "single" && exercises.length > 1;
+  const current = Number.isInteger(preferredIndex)
+    ? preferredIndex
+    : Number(carousel?.dataset.activeIndex || 0);
+  const activeIndex = Math.min(Math.max(current, 0), Math.max(exercises.length - 1, 0));
+
+  if (!carousel) {
+    return;
+  }
+
+  carousel.dataset.coachWorkoutFormat = format;
+  carousel.dataset.carouselEnabled = enabled ? "true" : "false";
+  carousel.dataset.activeIndex = String(activeIndex);
+  if (controls) controls.hidden = !enabled;
+  if (status) {
+    status.hidden = !enabled;
+    status.innerHTML = enabled
+      ? `<strong>${escapeCoachWorkoutHtml(coachWorkoutFormatMarker(format, activeIndex))}</strong><span>${activeIndex + 1} of ${exercises.length}</span>`
+      : "";
+  }
+  if (dots) {
+    dots.innerHTML = enabled ? exercises.map((_, index) => `
+      <button type="button" data-coach-workout-dot="${index}" aria-label="Show exercise ${index + 1}"${index === activeIndex ? ' class="is-active" aria-current="true"' : ""}></button>
+    `).join("") : "";
+  }
+
+  exercises.forEach((exercise, index) => {
+    exercise.classList.toggle("is-carousel-active", enabled && index === activeIndex);
+    exercise.setAttribute("aria-label", `Exercise ${index + 1} of ${exercises.length}`);
+    exercise.setAttribute("aria-roledescription", enabled ? "slide" : "exercise");
+  });
+
+  const previous = carousel.querySelector("[data-coach-workout-previous]");
+  const next = carousel.querySelector("[data-coach-workout-next]");
+  if (previous) previous.disabled = activeIndex === 0;
+  if (next) next.disabled = activeIndex === exercises.length - 1;
+}
+
+function moveCoachWorkoutCarousel(index) {
+  const list = document.getElementById("coach-workout-exercises");
+  const exercises = coachWorkoutExerciseElements();
+
+  if (!list || !coachWorkoutCarouselEnabled() || exercises.length === 0) {
+    return;
+  }
+
+  const activeIndex = Math.min(Math.max(Number(index) || 0, 0), exercises.length - 1);
+  renderCoachWorkoutCarousel(activeIndex);
+  list.scrollTo({ left: exercises[activeIndex].offsetLeft - list.offsetLeft, behavior: "smooth" });
+}
+
 function renumberCoachWorkoutExercises() {
-  const exercises = Array.from(document.querySelectorAll("[data-coach-workout-exercise]"));
+  const exercises = coachWorkoutExerciseElements();
   const format = coachWorkoutFormatValue();
 
   exercises.forEach((exercise, index) => {
-    const marker = exercise.querySelector("[data-coach-workout-marker]");
     const removeButton = exercise.querySelector("[data-coach-workout-remove]");
-
-    if (marker) {
-      marker.textContent = coachWorkoutFormatMarker(format, index);
-    }
+    const addSuperset = exercise.querySelector("[data-coach-workout-add-superset]");
 
     if (removeButton) {
       removeButton.disabled = exercises.length === 1;
       removeButton.setAttribute("aria-label", `Remove exercise ${index + 1}`);
     }
+
+    if (addSuperset) {
+      addSuperset.hidden = !(format === "superset" && index % 2 === 0 && index === exercises.length - 1);
+    }
+
+    updateCoachWorkoutSetRows(exercise);
   });
+
+  renderCoachWorkoutCarousel();
 }
 
-function addCoachWorkoutExercise(values = {}) {
+function addCoachWorkoutExercise(values = {}, afterExercise = null) {
   const list = document.getElementById("coach-workout-exercises");
 
   if (!list) {
     return;
   }
 
-  list.insertAdjacentHTML("beforeend", coachWorkoutExerciseMarkup(values));
+  if (afterExercise) {
+    afterExercise.insertAdjacentHTML("afterend", coachWorkoutExerciseMarkup(values));
+  } else {
+    list.insertAdjacentHTML("beforeend", coachWorkoutExerciseMarkup(values));
+  }
   renumberCoachWorkoutExercises();
-}
-
-function coachWorkoutNumericValues(rawValue, setCount, label, options = {}) {
-  const text = String(rawValue || "").trim().replace(/[–—]/g, "-");
-  const minimum = options.minimum ?? 0;
-
-  if (!text) {
-    throw new Error(`${label} is required.`);
-  }
-
-  if (options.allowRange) {
-    const range = text.match(/^(\d+(?:\.\d+)?)\s*-\s*(\d+(?:\.\d+)?)$/);
-
-    if (range) {
-      const low = Number(range[1]);
-      const high = Number(range[2]);
-
-      if (low < minimum || high < low) {
-        throw new Error(`${label} range must run from a smaller positive number to a larger one.`);
-      }
-
-      return {
-        values: Array(setCount).fill(high),
-        range: `${range[1]}-${range[2]}`
-      };
-    }
-  }
-
-  const parts = text.split(",").map((part) => part.trim()).filter(Boolean);
-
-  if (parts.length !== 1 && parts.length !== setCount) {
-    throw new Error(`${label} needs one value or exactly ${setCount} comma-separated values.`);
-  }
-
-  const values = parts.map(Number);
-
-  if (values.some((value) => !Number.isFinite(value) || value < minimum)) {
-    throw new Error(`${label} must contain valid ${minimum > 0 ? "positive " : "non-negative "}numbers.`);
-  }
-
-  return {
-    values: parts.length === 1 ? Array(setCount).fill(values[0]) : values,
-    range: ""
-  };
+  return afterExercise?.nextElementSibling || list.lastElementChild;
 }
 
 function coachWorkoutExerciseValues() {
-  const exerciseRows = Array.from(document.querySelectorAll("[data-coach-workout-exercise]"));
+  const exerciseRows = coachWorkoutExerciseElements();
 
   if (exerciseRows.length === 0) {
     throw new Error("Add at least one exercise.");
@@ -262,39 +397,45 @@ function coachWorkoutExerciseValues() {
 
   const exercises = exerciseRows.map((row, index) => {
     const nameInput = row.querySelector("[data-coach-workout-name]");
-    const setsInput = row.querySelector("[data-coach-workout-sets]");
     const name = nameInput?.value.trim() || "";
-    const sets = Number(setsInput?.value || 0);
 
     if (!name) {
       nameInput?.focus();
       throw new Error(`Exercise ${index + 1} needs a name.`);
     }
 
-    if (!Number.isInteger(sets) || sets < 1 || sets > 10) {
-      setsInput?.focus();
-      throw new Error(`${name} needs between 1 and 10 sets.`);
-    }
+    const setRows = Array.from(row.querySelectorAll("[data-coach-workout-set-row]"));
+    const sets = setRows.map((setRow, setIndex) => {
+      const weightInput = setRow.querySelector("[data-coach-workout-weight]");
+      const repsInput = setRow.querySelector("[data-coach-workout-reps]");
+      const rirInput = setRow.querySelector("[data-coach-workout-rir]");
+      const weightText = weightInput?.value.trim() || "";
+      const repsText = repsInput?.value.trim() || "";
+      const weight = Number(weightText);
+      const reps = Number(repsText);
+      const rir = rirInput?.value === "" ? null : Number(rirInput?.value);
 
-    const reps = coachWorkoutNumericValues(
-      row.querySelector("[data-coach-workout-reps]")?.value,
-      sets,
-      `${name} reps`,
-      { minimum: 1, allowRange: true }
-    );
-    const weights = coachWorkoutNumericValues(
-      row.querySelector("[data-coach-workout-weight]")?.value,
-      sets,
-      `${name} weight`,
-      { minimum: 0 }
-    );
+      if (weightText === "" || !Number.isFinite(weight) || weight < 0) {
+        weightInput?.focus();
+        throw new Error(`${name} set ${setIndex + 1} needs a valid non-negative weight.`);
+      }
+
+      if (repsText === "" || !Number.isInteger(reps) || reps < 1) {
+        repsInput?.focus();
+        throw new Error(`${name} set ${setIndex + 1} needs a positive whole-number rep count.`);
+      }
+
+      if (rir !== null && (!Number.isInteger(rir) || rir < 0 || rir > 4)) {
+        rirInput?.focus();
+        throw new Error(`${name} set ${setIndex + 1} RIR must be between 0 and 4.`);
+      }
+
+      return { weight, reps, rir };
+    });
 
     return {
       name,
       sets,
-      reps: reps.values,
-      repsRange: reps.range,
-      weights: weights.values,
       notes: row.querySelector("[data-coach-workout-notes]")?.value.trim() || ""
     };
   });
@@ -314,10 +455,6 @@ function coachWorkoutExerciseNote(format, index, exercise) {
       ? `Circuit training · ${coachWorkoutFormatMarker(format, index)}`
       : "Straight sets";
   const notes = [formatNote];
-
-  if (exercise.repsRange) {
-    notes.push(`Target reps: ${exercise.repsRange}`);
-  }
 
   if (exercise.notes) {
     notes.push(exercise.notes);
@@ -403,7 +540,7 @@ async function saveCoachWorkout(event) {
       const hasStaleSets = existing.some((row) => (
         row.exercise_code === exercise.code &&
         row.set_type !== "warm_up" &&
-        Number(row.set_number) > exercise.sets
+        Number(row.set_number) > exercise.sets.length
       ));
 
       if (hasStaleSets) {
@@ -415,7 +552,7 @@ async function saveCoachWorkout(event) {
           .eq("workout_title", "Custom workout")
           .eq("exercise_code", exercise.code)
           .neq("set_type", "warm_up")
-          .gt("set_number", exercise.sets);
+          .gt("set_number", exercise.sets.length);
 
         if (deleteError) {
           throw deleteError;
@@ -425,15 +562,17 @@ async function saveCoachWorkout(event) {
 
     const format = coachWorkoutFormatValue();
     const rows = planned.flatMap((exercise, exerciseIndex) => (
-      Array.from({ length: exercise.sets }, (_, setIndex) => ({
+      exercise.sets.map((set, setIndex) => ({
         client_email: clientEmail,
         entry_date: entryDate,
         workout_title: "Custom workout",
         exercise_code: exercise.code,
         exercise_name: exercise.name,
         set_number: setIndex + 1,
-        weight_used: exercise.weights[setIndex],
-        reps: exercise.reps[setIndex],
+        weight_used: set.weight,
+        reps: set.reps,
+        effort_scale: set.rir === null ? null : "rir",
+        effort_value: set.rir,
         notes: coachWorkoutExerciseNote(format, exerciseIndex, exercise),
         source: "website",
         set_type: "working",
@@ -487,32 +626,162 @@ function resetCoachWorkoutForm() {
 function handleCoachWorkoutForm() {
   const form = document.getElementById("coach-workout-log-form");
   const exerciseList = document.getElementById("coach-workout-exercises");
+  const carousel = document.getElementById("coach-workout-carousel");
 
   if (!form || !exerciseList) {
     return;
   }
 
   document.getElementById("coach-workout-add-exercise")?.addEventListener("click", () => {
-    addCoachWorkoutExercise();
-    exerciseList.querySelector("[data-coach-workout-exercise]:last-child [data-coach-workout-name]")?.focus();
+    const exercise = addCoachWorkoutExercise();
+    const index = coachWorkoutExerciseElements().indexOf(exercise);
+    moveCoachWorkoutCarousel(index);
+    exercise?.querySelector("[data-coach-workout-name]")?.focus();
   });
   document.getElementById("coach-workout-reset")?.addEventListener("click", resetCoachWorkoutForm);
   form.addEventListener("submit", saveCoachWorkout);
   form.addEventListener("change", (event) => {
     if (event.target.matches('input[name="coach_workout_format"]')) {
       renumberCoachWorkoutExercises();
+      moveCoachWorkoutCarousel(0);
     }
   });
-  exerciseList.addEventListener("click", (event) => {
-    const removeButton = event.target.closest("[data-coach-workout-remove]");
+  exerciseList.addEventListener("input", (event) => {
+    const exercise = event.target.closest("[data-coach-workout-exercise]");
 
-    if (!removeButton || exerciseList.querySelectorAll("[data-coach-workout-exercise]").length <= 1) {
+    if (event.target.matches("[data-coach-workout-name]")) {
+      renderCoachWorkoutSuggestions(event.target);
       return;
     }
 
-    removeButton.closest("[data-coach-workout-exercise]")?.remove();
-    renumberCoachWorkoutExercises();
+    if (exercise && event.target.matches("[data-coach-workout-weight], [data-coach-workout-reps], [data-coach-workout-notes]")) {
+      updateCoachWorkoutSetRows(exercise);
+      const notesState = exercise.querySelector("[data-coach-workout-notes-state]");
+      if (notesState) notesState.textContent = exercise.querySelector("[data-coach-workout-notes]")?.value.trim() ? "Added" : "";
+    }
   });
+  exerciseList.addEventListener("click", (event) => {
+    const suggestionButton = event.target.closest("[data-coach-workout-suggestion]");
+    const removeButton = event.target.closest("[data-coach-workout-remove]");
+    const toggleButton = event.target.closest("[data-coach-workout-toggle]");
+    const addSetButton = event.target.closest("[data-coach-workout-add-set]");
+    const deleteSetButton = event.target.closest("[data-coach-workout-delete-set]");
+    const addSupersetButton = event.target.closest("[data-coach-workout-add-superset]");
+    const notesButton = event.target.closest("[data-coach-workout-notes-toggle]");
+    const dotButton = event.target.closest("[data-coach-workout-dot]");
+    const exercise = event.target.closest("[data-coach-workout-exercise]");
+
+    if (suggestionButton && exercise) {
+      const input = exercise.querySelector("[data-coach-workout-name]");
+      if (input) input.value = suggestionButton.dataset.coachWorkoutSuggestion || "";
+      closeCoachWorkoutSuggestions();
+      input?.focus();
+      return;
+    }
+
+    if (dotButton) {
+      moveCoachWorkoutCarousel(Number(dotButton.dataset.coachWorkoutDot));
+      return;
+    }
+
+    if (toggleButton && exercise) {
+      const detail = exercise.querySelector(".coach-workout-exercise-detail");
+      const expanded = toggleButton.getAttribute("aria-expanded") !== "false";
+      toggleButton.setAttribute("aria-expanded", String(!expanded));
+      toggleButton.setAttribute("aria-label", expanded ? "Expand exercise" : "Collapse exercise");
+      exercise.classList.toggle("is-open", !expanded);
+      if (detail) detail.hidden = expanded;
+      return;
+    }
+
+    if (addSetButton && exercise) {
+      const rows = exercise.querySelector("[data-coach-workout-set-rows]");
+      const currentRows = Array.from(rows?.querySelectorAll("[data-coach-workout-set-row]") || []);
+      const last = currentRows[currentRows.length - 1];
+      const values = {
+        weight: last?.querySelector("[data-coach-workout-weight]")?.value || "",
+        reps: last?.querySelector("[data-coach-workout-reps]")?.value || "",
+        rir: last?.querySelector("[data-coach-workout-rir]")?.value || ""
+      };
+      rows?.insertAdjacentHTML("beforeend", coachWorkoutSetMarkup(values, currentRows.length));
+      updateCoachWorkoutSetRows(exercise);
+      rows?.querySelector("[data-coach-workout-set-row]:last-child [data-coach-workout-weight]")?.focus();
+      return;
+    }
+
+    if (deleteSetButton && exercise) {
+      const rows = exercise.querySelectorAll("[data-coach-workout-set-row]");
+      if (rows.length > 1) rows[rows.length - 1].remove();
+      updateCoachWorkoutSetRows(exercise);
+      return;
+    }
+
+    if (addSupersetButton && exercise) {
+      const pairedExercise = addCoachWorkoutExercise({}, exercise);
+      const index = coachWorkoutExerciseElements().indexOf(pairedExercise);
+      moveCoachWorkoutCarousel(index);
+      pairedExercise?.querySelector("[data-coach-workout-name]")?.focus();
+      return;
+    }
+
+    if (notesButton && exercise) {
+      const content = document.getElementById(notesButton.getAttribute("aria-controls"));
+      const icon = notesButton.querySelector("span[aria-hidden]");
+      const expanded = notesButton.getAttribute("aria-expanded") === "true";
+      notesButton.setAttribute("aria-expanded", String(!expanded));
+      if (content) content.hidden = expanded;
+      if (icon) icon.textContent = expanded ? "+" : "−";
+      if (!expanded) content?.querySelector("textarea")?.focus();
+      return;
+    }
+
+    if (!removeButton || !exercise || exerciseList.querySelectorAll("[data-coach-workout-exercise]").length <= 1) {
+      return;
+    }
+
+    const removedIndex = coachWorkoutExerciseElements().indexOf(exercise);
+    exercise.remove();
+    renumberCoachWorkoutExercises();
+    moveCoachWorkoutCarousel(Math.max(removedIndex - 1, 0));
+  });
+  exerciseList.addEventListener("focusin", (event) => {
+    if (event.target.matches("[data-coach-workout-name]")) {
+      renderCoachWorkoutSuggestions(event.target);
+    }
+  });
+  exerciseList.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && event.target.matches("[data-coach-workout-name]")) {
+      closeCoachWorkoutSuggestions();
+      event.target.setAttribute("aria-expanded", "false");
+    }
+  });
+  document.addEventListener("click", (event) => {
+    if (!event.target.closest(".coach-workout-exercise-name, [data-coach-workout-suggestions]")) {
+      closeCoachWorkoutSuggestions();
+    }
+  });
+
+  carousel?.querySelector("[data-coach-workout-previous]")?.addEventListener("click", () => {
+    moveCoachWorkoutCarousel(Number(carousel.dataset.activeIndex || 0) - 1);
+  });
+  carousel?.querySelector("[data-coach-workout-next]")?.addEventListener("click", () => {
+    moveCoachWorkoutCarousel(Number(carousel.dataset.activeIndex || 0) + 1);
+  });
+  carousel?.addEventListener("click", (event) => {
+    const dotButton = event.target.closest("[data-coach-workout-dot]");
+    if (dotButton) moveCoachWorkoutCarousel(Number(dotButton.dataset.coachWorkoutDot));
+  });
+  exerciseList.addEventListener("scroll", () => {
+    if (!coachWorkoutCarouselEnabled()) return;
+    const exercises = coachWorkoutExerciseElements();
+    const left = exerciseList.scrollLeft;
+    const closestIndex = exercises.reduce((closest, exercise, index) => (
+      Math.abs((exercise.offsetLeft - exerciseList.offsetLeft) - left) < Math.abs((exercises[closest].offsetLeft - exerciseList.offsetLeft) - left)
+        ? index
+        : closest
+    ), 0);
+    renderCoachWorkoutCarousel(closestIndex);
+  }, { passive: true });
 }
 
 async function loadCoachWorkoutData() {
@@ -539,7 +808,6 @@ async function loadCoachWorkoutData() {
   coachWorkoutPrograms = programResult.data || [];
   coachWorkoutExerciseLibrary = exerciseResult.data || [];
   renderCoachWorkoutClients();
-  renderCoachWorkoutSuggestions();
 }
 
 async function signOutCoachWorkout() {
