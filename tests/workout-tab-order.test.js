@@ -32,7 +32,7 @@ test("renders the approved compact icon workout selector", () => {
   assert.match(styles, /\.client-workout-tabs \{[\s\S]*?display: grid;[\s\S]*?minmax\(132px, 1fr\)/);
   assert.match(styles, /\.client-workout-tab \{[\s\S]*?min-height: 62px;[\s\S]*?grid-template-columns: 36px minmax\(0, 1fr\)/);
   assert.match(styles, /\.client-workout-selection-summary \{[\s\S]*?background: #171a16;/);
-  assert.match(dashboard, /css\/style\.css\?v=client-sidebar-assigned-card-1/);
+  assert.match(dashboard, /css\/style\.css\?v=client-active-nav-icon-1/);
   assert.match(dashboard, /js\/client-portal\.js\?v=client-sidebar-assigned-card-1/);
 });
 

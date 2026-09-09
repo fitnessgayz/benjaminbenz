@@ -25,9 +25,9 @@ function sourceBetween(startMarker, endMarker) {
   return styleSource.slice(start, end);
 }
 
-test("scopes the client navigation styles and cache-busts both changed assets", () => {
+test("scopes the client navigation styles and cache-busts the active-icon update", () => {
   assert.match(dashboardHtml, /<body class="dashboard-page client-dashboard-page is-loading">/);
-  assert.match(dashboardHtml, /href="css\/style\.css\?v=client-sidebar-assigned-card-1"/);
+  assert.match(dashboardHtml, /href="css\/style\.css\?v=client-active-nav-icon-1"/);
   assert.match(dashboardHtml, /src="js\/client-portal\.js\?v=client-sidebar-assigned-card-1"/);
   assert.match(styleSource, /body\.client-dashboard-page\s*\{[^}]*padding-bottom:\s*0;/s);
 });
@@ -88,6 +88,7 @@ test("keeps the six-column safe-area bottom dock on mobile and hides desktop-onl
 
   assert.match(mobileStyles, /body\.client-dashboard-page\s*\{[^}]*padding-bottom:\s*calc\(94px \+ env\(safe-area-inset-bottom\)\)/s);
   assert.match(mobileStyles, /\.dashboard-page \.client-dashboard-tabs\s*\{[^}]*position:\s*fixed[^}]*bottom:\s*calc\(10px \+ env\(safe-area-inset-bottom\)\)[^}]*grid-template-columns:\s*repeat\(6, minmax\(0, 1fr\)\)[^}]*width:\s*min\(720px, calc\(100% - 24px\)\)/s);
+  assert.match(mobileStyles, /\.client-dashboard-tab\.is-active \.client-dashboard-tab-icon\s*\{[^}]*color:\s*var\(--lime\)[^}]*background:\s*var\(--black\)[^}]*border-radius:\s*50%/s);
   assert.match(mobileStyles, /\.client-dashboard-tab-label,[\s\S]*?\.client-dashboard-nav-title,[\s\S]*?\.client-dashboard-sidebar-toggle\s*\{[^}]*display:\s*none !important/s);
 });
 

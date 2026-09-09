@@ -10650,9 +10650,21 @@ body.client-dashboard-page {
 
   .dashboard-page .client-dashboard-tab-icon {
     display: block;
-    width: 25px;
-    height: 25px;
-    flex: 0 0 25px;
+    width: 36px;
+    height: 36px;
+    flex: 0 0 36px;
+    padding: 6px;
+    color: inherit;
+    background: transparent;
+    border-radius: 50%;
+    transition: color .16s ease, background-color .16s ease, box-shadow .16s ease;
+  }
+
+  .dashboard-page .client-dashboard-tab.is-active .client-dashboard-tab-icon {
+    color: var(--lime);
+    background: var(--black);
+    border-radius: 50%;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, .18);
   }
 
   .dashboard-page .client-dashboard-tab-label,
@@ -10682,9 +10694,10 @@ body.client-dashboard-page {
   }
 
   .dashboard-page .client-dashboard-tab-icon {
-    width: 24px;
-    height: 24px;
-    flex-basis: 24px;
+    width: 34px;
+    height: 34px;
+    flex-basis: 34px;
+    padding: 5px;
   }
 
   .dashboard-page .client-dashboard-tab::after {
