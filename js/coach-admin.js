@@ -14,6 +14,7 @@ const coachLoginUrl = "client-login.html?v=manual-invite-copy-1";
 const warmupExerciseCode = "WARMUP";
 const cardioExerciseCode = "CARDIO";
 const warmUpSetNumberBase = 1000;
+const coachAdminSidebarStorageKey = "fwb_coach_admin_sidebar_collapsed";
 
 function isWarmUpWorkoutSet(set) {
   return set?.set_type === "warm_up" || (!set?.set_type && Number(set?.set_number) > warmUpSetNumberBase);
@@ -787,7 +788,11 @@ function setAdminTab(tabName) {
     const isActive = button.dataset.adminTab === nextTab;
 
     button.classList.toggle("is-active", isActive);
-    button.setAttribute("aria-selected", String(isActive));
+    if (isActive) {
+      button.setAttribute("aria-current", "page");
+    } else {
+      button.removeAttribute("aria-current");
+    }
   });
 
   document.querySelectorAll("[data-admin-panel]").forEach((panel) => {
@@ -835,6 +840,164 @@ function setAdminTab(tabName) {
       foodLogs = [];
       renderCoachFoodLogs();
     }
+  }
+}
+
+function isCoachAdminSidebarMobile() {
+  return window.matchMedia("(max-width: 900px)").matches;
+}
+
+function setCoachAdminSidebarCollapsed(collapsed, options = {}) {
+  const workspace = document.getElementById("coach-admin-workspace");
+  const sidebar = document.querySelector(".coach-admin-sidebar");
+  const toggle = document.querySelector("[data-admin-sidebar-toggle]");
+  const toggleIcon = document.querySelector("[data-admin-sidebar-toggle-icon]");
+  const backdrop = document.querySelector("[data-admin-sidebar-backdrop]");
+  const isCollapsed = Boolean(collapsed);
+  const drawerOpen = isCoachAdminSidebarMobile() && !isCollapsed;
+
+  if (!workspace || !toggle) {
+    return;
+  }
+
+  workspace.classList.toggle("is-sidebar-collapsed", isCollapsed);
+  workspace.classList.toggle("is-sidebar-drawer-open", drawerOpen);
+  document.body.classList.toggle("is-coach-admin-drawer-open", drawerOpen);
+  toggle.setAttribute("aria-expanded", String(!isCollapsed));
+  toggle.setAttribute("aria-label", isCollapsed ? "Expand navigation" : "Collapse navigation");
+
+  if (backdrop) {
+    backdrop.hidden = !drawerOpen;
+  }
+
+  if (sidebar) {
+    if (drawerOpen) {
+      sidebar.setAttribute("role", "dialog");
+      sidebar.setAttribute("aria-modal", "true");
+    } else {
+      sidebar.removeAttribute("role");
+      sidebar.removeAttribute("aria-modal");
+    }
+  }
+
+  if (toggleIcon) {
+    toggleIcon.textContent = isCollapsed ? "›" : "‹";
+  }
+
+  if (isCollapsed && options.restoreFocus) {
+    window.requestAnimationFrame(() => toggle.focus());
+  }
+}
+
+function closeCoachAdminSidebarDrawer(options = {}) {
+  const workspace = document.getElementById("coach-admin-workspace");
+
+  if (!workspace || !isCoachAdminSidebarMobile() || workspace.classList.contains("is-sidebar-collapsed")) {
+    return false;
+  }
+
+  setCoachAdminSidebarCollapsed(true, { restoreFocus: options.restoreFocus !== false });
+  return true;
+}
+
+function handleCoachAdminSidebar() {
+  const workspace = document.getElementById("coach-admin-workspace");
+  const sidebar = document.querySelector(".coach-admin-sidebar");
+  const toggle = document.querySelector("[data-admin-sidebar-toggle]");
+  const backdrop = document.querySelector("[data-admin-sidebar-backdrop]");
+
+  if (!workspace || !sidebar || !toggle) {
+    return;
+  }
+
+  let storedPreference = null;
+
+  try {
+    storedPreference = window.localStorage.getItem(coachAdminSidebarStorageKey);
+  } catch (_error) {
+    storedPreference = null;
+  }
+
+  const mobileQuery = window.matchMedia("(max-width: 900px)");
+  const collapsed = mobileQuery.matches
+    ? true
+    : storedPreference === "true";
+
+  setCoachAdminSidebarCollapsed(collapsed);
+
+  toggle.addEventListener("click", () => {
+    const nextCollapsed = !workspace.classList.contains("is-sidebar-collapsed");
+
+    setCoachAdminSidebarCollapsed(nextCollapsed);
+
+    if (!mobileQuery.matches) {
+      try {
+        window.localStorage.setItem(coachAdminSidebarStorageKey, String(nextCollapsed));
+      } catch (_error) {
+        // Sidebar preference persistence is best-effort only.
+      }
+    }
+  });
+
+  backdrop?.addEventListener("click", () => {
+    closeCoachAdminSidebarDrawer({ restoreFocus: true });
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (!workspace.classList.contains("is-sidebar-drawer-open")) {
+      return;
+    }
+
+    if (event.key === "Escape") {
+      event.preventDefault();
+      closeCoachAdminSidebarDrawer({ restoreFocus: true });
+      return;
+    }
+
+    if (event.key !== "Tab") {
+      return;
+    }
+
+    const focusable = Array.from(sidebar.querySelectorAll('a[href], button:not([disabled])'))
+      .filter((element) => !element.hidden && element.getClientRects().length > 0);
+
+    if (focusable.length === 0) {
+      return;
+    }
+
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  });
+
+  const handleMobileChange = (event) => {
+    if (event.matches) {
+      setCoachAdminSidebarCollapsed(true);
+      return;
+    }
+
+    let desktopCollapsed = false;
+
+    try {
+      desktopCollapsed = window.localStorage.getItem(coachAdminSidebarStorageKey) === "true";
+    } catch (_error) {
+      desktopCollapsed = false;
+    }
+
+    setCoachAdminSidebarCollapsed(desktopCollapsed);
+  };
+
+  if (typeof mobileQuery.addEventListener === "function") {
+    mobileQuery.addEventListener("change", handleMobileChange);
+  } else if (typeof mobileQuery.addListener === "function") {
+    mobileQuery.addListener(handleMobileChange);
   }
 }
 
@@ -3426,6 +3589,7 @@ function handleAdminTabs() {
   tabs.forEach((button) => {
     button.addEventListener("click", () => {
       setAdminTab(button.dataset.adminTab);
+      closeCoachAdminSidebarDrawer({ restoreFocus: true });
     });
   });
 
@@ -4926,6 +5090,7 @@ async function bootCoachAdmin() {
 
   renderWorkoutFields();
   handleAdminTabs();
+  handleCoachAdminSidebar();
   handleExerciseLibraryEditor();
   handleSelectedClientActions();
   handleNutritionEditor();

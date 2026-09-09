@@ -15,7 +15,7 @@ test("workout timer exposes a dedicated drag handle", () => {
 
 test("workout timer drag position is snapped, constrained, and persisted", () => {
   assert.match(portalSource, /workoutElapsedTimerPositionStorageKey/);
-  assert.match(portalSource, /Math\.min\(bounds\.maxLeft, Math\.max\(bounds\.gap/);
+  assert.match(portalSource, /Math\.min\(bounds\.maxLeft, Math\.max\(bounds\.minLeft/);
   assert.match(portalSource, /edge:\s*rect\.left \+ \(rect\.width \/ 2\) < viewportMidpoint \? "left" : "right"/);
   assert.match(portalSource, /persistWorkoutElapsedTimerPosition\(\)/);
   assert.match(portalSource, /window\.addEventListener\("resize", \(\) => applyWorkoutElapsedTimerPosition\(\)\)/);
@@ -23,7 +23,10 @@ test("workout timer drag position is snapped, constrained, and persisted", () =>
 
 test("workout timer starts above navigation and can be hidden without clearing elapsed time", () => {
   assert.match(portalSource, /workoutElapsedTimerPosition = \{ edge: "right", topRatio: 1 \}/);
+  assert.match(portalSource, /navigationIsBottomDock/);
+  assert.match(portalSource, /window\.matchMedia\?\.\("\(max-width: 900px\)"\)\?\.matches/);
   assert.match(portalSource, /navigationRect\.top - rect\.height - gap/);
+  assert.match(portalSource, /navigationRect\.right \+ gap/);
   assert.match(portalSource, /data-workout-elapsed-close/);
   assert.match(portalSource, /workoutElapsedTimerState\.dismissed = true/);
   assert.match(portalSource, /button\.textContent = "Show workout timer"/);

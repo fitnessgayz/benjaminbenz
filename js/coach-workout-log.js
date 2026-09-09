@@ -1,6 +1,11 @@
 const coachWorkoutConfig = window.FWB_SUPABASE_CONFIG || {};
 const coachWorkoutEmails = ["benjaminbenz.fit@gmail.com"];
 const coachWorkoutLoginUrl = "client-login.html?return_to=%2Fcoach-workout-log.html";
+const coachWorkoutAutosaveDelayMs = 10000;
+const coachWorkoutDraftMaxAgeMs = 7 * 24 * 60 * 60 * 1000;
+const coachWorkoutDraftStorageKey = "fwb_coach_session_logger_draft_v1";
+const coachWorkoutDraftVersion = 2;
+const coachWorkoutActiveContextStorageKey = "fwb_coach_session_logger_active_context_v2";
 const hasCoachWorkoutConfig = Boolean(
   coachWorkoutConfig.url &&
   coachWorkoutConfig.anonKey &&
@@ -14,6 +19,18 @@ const coachWorkoutSupabase = hasCoachWorkoutConfig && window.supabase
 let coachWorkoutPrograms = [];
 let coachWorkoutExerciseLibrary = [];
 let coachWorkoutExerciseId = 0;
+let coachWorkoutAutosaveTimer = null;
+let coachWorkoutAutosaveInFlight = false;
+let coachWorkoutAutosaveQueued = false;
+let coachWorkoutAutosaveQueuedEpoch = null;
+let coachWorkoutChangeRevision = 0;
+let coachWorkoutLastSavedSignature = "";
+let coachWorkoutPendingDeletes = [];
+let coachWorkoutPendingDeleteRevision = 0;
+let coachWorkoutSaveEpoch = 0;
+let coachWorkoutDraftOwner = "";
+let coachWorkoutActiveContext = { clientEmail: "", entryDate: "" };
+const coachWorkoutDraftMemory = new Map();
 
 function normalizeCoachWorkoutEmail(value) {
   return String(value || "").trim().toLowerCase();
@@ -206,7 +223,7 @@ function coachWorkoutExerciseMarkup(values = {}) {
   const sets = Array.isArray(values.sets) && values.sets.length > 0 ? values.sets : [{}];
 
   return `
-    <article class="coach-workout-exercise is-open" data-coach-workout-exercise>
+    <article class="coach-workout-exercise is-open" data-coach-workout-exercise data-coach-workout-code="${escapeCoachWorkoutHtml(values.code || "")}" data-coach-workout-code-context="${escapeCoachWorkoutHtml(values.codeContext || "")}">
       <div class="coach-workout-exercise-heading">
         <label class="coach-workout-exercise-name">
           <span class="sr-only">Exercise name</span>
@@ -330,8 +347,8 @@ function renderCoachWorkoutCarousel(preferredIndex) {
     exercise.setAttribute("aria-roledescription", enabled ? "slide" : "exercise");
   });
 
-  const previous = carousel.querySelector("[data-coach-workout-previous]");
-  const next = carousel.querySelector("[data-coach-workout-next]");
+  const previous = carousel.querySelector("button[data-coach-workout-previous]");
+  const next = carousel.querySelector("button[data-coach-workout-next]");
   if (previous) previous.disabled = activeIndex === 0;
   if (next) next.disabled = activeIndex === exercises.length - 1;
 }
@@ -388,8 +405,345 @@ function addCoachWorkoutExercise(values = {}, afterExercise = null) {
   return afterExercise?.nextElementSibling || list.lastElementChild;
 }
 
-function coachWorkoutExerciseValues() {
-  const exerciseRows = coachWorkoutExerciseElements();
+function coachWorkoutExerciseDrafts() {
+  return Array.from(document.querySelectorAll("[data-coach-workout-exercise]")).map((row) => ({
+    code: String(row.dataset.coachWorkoutCode || "").trim().toUpperCase(),
+    codeContext: String(row.dataset.coachWorkoutCodeContext || ""),
+    name: row.querySelector("[data-coach-workout-name]")?.value || "",
+    sets: Array.from(row.querySelectorAll("[data-coach-workout-set-row]")).map((setRow) => ({
+      weight: setRow.querySelector("[data-coach-workout-weight]")?.value ?? "",
+      reps: setRow.querySelector("[data-coach-workout-reps]")?.value ?? "",
+      rir: setRow.querySelector("[data-coach-workout-rir]")?.value ?? ""
+    })),
+    notes: row.querySelector("[data-coach-workout-notes]")?.value || ""
+  }));
+}
+
+function normalizeCoachWorkoutContext(context = {}) {
+  return {
+    clientEmail: normalizeCoachWorkoutEmail(context.clientEmail),
+    entryDate: String(context.entryDate || "")
+  };
+}
+
+function currentCoachWorkoutContext() {
+  return normalizeCoachWorkoutContext({
+    clientEmail: document.getElementById("coach-workout-client")?.value,
+    entryDate: document.getElementById("coach-workout-date")?.value
+  });
+}
+
+function coachWorkoutContextId(context = {}) {
+  const normalized = normalizeCoachWorkoutContext(context);
+
+  return `${normalized.clientEmail}|${normalized.entryDate}`;
+}
+
+function coachWorkoutContextsMatch(first, second) {
+  return coachWorkoutContextId(first) === coachWorkoutContextId(second);
+}
+
+function coachWorkoutDraftKey(context = coachWorkoutActiveContext) {
+  const normalized = normalizeCoachWorkoutContext(context);
+
+  return [
+    coachWorkoutDraftStorageKey,
+    encodeURIComponent(coachWorkoutDraftOwner),
+    encodeURIComponent(normalized.clientEmail || "unassigned"),
+    encodeURIComponent(normalized.entryDate || "undated")
+  ].join(":");
+}
+
+function coachWorkoutOwnerContextKey() {
+  return `${coachWorkoutActiveContextStorageKey}:${encodeURIComponent(coachWorkoutDraftOwner)}`;
+}
+
+function coachWorkoutDraftPayload(extra = {}, context = coachWorkoutActiveContext) {
+  const normalized = normalizeCoachWorkoutContext(context);
+
+  return {
+    version: coachWorkoutDraftVersion,
+    ownerEmail: coachWorkoutDraftOwner,
+    updatedAt: new Date().toISOString(),
+    clientEmail: normalized.clientEmail,
+    entryDate: normalized.entryDate,
+    format: coachWorkoutFormatValue(),
+    exercises: coachWorkoutExerciseDrafts(),
+    pendingDeletes: coachWorkoutPendingDeletes,
+    syncedSignature: coachWorkoutLastSavedSignature,
+    ...extra
+  };
+}
+
+function storeCoachWorkoutActiveContext(context = coachWorkoutActiveContext) {
+  if (!coachWorkoutDraftOwner) {
+    return false;
+  }
+
+  try {
+    window.localStorage.setItem(coachWorkoutOwnerContextKey(), JSON.stringify({
+      version: coachWorkoutDraftVersion,
+      ownerEmail: coachWorkoutDraftOwner,
+      updatedAt: new Date().toISOString(),
+      ...normalizeCoachWorkoutContext(context)
+    }));
+    return true;
+  } catch (_error) {
+    return false;
+  }
+}
+
+function storeCoachWorkoutDraft(extra = {}, options = {}) {
+  if (!coachWorkoutDraftOwner) {
+    return false;
+  }
+
+  const context = normalizeCoachWorkoutContext(options.context || coachWorkoutActiveContext);
+  const draftKey = coachWorkoutDraftKey(context);
+  const payload = coachWorkoutDraftPayload(extra, context);
+
+  coachWorkoutDraftMemory.set(draftKey, payload);
+
+  try {
+    window.localStorage.setItem(
+      draftKey,
+      JSON.stringify(payload)
+    );
+
+    if (options.markActive !== false && !storeCoachWorkoutActiveContext(context)) {
+      return false;
+    }
+
+    return true;
+  } catch (_error) {
+    return false;
+  }
+}
+
+function clearCoachWorkoutDraft(context = coachWorkoutActiveContext) {
+  if (!coachWorkoutDraftOwner) {
+    return false;
+  }
+
+  const draftKey = coachWorkoutDraftKey(context);
+
+  coachWorkoutDraftMemory.delete(draftKey);
+
+  try {
+    window.localStorage.removeItem(draftKey);
+    return true;
+  } catch (_error) {
+    return false;
+  }
+}
+
+function isValidCoachWorkoutDraftRecord(record) {
+  const updatedAt = new Date(record?.updatedAt || "");
+
+  return Boolean(
+    record &&
+    record.version === coachWorkoutDraftVersion &&
+    normalizeCoachWorkoutEmail(record.ownerEmail) === coachWorkoutDraftOwner &&
+    !Number.isNaN(updatedAt.getTime()) &&
+    Date.now() - updatedAt.getTime() <= coachWorkoutDraftMaxAgeMs
+  );
+}
+
+function readCoachWorkoutActiveContext() {
+  if (!coachWorkoutDraftOwner) {
+    return null;
+  }
+
+  try {
+    const context = JSON.parse(window.localStorage.getItem(coachWorkoutOwnerContextKey()) || "null");
+
+    if (!isValidCoachWorkoutDraftRecord(context)) {
+      return null;
+    }
+
+    return normalizeCoachWorkoutContext(context);
+  } catch (_error) {
+    return null;
+  }
+}
+
+function readCoachWorkoutDraft(context = coachWorkoutActiveContext) {
+  if (!coachWorkoutDraftOwner) {
+    return null;
+  }
+
+  const normalizedContext = normalizeCoachWorkoutContext(context);
+  const draftKey = coachWorkoutDraftKey(normalizedContext);
+
+  try {
+    const draft = coachWorkoutDraftMemory.get(draftKey) || JSON.parse(
+      window.localStorage.getItem(draftKey) || "null"
+    );
+
+    if (
+      !isValidCoachWorkoutDraftRecord(draft) ||
+      !coachWorkoutContextsMatch(draft, normalizedContext)
+    ) {
+      if (draft) {
+        clearCoachWorkoutDraft(normalizedContext);
+      }
+      return null;
+    }
+
+    coachWorkoutDraftMemory.set(draftKey, draft);
+    return draft;
+  } catch (_error) {
+    return null;
+  }
+}
+
+function resetCoachWorkoutEditor() {
+  const exerciseList = document.getElementById("coach-workout-exercises");
+  const singleFormat = document.querySelector('input[name="coach_workout_format"][value="single"]');
+
+  if (singleFormat) {
+    singleFormat.checked = true;
+  }
+
+  if (exerciseList) {
+    exerciseList.innerHTML = "";
+  }
+
+  coachWorkoutPendingDeletes = [];
+  coachWorkoutLastSavedSignature = "";
+  addCoachWorkoutExercise();
+  renumberCoachWorkoutExercises();
+}
+
+function restoreCoachWorkoutDraft(options = {}) {
+  const context = normalizeCoachWorkoutContext(
+    options.context || readCoachWorkoutActiveContext() || currentCoachWorkoutContext()
+  );
+  const draft = readCoachWorkoutDraft(context);
+  const clientSelect = document.getElementById("coach-workout-client");
+  const dateInput = document.getElementById("coach-workout-date");
+  const exerciseList = document.getElementById("coach-workout-exercises");
+  const clientExists = !context.clientEmail || Array.from(clientSelect?.options || [])
+    .some((option) => option.value === context.clientEmail);
+
+  if (!draft || !exerciseList || !clientExists) {
+    return false;
+  }
+
+  if (options.updateFields !== false) {
+    if (clientSelect) {
+      clientSelect.value = context.clientEmail;
+    }
+
+    if (dateInput && context.entryDate) {
+      dateInput.value = context.entryDate;
+    }
+  }
+
+  const formatInput = document.querySelector(
+    `input[name="coach_workout_format"][value="${String(draft.format || "single").replace(/[^a-z_]/gi, "")}"]`
+  );
+
+  if (formatInput) {
+    formatInput.checked = true;
+  }
+
+  exerciseList.innerHTML = "";
+  const exercises = Array.isArray(draft.exercises) ? draft.exercises : [];
+
+  (exercises.length > 0 ? exercises : [{}]).forEach((values) => {
+    addCoachWorkoutExercise(values);
+  });
+  coachWorkoutPendingDeletes = (Array.isArray(draft.pendingDeletes) ? draft.pendingDeletes : [])
+    .filter((item) => coachWorkoutContextsMatch(item, context))
+    .map((item) => ({
+      ...item,
+      mutationId: Number(item.mutationId) || ++coachWorkoutPendingDeleteRevision
+    }));
+  coachWorkoutPendingDeleteRevision = coachWorkoutPendingDeletes.reduce((maximum, item) => (
+    Math.max(maximum, Number(item.mutationId) || 0)
+  ), coachWorkoutPendingDeleteRevision);
+  coachWorkoutLastSavedSignature = String(draft.syncedSignature || "");
+  coachWorkoutActiveContext = context;
+  storeCoachWorkoutActiveContext(context);
+  renumberCoachWorkoutExercises();
+  setCoachWorkoutStatus("Draft restored. Autosave is on.");
+  return true;
+}
+
+function switchCoachWorkoutContext() {
+  const nextContext = currentCoachWorkoutContext();
+  const previousContext = normalizeCoachWorkoutContext(coachWorkoutActiveContext);
+  const isAssigningFirstClient = Boolean(
+    !previousContext.clientEmail &&
+    nextContext.clientEmail &&
+    previousContext.entryDate === nextContext.entryDate
+  );
+
+  if (coachWorkoutContextsMatch(previousContext, nextContext)) {
+    return false;
+  }
+
+  cancelCoachWorkoutAutosave();
+  const previousDraftStored = storeCoachWorkoutDraft({}, {
+    context: previousContext,
+    markActive: false
+  });
+  coachWorkoutSaveEpoch += 1;
+  coachWorkoutChangeRevision += 1;
+  coachWorkoutAutosaveQueued = false;
+  coachWorkoutAutosaveQueuedEpoch = null;
+  coachWorkoutActiveContext = nextContext;
+
+  const restored = restoreCoachWorkoutDraft({ context: nextContext, updateFields: false });
+
+  if (!restored) {
+    if (isAssigningFirstClient) {
+      coachWorkoutLastSavedSignature = "";
+      coachWorkoutPendingDeletes = [];
+    } else {
+      resetCoachWorkoutEditor();
+    }
+    storeCoachWorkoutActiveContext(nextContext);
+    const draftStored = storeCoachWorkoutDraft();
+    setCoachWorkoutStatus(
+      draftStored
+        ? isAssigningFirstClient
+          ? "Session assigned to this client. Autosave is on."
+          : "New session ready. Autosave is on."
+        : "This session could not be backed up on this device. Keep this page open or use Save now.",
+      !draftStored
+    );
+
+    if (isAssigningFirstClient) {
+      scheduleCoachWorkoutAutosave({ recordChange: false });
+    }
+  } else {
+    scheduleCoachWorkoutAutosave({ recordChange: false });
+  }
+
+  if (!previousDraftStored) {
+    setCoachWorkoutStatus(
+      "The previous session is kept only while this page stays open because this device could not store its draft.",
+      true
+    );
+  }
+
+  return true;
+}
+
+function cancelCoachWorkoutAutosave() {
+  if (coachWorkoutAutosaveTimer) {
+    window.clearTimeout(coachWorkoutAutosaveTimer);
+    coachWorkoutAutosaveTimer = null;
+  }
+}
+
+function coachWorkoutExerciseValues(options = {}) {
+  const exerciseRows = Array.from(document.querySelectorAll("[data-coach-workout-exercise]"));
+  const clientEmail = normalizeCoachWorkoutEmail(document.getElementById("coach-workout-client")?.value);
+  const entryDate = document.getElementById("coach-workout-date")?.value || "";
+  const codeContext = `${clientEmail}|${entryDate}`;
 
   if (exerciseRows.length === 0) {
     throw new Error("Add at least one exercise.");
@@ -400,7 +754,9 @@ function coachWorkoutExerciseValues() {
     const name = nameInput?.value.trim() || "";
 
     if (!name) {
-      nameInput?.focus();
+      if (options.focusInvalid) {
+        nameInput?.focus();
+      }
       throw new Error(`Exercise ${index + 1} needs a name.`);
     }
 
@@ -416,17 +772,23 @@ function coachWorkoutExerciseValues() {
       const rir = rirInput?.value === "" ? null : Number(rirInput?.value);
 
       if (weightText === "" || !Number.isFinite(weight) || weight < 0) {
-        weightInput?.focus();
+        if (options.focusInvalid) {
+          weightInput?.focus();
+        }
         throw new Error(`${name} set ${setIndex + 1} needs a valid non-negative weight.`);
       }
 
       if (repsText === "" || !Number.isInteger(reps) || reps < 1) {
-        repsInput?.focus();
+        if (options.focusInvalid) {
+          repsInput?.focus();
+        }
         throw new Error(`${name} set ${setIndex + 1} needs a positive whole-number rep count.`);
       }
 
       if (rir !== null && (!Number.isInteger(rir) || rir < 0 || rir > 4)) {
-        rirInput?.focus();
+        if (options.focusInvalid) {
+          rirInput?.focus();
+        }
         throw new Error(`${name} set ${setIndex + 1} RIR must be between 0 and 4.`);
       }
 
@@ -434,6 +796,9 @@ function coachWorkoutExerciseValues() {
     });
 
     return {
+      code: row.dataset.coachWorkoutCodeContext === codeContext
+        ? String(row.dataset.coachWorkoutCode || "").trim().toUpperCase()
+        : "",
       name,
       sets,
       notes: row.querySelector("[data-coach-workout-notes]")?.value.trim() || ""
@@ -473,139 +838,450 @@ function coachWorkoutCode(number) {
   return `CW${String(number).padStart(2, "0")}`;
 }
 
-async function saveCoachWorkout(event) {
-  event.preventDefault();
+function coachWorkoutSaveSignature(data) {
+  return JSON.stringify({
+    clientEmail: data.clientEmail,
+    entryDate: data.entryDate,
+    format: data.format,
+    exercises: data.exercises.map((exercise) => ({
+      code: exercise.code || "",
+      name: exercise.name,
+      sets: exercise.sets.map((set) => ({
+        weight: set.weight,
+        reps: set.reps,
+        rir: set.rir
+      })),
+      notes: exercise.notes
+    }))
+  });
+}
+
+function coachWorkoutAutosaveData() {
+  const form = document.getElementById("coach-workout-log-form");
+  const clientEmail = normalizeCoachWorkoutEmail(document.getElementById("coach-workout-client")?.value);
+  const entryDate = document.getElementById("coach-workout-date")?.value || "";
+
+  if (!form?.checkValidity() || !clientEmail || !entryDate) {
+    return null;
+  }
+
+  try {
+    return {
+      clientEmail,
+      entryDate,
+      format: coachWorkoutFormatValue(),
+      exercises: coachWorkoutExerciseValues()
+    };
+  } catch (_error) {
+    return null;
+  }
+}
+
+function coachWorkoutHasPendingDeletes(clientEmail, entryDate) {
+  return coachWorkoutPendingDeletes.some((item) => (
+    item.clientEmail === clientEmail && item.entryDate === entryDate
+  ));
+}
+
+function queueCoachWorkoutPendingDelete(code, clientEmail, entryDate) {
+  coachWorkoutPendingDeletes = coachWorkoutPendingDeletes.filter((item) => !(
+    item.code === code && item.clientEmail === clientEmail && item.entryDate === entryDate
+  ));
+  coachWorkoutPendingDeleteRevision += 1;
+  coachWorkoutPendingDeletes.push({
+    code,
+    clientEmail,
+    entryDate,
+    mutationId: coachWorkoutPendingDeleteRevision
+  });
+}
+
+function queueCoachWorkoutExerciseRemoval(exercise) {
+  const code = String(exercise?.dataset.coachWorkoutCode || "").trim().toUpperCase();
+  const clientEmail = normalizeCoachWorkoutEmail(document.getElementById("coach-workout-client")?.value);
+  const entryDate = document.getElementById("coach-workout-date")?.value || "";
+  const codeContext = `${clientEmail}|${entryDate}`;
+
+  if (!code || !clientEmail || !entryDate || exercise?.dataset.coachWorkoutCodeContext !== codeContext) {
+    return;
+  }
+
+  queueCoachWorkoutPendingDelete(code, clientEmail, entryDate);
+}
+
+function scheduleCoachWorkoutAutosave(options = {}) {
+  const recordChange = options.recordChange !== false;
+  const delayMs = Number.isFinite(options.delayMs) ? options.delayMs : coachWorkoutAutosaveDelayMs;
+
+  if (recordChange) {
+    coachWorkoutChangeRevision += 1;
+  }
+
+  const draftStored = storeCoachWorkoutDraft();
+  cancelCoachWorkoutAutosave();
+
+  const autosaveData = coachWorkoutAutosaveData();
+
+  if (!autosaveData) {
+    setCoachWorkoutStatus(
+      draftStored
+        ? "Draft saved on this device. Complete the required fields to sync it."
+        : "This draft could not be saved on this device. Keep this page open or use Save now.",
+      !draftStored
+    );
+    return;
+  }
+
+  const signature = coachWorkoutSaveSignature(autosaveData);
+  const hasPendingDeletes = coachWorkoutHasPendingDeletes(autosaveData.clientEmail, autosaveData.entryDate);
+
+  if (signature === coachWorkoutLastSavedSignature && !hasPendingDeletes) {
+    setCoachWorkoutStatus("Autosaved.");
+    return;
+  }
+
+  if (coachWorkoutAutosaveInFlight) {
+    coachWorkoutAutosaveQueued = true;
+    coachWorkoutAutosaveQueuedEpoch = coachWorkoutSaveEpoch;
+    setCoachWorkoutStatus("Saving the latest changes…");
+    return;
+  }
+
+  setCoachWorkoutStatus(
+    delayMs === 0
+      ? "Autosaving…"
+      : draftStored
+        ? "Changes saved as a draft. Autosaving soon…"
+        : "Changes could not be backed up on this device. Autosaving soon…",
+    !draftStored
+  );
+  coachWorkoutAutosaveTimer = window.setTimeout(() => {
+    coachWorkoutAutosaveTimer = null;
+    saveCoachWorkout(null, { automatic: true });
+  }, Math.max(delayMs, 0));
+}
+
+function withCoachWorkoutSaveLock(clientEmail, entryDate, operation) {
+  const lockManager = window.navigator?.locks;
+
+  if (!lockManager || typeof lockManager.request !== "function") {
+    return operation();
+  }
+
+  return lockManager.request(
+    `fwb-coach-session-logger:${clientEmail}|${entryDate}`,
+    operation
+  );
+}
+
+async function saveCoachWorkout(event, options = {}) {
+  event?.preventDefault();
+
+  const automatic = options.automatic === true;
 
   const form = document.getElementById("coach-workout-log-form");
   const saveButton = document.getElementById("coach-workout-save");
   const clientEmail = normalizeCoachWorkoutEmail(document.getElementById("coach-workout-client")?.value);
   const entryDate = document.getElementById("coach-workout-date")?.value || "";
+  const exerciseElements = Array.from(document.querySelectorAll("[data-coach-workout-exercise]"));
 
-  if (!form?.reportValidity()) {
-    setCoachWorkoutStatus("Complete every required field before saving.", true);
-    return;
+  if (!automatic) {
+    cancelCoachWorkoutAutosave();
+  }
+
+  if (coachWorkoutAutosaveInFlight) {
+    coachWorkoutAutosaveQueued = true;
+    coachWorkoutAutosaveQueuedEpoch = coachWorkoutSaveEpoch;
+    setCoachWorkoutStatus(automatic ? "Saving the latest changes…" : "Finishing the current autosave, then saving again…");
+    return { saved: false, queued: true };
+  }
+
+  const isFormValid = automatic ? form?.checkValidity() : form?.reportValidity();
+
+  if (!isFormValid) {
+    const draftStored = automatic ? storeCoachWorkoutDraft() : false;
+
+    setCoachWorkoutStatus(
+      automatic
+        ? draftStored
+          ? "Draft saved on this device. Complete the required fields to sync it."
+          : "This draft could not be saved on this device. Keep this page open or use Save now."
+        : "Complete every required field before saving.",
+      !automatic || !draftStored
+    );
+    return { saved: false, incomplete: true };
   }
 
   if (!clientEmail || !entryDate) {
-    setCoachWorkoutStatus("Choose a client and workout date first.", true);
-    return;
+    const draftStored = automatic ? storeCoachWorkoutDraft() : false;
+
+    setCoachWorkoutStatus(
+      automatic
+        ? draftStored
+          ? "Draft saved on this device. Choose a client and workout date to sync it."
+          : "This draft could not be saved on this device. Keep this page open or use Save now."
+        : "Choose a client and workout date first.",
+      !automatic || !draftStored
+    );
+    return { saved: false, incomplete: true };
   }
 
   let exercises;
 
   try {
-    exercises = coachWorkoutExerciseValues();
+    exercises = coachWorkoutExerciseValues({ focusInvalid: !automatic });
   } catch (error) {
-    setCoachWorkoutStatus(error.message || "Check the exercise fields and try again.", true);
-    return;
+    const draftStored = automatic ? storeCoachWorkoutDraft() : false;
+
+    setCoachWorkoutStatus(
+      automatic
+        ? draftStored
+          ? "Draft saved on this device. Complete the exercise details to sync it."
+          : "This draft could not be saved on this device. Keep this page open or use Save now."
+        : error.message || "Check the exercise fields and try again.",
+      !automatic || !draftStored
+    );
+    return { saved: false, incomplete: true };
   }
 
-  saveButton.disabled = true;
-  setCoachWorkoutStatus("Saving the workout…");
+  const format = coachWorkoutFormatValue();
+  const requestedData = { clientEmail, entryDate, format, exercises };
+  const requestedSignature = coachWorkoutSaveSignature(requestedData);
+  const requestedContext = { clientEmail, entryDate };
+  const requestedPendingDeletes = coachWorkoutPendingDeletes
+    .filter((item) => coachWorkoutContextsMatch(item, requestedContext))
+    .map((item) => ({ ...item }));
+
+  if (
+    automatic &&
+    requestedSignature === coachWorkoutLastSavedSignature &&
+    !coachWorkoutHasPendingDeletes(clientEmail, entryDate)
+  ) {
+    setCoachWorkoutStatus("Autosaved.");
+    return { saved: true, unchanged: true };
+  }
+
+  coachWorkoutAutosaveInFlight = true;
+  const saveRevision = coachWorkoutChangeRevision;
+  const saveEpoch = coachWorkoutSaveEpoch;
+
+  if (saveButton) {
+    saveButton.disabled = true;
+  }
+  setCoachWorkoutStatus(automatic ? "Autosaving…" : "Saving the workout…");
 
   try {
-    const { data: existingRows, error: existingError } = await coachWorkoutSupabase
-      .from("client_workout_logs")
-      .select("exercise_code,exercise_name,set_number,set_type")
-      .ilike("client_email", clientEmail)
-      .eq("entry_date", entryDate)
-      .eq("workout_title", "Custom workout");
+    const { planned, rows } = await withCoachWorkoutSaveLock(clientEmail, entryDate, async () => {
+      const { data: existingRows, error: existingError } = await coachWorkoutSupabase
+        .from("client_workout_logs")
+        .select("exercise_code,exercise_name,set_number,set_type")
+        .eq("client_email", clientEmail)
+        .eq("entry_date", entryDate)
+        .eq("workout_title", "Custom workout");
 
-    if (existingError) {
-      throw existingError;
-    }
-
-    const existing = existingRows || [];
-    const existingCodeByName = new Map();
-    let nextCodeNumber = existing.reduce((maximum, row) => (
-      Math.max(maximum, coachWorkoutCodeNumber(row.exercise_code))
-    ), 0) + 1;
-
-    existing.forEach((row) => {
-      const normalizedName = String(row.exercise_name || "").trim().toLowerCase();
-
-      if (normalizedName && !existingCodeByName.has(normalizedName)) {
-        existingCodeByName.set(normalizedName, row.exercise_code);
+      if (existingError) {
+        throw existingError;
       }
-    });
 
-    const planned = exercises.map((exercise) => {
-      const existingCode = existingCodeByName.get(exercise.name.toLowerCase());
-      const code = existingCode || coachWorkoutCode(nextCodeNumber++);
+      const existing = existingRows || [];
+      const existingCodeByName = new Map();
+      let nextCodeNumber = existing.reduce((maximum, row) => (
+        Math.max(maximum, coachWorkoutCodeNumber(row.exercise_code))
+      ), 0) + 1;
 
-      return { ...exercise, code };
-    });
+      existing.forEach((row) => {
+        const normalizedName = String(row.exercise_name || "").trim().toLowerCase();
 
-    for (const exercise of planned) {
-      const hasStaleSets = existing.some((row) => (
-        row.exercise_code === exercise.code &&
-        row.set_type !== "warm_up" &&
-        Number(row.set_number) > exercise.sets.length
+        if (normalizedName && !existingCodeByName.has(normalizedName)) {
+          existingCodeByName.set(normalizedName, row.exercise_code);
+        }
+      });
+
+      const usedCodes = new Set();
+      const plannedExercises = exercises.map((exercise) => {
+        let code = exercise.code || existingCodeByName.get(exercise.name.toLowerCase()) || "";
+
+        if (usedCodes.has(code)) {
+          code = "";
+        }
+
+        while (!code || usedCodes.has(code)) {
+          code = coachWorkoutCode(nextCodeNumber++);
+        }
+
+        usedCodes.add(code);
+
+        return { ...exercise, code };
+      });
+      const plannedCodes = new Set(plannedExercises.map((exercise) => exercise.code));
+      const pendingDeletes = requestedPendingDeletes.filter((item) => !plannedCodes.has(item.code));
+      const plannedRows = plannedExercises.flatMap((exercise, exerciseIndex) => (
+        exercise.sets.map((set, setIndex) => ({
+          client_email: clientEmail,
+          entry_date: entryDate,
+          workout_title: "Custom workout",
+          exercise_code: exercise.code,
+          exercise_name: exercise.name,
+          set_number: setIndex + 1,
+          weight_used: set.weight,
+          reps: set.reps,
+          effort_scale: set.rir === null ? null : "rir",
+          effort_value: set.rir,
+          notes: coachWorkoutExerciseNote(format, exerciseIndex, exercise),
+          source: "website",
+          set_type: "working",
+          exercise_order: exerciseIndex
+        }))
       ));
+      const { error: saveError } = await coachWorkoutSupabase
+        .from("client_workout_logs")
+        .upsert(plannedRows, { onConflict: "client_email,entry_date,workout_title,exercise_code,set_number" });
 
-      if (hasStaleSets) {
+      if (saveError) {
+        throw saveError;
+      }
+
+      for (const pendingDelete of pendingDeletes) {
         const { error: deleteError } = await coachWorkoutSupabase
           .from("client_workout_logs")
           .delete()
-          .ilike("client_email", clientEmail)
-          .eq("entry_date", entryDate)
+          .eq("client_email", pendingDelete.clientEmail)
+          .eq("entry_date", pendingDelete.entryDate)
           .eq("workout_title", "Custom workout")
-          .eq("exercise_code", exercise.code)
-          .neq("set_type", "warm_up")
-          .gt("set_number", exercise.sets.length);
+          .eq("exercise_code", pendingDelete.code);
 
         if (deleteError) {
           throw deleteError;
         }
       }
+
+      for (const exercise of plannedExercises) {
+        const hasStaleSets = existing.some((row) => (
+          row.exercise_code === exercise.code &&
+          row.set_type !== "warm_up" &&
+          Number(row.set_number) > exercise.sets.length
+        ));
+
+        if (hasStaleSets) {
+          const { error: deleteError } = await coachWorkoutSupabase
+            .from("client_workout_logs")
+            .delete()
+            .eq("client_email", clientEmail)
+            .eq("entry_date", entryDate)
+            .eq("workout_title", "Custom workout")
+            .eq("exercise_code", exercise.code)
+            .neq("set_type", "warm_up")
+            .gt("set_number", exercise.sets.length);
+
+          if (deleteError) {
+            throw deleteError;
+          }
+        }
+      }
+
+      return { planned: plannedExercises, rows: plannedRows };
+    });
+    const saveIsCurrent = (
+      saveEpoch === coachWorkoutSaveEpoch &&
+      coachWorkoutContextsMatch(coachWorkoutActiveContext, requestedContext)
+    );
+
+    if (!saveIsCurrent) {
+      return { saved: true, rows: rows.length, stale: true };
     }
 
-    const format = coachWorkoutFormatValue();
-    const rows = planned.flatMap((exercise, exerciseIndex) => (
-      exercise.sets.map((set, setIndex) => ({
-        client_email: clientEmail,
-        entry_date: entryDate,
-        workout_title: "Custom workout",
-        exercise_code: exercise.code,
-        exercise_name: exercise.name,
-        set_number: setIndex + 1,
-        weight_used: set.weight,
-        reps: set.reps,
-        effort_scale: set.rir === null ? null : "rir",
-        effort_value: set.rir,
-        notes: coachWorkoutExerciseNote(format, exerciseIndex, exercise),
-        source: "website",
-        set_type: "working",
-        exercise_order: exerciseIndex
-      }))
+    const settledDeleteIds = new Set(requestedPendingDeletes.map((item) => item.mutationId));
+
+    coachWorkoutPendingDeletes = coachWorkoutPendingDeletes.filter((item) => (
+      !settledDeleteIds.has(item.mutationId)
     ));
-    const { error: saveError } = await coachWorkoutSupabase
-      .from("client_workout_logs")
-      .upsert(rows, { onConflict: "client_email,entry_date,workout_title,exercise_code,set_number" });
+    exerciseElements.forEach((exercise, index) => {
+      if (document.body.contains(exercise) && planned[index]?.code) {
+        exercise.dataset.coachWorkoutCode = planned[index].code;
+        exercise.dataset.coachWorkoutCodeContext = `${clientEmail}|${entryDate}`;
+      } else if (!document.body.contains(exercise) && planned[index]?.code) {
+        queueCoachWorkoutPendingDelete(planned[index].code, clientEmail, entryDate);
+      }
+    });
 
-    if (saveError) {
-      throw saveError;
+    coachWorkoutLastSavedSignature = coachWorkoutSaveSignature({
+      clientEmail,
+      entryDate,
+      format,
+      exercises: planned
+    });
+    storeCoachWorkoutDraft({
+      syncedAt: new Date().toISOString(),
+      syncedSignature: coachWorkoutLastSavedSignature
+    });
+
+    setCoachWorkoutStatus(
+      automatic
+        ? `${rows.length} set${rows.length === 1 ? "" : "s"} autosaved.`
+        : `${rows.length} set${rows.length === 1 ? "" : "s"} saved to ${planned.length} exercise${planned.length === 1 ? "" : "s"}. Autosave remains on.`
+    );
+    return { saved: true, rows: rows.length };
+  } catch (error) {
+    const saveIsCurrent = (
+      saveEpoch === coachWorkoutSaveEpoch &&
+      coachWorkoutContextsMatch(coachWorkoutActiveContext, requestedContext)
+    );
+
+    if (saveIsCurrent) {
+      const draftStored = storeCoachWorkoutDraft();
+
+      setCoachWorkoutStatus(
+        automatic
+          ? draftStored
+            ? "Autosave could not sync. Your draft is safe on this device; use Save now to retry."
+            : "Autosave could not sync and this device could not back up the draft. Keep this page open and use Save now to retry."
+          : error.message || "The workout could not be saved. Try again.",
+        true
+      );
+    }
+    return { saved: false, error, stale: !saveIsCurrent };
+  } finally {
+    coachWorkoutAutosaveInFlight = false;
+
+    if (saveButton) {
+      saveButton.disabled = false;
     }
 
-    setCoachWorkoutStatus(`${rows.length} set${rows.length === 1 ? "" : "s"} saved to ${planned.length} exercise${planned.length === 1 ? "" : "s"} in the client’s Custom workout.`);
-  } catch (error) {
-    setCoachWorkoutStatus(error.message || "The workout could not be saved. Try again.", true);
-  } finally {
-    saveButton.disabled = false;
+    const queuedSave = (
+      coachWorkoutAutosaveQueued &&
+      coachWorkoutAutosaveQueuedEpoch === coachWorkoutSaveEpoch
+    );
+    const sameEpochChanged = (
+      saveEpoch === coachWorkoutSaveEpoch &&
+      coachWorkoutChangeRevision !== saveRevision
+    );
+
+    coachWorkoutAutosaveQueued = false;
+    coachWorkoutAutosaveQueuedEpoch = null;
+
+    if (queuedSave || sameEpochChanged) {
+      scheduleCoachWorkoutAutosave({ recordChange: false, delayMs: 0 });
+    }
   }
 }
 
-function resetCoachWorkoutForm() {
+function resetCoachWorkoutForm(options = {}) {
   const form = document.getElementById("coach-workout-log-form");
-  const exerciseList = document.getElementById("coach-workout-exercises");
   const selectedClient = document.getElementById("coach-workout-client")?.value || "";
+  const selectedDate = document.getElementById("coach-workout-date")?.value || coachWorkoutToday();
+  const previousContext = normalizeCoachWorkoutContext(coachWorkoutActiveContext);
 
-  form?.reset();
+  cancelCoachWorkoutAutosave();
+  coachWorkoutAutosaveQueued = false;
+  coachWorkoutAutosaveQueuedEpoch = null;
+  coachWorkoutSaveEpoch += 1;
+  coachWorkoutChangeRevision += 1;
 
-  if (exerciseList) {
-    exerciseList.innerHTML = "";
+  if (options.clearDraft !== false) {
+    clearCoachWorkoutDraft(previousContext);
   }
 
+  form?.reset();
   renderCoachWorkoutClients();
   const clientSelect = document.getElementById("coach-workout-client");
 
@@ -616,11 +1292,23 @@ function resetCoachWorkoutForm() {
   const dateInput = document.getElementById("coach-workout-date");
 
   if (dateInput) {
-    dateInput.value = coachWorkoutToday();
+    dateInput.value = selectedDate;
   }
 
-  addCoachWorkoutExercise();
-  setCoachWorkoutStatus("Choose a client and add the exercises completed today.");
+  resetCoachWorkoutEditor();
+  coachWorkoutActiveContext = currentCoachWorkoutContext();
+
+  if (
+    options.clearDraft !== false &&
+    !coachWorkoutContextsMatch(previousContext, coachWorkoutActiveContext)
+  ) {
+    clearCoachWorkoutDraft(coachWorkoutActiveContext);
+  }
+
+  if (options.persistContext !== false) {
+    storeCoachWorkoutActiveContext(coachWorkoutActiveContext);
+  }
+  setCoachWorkoutStatus("Autosave is on. Choose a client and add the exercises completed today.");
 }
 
 function handleCoachWorkoutForm() {
@@ -636,15 +1324,30 @@ function handleCoachWorkoutForm() {
     const exercise = addCoachWorkoutExercise();
     const index = coachWorkoutExerciseElements().indexOf(exercise);
     moveCoachWorkoutCarousel(index);
+    scheduleCoachWorkoutAutosave();
     exercise?.querySelector("[data-coach-workout-name]")?.focus();
   });
-  document.getElementById("coach-workout-reset")?.addEventListener("click", resetCoachWorkoutForm);
+  document.getElementById("coach-workout-reset")?.addEventListener("click", () => resetCoachWorkoutForm());
   form.addEventListener("submit", saveCoachWorkout);
+  form.addEventListener("input", (event) => {
+    if (event.target.matches("#coach-workout-client, #coach-workout-date")) {
+      return;
+    }
+
+    scheduleCoachWorkoutAutosave();
+  });
   form.addEventListener("change", (event) => {
+    if (event.target.matches("#coach-workout-client, #coach-workout-date")) {
+      switchCoachWorkoutContext();
+      return;
+    }
+
     if (event.target.matches('input[name="coach_workout_format"]')) {
       renumberCoachWorkoutExercises();
       moveCoachWorkoutCarousel(0);
     }
+
+    scheduleCoachWorkoutAutosave();
   });
   exerciseList.addEventListener("input", (event) => {
     const exercise = event.target.closest("[data-coach-workout-exercise]");
@@ -675,6 +1378,7 @@ function handleCoachWorkoutForm() {
       const input = exercise.querySelector("[data-coach-workout-name]");
       if (input) input.value = suggestionButton.dataset.coachWorkoutSuggestion || "";
       closeCoachWorkoutSuggestions();
+      scheduleCoachWorkoutAutosave();
       input?.focus();
       return;
     }
@@ -705,6 +1409,7 @@ function handleCoachWorkoutForm() {
       };
       rows?.insertAdjacentHTML("beforeend", coachWorkoutSetMarkup(values, currentRows.length));
       updateCoachWorkoutSetRows(exercise);
+      scheduleCoachWorkoutAutosave();
       rows?.querySelector("[data-coach-workout-set-row]:last-child [data-coach-workout-weight]")?.focus();
       return;
     }
@@ -713,6 +1418,7 @@ function handleCoachWorkoutForm() {
       const rows = exercise.querySelectorAll("[data-coach-workout-set-row]");
       if (rows.length > 1) rows[rows.length - 1].remove();
       updateCoachWorkoutSetRows(exercise);
+      scheduleCoachWorkoutAutosave();
       return;
     }
 
@@ -720,6 +1426,7 @@ function handleCoachWorkoutForm() {
       const pairedExercise = addCoachWorkoutExercise({}, exercise);
       const index = coachWorkoutExerciseElements().indexOf(pairedExercise);
       moveCoachWorkoutCarousel(index);
+      scheduleCoachWorkoutAutosave();
       pairedExercise?.querySelector("[data-coach-workout-name]")?.focus();
       return;
     }
@@ -740,9 +1447,11 @@ function handleCoachWorkoutForm() {
     }
 
     const removedIndex = coachWorkoutExerciseElements().indexOf(exercise);
+    queueCoachWorkoutExerciseRemoval(exercise);
     exercise.remove();
     renumberCoachWorkoutExercises();
     moveCoachWorkoutCarousel(Math.max(removedIndex - 1, 0));
+    scheduleCoachWorkoutAutosave();
   });
   exerciseList.addEventListener("focusin", (event) => {
     if (event.target.matches("[data-coach-workout-name]")) {
@@ -761,10 +1470,10 @@ function handleCoachWorkoutForm() {
     }
   });
 
-  carousel?.querySelector("[data-coach-workout-previous]")?.addEventListener("click", () => {
+  carousel?.querySelector("button[data-coach-workout-previous]")?.addEventListener("click", () => {
     moveCoachWorkoutCarousel(Number(carousel.dataset.activeIndex || 0) - 1);
   });
-  carousel?.querySelector("[data-coach-workout-next]")?.addEventListener("click", () => {
+  carousel?.querySelector("button[data-coach-workout-next]")?.addEventListener("click", () => {
     moveCoachWorkoutCarousel(Number(carousel.dataset.activeIndex || 0) + 1);
   });
   carousel?.addEventListener("click", (event) => {
@@ -782,6 +1491,7 @@ function handleCoachWorkoutForm() {
     ), 0);
     renderCoachWorkoutCarousel(closestIndex);
   }, { passive: true });
+  window.addEventListener("pagehide", () => storeCoachWorkoutDraft());
 }
 
 async function loadCoachWorkoutData() {
@@ -811,6 +1521,11 @@ async function loadCoachWorkoutData() {
 }
 
 async function signOutCoachWorkout() {
+  cancelCoachWorkoutAutosave();
+  coachWorkoutSaveEpoch += 1;
+  coachWorkoutAutosaveQueued = false;
+  coachWorkoutAutosaveQueuedEpoch = null;
+
   if (coachWorkoutSupabase) {
     await coachWorkoutSupabase.auth.signOut();
   }
@@ -845,9 +1560,21 @@ async function bootCoachWorkoutPage() {
     return;
   }
 
+  coachWorkoutDraftOwner = normalizeCoachWorkoutEmail(user.email);
+
   try {
+    const storedContext = readCoachWorkoutActiveContext();
+
     await loadCoachWorkoutData();
-    resetCoachWorkoutForm();
+    resetCoachWorkoutForm({ clearDraft: false, persistContext: false });
+    const restoredDraft = restoreCoachWorkoutDraft({ context: storedContext || currentCoachWorkoutContext() });
+
+    if (restoredDraft) {
+      scheduleCoachWorkoutAutosave({ recordChange: false });
+    } else {
+      coachWorkoutActiveContext = currentCoachWorkoutContext();
+      storeCoachWorkoutActiveContext(coachWorkoutActiveContext);
+    }
     document.getElementById("coach-workout-access-status")?.setAttribute("hidden", "");
     document.getElementById("coach-workout-log-form")?.removeAttribute("hidden");
     const signOutButton = document.querySelector("[data-coach-workout-sign-out]");

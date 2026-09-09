@@ -10394,97 +10394,276 @@ textarea,
   }
 }
 
-/* Floating client dashboard icon navigation */
-body.dashboard-page {
-  padding-bottom: calc(94px + env(safe-area-inset-bottom));
+/* Client dashboard navigation: pinned sidebar on desktop, bottom dock on mobile. */
+body.client-dashboard-page {
+  padding-bottom: 0;
 }
 
-.dashboard-page .client-dashboard-tabs {
-  position: fixed;
-  right: auto;
-  bottom: calc(10px + env(safe-area-inset-bottom));
-  left: 50%;
-  z-index: 85;
-  display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  width: min(720px, calc(100% - 24px));
-  max-width: none;
-  gap: 4px;
-  margin: 0;
-  padding: 6px 8px 4px;
-  overflow: visible;
-  transform: translateX(-50%);
-  background: rgba(251, 251, 248, .97);
-  border: 1px solid var(--line);
-  border-radius: 12px !important;
-  box-shadow: 0 12px 34px rgba(0, 0, 0, .2);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  scrollbar-width: none;
-}
-
-.dashboard-page .client-dashboard-tabs::-webkit-scrollbar {
-  display: none;
-}
-
-.dashboard-page .client-dashboard-tab,
-.dashboard-page .client-dashboard-tab[data-client-dashboard-tab] {
-  position: relative;
-  display: flex;
-  flex: none;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  width: auto;
+.client-dashboard-page [data-client-dashboard-panel] {
   min-width: 0;
-  max-width: none;
-  min-height: 56px !important;
-  gap: 0;
-  padding: 7px 2px 9px !important;
-  color: var(--muted);
-  background: transparent;
-  border: 0;
-  border-radius: 8px !important;
-  font-size: .64rem;
+}
+
+.client-dashboard-nav-title {
+  margin: 2px 8px 4px;
+  color: #858981;
+  font-size: .66rem;
+  font-weight: 900;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.client-dashboard-tab-label {
+  min-width: 0;
+  overflow: hidden;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.client-dashboard-sidebar-toggle {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr);
+  min-width: 0;
+  min-height: 46px;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+  padding: 4px 8px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, .2);
+  border-radius: 10px;
+  color: #f7f7f2;
+  background: rgba(255, 255, 255, .06);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.client-dashboard-sidebar-toggle:hover {
+  background: rgba(255, 255, 255, .12);
+}
+
+.client-dashboard-sidebar-toggle-icon {
+  display: inline-grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  font-size: 1.45rem;
+  font-weight: 900;
   line-height: 1;
-  text-align: center;
-  scroll-snap-align: none;
 }
 
-.dashboard-page .client-dashboard-tab::after {
-  content: "";
-  position: absolute;
-  right: 9px;
-  bottom: 0;
-  left: 9px;
-  height: 4px;
-  background: transparent;
-  border-radius: 3px 3px 0 0;
+.client-dashboard-sidebar-toggle-label {
+  min-width: 0;
+  overflow: hidden;
+  font-size: .78rem;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.dashboard-page .client-dashboard-tab.is-active {
-  color: var(--black);
-  background: transparent;
-  border-color: transparent;
+@media (min-width: 901px) {
+  .client-dashboard-page .dashboard-grid {
+    grid-template-columns: 240px minmax(0, 1fr);
+    column-gap: 18px;
+    transition: grid-template-columns .18s ease;
+  }
+
+  .client-dashboard-page .dashboard-grid.is-client-sidebar-collapsed {
+    grid-template-columns: 78px minmax(0, 1fr);
+  }
+
+  .client-dashboard-page .dashboard-grid > [data-client-dashboard-panel] {
+    grid-column: 2;
+  }
+
+  .dashboard-page .client-dashboard-tabs {
+    position: sticky;
+    top: 88px;
+    z-index: 12;
+    display: grid;
+    grid-template-columns: 1fr;
+    align-self: start;
+    width: 100%;
+    max-width: 100%;
+    max-height: calc(100dvh - 104px);
+    gap: 5px;
+    margin: 0;
+    padding: 10px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    transform: none;
+    background: #171a17;
+    border: 1px solid #31342f;
+    border-radius: 14px !important;
+    box-shadow: 0 16px 38px rgba(0, 0, 0, .14);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, .22) transparent;
+  }
+
+  .dashboard-page .client-dashboard-tab,
+  .dashboard-page .client-dashboard-tab[data-client-dashboard-tab] {
+    position: relative;
+    display: grid;
+    grid-template-columns: 38px minmax(0, 1fr);
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    min-height: 46px !important;
+    align-items: center;
+    justify-content: stretch;
+    gap: 10px;
+    padding: 4px 8px !important;
+    overflow: hidden;
+    color: #c7c9c3;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 10px !important;
+    font-size: .78rem;
+    line-height: 1.1;
+    text-align: left;
+    text-transform: none;
+  }
+
+  .dashboard-page .client-dashboard-tab:hover {
+    color: #f7f7f2;
+    background: rgba(255, 255, 255, .07);
+  }
+
+  .dashboard-page .client-dashboard-tab.is-active {
+    color: var(--black);
+    background: var(--lime);
+    border-color: var(--lime);
+  }
+
+  .dashboard-page .client-dashboard-tab::after {
+    display: none;
+  }
+
+  .dashboard-page .client-dashboard-tab-icon {
+    display: block;
+    width: 22px;
+    height: 22px;
+    justify-self: center;
+    flex: 0 0 22px;
+  }
+
+  .dashboard-page .client-dashboard-tab > .client-dashboard-tab-label {
+    display: block !important;
+  }
+
+  .client-dashboard-page .dashboard-grid.is-client-sidebar-collapsed .client-dashboard-nav-title,
+  .client-dashboard-page .dashboard-grid.is-client-sidebar-collapsed .client-dashboard-tab-label,
+  .client-dashboard-page .dashboard-grid.is-client-sidebar-collapsed .client-dashboard-sidebar-toggle-label {
+    display: none !important;
+  }
+
+  .client-dashboard-page .dashboard-grid.is-client-sidebar-collapsed .client-dashboard-tab,
+  .client-dashboard-page .dashboard-grid.is-client-sidebar-collapsed .client-dashboard-tab[data-client-dashboard-tab],
+  .client-dashboard-page .dashboard-grid.is-client-sidebar-collapsed .client-dashboard-sidebar-toggle {
+    grid-template-columns: 38px;
+    justify-content: center;
+    justify-items: center;
+    padding: 4px !important;
+  }
 }
 
-.dashboard-page .client-dashboard-tab.is-active::after {
-  background: var(--lime);
-}
+@media (max-width: 900px) {
+  body.client-dashboard-page {
+    padding-bottom: calc(94px + env(safe-area-inset-bottom));
+  }
 
-.dashboard-page .client-dashboard-tab-icon {
-  display: block;
-  width: 25px;
-  height: 25px;
-  flex: 0 0 25px;
-}
+  .dashboard-page .client-dashboard-tabs {
+    position: fixed;
+    right: auto;
+    bottom: calc(10px + env(safe-area-inset-bottom));
+    left: 50%;
+    z-index: 85;
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    width: min(720px, calc(100% - 24px));
+    max-width: none;
+    gap: 4px;
+    margin: 0;
+    padding: 6px 8px 4px;
+    overflow: visible;
+    transform: translateX(-50%);
+    background: rgba(251, 251, 248, .97);
+    border: 1px solid var(--line);
+    border-radius: 12px !important;
+    box-shadow: 0 12px 34px rgba(0, 0, 0, .2);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    scrollbar-width: none;
+  }
 
-.dashboard-page .client-dashboard-tab > span {
-  display: none !important;
+  .dashboard-page .client-dashboard-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .dashboard-page .client-dashboard-tab,
+  .dashboard-page .client-dashboard-tab[data-client-dashboard-tab] {
+    position: relative;
+    display: flex;
+    flex: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: auto;
+    min-width: 0;
+    max-width: none;
+    min-height: 56px !important;
+    gap: 0;
+    padding: 7px 2px 9px !important;
+    color: var(--muted);
+    background: transparent;
+    border: 0;
+    border-radius: 8px !important;
+    font-size: .64rem;
+    line-height: 1;
+    text-align: center;
+    scroll-snap-align: none;
+  }
+
+  .dashboard-page .client-dashboard-tab::after {
+    content: "";
+    position: absolute;
+    right: 9px;
+    bottom: 0;
+    left: 9px;
+    height: 4px;
+    background: transparent;
+    border-radius: 3px 3px 0 0;
+  }
+
+  .dashboard-page .client-dashboard-tab.is-active {
+    color: var(--black);
+    background: transparent;
+    border-color: transparent;
+  }
+
+  .dashboard-page .client-dashboard-tab.is-active::after {
+    background: var(--lime);
+  }
+
+  .dashboard-page .client-dashboard-tab-icon {
+    display: block;
+    width: 25px;
+    height: 25px;
+    flex: 0 0 25px;
+  }
+
+  .dashboard-page .client-dashboard-tab-label,
+  .dashboard-page .client-dashboard-nav-title,
+  .dashboard-page .client-dashboard-sidebar-toggle {
+    display: none !important;
+  }
 }
 
 @media (max-width: 420px) {
-  body.dashboard-page {
+  body.client-dashboard-page {
     padding-bottom: calc(88px + env(safe-area-inset-bottom));
   }
 
@@ -10512,5 +10691,312 @@ body.dashboard-page {
     right: 6px;
     left: 6px;
   }
+}
 
+/* Coach admin: collapsible left navigation. */
+.coach-admin-page .admin-workspace {
+  display: grid;
+  grid-template-columns: 248px minmax(0, 1fr);
+  align-items: start;
+  gap: 18px;
+}
+
+.coach-admin-page .admin-workspace.is-sidebar-collapsed {
+  grid-template-columns: 78px minmax(0, 1fr);
+}
+
+.coach-admin-sidebar {
+  position: sticky;
+  top: 78px;
+  z-index: 12;
+  display: grid;
+  align-self: start;
+  max-height: calc(100dvh - 94px);
+  gap: 10px;
+  padding: 10px;
+  overflow: hidden;
+  border: 1px solid #31342f;
+  border-radius: 14px;
+  background: #171a17;
+  box-shadow: 0 16px 38px rgba(0, 0, 0, .14);
+}
+
+.coach-admin-sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+
+.coach-admin-sidebar-brand {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 9px;
+  color: #f7f7f2;
+  text-decoration: none;
+}
+
+.coach-admin-sidebar-mark,
+.admin-nav-icon {
+  display: inline-grid;
+  flex: 0 0 38px;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, .18);
+  border-radius: 10px;
+  color: #f7f7f2;
+  font-size: .68rem;
+  font-weight: 900;
+  letter-spacing: -.02em;
+}
+
+.coach-admin-sidebar-mark {
+  color: #050505;
+  background: var(--lime);
+  border-color: var(--lime);
+}
+
+.coach-admin-sidebar-title {
+  overflow: hidden;
+  font-size: .86rem;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.coach-admin-sidebar-toggle {
+  display: inline-grid;
+  flex: 0 0 34px !important;
+  width: 34px !important;
+  inline-size: 34px !important;
+  min-width: 34px !important;
+  max-width: 34px !important;
+  height: 34px;
+  min-height: 34px;
+  padding: 0 !important;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, .2);
+  border-radius: 9px !important;
+  color: #f7f7f2;
+  background: rgba(255, 255, 255, .06);
+  font: inherit;
+  font-size: 1.45rem !important;
+  font-weight: 900;
+  line-height: 1;
+  overflow: visible !important;
+  cursor: pointer;
+}
+
+.coach-admin-sidebar-toggle:hover {
+  background: rgba(255, 255, 255, .12);
+}
+
+.coach-admin-page .admin-tabs {
+  position: static;
+  display: grid;
+  max-height: calc(100dvh - 158px);
+  gap: 4px;
+  padding: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  backdrop-filter: none;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, .22) transparent;
+}
+
+.coach-admin-page .admin-tab {
+  display: grid !important;
+  grid-template-columns: 38px minmax(0, 1fr);
+  flex: none !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 46px !important;
+  align-items: center;
+  justify-content: stretch;
+  gap: 10px;
+  padding: 4px 8px !important;
+  overflow: hidden !important;
+  border: 1px solid transparent;
+  border-radius: 10px !important;
+  color: #c7c9c3;
+  background: transparent;
+  font-size: .78rem !important;
+  line-height: 1.1 !important;
+  text-align: left;
+  text-overflow: clip !important;
+  white-space: normal !important;
+}
+
+.coach-admin-page .admin-tab:hover {
+  color: #f7f7f2;
+  background: rgba(255, 255, 255, .07);
+}
+
+.coach-admin-page .admin-tab.is-active {
+  color: #050505;
+  background: var(--lime);
+  border-color: var(--lime);
+}
+
+.coach-admin-page .admin-tab.is-active .admin-nav-icon {
+  color: #050505;
+  border-color: rgba(5, 5, 5, .25);
+}
+
+.coach-admin-page .admin-tab-session-logger {
+  margin-bottom: 6px;
+  color: #f7f7f2;
+  background: rgba(215, 255, 63, .1);
+  border-color: rgba(215, 255, 63, .38);
+}
+
+.coach-admin-page .admin-tab-session-logger .admin-nav-icon {
+  color: var(--lime);
+  border-color: rgba(215, 255, 63, .38);
+}
+
+.coach-admin-sidebar-backdrop {
+  display: none;
+}
+
+.admin-nav-label {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-weight: 900;
+}
+
+.admin-nav-group-title {
+  margin: 10px 8px 4px;
+  color: #858981;
+  font-size: .66rem;
+  font-weight: 900;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.coach-admin-page .admin-editor {
+  min-width: 0;
+}
+
+.admin-workspace.is-sidebar-collapsed .coach-admin-sidebar-header {
+  display: grid;
+  justify-items: center;
+}
+
+.admin-workspace.is-sidebar-collapsed .coach-admin-sidebar-title,
+.admin-workspace.is-sidebar-collapsed .admin-nav-label,
+.admin-workspace.is-sidebar-collapsed .admin-nav-group-title {
+  display: none;
+}
+
+.admin-workspace.is-sidebar-collapsed .coach-admin-sidebar-brand {
+  justify-content: center;
+}
+
+.coach-admin-page .admin-workspace.is-sidebar-collapsed .admin-tab {
+  grid-template-columns: 38px;
+  justify-content: center;
+  justify-items: center;
+  padding: 4px !important;
+}
+
+@media (max-width: 900px) {
+  .coach-admin-page .admin-workspace,
+  .coach-admin-page .admin-workspace.is-sidebar-collapsed {
+    grid-template-columns: 64px minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .coach-admin-sidebar {
+    width: 232px;
+    max-width: calc(100vw - 24px);
+    box-sizing: border-box;
+    box-shadow: 0 18px 48px rgba(0, 0, 0, .28);
+  }
+
+  .coach-admin-page .admin-workspace:not(.is-sidebar-collapsed) .coach-admin-sidebar {
+    position: fixed;
+    top: 78px;
+    right: auto;
+    bottom: auto;
+    left: 12px;
+    z-index: 14;
+    width: min(232px, calc(100vw - 24px));
+    max-height: calc(100dvh - 90px);
+  }
+
+  .coach-admin-page .admin-workspace.is-sidebar-drawer-open .coach-admin-sidebar-backdrop {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 13;
+    display: block !important;
+    width: 100vw !important;
+    inline-size: 100vw !important;
+    max-width: none !important;
+    min-height: 100dvh !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: rgba(5, 5, 5, .46);
+    cursor: default;
+  }
+
+  body.is-coach-admin-drawer-open {
+    overflow: hidden;
+  }
+
+  .coach-admin-page .admin-workspace.is-sidebar-collapsed .coach-admin-sidebar {
+    width: 64px;
+    padding-inline: 7px;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, .14);
+  }
+
+  .coach-admin-page .admin-tab,
+  .coach-admin-page .admin-workspace.is-sidebar-collapsed .admin-tab {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+}
+
+@media (max-width: 520px) {
+  .coach-admin-page .admin-shell {
+    width: calc(100% - 16px);
+  }
+
+  .coach-admin-page .admin-workspace,
+  .coach-admin-page .admin-workspace.is-sidebar-collapsed {
+    grid-template-columns: 58px minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .coach-admin-page .admin-workspace.is-sidebar-collapsed .coach-admin-sidebar {
+    width: 58px;
+    padding-inline: 6px;
+  }
+
+  .coach-admin-sidebar {
+    top: 70px;
+    max-height: calc(100dvh - 82px);
+  }
+
+  .coach-admin-page .admin-workspace:not(.is-sidebar-collapsed) .coach-admin-sidebar {
+    top: 70px;
+    max-height: calc(100dvh - 82px);
+  }
+
+  .coach-admin-page .admin-tabs {
+    max-height: calc(100dvh - 146px);
+  }
+}
+
+/* Session Logger autosave status. */
+.coach-workout-autosave-pill {
+  color: var(--black);
+  background: var(--lime);
+  border-color: var(--black);
 }

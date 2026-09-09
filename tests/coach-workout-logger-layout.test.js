@@ -8,13 +8,15 @@ const adminHtml = fs.readFileSync(path.join(root, "coach-admin.html"), "utf8");
 const loggerScript = fs.readFileSync(path.join(root, "js/coach-workout-log.js"), "utf8");
 const styles = fs.readFileSync(path.join(root, "css/style.css"), "utf8");
 
-test("places Session logger immediately after Clients", () => {
+test("keeps Session logger as the first coach navigation link", () => {
+  const navigationIndex = adminHtml.indexOf('id="coach-admin-sidebar-nav"');
   const clientsIndex = adminHtml.indexOf('data-admin-tab="clients"');
   const loggerIndex = adminHtml.indexOf('href="coach-workout-log.html"');
   const profileIndex = adminHtml.indexOf('data-admin-tab="profile"');
 
-  assert.ok(clientsIndex >= 0);
-  assert.ok(loggerIndex > clientsIndex);
+  assert.ok(navigationIndex >= 0);
+  assert.ok(loggerIndex > navigationIndex);
+  assert.ok(clientsIndex > loggerIndex);
   assert.ok(profileIndex > loggerIndex);
 });
 
@@ -43,8 +45,9 @@ test("uses a carousel for superset and circuit while straight sets stay stacked"
   assert.match(styles, /\.coach-workout-carousel\[data-carousel-enabled="true"\] \.coach-workout-exercise-list[\s\S]*?scroll-snap-type:\s*x mandatory/);
   assert.match(loggerScript, /const enabled = format !== "single" && exercises\.length > 1/);
   assert.match(loggerScript, /data-coach-workout-dot/);
-  assert.match(loggerScript, /data-coach-workout-previous/);
-  assert.match(loggerScript, /data-coach-workout-next/);
+  assert.match(loggerScript, /querySelector\("button\[data-coach-workout-previous\]"\)/);
+  assert.match(loggerScript, /querySelector\("button\[data-coach-workout-next\]"\)/);
+  assert.match(loggerScript, /\.forEach\(\(values\) => \{\s*addCoachWorkoutExercise\(values\);/s);
 });
 
 test("saves each set's weight reps and optional RIR", () => {

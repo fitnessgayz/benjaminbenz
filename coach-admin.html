@@ -30,7 +30,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=coach-workout-logger-1" />
+  <link rel="stylesheet" href="css/style.css?v=coach-admin-sidebar-1" />
 </head>
 <body class="dashboard-page coach-admin-page">
   <header class="site-header dashboard-header">
@@ -58,6 +58,83 @@
     </section>
 
     <section class="admin-workspace" id="coach-admin-workspace" hidden>
+      <button
+        class="coach-admin-sidebar-backdrop"
+        type="button"
+        aria-label="Close navigation"
+        data-admin-sidebar-backdrop
+        hidden
+      ></button>
+      <aside class="coach-admin-sidebar" aria-label="Coach admin navigation">
+        <div class="coach-admin-sidebar-header">
+          <a class="coach-admin-sidebar-brand" href="coach-admin.html" aria-label="Coach Admin home">
+            <span class="coach-admin-sidebar-mark" aria-hidden="true">FWB</span>
+            <span class="coach-admin-sidebar-title">Coach Admin</span>
+          </a>
+          <button
+            class="coach-admin-sidebar-toggle"
+            type="button"
+            aria-label="Collapse navigation"
+            aria-controls="coach-admin-sidebar-nav"
+            aria-expanded="true"
+            data-admin-sidebar-toggle
+          >
+            <span aria-hidden="true" data-admin-sidebar-toggle-icon>‹</span>
+          </button>
+        </div>
+
+        <nav class="admin-tabs" id="coach-admin-sidebar-nav" aria-label="Admin editor sections">
+          <a class="admin-tab admin-tab-link admin-tab-session-logger" href="coach-workout-log.html" aria-label="Session logger">
+            <span class="admin-nav-icon" aria-hidden="true">SL</span>
+            <span class="admin-nav-label">Session logger</span>
+          </a>
+
+          <p class="admin-nav-group-title">Manage</p>
+          <button class="admin-tab is-active" type="button" data-admin-tab="clients" aria-label="Clients" aria-current="page">
+            <span class="admin-nav-icon" aria-hidden="true">CL</span>
+            <span class="admin-nav-label">Clients</span>
+          </button>
+          <button class="admin-tab" type="button" data-admin-tab="profile" aria-label="Profile">
+            <span class="admin-nav-icon" aria-hidden="true">PR</span>
+            <span class="admin-nav-label">Profile</span>
+          </button>
+          <button class="admin-tab" type="button" data-admin-tab="program" aria-label="Program">
+            <span class="admin-nav-icon" aria-hidden="true">PG</span>
+            <span class="admin-nav-label">Program</span>
+          </button>
+          <button class="admin-tab" type="button" data-admin-tab="workouts" aria-label="Workouts">
+            <span class="admin-nav-icon" aria-hidden="true">WO</span>
+            <span class="admin-nav-label">Workouts</span>
+          </button>
+          <button class="admin-tab" type="button" data-admin-tab="library" aria-label="Exercise library">
+            <span class="admin-nav-icon" aria-hidden="true">EX</span>
+            <span class="admin-nav-label">Exercise library</span>
+          </button>
+
+          <p class="admin-nav-group-title">Coach</p>
+          <button class="admin-tab" type="button" data-admin-tab="nutrition" aria-label="Food">
+            <span class="admin-nav-icon" aria-hidden="true">FD</span>
+            <span class="admin-nav-label">Food</span>
+          </button>
+          <button class="admin-tab" type="button" data-admin-tab="progress" aria-label="Progress and stats">
+            <span class="admin-nav-icon" aria-hidden="true">PS</span>
+            <span class="admin-nav-label">Progress &amp; stats</span>
+          </button>
+          <button class="admin-tab" type="button" data-admin-tab="notes" aria-label="Notes">
+            <span class="admin-nav-icon" aria-hidden="true">NT</span>
+            <span class="admin-nav-label">Notes</span>
+          </button>
+          <button class="admin-tab" type="button" data-admin-tab="logs" aria-label="Logs">
+            <span class="admin-nav-icon" aria-hidden="true">LG</span>
+            <span class="admin-nav-label">Logs</span>
+          </button>
+          <button class="admin-tab" type="button" data-admin-tab="sessions" aria-label="Sessions">
+            <span class="admin-nav-icon" aria-hidden="true">SE</span>
+            <span class="admin-nav-label">Sessions</span>
+          </button>
+        </nav>
+      </aside>
+
       <form class="admin-editor" id="program-editor">
         <input type="hidden" name="id" />
         <input type="hidden" name="sheet_url" />
@@ -80,20 +157,6 @@
             <button class="button button-ghost" type="button" id="selected-save-profile-button">Save changes</button>
           </div>
         </section>
-
-        <nav class="admin-tabs" aria-label="Admin editor sections">
-          <button class="admin-tab is-active" type="button" data-admin-tab="clients" aria-selected="true">Clients</button>
-          <a class="admin-tab admin-tab-link" href="coach-workout-log.html" target="_blank" rel="noopener">Session logger ↗</a>
-          <button class="admin-tab" type="button" data-admin-tab="profile" aria-selected="false">Profile</button>
-          <button class="admin-tab" type="button" data-admin-tab="program" aria-selected="false">Program</button>
-          <button class="admin-tab" type="button" data-admin-tab="workouts" aria-selected="false">Workouts</button>
-          <button class="admin-tab" type="button" data-admin-tab="library" aria-selected="false">Exercise library</button>
-          <button class="admin-tab" type="button" data-admin-tab="nutrition" aria-selected="false">Food</button>
-          <button class="admin-tab" type="button" data-admin-tab="progress" aria-selected="false">Progress &amp; stats</button>
-          <button class="admin-tab" type="button" data-admin-tab="notes" aria-selected="false">Notes</button>
-          <button class="admin-tab" type="button" data-admin-tab="logs" aria-selected="false">Logs</button>
-          <button class="admin-tab" type="button" data-admin-tab="sessions" aria-selected="false">Sessions</button>
-        </nav>
 
         <section class="admin-card programming-heading-card" data-admin-panel="profile" hidden>
           <div class="admin-section-heading compact-heading">
@@ -687,6 +750,6 @@
   <script src="js/script.js?v=client-session-link-1"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js?v=client-session-link-1"></script>
-  <script src="js/coach-admin.js?v=coach-workout-logger-1"></script>
+  <script src="js/coach-admin.js?v=coach-admin-sidebar-1"></script>
 </body>
 </html>

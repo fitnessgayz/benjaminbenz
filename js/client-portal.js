@@ -58,6 +58,7 @@ const warmUpSetNumberBase = 1000;
 const workingSetType = "working";
 const warmUpSetType = "warm_up";
 const clientDashboardUrl = "client-dashboard.html?v=manual-sessions-1";
+const clientDashboardSidebarStorageKey = "fwb_client_dashboard_sidebar_collapsed_v1";
 const workoutElapsedTimerStorageKey = "fwb_workout_elapsed_timer_v1";
 const workoutElapsedTimerCompactStorageKey = "fwb_workout_elapsed_timer_compact_v1";
 const workoutElapsedTimerPositionStorageKey = "fwb_workout_elapsed_timer_position_v2";
@@ -4132,16 +4133,26 @@ function workoutElapsedTimerDragBounds(timer) {
   const rect = timer.getBoundingClientRect();
   const navigation = document.querySelector(".client-dashboard-tabs");
   const navigationRect = navigation?.getBoundingClientRect();
+  const navigationIsBottomDock = Boolean(
+    navigationRect?.height > 0 &&
+    window.matchMedia?.("(max-width: 900px)")?.matches
+  );
   const viewportMaxTop = Math.max(gap, viewportHeight - rect.height - gap);
-  const navigationMaxTop = navigationRect?.height > 0
+  const navigationMaxTop = navigationIsBottomDock
     ? navigationRect.top - rect.height - gap
     : viewportMaxTop;
+  const maxLeft = Math.max(gap, viewportWidth - rect.width - gap);
+  const sidebarMinLeft = navigationRect?.width > 0 && !navigationIsBottomDock
+    ? navigationRect.right + gap
+    : gap;
+  const minLeft = Math.min(maxLeft, Math.max(gap, sidebarMinLeft));
 
   return {
     gap,
+    minLeft,
     width: rect.width,
     height: rect.height,
-    maxLeft: Math.max(gap, viewportWidth - rect.width - gap),
+    maxLeft,
     maxTop: Math.max(gap, Math.min(viewportMaxTop, navigationMaxTop))
   };
 }
@@ -4158,7 +4169,7 @@ function applyWorkoutElapsedTimerPosition(timer = document.querySelector("[data-
 
   timer.style.top = `${Math.round(top)}px`;
   timer.style.bottom = "auto";
-  timer.style.left = position.edge === "left" ? `${bounds.gap}px` : "auto";
+  timer.style.left = position.edge === "left" ? `${bounds.minLeft}px` : "auto";
   timer.style.right = position.edge === "right" ? `${bounds.gap}px` : "auto";
 }
 
@@ -4198,7 +4209,7 @@ function bindWorkoutElapsedTimerDragging(timer) {
     }
 
     const bounds = workoutElapsedTimerDragBounds(timer);
-    const left = Math.min(bounds.maxLeft, Math.max(bounds.gap, event.clientX - dragState.offsetX));
+    const left = Math.min(bounds.maxLeft, Math.max(bounds.minLeft, event.clientX - dragState.offsetX));
     const top = Math.min(bounds.maxTop, Math.max(bounds.gap, event.clientY - dragState.offsetY));
 
     timer.style.left = `${Math.round(left)}px`;
@@ -6959,6 +6970,87 @@ async function deleteRemovedTrainingLogRows(logElements) {
   return { deletedCount, error: null };
 }
 
+function storedClientDashboardSidebarCollapsed() {
+  try {
+    return window.localStorage.getItem(clientDashboardSidebarStorageKey) === "true";
+  } catch (_error) {
+    return false;
+  }
+}
+
+function persistClientDashboardSidebarCollapsed(collapsed) {
+  try {
+    window.localStorage.setItem(clientDashboardSidebarStorageKey, String(Boolean(collapsed)));
+  } catch (_error) {
+    // The navigation can still collapse for this page view when storage is unavailable.
+  }
+}
+
+function setClientDashboardSidebarCollapsed(collapsed) {
+  const grid = document.getElementById("client-dashboard-grid");
+  const toggle = document.querySelector("[data-client-sidebar-toggle]");
+  const toggleIcon = document.querySelector("[data-client-sidebar-toggle-icon]");
+  const toggleLabel = toggle?.querySelector(".client-dashboard-sidebar-toggle-label");
+  const desktopNavigation = window.matchMedia?.("(min-width: 901px)")?.matches ?? true;
+  const isCollapsed = desktopNavigation && Boolean(collapsed);
+
+  if (!grid || !toggle) {
+    return;
+  }
+
+  grid.classList.toggle("is-client-sidebar-collapsed", isCollapsed);
+  toggle.setAttribute("aria-expanded", String(!isCollapsed));
+  toggle.setAttribute("aria-label", isCollapsed ? "Expand navigation" : "Minimize navigation");
+
+  if (toggleIcon) {
+    toggleIcon.textContent = isCollapsed ? "›" : "‹";
+  }
+  if (toggleLabel) {
+    toggleLabel.textContent = isCollapsed ? "Expand" : "Minimize";
+  }
+
+  window.requestAnimationFrame?.(() => applyWorkoutElapsedTimerPosition());
+}
+
+function handleClientDashboardSidebar() {
+  const grid = document.getElementById("client-dashboard-grid");
+  const toggle = document.querySelector("[data-client-sidebar-toggle]");
+  const desktopQuery = window.matchMedia?.("(min-width: 901px)");
+
+  if (!grid || !toggle || !desktopQuery) {
+    return;
+  }
+
+  setClientDashboardSidebarCollapsed(storedClientDashboardSidebarCollapsed());
+
+  toggle.addEventListener("click", () => {
+    if (!desktopQuery.matches) {
+      return;
+    }
+
+    const nextCollapsed = !grid.classList.contains("is-client-sidebar-collapsed");
+
+    setClientDashboardSidebarCollapsed(nextCollapsed);
+    persistClientDashboardSidebarCollapsed(nextCollapsed);
+  });
+
+  grid.addEventListener("transitionend", (event) => {
+    if (event.target === grid && event.propertyName === "grid-template-columns") {
+      applyWorkoutElapsedTimerPosition();
+    }
+  });
+
+  const handleDesktopChange = (event) => {
+    setClientDashboardSidebarCollapsed(event.matches && storedClientDashboardSidebarCollapsed());
+  };
+
+  if (typeof desktopQuery.addEventListener === "function") {
+    desktopQuery.addEventListener("change", handleDesktopChange);
+  } else if (typeof desktopQuery.addListener === "function") {
+    desktopQuery.addListener(handleDesktopChange);
+  }
+}
+
 function setClientDashboardTab(tabName) {
   const nextTab = tabName || "home";
   const tabs = document.querySelectorAll("[data-client-dashboard-tab]");
@@ -6969,7 +7061,11 @@ function setClientDashboardTab(tabName) {
     const isActive = button.dataset.clientDashboardTab === nextTab;
 
     button.classList.toggle("is-active", isActive);
-    button.setAttribute("aria-selected", isActive ? "true" : "false");
+    if (isActive) {
+      button.setAttribute("aria-current", "page");
+    } else {
+      button.removeAttribute("aria-current");
+    }
   });
   panels.forEach((panel) => {
     const isActive = panel.dataset.clientDashboardPanel === nextTab;
@@ -9066,6 +9162,7 @@ function disableClientDashboardZoom() {
 }
 
 disableClientDashboardZoom();
+handleClientDashboardSidebar();
 handleLogin();
 handleCoachPortalLogin();
 handlePasswordResetRequests();
