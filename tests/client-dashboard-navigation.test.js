@@ -43,25 +43,25 @@ test("renders six labeled client destinations in order with current-page semanti
   assert.deepEqual(buttons.map((match) => match[2]), [
     "home",
     "workouts",
+    "logs",
     "nutrition",
     "progress",
-    "logs",
     "sessions"
   ]);
   assert.deepEqual(buttons.map((match) => match[1].match(/aria-label="([^"]+)"/)?.[1]), [
     "Home",
     "Workouts",
+    "Logs",
     "Food",
     "Profile and progress",
-    "Logs",
     "Sessions"
   ]);
   assert.deepEqual(buttons.map((match) => match[3].match(/client-dashboard-tab-label">([^<]+)</)?.[1]), [
     "Home",
     "Workouts",
+    "Logs",
     "Food",
     "Progress",
-    "Logs",
     "Sessions"
   ]);
   assert.equal(buttons.filter((match) => /aria-current="page"/.test(match[1])).length, 1);
