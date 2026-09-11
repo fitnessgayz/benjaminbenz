@@ -3069,6 +3069,24 @@ function activeCustomWorkoutDraft() {
   return draft;
 }
 
+function customWorkoutCopyStatusMessage(draft = activeCustomWorkoutDraft()) {
+  const source = draft?.copiedFrom;
+  const workoutTitle = String(source?.workoutTitle || "").trim();
+  const entryDate = String(source?.entryDate || "").trim();
+
+  if (!workoutTitle) {
+    return "";
+  }
+
+  const sourceLabel = entryDate ? `${workoutTitle} from ${formatLogDate(entryDate)}` : workoutTitle;
+
+  return `Copied ${sourceLabel}. Exercise names and set structure are ready. Review the workout format before starting; previous weights remain visible for reference.`;
+}
+
+function customWorkoutStorageTitle(draft = activeCustomWorkoutDraft()) {
+  return String(draft?.workoutTitle || customWorkoutTitle).trim() || customWorkoutTitle;
+}
+
 function customWorkoutDraftExercises() {
   const exercises = activeCustomWorkoutDraft()?.exercises;
   return Array.isArray(exercises) ? exercises : [];
@@ -3143,11 +3161,14 @@ function serializeCustomExerciseDraft(logElement, index) {
 }
 
 function customWorkoutPanelDraft(panel) {
+  const currentDraft = activeCustomWorkoutDraft();
   const logElements = Array.from(panel?.querySelectorAll("[data-exercise-log]") || []);
 
   return {
     format: normalizeCustomWorkoutFormat(panel?.dataset.customWorkoutFormat || activeCustomWorkoutFormat),
     date: panel?.querySelector("[data-workout-date]")?.value || todayDate(),
+    workoutTitle: String(panel?.dataset.customWorkoutTitle || currentDraft?.workoutTitle || customWorkoutTitle),
+    ...(currentDraft?.copiedFrom ? { copiedFrom: currentDraft.copiedFrom } : {}),
     exercises: logElements
       .map((logElement, index) => serializeCustomExerciseDraft(logElement, index))
       .filter(Boolean)
@@ -4727,11 +4748,12 @@ function workoutActionsMarkup(workout, options = {}) {
   `;
 }
 
-function customWorkoutCardMarkup(exercise, workoutTitle, index = 0) {
+function customWorkoutCardMarkup(exercise, workoutTitle, index = 0, options = {}) {
   const exerciseName = String(exercise.name || "").trim();
   const groupIndex = Math.max(Number(exercise.group) || 0, 0);
-  const isFirstSupersetExercise = activeCustomWorkoutFormat === "superset" && index % 2 === 0;
-  const isSecondSupersetExercise = activeCustomWorkoutFormat === "superset" && index % 2 === 1;
+  const supersetPosition = Number.isInteger(options.groupPosition) ? options.groupPosition : index % 2;
+  const isFirstSupersetExercise = activeCustomWorkoutFormat === "superset" && supersetPosition === 0;
+  const isSecondSupersetExercise = activeCustomWorkoutFormat === "superset" && supersetPosition === 1;
   const suggestionMenuId = `custom-exercise-options-${String(exercise.code || index + 1).toLowerCase().replace(/[^a-z0-9-]/g, "-")}`;
 
   return `
@@ -4798,13 +4820,13 @@ function customWorkoutCardMarkup(exercise, workoutTitle, index = 0) {
   `;
 }
 
-function customWorkoutListMarkup() {
+function customWorkoutListMarkup(workoutTitle = customWorkoutTitle) {
   const exercises = customWorkoutExercises();
 
-  return exercises.map((exercise, index) => customWorkoutCardMarkup(exercise, customWorkoutTitle, index)).join("");
+  return exercises.map((exercise, index) => customWorkoutCardMarkup(exercise, workoutTitle, index)).join("");
 }
 
-function customWorkoutCarouselGroupMarkup(format, exercises, groupIndex = 0, startIndex = 0) {
+function customWorkoutCarouselGroupMarkup(format, exercises, groupIndex = 0, startIndex = 0, workoutTitle = customWorkoutTitle) {
   const label = format === "superset"
     ? `Superset ${groupIndex + 1}`
     : format === "circuit"
@@ -4816,7 +4838,7 @@ function customWorkoutCarouselGroupMarkup(format, exercises, groupIndex = 0, sta
       <div class="workout-group-progress" data-workout-group-progress aria-live="polite"></div>
       <div class="custom-workout-carousel-heading" data-custom-workout-carousel-status aria-live="polite"></div>
       <div class="workout-app-list custom-workout-list" data-custom-workout-list data-custom-workout-format="${escapeHtml(format)}" role="list" aria-label="Custom workout exercises" tabindex="0">
-        ${exercises.map((exercise, index) => customWorkoutCardMarkup(exercise, customWorkoutTitle, startIndex + index)).join("")}
+        ${exercises.map((exercise, index) => customWorkoutCardMarkup(exercise, workoutTitle, startIndex + index, { groupPosition: index })).join("")}
       </div>
       <div class="custom-workout-carousel-footer" data-custom-workout-carousel-controls hidden>
         <button class="custom-workout-carousel-arrow" type="button" data-custom-workout-carousel-previous aria-label="Previous exercise">←</button>
@@ -4831,16 +4853,30 @@ function customWorkoutCarouselGroupMarkup(format, exercises, groupIndex = 0, sta
   `;
 }
 
-function customWorkoutCarouselMarkup(format) {
+function customWorkoutCarouselMarkup(format, workoutTitle = customWorkoutTitle) {
   const exercises = customWorkoutExercises();
   let groups;
 
   if (format === "superset") {
-    groups = Array.from({ length: Math.ceil(exercises.length / 2) }, (_, index) => ({
-      index,
-      exercises: exercises.slice(index * 2, (index * 2) + 2),
-      startIndex: index * 2
-    }));
+    const hasExplicitGroups = exercises.some((exercise) => Math.max(Number(exercise.group) || 0, 0) > 0);
+
+    if (hasExplicitGroups) {
+      const supersetGroups = new Map();
+      exercises.forEach((exercise, index) => {
+        const groupIndex = Math.max(Number(exercise.group) || 0, 0);
+        if (!supersetGroups.has(groupIndex)) {
+          supersetGroups.set(groupIndex, { index: groupIndex, exercises: [], startIndex: index });
+        }
+        supersetGroups.get(groupIndex).exercises.push(exercise);
+      });
+      groups = Array.from(supersetGroups.values()).map((group, index) => ({ ...group, index }));
+    } else {
+      groups = Array.from({ length: Math.ceil(exercises.length / 2) }, (_, index) => ({
+        index,
+        exercises: exercises.slice(index * 2, (index * 2) + 2),
+        startIndex: index * 2
+      }));
+    }
   } else if (format === "circuit") {
     const circuitGroups = new Map();
     exercises.forEach((exercise, index) => {
@@ -4855,7 +4891,7 @@ function customWorkoutCarouselMarkup(format) {
 
   return `
     <div class="custom-workout-carousel-stack" data-custom-workout-carousel-stack>
-      ${groups.map((group) => customWorkoutCarouselGroupMarkup(format, group.exercises, group.index, group.startIndex)).join("")}
+      ${groups.map((group) => customWorkoutCarouselGroupMarkup(format, group.exercises, group.index, group.startIndex, workoutTitle)).join("")}
     </div>
   `;
 }
@@ -5280,14 +5316,34 @@ function bindCustomWorkoutCarousel(carousel) {
 function regroupCustomWorkoutCarousels(panel) {
   const stack = panel?.querySelector("[data-custom-workout-carousel-stack]");
   const format = normalizeCustomWorkoutFormat(panel?.dataset.customWorkoutFormat || activeCustomWorkoutFormat);
+  const workoutTitle = String(panel?.dataset.customWorkoutTitle || customWorkoutTitle);
   const cards = Array.from(stack?.querySelectorAll("[data-custom-exercise-card]") || []);
   let desiredGroups;
 
   if (format === "superset") {
-    desiredGroups = Array.from({ length: Math.max(Math.ceil(cards.length / 2), 1) }, (_, index) => ({
-      index,
-      cards: cards.slice(index * 2, (index * 2) + 2)
-    }));
+    const hasExplicitGroups = cards.some((card) => Math.max(Number(card.dataset.customWorkoutGroup) || 0, 0) > 0);
+
+    if (hasExplicitGroups) {
+      const supersetGroups = new Map();
+      cards.forEach((card) => {
+        const groupIndex = Math.max(Number(card.dataset.customWorkoutGroup) || 0, 0);
+        if (!supersetGroups.has(groupIndex)) {
+          supersetGroups.set(groupIndex, { index: groupIndex, cards: [] });
+        }
+        supersetGroups.get(groupIndex).cards.push(card);
+      });
+      desiredGroups = Array.from(supersetGroups.values()).map((group, index) => {
+        group.cards.forEach((card) => {
+          card.dataset.customWorkoutGroup = String(index);
+        });
+        return { index, cards: group.cards };
+      });
+    } else {
+      desiredGroups = Array.from({ length: Math.max(Math.ceil(cards.length / 2), 1) }, (_, index) => ({
+        index,
+        cards: cards.slice(index * 2, (index * 2) + 2)
+      }));
+    }
   } else if (format === "circuit") {
     const circuitGroups = new Map();
     cards.forEach((card) => {
@@ -5325,7 +5381,7 @@ function regroupCustomWorkoutCarousels(panel) {
   const fragment = document.createDocumentFragment();
   desiredGroups.forEach((group) => {
     const template = document.createElement("template");
-    template.innerHTML = customWorkoutCarouselGroupMarkup(format, [], group.index);
+    template.innerHTML = customWorkoutCarouselGroupMarkup(format, [], group.index, 0, workoutTitle);
     const carousel = template.content.firstElementChild;
     const list = carousel.querySelector("[data-custom-workout-list]");
     group.cards.forEach((card) => list.append(card));
@@ -5384,25 +5440,30 @@ function syncAssignedWorkoutCarousels(panel = null) {
 }
 
 function customWorkoutPanelMarkup(index) {
+  const activeDraft = activeCustomWorkoutDraft();
   const exercises = customWorkoutExercises();
   const format = normalizeCustomWorkoutFormat(activeCustomWorkoutFormat);
   const formatConfig = customWorkoutFormats[format];
+  const copyStatusMessage = customWorkoutCopyStatusMessage(activeDraft);
+  const workoutStorageTitle = customWorkoutStorageTitle(activeDraft);
 
   return `
     <section
       class="client-workout-panel client-workout-panel-custom"
       id="client-workout-panel-${index}"
       data-custom-workout-format="${format}"
+      data-custom-workout-title="${escapeHtml(workoutStorageTitle)}"
       role="region"
       aria-labelledby="client-workout-card-title-${index}"
       hidden
     >
       <div class="panel-heading">
         <div>
-          <h2>${escapeHtml(customWorkoutTitle)}</h2>
+          <h2 id="custom-workout-panel-title" tabindex="-1">${escapeHtml(customWorkoutTitle)}</h2>
         </div>
         <span class="status-pill">Build your own</span>
       </div>
+      <p class="custom-workout-copy-status" data-custom-workout-copy-status role="status" aria-live="polite" ${copyStatusMessage ? "" : "hidden"}>${escapeHtml(copyStatusMessage)}</p>
       <label class="custom-workout-session-date workout-session-date">
         <span>Workout date</span>
         <span class="workout-session-date-control">
@@ -5417,18 +5478,40 @@ function customWorkoutPanelMarkup(index) {
           <p>Add your own exercises here and save them into your workout log.</p>
         </div>
         ${customWorkoutFormatPickerMarkup()}
-        ${warmupLogFields(customWorkoutTitle, { showDate: false })}
-        ${workoutStartControlMarkup(customWorkoutTitle)}
-        ${customWorkoutCarouselMarkup(format)}
+        ${warmupLogFields(workoutStorageTitle, { showDate: false })}
+        ${workoutStartControlMarkup(workoutStorageTitle)}
+        ${customWorkoutCarouselMarkup(format, workoutStorageTitle)}
         <div class="custom-workout-add-actions" data-custom-workout-add-actions>
           <button class="button button-ghost custom-workout-add-bottom" type="button" data-add-custom-exercise data-custom-exercise-placement="current">${format === "circuit" ? "Add to current circuit" : "Add exercise"}</button>
           <button class="button button-ghost custom-workout-add-bottom" type="button" data-add-custom-exercise data-custom-exercise-placement="new-circuit" ${format === "circuit" ? "" : "hidden"}>Start new circuit</button>
         </div>
-        ${cardioLogFields(customWorkoutTitle, { showDate: false })}
+        ${cardioLogFields(workoutStorageTitle, { showDate: false })}
         ${workoutActionsMarkup({ exercises }, { includeCardio: true })}
       </div>
     </section>
   `;
+}
+
+function replaceCustomWorkoutPanelFromDraft(index) {
+  const currentPanel = document.querySelector(".client-workout-panel-custom");
+
+  if (!currentPanel) {
+    return null;
+  }
+
+  const template = document.createElement("template");
+  template.innerHTML = customWorkoutPanelMarkup(index).trim();
+  const replacement = template.content.firstElementChild;
+
+  if (!replacement) {
+    return null;
+  }
+
+  currentPanel.replaceWith(replacement);
+  applyCustomWorkoutDraft(replacement);
+  syncWorkoutStartButtons();
+
+  return replacement;
 }
 
 function syncWorkoutPanelDate(panel, value, refresh = true) {
@@ -5457,17 +5540,23 @@ function syncCustomWorkoutFormatMarkers(panel) {
 
   panel?.querySelectorAll("[data-custom-exercise-card]").forEach((card, index) => {
     const marker = card.querySelector("[data-custom-workout-format-marker]");
-    const groupIndex = Math.max(Number(card.dataset.customWorkoutGroup) || 0, 0);
+    const carousel = card.closest("[data-custom-workout-carousel]");
+    const groupIndex = Math.max(Number(carousel?.dataset.customWorkoutGroup ?? card.dataset.customWorkoutGroup) || 0, 0);
+    const groupPosition = Math.max(customWorkoutCarouselCards(carousel).indexOf(card), 0);
     const circuitPosition = (circuitPositions.get(groupIndex) || 0) + 1;
     circuitPositions.set(groupIndex, circuitPosition);
 
     if (marker) {
-      marker.textContent = format === "circuit" ? `Station ${circuitPosition}` : customWorkoutFormatMarker(format, index);
+      marker.textContent = format === "circuit"
+        ? `Station ${circuitPosition}`
+        : format === "superset"
+          ? `Superset ${groupIndex + 1}${String.fromCharCode(65 + groupPosition)}`
+          : customWorkoutFormatMarker(format, index);
     }
 
     const finishButton = card.querySelector("[data-finish-set]");
     const setActions = finishButton?.closest(".set-table-actions");
-    const addsSupersetExercise = format === "superset" && index % 2 === 0;
+    const addsSupersetExercise = format === "superset" && groupPosition === 0;
     if (finishButton) {
       if (addsSupersetExercise) {
         finishButton.setAttribute("data-add-superset", "");
@@ -6049,7 +6138,8 @@ function logsForExerciseDisplay(logElement) {
 
   return trainingLogs
     .filter((log) => (
-      log.workout_title === logElement.dataset.workoutTitle &&
+      String(log.exercise_code || "").trim().toUpperCase() !== warmupExerciseCode &&
+      String(log.exercise_code || "").trim().toUpperCase() !== cardioExerciseCode &&
       normalizeExerciseHistoryName(log.exercise_name) === exerciseName
     ))
     .sort((left, right) => {
@@ -6321,8 +6411,9 @@ function updateExerciseLogField(logElement) {
     ? logElement.querySelector("[data-set-progress]")
     : card?.querySelector("[data-set-progress]");
   const logs = logsForExerciseDisplay(logElement);
+  const exactSessionLogs = logsForExercise(logElement.dataset.workoutTitle, logElement.dataset.exerciseCode);
   const selectedDate = dateInput?.value || todayDate();
-  const selectedLogs = logs.filter((log) => log.entry_date === selectedDate);
+  const selectedLogs = exactSessionLogs.filter((log) => log.entry_date === selectedDate);
 
   if (dateInput && !dateInput.value) {
     dateInput.value = todayDate();
@@ -6633,6 +6724,228 @@ function nutritionLogHistorySections(logs = []) {
   });
 }
 
+function clientWorkoutHistorySessionKey(record = {}) {
+  const sessionId = String(record.session_id || record.workout_session_id || "").trim().toLowerCase();
+
+  if (sessionId) {
+    return `session:${sessionId}`;
+  }
+
+  const entryDate = String(record.entry_date || "").trim();
+  const workoutTitle = String(record.workout_title || "Workout").trim().toLowerCase();
+
+  return `legacy:${entryDate}::${workoutTitle}`;
+}
+
+function isCopyableWorkoutHistoryLog(log = {}) {
+  const exerciseCode = String(log.exercise_code || "").trim().toUpperCase();
+  const exerciseName = String(log.exercise_name || "").trim();
+
+  return Boolean(
+    exerciseName &&
+    exerciseCode !== warmupExerciseCode &&
+    exerciseCode !== cardioExerciseCode
+  );
+}
+
+function workoutHistoryLogsForCopy(sessionKey, logs = trainingLogs) {
+  return (Array.isArray(logs) ? logs : []).filter((log) => (
+    clientWorkoutHistorySessionKey(log) === sessionKey && isCopyableWorkoutHistoryLog(log)
+  ));
+}
+
+function customWorkoutFormatForHistoryLogs(logs = []) {
+  const sourceTitle = String(logs[0]?.workout_title || "").trim().toLowerCase();
+  const assignedWorkout = (Array.isArray(currentProgram?.workouts) ? currentProgram.workouts : [])
+    .find((workout) => String(workout?.title || "").trim().toLowerCase() === sourceTitle);
+
+  if (assignedWorkout) {
+    return normalizeCustomWorkoutFormat(inferWorkoutFormat(assignedWorkout));
+  }
+
+  // Historical Custom Workout rows do not store their original format. Keep the
+  // safe straight-set fallback and let the client review the visible picker.
+  if (sourceTitle.startsWith(customWorkoutTitle.toLowerCase())) {
+    return "single";
+  }
+
+  if (sourceTitle.includes("circuit")) {
+    return "circuit";
+  }
+
+  if (sourceTitle.includes("superset")) {
+    return "superset";
+  }
+
+  const sourceGroups = new Map();
+  logs.forEach((log) => {
+    const match = String(log.exercise_code || "").trim().toUpperCase().match(/^([A-Z]+)(\d+)$/);
+    if (!match) {
+      return;
+    }
+    if (!sourceGroups.has(match[1])) {
+      sourceGroups.set(match[1], new Set());
+    }
+    sourceGroups.get(match[1]).add(match[2]);
+  });
+
+  return Array.from(sourceGroups.values()).some((positions) => positions.size > 1)
+    ? "superset"
+    : "single";
+}
+
+function copiedCustomWorkoutStorageTitle(logs = [], copiedAt = new Date()) {
+  const rawSourceTitle = String(logs[0]?.workout_title || "Previous workout").trim();
+  const sourceTitle = rawSourceTitle.toLowerCase().startsWith(customWorkoutTitle.toLowerCase())
+    ? "Previous custom"
+    : truncateText(rawSourceTitle, 36);
+  const time = [copiedAt.getHours(), copiedAt.getMinutes(), copiedAt.getSeconds()]
+    .map((value) => String(value).padStart(2, "0"))
+    .join(":");
+  const milliseconds = String(copiedAt.getMilliseconds()).padStart(3, "0");
+
+  return `${customWorkoutTitle} · ${sourceTitle} · ${time}.${milliseconds}`;
+}
+
+function customWorkoutDraftHasMeaningfulContent(draft, currentDate = "") {
+  if (!draft || typeof draft !== "object") {
+    return false;
+  }
+
+  if (normalizeCustomWorkoutFormat(draft.format) !== "single") {
+    return true;
+  }
+
+  if (currentDate && draft.date && draft.date !== currentDate) {
+    return true;
+  }
+
+  const exercises = Array.isArray(draft.exercises) ? draft.exercises : [];
+
+  if (exercises.length > 1) {
+    return true;
+  }
+
+  return exercises.some((exercise) => {
+    const sets = Array.isArray(exercise?.sets) ? exercise.sets : [];
+
+    return Boolean(
+      String(exercise?.name || "").trim() ||
+      String(exercise?.notes || "").trim() ||
+      exercise?.skipped ||
+      sets.length > 1 ||
+      sets.some((set) => (
+        String(set?.weight ?? "").trim() ||
+        String(set?.reps ?? "").trim() ||
+        String(set?.rir ?? "").trim()
+      ))
+    );
+  });
+}
+
+function customWorkoutPanelHasAuxiliaryContent(panel) {
+  if (!panel) {
+    return false;
+  }
+
+  const enteredValue = (selector) => String(panel.querySelector(selector)?.value || "").trim();
+  const warmupType = enteredValue("[data-warmup-type]");
+  const cardioType = enteredValue("[data-cardio-type]");
+
+  return Boolean(
+    (warmupType && warmupType.toLowerCase() !== "warm up") ||
+    (cardioType && cardioType.toLowerCase() !== "cardio") ||
+    enteredValue("[data-warmup-duration]") ||
+    enteredValue("[data-warmup-log] [data-log-notes]") ||
+    enteredValue("[data-cardio-duration]") ||
+    enteredValue("[data-cardio-distance]") ||
+    enteredValue("[data-cardio-calories]") ||
+    enteredValue("[data-cardio-log] [data-log-notes]")
+  );
+}
+
+function customWorkoutDraftFromLogs(logs = [], options = {}) {
+  const format = ["superset", "circuit"].includes(options.format) ? options.format : "single";
+  const date = String(options.date || "").trim();
+  const exerciseGroups = new Map();
+
+  (Array.isArray(logs) ? logs : []).filter(isCopyableWorkoutHistoryLog).forEach((log) => {
+    const code = String(log.exercise_code || "").trim().toUpperCase();
+    const name = String(log.exercise_name || "").trim();
+    const key = `${code}::${name.toLowerCase()}`;
+
+    if (!exerciseGroups.has(key)) {
+      exerciseGroups.set(key, { code, name, sets: [] });
+    }
+    exerciseGroups.get(key).sets.push(log);
+  });
+
+  const exercises = Array.from(exerciseGroups.values()).sort((left, right) => (
+    left.code.localeCompare(right.code, undefined, { numeric: true }) ||
+    left.name.localeCompare(right.name)
+  ));
+  const sourceGroupIndexes = new Map();
+
+  return {
+    format,
+    date,
+    workoutTitle: String(options.workoutTitle || customWorkoutTitle),
+    copiedFrom: {
+      sessionKey: String(options.sessionKey || ""),
+      workoutTitle: String(logs[0]?.workout_title || "Workout"),
+      entryDate: String(logs[0]?.entry_date || "")
+    },
+    exercises: exercises.map((exercise, exerciseIndex) => {
+      const warmUpSetNumbers = new Set();
+      const workingSetNumbers = [];
+
+      exercise.sets.forEach((set, index) => {
+        const setNumber = Number(set.set_number);
+        const isWarmUp = set.set_type === warmUpSetType || setNumber > warmUpSetNumberBase;
+
+        if (isWarmUp) {
+          warmUpSetNumbers.add(Number.isFinite(setNumber) ? setNumber : warmUpSetNumberBase + index + 1);
+        } else {
+          workingSetNumbers.push(Number.isFinite(setNumber) && setNumber > 0 ? setNumber : index + 1);
+        }
+      });
+
+      const warmUpCount = warmUpSetNumbers.size;
+      const workingSetCount = Math.max(1, Math.max(0, ...workingSetNumbers, workingSetNumbers.length));
+      const sourceGroupKey = exercise.code.match(/^([A-Za-z]+)/)?.[1]?.toUpperCase() || `EXERCISE-${exerciseIndex}`;
+
+      if (!sourceGroupIndexes.has(sourceGroupKey)) {
+        sourceGroupIndexes.set(sourceGroupKey, sourceGroupIndexes.size);
+      }
+
+      return {
+        code: customExerciseCode(exerciseIndex),
+        name: exercise.name,
+        group: format === "superset" ? sourceGroupIndexes.get(sourceGroupKey) : 0,
+        date,
+        notes: "",
+        skipped: false,
+        sets: [
+          ...Array.from({ length: warmUpCount }, (_, index) => ({
+            label: index === 0 ? "W" : `W${index + 1}`,
+            weight: "",
+            reps: "",
+            setType: warmUpSetType,
+            rir: ""
+          })),
+          ...Array.from({ length: workingSetCount }, (_, index) => ({
+            label: String(index + 1),
+            weight: "",
+            reps: "",
+            setType: workingSetType,
+            rir: ""
+          }))
+        ]
+      };
+    })
+  };
+}
+
 function renderClientTrainingLogs() {
   renderClientExerciseProgress(trainingLogs);
   const history = document.getElementById("client-training-log-history");
@@ -6669,10 +6982,7 @@ function renderClientTrainingLogs() {
   const workoutGroups = new Map();
 
   filteredLogs.forEach((log) => {
-    const workoutKey = workoutFeedbackSessionId(log) || [
-      log.entry_date || "",
-      log.workout_title || "Workout"
-    ].join("::");
+    const workoutKey = clientWorkoutHistorySessionKey(log);
     const exerciseCode = String(log.exercise_code || "");
     const supersetMatch = exerciseCode.match(/^([A-Za-z]+)/);
     const supersetKey = exerciseCode === warmupExerciseCode
@@ -6683,6 +6993,7 @@ function renderClientTrainingLogs() {
 
     if (!workoutGroups.has(workoutKey)) {
       workoutGroups.set(workoutKey, {
+        history_key: workoutKey,
         entry_date: log.entry_date || "",
         workout_title: log.workout_title || "Workout",
         workout_duration_seconds: null,
@@ -6763,14 +7074,26 @@ function renderClientTrainingLogs() {
     const workoutDuration = workoutHistoryDurationLabel(workout.workout_duration_seconds);
     const workoutDifficulty = workoutHistoryDifficultyLabel(workout.workout_difficulty);
     const workoutHeading = [workout.workout_title, workoutDuration, workoutDifficulty].filter(Boolean).join(" · ");
+    const canCopyToCustom = workoutHistoryLogsForCopy(workout.history_key).length > 0;
+    const copyButtonLabel = `Copy ${workout.workout_title} from ${formatLogDate(workout.entry_date)} to Custom workout`;
 
     return {
       sort_key: `${workout.entry_date || ""}::workout::${workout.workout_title || ""}`,
       html: `
         <section class="training-log-workout-group">
-          <div class="training-log-workout-heading">
-            <strong>${escapeHtml(formatLogDate(workout.entry_date))}</strong>
-            <span>${escapeHtml(workoutHeading)}</span>
+          <div class="training-log-workout-heading${canCopyToCustom ? " has-copy-action" : ""}">
+            <div class="training-log-workout-title">
+              <strong>${escapeHtml(formatLogDate(workout.entry_date))}</strong>
+              <span>${escapeHtml(workoutHeading)}</span>
+            </div>
+            ${canCopyToCustom ? `
+              <button
+                class="training-log-copy-button"
+                type="button"
+                data-copy-workout-to-custom="${escapeHtml(workout.history_key)}"
+                aria-label="${escapeHtml(copyButtonLabel)}"
+              >Copy to Custom Workout</button>
+            ` : ""}
           </div>
           <div class="training-log-superset-list">
             ${supersets.map((superset) => {
@@ -6863,6 +7186,99 @@ function renderClientTrainingLogs() {
     .sort((a, b) => b.sort_key.localeCompare(a.sort_key))
     .map((section) => section.html)
     .join("");
+}
+
+function setClientWorkoutCopyStatus(message = "") {
+  const status = document.getElementById("client-workout-copy-status");
+
+  if (status) {
+    status.textContent = message;
+  }
+}
+
+function handleCopyWorkoutToCustom() {
+  document.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-copy-workout-to-custom]");
+
+    if (!button) {
+      return;
+    }
+
+    if (workoutElapsedTimerState) {
+      setClientWorkoutCopyStatus("Finish the active workout before copying a saved workout.");
+      return;
+    }
+
+    const sessionKey = String(button.dataset.copyWorkoutToCustom || "");
+    const sourceLogs = workoutHistoryLogsForCopy(sessionKey);
+
+    if (sourceLogs.length === 0) {
+      setClientWorkoutCopyStatus("This workout could not be copied. Refresh the page and try again.");
+      return;
+    }
+
+    const date = todayDate();
+    const existingDraft = activeCustomWorkoutDraft();
+    const existingCustomPanel = document.querySelector(".client-workout-panel-custom");
+
+    if (
+      (
+        customWorkoutDraftHasMeaningfulContent(existingDraft, date) ||
+        customWorkoutPanelHasAuxiliaryContent(existingCustomPanel)
+      ) &&
+      !window.confirm("Replace your current Custom Workout draft with this previous workout? Your saved workout history will not be changed.")
+    ) {
+      setClientWorkoutCopyStatus("Copy canceled. Your current Custom Workout draft was not changed.");
+      return;
+    }
+
+    const format = customWorkoutFormatForHistoryLogs(sourceLogs);
+    const workoutTitle = copiedCustomWorkoutStorageTitle(sourceLogs);
+    const draft = customWorkoutDraftFromLogs(sourceLogs, { date, format, sessionKey, workoutTitle });
+
+    if (draft.exercises.length === 0) {
+      setClientWorkoutCopyStatus("This workout has no strength exercises to copy.");
+      return;
+    }
+
+    activeCustomWorkoutFormat = draft.format;
+    storeCustomWorkoutFormat(draft.format);
+    storeCustomWorkoutDraft(draft);
+
+    const storedDraft = activeCustomWorkoutDraft();
+    if (storedDraft?.copiedFrom?.sessionKey !== sessionKey) {
+      setClientWorkoutCopyStatus("The Custom Workout draft could not be created on this device.");
+      return;
+    }
+
+    setClientDashboardTab("workouts");
+
+    const customPanelIndex = Array.isArray(currentProgram?.workouts) ? currentProgram.workouts.length : 0;
+    const customPanel = replaceCustomWorkoutPanelFromDraft(customPanelIndex);
+
+    if (!customPanel) {
+      setClientWorkoutCopyStatus("The Custom Workout could not be opened. Refresh the page and try again.");
+      return;
+    }
+
+    activateClientWorkoutPanel(customPanelIndex, { scroll: false, focus: false });
+    const heading = customPanel?.querySelector("#custom-workout-panel-title");
+    const copyStatus = customPanel?.querySelector("[data-custom-workout-copy-status]");
+
+    if (copyStatus) {
+      copyStatus.textContent = customWorkoutCopyStatusMessage(storedDraft);
+      copyStatus.hidden = false;
+    }
+    setClientWorkoutCopyStatus("");
+
+    window.requestAnimationFrame(() => {
+      customPanel?.scrollIntoView({
+        behavior: window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches ? "auto" : "smooth",
+        block: "start"
+      });
+      heading?.focus({ preventScroll: true });
+    });
+  });
 }
 
 function csvCell(value) {
@@ -7945,7 +8361,7 @@ function ensureDefaultCustomExercise(panel) {
     name: "",
     prescription: "Custom sets",
     rest: ""
-  }, customWorkoutTitle);
+  }, panel.dataset.customWorkoutTitle || customWorkoutTitle);
 
   const defaultLogElement = list.querySelector("[data-exercise-log]");
   if (defaultLogElement) {
@@ -7985,7 +8401,7 @@ function addOrOpenSupersetExercise(button) {
     group: groupIndex,
     prescription: "Custom sets",
     rest: ""
-  }, customWorkoutTitle, currentIndex + 1));
+  }, panel.dataset.customWorkoutTitle || customWorkoutTitle, currentIndex + 1, { groupPosition: carouselCards.length }));
 
   const newCard = list.querySelector("[data-custom-exercise-card]:last-child");
   const newLogElement = newCard?.querySelector("[data-exercise-log]");
@@ -8397,14 +8813,32 @@ function handleWorkoutInteractions() {
       const stack = panel?.querySelector("[data-custom-workout-carousel-stack]");
       let lists = Array.from(panel?.querySelectorAll("[data-custom-workout-list]") || []);
       let list = lists[lists.length - 1];
-      let groupIndex = format === "circuit"
+      let groupIndex = format === "circuit" || format === "superset"
         ? Math.max(Number(list?.closest("[data-custom-workout-carousel]")?.dataset.customWorkoutGroup) || 0, 0)
         : 0;
 
       if (format === "circuit" && placement === "new-circuit" && stack) {
         const groupNumbers = customWorkoutCarousels(panel).map((carousel) => Number(carousel.dataset.customWorkoutGroup) || 0);
         groupIndex = groupNumbers.length > 0 ? Math.max(...groupNumbers) + 1 : 0;
-        stack.insertAdjacentHTML("beforeend", customWorkoutCarouselGroupMarkup(format, [], groupIndex));
+        stack.insertAdjacentHTML("beforeend", customWorkoutCarouselGroupMarkup(
+          format,
+          [],
+          groupIndex,
+          0,
+          panel.dataset.customWorkoutTitle || customWorkoutTitle
+        ));
+        lists = Array.from(panel.querySelectorAll("[data-custom-workout-list]"));
+        list = lists[lists.length - 1];
+      } else if (format === "superset" && customWorkoutCarouselCards(list?.closest("[data-custom-workout-carousel]")).length >= 2 && stack) {
+        const groupNumbers = customWorkoutCarousels(panel).map((carousel) => Number(carousel.dataset.customWorkoutGroup) || 0);
+        groupIndex = groupNumbers.length > 0 ? Math.max(...groupNumbers) + 1 : 0;
+        stack.insertAdjacentHTML("beforeend", customWorkoutCarouselGroupMarkup(
+          format,
+          [],
+          groupIndex,
+          0,
+          panel.dataset.customWorkoutTitle || customWorkoutTitle
+        ));
         lists = Array.from(panel.querySelectorAll("[data-custom-workout-list]"));
         list = lists[lists.length - 1];
       }
@@ -8419,7 +8853,9 @@ function handleWorkoutInteractions() {
           group: groupIndex,
           prescription: "Custom sets",
           rest: ""
-        }, customWorkoutTitle, nextIndex - 1));
+        }, panel.dataset.customWorkoutTitle || customWorkoutTitle, nextIndex - 1, {
+          groupPosition: customWorkoutCarouselCards(list.closest("[data-custom-workout-carousel]")).length
+        }));
 
         const newCard = list.querySelector("[data-custom-exercise-card]:last-child");
         const newLogElement = newCard?.querySelector("[data-exercise-log]");
@@ -9535,6 +9971,7 @@ handleSignOut();
 handleTrainingDateChange();
 handleClientTrainingLogDateFilter();
 handleClientWorkoutHistoryDownload();
+handleCopyWorkoutToCustom();
 handleClientDashboardTabs();
 handleProgressSectionToggles();
 handleClientHomeCarousel();

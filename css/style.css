@@ -11577,3 +11577,86 @@ body.client-dashboard-page {
     transition: none;
   }
 }
+
+/* Copy a saved workout into the editable Custom Workout builder. */
+.training-log-workout-heading.has-copy-action {
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: start;
+}
+
+.training-log-workout-title {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+}
+
+.training-log-workout-title span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.dashboard-page .training-log-copy-button {
+  width: auto !important;
+  inline-size: auto !important;
+  max-width: 230px !important;
+  min-height: 42px !important;
+  padding: 9px 12px !important;
+  color: var(--black);
+  background: var(--lime);
+  border: 1px solid var(--black);
+  border-radius: 10px !important;
+  font: inherit;
+  font-size: .72rem !important;
+  font-weight: 900;
+  line-height: 1.1 !important;
+  text-align: center;
+  white-space: normal !important;
+  cursor: pointer;
+}
+
+.dashboard-page .training-log-copy-button:hover {
+  background: #c9f12e;
+}
+
+.dashboard-page .training-log-copy-button:focus-visible,
+#custom-workout-panel-title:focus-visible {
+  outline: 3px solid #8aa817;
+  outline-offset: 3px;
+}
+
+.training-log-copy-status {
+  min-height: 18px;
+  margin: -4px 0 12px;
+  color: var(--muted);
+  font-size: .78rem;
+  font-weight: 800;
+}
+
+.custom-workout-copy-status {
+  margin: 0;
+  padding: 11px 13px;
+  color: #28300f;
+  background: #f1f9cf;
+  border: 1px solid #b8d44d;
+  border-radius: 10px;
+  font-size: .82rem;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.custom-workout-copy-status[hidden] {
+  display: none !important;
+}
+
+@media (max-width: 600px) {
+  .training-log-workout-heading.has-copy-action {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .dashboard-page .training-log-copy-button {
+    width: 100% !important;
+    inline-size: 100% !important;
+    max-width: 100% !important;
+  }
+}
