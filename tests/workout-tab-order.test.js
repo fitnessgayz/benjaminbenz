@@ -123,7 +123,7 @@ test("keeps the deck compact and clear of the fixed mobile dock", () => {
   assert.match(styles, /@media \(max-width: 420px\)[\s\S]*?\.client-workout-picker-controls \{[\s\S]*?width:\s*100%;[\s\S]*?justify-content:\s*space-between/);
   assert.match(styles, /scroll-margin-bottom:\s*var\(--client-bottom-dock-clearance\)/);
   assert.match(dashboard, /css\/style\.css\?v=custom-workout-first-1/);
-  assert.match(dashboard, /js\/client-portal\.js\?v=custom-workout-first-1/);
+  assert.match(dashboard, /js\/client-portal\.js\?v=exercise-name-collapse-1/);
 });
 
 test("shows a workout day separately from its training target", () => {

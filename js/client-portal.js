@@ -2439,6 +2439,7 @@ function syncExerciseNamePreview(logElement, nextName) {
   const card = logElement.closest(".workout-exercise-card");
   const summaryTitle = card?.querySelector("[data-exercise-title]");
   const summaryTitleName = summaryTitle?.querySelector("[data-exercise-title-name]");
+  const collapsedTitle = card?.querySelector("[data-exercise-collapsed-name]");
   const detailTitle = logElement.querySelector("[data-exercise-heading]");
 
   if (summaryTitleName) {
@@ -2452,6 +2453,22 @@ function syncExerciseNamePreview(logElement, nextName) {
   if (detailTitle) {
     detailTitle.textContent = displayName;
   }
+
+  if (collapsedTitle) {
+    collapsedTitle.textContent = editedName || logElement.dataset.exerciseName || "Exercise name";
+  }
+}
+
+function setWorkoutExerciseCardExpanded(card, expanded) {
+  if (!card) {
+    return;
+  }
+
+  const isExpanded = Boolean(expanded);
+
+  card.classList.toggle("is-open", isExpanded);
+  card.querySelector("[data-exercise-toggle]")
+    ?.setAttribute("aria-expanded", isExpanded ? "true" : "false");
 }
 
 function renderExerciseNotesState(logElement) {
@@ -2658,6 +2675,8 @@ function exerciseCard(exercise, workoutTitle, isOpen = false, workoutFocus = "",
     <article class="workout-exercise-card workout-entry-card custom-workout-card assigned-workout-card${isOpen ? " is-open" : ""}" data-custom-exercise-card data-assigned-exercise-card${clientAdded ? " data-client-added-exercise" : ""}>
       <div class="exercise-card-summary custom-workout-card-summary">
         <span>
+          <span class="custom-workout-name-field-label" aria-hidden="true">Exercise name</span>
+          <strong class="custom-workout-collapsed-name" data-exercise-collapsed-name>${escapeHtml(exerciseName || "Exercise name")}</strong>
           <strong class="custom-workout-editable-title" data-exercise-title>
             <span class="custom-workout-name-editor">
               <input
@@ -2689,7 +2708,7 @@ function exerciseCard(exercise, workoutTitle, isOpen = false, workoutFocus = "",
                 <path d="M4 7h16M9 7V4h6v3m-9 0 1 13h10l1-13M10 11v5m4-5v5" />
               </svg>
             </button>
-          <button class="custom-workout-card-toggle" type="button" data-exercise-toggle aria-label="Toggle ${marker}"><i>›</i></button>
+          <button class="custom-workout-card-toggle" type="button" data-exercise-toggle aria-label="Toggle ${marker}" aria-expanded="${isOpen ? "true" : "false"}"><i>›</i></button>
         </div>
       </div>
       <div class="exercise-detail custom-workout-detail">
@@ -4760,6 +4779,8 @@ function customWorkoutCardMarkup(exercise, workoutTitle, index = 0, options = {}
     <article class="workout-exercise-card workout-entry-card custom-workout-card is-open" data-custom-exercise-card data-custom-workout-group="${groupIndex}">
       <div class="exercise-card-summary custom-workout-card-summary">
         <span>
+          <span class="custom-workout-name-field-label" aria-hidden="true">Exercise name</span>
+          <strong class="custom-workout-collapsed-name" data-exercise-collapsed-name>${escapeHtml(exerciseName || "Exercise name")}</strong>
           <strong class="custom-workout-editable-title" data-exercise-title>
             <span class="custom-workout-name-editor">
               <input
@@ -4791,7 +4812,7 @@ function customWorkoutCardMarkup(exercise, workoutTitle, index = 0, options = {}
                 <path d="M4 7h16M9 7V4h6v3m-9 0 1 13h10l1-13M10 11v5m4-5v5" />
               </svg>
             </button>
-          <button class="custom-workout-card-toggle" type="button" data-exercise-toggle aria-label="Toggle exercise ${index + 1}"><i>›</i></button>
+          <button class="custom-workout-card-toggle" type="button" data-exercise-toggle aria-label="Toggle exercise ${index + 1}" aria-expanded="true"><i>›</i></button>
         </div>
       </div>
       <div class="exercise-detail custom-workout-detail">
@@ -8365,7 +8386,7 @@ function setExerciseSkipped(logElement, skipped, options = {}) {
   if (options.syncCard !== false && card && logCount <= 1) {
     card.classList.toggle("is-skipped", skipped);
     if (!skipButton) {
-      card.classList.toggle("is-open", !skipped);
+      setWorkoutExerciseCardExpanded(card, !skipped);
     }
     const skipInput = card.querySelector("[data-skip-card]");
 
@@ -8666,7 +8687,7 @@ function handleWorkoutInteractions() {
         logElement.classList.add("is-exercise-complete");
         if (cardLogCount <= 1) {
           card?.classList.add("is-exercise-complete");
-          card?.classList.remove("is-open");
+          setWorkoutExerciseCardExpanded(card, false);
         }
         finishSetButton.textContent = "Finished ✓";
         finishSetButton.setAttribute("aria-pressed", "true");
@@ -8788,7 +8809,7 @@ function handleWorkoutInteractions() {
       const card = toggle.closest(".workout-exercise-card");
 
       if (card && !card.classList.contains("is-skipped")) {
-        card.classList.toggle("is-open");
+        setWorkoutExerciseCardExpanded(card, !card.classList.contains("is-open"));
       }
     }
 
@@ -9223,7 +9244,7 @@ function handleSkipToggle() {
       setExerciseSkipped(logElement, skipInput.checked, { syncCard: false });
     });
     card.classList.toggle("is-skipped", skipInput.checked);
-    card.classList.toggle("is-open", !skipInput.checked);
+    setWorkoutExerciseCardExpanded(card, !skipInput.checked);
   });
 }
 

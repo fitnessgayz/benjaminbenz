@@ -201,9 +201,51 @@
   }
 }
 
+/* Keep the exercise-name editor roomy when open and compact when collapsed. */
+.dashboard-page :is(.client-workout-panel-custom, .client-workout-panel-assigned) .custom-workout-name-field-label,
+.dashboard-page :is(.client-workout-panel-custom, .client-workout-panel-assigned) .custom-workout-collapsed-name {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 38px;
+  padding-right: 88px;
+  align-items: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dashboard-page :is(.client-workout-panel-custom, .client-workout-panel-assigned) .custom-workout-name-field-label {
+  display: flex;
+  color: #676b65;
+  font-size: .68rem;
+  font-weight: 900;
+  letter-spacing: .08em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.dashboard-page :is(.client-workout-panel-custom, .client-workout-panel-assigned) .custom-workout-collapsed-name {
+  display: none;
+  color: #111411;
+  font-size: 1rem;
+  font-weight: 900;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+
+.dashboard-page :is(.client-workout-panel-custom, .client-workout-panel-assigned) .custom-workout-card:not(.is-open) .custom-workout-name-field-label,
+.dashboard-page :is(.client-workout-panel-custom, .client-workout-panel-assigned) .custom-workout-card:not(.is-open) .custom-workout-editable-title {
+  display: none !important;
+}
+
+.dashboard-page :is(.client-workout-panel-custom, .client-workout-panel-assigned) .custom-workout-card:not(.is-open) .custom-workout-collapsed-name {
+  display: flex !important;
+}
+
 /* Workout cards use a compact action cluster instead of repeating the group badge. */
 .dashboard-page :is(.client-workout-panel-custom, .client-workout-panel-assigned) .custom-workout-card > .custom-workout-card-summary {
-  padding-right: 98px !important;
+  padding-right: 10px !important;
 }
 
 .dashboard-page :is(.client-workout-panel-custom, .client-workout-panel-assigned) .custom-workout-card-actions {
