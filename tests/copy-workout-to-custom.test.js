@@ -218,6 +218,7 @@ test("renders an accessible per-workout copy action and never adds it to nutriti
 
 test("opens the copied draft in Custom Workout and restores focus visibly", () => {
   const handlerSource = sourceForFunction("handleCopyWorkoutToCustom");
+  const panelIndexSource = sourceForFunction("clientCustomWorkoutPanelIndex");
   const previousWeightsSource = sourceForFunction("logsForExerciseDisplay");
 
   assert.match(handlerSource, /workoutHistoryLogsForCopy\(sessionKey\)/);
@@ -225,11 +226,15 @@ test("opens the copied draft in Custom Workout and restores focus visibly", () =
   assert.match(handlerSource, /window\.confirm\("Replace your current Custom Workout draft/);
   assert.match(handlerSource, /customWorkoutPanelHasAuxiliaryContent\(existingCustomPanel\)/);
   assert.match(handlerSource, /storeCustomWorkoutDraft\(draft\)/);
+  assert.match(handlerSource, /const customPanelIndex = clientCustomWorkoutPanelIndex\(\)/);
+  assert.doesNotMatch(handlerSource, /currentProgram\?\.workouts.*\.length/);
   assert.match(handlerSource, /replaceCustomWorkoutPanelFromDraft\(customPanelIndex\)/);
   assert.doesNotMatch(handlerSource, /renderClientWorkoutTabs/);
   assert.match(handlerSource, /setClientDashboardTab\("workouts"\)/);
   assert.match(handlerSource, /activateClientWorkoutPanel\(customPanelIndex/);
   assert.match(handlerSource, /heading\?\.focus\(\{ preventScroll: true \}\)/);
+  assert.match(panelIndexSource, /querySelectorAll\("\.client-workout-panel"\)/);
+  assert.match(panelIndexSource, /client-workout-panel-custom/);
   assert.match(previousWeightsSource, /normalizeExerciseHistoryName\(log\.exercise_name\) === exerciseName/);
   assert.doesNotMatch(previousWeightsSource, /log\.workout_title === logElement\.dataset\.workoutTitle/);
   assert.match(portal, /const exactSessionLogs = logsForExercise\(logElement\.dataset\.workoutTitle, logElement\.dataset\.exerciseCode\);/);

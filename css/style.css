@@ -11232,7 +11232,16 @@ body.client-dashboard-page {
   background: var(--lime);
 }
 
+.client-workout-picker-card-meta {
+  display: flex;
+  min-width: 0;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+}
+
 .client-workout-picker-badge {
+  flex: 0 1 auto;
   justify-self: start;
   max-width: 100%;
   padding: 5px 8px;
@@ -11247,6 +11256,36 @@ body.client-dashboard-page {
   text-overflow: ellipsis;
   text-transform: uppercase;
   white-space: nowrap !important;
+}
+
+.dashboard-page .client-workout-picker-copy-link {
+  width: auto !important;
+  inline-size: auto !important;
+  min-width: 0 !important;
+  max-width: 118px !important;
+  min-height: 32px !important;
+  flex: 0 0 auto;
+  padding: 4px 0 !important;
+  overflow: hidden !important;
+  color: #ffffff;
+  background: transparent;
+  border: 0;
+  border-radius: 4px !important;
+  font: inherit;
+  font-size: .66rem !important;
+  font-weight: 850;
+  line-height: 1.1 !important;
+  text-decoration: underline;
+  text-decoration-color: var(--lime);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+  text-overflow: ellipsis;
+  white-space: nowrap !important;
+  cursor: pointer;
+}
+
+.dashboard-page .client-workout-picker-copy-link:hover {
+  color: var(--lime);
 }
 
 .client-workout-picker-card-top h3 {
@@ -11407,6 +11446,7 @@ body.client-dashboard-page {
 .dashboard-page .client-workout-picker-arrow:focus-visible,
 .dashboard-page .client-workout-picker-dot:focus-visible,
 .dashboard-page .client-workout-picker-choose:focus-visible,
+.dashboard-page .client-workout-picker-copy-link:focus-visible,
 .dashboard-page .client-workout-selection-summary:focus-visible {
   outline: 3px solid #8aa817;
   outline-offset: 2px;
@@ -11620,7 +11660,8 @@ body.client-dashboard-page {
 }
 
 .dashboard-page .training-log-copy-button:focus-visible,
-#custom-workout-panel-title:focus-visible {
+#custom-workout-panel-title:focus-visible,
+#client-logs-title:focus-visible {
   outline: 3px solid #8aa817;
   outline-offset: 3px;
 }

@@ -16,7 +16,7 @@ function sourceForFunction(name) {
   return portal.slice(start, end >= 0 ? end : undefined);
 }
 
-test("places assigned workouts first and the Custom Workout card last", () => {
+test("places the Custom Workout card first and assigned workouts behind it", () => {
   const source = sourceForFunction("clientWorkoutPickerItems");
   const pickerItems = Function(
     "customWorkoutTitle",
@@ -28,10 +28,11 @@ test("places assigned workouts first and the Custom Workout card last", () => {
   ]);
 
   assert.equal(items.length, 3);
-  assert.deepEqual(items.map((item) => item.title), ["Workout A", "Workout B", "Custom workout"]);
+  assert.deepEqual(items.map((item) => item.title), ["Custom workout", "Workout A", "Workout B"]);
   assert.deepEqual(items.map((item) => item.panelIndex), [0, 1, 2]);
+  assert.deepEqual(items.map((item) => item.assignedWorkoutIndex), [-1, 0, 1]);
   assert.equal(items.filter((item) => item.isCustom).length, 1);
-  assert.equal(items.at(-1).isCustom, true);
+  assert.equal(items[0].isCustom, true);
   assert.equal(pickerItems([])[0].isCustom, true);
 });
 
@@ -54,6 +55,7 @@ test("wraps arrow navigation and protects vertical scrolling", () => {
 test("renders a compact accessible 3D deck with descriptions and direct controls", () => {
   const markupSource = sourceForFunction("clientWorkoutPickerMarkup");
   const cardSource = sourceForFunction("clientWorkoutPickerCardMarkup");
+  const renderSource = sourceForFunction("renderClientWorkoutTabs");
   const syncSource = sourceForFunction("syncClientWorkoutPicker");
   const handlerSource = sourceForFunction("handleClientWorkoutTabs");
 
@@ -68,6 +70,9 @@ test("renders a compact accessible 3D deck with descriptions and direct controls
   assert.match(cardSource, /client-workout-picker-preview/);
   assert.match(cardSource, /data-client-workout-picker-choose/);
   assert.match(cardSource, /Build custom workout/);
+  assert.match(cardSource, /workout\.isCustom \? `[\s\S]*?data-client-workout-copy-history/);
+  assert.match(markupSource, /workout\.pickerLabel \|\| "workout"/);
+  assert.match(renderSource, /workout\.assignedWorkoutIndex \+ 1/);
   assert.match(syncSource, /setAttribute\("aria-hidden", isCurrent \? "false" : "true"\)/);
   assert.match(syncSource, /toggleAttribute\("inert", !isCurrent\)/);
   assert.match(syncSource, /setAttribute\("aria-current", "true"\)/);
@@ -78,6 +83,19 @@ test("renders a compact accessible 3D deck with descriptions and direct controls
   assert.match(handlerSource, /pointermove/);
   assert.match(handlerSource, /horizontalDistance > verticalDistance \* 1\.15/);
   assert.match(handlerSource, /\{ passive: false \}/);
+});
+
+test("opens Saved Logs from the Custom Workout copy link", () => {
+  const handlerSource = sourceForFunction("handleClientWorkoutTabs");
+  const openHistorySource = sourceForFunction("openClientWorkoutCopyHistory");
+
+  assert.match(handlerSource, /data-client-workout-copy-history/);
+  assert.match(handlerSource, /openClientWorkoutCopyHistory\(\)/);
+  assert.match(openHistorySource, /setClientDashboardTab\("logs"\)/);
+  assert.match(openHistorySource, /client-logs-title/);
+  assert.match(openHistorySource, /scrollIntoView/);
+  assert.match(openHistorySource, /focus\(\{ preventScroll: true \}\)/);
+  assert.match(dashboard, /id="client-logs-title" tabindex="-1"/);
 });
 
 test("opens the existing workout logger and provides a back-to-choices control", () => {
@@ -104,8 +122,8 @@ test("keeps the deck compact and clear of the fixed mobile dock", () => {
   assert.match(styles, /@media \(max-width: 420px\)[\s\S]*?\.client-workout-picker-status \{[\s\S]*?display:\s*grid;[\s\S]*?grid-template-columns:\s*minmax\(0, 1fr\)/);
   assert.match(styles, /@media \(max-width: 420px\)[\s\S]*?\.client-workout-picker-controls \{[\s\S]*?width:\s*100%;[\s\S]*?justify-content:\s*space-between/);
   assert.match(styles, /scroll-margin-bottom:\s*var\(--client-bottom-dock-clearance\)/);
-  assert.match(dashboard, /css\/style\.css\?v=copy-previous-workout-1/);
-  assert.match(dashboard, /js\/client-portal\.js\?v=copy-previous-workout-1/);
+  assert.match(dashboard, /css\/style\.css\?v=custom-workout-first-1/);
+  assert.match(dashboard, /js\/client-portal\.js\?v=custom-workout-first-1/);
 });
 
 test("shows a workout day separately from its training target", () => {

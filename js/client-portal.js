@@ -5664,22 +5664,22 @@ function clientWorkoutPickerItems(workouts = []) {
   const assignedItems = scheduledWorkouts.map((workout, assignedWorkoutIndex) => ({
     ...workout,
     assignedWorkoutIndex,
-    panelIndex: assignedWorkoutIndex,
+    panelIndex: assignedWorkoutIndex + 1,
     pickerLabel: `Workout ${assignedWorkoutIndex + 1}`,
     isCustom: false
   }));
 
   return [
-    ...assignedItems,
     {
       title: customWorkoutTitle,
       focus: "Build your own",
       format: "custom",
       isCustom: true,
       assignedWorkoutIndex: -1,
-      panelIndex: assignedItems.length,
+      panelIndex: 0,
       pickerLabel: "Custom"
-    }
+    },
+    ...assignedItems
   ];
 }
 
@@ -5791,7 +5791,17 @@ function clientWorkoutPickerCardMarkup(workout, index, total) {
       aria-label="${escapeHtml(`${details.label}: ${title}. Workout ${index + 1} of ${total}`)}"
     >
       <div class="client-workout-picker-card-top">
-        <span class="client-workout-picker-badge">${escapeHtml(badge)}</span>
+        <div class="client-workout-picker-card-meta">
+          <span class="client-workout-picker-badge">${escapeHtml(badge)}</span>
+          ${workout.isCustom ? `
+            <button
+              class="client-workout-picker-copy-link"
+              type="button"
+              data-client-workout-copy-history
+              aria-label="Copy a previous workout to Custom Workout"
+            >Copy previous</button>
+          ` : ""}
+        </div>
         <h3 id="client-workout-card-title-${index}">${escapeHtml(title)}</h3>
       </div>
       <div class="client-workout-picker-card-body">
@@ -5828,7 +5838,7 @@ function clientWorkoutPickerMarkup(workouts) {
               class="client-workout-picker-dot"
               type="button"
               data-client-workout-picker-dot="${index}"
-              aria-label="${escapeHtml(`Show ${workout.isCustom ? "custom workout" : `workout ${index + 1}`}`)}"
+              aria-label="${escapeHtml(`Show ${workout.isCustom ? "custom workout" : String(workout.pickerLabel || "workout").toLowerCase()}`)}"
             ></button>
           `).join("")}
         </div>
@@ -6045,7 +6055,7 @@ function renderClientWorkoutTabs(workouts = []) {
       return customWorkoutPanelMarkup(index);
     }
 
-    const title = workout.title || `Workout ${index + 1}`;
+    const title = workout.title || `Workout ${workout.assignedWorkoutIndex + 1}`;
     const workoutFormat = inferWorkoutFormat(workout);
 
     return `
@@ -7196,6 +7206,27 @@ function setClientWorkoutCopyStatus(message = "") {
   }
 }
 
+function clientCustomWorkoutPanelIndex() {
+  return Math.max(
+    0,
+    Array.from(document.querySelectorAll(".client-workout-panel"))
+      .findIndex((panel) => panel.classList.contains("client-workout-panel-custom"))
+  );
+}
+
+function openClientWorkoutCopyHistory() {
+  const logsTitle = document.getElementById("client-logs-title");
+
+  setClientDashboardTab("logs");
+  window.requestAnimationFrame(() => {
+    logsTitle?.scrollIntoView({
+      behavior: window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches ? "auto" : "smooth",
+      block: "start"
+    });
+    logsTitle?.focus({ preventScroll: true });
+  });
+}
+
 function handleCopyWorkoutToCustom() {
   document.addEventListener("click", (event) => {
     const button = event.target.closest("[data-copy-workout-to-custom]");
@@ -7253,7 +7284,7 @@ function handleCopyWorkoutToCustom() {
 
     setClientDashboardTab("workouts");
 
-    const customPanelIndex = Array.isArray(currentProgram?.workouts) ? currentProgram.workouts.length : 0;
+    const customPanelIndex = clientCustomWorkoutPanelIndex();
     const customPanel = replaceCustomWorkoutPanelFromDraft(customPanelIndex);
 
     if (!customPanel) {
@@ -9052,6 +9083,13 @@ function handleClientWorkoutTabs() {
   let gesture = null;
 
   document.addEventListener("click", (event) => {
+    const copyHistoryLink = event.target.closest("[data-client-workout-copy-history]");
+
+    if (copyHistoryLink) {
+      openClientWorkoutCopyHistory();
+      return;
+    }
+
     const backButton = event.target.closest("[data-client-workout-picker-back]");
 
     if (backButton) {
