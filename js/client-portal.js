@@ -25,6 +25,7 @@ let clientTrainingLogDateFilter = "";
 let clientTrainingLogSearchFilter = "";
 let activeClientDashboardTab = "home";
 let activeWorkoutTabIndex = 0;
+let clientWorkoutPickerIsOpen = true;
 let currentProgram = null;
 const dashboardRequestTimeout = 15000;
 const customWorkoutTitle = "Custom workout";
@@ -5389,12 +5390,12 @@ function customWorkoutPanelMarkup(index) {
 
   return `
     <section
-      class="client-workout-panel client-workout-panel-custom${index === activeWorkoutTabIndex ? " is-active" : ""}"
+      class="client-workout-panel client-workout-panel-custom"
       id="client-workout-panel-${index}"
       data-custom-workout-format="${format}"
-      role="tabpanel"
-      aria-labelledby="client-workout-tab-${index}"
-      ${index === activeWorkoutTabIndex ? "" : "hidden"}
+      role="region"
+      aria-labelledby="client-workout-card-title-${index}"
+      hidden
     >
       <div class="panel-heading">
         <div>
@@ -5569,19 +5570,192 @@ function clientWorkoutSelectorDetails(workout, label) {
   };
 }
 
-function clientWorkoutTabIconMarkup(isCustom) {
-  if (isCustom) {
-    return `
-      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-        <path d="M12 5v14M5 12h14" />
-      </svg>
-    `;
+function clientWorkoutPickerItems(workouts = []) {
+  const scheduledWorkouts = Array.isArray(workouts) ? workouts : [];
+  const assignedItems = scheduledWorkouts.map((workout, assignedWorkoutIndex) => ({
+    ...workout,
+    assignedWorkoutIndex,
+    panelIndex: assignedWorkoutIndex,
+    pickerLabel: `Workout ${assignedWorkoutIndex + 1}`,
+    isCustom: false
+  }));
+
+  return [
+    ...assignedItems,
+    {
+      title: customWorkoutTitle,
+      focus: "Build your own",
+      format: "custom",
+      isCustom: true,
+      assignedWorkoutIndex: -1,
+      panelIndex: assignedItems.length,
+      pickerLabel: "Custom"
+    }
+  ];
+}
+
+function clientWorkoutPickerIndex(index, count) {
+  const total = Math.max(0, Number(count) || 0);
+
+  if (total === 0) {
+    return 0;
   }
 
+  return ((Number(index) || 0) % total + total) % total;
+}
+
+function clientWorkoutPickerSwipeStep(deltaX, deltaY, width = 0) {
+  const horizontalDistance = Math.abs(Number(deltaX) || 0);
+  const verticalDistance = Math.abs(Number(deltaY) || 0);
+  const threshold = Math.max(44, Math.min(68, (Number(width) || 0) * .14));
+
+  if (horizontalDistance < threshold || horizontalDistance <= verticalDistance * 1.15) {
+    return 0;
+  }
+
+  return Number(deltaX) < 0 ? 1 : -1;
+}
+
+function clientWorkoutPickerSummary(workout, details) {
+  const providedSummary = String(
+    workout?.description ||
+    workout?.summary ||
+    workout?.notes ||
+    ""
+  ).trim();
+
+  if (providedSummary) {
+    return truncateText(providedSummary, 150);
+  }
+
+  if (workout?.isCustom) {
+    return "Choose exercises from the library, add your sets, and log a workout outside your assigned program.";
+  }
+
+  const format = inferWorkoutFormat(workout);
+  const formatDescription = format === "single"
+    ? "straight-set"
+    : formatLabel(format).toLowerCase();
+  const target = String(details?.target || workout?.focus || "your training goals").trim();
+
+  return `A ${formatDescription} session focused on ${target}. Review the exercises, then open the workout to start logging.`;
+}
+
+function clientWorkoutPickerPreviewMarkup(workout) {
+  if (workout?.isCustom) {
+    return [
+      "Choose from the exercise library",
+      "Add warm-up and working sets",
+      "Track weight, reps, and RIR"
+    ].map((item, index) => `
+      <li><span>${index + 1}</span><strong>${escapeHtml(item)}</strong></li>
+    `).join("");
+  }
+
+  const exercises = Array.isArray(workout?.exercises) ? workout.exercises : [];
+
+  if (exercises.length === 0) {
+    return '<li class="is-empty"><strong>Your coach is building this workout.</strong></li>';
+  }
+
+  return exercises.slice(0, 3).map((exercise, index) => {
+    const remaining = index === 2 && exercises.length > 3 ? ` + ${exercises.length - 3} more` : "";
+    const name = `${String(exercise?.name || `Exercise ${index + 1}`).trim()}${remaining}`;
+
+    return `
+      <li><span>${index + 1}</span><strong>${escapeHtml(name)}</strong></li>
+    `;
+  }).join("");
+}
+
+function clientWorkoutPickerCardMarkup(workout, index, total) {
+  const details = clientWorkoutSelectorDetails(workout, workout.pickerLabel);
+  const insights = workout.isCustom
+    ? { exerciseCount: 0, estimatedSets: 0, format: "Custom" }
+    : workoutInsightData(workout);
+  const badge = workout.isCustom
+    ? "Custom workout"
+    : [details.label, details.day].filter(Boolean).join(" · ");
+  const title = workout.isCustom ? "Build your own workout" : details.target;
+  const facts = workout.isCustom
+    ? [
+      { value: "Any", label: "Exercises" },
+      { value: "You choose", label: "Format" },
+      { value: "Flexible", label: "Plan" }
+    ]
+    : [
+      { value: String(insights.exerciseCount || 0), label: "Exercises" },
+      { value: String(insights.estimatedSets || 0), label: "Planned sets" },
+      { value: insights.format || formatLabel(inferWorkoutFormat(workout)), label: "Format" }
+    ];
+
   return `
-    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-      <path d="M6 7v10M3.5 9v6M18 7v10M20.5 9v6M6 12h12" />
-    </svg>
+    <article
+      class="client-workout-picker-card"
+      id="client-workout-card-${index}"
+      data-client-workout-picker-card="${index}"
+      data-client-workout-selection-label="${escapeHtml(details.label)}"
+      data-client-workout-selection-day="${escapeHtml(details.day)}"
+      data-client-workout-selection-target="${escapeHtml(details.target)}"
+      role="group"
+      aria-roledescription="slide"
+      aria-label="${escapeHtml(`${details.label}: ${title}. Workout ${index + 1} of ${total}`)}"
+    >
+      <div class="client-workout-picker-card-top">
+        <span class="client-workout-picker-badge">${escapeHtml(badge)}</span>
+        <h3 id="client-workout-card-title-${index}">${escapeHtml(title)}</h3>
+      </div>
+      <div class="client-workout-picker-card-body">
+        <p class="client-workout-picker-description">${escapeHtml(clientWorkoutPickerSummary(workout, details))}</p>
+        <dl class="client-workout-picker-facts">
+          ${facts.map((fact) => `
+            <div><dt>${escapeHtml(fact.label)}</dt><dd>${escapeHtml(fact.value)}</dd></div>
+          `).join("")}
+        </dl>
+        <ol class="client-workout-picker-preview" aria-label="Exercise preview">
+          ${clientWorkoutPickerPreviewMarkup(workout)}
+        </ol>
+        <button
+          class="client-workout-picker-choose"
+          type="button"
+          data-client-workout-picker-choose="${index}"
+        >${workout.isCustom ? "Build custom workout" : "Choose workout"}</button>
+      </div>
+    </article>
+  `;
+}
+
+function clientWorkoutPickerMarkup(workouts) {
+  const total = workouts.length;
+
+  return `
+    <div class="client-workout-picker-status">
+      <strong data-client-workout-picker-position aria-live="polite" aria-atomic="true">Workout 1 of ${total}</strong>
+      <div class="client-workout-picker-controls" aria-label="Workout carousel controls">
+        <button class="client-workout-picker-arrow" type="button" data-client-workout-picker-previous aria-label="Previous workout">←</button>
+        <div class="client-workout-picker-dots" aria-label="Choose a workout">
+          ${workouts.map((workout, index) => `
+            <button
+              class="client-workout-picker-dot"
+              type="button"
+              data-client-workout-picker-dot="${index}"
+              aria-label="${escapeHtml(`Show ${workout.isCustom ? "custom workout" : `workout ${index + 1}`}`)}"
+            ></button>
+          `).join("")}
+        </div>
+        <button class="client-workout-picker-arrow" type="button" data-client-workout-picker-next aria-label="Next workout">→</button>
+      </div>
+    </div>
+    <div
+      class="client-workout-picker-deck"
+      data-client-workout-picker-deck
+      role="region"
+      aria-roledescription="carousel"
+      aria-label="Workout choices. Swipe left or right, or use the arrow buttons."
+      tabindex="0"
+    >
+      ${workouts.map((workout, index) => clientWorkoutPickerCardMarkup(workout, index, total)).join("")}
+    </div>
   `;
 }
 
@@ -5592,26 +5766,165 @@ function syncClientWorkoutSelectionSummary(tab) {
     return;
   }
 
-  summary.hidden = !tab;
   if (!tab) {
+    summary.hidden = true;
     return;
   }
 
-  const label = tab.dataset.clientWorkoutSelectionLabel || "Workout";
   const day = tab.dataset.clientWorkoutSelectionDay || "";
-  const target = tab.dataset.clientWorkoutSelectionTarget || label;
-  const labelElement = summary.querySelector("[data-client-workout-selection-label]");
+  const target = tab.dataset.clientWorkoutSelectionTarget || "Workout";
   const dayElement = summary.querySelector("[data-client-workout-selection-day]");
   const divider = summary.querySelector("[data-client-workout-selection-divider]");
   const titleElement = summary.querySelector("[data-client-workout-selection-title]");
 
-  if (labelElement) labelElement.textContent = label;
   if (dayElement) {
     dayElement.textContent = day;
     dayElement.hidden = !day;
   }
   if (divider) divider.hidden = !day;
   if (titleElement) titleElement.textContent = target;
+  summary.setAttribute("aria-label", `Back to workout choices. Currently viewing ${target}`);
+}
+
+function syncClientWorkoutPicker(nextIndex = activeWorkoutTabIndex) {
+  const picker = document.getElementById("client-workout-tabs");
+  const cards = Array.from(picker?.querySelectorAll("[data-client-workout-picker-card]") || []);
+
+  if (!picker || cards.length === 0) {
+    return;
+  }
+
+  const index = clientWorkoutPickerIndex(nextIndex, cards.length);
+  const dots = Array.from(picker.querySelectorAll("[data-client-workout-picker-dot]"));
+  const position = picker.querySelector("[data-client-workout-picker-position]");
+  const previousButton = picker.querySelector("[data-client-workout-picker-previous]");
+  const nextButton = picker.querySelector("[data-client-workout-picker-next]");
+
+  activeWorkoutTabIndex = index;
+  picker.dataset.activeIndex = String(index);
+  cards.forEach((card, cardIndex) => {
+    const depth = clientWorkoutPickerIndex(cardIndex - index, cards.length);
+    const isCurrent = depth === 0;
+
+    card.classList.toggle("is-current", isCurrent);
+    card.classList.toggle("is-deck-behind-1", depth === 1);
+    card.classList.toggle("is-deck-behind-2", depth === 2);
+    card.classList.toggle("is-deck-behind-3", depth === 3);
+    card.setAttribute("aria-hidden", isCurrent ? "false" : "true");
+    card.toggleAttribute("inert", !isCurrent);
+  });
+  dots.forEach((dot, dotIndex) => {
+    const isCurrent = dotIndex === index;
+
+    dot.classList.toggle("is-current", isCurrent);
+    if (isCurrent) {
+      dot.setAttribute("aria-current", "true");
+    } else {
+      dot.removeAttribute("aria-current");
+    }
+  });
+
+  if (position) {
+    position.textContent = `Workout ${index + 1} of ${cards.length}`;
+  }
+  if (previousButton) {
+    previousButton.disabled = cards.length < 2;
+  }
+  if (nextButton) {
+    nextButton.disabled = cards.length < 2;
+  }
+}
+
+function setClientWorkoutPickerIndex(nextIndex) {
+  const picker = document.getElementById("client-workout-tabs");
+  const count = picker?.querySelectorAll("[data-client-workout-picker-card]").length || 0;
+
+  if (count === 0) {
+    return;
+  }
+
+  syncClientWorkoutPicker(clientWorkoutPickerIndex(nextIndex, count));
+}
+
+function moveClientWorkoutPicker(step) {
+  setClientWorkoutPickerIndex(activeWorkoutTabIndex + step);
+}
+
+function activateClientWorkoutPanel(nextIndex, options = {}) {
+  const picker = document.getElementById("client-workout-tabs");
+  const summary = document.getElementById("client-workout-selection-summary");
+  const panels = Array.from(document.querySelectorAll(".client-workout-panel"));
+  const cards = Array.from(picker?.querySelectorAll("[data-client-workout-picker-card]") || []);
+  const index = clientWorkoutPickerIndex(nextIndex, panels.length);
+  const activePanel = panels[index];
+  const activeCard = cards[index];
+
+  if (!picker || !activePanel) {
+    return;
+  }
+
+  clientWorkoutPickerIsOpen = false;
+  syncClientWorkoutPicker(index);
+  picker.hidden = true;
+  panels.forEach((panel, panelIndex) => {
+    const isActive = panelIndex === index;
+
+    panel.classList.toggle("is-active", isActive);
+    panel.hidden = !isActive;
+  });
+  syncClientWorkoutSelectionSummary(activeCard);
+  if (summary) {
+    summary.hidden = false;
+    if (options.focus !== false) {
+      summary.focus({ preventScroll: true });
+    }
+  }
+
+  if (activePanel.classList.contains("client-workout-panel-custom")) {
+    syncCustomWorkoutCarousel(activePanel, { scrollToActive: true, instant: true });
+  } else {
+    syncAssignedWorkoutCarousels(activePanel);
+  }
+
+  if (options.scroll !== false) {
+    window.requestAnimationFrame(() => {
+      (summary || activePanel).scrollIntoView({
+        behavior: window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches ? "auto" : "smooth",
+        block: "start"
+      });
+    });
+  }
+}
+
+function showClientWorkoutPicker(options = {}) {
+  const picker = document.getElementById("client-workout-tabs");
+  const summary = document.getElementById("client-workout-selection-summary");
+  const panels = document.querySelectorAll(".client-workout-panel");
+
+  if (!picker) {
+    return;
+  }
+
+  clientWorkoutPickerIsOpen = true;
+  picker.hidden = false;
+  if (summary) {
+    summary.hidden = true;
+  }
+  panels.forEach((panel) => {
+    panel.hidden = true;
+    panel.classList.remove("is-active");
+  });
+  syncClientWorkoutPicker(activeWorkoutTabIndex);
+
+  if (options.scroll !== false) {
+    window.requestAnimationFrame(() => {
+      picker.scrollIntoView({
+        behavior: window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches ? "auto" : "smooth",
+        block: "start"
+      });
+      picker.querySelector("[data-client-workout-picker-deck]")?.focus({ preventScroll: true });
+    });
+  }
 }
 
 function renderClientWorkoutTabs(workouts = []) {
@@ -5624,12 +5937,7 @@ function renderClientWorkoutTabs(workouts = []) {
   }
 
   const scheduledWorkouts = Array.isArray(workouts) ? workouts : [];
-  const availableWorkouts = [{
-    title: customWorkoutTitle,
-    focus: "Build your own",
-    format: "custom",
-    isCustom: true
-  }, ...scheduledWorkouts];
+  const availableWorkouts = clientWorkoutPickerItems(scheduledWorkouts);
 
   if (count) {
     count.textContent = scheduledWorkouts.length > 0
@@ -5637,47 +5945,11 @@ function renderClientWorkoutTabs(workouts = []) {
       : "Custom workout";
   }
 
-  if (availableWorkouts.length === 0) {
-    tabs.innerHTML = "";
-    syncClientWorkoutSelectionSummary(null);
-    panels.innerHTML = '<p class="empty-state">No workouts have been added yet.</p>';
-    return;
-  }
-
   if (activeWorkoutTabIndex >= availableWorkouts.length) {
     activeWorkoutTabIndex = 0;
   }
 
-  tabs.innerHTML = availableWorkouts.map((workout, index) => {
-    const isActive = index === activeWorkoutTabIndex;
-    const assignedWorkoutIndex = scheduledWorkouts.indexOf(workout);
-    const label = workout.isCustom ? "Custom" : `Workout ${assignedWorkoutIndex + 1}`;
-    const details = clientWorkoutSelectorDetails(workout, label);
-
-    return `
-      <button
-        class="client-workout-tab${isActive ? " is-active" : ""}"
-        type="button"
-        role="tab"
-        id="client-workout-tab-${index}"
-        aria-selected="${isActive ? "true" : "false"}"
-        aria-controls="client-workout-panel-${index}"
-        data-client-workout-tab="${index}"
-        data-client-workout-selection-label="${escapeHtml(details.label)}"
-        data-client-workout-selection-day="${escapeHtml(details.day)}"
-        data-client-workout-selection-target="${escapeHtml(details.target)}"
-        aria-label="${escapeHtml(`${details.label}: ${details.target}`)}"
-      >
-        <span class="client-workout-tab-icon" aria-hidden="true">${clientWorkoutTabIconMarkup(workout.isCustom)}</span>
-        <span class="client-workout-tab-copy">
-          <strong>${escapeHtml(details.tabLabel)}</strong>
-          <small>${escapeHtml(details.tabCaption)}</small>
-        </span>
-      </button>
-    `;
-  }).join("");
-
-  syncClientWorkoutSelectionSummary(tabs.querySelector(`[data-client-workout-tab="${activeWorkoutTabIndex}"]`));
+  tabs.innerHTML = clientWorkoutPickerMarkup(availableWorkouts);
 
   panels.innerHTML = availableWorkouts.map((workout, index) => {
     if (workout.isCustom) {
@@ -5685,17 +5957,16 @@ function renderClientWorkoutTabs(workouts = []) {
     }
 
     const title = workout.title || `Workout ${index + 1}`;
-    const isActive = index === activeWorkoutTabIndex;
     const workoutFormat = inferWorkoutFormat(workout);
 
     return `
       <section
-        class="client-workout-panel client-workout-panel-assigned${isActive ? " is-active" : ""}"
+        class="client-workout-panel client-workout-panel-assigned"
         id="client-workout-panel-${index}"
         data-assigned-workout-format="${escapeHtml(workoutFormat)}"
-        role="tabpanel"
-        aria-labelledby="client-workout-tab-${index}"
-        ${isActive ? "" : "hidden"}
+        role="region"
+        aria-labelledby="client-workout-card-title-${index}"
+        hidden
       >
       <div class="panel-heading">
         <div>
@@ -5724,6 +5995,9 @@ function renderClientWorkoutTabs(workouts = []) {
   `;
   }).join("");
 
+  clientWorkoutPickerIsOpen = true;
+  syncClientWorkoutPicker(activeWorkoutTabIndex);
+  showClientWorkoutPicker({ scroll: false });
   renderClientHomeSummary();
   syncWorkoutStartButtons();
   syncCustomWorkoutCarousels();
@@ -8339,31 +8613,121 @@ function handleWorkoutInteractions() {
 }
 
 function handleClientWorkoutTabs() {
-  document.addEventListener("click", (event) => {
-    const tab = event.target.closest("[data-client-workout-tab]");
+  let gesture = null;
 
-    if (!tab) {
+  document.addEventListener("click", (event) => {
+    const backButton = event.target.closest("[data-client-workout-picker-back]");
+
+    if (backButton) {
+      showClientWorkoutPicker();
       return;
     }
 
-    const nextIndex = Number(tab.dataset.clientWorkoutTab || 0);
-    const tabs = document.querySelectorAll("[data-client-workout-tab]");
-    const panels = document.querySelectorAll(".client-workout-panel");
+    const chooseButton = event.target.closest("[data-client-workout-picker-choose]");
 
-    activeWorkoutTabIndex = nextIndex;
-    tabs.forEach((button) => {
-      const isActive = Number(button.dataset.clientWorkoutTab || 0) === nextIndex;
+    if (chooseButton) {
+      activateClientWorkoutPanel(Number(chooseButton.dataset.clientWorkoutPickerChoose || 0));
+      return;
+    }
 
-      button.classList.toggle("is-active", isActive);
-      button.setAttribute("aria-selected", isActive ? "true" : "false");
-    });
-    panels.forEach((panel, index) => {
-      const isActive = index === nextIndex;
+    if (event.target.closest("[data-client-workout-picker-previous]")) {
+      moveClientWorkoutPicker(-1);
+      return;
+    }
 
-      panel.classList.toggle("is-active", isActive);
-      panel.hidden = !isActive;
-    });
-    syncClientWorkoutSelectionSummary(tab);
+    if (event.target.closest("[data-client-workout-picker-next]")) {
+      moveClientWorkoutPicker(1);
+      return;
+    }
+
+    const dot = event.target.closest("[data-client-workout-picker-dot]");
+
+    if (dot) {
+      setClientWorkoutPickerIndex(Number(dot.dataset.clientWorkoutPickerDot || 0));
+    }
+  });
+
+  document.addEventListener("keydown", (event) => {
+    const deck = event.target.closest("[data-client-workout-picker-deck]");
+
+    if (!deck || event.target !== deck || !clientWorkoutPickerIsOpen) {
+      return;
+    }
+
+    if (event.key === "ArrowLeft") {
+      event.preventDefault();
+      moveClientWorkoutPicker(-1);
+    } else if (event.key === "ArrowRight") {
+      event.preventDefault();
+      moveClientWorkoutPicker(1);
+    } else if (event.key === "Home") {
+      event.preventDefault();
+      setClientWorkoutPickerIndex(0);
+    } else if (event.key === "End") {
+      event.preventDefault();
+      setClientWorkoutPickerIndex(deck.querySelectorAll("[data-client-workout-picker-card]").length - 1);
+    }
+  });
+
+  document.addEventListener("pointerdown", (event) => {
+    const deck = event.target.closest("[data-client-workout-picker-deck]");
+    const interactive = event.target.closest("button, input, select, textarea, a");
+
+    if (!deck || interactive || !clientWorkoutPickerIsOpen) {
+      gesture = null;
+      return;
+    }
+
+    gesture = {
+      deck,
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      axis: ""
+    };
+  });
+
+  document.addEventListener("pointermove", (event) => {
+    if (!gesture || gesture.pointerId !== event.pointerId) {
+      return;
+    }
+
+    const deltaX = event.clientX - gesture.startX;
+    const deltaY = event.clientY - gesture.startY;
+    const horizontalDistance = Math.abs(deltaX);
+    const verticalDistance = Math.abs(deltaY);
+
+    if (!gesture.axis && Math.max(horizontalDistance, verticalDistance) >= 8) {
+      gesture.axis = horizontalDistance > verticalDistance * 1.15 ? "horizontal" : "vertical";
+    }
+
+    if (gesture.axis === "horizontal") {
+      event.preventDefault();
+    }
+  }, { passive: false });
+
+  document.addEventListener("pointerup", (event) => {
+    if (!gesture || gesture.pointerId !== event.pointerId) {
+      return;
+    }
+
+    const { deck, startX, startY, axis } = gesture;
+    const step = axis === "vertical"
+      ? 0
+      : clientWorkoutPickerSwipeStep(
+        event.clientX - startX,
+        event.clientY - startY,
+        deck.getBoundingClientRect().width
+      );
+
+    gesture = null;
+    if (step !== 0) {
+      moveClientWorkoutPicker(step);
+    }
+  });
+
+  document.addEventListener("pointercancel", () => {
+    gesture = null;
   });
 }
 

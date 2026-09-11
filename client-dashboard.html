@@ -30,7 +30,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=client-active-nav-icon-1" />
+  <link rel="stylesheet" href="css/style.css?v=client-workout-deck-1" />
   <link rel="stylesheet" href="css/custom-workout-mobile-fix.css?v=assigned-card-layout-1" />
 </head>
 <body class="dashboard-page client-dashboard-page is-loading">
@@ -232,18 +232,18 @@
             </div>
             <span class="status-pill" id="client-workouts-count"></span>
           </div>
-          <div class="client-workout-tabs" id="client-workout-tabs" role="tablist" aria-label="Workout sessions"></div>
-          <div class="client-workout-selection-summary" id="client-workout-selection-summary" aria-live="polite" hidden>
-            <div class="client-workout-selection-copy">
-              <p class="client-workout-selection-meta">
-                <span class="client-workout-selection-label" data-client-workout-selection-label></span>
+          <div class="client-workout-picker" id="client-workout-tabs" aria-label="Choose a workout"></div>
+          <button class="client-workout-selection-summary" id="client-workout-selection-summary" type="button" data-client-workout-picker-back aria-label="Back to workout choices" hidden>
+            <span class="client-workout-selection-arrow" aria-hidden="true">←</span>
+            <span class="client-workout-selection-copy">
+              <span class="client-workout-selection-meta">
+                <span class="client-workout-selection-label">All workouts</span>
                 <span data-client-workout-selection-divider aria-hidden="true">•</span>
                 <span data-client-workout-selection-day></span>
-              </p>
+              </span>
               <strong class="client-workout-selection-title" data-client-workout-selection-title></strong>
-            </div>
-            <span class="client-workout-selection-arrow" aria-hidden="true">→</span>
-          </div>
+            </span>
+          </button>
           <div class="client-workout-panels" id="client-workout-panels"></div>
         </section>
 
@@ -621,6 +621,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js?v=manual-sessions-1"></script>
   <script src="js/exercise-name-matcher.js?v=exercise-consolidation-1"></script>
-  <script src="js/client-portal.js?v=client-sidebar-assigned-card-1"></script>
+  <script src="js/client-portal.js?v=client-workout-deck-1"></script>
 </body>
 </html>

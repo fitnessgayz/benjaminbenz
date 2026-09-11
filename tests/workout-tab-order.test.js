@@ -8,41 +8,111 @@ const portal = fs.readFileSync(path.join(root, "js/client-portal.js"), "utf8");
 const dashboard = fs.readFileSync(path.join(root, "client-dashboard.html"), "utf8");
 const styles = fs.readFileSync(path.join(root, "css/style.css"), "utf8");
 
-test("places Custom Workout before assigned workouts", () => {
-  assert.match(portal, /const availableWorkouts = \[\{[\s\S]*?isCustom: true[\s\S]*?\}, \.\.\.scheduledWorkouts\];/);
+function sourceForFunction(name) {
+  const start = portal.indexOf(`function ${name}(`);
+  const end = portal.indexOf("\nfunction ", start + 1);
+
+  assert.ok(start >= 0, `Expected ${name} to exist`);
+  return portal.slice(start, end >= 0 ? end : undefined);
+}
+
+test("places assigned workouts first and the Custom Workout card last", () => {
+  const source = sourceForFunction("clientWorkoutPickerItems");
+  const pickerItems = Function(
+    "customWorkoutTitle",
+    `${source}; return clientWorkoutPickerItems;`
+  )("Custom workout");
+  const items = pickerItems([
+    { title: "Workout A", focus: "Lower" },
+    { title: "Workout B", focus: "Upper" }
+  ]);
+
+  assert.equal(items.length, 3);
+  assert.deepEqual(items.map((item) => item.title), ["Workout A", "Workout B", "Custom workout"]);
+  assert.deepEqual(items.map((item) => item.panelIndex), [0, 1, 2]);
+  assert.equal(items.filter((item) => item.isCustom).length, 1);
+  assert.equal(items.at(-1).isCustom, true);
+  assert.equal(pickerItems([])[0].isCustom, true);
 });
 
-test("keeps assigned workout numbering independent of tab position", () => {
-  assert.match(portal, /const assignedWorkoutIndex = scheduledWorkouts\.indexOf\(workout\);/);
-  assert.match(portal, /`Workout \$\{assignedWorkoutIndex \+ 1\}`/);
+test("wraps arrow navigation and protects vertical scrolling", () => {
+  const indexSource = sourceForFunction("clientWorkoutPickerIndex");
+  const swipeSource = sourceForFunction("clientWorkoutPickerSwipeStep");
+  const normalizeIndex = Function(`${indexSource}; return clientWorkoutPickerIndex;`)();
+  const swipeStep = Function(`${swipeSource}; return clientWorkoutPickerSwipeStep;`)();
+
+  assert.equal(normalizeIndex(-1, 4), 3);
+  assert.equal(normalizeIndex(4, 4), 0);
+  assert.equal(normalizeIndex(2, 4), 2);
+  assert.equal(normalizeIndex(9, 0), 0);
+  assert.equal(swipeStep(-60, 8, 360), 1);
+  assert.equal(swipeStep(60, 8, 360), -1);
+  assert.equal(swipeStep(24, 2, 360), 0);
+  assert.equal(swipeStep(-80, 100, 360), 0);
 });
 
-test("activates the workout panel matching the selected tab", () => {
-  assert.match(portal, /activeWorkoutTabIndex = nextIndex;/);
-  assert.match(portal, /panels\.forEach\(\(panel, index\) => \{/);
-  assert.match(portal, /const isActive = index === nextIndex;/);
-  assert.match(portal, /syncClientWorkoutSelectionSummary\(tab\);/);
+test("renders a compact accessible 3D deck with descriptions and direct controls", () => {
+  const markupSource = sourceForFunction("clientWorkoutPickerMarkup");
+  const cardSource = sourceForFunction("clientWorkoutPickerCardMarkup");
+  const syncSource = sourceForFunction("syncClientWorkoutPicker");
+  const handlerSource = sourceForFunction("handleClientWorkoutTabs");
+
+  assert.match(markupSource, /client-workout-picker-controls[\s\S]*?client-workout-picker-deck/);
+  assert.match(markupSource, /aria-roledescription="carousel"/);
+  assert.match(markupSource, /data-client-workout-picker-previous/);
+  assert.match(markupSource, /data-client-workout-picker-next/);
+  assert.match(markupSource, /data-client-workout-picker-dot/);
+  assert.match(cardSource, /aria-roledescription="slide"/);
+  assert.match(cardSource, /client-workout-picker-description/);
+  assert.match(cardSource, /client-workout-picker-facts/);
+  assert.match(cardSource, /client-workout-picker-preview/);
+  assert.match(cardSource, /data-client-workout-picker-choose/);
+  assert.match(cardSource, /Build custom workout/);
+  assert.match(syncSource, /setAttribute\("aria-hidden", isCurrent \? "false" : "true"\)/);
+  assert.match(syncSource, /toggleAttribute\("inert", !isCurrent\)/);
+  assert.match(syncSource, /setAttribute\("aria-current", "true"\)/);
+  assert.match(handlerSource, /data-client-workout-picker-previous/);
+  assert.match(handlerSource, /data-client-workout-picker-next/);
+  assert.match(handlerSource, /data-client-workout-picker-dot/);
+  assert.match(handlerSource, /event\.target !== deck/);
+  assert.match(handlerSource, /pointermove/);
+  assert.match(handlerSource, /horizontalDistance > verticalDistance \* 1\.15/);
+  assert.match(handlerSource, /\{ passive: false \}/);
 });
 
-test("renders the approved compact icon workout selector", () => {
-  assert.match(portal, /class="client-workout-tab-icon"/);
-  assert.match(portal, /class="client-workout-tab-copy"/);
-  assert.match(portal, /data-client-workout-selection-target=/);
-  assert.match(dashboard, /id="client-workout-selection-summary"[\s\S]*?data-client-workout-selection-title/);
-  assert.match(styles, /\.client-workout-tabs \{[\s\S]*?display: grid;[\s\S]*?minmax\(132px, 1fr\)/);
-  assert.match(styles, /\.client-workout-tab \{[\s\S]*?min-height: 62px;[\s\S]*?grid-template-columns: 36px minmax\(0, 1fr\)/);
-  assert.match(styles, /\.client-workout-selection-summary \{[\s\S]*?background: #171a16;/);
-  assert.match(dashboard, /css\/style\.css\?v=client-active-nav-icon-1/);
-  assert.match(dashboard, /js\/client-portal\.js\?v=client-sidebar-assigned-card-1/);
+test("opens the existing workout logger and provides a back-to-choices control", () => {
+  const activateSource = sourceForFunction("activateClientWorkoutPanel");
+  const handlerSource = sourceForFunction("handleClientWorkoutTabs");
+
+  assert.match(handlerSource, /data-client-workout-picker-choose/);
+  assert.match(handlerSource, /activateClientWorkoutPanel/);
+  assert.match(handlerSource, /data-client-workout-picker-back/);
+  assert.match(activateSource, /document\.querySelectorAll\("\.client-workout-panel"\)/);
+  assert.match(activateSource, /panel\.hidden = !isActive/);
+  assert.match(activateSource, /syncCustomWorkoutCarousel|syncAssignedWorkoutCarousels/);
+  assert.match(activateSource, /summary\.focus\(\{ preventScroll: true \}\)/);
+  assert.match(activateSource, /scrollIntoView/);
+  assert.match(dashboard, /data-client-workout-picker-back/);
+  assert.match(dashboard, /id="client-workout-panels"/);
+});
+
+test("keeps the deck compact and clear of the fixed mobile dock", () => {
+  assert.match(styles, /--client-bottom-dock-clearance:\s*calc\(94px \+ env\(safe-area-inset-bottom\)\)/);
+  assert.match(styles, /\.client-workout-picker-deck \{[\s\S]*?touch-action:\s*pan-y;/);
+  assert.match(styles, /\.client-workout-picker-card \{[\s\S]*?height:\s*366px;/);
+  assert.match(styles, /@media \(max-width: 420px\)[\s\S]*?\.client-workout-picker-card \{[\s\S]*?height:\s*350px;/);
+  assert.match(styles, /@media \(max-width: 420px\)[\s\S]*?\.client-workout-picker-status \{[\s\S]*?display:\s*grid;[\s\S]*?grid-template-columns:\s*minmax\(0, 1fr\)/);
+  assert.match(styles, /@media \(max-width: 420px\)[\s\S]*?\.client-workout-picker-controls \{[\s\S]*?width:\s*100%;[\s\S]*?justify-content:\s*space-between/);
+  assert.match(styles, /scroll-margin-bottom:\s*var\(--client-bottom-dock-clearance\)/);
+  assert.match(dashboard, /css\/style\.css\?v=client-workout-deck-1/);
+  assert.match(dashboard, /js\/client-portal\.js\?v=client-workout-deck-1/);
 });
 
 test("shows a workout day separately from its training target", () => {
-  const start = portal.indexOf("function clientWorkoutSelectorDetails");
-  const end = portal.indexOf("function clientWorkoutTabIconMarkup", start);
-  const detailsSource = portal.slice(start, end);
+  const source = sourceForFunction("clientWorkoutSelectorDetails");
   const selectorDetails = Function(
     "customWorkoutTitle",
-    `${detailsSource}; return clientWorkoutSelectorDetails;`
+    `${source}; return clientWorkoutSelectorDetails;`
   )("Custom workout");
 
   assert.deepEqual(
