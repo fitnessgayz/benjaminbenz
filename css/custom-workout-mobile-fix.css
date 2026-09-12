@@ -242,12 +242,12 @@
 
 .dashboard-page :is(.client-workout-panel-custom, .client-workout-panel-assigned) .custom-workout-editable-title input {
   min-width: 0;
-  font-size: clamp(1.35rem, 6vw, 1.75rem) !important;
-  font-weight: 900 !important;
-  letter-spacing: -.025em;
-  line-height: 1.02;
+  font-size: 1rem !important;
+  font-weight: 400 !important;
+  letter-spacing: normal;
+  line-height: 1.2;
   text-overflow: ellipsis !important;
-  text-transform: uppercase;
+  text-transform: none;
 }
 
 .dashboard-page :is(.client-workout-panel-custom, .client-workout-panel-assigned) .custom-workout-editable-title input::placeholder {

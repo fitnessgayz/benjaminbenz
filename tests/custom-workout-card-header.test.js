@@ -43,13 +43,13 @@ test("labels and collapses the exercise-name editor on both workout card types",
   assert.match(mobileStyles, /\.custom-workout-name-field-label[\s\S]*?text-transform:\s*uppercase/);
   assert.match(mobileStyles, /\.custom-workout-card:not\(\.is-open\) \.custom-workout-editable-title[\s\S]*?display:\s*none !important/);
   assert.match(mobileStyles, /\.custom-workout-card:not\(\.is-open\) \.custom-workout-collapsed-name \{[\s\S]*?display:\s*-webkit-box !important/);
-  assert.match(dashboard, /css\/custom-workout-mobile-fix\.css\?v=exercise-title-swipe-1/);
+  assert.match(dashboard, /css\/custom-workout-mobile-fix\.css\?v=exercise-title-font-2/);
 });
 
-test("renders exercise names as large bold uppercase titles without changing stored casing", () => {
+test("keeps the editable name normal while rendering the collapsed title bold uppercase", () => {
   assert.match(
     mobileStyles,
-    /:is\(\.client-workout-panel-custom, \.client-workout-panel-assigned\) \.custom-workout-editable-title input \{[\s\S]*?font-size:\s*clamp\([^;]+\)(?:\s*!important)?;[\s\S]*?font-weight:\s*900(?:\s*!important)?;[\s\S]*?line-height:\s*[^;]+;[\s\S]*?text-transform:\s*uppercase;/,
+    /:is\(\.client-workout-panel-custom, \.client-workout-panel-assigned\) \.custom-workout-editable-title input \{[^}]*font-size:\s*1rem !important;[^}]*font-weight:\s*400 !important;[^}]*letter-spacing:\s*normal;[^}]*text-transform:\s*none;/,
   );
   assert.match(
     mobileStyles,
