@@ -28,7 +28,7 @@ function sourceBetween(startMarker, endMarker) {
 test("scopes the client navigation styles and cache-busts the workout deck update", () => {
   assert.match(dashboardHtml, /<body class="dashboard-page client-dashboard-page is-loading">/);
   assert.match(dashboardHtml, /href="css\/style\.css\?v=custom-workout-first-1"/);
-  assert.match(dashboardHtml, /src="js\/client-portal\.js\?v=custom-exercise-deck-1"/);
+  assert.match(dashboardHtml, /src="js\/client-portal\.js\?v=copy-workout-timer-fix-1"/);
   assert.match(styleSource, /body\.client-dashboard-page\s*\{[^}]*padding-bottom:\s*0;/s);
 });
 

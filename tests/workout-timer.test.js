@@ -7,6 +7,14 @@ const projectRoot = path.resolve(__dirname, "..");
 const portalSource = fs.readFileSync(path.join(projectRoot, "js/client-portal.js"), "utf8");
 const styleSource = fs.readFileSync(path.join(projectRoot, "css/style.css"), "utf8");
 
+function sourceForFunction(name) {
+  const start = portalSource.indexOf(`function ${name}(`);
+  const end = portalSource.indexOf("\nfunction ", start + 1);
+
+  assert.ok(start >= 0, `Expected ${name} to exist`);
+  return portalSource.slice(start, end >= 0 ? end : undefined);
+}
+
 test("workout timer exposes a dedicated drag handle", () => {
   assert.match(portalSource, /data-workout-elapsed-drag/);
   assert.match(portalSource, /aria-label="Move workout timer"/);
@@ -41,4 +49,23 @@ test("expanded workout timer uses compact icon controls without overflow", () =>
   assert.match(styleSource, /grid-template-columns:\s*20px 40px minmax\(0, 1fr\) 40px 40px 36px/);
   assert.match(styleSource, /max-width:\s*calc\(100% - 16px\)/);
   assert.match(styleSource, /\.workout-elapsed-timer button svg/);
+});
+
+test("orphaned and day-old timer state expires by wall-clock age", () => {
+  const source = sourceForFunction("workoutElapsedTimerIsStale");
+  const maximumAge = 24 * 60 * 60 * 1000;
+  const isStale = Function(
+    "workoutElapsedTimerMaximumMilliseconds",
+    `${source}; return workoutElapsedTimerIsStale;`
+  )(maximumAge);
+  const now = 2_000_000_000_000;
+
+  assert.equal(isStale(null, now, maximumAge), true);
+  assert.equal(isStale({ startedAt: 0, updatedAt: 0 }, now, maximumAge), true);
+  assert.equal(isStale({ updatedAt: now - maximumAge }, now, maximumAge), false);
+  assert.equal(isStale({ updatedAt: now - maximumAge - 1 }, now, maximumAge), true);
+  assert.equal(isStale({ startedAt: now - 1_000 }, now, maximumAge), false);
+
+  assert.match(sourceForFunction("readWorkoutElapsedTimerState"), /workoutElapsedTimerIsStale\(state\)/);
+  assert.match(sourceForFunction("persistWorkoutElapsedTimerState"), /workoutElapsedTimerState\.updatedAt = Date\.now\(\)/);
 });

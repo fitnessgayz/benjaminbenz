@@ -4348,6 +4348,7 @@ function readWorkoutElapsedTimerState() {
       workoutTitle: String(parsed.workoutTitle || "Workout").trim() || "Workout",
       accumulatedMilliseconds: Math.max(0, Number(parsed.accumulatedMilliseconds) || 0),
       startedAt: Math.max(0, Number(parsed.startedAt) || 0),
+      updatedAt: Math.max(0, Number(parsed.updatedAt) || Number(parsed.startedAt) || 0),
       running: Boolean(parsed.running),
       dismissed: Boolean(parsed.dismissed)
     };
@@ -4355,7 +4356,10 @@ function readWorkoutElapsedTimerState() {
       ? Math.max(0, Date.now() - state.startedAt)
       : 0;
 
-    if (state.accumulatedMilliseconds + activeMilliseconds > workoutElapsedTimerMaximumMilliseconds) {
+    if (
+      workoutElapsedTimerIsStale(state) ||
+      state.accumulatedMilliseconds + activeMilliseconds > workoutElapsedTimerMaximumMilliseconds
+    ) {
       window.localStorage.removeItem(workoutElapsedTimerStorageKey);
       return null;
     }
@@ -4366,12 +4370,27 @@ function readWorkoutElapsedTimerState() {
   }
 }
 
+function workoutElapsedTimerIsStale(
+  state,
+  now = Date.now(),
+  maximumAge = workoutElapsedTimerMaximumMilliseconds
+) {
+  const updatedAt = Math.max(0, Number(state?.updatedAt) || Number(state?.startedAt) || 0);
+
+  if (!updatedAt) {
+    return true;
+  }
+
+  return Math.max(0, Number(now) - updatedAt) > Math.max(0, Number(maximumAge) || 0);
+}
+
 function persistWorkoutElapsedTimerState() {
   if (!workoutElapsedTimerState) {
     return;
   }
 
   try {
+    workoutElapsedTimerState.updatedAt = Date.now();
     window.localStorage.setItem(workoutElapsedTimerStorageKey, JSON.stringify(workoutElapsedTimerState));
   } catch (_error) {
     // The timer still works for this page view when storage is unavailable.
@@ -7365,11 +7384,6 @@ function handleCopyWorkoutToCustom() {
       return;
     }
 
-    if (workoutElapsedTimerState) {
-      setClientWorkoutCopyStatus("Finish the active workout before copying a saved workout.");
-      return;
-    }
-
     const sessionKey = String(button.dataset.copyWorkoutToCustom || "");
     const sourceLogs = workoutHistoryLogsForCopy(sessionKey);
 
@@ -7402,14 +7416,30 @@ function handleCopyWorkoutToCustom() {
       return;
     }
 
-    activeCustomWorkoutFormat = draft.format;
-    storeCustomWorkoutFormat(draft.format);
+    const endSavedTimer = Boolean(workoutElapsedTimerState);
+    if (
+      endSavedTimer &&
+      !window.confirm(
+        "A workout timer is still saved on this device. End it without saving its workout time and copy this workout?"
+      )
+    ) {
+      setClientWorkoutCopyStatus("Copy canceled. Your saved workout timer is still open.");
+      return;
+    }
+
     storeCustomWorkoutDraft(draft);
 
     const storedDraft = activeCustomWorkoutDraft();
     if (storedDraft?.copiedFrom?.sessionKey !== sessionKey) {
       setClientWorkoutCopyStatus("The Custom Workout draft could not be created on this device.");
       return;
+    }
+
+    activeCustomWorkoutFormat = draft.format;
+    storeCustomWorkoutFormat(draft.format);
+
+    if (endSavedTimer) {
+      finishWorkoutElapsedTimer();
     }
 
     setClientDashboardTab("workouts");
@@ -8036,11 +8066,6 @@ function handleClientSummaryActions() {
       const tabName = summaryTabButton.dataset.clientSummaryGoTab;
       const panel = document.querySelector(`[data-client-dashboard-panel="${tabName}"]`);
 
-      if (tabName === "workouts") {
-        startWorkoutElapsedTimer(
-          document.getElementById("client-home-workout-title")?.textContent || activeWorkoutElapsedTitle()
-        );
-      }
       setClientDashboardTab(tabName);
       panel?.scrollIntoView({ behavior: "smooth", block: "start" });
       return;

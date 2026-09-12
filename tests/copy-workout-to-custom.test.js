@@ -222,8 +222,18 @@ test("opens the copied draft in Custom Workout and restores focus visibly", () =
   const previousWeightsSource = sourceForFunction("logsForExerciseDisplay");
 
   assert.match(handlerSource, /workoutHistoryLogsForCopy\(sessionKey\)/);
-  assert.match(handlerSource, /if \(workoutElapsedTimerState\)/);
+  assert.match(handlerSource, /A workout timer is still saved on this device\. End it without saving its workout time and copy this workout\?/);
+  assert.match(handlerSource, /finishWorkoutElapsedTimer\(\)/);
+  assert.doesNotMatch(handlerSource, /Finish the active workout before copying/);
   assert.match(handlerSource, /window\.confirm\("Replace your current Custom Workout draft/);
+  assert.ok(
+    handlerSource.indexOf("Replace your current Custom Workout draft") <
+    handlerSource.indexOf("A workout timer is still saved on this device")
+  );
+  assert.ok(
+    handlerSource.indexOf("storedDraft?.copiedFrom?.sessionKey !== sessionKey") <
+    handlerSource.indexOf("finishWorkoutElapsedTimer()")
+  );
   assert.match(handlerSource, /customWorkoutPanelHasAuxiliaryContent\(existingCustomPanel\)/);
   assert.match(handlerSource, /storeCustomWorkoutDraft\(draft\)/);
   assert.match(handlerSource, /const customPanelIndex = clientCustomWorkoutPanelIndex\(\)/);
@@ -240,6 +250,13 @@ test("opens the copied draft in Custom Workout and restores focus visibly", () =
   assert.match(portal, /const exactSessionLogs = logsForExercise\(logElement\.dataset\.workoutTitle, logElement\.dataset\.exerciseCode\);/);
   assert.match(portal, /const selectedLogs = exactSessionLogs\.filter\(\(log\) => log\.entry_date === selectedDate\);/);
   assert.match(portal, /handleCopyWorkoutToCustom\(\);/);
+});
+
+test("opening the Workouts tab does not start a workout timer", () => {
+  const summaryActions = sourceForFunction("handleClientSummaryActions");
+
+  assert.match(summaryActions, /setClientDashboardTab\(tabName\)/);
+  assert.doesNotMatch(summaryActions, /startWorkoutElapsedTimer\(/);
 });
 
 test("keeps the history action inside the mobile viewport", () => {
