@@ -33,3 +33,18 @@ test("applies the lifted deck to custom and assigned grouped workouts without ov
   assert.match(mobileStyles, /\.custom-workout-carousel\[data-group-workout-deck="true"\][\s\S]*?border-left: 4px solid var\(--blue, #2878ff\);/);
   assert.match(mobileStyles, /\.custom-workout-carousel\[data-group-workout-deck="true"\]:is\(\.is-superset-complete, \.is-circuit-complete\)[\s\S]*?border-color: #21a637;[\s\S]*?background: #f5faf4;/);
 });
+
+test("keeps drag-follow motion clipped to the full-width deck", () => {
+  assert.match(
+    mobileStyles,
+    /\.custom-workout-carousel\[data-custom-workout-deck="true"\] \{[\s\S]*?min-width:\s*0;[\s\S]*?overflow:\s*hidden;/,
+  );
+  assert.match(
+    mobileStyles,
+    /\.custom-workout-carousel\[data-custom-workout-deck="true"\] \.custom-workout-list \{[\s\S]*?width:\s*100%;[\s\S]*?overflow-x:\s*hidden !important;/,
+  );
+  assert.match(
+    mobileStyles,
+    /\.custom-workout-carousel\[data-custom-workout-deck="true"\] \.custom-workout-card\.is-carousel-active \{[\s\S]*?transform:\s*translate3d\(var\(--custom-workout-deck-drag-x\), 0, 0\) rotate\(var\(--custom-workout-deck-drag-rotate\)\);[\s\S]*?opacity:\s*var\(--custom-workout-deck-drag-opacity\);/,
+  );
+});

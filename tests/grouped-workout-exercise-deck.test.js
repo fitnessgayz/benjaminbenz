@@ -40,7 +40,7 @@ test("keeps grouped deck visuals separate from straight-set add permission", () 
   assert.match(render, /dataset\.customWorkoutCanAddExercise = canAddExercise/);
   assert.match(move, /const canAddExercise = carousel\.dataset\.customWorkoutCanAddExercise === "true"/);
   assert.match(move, /const isVisualDeck = carousel\.dataset\.customWorkoutDeck === "true"/);
-  assert.match(move, /if \(isVisualDeck && index !== currentIndex/);
+  assert.match(move, /isVisualDeck && index !== currentIndex/);
 });
 
 test("builds the next-card cue for superset and circuit sequences", () => {
@@ -105,11 +105,20 @@ test("group logging still autosaves before advancing the deck", () => {
   const savingIndex = logSet.indexOf('setWorkoutCarouselAutosaveState(logElement, "saving")');
   const saveIndex = logSet.indexOf("await saveTrainingLogRows");
   const progressIndex = logSet.indexOf("const nextProgress = workoutCarouselProgress");
-  const moveIndex = logSet.indexOf("moveCustomWorkoutCarousel(carousel, nextProgress.current.index)");
+  const moveIndex = logSet.indexOf("moveCustomWorkoutCarousel(carousel, nextProgress.current.index");
 
   assert.ok(savingIndex >= 0 && savingIndex < saveIndex);
   assert.ok(saveIndex < progressIndex && progressIndex < moveIndex);
   assert.match(logSet, /if \(!result\.saved\) \{[\s\S]*?setWorkoutCarouselAutosaveState\(logElement, "issue"\);[\s\S]*?return;/);
+});
+
+test("group autosave advances forward with the same smooth deck direction", () => {
+  const logSet = sourceForFunction("logCurrentWorkoutCarouselSet");
+
+  assert.match(
+    logSet,
+    /moveCustomWorkoutCarousel\(carousel, nextProgress\.current\.index, \{[\s\S]*?direction:\s*1[\s\S]*?\}\)/,
+  );
 });
 
 test("group decks wrap into the next round by arrow, swipe, and keyboard", () => {

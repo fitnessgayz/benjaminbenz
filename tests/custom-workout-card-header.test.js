@@ -42,8 +42,42 @@ test("labels and collapses the exercise-name editor on both workout card types",
   assert.match(namePreviewSource, /function setWorkoutExerciseCardExpanded[\s\S]*?classList\.toggle\("is-open", isExpanded\)[\s\S]*?setAttribute\("aria-expanded"/);
   assert.match(mobileStyles, /\.custom-workout-name-field-label[\s\S]*?text-transform:\s*uppercase/);
   assert.match(mobileStyles, /\.custom-workout-card:not\(\.is-open\) \.custom-workout-editable-title[\s\S]*?display:\s*none !important/);
-  assert.match(mobileStyles, /\.custom-workout-card:not\(\.is-open\) \.custom-workout-collapsed-name \{[\s\S]*?display:\s*flex !important/);
-  assert.match(dashboard, /css\/custom-workout-mobile-fix\.css\?v=group-exercise-deck-1/);
+  assert.match(mobileStyles, /\.custom-workout-card:not\(\.is-open\) \.custom-workout-collapsed-name \{[\s\S]*?display:\s*-webkit-box !important/);
+  assert.match(dashboard, /css\/custom-workout-mobile-fix\.css\?v=exercise-title-swipe-1/);
+});
+
+test("renders exercise names as large bold uppercase titles without changing stored casing", () => {
+  assert.match(
+    mobileStyles,
+    /:is\(\.client-workout-panel-custom, \.client-workout-panel-assigned\) \.custom-workout-editable-title input \{[\s\S]*?font-size:\s*clamp\([^;]+\)(?:\s*!important)?;[\s\S]*?font-weight:\s*900(?:\s*!important)?;[\s\S]*?line-height:\s*[^;]+;[\s\S]*?text-transform:\s*uppercase;/,
+  );
+  assert.match(
+    mobileStyles,
+    /:is\(\.client-workout-panel-custom, \.client-workout-panel-assigned\) \.custom-workout-collapsed-name \{[\s\S]*?font-size:\s*clamp\([^;]+\)(?:\s*!important)?;[\s\S]*?font-weight:\s*900(?:\s*!important)?;[\s\S]*?line-height:\s*[^;]+;[\s\S]*?text-transform:\s*uppercase;/,
+  );
+
+  [customCardMarkup, assignedCardMarkup].forEach((markup) => {
+    assert.match(markup, /value="\$\{escapeHtml\(exerciseName\)\}"/);
+    assert.doesNotMatch(markup, /toUpperCase\(/);
+  });
+  assert.match(namePreviewSource, /const rawName = String\(nextName \|\| ""\)/);
+  assert.match(namePreviewSource, /collapsedTitle\.textContent = editedName \|\| logElement\.dataset\.exerciseName \|\| "Exercise name"/);
+  assert.doesNotMatch(namePreviewSource, /toUpperCase\(/);
+});
+
+test("contains long uppercase exercise titles inside the card header", () => {
+  assert.match(
+    mobileStyles,
+    /\.custom-workout-name-field-label,[\s\S]*?\.custom-workout-collapsed-name \{[\s\S]*?width:\s*100%;[\s\S]*?max-width:\s*100%;[\s\S]*?min-width:\s*0;[\s\S]*?overflow:\s*hidden;/,
+  );
+  assert.match(
+    mobileStyles,
+    /:is\(\.client-workout-panel-custom, \.client-workout-panel-assigned\) \.custom-workout-collapsed-name \{[\s\S]*?max-height:\s*3\.65rem;[\s\S]*?overflow-wrap:\s*anywhere;[\s\S]*?white-space:\s*normal;[\s\S]*?-webkit-line-clamp:\s*2;/,
+  );
+  assert.match(
+    mobileStyles,
+    /:is\(\.client-workout-panel-custom, \.client-workout-panel-assigned\) \.custom-workout-editable-title input \{[\s\S]*?min-width:\s*0;[\s\S]*?text-overflow:\s*ellipsis !important;/,
+  );
 });
 
 test("keeps delete and collapse actions together in both workout card headers", () => {

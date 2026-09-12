@@ -99,6 +99,73 @@ test("keeps only the active real card interactive and clears the mobile dock", (
   assert.match(mobileStyles, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?animation: none !important;/);
 });
 
+test("maps horizontal touch distance to bounded deck drag motion", () => {
+  const metricsSource = sourceForFunction("customWorkoutDeckDragMetrics");
+  const metricsFor = Function(`${metricsSource}; return customWorkoutDeckDragMetrics;`)();
+
+  assert.deepEqual(metricsFor(0, 320), {
+    x: 0,
+    rotate: 0,
+    opacity: 1
+  });
+  assert.deepEqual(metricsFor(32, 320), {
+    x: 32,
+    rotate: 0.24,
+    opacity: 0.976
+  });
+  assert.deepEqual(metricsFor(-32, 320), {
+    x: -32,
+    rotate: -0.24,
+    opacity: 0.976
+  });
+  assert.deepEqual(metricsFor(1000, 320), metricsFor(320, 320));
+  assert.deepEqual(metricsFor(-1000, 320), metricsFor(-320, 320));
+});
+
+test("uses CSS variables for finger-following and settles before moving the deck", () => {
+  const bind = sourceForFunction("bindCustomWorkoutCarousel");
+  const applyDrag = sourceForFunction("applyCustomWorkoutDeckDrag");
+  const applyExit = sourceForFunction("applyCustomWorkoutDeckExit");
+  const move = sourceForFunction("moveCustomWorkoutCarousel");
+
+  assert.match(bind, /applyCustomWorkoutDeckDrag\(list, resistedDeltaX\)/);
+  assert.match(applyDrag, /customWorkoutDeckDragMetrics\(deltaX, list\?\.clientWidth\)/);
+  assert.match(applyDrag, /--custom-workout-deck-drag-x/);
+  assert.match(applyDrag, /--custom-workout-deck-drag-rotate/);
+  assert.match(applyDrag, /--custom-workout-deck-drag-opacity/);
+  assert.match(bind, /if \(!touchSwipe\.visualDeck\) \{[\s\S]*?list\.scrollLeft = touchSwipe\.startScrollLeft - deltaX;[\s\S]*?return;[\s\S]*?applyCustomWorkoutDeckDrag\(list, resistedDeltaX\)/);
+  assert.match(bind, /classList\.add\("is-touch-swiping"\)/);
+  assert.match(bind, /classList\.add\("is-deck-settling"\)/);
+  assert.match(bind, /moveCustomWorkoutCarousel\(carousel, startIndex \+ direction,[\s\S]*?direction/);
+  assert.match(move, /function moveCustomWorkoutCarousel\(carousel, nextIndex, options = \{\}\)/);
+  assert.match(move, /options\.instant/);
+  assert.match(move, /options\.direction/);
+  assert.match(bind, /activeCard\?\.classList\.remove\([\s\S]*?"is-deck-entering-forward"[\s\S]*?"is-deck-entering-backward"/);
+  assert.match(bind, /delete activeCard\.dataset\.deckAnimationToken/);
+  assert.match(bind, /event\.touches\.length !== 1[\s\S]*?clearCustomWorkoutDeckDrag\(list\)/);
+  assert.match(bind, /classList\.contains\("is-deck-settling"\)[\s\S]*?return/);
+  assert.match(applyExit, /clientWidth[\s\S]*?\+ 32/);
+  assert.match(applyExit, /--custom-workout-deck-drag-opacity", "0"/);
+  assert.match(bind, /addEventListener\("transitionend", finishExit/);
+  assert.match(bind, /event\.target !== activeCard \|\| event\.propertyName !== "transform"/);
+  assert.match(bind, /window\.setTimeout\(finishExit, 240\)/);
+});
+
+test("uses a smooth 320ms entrance with an instant and reduced-motion escape hatch", () => {
+  const move = sourceForFunction("moveCustomWorkoutCarousel");
+
+  assert.match(mobileStyles, /\.custom-workout-card\.is-deck-entering-forward \{[\s\S]*?animation:\s*custom-workout-deck-enter-forward 320ms cubic-bezier\(/);
+  assert.match(mobileStyles, /\.custom-workout-card\.is-deck-entering-backward \{[\s\S]*?animation:\s*custom-workout-deck-enter-backward 320ms cubic-bezier\(/);
+  assert.match(move, /const instant = Boolean\(options\.instant\)/);
+  assert.match(move, /prefers-reduced-motion:\s*reduce/);
+  assert.match(move, /!instant[\s\S]*?!reducedMotion[\s\S]*?isVisualDeck/);
+  assert.match(move, /window\.setTimeout\([\s\S]*?360\)/);
+  assert.match(
+    mobileStyles,
+    /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.is-touch-swiping[\s\S]*?\.is-deck-settling[\s\S]*?transition:\s*none !important;[\s\S]*?animation:\s*none !important;/,
+  );
+});
+
 test("rebuilds when switching between grouped cards and the straight-set add card", () => {
   const regroup = sourceForFunction("regroupCustomWorkoutCarousels");
   const formatUpdate = sourceForFunction("updateCustomWorkoutFormat");

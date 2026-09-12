@@ -5340,6 +5340,47 @@ function requestCustomWorkoutNewExercise(carousel) {
   return true;
 }
 
+function customWorkoutDeckDragMetrics(deltaX, width) {
+  const safeWidth = Math.max(Number(width) || 0, 1);
+  const rawX = Number(deltaX) || 0;
+  const dragLimit = safeWidth * .72;
+  const x = Math.max(-dragLimit, Math.min(rawX, dragLimit));
+  const progress = Math.min(Math.abs(x) / safeWidth, 1);
+
+  return {
+    x: Math.round(x * 1000) / 1000,
+    rotate: Math.round((x / safeWidth) * 2.4 * 1000) / 1000,
+    opacity: Math.round((1 - (progress * .24)) * 1000) / 1000
+  };
+}
+
+function applyCustomWorkoutDeckDrag(list, deltaX) {
+  const metrics = customWorkoutDeckDragMetrics(deltaX, list?.clientWidth);
+
+  list?.style.setProperty("--custom-workout-deck-drag-x", `${metrics.x}px`);
+  list?.style.setProperty("--custom-workout-deck-drag-rotate", `${metrics.rotate}deg`);
+  list?.style.setProperty("--custom-workout-deck-drag-opacity", String(metrics.opacity));
+  return metrics;
+}
+
+function applyCustomWorkoutDeckExit(list, direction) {
+  const normalizedDirection = Number(direction) > 0 ? 1 : -1;
+  const exitX = normalizedDirection * -1 * (Math.max(Number(list?.clientWidth) || 0, 1) + 32);
+
+  list?.style.setProperty("--custom-workout-deck-drag-x", `${exitX}px`);
+  list?.style.setProperty("--custom-workout-deck-drag-rotate", `${normalizedDirection * -2.4}deg`);
+  list?.style.setProperty("--custom-workout-deck-drag-opacity", "0");
+}
+
+function clearCustomWorkoutDeckDrag(list) {
+  list?.style.removeProperty("--custom-workout-deck-drag-x");
+  list?.style.removeProperty("--custom-workout-deck-drag-rotate");
+  list?.style.removeProperty("--custom-workout-deck-drag-opacity");
+  list?.classList.remove("is-touch-swiping", "is-deck-settling");
+}
+
+let customWorkoutDeckAnimationSequence = 0;
+
 function moveCustomWorkoutCarousel(carousel, nextIndex, options = {}) {
   const list = carousel?.querySelector("[data-custom-workout-list]");
   const cards = customWorkoutCarouselCards(carousel);
@@ -5351,6 +5392,8 @@ function moveCustomWorkoutCarousel(carousel, nextIndex, options = {}) {
   const canAddExercise = carousel.dataset.customWorkoutCanAddExercise === "true";
   const isVisualDeck = carousel.dataset.customWorkoutDeck === "true";
   const wrapsGroupDeck = carousel.dataset.groupWorkoutDeck === "true";
+  const instant = Boolean(options.instant);
+  const reducedMotion = Boolean(window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches);
   const currentIndex = Number(carousel.dataset.activeIndex) || 0;
   const decision = customWorkoutCarouselNavigationDecision(
     nextIndex,
@@ -5373,14 +5416,24 @@ function moveCustomWorkoutCarousel(carousel, nextIndex, options = {}) {
   carousel.dataset.activeIndex = String(index);
   renderCustomWorkoutCarousel(carousel);
 
-  if (isVisualDeck && index !== currentIndex && !card.classList.contains("is-entering-deck")) {
-    const transitionClass = Number(nextIndex) > currentIndex
+  if (!instant && !reducedMotion && isVisualDeck && index !== currentIndex && !card.classList.contains("is-entering-deck")) {
+    const transitionDirection = Number(options.direction) || (Number(nextIndex) > currentIndex ? 1 : -1);
+    const transitionClass = transitionDirection > 0
       ? "is-deck-entering-forward"
       : "is-deck-entering-backward";
     card.classList.remove("is-deck-entering-forward", "is-deck-entering-backward");
     void card.offsetWidth;
+    const animationToken = String(++customWorkoutDeckAnimationSequence);
+    card.dataset.deckAnimationToken = animationToken;
     card.classList.add(transitionClass);
-    window.setTimeout(() => card.classList.remove(transitionClass), 280);
+    const finishEntry = () => {
+      card.removeEventListener("animationend", finishEntry);
+      if (card.dataset.deckAnimationToken !== animationToken) return;
+      card.classList.remove(transitionClass);
+      delete card.dataset.deckAnimationToken;
+    };
+    card.addEventListener("animationend", finishEntry, { once: true });
+    window.setTimeout(finishEntry, 360);
   }
 
   // Direct assignment works consistently in iOS/Android webviews and avoids a
@@ -5443,7 +5496,7 @@ async function logCurrentWorkoutCarouselSet(button) {
   }
 
   if (nextProgress.current) {
-    moveCustomWorkoutCarousel(carousel, nextProgress.current.index);
+    moveCustomWorkoutCarousel(carousel, nextProgress.current.index, { direction: 1 });
   } else {
     renderCustomWorkoutCarousel(carousel);
   }
@@ -5458,6 +5511,9 @@ function bindCustomWorkoutCarousel(carousel) {
 
   carousel.dataset.carouselBound = "true";
   let frame = 0;
+  let dragFrame = 0;
+  let settleTimer = 0;
+  let settleSequence = 0;
   let touchSwipe = null;
   carousel.addEventListener("click", (event) => {
     const target = event.target instanceof Element ? event.target : null;
@@ -5468,12 +5524,14 @@ function bindCustomWorkoutCarousel(carousel) {
     if (!previous && !next && !dot) return;
     event.preventDefault();
     event.stopPropagation();
+    if (list.classList.contains("is-deck-settling")) return;
 
     const current = Number(carousel.dataset.activeIndex) || 0;
     const nextIndex = dot
       ? Number(dot.dataset.customWorkoutCarouselDot)
       : current + (next ? 1 : -1);
-    moveCustomWorkoutCarousel(carousel, nextIndex);
+    const direction = dot ? Math.sign(nextIndex - current) : (next ? 1 : -1);
+    moveCustomWorkoutCarousel(carousel, nextIndex, { direction });
   });
 
   list.addEventListener("scroll", () => {
@@ -5500,9 +5558,20 @@ function bindCustomWorkoutCarousel(carousel) {
   }, { passive: true });
 
   list.addEventListener("touchstart", (event) => {
+    if (event.touches.length !== 1) {
+      if (touchSwipe) {
+        touchSwipe = null;
+        settleSequence += 1;
+        window.cancelAnimationFrame(dragFrame);
+        window.clearTimeout(settleTimer);
+        clearCustomWorkoutDeckDrag(list);
+      }
+      return;
+    }
+
     if (
       carousel.dataset.carouselEnabled !== "true" ||
-      event.touches.length !== 1 ||
+      list.classList.contains("is-deck-settling") ||
       event.target.closest("input, select, textarea, button, a")
     ) {
       touchSwipe = null;
@@ -5510,12 +5579,20 @@ function bindCustomWorkoutCarousel(carousel) {
     }
 
     const touch = event.touches[0];
+    const activeCard = customWorkoutCarouselCards(carousel)[Number(carousel.dataset.activeIndex) || 0];
+    activeCard?.classList.remove(
+      "is-entering-deck",
+      "is-deck-entering-forward",
+      "is-deck-entering-backward"
+    );
+    if (activeCard) delete activeCard.dataset.deckAnimationToken;
     touchSwipe = {
       startX: touch.clientX,
       startY: touch.clientY,
       lastX: touch.clientX,
       startScrollLeft: list.scrollLeft,
       startIndex: Number(carousel.dataset.activeIndex) || 0,
+      visualDeck: carousel.dataset.customWorkoutDeck === "true",
       direction: ""
     };
   }, { passive: true });
@@ -5537,7 +5614,24 @@ function bindCustomWorkoutCarousel(carousel) {
 
     if (touchSwipe.direction !== "horizontal") return;
     event.preventDefault();
-    list.scrollLeft = touchSwipe.startScrollLeft - deltaX;
+    if (!touchSwipe.visualDeck) {
+      list.scrollLeft = touchSwipe.startScrollLeft - deltaX;
+      return;
+    }
+
+    const cards = customWorkoutCarouselCards(carousel);
+    const currentIndex = touchSwipe.startIndex;
+    const wrapsGroupDeck = carousel.dataset.groupWorkoutDeck === "true";
+    const canAddExercise = carousel.dataset.customWorkoutCanAddExercise === "true";
+    const blockedAtStart = deltaX > 0 && currentIndex === 0 && !wrapsGroupDeck;
+    const blockedAtEnd = deltaX < 0 && currentIndex === cards.length - 1 && !wrapsGroupDeck && !canAddExercise;
+    const resistedDeltaX = blockedAtStart || blockedAtEnd ? deltaX * .28 : deltaX;
+    const reducedMotion = Boolean(window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches);
+    if (reducedMotion) return;
+    window.cancelAnimationFrame(dragFrame);
+    dragFrame = window.requestAnimationFrame(() => {
+      applyCustomWorkoutDeckDrag(list, resistedDeltaX);
+    });
   }, { passive: false });
 
   const finishTouchSwipe = (cancelled = false) => {
@@ -5547,12 +5641,67 @@ function bindCustomWorkoutCarousel(carousel) {
     const threshold = Math.min(54, list.clientWidth * .14);
     const wasHorizontal = touchSwipe.direction === "horizontal";
     const startIndex = touchSwipe.startIndex;
+    const visualDeck = touchSwipe.visualDeck;
     touchSwipe = null;
-    list.classList.remove("is-touch-swiping");
+    window.cancelAnimationFrame(dragFrame);
 
     if (!wasHorizontal) return;
-    const direction = !cancelled && Math.abs(deltaX) >= threshold ? (deltaX < 0 ? 1 : -1) : 0;
-    moveCustomWorkoutCarousel(carousel, startIndex + direction);
+    let direction = !cancelled && Math.abs(deltaX) >= threshold ? (deltaX < 0 ? 1 : -1) : 0;
+    if (!visualDeck) {
+      list.classList.remove("is-touch-swiping");
+      moveCustomWorkoutCarousel(carousel, startIndex + direction);
+      return;
+    }
+
+    if (direction) {
+      const cards = customWorkoutCarouselCards(carousel);
+      const decision = customWorkoutCarouselNavigationDecision(
+        startIndex + direction,
+        cards.length,
+        carousel.dataset.customWorkoutCanAddExercise === "true",
+        carousel.dataset.groupWorkoutDeck === "true"
+      );
+      if (decision.action === "move" && decision.index === startIndex) {
+        direction = 0;
+      }
+    }
+
+    const reducedMotion = Boolean(window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches);
+    window.clearTimeout(settleTimer);
+    const settleToken = ++settleSequence;
+    list.classList.remove("is-touch-swiping");
+    list.classList.add("is-deck-settling");
+
+    if (!direction || reducedMotion) {
+      applyCustomWorkoutDeckDrag(list, 0);
+      if (direction) {
+        clearCustomWorkoutDeckDrag(list);
+        moveCustomWorkoutCarousel(carousel, startIndex + direction, {
+          direction,
+          instant: reducedMotion
+        });
+        return;
+      }
+      settleTimer = window.setTimeout(() => {
+        if (settleToken === settleSequence) clearCustomWorkoutDeckDrag(list);
+      }, reducedMotion ? 0 : 190);
+      return;
+    }
+
+    const activeCard = customWorkoutCarouselCards(carousel)[startIndex];
+    let exitFinished = false;
+    const finishExit = (event) => {
+      if (event && (event.target !== activeCard || event.propertyName !== "transform")) return;
+      activeCard?.removeEventListener("transitionend", finishExit);
+      if (exitFinished || settleToken !== settleSequence) return;
+      exitFinished = true;
+      window.clearTimeout(settleTimer);
+      clearCustomWorkoutDeckDrag(list);
+      moveCustomWorkoutCarousel(carousel, startIndex + direction, { direction });
+    };
+    activeCard?.addEventListener("transitionend", finishExit);
+    applyCustomWorkoutDeckExit(list, direction);
+    settleTimer = window.setTimeout(finishExit, 240);
   };
 
   list.addEventListener("touchend", () => finishTouchSwipe(), { passive: true });
@@ -5562,8 +5711,9 @@ function bindCustomWorkoutCarousel(carousel) {
     if (event.target.closest("input, select, textarea, button")) return;
     if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
     event.preventDefault();
+    if (list.classList.contains("is-deck-settling")) return;
     const direction = event.key === "ArrowRight" ? 1 : -1;
-    moveCustomWorkoutCarousel(carousel, (Number(carousel.dataset.activeIndex) || 0) + direction);
+    moveCustomWorkoutCarousel(carousel, (Number(carousel.dataset.activeIndex) || 0) + direction, { direction });
   });
 }
 
@@ -8716,7 +8866,7 @@ function addOrOpenSupersetExercise(button) {
 
   const existingSecondExercise = carouselCards[carouselIndex + 1];
   if (existingSecondExercise) {
-    moveCustomWorkoutCarousel(carousel, carouselIndex + 1);
+    moveCustomWorkoutCarousel(carousel, carouselIndex + 1, { direction: 1 });
     window.requestAnimationFrame(() => {
       existingSecondExercise.querySelector("[data-exercise-title-name]")?.focus();
     });
@@ -9063,7 +9213,10 @@ function handleWorkoutInteractions() {
         ? Number(customWorkoutCarouselDot.dataset.customWorkoutCarouselDot)
         : current + (customWorkoutCarouselNext ? 1 : -1);
 
-      moveCustomWorkoutCarousel(carousel, nextIndex);
+      const direction = customWorkoutCarouselDot
+        ? Math.sign(nextIndex - current)
+        : (customWorkoutCarouselNext ? 1 : -1);
+      moveCustomWorkoutCarousel(carousel, nextIndex, { direction });
       return;
     }
 
@@ -9300,7 +9453,11 @@ function handleWorkoutInteractions() {
         syncAssignedWorkoutCarousels(panel);
         const targetCarousel = newCard?.closest("[data-assigned-workout-carousel]");
         if (targetCarousel) {
-          moveCustomWorkoutCarousel(targetCarousel, customWorkoutCarouselCards(targetCarousel).indexOf(newCard));
+          moveCustomWorkoutCarousel(
+            targetCarousel,
+            customWorkoutCarouselCards(targetCarousel).indexOf(newCard),
+            { direction: 1 }
+          );
         }
       }
     }

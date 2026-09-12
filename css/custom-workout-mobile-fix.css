@@ -228,10 +228,31 @@
 .dashboard-page :is(.client-workout-panel-custom, .client-workout-panel-assigned) .custom-workout-collapsed-name {
   display: none;
   color: #111411;
-  font-size: 1rem;
-  font-weight: 900;
-  line-height: 1.15;
-  white-space: nowrap;
+  max-height: 3.65rem;
+  font-size: clamp(1.35rem, 6vw, 1.75rem) !important;
+  font-weight: 900 !important;
+  letter-spacing: -.025em;
+  line-height: 1.02;
+  overflow-wrap: anywhere;
+  text-transform: uppercase;
+  white-space: normal;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.dashboard-page :is(.client-workout-panel-custom, .client-workout-panel-assigned) .custom-workout-editable-title input {
+  min-width: 0;
+  font-size: clamp(1.35rem, 6vw, 1.75rem) !important;
+  font-weight: 900 !important;
+  letter-spacing: -.025em;
+  line-height: 1.02;
+  text-overflow: ellipsis !important;
+  text-transform: uppercase;
+}
+
+.dashboard-page :is(.client-workout-panel-custom, .client-workout-panel-assigned) .custom-workout-editable-title input::placeholder {
+  letter-spacing: 0;
+  text-transform: none;
 }
 
 .dashboard-page :is(.client-workout-panel-custom, .client-workout-panel-assigned) .custom-workout-card:not(.is-open) .custom-workout-name-field-label,
@@ -240,7 +261,7 @@
 }
 
 .dashboard-page :is(.client-workout-panel-custom, .client-workout-panel-assigned) .custom-workout-card:not(.is-open) .custom-workout-collapsed-name {
-  display: flex !important;
+  display: -webkit-box !important;
 }
 
 /* Workout cards use a compact action cluster instead of repeating the group badge. */
@@ -809,6 +830,9 @@
   }
 
   .dashboard-page :is(.client-workout-panel-custom, .client-workout-panel-assigned) .custom-workout-carousel[data-custom-workout-deck="true"] .custom-workout-list {
+    --custom-workout-deck-drag-x: 0px;
+    --custom-workout-deck-drag-rotate: 0deg;
+    --custom-workout-deck-drag-opacity: 1;
     position: relative;
     z-index: 3;
     width: 100%;
@@ -817,6 +841,8 @@
     overflow-y: hidden !important;
     border: 0 !important;
     background: transparent !important;
+    overscroll-behavior-x: contain;
+    touch-action: pan-y pinch-zoom;
   }
 
   .dashboard-page :is(.client-workout-panel-custom, .client-workout-panel-assigned) .custom-workout-carousel[data-custom-workout-deck="true"] .custom-workout-card {
@@ -824,7 +850,25 @@
     border-radius: 20px !important;
     background: #fff !important;
     box-shadow: 0 16px 30px rgba(17, 20, 17, .18) !important;
+    backface-visibility: hidden;
     transform-origin: 50% 88%;
+  }
+
+  .dashboard-page :is(.client-workout-panel-custom, .client-workout-panel-assigned) .custom-workout-carousel[data-custom-workout-deck="true"] .custom-workout-card.is-carousel-active {
+    transform: translate3d(var(--custom-workout-deck-drag-x), 0, 0) rotate(var(--custom-workout-deck-drag-rotate));
+    opacity: var(--custom-workout-deck-drag-opacity);
+    transition: transform 180ms cubic-bezier(.22, 1, .36, 1), opacity 180ms ease-out;
+  }
+
+  .dashboard-page :is(.client-workout-panel-custom, .client-workout-panel-assigned) .custom-workout-carousel[data-custom-workout-deck="true"] .custom-workout-list.is-touch-swiping .custom-workout-card.is-carousel-active {
+    transition: none !important;
+    will-change: transform, opacity;
+  }
+
+  .dashboard-page :is(.client-workout-panel-custom, .client-workout-panel-assigned) .custom-workout-carousel[data-custom-workout-deck="true"] .custom-workout-list.is-deck-settling .custom-workout-card.is-carousel-active {
+    pointer-events: none;
+    transition: transform 180ms cubic-bezier(.22, 1, .36, 1), opacity 180ms ease-out !important;
+    will-change: transform, opacity;
   }
 
   .dashboard-page :is(.client-workout-panel-custom, .client-workout-panel-assigned) .custom-workout-carousel[data-custom-workout-deck="true"] .custom-workout-card.is-exercise-complete {
@@ -839,11 +883,11 @@
   }
 
   .dashboard-page :is(.client-workout-panel-custom, .client-workout-panel-assigned) .custom-workout-carousel[data-custom-workout-deck="true"] .custom-workout-card.is-deck-entering-forward {
-    animation: custom-workout-deck-enter-forward 260ms cubic-bezier(.22, 1, .36, 1);
+    animation: custom-workout-deck-enter-forward 320ms cubic-bezier(.16, 1, .3, 1);
   }
 
   .dashboard-page :is(.client-workout-panel-custom, .client-workout-panel-assigned) .custom-workout-carousel[data-custom-workout-deck="true"] .custom-workout-card.is-deck-entering-backward {
-    animation: custom-workout-deck-enter-backward 260ms cubic-bezier(.22, 1, .36, 1);
+    animation: custom-workout-deck-enter-backward 320ms cubic-bezier(.16, 1, .3, 1);
   }
 
   .dashboard-page :is(.client-workout-panel-custom, .client-workout-panel-assigned) .custom-workout-carousel[data-group-workout-deck="true"] {
@@ -1014,8 +1058,8 @@
 
 @keyframes custom-workout-deck-enter-forward {
   from {
-    opacity: .72;
-    transform: translate3d(24px, 18px, -72px) rotate(.6deg) scale(.98);
+    opacity: .76;
+    transform: translate3d(20px, 12px, -40px) rotate(.45deg) scale(.985);
   }
   to {
     opacity: 1;
@@ -1025,8 +1069,8 @@
 
 @keyframes custom-workout-deck-enter-backward {
   from {
-    opacity: .72;
-    transform: translate3d(-24px, 18px, -72px) rotate(-.6deg) scale(.98);
+    opacity: .76;
+    transform: translate3d(-20px, 12px, -40px) rotate(-.45deg) scale(.985);
   }
   to {
     opacity: 1;
@@ -1038,7 +1082,9 @@
   .dashboard-page .custom-workout-carousel .custom-workout-card,
   .dashboard-page .custom-workout-card.is-entering-deck,
   .dashboard-page .custom-workout-card.is-deck-entering-forward,
-  .dashboard-page .custom-workout-card.is-deck-entering-backward {
+  .dashboard-page .custom-workout-card.is-deck-entering-backward,
+  .dashboard-page .custom-workout-list.is-touch-swiping .custom-workout-card,
+  .dashboard-page .custom-workout-list.is-deck-settling .custom-workout-card {
     transition: none !important;
     animation: none !important;
   }
