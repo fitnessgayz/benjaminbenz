@@ -43,7 +43,11 @@ test("labels and collapses the exercise-name editor on both workout card types",
   assert.match(mobileStyles, /\.custom-workout-name-field-label[\s\S]*?text-transform:\s*uppercase/);
   assert.match(mobileStyles, /\.custom-workout-card:not\(\.is-open\) \.custom-workout-editable-title[\s\S]*?display:\s*none !important/);
   assert.match(mobileStyles, /\.custom-workout-card:not\(\.is-open\) \.custom-workout-collapsed-name \{[\s\S]*?display:\s*-webkit-box !important/);
-  assert.match(dashboard, /css\/custom-workout-mobile-fix\.css\?v=exercise-title-font-2/);
+  assert.match(
+    mobileStyles,
+    /:is\(\.client-workout-panel-custom, \.client-workout-panel-assigned\) \.custom-workout-collapsed-name \{[^}]*display:\s*none !important;/,
+  );
+  assert.match(dashboard, /css\/custom-workout-mobile-fix\.css\?v=exercise-title-state-3/);
 });
 
 test("keeps the editable name normal while rendering the collapsed title bold uppercase", () => {

@@ -226,7 +226,7 @@
 }
 
 .dashboard-page :is(.client-workout-panel-custom, .client-workout-panel-assigned) .custom-workout-collapsed-name {
-  display: none;
+  display: none !important;
   color: #111411;
   max-height: 3.65rem;
   font-size: clamp(1.35rem, 6vw, 1.75rem) !important;
