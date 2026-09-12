@@ -286,6 +286,15 @@
   gap: 16px;
 }
 
+.custom-workout-exercise-deck {
+  display: contents;
+}
+
+.custom-workout-deck-layer,
+.custom-workout-new-exercise-card {
+  display: none;
+}
+
 .custom-workout-add-actions > [hidden] {
   display: none !important;
 }
@@ -692,11 +701,256 @@
     background: #e5e7e1;
     color: #676b65;
   }
+
+  /* Option 1: straight-set custom exercises use a lifted, swipeable card deck. */
+  .dashboard-page .client-workout-panel-custom .custom-workout-carousel[data-custom-workout-deck="true"] {
+    position: relative;
+    min-width: 0;
+    padding: 0 0 14px;
+    overflow: visible;
+    border: 1px solid #d9dad4;
+    border-radius: 22px;
+    background: #f8f9f5;
+    color: #111411;
+  }
+
+  .dashboard-page .client-workout-panel-custom .custom-workout-carousel[data-custom-workout-deck="true"] .custom-workout-carousel-heading {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+    min-height: 68px;
+    padding: 14px 116px 10px 16px;
+    align-content: center;
+    border-bottom: 0;
+  }
+
+  .dashboard-page .client-workout-panel-custom .custom-workout-carousel[data-custom-workout-deck="true"] .custom-workout-carousel-heading strong {
+    font-size: 16px;
+    letter-spacing: 0;
+    line-height: 1.15;
+    text-transform: none;
+  }
+
+  .dashboard-page .client-workout-panel-custom .custom-workout-carousel[data-custom-workout-deck="true"] .custom-workout-carousel-heading span {
+    overflow: hidden;
+    color: #676b65;
+    font-size: 13px;
+    line-height: 1.2;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .dashboard-page .client-workout-panel-custom .custom-workout-carousel[data-custom-workout-deck="true"] .custom-workout-carousel-footer {
+    position: absolute;
+    z-index: 6;
+    top: 12px;
+    right: 12px;
+    display: grid;
+    grid-template-columns: repeat(2, 44px);
+    gap: 8px;
+    width: auto;
+    padding: 0;
+  }
+
+  .dashboard-page .client-workout-panel-custom .custom-workout-carousel[data-custom-workout-deck="true"] .custom-workout-carousel-dots {
+    display: none;
+  }
+
+  .dashboard-page .client-workout-panel-custom .custom-workout-carousel[data-custom-workout-deck="true"] .custom-workout-carousel-arrow {
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    min-height: 44px;
+    border: 1px solid #d4d7cf;
+    border-radius: 12px;
+    background: #fff;
+    color: #111411;
+  }
+
+  .dashboard-page .client-workout-panel-custom .custom-workout-carousel[data-custom-workout-deck="true"] .custom-workout-exercise-deck {
+    --custom-workout-new-exercise-peek: 108px;
+    position: relative;
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    padding: 12px 12px calc(var(--custom-workout-new-exercise-peek) + 12px);
+    overflow: visible;
+    box-sizing: border-box;
+    isolation: isolate;
+    perspective: 1000px;
+    perspective-origin: 48% 32%;
+    scroll-margin-bottom: calc(var(--client-bottom-dock-clearance, 94px) + 16px);
+  }
+
+  .dashboard-page .client-workout-panel-custom .custom-workout-carousel[data-custom-workout-deck="true"] .custom-workout-deck-layer {
+    position: absolute;
+    top: 20px;
+    right: 22px;
+    bottom: calc(var(--custom-workout-new-exercise-peek) + 4px);
+    left: 18px;
+    display: block;
+    border: 1px solid #d9dad4;
+    border-radius: 20px;
+    background: #f1f3ed;
+    box-shadow: 0 12px 24px rgba(17, 20, 17, .12);
+    pointer-events: none;
+    transform-origin: 50% 92%;
+  }
+
+  .dashboard-page .client-workout-panel-custom .custom-workout-carousel[data-custom-workout-deck="true"] .custom-workout-deck-layer-one {
+    z-index: 2;
+    transform: translate3d(8px, 10px, -42px) rotate(.8deg);
+  }
+
+  .dashboard-page .client-workout-panel-custom .custom-workout-carousel[data-custom-workout-deck="true"] .custom-workout-deck-layer-two {
+    z-index: 1;
+    transform: translate3d(15px, 19px, -82px) rotate(1.4deg);
+  }
+
+  .dashboard-page .client-workout-panel-custom .custom-workout-carousel[data-custom-workout-deck="true"] .custom-workout-list {
+    position: relative;
+    z-index: 3;
+    width: 100%;
+    padding: 0 !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    border: 0 !important;
+    background: transparent !important;
+  }
+
+  .dashboard-page .client-workout-panel-custom .custom-workout-carousel[data-custom-workout-deck="true"] .custom-workout-card {
+    border: 1px solid #d4d7cf !important;
+    border-radius: 20px !important;
+    background: #fff !important;
+    box-shadow: 0 16px 30px rgba(17, 20, 17, .18) !important;
+    transform-origin: 50% 88%;
+  }
+
+  .dashboard-page .client-workout-panel-custom .custom-workout-carousel[data-custom-workout-deck="true"] .custom-workout-card.is-exercise-complete {
+    border-color: #21a637 !important;
+    background: #f5faf4 !important;
+    box-shadow: 0 0 0 2px rgba(33, 166, 55, .14), 0 16px 30px rgba(17, 20, 17, .14) !important;
+  }
+
+  .dashboard-page .client-workout-panel-custom .custom-workout-carousel[data-custom-workout-deck="true"] .custom-workout-card:not(.is-carousel-active) {
+    display: none !important;
+    pointer-events: none;
+  }
+
+  .dashboard-page .client-workout-panel-custom .custom-workout-carousel[data-custom-workout-deck="true"] .custom-workout-card.is-deck-entering-forward {
+    animation: custom-workout-deck-enter-forward 260ms cubic-bezier(.22, 1, .36, 1);
+  }
+
+  .dashboard-page .client-workout-panel-custom .custom-workout-carousel[data-custom-workout-deck="true"] .custom-workout-card.is-deck-entering-backward {
+    animation: custom-workout-deck-enter-backward 260ms cubic-bezier(.22, 1, .36, 1);
+  }
+
+  .dashboard-page .client-workout-panel-custom .custom-workout-carousel[data-custom-workout-deck="true"] .custom-workout-new-exercise-card {
+    position: absolute;
+    z-index: 0;
+    top: 24px;
+    right: 46px;
+    bottom: 10px;
+    left: 20px;
+    display: flex;
+    min-width: 0;
+    padding: 16px;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 12px;
+    overflow: hidden;
+    border: 2px dashed #9dbd24;
+    border-left: 7px solid var(--lime, #caff2c);
+    border-radius: 20px;
+    background: #efffc7;
+    box-shadow: 0 14px 30px rgba(17, 20, 17, .15);
+    color: #111411;
+    cursor: pointer;
+    font: inherit;
+    text-align: left;
+    transform: translate3d(8px, 0, -118px) scale(.97);
+    transform-origin: 50% 92%;
+  }
+
+  .dashboard-page .client-workout-panel-custom .custom-workout-carousel[data-custom-workout-deck="true"] .custom-workout-new-exercise-card[hidden] {
+    display: none !important;
+  }
+
+  .dashboard-page .client-workout-panel-custom .custom-workout-new-exercise-card > span:first-child {
+    display: grid;
+    min-width: 0;
+    gap: 3px;
+  }
+
+  .dashboard-page .client-workout-panel-custom .custom-workout-new-exercise-card small {
+    font-size: 13px;
+    font-weight: 900;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+  }
+
+  .dashboard-page .client-workout-panel-custom .custom-workout-new-exercise-card strong {
+    overflow: hidden;
+    font-size: 15px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .dashboard-page .client-workout-panel-custom .custom-workout-new-exercise-card:focus-visible {
+    outline: 3px solid #111411;
+    outline-offset: 3px;
+  }
+
+  .dashboard-page .client-workout-panel-custom[data-custom-workout-deck-enabled="true"] .custom-workout-add-actions {
+    display: none;
+  }
+
+  .dashboard-page .client-workout-panel-custom .custom-workout-card.is-entering-deck {
+    animation: custom-workout-card-lift-in 360ms cubic-bezier(.22, 1, .36, 1);
+  }
+}
+
+@keyframes custom-workout-card-lift-in {
+  from {
+    opacity: .72;
+    transform: translate3d(10px, 68px, -110px) scale(.97);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes custom-workout-deck-enter-forward {
+  from {
+    opacity: .72;
+    transform: translate3d(24px, 18px, -72px) rotate(.6deg) scale(.98);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) rotate(0) scale(1);
+  }
+}
+
+@keyframes custom-workout-deck-enter-backward {
+  from {
+    opacity: .72;
+    transform: translate3d(-24px, 18px, -72px) rotate(-.6deg) scale(.98);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) rotate(0) scale(1);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .dashboard-page .custom-workout-carousel .custom-workout-card {
+  .dashboard-page .custom-workout-carousel .custom-workout-card,
+  .dashboard-page .custom-workout-card.is-entering-deck,
+  .dashboard-page .custom-workout-card.is-deck-entering-forward,
+  .dashboard-page .custom-workout-card.is-deck-entering-backward {
     transition: none !important;
+    animation: none !important;
   }
 }
 

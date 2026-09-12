@@ -4853,13 +4853,36 @@ function customWorkoutCarouselGroupMarkup(format, exercises, groupIndex = 0, sta
     : format === "circuit"
       ? `Circuit ${groupIndex + 1}`
       : "Custom workout";
+  const nextExerciseNumber = startIndex + exercises.length + 1;
+  const newExerciseCard = format === "single" ? `
+    <button
+      class="custom-workout-new-exercise-card"
+      type="button"
+      data-add-custom-exercise
+      data-custom-exercise-placement="current"
+      data-custom-workout-new-exercise="${nextExerciseNumber}"
+      aria-label="Add new exercise ${nextExerciseNumber}"
+      hidden
+    >
+      <span>
+        <small data-custom-workout-new-exercise-label>+ New exercise ${nextExerciseNumber}</small>
+        <strong>Input exercise name here</strong>
+      </span>
+      <span aria-hidden="true">↗</span>
+    </button>
+  ` : "";
 
   return `
     <section class="custom-workout-carousel" data-custom-workout-carousel data-custom-workout-group="${groupIndex}" data-custom-workout-format="${escapeHtml(format)}" aria-label="${escapeHtml(label)} exercise carousel">
       <div class="workout-group-progress" data-workout-group-progress aria-live="polite"></div>
       <div class="custom-workout-carousel-heading" data-custom-workout-carousel-status aria-live="polite"></div>
-      <div class="workout-app-list custom-workout-list" data-custom-workout-list data-custom-workout-format="${escapeHtml(format)}" role="list" aria-label="Custom workout exercises" tabindex="0">
-        ${exercises.map((exercise, index) => customWorkoutCardMarkup(exercise, workoutTitle, startIndex + index, { groupPosition: index })).join("")}
+      <div class="custom-workout-exercise-deck" data-custom-workout-exercise-deck>
+        <span class="custom-workout-deck-layer custom-workout-deck-layer-two" aria-hidden="true"></span>
+        <span class="custom-workout-deck-layer custom-workout-deck-layer-one" aria-hidden="true"></span>
+        <div class="workout-app-list custom-workout-list" data-custom-workout-list data-custom-workout-format="${escapeHtml(format)}" role="list" aria-label="Custom workout exercises" tabindex="0">
+          ${exercises.map((exercise, index) => customWorkoutCardMarkup(exercise, workoutTitle, startIndex + index, { groupPosition: index })).join("")}
+        </div>
+        ${newExerciseCard}
       </div>
       <div class="custom-workout-carousel-footer" data-custom-workout-carousel-controls hidden>
         <button class="custom-workout-carousel-arrow" type="button" data-custom-workout-carousel-previous aria-label="Previous exercise">←</button>
@@ -5026,6 +5049,14 @@ function workoutCarouselProgressMarkup(carousel, progress, format, groupIndex) {
 }
 
 function customWorkoutCarouselMeta(format, index, total, groupIndex = 0) {
+  if (format === "single") {
+    return {
+      title: `Exercise ${index + 1} of ${total}`,
+      count: "New exercise waiting below",
+      cue: "Swipe between exercises or add another from the bottom of the deck."
+    };
+  }
+
   if (format === "superset") {
     const position = workoutCarouselExerciseCode(format, groupIndex, index);
     return {
@@ -5057,7 +5088,10 @@ function renderCustomWorkoutCarousel(carousel) {
   );
   const groupIndex = Number(carousel?.dataset.customWorkoutGroup) || 0;
   const mobile = window.matchMedia("(max-width: 760px)").matches;
-  const enabled = mobile && format !== "single" && cards.length > 1;
+  const isCustomPanel = panel?.classList.contains("client-workout-panel-custom") || false;
+  const deckEnabled = mobile && isCustomPanel && format === "single" && cards.length > 0;
+  const enabled = deckEnabled || (mobile && format !== "single" && cards.length > 1);
+  const groupProgressEnabled = enabled && format !== "single";
   const activeIndex = Math.min(Math.max(Number(carousel?.dataset.activeIndex) || 0, 0), Math.max(cards.length - 1, 0));
   const status = carousel?.querySelector("[data-custom-workout-carousel-status]");
   const controls = carousel?.querySelector("[data-custom-workout-carousel-controls]");
@@ -5066,6 +5100,7 @@ function renderCustomWorkoutCarousel(carousel) {
   const progressHeader = carousel?.querySelector("[data-workout-group-progress]");
   const primaryAction = carousel?.querySelector("[data-workout-group-primary-action]");
   const logSetButton = carousel?.querySelector("[data-workout-group-log-set]");
+  const newExerciseCard = carousel?.querySelector("[data-custom-workout-new-exercise]");
 
   if (!carousel) {
     return;
@@ -5073,7 +5108,11 @@ function renderCustomWorkoutCarousel(carousel) {
 
   carousel.dataset.customWorkoutFormat = format;
   carousel.dataset.carouselEnabled = enabled ? "true" : "false";
+  carousel.dataset.customWorkoutDeck = deckEnabled ? "true" : "false";
   carousel.dataset.activeIndex = String(activeIndex);
+  if (isCustomPanel) {
+    panel.dataset.customWorkoutDeckEnabled = deckEnabled ? "true" : "false";
+  }
   carousel.classList.toggle(
     "is-superset-complete",
     format === "superset" && cards.length > 1 && cards[cards.length - 1].classList.contains("is-exercise-complete")
@@ -5084,13 +5123,29 @@ function renderCustomWorkoutCarousel(carousel) {
   );
   if (controls) controls.hidden = !enabled;
   if (status) status.hidden = !enabled;
-  if (progressHeader) progressHeader.hidden = !enabled;
-  if (primaryAction) primaryAction.hidden = !enabled;
+  if (progressHeader) progressHeader.hidden = !groupProgressEnabled;
+  if (primaryAction) primaryAction.hidden = !groupProgressEnabled;
+  if (newExerciseCard) {
+    const nextExerciseNumber = (panel?.querySelectorAll("[data-custom-exercise-card]").length || cards.length) + 1;
+    const label = newExerciseCard.querySelector("[data-custom-workout-new-exercise-label]");
+    newExerciseCard.hidden = !deckEnabled;
+    newExerciseCard.dataset.customWorkoutNewExercise = String(nextExerciseNumber);
+    newExerciseCard.setAttribute("aria-label", `Add new exercise ${nextExerciseNumber}`);
+    if (label) label.textContent = `+ New exercise ${nextExerciseNumber}`;
+  }
 
   cards.forEach((card, index) => {
-    card.classList.toggle("is-carousel-active", enabled && index === activeIndex);
+    const isActive = enabled && index === activeIndex;
+    const isHiddenSlide = enabled && !isActive;
+    card.classList.toggle("is-carousel-active", isActive);
     card.setAttribute("aria-roledescription", enabled ? "slide" : "exercise");
     card.setAttribute("aria-label", `Exercise ${index + 1} of ${cards.length}`);
+    card.inert = isHiddenSlide;
+    if (isHiddenSlide) {
+      card.setAttribute("aria-hidden", "true");
+    } else {
+      card.removeAttribute("aria-hidden");
+    }
   });
 
   if (!enabled) {
@@ -5133,7 +5188,36 @@ function renderCustomWorkoutCarousel(carousel) {
   const previous = carousel.querySelector("[data-custom-workout-carousel-previous]");
   const next = carousel.querySelector("[data-custom-workout-carousel-next]");
   if (previous) previous.disabled = activeIndex === 0;
-  if (next) next.disabled = activeIndex === cards.length - 1;
+  if (next) {
+    const addsExercise = deckEnabled && activeIndex === cards.length - 1;
+    next.disabled = !addsExercise && activeIndex === cards.length - 1;
+    next.setAttribute("aria-label", addsExercise ? `Add new exercise ${cards.length + 1}` : "Next exercise");
+  }
+}
+
+function customWorkoutCarouselNavigationDecision(nextIndex, total, canAddExercise = false) {
+  const count = Math.max(Number(total) || 0, 0);
+  const requestedIndex = Number(nextIndex) || 0;
+
+  if (canAddExercise && count > 0 && requestedIndex >= count) {
+    return { action: "add", index: count };
+  }
+
+  return {
+    action: "move",
+    index: Math.min(Math.max(requestedIndex, 0), Math.max(count - 1, 0))
+  };
+}
+
+function requestCustomWorkoutNewExercise(carousel) {
+  const addCard = carousel?.querySelector("[data-custom-workout-new-exercise]");
+
+  if (!addCard || addCard.hidden) {
+    return false;
+  }
+
+  addCard.click();
+  return true;
 }
 
 function moveCustomWorkoutCarousel(carousel, nextIndex, options = {}) {
@@ -5144,7 +5228,15 @@ function moveCustomWorkoutCarousel(carousel, nextIndex, options = {}) {
     return;
   }
 
-  const index = Math.min(Math.max(Number(nextIndex) || 0, 0), cards.length - 1);
+  const canAddExercise = carousel.dataset.customWorkoutDeck === "true";
+  const currentIndex = Number(carousel.dataset.activeIndex) || 0;
+  const decision = customWorkoutCarouselNavigationDecision(nextIndex, cards.length, canAddExercise);
+  if (decision.action === "add") {
+    requestCustomWorkoutNewExercise(carousel);
+    return;
+  }
+
+  const index = decision.index;
   const firstOffset = cards[0]?.offsetLeft || 0;
   const card = cards[index];
   const cardOffset = Math.max((card?.offsetLeft || 0) - firstOffset, 0);
@@ -5153,6 +5245,16 @@ function moveCustomWorkoutCarousel(carousel, nextIndex, options = {}) {
   const targetLeft = cardOffset;
   carousel.dataset.activeIndex = String(index);
   renderCustomWorkoutCarousel(carousel);
+
+  if (canAddExercise && index !== currentIndex && !card.classList.contains("is-entering-deck")) {
+    const transitionClass = index > currentIndex
+      ? "is-deck-entering-forward"
+      : "is-deck-entering-backward";
+    card.classList.remove("is-deck-entering-forward", "is-deck-entering-backward");
+    void card.offsetWidth;
+    card.classList.add(transitionClass);
+    window.setTimeout(() => card.classList.remove(transitionClass), 280);
+  }
 
   // Direct assignment works consistently in iOS/Android webviews and avoids a
   // smooth-scroll race where the scroll listener could restore the old slide.
@@ -5250,7 +5352,11 @@ function bindCustomWorkoutCarousel(carousel) {
   list.addEventListener("scroll", () => {
     window.cancelAnimationFrame(frame);
     frame = window.requestAnimationFrame(() => {
-      if (carousel.dataset.carouselEnabled !== "true" || list.classList.contains("is-touch-swiping")) return;
+      if (
+        carousel.dataset.carouselEnabled !== "true" ||
+        carousel.dataset.customWorkoutDeck === "true" ||
+        list.classList.contains("is-touch-swiping")
+      ) return;
       const cards = customWorkoutCarouselCards(carousel);
       const firstOffset = cards[0]?.offsetLeft || 0;
       const index = cards.reduce((closest, card, cardIndex) => (
@@ -5270,7 +5376,7 @@ function bindCustomWorkoutCarousel(carousel) {
     if (
       carousel.dataset.carouselEnabled !== "true" ||
       event.touches.length !== 1 ||
-      event.target.closest("input, select, textarea")
+      event.target.closest("input, select, textarea, button, a")
     ) {
       touchSwipe = null;
       return;
@@ -5383,7 +5489,10 @@ function regroupCustomWorkoutCarousels(panel) {
     desiredGroups = [{ index: 0, cards }];
   }
   const existing = customWorkoutCarousels(panel);
-  const alreadyGrouped = existing.length === desiredGroups.length && desiredGroups.every((group, groupIndex) => {
+  const hasExpectedNewExerciseCards = existing.every((carousel) => (
+    Boolean(carousel.querySelector("[data-custom-workout-new-exercise]")) === (format === "single")
+  ));
+  const alreadyGrouped = hasExpectedNewExerciseCards && existing.length === desiredGroups.length && desiredGroups.every((group, groupIndex) => {
     const currentCards = customWorkoutCarouselCards(existing[groupIndex]);
     return Number(existing[groupIndex].dataset.customWorkoutGroup) === group.index &&
       currentCards.length === group.cards.length && currentCards.every((card, index) => card === group.cards[index]);
@@ -5635,7 +5744,7 @@ function updateCustomWorkoutFormat(panel, value, options = {}) {
     guide.textContent = config.guide;
   }
 
-  const addCurrentButton = panel.querySelector('[data-add-custom-exercise][data-custom-exercise-placement="current"]');
+  const addCurrentButton = panel.querySelector('[data-custom-workout-add-actions] [data-add-custom-exercise][data-custom-exercise-placement="current"]');
   const addCircuitButton = panel.querySelector('[data-add-custom-exercise][data-custom-exercise-placement="new-circuit"]');
   if (addCurrentButton) {
     addCurrentButton.textContent = format === "circuit" ? "Add to current circuit" : "Add exercise";
@@ -8860,6 +8969,27 @@ function handleWorkoutInteractions() {
 
     if (addCustomExerciseButton) {
       const panel = addCustomExerciseButton.closest(".client-workout-panel-custom");
+      const isDeckRequest = addCustomExerciseButton.matches("[data-custom-workout-new-exercise]");
+      const expectedExerciseNumber = Number(addCustomExerciseButton.dataset.customWorkoutNewExercise);
+      const nextExerciseNumber = (panel?.querySelectorAll("[data-custom-exercise-card]").length || 0) + 1;
+
+      if (
+        isDeckRequest &&
+        (
+          panel?.dataset.customWorkoutNewExercisePending === "true" ||
+          expectedExerciseNumber !== nextExerciseNumber
+        )
+      ) {
+        return;
+      }
+
+      if (isDeckRequest && panel) {
+        panel.dataset.customWorkoutNewExercisePending = "true";
+        window.setTimeout(() => {
+          delete panel.dataset.customWorkoutNewExercisePending;
+        }, 420);
+      }
+
       const format = normalizeCustomWorkoutFormat(panel?.dataset.customWorkoutFormat || activeCustomWorkoutFormat);
       const placement = addCustomExerciseButton.dataset.customExercisePlacement || "current";
       const stack = panel?.querySelector("[data-custom-workout-carousel-stack]");
@@ -8911,6 +9041,11 @@ function handleWorkoutInteractions() {
 
         const newCard = list.querySelector("[data-custom-exercise-card]:last-child");
         const newLogElement = newCard?.querySelector("[data-exercise-log]");
+
+        if (isDeckRequest && newCard) {
+          newCard.classList.add("is-entering-deck");
+          window.setTimeout(() => newCard.classList.remove("is-entering-deck"), 420);
+        }
 
         if (newLogElement) {
           const sharedDate = panel.querySelector("[data-workout-date]")?.value || todayDate();
