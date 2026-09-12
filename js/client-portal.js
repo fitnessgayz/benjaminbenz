@@ -2743,6 +2743,18 @@ function exerciseCardRows(exercises, workoutTitle, openMode = "first", workoutFo
   }).join("");
 }
 
+function workoutGroupDeckNextCardMarkup() {
+  return `
+    <span class="custom-workout-group-next-card" data-workout-group-next-card aria-hidden="true" hidden>
+      <span>
+        <small data-workout-group-next-label>Up next</small>
+        <strong data-workout-group-next-name>Next exercise</strong>
+      </span>
+      <span aria-hidden="true">↗</span>
+    </span>
+  `;
+}
+
 function assignedWorkoutCarouselMarkup(exercises, workoutTitle, workoutFocus, format, groupIndex = 0, startIndex = 0) {
   const label = format === "superset" ? `Superset ${groupIndex + 1}` : "Circuit";
 
@@ -2757,8 +2769,13 @@ function assignedWorkoutCarouselMarkup(exercises, workoutTitle, workoutFocus, fo
     >
       <div class="workout-group-progress" data-workout-group-progress aria-live="polite"></div>
       <div class="custom-workout-carousel-heading" data-custom-workout-carousel-status aria-live="polite"></div>
-      <div class="workout-app-list custom-workout-list assigned-workout-carousel-list" data-custom-workout-list data-custom-workout-format="${escapeHtml(format)}" role="list" aria-label="${escapeHtml(label)} exercises" tabindex="0">
-        ${exercises.length > 0 ? exerciseCardRows(exercises, workoutTitle, "all", workoutFocus, { format, startIndex }) : ""}
+      <div class="custom-workout-exercise-deck" data-custom-workout-exercise-deck>
+        <span class="custom-workout-deck-layer custom-workout-deck-layer-two" aria-hidden="true"></span>
+        <span class="custom-workout-deck-layer custom-workout-deck-layer-one" aria-hidden="true"></span>
+        <div class="workout-app-list custom-workout-list assigned-workout-carousel-list" data-custom-workout-list data-custom-workout-format="${escapeHtml(format)}" role="list" aria-label="${escapeHtml(label)} exercises" tabindex="0">
+          ${exercises.length > 0 ? exerciseCardRows(exercises, workoutTitle, "all", workoutFocus, { format, startIndex }) : ""}
+        </div>
+        ${workoutGroupDeckNextCardMarkup()}
       </div>
       <div class="custom-workout-carousel-footer" data-custom-workout-carousel-controls hidden>
         <button class="custom-workout-carousel-arrow" type="button" data-custom-workout-carousel-previous aria-label="Previous exercise">←</button>
@@ -4665,7 +4682,7 @@ function supersetRows(workout, workoutTitle) {
           group.exercises,
           workoutTitle,
           workout.focus,
-          group.exercises.length > 1 ? "superset" : "single",
+          "superset",
           groupIndex,
           startIndex
         )}
@@ -4890,6 +4907,7 @@ function customWorkoutCarouselGroupMarkup(format, exercises, groupIndex = 0, sta
       <span aria-hidden="true">↗</span>
     </button>
   ` : "";
+  const groupNextCard = format === "single" ? "" : workoutGroupDeckNextCardMarkup();
 
   return `
     <section class="custom-workout-carousel" data-custom-workout-carousel data-custom-workout-group="${groupIndex}" data-custom-workout-format="${escapeHtml(format)}" aria-label="${escapeHtml(label)} exercise carousel">
@@ -4902,6 +4920,7 @@ function customWorkoutCarouselGroupMarkup(format, exercises, groupIndex = 0, sta
           ${exercises.map((exercise, index) => customWorkoutCardMarkup(exercise, workoutTitle, startIndex + index, { groupPosition: index })).join("")}
         </div>
         ${newExerciseCard}
+        ${groupNextCard}
       </div>
       <div class="custom-workout-carousel-footer" data-custom-workout-carousel-controls hidden>
         <button class="custom-workout-carousel-arrow" type="button" data-custom-workout-carousel-previous aria-label="Previous exercise">←</button>
@@ -5096,6 +5115,55 @@ function customWorkoutCarouselMeta(format, index, total, groupIndex = 0) {
   };
 }
 
+function workoutCarouselDeckMeta(format, index, total, groupIndex, progress) {
+  const groupTitle = `${groupTypeLabel(format)} ${groupIndex + 1}`;
+  const position = workoutCarouselExerciseCode(format, groupIndex, index);
+  const roundTitle = progress.isComplete
+    ? "Complete"
+    : `Round ${progress.displayRound} of ${progress.roundCount}`;
+
+  return {
+    title: `${groupTitle} · ${roundTitle}`,
+    count: format === "circuit"
+      ? `Station ${index + 1} of ${total}`
+      : `${position} · Exercise ${index + 1} of ${total}`
+  };
+}
+
+function workoutCarouselDeckCue(progress, activeIndex, format) {
+  const exercises = Array.isArray(progress?.exercises) ? progress.exercises : [];
+
+  if (exercises.length === 0) {
+    return { hidden: true, complete: false, label: "", name: "", targetIndex: -1 };
+  }
+
+  if (progress.isComplete) {
+    return {
+      hidden: false,
+      complete: true,
+      label: `${groupTypeLabel(format)} complete ✓`,
+      name: "All rounds are saved.",
+      targetIndex: -1
+    };
+  }
+
+  const index = Math.min(Math.max(Number(activeIndex) || 0, 0), exercises.length - 1);
+  const wrapsToNextRound = index === exercises.length - 1;
+  const targetIndex = wrapsToNextRound ? 0 : index + 1;
+  const nextExercise = exercises[targetIndex];
+  const nextPosition = format === "circuit"
+    ? `Station ${targetIndex + 1}`
+    : nextExercise.code;
+
+  return {
+    hidden: false,
+    complete: false,
+    label: `${wrapsToNextRound ? "Next round" : "Up next"} · ${nextPosition}`,
+    name: nextExercise.name,
+    targetIndex
+  };
+}
+
 function renderCustomWorkoutCarousel(carousel) {
   const panel = carousel?.closest(".client-workout-panel-custom, .client-workout-panel-assigned");
   const cards = customWorkoutCarouselCards(carousel);
@@ -5108,8 +5176,11 @@ function renderCustomWorkoutCarousel(carousel) {
   const groupIndex = Number(carousel?.dataset.customWorkoutGroup) || 0;
   const mobile = window.matchMedia("(max-width: 760px)").matches;
   const isCustomPanel = panel?.classList.contains("client-workout-panel-custom") || false;
-  const deckEnabled = mobile && isCustomPanel && format === "single" && cards.length > 0;
-  const enabled = deckEnabled || (mobile && format !== "single" && cards.length > 1);
+  const straightDeckEnabled = mobile && isCustomPanel && format === "single" && cards.length > 0;
+  const groupDeckEnabled = mobile && format !== "single" && cards.length > 1;
+  const deckEnabled = straightDeckEnabled || groupDeckEnabled;
+  const canAddExercise = straightDeckEnabled;
+  const enabled = deckEnabled;
   const groupProgressEnabled = enabled && format !== "single";
   const activeIndex = Math.min(Math.max(Number(carousel?.dataset.activeIndex) || 0, 0), Math.max(cards.length - 1, 0));
   const status = carousel?.querySelector("[data-custom-workout-carousel-status]");
@@ -5120,6 +5191,7 @@ function renderCustomWorkoutCarousel(carousel) {
   const primaryAction = carousel?.querySelector("[data-workout-group-primary-action]");
   const logSetButton = carousel?.querySelector("[data-workout-group-log-set]");
   const newExerciseCard = carousel?.querySelector("[data-custom-workout-new-exercise]");
+  const groupNextCard = carousel?.querySelector("[data-workout-group-next-card]");
 
   if (!carousel) {
     return;
@@ -5128,29 +5200,41 @@ function renderCustomWorkoutCarousel(carousel) {
   carousel.dataset.customWorkoutFormat = format;
   carousel.dataset.carouselEnabled = enabled ? "true" : "false";
   carousel.dataset.customWorkoutDeck = deckEnabled ? "true" : "false";
+  carousel.dataset.groupWorkoutDeck = groupDeckEnabled ? "true" : "false";
+  carousel.dataset.customWorkoutCanAddExercise = canAddExercise ? "true" : "false";
   carousel.dataset.activeIndex = String(activeIndex);
   if (isCustomPanel) {
-    panel.dataset.customWorkoutDeckEnabled = deckEnabled ? "true" : "false";
+    panel.dataset.customWorkoutDeckEnabled = straightDeckEnabled ? "true" : "false";
   }
+  const progress = workoutCarouselProgress(carousel, cards, format, groupIndex);
   carousel.classList.toggle(
     "is-superset-complete",
-    format === "superset" && cards.length > 1 && cards[cards.length - 1].classList.contains("is-exercise-complete")
+    format === "superset" && cards.length > 1 && progress.isComplete
   );
   carousel.classList.toggle(
     "is-circuit-complete",
-    format === "circuit" && cards.length > 0 && cards.every((card) => card.classList.contains("is-exercise-complete"))
+    format === "circuit" && cards.length > 1 && progress.isComplete
   );
   if (controls) controls.hidden = !enabled;
   if (status) status.hidden = !enabled;
-  if (progressHeader) progressHeader.hidden = !groupProgressEnabled;
+  if (progressHeader) progressHeader.hidden = !groupProgressEnabled || groupDeckEnabled;
   if (primaryAction) primaryAction.hidden = !groupProgressEnabled;
   if (newExerciseCard) {
     const nextExerciseNumber = (panel?.querySelectorAll("[data-custom-exercise-card]").length || cards.length) + 1;
     const label = newExerciseCard.querySelector("[data-custom-workout-new-exercise-label]");
-    newExerciseCard.hidden = !deckEnabled;
+    newExerciseCard.hidden = !canAddExercise;
     newExerciseCard.dataset.customWorkoutNewExercise = String(nextExerciseNumber);
     newExerciseCard.setAttribute("aria-label", `Add new exercise ${nextExerciseNumber}`);
     if (label) label.textContent = `+ New exercise ${nextExerciseNumber}`;
+  }
+  if (groupNextCard) {
+    const deckCue = workoutCarouselDeckCue(progress, activeIndex, format);
+    const label = groupNextCard.querySelector("[data-workout-group-next-label]");
+    const name = groupNextCard.querySelector("[data-workout-group-next-name]");
+    groupNextCard.hidden = !groupDeckEnabled || deckCue.hidden;
+    groupNextCard.classList.toggle("is-complete", groupDeckEnabled && deckCue.complete);
+    if (label) label.textContent = deckCue.label;
+    if (name) name.textContent = deckCue.name;
   }
 
   cards.forEach((card, index) => {
@@ -5172,8 +5256,9 @@ function renderCustomWorkoutCarousel(carousel) {
     return;
   }
 
-  const meta = customWorkoutCarouselMeta(format, activeIndex, cards.length, groupIndex);
-  const progress = workoutCarouselProgress(carousel, cards, format, groupIndex);
+  const meta = groupDeckEnabled
+    ? workoutCarouselDeckMeta(format, activeIndex, cards.length, groupIndex, progress)
+    : customWorkoutCarouselMeta(format, activeIndex, cards.length, groupIndex);
   if (progressHeader) {
     progressHeader.innerHTML = workoutCarouselProgressMarkup(carousel, progress, format, groupIndex);
   }
@@ -5206,20 +5291,36 @@ function renderCustomWorkoutCarousel(carousel) {
 
   const previous = carousel.querySelector("[data-custom-workout-carousel-previous]");
   const next = carousel.querySelector("[data-custom-workout-carousel-next]");
-  if (previous) previous.disabled = activeIndex === 0;
+  const wrapsGroupDeck = groupDeckEnabled && cards.length > 1;
+  if (previous) {
+    previous.disabled = !wrapsGroupDeck && activeIndex === 0;
+    previous.setAttribute("aria-label", format === "circuit" ? "Previous station" : "Previous exercise");
+  }
   if (next) {
-    const addsExercise = deckEnabled && activeIndex === cards.length - 1;
-    next.disabled = !addsExercise && activeIndex === cards.length - 1;
-    next.setAttribute("aria-label", addsExercise ? `Add new exercise ${cards.length + 1}` : "Next exercise");
+    const addsExercise = canAddExercise && activeIndex === cards.length - 1;
+    const startsNextRound = wrapsGroupDeck && activeIndex === cards.length - 1;
+    next.disabled = !addsExercise && !wrapsGroupDeck && activeIndex === cards.length - 1;
+    next.setAttribute(
+      "aria-label",
+      addsExercise
+        ? `Add new exercise ${cards.length + 1}`
+        : startsNextRound
+          ? `Next round, ${format === "circuit" ? "station 1" : "exercise 1"}`
+          : format === "circuit" ? "Next station" : "Next exercise"
+    );
   }
 }
 
-function customWorkoutCarouselNavigationDecision(nextIndex, total, canAddExercise = false) {
+function customWorkoutCarouselNavigationDecision(nextIndex, total, canAddExercise = false, wrap = false) {
   const count = Math.max(Number(total) || 0, 0);
   const requestedIndex = Number(nextIndex) || 0;
 
   if (canAddExercise && count > 0 && requestedIndex >= count) {
     return { action: "add", index: count };
+  }
+
+  if (wrap && count > 0) {
+    return { action: "move", index: ((requestedIndex % count) + count) % count };
   }
 
   return {
@@ -5247,9 +5348,16 @@ function moveCustomWorkoutCarousel(carousel, nextIndex, options = {}) {
     return;
   }
 
-  const canAddExercise = carousel.dataset.customWorkoutDeck === "true";
+  const canAddExercise = carousel.dataset.customWorkoutCanAddExercise === "true";
+  const isVisualDeck = carousel.dataset.customWorkoutDeck === "true";
+  const wrapsGroupDeck = carousel.dataset.groupWorkoutDeck === "true";
   const currentIndex = Number(carousel.dataset.activeIndex) || 0;
-  const decision = customWorkoutCarouselNavigationDecision(nextIndex, cards.length, canAddExercise);
+  const decision = customWorkoutCarouselNavigationDecision(
+    nextIndex,
+    cards.length,
+    canAddExercise,
+    wrapsGroupDeck
+  );
   if (decision.action === "add") {
     requestCustomWorkoutNewExercise(carousel);
     return;
@@ -5265,8 +5373,8 @@ function moveCustomWorkoutCarousel(carousel, nextIndex, options = {}) {
   carousel.dataset.activeIndex = String(index);
   renderCustomWorkoutCarousel(carousel);
 
-  if (canAddExercise && index !== currentIndex && !card.classList.contains("is-entering-deck")) {
-    const transitionClass = index > currentIndex
+  if (isVisualDeck && index !== currentIndex && !card.classList.contains("is-entering-deck")) {
+    const transitionClass = Number(nextIndex) > currentIndex
       ? "is-deck-entering-forward"
       : "is-deck-entering-backward";
     card.classList.remove("is-deck-entering-forward", "is-deck-entering-backward");
@@ -5667,6 +5775,7 @@ function syncWorkoutPanelDate(panel, value, refresh = true) {
   const date = value || todayDate();
   const picker = panel?.querySelector("[data-workout-date]");
   const display = panel?.querySelector("[data-workout-date-value]");
+  const carouselsToRefresh = new Set();
 
   if (picker && picker.value !== date) {
     picker.value = date;
@@ -5676,11 +5785,19 @@ function syncWorkoutPanelDate(panel, value, refresh = true) {
   }
 
   panel?.querySelectorAll("[data-exercise-log] [data-log-date]").forEach((input) => {
+    const logElement = input.closest("[data-exercise-log]");
     input.value = date;
-    if (refresh) {
-      updateExerciseLogField(input.closest("[data-exercise-log]"));
+    if (refresh && logElement) {
+      updateExerciseLogField(logElement);
+      const carousel = logElement.closest("[data-custom-workout-carousel]");
+      if (carousel) {
+        logElement.dataset.groupLoggedSets = String(filledSetCount(logElement));
+        carouselsToRefresh.add(carousel);
+      }
     }
   });
+
+  carouselsToRefresh.forEach((carousel) => renderCustomWorkoutCarousel(carousel));
 }
 
 function syncCustomWorkoutFormatMarkers(panel) {
@@ -6529,6 +6646,34 @@ function historyPlaceholder(value, fallback = "") {
   return value === null || value === undefined || value === "" ? fallback : String(value);
 }
 
+function syncExerciseFinishedState(logElement) {
+  if (!logElement || logElement.dataset.warmupLog !== undefined || logElement.dataset.cardioLog !== undefined) {
+    return false;
+  }
+
+  const card = logElement.closest(".workout-exercise-card");
+  const completed = visibleSetTarget(logElement) > 0 && filledSetCount(logElement) >= visibleSetTarget(logElement);
+  const finishButton = logElement.querySelector("[data-finish-set]");
+  const format = normalizeCustomWorkoutFormat(
+    card?.closest("[data-custom-workout-carousel]")?.dataset.customWorkoutFormat || "single"
+  );
+  const isCustomWorkout = Boolean(card?.closest(".client-workout-panel-custom"));
+
+  logElement.classList.toggle("is-exercise-complete", completed);
+  if ((card?.querySelectorAll("[data-exercise-log]").length || 0) <= 1) {
+    card?.classList.toggle("is-exercise-complete", completed);
+  }
+
+  if (finishButton && !finishButton.matches("[data-add-superset]")) {
+    finishButton.textContent = completed
+      ? "Finished ✓"
+      : isCustomWorkout && format === "superset" ? "Superset Completed" : "Set Finished";
+    finishButton.setAttribute("aria-pressed", completed ? "true" : "false");
+  }
+
+  return completed;
+}
+
 function updateSetHistoryPlaceholders(logElement, logs = logsForExerciseDisplay(logElement)) {
   const selectedDate = logElement?.querySelector("[data-log-date]")?.value || todayDate();
   const previousLogs = latestPreviousSetLogs(logs, selectedDate);
@@ -6697,6 +6842,7 @@ function updateExerciseLogField(logElement) {
   }
 
   updateVisibleSetProgress(logElement);
+  syncExerciseFinishedState(logElement);
   renderPreviousExerciseWeights(logElement, logs);
 }
 
@@ -9118,6 +9264,10 @@ function handleWorkoutInteractions() {
           }
 
           targetList = targetCarousel?.querySelector("[data-custom-workout-list]") || list;
+          if (targetCarousel) {
+            targetCarousel.dataset.customWorkoutFormat = "superset";
+            targetList.dataset.customWorkoutFormat = "superset";
+          }
         }
 
         const cardMarkup = exerciseCard({

@@ -29,14 +29,19 @@ test("renders a distinct bottom add card that stays out of exercise counts", () 
   assert.doesNotMatch(cards, /data-custom-workout-new-exercise/);
 });
 
-test("enables the lifted deck only for mobile custom straight sets", () => {
+test("enables the lifted deck for straight custom and grouped mobile workouts", () => {
   const render = sourceForFunction("renderCustomWorkoutCarousel");
 
-  assert.match(render, /isCustomPanel && format === "single" && cards\.length > 0/);
+  assert.match(render, /const straightDeckEnabled = mobile && isCustomPanel && format === "single" && cards\.length > 0/);
+  assert.match(render, /const groupDeckEnabled = mobile && format !== "single" && cards\.length > 1/);
+  assert.match(render, /const deckEnabled = straightDeckEnabled \|\| groupDeckEnabled/);
+  assert.match(render, /const canAddExercise = straightDeckEnabled/);
   assert.match(render, /carousel\.dataset\.customWorkoutDeck = deckEnabled \? "true" : "false"/);
-  assert.match(render, /panel\.dataset\.customWorkoutDeckEnabled = deckEnabled \? "true" : "false"/);
-  assert.match(render, /progressHeader\.hidden = !groupProgressEnabled/);
-  assert.match(render, /newExerciseCard\.hidden = !deckEnabled/);
+  assert.match(render, /carousel\.dataset\.groupWorkoutDeck = groupDeckEnabled \? "true" : "false"/);
+  assert.match(render, /carousel\.dataset\.customWorkoutCanAddExercise = canAddExercise \? "true" : "false"/);
+  assert.match(render, /panel\.dataset\.customWorkoutDeckEnabled = straightDeckEnabled \? "true" : "false"/);
+  assert.match(render, /progressHeader\.hidden = !groupProgressEnabled \|\| groupDeckEnabled/);
+  assert.match(render, /newExerciseCard\.hidden = !canAddExercise/);
   assert.match(render, /querySelectorAll\("\[data-custom-exercise-card\]"\)\.length \|\| cards\.length\) \+ 1/);
 });
 
@@ -49,6 +54,8 @@ test("moves normally and treats forward navigation past the last card as add", (
   assert.deepEqual(decision(1, 3, true), { action: "move", index: 1 });
   assert.deepEqual(decision(-1, 3, true), { action: "move", index: 0 });
   assert.deepEqual(decision(3, 3, false), { action: "move", index: 2 });
+  assert.deepEqual(decision(3, 3, false, true), { action: "move", index: 0 });
+  assert.deepEqual(decision(-1, 3, false, true), { action: "move", index: 2 });
 });
 
 test("tap, next arrow, and final left swipe share the guarded add path", () => {
@@ -60,6 +67,7 @@ test("tap, next arrow, and final left swipe share the guarded add path", () => {
   const interaction = portal.slice(interactionStart, interactionEnd);
 
   assert.match(request, /addCard\.click\(\)/);
+  assert.match(move, /customWorkoutCanAddExercise === "true"/);
   assert.match(move, /decision\.action === "add"[\s\S]*?requestCustomWorkoutNewExercise\(carousel\)/);
   assert.match(bind, /moveCustomWorkoutCarousel\(carousel, startIndex \+ direction\)/);
   assert.match(bind, /input, select, textarea, button, a/);
@@ -78,7 +86,10 @@ test("keeps only the active real card interactive and clears the mobile dock", (
   assert.match(render, /card\.inert = isHiddenSlide/);
   assert.match(render, /card\.setAttribute\("aria-hidden", "true"\)/);
   assert.match(render, /card\.removeAttribute\("aria-hidden"\)/);
-  assert.match(render, /addsExercise \? `Add new exercise \$\{cards\.length \+ 1\}` : "Next exercise"/);
+  assert.match(
+    render,
+    /addsExercise[\s\S]*?\? `Add new exercise \$\{cards\.length \+ 1\}`[\s\S]*?: format === "circuit" \? "Next station" : "Next exercise"/,
+  );
   assert.match(bind, /carousel\.dataset\.customWorkoutDeck === "true"/);
   assert.match(move, /is-deck-entering-forward/);
   assert.match(move, /is-deck-entering-backward/);

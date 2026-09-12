@@ -43,7 +43,7 @@ test("labels and collapses the exercise-name editor on both workout card types",
   assert.match(mobileStyles, /\.custom-workout-name-field-label[\s\S]*?text-transform:\s*uppercase/);
   assert.match(mobileStyles, /\.custom-workout-card:not\(\.is-open\) \.custom-workout-editable-title[\s\S]*?display:\s*none !important/);
   assert.match(mobileStyles, /\.custom-workout-card:not\(\.is-open\) \.custom-workout-collapsed-name \{[\s\S]*?display:\s*flex !important/);
-  assert.match(dashboard, /css\/custom-workout-mobile-fix\.css\?v=custom-exercise-deck-1/);
+  assert.match(dashboard, /css\/custom-workout-mobile-fix\.css\?v=group-exercise-deck-1/);
 });
 
 test("keeps delete and collapse actions together in both workout card headers", () => {
