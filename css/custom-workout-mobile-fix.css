@@ -226,23 +226,22 @@
 }
 
 .dashboard-page :is(.client-workout-panel-custom, .client-workout-panel-assigned) .custom-workout-collapsed-name {
-  display: none !important;
+  display: block !important;
   color: #111411;
-  max-height: 3.65rem;
   font-size: clamp(1.35rem, 6vw, 1.75rem) !important;
+  font-style: italic !important;
   font-weight: 900 !important;
   letter-spacing: -.025em;
   line-height: 1.02;
   overflow-wrap: anywhere;
   text-transform: uppercase;
   white-space: normal;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
 }
 
 .dashboard-page :is(.client-workout-panel-custom, .client-workout-panel-assigned) .custom-workout-editable-title input {
   min-width: 0;
   font-size: 1rem !important;
+  font-style: normal !important;
   font-weight: 400 !important;
   letter-spacing: normal;
   line-height: 1.2;
@@ -255,6 +254,13 @@
   text-transform: none;
 }
 
+.dashboard-page :is(.client-workout-panel-custom, .client-workout-panel-assigned) .custom-workout-card.is-open .custom-workout-collapsed-name {
+  max-height: none;
+  padding-right: .12em;
+  overflow: hidden;
+  text-overflow: clip;
+}
+
 .dashboard-page :is(.client-workout-panel-custom, .client-workout-panel-assigned) .custom-workout-card:not(.is-open) .custom-workout-name-field-label,
 .dashboard-page :is(.client-workout-panel-custom, .client-workout-panel-assigned) .custom-workout-card:not(.is-open) .custom-workout-editable-title {
   display: none !important;
@@ -262,6 +268,10 @@
 
 .dashboard-page :is(.client-workout-panel-custom, .client-workout-panel-assigned) .custom-workout-card:not(.is-open) .custom-workout-collapsed-name {
   display: -webkit-box !important;
+  max-height: 3.65rem;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 /* Workout cards use a compact action cluster instead of repeating the group badge. */

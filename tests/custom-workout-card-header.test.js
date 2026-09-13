@@ -29,9 +29,10 @@ test("removes duplicate group badges from both workout card types", () => {
 test("labels and collapses the exercise-name editor on both workout card types", () => {
   [customCardMarkup, assignedCardMarkup].forEach((markup) => {
     const labelIndex = markup.indexOf('class="custom-workout-name-field-label"');
+    const titleIndex = markup.indexOf('class="custom-workout-collapsed-name"');
     const editorIndex = markup.indexOf('class="custom-workout-editable-title"');
 
-    assert.ok(labelIndex >= 0 && labelIndex < editorIndex);
+    assert.ok(labelIndex >= 0 && labelIndex < titleIndex && titleIndex < editorIndex);
     assert.match(markup, />Exercise name<\/span>/);
     assert.match(markup, /data-exercise-collapsed-name/);
     assert.match(markup, /data-exercise-toggle[\s\S]*?aria-expanded=/);
@@ -42,22 +43,26 @@ test("labels and collapses the exercise-name editor on both workout card types",
   assert.match(namePreviewSource, /function setWorkoutExerciseCardExpanded[\s\S]*?classList\.toggle\("is-open", isExpanded\)[\s\S]*?setAttribute\("aria-expanded"/);
   assert.match(mobileStyles, /\.custom-workout-name-field-label[\s\S]*?text-transform:\s*uppercase/);
   assert.match(mobileStyles, /\.custom-workout-card:not\(\.is-open\) \.custom-workout-editable-title[\s\S]*?display:\s*none !important/);
-  assert.match(mobileStyles, /\.custom-workout-card:not\(\.is-open\) \.custom-workout-collapsed-name \{[\s\S]*?display:\s*-webkit-box !important/);
+  assert.match(mobileStyles, /\.custom-workout-card:not\(\.is-open\) \.custom-workout-collapsed-name \{[^}]*display:\s*-webkit-box !important/);
   assert.match(
     mobileStyles,
-    /:is\(\.client-workout-panel-custom, \.client-workout-panel-assigned\) \.custom-workout-collapsed-name \{[^}]*display:\s*none !important;/,
+    /:is\(\.client-workout-panel-custom, \.client-workout-panel-assigned\) \.custom-workout-collapsed-name \{[^}]*display:\s*block !important;/,
   );
-  assert.match(dashboard, /css\/custom-workout-mobile-fix\.css\?v=exercise-title-state-3/);
+  assert.match(
+    mobileStyles,
+    /\.custom-workout-card\.is-open \.custom-workout-collapsed-name \{[^}]*max-height:\s*none;[^}]*padding-right:\s*\.12em;[^}]*overflow:\s*hidden;/,
+  );
+  assert.match(dashboard, /css\/custom-workout-mobile-fix\.css\?v=exercise-title-wrap-italic-5/);
 });
 
-test("keeps the editable name normal while rendering the collapsed title bold uppercase", () => {
+test("keeps the editable name normal while rendering the display title bold italic uppercase", () => {
   assert.match(
     mobileStyles,
-    /:is\(\.client-workout-panel-custom, \.client-workout-panel-assigned\) \.custom-workout-editable-title input \{[^}]*font-size:\s*1rem !important;[^}]*font-weight:\s*400 !important;[^}]*letter-spacing:\s*normal;[^}]*text-transform:\s*none;/,
+    /:is\(\.client-workout-panel-custom, \.client-workout-panel-assigned\) \.custom-workout-editable-title input \{[^}]*font-size:\s*1rem !important;[^}]*font-style:\s*normal !important;[^}]*font-weight:\s*400 !important;[^}]*letter-spacing:\s*normal;[^}]*text-transform:\s*none;/,
   );
   assert.match(
     mobileStyles,
-    /:is\(\.client-workout-panel-custom, \.client-workout-panel-assigned\) \.custom-workout-collapsed-name \{[\s\S]*?font-size:\s*clamp\([^;]+\)(?:\s*!important)?;[\s\S]*?font-weight:\s*900(?:\s*!important)?;[\s\S]*?line-height:\s*[^;]+;[\s\S]*?text-transform:\s*uppercase;/,
+    /:is\(\.client-workout-panel-custom, \.client-workout-panel-assigned\) \.custom-workout-collapsed-name \{[^}]*font-size:\s*clamp\([^;]+\)(?:\s*!important)?;[^}]*font-style:\s*italic !important;[^}]*font-weight:\s*900(?:\s*!important)?;[^}]*line-height:\s*[^;]+;[^}]*text-transform:\s*uppercase;/,
   );
 
   [customCardMarkup, assignedCardMarkup].forEach((markup) => {
@@ -76,7 +81,11 @@ test("contains long uppercase exercise titles inside the card header", () => {
   );
   assert.match(
     mobileStyles,
-    /:is\(\.client-workout-panel-custom, \.client-workout-panel-assigned\) \.custom-workout-collapsed-name \{[\s\S]*?max-height:\s*3\.65rem;[\s\S]*?overflow-wrap:\s*anywhere;[\s\S]*?white-space:\s*normal;[\s\S]*?-webkit-line-clamp:\s*2;/,
+    /:is\(\.client-workout-panel-custom, \.client-workout-panel-assigned\) \.custom-workout-collapsed-name \{[^}]*overflow-wrap:\s*anywhere;[^}]*white-space:\s*normal;/,
+  );
+  assert.match(
+    mobileStyles,
+    /\.custom-workout-card:not\(\.is-open\) \.custom-workout-collapsed-name \{[^}]*max-height:\s*3\.65rem;[^}]*overflow:\s*hidden;[^}]*-webkit-line-clamp:\s*2;/,
   );
   assert.match(
     mobileStyles,
