@@ -13974,3 +13974,72 @@ body.client-dashboard-page {
     font-size: .72rem;
   }
 }
+
+/* Compact the client food entry form into paired mobile fields. */
+@media (max-width: 760px) {
+  body.client-dashboard-page .nutrition-panel .nutrition-food-log-card {
+    gap: 12px;
+    padding: 14px !important;
+  }
+
+  body.client-dashboard-page .nutrition-panel .nutrition-food-log-card .compact-heading h3 {
+    font-size: clamp(1.7rem, 8vw, 2.15rem) !important;
+    line-height: .94 !important;
+  }
+
+  body.client-dashboard-page #client-food-entry-form {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px 8px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  body.client-dashboard-page #client-food-entry-form > * {
+    grid-column: auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  body.client-dashboard-page #client-food-entry-form > :is(.food-result-field, .food-notes-field) {
+    grid-column: 1 / -1 !important;
+  }
+
+  body.client-dashboard-page #client-food-entry-form > label {
+    align-content: start;
+    gap: 5px;
+    font-size: .82rem;
+    line-height: 1.1;
+  }
+
+  body.client-dashboard-page #client-food-entry-form :is(input, select, textarea) {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    min-height: 48px;
+    padding: 10px 11px;
+    overflow: hidden;
+    font-size: 16px !important;
+    line-height: 1.15;
+    text-overflow: ellipsis;
+  }
+
+  body.client-dashboard-page #client-food-entry-form textarea {
+    min-height: 72px;
+    overflow: auto !important;
+    text-overflow: clip !important;
+    white-space: normal;
+  }
+
+  body.client-dashboard-page #client-food-entry-form #search-food-button {
+    grid-column: auto !important;
+    min-height: 48px !important;
+    align-self: end;
+    padding: 10px !important;
+    font-size: .84rem !important;
+    line-height: 1.1 !important;
+    white-space: normal !important;
+  }
+}
