@@ -3519,36 +3519,13 @@ function handleClientProgressDateChange() {
   });
 }
 
-function setProgressSectionExpanded(button, content, expanded) {
-  if (!button || !content) {
-    return;
-  }
-
-  const label = button.querySelector("[data-progress-toggle-label]");
-  const icon = button.querySelector(".progress-section-toggle-icon");
-  const section = button.closest(".progress-entry-card, .progress-exercise-section, .progress-gallery-section, .progress-history-section");
-
-  button.setAttribute("aria-expanded", expanded ? "true" : "false");
-  content.hidden = !expanded;
-  section?.classList.toggle("is-collapsed", !expanded);
-
-  if (label) {
-    label.textContent = expanded ? "Minimize" : "Expand";
-  }
-  if (icon) {
-    icon.textContent = expanded ? "−" : "+";
-  }
-}
-
 function handleClientPastProgressEntry() {
   const button = document.getElementById("client-add-past-progress-button");
 
   button?.addEventListener("click", () => {
     const content = document.getElementById("client-progress-entry-content");
-    const toggle = document.querySelector('[data-progress-section-toggle][aria-controls="client-progress-entry-content"]');
     const dateInput = document.querySelector('[name="progress_date"]');
 
-    setProgressSectionExpanded(toggle, content, true);
     setClientProgressStatus("Choose the date of the DEXA scan or past measurement.");
     content?.scrollIntoView({
       behavior: window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches ? "auto" : "smooth",
@@ -10737,26 +10714,6 @@ function handleClientDashboardTabs() {
   });
 }
 
-function handleProgressSectionToggles() {
-  document.addEventListener("click", (event) => {
-    const button = event.target.closest("[data-progress-section-toggle]");
-
-    if (!button) {
-      return;
-    }
-
-    const contentId = button.getAttribute("aria-controls");
-    const content = contentId ? document.getElementById(contentId) : null;
-
-    if (!content) {
-      return;
-    }
-
-    const willExpand = button.getAttribute("aria-expanded") !== "true";
-    setProgressSectionExpanded(button, content, willExpand);
-  });
-}
-
 function setExerciseSkipped(logElement, skipped, options = {}) {
   if (!logElement) {
     return;
@@ -12529,7 +12486,6 @@ handleClientWorkoutHistoryDownload();
 handleCopyWorkoutToCustom();
 handleClientWorkoutHistoryDeck();
 handleClientDashboardTabs();
-handleProgressSectionToggles();
 handleMonthlyProgressReport();
 handleClientExerciseProgressCarousel();
 handleClientPastProgressEntry();

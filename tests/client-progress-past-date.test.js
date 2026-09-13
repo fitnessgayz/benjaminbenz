@@ -18,7 +18,7 @@ function sourceBetween(source, startMarker, endMarker) {
 }
 
 test("makes past DEXA and measurement dates easy to find", () => {
-  assert.match(dashboard, /id="client-add-past-progress-button"[^>]*aria-controls="client-progress-entry-content"/);
+  assert.match(dashboard, /id="client-add-past-progress-button"[^>]*aria-controls="client-progress-entry-content"[^>]*>Add measurements<\/button>/);
   assert.match(dashboard, /Measurement date[\s\S]*?name="progress_date"[\s\S]*?For older DEXA results, choose the date of the scan\./);
   assert.match(styles, /\.progress-date-actions[\s\S]*?\.progress-past-entry-button/);
 });
@@ -30,7 +30,7 @@ test("opens the stats editor and focuses the historical date picker", () => {
     "async function progressPhotoJpeg"
   );
 
-  assert.match(handler, /setProgressSectionExpanded\(toggle, content, true\)/);
+  assert.doesNotMatch(handler, /setProgressSectionExpanded/);
   assert.match(handler, /Choose the date of the DEXA scan or past measurement/);
   assert.match(handler, /dateInput\?\.focus\(\{ preventScroll: true \}\)/);
   assert.match(handler, /dateInput\?\.showPicker\?\.\(\)/);
@@ -41,7 +41,7 @@ test("loads only the selected date and keeps historical entries separate", () =>
   const dateHandler = sourceBetween(
     portal,
     "function handleClientProgressDateChange()",
-    "function setProgressSectionExpanded"
+    "function handleClientPastProgressEntry()"
   );
   const payload = sourceBetween(portal, "function clientProgressPayload", "function renderRest");
 

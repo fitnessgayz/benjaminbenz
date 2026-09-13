@@ -499,37 +499,18 @@
             </div>
             <div class="progress-date-actions">
               <span class="status-pill" id="progress-date" aria-label="Latest measurement date"></span>
-              <button class="button button-ghost progress-past-entry-button" type="button" id="client-add-past-progress-button" aria-controls="client-progress-entry-content">Add past measurement</button>
+              <button class="button button-ghost progress-past-entry-button" type="button" id="client-add-past-progress-button" aria-controls="client-progress-entry-content">Add measurements</button>
             </div>
           </div>
           <p class="client-progress-intro">Track body measurements and private progress photos over time.</p>
-          <div class="progress-current" id="progress-current"></div>
-          <div class="progress-metric-tabs" id="progress-metric-tabs" aria-label="Choose progress chart">
-            <button class="progress-metric-tab is-active" type="button" data-progress-metric="bodyweight" aria-pressed="true">Bodyweight</button>
-            <button class="progress-metric-tab" type="button" data-progress-metric="bodyfat" aria-pressed="false">Body fat</button>
-            <button class="progress-metric-tab" type="button" data-progress-metric="lean_mass" aria-pressed="false">Lean mass</button>
-            <button class="progress-metric-tab" type="button" data-progress-metric="muscle_mass" aria-pressed="false">Muscle</button>
-            <button class="progress-metric-tab" type="button" data-progress-metric="chest" aria-pressed="false">Chest</button>
-            <button class="progress-metric-tab" type="button" data-progress-metric="waist" aria-pressed="false">Waist</button>
-            <button class="progress-metric-tab" type="button" data-progress-metric="hips" aria-pressed="false">Hips</button>
-            <button class="progress-metric-tab" type="button" data-progress-metric="arm" aria-pressed="false">Arm</button>
-            <button class="progress-metric-tab" type="button" data-progress-metric="thigh" aria-pressed="false">Thigh</button>
-          </div>
-          <div class="progress-chart" id="progress-chart" aria-label="Progress line graph"></div>
-          <p class="progress-goal" id="progress-goal"></p>
-
           <section class="progress-entry-card progress-dexa-card" aria-labelledby="client-dexa-title">
             <div class="progress-card-heading">
               <div>
                 <p class="kicker">DEXA report</p>
                 <h3 id="client-dexa-title">Upload and autofill</h3>
               </div>
-              <button class="progress-section-toggle" type="button" data-progress-section-toggle aria-expanded="true" aria-controls="client-dexa-content">
-                <span data-progress-toggle-label>Minimize</span>
-                <span class="progress-section-toggle-icon" aria-hidden="true">−</span>
-              </button>
             </div>
-            <div class="progress-section-body" id="client-dexa-content" data-progress-section-content>
+            <div class="progress-section-body" id="client-dexa-content">
               <p class="dexa-intro">Upload a DEXA report and we’ll prepare the scan date, bodyweight, body-fat percentage, and whole-body lean mass for you to review.</p>
               <div class="dexa-uploader">
                 <label for="client-dexa-file">DEXA report</label>
@@ -569,6 +550,21 @@
             </div>
           </section>
 
+          <div class="progress-current" id="progress-current"></div>
+          <div class="progress-metric-tabs" id="progress-metric-tabs" aria-label="Choose progress chart">
+            <button class="progress-metric-tab is-active" type="button" data-progress-metric="bodyweight" aria-pressed="true">Bodyweight</button>
+            <button class="progress-metric-tab" type="button" data-progress-metric="bodyfat" aria-pressed="false">Body fat</button>
+            <button class="progress-metric-tab" type="button" data-progress-metric="lean_mass" aria-pressed="false">Lean mass</button>
+            <button class="progress-metric-tab" type="button" data-progress-metric="muscle_mass" aria-pressed="false">Muscle</button>
+            <button class="progress-metric-tab" type="button" data-progress-metric="chest" aria-pressed="false">Chest</button>
+            <button class="progress-metric-tab" type="button" data-progress-metric="waist" aria-pressed="false">Waist</button>
+            <button class="progress-metric-tab" type="button" data-progress-metric="hips" aria-pressed="false">Hips</button>
+            <button class="progress-metric-tab" type="button" data-progress-metric="arm" aria-pressed="false">Arm</button>
+            <button class="progress-metric-tab" type="button" data-progress-metric="thigh" aria-pressed="false">Thigh</button>
+          </div>
+          <div class="progress-chart" id="progress-chart" aria-label="Progress line graph"></div>
+          <p class="progress-goal" id="progress-goal"></p>
+
           <div class="progress-profile-grid">
             <section class="progress-entry-card" aria-labelledby="client-progress-entry-title">
               <div class="progress-card-heading">
@@ -576,12 +572,8 @@
                   <p class="kicker">New entry</p>
                   <h3 id="client-progress-entry-title">Update your stats</h3>
                 </div>
-                <button class="progress-section-toggle" type="button" data-progress-section-toggle aria-expanded="true" aria-controls="client-progress-entry-content">
-                  <span data-progress-toggle-label>Minimize</span>
-                  <span class="progress-section-toggle-icon" aria-hidden="true">−</span>
-                </button>
               </div>
-              <div class="progress-section-body" id="client-progress-entry-content" data-progress-section-content>
+              <div class="progress-section-body" id="client-progress-entry-content">
                 <form class="progress-entry-grid" id="client-checkin-form">
                   <label class="progress-date-field">
                     Measurement date
@@ -612,12 +604,8 @@
                   <p class="kicker">Private photos</p>
                   <h3 id="client-progress-photo-title">Add a progress photo</h3>
                 </div>
-                <button class="progress-section-toggle" type="button" data-progress-section-toggle aria-expanded="true" aria-controls="client-progress-photo-content">
-                  <span data-progress-toggle-label>Minimize</span>
-                  <span class="progress-section-toggle-icon" aria-hidden="true">−</span>
-                </button>
               </div>
-              <div class="progress-section-body" id="client-progress-photo-content" data-progress-section-content>
+              <div class="progress-section-body" id="client-progress-photo-content">
                 <p class="progress-photo-privacy">Visible only to you and your coach.</p>
                 <div class="progress-photo-uploader">
                   <label>Photo date<input type="date" id="client-progress-photo-date" /></label>
@@ -638,12 +626,8 @@
                   <p class="kicker">Progress photos</p>
                   <h3 id="client-progress-gallery-title">Your private gallery</h3>
                 </div>
-                <button class="progress-section-toggle" type="button" data-progress-section-toggle aria-expanded="true" aria-controls="client-progress-gallery-content">
-                  <span data-progress-toggle-label>Minimize</span>
-                  <span class="progress-section-toggle-icon" aria-hidden="true">−</span>
-                </button>
               </div>
-            <div class="progress-section-body" id="client-progress-gallery-content" data-progress-section-content>
+            <div class="progress-section-body" id="client-progress-gallery-content">
               <div class="progress-photo-gallery" id="client-progress-photo-gallery"><p class="empty-state">No progress photos yet.</p></div>
             </div>
           </section>
@@ -654,12 +638,8 @@
                   <p class="kicker">History</p>
                   <h3 id="client-progress-history-title">Measurement log</h3>
                 </div>
-                <button class="progress-section-toggle" type="button" data-progress-section-toggle aria-expanded="true" aria-controls="client-progress-history-content">
-                  <span data-progress-toggle-label>Minimize</span>
-                  <span class="progress-section-toggle-icon" aria-hidden="true">−</span>
-                </button>
               </div>
-            <div class="progress-section-body" id="client-progress-history-content" data-progress-section-content>
+            <div class="progress-section-body" id="client-progress-history-content">
               <div class="client-progress-history" id="client-progress-history"><p class="empty-state">No measurements yet.</p></div>
             </div>
           </section>

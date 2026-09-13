@@ -29,6 +29,21 @@ test("separates training progress from stats and measurements", () => {
   assert.doesNotMatch(statsPanel, /id="client-monthly-report-card"/);
 });
 
+test("keeps Stats and Measurements open with DEXA first", () => {
+  const statsPanel = dashboard.match(/<section class="progress-panel client-stats-panel" data-client-dashboard-panel="stats"[\s\S]*?<section class="progress-panel client-questionnaire-panel"/)?.[0] || "";
+  const dexaIndex = statsPanel.indexOf('id="client-dexa-title"');
+  const summaryIndex = statsPanel.indexOf('id="progress-current"');
+  const measurementsIndex = statsPanel.indexOf('id="client-progress-entry-title"');
+
+  assert.match(statsPanel, /id="client-add-past-progress-button"[^>]*>Add measurements<\/button>/);
+  assert.ok(dexaIndex >= 0);
+  assert.ok(dexaIndex < summaryIndex);
+  assert.ok(dexaIndex < measurementsIndex);
+  assert.doesNotMatch(statsPanel, /data-progress-section-toggle/);
+  assert.doesNotMatch(statsPanel, /data-progress-section-content/);
+  assert.doesNotMatch(statsPanel, />Minimize</);
+});
+
 test("places the latest monthly report first in Progress", () => {
   const reportIndex = dashboard.indexOf('id="client-monthly-report-card"');
   const introIndex = dashboard.indexOf('class="client-progress-intro"');
@@ -81,31 +96,10 @@ test("exercise comparison pagination keeps ten records per card", () => {
   assert.deepEqual(pages.flat(), records);
 });
 
-test("every progress minimize button controls one matching section body", () => {
-  const controls = [...dashboard.matchAll(/data-progress-section-toggle[^>]*aria-controls="([^"]+)"/g)]
-    .map((match) => match[1]);
-  const contentIds = [...dashboard.matchAll(/id="([^"]+)" data-progress-section-content/g)]
-    .map((match) => match[1]);
-
-  assert.deepEqual(controls, [
-    "client-dexa-content",
-    "client-progress-entry-content",
-    "client-progress-photo-content",
-    "client-progress-gallery-content",
-    "client-progress-history-content"
-  ]);
-  assert.deepEqual(contentIds, controls);
-  assert.equal(new Set(controls).size, controls.length);
-});
-
-test("remaining collapsible progress sections start expanded with accessible labels", () => {
-  const toggles = dashboard.match(/<button class="progress-section-toggle"[\s\S]*?<\/button>/g) || [];
-
-  assert.equal(toggles.length, 5);
-  toggles.forEach((toggle) => {
-    assert.match(toggle, /type="button"/);
-    assert.match(toggle, /aria-expanded="true"/);
-    assert.match(toggle, /data-progress-toggle-label>Minimize</);
-    assert.match(toggle, /aria-hidden="true">−</);
-  });
+test("does not initialize removed progress minimize behavior", () => {
+  assert.doesNotMatch(dashboard, /data-progress-section-toggle/);
+  assert.doesNotMatch(dashboard, /data-progress-section-content/);
+  assert.doesNotMatch(clientPortal, /function setProgressSectionExpanded\(/);
+  assert.doesNotMatch(clientPortal, /function handleProgressSectionToggles\(/);
+  assert.doesNotMatch(clientPortal, /handleProgressSectionToggles\(\);/);
 });
