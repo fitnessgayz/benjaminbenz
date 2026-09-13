@@ -93,6 +93,8 @@ test("keeps the eight-column safe-area bottom dock on mobile and hides desktop-o
   const mobileStyles = sourceBetween("@media (max-width: 900px)", "@media (max-width: 420px)");
 
   assert.match(mobileStyles, /body\.client-dashboard-page\s*\{[^}]*padding-bottom:\s*calc\(94px \+ env\(safe-area-inset-bottom\)\)/s);
+  assert.match(mobileStyles, /\.client-dashboard-page \.dashboard-shell\s*\{[^}]*padding-top:\s*10px/s);
+  assert.match(mobileStyles, /\.client-dashboard-page \.dashboard-grid\s*\{[^}]*padding-top:\s*0/s);
   assert.match(mobileStyles, /\.dashboard-page \.client-dashboard-tabs\s*\{[^}]*position:\s*fixed[^}]*bottom:\s*calc\(10px \+ env\(safe-area-inset-bottom\)\)[^}]*grid-template-columns:\s*repeat\(8, minmax\(0, 1fr\)\)[^}]*width:\s*min\(720px, calc\(100% - 24px\)\)/s);
   assert.match(mobileStyles, /\.client-dashboard-tab\.is-active \.client-dashboard-tab-icon\s*\{[^}]*color:\s*var\(--lime\)[^}]*background:\s*var\(--black\)[^}]*border-radius:\s*50%/s);
   assert.match(mobileStyles, /\.client-dashboard-tab-label,[\s\S]*?\.client-dashboard-nav-title,[\s\S]*?\.client-dashboard-sidebar-toggle\s*\{[^}]*display:\s*none !important/s);

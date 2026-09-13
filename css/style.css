@@ -11701,6 +11701,14 @@ body.client-dashboard-page {
     padding-bottom: calc(94px + env(safe-area-inset-bottom));
   }
 
+  .client-dashboard-page .dashboard-shell {
+    padding-top: 10px;
+  }
+
+  .client-dashboard-page .dashboard-grid {
+    padding-top: 0;
+  }
+
   .dashboard-page .client-dashboard-tabs {
     position: fixed;
     right: auto;
