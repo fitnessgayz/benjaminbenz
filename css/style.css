@@ -2426,6 +2426,44 @@ footer {
   color: var(--black);
 }
 
+.login-help-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+}
+
+.login-help-links .password-reset-button + .password-reset-button {
+  position: relative;
+}
+
+.login-help-links .password-reset-button + .password-reset-button::before {
+  position: absolute;
+  top: 50%;
+  left: -9px;
+  color: var(--line-dark);
+  content: "•";
+  text-decoration: none;
+  transform: translateY(-50%);
+}
+
+.account-setup-panel {
+  max-width: 620px;
+}
+
+.account-setup-back {
+  width: fit-content;
+  color: var(--muted);
+  font-size: .9rem;
+  font-weight: 900;
+  text-decoration: underline;
+}
+
+.account-setup-back:hover,
+.account-setup-back:focus-visible {
+  color: var(--black);
+}
+
 .login-form input {
   min-height: 54px;
   border-radius: 14px;

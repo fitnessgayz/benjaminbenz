@@ -383,7 +383,7 @@ async function saveInviteOnboarding() {
 
     const { data: program, error: loadError } = await inviteSupabase
       .from("client_programs")
-      .select("id, client_name, nutrition_plan")
+      .select("id, client_name")
       .ilike("client_email", email)
       .eq("active", true)
       .eq("client_archived", false)
@@ -391,50 +391,30 @@ async function saveInviteOnboarding() {
     if (loadError) throw loadError;
     if (!program?.id) throw new Error("Your password is saved, but your client profile could not be found. Contact Benjamin for help.");
 
-    const now = new Date().toISOString();
-    const sourceSubmissionId = `invite-${userData.user.id}`;
-    const { data: existingQuestionnaire, error: questionnaireLoadError } = await inviteSupabase
-      .from("client_fitness_questionnaires")
-      .select("id")
-      .eq("source", "client_portal")
-      .eq("source_submission_id", sourceSubmissionId)
-      .maybeSingle();
-    if (questionnaireLoadError) throw questionnaireLoadError;
-
-    if (!existingQuestionnaire?.id) {
-      const { error: questionnaireError } = await inviteSupabase
-        .from("client_fitness_questionnaires")
-        .insert({
-          source: "client_portal",
-          source_submission_id: sourceSubmissionId,
-          submitted_at: now,
-          respondent_name: program.client_name?.trim() || email.split("@")[0],
-          respondent_email: email,
-          linked_user_id: userData.user.id,
-          linked_client_email: email,
-          match_status: "matched",
-          answers: inviteOnboardingAnswers(wantsMacros, nutritionResult.plan || null),
-          profile_imported_at: now
-        });
-      if (questionnaireError) throw questionnaireError;
-    }
-
-    const update = {
-      height: inviteField("height")?.value.trim() || "Not set",
-      starting_weight: String(inviteNumber(inviteField("current_weight")?.value)),
-      fitness_goal: inviteSelectedValue("fitness_goal")
-    };
     const bodyFat = inviteField("body_fat")?.value.trim() || "";
-    if (bodyFat) update.starting_bodyfat = bodyFat;
-    if (nutritionResult.plan) {
-      update.nutrition_plan = {
-        ...(program.nutrition_plan && typeof program.nutrition_plan === "object" ? program.nutrition_plan : {}),
-        ...nutritionResult.plan
-      };
-    }
+    const { data: sessionData } = await inviteSupabase.auth.getSession();
+    const accessToken = sessionData.session?.access_token;
+    if (!accessToken) throw new Error("Your account setup session expired. Request a new setup link.");
 
-    const { error: saveError } = await inviteSupabase.from("client_programs").update(update).eq("id", program.id);
-    if (saveError) throw saveError;
+    const response = await fetch(`${inviteConfig.url}/functions/v1/submit-client-onboarding`, {
+      method: "POST",
+      headers: {
+        "apikey": inviteConfig.anonKey,
+        "Authorization": `Bearer ${accessToken}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        answers: inviteOnboardingAnswers(wantsMacros, nutritionResult.plan || null),
+        profile: {
+          height: inviteField("height")?.value.trim() || "Not set",
+          starting_weight: String(inviteNumber(inviteField("current_weight")?.value)),
+          starting_bodyfat: bodyFat,
+          fitness_goal: inviteSelectedValue("fitness_goal")
+        }
+      })
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(result.error || "Could not save your questionnaire.");
 
     setInviteStatus("Setup complete. Opening your dashboard...");
     window.location.href = "client-dashboard.html?v=manual-sessions-1";
@@ -455,6 +435,13 @@ function setInviteRecoveryMode() {
   if (button) button.textContent = "Save password";
 }
 
+function setInviteAccountSetupMode() {
+  const heading = document.getElementById("invite-title");
+  const copy = inviteForm()?.querySelector('[data-invite-step="account"] .invite-step-copy');
+  if (heading) heading.textContent = "Create your account";
+  if (copy) copy.textContent = "Choose a password, then tell your coach about your goals.";
+}
+
 async function prepareInviteSession() {
   const form = inviteForm();
   if (!form) return;
@@ -469,9 +456,11 @@ async function prepareInviteSession() {
   const accessToken = hashParams.get("access_token");
   const refreshToken = hashParams.get("refresh_token");
   const authType = params.get("type") || hashParams.get("type") || "";
+  const requestedFlow = params.get("flow") || "";
   const inviteError = params.get("error_description") || hashParams.get("error_description");
 
-  if (authType === "recovery") passwordFlow = "recovery";
+  if (requestedFlow === "account-setup") passwordFlow = "account-setup";
+  else if (authType === "recovery") passwordFlow = "recovery";
   if (inviteError) {
     setInviteStatus(inviteError);
     return;
@@ -500,6 +489,7 @@ async function prepareInviteSession() {
   form.hidden = false;
   window.history.replaceState({}, document.title, window.location.pathname);
   if (passwordFlow === "recovery") setInviteRecoveryMode();
+  if (passwordFlow === "account-setup") setInviteAccountSetupMode();
   renderInviteStep(0);
   setInviteStatus("Choose a password with at least 8 characters.");
 }

@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Create Client Account | Fitness with Benjamin</title>
+  <meta name="description" content="Request a fresh Fitness with Benjamin client account setup link." />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-P3FPJMJ4PK"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-P3FPJMJ4PK');
+  </script>
+  <link rel="shortcut icon" href="/favicon.ico" />
+  <link rel="icon" href="/favicon.ico" sizes="any" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+  <link rel="apple-touch-icon" href="/fwb-home-icon-180.png" />
+  <link rel="apple-touch-icon-precomposed" href="/fwb-home-icon-180.png" />
+  <link rel="apple-touch-icon" sizes="120x120" href="/apple-touch-icon-120x120.png" />
+  <link rel="apple-touch-icon" sizes="152x152" href="/apple-touch-icon-152x152.png" />
+  <link rel="apple-touch-icon" sizes="167x167" href="/apple-touch-icon-167x167.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/fwb-home-icon-180.png" />
+  <link rel="manifest" href="/site.webmanifest" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="FWB" />
+  <meta name="application-name" content="FWB" />
+  <meta name="theme-color" content="#050505" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css?v=client-account-setup-1" />
+  <link rel="stylesheet" href="css/login-layout-fix.css?v=mobile-fit-audit-2" />
+</head>
+<body class="login-page password-access-page">
+  <header class="site-header">
+    <a class="brand" href="index.html#top" aria-label="Fitness with Benjamin home">
+      <span>FWB</span>
+      <strong>Fitness with Benjamin</strong>
+    </a>
+    <nav class="nav-links" aria-label="Primary navigation">
+      <a href="index.html#training">Training</a>
+      <a href="index.html#results">Results</a>
+      <a href="index.html#start">Start</a>
+    </nav>
+    <div class="header-actions">
+      <a class="login-link is-current" href="client-login.html">
+        <span class="desktop-label">Client Login</span>
+        <span class="mobile-label">Login</span>
+      </a>
+    </div>
+  </header>
+
+  <main class="client-access">
+    <section class="access-intro" aria-labelledby="account-setup-title">
+      <p class="kicker">Client access</p>
+      <h1 id="account-setup-title"><span>Create</span><span>Account</span></h1>
+      <p class="access-intro-copy"><span>Expired invite? Request a fresh, secure</span><span>link using the email your coach has on file.</span></p>
+    </section>
+
+    <section class="access-panel account-setup-panel" aria-label="Request client account setup link">
+      <div class="access-panel-heading">
+        <p class="kicker">Account setup</p>
+        <h2>Get a new link</h2>
+      </div>
+      <form class="login-form" id="client-account-setup-form">
+        <label>
+          Email
+          <input type="email" name="email" placeholder="client@example.com" autocomplete="email" required aria-label="Email" />
+        </label>
+        <button class="button button-dark" type="submit">Send account setup link</button>
+        <p class="login-status" id="account-setup-status" role="status">We’ll email you a one-time link to create your password and complete your questionnaire.</p>
+      </form>
+      <a class="account-setup-back" href="client-login.html">Back to client login</a>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase-config.js"></script>
+  <script src="js/client-signup.js?v=client-account-setup-1"></script>
+</body>
+</html>

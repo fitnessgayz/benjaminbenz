@@ -11,6 +11,14 @@ const migration = fs.readFileSync(
   path.join(root, "supabase/migrations/20260913155314_allow_client_onboarding_questionnaires.sql"),
   "utf8"
 );
+const hardenedMigration = fs.readFileSync(
+  path.join(root, "supabase/migrations/20260913160512_remove_direct_questionnaire_inserts.sql"),
+  "utf8"
+);
+const onboardingFunction = fs.readFileSync(
+  path.join(root, "supabase/functions/submit-client-onboarding/index.ts"),
+  "utf8"
+);
 
 test("presents account, fitness, and optional macro cards as one onboarding deck", () => {
   assert.match(html, /data-invite-step="account"/);
@@ -33,17 +41,26 @@ test("keeps password recovery on the account card and skips onboarding", () => {
 test("saves fitness answers and only writes calculated macros when requested", () => {
   assert.match(script, /answers: inviteOnboardingAnswers\(wantsMacros, nutritionResult\.plan \|\| null\)/);
   assert.match(script, /fitness_goal: inviteSelectedValue\("fitness_goal"\)/);
-  assert.match(script, /if \(nutritionResult\.plan\) \{[\s\S]*?update\.nutrition_plan/);
+  assert.match(script, /functions\/v1\/submit-client-onboarding/);
+  assert.match(script, /macro_estimate: nutritionPlan/);
   assert.match(script, /\.eq\("client_archived", false\)/);
-  assert.match(script, /\.eq\("id", program\.id\)/);
 });
 
-test("migration allows clients to insert only their own questionnaire", () => {
+test("initial questionnaire migration defines the owned insert policy", () => {
   assert.match(migration, /create table if not exists public\.client_fitness_questionnaires/);
   assert.match(migration, /linked_user_id = \(select auth\.uid\(\)\)/);
   assert.match(migration, /linked_client_email = lower\(coalesce\(\(select auth\.jwt\(\) ->> 'email'\), ''\)\)/);
   assert.match(migration, /grant select, insert on public\.client_fitness_questionnaires to authenticated/);
   assert.doesNotMatch(migration, /grant update on public\.client_programs/);
+});
+
+test("production hardening routes questionnaire writes through a verified function", () => {
+  assert.match(hardenedMigration, /revoke insert on table public\.client_fitness_questionnaires from authenticated/);
+  assert.match(onboardingFunction, /userClient\.auth\.getUser\(\)/);
+  assert.match(onboardingFunction, /\.eq\("active", true\)/);
+  assert.match(onboardingFunction, /\.eq\("client_archived", false\)/);
+  assert.match(onboardingFunction, /source_submission_id: `invite-\$\{user\.id\}`/);
+  assert.match(onboardingFunction, /onConflict: "source,source_submission_id"/);
 });
 
 test("mobile styles keep the deck within 375 to 430 pixel screens", () => {
