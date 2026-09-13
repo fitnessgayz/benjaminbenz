@@ -27,6 +27,7 @@ let clientTrainingLogSearchFilter = "";
 let activeClientDashboardTab = "home";
 let activeWorkoutTabIndex = 0;
 let clientWorkoutPickerIsOpen = true;
+let activeWorkoutHistoryDeckIndex = 0;
 let currentProgram = null;
 const dashboardRequestTimeout = 15000;
 const customWorkoutTitle = "Custom workout";
@@ -7768,6 +7769,65 @@ function customWorkoutDraftFromLogs(logs = [], options = {}) {
   };
 }
 
+function workoutHistorySummaryMetrics(workout = {}) {
+  const exercises = Array.from(workout.supersets?.values?.() || [])
+    .flatMap((superset) => Array.from(superset.exercises?.values?.() || []));
+  const workingSets = exercises.flatMap((exercise) => {
+    const exerciseCode = String(exercise.exercise_code || "").trim().toUpperCase();
+
+    if (exerciseCode === warmupExerciseCode || exerciseCode === cardioExerciseCode) {
+      return [];
+    }
+
+    return (Array.isArray(exercise.sets) ? exercise.sets : []).filter((set) => (
+      normalizedSetType(set.set_type, set.set_number) !== warmUpSetType
+    ));
+  });
+  const totalVolume = workingSets.reduce((sum, set) => {
+    const weight = Number(set.weight_used);
+    const reps = Number(set.reps);
+
+    return Number.isFinite(weight) && weight > 0 && Number.isFinite(reps) && reps > 0
+      ? sum + (weight * reps)
+      : sum;
+  }, 0);
+  const rirValues = workingSets
+    .filter((set) => String(set.effort_scale || "").trim().toLowerCase() === "rir")
+    .map((set) => Number(set.effort_value))
+    .filter((value) => Number.isFinite(value) && value >= 0 && value <= 4);
+  const averageRir = rirValues.length > 0
+    ? rirValues.reduce((sum, value) => sum + value, 0) / rirValues.length
+    : null;
+
+  return {
+    exerciseCount: exercises.length,
+    workingSetCount: workingSets.length,
+    volumeLabel: totalVolume > 0 ? `${Math.round(totalVolume).toLocaleString("en-US")} lb` : "—",
+    averageRirLabel: averageRir === null ? "—" : averageRir.toFixed(1)
+  };
+}
+
+function filteredClientWorkoutHistoryLogs(logs = [], dateFilter = "", searchFilter = "") {
+  const safeLogs = Array.isArray(logs) ? logs : [];
+  const normalizedDate = String(dateFilter || "").trim();
+  const normalizedSearch = String(searchFilter || "").trim();
+  const matchesDate = (log) => !normalizedDate || String(log.entry_date || "") === normalizedDate;
+
+  if (!normalizedSearch) {
+    return safeLogs.filter(matchesDate);
+  }
+
+  const matchingSessionKeys = new Set(
+    safeLogs
+      .filter((log) => matchesDate(log) && clientTrainingLogMatchesSearch(log, normalizedSearch))
+      .map((log) => clientWorkoutHistorySessionKey(log))
+  );
+
+  return safeLogs.filter((log) => (
+    matchesDate(log) && matchingSessionKeys.has(clientWorkoutHistorySessionKey(log))
+  ));
+}
+
 function renderClientTrainingLogs() {
   renderClientExerciseProgress(trainingLogs);
   const history = document.getElementById("client-training-log-history");
@@ -7777,11 +7837,12 @@ function renderClientTrainingLogs() {
     return;
   }
 
-  const filteredLogs = trainingLogs.filter((log) => {
-    const matchesDate = !clientTrainingLogDateFilter || String(log.entry_date || "") === clientTrainingLogDateFilter;
-
-    return matchesDate && clientTrainingLogMatchesSearch(log, clientTrainingLogSearchFilter);
-  });
+  activeWorkoutHistoryDeckIndex = 0;
+  const filteredLogs = filteredClientWorkoutHistoryLogs(
+    trainingLogs,
+    clientTrainingLogDateFilter,
+    clientTrainingLogSearchFilter
+  );
   const filteredFoodLogs = foodLogs.filter((log) => {
     const matchesDate = !clientTrainingLogDateFilter || String(log.entry_date || "") === clientTrainingLogDateFilter;
 
@@ -7871,6 +7932,8 @@ function renderClientTrainingLogs() {
       set_type: log.set_type,
       weight_used: log.weight_used,
       reps: log.reps,
+      effort_scale: log.effort_scale,
+      effort_value: log.effort_value,
       notes: log.notes
     });
   });
@@ -7891,17 +7954,104 @@ function renderClientTrainingLogs() {
       : sessionLabel;
   }
 
-  const workoutHistorySections = workoutSections.map((workout) => {
+  const workoutHistorySections = workoutSections.map((workout, workoutIndex) => {
     const supersets = Array.from(workout.supersets.values()).sort((a, b) => a.key.localeCompare(b.key));
     const workoutDuration = workoutHistoryDurationLabel(workout.workout_duration_seconds);
     const workoutDifficulty = workoutHistoryDifficultyLabel(workout.workout_difficulty);
     const workoutHeading = [workout.workout_title, workoutDuration, workoutDifficulty].filter(Boolean).join(" · ");
+    const mobileWorkoutMeta = [workoutDuration, workoutDifficulty].filter(Boolean).join(" · ") || "Workout saved";
+    const workoutStatus = workout.completed_at ? "Completed" : "Saved";
+    const metrics = workoutHistorySummaryMetrics(workout);
     const canCopyToCustom = workoutHistoryLogsForCopy(workout.history_key).length > 0;
     const copyButtonLabel = `Copy ${workout.workout_title} from ${formatLogDate(workout.entry_date)} to Custom workout`;
+    const detailsId = `client-workout-history-details-${workoutIndex}`;
+    const detailsHtml = `
+      <div class="training-log-superset-list">
+        ${supersets.map((superset) => {
+          const exercises = Array.from(superset.exercises.values()).sort((a, b) => {
+            const left = `${a.exercise_code} ${a.exercise_name}`;
+            const right = `${b.exercise_code} ${b.exercise_name}`;
+            return left.localeCompare(right);
+          });
+
+          return `
+            <section class="training-log-superset-group">
+              <div class="training-log-superset-heading">${escapeHtml(
+                superset.key === "WARMUP"
+                  ? "Warm up"
+                  : superset.key === "CARDIO"
+                    ? "Cardio"
+                    : superset.key === "OTHER" ? "Other" : `Superset ${superset.key}`
+              )}</div>
+              <div class="training-log-exercise-list">
+                ${exercises.map((entry) => {
+                  const noteSummary = exerciseNoteSummary(entry.sets);
+                  const setSummary = entry.exercise_code === warmupExerciseCode
+                    ? entry.sets
+                      .sort((a, b) => Number(a.set_number || 0) - Number(b.set_number || 0))
+                      .map((set) => warmupDisplay(set))
+                      .filter(Boolean)
+                      .join("  |  ")
+                    : entry.exercise_code === cardioExerciseCode
+                    ? entry.sets
+                      .sort((a, b) => Number(a.set_number || 0) - Number(b.set_number || 0))
+                      .map((set) => cardioDisplay(set))
+                      .filter(Boolean)
+                      .join("  |  ")
+                    : entry.sets
+                    .sort((a, b) => {
+                      const leftWarmUp = normalizedSetType(a.set_type, a.set_number) === warmUpSetType;
+                      const rightWarmUp = normalizedSetType(b.set_type, b.set_number) === warmUpSetType;
+                      if (leftWarmUp !== rightWarmUp) {
+                        return leftWarmUp ? -1 : 1;
+                      }
+                      return Number(a.set_number || 0) - Number(b.set_number || 0);
+                    })
+                    .map((set) => {
+                      const parts = [];
+
+                      if (set.set_number) {
+                        const isWarmUpSet = normalizedSetType(set.set_type, set.set_number) === warmUpSetType;
+                        parts.push(isWarmUpSet
+                          ? `Warm-up ${setNumberLabel(set.set_number, set.set_type)}`
+                          : `Set ${setNumberLabel(set.set_number, set.set_type)}`);
+                      }
+
+                      if (set.weight_used !== null && set.weight_used !== undefined && set.weight_used !== "") {
+                        parts.push(`${set.weight_used} lb${set.reps ? ` x ${set.reps}` : ""}`);
+                      } else if (set.reps) {
+                        parts.push(`${set.reps} reps`);
+                      }
+
+                      return parts.join(": ");
+                    })
+                    .filter(Boolean)
+                    .join("  |  ");
+
+                  return `
+                    <article class="training-log-row training-log-row-compact training-log-row-nested">
+                      <div class="training-log-row-main">
+                        <span>${escapeHtml(
+                          entry.exercise_code === warmupExerciseCode || entry.exercise_code === cardioExerciseCode
+                            ? entry.exercise_name
+                            : `${entry.exercise_code} ${entry.exercise_name}`
+                        )}</span>
+                        <em>${escapeHtml(setSummary || "Sets saved")}</em>
+                        ${noteSummary ? `<small class="training-log-notes"><strong>Notes:</strong> ${escapeHtml(noteSummary)}</small>` : ""}
+                      </div>
+                    </article>
+                  `;
+                }).join("")}
+              </div>
+            </section>
+          `;
+        }).join("")}
+      </div>
+    `;
 
     return {
       sort_key: `${workout.entry_date || ""}::workout::${workout.workout_title || ""}`,
-      html: `
+      desktop_html: `
         <section class="training-log-workout-group">
           <div class="training-log-workout-heading${canCopyToCustom ? " has-copy-action" : ""}">
             <div class="training-log-workout-title">
@@ -7914,100 +8064,318 @@ function renderClientTrainingLogs() {
                 type="button"
                 data-copy-workout-to-custom="${escapeHtml(workout.history_key)}"
                 aria-label="${escapeHtml(copyButtonLabel)}"
-              >Copy to Custom Workout</button>
+              >Copy Workout</button>
             ` : ""}
           </div>
-          <div class="training-log-superset-list">
-            ${supersets.map((superset) => {
-              const exercises = Array.from(superset.exercises.values()).sort((a, b) => {
-                const left = `${a.exercise_code} ${a.exercise_name}`;
-                const right = `${b.exercise_code} ${b.exercise_name}`;
-                return left.localeCompare(right);
-              });
-
-              return `
-                <section class="training-log-superset-group">
-                  <div class="training-log-superset-heading">${escapeHtml(
-                    superset.key === "WARMUP"
-                      ? "Warm up"
-                      : superset.key === "CARDIO"
-                        ? "Cardio"
-                        : superset.key === "OTHER" ? "Other" : `Superset ${superset.key}`
-                  )}</div>
-                  <div class="training-log-exercise-list">
-                    ${exercises.map((entry) => {
-                      const noteSummary = exerciseNoteSummary(entry.sets);
-                      const setSummary = entry.exercise_code === warmupExerciseCode
-                        ? entry.sets
-                          .sort((a, b) => Number(a.set_number || 0) - Number(b.set_number || 0))
-                          .map((set) => warmupDisplay(set))
-                          .filter(Boolean)
-                          .join("  |  ")
-                        : entry.exercise_code === cardioExerciseCode
-                        ? entry.sets
-                          .sort((a, b) => Number(a.set_number || 0) - Number(b.set_number || 0))
-                          .map((set) => cardioDisplay(set))
-                          .filter(Boolean)
-                          .join("  |  ")
-                        : entry.sets
-                        .sort((a, b) => {
-                          const leftWarmUp = normalizedSetType(a.set_type, a.set_number) === warmUpSetType;
-                          const rightWarmUp = normalizedSetType(b.set_type, b.set_number) === warmUpSetType;
-                          if (leftWarmUp !== rightWarmUp) {
-                            return leftWarmUp ? -1 : 1;
-                          }
-                          return Number(a.set_number || 0) - Number(b.set_number || 0);
-                        })
-                        .map((set) => {
-                          const parts = [];
-
-                          if (set.set_number) {
-                            const isWarmUpSet = normalizedSetType(set.set_type, set.set_number) === warmUpSetType;
-                            parts.push(isWarmUpSet
-                              ? `Warm-up ${setNumberLabel(set.set_number, set.set_type)}`
-                              : `Set ${setNumberLabel(set.set_number, set.set_type)}`);
-                          }
-
-                          if (set.weight_used !== null && set.weight_used !== undefined && set.weight_used !== "") {
-                            parts.push(`${set.weight_used} lb${set.reps ? ` x ${set.reps}` : ""}`);
-                          } else if (set.reps) {
-                            parts.push(`${set.reps} reps`);
-                          }
-
-                          return parts.join(": ");
-                        })
-                        .filter(Boolean)
-                        .join("  |  ");
-
-                      return `
-                        <article class="training-log-row training-log-row-compact training-log-row-nested">
-                          <div class="training-log-row-main">
-                            <span>${escapeHtml(
-                              entry.exercise_code === warmupExerciseCode || entry.exercise_code === cardioExerciseCode
-                                ? entry.exercise_name
-                                : `${entry.exercise_code} ${entry.exercise_name}`
-                            )}</span>
-                            <em>${escapeHtml(setSummary || "Sets saved")}</em>
-                            ${noteSummary ? `<small class="training-log-notes"><strong>Notes:</strong> ${escapeHtml(noteSummary)}</small>` : ""}
-                          </div>
-                        </article>
-                      `;
-                    }).join("")}
-                  </div>
-                </section>
-              `;
-            }).join("")}
-          </div>
+          ${detailsHtml}
         </section>
+      `,
+      mobile_html: `
+        <article
+          class="training-log-history-card"
+          data-client-workout-history-card="${workoutIndex}"
+          data-client-workout-history-key="${escapeHtml(workout.history_key)}"
+          role="group"
+          aria-roledescription="slide"
+          aria-label="${escapeHtml(`${workout.workout_title}, ${formatLogDate(workout.entry_date)}. Workout ${workoutIndex + 1} of ${workoutSections.length}.`)}"
+        >
+          <div class="training-log-history-card-summary" data-client-workout-history-summary>
+            <div class="training-log-history-card-topline">
+              <span class="training-log-history-state${workout.completed_at ? " is-complete" : ""}">${escapeHtml(workoutStatus)}</span>
+              <strong>${escapeHtml(formatLogDate(workout.entry_date))}</strong>
+            </div>
+            <h3>${escapeHtml(workout.workout_title)}</h3>
+            <p>${escapeHtml(mobileWorkoutMeta)}</p>
+            <dl class="training-log-history-metrics">
+              <div><dt>Exercises</dt><dd>${escapeHtml(String(metrics.exerciseCount))}</dd></div>
+              <div><dt>Volume</dt><dd>${escapeHtml(metrics.volumeLabel)}</dd></div>
+              <div><dt>Working sets</dt><dd>${escapeHtml(String(metrics.workingSetCount))}</dd></div>
+              <div><dt>Average RIR</dt><dd>${escapeHtml(metrics.averageRirLabel)}</dd></div>
+            </dl>
+            <div class="training-log-history-card-actions">
+              <button
+                class="training-log-history-open"
+                type="button"
+                data-client-workout-history-open
+                aria-expanded="false"
+                aria-controls="${escapeHtml(detailsId)}"
+              >View Exercises <span aria-hidden="true">→</span></button>
+              ${canCopyToCustom ? `
+                <button
+                  class="training-log-copy-button"
+                  type="button"
+                  data-copy-workout-to-custom="${escapeHtml(workout.history_key)}"
+                  aria-label="${escapeHtml(copyButtonLabel)}"
+                >Copy Workout</button>
+              ` : ""}
+            </div>
+          </div>
+          <div
+            class="training-log-history-card-details"
+            id="${escapeHtml(detailsId)}"
+            data-client-workout-history-details
+            hidden
+          >
+            <div class="training-log-history-details-heading">
+              <div>
+                <p class="kicker">Exercises completed</p>
+                <h3>${escapeHtml(`${metrics.exerciseCount} ${metrics.exerciseCount === 1 ? "exercise" : "exercises"}`)}</h3>
+              </div>
+              <button type="button" data-client-workout-history-close>Back</button>
+            </div>
+            ${detailsHtml}
+          </div>
+        </article>
       `
     };
   });
   const nutritionHistorySections = nutritionLogHistorySections(filteredFoodLogs);
+  const chronologicalHistory = [
+    ...workoutHistorySections.map((section) => ({ sort_key: section.sort_key, html: section.desktop_html })),
+    ...nutritionHistorySections
+  ].sort((a, b) => b.sort_key.localeCompare(a.sort_key));
+  const mobileWorkoutBrowser = workoutHistorySections.length > 0 ? `
+    <section class="training-log-mobile-workout-browser" data-client-workout-history-browser>
+      <div class="training-log-history-deck-heading">
+        <div>
+          <p class="kicker">Past workouts</p>
+          <strong data-client-workout-history-position aria-live="polite" aria-atomic="true">Workout 1 of ${workoutHistorySections.length}</strong>
+        </div>
+        <div class="training-log-history-deck-controls" aria-label="Past workout controls">
+          <button type="button" data-client-workout-history-previous aria-label="Previous workout">←</button>
+          <button type="button" data-client-workout-history-next aria-label="Next workout">→</button>
+        </div>
+      </div>
+      <div
+        class="training-log-history-deck"
+        data-client-workout-history-deck
+        role="region"
+        aria-roledescription="carousel"
+        aria-label="Past workouts. Swipe left or right, or use the arrow buttons."
+        tabindex="0"
+      >
+        ${workoutHistorySections.map((section) => section.mobile_html).join("")}
+      </div>
+      <p class="training-log-history-swipe-hint">Swipe left or right to browse</p>
+    </section>
+  ` : "";
 
-  history.innerHTML = [...workoutHistorySections, ...nutritionHistorySections]
-    .sort((a, b) => b.sort_key.localeCompare(a.sort_key))
-    .map((section) => section.html)
-    .join("");
+  history.innerHTML = `
+    <div class="training-log-desktop-history">${chronologicalHistory.map((section) => section.html).join("")}</div>
+    ${mobileWorkoutBrowser}
+    <div class="training-log-mobile-nutrition-history">${nutritionHistorySections.map((section) => section.html).join("")}</div>
+  `;
+  syncClientWorkoutHistoryDeck(activeWorkoutHistoryDeckIndex);
+}
+
+function setClientWorkoutHistoryCardExpanded(card, expanded, options = {}) {
+  const details = card?.querySelector("[data-client-workout-history-details]");
+  const openButton = card?.querySelector("[data-client-workout-history-open]");
+
+  if (!card || !details || !openButton) {
+    return;
+  }
+
+  const isExpanded = Boolean(expanded);
+
+  card.classList.toggle("is-detail-open", isExpanded);
+  details.hidden = !isExpanded;
+  openButton.setAttribute("aria-expanded", isExpanded ? "true" : "false");
+  openButton.innerHTML = isExpanded
+    ? 'Hide Exercises <span aria-hidden="true">↑</span>'
+    : 'View Exercises <span aria-hidden="true">→</span>';
+
+  if (!isExpanded && options.restoreFocus) {
+    openButton.focus({ preventScroll: true });
+  }
+}
+
+function syncClientWorkoutHistoryDeck(nextIndex = activeWorkoutHistoryDeckIndex) {
+  const browser = document.querySelector("[data-client-workout-history-browser]");
+  const deck = browser?.querySelector("[data-client-workout-history-deck]");
+  const cards = Array.from(deck?.querySelectorAll("[data-client-workout-history-card]") || []);
+
+  if (!browser || !deck || cards.length === 0) {
+    activeWorkoutHistoryDeckIndex = 0;
+    return;
+  }
+
+  const index = clientWorkoutPickerIndex(nextIndex, cards.length);
+  const position = browser.querySelector("[data-client-workout-history-position]");
+  const previousButton = browser.querySelector("[data-client-workout-history-previous]");
+  const nextButton = browser.querySelector("[data-client-workout-history-next]");
+
+  activeWorkoutHistoryDeckIndex = index;
+  browser.dataset.activeIndex = String(index);
+  cards.forEach((card, cardIndex) => {
+    const depth = clientWorkoutPickerIndex(cardIndex - index, cards.length);
+    const isCurrent = depth === 0;
+
+    card.classList.toggle("is-current", isCurrent);
+    card.classList.toggle("is-deck-behind-1", depth === 1);
+    card.classList.toggle("is-deck-behind-2", depth === 2);
+    card.classList.toggle("is-deck-behind-3", depth === 3);
+    card.setAttribute("aria-hidden", isCurrent ? "false" : "true");
+    card.toggleAttribute("inert", !isCurrent);
+    if (!isCurrent) {
+      setClientWorkoutHistoryCardExpanded(card, false);
+    }
+  });
+
+  if (position) {
+    position.textContent = `Workout ${index + 1} of ${cards.length}`;
+  }
+  if (previousButton) {
+    previousButton.disabled = cards.length < 2;
+  }
+  if (nextButton) {
+    nextButton.disabled = cards.length < 2;
+  }
+}
+
+function setClientWorkoutHistoryDeckIndex(nextIndex) {
+  const count = document.querySelectorAll("[data-client-workout-history-card]").length;
+
+  if (count === 0) {
+    return;
+  }
+
+  syncClientWorkoutHistoryDeck(clientWorkoutPickerIndex(nextIndex, count));
+}
+
+function moveClientWorkoutHistoryDeck(step) {
+  setClientWorkoutHistoryDeckIndex(activeWorkoutHistoryDeckIndex + step);
+}
+
+function handleClientWorkoutHistoryDeck() {
+  let gesture = null;
+  let ignoreCardClickUntil = 0;
+
+  document.addEventListener("click", (event) => {
+    if (event.target.closest("[data-client-workout-history-previous]")) {
+      moveClientWorkoutHistoryDeck(-1);
+      return;
+    }
+
+    if (event.target.closest("[data-client-workout-history-next]")) {
+      moveClientWorkoutHistoryDeck(1);
+      return;
+    }
+
+    const closeButton = event.target.closest("[data-client-workout-history-close]");
+
+    if (closeButton) {
+      const card = closeButton.closest("[data-client-workout-history-card]");
+
+      setClientWorkoutHistoryCardExpanded(card, false, { restoreFocus: true });
+      return;
+    }
+
+    const openButton = event.target.closest("[data-client-workout-history-open]");
+
+    if (openButton) {
+      const card = openButton.closest("[data-client-workout-history-card]");
+      const details = card?.querySelector("[data-client-workout-history-details]");
+
+      setClientWorkoutHistoryCardExpanded(card, details?.hidden !== false);
+      return;
+    }
+
+    if (Date.now() < ignoreCardClickUntil || event.target.closest("button, a, input, select, textarea")) {
+      return;
+    }
+
+    const summary = event.target.closest("[data-client-workout-history-summary]");
+    const card = summary?.closest("[data-client-workout-history-card]");
+
+    if (card?.classList.contains("is-current")) {
+      setClientWorkoutHistoryCardExpanded(card, true);
+    }
+  });
+
+  document.addEventListener("keydown", (event) => {
+    const deck = event.target.closest("[data-client-workout-history-deck]");
+
+    if (!deck || event.target !== deck || deck.querySelector(".is-current.is-detail-open")) {
+      return;
+    }
+
+    if (event.key === "ArrowLeft") {
+      event.preventDefault();
+      moveClientWorkoutHistoryDeck(-1);
+    } else if (event.key === "ArrowRight") {
+      event.preventDefault();
+      moveClientWorkoutHistoryDeck(1);
+    } else if (event.key === "Home") {
+      event.preventDefault();
+      setClientWorkoutHistoryDeckIndex(0);
+    } else if (event.key === "End") {
+      event.preventDefault();
+      setClientWorkoutHistoryDeckIndex(deck.querySelectorAll("[data-client-workout-history-card]").length - 1);
+    }
+  });
+
+  document.addEventListener("pointerdown", (event) => {
+    const deck = event.target.closest("[data-client-workout-history-deck]");
+    const interactive = event.target.closest("button, input, select, textarea, a");
+
+    if (!deck || interactive || deck.querySelector(".is-current.is-detail-open")) {
+      gesture = null;
+      return;
+    }
+
+    gesture = {
+      deck,
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      axis: ""
+    };
+  });
+
+  document.addEventListener("pointermove", (event) => {
+    if (!gesture || gesture.pointerId !== event.pointerId) {
+      return;
+    }
+
+    const deltaX = event.clientX - gesture.startX;
+    const deltaY = event.clientY - gesture.startY;
+    const horizontalDistance = Math.abs(deltaX);
+    const verticalDistance = Math.abs(deltaY);
+
+    if (!gesture.axis && Math.max(horizontalDistance, verticalDistance) >= 8) {
+      gesture.axis = horizontalDistance > verticalDistance * 1.15 ? "horizontal" : "vertical";
+    }
+
+    if (gesture.axis === "horizontal") {
+      event.preventDefault();
+    }
+  }, { passive: false });
+
+  document.addEventListener("pointerup", (event) => {
+    if (!gesture || gesture.pointerId !== event.pointerId) {
+      return;
+    }
+
+    const { deck, startX, startY, axis } = gesture;
+    const step = axis === "vertical"
+      ? 0
+      : clientWorkoutPickerSwipeStep(
+        event.clientX - startX,
+        event.clientY - startY,
+        deck.getBoundingClientRect().width
+      );
+
+    gesture = null;
+    if (step !== 0) {
+      ignoreCardClickUntil = Date.now() + 350;
+      moveClientWorkoutHistoryDeck(step);
+    }
+  });
+
+  document.addEventListener("pointercancel", () => {
+    gesture = null;
+  });
 }
 
 function setClientWorkoutCopyStatus(message = "") {
@@ -10893,6 +11261,7 @@ handleTrainingDateChange();
 handleClientTrainingLogDateFilter();
 handleClientWorkoutHistoryDownload();
 handleCopyWorkoutToCustom();
+handleClientWorkoutHistoryDeck();
 handleClientDashboardTabs();
 handleProgressSectionToggles();
 handleClientHomeCarousel();

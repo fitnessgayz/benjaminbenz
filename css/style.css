@@ -12235,3 +12235,450 @@ body.client-dashboard-page {
     max-width: 100% !important;
   }
 }
+
+/* Mobile Session Log: past workouts shown as an interactive card deck. */
+.training-log-desktop-history {
+  display: grid;
+  gap: 8px;
+}
+
+.training-log-mobile-workout-browser,
+.training-log-mobile-nutrition-history {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .training-log-desktop-history {
+    display: none;
+  }
+
+  .training-log-mobile-workout-browser,
+  .training-log-mobile-nutrition-history {
+    display: grid;
+  }
+
+  .training-log-mobile-workout-browser {
+    min-width: 0;
+    gap: 10px;
+  }
+
+  .training-log-history-deck-heading {
+    display: flex;
+    min-width: 0;
+    align-items: end;
+    justify-content: space-between;
+    gap: 12px;
+    padding-inline: 2px;
+  }
+
+  .training-log-history-deck-heading > div:first-child {
+    display: grid;
+    min-width: 0;
+    gap: 3px;
+  }
+
+  .training-log-history-deck-heading .kicker,
+  .training-log-history-deck-heading strong {
+    margin: 0;
+  }
+
+  .training-log-history-deck-heading strong {
+    color: var(--black);
+    font-size: 1rem;
+    font-weight: 900;
+  }
+
+  .training-log-history-deck-controls {
+    display: flex;
+    flex: 0 0 auto;
+    gap: 7px;
+  }
+
+  .dashboard-page .training-log-history-deck-controls button {
+    display: grid;
+    width: 44px !important;
+    inline-size: 44px !important;
+    min-width: 44px !important;
+    max-width: 44px !important;
+    height: 44px;
+    min-height: 44px !important;
+    padding: 0 !important;
+    place-items: center;
+    color: var(--black);
+    background: #ffffff;
+    border: 1px solid var(--line);
+    border-radius: 50% !important;
+    font: inherit;
+    font-size: 1.05rem !important;
+    font-weight: 900;
+    line-height: 1 !important;
+    cursor: pointer;
+  }
+
+  .dashboard-page .training-log-history-deck-controls button:disabled {
+    color: #a6aaa1;
+    background: #eceee8;
+    cursor: default;
+  }
+
+  .training-log-history-deck {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    padding: 0 25px 25px 0;
+    overflow: hidden;
+    perspective: 1200px;
+    perspective-origin: 48% 36%;
+    isolation: isolate;
+    touch-action: pan-y;
+    outline: none;
+  }
+
+  .training-log-history-deck:focus-visible {
+    border-radius: 22px;
+    box-shadow: 0 0 0 3px rgba(151, 180, 27, .55);
+  }
+
+  .training-log-history-card {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 0;
+    grid-area: 1 / 1;
+    display: grid;
+    width: calc(100% - 3px);
+    min-width: 0;
+    min-height: 354px;
+    align-self: start;
+    overflow: hidden;
+    opacity: 0;
+    pointer-events: none;
+    background: #ffffff;
+    border: 1px solid #d1d4ca;
+    border-radius: 22px;
+    box-shadow: 0 14px 28px rgba(20, 22, 18, .14);
+    transform: translate3d(24px, 27px, -145px) scale(.93) rotateY(-7deg) rotateZ(2deg);
+    transform-origin: 50% 104%;
+    transition: transform .3s cubic-bezier(.2, .78, .25, 1), opacity .2s ease, filter .26s ease, box-shadow .26s ease;
+    will-change: transform, opacity;
+  }
+
+  .training-log-history-card.is-current {
+    position: relative;
+    z-index: 4;
+    opacity: 1;
+    pointer-events: auto;
+    border-color: #9dbd24;
+    box-shadow: 0 19px 36px rgba(20, 22, 18, .2), inset 0 0 0 1px var(--lime);
+    transform: translate3d(0, 0, 0);
+  }
+
+  .training-log-history-card.is-deck-behind-1 {
+    z-index: 3;
+    opacity: 1;
+    filter: saturate(.92) brightness(.98);
+    transform: translate3d(9px, 7px, -38px) scale(.985) rotateY(-3deg) rotateZ(.8deg);
+  }
+
+  .training-log-history-card.is-deck-behind-2 {
+    z-index: 2;
+    opacity: 1;
+    filter: saturate(.8) brightness(.95);
+    transform: translate3d(17px, 13px, -76px) scale(.965) rotateY(-5deg) rotateZ(1.4deg);
+  }
+
+  .training-log-history-card.is-deck-behind-3 {
+    z-index: 1;
+    opacity: 1;
+    filter: saturate(.65) brightness(.91);
+    transform: translate3d(24px, 19px, -114px) scale(.945) rotateY(-7deg) rotateZ(2deg);
+  }
+
+  .training-log-history-card-summary {
+    display: grid;
+    min-width: 0;
+    align-content: start;
+    gap: 13px;
+    padding: 20px;
+    cursor: pointer;
+  }
+
+  .training-log-history-card-topline {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .training-log-history-card-topline > strong {
+    min-width: 0;
+    color: var(--muted);
+    font-size: 1rem;
+    font-weight: 900;
+    letter-spacing: .06em;
+    overflow-wrap: anywhere;
+    text-align: right;
+    text-transform: uppercase;
+  }
+
+  .training-log-history-state {
+    display: inline-flex;
+    min-height: 30px;
+    align-items: center;
+    padding: 6px 10px;
+    color: var(--black);
+    background: #eceee8;
+    border: 1px solid #cdd0c7;
+    border-radius: 999px;
+    font-size: 1rem;
+    font-weight: 900;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+  }
+
+  .training-log-history-state.is-complete {
+    background: var(--lime);
+    border-color: #99b925;
+  }
+
+  .training-log-history-card-summary > h3 {
+    margin: 0;
+    color: var(--black);
+    font-size: clamp(1.35rem, 6.2vw, 1.85rem);
+    font-weight: 900;
+    line-height: 1;
+    letter-spacing: -.035em;
+    overflow-wrap: anywhere;
+    text-transform: capitalize;
+  }
+
+  .training-log-history-card-summary > p {
+    margin: -4px 0 0;
+    color: var(--muted);
+    font-size: 1rem;
+    font-weight: 800;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+  }
+
+  .training-log-history-metrics {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin: 2px 0 0;
+    border-top: 1px solid var(--line);
+    border-left: 1px solid var(--line);
+  }
+
+  .training-log-history-metrics > div {
+    display: grid;
+    min-width: 0;
+    gap: 4px;
+    padding: 11px 10px;
+    border-right: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .training-log-history-metrics dt,
+  .training-log-history-metrics dd {
+    min-width: 0;
+    margin: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .training-log-history-metrics dt {
+    grid-row: 2;
+    color: var(--muted);
+    font-size: 1rem;
+    font-weight: 900;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+  }
+
+  .training-log-history-metrics dd {
+    grid-row: 1;
+    color: var(--black);
+    font-size: 1.12rem;
+    font-weight: 900;
+  }
+
+  .training-log-history-card-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px 14px;
+    padding-top: 2px;
+  }
+
+  .dashboard-page .training-log-history-open,
+  .dashboard-page .training-log-history-card-actions .training-log-copy-button {
+    display: inline-flex;
+    width: auto !important;
+    inline-size: auto !important;
+    max-width: 100% !important;
+    min-height: 44px !important;
+    flex: 1 1 125px;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 7px;
+    padding: 8px 0 !important;
+    overflow: visible !important;
+    color: var(--black);
+    background: transparent;
+    border: 0;
+    border-radius: 0 !important;
+    font: inherit;
+    font-size: 1rem !important;
+    font-weight: 900;
+    line-height: 1.2 !important;
+    text-align: left;
+    text-decoration: underline;
+    text-decoration-color: #98b523;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 4px;
+    white-space: normal !important;
+    cursor: pointer;
+  }
+
+  .dashboard-page .training-log-history-card-actions .training-log-copy-button {
+    justify-content: flex-end;
+    text-align: right;
+  }
+
+  .dashboard-page .training-log-history-open:hover,
+  .dashboard-page .training-log-history-card-actions .training-log-copy-button:hover {
+    color: #506300;
+    background: transparent;
+  }
+
+  .training-log-history-card-details {
+    display: grid;
+    min-width: 0;
+    gap: 13px;
+    padding: 18px 20px 22px;
+    background: #f5f6f1;
+    border-top: 1px solid var(--line);
+  }
+
+  .training-log-history-card-details[hidden] {
+    display: none !important;
+  }
+
+  .training-log-history-details-heading {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .training-log-history-details-heading > div {
+    display: grid;
+    min-width: 0;
+    gap: 2px;
+  }
+
+  .training-log-history-details-heading .kicker,
+  .training-log-history-details-heading h3 {
+    margin: 0;
+  }
+
+  .training-log-history-details-heading .kicker {
+    font-size: 1rem;
+  }
+
+  .training-log-history-details-heading h3 {
+    color: var(--black);
+    font-size: 1.2rem;
+    font-weight: 900;
+  }
+
+  .dashboard-page .training-log-history-details-heading button {
+    width: auto !important;
+    inline-size: auto !important;
+    max-width: 100% !important;
+    min-height: 44px !important;
+    padding: 8px 0 !important;
+    color: var(--black);
+    background: transparent;
+    border: 0;
+    border-radius: 0 !important;
+    font: inherit;
+    font-size: 1rem !important;
+    font-weight: 900;
+    text-decoration: underline;
+    text-decoration-color: #98b523;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 4px;
+    cursor: pointer;
+  }
+
+  .training-log-history-card-details .training-log-superset-list {
+    gap: 12px;
+  }
+
+  .training-log-history-card-details .training-log-superset-heading {
+    font-size: 1rem;
+  }
+
+  .training-log-history-card-details .training-log-superset-group {
+    gap: 9px;
+    padding-top: 0;
+  }
+
+  .training-log-history-card-details .training-log-superset-group + .training-log-superset-group {
+    padding-top: 12px;
+    border-top: 1px solid var(--line);
+  }
+
+  .training-log-history-card-details .training-log-row-nested {
+    min-width: 0;
+    padding: 12px;
+    background: #ffffff;
+  }
+
+  .training-log-history-card-details .training-log-row-main span,
+  .training-log-history-card-details .training-log-row-main em,
+  .training-log-history-card-details .training-log-notes {
+    min-width: 0;
+    font-size: 1rem;
+    overflow-wrap: anywhere;
+  }
+
+  .training-log-history-swipe-hint {
+    margin: -8px 2px 0;
+    color: var(--muted);
+    font-size: 1rem;
+    font-weight: 800;
+    text-align: right;
+  }
+
+  .training-log-mobile-nutrition-history {
+    gap: 8px;
+    margin-top: 18px;
+  }
+}
+
+@media (max-width: 370px) {
+  .training-log-history-card-summary {
+    padding: 17px;
+  }
+
+  .training-log-history-card-details {
+    padding-inline: 17px;
+  }
+
+  .training-log-history-deck {
+    padding-right: 22px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .training-log-history-card {
+    transition: none;
+  }
+}
