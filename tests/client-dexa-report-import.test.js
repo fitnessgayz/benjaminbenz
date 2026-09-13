@@ -55,6 +55,12 @@ test("provides an accessible inline review that requires confirmation", () => {
   assert.match(dashboard, /(?:dexa_bodyweight|dexa-bodyweight)/i);
   assert.match(dashboard, /(?:dexa_bodyfat|dexa-bodyfat)/i);
   assert.match(dashboard, /(?:dexa_lean_mass|dexa-lean-mass)/i);
+  assert.match(dashboard, /name="dexa_fat_mass"/i);
+  assert.match(dashboard, /name="dexa_rmr"/i);
+  assert.match(dashboard, /name="dexa_vat_mass"/i);
+  assert.match(dashboard, /name="dexa_bone_density"/i);
+  assert.match(dashboard, /name="dexa_right_arm_lean_mass"/i);
+  assert.match(dashboard, /name="dexa_left_leg_lean_mass"/i);
   assert.match(dashboard, /Automatic extraction can be wrong/i);
   assert.match(dashboard, /Compare every value[^<]*(?:DEXA|report)/i);
   assert.match(dashboard, /(?:Confirm|Save)[^<]*(?:measurement|DEXA|review)/i);
@@ -88,8 +94,12 @@ test("rejects unsupported or oversized files before uploading", () => {
 
 test("validates the reviewed values before confirmation", () => {
   const reviewSource = sourceForFunction(portal, "reviewedDexaValues");
-  const reviewValues = Function("todayDate", `${reviewSource}; return reviewedDexaValues;`)(
-    () => "2026-09-13"
+  const fieldsSource = sourceWindow(portal, "const bodySpecDexaFields", 0, 7000);
+  const fieldsEnd = fieldsSource.indexOf("function dexaReportExtractedValues");
+  const bodySpecDexaFields = Function(`${fieldsSource.slice(0, fieldsEnd)}; return bodySpecDexaFields;`)();
+  const reviewValues = Function("todayDate", "bodySpecDexaFields", `${reviewSource}; return reviewedDexaValues;`)(
+    () => "2026-09-13",
+    bodySpecDexaFields
   );
   const formFor = (values = {}) => ({
     elements: {
@@ -100,19 +110,41 @@ test("validates the reviewed values before confirmation", () => {
     }
   });
 
-  assert.deepEqual(reviewValues(formFor()), {
-    valid: true,
-    values: {
+  const reviewed = reviewValues(formFor());
+  assert.equal(reviewed.valid, true);
+  assert.deepEqual(
+    {
+      scan_date: reviewed.values.scan_date,
+      bodyweight_lb: reviewed.values.bodyweight_lb,
+      bodyfat_percent: reviewed.values.bodyfat_percent,
+      lean_mass_lb: reviewed.values.lean_mass_lb
+    },
+    {
       scan_date: "2026-06-05",
       bodyweight_lb: 180,
       bodyfat_percent: 18.5,
       lean_mass_lb: 145
     }
-  });
+  );
+  bodySpecDexaFields.forEach(({ key }) => assert.equal(reviewed.values[key], null));
   assert.equal(reviewValues(formFor({ scanDate: "2026-09-14" })).valid, false);
   assert.equal(reviewValues(formFor({ bodyweight: "", bodyfat: "", leanMass: "" })).valid, false);
   assert.equal(reviewValues(formFor({ bodyfat: "101" })).valid, false);
   assert.equal(reviewValues(formFor({ bodyweight: "140", leanMass: "145" })).valid, false);
+});
+
+test("extracts and saves the extended BodySpec result fields", () => {
+  const edgeFunction = fs.readFileSync(path.join(root, "supabase/functions/extract-dexa-report/index.ts"), "utf8");
+
+  assert.match(edgeFunction, /fat_mass_lb/);
+  assert.match(edgeFunction, /rmr_cal_per_day/);
+  assert.match(edgeFunction, /vat_volume_in3/);
+  assert.match(edgeFunction, /bone_z_score/);
+  assert.match(edgeFunction, /right_arm_lean_mass_lb/);
+  assert.match(edgeFunction, /left_leg_lean_mass_lb/);
+  assert.match(edgeFunction, /measurements\s*=\s*\{[\s\S]*?bodyspec:/);
+  assert.match(portal, /bodySpecDexaFields\.forEach/);
+  assert.match(portal, /bodySpecHistoryRows\(entry\)/);
 });
 
 test("keeps DEXA lean mass separate from muscle mass in client editing and history", () => {

@@ -1534,6 +1534,22 @@ function progressMeasurements(entry = {}) {
   };
 }
 
+function bodySpecMeasurements(entry = {}) {
+  const measurements = progressMeasurements(entry);
+
+  return measurements.bodyspec && typeof measurements.bodyspec === "object" && !Array.isArray(measurements.bodyspec)
+    ? measurements.bodyspec
+    : {};
+}
+
+function bodySpecHistoryRows(entry = {}) {
+  const metrics = bodySpecMeasurements(entry);
+
+  return bodySpecDexaFields
+    .map(({ key, label, unit }) => [label, metrics[key], unit])
+    .filter(([, value]) => value !== null && value !== undefined && value !== "");
+}
+
 function measurementRows(entry = {}) {
   const measurements = progressMeasurements(entry);
   const rows = [
@@ -2063,7 +2079,8 @@ function renderClientProgressHistory(entries) {
       ["Waist", measurements.waist, "in"],
       ["Hips", measurements.hips, "in"],
       ["Arm", measurements.arm, "in"],
-      ["Thigh", measurements.thigh, "in"]
+      ["Thigh", measurements.thigh, "in"],
+      ...bodySpecHistoryRows(entry)
     ].filter(([, value]) => value !== null && value !== undefined && value !== "");
 
     return `
@@ -3149,13 +3166,52 @@ function dexaReportStatusLabel(status) {
   }[status] || "Uploaded";
 }
 
+const bodySpecDexaFields = [
+  { key: "fat_mass_lb", form: "dexa_fat_mass", label: "Fat mass", unit: "lb", min: 0, max: 1000 },
+  { key: "bone_mineral_content_lb", form: "dexa_bone_mineral_content", label: "Bone mineral content", unit: "lb", min: 0, max: 50 },
+  { key: "arms_fat_percent", form: "dexa_arms_fat_percent", label: "Arm fat", unit: "%", min: 0, max: 75 },
+  { key: "legs_fat_percent", form: "dexa_legs_fat_percent", label: "Leg fat", unit: "%", min: 0, max: 75 },
+  { key: "trunk_fat_percent", form: "dexa_trunk_fat_percent", label: "Trunk fat", unit: "%", min: 0, max: 75 },
+  { key: "android_fat_percent", form: "dexa_android_fat_percent", label: "Android fat", unit: "%", min: 0, max: 75 },
+  { key: "gynoid_fat_percent", form: "dexa_gynoid_fat_percent", label: "Gynoid fat", unit: "%", min: 0, max: 75 },
+  { key: "ag_ratio", form: "dexa_ag_ratio", label: "A/G ratio", unit: "", min: 0, max: 10 },
+  { key: "rmr_cal_per_day", form: "dexa_rmr", label: "RMR", unit: " cal/day", min: 500, max: 10000 },
+  { key: "vat_mass_lb", form: "dexa_vat_mass", label: "Visceral fat mass", unit: "lb", min: 0, max: 100 },
+  { key: "vat_volume_in3", form: "dexa_vat_volume", label: "Visceral fat volume", unit: " in³", min: 0, max: 1000 },
+  { key: "bone_density_g_cm2", form: "dexa_bone_density", label: "Bone density", unit: " g/cm²", min: 0, max: 5 },
+  { key: "bone_t_score", form: "dexa_bone_t_score", label: "Bone T-score", unit: "", min: -10, max: 10 },
+  { key: "bone_z_score", form: "dexa_bone_z_score", label: "Bone Z-score", unit: "", min: -10, max: 10 },
+  { key: "arms_lean_mass_lb", form: "dexa_arms_lean_mass", label: "Arms lean mass", unit: "lb", min: 0, max: 500 },
+  { key: "legs_lean_mass_lb", form: "dexa_legs_lean_mass", label: "Legs lean mass", unit: "lb", min: 0, max: 500 },
+  { key: "trunk_lean_mass_lb", form: "dexa_trunk_lean_mass", label: "Trunk lean mass", unit: "lb", min: 0, max: 500 },
+  { key: "right_arm_lean_mass_lb", form: "dexa_right_arm_lean_mass", label: "Right arm lean mass", unit: "lb", min: 0, max: 250 },
+  { key: "left_arm_lean_mass_lb", form: "dexa_left_arm_lean_mass", label: "Left arm lean mass", unit: "lb", min: 0, max: 250 },
+  { key: "right_leg_lean_mass_lb", form: "dexa_right_leg_lean_mass", label: "Right leg lean mass", unit: "lb", min: 0, max: 250 },
+  { key: "left_leg_lean_mass_lb", form: "dexa_left_leg_lean_mass", label: "Left leg lean mass", unit: "lb", min: 0, max: 250 }
+];
+
 function dexaReportExtractedValues(report = {}) {
-  return {
+  const extractionData = report.extraction_data && typeof report.extraction_data === "object"
+    ? report.extraction_data
+    : {};
+  const extractedMetrics = extractionData.bodyspec_metrics && typeof extractionData.bodyspec_metrics === "object"
+    ? extractionData.bodyspec_metrics
+    : {};
+  const confirmedValues = extractionData.confirmed_values && typeof extractionData.confirmed_values === "object"
+    ? extractionData.confirmed_values
+    : {};
+  const values = {
     scan_date: report.extracted_scan_date || "",
     bodyweight_lb: report.extracted_bodyweight_lb ?? null,
     bodyfat_percent: report.extracted_bodyfat_percent ?? null,
     lean_mass_lb: report.extracted_lean_mass_lb ?? null
   };
+
+  bodySpecDexaFields.forEach(({ key }) => {
+    values[key] = report[key] ?? confirmedValues[key] ?? extractedMetrics[key] ?? null;
+  });
+
+  return values;
 }
 
 function renderClientDexaReports(records) {
@@ -3203,7 +3259,7 @@ async function loadClientDexaReports(email = activeClientEmail) {
 
   const { data, error } = await supabaseClient
     .from("client_dexa_reports")
-    .select("id,client_email,storage_path,original_filename,mime_type,file_size_bytes,status,extracted_scan_date,extracted_bodyweight_lb,extracted_bodyfat_percent,extracted_lean_mass_lb,extraction_confidence,extraction_warnings,extraction_error,progress_entry_id,processed_at,confirmed_at,created_at")
+    .select("id,client_email,storage_path,original_filename,mime_type,file_size_bytes,status,extracted_scan_date,extracted_bodyweight_lb,extracted_bodyfat_percent,extracted_lean_mass_lb,extraction_confidence,extraction_data,extraction_warnings,extraction_error,progress_entry_id,processed_at,confirmed_at,created_at")
     .ilike("client_email", email)
     .order("created_at", { ascending: false });
 
@@ -3245,6 +3301,11 @@ function showClientDexaReview(report, extracted = null, warnings = null) {
   form.elements.dexa_bodyweight.value = values.bodyweight_lb ?? "";
   form.elements.dexa_bodyfat.value = values.bodyfat_percent ?? "";
   form.elements.dexa_lean_mass.value = values.lean_mass_lb ?? "";
+  bodySpecDexaFields.forEach(({ key, form: fieldName }) => {
+    if (form.elements[fieldName]) {
+      form.elements[fieldName].value = values[key] ?? "";
+    }
+  });
   setDexaReviewWarnings(warnings ?? report.extraction_warnings ?? []);
   updateDexaExistingEntryNote();
   review.hidden = false;
@@ -3278,7 +3339,7 @@ function updateDexaExistingEntryNote() {
   }
 
   note.textContent = existing
-    ? "A measurement entry already exists for this date. Saving will update only bodyweight, body fat, and DEXA lean mass; your muscle mass, tape measurements, and notes will stay unchanged."
+    ? "A measurement entry already exists for this date. Saving will update the DEXA and BodySpec values; your muscle mass, tape measurements, and notes will stay unchanged."
     : "A new measurement entry will be created for this scan date.";
 }
 
@@ -3295,11 +3356,15 @@ function reviewedDexaValues(form) {
     lean_mass_lb: optionalNumber("dexa_lean_mass")
   };
 
+  bodySpecDexaFields.forEach(({ key, form: fieldName }) => {
+    values[key] = optionalNumber(fieldName);
+  });
+
   if (!/^\d{4}-\d{2}-\d{2}$/.test(scanDate) || scanDate < "1900-01-01" || scanDate > todayDate()) {
     return { valid: false, message: "Choose the date shown on the DEXA report." };
   }
 
-  if ([values.bodyweight_lb, values.bodyfat_percent, values.lean_mass_lb].every((value) => value === null)) {
+  if (Object.entries(values).every(([key, value]) => key === "scan_date" || value === null)) {
     return { valid: false, message: "Enter at least one measurement from the DEXA report." };
   }
 
@@ -3317,6 +3382,18 @@ function reviewedDexaValues(form) {
 
   if (values.bodyweight_lb !== null && values.lean_mass_lb !== null && values.lean_mass_lb > values.bodyweight_lb) {
     return { valid: false, message: "Lean mass cannot be greater than total bodyweight. Compare both values with the report." };
+  }
+
+  const invalidBodySpecField = bodySpecDexaFields.find(({ key, min, max }) => {
+    const value = values[key];
+    return value !== null && (!Number.isFinite(value) || value < min || value > max);
+  });
+
+  if (invalidBodySpecField) {
+    return {
+      valid: false,
+      message: `${invalidBodySpecField.label} must be between ${invalidBodySpecField.min} and ${invalidBodySpecField.max}${invalidBodySpecField.unit}.`
+    };
   }
 
   return { valid: true, values };
@@ -12127,7 +12204,7 @@ async function loadDashboard() {
       withTimeout(
         supabaseClient
           .from("client_dexa_reports")
-          .select("id,client_email,storage_path,original_filename,mime_type,file_size_bytes,status,extracted_scan_date,extracted_bodyweight_lb,extracted_bodyfat_percent,extracted_lean_mass_lb,extraction_confidence,extraction_warnings,extraction_error,progress_entry_id,processed_at,confirmed_at,created_at")
+          .select("id,client_email,storage_path,original_filename,mime_type,file_size_bytes,status,extracted_scan_date,extracted_bodyweight_lb,extracted_bodyfat_percent,extracted_lean_mass_lb,extraction_confidence,extraction_data,extraction_warnings,extraction_error,progress_entry_id,processed_at,confirmed_at,created_at")
           .ilike("client_email", activeClientEmail)
           .order("created_at", { ascending: false }),
         "DEXA report request timed out."

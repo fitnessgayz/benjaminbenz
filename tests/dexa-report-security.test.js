@@ -119,7 +119,8 @@ test("confirmation patches only DEXA metrics and preserves unrelated progress fi
   assert.match(confirmSource, /lean_mass/);
   assert.match(confirmSource, /\.eq\("id",\s*existingProgress\.id\)|\.eq\("id",\s*existing(?:Entry|ProgressEntry)\.id\)/);
   assert.doesNotMatch(confirmSource, /muscle_mass\s*:/);
-  assert.doesNotMatch(confirmSource, /measurements\s*:/);
+  assert.match(confirmSource, /existingMeasurements[\s\S]*?\.\.\.existingMeasurements[\s\S]*?bodyspec:\s*values\.bodyspec/);
+  assert.doesNotMatch(confirmSource, /(?:chest|waist|hips|arm|thigh)\s*:/);
   assert.doesNotMatch(confirmSource, /goal_note\s*:/);
   assert.doesNotMatch(confirmSource, /\.upsert\(/);
 });

@@ -5820,6 +5820,29 @@ body.is-client-checkin-prompt-open {
   gap: 12px;
 }
 
+.dexa-metric-group {
+  grid-column: 1 / -1;
+  min-width: 0;
+  margin: 2px 0 0;
+  padding: 14px;
+  border: 1px solid var(--line);
+}
+
+.dexa-metric-group legend {
+  padding: 0 7px;
+  color: var(--black);
+  font-size: .82rem;
+  font-weight: 950;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.dexa-metric-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
 .dexa-existing-entry-note,
 .dexa-review-actions {
   grid-column: 1 / -1;
@@ -5870,6 +5893,10 @@ body.is-client-checkin-prompt-open {
     grid-template-columns: 1fr;
   }
 
+  .dexa-metric-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .dexa-report-actions {
     justify-content: stretch;
   }
@@ -5877,6 +5904,12 @@ body.is-client-checkin-prompt-open {
   .dexa-report-actions .button,
   .dexa-review-actions .button {
     width: 100%;
+  }
+}
+
+@media (max-width: 430px) {
+  .dexa-metric-grid {
+    grid-template-columns: 1fr;
   }
 }
 

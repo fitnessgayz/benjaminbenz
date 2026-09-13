@@ -4,6 +4,7 @@ const path = require("node:path");
 const test = require("node:test");
 
 const portal = fs.readFileSync(path.resolve(__dirname, "../js/client-portal.js"), "utf8");
+const edgeFunction = fs.readFileSync(path.resolve(__dirname, "../supabase/functions/extract-dexa-report/index.ts"), "utf8");
 
 function sourceBetween(startMarker, endMarker) {
   const start = portal.indexOf(startMarker);
@@ -18,10 +19,15 @@ const dexaFileDetails = Function(
   `${sourceBetween("function dexaFileDetails", "function dexaReportStatusLabel")}\nreturn dexaFileDetails;`
 )();
 
+const bodySpecDexaFields = Function(
+  `${sourceBetween("const bodySpecDexaFields", "function dexaReportExtractedValues")}\nreturn bodySpecDexaFields;`
+)();
+
 const reviewedDexaValues = Function(
   "todayDate",
+  "bodySpecDexaFields",
   `${sourceBetween("function reviewedDexaValues", "async function invokeDexaExtraction")}\nreturn reviewedDexaValues;`
-)(() => "2026-09-13");
+)(() => "2026-09-13", bodySpecDexaFields);
 
 function reviewForm(values = {}) {
   const field = (value = "") => ({ value: String(value) });
@@ -62,10 +68,26 @@ test("client review keeps missing optional fields null instead of manufacturing 
   const result = reviewedDexaValues(reviewForm({ bodyfat: "", leanMass: "" }));
 
   assert.equal(result.valid, true);
-  assert.deepEqual(result.values, {
-    scan_date: "2026-05-04",
-    bodyweight_lb: 180,
-    bodyfat_percent: null,
-    lean_mass_lb: null
-  });
+  assert.equal(result.values.scan_date, "2026-05-04");
+  assert.equal(result.values.bodyweight_lb, 180);
+  assert.equal(result.values.bodyfat_percent, null);
+  assert.equal(result.values.lean_mass_lb, null);
+  bodySpecDexaFields.forEach(({ key }) => assert.equal(result.values[key], null));
+});
+
+test("BodySpec extraction prioritizes Measured Date and accepts its printed US format", () => {
+  assert.match(edgeFunction, /BodySpec report, the scan date is labeled Measured Date/i);
+  assert.match(edgeFunction, /newest\/current row, normally the first row/i);
+  assert.match(edgeFunction, /Do not treat older comparison rows as the current scan/i);
+
+  const start = edgeFunction.indexOf("function validPastOrPresentDate");
+  const end = edgeFunction.indexOf("\nfunction rounded", start);
+  const validPastOrPresentDate = Function(
+    "stringValue",
+    "currentDateInLosAngeles",
+    `${edgeFunction.slice(start, end).replace("value: unknown", "value")}; return validPastOrPresentDate;`
+  )((value) => String(value || "").trim(), () => "2026-09-13");
+
+  assert.equal(validPastOrPresentDate("3/7/2025"), "2025-03-07");
+  assert.equal(validPastOrPresentDate("2025-03-07"), "2025-03-07");
 });
