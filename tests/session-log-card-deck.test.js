@@ -124,6 +124,29 @@ test("keeps only the current history card interactive and supports arrows, keybo
   assert.match(handlerSource, /setClientWorkoutHistoryCardExpanded\(card, true\)/);
 });
 
+test("renders food days as a separate mobile deck with expandable entries", () => {
+  const nutritionSource = sourceForFunction("nutritionLogHistorySections");
+  const renderSource = sourceForFunction("renderClientTrainingLogs");
+  const syncSource = sourceForFunction("syncClientWorkoutHistoryDeck");
+  const handlerSource = sourceForFunction("handleClientWorkoutHistoryDeck");
+
+  assert.match(nutritionSource, /data-client-food-history-card/);
+  assert.match(nutritionSource, /data-client-food-history-summary/);
+  assert.match(nutritionSource, /data-client-food-history-open/);
+  assert.match(nutritionSource, /data-client-food-history-details/);
+  assert.match(nutritionSource, /View Foods/);
+  assert.match(renderSource, /data-client-food-history-browser/);
+  assert.match(renderSource, /data-client-food-history-deck/);
+  assert.match(renderSource, /data-client-food-history-previous/);
+  assert.match(renderSource, /data-client-food-history-next/);
+  assert.match(renderSource, /syncClientFoodHistoryDeck\(activeFoodHistoryDeckIndex\)/);
+  assert.match(syncSource, /historyType === "food"/);
+  assert.match(syncSource, /activeFoodHistoryDeckIndex/);
+  assert.match(handlerSource, /data-client-food-history-deck/);
+  assert.match(handlerSource, /moveClientWorkoutHistoryDeck\(-1, historyType\)/);
+  assert.match(handlerSource, /moveClientWorkoutHistoryDeck\(step, historyType\)/);
+});
+
 test("mobile deck styles layer cards without clipping long workout content", () => {
   const start = styles.indexOf("/* Mobile Session Log: past workouts shown as an interactive card deck. */");
   const deckStyles = styles.slice(start);
@@ -145,7 +168,7 @@ test("mobile deck styles layer cards without clipping long workout content", () 
 });
 
 test("cache-busts the live dashboard assets after the Session Log release", () => {
-  assert.match(dashboard, /css\/style\.css\?v=compact-nutrition-grid-1/);
-  assert.match(dashboard, /js\/client-portal\.js\?v=collapsible-client-nav-2/);
+  assert.match(dashboard, /css\/style\.css\?v=nutrition-history-macro-chart-1/);
+  assert.match(dashboard, /js\/client-portal\.js\?v=nutrition-history-macro-chart-1/);
   assert.match(portal, /handleClientWorkoutHistoryDeck\(\);/);
 });

@@ -36,6 +36,7 @@ let clientExerciseProgressDirection = 0;
 let activeWorkoutTabIndex = 0;
 let clientWorkoutPickerIsOpen = true;
 let activeWorkoutHistoryDeckIndex = 0;
+let activeFoodHistoryDeckIndex = 0;
 let currentProgram = null;
 const dashboardRequestTimeout = 15000;
 const customWorkoutTitle = "Custom workout";
@@ -696,6 +697,67 @@ function numberValue(value) {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+function nutritionMacroChartModel(nutrition = {}) {
+  const proteinGrams = numberValue(nutrition.protein);
+  const carbGrams = numberValue(nutrition.carbs);
+  const fatGrams = numberValue(nutrition.fat);
+  const proteinCalories = proteinGrams * 4;
+  const carbCalories = carbGrams * 4;
+  const fatCalories = fatGrams * 9;
+  const macroCalories = proteinCalories + carbCalories + fatCalories;
+  const percent = (value) => macroCalories > 0 ? (value / macroCalories) * 100 : 0;
+  const proteinPercent = percent(proteinCalories);
+  const carbPercent = percent(carbCalories);
+  const fatPercent = percent(fatCalories);
+
+  return {
+    calories: numberValue(nutrition.calories),
+    proteinGrams,
+    carbGrams,
+    fatGrams,
+    proteinPercent,
+    carbPercent,
+    fatPercent,
+    proteinEnd: proteinPercent,
+    carbEnd: proteinPercent + carbPercent,
+    hasMacros: macroCalories > 0
+  };
+}
+
+function renderNutritionMacroChart(nutrition = {}) {
+  const overview = document.getElementById("client-nutrition-macro-overview");
+
+  if (!overview) {
+    return;
+  }
+
+  const chart = nutritionMacroChartModel(nutrition);
+  const percentLabel = (value) => `${Math.round(value)}%`;
+  const gramsLabel = (value) => value > 0 ? `${foodLogNumberLabel(value)}g` : "Not set";
+  const chartLabel = chart.hasMacros
+    ? `Macro distribution: protein ${percentLabel(chart.proteinPercent)}, carbs ${percentLabel(chart.carbPercent)}, fat ${percentLabel(chart.fatPercent)}.`
+    : "Macro distribution will appear after protein, carbs, and fat are entered.";
+
+  overview.innerHTML = `
+    <div
+      class="nutrition-macro-chart${chart.hasMacros ? "" : " is-empty"}"
+      role="img"
+      aria-label="${escapeHtml(chartLabel)}"
+      style="--macro-protein-end: ${chart.proteinEnd.toFixed(2)}%; --macro-carbs-end: ${chart.carbEnd.toFixed(2)}%;"
+    >
+      <div class="nutrition-macro-chart-center">
+        <strong>${escapeHtml(chart.calories > 0 ? foodLogNumberLabel(chart.calories) : "—")}</strong>
+        <span>calorie target</span>
+      </div>
+    </div>
+    <div class="nutrition-macro-chart-legend" aria-hidden="true">
+      <span class="is-protein"><i></i><strong>Protein</strong><em>${escapeHtml(gramsLabel(chart.proteinGrams))} · ${percentLabel(chart.proteinPercent)}</em></span>
+      <span class="is-carbs"><i></i><strong>Carbs</strong><em>${escapeHtml(gramsLabel(chart.carbGrams))} · ${percentLabel(chart.carbPercent)}</em></span>
+      <span class="is-fat"><i></i><strong>Fat</strong><em>${escapeHtml(gramsLabel(chart.fatGrams))} · ${percentLabel(chart.fatPercent)}</em></span>
+    </div>
+  `;
+}
+
 function roundToNearest(value, nearest) {
   return Math.round(value / nearest) * nearest;
 }
@@ -890,6 +952,8 @@ function renderClientNutrition(program) {
   const status = document.getElementById("client-nutrition-status");
   const nutrition = nutritionPlanFromProgram(program);
   const hasTargets = Boolean(nutrition.calories || nutrition.protein || nutrition.carbs || nutrition.fat || nutrition.guide);
+
+  renderNutritionMacroChart(nutrition);
 
   if (status) {
     status.textContent = nutrition.source === "client_calculator"
@@ -8490,7 +8554,9 @@ function sortedFoodLogDayGroups(logs = []) {
 }
 
 function nutritionLogHistorySections(logs = []) {
-  return sortedFoodLogDayGroups(logs).map((day) => {
+  const days = sortedFoodLogDayGroups(logs);
+
+  return days.map((day, dayIndex) => {
     const totals = foodLogTotals(day.entries);
     const macroSummary = [
       `${foodLogNumberLabel(totals.calories)} cal`,
@@ -8498,33 +8564,85 @@ function nutritionLogHistorySections(logs = []) {
       `${foodLogNumberLabel(totals.carbs, "g")} carbs`,
       `${foodLogNumberLabel(totals.fat, "g")} fat`
     ].join(" · ");
+    const detailsId = `client-food-history-details-${dayIndex}`;
+    const foodEntriesHtml = `
+      <div class="training-log-exercise-list">
+        ${day.entries.map((log) => `
+          <article class="training-log-row training-log-row-compact training-log-row-nested">
+            <div class="training-log-row-main">
+              <span>${escapeHtml(log.food_name || "Food")}</span>
+              <em>${escapeHtml([log.meal, log.serving].filter(Boolean).join(" · ") || "Food entry")}</em>
+              <small class="training-log-notes">${escapeHtml([
+                `${foodLogNumberLabel(log.calories)} cal`,
+                `${foodLogNumberLabel(log.protein, "g")} protein`,
+                `${foodLogNumberLabel(log.carbs, "g")} carbs`,
+                `${foodLogNumberLabel(log.fat, "g")} fat`
+              ].join(" · "))}</small>
+              ${log.notes ? `<small class="training-log-notes"><strong>Notes:</strong> ${escapeHtml(log.notes)}</small>` : ""}
+            </div>
+          </article>
+        `).join("")}
+      </div>
+    `;
 
     return {
       sort_key: `${day.entry_date || ""}::nutrition`,
-      html: `
+      desktop_html: `
         <section class="training-log-workout-group training-log-nutrition-group">
           <div class="training-log-workout-heading">
             <strong>${escapeHtml(formatLogDate(day.entry_date))}</strong>
             <span>${escapeHtml(`Nutrition · ${macroSummary}`)}</span>
           </div>
-          <div class="training-log-exercise-list">
-            ${day.entries.map((log) => `
-              <article class="training-log-row training-log-row-compact training-log-row-nested">
-                <div class="training-log-row-main">
-                  <span>${escapeHtml(log.food_name || "Food")}</span>
-                  <em>${escapeHtml([log.meal, log.serving].filter(Boolean).join(" · ") || "Food entry")}</em>
-                  <small class="training-log-notes">${escapeHtml([
-                    `${foodLogNumberLabel(log.calories)} cal`,
-                    `${foodLogNumberLabel(log.protein, "g")} protein`,
-                    `${foodLogNumberLabel(log.carbs, "g")} carbs`,
-                    `${foodLogNumberLabel(log.fat, "g")} fat`
-                  ].join(" · "))}</small>
-                  ${log.notes ? `<small class="training-log-notes"><strong>Notes:</strong> ${escapeHtml(log.notes)}</small>` : ""}
-                </div>
-              </article>
-            `).join("")}
-          </div>
+          ${foodEntriesHtml}
         </section>
+      `,
+      mobile_html: `
+        <article
+          class="training-log-history-card training-log-food-history-card"
+          data-client-food-history-card="${dayIndex}"
+          role="group"
+          aria-roledescription="slide"
+          aria-label="${escapeHtml(`${formatLogDate(day.entry_date)} nutrition log. Day ${dayIndex + 1} of ${days.length}.`)}"
+        >
+          <div class="training-log-history-card-summary" data-client-food-history-summary>
+            <div class="training-log-history-card-topline">
+              <span class="training-log-history-state is-nutrition">Nutrition</span>
+              <strong>${escapeHtml(formatLogDate(day.entry_date))}</strong>
+            </div>
+            <h3>${escapeHtml(`${day.entries.length} food ${day.entries.length === 1 ? "entry" : "entries"}`)}</h3>
+            <p>Daily nutrition log</p>
+            <dl class="training-log-history-metrics">
+              <div><dt>Calories</dt><dd>${escapeHtml(foodLogNumberLabel(totals.calories))}</dd></div>
+              <div><dt>Protein</dt><dd>${escapeHtml(foodLogNumberLabel(totals.protein, "g"))}</dd></div>
+              <div><dt>Carbs</dt><dd>${escapeHtml(foodLogNumberLabel(totals.carbs, "g"))}</dd></div>
+              <div><dt>Fat</dt><dd>${escapeHtml(foodLogNumberLabel(totals.fat, "g"))}</dd></div>
+            </dl>
+            <div class="training-log-history-card-actions">
+              <button
+                class="training-log-history-open"
+                type="button"
+                data-client-food-history-open
+                aria-expanded="false"
+                aria-controls="${escapeHtml(detailsId)}"
+              >View Foods <span aria-hidden="true">→</span></button>
+            </div>
+          </div>
+          <div
+            class="training-log-history-card-details"
+            id="${escapeHtml(detailsId)}"
+            data-client-food-history-details
+            hidden
+          >
+            <div class="training-log-history-details-heading">
+              <div>
+                <p class="kicker">Foods logged</p>
+                <h3>${escapeHtml(`${day.entries.length} ${day.entries.length === 1 ? "entry" : "entries"}`)}</h3>
+              </div>
+              <button type="button" data-client-food-history-close>Back</button>
+            </div>
+            ${foodEntriesHtml}
+          </div>
+        </article>
       `
     };
   });
@@ -8821,6 +8939,7 @@ function renderClientTrainingLogs() {
   }
 
   activeWorkoutHistoryDeckIndex = 0;
+  activeFoodHistoryDeckIndex = 0;
   const filteredLogs = filteredClientWorkoutHistoryLogs(
     trainingLogs,
     clientTrainingLogDateFilter,
@@ -9115,7 +9234,7 @@ function renderClientTrainingLogs() {
   const nutritionHistorySections = nutritionLogHistorySections(filteredFoodLogs);
   const chronologicalHistory = [
     ...workoutHistorySections.map((section) => ({ sort_key: section.sort_key, html: section.desktop_html })),
-    ...nutritionHistorySections
+    ...nutritionHistorySections.map((section) => ({ sort_key: section.sort_key, html: section.desktop_html }))
   ].sort((a, b) => b.sort_key.localeCompare(a.sort_key));
   const mobileWorkoutBrowser = workoutHistorySections.length > 0 ? `
     <section class="training-log-mobile-workout-browser" data-client-workout-history-browser>
@@ -9142,18 +9261,49 @@ function renderClientTrainingLogs() {
       <p class="training-log-history-swipe-hint">Swipe left or right to browse</p>
     </section>
   ` : "";
+  const mobileFoodBrowser = nutritionHistorySections.length > 0 ? `
+    <section class="training-log-mobile-nutrition-history" data-client-food-history-browser>
+      <div class="training-log-history-deck-heading">
+        <div>
+          <p class="kicker">Food logs</p>
+          <strong data-client-food-history-position aria-live="polite" aria-atomic="true">Day 1 of ${nutritionHistorySections.length}</strong>
+        </div>
+        <div class="training-log-history-deck-controls" aria-label="Food log controls">
+          <button type="button" data-client-food-history-previous aria-label="Previous food log day">←</button>
+          <button type="button" data-client-food-history-next aria-label="Next food log day">→</button>
+        </div>
+      </div>
+      <div
+        class="training-log-history-deck"
+        data-client-food-history-deck
+        role="region"
+        aria-roledescription="carousel"
+        aria-label="Food logs. Swipe left or right, or use the arrow buttons."
+        tabindex="0"
+      >
+        ${nutritionHistorySections.map((section) => section.mobile_html).join("")}
+      </div>
+      <p class="training-log-history-swipe-hint">Swipe left or right to browse</p>
+    </section>
+  ` : "";
 
   history.innerHTML = `
     <div class="training-log-desktop-history">${chronologicalHistory.map((section) => section.html).join("")}</div>
     ${mobileWorkoutBrowser}
-    <div class="training-log-mobile-nutrition-history">${nutritionHistorySections.map((section) => section.html).join("")}</div>
+    ${mobileFoodBrowser}
   `;
   syncClientWorkoutHistoryDeck(activeWorkoutHistoryDeckIndex);
+  syncClientFoodHistoryDeck(activeFoodHistoryDeckIndex);
 }
 
 function setClientWorkoutHistoryCardExpanded(card, expanded, options = {}) {
-  const details = card?.querySelector("[data-client-workout-history-details]");
-  const openButton = card?.querySelector("[data-client-workout-history-open]");
+  const isFoodCard = card?.matches("[data-client-food-history-card]");
+  const details = card?.querySelector(isFoodCard
+    ? "[data-client-food-history-details]"
+    : "[data-client-workout-history-details]");
+  const openButton = card?.querySelector(isFoodCard
+    ? "[data-client-food-history-open]"
+    : "[data-client-workout-history-open]");
 
   if (!card || !details || !openButton) {
     return;
@@ -9165,30 +9315,51 @@ function setClientWorkoutHistoryCardExpanded(card, expanded, options = {}) {
   details.hidden = !isExpanded;
   openButton.setAttribute("aria-expanded", isExpanded ? "true" : "false");
   openButton.innerHTML = isExpanded
-    ? 'Hide Exercises <span aria-hidden="true">↑</span>'
-    : 'View Exercises <span aria-hidden="true">→</span>';
+    ? `${isFoodCard ? "Hide Foods" : "Hide Exercises"} <span aria-hidden="true">↑</span>`
+    : `${isFoodCard ? "View Foods" : "View Exercises"} <span aria-hidden="true">→</span>`;
 
   if (!isExpanded && options.restoreFocus) {
     openButton.focus({ preventScroll: true });
   }
 }
 
-function syncClientWorkoutHistoryDeck(nextIndex = activeWorkoutHistoryDeckIndex) {
-  const browser = document.querySelector("[data-client-workout-history-browser]");
-  const deck = browser?.querySelector("[data-client-workout-history-deck]");
-  const cards = Array.from(deck?.querySelectorAll("[data-client-workout-history-card]") || []);
+function syncClientWorkoutHistoryDeck(nextIndex = activeWorkoutHistoryDeckIndex, historyType = "workout") {
+  const isFoodHistory = historyType === "food";
+  const browser = document.querySelector(isFoodHistory
+    ? "[data-client-food-history-browser]"
+    : "[data-client-workout-history-browser]");
+  const deck = browser?.querySelector(isFoodHistory
+    ? "[data-client-food-history-deck]"
+    : "[data-client-workout-history-deck]");
+  const cards = Array.from(deck?.querySelectorAll(isFoodHistory
+    ? "[data-client-food-history-card]"
+    : "[data-client-workout-history-card]") || []);
 
   if (!browser || !deck || cards.length === 0) {
-    activeWorkoutHistoryDeckIndex = 0;
+    if (isFoodHistory) {
+      activeFoodHistoryDeckIndex = 0;
+    } else {
+      activeWorkoutHistoryDeckIndex = 0;
+    }
     return;
   }
 
   const index = clientWorkoutPickerIndex(nextIndex, cards.length);
-  const position = browser.querySelector("[data-client-workout-history-position]");
-  const previousButton = browser.querySelector("[data-client-workout-history-previous]");
-  const nextButton = browser.querySelector("[data-client-workout-history-next]");
+  const position = browser.querySelector(isFoodHistory
+    ? "[data-client-food-history-position]"
+    : "[data-client-workout-history-position]");
+  const previousButton = browser.querySelector(isFoodHistory
+    ? "[data-client-food-history-previous]"
+    : "[data-client-workout-history-previous]");
+  const nextButton = browser.querySelector(isFoodHistory
+    ? "[data-client-food-history-next]"
+    : "[data-client-workout-history-next]");
 
-  activeWorkoutHistoryDeckIndex = index;
+  if (isFoodHistory) {
+    activeFoodHistoryDeckIndex = index;
+  } else {
+    activeWorkoutHistoryDeckIndex = index;
+  }
   browser.dataset.activeIndex = String(index);
   cards.forEach((card, cardIndex) => {
     const depth = clientWorkoutPickerIndex(cardIndex - index, cards.length);
@@ -9206,7 +9377,7 @@ function syncClientWorkoutHistoryDeck(nextIndex = activeWorkoutHistoryDeckIndex)
   });
 
   if (position) {
-    position.textContent = `Workout ${index + 1} of ${cards.length}`;
+    position.textContent = `${isFoodHistory ? "Day" : "Workout"} ${index + 1} of ${cards.length}`;
   }
   if (previousButton) {
     previousButton.disabled = cards.length < 2;
@@ -9216,18 +9387,28 @@ function syncClientWorkoutHistoryDeck(nextIndex = activeWorkoutHistoryDeckIndex)
   }
 }
 
-function setClientWorkoutHistoryDeckIndex(nextIndex) {
-  const count = document.querySelectorAll("[data-client-workout-history-card]").length;
+function syncClientFoodHistoryDeck(nextIndex = activeFoodHistoryDeckIndex) {
+  syncClientWorkoutHistoryDeck(nextIndex, "food");
+}
+
+function setClientWorkoutHistoryDeckIndex(nextIndex, historyType = "workout") {
+  const count = document.querySelectorAll(historyType === "food"
+    ? "[data-client-food-history-card]"
+    : "[data-client-workout-history-card]").length;
 
   if (count === 0) {
     return;
   }
 
-  syncClientWorkoutHistoryDeck(clientWorkoutPickerIndex(nextIndex, count));
+  syncClientWorkoutHistoryDeck(clientWorkoutPickerIndex(nextIndex, count), historyType);
 }
 
-function moveClientWorkoutHistoryDeck(step) {
-  setClientWorkoutHistoryDeckIndex(activeWorkoutHistoryDeckIndex + step);
+function moveClientWorkoutHistoryDeck(step, historyType = "workout") {
+  const currentIndex = historyType === "food"
+    ? activeFoodHistoryDeckIndex
+    : activeWorkoutHistoryDeckIndex;
+
+  setClientWorkoutHistoryDeckIndex(currentIndex + step, historyType);
 }
 
 function handleClientWorkoutHistoryDeck() {
@@ -9235,30 +9416,33 @@ function handleClientWorkoutHistoryDeck() {
   let ignoreCardClickUntil = 0;
 
   document.addEventListener("click", (event) => {
-    if (event.target.closest("[data-client-workout-history-previous]")) {
-      moveClientWorkoutHistoryDeck(-1);
+    const foodBrowser = event.target.closest("[data-client-food-history-browser]");
+    const historyType = foodBrowser ? "food" : "workout";
+
+    if (event.target.closest("[data-client-workout-history-previous], [data-client-food-history-previous]")) {
+      moveClientWorkoutHistoryDeck(-1, historyType);
       return;
     }
 
-    if (event.target.closest("[data-client-workout-history-next]")) {
-      moveClientWorkoutHistoryDeck(1);
+    if (event.target.closest("[data-client-workout-history-next], [data-client-food-history-next]")) {
+      moveClientWorkoutHistoryDeck(1, historyType);
       return;
     }
 
-    const closeButton = event.target.closest("[data-client-workout-history-close]");
+    const closeButton = event.target.closest("[data-client-workout-history-close], [data-client-food-history-close]");
 
     if (closeButton) {
-      const card = closeButton.closest("[data-client-workout-history-card]");
+      const card = closeButton.closest("[data-client-workout-history-card], [data-client-food-history-card]");
 
       setClientWorkoutHistoryCardExpanded(card, false, { restoreFocus: true });
       return;
     }
 
-    const openButton = event.target.closest("[data-client-workout-history-open]");
+    const openButton = event.target.closest("[data-client-workout-history-open], [data-client-food-history-open]");
 
     if (openButton) {
-      const card = openButton.closest("[data-client-workout-history-card]");
-      const details = card?.querySelector("[data-client-workout-history-details]");
+      const card = openButton.closest("[data-client-workout-history-card], [data-client-food-history-card]");
+      const details = card?.querySelector("[data-client-workout-history-details], [data-client-food-history-details]");
 
       setClientWorkoutHistoryCardExpanded(card, details?.hidden !== false);
       return;
@@ -9268,8 +9452,8 @@ function handleClientWorkoutHistoryDeck() {
       return;
     }
 
-    const summary = event.target.closest("[data-client-workout-history-summary]");
-    const card = summary?.closest("[data-client-workout-history-card]");
+    const summary = event.target.closest("[data-client-workout-history-summary], [data-client-food-history-summary]");
+    const card = summary?.closest("[data-client-workout-history-card], [data-client-food-history-card]");
 
     if (card?.classList.contains("is-current")) {
       setClientWorkoutHistoryCardExpanded(card, true);
@@ -9277,7 +9461,8 @@ function handleClientWorkoutHistoryDeck() {
   });
 
   document.addEventListener("keydown", (event) => {
-    const deck = event.target.closest("[data-client-workout-history-deck]");
+    const deck = event.target.closest("[data-client-workout-history-deck], [data-client-food-history-deck]");
+    const historyType = deck?.matches("[data-client-food-history-deck]") ? "food" : "workout";
 
     if (!deck || event.target !== deck || deck.querySelector(".is-current.is-detail-open")) {
       return;
@@ -9285,21 +9470,23 @@ function handleClientWorkoutHistoryDeck() {
 
     if (event.key === "ArrowLeft") {
       event.preventDefault();
-      moveClientWorkoutHistoryDeck(-1);
+      moveClientWorkoutHistoryDeck(-1, historyType);
     } else if (event.key === "ArrowRight") {
       event.preventDefault();
-      moveClientWorkoutHistoryDeck(1);
+      moveClientWorkoutHistoryDeck(1, historyType);
     } else if (event.key === "Home") {
       event.preventDefault();
-      setClientWorkoutHistoryDeckIndex(0);
+      setClientWorkoutHistoryDeckIndex(0, historyType);
     } else if (event.key === "End") {
       event.preventDefault();
-      setClientWorkoutHistoryDeckIndex(deck.querySelectorAll("[data-client-workout-history-card]").length - 1);
+      setClientWorkoutHistoryDeckIndex(deck.querySelectorAll(
+        historyType === "food" ? "[data-client-food-history-card]" : "[data-client-workout-history-card]"
+      ).length - 1, historyType);
     }
   });
 
   document.addEventListener("pointerdown", (event) => {
-    const deck = event.target.closest("[data-client-workout-history-deck]");
+    const deck = event.target.closest("[data-client-workout-history-deck], [data-client-food-history-deck]");
     const interactive = event.target.closest("button, input, select, textarea, a");
 
     if (!deck || interactive || deck.querySelector(".is-current.is-detail-open")) {
@@ -9309,6 +9496,7 @@ function handleClientWorkoutHistoryDeck() {
 
     gesture = {
       deck,
+      historyType: deck.matches("[data-client-food-history-deck]") ? "food" : "workout",
       pointerId: event.pointerId,
       startX: event.clientX,
       startY: event.clientY,
@@ -9340,7 +9528,7 @@ function handleClientWorkoutHistoryDeck() {
       return;
     }
 
-    const { deck, startX, startY, axis } = gesture;
+    const { deck, historyType, startX, startY, axis } = gesture;
     const step = axis === "vertical"
       ? 0
       : clientWorkoutPickerSwipeStep(
@@ -9352,7 +9540,7 @@ function handleClientWorkoutHistoryDeck() {
     gesture = null;
     if (step !== 0) {
       ignoreCardClickUntil = Date.now() + 350;
-      moveClientWorkoutHistoryDeck(step);
+      moveClientWorkoutHistoryDeck(step, historyType);
     }
   });
 
@@ -10662,6 +10850,12 @@ async function saveClientNutritionPlan() {
 }
 
 function handleClientNutritionSave() {
+  document.addEventListener("input", (event) => {
+    if (event.target.closest("#client-nutrition-targets")) {
+      renderNutritionMacroChart(clientNutritionTargetValues());
+    }
+  });
+
   document.addEventListener("click", async (event) => {
     const button = event.target.closest("#save-client-nutrition-button");
 

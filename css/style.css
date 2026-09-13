@@ -7075,6 +7075,145 @@ body.is-client-checkin-prompt-open {
   gap: 10px;
 }
 
+.nutrition-panel .nutrition-macro-overview {
+  display: grid;
+  width: min(720px, 100%);
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: clamp(20px, 4vw, 42px);
+  align-items: center;
+  margin: 0 auto 16px;
+  padding: 18px 22px;
+  background: #fbfbf8;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.nutrition-macro-chart {
+  position: relative;
+  display: grid;
+  width: 188px;
+  aspect-ratio: 1;
+  place-items: center;
+  background: conic-gradient(
+    var(--lime) 0 var(--macro-protein-end),
+    var(--blue) var(--macro-protein-end) var(--macro-carbs-end),
+    var(--red) var(--macro-carbs-end) 100%
+  );
+  border: 1px solid var(--black);
+  border-radius: 50%;
+  box-shadow: 0 10px 24px rgba(5, 5, 5, .1);
+}
+
+.nutrition-macro-chart.is-empty {
+  background: #e7e8e2;
+  border-color: var(--line);
+}
+
+.nutrition-macro-chart-center {
+  display: grid;
+  width: 58%;
+  aspect-ratio: 1;
+  place-content: center;
+  gap: 3px;
+  padding: 8px;
+  text-align: center;
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+}
+
+.nutrition-macro-chart-center strong {
+  color: var(--black);
+  font-size: clamp(1.25rem, 3vw, 1.75rem);
+  font-weight: 900;
+  line-height: 1;
+}
+
+.nutrition-macro-chart-center span {
+  color: var(--muted);
+  font-size: .62rem;
+  font-weight: 900;
+  letter-spacing: .05em;
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+
+.nutrition-macro-chart-legend {
+  display: grid;
+  min-width: 0;
+  gap: 11px;
+}
+
+.nutrition-macro-chart-legend > span {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: 14px minmax(0, 1fr);
+  gap: 1px 9px;
+  align-items: center;
+}
+
+.nutrition-macro-chart-legend i {
+  width: 14px;
+  height: 14px;
+  grid-row: 1 / span 2;
+  border: 1px solid rgba(5, 5, 5, .35);
+  border-radius: 50%;
+}
+
+.nutrition-macro-chart-legend .is-protein i {
+  background: var(--lime);
+}
+
+.nutrition-macro-chart-legend .is-carbs i {
+  background: var(--blue);
+}
+
+.nutrition-macro-chart-legend .is-fat i {
+  background: var(--red);
+}
+
+.nutrition-macro-chart-legend strong,
+.nutrition-macro-chart-legend em {
+  min-width: 0;
+  font-style: normal;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.nutrition-macro-chart-legend strong {
+  color: var(--black);
+  font-size: .9rem;
+  font-weight: 900;
+}
+
+.nutrition-macro-chart-legend em {
+  color: var(--muted);
+  font-size: .76rem;
+  font-weight: 800;
+}
+
+.nutrition-panel .nutrition-macro-grid {
+  width: min(860px, 100%);
+  margin-inline: auto;
+  gap: 8px;
+}
+
+.nutrition-panel .nutrition-macro-card {
+  min-height: 88px;
+  align-content: center;
+  gap: 5px;
+  padding: 11px 13px;
+}
+
+.nutrition-panel .nutrition-macro-card > span {
+  font-size: .82rem;
+}
+
+.nutrition-panel .nutrition-macro-edit input {
+  padding: 3px 0;
+  font-size: clamp(1.08rem, 2vw, 1.45rem);
+}
+
 .nutrition-macro-card,
 .nutrition-calculator-card,
 .nutrition-client-guide,
@@ -13274,7 +13413,8 @@ body.client-dashboard-page {
     display: grid;
   }
 
-  .training-log-mobile-workout-browser {
+  .training-log-mobile-workout-browser,
+  .training-log-mobile-nutrition-history {
     min-width: 0;
     gap: 10px;
   }
@@ -13458,6 +13598,11 @@ body.client-dashboard-page {
   }
 
   .training-log-history-state.is-complete {
+    background: var(--lime);
+    border-color: #99b925;
+  }
+
+  .training-log-history-state.is-nutrition {
     background: var(--lime);
     border-color: #99b925;
   }
@@ -13675,7 +13820,6 @@ body.client-dashboard-page {
   }
 
   .training-log-mobile-nutrition-history {
-    gap: 8px;
     margin-top: 18px;
   }
 }
@@ -13716,10 +13860,10 @@ body.client-dashboard-page {
     width: 100% !important;
     max-width: 100% !important;
     min-width: 0 !important;
-    min-height: 88px !important;
+    min-height: 82px !important;
     align-content: center;
-    gap: 6px !important;
-    padding: 12px !important;
+    gap: 5px !important;
+    padding: 10px !important;
     overflow: hidden !important;
   }
 
@@ -13778,5 +13922,55 @@ body.client-dashboard-page {
     line-height: 1.15;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  .dashboard-page .nutrition-panel .nutrition-macro-overview {
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: center;
+    gap: 14px;
+    padding: 15px;
+  }
+
+  .nutrition-macro-chart {
+    width: 164px;
+  }
+
+  .nutrition-macro-chart-legend {
+    width: 100%;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 7px;
+  }
+
+  .nutrition-macro-chart-legend > span {
+    grid-template-columns: 10px minmax(0, 1fr);
+    gap: 1px 5px;
+  }
+
+  .nutrition-macro-chart-legend i {
+    width: 10px;
+    height: 10px;
+  }
+
+  .nutrition-macro-chart-legend strong {
+    font-size: .72rem;
+  }
+
+  .nutrition-macro-chart-legend em {
+    font-size: .62rem;
+  }
+}
+
+@media (max-width: 390px) {
+  .nutrition-macro-chart {
+    width: 150px;
+  }
+
+  body.client-dashboard-page #client-nutrition-targets > .nutrition-macro-card {
+    min-height: 78px !important;
+    padding: 9px !important;
+  }
+
+  body.client-dashboard-page #client-nutrition-targets .nutrition-macro-card > span {
+    font-size: .72rem;
   }
 }
