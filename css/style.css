@@ -3267,6 +3267,20 @@ body.is-client-checkin-prompt-open {
   font-weight: 900;
 }
 
+.client-home-signout {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+
+.dashboard-page .client-home-signout-button {
+  width: min(260px, 100%);
+  min-height: 48px;
+  border-color: var(--black);
+}
+
 .panel-heading {
   display: flex;
   align-items: start;

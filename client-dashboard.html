@@ -30,20 +30,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=dexa-exercise-progress-deck-1" />
+  <link rel="stylesheet" href="css/style.css?v=client-home-signout-1" />
   <link rel="stylesheet" href="css/custom-workout-mobile-fix.css?v=exercise-title-wrap-italic-5" />
 </head>
 <body class="dashboard-page client-dashboard-page is-loading">
-  <header class="site-header dashboard-header">
-    <a class="brand" href="index.html#top" aria-label="Fitness with Benjamin home">
-      <span>FWB</span>
-      <strong>Fitness with Benjamin</strong>
-    </a>
-    <div class="header-actions">
-      <button class="login-link is-current sign-out-button" type="button" data-sign-out>Sign Out</button>
-    </div>
-  </header>
-
   <main class="dashboard-shell">
     <section class="dashboard-loading" id="dashboard-loading" role="status">
       <p class="kicker">Client dashboard</p>
@@ -250,6 +240,9 @@
                 <small id="client-dashboard-reset-status" role="status"></small>
               </div>
             </article>
+          </div>
+          <div class="client-home-signout">
+            <button class="button button-ghost client-home-signout-button" type="button" data-sign-out>Sign Out</button>
           </div>
         </section>
 
@@ -773,6 +766,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js?v=manual-sessions-1"></script>
   <script src="js/exercise-name-matcher.js?v=exercise-consolidation-1"></script>
-  <script src="js/client-portal.js?v=dexa-exercise-progress-deck-1"></script>
+  <script src="js/client-portal.js?v=client-home-signout-1"></script>
 </body>
 </html>

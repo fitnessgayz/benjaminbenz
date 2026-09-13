@@ -61,3 +61,17 @@ test("Home report dialog is outside hidden dashboard panels", () => {
   assert.match(portal, /openLink[\s\S]*?openMonthlyProgressReport/);
   assert.match(portal, /dialog\.showModal\(\)/);
 });
+
+test("moves the client sign-out control from the header to the bottom of Home", () => {
+  const homePanel = dashboard.match(/data-client-dashboard-panel="home"[\s\S]*?data-client-dashboard-panel="workouts"/)?.[0] || "";
+  const checklistIndex = homePanel.indexOf('class="client-home-card client-home-card-checklist"');
+  const signOutIndex = homePanel.indexOf('class="client-home-signout"');
+
+  assert.doesNotMatch(dashboard, /<header class="site-header dashboard-header">/);
+  assert.equal((dashboard.match(/data-sign-out/g) || []).length, 1);
+  assert.notEqual(checklistIndex, -1);
+  assert.ok(signOutIndex > checklistIndex);
+  assert.match(homePanel, /class="button button-ghost client-home-signout-button"[^>]*data-sign-out>Sign Out<\/button>/);
+  assert.match(portal, /document\.querySelectorAll\("\[data-sign-out\]"\)/);
+  assert.match(styles, /\.dashboard-page \.client-home-signout-button\s*\{[\s\S]*?min-height:\s*48px;/);
+});
