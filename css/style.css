@@ -14151,6 +14151,11 @@ body.client-dashboard-page {
     line-height: 1.1;
   }
 
+  body.client-dashboard-page #client-food-entry-form > .food-date-field {
+    min-width: 0 !important;
+    min-inline-size: 0 !important;
+  }
+
   body.client-dashboard-page #client-food-entry-form :is(input, select, textarea) {
     width: 100% !important;
     max-width: 100% !important;
@@ -14161,6 +14166,26 @@ body.client-dashboard-page {
     font-size: 16px !important;
     line-height: 1.15;
     text-overflow: ellipsis;
+  }
+
+  /* WebKit overcounts a temporal input's padding when resolving width: 100%. */
+  body.client-dashboard-page #client-food-entry-form input[type="date"] {
+    display: block !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+    inline-size: 100% !important;
+    max-width: 100% !important;
+    max-inline-size: 100% !important;
+    min-width: 0 !important;
+    min-inline-size: 0 !important;
+    padding-inline: 0 !important;
+    text-align: center;
+  }
+
+  body.client-dashboard-page #client-food-entry-form input[type="date"]::-webkit-date-and-time-value {
+    min-width: 0;
+    margin: 0;
+    text-align: center;
   }
 
   body.client-dashboard-page #client-food-entry-form textarea {
@@ -14178,5 +14203,11 @@ body.client-dashboard-page {
     font-size: .84rem !important;
     line-height: 1.1 !important;
     white-space: normal !important;
+  }
+}
+
+@media (max-width: 359px) {
+  body.client-dashboard-page #client-food-entry-form {
+    grid-template-columns: minmax(0, 1fr) !important;
   }
 }

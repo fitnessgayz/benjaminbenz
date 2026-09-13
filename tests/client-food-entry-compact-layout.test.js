@@ -41,6 +41,7 @@ test("keeps food-entry fields in a logical order for paired mobile rows", () => 
   ]);
   assert.match(form, /class="food-result-field" hidden/);
   assert.match(form, /class="food-notes-field"/);
+  assert.match(form, /class="food-date-field"[\s\S]*?input type="date" name="food_entry_date"/);
 });
 
 test("overrides broad one-column mobile rules with two contained columns", () => {
@@ -65,4 +66,20 @@ test("keeps paired controls readable and safe from mobile overflow", () => {
   assert.match(compact, /#client-food-entry-form textarea\s*\{[\s\S]*?min-height:\s*72px/);
   assert.match(compact, /#client-food-entry-form textarea\s*\{[\s\S]*?overflow:\s*auto !important/);
   assert.match(compact, /#client-food-entry-form #search-food-button\s*\{[\s\S]*?min-height:\s*48px !important/);
+});
+
+test("contains the native date input without overlapping the adjacent meal field on iOS", () => {
+  const compact = styles.slice(
+    styles.indexOf("/* Compact the client food entry form into paired mobile fields. */")
+  );
+
+  const genericControls = compact.indexOf("#client-food-entry-form :is(input, select, textarea)");
+  const dateControl = compact.indexOf('#client-food-entry-form input[type="date"]');
+
+  assert.ok(dateControl > genericControls, "date correction should override the shared control padding");
+  assert.match(compact, /#client-food-entry-form > \.food-date-field\s*\{[\s\S]*?min-width:\s*0 !important[\s\S]*?min-inline-size:\s*0 !important/);
+  assert.match(compact, /#client-food-entry-form input\[type="date"\]\s*\{[\s\S]*?inline-size:\s*100% !important/);
+  assert.match(compact, /#client-food-entry-form input\[type="date"\]\s*\{[\s\S]*?min-inline-size:\s*0 !important[\s\S]*?padding-inline:\s*0 !important/);
+  assert.match(compact, /input\[type="date"\]::\-webkit-date-and-time-value\s*\{[\s\S]*?min-width:\s*0/);
+  assert.match(compact, /@media \(max-width:\s*359px\)[\s\S]*?#client-food-entry-form\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0, 1fr\) !important/);
 });
