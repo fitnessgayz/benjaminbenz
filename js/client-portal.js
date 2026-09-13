@@ -19,6 +19,8 @@ let foodLogs = [];
 let foodSearchResults = [];
 let progressEntries = [];
 let progressPhotos = [];
+let dexaReports = [];
+let activeDexaReviewId = "";
 let clientQuestionnaire = null;
 let activeDashboardUser = null;
 let activeProgressMetric = "bodyweight";
@@ -1537,9 +1539,10 @@ function fillClientProgressForm(entry = {}) {
   }
 
   const measurements = progressMeasurements(entry);
-  form.elements.progress_date.value = entry.entry_date || new Date().toISOString().slice(0, 10);
+  form.elements.progress_date.value = entry.entry_date || todayDate();
   form.elements.progress_bodyweight.value = entry.bodyweight ?? "";
   form.elements.progress_bodyfat.value = entry.bodyfat ?? "";
+  form.elements.progress_lean_mass.value = entry.lean_mass ?? "";
   form.elements.progress_muscle_mass.value = entry.muscle_mass ?? "";
   form.elements.progress_chest.value = measurements.chest ?? "";
   form.elements.progress_waist.value = measurements.waist ?? "";
@@ -1564,6 +1567,7 @@ function clientProgressPayload(form, email) {
     entry_date: entryDate,
     bodyweight: nextNumber("progress_bodyweight", existing.bodyweight),
     bodyfat: nextNumber("progress_bodyfat", existing.bodyfat),
+    lean_mass: nextNumber("progress_lean_mass", existing.lean_mass),
     muscle_mass: nextNumber("progress_muscle_mass", existing.muscle_mass),
     measurements: {
       ...existingMeasurements,
@@ -1867,6 +1871,7 @@ function progressMetricDetails(key) {
   return {
     bodyweight: { label: "Bodyweight", suffix: " lb" },
     bodyfat: { label: "Body fat", suffix: "%" },
+    lean_mass: { label: "DEXA lean mass", suffix: " lb" },
     muscle_mass: { label: "Muscle mass", suffix: " lb" },
     chest: { label: "Chest", suffix: " in" },
     waist: { label: "Waist", suffix: " in" },
@@ -1986,6 +1991,7 @@ function renderClientProgressHistory(entries) {
     const values = [
       ["Weight", entry.bodyweight, "lb"],
       ["Body fat", entry.bodyfat, "%"],
+      ["Lean mass", entry.lean_mass, "lb"],
       ["Muscle", entry.muscle_mass, "lb"],
       ["Chest", measurements.chest, "in"],
       ["Waist", measurements.waist, "in"],
@@ -2850,7 +2856,7 @@ function renderProgress(entries) {
   }
 
   if (!latest) {
-    setText("#progress-date", "");
+    setText("#progress-date", "No measurements yet");
     current.innerHTML = '<p class="empty-state">No progress check-ins yet.</p>';
     setText("#progress-goal", "");
     renderProgressGraph([]);
@@ -2860,11 +2866,12 @@ function renderProgress(entries) {
     return;
   }
 
-  setText("#progress-date", latest.entry_date);
+  setText("#progress-date", `Latest measurement · ${formatLogDate(latest.entry_date)}`);
   fillClientProgressForm(latest);
   current.innerHTML = `
     <span><strong>Current bodyweight</strong> ${formatProgressValue(latest.bodyweight, " lb")}</span>
     <span><strong>Current bodyfat</strong> ${formatProgressValue(latest.bodyfat, "%")}</span>
+    <span><strong>DEXA lean mass</strong> ${formatProgressValue(latest.lean_mass, " lb")}</span>
     <span><strong>Muscle mass</strong> ${formatProgressValue(latest.muscle_mass, " lb")}</span>
     <span><strong>Waist</strong> ${formatProgressValue(progressMeasurements(latest).waist, " in")}</span>
   `;
@@ -2886,7 +2893,7 @@ function setClientProgressPhotoStatus(message) {
 function configureClientProgressAccess() {
   const coachPreview = isCoachPortalEmail(activeDashboardUser?.email);
   const controls = document.querySelectorAll(
-    "#client-checkin-form input, #client-checkin-form textarea, #client-save-progress-button, #client-progress-photo-date, #client-progress-photo-file, #client-progress-photo-note, #upload-client-progress-photo-button"
+    "#client-checkin-form input, #client-checkin-form textarea, #client-save-progress-button, #client-add-past-progress-button, #client-progress-photo-date, #client-progress-photo-file, #client-progress-photo-note, #upload-client-progress-photo-button, #client-dexa-file, #upload-client-dexa-button, #client-dexa-review-form input, #client-dexa-review-form button"
   );
 
   controls.forEach((control) => {
@@ -2896,6 +2903,7 @@ function configureClientProgressAccess() {
   if (coachPreview) {
     setClientProgressStatus("Client measurements are read-only here. Use Coach Admin to make changes.");
     setClientProgressPhotoStatus("Client progress photos are read-only in Coach View.");
+    setClientDexaStatus("DEXA reports are read-only in Coach View.");
   }
 }
 
@@ -2968,6 +2976,438 @@ async function loadClientProgressPhotos(email = activeClientEmail) {
   renderClientProgressPhotos(await signedProgressPhotoRecords(data || []));
 }
 
+function setClientDexaStatus(message) {
+  setText("#client-dexa-status", message);
+}
+
+function dexaFileDetails(file) {
+  const allowedTypes = {
+    "application/pdf": "pdf",
+    "image/jpeg": "jpg",
+    "image/png": "png"
+  };
+  const extension = allowedTypes[String(file?.type || "").toLowerCase()] || "";
+
+  if (!file || !extension) {
+    return { valid: false, message: "Choose a PDF, JPG, or PNG DEXA report." };
+  }
+
+  if (!Number.isFinite(file.size) || file.size <= 0 || file.size > 10 * 1024 * 1024) {
+    return { valid: false, message: "Choose a DEXA report smaller than 10 MB." };
+  }
+
+  return { valid: true, extension, contentType: file.type };
+}
+
+function dexaReportStatusLabel(status) {
+  return {
+    processing: "Reading report",
+    ready: "Ready to review",
+    failed: "Needs attention",
+    confirmed: "Measurements saved"
+  }[status] || "Uploaded";
+}
+
+function dexaReportExtractedValues(report = {}) {
+  return {
+    scan_date: report.extracted_scan_date || "",
+    bodyweight_lb: report.extracted_bodyweight_lb ?? null,
+    bodyfat_percent: report.extracted_bodyfat_percent ?? null,
+    lean_mass_lb: report.extracted_lean_mass_lb ?? null
+  };
+}
+
+function renderClientDexaReports(records) {
+  dexaReports = Array.isArray(records) ? records : [];
+  const list = document.getElementById("client-dexa-report-list");
+
+  if (!list) {
+    return;
+  }
+
+  if (!dexaReports.length) {
+    list.innerHTML = '<p class="empty-state">No DEXA reports uploaded yet.</p>';
+    return;
+  }
+
+  const readOnly = isCoachPortalEmail(activeDashboardUser?.email);
+  list.innerHTML = dexaReports.map((report) => {
+    const dateLabel = report.extracted_scan_date
+      ? formatLogDate(report.extracted_scan_date)
+      : formatLogDate(String(report.created_at || "").slice(0, 10));
+    const canReview = report.status === "ready" && !readOnly;
+    const canRetry = report.status === "failed" && !readOnly;
+
+    return `
+      <article class="dexa-report-row">
+        <div class="dexa-report-summary">
+          <strong class="client-dexa-report-filename" title="${escapeHtml(report.original_filename || "DEXA report")}">${escapeHtml(report.original_filename || "DEXA report")}</strong>
+          <span>${escapeHtml(dateLabel || "Date unavailable")} · ${escapeHtml(dexaReportStatusLabel(report.status))}</span>
+        </div>
+        <div class="dexa-report-actions">
+          ${canReview ? `<button class="button button-accent" type="button" data-client-dexa-report-review="${escapeHtml(report.id)}">Review values</button>` : ""}
+          ${canRetry ? `<button class="button button-ghost" type="button" data-client-dexa-report-retry="${escapeHtml(report.id)}">Try extraction again</button>` : ""}
+          <button class="button button-ghost" type="button" data-client-dexa-report-view="${escapeHtml(report.id)}">View report</button>
+        </div>
+      </article>
+    `;
+  }).join("");
+}
+
+async function loadClientDexaReports(email = activeClientEmail) {
+  if (!supabaseClient || !email) {
+    renderClientDexaReports([]);
+    return;
+  }
+
+  const { data, error } = await supabaseClient
+    .from("client_dexa_reports")
+    .select("id,client_email,storage_path,original_filename,mime_type,file_size_bytes,status,extracted_scan_date,extracted_bodyweight_lb,extracted_bodyfat_percent,extracted_lean_mass_lb,extraction_confidence,extraction_warnings,extraction_error,progress_entry_id,processed_at,confirmed_at,created_at")
+    .ilike("client_email", email)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    renderClientDexaReports([]);
+    setClientDexaStatus("DEXA reports could not be loaded. Refresh and try again.");
+    return;
+  }
+
+  renderClientDexaReports(data || []);
+}
+
+function setDexaReviewWarnings(warnings = []) {
+  const list = document.getElementById("client-dexa-extraction-warnings");
+  const safeWarnings = Array.isArray(warnings)
+    ? warnings.map((warning) => String(warning || "").trim()).filter(Boolean).slice(0, 6)
+    : [];
+
+  if (!list) {
+    return;
+  }
+
+  list.hidden = safeWarnings.length === 0;
+  list.innerHTML = safeWarnings.map((warning) => `<li>${escapeHtml(warning)}</li>`).join("");
+}
+
+function showClientDexaReview(report, extracted = null, warnings = null) {
+  const review = document.getElementById("client-dexa-review");
+  const form = document.getElementById("client-dexa-review-form");
+
+  if (!review || !form || !report?.id) {
+    return;
+  }
+
+  const values = extracted || dexaReportExtractedValues(report);
+  activeDexaReviewId = String(report.id);
+  form.elements.dexa_scan_date.max = todayDate();
+  form.elements.dexa_scan_date.value = values.scan_date || "";
+  form.elements.dexa_bodyweight.value = values.bodyweight_lb ?? "";
+  form.elements.dexa_bodyfat.value = values.bodyfat_percent ?? "";
+  form.elements.dexa_lean_mass.value = values.lean_mass_lb ?? "";
+  setDexaReviewWarnings(warnings ?? report.extraction_warnings ?? []);
+  updateDexaExistingEntryNote();
+  review.hidden = false;
+  review.focus({ preventScroll: true });
+  review.scrollIntoView({
+    behavior: window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches ? "auto" : "smooth",
+    block: "nearest"
+  });
+}
+
+function hideClientDexaReview() {
+  const review = document.getElementById("client-dexa-review");
+  const form = document.getElementById("client-dexa-review-form");
+
+  activeDexaReviewId = "";
+  form?.reset();
+  setDexaReviewWarnings([]);
+  if (review) {
+    review.hidden = true;
+  }
+}
+
+function updateDexaExistingEntryNote() {
+  const form = document.getElementById("client-dexa-review-form");
+  const note = document.getElementById("client-dexa-existing-entry-note");
+  const scanDate = form?.elements.dexa_scan_date?.value || "";
+  const existing = progressEntries.some((entry) => entry.entry_date === scanDate);
+
+  if (!note) {
+    return;
+  }
+
+  note.textContent = existing
+    ? "A measurement entry already exists for this date. Saving will update only bodyweight, body fat, and DEXA lean mass; your muscle mass, tape measurements, and notes will stay unchanged."
+    : "A new measurement entry will be created for this scan date.";
+}
+
+function reviewedDexaValues(form) {
+  const scanDate = String(form?.elements.dexa_scan_date?.value || "");
+  const optionalNumber = (name) => {
+    const raw = String(form?.elements[name]?.value || "").trim();
+    return raw === "" ? null : Number(raw);
+  };
+  const values = {
+    scan_date: scanDate,
+    bodyweight_lb: optionalNumber("dexa_bodyweight"),
+    bodyfat_percent: optionalNumber("dexa_bodyfat"),
+    lean_mass_lb: optionalNumber("dexa_lean_mass")
+  };
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(scanDate) || scanDate < "1900-01-01" || scanDate > todayDate()) {
+    return { valid: false, message: "Choose the date shown on the DEXA report." };
+  }
+
+  if ([values.bodyweight_lb, values.bodyfat_percent, values.lean_mass_lb].every((value) => value === null)) {
+    return { valid: false, message: "Enter at least one measurement from the DEXA report." };
+  }
+
+  if (values.bodyweight_lb !== null && (!Number.isFinite(values.bodyweight_lb) || values.bodyweight_lb < 20 || values.bodyweight_lb > 1500)) {
+    return { valid: false, message: "Bodyweight must be between 20 and 1,500 lb." };
+  }
+
+  if (values.bodyfat_percent !== null && (!Number.isFinite(values.bodyfat_percent) || values.bodyfat_percent < 1 || values.bodyfat_percent > 75)) {
+    return { valid: false, message: "Body fat must be between 1 and 75%." };
+  }
+
+  if (values.lean_mass_lb !== null && (!Number.isFinite(values.lean_mass_lb) || values.lean_mass_lb < 10 || values.lean_mass_lb > 1400)) {
+    return { valid: false, message: "Lean mass must be between 10 and 1,400 lb." };
+  }
+
+  if (values.bodyweight_lb !== null && values.lean_mass_lb !== null && values.lean_mass_lb > values.bodyweight_lb) {
+    return { valid: false, message: "Lean mass cannot be greater than total bodyweight. Compare both values with the report." };
+  }
+
+  return { valid: true, values };
+}
+
+async function invokeDexaExtraction(report) {
+  const { data, error } = await withTimeout(
+    supabaseClient.functions.invoke("extract-dexa-report", {
+      body: {
+        action: "extract",
+        storage_path: report.storage_path,
+        original_filename: report.original_filename
+      }
+    }),
+    "Automatic DEXA extraction timed out. Your private upload is still saved.",
+    90000
+  );
+
+  if (error || data?.error) {
+    throw new Error(data?.error || error?.message || "Automatic extraction could not read this report.");
+  }
+
+  if (!data?.report_id) {
+    throw new Error("The report uploaded, but no extraction result was returned.");
+  }
+
+  return data;
+}
+
+async function reloadClientProgressEntries() {
+  const email = normalizeClientEmail(activeClientEmail || currentProgram?.client_email);
+
+  if (!supabaseClient || !email) {
+    return;
+  }
+
+  const { data, error } = await withTimeout(
+    supabaseClient
+      .from("client_progress")
+      .select("*")
+      .ilike("client_email", email)
+      .order("entry_date", { ascending: true }),
+    "Progress reload timed out."
+  );
+
+  if (error) {
+    throw error;
+  }
+
+  renderProgress(data || []);
+}
+
+function handleClientDexaUpload() {
+  const button = document.getElementById("upload-client-dexa-button");
+  const fileInput = document.getElementById("client-dexa-file");
+
+  button?.addEventListener("click", async () => {
+    const file = fileInput?.files?.[0];
+    const details = dexaFileDetails(file);
+
+    if (!supabaseClient || !activeDashboardUser || !activeClientEmail || isCoachPortalEmail(activeDashboardUser.email)) {
+      return;
+    }
+
+    if (!details.valid) {
+      setClientDexaStatus(details.message);
+      fileInput?.focus();
+      return;
+    }
+
+    button.disabled = true;
+    fileInput.disabled = true;
+    setClientDexaStatus("Uploading your private DEXA report...");
+    const reportId = window.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    const storagePath = `${activeDashboardUser.id}/${reportId}.${details.extension}`;
+
+    try {
+      const { error: uploadError } = await supabaseClient.storage
+        .from("dexa-reports")
+        .upload(storagePath, file, {
+          contentType: details.contentType,
+          cacheControl: "3600",
+          upsert: false
+        });
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      setClientDexaStatus("Report uploaded. Reading the scan values...");
+      const result = await invokeDexaExtraction({
+        storage_path: storagePath,
+        original_filename: String(file.name || `dexa-report.${details.extension}`).slice(0, 255)
+      });
+
+      await loadClientDexaReports();
+      const report = dexaReports.find((item) => String(item.id) === String(result.report_id)) || { id: result.report_id };
+      showClientDexaReview(report, result.extracted, result.warnings);
+      setClientDexaStatus("Report read. Compare every extracted value with the original before saving.");
+      fileInput.value = "";
+    } catch (error) {
+      await loadClientDexaReports();
+      setClientDexaStatus(error?.message || "The report was uploaded, but automatic extraction could not finish.");
+    } finally {
+      button.disabled = false;
+      fileInput.disabled = false;
+    }
+  });
+}
+
+function handleClientDexaReports() {
+  const list = document.getElementById("client-dexa-report-list");
+
+  list?.addEventListener("click", async (event) => {
+    const reviewButton = event.target.closest("[data-client-dexa-report-review]");
+    const retryButton = event.target.closest("[data-client-dexa-report-retry]");
+    const viewButton = event.target.closest("[data-client-dexa-report-view]");
+    const reportId = reviewButton?.dataset.clientDexaReportReview || retryButton?.dataset.clientDexaReportRetry || viewButton?.dataset.clientDexaReportView;
+    const report = dexaReports.find((item) => String(item.id) === String(reportId));
+
+    if (!report || !supabaseClient) {
+      return;
+    }
+
+    if (reviewButton) {
+      showClientDexaReview(report);
+      setClientDexaStatus("Compare every extracted value with the original before saving.");
+      return;
+    }
+
+    if (retryButton && !isCoachPortalEmail(activeDashboardUser?.email)) {
+      retryButton.disabled = true;
+      setClientDexaStatus("Reading the report again...");
+      try {
+        const result = await invokeDexaExtraction(report);
+        await loadClientDexaReports();
+        const updated = dexaReports.find((item) => String(item.id) === String(result.report_id)) || report;
+        showClientDexaReview(updated, result.extracted, result.warnings);
+        setClientDexaStatus("Report read. Compare every extracted value with the original before saving.");
+      } catch (error) {
+        await loadClientDexaReports();
+        setClientDexaStatus(error?.message || "Automatic extraction could not finish.");
+      } finally {
+        retryButton.disabled = false;
+      }
+      return;
+    }
+
+    if (viewButton) {
+      const reportWindow = window.open("", "_blank");
+      if (reportWindow) {
+        reportWindow.opener = null;
+        reportWindow.document.title = "Opening private DEXA report";
+        reportWindow.document.body.textContent = "Opening private DEXA report...";
+      }
+      viewButton.disabled = true;
+      setClientDexaStatus("Creating a secure, short-lived report link...");
+      const { data, error } = await supabaseClient.storage
+        .from("dexa-reports")
+        .createSignedUrl(report.storage_path, 300);
+      const signedUrl = data?.signedUrl || data?.signed_url || "";
+
+      if (error || !signedUrl) {
+        reportWindow?.close();
+        setClientDexaStatus("The private report could not be opened. Try again.");
+      } else if (reportWindow) {
+        reportWindow.location.replace(signedUrl);
+        setClientDexaStatus("Private report opened in a new tab.");
+      } else {
+        setClientDexaStatus("Your browser blocked the report tab. Allow pop-ups, then tap View report again.");
+      }
+      viewButton.disabled = false;
+    }
+  });
+}
+
+function handleClientDexaReview() {
+  const form = document.getElementById("client-dexa-review-form");
+  const cancelButton = document.getElementById("cancel-client-dexa-review-button");
+
+  form?.elements.dexa_scan_date?.addEventListener("change", updateDexaExistingEntryNote);
+  cancelButton?.addEventListener("click", () => {
+    hideClientDexaReview();
+    setClientDexaStatus("Review closed. Your private uploaded report is still available below.");
+  });
+
+  form?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const reviewed = reviewedDexaValues(form);
+
+    if (!activeDexaReviewId) {
+      setClientDexaStatus("Choose a report to review first.");
+      return;
+    }
+
+    if (!reviewed.valid) {
+      setClientDexaStatus(reviewed.message);
+      return;
+    }
+
+    const button = document.getElementById("confirm-client-dexa-button");
+    button.disabled = true;
+    setClientDexaStatus("Saving your reviewed DEXA measurements...");
+
+    try {
+      const { data, error } = await withTimeout(
+        supabaseClient.functions.invoke("extract-dexa-report", {
+          body: {
+            action: "confirm",
+            report_id: activeDexaReviewId,
+            values: reviewed.values
+          }
+        }),
+        "Saving the DEXA measurements timed out.",
+        30000
+      );
+
+      if (error || data?.error) {
+        throw new Error(data?.error || error?.message || "The reviewed measurements could not be saved.");
+      }
+
+      await Promise.all([reloadClientProgressEntries(), loadClientDexaReports()]);
+      hideClientDexaReview();
+      setClientDexaStatus("Reviewed DEXA measurements saved to your progress log.");
+    } catch (error) {
+      setClientDexaStatus(error?.message || "The reviewed measurements could not be saved.");
+    } finally {
+      button.disabled = false;
+    }
+  });
+}
+
 function handleClientProgressMetricTabs() {
   const tabs = document.getElementById("progress-metric-tabs");
 
@@ -2991,10 +3431,59 @@ function handleClientProgressMetricTabs() {
 function handleClientProgressDateChange() {
   const dateInput = document.querySelector('[name="progress_date"]');
 
+  if (dateInput) {
+    dateInput.max = todayDate();
+  }
+
   dateInput?.addEventListener("change", () => {
     const entry = progressEntries.find((item) => item.entry_date === dateInput.value);
     fillClientProgressForm(entry || { entry_date: dateInput.value });
     setClientProgressStatus(entry ? "Loaded this measurement entry for editing." : "Ready for a new measurement entry.");
+  });
+}
+
+function setProgressSectionExpanded(button, content, expanded) {
+  if (!button || !content) {
+    return;
+  }
+
+  const label = button.querySelector("[data-progress-toggle-label]");
+  const icon = button.querySelector(".progress-section-toggle-icon");
+  const section = button.closest(".progress-entry-card, .progress-exercise-section, .progress-gallery-section, .progress-history-section");
+
+  button.setAttribute("aria-expanded", expanded ? "true" : "false");
+  content.hidden = !expanded;
+  section?.classList.toggle("is-collapsed", !expanded);
+
+  if (label) {
+    label.textContent = expanded ? "Minimize" : "Expand";
+  }
+  if (icon) {
+    icon.textContent = expanded ? "−" : "+";
+  }
+}
+
+function handleClientPastProgressEntry() {
+  const button = document.getElementById("client-add-past-progress-button");
+
+  button?.addEventListener("click", () => {
+    const content = document.getElementById("client-progress-entry-content");
+    const toggle = document.querySelector('[data-progress-section-toggle][aria-controls="client-progress-entry-content"]');
+    const dateInput = document.querySelector('[name="progress_date"]');
+
+    setProgressSectionExpanded(toggle, content, true);
+    setClientProgressStatus("Choose the date of the DEXA scan or past measurement.");
+    content?.scrollIntoView({
+      behavior: window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches ? "auto" : "smooth",
+      block: "start"
+    });
+    dateInput?.focus({ preventScroll: true });
+
+    try {
+      dateInput?.showPicker?.();
+    } catch (_error) {
+      // Focusing the native date input remains the fallback on older browsers.
+    }
   });
 }
 
@@ -9797,6 +10286,7 @@ function handleClientProgressSave() {
       entry_date: entryDate,
       bodyweight: existing.bodyweight ?? null,
       bodyfat: existing.bodyfat ?? null,
+      lean_mass: existing.lean_mass ?? null,
       muscle_mass: existing.muscle_mass ?? null,
       measurements: progressMeasurements(existing),
       goal_note: note
@@ -10098,20 +10588,7 @@ function handleProgressSectionToggles() {
     }
 
     const willExpand = button.getAttribute("aria-expanded") !== "true";
-    const label = button.querySelector("[data-progress-toggle-label]");
-    const icon = button.querySelector(".progress-section-toggle-icon");
-    const section = button.closest(".progress-entry-card, .progress-exercise-section, .progress-gallery-section, .progress-history-section");
-
-    button.setAttribute("aria-expanded", willExpand ? "true" : "false");
-    content.hidden = !willExpand;
-    section?.classList.toggle("is-collapsed", !willExpand);
-
-    if (label) {
-      label.textContent = willExpand ? "Minimize" : "Expand";
-    }
-    if (icon) {
-      icon.textContent = willExpand ? "−" : "+";
-    }
+    setProgressSectionExpanded(button, content, willExpand);
   });
 }
 
@@ -11313,7 +11790,7 @@ async function loadDashboard() {
       questionnaireQuery.eq("linked_user_id", user.id);
     }
 
-    const [progressResult, progressPhotoResult, trainingLogResult, workoutFeedbackResult, foodLogResult, exerciseLibraryResult, questionnaireResult] = await Promise.allSettled([
+    const [progressResult, progressPhotoResult, dexaReportResult, trainingLogResult, workoutFeedbackResult, foodLogResult, exerciseLibraryResult, questionnaireResult] = await Promise.allSettled([
       withTimeout(
         supabaseClient
           .from("client_progress")
@@ -11330,6 +11807,14 @@ async function loadDashboard() {
           .order("captured_on", { ascending: false })
           .order("created_at", { ascending: false }),
         "Progress photo request timed out."
+      ),
+      withTimeout(
+        supabaseClient
+          .from("client_dexa_reports")
+          .select("id,client_email,storage_path,original_filename,mime_type,file_size_bytes,status,extracted_scan_date,extracted_bodyweight_lb,extracted_bodyfat_percent,extracted_lean_mass_lb,extraction_confidence,extraction_warnings,extraction_error,progress_entry_id,processed_at,confirmed_at,created_at")
+          .ilike("client_email", activeClientEmail)
+          .order("created_at", { ascending: false }),
+        "DEXA report request timed out."
       ),
       withTimeout(
         supabaseClient
@@ -11381,6 +11866,9 @@ async function loadDashboard() {
     const progressPhotoData = progressPhotoResult.status === "fulfilled" && !progressPhotoResult.value.error
       ? progressPhotoResult.value.data
       : [];
+    const dexaReportData = dexaReportResult.status === "fulfilled" && !dexaReportResult.value.error
+      ? dexaReportResult.value.data
+      : [];
     const trainingLogData = trainingLogResult.status === "fulfilled" && !trainingLogResult.value.error
       ? trainingLogResult.value.data
       : [];
@@ -11402,6 +11890,7 @@ async function loadDashboard() {
 
     renderProgress(progressData || []);
     renderClientProgressPhotos(await signedProgressPhotoRecords(progressPhotoData || []));
+    renderClientDexaReports(dexaReportData || []);
     if (questionnaireResult.status !== "fulfilled" || questionnaireResult.value.error) {
       renderClientQuestionnaire(null, "error");
     } else {
@@ -11409,6 +11898,9 @@ async function loadDashboard() {
     }
     if (progressPhotoResult.status !== "fulfilled" || progressPhotoResult.value.error) {
       setClientProgressPhotoStatus("Progress photos could not be loaded. Refresh and try again.");
+    }
+    if (dexaReportResult.status !== "fulfilled" || dexaReportResult.value.error) {
+      setClientDexaStatus("DEXA reports could not be loaded. Refresh and try again.");
     }
     configureClientProgressAccess();
     fillFoodEntryDefaults();
@@ -11831,6 +12323,9 @@ async function handleSignOut() {
   buttons.forEach((button) => {
     button.addEventListener("click", async () => {
       clearClientQuestionnaire();
+      dexaReports = [];
+      hideClientDexaReview();
+      renderClientDexaReports([]);
       if (supabaseClient) {
         await supabaseClient.auth.signOut();
       }
@@ -11871,6 +12366,7 @@ handleClientDashboardTabs();
 handleProgressSectionToggles();
 handleMonthlyProgressReport();
 handleClientExerciseProgressCarousel();
+handleClientPastProgressEntry();
 handleClientHomeCarousel();
 handleClientHomeCheckin();
 handleClientSummaryActions();
@@ -11890,3 +12386,6 @@ handleClientProgressMetricTabs();
 handleClientProgressDateChange();
 handleClientProgressPhotoUpload();
 handleClientProgressPhotoDelete();
+handleClientDexaUpload();
+handleClientDexaReports();
+handleClientDexaReview();

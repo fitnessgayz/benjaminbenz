@@ -31,6 +31,7 @@ let programs = [];
 let selectedProgramId = "";
 let progressEntries = [];
 let progressPhotos = [];
+let dexaReports = [];
 let trainingLogs = [];
 let foodLogs = [];
 let recentTrainingLogs = [];
@@ -2321,10 +2322,12 @@ function fillForm(program = {}) {
     renderProgramHistory("");
     progressEntries = [];
     progressPhotos = [];
+    dexaReports = [];
     trainingLogs = [];
     foodLogs = [];
     fillProgressForm();
     renderProgressHistory();
+    renderCoachDexaReports();
     renderCoachProgressPhotos();
     renderTrainingLogs();
     renderSelectedClientTrainingLogs();
@@ -2344,6 +2347,7 @@ function fillProgressForm(entry = {}) {
   form.elements.progress_date.value = entry.entry_date || todayDate();
   form.elements.progress_bodyweight.value = entry.bodyweight ?? "";
   form.elements.progress_bodyfat.value = entry.bodyfat ?? "";
+  form.elements.progress_lean_mass.value = entry.lean_mass ?? "";
   form.elements.progress_muscle_mass.value = entry.muscle_mass ?? "";
   form.elements.progress_chest.value = measurements.chest ?? "";
   form.elements.progress_waist.value = measurements.waist ?? "";
@@ -2373,6 +2377,7 @@ function renderProgressHistory() {
       const values = [
         ["Weight", entry.bodyweight, "lb"],
         ["Body fat", entry.bodyfat, "%"],
+        ["Lean mass", entry.lean_mass, "lb"],
         ["Muscle", entry.muscle_mass, "lb"],
         ["Chest", measurements.chest, "in"],
         ["Waist", measurements.waist, "in"],
@@ -2398,6 +2403,147 @@ function renderProgressHistory() {
       fillProgressForm(entry);
       progressStatus("Editing selected check-in.");
     });
+  });
+}
+
+function coachDexaReportSummary(report = {}) {
+  const values = [
+    report.extracted_bodyweight_lb === null || report.extracted_bodyweight_lb === undefined
+      ? ""
+      : `${report.extracted_bodyweight_lb} lb`,
+    report.extracted_bodyfat_percent === null || report.extracted_bodyfat_percent === undefined
+      ? ""
+      : `${report.extracted_bodyfat_percent}% body fat`,
+    report.extracted_lean_mass_lb === null || report.extracted_lean_mass_lb === undefined
+      ? ""
+      : `${report.extracted_lean_mass_lb} lb lean mass`
+  ].filter(Boolean);
+
+  return values.join(" · ") || "No measurements extracted";
+}
+
+function renderCoachDexaReports() {
+  const list = document.getElementById("coach-dexa-report-list");
+  const status = document.getElementById("coach-dexa-report-status");
+
+  if (!list) {
+    return;
+  }
+
+  if (!normalizeEmail(selectedProgram()?.client_email)) {
+    list.innerHTML = '<p class="empty-state">Choose a client to view DEXA reports.</p>';
+    if (status) {
+      status.textContent = "Choose a client to view their private DEXA reports.";
+    }
+    return;
+  }
+
+  if (!dexaReports.length) {
+    list.innerHTML = '<p class="empty-state">No private DEXA reports yet.</p>';
+    if (status) {
+      status.textContent = "Clients can upload DEXA reports from their profile. A private report link is created only when you open it.";
+    }
+    return;
+  }
+
+  list.innerHTML = dexaReports.map((report) => {
+    const reportDate = report.extracted_scan_date || String(report.created_at || "").slice(0, 10);
+    const statusLabel = report.status === "confirmed"
+      ? "Measurements confirmed"
+      : report.status === "ready"
+        ? "Ready for client review"
+        : report.status === "failed"
+          ? "Extraction needs attention"
+          : "Processing";
+
+    return `
+      <article class="training-log-summary-row">
+        <div class="training-log-summary-date">
+          <strong>${escapeHtml(formatAdminDate(reportDate))}</strong>
+          <span>${escapeHtml(statusLabel)}</span>
+        </div>
+        <div class="training-log-summary-body">
+          <span class="coach-dexa-report-filename" title="${escapeHtml(report.original_filename || "DEXA report")}">${escapeHtml(report.original_filename || "DEXA report")}</span>
+          <small>${escapeHtml(coachDexaReportSummary(report))}</small>
+        </div>
+        <button class="button button-ghost" type="button" data-coach-dexa-report-view="${escapeHtml(report.id)}" aria-label="Open private DEXA report ${escapeHtml(report.original_filename || "DEXA report")}">Open</button>
+      </article>
+    `;
+  }).join("");
+
+  if (status) {
+    status.textContent = `${dexaReports.length} private DEXA report${dexaReports.length === 1 ? "" : "s"}. Links expire shortly after opening.`;
+  }
+}
+
+async function openCoachDexaReport(reportId, button) {
+  const status = document.getElementById("coach-dexa-report-status");
+  const report = dexaReports.find((item) => String(item.id) === String(reportId));
+
+  if (!coachSupabase || !report?.storage_path) {
+    if (status) {
+      status.textContent = "That private report is unavailable. Refresh and try again.";
+    }
+    return;
+  }
+
+  const reportWindow = window.open("about:blank", "_blank");
+
+  if (reportWindow) {
+    reportWindow.opener = null;
+  }
+  if (button) {
+    button.disabled = true;
+    button.textContent = "Opening...";
+  }
+  if (status) {
+    status.textContent = "Creating a private report link...";
+  }
+
+  try {
+    const { data, error } = await coachSupabase.storage
+      .from("dexa-reports")
+      .createSignedUrl(report.storage_path, 600);
+    const signedUrl = data?.signedUrl || data?.signed_url || "";
+
+    if (error || !signedUrl) {
+      throw new Error("Private report link unavailable");
+    }
+
+    if (reportWindow) {
+      reportWindow.location.replace(signedUrl);
+      if (status) {
+        status.textContent = "Private report opened. The link expires in 10 minutes.";
+      }
+    } else {
+      window.location.assign(signedUrl);
+    }
+  } catch {
+    reportWindow?.close();
+    if (status) {
+      status.textContent = "Could not open that private report. Refresh and try again.";
+    }
+  } finally {
+    if (button) {
+      button.disabled = false;
+      button.textContent = "Open";
+    }
+  }
+}
+
+function handleCoachDexaReports() {
+  const list = document.getElementById("coach-dexa-report-list");
+
+  if (!list) {
+    return;
+  }
+
+  list.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-coach-dexa-report-view]");
+
+    if (button) {
+      void openCoachDexaReport(button.dataset.coachDexaReportView, button);
+    }
   });
 }
 
@@ -2452,27 +2598,47 @@ async function loadProgressForEmail(email) {
     return;
   }
 
+  const requestedEmail = normalizeEmail(email);
+
+  dexaReports = [];
+  renderCoachDexaReports();
+  const dexaStatus = document.getElementById("coach-dexa-report-status");
+  if (dexaStatus) {
+    dexaStatus.textContent = "Loading private DEXA reports...";
+  }
   progressStatus("Loading progress...");
 
-  const [progressResult, photoResult] = await Promise.all([
+  const [progressResult, photoResult, dexaResult] = await Promise.all([
     coachSupabase
       .from("client_progress")
       .select("*")
-      .eq("client_email", email)
+      .eq("client_email", requestedEmail)
       .order("entry_date", { ascending: true }),
     coachSupabase
       .from("client_progress_photos")
       .select("id, client_email, storage_path, captured_on, note, created_at")
-      .eq("client_email", email)
+      .eq("client_email", requestedEmail)
       .order("captured_on", { ascending: false })
+      .order("created_at", { ascending: false }),
+    coachSupabase
+      .from("client_dexa_reports")
+      .select("id, client_email, storage_path, original_filename, status, extracted_scan_date, extracted_bodyweight_lb, extracted_bodyfat_percent, extracted_lean_mass_lb, created_at")
+      .eq("client_email", requestedEmail)
+      .order("extracted_scan_date", { ascending: false, nullsFirst: false })
       .order("created_at", { ascending: false })
   ]);
   const { data, error } = progressResult;
 
+  if (normalizeEmail(selectedProgram()?.client_email) !== requestedEmail) {
+    return;
+  }
+
   if (error) {
     progressEntries = [];
     progressPhotos = [];
+    dexaReports = [];
     renderProgressHistory();
+    renderCoachDexaReports();
     renderCoachProgressPhotos();
     progressStatus("Could not load progress. Run the progress SQL in Supabase.");
     return;
@@ -2480,12 +2646,20 @@ async function loadProgressForEmail(email) {
 
   progressEntries = data || [];
   progressPhotos = photoResult.error ? [] : await signedCoachProgressPhotos(photoResult.data || []);
+  dexaReports = dexaResult.error ? [] : dexaResult.data || [];
   renderProgressHistory();
+  renderCoachDexaReports();
   renderCoachProgressPhotos();
   if (photoResult.error) {
     const photoStatus = document.getElementById("coach-progress-photo-status");
     if (photoStatus) {
       photoStatus.textContent = "Private progress photos could not be loaded. Refresh and try again.";
+    }
+  }
+  if (dexaResult.error) {
+    const dexaStatus = document.getElementById("coach-dexa-report-status");
+    if (dexaStatus) {
+      dexaStatus.textContent = "Private DEXA reports could not be loaded. Refresh and try again.";
     }
   }
   fillProgressForm();
@@ -5016,6 +5190,7 @@ async function handleSaveProgress() {
       entry_date: entryDate,
       bodyweight: nextNumber("progress_bodyweight", existing.bodyweight),
       bodyfat: nextNumber("progress_bodyfat", existing.bodyfat),
+      lean_mass: nextNumber("progress_lean_mass", existing.lean_mass),
       muscle_mass: nextNumber("progress_muscle_mass", existing.muscle_mass),
       measurements,
       goal_note: goalNote || existing.goal_note || ""
@@ -5148,6 +5323,7 @@ async function bootCoachAdmin() {
   handleProgramHistoryActions();
   handleSendInvite();
   handleSaveProgress();
+  handleCoachDexaReports();
   handleTrainingLogDateFilter();
   handleWorkoutAnalysis();
   handleCoachSignOut();

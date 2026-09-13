@@ -30,7 +30,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=mobile-header-spacing-1" />
+  <link rel="stylesheet" href="css/style.css?v=dexa-import-2" />
   <link rel="stylesheet" href="css/custom-workout-mobile-fix.css?v=exercise-title-wrap-italic-5" />
 </head>
 <body class="dashboard-page client-dashboard-page is-loading">
@@ -504,13 +504,17 @@
               <p class="kicker">Client profile</p>
               <h2 id="client-stats-title">Stats &amp; measurements</h2>
             </div>
-            <span class="status-pill" id="progress-date"></span>
+            <div class="progress-date-actions">
+              <span class="status-pill" id="progress-date" aria-label="Latest measurement date"></span>
+              <button class="button button-ghost progress-past-entry-button" type="button" id="client-add-past-progress-button" aria-controls="client-progress-entry-content">Add past measurement</button>
+            </div>
           </div>
           <p class="client-progress-intro">Track body measurements and private progress photos over time.</p>
           <div class="progress-current" id="progress-current"></div>
           <div class="progress-metric-tabs" id="progress-metric-tabs" aria-label="Choose progress chart">
             <button class="progress-metric-tab is-active" type="button" data-progress-metric="bodyweight" aria-pressed="true">Bodyweight</button>
             <button class="progress-metric-tab" type="button" data-progress-metric="bodyfat" aria-pressed="false">Body fat</button>
+            <button class="progress-metric-tab" type="button" data-progress-metric="lean_mass" aria-pressed="false">Lean mass</button>
             <button class="progress-metric-tab" type="button" data-progress-metric="muscle_mass" aria-pressed="false">Muscle</button>
             <button class="progress-metric-tab" type="button" data-progress-metric="chest" aria-pressed="false">Chest</button>
             <button class="progress-metric-tab" type="button" data-progress-metric="waist" aria-pressed="false">Waist</button>
@@ -520,6 +524,58 @@
           </div>
           <div class="progress-chart" id="progress-chart" aria-label="Progress line graph"></div>
           <p class="progress-goal" id="progress-goal"></p>
+
+          <section class="progress-entry-card progress-dexa-card" aria-labelledby="client-dexa-title">
+            <div class="progress-card-heading">
+              <div>
+                <p class="kicker">DEXA report</p>
+                <h3 id="client-dexa-title">Upload and autofill</h3>
+              </div>
+              <button class="progress-section-toggle" type="button" data-progress-section-toggle aria-expanded="true" aria-controls="client-dexa-content">
+                <span data-progress-toggle-label>Minimize</span>
+                <span class="progress-section-toggle-icon" aria-hidden="true">−</span>
+              </button>
+            </div>
+            <div class="progress-section-body" id="client-dexa-content" data-progress-section-content>
+              <p class="dexa-intro">Upload a DEXA report and we’ll prepare the scan date, bodyweight, body-fat percentage, and whole-body lean mass for you to review.</p>
+              <div class="dexa-uploader">
+                <label for="client-dexa-file">DEXA report</label>
+                <input type="file" id="client-dexa-file" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" aria-describedby="client-dexa-file-help" />
+                <small id="client-dexa-file-help">PDF, JPG, or PNG up to 10 MB. Visible only to you and your coach.</small>
+              </div>
+              <div class="progress-actions dexa-upload-actions">
+                <p id="client-dexa-status" role="status" aria-live="polite">Choose a report when you’re ready.</p>
+                <button class="button button-dark" type="button" id="upload-client-dexa-button">Upload and read report</button>
+              </div>
+
+              <section class="dexa-review" id="client-dexa-review" aria-labelledby="client-dexa-review-title" tabindex="-1" hidden>
+                <div>
+                  <p class="kicker">Review required</p>
+                  <h4 id="client-dexa-review-title">Check the extracted measurements</h4>
+                </div>
+                <p class="dexa-review-warning" role="note"><strong>Automatic extraction can be wrong.</strong> Compare every value with your report before saving.</p>
+                <ul class="dexa-extraction-warnings" id="client-dexa-extraction-warnings" aria-label="Extraction notes" hidden></ul>
+                <form class="dexa-review-grid" id="client-dexa-review-form">
+                  <label>Scan date<input type="date" name="dexa_scan_date" required /></label>
+                  <label>Bodyweight (lb)<input type="number" name="dexa_bodyweight" step="0.1" min="20" max="1500" inputmode="decimal" /></label>
+                  <label>Body fat (%)<input type="number" name="dexa_bodyfat" step="0.1" min="1" max="75" inputmode="decimal" /></label>
+                  <label>Lean mass (lb)<input type="number" name="dexa_lean_mass" step="0.1" min="10" max="1400" inputmode="decimal" /></label>
+                  <p class="dexa-existing-entry-note" id="client-dexa-existing-entry-note"></p>
+                  <div class="dexa-review-actions">
+                    <button class="button button-dark" type="submit" id="confirm-client-dexa-button">Save reviewed measurements</button>
+                    <button class="button button-ghost" type="button" id="cancel-client-dexa-review-button">Cancel review</button>
+                  </div>
+                </form>
+              </section>
+
+              <div class="dexa-report-history" aria-labelledby="client-dexa-history-title">
+                <h4 id="client-dexa-history-title">Uploaded reports</h4>
+                <div class="dexa-report-list" id="client-dexa-report-list"><p class="empty-state">No DEXA reports uploaded yet.</p></div>
+              </div>
+              <p class="dexa-privacy-note">Your report is stored privately and processed to extract these fields. Read the <a href="fwb-training-privacy.html" target="_blank" rel="noopener noreferrer">training privacy notice</a>.</p>
+            </div>
+          </section>
+
           <div class="progress-profile-grid">
             <section class="progress-entry-card" aria-labelledby="client-progress-entry-title">
               <div class="progress-card-heading">
@@ -534,9 +590,14 @@
               </div>
               <div class="progress-section-body" id="client-progress-entry-content" data-progress-section-content>
                 <form class="progress-entry-grid" id="client-checkin-form">
-                  <label>Date<input type="date" name="progress_date" /></label>
+                  <label class="progress-date-field">
+                    Measurement date
+                    <input type="date" name="progress_date" aria-describedby="client-progress-date-help" />
+                    <small id="client-progress-date-help">For older DEXA results, choose the date of the scan.</small>
+                  </label>
                   <label>Bodyweight (lb)<input type="number" name="progress_bodyweight" step="0.1" min="0" inputmode="decimal" /></label>
                   <label>Body fat (%)<input type="number" name="progress_bodyfat" step="0.1" min="0" inputmode="decimal" /></label>
+                  <label>Lean mass (DEXA, lb)<input type="number" name="progress_lean_mass" step="0.1" min="0" max="1500" inputmode="decimal" /></label>
                   <label>Muscle mass (lb)<input type="number" name="progress_muscle_mass" step="0.1" min="0" inputmode="decimal" /></label>
                   <label>Chest (in)<input type="number" name="progress_chest" step="0.1" min="0" inputmode="decimal" /></label>
                   <label>Waist (in)<input type="number" name="progress_waist" step="0.1" min="0" inputmode="decimal" /></label>
@@ -711,6 +772,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js?v=manual-sessions-1"></script>
   <script src="js/exercise-name-matcher.js?v=exercise-consolidation-1"></script>
-  <script src="js/client-portal.js?v=home-progress-checkin-1"></script>
+  <script src="js/client-portal.js?v=dexa-import-2"></script>
 </body>
 </html>

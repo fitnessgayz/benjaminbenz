@@ -3289,6 +3289,21 @@ body.is-client-checkin-prompt-open {
   white-space: nowrap;
 }
 
+.progress-date-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.progress-past-entry-button {
+  min-height: 36px;
+  padding: 7px 12px;
+  font-size: .74rem;
+  white-space: nowrap;
+}
+
 .exercise-list {
   display: grid;
   gap: 10px;
@@ -5532,7 +5547,7 @@ body.is-client-checkin-prompt-open {
 }
 
 .progress-current {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
 }
 
 .progress-current span,
@@ -5610,6 +5625,183 @@ body.is-client-checkin-prompt-open {
   grid-template-columns: minmax(0, 1.35fr) minmax(280px, .65fr);
   gap: 16px;
   margin-top: 24px;
+}
+
+.progress-dexa-card {
+  margin-top: 24px;
+}
+
+.dexa-intro,
+.dexa-existing-entry-note,
+.dexa-privacy-note {
+  margin: 0;
+  color: var(--muted);
+  font-weight: 800;
+  line-height: 1.45;
+}
+
+.dexa-uploader {
+  display: grid;
+  gap: 7px;
+}
+
+.dexa-uploader label,
+.dexa-review-grid label {
+  display: grid;
+  gap: 6px;
+  color: var(--black);
+  font-size: .78rem;
+  font-weight: 900;
+}
+
+.dexa-uploader input,
+.dexa-review-grid input {
+  width: 100%;
+  min-width: 0;
+  min-height: 48px;
+  padding: 11px 12px;
+  border: 1px solid var(--line);
+  border-radius: 0;
+  color: var(--black);
+  background: var(--paper);
+  font: inherit;
+  font-weight: 800;
+}
+
+.dexa-uploader small,
+.dexa-privacy-note {
+  color: var(--muted);
+  font-size: .75rem;
+}
+
+.dexa-review {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid var(--black);
+  border-left: 7px solid var(--lime);
+  background: var(--paper);
+  outline: none;
+}
+
+.dexa-review[hidden] {
+  display: none;
+}
+
+.dexa-review h4,
+.dexa-report-history h4 {
+  margin: 2px 0 0;
+  font-size: 1.15rem;
+}
+
+.dexa-review-warning {
+  margin: 0;
+  padding: 12px;
+  border: 1px solid var(--black);
+  background: #f5f6e9;
+  font-size: .86rem;
+  line-height: 1.4;
+}
+
+.dexa-extraction-warnings {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0 0 0 20px;
+  color: var(--muted);
+  font-size: .82rem;
+  font-weight: 800;
+}
+
+.dexa-extraction-warnings[hidden] {
+  display: none;
+}
+
+.dexa-review-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.dexa-existing-entry-note,
+.dexa-review-actions {
+  grid-column: 1 / -1;
+}
+
+.dexa-review-actions,
+.dexa-report-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.dexa-report-history,
+.dexa-report-list {
+  display: grid;
+  min-width: 0;
+  gap: 10px;
+}
+
+.dexa-report-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+  padding: 12px 0;
+  border-top: 1px solid var(--line);
+}
+
+.dexa-report-summary {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+}
+
+.dexa-report-summary strong,
+.client-dexa-report-filename,
+.coach-dexa-report-filename {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 760px) {
+  .dexa-review-grid,
+  .dexa-report-row {
+    grid-template-columns: 1fr;
+  }
+
+  .dexa-report-actions {
+    justify-content: stretch;
+  }
+
+  .dexa-report-actions .button,
+  .dexa-review-actions .button {
+    width: 100%;
+  }
+}
+
+.dexa-report-summary span {
+  color: var(--muted);
+  font-size: .78rem;
+  font-weight: 800;
+}
+
+.dexa-report-actions {
+  justify-content: flex-end;
+}
+
+.dexa-report-actions .button {
+  min-height: 40px;
+  padding: 8px 11px;
+  font-size: .74rem;
+}
+
+.dexa-privacy-note a {
+  color: var(--black);
+  text-decoration-thickness: 2px;
 }
 
 .progress-entry-card,
@@ -5711,6 +5903,18 @@ body.is-client-checkin-prompt-open {
   color: var(--black);
   font-size: .78rem;
   font-weight: 900;
+}
+
+.progress-entry-grid .progress-date-field {
+  grid-column: 1 / -1;
+  max-width: 360px;
+}
+
+.progress-date-field small {
+  color: var(--muted);
+  font-size: .72rem;
+  font-weight: 700;
+  line-height: 1.35;
 }
 
 .progress-entry-grid input,
@@ -8528,6 +8732,17 @@ textarea:focus {
     display: grid;
   }
 
+  .progress-date-actions {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .progress-date-actions .status-pill,
+  .progress-date-actions .progress-past-entry-button {
+    width: 100%;
+    justify-content: center;
+  }
+
   .custom-workout-header {
     display: grid;
   }
@@ -8805,6 +9020,20 @@ textarea:focus {
 
   .progress-entry-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dexa-review-grid,
+  .dexa-report-row {
+    grid-template-columns: 1fr;
+  }
+
+  .dexa-report-actions {
+    justify-content: stretch;
+  }
+
+  .dexa-report-actions .button,
+  .dexa-review-actions .button {
+    width: 100%;
   }
 
   .progress-photo-gallery {

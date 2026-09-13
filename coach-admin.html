@@ -361,6 +361,10 @@
               <input type="number" name="progress_bodyfat" placeholder="18" step="0.1" min="0" />
             </label>
             <label>
+              DEXA lean mass
+              <input type="number" name="progress_lean_mass" placeholder="130" step="0.1" min="0" />
+            </label>
+            <label>
               Muscle mass
               <input type="number" name="progress_muscle_mass" placeholder="140" step="0.1" min="0" />
             </label>
@@ -394,6 +398,18 @@
             <button class="button button-dark" type="button" id="save-progress-button">Save check-in</button>
           </div>
           <div class="progress-history" id="progress-history"></div>
+          <div class="coach-progress-photo-panel">
+            <div class="admin-section-heading compact-heading">
+              <div>
+                <p class="kicker">Private DEXA reports</p>
+                <h2>Client scans</h2>
+              </div>
+            </div>
+            <p id="coach-dexa-report-status" role="status" aria-live="polite">Clients can upload DEXA reports from their profile. A private report link is created only when you open it.</p>
+            <div class="training-log-summary-list" id="coach-dexa-report-list">
+              <p class="empty-state">Choose a client to view DEXA reports.</p>
+            </div>
+          </div>
           <div class="coach-progress-photo-panel">
             <div class="admin-section-heading compact-heading">
               <div>
@@ -757,6 +773,6 @@
   <script src="js/script.js?v=client-session-link-1"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js?v=client-session-link-1"></script>
-  <script src="js/coach-admin.js?v=coach-admin-onboarding-1"></script>
+  <script src="js/coach-admin.js?v=dexa-reports-1"></script>
 </body>
 </html>

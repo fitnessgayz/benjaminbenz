@@ -58,6 +58,7 @@ test("every progress minimize button controls one matching section body", () => 
 
   assert.deepEqual(controls, [
     "client-exercise-progress-content",
+    "client-dexa-content",
     "client-progress-entry-content",
     "client-progress-photo-content",
     "client-progress-gallery-content",
@@ -70,7 +71,7 @@ test("every progress minimize button controls one matching section body", () => 
 test("progress sections start expanded with accessible labels", () => {
   const toggles = dashboard.match(/<button class="progress-section-toggle"[\s\S]*?<\/button>/g) || [];
 
-  assert.equal(toggles.length, 5);
+  assert.equal(toggles.length, 6);
   toggles.forEach((toggle) => {
     assert.match(toggle, /type="button"/);
     assert.match(toggle, /aria-expanded="true"/);
