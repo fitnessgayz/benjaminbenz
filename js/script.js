@@ -381,6 +381,162 @@ photoStoryCarousels.forEach((carousel) => {
   updateCarousel();
 });
 
+function wrapCoachingOptionIndex(index, length) {
+  if (!length) {
+    return 0;
+  }
+
+  return ((Number(index) || 0) % length + length) % length;
+}
+
+function coachingOptionSwipeDirection(deltaX, deltaY, threshold = 48) {
+  const horizontalDistance = Math.abs(Number(deltaX) || 0);
+  const verticalDistance = Math.abs(Number(deltaY) || 0);
+
+  if (horizontalDistance < threshold || horizontalDistance <= verticalDistance * 1.2) {
+    return 0;
+  }
+
+  return deltaX < 0 ? 1 : -1;
+}
+
+function setCoachingOptionDeckCard(deck, nextIndex) {
+  const cards = Array.from(deck?.querySelectorAll("[data-coaching-option-card]") || []);
+  const dots = Array.from(deck?.querySelectorAll("[data-coaching-option-dot]") || []);
+
+  if (!deck || cards.length === 0) {
+    return;
+  }
+
+  const activeIndex = wrapCoachingOptionIndex(nextIndex, cards.length);
+  const behindOneIndex = wrapCoachingOptionIndex(activeIndex + 1, cards.length);
+  const behindTwoIndex = wrapCoachingOptionIndex(activeIndex + 2, cards.length);
+  const status = deck.querySelector("[data-coaching-option-status]");
+  const activeTitle = cards[activeIndex].querySelector("h3")?.textContent?.trim() || "Coaching option";
+
+  deck.dataset.activeIndex = String(activeIndex);
+
+  cards.forEach((card, index) => {
+    const isCurrent = index === activeIndex;
+    card.classList.toggle("is-current", isCurrent);
+    card.classList.toggle("is-deck-behind-1", index === behindOneIndex);
+    card.classList.toggle("is-deck-behind-2", index === behindTwoIndex);
+    card.setAttribute("aria-hidden", isCurrent ? "false" : "true");
+    card.toggleAttribute("inert", !isCurrent);
+  });
+
+  dots.forEach((dot, index) => {
+    const isActive = index === activeIndex;
+    dot.classList.toggle("is-active", isActive);
+    dot.setAttribute("aria-pressed", isActive ? "true" : "false");
+  });
+
+  if (status) {
+    status.textContent = `Option ${activeIndex + 1} of ${cards.length} · ${activeTitle}`;
+  }
+}
+
+function initializeCoachingOptionDeck(deck) {
+  const cards = Array.from(deck?.querySelectorAll("[data-coaching-option-card]") || []);
+  const dotsContainer = deck?.querySelector("[data-coaching-option-dots]");
+  const previousButton = deck?.querySelector("[data-coaching-option-previous]");
+  const nextButton = deck?.querySelector("[data-coaching-option-next]");
+
+  if (!deck || cards.length < 2 || !dotsContainer) {
+    return;
+  }
+
+  cards.forEach((card, index) => {
+    const title = card.querySelector("h3")?.textContent?.trim() || `Option ${index + 1}`;
+    card.setAttribute("role", "group");
+    card.setAttribute("aria-roledescription", "slide");
+    card.setAttribute("aria-label", `${title}, option ${index + 1} of ${cards.length}`);
+  });
+
+  dotsContainer.innerHTML = cards.map((card, index) => {
+    const title = card.querySelector("h3")?.textContent?.trim() || `Option ${index + 1}`;
+    const shortLabel = card.querySelector(".coaching-option-icon")?.textContent?.trim() || String(index + 1);
+
+    return `<button class="coaching-option-deck-dot" type="button" data-coaching-option-dot="${index}" aria-label="Show ${title}" aria-pressed="false">${shortLabel}</button>`;
+  }).join("");
+
+  deck.classList.add("is-enhanced");
+  setCoachingOptionDeckCard(deck, Number(deck.dataset.coachingOptionStart) || 0);
+
+  const move = (direction) => {
+    const activeIndex = Number(deck.dataset.activeIndex) || 0;
+    setCoachingOptionDeckCard(deck, activeIndex + direction);
+  };
+
+  previousButton?.addEventListener("click", () => move(-1));
+  nextButton?.addEventListener("click", () => move(1));
+
+  dotsContainer.addEventListener("click", (event) => {
+    const dot = event.target.closest("[data-coaching-option-dot]");
+
+    if (!dot) {
+      return;
+    }
+
+    setCoachingOptionDeckCard(deck, Number(dot.dataset.coachingOptionDot));
+  });
+
+  deck.addEventListener("keydown", (event) => {
+    const keyDirections = {
+      ArrowLeft: -1,
+      ArrowRight: 1
+    };
+
+    if (keyDirections[event.key]) {
+      event.preventDefault();
+      move(keyDirections[event.key]);
+      return;
+    }
+
+    if (event.key === "Home" || event.key === "End") {
+      event.preventDefault();
+      setCoachingOptionDeckCard(deck, event.key === "Home" ? 0 : cards.length - 1);
+    }
+  });
+
+  let touchStart = null;
+
+  deck.addEventListener("touchstart", (event) => {
+    if (event.touches.length !== 1 || event.target.closest("button, a, input, select, textarea")) {
+      touchStart = null;
+      return;
+    }
+
+    touchStart = {
+      x: event.touches[0].clientX,
+      y: event.touches[0].clientY
+    };
+  }, { passive: true });
+
+  deck.addEventListener("touchend", (event) => {
+    if (!touchStart || event.changedTouches.length !== 1) {
+      touchStart = null;
+      return;
+    }
+
+    const direction = coachingOptionSwipeDirection(
+      event.changedTouches[0].clientX - touchStart.x,
+      event.changedTouches[0].clientY - touchStart.y
+    );
+    touchStart = null;
+
+    if (direction) {
+      move(direction);
+    }
+  }, { passive: true });
+
+  deck.addEventListener("touchcancel", () => {
+    touchStart = null;
+  }, { passive: true });
+}
+
+document.querySelectorAll("[data-coaching-option-deck]").forEach(initializeCoachingOptionDeck);
+
 const homeTabLinks = Array.from(document.querySelectorAll("[data-home-tab-link]"));
 const homeTabPanels = Array.from(document.querySelectorAll("[data-home-tab-panel]"));
 const homeTabStage = document.querySelector(".homepage-tab-stage");
