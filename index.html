@@ -30,7 +30,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=mobile-fit-audit-2" />
+  <link rel="stylesheet" href="css/style.css?v=coaching-option-deck-1" />
 </head>
 <body class="homepage">
   <header class="site-header">
@@ -112,58 +112,85 @@
               <h2 id="coaching-options-title">Expert coaching, your way.</h2>
               <p>Choose the level of support that fits your lifestyle, goals, and schedule.</p>
             </div>
-            <div class="coaching-option-grid">
-              <article class="coaching-option-card">
-                <span class="coaching-option-icon" aria-hidden="true">Online</span>
-                <h3>Online Coaching</h3>
-                <p>Train anywhere with expert guidance and clear weekly structure.</p>
-                <ul>
-                  <li>Personalized workout program</li>
-                  <li>Coaching app access</li>
-                  <li>Progress tracking</li>
-                  <li>Weekly check-in</li>
-                  <li>Program adjustments</li>
-                  <li>Messaging support</li>
-                  <li>Form and technique video review</li>
-                  <li>General nutrition and habit guidance</li>
-                  <li>Accountability and goal tracking</li>
-                </ul>
-                <strong>3 month minimum</strong>
-              </article>
-              <article class="coaching-option-card coaching-option-card-featured">
-                <span class="coaching-option-icon" aria-hidden="true">Hybrid</span>
-                <h3>Hybrid Coaching</h3>
-                <p>Online coaching plus in-person attention when you need hands-on support.</p>
-                <ul>
-                  <li>Personalized workout program</li>
-                  <li>Coaching app access</li>
-                  <li>Progress tracking</li>
-                  <li>Weekly check-in</li>
-                  <li>Program adjustments</li>
-                  <li>Messaging support</li>
-                  <li>Form and technique video review</li>
-                  <li>General nutrition and habit guidance</li>
-                  <li>Accountability and goal tracking</li>
-                  <li>One in-person session per month</li>
-                </ul>
-                <strong>3 month minimum</strong>
-              </article>
-              <article class="coaching-option-card">
-                <span class="coaching-option-icon" aria-hidden="true">1:1</span>
-                <h3>Personal Training</h3>
-                <p>Hands-on coaching in San Francisco for maximum support and feedback.</p>
-                <ul>
-                  <li>Included coaching app access</li>
-                  <li>Progress tracking</li>
-                  <li>Weekly check-in during sessions</li>
-                  <li>Ongoing program adjustments</li>
-                  <li>Messaging support as needed</li>
-                  <li>In-person form and technique review</li>
-                  <li>General nutrition and habit guidance</li>
-                  <li>Accountability and goal tracking</li>
-                </ul>
-                <strong>In-person training per session</strong>
-              </article>
+            <div
+              class="coaching-option-deck"
+              data-coaching-option-deck
+              data-coaching-option-start="1"
+              role="region"
+              aria-roledescription="carousel"
+              aria-label="Coaching options"
+              tabindex="0"
+            >
+              <div class="coaching-option-deck-stage">
+                <div class="coaching-option-grid" data-coaching-option-track>
+                  <article class="coaching-option-card" data-coaching-option-card>
+                    <div class="coaching-option-card-meta">
+                      <span class="coaching-option-icon" aria-hidden="true">Online</span>
+                      <span class="coaching-option-number" aria-hidden="true">01 / 03</span>
+                    </div>
+                    <h3>Online Coaching</h3>
+                    <p>Train anywhere with expert guidance and clear weekly structure.</p>
+                    <ul>
+                      <li>Personalized workout program</li>
+                      <li>Coaching app access</li>
+                      <li>Progress tracking</li>
+                      <li>Weekly check-in</li>
+                      <li>Program adjustments</li>
+                      <li>Messaging support</li>
+                      <li>Form and technique video review</li>
+                      <li>General nutrition and habit guidance</li>
+                      <li>Accountability and goal tracking</li>
+                    </ul>
+                    <strong>3 month minimum</strong>
+                  </article>
+                  <article class="coaching-option-card coaching-option-card-featured" data-coaching-option-card>
+                    <div class="coaching-option-card-meta">
+                      <span class="coaching-option-icon" aria-hidden="true">Hybrid</span>
+                      <span class="coaching-option-number" aria-hidden="true">02 / 03</span>
+                    </div>
+                    <h3>Hybrid Coaching</h3>
+                    <p>Online coaching plus in-person attention when you need hands-on support.</p>
+                    <ul>
+                      <li>Personalized workout program</li>
+                      <li>Coaching app access</li>
+                      <li>Progress tracking</li>
+                      <li>Weekly check-in</li>
+                      <li>Program adjustments</li>
+                      <li>Messaging support</li>
+                      <li>Form and technique video review</li>
+                      <li>General nutrition and habit guidance</li>
+                      <li>Accountability and goal tracking</li>
+                      <li>One in-person session per month</li>
+                    </ul>
+                    <strong>3 month minimum</strong>
+                  </article>
+                  <article class="coaching-option-card" data-coaching-option-card>
+                    <div class="coaching-option-card-meta">
+                      <span class="coaching-option-icon" aria-hidden="true">1:1</span>
+                      <span class="coaching-option-number" aria-hidden="true">03 / 03</span>
+                    </div>
+                    <h3>Personal Training</h3>
+                    <p>Hands-on coaching in San Francisco for maximum support and feedback.</p>
+                    <ul>
+                      <li>Included coaching app access</li>
+                      <li>Progress tracking</li>
+                      <li>Weekly check-in during sessions</li>
+                      <li>Ongoing program adjustments</li>
+                      <li>Messaging support as needed</li>
+                      <li>In-person form and technique review</li>
+                      <li>General nutrition and habit guidance</li>
+                      <li>Accountability and goal tracking</li>
+                    </ul>
+                    <strong>In-person training per session</strong>
+                  </article>
+                </div>
+              </div>
+              <p class="coaching-option-deck-status" data-coaching-option-status aria-live="polite">Option 2 of 3 · Hybrid Coaching</p>
+              <div class="coaching-option-deck-controls">
+                <button class="coaching-option-deck-arrow" type="button" data-coaching-option-previous aria-label="Previous coaching option">←</button>
+                <div class="coaching-option-deck-dots" data-coaching-option-dots role="group" aria-label="Choose a coaching option"></div>
+                <button class="coaching-option-deck-arrow" type="button" data-coaching-option-next aria-label="Next coaching option">→</button>
+              </div>
             </div>
             <div class="coaching-options-footer">
               <p><strong>Minimum commitment.</strong> Online and hybrid coaching require three months to build consistent results.</p>
@@ -361,6 +388,6 @@
   </footer>
 
   <script src="js/supabase-config.js"></script>
-  <script src="js/script.js?v=site-feedback-1"></script>
+  <script src="js/script.js?v=coaching-option-deck-1"></script>
 </body>
 </html>

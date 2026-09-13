@@ -1932,6 +1932,168 @@ figcaption {
   align-items: stretch;
 }
 
+.coaching-option-deck {
+  display: grid;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+  touch-action: pan-y;
+}
+
+.coaching-option-deck:focus-visible {
+  outline: 3px solid var(--lime);
+  outline-offset: 8px;
+}
+
+.coaching-option-deck-stage {
+  width: min(780px, calc(100% - 32px));
+  min-width: 0;
+  margin: 0 auto;
+}
+
+.coaching-option-deck.is-enhanced .coaching-option-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  width: 100%;
+  min-width: 0;
+  padding: 0 24px 24px 0;
+  isolation: isolate;
+}
+
+.coaching-option-deck.is-enhanced .coaching-option-card {
+  grid-area: 1 / 1;
+  min-height: 0;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translate(0, 0) rotate(0);
+  transform-origin: center;
+  transition: opacity .22s ease, transform .28s ease, box-shadow .28s ease;
+}
+
+.coaching-option-deck.is-enhanced .coaching-option-card.is-current {
+  z-index: 3;
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translate(0, 0) rotate(0);
+  box-shadow: 0 18px 38px rgba(0, 0, 0, .14);
+}
+
+.coaching-option-deck.is-enhanced .coaching-option-card.is-deck-behind-1,
+.coaching-option-deck.is-enhanced .coaching-option-card.is-deck-behind-2 {
+  opacity: 1;
+  visibility: visible;
+}
+
+.coaching-option-deck.is-enhanced .coaching-option-card.is-deck-behind-1 {
+  z-index: 2;
+  transform: translate(12px, 12px) rotate(.35deg);
+  box-shadow: 0 12px 26px rgba(0, 0, 0, .1);
+}
+
+.coaching-option-deck.is-enhanced .coaching-option-card.is-deck-behind-2 {
+  z-index: 1;
+  transform: translate(24px, 24px) rotate(-.35deg);
+}
+
+.coaching-option-deck.is-enhanced .coaching-option-card:is(.is-deck-behind-1, .is-deck-behind-2) > * {
+  visibility: hidden;
+}
+
+.coaching-option-card-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.coaching-option-number {
+  color: var(--muted);
+  font-size: .78rem;
+  font-weight: 900;
+  letter-spacing: .08em;
+}
+
+.coaching-option-card-featured .coaching-option-number {
+  color: rgba(17, 17, 17, .68);
+}
+
+.coaching-option-deck-status,
+.coaching-option-deck-controls {
+  display: none;
+}
+
+.coaching-option-deck.is-enhanced .coaching-option-deck-status {
+  display: block;
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: .82rem;
+  font-weight: 900;
+  letter-spacing: .055em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.coaching-option-deck.is-enhanced .coaching-option-deck-controls {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) 48px;
+  align-items: center;
+  gap: 10px;
+  width: min(780px, 100%);
+  margin: 0 auto;
+}
+
+.coaching-option-deck-arrow {
+  display: grid;
+  width: 48px;
+  min-width: 48px;
+  height: 48px;
+  min-height: 48px;
+  padding: 0;
+  place-items: center;
+  border: 1px solid var(--black);
+  background: var(--black);
+  color: var(--white);
+  font: inherit;
+  font-size: 1.25rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.coaching-option-deck-dots {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  min-width: 0;
+}
+
+.coaching-option-deck-dot {
+  min-width: 0;
+  min-height: 48px;
+  padding: 7px 8px;
+  border: 1px solid var(--line);
+  background: var(--white);
+  color: var(--muted);
+  font: inherit;
+  font-size: .72rem;
+  font-weight: 900;
+  overflow-wrap: anywhere;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.coaching-option-deck-dot.is-active {
+  border-color: var(--black);
+  background: var(--lime);
+  color: var(--black);
+}
+
+.coaching-option-deck :is(.coaching-option-deck-arrow, .coaching-option-deck-dot):focus-visible {
+  outline: 3px solid var(--blue);
+  outline-offset: 2px;
+}
+
 .coaching-option-card {
   display: flex;
   min-height: 100%;
@@ -2028,6 +2190,19 @@ figcaption {
 
 .coaching-options-footer strong {
   color: var(--black);
+}
+
+@media (min-width: 760px) {
+  .coaching-option-deck.is-enhanced .coaching-option-card ul {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 30px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .coaching-option-deck.is-enhanced .coaching-option-card {
+    transition: none;
+  }
 }
 
 .contact h2 {
@@ -7471,6 +7646,40 @@ textarea:focus {
   .coaching-option-card {
     gap: 14px;
     padding: 20px;
+  }
+
+  .coaching-option-deck-stage {
+    width: 100%;
+  }
+
+  .coaching-option-deck.is-enhanced .coaching-option-grid {
+    padding: 0 14px 14px 0;
+  }
+
+  .coaching-option-deck.is-enhanced .coaching-option-card.is-deck-behind-1 {
+    transform: translate(7px, 7px) rotate(.3deg);
+  }
+
+  .coaching-option-deck.is-enhanced .coaching-option-card.is-deck-behind-2 {
+    transform: translate(14px, 14px) rotate(-.3deg);
+  }
+
+  .coaching-option-deck.is-enhanced .coaching-option-deck-controls {
+    grid-template-columns: 44px minmax(0, 1fr) 44px;
+    gap: 6px;
+  }
+
+  .coaching-option-deck-arrow {
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    min-height: 44px;
+  }
+
+  .coaching-option-deck-dot {
+    min-height: 44px;
+    padding-inline: 4px;
+    font-size: .63rem;
   }
 
   .coaching-option-card h3 {
