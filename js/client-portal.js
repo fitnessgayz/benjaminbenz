@@ -25,6 +25,9 @@ let activeProgressMetric = "bodyweight";
 let clientTrainingLogDateFilter = "";
 let clientTrainingLogSearchFilter = "";
 let activeClientDashboardTab = "home";
+let latestMonthlyProgressReport = null;
+let clientExerciseProgressIndex = 0;
+let clientExerciseProgressSearch = "";
 let activeWorkoutTabIndex = 0;
 let clientWorkoutPickerIsOpen = true;
 let activeWorkoutHistoryDeckIndex = 0;
@@ -2074,47 +2077,454 @@ function exerciseProgressRecords(logs = []) {
 
 function renderClientExerciseProgress(logs = trainingLogs) {
   const container = document.getElementById("client-exercise-progress");
+  const count = document.getElementById("client-exercise-progress-count");
+  const previous = document.querySelector("[data-client-exercise-progress-previous]");
+  const next = document.querySelector("[data-client-exercise-progress-next]");
 
   if (!container) {
     return;
   }
 
-  const records = exerciseProgressRecords(logs);
+  const allRecords = exerciseProgressRecords(logs);
+  const search = normalizeExerciseHistoryName(clientExerciseProgressSearch);
+  const records = allRecords.filter((record) => (
+    !search || normalizeExerciseHistoryName(`${record.code} ${record.name}`).includes(search)
+  ));
 
   if (records.length === 0) {
-    container.innerHTML = '<p class="empty-state">Log the same exercise in another workout to see how far you’ve come.</p>';
+    const emptyMessage = search
+      ? `No exercises match “${escapeHtml(clientExerciseProgressSearch)}.”`
+      : "Log the same exercise in another workout to see how far you’ve come.";
+
+    container.innerHTML = `<p class="empty-state">${emptyMessage}</p>`;
+    if (count) {
+      count.textContent = search ? "No matches" : "No exercises yet";
+    }
+    if (previous) {
+      previous.disabled = true;
+    }
+    if (next) {
+      next.disabled = true;
+    }
     return;
   }
 
-  container.innerHTML = records.map((record) => {
-    const changePrefix = record.change > 0 ? "+" : "";
-    const changeClass = record.change > 0 ? " is-positive" : record.change < 0 ? " is-negative" : "";
+  clientExerciseProgressIndex = ((clientExerciseProgressIndex % records.length) + records.length) % records.length;
+  const record = records[clientExerciseProgressIndex];
+  const changePrefix = record.change > 0 ? "+" : "";
+  const changeClass = record.change > 0 ? " is-positive" : record.change < 0 ? " is-negative" : "";
 
-    return `
-      <article class="progress-exercise-card">
-        <div class="progress-exercise-card-heading">
-          <div>
-            ${record.code ? `<span>${escapeHtml(record.code)}</span>` : ""}
-            <h4>${escapeHtml(record.name)}</h4>
-          </div>
-          <strong class="progress-exercise-change${changeClass}">${escapeHtml(changePrefix)}${escapeHtml(exerciseProgressNumber(record.change))} ${escapeHtml(record.unit)}</strong>
+  container.innerHTML = `
+    <article class="progress-exercise-card">
+      <div class="progress-exercise-card-heading">
+        <div>
+          ${record.code ? `<span>${escapeHtml(record.code)}</span>` : ""}
+          <h4>${escapeHtml(record.name)}</h4>
         </div>
-        <div class="progress-exercise-comparison">
-          <span>
-            <small>Started</small>
-            <strong>${escapeHtml(exerciseProgressNumber(record.startingValue))} ${escapeHtml(record.unit)}</strong>
-            <em>${escapeHtml(formatLogDate(record.started.date))}</em>
-          </span>
-          <i aria-hidden="true">→</i>
-          <span>
-            <small>Now</small>
-            <strong>${escapeHtml(exerciseProgressNumber(record.currentValue))} ${escapeHtml(record.unit)}</strong>
-            <em>${escapeHtml(formatLogDate(record.current.date))}</em>
-          </span>
+        <strong class="progress-exercise-change${changeClass}">${escapeHtml(changePrefix)}${escapeHtml(exerciseProgressNumber(record.change))} ${escapeHtml(record.unit)}</strong>
+      </div>
+      <div class="progress-exercise-comparison">
+        <span>
+          <small>Started</small>
+          <strong>${escapeHtml(exerciseProgressNumber(record.startingValue))} ${escapeHtml(record.unit)}</strong>
+          <em>${escapeHtml(formatLogDate(record.started.date))}</em>
+        </span>
+        <i aria-hidden="true">→</i>
+        <span>
+          <small>Now</small>
+          <strong>${escapeHtml(exerciseProgressNumber(record.currentValue))} ${escapeHtml(record.unit)}</strong>
+          <em>${escapeHtml(formatLogDate(record.current.date))}</em>
+        </span>
+      </div>
+    </article>
+  `;
+  if (count) {
+    count.textContent = `${clientExerciseProgressIndex + 1} of ${records.length} exercise${records.length === 1 ? "" : "s"}`;
+  }
+  if (previous) {
+    previous.disabled = records.length < 2;
+  }
+  if (next) {
+    next.disabled = records.length < 2;
+  }
+}
+
+function moveClientExerciseProgress(step) {
+  clientExerciseProgressIndex += Number(step) || 0;
+  renderClientExerciseProgress(trainingLogs);
+}
+
+function handleClientExerciseProgressCarousel() {
+  document.addEventListener("input", (event) => {
+    if (event.target.id !== "client-exercise-progress-search") {
+      return;
+    }
+
+    clientExerciseProgressSearch = event.target.value || "";
+    clientExerciseProgressIndex = 0;
+    renderClientExerciseProgress(trainingLogs);
+  });
+
+  document.addEventListener("click", (event) => {
+    if (event.target.closest("[data-client-exercise-progress-previous]")) {
+      moveClientExerciseProgress(-1);
+    } else if (event.target.closest("[data-client-exercise-progress-next]")) {
+      moveClientExerciseProgress(1);
+    }
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (!event.target.closest("[data-client-exercise-progress-carousel]") || !["ArrowLeft", "ArrowRight"].includes(event.key)) {
+      return;
+    }
+
+    event.preventDefault();
+    moveClientExerciseProgress(event.key === "ArrowRight" ? 1 : -1);
+  });
+}
+
+function monthlyReportMonthLabel(monthKey) {
+  const [year, month] = String(monthKey || "").split("-").map(Number);
+
+  if (!year || !month) {
+    return "Monthly";
+  }
+
+  return new Date(Date.UTC(year, month - 1, 1)).toLocaleDateString("en-US", {
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC"
+  });
+}
+
+function monthlyReportClientName() {
+  const metadata = activeDashboardUser?.user_metadata || {};
+  const emailName = String(activeClientEmail || "").split("@")[0].replace(/[._-]+/g, " ");
+
+  return String(
+    currentProgram?.client_name ||
+    metadata.full_name ||
+    metadata.name ||
+    emailName ||
+    "Client"
+  ).trim();
+}
+
+function monthlyReportWorkingLogs(logs, monthKey) {
+  return (Array.isArray(logs) ? logs : []).filter((log) => {
+    const code = String(log.exercise_code || "").trim().toUpperCase();
+    const date = String(log.entry_date || "");
+
+    return date.slice(0, 7) === monthKey &&
+      ![warmupExerciseCode, cardioExerciseCode].includes(code) &&
+      normalizedSetType(log.set_type, log.set_number) !== warmUpSetType &&
+      ((Number(log.weight_used) || 0) > 0 || (Number(log.reps) || 0) > 0);
+  });
+}
+
+function monthlyReportSetScore(log) {
+  const weight = Number(log.weight_used) || 0;
+  const reps = Number(log.reps) || 0;
+
+  return weight > 0 ? weight * (1 + Math.max(reps, 0) / 30) : reps;
+}
+
+function monthlyReportBestSet(logs) {
+  return logs.slice().sort((left, right) => {
+    const scoreDifference = monthlyReportSetScore(right) - monthlyReportSetScore(left);
+
+    if (scoreDifference !== 0) {
+      return scoreDifference;
+    }
+
+    return (Number(right.weight_used) || 0) - (Number(left.weight_used) || 0) ||
+      (Number(right.reps) || 0) - (Number(left.reps) || 0);
+  })[0] || null;
+}
+
+function monthlyReportSetLabel(log) {
+  const weight = Number(log?.weight_used) || 0;
+  const reps = Number(log?.reps) || 0;
+
+  if (weight > 0 && reps > 0) {
+    return `${exerciseProgressNumber(weight)} lb × ${exerciseProgressNumber(reps)}`;
+  }
+  if (weight > 0) {
+    return `${exerciseProgressNumber(weight)} lb`;
+  }
+
+  return `${exerciseProgressNumber(reps)} reps`;
+}
+
+function monthlyReportExerciseHighlights(logs) {
+  const exercises = new Map();
+
+  logs.forEach((log) => {
+    const name = String(log.exercise_name || log.exercise_code || "Exercise").trim();
+    const key = normalizeExerciseHistoryName(name);
+    const date = String(log.entry_date || "");
+
+    if (!key || !date) {
+      return;
+    }
+    if (!exercises.has(key)) {
+      exercises.set(key, { name, dates: new Map(), logs: [] });
+    }
+
+    const exercise = exercises.get(key);
+    exercise.logs.push(log);
+    if (!exercise.dates.has(date)) {
+      exercise.dates.set(date, []);
+    }
+    exercise.dates.get(date).push(log);
+  });
+
+  const records = Array.from(exercises.values()).map((exercise) => {
+    const dates = Array.from(exercise.dates.keys()).sort();
+    const first = monthlyReportBestSet(exercise.dates.get(dates[0]) || []);
+    const latest = monthlyReportBestSet(exercise.dates.get(dates[dates.length - 1]) || []);
+    const benchmark = monthlyReportBestSet(exercise.logs);
+    const firstScore = monthlyReportSetScore(first || {});
+    const latestScore = monthlyReportSetScore(latest || {});
+    const improvement = firstScore > 0 ? (latestScore - firstScore) / firstScore : 0;
+    const progressed = dates.length > 1 && improvement > 0.005;
+
+    return {
+      name: exercise.name,
+      first,
+      latest,
+      benchmark,
+      progressed,
+      improvement,
+      benchmarkScore: monthlyReportSetScore(benchmark || {})
+    };
+  });
+  const progressRecords = records
+    .filter((record) => record.progressed)
+    .sort((left, right) => right.improvement - left.improvement)
+    .slice(0, 3)
+    .map((record) => ({
+      name: record.name,
+      type: "Progress",
+      value: `${monthlyReportSetLabel(record.first)} → ${monthlyReportSetLabel(record.latest)}`
+    }));
+  const progressNames = new Set(progressRecords.map((record) => normalizeExerciseHistoryName(record.name)));
+  const benchmarkRecords = records
+    .filter((record) => !progressNames.has(normalizeExerciseHistoryName(record.name)))
+    .sort((left, right) => right.benchmarkScore - left.benchmarkScore)
+    .slice(0, Math.max(0, 5 - progressRecords.length))
+    .map((record) => ({
+      name: record.name,
+      type: "Benchmark",
+      value: monthlyReportSetLabel(record.benchmark)
+    }));
+
+  return [...progressRecords, ...benchmarkRecords].slice(0, 5);
+}
+
+function buildMonthlyProgressReport(logs, monthKey = "") {
+  const currentMonth = todayDate().slice(0, 7);
+  const availableMonths = Array.from(new Set((Array.isArray(logs) ? logs : [])
+    .map((log) => String(log.entry_date || "").slice(0, 7))
+    .filter((key) => /^\d{4}-\d{2}$/.test(key) && key < currentMonth)))
+    .sort()
+    .reverse();
+  const selectedMonth = availableMonths.includes(monthKey) ? monthKey : availableMonths[0];
+
+  if (!selectedMonth) {
+    return null;
+  }
+
+  const workingLogs = monthlyReportWorkingLogs(logs, selectedMonth);
+
+  if (workingLogs.length === 0) {
+    return null;
+  }
+
+  const sessions = new Set(workingLogs.map((log) => (
+    String(log.workout_session_id || log.session_id || "").trim() ||
+    `${log.entry_date || ""}|${log.workout_title || "Workout"}`
+  )));
+  const exercises = new Set(workingLogs.map((log) => normalizeExerciseHistoryName(log.exercise_name || log.exercise_code)).filter(Boolean));
+  const activeWeeks = new Set(workingLogs.map((log) => {
+    const day = Number(String(log.entry_date || "").slice(8, 10)) || 1;
+
+    return Math.floor((day - 1) / 7) + 1;
+  }));
+  const workouts = sessions.size;
+  const nextMonthDate = new Date(`${selectedMonth}-01T00:00:00Z`);
+  nextMonthDate.setUTCMonth(nextMonthDate.getUTCMonth() + 1);
+  const nextMonth = nextMonthDate.toLocaleDateString("en-US", { month: "long", timeZone: "UTC" });
+  const frequencyFocus = workouts < 4
+    ? "Schedule at least one workout each week."
+    : `Keep training frequency near ${workouts} sessions per month.`;
+
+  return {
+    monthKey: selectedMonth,
+    monthLabel: monthlyReportMonthLabel(selectedMonth),
+    clientName: monthlyReportClientName(),
+    workouts,
+    workingSets: workingLogs.length,
+    activeWeeks: activeWeeks.size,
+    exerciseCount: exercises.size,
+    highlights: monthlyReportExerciseHighlights(workingLogs),
+    nextMonth,
+    focus: [
+      frequencyFocus,
+      "Add load or reps only when prescribed reps stay controlled.",
+      "Log every working set so comparisons stay complete."
+    ]
+  };
+}
+
+function monthlyProgressReportUrl(monthKey) {
+  const url = new URL(window.location.href);
+
+  url.searchParams.set("tab", "progress");
+  url.searchParams.set("report", monthKey);
+  url.hash = "";
+
+  return url.toString();
+}
+
+function monthlyProgressReportMarkup(report) {
+  const highlights = report.highlights.length > 0
+    ? report.highlights.map((highlight) => `
+        <div class="client-monthly-report-highlight">
+          <span><strong>${escapeHtml(highlight.name)}</strong><small class="is-${escapeHtml(highlight.type.toLowerCase())}">${escapeHtml(highlight.type)}</small></span>
+          <b>${escapeHtml(highlight.value)}</b>
         </div>
-      </article>
-    `;
-  }).join("");
+      `).join("")
+    : '<p class="empty-state">No comparable exercise sets were logged this month.</p>';
+
+  return `
+    <header class="client-monthly-report-hero">
+      <p>Fitness with Benjamin</p>
+      <h2>${escapeHtml(report.monthLabel)}<br />Monthly Training Report</h2>
+      <span>${escapeHtml(report.clientName)}</span>
+    </header>
+    <div class="client-monthly-report-metrics" aria-label="${escapeHtml(report.monthLabel)} summary">
+      <div><strong>${escapeHtml(report.workouts)}</strong><span>Workouts</span></div>
+      <div><strong>${escapeHtml(report.workingSets)}</strong><span>Working sets</span></div>
+      <div><strong>${escapeHtml(report.exerciseCount)}</strong><span>Exercises</span></div>
+      <div><strong>${escapeHtml(report.activeWeeks)}</strong><span>Active weeks</span></div>
+    </div>
+    <section class="client-monthly-report-highlights">
+      <h3>Exercise highlights</h3>
+      ${highlights}
+    </section>
+    <section class="client-monthly-report-focus">
+      <h3>${escapeHtml(report.nextMonth)} focus</h3>
+      <ul>${report.focus.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
+    </section>
+    <p class="client-monthly-report-note">Based on completed working sets logged from ${escapeHtml(report.monthLabel)}.</p>
+    <div class="client-monthly-report-actions">
+      <button class="button button-dark" type="button" data-close-monthly-report>Back to Progress</button>
+      <button class="button button-ghost" type="button" data-print-monthly-report>Print / Save PDF</button>
+    </div>
+  `;
+}
+
+function openMonthlyProgressReport(monthKey, updateUrl = true) {
+  const report = buildMonthlyProgressReport(trainingLogs, monthKey);
+  const dialog = document.getElementById("client-monthly-report-dialog");
+  const documentElement = document.getElementById("client-monthly-report-document");
+
+  if (!report || !dialog || !documentElement) {
+    return;
+  }
+
+  documentElement.innerHTML = monthlyProgressReportMarkup(report);
+  setText("#client-monthly-report-dialog-title", `${report.monthLabel} report`);
+  setClientDashboardTab("progress");
+  if (typeof dialog.showModal === "function") {
+    if (!dialog.open) {
+      dialog.showModal();
+    }
+  } else {
+    dialog.setAttribute("open", "");
+  }
+
+  if (updateUrl) {
+    window.history.replaceState({}, "", monthlyProgressReportUrl(report.monthKey));
+  }
+}
+
+function closeMonthlyProgressReport() {
+  const dialog = document.getElementById("client-monthly-report-dialog");
+
+  if (dialog?.open && typeof dialog.close === "function") {
+    dialog.close();
+  } else {
+    dialog?.removeAttribute("open");
+  }
+
+  const url = new URL(window.location.href);
+  url.searchParams.set("tab", "progress");
+  url.searchParams.delete("report");
+  window.history.replaceState({}, "", url.toString());
+  document.getElementById("client-monthly-report-link")?.focus();
+}
+
+function renderMonthlyProgressReport(logs = trainingLogs) {
+  const card = document.getElementById("client-monthly-report-card");
+  const link = document.getElementById("client-monthly-report-link");
+  const requestedMonth = new URLSearchParams(window.location.search).get("report") || "";
+
+  latestMonthlyProgressReport = buildMonthlyProgressReport(logs);
+  if (!card || !link) {
+    return;
+  }
+
+  card.hidden = !latestMonthlyProgressReport;
+  if (!latestMonthlyProgressReport) {
+    setText("#client-progress-report-month", "Monthly");
+    return;
+  }
+
+  const report = latestMonthlyProgressReport;
+  setText("#client-progress-report-month", report.monthLabel);
+  link.href = monthlyProgressReportUrl(report.monthKey);
+  setText("#client-monthly-report-title", `${report.monthLabel} training report`);
+  setText(
+    "#client-monthly-report-summary",
+    `${report.workouts} workout${report.workouts === 1 ? "" : "s"} · ${report.workingSets} working sets · ${report.activeWeeks} active week${report.activeWeeks === 1 ? "" : "s"}`
+  );
+
+  if (requestedMonth && buildMonthlyProgressReport(logs, requestedMonth)) {
+    window.requestAnimationFrame?.(() => openMonthlyProgressReport(requestedMonth, false));
+  }
+}
+
+function handleMonthlyProgressReport() {
+  document.addEventListener("click", (event) => {
+    const openLink = event.target.closest("#client-monthly-report-link");
+    const closeButton = event.target.closest("[data-close-monthly-report]");
+    const printButton = event.target.closest("[data-print-monthly-report]");
+
+    if (openLink) {
+      event.preventDefault();
+      openMonthlyProgressReport(latestMonthlyProgressReport?.monthKey);
+      return;
+    }
+    if (closeButton) {
+      closeMonthlyProgressReport();
+      return;
+    }
+    if (printButton) {
+      document.body.classList.add("is-printing-monthly-report");
+      window.print();
+    }
+  });
+
+  window.addEventListener("afterprint", () => {
+    document.body.classList.remove("is-printing-monthly-report");
+  });
+
+  document.getElementById("client-monthly-report-dialog")?.addEventListener("cancel", (event) => {
+    event.preventDefault();
+    closeMonthlyProgressReport();
+  });
 }
 
 function normalizeQuestionnaireAnswerKey(value) {
@@ -7387,6 +7797,7 @@ function populateTrainingLogs(logs) {
   syncCustomWorkoutCarousels();
   syncAssignedWorkoutCarousels();
   renderClientTrainingLogs();
+  renderMonthlyProgressReport(trainingLogs);
   renderClientHomeSummary();
 }
 
@@ -10644,11 +11055,19 @@ async function loadDashboard() {
     const user = sessionData?.session?.user;
 
     if (sessionError || !user) {
-      window.location.href = "client-login.html";
+      const returnTo = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+      window.location.href = `client-login.html?return_to=${encodeURIComponent(returnTo)}`;
       return;
     }
 
     activeDashboardUser = user;
+    const requestedTab = new URLSearchParams(window.location.search).get("tab");
+    const availableTabs = new Set(Array.from(document.querySelectorAll("[data-client-dashboard-tab]"))
+      .map((button) => button.dataset.clientDashboardTab));
+
+    if (availableTabs.has(requestedTab)) {
+      activeClientDashboardTab = requestedTab;
+    }
 
     const signedInEmail = normalizeClientEmail(user.email);
     const previewEmail = dashboardClientEmailParam();
@@ -11264,6 +11683,8 @@ handleCopyWorkoutToCustom();
 handleClientWorkoutHistoryDeck();
 handleClientDashboardTabs();
 handleProgressSectionToggles();
+handleMonthlyProgressReport();
+handleClientExerciseProgressCarousel();
 handleClientHomeCarousel();
 handleClientSummaryActions();
 handleClientWorkoutTabs();

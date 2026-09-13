@@ -32,20 +32,21 @@ test("scopes the client navigation styles and cache-busts dashboard assets", () 
   assert.match(styleSource, /body\.client-dashboard-page\s*\{[^}]*padding-bottom:\s*0;/s);
 });
 
-test("renders seven labeled client destinations in order with current-page semantics", () => {
+test("renders eight labeled client destinations in order with current-page semantics", () => {
   const navStart = dashboardHtml.indexOf('<nav class="client-dashboard-tabs"');
   const navEnd = dashboardHtml.indexOf("</nav>", navStart);
   const navMarkup = dashboardHtml.slice(navStart, navEnd);
   const buttons = [...navMarkup.matchAll(/<button\b([^>]*data-client-dashboard-tab="([^"]+)"[^>]*)>([\s\S]*?)<\/button>/g)];
 
   assert.ok(navStart >= 0);
-  assert.equal(buttons.length, 7);
+  assert.equal(buttons.length, 8);
   assert.deepEqual(buttons.map((match) => match[2]), [
     "home",
     "workouts",
     "logs",
-    "nutrition",
     "progress",
+    "stats",
+    "nutrition",
     "questionnaire",
     "sessions"
   ]);
@@ -53,8 +54,9 @@ test("renders seven labeled client destinations in order with current-page seman
     "Home",
     "Workouts",
     "Logs",
+    "Progress",
+    "Stats and measurements",
     "Food",
-    "Profile and progress",
     "Fitness questionnaire",
     "Sessions"
   ]);
@@ -62,8 +64,9 @@ test("renders seven labeled client destinations in order with current-page seman
     "Home",
     "Workouts",
     "Logs",
-    "Food",
     "Progress",
+    "Stats",
+    "Food",
     "Questionnaire",
     "Sessions"
   ]);
@@ -86,11 +89,11 @@ test("uses a sticky 240px desktop sidebar with a persistent 78px icon rail", () 
   assert.match(dashboardHtml, /client-dashboard-sidebar-toggle-label">Minimize</);
 });
 
-test("keeps the seven-column safe-area bottom dock on mobile and hides desktop-only labels", () => {
+test("keeps the eight-column safe-area bottom dock on mobile and hides desktop-only labels", () => {
   const mobileStyles = sourceBetween("@media (max-width: 900px)", "@media (max-width: 420px)");
 
   assert.match(mobileStyles, /body\.client-dashboard-page\s*\{[^}]*padding-bottom:\s*calc\(94px \+ env\(safe-area-inset-bottom\)\)/s);
-  assert.match(mobileStyles, /\.dashboard-page \.client-dashboard-tabs\s*\{[^}]*position:\s*fixed[^}]*bottom:\s*calc\(10px \+ env\(safe-area-inset-bottom\)\)[^}]*grid-template-columns:\s*repeat\(7, minmax\(0, 1fr\)\)[^}]*width:\s*min\(720px, calc\(100% - 24px\)\)/s);
+  assert.match(mobileStyles, /\.dashboard-page \.client-dashboard-tabs\s*\{[^}]*position:\s*fixed[^}]*bottom:\s*calc\(10px \+ env\(safe-area-inset-bottom\)\)[^}]*grid-template-columns:\s*repeat\(8, minmax\(0, 1fr\)\)[^}]*width:\s*min\(720px, calc\(100% - 24px\)\)/s);
   assert.match(mobileStyles, /\.client-dashboard-tab\.is-active \.client-dashboard-tab-icon\s*\{[^}]*color:\s*var\(--lime\)[^}]*background:\s*var\(--black\)[^}]*border-radius:\s*50%/s);
   assert.match(mobileStyles, /\.client-dashboard-tab-label,[\s\S]*?\.client-dashboard-nav-title,[\s\S]*?\.client-dashboard-sidebar-toggle\s*\{[^}]*display:\s*none !important/s);
 });

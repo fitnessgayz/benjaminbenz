@@ -122,8 +122,8 @@ test("keeps the deck compact and clear of the fixed mobile dock", () => {
   assert.match(styles, /@media \(max-width: 420px\)[\s\S]*?\.client-workout-picker-status \{[\s\S]*?display:\s*grid;[\s\S]*?grid-template-columns:\s*minmax\(0, 1fr\)/);
   assert.match(styles, /@media \(max-width: 420px\)[\s\S]*?\.client-workout-picker-controls \{[\s\S]*?width:\s*100%;[\s\S]*?justify-content:\s*space-between/);
   assert.match(styles, /scroll-margin-bottom:\s*var\(--client-bottom-dock-clearance\)/);
-  assert.match(dashboard, /css\/style\.css\?v=session-log-card-deck-1/);
-  assert.match(dashboard, /js\/client-portal\.js\?v=session-log-card-deck-1/);
+  assert.match(dashboard, /css\/style\.css\?v=stats-tab-1/);
+  assert.match(dashboard, /js\/client-portal\.js\?v=stats-tab-1/);
 });
 
 test("shows a workout day separately from its training target", () => {

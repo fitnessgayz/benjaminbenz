@@ -30,7 +30,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=session-log-card-deck-1" />
+  <link rel="stylesheet" href="css/style.css?v=stats-tab-1" />
   <link rel="stylesheet" href="css/custom-workout-mobile-fix.css?v=exercise-title-wrap-italic-5" />
 </head>
 <body class="dashboard-page client-dashboard-page is-loading">
@@ -67,13 +67,17 @@
             <svg class="client-dashboard-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-3"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M8 12h8M8 16h8"/></svg>
             <span class="client-dashboard-tab-label">Logs</span>
           </button>
+          <button class="client-dashboard-tab" type="button" data-client-dashboard-tab="progress" aria-label="Progress">
+            <svg class="client-dashboard-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V5M4 20h16"/><path d="m7 15 4-4 3 3 5-7"/></svg>
+            <span class="client-dashboard-tab-label">Progress</span>
+          </button>
+          <button class="client-dashboard-tab" type="button" data-client-dashboard-tab="stats" aria-label="Stats and measurements">
+            <svg class="client-dashboard-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/></svg>
+            <span class="client-dashboard-tab-label">Stats</span>
+          </button>
           <button class="client-dashboard-tab" type="button" data-client-dashboard-tab="nutrition" aria-label="Food">
             <svg class="client-dashboard-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3v8M4 3v5a3 3 0 0 0 6 0V3M7 11v10M16 3v18M16 3c3 2 4 5 4 8h-4"/></svg>
             <span class="client-dashboard-tab-label">Food</span>
-          </button>
-          <button class="client-dashboard-tab" type="button" data-client-dashboard-tab="progress" aria-label="Profile and progress">
-            <svg class="client-dashboard-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V5M4 20h16"/><path d="m7 15 4-4 3 3 5-7"/></svg>
-            <span class="client-dashboard-tab-label">Progress</span>
           </button>
           <button class="client-dashboard-tab" type="button" data-client-dashboard-tab="questionnaire" aria-label="Fitness questionnaire">
             <svg class="client-dashboard-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-3"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="m8 13 2 2 5-5"/><path d="M8 19h8"/></svg>
@@ -415,12 +419,73 @@
         <section class="progress-panel" data-client-dashboard-panel="progress" aria-labelledby="progress-title" hidden>
           <div class="panel-heading">
             <div>
+              <p class="kicker">Client dashboard</p>
+              <h2 id="progress-title">Progress</h2>
+            </div>
+            <span class="status-pill" id="client-progress-report-month">Monthly</span>
+          </div>
+          <article class="client-monthly-report-card" id="client-monthly-report-card" hidden>
+            <a class="client-monthly-report-link" id="client-monthly-report-link" href="#">
+              <span class="client-monthly-report-icon" aria-hidden="true">↗</span>
+              <span class="client-monthly-report-copy">
+                <span class="client-monthly-report-label">Latest monthly report</span>
+                <strong id="client-monthly-report-title">Monthly training report</strong>
+                <span id="client-monthly-report-summary"></span>
+              </span>
+              <span class="client-monthly-report-cta">View report <span aria-hidden="true">→</span></span>
+            </a>
+            <p>Same private report shared in your monthly email.</p>
+          </article>
+
+          <section class="progress-exercise-section" aria-labelledby="client-exercise-progress-title">
+            <div class="progress-card-heading">
+              <div>
+                <p class="kicker">Exercise progress</p>
+                <h3 id="client-exercise-progress-title">Exercise comparisons</h3>
+              </div>
+              <button class="progress-section-toggle" type="button" data-progress-section-toggle aria-expanded="true" aria-controls="client-exercise-progress-content">
+                <span data-progress-toggle-label>Minimize</span>
+                <span class="progress-section-toggle-icon" aria-hidden="true">−</span>
+              </button>
+            </div>
+            <div class="progress-section-body" id="client-exercise-progress-content" data-progress-section-content>
+              <p class="progress-exercise-intro">Compare your first logged working result with your most recent performance.</p>
+              <label class="progress-exercise-search" for="client-exercise-progress-search">
+                <span>Search exercises</span>
+                <input type="search" id="client-exercise-progress-search" placeholder="Search an exercise" autocomplete="off" />
+              </label>
+              <div class="progress-exercise-carousel" data-client-exercise-progress-carousel tabindex="0" aria-label="Exercise comparison carousel">
+                <div class="progress-exercise-carousel-bar">
+                  <span id="client-exercise-progress-count">No exercises yet</span>
+                  <div>
+                    <button type="button" data-client-exercise-progress-previous aria-label="Previous exercise">‹</button>
+                    <button type="button" data-client-exercise-progress-next aria-label="Next exercise">›</button>
+                  </div>
+                </div>
+                <div class="progress-exercise-list" id="client-exercise-progress" aria-live="polite"><p class="empty-state">Log the same exercise in another workout to see how far you’ve come.</p></div>
+              </div>
+            </div>
+          </section>
+
+          <dialog class="client-monthly-report-dialog" id="client-monthly-report-dialog" aria-labelledby="client-monthly-report-dialog-title">
+            <div class="client-monthly-report-dialog-bar">
+              <button type="button" data-close-monthly-report aria-label="Back to Progress">←</button>
+              <strong id="client-monthly-report-dialog-title">Monthly training report</strong>
+              <button type="button" data-print-monthly-report aria-label="Print or save report as PDF">↓</button>
+            </div>
+            <div class="client-monthly-report-document" id="client-monthly-report-document"></div>
+          </dialog>
+        </section>
+
+        <section class="progress-panel client-stats-panel" data-client-dashboard-panel="stats" aria-labelledby="client-stats-title" hidden>
+          <div class="panel-heading">
+            <div>
               <p class="kicker">Client profile</p>
-              <h2 id="progress-title">Stats &amp; measurements</h2>
+              <h2 id="client-stats-title">Stats &amp; measurements</h2>
             </div>
             <span class="status-pill" id="progress-date"></span>
           </div>
-          <p class="client-progress-intro">Track changes over time. Measurements and private progress photos stay connected to the same client profile you use in the iOS app.</p>
+          <p class="client-progress-intro">Track body measurements and private progress photos over time.</p>
           <div class="progress-current" id="progress-current"></div>
           <div class="progress-metric-tabs" id="progress-metric-tabs" aria-label="Choose progress chart">
             <button class="progress-metric-tab is-active" type="button" data-progress-metric="bodyweight" aria-pressed="true">Bodyweight</button>
@@ -491,23 +556,6 @@
               </div>
             </section>
           </div>
-
-          <section class="progress-exercise-section" aria-labelledby="client-exercise-progress-title">
-            <div class="progress-card-heading">
-              <div>
-                <p class="kicker">Exercise progress</p>
-                <h3 id="client-exercise-progress-title">Where you started vs. now</h3>
-              </div>
-              <button class="progress-section-toggle" type="button" data-progress-section-toggle aria-expanded="true" aria-controls="client-exercise-progress-content">
-                <span data-progress-toggle-label>Minimize</span>
-                <span class="progress-section-toggle-icon" aria-hidden="true">−</span>
-              </button>
-            </div>
-            <div class="progress-section-body" id="client-exercise-progress-content" data-progress-section-content>
-              <p class="progress-exercise-intro">Compare your first logged working result with your most recent performance.</p>
-              <div class="progress-exercise-list" id="client-exercise-progress"><p class="empty-state">Log the same exercise in another workout to see how far you’ve come.</p></div>
-            </div>
-          </section>
 
           <section class="progress-gallery-section" aria-labelledby="client-progress-gallery-title">
             <div class="progress-card-heading">
@@ -642,6 +690,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js?v=manual-sessions-1"></script>
   <script src="js/exercise-name-matcher.js?v=exercise-consolidation-1"></script>
-  <script src="js/client-portal.js?v=session-log-card-deck-1"></script>
+  <script src="js/client-portal.js?v=stats-tab-1"></script>
 </body>
 </html>

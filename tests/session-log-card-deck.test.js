@@ -144,8 +144,8 @@ test("mobile deck styles layer cards without clipping long workout content", () 
   assert.match(deckStyles, /\.training-log-history-swipe-hint \{[\s\S]*?font-size:\s*1rem/);
 });
 
-test("cache-busts the live dashboard assets for the Session Log release", () => {
-  assert.match(dashboard, /css\/style\.css\?v=session-log-card-deck-1/);
-  assert.match(dashboard, /js\/client-portal\.js\?v=session-log-card-deck-1/);
+test("cache-busts the live dashboard assets after the Session Log release", () => {
+  assert.match(dashboard, /css\/style\.css\?v=stats-tab-1/);
+  assert.match(dashboard, /js\/client-portal\.js\?v=stats-tab-1/);
   assert.match(portal, /handleClientWorkoutHistoryDeck\(\);/);
 });
