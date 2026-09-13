@@ -719,19 +719,15 @@ function contactMailto(formData) {
   const name = String(formData.get("name") || "").trim();
   const email = String(formData.get("email") || "").trim();
   const phone = String(formData.get("phone") || "").trim();
-  const message = String(formData.get("message") || "").trim();
   const body = [
-    "New message from benjaminbenz.com.",
+    "New coaching inquiry from benjaminbenz.com.",
     "",
     `Name: ${name}`,
     `Email: ${email}`,
-    `Phone: ${phone || "Not provided"}`,
-    "",
-    "Message:",
-    message
+    `Phone: ${phone || "Not provided"}`
   ].join("\n");
 
-  return `mailto:${contactEmail}?subject=${encodeURIComponent(`Website message from ${name || "visitor"}`)}&body=${encodeURIComponent(body)}`;
+  return `mailto:${contactEmail}?subject=${encodeURIComponent(`Website coaching inquiry from ${name || "visitor"}`)}&body=${encodeURIComponent(body)}`;
 }
 
 if (contactForm) {
@@ -750,7 +746,7 @@ if (contactForm) {
       submitButton.disabled = true;
     }
     if (status) {
-      status.textContent = "Sending your message...";
+      status.textContent = "Sending your inquiry...";
     }
 
     try {
@@ -768,7 +764,6 @@ if (contactForm) {
           name: String(formData.get("name") || ""),
           email: String(formData.get("email") || ""),
           phone: String(formData.get("phone") || ""),
-          message: String(formData.get("message") || ""),
           website: String(formData.get("website") || "")
         })
       });
@@ -779,13 +774,13 @@ if (contactForm) {
       }
 
       if (status) {
-        status.textContent = "Thanks. Your message was sent to Benjamin.";
+        status.textContent = "Thanks. Your information was sent to Benjamin.";
       }
 
       contactForm.reset();
     } catch (error) {
       if (status) {
-        status.textContent = "Opening your email app so the message still reaches Benjamin.";
+        status.textContent = "Opening your email app so the request still reaches Benjamin.";
       }
       window.location.href = contactMailto(formData);
     } finally {

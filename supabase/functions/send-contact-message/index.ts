@@ -84,7 +84,7 @@ serve(async (request) => {
   const honeypot = stringValue(safeBody.website);
 
   if (honeypot) {
-    return jsonResponse(request, { message: "Message sent." });
+    return jsonResponse(request, { message: "Inquiry sent." });
   }
 
   const name = stringValue(safeBody.name);
@@ -92,8 +92,8 @@ serve(async (request) => {
   const phone = stringValue(safeBody.phone);
   const message = stringValue(safeBody.message);
 
-  if (!name || !validEmail(email) || message.length < 8) {
-    return jsonResponse(request, { error: "Add your name, a valid email, and a message." }, 400);
+  if (!name || !validEmail(email)) {
+    return jsonResponse(request, { error: "Add your name and a valid email." }, 400);
   }
 
   if (name.length > 120 || email.length > 180 || phone.length > 60 || message.length > 2000) {
@@ -101,6 +101,19 @@ serve(async (request) => {
   }
 
   const submittedAt = new Date().toISOString();
+  const emailText = [
+    "New coaching inquiry from benjaminbenz.com.",
+    "",
+    `Name: ${name}`,
+    `Email: ${email}`,
+    `Phone: ${phone || "Not provided"}`,
+    `Submitted at: ${submittedAt}`
+  ];
+
+  if (message) {
+    emailText.push("", "Message:", message);
+  }
+
   const resendResponse = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
@@ -111,18 +124,8 @@ serve(async (request) => {
       from: fromEmail,
       to: notifyEmails,
       reply_to: email,
-      subject: `Website message from ${name}`,
-      text: [
-        "New message from benjaminbenz.com.",
-        "",
-        `Name: ${name}`,
-        `Email: ${email}`,
-        `Phone: ${phone || "Not provided"}`,
-        `Submitted at: ${submittedAt}`,
-        "",
-        "Message:",
-        message
-      ].join("\n")
+      subject: `Website coaching inquiry from ${name}`,
+      text: emailText.join("\n")
     })
   });
 
@@ -130,10 +133,10 @@ serve(async (request) => {
     const detail = await resendResponse.text().catch(() => "");
 
     return jsonResponse(request, {
-      error: "Could not send message.",
+      error: "Could not send inquiry.",
       detail: detail || undefined
     }, 502);
   }
 
-  return jsonResponse(request, { message: "Message sent." });
+  return jsonResponse(request, { message: "Inquiry sent." });
 });

@@ -90,6 +90,6 @@ test("renders a layered, content-driven deck with mobile-safe controls", () => {
 });
 
 test("cache-busts the homepage deck assets", () => {
-  assert.match(homepage, /css\/style\.css\?v=coaching-option-deck-1/);
-  assert.match(homepage, /js\/script\.js\?v=coaching-option-deck-1/);
+  assert.match(homepage, /css\/style\.css\?v=contact-form-no-message-1/);
+  assert.match(homepage, /js\/script\.js\?v=contact-form-no-message-1/);
 });
