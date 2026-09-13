@@ -51,6 +51,8 @@ test("monthly report has an in-app viewer and a shareable deep link", () => {
 });
 
 test("exercise comparisons use searchable cards containing up to ten exercises", () => {
+  const exerciseSection = dashboard.match(/<section class="progress-exercise-section"[\s\S]*?<\/section>/)?.[0] || "";
+
   assert.match(dashboard, /id="client-exercise-progress-search"/);
   assert.match(dashboard, /data-client-exercise-progress-carousel/);
   assert.match(dashboard, /data-client-exercise-progress-previous/);
@@ -64,6 +66,9 @@ test("exercise comparisons use searchable cards containing up to ten exercises",
   assert.match(styles, /@keyframes progress-exercise-card-forward/);
   assert.match(styles, /@keyframes progress-exercise-card-backward/);
   assert.match(styles, /@media \(prefers-reduced-motion: reduce\)/);
+  assert.doesNotMatch(exerciseSection, /data-progress-section-toggle/);
+  assert.doesNotMatch(exerciseSection, /data-progress-section-content/);
+  assert.doesNotMatch(exerciseSection, />Minimize</);
 });
 
 test("exercise comparison pagination keeps ten records per card", () => {
@@ -83,7 +88,6 @@ test("every progress minimize button controls one matching section body", () => 
     .map((match) => match[1]);
 
   assert.deepEqual(controls, [
-    "client-exercise-progress-content",
     "client-dexa-content",
     "client-progress-entry-content",
     "client-progress-photo-content",
@@ -94,10 +98,10 @@ test("every progress minimize button controls one matching section body", () => 
   assert.equal(new Set(controls).size, controls.length);
 });
 
-test("progress sections start expanded with accessible labels", () => {
+test("remaining collapsible progress sections start expanded with accessible labels", () => {
   const toggles = dashboard.match(/<button class="progress-section-toggle"[\s\S]*?<\/button>/g) || [];
 
-  assert.equal(toggles.length, 6);
+  assert.equal(toggles.length, 5);
   toggles.forEach((toggle) => {
     assert.match(toggle, /type="button"/);
     assert.match(toggle, /aria-expanded="true"/);
