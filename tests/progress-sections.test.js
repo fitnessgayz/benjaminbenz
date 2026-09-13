@@ -6,6 +6,15 @@ const path = require("node:path");
 const root = path.resolve(__dirname, "..");
 const dashboard = fs.readFileSync(path.join(root, "client-dashboard.html"), "utf8");
 const clientPortal = fs.readFileSync(path.join(root, "js", "client-portal.js"), "utf8");
+const styles = fs.readFileSync(path.join(root, "css", "style.css"), "utf8");
+
+function sourceForFunction(name) {
+  const start = clientPortal.indexOf(`function ${name}(`);
+  const end = clientPortal.indexOf("\nfunction ", start + 1);
+
+  assert.ok(start >= 0, `Expected ${name} to exist`);
+  return clientPortal.slice(start, end >= 0 ? end : undefined);
+}
 
 test("separates training progress from stats and measurements", () => {
   const progressPanel = dashboard.match(/<section class="progress-panel" data-client-dashboard-panel="progress"[\s\S]*?<\/section>\s*<section class="progress-panel client-stats-panel"/)?.[0] || "";
@@ -41,13 +50,30 @@ test("monthly report has an in-app viewer and a shareable deep link", () => {
   assert.match(clientPortal, /client-login\.html\?return_to=/);
 });
 
-test("exercise comparisons use a searchable single-card carousel", () => {
+test("exercise comparisons use searchable cards containing up to ten exercises", () => {
   assert.match(dashboard, /id="client-exercise-progress-search"/);
   assert.match(dashboard, /data-client-exercise-progress-carousel/);
   assert.match(dashboard, /data-client-exercise-progress-previous/);
   assert.match(dashboard, /data-client-exercise-progress-next/);
+  assert.match(clientPortal, /const clientExerciseProgressPageSize = 10/);
+  assert.match(clientPortal, /class="progress-exercise-deck\$\{directionClass\}"/);
+  assert.match(clientPortal, /pageRecords\.map\(clientExerciseProgressCardMarkup\)/);
   assert.match(clientPortal, /function handleClientExerciseProgressCarousel\(\)/);
   assert.match(clientPortal, /clientExerciseProgressSearch/);
+  assert.match(clientPortal, /event\.target\.closest\("\[data-client-exercise-progress-carousel\]"\)/);
+  assert.match(styles, /@keyframes progress-exercise-card-forward/);
+  assert.match(styles, /@keyframes progress-exercise-card-backward/);
+  assert.match(styles, /@media \(prefers-reduced-motion: reduce\)/);
+});
+
+test("exercise comparison pagination keeps ten records per card", () => {
+  const paginateSource = sourceForFunction("paginateClientExerciseProgress");
+  const paginate = Function(`const clientExerciseProgressPageSize = 10; ${paginateSource}; return paginateClientExerciseProgress;`)();
+  const records = Array.from({ length: 23 }, (_, index) => ({ id: index + 1 }));
+  const pages = paginate(records);
+
+  assert.deepEqual(pages.map((page) => page.length), [10, 10, 3]);
+  assert.deepEqual(pages.flat(), records);
 });
 
 test("every progress minimize button controls one matching section body", () => {

@@ -145,7 +145,7 @@ test("mobile deck styles layer cards without clipping long workout content", () 
 });
 
 test("cache-busts the live dashboard assets after the Session Log release", () => {
-  assert.match(dashboard, /css\/style\.css\?v=dexa-import-2/);
-  assert.match(dashboard, /js\/client-portal\.js\?v=dexa-import-2/);
+  assert.match(dashboard, /css\/style\.css\?v=dexa-exercise-progress-deck-1/);
+  assert.match(dashboard, /js\/client-portal\.js\?v=dexa-exercise-progress-deck-1/);
   assert.match(portal, /handleClientWorkoutHistoryDeck\(\);/);
 });

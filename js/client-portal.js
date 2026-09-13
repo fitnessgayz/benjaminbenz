@@ -32,6 +32,7 @@ let monthlyReportReturnTab = "progress";
 let monthlyReportReturnFocus = null;
 let clientExerciseProgressIndex = 0;
 let clientExerciseProgressSearch = "";
+let clientExerciseProgressDirection = 0;
 let activeWorkoutTabIndex = 0;
 let clientWorkoutPickerIsOpen = true;
 let activeWorkoutHistoryDeckIndex = 0;
@@ -155,6 +156,7 @@ const clientDashboardUrl = "client-dashboard.html?v=manual-sessions-1";
 const clientDashboardSidebarStorageKey = "fwb_client_dashboard_sidebar_collapsed_v1";
 const clientHomeCheckinPromptMetadataKey = "home_checkin_prompt_seen_v1";
 const clientHomeCheckinPromptStoragePrefix = "fwb_home_checkin_prompt_seen_v1";
+const clientExerciseProgressPageSize = 10;
 const workoutElapsedTimerStorageKey = "fwb_workout_elapsed_timer_v1";
 const workoutElapsedTimerCompactStorageKey = "fwb_workout_elapsed_timer_compact_v1";
 const workoutElapsedTimerPositionStorageKey = "fwb_workout_elapsed_timer_position_v2";
@@ -2085,46 +2087,21 @@ function exerciseProgressRecords(logs = []) {
     .sort((left, right) => right.current.date.localeCompare(left.current.date));
 }
 
-function renderClientExerciseProgress(logs = trainingLogs) {
-  const container = document.getElementById("client-exercise-progress");
-  const count = document.getElementById("client-exercise-progress-count");
-  const previous = document.querySelector("[data-client-exercise-progress-previous]");
-  const next = document.querySelector("[data-client-exercise-progress-next]");
+function paginateClientExerciseProgress(records = [], pageSize = clientExerciseProgressPageSize) {
+  const safeRecords = Array.isArray(records) ? records : [];
+  const safePageSize = Math.max(1, Math.floor(Number(pageSize) || clientExerciseProgressPageSize));
 
-  if (!container) {
-    return;
-  }
+  return Array.from(
+    { length: Math.ceil(safeRecords.length / safePageSize) },
+    (_, pageIndex) => safeRecords.slice(pageIndex * safePageSize, (pageIndex + 1) * safePageSize)
+  );
+}
 
-  const allRecords = exerciseProgressRecords(logs);
-  const search = normalizeExerciseHistoryName(clientExerciseProgressSearch);
-  const records = allRecords.filter((record) => (
-    !search || normalizeExerciseHistoryName(`${record.code} ${record.name}`).includes(search)
-  ));
-
-  if (records.length === 0) {
-    const emptyMessage = search
-      ? `No exercises match “${escapeHtml(clientExerciseProgressSearch)}.”`
-      : "Log the same exercise in another workout to see how far you’ve come.";
-
-    container.innerHTML = `<p class="empty-state">${emptyMessage}</p>`;
-    if (count) {
-      count.textContent = search ? "No matches" : "No exercises yet";
-    }
-    if (previous) {
-      previous.disabled = true;
-    }
-    if (next) {
-      next.disabled = true;
-    }
-    return;
-  }
-
-  clientExerciseProgressIndex = ((clientExerciseProgressIndex % records.length) + records.length) % records.length;
-  const record = records[clientExerciseProgressIndex];
+function clientExerciseProgressCardMarkup(record) {
   const changePrefix = record.change > 0 ? "+" : "";
   const changeClass = record.change > 0 ? " is-positive" : record.change < 0 ? " is-negative" : "";
 
-  container.innerHTML = `
+  return `
     <article class="progress-exercise-card">
       <div class="progress-exercise-card-heading">
         <div>
@@ -2148,23 +2125,89 @@ function renderClientExerciseProgress(logs = trainingLogs) {
       </div>
     </article>
   `;
+}
+
+function renderClientExerciseProgress(logs = trainingLogs) {
+  const container = document.getElementById("client-exercise-progress");
+  const count = document.getElementById("client-exercise-progress-count");
+  const previous = document.querySelector("[data-client-exercise-progress-previous]");
+  const next = document.querySelector("[data-client-exercise-progress-next]");
+
+  if (!container) {
+    return;
+  }
+
+  const allRecords = exerciseProgressRecords(logs);
+  const search = normalizeExerciseHistoryName(clientExerciseProgressSearch);
+  const records = allRecords.filter((record) => (
+    !search || normalizeExerciseHistoryName(`${record.code} ${record.name}`).includes(search)
+  ));
+  const pages = paginateClientExerciseProgress(records);
+
+  if (records.length === 0) {
+    const emptyMessage = search
+      ? `No exercises match “${escapeHtml(clientExerciseProgressSearch)}.”`
+      : "Log the same exercise in another workout to see how far you’ve come.";
+
+    container.innerHTML = `<p class="empty-state">${emptyMessage}</p>`;
+    if (count) {
+      count.textContent = search ? "No matches" : "No exercises yet";
+    }
+    if (previous) {
+      previous.disabled = true;
+    }
+    if (next) {
+      next.disabled = true;
+    }
+    return;
+  }
+
+  clientExerciseProgressIndex = ((clientExerciseProgressIndex % pages.length) + pages.length) % pages.length;
+  const pageRecords = pages[clientExerciseProgressIndex];
+  const pageStart = clientExerciseProgressIndex * clientExerciseProgressPageSize;
+  const directionClass = clientExerciseProgressDirection > 0
+    ? " is-forward"
+    : clientExerciseProgressDirection < 0
+      ? " is-backward"
+      : "";
+
+  container.innerHTML = `
+    <div class="progress-exercise-deck${directionClass}">
+      <section class="progress-exercise-page" aria-label="Exercise card ${clientExerciseProgressIndex + 1} of ${pages.length}">
+        ${pageRecords.map(clientExerciseProgressCardMarkup).join("")}
+      </section>
+    </div>
+  `;
+  clientExerciseProgressDirection = 0;
   if (count) {
-    count.textContent = `${clientExerciseProgressIndex + 1} of ${records.length} exercise${records.length === 1 ? "" : "s"}`;
+    const pageEnd = Math.min(pageStart + pageRecords.length, records.length);
+    count.textContent = pages.length > 1
+      ? `${pageStart + 1}–${pageEnd} of ${records.length} exercises · Card ${clientExerciseProgressIndex + 1} of ${pages.length}`
+      : `${records.length} exercise${records.length === 1 ? "" : "s"}`;
   }
   if (previous) {
-    previous.disabled = records.length < 2;
+    previous.disabled = pages.length < 2;
   }
   if (next) {
-    next.disabled = records.length < 2;
+    next.disabled = pages.length < 2;
   }
 }
 
 function moveClientExerciseProgress(step) {
-  clientExerciseProgressIndex += Number(step) || 0;
+  const direction = Math.sign(Number(step) || 0);
+
+  if (!direction) {
+    return;
+  }
+
+  clientExerciseProgressDirection = direction;
+  clientExerciseProgressIndex += direction;
   renderClientExerciseProgress(trainingLogs);
 }
 
 function handleClientExerciseProgressCarousel() {
+  let gesture = null;
+
   document.addEventListener("input", (event) => {
     if (event.target.id !== "client-exercise-progress-search") {
       return;
@@ -2172,6 +2215,7 @@ function handleClientExerciseProgressCarousel() {
 
     clientExerciseProgressSearch = event.target.value || "";
     clientExerciseProgressIndex = 0;
+    clientExerciseProgressDirection = 0;
     renderClientExerciseProgress(trainingLogs);
   });
 
@@ -2190,6 +2234,39 @@ function handleClientExerciseProgressCarousel() {
 
     event.preventDefault();
     moveClientExerciseProgress(event.key === "ArrowRight" ? 1 : -1);
+  });
+
+  document.addEventListener("pointerdown", (event) => {
+    const carousel = event.target.closest("[data-client-exercise-progress-carousel]");
+
+    if (!carousel || event.target.closest("button, input, a")) {
+      gesture = null;
+      return;
+    }
+
+    gesture = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY
+    };
+  });
+
+  document.addEventListener("pointerup", (event) => {
+    if (!gesture || event.pointerId !== gesture.pointerId) {
+      return;
+    }
+
+    const deltaX = event.clientX - gesture.startX;
+    const deltaY = event.clientY - gesture.startY;
+    gesture = null;
+
+    if (Math.abs(deltaX) >= 48 && Math.abs(deltaX) > Math.abs(deltaY) * 1.2) {
+      moveClientExerciseProgress(deltaX < 0 ? 1 : -1);
+    }
+  });
+
+  document.addEventListener("pointercancel", () => {
+    gesture = null;
   });
 }
 
