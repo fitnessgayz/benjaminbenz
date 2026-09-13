@@ -7362,6 +7362,102 @@ body.is-client-checkin-prompt-open {
   margin-top: 12px;
 }
 
+.food-label-import-card {
+  display: grid;
+  gap: 10px;
+  padding: 15px;
+  border: 1px solid var(--black);
+  border-left: 6px solid var(--lime);
+  border-radius: 8px;
+  background: var(--paper);
+}
+
+.food-label-import-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.food-label-import-heading h4,
+.food-label-import-card p {
+  margin: 0;
+}
+
+.food-label-import-heading h4 {
+  font-size: clamp(1.2rem, 3vw, 1.65rem);
+  line-height: 1;
+}
+
+.food-label-import-heading > span {
+  color: var(--black);
+  font-size: 1.65rem;
+}
+
+.food-label-import-card > p {
+  color: var(--muted);
+  font-size: .82rem;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.food-label-import-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 9px;
+  align-items: end;
+}
+
+.food-label-photo-field,
+.shared-food-library-field {
+  display: grid;
+  min-width: 0;
+  gap: 5px;
+  color: var(--ink);
+  font-size: .8rem;
+  font-weight: 900;
+}
+
+.food-label-photo-field input,
+.shared-food-library-field select {
+  width: 100%;
+  min-width: 0;
+  min-height: 48px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfbf8;
+  color: var(--black);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.food-label-photo-field input::file-selector-button {
+  margin-right: 9px;
+  padding: 7px 9px;
+  border: 1px solid var(--black);
+  border-radius: 6px;
+  background: var(--lime);
+  color: var(--black);
+  font: inherit;
+  font-size: .72rem;
+  font-weight: 900;
+}
+
+.food-label-import-controls .button {
+  width: auto;
+  min-height: 48px;
+  border-color: var(--black);
+  background: var(--lime);
+  color: var(--black);
+  white-space: nowrap;
+}
+
+.food-label-import-status {
+  min-height: 1.2em;
+}
+
 .food-entry-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -8977,6 +9073,14 @@ textarea:focus {
 
   .food-entry-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .food-label-import-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .food-label-import-controls .button {
+    width: 100%;
   }
 
   .food-entry-grid #search-food-button,

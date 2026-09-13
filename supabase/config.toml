@@ -45,3 +45,6 @@ verify_jwt = true
 
 [functions.extract-dexa-report]
 verify_jwt = true
+
+[functions.extract-food-label]
+verify_jwt = true

@@ -123,6 +123,30 @@ serve(async (request) => {
     return jsonResponse(request, { foods: [] });
   }
 
+  const libraryNeedle = query.toLowerCase().replace(/[^a-z0-9\s-]/g, " ").replace(/\s+/g, " ").trim().slice(0, 80);
+  let libraryFoods: Record<string, unknown>[] = [];
+
+  if (libraryNeedle) {
+    const { data: libraryRows } = await userClient
+      .from("shared_food_library")
+      .select("id,food_name,brand,serving,calories,protein,carbs,fat,created_at")
+      .or(`food_name.ilike.%${libraryNeedle}%,brand.ilike.%${libraryNeedle}%`)
+      .order("created_at", { ascending: false })
+      .limit(8);
+
+    libraryFoods = (libraryRows || []).map((row) => ({
+      libraryId: String(row.id || ""),
+      description: stringValue(row.food_name),
+      brandOwner: stringValue(row.brand),
+      serving: stringValue(row.serving),
+      calories: Number(row.calories),
+      protein: Number(row.protein),
+      carbs: Number(row.carbs),
+      fat: Number(row.fat),
+      source: "Shared food label"
+    }));
+  }
+
   const apiKey = Deno.env.get("USDA_FDC_API_KEY") || "DEMO_KEY";
   const response = await fetch(`https://api.nal.usda.gov/fdc/v1/foods/search?api_key=${encodeURIComponent(apiKey)}`, {
     method: "POST",
@@ -134,15 +158,17 @@ serve(async (request) => {
     })
   });
 
-  if (!response.ok) {
+  if (!response.ok && !libraryFoods.length) {
     return jsonResponse(request, { error: "Food lookup is not available right now." }, 502);
   }
 
-  const payload = await response.json().catch(() => ({}));
+  const payload = response.ok ? await response.json().catch(() => ({})) : {};
   const foods = Array.isArray(payload.foods) ? payload.foods : [];
 
   return jsonResponse(request, {
-    foods: foods.map((food) => {
+    foods: [
+      ...libraryFoods,
+      ...foods.map((food) => {
       const source = food && typeof food === "object" ? food as Record<string, unknown> : {};
 
       return {
@@ -153,8 +179,10 @@ serve(async (request) => {
         calories: nutrientAmount(source, ["energy"]),
         protein: nutrientAmount(source, ["protein"]),
         carbs: nutrientAmount(source, ["carbohydrate"]),
-        fat: nutrientAmount(source, ["total lipid", "fat"])
+        fat: nutrientAmount(source, ["total lipid", "fat"]),
+        source: "USDA FoodData Central"
       };
     }).filter((food) => food.description)
+    ].slice(0, 8)
   });
 });

@@ -30,7 +30,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=bodyspec-metrics-1" />
+  <link rel="stylesheet" href="css/style.css?v=food-label-bodyspec-1" />
   <link rel="stylesheet" href="css/custom-workout-mobile-fix.css?v=exercise-title-wrap-italic-5" />
 </head>
 <body class="dashboard-page client-dashboard-page is-loading">
@@ -380,6 +380,30 @@
               </div>
               <span class="status-pill" id="client-food-log-count">No food yet</span>
             </div>
+            <section class="food-label-import-card" aria-labelledby="food-label-import-title">
+              <div class="food-label-import-heading">
+                <div>
+                  <p class="kicker">Food label</p>
+                  <h4 id="food-label-import-title">Scan nutrition facts</h4>
+                </div>
+                <span aria-hidden="true">▣</span>
+              </div>
+              <p>Take or upload a clear photo. We’ll fill the food fields for you to review before anything is saved.</p>
+              <div class="food-label-import-controls">
+                <label class="food-label-photo-field">
+                  Food-label photo
+                  <input id="client-food-label-photo" type="file" accept="image/jpeg,image/png,image/webp" capture="environment" />
+                </label>
+                <button class="button button-accent" type="button" id="read-food-label-button">Read label</button>
+              </div>
+              <label class="shared-food-library-field">
+                Food label library
+                <select id="shared-food-library-select">
+                  <option value="">Choose a previously saved label</option>
+                </select>
+              </label>
+              <p class="food-label-import-status" id="food-label-import-status" role="status">JPG, PNG, or WebP up to 8 MB. The photo is processed securely and is not stored.</p>
+            </section>
             <div class="food-entry-grid" id="client-food-entry-form">
               <label>
                 Date
@@ -791,6 +815,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js?v=manual-sessions-1"></script>
   <script src="js/exercise-name-matcher.js?v=exercise-consolidation-1"></script>
-  <script src="js/client-portal.js?v=bodyspec-metrics-1"></script>
+  <script src="js/client-portal.js?v=food-label-bodyspec-1"></script>
 </body>
 </html>

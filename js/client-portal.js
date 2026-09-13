@@ -17,6 +17,7 @@ let trainingLogs = [];
 let workoutSessionFeedback = [];
 let foodLogs = [];
 let foodSearchResults = [];
+let sharedFoodLibrary = [];
 let progressEntries = [];
 let progressPhotos = [];
 let dexaReports = [];
@@ -1035,6 +1036,90 @@ function setFoodEntryStatus(message) {
   }
 }
 
+function setFoodLabelImportStatus(message) {
+  const status = document.getElementById("food-label-import-status");
+
+  if (status) {
+    status.textContent = message;
+  }
+}
+
+function foodLabelFileDetails(file) {
+  const allowedTypes = {
+    "image/jpeg": "jpg",
+    "image/png": "png",
+    "image/webp": "webp"
+  };
+  const extension = allowedTypes[String(file?.type || "").toLowerCase()] || "";
+
+  if (!file || !extension) {
+    return { valid: false, message: "Choose a JPG, PNG, or WebP photo of the Nutrition Facts label." };
+  }
+
+  if (!Number.isFinite(file.size) || file.size <= 0 || file.size > 8 * 1024 * 1024) {
+    return { valid: false, message: "Choose a food-label photo smaller than 8 MB." };
+  }
+
+  return { valid: true, extension, contentType: file.type };
+}
+
+function normalizeSharedFoodLibraryResult(food = {}) {
+  return {
+    libraryId: String(food.id || food.libraryId || ""),
+    description: String(food.food_name || food.description || "").trim(),
+    brandOwner: String(food.brand || food.brandOwner || "").trim(),
+    serving: String(food.serving || "").trim(),
+    calories: foodLogNumber(food.calories),
+    protein: foodLogNumber(food.protein),
+    carbs: foodLogNumber(food.carbs),
+    fat: foodLogNumber(food.fat),
+    source: "Shared food label"
+  };
+}
+
+function renderSharedFoodLibrary(records = sharedFoodLibrary) {
+  const select = document.getElementById("shared-food-library-select");
+  sharedFoodLibrary = Array.isArray(records)
+    ? records.map(normalizeSharedFoodLibraryResult).filter((food) => food.libraryId && food.description)
+    : [];
+
+  if (!select) {
+    return;
+  }
+
+  select.innerHTML = `
+    <option value="">${sharedFoodLibrary.length ? "Choose a previously saved label" : "No saved food labels yet"}</option>
+    ${sharedFoodLibrary.map((food) => `
+      <option value="${escapeHtml(food.libraryId)}">${escapeHtml([
+        food.description,
+        food.brandOwner,
+        food.serving
+      ].filter(Boolean).join(" · "))}</option>
+    `).join("")}
+  `;
+}
+
+async function loadSharedFoodLibrary() {
+  if (!supabaseClient) {
+    renderSharedFoodLibrary([]);
+    return;
+  }
+
+  const { data, error } = await supabaseClient
+    .from("shared_food_library")
+    .select("id,food_name,brand,serving,calories,protein,carbs,fat,created_at")
+    .order("created_at", { ascending: false })
+    .limit(50);
+
+  if (error) {
+    renderSharedFoodLibrary([]);
+    setFoodLabelImportStatus("The shared food-label library could not be loaded. You can still enter food manually.");
+    return;
+  }
+
+  renderSharedFoodLibrary(data || []);
+}
+
 function foodLogTotals(logs) {
   return logs.reduce((totals, log) => {
     totals.calories += Number(log.calories || 0);
@@ -1172,7 +1257,7 @@ function resetFoodSearchResults() {
   }
 }
 
-function applyFoodResult(food) {
+function applyFoodResult(food, options = {}) {
   const form = foodEntryForm();
 
   if (!form || !food) {
@@ -1196,8 +1281,127 @@ function applyFoodResult(food) {
     }
   });
 
-  form.dataset.foodSource = "USDA FoodData Central";
+  form.dataset.foodSource = food.source || "USDA FoodData Central";
   form.dataset.fdcId = food.fdcId || "";
+  form.dataset.foodLibraryId = food.libraryId || "";
+  form.dataset.foodLabelPending = options.foodLabelPending ? "true" : "";
+  form.dataset.foodLabelBrand = food.brandOwner || food.brand || "";
+}
+
+function applyExtractedFoodLabel(food = {}) {
+  const normalized = normalizeSharedFoodLibraryResult({
+    ...food,
+    libraryId: "",
+    source: "Food label scan"
+  });
+
+  normalized.source = "Food label scan";
+  applyFoodResult(normalized, { foodLabelPending: true });
+  resetFoodSearchResults();
+  setFoodEntryStatus("Label values filled in. Review the serving and every macro, then tap Save food.");
+}
+
+async function publishPendingFoodLabel(payload) {
+  const form = foodEntryForm();
+  if (!supabaseClient || form?.dataset.foodLabelPending !== "true") {
+    return { saved: false, skipped: true };
+  }
+
+  const { data, error } = await supabaseClient.functions.invoke("extract-food-label", {
+    body: {
+      action: "publish",
+      food: {
+        food_name: payload.food_name,
+        brand: form.dataset.foodLabelBrand || "",
+        serving: payload.serving,
+        calories: payload.calories,
+        protein: payload.protein,
+        carbs: payload.carbs,
+        fat: payload.fat,
+        confidence: "high",
+        warnings: []
+      }
+    }
+  });
+
+  if (error || data?.error || !data?.food) {
+    return {
+      saved: false,
+      skipped: false,
+      message: data?.error || error?.message || "The food was logged, but could not be added to the shared library."
+    };
+  }
+
+  await loadSharedFoodLibrary();
+  return { saved: true, skipped: false };
+}
+
+function handleFoodLabelUpload() {
+  const button = document.getElementById("read-food-label-button");
+  const input = document.getElementById("client-food-label-photo");
+
+  button?.addEventListener("click", async () => {
+    const file = input?.files?.[0];
+    const details = foodLabelFileDetails(file);
+
+    if (!details.valid) {
+      setFoodLabelImportStatus(details.message);
+      input?.focus();
+      return;
+    }
+
+    if (!supabaseClient || !activeDashboardUser || isCoachPortalEmail(activeDashboardUser.email)) {
+      setFoodLabelImportStatus("Sign in as the client before reading a food label.");
+      return;
+    }
+
+    button.disabled = true;
+    input.disabled = true;
+    setFoodLabelImportStatus("Reading calories and macros from the label…");
+
+    try {
+      const formData = new FormData();
+      formData.append("photo", file, String(file.name || `food-label.${details.extension}`).slice(0, 180));
+      const { data, error } = await withTimeout(
+        supabaseClient.functions.invoke("extract-food-label", { body: formData }),
+        "Food-label reading timed out. Try again or enter the values manually.",
+        90000
+      );
+
+      if (error || data?.error || !data?.food) {
+        throw new Error(data?.error || error?.message || "The label could not be read. Try a closer photo.");
+      }
+
+      applyExtractedFoodLabel(data.food);
+      const warningText = Array.isArray(data.food.warnings) && data.food.warnings.length
+        ? ` Check: ${data.food.warnings.join(" ")}`
+        : "";
+      setFoodLabelImportStatus(`Label read with ${data.food.confidence || "low"} confidence.${warningText} Review every value before saving.`);
+      input.value = "";
+      foodEntryForm()?.querySelector('[name="food_name"]')?.focus();
+    } catch (error) {
+      setFoodLabelImportStatus(error?.message || "The label could not be read. Try a closer photo or enter it manually.");
+    } finally {
+      button.disabled = false;
+      input.disabled = false;
+    }
+  });
+}
+
+function handleSharedFoodLibrarySelect() {
+  const select = document.getElementById("shared-food-library-select");
+
+  select?.addEventListener("change", () => {
+    const food = sharedFoodLibrary.find((item) => item.libraryId === select.value);
+    if (!food) {
+      return;
+    }
+
+    applyFoodResult(food);
+    resetFoodSearchResults();
+    setFoodLabelImportStatus("Saved label selected. Review the serving and macros before saving this food log.");
+    setFoodEntryStatus("Saved label filled in. Adjust anything needed, then tap Save food.");
+  });
 }
 
 function foodSearchString(value) {
@@ -1410,6 +1614,13 @@ function resetFoodEntryForm() {
 
   form.dataset.foodSource = "";
   form.dataset.fdcId = "";
+  form.dataset.foodLibraryId = "";
+  form.dataset.foodLabelPending = "";
+  form.dataset.foodLabelBrand = "";
+  const librarySelect = document.getElementById("shared-food-library-select");
+  if (librarySelect) {
+    librarySelect.value = "";
+  }
   resetFoodSearchResults();
 }
 
@@ -1448,11 +1659,19 @@ function handleFoodSave() {
         return;
       }
 
+      const libraryResult = await publishPendingFoodLabel(payload);
       foodLogs = [data, ...foodLogs].sort((a, b) => String(b.entry_date || "").localeCompare(String(a.entry_date || "")));
       renderClientFoodLogs();
       renderClientTrainingLogs();
       resetFoodEntryForm();
-      setFoodEntryStatus("Food saved.");
+      if (libraryResult.saved) {
+        setFoodEntryStatus("Food saved and added to the shared food-label library.");
+        setFoodLabelImportStatus("Saved label added to the library for all clients.");
+      } else if (!libraryResult.skipped) {
+        setFoodEntryStatus(libraryResult.message || "Food saved, but the shared library could not be updated.");
+      } else {
+        setFoodEntryStatus("Food saved.");
+      }
     } catch (error) {
       setFoodEntryStatus(error?.message || "Could not save food.");
     } finally {
@@ -12183,7 +12402,7 @@ async function loadDashboard() {
       questionnaireQuery.eq("linked_user_id", user.id);
     }
 
-    const [progressResult, progressPhotoResult, dexaReportResult, trainingLogResult, workoutFeedbackResult, foodLogResult, exerciseLibraryResult, questionnaireResult] = await Promise.allSettled([
+    const [progressResult, progressPhotoResult, dexaReportResult, trainingLogResult, workoutFeedbackResult, foodLogResult, sharedFoodLibraryResult, exerciseLibraryResult, questionnaireResult] = await Promise.allSettled([
       withTimeout(
         supabaseClient
           .from("client_progress")
@@ -12239,6 +12458,14 @@ async function loadDashboard() {
       ),
       withTimeout(
         supabaseClient
+          .from("shared_food_library")
+          .select("id,food_name,brand,serving,calories,protein,carbs,fat,created_at")
+          .order("created_at", { ascending: false })
+          .limit(50),
+        "Food library request timed out."
+      ),
+      withTimeout(
+        supabaseClient
           .from("exercise_library")
           .select("id,name,aliases,primary_muscle,secondary_muscles,equipment,difficulty,movement_pattern,default_sets,default_reps,default_rest_seconds,substitution_group,demo_url,instructions")
           .eq("is_active", true)
@@ -12271,6 +12498,9 @@ async function loadDashboard() {
     const foodLogData = foodLogResult.status === "fulfilled" && !foodLogResult.value.error
       ? foodLogResult.value.data
       : [];
+    const sharedFoodLibraryData = sharedFoodLibraryResult.status === "fulfilled" && !sharedFoodLibraryResult.value.error
+      ? sharedFoodLibraryResult.value.data
+      : [];
     const exerciseLibraryData = exerciseLibraryResult.status === "fulfilled" && !exerciseLibraryResult.value.error
       ? exerciseLibraryResult.value.data
       : [];
@@ -12297,6 +12527,10 @@ async function loadDashboard() {
     }
     configureClientProgressAccess();
     fillFoodEntryDefaults();
+    renderSharedFoodLibrary(sharedFoodLibraryData || []);
+    if (sharedFoodLibraryResult.status !== "fulfilled" || sharedFoodLibraryResult.value.error) {
+      setFoodLabelImportStatus("The shared food-label library could not be loaded. You can still enter food manually.");
+    }
     populateFoodLogs(foodLogData || []);
     populateTrainingLogs(
       trainingLogData?.length || !shouldUseDemoTrainingLogs()
@@ -12717,8 +12951,10 @@ async function handleSignOut() {
     button.addEventListener("click", async () => {
       clearClientQuestionnaire();
       dexaReports = [];
+      sharedFoodLibrary = [];
       hideClientDexaReview();
       renderClientDexaReports([]);
+      renderSharedFoodLibrary([]);
       if (supabaseClient) {
         await supabaseClient.auth.signOut();
       }
@@ -12770,6 +13006,8 @@ handleTrainingLogSave();
 handleClientProgressHistorySelect();
 handleClientProgressSave();
 handleClientNutritionSave();
+handleFoodLabelUpload();
+handleSharedFoodLibrarySelect();
 handleFoodSearch();
 handleFoodResultSelect();
 handleFoodSave();

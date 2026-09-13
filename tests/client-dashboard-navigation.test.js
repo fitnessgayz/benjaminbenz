@@ -30,8 +30,8 @@ test("scopes the client navigation styles and cache-busts dashboard assets", () 
   assert.match(dashboardHtml, /href="css\/style\.css\?v=[^"\s]+"/);
   assert.match(dashboardHtml, /src="js\/client-portal\.js\?v=[^"\s]+"/);
   assert.match(styleSource, /body\.client-dashboard-page\s*\{[^}]*padding-bottom:\s*0;/s);
-  assert.match(dashboardHtml, /css\/style\.css\?v=bodyspec-metrics-1/);
-  assert.match(dashboardHtml, /js\/client-portal\.js\?v=bodyspec-metrics-1/);
+  assert.match(dashboardHtml, /css\/style\.css\?v=food-label-bodyspec-1/);
+  assert.match(dashboardHtml, /js\/client-portal\.js\?v=food-label-bodyspec-1/);
 });
 
 test("renders eight labeled client destinations in order with current-page semantics", () => {
