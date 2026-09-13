@@ -46,6 +46,15 @@ test("saves fitness answers and only writes calculated macros when requested", (
   assert.match(script, /\.eq\("client_archived", false\)/);
 });
 
+test("keeps an on-device draft until the server confirms onboarding was saved", () => {
+  const draftFields = script.match(/const inviteDraftFieldNames = \[([\s\S]*?)\];/)?.[1] || "";
+  assert.match(script, /fwb-client-onboarding-draft:\$\{data\.session\.user\.id\}/);
+  assert.match(script, /function saveInviteDraft\(\)/);
+  assert.match(script, /function restoreInviteDraft\(\)/);
+  assert.doesNotMatch(draftFields, /password/);
+  assert.match(script, /if \(!response\.ok\) throw[\s\S]*?clearInviteDraft\(\);/);
+});
+
 test("initial questionnaire migration defines the owned insert policy", () => {
   assert.match(migration, /create table if not exists public\.client_fitness_questionnaires/);
   assert.match(migration, /linked_user_id = \(select auth\.uid\(\)\)/);
@@ -61,6 +70,8 @@ test("production hardening routes questionnaire writes through a verified functi
   assert.match(onboardingFunction, /\.eq\("client_archived", false\)/);
   assert.match(onboardingFunction, /source_submission_id: `invite-\$\{user\.id\}`/);
   assert.match(onboardingFunction, /onConflict: "source,source_submission_id"/);
+  assert.match(onboardingFunction, /could not be confirmed after saving/);
+  assert.match(onboardingFunction, /\.select\("id,linked_user_id,linked_client_email,match_status,answers"\)/);
 });
 
 test("mobile styles keep the deck within 375 to 430 pixel screens", () => {

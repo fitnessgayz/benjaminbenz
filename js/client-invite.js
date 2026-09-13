@@ -15,6 +15,24 @@ let activeInviteStep = 0;
 let invitePasswordSaved = false;
 let inviteSubmitting = false;
 let inviteTouchStartX = null;
+let inviteDraftStorageKey = "";
+const inviteDraftFieldNames = [
+  "height",
+  "current_weight",
+  "body_fat",
+  "fitness_goal",
+  "training_days",
+  "training_experience",
+  "available_equipment",
+  "limitations",
+  "wants_macros",
+  "nutrition_goal",
+  "nutrition_age",
+  "nutrition_sex",
+  "nutrition_workouts",
+  "nutrition_movement",
+  "nutrition_intensity"
+];
 
 function inviteForm() {
   return document.getElementById("client-invite-form");
@@ -23,6 +41,66 @@ function inviteForm() {
 function setInviteStatus(message) {
   const status = document.getElementById("client-invite-status");
   if (status) status.textContent = message;
+}
+
+function saveInviteDraft() {
+  const form = inviteForm();
+  if (!form || !inviteDraftStorageKey || passwordFlow === "recovery") return;
+
+  const fields = {};
+  inviteDraftFieldNames.forEach((name) => {
+    const controls = Array.from(form.querySelectorAll(`[name="${name}"]`));
+    const selected = controls.find((control) => control.type === "radio" ? control.checked : true);
+    if (selected) fields[name] = selected.value;
+  });
+
+  try {
+    window.localStorage.setItem(inviteDraftStorageKey, JSON.stringify({
+      version: 1,
+      accountComplete: invitePasswordSaved,
+      activeStep: activeInviteStep,
+      fields,
+      updatedAt: new Date().toISOString()
+    }));
+  } catch (error) {
+    console.warn("Could not save the onboarding draft on this device.", error);
+  }
+}
+
+function restoreInviteDraft() {
+  const form = inviteForm();
+  if (!form || !inviteDraftStorageKey || passwordFlow === "recovery") return 0;
+
+  try {
+    const draft = JSON.parse(window.localStorage.getItem(inviteDraftStorageKey) || "null");
+    if (!draft || draft.version !== 1 || !draft.fields || typeof draft.fields !== "object") return 0;
+
+    inviteDraftFieldNames.forEach((name) => {
+      if (typeof draft.fields[name] !== "string") return;
+      const controls = Array.from(form.querySelectorAll(`[name="${name}"]`));
+      controls.forEach((control) => {
+        if (control.type === "radio") control.checked = control.value === draft.fields[name];
+        else control.value = draft.fields[name];
+      });
+    });
+
+    invitePasswordSaved = draft.accountComplete === true;
+    const restoredStep = Number.parseInt(draft.activeStep, 10);
+    if (!invitePasswordSaved) return 0;
+    return Math.min(Math.max(Number.isFinite(restoredStep) ? restoredStep : 1, 1), inviteSteps.length - 1);
+  } catch (error) {
+    console.warn("Could not restore the onboarding draft on this device.", error);
+    return 0;
+  }
+}
+
+function clearInviteDraft() {
+  if (!inviteDraftStorageKey) return;
+  try {
+    window.localStorage.removeItem(inviteDraftStorageKey);
+  } catch (error) {
+    console.warn("Could not clear the onboarding draft on this device.", error);
+  }
 }
 
 function inviteField(name) {
@@ -300,6 +378,7 @@ async function saveInvitePassword() {
   }
 
   invitePasswordSaved = true;
+  saveInviteDraft();
   await notifyPasswordCreated();
   if (passwordFlow === "recovery") {
     setInviteStatus("Password saved. Returning to login...");
@@ -333,11 +412,17 @@ async function advanceInviteStep() {
     if (!validateInviteFitness()) return;
     syncInviteMacroDefaults();
   }
-  if (activeInviteStep < inviteSteps.length - 1) renderInviteStep(activeInviteStep + 1, "forward");
+  if (activeInviteStep < inviteSteps.length - 1) {
+    renderInviteStep(activeInviteStep + 1, "forward");
+    saveInviteDraft();
+  }
 }
 
 function goBackInviteStep() {
-  if (!inviteSubmitting && activeInviteStep > 0) renderInviteStep(activeInviteStep - 1, "back");
+  if (!inviteSubmitting && activeInviteStep > 0) {
+    renderInviteStep(activeInviteStep - 1, "back");
+    saveInviteDraft();
+  }
 }
 
 function inviteOnboardingAnswers(wantsMacros, nutritionPlan = null) {
@@ -416,6 +501,7 @@ async function saveInviteOnboarding() {
     const result = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(result.error || "Could not save your questionnaire.");
 
+    clearInviteDraft();
     setInviteStatus("Setup complete. Opening your dashboard...");
     window.location.href = "client-dashboard.html?v=manual-sessions-1";
   } catch (error) {
@@ -487,11 +573,16 @@ async function prepareInviteSession() {
   }
 
   form.hidden = false;
+  inviteDraftStorageKey = `fwb-client-onboarding-draft:${data.session.user.id}`;
   window.history.replaceState({}, document.title, window.location.pathname);
   if (passwordFlow === "recovery") setInviteRecoveryMode();
   if (passwordFlow === "account-setup") setInviteAccountSetupMode();
-  renderInviteStep(0);
-  setInviteStatus("Choose a password with at least 8 characters.");
+  const restoredStep = restoreInviteDraft();
+  renderInviteStep(restoredStep);
+  renderInviteMacroTarget();
+  setInviteStatus(restoredStep > 0
+    ? "Your saved answers were restored from this device."
+    : "Choose a password with at least 8 characters.");
 }
 
 function handleInviteOnboarding() {
@@ -511,10 +602,12 @@ function handleInviteOnboarding() {
   });
   form.addEventListener("input", (event) => {
     if (event.target.closest('[data-invite-step="macros"], [data-invite-step="fitness"]')) renderInviteMacroTarget();
+    saveInviteDraft();
   });
   form.addEventListener("change", (event) => {
     if (event.target.name === "wants_macros") renderInviteMacroTarget();
     if (event.target.name === "fitness_goal" || event.target.name === "training_days") syncInviteMacroDefaults();
+    saveInviteDraft();
   });
   deck?.addEventListener("touchstart", (event) => {
     inviteTouchStartX = event.touches[0]?.clientX ?? null;

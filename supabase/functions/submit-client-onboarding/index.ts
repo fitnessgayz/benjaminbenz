@@ -84,6 +84,21 @@ function normalizeEmail(value: unknown) {
   return stringValue(value).toLowerCase();
 }
 
+function canonicalJson(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(canonicalJson);
+  if (!value || typeof value !== "object") return value;
+  return Object.keys(value as Record<string, unknown>)
+    .sort()
+    .reduce<Record<string, unknown>>((result, key) => {
+      result[key] = canonicalJson((value as Record<string, unknown>)[key]);
+      return result;
+    }, {});
+}
+
+function jsonValuesMatch(left: unknown, right: unknown) {
+  return JSON.stringify(canonicalJson(left)) === JSON.stringify(canonicalJson(right));
+}
+
 function sanitizeStringObject(value: unknown, limits: Map<string, number>) {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
   const source = value as Record<string, unknown>;
@@ -227,14 +242,34 @@ serve(async (request) => {
     };
   }
 
-  const { error: profileError } = await adminClient
+  const { data: savedProfile, error: profileError } = await adminClient
     .from("client_programs")
     .update(profileUpdate)
-    .eq("id", program.id);
-  if (profileError) return jsonResponse(request, { error: "Your client profile could not be updated." }, 500);
+    .eq("id", program.id)
+    .select("height,starting_weight,starting_bodyfat,fitness_goal,nutrition_plan")
+    .single();
+  if (
+    profileError ||
+    !savedProfile ||
+    stringValue(savedProfile.height) !== height ||
+    stringValue(savedProfile.starting_weight) !== startingWeight ||
+    stringValue(savedProfile.fitness_goal) !== fitnessGoal ||
+    (startingBodyfat && stringValue(savedProfile.starting_bodyfat) !== startingBodyfat)
+  ) {
+    return jsonResponse(request, { error: "Your client profile could not be confirmed after saving. Try again." }, 500);
+  }
+  if (answers.macro_estimate_requested === true) {
+    const savedNutrition = savedProfile.nutrition_plan && typeof savedProfile.nutrition_plan === "object"
+      ? savedProfile.nutrition_plan as Record<string, unknown>
+      : {};
+    const expectedNutrition = answers.macro_estimate as Record<string, string>;
+    if (["calories", "protein", "carbs", "fat"].some((key) => savedNutrition[key] !== expectedNutrition[key])) {
+      return jsonResponse(request, { error: "Your nutrition targets could not be confirmed after saving. Try again." }, 500);
+    }
+  }
 
   const now = new Date().toISOString();
-  const { error: questionnaireError } = await adminClient
+  const { data: savedQuestionnaire, error: questionnaireError } = await adminClient
     .from("client_fitness_questionnaires")
     .upsert({
       source: "client_portal",
@@ -248,9 +283,18 @@ serve(async (request) => {
       answers,
       profile_imported_at: now,
       updated_at: now
-    }, { onConflict: "source,source_submission_id" });
-  if (questionnaireError) {
-    return jsonResponse(request, { error: "Your questionnaire could not be saved. Try again." }, 500);
+    }, { onConflict: "source,source_submission_id" })
+    .select("id,linked_user_id,linked_client_email,match_status,answers")
+    .single();
+  if (
+    questionnaireError ||
+    !savedQuestionnaire?.id ||
+    savedQuestionnaire.linked_user_id !== user.id ||
+    normalizeEmail(savedQuestionnaire.linked_client_email) !== email ||
+    savedQuestionnaire.match_status !== "matched" ||
+    !jsonValuesMatch(savedQuestionnaire.answers, answers)
+  ) {
+    return jsonResponse(request, { error: "Your questionnaire could not be confirmed after saving. Try again." }, 500);
   }
 
   return jsonResponse(request, { message: "Account setup and questionnaire saved." });
