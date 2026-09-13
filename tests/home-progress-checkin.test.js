@@ -48,3 +48,16 @@ test("monthly report returns focus to the Home or Progress link that opened it",
   assert.match(portal, /monthlyReportReturnFocus = returnFocus \|\| document\.activeElement/);
   assert.match(portal, /monthlyReportReturnFocus\?\.focus\?\.\(\)/);
 });
+
+test("Home report dialog is outside hidden dashboard panels", () => {
+  const dialogIndex = dashboard.indexOf('id="client-monthly-report-dialog"');
+  const lastPanelIndex = dashboard.lastIndexOf('data-client-dashboard-panel=', dialogIndex);
+  const lastPanelCloseIndex = dashboard.indexOf("</section>", lastPanelIndex);
+
+  assert.notEqual(dialogIndex, -1);
+  assert.notEqual(lastPanelIndex, -1);
+  assert.notEqual(lastPanelCloseIndex, -1);
+  assert.ok(lastPanelCloseIndex < dialogIndex);
+  assert.match(portal, /openLink[\s\S]*?openMonthlyProgressReport/);
+  assert.match(portal, /dialog\.showModal\(\)/);
+});
