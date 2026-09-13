@@ -30,7 +30,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=client-home-signout-1" />
+  <link rel="stylesheet" href="css/style.css?v=collapsible-client-nav-1" />
   <link rel="stylesheet" href="css/custom-workout-mobile-fix.css?v=exercise-title-wrap-italic-5" />
 </head>
 <body class="dashboard-page client-dashboard-page is-loading">
@@ -43,7 +43,19 @@
 
     <div id="dashboard-content" hidden>
       <section class="dashboard-grid" id="client-dashboard-grid" aria-label="Client program dashboard">
-        <nav class="client-dashboard-tabs" aria-label="Client dashboard sections">
+        <button
+          class="client-dashboard-mobile-nav-toggle"
+          type="button"
+          aria-label="Open navigation, Home selected"
+          aria-controls="client-dashboard-navigation"
+          aria-expanded="false"
+          data-client-mobile-nav-toggle
+        >
+          <span class="client-dashboard-mobile-nav-icon-wrap" data-client-mobile-nav-icon>
+            <svg class="client-dashboard-mobile-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10.5V20h14v-9.5"/><path d="M9 20v-6h6v6"/></svg>
+          </span>
+        </button>
+        <nav class="client-dashboard-tabs" id="client-dashboard-navigation" aria-label="Client dashboard sections">
           <p class="client-dashboard-nav-title">Your app</p>
           <button class="client-dashboard-tab is-active" type="button" data-client-dashboard-tab="home" aria-current="page" aria-label="Home">
             <svg class="client-dashboard-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10.5V20h14v-9.5"/><path d="M9 20v-6h6v6"/></svg>
@@ -766,6 +778,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js?v=manual-sessions-1"></script>
   <script src="js/exercise-name-matcher.js?v=exercise-consolidation-1"></script>
-  <script src="js/client-portal.js?v=client-home-signout-1"></script>
+  <script src="js/client-portal.js?v=collapsible-client-nav-1"></script>
 </body>
 </html>

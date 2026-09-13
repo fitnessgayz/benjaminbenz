@@ -9969,6 +9969,92 @@ function handleClientDashboardSidebar() {
   }
 }
 
+function syncClientDashboardMobileNavigationIcon(tabName = activeClientDashboardTab) {
+  const toggle = document.querySelector("[data-client-mobile-nav-toggle]");
+  const iconHost = toggle?.querySelector("[data-client-mobile-nav-icon]");
+  const tabs = Array.from(document.querySelectorAll("[data-client-dashboard-tab]"));
+  const selectedTab = tabs.find((tab) => tab.dataset.clientDashboardTab === tabName)
+    || tabs.find((tab) => tab.classList.contains("is-active"));
+  const selectedIcon = selectedTab?.querySelector(".client-dashboard-tab-icon");
+
+  if (!toggle || !iconHost || !selectedTab || !selectedIcon) {
+    return;
+  }
+
+  const icon = selectedIcon.cloneNode(true);
+  const selectedLabel = selectedTab.getAttribute("aria-label") || "Selected tab";
+
+  icon.classList.remove("client-dashboard-tab-icon");
+  icon.classList.add("client-dashboard-mobile-nav-icon");
+  iconHost.replaceChildren(icon);
+  toggle.setAttribute("aria-label", `Open navigation, ${selectedLabel} selected`);
+}
+
+function setClientDashboardMobileNavigationExpanded(expanded, options = {}) {
+  const navigation = document.querySelector(".client-dashboard-tabs");
+  const toggle = document.querySelector("[data-client-mobile-nav-toggle]");
+  const mobileNavigation = window.matchMedia?.("(max-width: 900px)")?.matches ?? false;
+  const isExpanded = mobileNavigation && Boolean(expanded);
+
+  if (!navigation || !toggle) {
+    return;
+  }
+
+  toggle.hidden = !mobileNavigation || isExpanded;
+  toggle.setAttribute("aria-expanded", String(isExpanded));
+  navigation.classList.toggle("is-mobile-expanded", isExpanded);
+  document.body.classList.toggle("client-dashboard-mobile-nav-expanded", isExpanded);
+
+  if (mobileNavigation) {
+    if (!isExpanded && options.focusToggle) {
+      toggle.focus({ preventScroll: true });
+    }
+    navigation.inert = !isExpanded;
+    navigation.setAttribute("aria-hidden", String(!isExpanded));
+  } else {
+    navigation.inert = false;
+    navigation.removeAttribute("aria-hidden");
+  }
+
+  if (isExpanded && options.focusNavigation) {
+    navigation.querySelector(".client-dashboard-tab.is-active")?.focus({ preventScroll: true });
+  }
+
+  window.requestAnimationFrame?.(() => applyWorkoutElapsedTimerPosition());
+}
+
+function handleClientDashboardMobileNavigation() {
+  const toggle = document.querySelector("[data-client-mobile-nav-toggle]");
+  const mobileQuery = window.matchMedia?.("(max-width: 900px)");
+
+  if (!toggle || !mobileQuery) {
+    return;
+  }
+
+  syncClientDashboardMobileNavigationIcon();
+  setClientDashboardMobileNavigationExpanded(false);
+
+  toggle.addEventListener("click", () => {
+    setClientDashboardMobileNavigationExpanded(true, { focusNavigation: true });
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && mobileQuery.matches) {
+      setClientDashboardMobileNavigationExpanded(false, { focusToggle: true });
+    }
+  });
+
+  const handleMobileChange = () => {
+    setClientDashboardMobileNavigationExpanded(false);
+  };
+
+  if (typeof mobileQuery.addEventListener === "function") {
+    mobileQuery.addEventListener("change", handleMobileChange);
+  } else if (typeof mobileQuery.addListener === "function") {
+    mobileQuery.addListener(handleMobileChange);
+  }
+}
+
 function setClientDashboardTab(tabName) {
   const nextTab = tabName || "home";
   const tabs = document.querySelectorAll("[data-client-dashboard-tab]");
@@ -9985,6 +10071,7 @@ function setClientDashboardTab(tabName) {
       button.removeAttribute("aria-current");
     }
   });
+  syncClientDashboardMobileNavigationIcon(nextTab);
   panels.forEach((panel) => {
     const isActive = panel.dataset.clientDashboardPanel === nextTab;
 
@@ -10643,6 +10730,7 @@ function handleClientDashboardTabs() {
     }
 
     setClientDashboardTab(tab.dataset.clientDashboardTab);
+    setClientDashboardMobileNavigationExpanded(false, { focusToggle: true });
     if (tab.dataset.clientDashboardTab === "home") {
       window.requestAnimationFrame?.(() => maybeShowClientHomeCheckinPrompt());
     }
@@ -12429,6 +12517,7 @@ function disableClientDashboardZoom() {
 
 disableClientDashboardZoom();
 handleClientDashboardSidebar();
+handleClientDashboardMobileNavigation();
 handleLogin();
 handleCoachPortalLogin();
 handlePasswordResetRequests();

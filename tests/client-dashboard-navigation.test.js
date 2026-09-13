@@ -100,6 +100,38 @@ test("keeps the eight-column safe-area bottom dock on mobile and hides desktop-o
   assert.match(mobileStyles, /\.client-dashboard-tab-label,[\s\S]*?\.client-dashboard-nav-title,[\s\S]*?\.client-dashboard-sidebar-toggle\s*\{[^}]*display:\s*none !important/s);
 });
 
+test("collapses mobile navigation to the selected destination icon", () => {
+  const mobileStyles = sourceBetween("@media (max-width: 900px)", "@media (max-width: 420px)");
+  const syncSource = sourceForFunction("syncClientDashboardMobileNavigationIcon");
+  const setMobileSource = sourceForFunction("setClientDashboardMobileNavigationExpanded");
+  const handlerSource = sourceForFunction("handleClientDashboardMobileNavigation");
+  const tabHandlerSource = sourceForFunction("handleClientDashboardTabs");
+
+  assert.match(dashboardHtml, /class="client-dashboard-mobile-nav-toggle"[\s\S]*?aria-label="Open navigation, Home selected"[\s\S]*?aria-controls="client-dashboard-navigation"[\s\S]*?data-client-mobile-nav-toggle/);
+  assert.match(dashboardHtml, /<nav class="client-dashboard-tabs" id="client-dashboard-navigation"/);
+  assert.match(mobileStyles, /\.client-dashboard-mobile-nav-toggle\s*\{[^}]*position:\s*fixed[^}]*left:\s*12px[^}]*width:\s*62px[^}]*height:\s*62px/s);
+  assert.match(mobileStyles, /\.client-dashboard-tabs\s*\{[^}]*visibility:\s*hidden[^}]*opacity:\s*0[^}]*pointer-events:\s*none[^}]*scale\(\.72\)/s);
+  assert.match(mobileStyles, /\.client-dashboard-tabs\.is-mobile-expanded\s*\{[^}]*visibility:\s*visible[^}]*opacity:\s*1[^}]*pointer-events:\s*auto/s);
+  assert.match(syncSource, /selectedIcon\.cloneNode\(true\)/);
+  assert.match(syncSource, /iconHost\.replaceChildren\(icon\)/);
+  assert.match(syncSource, /`Open navigation, \$\{selectedLabel\} selected`/);
+  assert.match(setMobileSource, /navigation\.inert = !isExpanded/);
+  assert.match(setMobileSource, /navigation\.setAttribute\("aria-hidden", String\(!isExpanded\)\)/);
+  assert.match(handlerSource, /setClientDashboardMobileNavigationExpanded\(true, \{ focusNavigation: true \}\)/);
+  assert.match(tabHandlerSource, /setClientDashboardMobileNavigationExpanded\(false, \{ focusToggle: true \}\)/);
+  assert.match(portalSource, /handleClientDashboardMobileNavigation\(\);/);
+});
+
+test("uses the approved balanced icon scale in the expanded mobile dock", () => {
+  const mobileStyles = sourceBetween("@media (max-width: 900px)", "@media (max-width: 420px)");
+  const narrowStyles = sourceBetween("@media (max-width: 420px)", "@media (prefers-reduced-motion: reduce)");
+
+  assert.match(mobileStyles, /\.client-dashboard-tab-icon\s*\{[^}]*width:\s*30px[^}]*height:\s*30px[^}]*padding:\s*1px/s);
+  assert.match(mobileStyles, /\.client-dashboard-tab\.is-active \.client-dashboard-tab-icon\s*\{[^}]*width:\s*42px[^}]*height:\s*42px[^}]*padding:\s*7px/s);
+  assert.match(narrowStyles, /\.client-dashboard-tab-icon\s*\{[^}]*width:\s*28px[^}]*height:\s*28px/s);
+  assert.match(narrowStyles, /\.client-dashboard-tab\.is-active \.client-dashboard-tab-icon\s*\{[^}]*width:\s*40px[^}]*height:\s*40px/s);
+});
+
 test("restores, persists, and exposes the desktop sidebar state accessibly", () => {
   const restoreSource = sourceForFunction("storedClientDashboardSidebarCollapsed");
   const persistSource = sourceForFunction("persistClientDashboardSidebarCollapsed");
