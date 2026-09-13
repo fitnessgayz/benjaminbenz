@@ -675,6 +675,154 @@ if (homeTabLinks.length && homeTabPanels.length) {
 const questionnaire = document.getElementById("training-questionnaire");
 
 if (questionnaire) {
+  const questionnaireConfig = window.FWB_SUPABASE_CONFIG || {};
+  const questionnaireSupabaseClient = questionnaireConfig.url &&
+    questionnaireConfig.anonKey &&
+    window.supabase
+    ? window.supabase.createClient(questionnaireConfig.url, questionnaireConfig.anonKey)
+    : null;
+  const questionnaireAnswerKeys = [
+    "date_of_birth",
+    "phone",
+    "home_address",
+    "address_line_2",
+    "address_city",
+    "address_state",
+    "address_zip",
+    "preferred_communication",
+    "service_interest",
+    "heart_condition",
+    "chest_pain_activity",
+    "chest_pain_rest",
+    "bone_joint_problem",
+    "other_activity_reason",
+    "comfortable_fitness_history",
+    "fitness_goals",
+    "goal_timeline",
+    "why_now",
+    "goal_plan",
+    "daily_nutrition",
+    "fitness_apps",
+    "commitment_level",
+    "ready_for_change",
+    "occupation",
+    "repetitive_movements",
+    "work_stress",
+    "recreational_activities",
+    "hobbies",
+    "pain_or_injuries",
+    "surgeries",
+    "sleep_schedule",
+    "home_equipment",
+    "availability_days",
+    "availability_times",
+    "additional_notes"
+  ];
+  let questionnaireSignedInUser = null;
+
+  function normalizeQuestionnaireEmail(value) {
+    return String(value || "").trim().toLowerCase();
+  }
+
+  function questionnaireSubmissionId() {
+    if (window.crypto?.randomUUID) {
+      return window.crypto.randomUUID();
+    }
+
+    const bytes = new Uint8Array(16);
+    window.crypto.getRandomValues(bytes);
+    bytes[6] = (bytes[6] & 0x0f) | 0x40;
+    bytes[8] = (bytes[8] & 0x3f) | 0x80;
+    const hex = Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0"));
+
+    return `${hex.slice(0, 4).join("")}-${hex.slice(4, 6).join("")}-${hex.slice(6, 8).join("")}-${hex.slice(8, 10).join("")}-${hex.slice(10).join("")}`;
+  }
+
+  function questionnaireAnswers(formData) {
+    return questionnaireAnswerKeys.reduce((answers, key) => {
+      if (key === "availability_days") {
+        const days = formData.getAll(key).map((value) => String(value || "").trim()).filter(Boolean);
+
+        if (days.length > 0) {
+          answers[key] = days;
+        }
+        return answers;
+      }
+
+      const value = String(formData.get(key) || "").trim();
+
+      if (value) {
+        answers[key] = value;
+      }
+      return answers;
+    }, {});
+  }
+
+  function questionnaireAccountName(user) {
+    const metadata = user?.user_metadata || {};
+
+    return String(
+      metadata.client_name ||
+      metadata.full_name ||
+      metadata.name ||
+      ""
+    ).trim();
+  }
+
+  async function verifiedQuestionnaireUser() {
+    if (!questionnaireSupabaseClient) {
+      return null;
+    }
+
+    const { data: sessionData } = await questionnaireSupabaseClient.auth.getSession();
+
+    if (!sessionData.session) {
+      questionnaireSignedInUser = null;
+      return null;
+    }
+
+    const { data: userData, error } = await questionnaireSupabaseClient.auth.getUser();
+
+    questionnaireSignedInUser = error || !userData.user?.email ? null : userData.user;
+    return questionnaireSignedInUser;
+  }
+
+  async function prefillQuestionnaireAccount(user) {
+    const emailInput = questionnaire.elements.email;
+    const nameInput = questionnaire.elements.name;
+    const signedInEmail = String(user?.email || "").trim();
+
+    if (!signedInEmail || !emailInput || !nameInput) {
+      return;
+    }
+
+    emailInput.value = signedInEmail;
+    let clientName = questionnaireAccountName(user);
+
+    if (!clientName && questionnaireSupabaseClient) {
+      const { data: programs } = await questionnaireSupabaseClient
+        .from("client_programs")
+        .select("client_name,client_email,updated_at")
+        .eq("client_archived", false)
+        .ilike("client_email", signedInEmail)
+        .order("updated_at", { ascending: false })
+        .limit(1);
+      const exactProgram = (programs || []).find(
+        (program) => normalizeQuestionnaireEmail(program.client_email) === normalizeQuestionnaireEmail(signedInEmail)
+      );
+
+      clientName = String(exactProgram?.client_name || "").trim();
+    }
+
+    if (clientName) {
+      nameInput.value = clientName;
+    }
+  }
+
+  verifiedQuestionnaireUser()
+    .then((user) => prefillQuestionnaireAccount(user))
+    .catch(() => {});
+
   questionnaire.addEventListener("submit", async (event) => {
     event.preventDefault();
 
@@ -689,17 +837,60 @@ if (questionnaire) {
     }
 
     try {
+      const submissionId = questionnaireSubmissionId();
+      const formData = new FormData(questionnaire);
+      const submittedEmail = normalizeQuestionnaireEmail(formData.get("email"));
+      const respondentName = String(formData.get("name") || "").trim();
+      const answers = questionnaireAnswers(formData);
+
+      formData.set("submission_id", submissionId);
+      formData.set("source", "client_portal");
+
       await fetch(questionnaire.action, {
         method: "POST",
         mode: "no-cors",
-        body: new URLSearchParams(new FormData(questionnaire))
+        body: new URLSearchParams(formData)
       });
 
-      if (status) {
-        status.textContent = "Thanks. Your questionnaire was sent to Benjamin.";
+      const signedInUser = await verifiedQuestionnaireUser().catch(() => null);
+      const signedInEmail = normalizeQuestionnaireEmail(signedInUser?.email);
+      let successMessage = "Thanks. Your questionnaire was sent to Benjamin.";
+
+      if (signedInUser && signedInEmail !== submittedEmail) {
+        successMessage = "Your questionnaire was sent to Benjamin, but it was not linked to your client profile because the form email does not match your signed-in account.";
+      } else if (signedInUser && questionnaireSupabaseClient) {
+        try {
+          const { data: linkedData, error: linkedError } = await questionnaireSupabaseClient.functions.invoke(
+            "submit-fitness-questionnaire",
+            {
+              body: {
+                submission_id: submissionId,
+                email: submittedEmail,
+                name: respondentName,
+                answers
+              }
+            }
+          );
+
+          if (linkedError || linkedData?.error) {
+            successMessage = "Your questionnaire was sent to Benjamin, but the private client-profile copy could not be added. Benjamin can link it safely from your submitted response.";
+          } else if (linkedData?.profile_import_warning) {
+            successMessage = "Your questionnaire was sent and linked to your client profile. Some empty profile details could not be filled automatically.";
+          } else {
+            successMessage = "Thanks. Your questionnaire was sent to Benjamin and linked to your client profile.";
+          }
+        } catch (_error) {
+          successMessage = "Your questionnaire was sent to Benjamin, but the private client-profile copy could not be added. Benjamin can link it safely from your submitted response.";
+        }
       }
 
       questionnaire.reset();
+      if (signedInUser) {
+        await prefillQuestionnaireAccount(signedInUser).catch(() => {});
+      }
+      if (status) {
+        status.textContent = successMessage;
+      }
     } catch (error) {
       if (status) {
         status.textContent = "Something went wrong. Please email fwb@benjaminbenz.com.";

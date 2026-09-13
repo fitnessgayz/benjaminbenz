@@ -25,27 +25,28 @@ function sourceBetween(startMarker, endMarker) {
   return styleSource.slice(start, end);
 }
 
-test("scopes the client navigation styles and cache-busts the workout deck update", () => {
+test("scopes the client navigation styles and cache-busts dashboard assets", () => {
   assert.match(dashboardHtml, /<body class="dashboard-page client-dashboard-page is-loading">/);
-  assert.match(dashboardHtml, /href="css\/style\.css\?v=custom-workout-first-1"/);
-  assert.match(dashboardHtml, /src="js\/client-portal\.js\?v=exercise-title-swipe-1"/);
+  assert.match(dashboardHtml, /href="css\/style\.css\?v=[^"\s]+"/);
+  assert.match(dashboardHtml, /src="js\/client-portal\.js\?v=[^"\s]+"/);
   assert.match(styleSource, /body\.client-dashboard-page\s*\{[^}]*padding-bottom:\s*0;/s);
 });
 
-test("renders six labeled client destinations in order with current-page semantics", () => {
+test("renders seven labeled client destinations in order with current-page semantics", () => {
   const navStart = dashboardHtml.indexOf('<nav class="client-dashboard-tabs"');
   const navEnd = dashboardHtml.indexOf("</nav>", navStart);
   const navMarkup = dashboardHtml.slice(navStart, navEnd);
   const buttons = [...navMarkup.matchAll(/<button\b([^>]*data-client-dashboard-tab="([^"]+)"[^>]*)>([\s\S]*?)<\/button>/g)];
 
   assert.ok(navStart >= 0);
-  assert.equal(buttons.length, 6);
+  assert.equal(buttons.length, 7);
   assert.deepEqual(buttons.map((match) => match[2]), [
     "home",
     "workouts",
     "logs",
     "nutrition",
     "progress",
+    "questionnaire",
     "sessions"
   ]);
   assert.deepEqual(buttons.map((match) => match[1].match(/aria-label="([^"]+)"/)?.[1]), [
@@ -54,6 +55,7 @@ test("renders six labeled client destinations in order with current-page semanti
     "Logs",
     "Food",
     "Profile and progress",
+    "Fitness questionnaire",
     "Sessions"
   ]);
   assert.deepEqual(buttons.map((match) => match[3].match(/client-dashboard-tab-label">([^<]+)</)?.[1]), [
@@ -62,6 +64,7 @@ test("renders six labeled client destinations in order with current-page semanti
     "Logs",
     "Food",
     "Progress",
+    "Questionnaire",
     "Sessions"
   ]);
   assert.equal(buttons.filter((match) => /aria-current="page"/.test(match[1])).length, 1);
@@ -83,11 +86,11 @@ test("uses a sticky 240px desktop sidebar with a persistent 78px icon rail", () 
   assert.match(dashboardHtml, /client-dashboard-sidebar-toggle-label">Minimize</);
 });
 
-test("keeps the six-column safe-area bottom dock on mobile and hides desktop-only labels", () => {
+test("keeps the seven-column safe-area bottom dock on mobile and hides desktop-only labels", () => {
   const mobileStyles = sourceBetween("@media (max-width: 900px)", "@media (max-width: 420px)");
 
   assert.match(mobileStyles, /body\.client-dashboard-page\s*\{[^}]*padding-bottom:\s*calc\(94px \+ env\(safe-area-inset-bottom\)\)/s);
-  assert.match(mobileStyles, /\.dashboard-page \.client-dashboard-tabs\s*\{[^}]*position:\s*fixed[^}]*bottom:\s*calc\(10px \+ env\(safe-area-inset-bottom\)\)[^}]*grid-template-columns:\s*repeat\(6, minmax\(0, 1fr\)\)[^}]*width:\s*min\(720px, calc\(100% - 24px\)\)/s);
+  assert.match(mobileStyles, /\.dashboard-page \.client-dashboard-tabs\s*\{[^}]*position:\s*fixed[^}]*bottom:\s*calc\(10px \+ env\(safe-area-inset-bottom\)\)[^}]*grid-template-columns:\s*repeat\(7, minmax\(0, 1fr\)\)[^}]*width:\s*min\(720px, calc\(100% - 24px\)\)/s);
   assert.match(mobileStyles, /\.client-dashboard-tab\.is-active \.client-dashboard-tab-icon\s*\{[^}]*color:\s*var\(--lime\)[^}]*background:\s*var\(--black\)[^}]*border-radius:\s*50%/s);
   assert.match(mobileStyles, /\.client-dashboard-tab-label,[\s\S]*?\.client-dashboard-nav-title,[\s\S]*?\.client-dashboard-sidebar-toggle\s*\{[^}]*display:\s*none !important/s);
 });

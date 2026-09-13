@@ -19,6 +19,7 @@ let foodLogs = [];
 let foodSearchResults = [];
 let progressEntries = [];
 let progressPhotos = [];
+let clientQuestionnaire = null;
 let activeDashboardUser = null;
 let activeProgressMetric = "bodyweight";
 let clientTrainingLogDateFilter = "";
@@ -43,6 +44,90 @@ const customWorkoutFormats = {
     guide: "Complete one set of every exercise in order, then begin the next round."
   }
 };
+const clientQuestionnaireQuestionGroups = [
+  {
+    title: "Contact",
+    questions: [
+      { label: "Date of birth", keys: ["date_of_birth", "Date of Birth"] },
+      { label: "Phone number", keys: ["phone", "phone_number", "Phone Number"] },
+      { label: "Home address", keys: ["home_address", "Home Address"] },
+      { label: "Apartment, suite, or unit", keys: ["address_line_2"] },
+      { label: "City", keys: ["address_city"] },
+      { label: "State", keys: ["address_state"] },
+      { label: "ZIP", keys: ["address_zip"] },
+      { label: "Preferred communication", keys: ["preferred_communication", "Preferred Communication"] },
+      { label: "Coaching service", keys: ["service_interest", "Which coaching service are you interested in?"] }
+    ]
+  },
+  {
+    title: "Readiness",
+    questions: [
+      {
+        label: "Has a doctor recommended only doctor-approved physical activity?",
+        keys: ["heart_condition", "Doctor recommended physical activity only?"]
+      },
+      {
+        label: "Chest pain during physical activity?",
+        keys: ["chest_pain_activity", "Chest pain during physical activity?"]
+      },
+      {
+        label: "Chest pain at rest in the past month?",
+        keys: ["chest_pain_rest", "Chest pain at rest in the past month?"]
+      },
+      {
+        label: "Bone or joint problem that activity could worsen?",
+        keys: ["bone_joint_problem", "Bone or joint problem?"]
+      },
+      {
+        label: "Any other reason not to engage in physical activity?",
+        keys: ["other_activity_reason", "Other reason not to engage in physical activity?"]
+      }
+    ]
+  },
+  {
+    title: "Goals",
+    questions: [
+      {
+        label: "Fitness history",
+        keys: ["comfortable_fitness_history", "Comfortable fitness history"]
+      },
+      { label: "Fitness goals and why", keys: ["fitness_goals", "Fitness goals and why"] },
+      { label: "Goal timeline", keys: ["goal_timeline", "Goal timeline"] },
+      { label: "Why now", keys: ["why_now", "Why now"] },
+      { label: "Plan for achieving goals", keys: ["goal_plan", "Plan for achieving goals"] },
+      { label: "Daily nutrition", keys: ["daily_nutrition", "Daily nutrition"] },
+      { label: "Fitness apps", keys: ["fitness_apps", "Fitness apps"] },
+      { label: "Commitment level", keys: ["commitment_level", "Commitment level"] },
+      { label: "Ready for a change today?", keys: ["ready_for_change", "Ready for a change today?"] }
+    ]
+  },
+  {
+    title: "Lifestyle",
+    questions: [
+      { label: "Occupation", keys: ["occupation", "Occupation"] },
+      { label: "Repetitive movements at work", keys: ["repetitive_movements", "Repetitive movements at work"] },
+      { label: "Work anxiety or mental stress", keys: ["work_stress", "Work anxiety or mental stress"] },
+      { label: "Recreational activities", keys: ["recreational_activities", "Recreational activities"] },
+      { label: "Hobbies", keys: ["hobbies", "Hobbies"] },
+      { label: "Pain or injuries", keys: ["pain_or_injuries", "Pain or injuries"] },
+      { label: "Surgeries", keys: ["surgeries", "Surgeries"] },
+      { label: "Sleep schedule", keys: ["sleep_schedule", "Sleep schedule"] }
+    ]
+  },
+  {
+    title: "Training logistics",
+    questions: [
+      {
+        label: "Able to train at Castro Fitness, Market Street?",
+        keys: ["castro_fitness", "Able to train at Castro Fitness, Market Street?"]
+      },
+      { label: "Home workout equipment", keys: ["home_equipment", "Home workout equipment"] },
+      { label: "Preferred days", keys: ["availability_days", "Availability by day"] },
+      { label: "Preferred days and times", keys: ["availability_times", "Availability by time"] },
+      { label: "Anything else", keys: ["additional_notes", "Anything else"] }
+    ]
+  }
+];
 const workoutCompletionMessages = [
   "Congratulations for completing the workout!",
   "Workout complete—great work!",
@@ -2029,6 +2114,288 @@ function renderClientExerciseProgress(logs = trainingLogs) {
       </article>
     `;
   }).join("");
+}
+
+function normalizeQuestionnaireAnswerKey(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "");
+}
+
+function questionnaireAnswersObject(value) {
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    return value;
+  }
+
+  if (typeof value !== "string") {
+    return {};
+  }
+
+  try {
+    const parsed = JSON.parse(value);
+
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
+  } catch (error) {
+    return {};
+  }
+}
+
+function questionnaireAnswerText(value) {
+  if (value === null || value === undefined) {
+    return "";
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((item) => String(item || "").trim()).filter(Boolean).join(", ");
+  }
+
+  if (typeof value === "object") {
+    try {
+      return Object.keys(value).length ? JSON.stringify(value) : "";
+    } catch (error) {
+      return "";
+    }
+  }
+
+  return String(value).trim();
+}
+
+function questionnaireAnswerLabel(key) {
+  const text = String(key || "")
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  return text ? `${text.charAt(0).toUpperCase()}${text.slice(1)}` : "Additional detail";
+}
+
+function questionnaireDisplayGroups(answersValue) {
+  const answers = questionnaireAnswersObject(answersValue);
+  const indexedAnswers = new Map();
+
+  Object.entries(answers).forEach(([key, value]) => {
+    const normalizedKey = normalizeQuestionnaireAnswerKey(key);
+    const text = questionnaireAnswerText(value);
+
+    if (normalizedKey && text && !indexedAnswers.has(normalizedKey)) {
+      indexedAnswers.set(normalizedKey, { key, text });
+    }
+  });
+
+  const usedKeys = new Set();
+  const groups = clientQuestionnaireQuestionGroups.map((group) => {
+    const questions = group.questions.reduce((items, question) => {
+      const match = question.keys
+        .map((key) => normalizeQuestionnaireAnswerKey(key))
+        .map((key) => indexedAnswers.get(key))
+        .find(Boolean);
+
+      if (match) {
+        usedKeys.add(normalizeQuestionnaireAnswerKey(match.key));
+        items.push({ label: question.label, response: match.text });
+      }
+
+      return items;
+    }, []);
+
+    return { title: group.title, questions };
+  }).filter((group) => group.questions.length > 0);
+  const ignoredKeys = new Set([
+    "submittedat",
+    "submissionid",
+    "source",
+    "email",
+    "name",
+    "respondentemail",
+    "respondentname"
+  ]);
+  const additionalQuestions = [];
+
+  indexedAnswers.forEach((answer, normalizedKey) => {
+    if (!usedKeys.has(normalizedKey) && !ignoredKeys.has(normalizedKey)) {
+      additionalQuestions.push({
+        label: questionnaireAnswerLabel(answer.key),
+        response: answer.text
+      });
+    }
+  });
+
+  if (additionalQuestions.length > 0) {
+    groups.push({ title: "Additional details", questions: additionalQuestions });
+  }
+
+  return groups;
+}
+
+function formatQuestionnaireSubmittedAt(value) {
+  const date = new Date(value);
+
+  if (!value || Number.isNaN(date.getTime())) {
+    return value ? String(value) : "Date not available";
+  }
+
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric"
+  });
+}
+
+function questionnaireStateElement(className, title, message, includeLink = false) {
+  const state = document.createElement("div");
+  const heading = document.createElement("h3");
+  const description = document.createElement("p");
+
+  state.className = className;
+  heading.textContent = title;
+  description.textContent = message;
+  state.append(heading, description);
+
+  if (includeLink) {
+    const link = document.createElement("a");
+
+    link.className = "button button-accent";
+    link.href = "questionnaire.html?return=client";
+    link.textContent = "Complete fitness questionnaire";
+    state.append(link);
+  }
+
+  return state;
+}
+
+function renderClientQuestionnaire(record, state = "available") {
+  const container = document.getElementById("client-questionnaire-record");
+  const status = document.getElementById("client-questionnaire-status");
+
+  if (!container) {
+    clientQuestionnaire = state === "available" ? record || null : null;
+    return;
+  }
+
+  clientQuestionnaire = state === "available" ? record || null : null;
+  container.replaceChildren();
+  container.setAttribute("aria-busy", state === "loading" ? "true" : "false");
+
+  if (state === "loading") {
+    if (status) {
+      status.textContent = "Loading";
+    }
+    container.append(questionnaireStateElement(
+      "client-questionnaire-loading",
+      "Loading your questionnaire",
+      "Checking for a fitness questionnaire linked to your account."
+    ));
+    return;
+  }
+
+  if (state === "error") {
+    if (status) {
+      status.textContent = "Unavailable";
+    }
+    container.append(questionnaireStateElement(
+      "client-questionnaire-error",
+      "Questionnaire unavailable",
+      "We could not load your questionnaire right now. Refresh the page or message Benjamin if this continues."
+    ));
+    return;
+  }
+
+  if (!record) {
+    if (status) {
+      status.textContent = "Not submitted";
+    }
+    container.append(questionnaireStateElement(
+      "client-questionnaire-empty",
+      "No questionnaire linked yet",
+      "Complete the fitness questionnaire and use the same email address as your client account.",
+      true
+    ));
+    return;
+  }
+
+  if (status) {
+    status.textContent = "Available";
+  }
+
+  const identity = document.createElement("article");
+  const identityKicker = document.createElement("p");
+  const name = document.createElement("h3");
+  const emailText = String(record.respondent_email || "").trim();
+  const hasValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailText);
+  const email = hasValidEmail
+    ? document.createElement("a")
+    : document.createElement("span");
+  const meta = document.createElement("p");
+
+  identity.className = "client-questionnaire-identity";
+  identityKicker.className = "kicker";
+  identityKicker.textContent = "Questionnaire on file";
+  name.className = "client-questionnaire-name";
+  name.textContent = String(record.respondent_name || "").trim() || "Name not provided";
+  email.className = "client-questionnaire-email";
+  email.textContent = emailText || "Email not provided";
+  if (hasValidEmail) {
+    email.href = `mailto:${emailText}`;
+  }
+  meta.className = "client-questionnaire-meta";
+  meta.textContent = `Submitted ${formatQuestionnaireSubmittedAt(record.submitted_at)}`;
+  identity.append(identityKicker, name, email, meta);
+  container.append(identity);
+
+  const groups = questionnaireDisplayGroups(record.answers);
+
+  if (groups.length === 0) {
+    const emptyAnswers = document.createElement("p");
+
+    emptyAnswers.className = "empty-state client-questionnaire-empty";
+    emptyAnswers.textContent = "This questionnaire is linked, but it does not contain any saved answers.";
+    container.append(emptyAnswers);
+    return;
+  }
+
+  const groupsContainer = document.createElement("div");
+
+  groupsContainer.className = "client-questionnaire-groups";
+  groups.forEach((group) => {
+    const groupElement = document.createElement("section");
+    const groupTitle = document.createElement("h3");
+    const answersElement = document.createElement("div");
+
+    groupElement.className = "client-questionnaire-group";
+    groupTitle.textContent = group.title;
+    answersElement.className = "client-questionnaire-answers";
+
+    group.questions.forEach((question) => {
+      const answer = document.createElement("article");
+      const questionText = document.createElement("p");
+      const response = document.createElement("p");
+
+      answer.className = "client-questionnaire-answer";
+      questionText.className = "client-questionnaire-question";
+      questionText.textContent = question.label;
+      response.className = "client-questionnaire-response";
+      response.textContent = question.response;
+      answer.append(questionText, response);
+      answersElement.append(answer);
+    });
+
+    groupElement.append(groupTitle, answersElement);
+    groupsContainer.append(groupElement);
+  });
+  container.append(groupsContainer);
+}
+
+function clearClientQuestionnaire() {
+  clientQuestionnaire = null;
+  const container = document.getElementById("client-questionnaire-record");
+  const status = document.getElementById("client-questionnaire-status");
+
+  container?.replaceChildren();
+  container?.removeAttribute("aria-busy");
+  if (status) {
+    status.textContent = "";
+  }
 }
 
 function renderProgress(entries) {
@@ -9929,6 +10296,8 @@ async function loadDashboard() {
       return;
     }
 
+    renderClientQuestionnaire(null, "loading");
+
     const { data: programRows, error } = await withTimeout(
       supabaseClient
         .from("client_programs")
@@ -9959,7 +10328,20 @@ async function loadDashboard() {
 
     activeClientEmail = data.client_email || targetClientEmail;
     renderProgram(data);
-    const [progressResult, progressPhotoResult, trainingLogResult, workoutFeedbackResult, foodLogResult, exerciseLibraryResult] = await Promise.allSettled([
+    const questionnaireQuery = supabaseClient
+      .from("client_fitness_questionnaires")
+      .select("id,respondent_email,respondent_name,submitted_at,answers,linked_client_email,match_status,profile_imported_at")
+      .eq("match_status", "matched")
+      .order("submitted_at", { ascending: false })
+      .limit(1);
+
+    if (isCoachDashboardPreview) {
+      questionnaireQuery.ilike("linked_client_email", targetClientEmail);
+    } else {
+      questionnaireQuery.eq("linked_user_id", user.id);
+    }
+
+    const [progressResult, progressPhotoResult, trainingLogResult, workoutFeedbackResult, foodLogResult, exerciseLibraryResult, questionnaireResult] = await Promise.allSettled([
       withTimeout(
         supabaseClient
           .from("client_progress")
@@ -10014,6 +10396,10 @@ async function loadDashboard() {
           .order("sort_order", { ascending: true })
           .order("name", { ascending: true }),
         "Exercise library request timed out."
+      ),
+      withTimeout(
+        questionnaireQuery,
+        "Questionnaire request timed out."
       )
     ]);
 
@@ -10035,12 +10421,20 @@ async function loadDashboard() {
     const exerciseLibraryData = exerciseLibraryResult.status === "fulfilled" && !exerciseLibraryResult.value.error
       ? exerciseLibraryResult.value.data
       : [];
+    const questionnaireData = questionnaireResult.status === "fulfilled" && !questionnaireResult.value.error
+      ? questionnaireResult.value.data
+      : null;
 
     exerciseLibraryEntries = exerciseLibraryData || [];
     workoutSessionFeedback = workoutFeedbackData || [];
 
     renderProgress(progressData || []);
     renderClientProgressPhotos(await signedProgressPhotoRecords(progressPhotoData || []));
+    if (questionnaireResult.status !== "fulfilled" || questionnaireResult.value.error) {
+      renderClientQuestionnaire(null, "error");
+    } else {
+      renderClientQuestionnaire(Array.isArray(questionnaireData) ? questionnaireData[0] || null : null);
+    }
     if (progressPhotoResult.status !== "fulfilled" || progressPhotoResult.value.error) {
       setClientProgressPhotoStatus("Progress photos could not be loaded. Refresh and try again.");
     }
@@ -10463,6 +10857,7 @@ async function handleSignOut() {
 
   buttons.forEach((button) => {
     button.addEventListener("click", async () => {
+      clearClientQuestionnaire();
       if (supabaseClient) {
         await supabaseClient.auth.signOut();
       }

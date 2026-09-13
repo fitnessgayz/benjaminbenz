@@ -10690,6 +10690,244 @@ textarea,
   }
 }
 
+/* Client fitness questionnaire: private, readable client-only response summary. */
+.client-questionnaire-panel {
+  display: grid;
+  gap: 18px;
+}
+
+.client-questionnaire-panel[hidden] {
+  display: none;
+}
+
+.client-questionnaire-intro,
+.client-questionnaire-privacy {
+  max-width: 72ch;
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.client-questionnaire-privacy {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 11px 13px;
+  background: #f1f1eb;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: .82rem;
+  font-weight: 800;
+}
+
+.client-questionnaire-record,
+#client-questionnaire-record {
+  display: grid;
+  min-width: 0;
+  gap: 14px;
+}
+
+.client-questionnaire-identity {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px 20px;
+  min-width: 0;
+  padding: 18px 18px 18px 22px;
+  overflow: hidden;
+  background: #fbfbf8;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.client-questionnaire-identity::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 5px;
+  background: var(--lime);
+}
+
+.client-questionnaire-name,
+.client-questionnaire-email,
+.client-questionnaire-meta {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.client-questionnaire-name {
+  color: var(--black);
+  font-size: clamp(1.25rem, 2.5vw, 1.75rem);
+  font-weight: 900;
+  line-height: 1.05;
+}
+
+.client-questionnaire-email {
+  color: var(--black);
+  font-size: .92rem;
+  font-weight: 800;
+}
+
+.client-questionnaire-email:is(a),
+.client-questionnaire-email a {
+  color: inherit;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+
+.client-questionnaire-meta {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+  color: var(--muted);
+  font-size: .78rem;
+  font-weight: 900;
+  text-align: right;
+}
+
+.client-questionnaire-groups {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 12px;
+  min-width: 0;
+}
+
+.client-questionnaire-group {
+  display: grid;
+  min-width: 0;
+  gap: 12px;
+  padding: 16px;
+  background: #fbfbf8;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.client-questionnaire-group h3 {
+  margin: 0;
+  color: var(--black);
+  font-size: 1.05rem;
+  line-height: 1.15;
+}
+
+.client-questionnaire-answers {
+  display: grid;
+  min-width: 0;
+  gap: 0;
+  margin: 0;
+}
+
+.client-questionnaire-answer {
+  display: grid;
+  min-width: 0;
+  gap: 5px;
+  padding: 12px 0;
+  border-top: 1px solid var(--line);
+}
+
+.client-questionnaire-answer:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.client-questionnaire-answer:last-child {
+  padding-bottom: 0;
+}
+
+.client-questionnaire-question,
+.client-questionnaire-response {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+.client-questionnaire-question {
+  color: var(--muted);
+  font-size: .72rem;
+  font-weight: 900;
+  letter-spacing: .025em;
+  line-height: 1.3;
+  text-transform: uppercase;
+}
+
+.client-questionnaire-response {
+  color: var(--black);
+  font-size: .94rem;
+  font-weight: 750;
+  line-height: 1.48;
+  white-space: pre-wrap;
+}
+
+.client-questionnaire-empty,
+.client-questionnaire-error,
+.client-questionnaire-loading {
+  display: grid;
+  justify-items: start;
+  min-width: 0;
+  gap: 10px;
+  padding: clamp(18px, 4vw, 28px);
+  color: var(--muted);
+  background: #fbfbf8;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.client-questionnaire-empty h3,
+.client-questionnaire-error h3,
+.client-questionnaire-loading h3,
+.client-questionnaire-empty p,
+.client-questionnaire-error p,
+.client-questionnaire-loading p {
+  margin: 0;
+}
+
+.client-questionnaire-empty h3,
+.client-questionnaire-error h3,
+.client-questionnaire-loading h3 {
+  color: var(--black);
+}
+
+.client-questionnaire-empty .button {
+  width: min(100%, 360px);
+  margin-top: 4px;
+}
+
+.client-questionnaire-error {
+  border-color: rgba(218, 45, 36, .35);
+  background: #fff8f7;
+}
+
+@media (max-width: 700px) {
+  .client-questionnaire-panel {
+    gap: 14px;
+  }
+
+  .client-questionnaire-identity {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 16px 14px 16px 19px;
+  }
+
+  .client-questionnaire-meta {
+    grid-column: 1;
+    grid-row: auto;
+    text-align: left;
+  }
+
+  .client-questionnaire-groups {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .client-questionnaire-group {
+    padding: 14px;
+  }
+
+  .client-questionnaire-response {
+    font-size: .9rem;
+  }
+}
+
 /* Client dashboard navigation: pinned sidebar on desktop, bottom dock on mobile. */
 body.client-dashboard-page {
   padding-bottom: 0;
@@ -10878,7 +11116,7 @@ body.client-dashboard-page {
     left: 50%;
     z-index: 85;
     display: grid;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
+    grid-template-columns: repeat(7, minmax(0, 1fr));
     width: min(720px, calc(100% - 24px));
     max-width: none;
     gap: 4px;

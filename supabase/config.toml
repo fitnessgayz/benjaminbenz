@@ -39,3 +39,6 @@ verify_jwt = false
 
 [functions.fitbit-auth]
 verify_jwt = true
+
+[functions.submit-fitness-questionnaire]
+verify_jwt = true
