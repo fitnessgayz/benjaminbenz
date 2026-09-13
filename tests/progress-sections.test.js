@@ -35,7 +35,8 @@ test("places the latest monthly report first in Progress", () => {
 test("monthly report has an in-app viewer and a shareable deep link", () => {
   assert.match(dashboard, /<dialog class="client-monthly-report-dialog" id="client-monthly-report-dialog"/);
   assert.match(dashboard, /data-print-monthly-report/);
-  assert.match(clientPortal, /url\.searchParams\.set\("tab", "progress"\)/);
+  assert.match(clientPortal, /function monthlyProgressReportUrl\(monthKey, tabName = "progress"\)/);
+  assert.match(clientPortal, /url\.searchParams\.set\("tab", tabName\)/);
   assert.match(clientPortal, /url\.searchParams\.set\("report", monthKey\)/);
   assert.match(clientPortal, /client-login\.html\?return_to=/);
 });

@@ -26,6 +26,8 @@ let clientTrainingLogDateFilter = "";
 let clientTrainingLogSearchFilter = "";
 let activeClientDashboardTab = "home";
 let latestMonthlyProgressReport = null;
+let monthlyReportReturnTab = "progress";
+let monthlyReportReturnFocus = null;
 let clientExerciseProgressIndex = 0;
 let clientExerciseProgressSearch = "";
 let activeWorkoutTabIndex = 0;
@@ -149,6 +151,8 @@ const workingSetType = "working";
 const warmUpSetType = "warm_up";
 const clientDashboardUrl = "client-dashboard.html?v=manual-sessions-1";
 const clientDashboardSidebarStorageKey = "fwb_client_dashboard_sidebar_collapsed_v1";
+const clientHomeCheckinPromptMetadataKey = "home_checkin_prompt_seen_v1";
+const clientHomeCheckinPromptStoragePrefix = "fwb_home_checkin_prompt_seen_v1";
 const workoutElapsedTimerStorageKey = "fwb_workout_elapsed_timer_v1";
 const workoutElapsedTimerCompactStorageKey = "fwb_workout_elapsed_timer_compact_v1";
 const workoutElapsedTimerPositionStorageKey = "fwb_workout_elapsed_timer_position_v2";
@@ -2377,10 +2381,10 @@ function buildMonthlyProgressReport(logs, monthKey = "") {
   };
 }
 
-function monthlyProgressReportUrl(monthKey) {
+function monthlyProgressReportUrl(monthKey, tabName = "progress") {
   const url = new URL(window.location.href);
 
-  url.searchParams.set("tab", "progress");
+  url.searchParams.set("tab", tabName);
   url.searchParams.set("report", monthKey);
   url.hash = "";
 
@@ -2419,13 +2423,13 @@ function monthlyProgressReportMarkup(report) {
     </section>
     <p class="client-monthly-report-note">Based on completed working sets logged from ${escapeHtml(report.monthLabel)}.</p>
     <div class="client-monthly-report-actions">
-      <button class="button button-dark" type="button" data-close-monthly-report>Back to Progress</button>
+      <button class="button button-dark" type="button" data-close-monthly-report>Close report</button>
       <button class="button button-ghost" type="button" data-print-monthly-report>Print / Save PDF</button>
     </div>
   `;
 }
 
-function openMonthlyProgressReport(monthKey, updateUrl = true) {
+function openMonthlyProgressReport(monthKey, updateUrl = true, returnFocus = null) {
   const report = buildMonthlyProgressReport(trainingLogs, monthKey);
   const dialog = document.getElementById("client-monthly-report-dialog");
   const documentElement = document.getElementById("client-monthly-report-document");
@@ -2436,7 +2440,8 @@ function openMonthlyProgressReport(monthKey, updateUrl = true) {
 
   documentElement.innerHTML = monthlyProgressReportMarkup(report);
   setText("#client-monthly-report-dialog-title", `${report.monthLabel} report`);
-  setClientDashboardTab("progress");
+  monthlyReportReturnTab = activeClientDashboardTab || "progress";
+  monthlyReportReturnFocus = returnFocus || document.activeElement;
   if (typeof dialog.showModal === "function") {
     if (!dialog.open) {
       dialog.showModal();
@@ -2446,7 +2451,7 @@ function openMonthlyProgressReport(monthKey, updateUrl = true) {
   }
 
   if (updateUrl) {
-    window.history.replaceState({}, "", monthlyProgressReportUrl(report.monthKey));
+    window.history.replaceState({}, "", monthlyProgressReportUrl(report.monthKey, monthlyReportReturnTab));
   }
 }
 
@@ -2460,23 +2465,42 @@ function closeMonthlyProgressReport() {
   }
 
   const url = new URL(window.location.href);
-  url.searchParams.set("tab", "progress");
+  url.searchParams.set("tab", monthlyReportReturnTab || "progress");
   url.searchParams.delete("report");
   window.history.replaceState({}, "", url.toString());
-  document.getElementById("client-monthly-report-link")?.focus();
+  monthlyReportReturnFocus?.focus?.();
+  monthlyReportReturnFocus = null;
 }
 
 function renderMonthlyProgressReport(logs = trainingLogs) {
-  const card = document.getElementById("client-monthly-report-card");
-  const link = document.getElementById("client-monthly-report-link");
+  const reportCards = [
+    {
+      card: document.getElementById("client-monthly-report-card"),
+      link: document.getElementById("client-monthly-report-link"),
+      title: "#client-monthly-report-title",
+      summary: "#client-monthly-report-summary",
+      tabName: "progress"
+    },
+    {
+      card: document.getElementById("client-home-monthly-report-card"),
+      link: document.getElementById("client-home-monthly-report-link"),
+      title: "#client-home-monthly-report-title",
+      summary: "#client-home-monthly-report-summary",
+      tabName: "home"
+    }
+  ];
   const requestedMonth = new URLSearchParams(window.location.search).get("report") || "";
 
   latestMonthlyProgressReport = buildMonthlyProgressReport(logs);
-  if (!card || !link) {
+  if (!reportCards.some(({ card, link }) => card && link)) {
     return;
   }
 
-  card.hidden = !latestMonthlyProgressReport;
+  reportCards.forEach(({ card }) => {
+    if (card) {
+      card.hidden = !latestMonthlyProgressReport;
+    }
+  });
   if (!latestMonthlyProgressReport) {
     setText("#client-progress-report-month", "Monthly");
     return;
@@ -2484,12 +2508,17 @@ function renderMonthlyProgressReport(logs = trainingLogs) {
 
   const report = latestMonthlyProgressReport;
   setText("#client-progress-report-month", report.monthLabel);
-  link.href = monthlyProgressReportUrl(report.monthKey);
-  setText("#client-monthly-report-title", `${report.monthLabel} training report`);
-  setText(
-    "#client-monthly-report-summary",
-    `${report.workouts} workout${report.workouts === 1 ? "" : "s"} · ${report.workingSets} working sets · ${report.activeWeeks} active week${report.activeWeeks === 1 ? "" : "s"}`
-  );
+  const summary = `${report.workouts} workout${report.workouts === 1 ? "" : "s"} · ${report.workingSets} working sets · ${report.activeWeeks} active week${report.activeWeeks === 1 ? "" : "s"}`;
+
+  reportCards.forEach(({ link, title, summary: summarySelector, tabName }) => {
+    if (!link) {
+      return;
+    }
+
+    link.href = monthlyProgressReportUrl(report.monthKey, tabName);
+    setText(title, `${report.monthLabel} training report`);
+    setText(summarySelector, summary);
+  });
 
   if (requestedMonth && buildMonthlyProgressReport(logs, requestedMonth)) {
     window.requestAnimationFrame?.(() => openMonthlyProgressReport(requestedMonth, false));
@@ -2498,13 +2527,13 @@ function renderMonthlyProgressReport(logs = trainingLogs) {
 
 function handleMonthlyProgressReport() {
   document.addEventListener("click", (event) => {
-    const openLink = event.target.closest("#client-monthly-report-link");
+    const openLink = event.target.closest("[data-monthly-report-link]");
     const closeButton = event.target.closest("[data-close-monthly-report]");
     const printButton = event.target.closest("[data-print-monthly-report]");
 
     if (openLink) {
       event.preventDefault();
-      openMonthlyProgressReport(latestMonthlyProgressReport?.monthKey);
+      openMonthlyProgressReport(latestMonthlyProgressReport?.monthKey, true, openLink);
       return;
     }
     if (closeButton) {
@@ -9397,6 +9426,158 @@ function setClientDashboardTab(tabName) {
   });
 }
 
+function clientHomeCheckinPromptStorageKey(user = activeDashboardUser) {
+  const identity = String(user?.id || user?.email || "client").trim().toLowerCase();
+
+  return `${clientHomeCheckinPromptStoragePrefix}:${identity}`;
+}
+
+function clientHomeCheckinPromptSeen(user = activeDashboardUser) {
+  if (user?.user_metadata?.[clientHomeCheckinPromptMetadataKey] === true) {
+    return true;
+  }
+
+  try {
+    return window.localStorage.getItem(clientHomeCheckinPromptStorageKey(user)) === "true";
+  } catch (_error) {
+    return false;
+  }
+}
+
+async function rememberClientHomeCheckinPromptSeen() {
+  if (!activeDashboardUser) {
+    return;
+  }
+
+  try {
+    window.localStorage.setItem(clientHomeCheckinPromptStorageKey(), "true");
+  } catch (_error) {
+    // Supabase metadata remains the cross-device source of truth when local storage is unavailable.
+  }
+
+  activeDashboardUser = {
+    ...activeDashboardUser,
+    user_metadata: {
+      ...(activeDashboardUser.user_metadata || {}),
+      [clientHomeCheckinPromptMetadataKey]: true
+    }
+  };
+
+  if (!supabaseClient || isCoachPortalEmail(activeDashboardUser.email)) {
+    return;
+  }
+
+  const { data, error } = await supabaseClient.auth.updateUser({
+    data: { [clientHomeCheckinPromptMetadataKey]: true }
+  });
+
+  if (!error && data?.user) {
+    activeDashboardUser = data.user;
+  }
+}
+
+function setClientHomeCheckinExpanded(expanded) {
+  const card = document.querySelector("[data-client-home-checkin]");
+  const button = card?.querySelector("[data-client-home-checkin-toggle]");
+  const content = card?.querySelector("[data-client-home-checkin-content]");
+  const label = button?.querySelector("[data-client-home-checkin-toggle-label]");
+  const icon = button?.querySelector("[data-client-home-checkin-toggle-icon]");
+  const isExpanded = Boolean(expanded);
+  const isPrompt = card?.classList.contains("is-first-login-prompt");
+
+  if (!card || !button || !content) {
+    return;
+  }
+
+  button.setAttribute("aria-expanded", String(isExpanded));
+  button.setAttribute("aria-label", isPrompt ? "Close check-in" : (isExpanded ? "Minimize check-in" : "Open check-in"));
+  content.hidden = !isExpanded;
+  card.classList.toggle("is-collapsed", !isExpanded);
+
+  if (label) {
+    label.textContent = isPrompt ? "Close" : (isExpanded ? "Minimize" : "Open");
+  }
+  if (icon) {
+    icon.textContent = isPrompt ? "×" : (isExpanded ? "−" : "+");
+  }
+}
+
+function dismissClientHomeCheckinPrompt(restoreFocus = true) {
+  const card = document.querySelector("[data-client-home-checkin]");
+  const backdrop = document.querySelector("[data-client-home-checkin-backdrop]");
+  const button = card?.querySelector("[data-client-home-checkin-toggle]");
+
+  if (!card?.classList.contains("is-first-login-prompt")) {
+    return;
+  }
+
+  card.classList.remove("is-first-login-prompt");
+  card.removeAttribute("role");
+  card.removeAttribute("aria-modal");
+  backdrop && (backdrop.hidden = true);
+  document.body.classList.remove("is-client-checkin-prompt-open");
+  setClientHomeCheckinExpanded(false);
+
+  if (restoreFocus) {
+    button?.focus();
+  }
+}
+
+function maybeShowClientHomeCheckinPrompt() {
+  const card = document.querySelector("[data-client-home-checkin]");
+  const backdrop = document.querySelector("[data-client-home-checkin-backdrop]");
+
+  if (
+    !card ||
+    !backdrop ||
+    !activeDashboardUser ||
+    activeClientDashboardTab !== "home" ||
+    isCoachPortalEmail(activeDashboardUser.email) ||
+    clientHomeCheckinPromptSeen()
+  ) {
+    return;
+  }
+
+  card.classList.add("is-first-login-prompt");
+  card.setAttribute("role", "dialog");
+  card.setAttribute("aria-modal", "true");
+  backdrop.hidden = false;
+  document.body.classList.add("is-client-checkin-prompt-open");
+  setClientHomeCheckinExpanded(true);
+  void rememberClientHomeCheckinPromptSeen();
+  window.setTimeout?.(() => card.querySelector("select, textarea")?.focus(), 0);
+}
+
+function handleClientHomeCheckin() {
+  document.addEventListener("click", (event) => {
+    const toggle = event.target.closest("[data-client-home-checkin-toggle]");
+    const backdrop = event.target.closest("[data-client-home-checkin-backdrop]");
+
+    if (backdrop) {
+      dismissClientHomeCheckinPrompt();
+      return;
+    }
+    if (!toggle) {
+      return;
+    }
+
+    const card = toggle.closest("[data-client-home-checkin]");
+
+    if (card?.classList.contains("is-first-login-prompt")) {
+      dismissClientHomeCheckinPrompt();
+      return;
+    }
+
+    setClientHomeCheckinExpanded(toggle.getAttribute("aria-expanded") !== "true");
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      dismissClientHomeCheckinPrompt();
+    }
+  });
+}
+
 function setClientHomeCarouselSlide(carousel, nextIndex) {
   const slides = Array.from(carousel?.querySelectorAll("[data-client-home-carousel-slide]") || []);
 
@@ -9659,6 +9840,7 @@ function handleClientProgressSave() {
     renderProgress(data || []);
     form.reset();
     setText("#client-home-mood-status", "Mood check-in saved for today.");
+    dismissClientHomeCheckinPrompt(false);
 
     if (button) {
       button.disabled = false;
@@ -9894,6 +10076,9 @@ function handleClientDashboardTabs() {
     }
 
     setClientDashboardTab(tab.dataset.clientDashboardTab);
+    if (tab.dataset.clientDashboardTab === "home") {
+      window.requestAnimationFrame?.(() => maybeShowClientHomeCheckinPrompt());
+    }
   });
 }
 
@@ -11234,6 +11419,7 @@ async function loadDashboard() {
         : demoTrainingLogsForProgram(data)
     );
     refreshExerciseSuggestionsDatalist();
+    window.requestAnimationFrame?.(() => maybeShowClientHomeCheckinPrompt());
   } catch (error) {
     setDashboardMessage(
       "Could not load dashboard",
@@ -11686,6 +11872,7 @@ handleProgressSectionToggles();
 handleMonthlyProgressReport();
 handleClientExerciseProgressCarousel();
 handleClientHomeCarousel();
+handleClientHomeCheckin();
 handleClientSummaryActions();
 handleClientWorkoutTabs();
 handleWorkoutInteractions();

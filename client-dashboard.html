@@ -30,7 +30,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=stats-tab-1" />
+  <link rel="stylesheet" href="css/style.css?v=home-progress-checkin-1" />
   <link rel="stylesheet" href="css/custom-workout-mobile-fix.css?v=exercise-title-wrap-italic-5" />
 </head>
 <body class="dashboard-page client-dashboard-page is-loading">
@@ -108,79 +108,100 @@
             </div>
             <span class="status-pill" id="client-home-status">Ready</span>
           </div>
+          <div class="client-home-checkin-backdrop" data-client-home-checkin-backdrop hidden></div>
           <div class="client-home-grid" id="client-home-grid">
-            <article class="client-home-card client-home-card-mood">
-              <form class="client-home-mood-form" id="client-home-mood-form">
+            <article class="client-monthly-report-card client-home-monthly-report-card" id="client-home-monthly-report-card" hidden>
+              <a class="client-monthly-report-link" id="client-home-monthly-report-link" href="#" data-monthly-report-link data-monthly-report-home-link>
+                <span class="client-monthly-report-icon" aria-hidden="true">↗</span>
+                <span class="client-monthly-report-copy">
+                  <span class="client-monthly-report-label">Latest monthly report</span>
+                  <strong id="client-home-monthly-report-title">Monthly training report</strong>
+                  <span id="client-home-monthly-report-summary"></span>
+                </span>
+                <span class="client-monthly-report-cta">View report <span aria-hidden="true">→</span></span>
+              </a>
+              <p>Same private report shared in your monthly email.</p>
+            </article>
+            <article class="client-home-card client-home-card-mood" data-client-home-checkin>
+              <div class="client-home-checkin-heading">
                 <div>
                   <p class="kicker">Mood check-in</p>
                   <h3 id="client-home-mood">How are you feeling?</h3>
                   <p id="client-home-mood-meta">Log mood, energy, sleep, eating, body readiness, or anything Benjamin should know today.</p>
                 </div>
-                <div class="client-home-mood-grid">
-                  <label>
-                    Mood
-                    <select name="home_mood">
-                      <option value="">Choose</option>
-                      <option value="Strong">Strong</option>
-                      <option value="Good">Good</option>
-                      <option value="Okay">Okay</option>
-                      <option value="Low">Low</option>
-                      <option value="Sore">Sore</option>
-                    </select>
+                <button class="client-home-checkin-toggle" type="button" data-client-home-checkin-toggle aria-expanded="false" aria-controls="client-home-checkin-content">
+                  <span data-client-home-checkin-toggle-label>Open</span>
+                  <span class="client-home-checkin-toggle-icon" data-client-home-checkin-toggle-icon aria-hidden="true">+</span>
+                </button>
+              </div>
+              <div class="client-home-checkin-content" id="client-home-checkin-content" data-client-home-checkin-content hidden>
+                <form class="client-home-mood-form" id="client-home-mood-form">
+                  <div class="client-home-mood-grid">
+                    <label>
+                      Mood
+                      <select name="home_mood">
+                        <option value="">Choose</option>
+                        <option value="Strong">Strong</option>
+                        <option value="Good">Good</option>
+                        <option value="Okay">Okay</option>
+                        <option value="Low">Low</option>
+                        <option value="Sore">Sore</option>
+                      </select>
+                    </label>
+                    <label>
+                      Energy
+                      <select name="home_energy">
+                        <option value="">Choose</option>
+                        <option value="1">1 / 5</option>
+                        <option value="2">2 / 5</option>
+                        <option value="3">3 / 5</option>
+                        <option value="4">4 / 5</option>
+                        <option value="5">5 / 5</option>
+                      </select>
+                    </label>
+                    <label>
+                      Sleep
+                      <select name="home_sleep">
+                        <option value="">Choose</option>
+                        <option value="1">1 / 5</option>
+                        <option value="2">2 / 5</option>
+                        <option value="3">3 / 5</option>
+                        <option value="4">4 / 5</option>
+                        <option value="5">5 / 5</option>
+                      </select>
+                    </label>
+                    <label>
+                      Eating
+                      <select name="home_eating">
+                        <option value="">Choose</option>
+                        <option value="On track">On track</option>
+                        <option value="Mostly good">Mostly good</option>
+                        <option value="Missed meals">Missed meals</option>
+                        <option value="Need help">Need help</option>
+                      </select>
+                    </label>
+                    <label class="client-home-body-feeling">
+                      How’s the body feeling today?
+                      <select name="home_body_feeling">
+                        <option value="">Choose</option>
+                        <option value="Fresh and ready">Fresh and ready</option>
+                        <option value="Good">Good</option>
+                        <option value="A little tight">A little tight</option>
+                        <option value="Sore">Sore</option>
+                        <option value="Pain or discomfort">Pain or discomfort</option>
+                      </select>
+                    </label>
+                  </div>
+                  <label class="client-home-mood-note">
+                    Note
+                    <textarea name="home_mood_note" placeholder="Sleep, soreness, stress, wins, or anything to adjust today."></textarea>
                   </label>
-                  <label>
-                    Energy
-                    <select name="home_energy">
-                      <option value="">Choose</option>
-                      <option value="1">1 / 5</option>
-                      <option value="2">2 / 5</option>
-                      <option value="3">3 / 5</option>
-                      <option value="4">4 / 5</option>
-                      <option value="5">5 / 5</option>
-                    </select>
-                  </label>
-                  <label>
-                    Sleep
-                    <select name="home_sleep">
-                      <option value="">Choose</option>
-                      <option value="1">1 / 5</option>
-                      <option value="2">2 / 5</option>
-                      <option value="3">3 / 5</option>
-                      <option value="4">4 / 5</option>
-                      <option value="5">5 / 5</option>
-                    </select>
-                  </label>
-                  <label>
-                    Eating
-                    <select name="home_eating">
-                      <option value="">Choose</option>
-                      <option value="On track">On track</option>
-                      <option value="Mostly good">Mostly good</option>
-                      <option value="Missed meals">Missed meals</option>
-                      <option value="Need help">Need help</option>
-                    </select>
-                  </label>
-                  <label class="client-home-body-feeling">
-                    How’s the body feeling today?
-                    <select name="home_body_feeling">
-                      <option value="">Choose</option>
-                      <option value="Fresh and ready">Fresh and ready</option>
-                      <option value="Good">Good</option>
-                      <option value="A little tight">A little tight</option>
-                      <option value="Sore">Sore</option>
-                      <option value="Pain or discomfort">Pain or discomfort</option>
-                    </select>
-                  </label>
-                </div>
-                <label class="client-home-mood-note">
-                  Note
-                  <textarea name="home_mood_note" placeholder="Sleep, soreness, stress, wins, or anything to adjust today."></textarea>
-                </label>
-                <div class="client-home-mood-actions">
-                  <p id="client-home-mood-status" role="status">Quick check-in saves to today.</p>
-                  <button class="button button-ghost" type="submit" id="client-home-save-mood-button">Save mood</button>
-                </div>
-              </form>
+                  <div class="client-home-mood-actions">
+                    <p id="client-home-mood-status" role="status">Quick check-in saves to today.</p>
+                    <button class="button button-ghost" type="submit" id="client-home-save-mood-button">Save mood</button>
+                  </div>
+                </form>
+              </div>
             </article>
             <article class="client-home-card client-home-card-note client-home-program-carousel" data-client-home-carousel tabindex="0" role="region" aria-roledescription="carousel" aria-label="Program overview and coach note">
               <div class="client-home-carousel-slides" aria-live="polite">
@@ -425,7 +446,7 @@
             <span class="status-pill" id="client-progress-report-month">Monthly</span>
           </div>
           <article class="client-monthly-report-card" id="client-monthly-report-card" hidden>
-            <a class="client-monthly-report-link" id="client-monthly-report-link" href="#">
+            <a class="client-monthly-report-link" id="client-monthly-report-link" href="#" data-monthly-report-link>
               <span class="client-monthly-report-icon" aria-hidden="true">↗</span>
               <span class="client-monthly-report-copy">
                 <span class="client-monthly-report-label">Latest monthly report</span>
@@ -469,7 +490,7 @@
 
           <dialog class="client-monthly-report-dialog" id="client-monthly-report-dialog" aria-labelledby="client-monthly-report-dialog-title">
             <div class="client-monthly-report-dialog-bar">
-              <button type="button" data-close-monthly-report aria-label="Back to Progress">←</button>
+              <button type="button" data-close-monthly-report aria-label="Close report">←</button>
               <strong id="client-monthly-report-dialog-title">Monthly training report</strong>
               <button type="button" data-print-monthly-report aria-label="Print or save report as PDF">↓</button>
             </div>
@@ -690,6 +711,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js?v=manual-sessions-1"></script>
   <script src="js/exercise-name-matcher.js?v=exercise-consolidation-1"></script>
-  <script src="js/client-portal.js?v=stats-tab-1"></script>
+  <script src="js/client-portal.js?v=home-progress-checkin-1"></script>
 </body>
 </html>

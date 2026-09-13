@@ -3034,9 +3034,97 @@ footer {
   min-height: 0;
 }
 
+.client-home-monthly-report-card {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+.client-home-checkin-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-width: 0;
+  gap: 16px;
+}
+
+.client-home-checkin-heading > div {
+  display: grid;
+  flex: 1 1 auto;
+  min-width: 0;
+  gap: 7px;
+}
+
+.dashboard-page .client-home-checkin-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: auto !important;
+  inline-size: auto !important;
+  min-width: 112px;
+  min-height: 44px;
+  gap: 9px;
+  padding: 8px 14px;
+  border: 1px solid var(--black);
+  border-radius: 14px;
+  color: var(--black);
+  background: var(--white);
+  font: inherit;
+  font-size: .78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.dashboard-page .client-home-checkin-toggle:hover,
+.dashboard-page .client-home-checkin-toggle:focus-visible {
+  color: var(--paper);
+  background: var(--black);
+}
+
+.client-home-checkin-toggle-icon {
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.client-home-checkin-content {
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.client-home-checkin-content[hidden],
+.client-home-checkin-backdrop[hidden] {
+  display: none;
+}
+
+.client-home-checkin-backdrop {
+  position: fixed;
+  z-index: 199;
+  inset: 0;
+  background: rgba(5, 5, 5, .68);
+}
+
+body.is-client-checkin-prompt-open {
+  overflow: hidden;
+}
+
+.client-home-card-mood.is-first-login-prompt {
+  position: fixed;
+  z-index: 200;
+  top: 50%;
+  left: 50%;
+  width: min(720px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  transform: translate(-50%, -50%);
+  border-color: var(--black);
+  background: var(--white);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, .32);
+}
+
 .client-home-mood-form {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(220px, .85fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 14px;
   align-items: start;
 }
@@ -8625,6 +8713,37 @@ textarea:focus {
 }
 
 @media (max-width: 620px) {
+  .client-home-checkin-heading {
+    align-items: flex-start;
+  }
+
+  .dashboard-page .client-home-checkin-toggle {
+    min-width: 44px;
+    width: 44px !important;
+    inline-size: 44px !important;
+    height: 44px;
+    padding: 0;
+  }
+
+  .dashboard-page .client-home-checkin-toggle > span:first-child {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .client-home-card-mood.is-first-login-prompt {
+    top: max(12px, env(safe-area-inset-top));
+    left: 12px;
+    width: calc(100vw - 24px);
+    max-height: calc(100dvh - max(24px, env(safe-area-inset-top)) - 12px);
+    transform: none;
+  }
+
   .client-monthly-report-link {
     grid-template-columns: auto minmax(0, 1fr);
     gap: 12px;
