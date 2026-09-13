@@ -30,7 +30,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=coach-admin-sidebar-1" />
+  <link rel="stylesheet" href="css/style.css?v=coach-admin-onboarding-1" />
 </head>
 <body class="dashboard-page coach-admin-page">
   <header class="site-header dashboard-header">
@@ -278,6 +278,13 @@
               <output id="program-session-count">Add sessions used and total sessions.</output>
             </label>
           </div>
+          <section class="client-onboarding-summary" id="client-onboarding-summary" hidden>
+            <div>
+              <p class="kicker">Client onboarding</p>
+              <h3>Training preferences</h3>
+            </div>
+            <dl id="client-onboarding-summary-list"></dl>
+          </section>
           <div class="profile-actions-row">
             <p class="profile-save-status" id="admin-save-status" role="status">Ready.</p>
             <button class="button button-ghost" type="button" id="save-profile-changes-button">Save changes</button>
@@ -750,6 +757,6 @@
   <script src="js/script.js?v=client-session-link-1"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js?v=client-session-link-1"></script>
-  <script src="js/coach-admin.js?v=coach-admin-sidebar-1"></script>
+  <script src="js/coach-admin.js?v=coach-admin-onboarding-1"></script>
 </body>
 </html>

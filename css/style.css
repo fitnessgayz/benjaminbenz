@@ -5483,6 +5483,59 @@ footer {
   font-weight: 900;
 }
 
+.client-onboarding-summary {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  background: #fbfbf8;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.client-onboarding-summary[hidden] {
+  display: none;
+}
+
+.client-onboarding-summary h3 {
+  margin: 3px 0 0;
+  font-size: 1.35rem;
+}
+
+.client-onboarding-summary dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+
+.client-onboarding-summary dl > div {
+  padding: 12px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.client-onboarding-summary dt {
+  color: var(--muted);
+  font-size: .72rem;
+  font-weight: 900;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.client-onboarding-summary dd {
+  margin: 4px 0 0;
+  color: var(--black);
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 620px) {
+  .client-onboarding-summary dl {
+    grid-template-columns: 1fr;
+  }
+}
+
 .profile-management-actions {
   display: flex;
   flex-wrap: wrap;

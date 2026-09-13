@@ -1,5 +1,5 @@
 revoke update on public.client_programs from authenticated;
-grant update (height, starting_weight, starting_bodyfat) on public.client_programs to authenticated;
+grant update (fitness_goal, height, starting_weight, starting_bodyfat) on public.client_programs to authenticated;
 
 drop policy if exists "Clients can update their own metrics" on public.client_programs;
 create policy "Clients can update their own metrics"

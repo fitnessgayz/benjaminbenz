@@ -31,6 +31,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css?v=mobile-fit-audit-2" />
+  <link rel="stylesheet" href="css/client-invite.css?v=onboarding-deck-1" />
 </head>
 <body class="login-page password-access-page">
   <header class="site-header">
@@ -51,28 +52,197 @@
     </div>
   </header>
 
-  <main class="client-access">
-    <section class="access-intro" aria-labelledby="invite-title">
-      <p class="kicker">Account access</p>
-      <h1 id="invite-title"><span>Set</span><span>Password</span></h1>
-      <p class="access-intro-copy"><span>Create a new password to open your</span><span>private training portal.</span></p>
-    </section>
+  <main class="client-access invite-access">
+    <section class="access-panel invite-panel" aria-labelledby="invite-title">
+      <form class="invite-onboarding" id="client-invite-form" hidden novalidate>
+        <div class="invite-deck-shell">
+          <div class="invite-deck-peek invite-deck-peek-left" aria-hidden="true">
+            <span id="invite-deck-left-label">Account</span>
+            <strong id="invite-deck-left-state"></strong>
+          </div>
+          <div class="invite-deck-peek invite-deck-peek-right" aria-hidden="true">
+            <span id="invite-deck-right-label">Macros</span>
+            <strong id="invite-deck-right-state">Optional</strong>
+          </div>
 
-    <section class="access-panel" aria-label="Set account password">
-      <div class="access-panel-heading">
-        <p class="kicker">Password</p>
-        <h2>Account access</h2>
-      </div>
-      <form class="login-form" id="client-invite-form" hidden>
-        <label>
-          New password
-          <input type="password" name="password" placeholder="New password" autocomplete="new-password" required minlength="8" aria-label="New password" />
-        </label>
-        <label>
-          Confirm password
-          <input type="password" name="confirm_password" placeholder="Confirm password" autocomplete="new-password" required minlength="8" aria-label="Confirm password" />
-        </label>
-        <button class="button button-dark" type="submit">Set password</button>
+          <div class="invite-deck" id="invite-deck">
+            <div class="invite-deck-brand" aria-hidden="true">FWB</div>
+            <p class="kicker invite-step-count" id="invite-step-count">Step 1 of 3</p>
+            <div class="invite-progress" aria-hidden="true">
+              <span data-invite-progress="0"></span>
+              <span data-invite-progress="1"></span>
+              <span data-invite-progress="2"></span>
+            </div>
+            <div class="invite-deck-navigation" aria-label="Onboarding steps">
+              <button type="button" class="invite-step-arrow" id="invite-step-back" aria-label="Previous step">&#8249;</button>
+              <strong id="invite-step-label">Account</strong>
+              <button type="button" class="invite-step-arrow" id="invite-step-next" aria-label="Next step">&#8250;</button>
+            </div>
+
+            <section class="invite-step" data-invite-step="account" aria-labelledby="invite-title">
+              <h1 id="invite-title">Welcome to FWB</h1>
+              <p class="invite-step-copy">Create your password to get started.</p>
+              <div class="invite-fields">
+                <label>
+                  New password
+                  <input type="password" name="password" placeholder="New password" autocomplete="new-password" minlength="8" />
+                </label>
+                <label>
+                  Confirm password
+                  <input type="password" name="confirm_password" placeholder="Confirm password" autocomplete="new-password" minlength="8" />
+                </label>
+              </div>
+              <div class="invite-step-actions invite-step-actions-single">
+                <button class="button invite-primary-button" type="button" data-invite-continue>Continue</button>
+              </div>
+              <small>Your answers stay private between you and your coach.</small>
+            </section>
+
+            <section class="invite-step" data-invite-step="fitness" aria-labelledby="invite-fitness-title" hidden>
+              <h1 id="invite-fitness-title">Tell me about you</h1>
+              <div class="invite-field-grid">
+                <label>
+                  Height
+                  <input type="text" name="height" placeholder="5 ft 10 in" autocomplete="off" />
+                </label>
+                <label>
+                  Current weight
+                  <span class="invite-input-unit"><input type="number" name="current_weight" placeholder="175" inputmode="decimal" min="60" max="700" /><em>lb</em></span>
+                </label>
+              </div>
+              <label>
+                Body fat (optional)
+                <span class="invite-input-unit"><input type="number" name="body_fat" placeholder="18" inputmode="decimal" min="2" max="70" step="0.1" /><em>%</em></span>
+              </label>
+              <fieldset class="invite-choice-group">
+                <legend>What is your primary goal?</legend>
+                <div class="invite-choice-grid invite-goal-grid">
+                  <label><input type="radio" name="fitness_goal" value="Lose fat" /><span>Lose fat</span></label>
+                  <label><input type="radio" name="fitness_goal" value="Build muscle" /><span>Build muscle</span></label>
+                  <label><input type="radio" name="fitness_goal" value="Get stronger" /><span>Get stronger</span></label>
+                  <label><input type="radio" name="fitness_goal" value="Move better" /><span>Move better</span></label>
+                </div>
+              </fieldset>
+              <fieldset class="invite-choice-group">
+                <legend>Training days per week</legend>
+                <div class="invite-choice-grid invite-days-grid">
+                  <label><input type="radio" name="training_days" value="1" /><span>1</span></label>
+                  <label><input type="radio" name="training_days" value="2" /><span>2</span></label>
+                  <label><input type="radio" name="training_days" value="3" /><span>3</span></label>
+                  <label><input type="radio" name="training_days" value="4" /><span>4</span></label>
+                  <label><input type="radio" name="training_days" value="5" /><span>5</span></label>
+                  <label><input type="radio" name="training_days" value="6" /><span>6</span></label>
+                  <label><input type="radio" name="training_days" value="7" /><span>7</span></label>
+                </div>
+              </fieldset>
+              <div class="invite-fields invite-compact-fields">
+                <label>
+                  Training experience
+                  <select name="training_experience">
+                    <option value="">Select an option</option>
+                    <option value="Beginner">Beginner</option>
+                    <option value="Intermediate">Intermediate</option>
+                    <option value="Advanced">Advanced</option>
+                  </select>
+                </label>
+                <label>
+                  Available equipment
+                  <select name="available_equipment">
+                    <option value="">Select an option</option>
+                    <option value="Full gym">Full gym</option>
+                    <option value="Home gym">Home gym</option>
+                    <option value="Dumbbells and bands">Dumbbells and bands</option>
+                    <option value="Bodyweight only">Bodyweight only</option>
+                  </select>
+                </label>
+                <label>
+                  Injuries or limitations
+                  <textarea name="limitations" placeholder="Anything your coach should know?" rows="2"></textarea>
+                </label>
+              </div>
+              <div class="invite-step-actions">
+                <button class="button invite-secondary-button" type="button" data-invite-back>Back</button>
+                <button class="button invite-primary-button" type="button" data-invite-continue>Next</button>
+              </div>
+            </section>
+
+            <section class="invite-step" data-invite-step="macros" aria-labelledby="invite-macros-title" hidden>
+              <h1 id="invite-macros-title">Nutrition &amp; macros</h1>
+              <fieldset class="invite-macro-choice">
+                <legend><span>Would you like an estimated calorie</span><span>and macro target?</span></legend>
+                <div class="invite-segmented-control">
+                  <label><input type="radio" name="wants_macros" value="yes" checked /><span>Yes</span></label>
+                  <label><input type="radio" name="wants_macros" value="no" /><span>Not now</span></label>
+                </div>
+              </fieldset>
+              <div id="invite-macro-fields">
+                <div class="invite-field-grid">
+                  <label>
+                    Nutrition goal
+                    <select name="nutrition_goal">
+                      <option value="fat_loss">Fat loss</option>
+                      <option value="muscle_gain">Build muscle</option>
+                      <option value="recomposition">Build muscle and lean out</option>
+                      <option value="maintenance">Maintain</option>
+                    </select>
+                  </label>
+                  <label>
+                    Age
+                    <input type="number" name="nutrition_age" placeholder="35" inputmode="numeric" min="13" max="100" />
+                  </label>
+                  <label>
+                    Sex for calculation
+                    <select name="nutrition_sex">
+                      <option value="">Select</option>
+                      <option value="male">Male</option>
+                      <option value="female">Female</option>
+                    </select>
+                  </label>
+                  <label>
+                    Workouts per week
+                    <select name="nutrition_workouts">
+                      <option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option>
+                      <option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7+</option>
+                    </select>
+                  </label>
+                  <label>
+                    Daily movement
+                    <select name="nutrition_movement">
+                      <option value="mostly_sitting">Mostly sitting</option>
+                      <option value="mixed" selected>Mixed</option>
+                      <option value="active_job">Active job</option>
+                    </select>
+                  </label>
+                  <label>
+                    Training intensity
+                    <select name="nutrition_intensity">
+                      <option value="light">Light</option>
+                      <option value="moderate" selected>Moderate</option>
+                      <option value="hard">Hard</option>
+                    </select>
+                  </label>
+                </div>
+                <div class="invite-macro-target" id="invite-macro-target" aria-live="polite">
+                  <strong>Your starting target</strong>
+                  <div>
+                    <span><b id="invite-calories">—</b><small>Calories</small></span>
+                    <span><b id="invite-protein">—</b><small>Protein</small></span>
+                    <span><b id="invite-carbs">—</b><small>Carbs</small></span>
+                    <span><b id="invite-fat">—</b><small>Fat</small></span>
+                  </div>
+                </div>
+              </div>
+              <div class="invite-step-actions">
+                <button class="button invite-secondary-button" type="button" data-invite-back>Back</button>
+                <button class="button invite-primary-button" type="submit">Finish setup</button>
+              </div>
+              <small>You can update these later in Nutrition.</small>
+            </section>
+          </div>
+        </div>
+        <div class="invite-pagination" aria-hidden="true">
+          <span data-invite-dot="0"></span><span data-invite-dot="1"></span><span data-invite-dot="2"></span>
+        </div>
       </form>
       <p class="login-status" id="client-invite-status" role="status">Checking password link...</p>
     </section>
@@ -80,6 +250,6 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js"></script>
-  <script src="js/client-invite.js?v=password-reset-1"></script>
+  <script src="js/client-invite.js?v=onboarding-deck-1"></script>
 </body>
 </html>

@@ -34,6 +34,7 @@ let progressPhotos = [];
 let trainingLogs = [];
 let foodLogs = [];
 let recentTrainingLogs = [];
+let clientFitnessQuestionnaires = [];
 let trainingLogDateFilter = "";
 let trainingLogSearchFilter = "";
 let workoutAnalysis = null;
@@ -2234,6 +2235,31 @@ function renderWorkoutFields() {
   `).join("");
 }
 
+function renderClientOnboardingSummary(program = {}) {
+  const summary = document.getElementById("client-onboarding-summary");
+  const list = document.getElementById("client-onboarding-summary-list");
+  const email = normalizeEmail(program.client_email);
+  const questionnaire = clientFitnessQuestionnaires.find((item) => normalizeEmail(item.linked_client_email) === email);
+  const profile = questionnaire?.answers && typeof questionnaire.answers === "object" ? questionnaire.answers : {};
+  const rows = [
+    ["Primary goal", profile.fitness_goal || program.fitness_goal],
+    ["Training days", profile.training_days_per_week ? `${profile.training_days_per_week} per week` : ""],
+    ["Experience", profile.training_experience],
+    ["Equipment", profile.available_equipment],
+    ["Injuries / limitations", profile.limitations]
+  ].filter(([, value]) => String(value || "").trim());
+
+  if (!summary || !list) return;
+
+  summary.hidden = rows.length === 0;
+  list.innerHTML = rows.map(([label, value]) => `
+    <div>
+      <dt>${escapeHtml(label)}</dt>
+      <dd>${escapeHtml(value)}</dd>
+    </div>
+  `).join("");
+}
+
 function fillForm(program = {}) {
   const form = document.getElementById("program-editor");
   const workouts = Array.isArray(program.workouts) ? program.workouts : [];
@@ -2251,6 +2277,7 @@ function fillForm(program = {}) {
   form.elements.height.value = program.height || "";
   form.elements.starting_weight.value = program.starting_weight || "";
   form.elements.starting_bodyfat.value = program.starting_bodyfat || "";
+  renderClientOnboardingSummary(program);
   form.elements.program_title.value = program.program_title || "";
   form.elements.fitness_goal.value = program.fitness_goal || "";
   form.elements.focus_target.value = program.focus_target || "";
@@ -3308,10 +3335,17 @@ function renderClientList() {
 async function loadPrograms() {
   adminStatus("Loading clients...");
 
-  const { data, error } = await coachSupabase
-    .from("client_programs")
-    .select("*")
-    .order("client_name", { ascending: true });
+  const [programResult, questionnaireResult] = await Promise.all([
+    coachSupabase
+      .from("client_programs")
+      .select("*")
+      .order("client_name", { ascending: true }),
+    coachSupabase
+      .from("client_fitness_questionnaires")
+      .select("linked_client_email, submitted_at, answers")
+      .order("submitted_at", { ascending: false })
+  ]);
+  const { data, error } = programResult;
 
   if (error) {
     adminStatus("Could not load clients. Check the coach admin Supabase policy.");
@@ -3319,6 +3353,7 @@ async function loadPrograms() {
   }
 
   programs = data || [];
+  clientFitnessQuestionnaires = questionnaireResult.error ? [] : (questionnaireResult.data || []);
   renderCoachWorkoutClientOptions();
 
   const visiblePrograms = programsForCurrentClientView();
