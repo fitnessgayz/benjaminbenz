@@ -30,6 +30,8 @@ test("scopes the client navigation styles and cache-busts dashboard assets", () 
   assert.match(dashboardHtml, /href="css\/style\.css\?v=[^"\s]+"/);
   assert.match(dashboardHtml, /src="js\/client-portal\.js\?v=[^"\s]+"/);
   assert.match(styleSource, /body\.client-dashboard-page\s*\{[^}]*padding-bottom:\s*0;/s);
+  assert.match(dashboardHtml, /css\/style\.css\?v=collapsible-client-nav-2/);
+  assert.match(dashboardHtml, /js\/client-portal\.js\?v=collapsible-client-nav-2/);
 });
 
 test("renders eight labeled client destinations in order with current-page semantics", () => {
@@ -109,7 +111,7 @@ test("collapses mobile navigation to the selected destination icon", () => {
 
   assert.match(dashboardHtml, /class="client-dashboard-mobile-nav-toggle"[\s\S]*?aria-label="Open navigation, Home selected"[\s\S]*?aria-controls="client-dashboard-navigation"[\s\S]*?data-client-mobile-nav-toggle/);
   assert.match(dashboardHtml, /<nav class="client-dashboard-tabs" id="client-dashboard-navigation"/);
-  assert.match(mobileStyles, /\.client-dashboard-mobile-nav-toggle\s*\{[^}]*position:\s*fixed[^}]*left:\s*12px[^}]*width:\s*62px[^}]*height:\s*62px/s);
+  assert.match(mobileStyles, /\.dashboard-page \.client-dashboard-mobile-nav-toggle\s*\{[^}]*position:\s*fixed[^}]*left:\s*12px[^}]*width:\s*62px !important[^}]*min-width:\s*62px !important[^}]*max-width:\s*62px !important[^}]*inline-size:\s*62px !important[^}]*max-inline-size:\s*62px !important[^}]*height:\s*62px !important/s);
   assert.match(mobileStyles, /\.client-dashboard-tabs\s*\{[^}]*visibility:\s*hidden[^}]*opacity:\s*0[^}]*pointer-events:\s*none[^}]*scale\(\.72\)/s);
   assert.match(mobileStyles, /\.client-dashboard-tabs\.is-mobile-expanded\s*\{[^}]*visibility:\s*visible[^}]*opacity:\s*1[^}]*pointer-events:\s*auto/s);
   assert.match(syncSource, /selectedIcon\.cloneNode\(true\)/);
