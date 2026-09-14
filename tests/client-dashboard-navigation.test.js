@@ -59,7 +59,7 @@ test("renders eight labeled client destinations in order with current-page seman
     "Progress",
     "Stats and measurements",
     "Food",
-    "Fitness questionnaire",
+    "PAR-Q",
     "Sessions"
   ]);
   assert.deepEqual(buttons.map((match) => match[3].match(/client-dashboard-tab-label">([^<]+)</)?.[1]), [
@@ -69,7 +69,7 @@ test("renders eight labeled client destinations in order with current-page seman
     "Progress",
     "Stats",
     "Food",
-    "Questionnaire",
+    "PAR-Q",
     "Sessions"
   ]);
   assert.equal(buttons.filter((match) => /aria-current="page"/.test(match[1])).length, 1);

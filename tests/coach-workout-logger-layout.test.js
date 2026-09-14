@@ -51,10 +51,22 @@ test("uses a carousel for superset and circuit while straight sets stay stacked"
 });
 
 test("saves each set's weight reps and optional RIR", () => {
+  assert.match(loggerScript, /data-coach-workout-set-label/);
+  assert.match(loggerScript, /data-coach-workout-set-type=/);
+  assert.match(loggerScript, /set_number:\s*set\.setNumber/);
+  assert.match(loggerScript, /set_type:\s*set\.setType/);
   assert.match(loggerScript, /weight_used:\s*set\.weight/);
   assert.match(loggerScript, /reps:\s*set\.reps/);
   assert.match(loggerScript, /effort_scale:\s*set\.rir === null \? null : "rir"/);
   assert.match(loggerScript, /effort_value:\s*set\.rir/);
+});
+
+test("makes the warm-up set editable and accepts zero weight and reps", () => {
+  assert.match(loggerScript, /placeholder="W" data-coach-workout-set-label/);
+  assert.doesNotMatch(loggerScript, /data-coach-workout-set-label[^>]*readonly/);
+  assert.match(loggerScript, /data-coach-workout-reps \/>/);
+  assert.match(loggerScript, /reps < 0/);
+  assert.doesNotMatch(loggerScript, /reps < 1/);
 });
 
 test("filters the exercise library into a scrollable name dropdown", () => {

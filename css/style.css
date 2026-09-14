@@ -11691,6 +11691,11 @@ textarea,
   background: #fff;
 }
 
+.coach-workout-set-row.is-warm-up {
+  border-left-color: var(--lime);
+  background: #f9ffe8;
+}
+
 .coach-workout-set-row :is(input, select):focus {
   border-color: var(--black);
   outline: 2px solid var(--lime);
@@ -11893,10 +11898,22 @@ textarea,
   color: var(--red);
 }
 
-.coach-workout-submit-panel > div {
+.coach-workout-submit-panel > .coach-workout-submit-actions {
   display: flex;
+  align-items: stretch;
   justify-content: flex-end;
   gap: 10px;
+}
+
+.coach-workout-save-actions {
+  display: grid;
+  gap: 8px;
+}
+
+.coach-workout-finish-button {
+  color: var(--black);
+  border-color: var(--black);
+  background: var(--lime);
 }
 
 .coach-workout-submit-panel .button {
@@ -12002,7 +12019,7 @@ textarea,
     font-size: .72rem;
   }
 
-  .coach-workout-submit-panel > div {
+  .coach-workout-submit-panel > .coach-workout-submit-actions {
     display: grid;
     grid-template-columns: 1fr;
   }

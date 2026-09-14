@@ -2,6 +2,9 @@ const coachWorkoutConfig = window.FWB_SUPABASE_CONFIG || {};
 const coachWorkoutEmails = ["benjaminbenz.fit@gmail.com"];
 const coachWorkoutLoginUrl = "client-login.html?return_to=%2Fcoach-workout-log.html";
 const coachWorkoutAutosaveDelayMs = 10000;
+const coachWorkoutWarmUpSetNumberBase = 1000;
+const coachWorkoutWarmUpSetType = "warm_up";
+const coachWorkoutWorkingSetType = "working";
 const coachWorkoutDraftMaxAgeMs = 7 * 24 * 60 * 60 * 1000;
 const coachWorkoutDraftStorageKey = "fwb_coach_session_logger_draft_v1";
 const coachWorkoutDraftVersion = 2;
@@ -188,15 +191,34 @@ function coachWorkoutFormatMarker(format, index) {
   return `Exercise ${index + 1}`;
 }
 
+function coachWorkoutSetType(value, setNumber = 0) {
+  if (value === coachWorkoutWarmUpSetType) {
+    return coachWorkoutWarmUpSetType;
+  }
+
+  if (value === coachWorkoutWorkingSetType) {
+    return coachWorkoutWorkingSetType;
+  }
+
+  return Number(setNumber) > coachWorkoutWarmUpSetNumberBase
+    ? coachWorkoutWarmUpSetType
+    : coachWorkoutWorkingSetType;
+}
+
 function coachWorkoutSetMarkup(values = {}, index = 0) {
-  const setLabel = index === 0 ? "" : String(index);
+  const setType = coachWorkoutSetType(
+    values.setType || (index === 0 ? coachWorkoutWarmUpSetType : coachWorkoutWorkingSetType),
+    values.setNumber
+  );
+  const defaultLabel = setType === coachWorkoutWarmUpSetType ? "" : String(index);
+  const setLabel = String(values.label ?? defaultLabel);
   const rir = String(values.rir ?? "");
 
   return `
-    <div class="coach-workout-set-row" data-coach-workout-set-row>
+    <div class="coach-workout-set-row${setType === coachWorkoutWarmUpSetType ? " is-warm-up" : ""}" data-coach-workout-set-row data-coach-workout-set-type="${setType}" data-coach-workout-set-number="${escapeCoachWorkoutHtml(values.setNumber || (setType === coachWorkoutWarmUpSetType ? coachWorkoutWarmUpSetNumberBase + 1 : Math.max(index, 1)))}">
       <label class="coach-workout-set-label">
         <span>Set</span>
-        <input type="text" value="${setLabel}" tabindex="-1" aria-label="Set ${index + 1}" readonly />
+        <input type="text" value="${escapeCoachWorkoutHtml(setLabel)}" maxlength="3" inputmode="text" autocomplete="off" aria-label="${setType === coachWorkoutWarmUpSetType ? "Warm-up set label" : `Set ${Math.max(index, 1)} label`}" placeholder="W" data-coach-workout-set-label />
       </label>
       <label>
         <span>Weight</span>
@@ -204,7 +226,7 @@ function coachWorkoutSetMarkup(values = {}, index = 0) {
       </label>
       <label>
         <span>Reps</span>
-        <input type="number" value="${escapeCoachWorkoutHtml(values.reps ?? "")}" min="1" step="1" inputmode="numeric" placeholder="0" data-coach-workout-reps />
+        <input type="number" value="${escapeCoachWorkoutHtml(values.reps ?? "")}" min="0" step="1" inputmode="numeric" placeholder="0" data-coach-workout-reps />
       </label>
       <label>
         <span>RIR</span>
@@ -276,18 +298,36 @@ function coachWorkoutExerciseElements() {
 function updateCoachWorkoutSetRows(exercise) {
   const rows = Array.from(exercise?.querySelectorAll("[data-coach-workout-set-row]") || []);
   let completed = 0;
+  let warmUpIndex = 0;
+  let workingIndex = 0;
 
-  rows.forEach((row, index) => {
-    const label = row.querySelector(".coach-workout-set-label input");
+  rows.forEach((row) => {
+    const label = row.querySelector("[data-coach-workout-set-label]");
+    const normalizedLabel = String(label?.value || "").trim().toUpperCase().replace(/[^W0-9]/g, "").slice(0, 3);
+    const wasWarmUp = coachWorkoutSetType(row.dataset.coachWorkoutSetType, row.dataset.coachWorkoutSetNumber) === coachWorkoutWarmUpSetType;
+    const setType = normalizedLabel.startsWith("W") || (!normalizedLabel && wasWarmUp)
+      ? coachWorkoutWarmUpSetType
+      : coachWorkoutWorkingSetType;
     const weight = row.querySelector("[data-coach-workout-weight]")?.value.trim() || "";
     const reps = row.querySelector("[data-coach-workout-reps]")?.value.trim() || "";
+    const setNumber = setType === coachWorkoutWarmUpSetType
+      ? coachWorkoutWarmUpSetNumberBase + (warmUpIndex += 1)
+      : (workingIndex += 1);
 
     if (label) {
-      label.value = index === 0 ? "" : String(index);
-      label.setAttribute("aria-label", `Set ${index + 1}`);
+      label.value = setType === coachWorkoutWarmUpSetType
+        ? normalizedLabel
+        : String(workingIndex);
+      label.setAttribute("aria-label", setType === coachWorkoutWarmUpSetType
+        ? `Warm-up set ${warmUpIndex} label`
+        : `Set ${workingIndex} label`);
     }
 
-    if (weight !== "" && reps !== "") {
+    row.dataset.coachWorkoutSetType = setType;
+    row.dataset.coachWorkoutSetNumber = String(setNumber);
+    row.classList.toggle("is-warm-up", setType === coachWorkoutWarmUpSetType);
+
+    if (setType === coachWorkoutWorkingSetType && weight !== "" && reps !== "") {
       completed += 1;
     }
   });
@@ -296,7 +336,7 @@ function updateCoachWorkoutSetRows(exercise) {
   const deleteSet = exercise?.querySelector("[data-coach-workout-delete-set]");
 
   if (progress) {
-    progress.textContent = `${completed} / ${rows.length} working sets completed`;
+    progress.textContent = `${completed} / ${workingIndex} working sets completed`;
   }
 
   if (deleteSet) {
@@ -411,6 +451,9 @@ function coachWorkoutExerciseDrafts() {
     codeContext: String(row.dataset.coachWorkoutCodeContext || ""),
     name: row.querySelector("[data-coach-workout-name]")?.value || "",
     sets: Array.from(row.querySelectorAll("[data-coach-workout-set-row]")).map((setRow) => ({
+      label: setRow.querySelector("[data-coach-workout-set-label]")?.value ?? "",
+      setType: coachWorkoutSetType(setRow.dataset.coachWorkoutSetType, setRow.dataset.coachWorkoutSetNumber),
+      setNumber: Number(setRow.dataset.coachWorkoutSetNumber || 1),
       weight: setRow.querySelector("[data-coach-workout-weight]")?.value ?? "",
       reps: setRow.querySelector("[data-coach-workout-reps]")?.value ?? "",
       rir: setRow.querySelector("[data-coach-workout-rir]")?.value ?? ""
@@ -711,7 +754,7 @@ function switchCoachWorkoutContext() {
         ? isAssigningFirstClient
           ? "Session assigned to this client. Autosave is on."
           : "New session ready. Autosave is on."
-        : "This session could not be backed up on this device. Keep this page open or use Save now.",
+        : "This session could not be backed up on this device. Keep this page open or use Save Workout.",
       !draftStored
     );
 
@@ -765,6 +808,8 @@ function coachWorkoutExerciseValues(options = {}) {
       const weightInput = setRow.querySelector("[data-coach-workout-weight]");
       const repsInput = setRow.querySelector("[data-coach-workout-reps]");
       const rirInput = setRow.querySelector("[data-coach-workout-rir]");
+      const setType = coachWorkoutSetType(setRow.dataset.coachWorkoutSetType, setRow.dataset.coachWorkoutSetNumber);
+      const setNumber = Number(setRow.dataset.coachWorkoutSetNumber || setIndex + 1);
       const weightText = weightInput?.value.trim() || "";
       const repsText = repsInput?.value.trim() || "";
       const weight = Number(weightText);
@@ -778,11 +823,11 @@ function coachWorkoutExerciseValues(options = {}) {
         throw new Error(`${name} set ${setIndex + 1} needs a valid non-negative weight.`);
       }
 
-      if (repsText === "" || !Number.isInteger(reps) || reps < 1) {
+      if (repsText === "" || !Number.isInteger(reps) || reps < 0) {
         if (options.focusInvalid) {
           repsInput?.focus();
         }
-        throw new Error(`${name} set ${setIndex + 1} needs a positive whole-number rep count.`);
+        throw new Error(`${name} set ${setIndex + 1} needs a non-negative whole-number rep count.`);
       }
 
       if (rir !== null && (!Number.isInteger(rir) || rir < 0 || rir > 4)) {
@@ -792,7 +837,7 @@ function coachWorkoutExerciseValues(options = {}) {
         throw new Error(`${name} set ${setIndex + 1} RIR must be between 0 and 4.`);
       }
 
-      return { weight, reps, rir };
+      return { setType, setNumber, weight, reps, rir };
     });
 
     return {
@@ -847,6 +892,8 @@ function coachWorkoutSaveSignature(data) {
       code: exercise.code || "",
       name: exercise.name,
       sets: exercise.sets.map((set) => ({
+        setType: set.setType,
+        setNumber: set.setNumber,
         weight: set.weight,
         reps: set.reps,
         rir: set.rir
@@ -926,7 +973,7 @@ function scheduleCoachWorkoutAutosave(options = {}) {
     setCoachWorkoutStatus(
       draftStored
         ? "Draft saved on this device. Complete the required fields to sync it."
-        : "This draft could not be saved on this device. Keep this page open or use Save now.",
+        : "This draft could not be saved on this device. Keep this page open or use Save Workout.",
       !draftStored
     );
     return;
@@ -981,6 +1028,7 @@ async function saveCoachWorkout(event, options = {}) {
 
   const form = document.getElementById("coach-workout-log-form");
   const saveButton = document.getElementById("coach-workout-save");
+  const finishButton = document.getElementById("coach-workout-finish");
   const clientEmail = normalizeCoachWorkoutEmail(document.getElementById("coach-workout-client")?.value);
   const entryDate = document.getElementById("coach-workout-date")?.value || "";
   const exerciseElements = Array.from(document.querySelectorAll("[data-coach-workout-exercise]"));
@@ -1005,7 +1053,7 @@ async function saveCoachWorkout(event, options = {}) {
       automatic
         ? draftStored
           ? "Draft saved on this device. Complete the required fields to sync it."
-          : "This draft could not be saved on this device. Keep this page open or use Save now."
+          : "This draft could not be saved on this device. Keep this page open or use Save Workout."
         : "Complete every required field before saving.",
       !automatic || !draftStored
     );
@@ -1019,7 +1067,7 @@ async function saveCoachWorkout(event, options = {}) {
       automatic
         ? draftStored
           ? "Draft saved on this device. Choose a client and workout date to sync it."
-          : "This draft could not be saved on this device. Keep this page open or use Save now."
+          : "This draft could not be saved on this device. Keep this page open or use Save Workout."
         : "Choose a client and workout date first.",
       !automatic || !draftStored
     );
@@ -1037,7 +1085,7 @@ async function saveCoachWorkout(event, options = {}) {
       automatic
         ? draftStored
           ? "Draft saved on this device. Complete the exercise details to sync it."
-          : "This draft could not be saved on this device. Keep this page open or use Save now."
+          : "This draft could not be saved on this device. Keep this page open or use Save Workout."
         : error.message || "Check the exercise fields and try again.",
       !automatic || !draftStored
     );
@@ -1067,6 +1115,9 @@ async function saveCoachWorkout(event, options = {}) {
 
   if (saveButton) {
     saveButton.disabled = true;
+  }
+  if (finishButton) {
+    finishButton.disabled = true;
   }
   setCoachWorkoutStatus(automatic ? "Autosaving…" : "Saving the workout…");
 
@@ -1122,14 +1173,14 @@ async function saveCoachWorkout(event, options = {}) {
           workout_title: "Custom workout",
           exercise_code: exercise.code,
           exercise_name: exercise.name,
-          set_number: setIndex + 1,
+          set_number: set.setNumber,
           weight_used: set.weight,
           reps: set.reps,
           effort_scale: set.rir === null ? null : "rir",
           effort_value: set.rir,
           notes: coachWorkoutExerciseNote(format, exerciseIndex, exercise),
           source: "website",
-          set_type: "working",
+          set_type: set.setType,
           exercise_order: exerciseIndex
         }))
       ));
@@ -1156,13 +1207,12 @@ async function saveCoachWorkout(event, options = {}) {
       }
 
       for (const exercise of plannedExercises) {
-        const hasStaleSets = existing.some((row) => (
-          row.exercise_code === exercise.code &&
-          row.set_type !== "warm_up" &&
-          Number(row.set_number) > exercise.sets.length
-        ));
+        const plannedSetNumbers = new Set(exercise.sets.map((set) => Number(set.setNumber)));
+        const staleSetNumbers = existing
+          .filter((row) => row.exercise_code === exercise.code && !plannedSetNumbers.has(Number(row.set_number)))
+          .map((row) => Number(row.set_number));
 
-        if (hasStaleSets) {
+        if (staleSetNumbers.length > 0) {
           const { error: deleteError } = await coachWorkoutSupabase
             .from("client_workout_logs")
             .delete()
@@ -1170,8 +1220,7 @@ async function saveCoachWorkout(event, options = {}) {
             .eq("entry_date", entryDate)
             .eq("workout_title", "Custom workout")
             .eq("exercise_code", exercise.code)
-            .neq("set_type", "warm_up")
-            .gt("set_number", exercise.sets.length);
+            .in("set_number", staleSetNumbers);
 
           if (deleteError) {
             throw deleteError;
@@ -1233,8 +1282,8 @@ async function saveCoachWorkout(event, options = {}) {
       setCoachWorkoutStatus(
         automatic
           ? draftStored
-            ? "Autosave could not sync. Your draft is safe on this device; use Save now to retry."
-            : "Autosave could not sync and this device could not back up the draft. Keep this page open and use Save now to retry."
+            ? "Autosave could not sync. Your draft is safe on this device; use Save Workout to retry."
+            : "Autosave could not sync and this device could not back up the draft. Keep this page open and use Save Workout to retry."
           : error.message || "The workout could not be saved. Try again.",
         true
       );
@@ -1245,6 +1294,9 @@ async function saveCoachWorkout(event, options = {}) {
 
     if (saveButton) {
       saveButton.disabled = false;
+    }
+    if (finishButton) {
+      finishButton.disabled = false;
     }
 
     const queuedSave = (
@@ -1262,6 +1314,30 @@ async function saveCoachWorkout(event, options = {}) {
     if (queuedSave || sameEpochChanged) {
       scheduleCoachWorkoutAutosave({ recordChange: false, delayMs: 0 });
     }
+  }
+}
+
+async function finishCoachWorkout() {
+  if (coachWorkoutAutosaveInFlight) {
+    setCoachWorkoutStatus("An autosave is finishing. Tap Finish Workout again in a moment.");
+    return;
+  }
+
+  const finishButton = document.getElementById("coach-workout-finish");
+
+  if (finishButton) {
+    finishButton.disabled = true;
+  }
+
+  const result = await saveCoachWorkout();
+
+  if (result.saved && !result.stale) {
+    resetCoachWorkoutForm();
+    setCoachWorkoutStatus("Workout finished and saved. The logger is ready for the next session.");
+  }
+
+  if (finishButton) {
+    finishButton.disabled = false;
   }
 }
 
@@ -1328,6 +1404,7 @@ function handleCoachWorkoutForm() {
     exercise?.querySelector("[data-coach-workout-name]")?.focus();
   });
   document.getElementById("coach-workout-reset")?.addEventListener("click", () => resetCoachWorkoutForm());
+  document.getElementById("coach-workout-finish")?.addEventListener("click", finishCoachWorkout);
   form.addEventListener("submit", saveCoachWorkout);
   form.addEventListener("input", (event) => {
     if (event.target.matches("#coach-workout-client, #coach-workout-date")) {
@@ -1357,7 +1434,7 @@ function handleCoachWorkoutForm() {
       return;
     }
 
-    if (exercise && event.target.matches("[data-coach-workout-weight], [data-coach-workout-reps], [data-coach-workout-notes]")) {
+    if (exercise && event.target.matches("[data-coach-workout-set-label], [data-coach-workout-weight], [data-coach-workout-reps], [data-coach-workout-notes]")) {
       updateCoachWorkoutSetRows(exercise);
       const notesState = exercise.querySelector("[data-coach-workout-notes-state]");
       if (notesState) notesState.textContent = exercise.querySelector("[data-coach-workout-notes]")?.value.trim() ? "Added" : "";

@@ -7,13 +7,25 @@ const projectRoot = path.resolve(__dirname, "..");
 const loggerHtml = fs.readFileSync(path.join(projectRoot, "coach-workout-log.html"), "utf8");
 const loggerSource = fs.readFileSync(path.join(projectRoot, "js/coach-workout-log.js"), "utf8");
 
-test("Session Logger exposes autosave with a manual Save now fallback", () => {
+test("Session Logger exposes autosave with manual save and finish actions", () => {
   assert.match(loggerHtml, />Autosave on</);
-  assert.match(loggerHtml, /id="coach-workout-save">Save now</);
+  assert.match(loggerHtml, /id="coach-workout-save">Save Workout</);
+  assert.match(loggerHtml, /id="coach-workout-finish">Finish Workout</);
   assert.match(loggerSource, /const coachWorkoutAutosaveDelayMs = 10000/);
   assert.match(loggerSource, /form\.addEventListener\("input", \(event\) =>/);
   assert.match(loggerSource, /scheduleCoachWorkoutAutosave\(\)/);
   assert.match(loggerSource, /form\.addEventListener\("change",/);
+});
+
+test("Finish Workout clears the logger only after a confirmed save", () => {
+  const finishSource = loggerSource.slice(
+    loggerSource.indexOf("async function finishCoachWorkout"),
+    loggerSource.indexOf("function resetCoachWorkoutForm")
+  );
+
+  assert.match(finishSource, /const result = await saveCoachWorkout\(\)/);
+  assert.match(finishSource, /if \(result\.saved && !result\.stale\)/);
+  assert.ok(finishSource.indexOf("resetCoachWorkoutForm()") > finishSource.indexOf("result.saved"));
 });
 
 test("incomplete Session Logger changes stay in a restorable local draft", () => {

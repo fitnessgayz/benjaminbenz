@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=coach-session-autosave-suggestions-1" />
+  <link rel="stylesheet" href="css/style.css?v=coach-session-finish-warmup-1" />
 </head>
 <body class="dashboard-page coach-workout-log-page">
   <header class="site-header dashboard-header">
@@ -103,9 +103,12 @@
 
       <section class="admin-card coach-workout-submit-panel">
         <p id="coach-workout-status" role="status">Autosave is on. Choose a client and add the exercises completed today.</p>
-        <div>
+        <div class="coach-workout-submit-actions">
           <button class="button button-ghost" type="button" id="coach-workout-reset">Clear form</button>
-          <button class="button button-dark" type="submit" id="coach-workout-save">Save now</button>
+          <div class="coach-workout-save-actions">
+            <button class="button button-dark" type="submit" id="coach-workout-save">Save Workout</button>
+            <button class="button coach-workout-finish-button" type="button" id="coach-workout-finish">Finish Workout</button>
+          </div>
         </div>
       </section>
     </form>
@@ -113,6 +116,6 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js?v=client-session-link-1"></script>
-  <script src="js/coach-workout-log.js?v=coach-session-autosave-suggestions-1"></script>
+  <script src="js/coach-workout-log.js?v=coach-session-finish-warmup-1"></script>
 </body>
 </html>
