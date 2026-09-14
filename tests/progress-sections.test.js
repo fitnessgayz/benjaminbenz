@@ -24,21 +24,22 @@ test("separates training progress from stats and measurements", () => {
   assert.match(progressPanel, /id="client-exercise-progress-title"/);
   assert.doesNotMatch(progressPanel, /id="progress-current"/);
   assert.match(statsPanel, /id="client-stats-title">Stats &amp; measurements/);
-  assert.match(statsPanel, /id="progress-current"/);
+  assert.doesNotMatch(statsPanel, /id="progress-current"/);
   assert.match(statsPanel, /id="client-progress-entry-title"/);
+  assert.match(statsPanel, /id="client-current-rmr"/);
+  assert.match(clientPortal, /clientProgressRmr\(rmrEntry\)/);
   assert.doesNotMatch(statsPanel, /id="client-monthly-report-card"/);
 });
 
-test("keeps Stats and Measurements open with DEXA first", () => {
+test("keeps Stats and Measurements open with DEXA first and removes the redundant current snapshot", () => {
   const statsPanel = dashboard.match(/<section class="progress-panel client-stats-panel" data-client-dashboard-panel="stats"[\s\S]*?<section class="progress-panel client-questionnaire-panel"/)?.[0] || "";
   const dexaIndex = statsPanel.indexOf('id="client-dexa-title"');
-  const summaryIndex = statsPanel.indexOf('id="progress-current"');
   const measurementsIndex = statsPanel.indexOf('id="client-progress-entry-title"');
 
   assert.match(statsPanel, /id="client-add-past-progress-button"[^>]*>Add measurements<\/button>/);
   assert.ok(dexaIndex >= 0);
-  assert.ok(dexaIndex < summaryIndex);
   assert.ok(dexaIndex < measurementsIndex);
+  assert.equal(statsPanel.indexOf('id="progress-current"'), -1);
   assert.doesNotMatch(statsPanel, /data-progress-section-toggle/);
   assert.doesNotMatch(statsPanel, /data-progress-section-content/);
   assert.doesNotMatch(statsPanel, />Minimize</);

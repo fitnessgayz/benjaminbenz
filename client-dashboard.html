@@ -30,7 +30,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=progress-history-archive-1" />
+  <link rel="stylesheet" href="css/style.css?v=home-snapshot-deck-2" />
   <link rel="stylesheet" href="css/custom-workout-mobile-fix.css?v=exercise-title-wrap-italic-5" />
 </head>
 <body class="dashboard-page client-dashboard-page is-loading">
@@ -112,6 +112,63 @@
           </div>
           <div class="client-home-checkin-backdrop" data-client-home-checkin-backdrop hidden></div>
           <div class="client-home-grid" id="client-home-grid">
+            <section class="client-home-snapshot-section" aria-labelledby="client-home-snapshot-title">
+              <div class="client-home-snapshot-heading">
+                <div>
+                  <p class="kicker">Your dashboard</p>
+                  <h3 id="client-home-snapshot-title">Today at a glance</h3>
+                </div>
+                <span>Swipe cards</span>
+              </div>
+              <div class="client-home-snapshot-deck" data-client-home-snapshot-deck tabindex="0" role="region" aria-roledescription="carousel" aria-label="Stats, macro targets, and training report snapshots">
+                <article class="client-home-snapshot-card client-home-stats-snapshot" data-client-home-snapshot-card aria-label="Stats and measurements snapshot">
+                  <header>
+                    <div><span>Snapshot 01</span><h4>Stats + measurements</h4></div>
+                    <button type="button" data-client-summary-go-tab="stats" aria-label="Open stats and measurements">→</button>
+                  </header>
+                  <div class="client-home-snapshot-metrics">
+                    <span><small>Bodyweight</small><strong id="client-home-snapshot-bodyweight">Not set</strong></span>
+                    <span><small>Body fat</small><strong id="client-home-snapshot-bodyfat">Not set</strong></span>
+                    <span><small>DEXA lean mass</small><strong id="client-home-snapshot-lean-mass">Not set</strong></span>
+                    <span><small>Waist</small><strong id="client-home-snapshot-waist">Not set</strong></span>
+                    <span class="is-wide"><small>Current RMR</small><strong id="client-home-snapshot-rmr">Not set</strong></span>
+                  </div>
+                </article>
+                <article class="client-home-snapshot-card" data-client-home-snapshot-card aria-label="Calories and macros snapshot">
+                  <header>
+                    <div><span>Snapshot 02</span><h4>Calories + macros</h4></div>
+                    <button type="button" data-client-summary-go-tab="nutrition" aria-label="Open calories and macros">→</button>
+                  </header>
+                  <div class="client-home-snapshot-metrics">
+                    <span><small>Calories</small><strong id="client-home-snapshot-calories">Not set</strong></span>
+                    <span><small>Protein</small><strong id="client-home-snapshot-protein">Not set</strong></span>
+                    <span><small>Carbs</small><strong id="client-home-snapshot-carbs">Not set</strong></span>
+                    <span><small>Fat</small><strong id="client-home-snapshot-fat">Not set</strong></span>
+                  </div>
+                </article>
+                <article class="client-home-snapshot-card client-home-training-snapshot" data-client-home-snapshot-card aria-label="Training report snapshot">
+                  <header>
+                    <div><span>Snapshot 03</span><h4>Training report</h4></div>
+                    <button type="button" data-client-summary-go-tab="logs" aria-label="Open workout history">→</button>
+                  </header>
+                  <div class="client-home-training-total">
+                    <strong id="client-home-snapshot-workouts">0</strong>
+                    <span>workouts completed this week</span>
+                    <small id="client-home-snapshot-week">This week</small>
+                  </div>
+                  <div class="client-home-training-metrics">
+                    <span><small>Working sets</small><strong id="client-home-snapshot-working-sets">0</strong></span>
+                    <span><small>Total volume</small><strong id="client-home-snapshot-volume">0 lb</strong></span>
+                    <span><small>Personal bests</small><strong id="client-home-snapshot-personal-bests">0 new</strong></span>
+                  </div>
+                </article>
+              </div>
+              <div class="client-home-snapshot-controls" aria-label="Choose a snapshot card">
+                <button class="is-active" type="button" data-client-home-snapshot-dot="0" aria-label="Show stats and measurements" aria-pressed="true"><span></span></button>
+                <button type="button" data-client-home-snapshot-dot="1" aria-label="Show calories and macros" aria-pressed="false"><span></span></button>
+                <button type="button" data-client-home-snapshot-dot="2" aria-label="Show training report" aria-pressed="false"><span></span></button>
+              </div>
+            </section>
             <article class="client-monthly-report-card client-home-monthly-report-card" id="client-home-monthly-report-card" hidden>
               <a class="client-monthly-report-link" id="client-home-monthly-report-link" href="#" data-monthly-report-link data-monthly-report-home-link>
                 <span class="client-monthly-report-icon" aria-hidden="true">↗</span>
@@ -611,7 +668,14 @@
             </div>
           </section>
 
-          <div class="progress-current" id="progress-current"></div>
+          <article class="progress-current-rmr" aria-labelledby="client-current-rmr-title">
+            <div>
+              <p class="kicker">Current RMR</p>
+              <h3 id="client-current-rmr-title"><span id="client-current-rmr">Not set</span></h3>
+            </div>
+            <p id="client-current-rmr-meta">Upload and save a DEXA report to add resting metabolic rate.</p>
+          </article>
+
           <div class="progress-metric-tabs" id="progress-metric-tabs" aria-label="Choose progress chart">
             <button class="progress-metric-tab is-active" type="button" data-progress-metric="bodyweight" aria-pressed="true">Bodyweight</button>
             <button class="progress-metric-tab" type="button" data-progress-metric="bodyfat" aria-pressed="false">Body fat</button>
@@ -815,6 +879,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js?v=manual-sessions-1"></script>
   <script src="js/exercise-name-matcher.js?v=exercise-consolidation-1"></script>
-  <script src="js/client-portal.js?v=progress-history-archive-1"></script>
+  <script src="js/client-portal.js?v=home-snapshot-deck-2"></script>
 </body>
 </html>

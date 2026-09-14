@@ -522,6 +522,146 @@ function latestWorkoutLogSummary() {
   };
 }
 
+function clientHomeSnapshotValue(value, suffix = "") {
+  if (value === null || value === undefined || String(value).trim() === "") {
+    return "Not set";
+  }
+
+  const text = String(value).trim();
+
+  return suffix && !/[a-z%]/i.test(text) ? `${text}${suffix}` : text;
+}
+
+function clientProgressRmr(entry = {}) {
+  const bodyspec = progressMeasurements(entry).bodyspec;
+  const value = bodyspec && typeof bodyspec === "object" ? bodyspec.rmr_cal_per_day : null;
+
+  return value === null || value === undefined || value === "" ? null : value;
+}
+
+function latestClientRmrEntry(entries = progressEntries) {
+  return (Array.isArray(entries) ? entries : []).slice().reverse()
+    .find((entry) => clientProgressRmr(entry) !== null) || null;
+}
+
+function localDateKey(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+function clientHomeWeekRange(referenceDate = todayDate()) {
+  const date = new Date(`${referenceDate}T12:00:00`);
+  const mondayOffset = (date.getDay() + 6) % 7;
+  const start = new Date(date);
+  const end = new Date(date);
+
+  start.setDate(date.getDate() - mondayOffset);
+  end.setDate(start.getDate() + 6);
+
+  return {
+    start: localDateKey(start),
+    end: localDateKey(end)
+  };
+}
+
+function clientHomeWorkingLogs(logs = []) {
+  return (Array.isArray(logs) ? logs : []).filter((log) => {
+    const code = String(log.exercise_code || "").trim().toUpperCase();
+
+    return ![warmupExerciseCode, cardioExerciseCode].includes(code) &&
+      normalizedSetType(log.set_type, log.set_number) !== warmUpSetType &&
+      ((Number(log.weight_used) || 0) > 0 || (Number(log.reps) || 0) > 0);
+  });
+}
+
+function clientHomeTrainingSnapshot(logs = trainingLogs, feedback = workoutSessionFeedback) {
+  const range = clientHomeWeekRange();
+  const workingLogs = clientHomeWorkingLogs(logs);
+  const weeklyLogs = workingLogs.filter((log) => {
+    const date = String(log.entry_date || "");
+
+    return date >= range.start && date <= range.end;
+  });
+  const priorLogs = workingLogs.filter((log) => String(log.entry_date || "") < range.start);
+  const weeklySessionKeys = new Set(weeklyLogs.map((log) => (
+    String(log.workout_session_id || log.session_id || "").trim() ||
+    `${log.entry_date || ""}|${log.workout_title || "Workout"}`
+  )));
+  const completedFeedbackKeys = new Set((Array.isArray(feedback) ? feedback : [])
+    .filter((entry) => {
+      const date = String(entry.entry_date || "");
+
+      return date >= range.start && date <= range.end;
+    })
+    .map((entry) => workoutFeedbackSessionId(entry) || `${entry.entry_date || ""}|${entry.workout_title || "Workout"}`));
+  const priorBest = new Map();
+  const weeklyBest = new Map();
+
+  priorLogs.forEach((log) => {
+    const key = normalizeExerciseHistoryName(log.exercise_name || log.exercise_code);
+    const score = monthlyReportSetScore(log);
+
+    if (key) {
+      priorBest.set(key, Math.max(priorBest.get(key) || 0, score));
+    }
+  });
+  weeklyLogs.forEach((log) => {
+    const key = normalizeExerciseHistoryName(log.exercise_name || log.exercise_code);
+    const score = monthlyReportSetScore(log);
+
+    if (key) {
+      weeklyBest.set(key, Math.max(weeklyBest.get(key) || 0, score));
+    }
+  });
+
+  const personalBests = Array.from(weeklyBest.entries()).filter(([key, score]) => {
+    const previous = priorBest.get(key) || 0;
+
+    return previous > 0 && score > previous * 1.005;
+  }).length;
+  const workoutTarget = Array.isArray(currentProgram?.workouts) ? currentProgram.workouts.length : 0;
+  const completedWorkouts = completedFeedbackKeys.size || weeklySessionKeys.size;
+  const volume = weeklyLogs.reduce((total, log) => (
+    total + ((Number(log.weight_used) || 0) * (Number(log.reps) || 0))
+  ), 0);
+
+  return {
+    range,
+    workouts: workoutTarget > 0 ? `${completedWorkouts} / ${workoutTarget}` : String(completedWorkouts),
+    workingSets: weeklyLogs.length,
+    volume: `${Math.round(volume).toLocaleString("en-US")} lb`,
+    personalBests: `${personalBests} new`
+  };
+}
+
+function renderClientHomeSnapshots(nutrition = nutritionPlanFromProgram(currentProgram || {}), latestProgress = progressEntries[progressEntries.length - 1]) {
+  const measurements = progressMeasurements(latestProgress || {});
+  const rmrEntry = latestClientRmrEntry();
+  const training = clientHomeTrainingSnapshot();
+  const weekStart = new Date(`${training.range.start}T12:00:00`).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric"
+  });
+
+  setText("#client-home-snapshot-bodyweight", clientHomeSnapshotValue(latestProgress?.bodyweight, " lb"));
+  setText("#client-home-snapshot-bodyfat", clientHomeSnapshotValue(latestProgress?.bodyfat, "%"));
+  setText("#client-home-snapshot-lean-mass", clientHomeSnapshotValue(latestProgress?.lean_mass, " lb"));
+  setText("#client-home-snapshot-waist", clientHomeSnapshotValue(measurements.waist, " in"));
+  setText("#client-home-snapshot-rmr", clientHomeSnapshotValue(clientProgressRmr(rmrEntry), " cal/day"));
+  setText("#client-home-snapshot-calories", clientHomeSnapshotValue(nutrition.calories));
+  setText("#client-home-snapshot-protein", clientHomeSnapshotValue(nutrition.protein, "g"));
+  setText("#client-home-snapshot-carbs", clientHomeSnapshotValue(nutrition.carbs, "g"));
+  setText("#client-home-snapshot-fat", clientHomeSnapshotValue(nutrition.fat, "g"));
+  setText("#client-home-snapshot-workouts", training.workouts);
+  setText("#client-home-snapshot-week", `Week of ${weekStart}`);
+  setText("#client-home-snapshot-working-sets", String(training.workingSets));
+  setText("#client-home-snapshot-volume", training.volume);
+  setText("#client-home-snapshot-personal-bests", training.personalBests);
+}
+
 function renderClientHomeSummary() {
   const homePanel = document.querySelector('[data-client-dashboard-panel="home"]');
 
@@ -562,6 +702,7 @@ function renderClientHomeSummary() {
     : "Log mood, energy, body readiness, or anything Benjamin should know today.");
   setText("#client-home-note-title", noteTitle || "No note yet");
   setText("#client-home-note-body", noteBody || "Coach notes will appear here when Benjamin adds one.");
+  renderClientHomeSnapshots(nutrition, latestProgress);
 
   if (checklist) {
     const todayFoodLogged = foodLogs.some((log) => String(log.entry_date || "") === todayDate());
@@ -3316,16 +3457,11 @@ function renderProgress(entries) {
   const safeEntries = Array.isArray(entries) ? entries : [];
   progressEntries = safeEntries;
   const latest = safeEntries[safeEntries.length - 1];
-  const current = document.getElementById("progress-current");
-
-  if (!current) {
-    renderClientHomeSummary();
-    return;
-  }
 
   if (!latest) {
     setText("#progress-date", "No measurements yet");
-    current.innerHTML = '<p class="empty-state">No progress check-ins yet.</p>';
+    setText("#client-current-rmr", "Not set");
+    setText("#client-current-rmr-meta", "Upload and save a DEXA report to add resting metabolic rate.");
     setText("#progress-goal", "");
     renderProgressGraph([]);
     renderClientProgressHistory([]);
@@ -3335,14 +3471,12 @@ function renderProgress(entries) {
   }
 
   setText("#progress-date", `Latest measurement · ${formatLogDate(latest.entry_date)}`);
+  const rmrEntry = latestClientRmrEntry(safeEntries);
+  setText("#client-current-rmr", clientHomeSnapshotValue(clientProgressRmr(rmrEntry), " cal/day"));
+  setText("#client-current-rmr-meta", rmrEntry
+    ? `Latest saved DEXA estimate · ${formatLogDate(rmrEntry.entry_date)}`
+    : "Upload and save a DEXA report to add resting metabolic rate.");
   fillClientProgressForm(latest);
-  current.innerHTML = `
-    <span><strong>Current bodyweight</strong> ${formatProgressValue(latest.bodyweight, " lb")}</span>
-    <span><strong>Current bodyfat</strong> ${formatProgressValue(latest.bodyfat, "%")}</span>
-    <span><strong>DEXA lean mass</strong> ${formatProgressValue(latest.lean_mass, " lb")}</span>
-    <span><strong>Muscle mass</strong> ${formatProgressValue(latest.muscle_mass, " lb")}</span>
-    <span><strong>Waist</strong> ${formatProgressValue(progressMeasurements(latest).waist, " in")}</span>
-  `;
   setText("#progress-goal", latest.goal_note ? `Updated goal: ${latest.goal_note}` : "");
   renderProgressGraph(safeEntries);
   renderClientProgressHistory(safeEntries);
@@ -11000,6 +11134,91 @@ function handleClientHomeCarousel() {
   });
 }
 
+function syncClientHomeSnapshotControls(deck, index) {
+  const section = deck?.closest(".client-home-snapshot-section");
+  const cards = Array.from(deck?.querySelectorAll("[data-client-home-snapshot-card]") || []);
+  const dots = Array.from(section?.querySelectorAll("[data-client-home-snapshot-dot]") || []);
+  const safeIndex = Math.min(Math.max(Number(index) || 0, 0), Math.max(cards.length - 1, 0));
+
+  if (!deck || cards.length === 0) {
+    return;
+  }
+
+  deck.dataset.activeIndex = String(safeIndex);
+  dots.forEach((dot, dotIndex) => {
+    const isActive = dotIndex === safeIndex;
+
+    dot.classList.toggle("is-active", isActive);
+    dot.setAttribute("aria-pressed", String(isActive));
+  });
+}
+
+function setClientHomeSnapshotCard(deck, nextIndex, behavior = "smooth") {
+  const cards = Array.from(deck?.querySelectorAll("[data-client-home-snapshot-card]") || []);
+
+  if (!deck || cards.length === 0) {
+    return;
+  }
+
+  const index = ((Number(nextIndex) || 0) % cards.length + cards.length) % cards.length;
+  const origin = cards[0].offsetLeft;
+
+  deck.scrollTo({
+    left: cards[index].offsetLeft - origin,
+    behavior: window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches ? "auto" : behavior
+  });
+  syncClientHomeSnapshotControls(deck, index);
+}
+
+function handleClientHomeSnapshotDeck() {
+  document.querySelectorAll("[data-client-home-snapshot-deck]").forEach((deck) => {
+    let scrollFrame = null;
+
+    syncClientHomeSnapshotControls(deck, 0);
+    deck.addEventListener("scroll", () => {
+      if (scrollFrame !== null) {
+        return;
+      }
+
+      scrollFrame = window.requestAnimationFrame(() => {
+        const cards = Array.from(deck.querySelectorAll("[data-client-home-snapshot-card]"));
+        const origin = cards[0]?.offsetLeft || 0;
+        const activeIndex = cards.reduce((closestIndex, card, index) => (
+          Math.abs((card.offsetLeft - origin) - deck.scrollLeft) <
+          Math.abs((cards[closestIndex].offsetLeft - origin) - deck.scrollLeft)
+            ? index
+            : closestIndex
+        ), 0);
+
+        syncClientHomeSnapshotControls(deck, activeIndex);
+        scrollFrame = null;
+      });
+    }, { passive: true });
+  });
+
+  document.addEventListener("click", (event) => {
+    const dot = event.target.closest("[data-client-home-snapshot-dot]");
+    const section = dot?.closest(".client-home-snapshot-section");
+    const deck = section?.querySelector("[data-client-home-snapshot-deck]");
+
+    if (dot && deck) {
+      setClientHomeSnapshotCard(deck, Number(dot.dataset.clientHomeSnapshotDot));
+    }
+  });
+
+  document.addEventListener("keydown", (event) => {
+    const deck = event.target.closest("[data-client-home-snapshot-deck]");
+
+    if (!deck || !["ArrowLeft", "ArrowRight"].includes(event.key)) {
+      return;
+    }
+
+    event.preventDefault();
+    const current = Number(deck.dataset.activeIndex) || 0;
+    setClientHomeSnapshotCard(deck, current + (event.key === "ArrowRight" ? 1 : -1));
+  });
+}
+
 function handleClientSummaryActions() {
   document.addEventListener("click", async (event) => {
     const summaryTabButton = event.target.closest("[data-client-summary-go-tab]");
@@ -13204,6 +13423,7 @@ handleMonthlyProgressReport();
 handleClientExerciseProgressCarousel();
 handleClientPastProgressEntry();
 handleClientHomeCarousel();
+handleClientHomeSnapshotDeck();
 handleClientHomeCheckin();
 handleClientSummaryActions();
 handleClientWorkoutTabs();
