@@ -151,15 +151,15 @@ test("uses CSS variables for finger-following and settles before moving the deck
   assert.match(bind, /window\.setTimeout\(finishExit, 240\)/);
 });
 
-test("uses a smooth 320ms entrance with an instant and reduced-motion escape hatch", () => {
+test("uses a pronounced physical entrance with an instant and reduced-motion escape hatch", () => {
   const move = sourceForFunction("moveCustomWorkoutCarousel");
 
-  assert.match(mobileStyles, /\.custom-workout-card\.is-deck-entering-forward \{[\s\S]*?animation:\s*custom-workout-deck-enter-forward 320ms cubic-bezier\(/);
-  assert.match(mobileStyles, /\.custom-workout-card\.is-deck-entering-backward \{[\s\S]*?animation:\s*custom-workout-deck-enter-backward 320ms cubic-bezier\(/);
+  assert.match(mobileStyles, /\.custom-workout-card\.is-deck-entering-forward \{[\s\S]*?animation:\s*custom-workout-deck-enter-forward 460ms cubic-bezier\(/);
+  assert.match(mobileStyles, /\.custom-workout-card\.is-deck-entering-backward \{[\s\S]*?animation:\s*custom-workout-deck-enter-backward 460ms cubic-bezier\(/);
   assert.match(move, /const instant = Boolean\(options\.instant\)/);
   assert.match(move, /prefers-reduced-motion:\s*reduce/);
   assert.match(move, /!instant[\s\S]*?!reducedMotion[\s\S]*?isVisualDeck/);
-  assert.match(move, /window\.setTimeout\([\s\S]*?360\)/);
+  assert.match(move, /window\.setTimeout\([\s\S]*?520\)/);
   assert.match(
     mobileStyles,
     /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.is-touch-swiping[\s\S]*?\.is-deck-settling[\s\S]*?transition:\s*none !important;[\s\S]*?animation:\s*none !important;/,

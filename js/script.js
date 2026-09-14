@@ -465,7 +465,18 @@ function initializeCoachingOptionDeck(deck) {
 
   const move = (direction) => {
     const activeIndex = Number(deck.dataset.activeIndex) || 0;
+    const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+    const className = direction > 0 ? "is-moving-forward" : "is-moving-backward";
+
+    deck.classList.remove("is-moving-forward", "is-moving-backward");
+    if (!reducedMotion) {
+      deck.classList.add(className);
+      void deck.offsetWidth;
+    }
     setCoachingOptionDeckCard(deck, activeIndex + direction);
+    if (!reducedMotion) {
+      window.setTimeout(() => deck.classList.remove(className), 540);
+    }
   };
 
   previousButton?.addEventListener("click", () => move(-1));
@@ -509,9 +520,38 @@ function initializeCoachingOptionDeck(deck) {
 
     touchStart = {
       x: event.touches[0].clientX,
-      y: event.touches[0].clientY
+      y: event.touches[0].clientY,
+      axis: ""
     };
   }, { passive: true });
+
+  deck.addEventListener("touchmove", (event) => {
+    if (!touchStart || event.touches.length !== 1) {
+      return;
+    }
+
+    const deltaX = event.touches[0].clientX - touchStart.x;
+    const deltaY = event.touches[0].clientY - touchStart.y;
+    const horizontalDistance = Math.abs(deltaX);
+    const verticalDistance = Math.abs(deltaY);
+
+    if (!touchStart.axis && Math.max(horizontalDistance, verticalDistance) >= 8) {
+      touchStart.axis = horizontalDistance > verticalDistance * 1.15 ? "horizontal" : "vertical";
+    }
+
+    if (touchStart.axis === "horizontal") {
+      const width = Math.max(deck.getBoundingClientRect().width, 1);
+      const boundedX = Math.max(-width * .34, Math.min(width * .34, deltaX));
+      const progress = Math.min(Math.abs(boundedX) / width, 1);
+
+      event.preventDefault();
+      deck.classList.add("is-dragging");
+      deck.style.setProperty("--deck-drag-x", `${boundedX}px`);
+      deck.style.setProperty("--deck-drag-rotate", `${boundedX / width * 7}deg`);
+      deck.style.setProperty("--deck-drag-scale", String(1 - progress * .025));
+      deck.style.setProperty("--deck-drag-opacity", String(1 - progress * .18));
+    }
+  }, { passive: false });
 
   deck.addEventListener("touchend", (event) => {
     if (!touchStart || event.changedTouches.length !== 1) {
@@ -523,6 +563,11 @@ function initializeCoachingOptionDeck(deck) {
       event.changedTouches[0].clientX - touchStart.x,
       event.changedTouches[0].clientY - touchStart.y
     );
+    deck.classList.remove("is-dragging");
+    deck.style.removeProperty("--deck-drag-x");
+    deck.style.removeProperty("--deck-drag-rotate");
+    deck.style.removeProperty("--deck-drag-scale");
+    deck.style.removeProperty("--deck-drag-opacity");
     touchStart = null;
 
     if (direction) {
@@ -531,6 +576,11 @@ function initializeCoachingOptionDeck(deck) {
   }, { passive: true });
 
   deck.addEventListener("touchcancel", () => {
+    deck.classList.remove("is-dragging");
+    deck.style.removeProperty("--deck-drag-x");
+    deck.style.removeProperty("--deck-drag-rotate");
+    deck.style.removeProperty("--deck-drag-scale");
+    deck.style.removeProperty("--deck-drag-opacity");
     touchStart = null;
   }, { passive: true });
 }

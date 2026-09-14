@@ -156,7 +156,7 @@ test("mobile deck styles layer cards without clipping long workout content", () 
   assert.match(deckStyles, /@media \(max-width: 900px\) \{\s*\.training-log-desktop-history \{\s*display:\s*none/);
   assert.doesNotMatch(deckStyles, /@media \(max-width: 700px\)/);
   assert.match(deckStyles, /\.training-log-history-deck \{[\s\S]*?touch-action:\s*pan-y/);
-  assert.match(deckStyles, /\.training-log-history-deck \{[\s\S]*?overflow:\s*hidden/);
+  assert.match(deckStyles, /\.training-log-history-deck \{[\s\S]*?overflow:\s*visible/);
   assert.match(deckStyles, /\.training-log-history-card \{[\s\S]*?position:\s*absolute/);
   assert.match(deckStyles, /\.training-log-history-card\.is-current \{[\s\S]*?position:\s*relative[\s\S]*?pointer-events:\s*auto/);
   assert.match(deckStyles, /\.training-log-history-card\.is-deck-behind-1/);
@@ -168,7 +168,7 @@ test("mobile deck styles layer cards without clipping long workout content", () 
 });
 
 test("cache-busts the live dashboard assets after the Session Log release", () => {
-  assert.match(dashboard, /css\/style\.css\?v=mobile-labeled-nav-1/);
-  assert.match(dashboard, /js\/client-portal\.js\?v=group-preview-click-1/);
+  assert.match(dashboard, /css\/style\.css\?v=physical-card-decks-1/);
+  assert.match(dashboard, /js\/client-portal\.js\?v=physical-card-decks-1/);
   assert.match(portal, /handleClientWorkoutHistoryDeck\(\);/);
 });

@@ -2523,6 +2523,8 @@ function moveClientProgressHistoryDeck(step) {
 }
 
 function handleClientProgressHistoryDeck() {
+  let gesture = null;
+
   document.addEventListener("click", (event) => {
     if (event.target.closest("[data-client-progress-history-previous]")) {
       moveClientProgressHistoryDeck(-1);
@@ -2557,6 +2559,69 @@ function handleClientProgressHistoryDeck() {
       renderClientProgressHistory(progressEntries);
       document.querySelector("[data-client-progress-history-deck]")?.focus({ preventScroll: true });
     }
+  });
+
+  document.addEventListener("pointerdown", (event) => {
+    const deck = event.target.closest("[data-client-progress-history-deck]");
+
+    if (!deck || event.target.closest("button, input, a")) {
+      gesture = null;
+      return;
+    }
+
+    gesture = {
+      deck,
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      axis: ""
+    };
+  });
+
+  document.addEventListener("pointermove", (event) => {
+    if (!gesture || event.pointerId !== gesture.pointerId) {
+      return;
+    }
+
+    const deltaX = event.clientX - gesture.startX;
+    const deltaY = event.clientY - gesture.startY;
+    const horizontalDistance = Math.abs(deltaX);
+    const verticalDistance = Math.abs(deltaY);
+
+    if (!gesture.axis && Math.max(horizontalDistance, verticalDistance) >= 8) {
+      gesture.axis = horizontalDistance > verticalDistance * 1.2 ? "horizontal" : "vertical";
+    }
+
+    if (gesture.axis === "horizontal") {
+      event.preventDefault();
+      applyPhysicalDeckDrag(gesture.deck, deltaX, gesture.deck.getBoundingClientRect().width);
+    }
+  }, { passive: false });
+
+  document.addEventListener("pointerup", (event) => {
+    if (!gesture || event.pointerId !== gesture.pointerId) {
+      return;
+    }
+
+    const { deck, startX, startY, axis } = gesture;
+    const step = axis === "vertical"
+      ? 0
+      : clientWorkoutPickerSwipeStep(
+        event.clientX - startX,
+        event.clientY - startY,
+        deck.getBoundingClientRect().width
+      );
+
+    releasePhysicalDeckDrag(deck);
+    gesture = null;
+    if (step !== 0) {
+      moveClientProgressHistoryDeck(step);
+    }
+  });
+
+  document.addEventListener("pointercancel", () => {
+    releasePhysicalDeckDrag(gesture?.deck);
+    gesture = null;
   });
 }
 
@@ -2794,11 +2859,33 @@ function handleClientExerciseProgressCarousel() {
     }
 
     gesture = {
+      deck: carousel.querySelector(".progress-exercise-deck"),
       pointerId: event.pointerId,
       startX: event.clientX,
-      startY: event.clientY
+      startY: event.clientY,
+      axis: ""
     };
   });
+
+  document.addEventListener("pointermove", (event) => {
+    if (!gesture || event.pointerId !== gesture.pointerId) {
+      return;
+    }
+
+    const deltaX = event.clientX - gesture.startX;
+    const deltaY = event.clientY - gesture.startY;
+    const horizontalDistance = Math.abs(deltaX);
+    const verticalDistance = Math.abs(deltaY);
+
+    if (!gesture.axis && Math.max(horizontalDistance, verticalDistance) >= 8) {
+      gesture.axis = horizontalDistance > verticalDistance * 1.2 ? "horizontal" : "vertical";
+    }
+
+    if (gesture.axis === "horizontal" && gesture.deck) {
+      event.preventDefault();
+      applyPhysicalDeckDrag(gesture.deck, deltaX, gesture.deck.getBoundingClientRect().width);
+    }
+  }, { passive: false });
 
   document.addEventListener("pointerup", (event) => {
     if (!gesture || event.pointerId !== gesture.pointerId) {
@@ -2807,6 +2894,7 @@ function handleClientExerciseProgressCarousel() {
 
     const deltaX = event.clientX - gesture.startX;
     const deltaY = event.clientY - gesture.startY;
+    releasePhysicalDeckDrag(gesture.deck);
     gesture = null;
 
     if (Math.abs(deltaX) >= 48 && Math.abs(deltaX) > Math.abs(deltaY) * 1.2) {
@@ -2815,6 +2903,7 @@ function handleClientExerciseProgressCarousel() {
   });
 
   document.addEventListener("pointercancel", () => {
+    releasePhysicalDeckDrag(gesture?.deck);
     gesture = null;
   });
 }
@@ -7509,7 +7598,7 @@ function moveCustomWorkoutCarousel(carousel, nextIndex, options = {}) {
       delete card.dataset.deckAnimationToken;
     };
     card.addEventListener("animationend", finishEntry, { once: true });
-    window.setTimeout(finishEntry, 360);
+    window.setTimeout(finishEntry, 520);
   }
 
   // Direct assignment works consistently in iOS/Android webviews and avoids a
@@ -8202,6 +8291,51 @@ function clientWorkoutPickerSwipeStep(deltaX, deltaY, width = 0) {
   return Number(deltaX) < 0 ? 1 : -1;
 }
 
+function applyPhysicalDeckDrag(deck, deltaX, width = 0) {
+  if (!deck || window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches) {
+    return;
+  }
+
+  const safeWidth = Math.max(Number(width) || deck.getBoundingClientRect().width || 1, 1);
+  const boundedX = Math.max(-safeWidth * .34, Math.min(safeWidth * .34, Number(deltaX) || 0));
+  const progress = Math.min(Math.abs(boundedX) / safeWidth, 1);
+
+  deck.classList.add("is-dragging");
+  deck.style.setProperty("--deck-drag-x", `${boundedX}px`);
+  deck.style.setProperty("--deck-drag-rotate", `${boundedX / safeWidth * 7}deg`);
+  deck.style.setProperty("--deck-drag-scale", String(1 - progress * .025));
+  deck.style.setProperty("--deck-drag-opacity", String(1 - progress * .18));
+}
+
+function releasePhysicalDeckDrag(deck) {
+  if (!deck) {
+    return;
+  }
+
+  deck.classList.remove("is-dragging");
+  deck.style.removeProperty("--deck-drag-x");
+  deck.style.removeProperty("--deck-drag-rotate");
+  deck.style.removeProperty("--deck-drag-scale");
+  deck.style.removeProperty("--deck-drag-opacity");
+}
+
+function animatePhysicalDeckChange(deck, direction, change) {
+  const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+
+  if (!deck || reducedMotion || !direction) {
+    change();
+    return;
+  }
+
+  const className = direction > 0 ? "is-moving-forward" : "is-moving-backward";
+
+  deck.classList.remove("is-moving-forward", "is-moving-backward");
+  deck.classList.add(className);
+  void deck.offsetWidth;
+  change();
+  window.setTimeout(() => deck.classList.remove(className), 540);
+}
+
 function clientWorkoutPickerSummary(workout, details) {
   const providedSummary = String(
     workout?.description ||
@@ -8443,7 +8577,11 @@ function setClientWorkoutPickerIndex(nextIndex) {
 }
 
 function moveClientWorkoutPicker(step) {
-  setClientWorkoutPickerIndex(activeWorkoutTabIndex + step);
+  const deck = document.querySelector("[data-client-workout-picker-deck]");
+
+  animatePhysicalDeckChange(deck, step, () => {
+    setClientWorkoutPickerIndex(activeWorkoutTabIndex + step);
+  });
 }
 
 function activateClientWorkoutPanel(nextIndex, options = {}) {
@@ -10074,8 +10212,13 @@ function moveClientWorkoutHistoryDeck(step, historyType = "workout") {
   const currentIndex = historyType === "food"
     ? activeFoodHistoryDeckIndex
     : activeWorkoutHistoryDeckIndex;
+  const deck = document.querySelector(historyType === "food"
+    ? "[data-client-food-history-deck]"
+    : "[data-client-workout-history-deck]");
 
-  setClientWorkoutHistoryDeckIndex(currentIndex + step, historyType);
+  animatePhysicalDeckChange(deck, step, () => {
+    setClientWorkoutHistoryDeckIndex(currentIndex + step, historyType);
+  });
 }
 
 function handleClientWorkoutHistoryDeck() {
@@ -10187,6 +10330,7 @@ function handleClientWorkoutHistoryDeck() {
 
     if (gesture.axis === "horizontal") {
       event.preventDefault();
+      applyPhysicalDeckDrag(gesture.deck, deltaX, gesture.deck.getBoundingClientRect().width);
     }
   }, { passive: false });
 
@@ -10204,6 +10348,7 @@ function handleClientWorkoutHistoryDeck() {
         deck.getBoundingClientRect().width
       );
 
+    releasePhysicalDeckDrag(deck);
     gesture = null;
     if (step !== 0) {
       ignoreCardClickUntil = Date.now() + 350;
@@ -10212,6 +10357,7 @@ function handleClientWorkoutHistoryDeck() {
   });
 
   document.addEventListener("pointercancel", () => {
+    releasePhysicalDeckDrag(gesture?.deck);
     gesture = null;
   });
 }
@@ -11208,6 +11354,24 @@ function syncClientHomeSnapshotControls(deck, index) {
   });
 }
 
+function updateClientHomeSnapshotMotion(deck) {
+  const cards = Array.from(deck?.querySelectorAll("[data-client-home-snapshot-card]") || []);
+  const origin = cards[0]?.offsetLeft || 0;
+  const step = Math.max((cards[1]?.offsetLeft || 0) - origin, cards[0]?.offsetWidth || 1, 1);
+  const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+
+  cards.forEach((card) => {
+    const distance = reducedMotion ? 0 : Math.max(-1.15, Math.min(1.15, ((card.offsetLeft - origin) - deck.scrollLeft) / step));
+    const depth = Math.abs(distance);
+
+    card.style.setProperty("--snapshot-y", `${depth * 10}px`);
+    card.style.setProperty("--snapshot-rotate", `${distance * -1.7}deg`);
+    card.style.setProperty("--snapshot-scale", String(1 - depth * .035));
+    card.style.setProperty("--snapshot-opacity", String(1 - depth * .2));
+    card.classList.toggle("is-snapshot-active", depth < .45);
+  });
+}
+
 function setClientHomeSnapshotCard(deck, nextIndex, behavior = "smooth") {
   const cards = Array.from(deck?.querySelectorAll("[data-client-home-snapshot-card]") || []);
 
@@ -11230,6 +11394,7 @@ function handleClientHomeSnapshotDeck() {
     let scrollFrame = null;
 
     syncClientHomeSnapshotControls(deck, 0);
+    updateClientHomeSnapshotMotion(deck);
     deck.addEventListener("scroll", () => {
       if (scrollFrame !== null) {
         return;
@@ -11245,6 +11410,7 @@ function handleClientHomeSnapshotDeck() {
             : closestIndex
         ), 0);
 
+        updateClientHomeSnapshotMotion(deck);
         syncClientHomeSnapshotControls(deck, activeIndex);
         scrollFrame = null;
       });
@@ -12565,6 +12731,7 @@ function handleClientWorkoutTabs() {
 
     if (gesture.axis === "horizontal") {
       event.preventDefault();
+      applyPhysicalDeckDrag(gesture.deck, deltaX, gesture.deck.getBoundingClientRect().width);
     }
   }, { passive: false });
 
@@ -12582,6 +12749,7 @@ function handleClientWorkoutTabs() {
         deck.getBoundingClientRect().width
       );
 
+    releasePhysicalDeckDrag(deck);
     gesture = null;
     if (step !== 0) {
       moveClientWorkoutPicker(step);
@@ -12589,6 +12757,7 @@ function handleClientWorkoutTabs() {
   });
 
   document.addEventListener("pointercancel", () => {
+    releasePhysicalDeckDrag(gesture?.deck);
     gesture = null;
   });
 }

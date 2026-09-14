@@ -34,6 +34,6 @@ test("sends a coaching inquiry without asking for message text", () => {
 });
 
 test("cache-busts the updated homepage assets", () => {
-  assert.match(homepage, /css\/style\.css\?v=contact-form-no-message-1/);
-  assert.match(homepage, /js\/script\.js\?v=contact-form-no-message-1/);
+  assert.match(homepage, /css\/style\.css\?v=physical-card-decks-1/);
+  assert.match(homepage, /js\/script\.js\?v=physical-card-decks-1/);
 });
