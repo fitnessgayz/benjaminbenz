@@ -52,6 +52,7 @@ type ReportRow = {
   extraction_warnings: unknown;
   extraction_error: string;
   progress_entry_id: string | null;
+  archived_at: string | null;
   updated_at: string;
 };
 
@@ -245,6 +246,114 @@ function reportResponse(report: ReportRow) {
     confidence: report.extraction_confidence,
     warnings: safeWarnings(report.extraction_warnings)
   };
+}
+
+async function archiveReport(
+  request: Request,
+  body: JsonRecord,
+  userClient: ReturnType<typeof createClient>,
+  adminClient: ReturnType<typeof createClient>,
+  userId: string,
+  clientEmail: string
+) {
+  const reportId = stringValue(body.report_id);
+
+  if (!validUuid(reportId) || typeof body.archived !== "boolean") {
+    return jsonResponse(request, { error: "Choose a valid report archive action." }, 400);
+  }
+
+  const { data: reportData, error: reportError } = await userClient
+    .from("client_dexa_reports")
+    .select("id,owner_user_id,client_email")
+    .eq("id", reportId)
+    .eq("owner_user_id", userId)
+    .maybeSingle();
+  const report = reportData as Pick<ReportRow, "id" | "owner_user_id" | "client_email"> | null;
+
+  if (reportError || !report) {
+    return jsonResponse(request, { error: "This DEXA report could not be found." }, 404);
+  }
+
+  if (report.client_email !== clientEmail) {
+    return jsonResponse(request, { error: "This DEXA report does not belong to your profile." }, 403);
+  }
+
+  const archivedAt = body.archived ? new Date().toISOString() : null;
+  const { data: updatedData, error: updateError } = await adminClient
+    .from("client_dexa_reports")
+    .update({ archived_at: archivedAt, updated_at: new Date().toISOString() })
+    .eq("id", report.id)
+    .eq("owner_user_id", userId)
+    .select("id,archived_at")
+    .maybeSingle();
+
+  if (updateError || !updatedData) {
+    return jsonResponse(request, { error: "The report archive could not be updated." }, 500);
+  }
+
+  return jsonResponse(request, {
+    report_id: report.id,
+    archived: Boolean(updatedData.archived_at),
+    archived_at: updatedData.archived_at
+  });
+}
+
+async function deleteReviewedReport(
+  request: Request,
+  body: JsonRecord,
+  userClient: ReturnType<typeof createClient>,
+  adminClient: ReturnType<typeof createClient>,
+  userId: string,
+  clientEmail: string
+) {
+  const reportId = stringValue(body.report_id);
+
+  if (!validUuid(reportId)) {
+    return jsonResponse(request, { error: "Choose a valid reviewed DEXA report." }, 400);
+  }
+
+  const { data: reportData, error: reportError } = await userClient
+    .from("client_dexa_reports")
+    .select("id,owner_user_id,client_email,storage_path,status")
+    .eq("id", reportId)
+    .eq("owner_user_id", userId)
+    .maybeSingle();
+  const report = reportData as Pick<ReportRow, "id" | "owner_user_id" | "client_email" | "storage_path" | "status"> | null;
+
+  if (reportError || !report) {
+    return jsonResponse(request, { error: "This DEXA report could not be found." }, 404);
+  }
+
+  if (report.client_email !== clientEmail) {
+    return jsonResponse(request, { error: "This DEXA report does not belong to your profile." }, 403);
+  }
+
+  if (report.status !== "confirmed") {
+    return jsonResponse(request, { error: "Review and save this report before deleting it." }, 409);
+  }
+
+  const { error: storageError } = await adminClient.storage
+    .from(DEXA_BUCKET)
+    .remove([report.storage_path]);
+
+  if (storageError) {
+    return jsonResponse(request, { error: "The reviewed report file could not be deleted." }, 500);
+  }
+
+  const { data: deletedData, error: deleteError } = await adminClient
+    .from("client_dexa_reports")
+    .delete()
+    .eq("id", report.id)
+    .eq("owner_user_id", userId)
+    .eq("status", "confirmed")
+    .select("id")
+    .maybeSingle();
+
+  if (deleteError || !deletedData) {
+    return jsonResponse(request, { error: "The report record could not be deleted." }, 500);
+  }
+
+  return jsonResponse(request, { report_id: report.id, deleted: true });
 }
 
 function responseText(payload: JsonRecord) {
@@ -1047,6 +1156,14 @@ serve(async (request) => {
   const adminClient = createClient(supabaseUrl, serviceRoleKey, {
     auth: { persistSession: false }
   });
+
+  if (action === "archive") {
+    return await archiveReport(request, body, userClient, adminClient, user.id, clientEmail);
+  }
+
+  if (action === "delete") {
+    return await deleteReviewedReport(request, body, userClient, adminClient, user.id, clientEmail);
+  }
 
   if (action === "confirm") {
     return await confirmReport(request, body, userClient, adminClient, user.id, clientEmail);

@@ -170,8 +170,8 @@ test("keeps DEXA lean mass separate from muscle mass in coach editing and histor
 });
 
 test("loads report metadata and creates short-lived private links only when requested", () => {
-  const clientLinkSource = sourceWindow(portal, '.from("dexa-reports")');
-  const coachLinkSource = sourceWindow(coachPortal, '.from("dexa-reports")');
+  const clientLinkSource = sourceWindow(portal, ".createSignedUrl(report.storage_path", 1400, 1800);
+  const coachLinkSource = sourceWindow(coachPortal, ".createSignedUrl(report.storage_path", 1400, 1800);
 
   assert.match(portal, /\.from\("client_dexa_reports"\)/);
   assert.match(coachPortal, /\.from\("client_dexa_reports"\)/);
@@ -187,4 +187,45 @@ test("loads report metadata and creates short-lived private links only when requ
 test("contains long filenames and collapses review fields on phones", () => {
   assert.match(styles, /\.dexa-report-summary strong,[\s\S]*?\{[^}]*overflow:\s*hidden[^}]*text-overflow:\s*ellipsis[^}]*white-space:\s*nowrap[^}]*\}/s);
   assert.match(styles, /@media \(max-width:\s*(?:620|700|760|820)px\)[\s\S]*?\.dexa-review-grid,[\s\S]*?\{[^}]*grid-template-columns:\s*(?:minmax\(0,\s*1fr\)|1fr)[^}]*\}/s);
+});
+
+test("archives reports into a collapsed reversible section", () => {
+  assert.match(portal, /\.select\("[^"]*archived_at[^"]*"\)/);
+  assert.match(portal, /dexaReports\.filter\(\(report\) => !report\.archived_at\)/);
+  assert.match(portal, /data-client-dexa-archived-toggle/);
+  assert.match(portal, /data-client-dexa-report-archive/);
+  assert.match(portal, /data-client-dexa-report-restore/);
+  assert.match(portal, /action:\s*"archive"/);
+  assert.match(styles, /\.dexa-report-archived-list\[hidden\]\s*\{[^}]*display:\s*none/);
+});
+
+test("only offers permanent deletion after review and preserves saved measurements", () => {
+  const edgeFunction = fs.readFileSync(path.join(root, "supabase/functions/extract-dexa-report/index.ts"), "utf8");
+  const deleteStart = edgeFunction.indexOf("async function deleteReviewedReport(");
+  const deleteEnd = edgeFunction.indexOf("\nfunction responseText", deleteStart);
+  const deleteSource = edgeFunction.slice(deleteStart, deleteEnd);
+
+  assert.ok(deleteStart >= 0, "Expected reviewed report deletion handler");
+  assert.match(portal, /report\.status === "confirmed"[\s\S]*?data-client-dexa-report-delete/);
+  assert.match(portal, /saved measurements will stay in your progress history/i);
+  assert.match(portal, /action:\s*"delete"/);
+  assert.match(deleteSource, /report\.status !== "confirmed"/);
+  assert.match(deleteSource, /\.from\(DEXA_BUCKET\)[\s\S]*?\.remove\(\[report\.storage_path\]\)/);
+  assert.match(deleteSource, /\.from\("client_dexa_reports"\)[\s\S]*?\.delete\(\)/);
+  assert.doesNotMatch(deleteSource, /\.from\("client_progress"\)[\s\S]*?\.delete\(\)/);
+});
+
+test("stores report archive state without expanding direct client write access", () => {
+  const migrationFile = fs.readdirSync(path.join(root, "supabase/migrations"))
+    .find((name) => name.endsWith("_add_dexa_report_archiving.sql"));
+
+  assert.ok(migrationFile, "Expected DEXA archive migration");
+  const migration = fs.readFileSync(path.join(root, "supabase/migrations", migrationFile), "utf8");
+  const edgeFunction = fs.readFileSync(path.join(root, "supabase/functions/extract-dexa-report/index.ts"), "utf8");
+
+  assert.match(migration, /add column if not exists archived_at timestamptz/i);
+  assert.match(edgeFunction, /action === "archive"/);
+  assert.match(edgeFunction, /action === "delete"/);
+  assert.match(edgeFunction, /\.eq\("owner_user_id", userId\)/);
+  assert.doesNotMatch(migration, /grant\s+(?:update|delete)[\s\S]*?to authenticated/i);
 });

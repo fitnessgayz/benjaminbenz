@@ -38,6 +38,9 @@ let activeWorkoutTabIndex = 0;
 let clientWorkoutPickerIsOpen = true;
 let activeWorkoutHistoryDeckIndex = 0;
 let activeFoodHistoryDeckIndex = 0;
+let activeProgressHistoryDeckIndex = 0;
+let clientProgressHistoryDirection = 0;
+let archivedDexaReportsExpanded = false;
 let currentProgram = null;
 const dashboardRequestTimeout = 15000;
 const customWorkoutTitle = "Custom workout";
@@ -2255,7 +2258,7 @@ function renderProgressGraph(entries) {
 
   const width = 680;
   const height = 260;
-  const padding = 34;
+  const padding = 46;
   const metricPoints = pointsFor(chartEntries, activeProgressMetric, width, height, padding);
   const values = chartEntries.map((entry) => progressMetricNumber(entry, activeProgressMetric));
   const latestValue = values[values.length - 1];
@@ -2267,6 +2270,12 @@ function renderProgressGraph(entries) {
       <line x1="${padding}" y1="${padding}" x2="${padding}" y2="${height - padding}" />
       <polyline class="progress-metric-line" points="${metricPoints}" />
       ${circlesFor(metricPoints, "progress-metric-dot")}
+      ${metricPoints.split(" ").filter(Boolean).map((point, index) => {
+        const [x, y] = point.split(",").map(Number);
+        const labelY = Math.max(15, y - 13);
+
+        return `<text class="progress-chart-value" x="${x}" y="${labelY}" text-anchor="middle">${escapeHtml(values[index])}${escapeHtml(metric.suffix)}</text>`;
+      }).join("")}
       ${chartEntries.map((entry, index) => {
         const x = padding + (chartEntries.length === 1 ? width - padding * 2 : (index / (chartEntries.length - 1)) * (width - padding * 2));
         return `<text x="${x}" y="${height - 8}" text-anchor="middle">${escapeHtml(entry.entry_date.slice(5))}</text>`;
@@ -2283,11 +2292,19 @@ function renderClientProgressHistory(entries) {
   }
 
   if (!entries.length) {
+    activeProgressHistoryDeckIndex = 0;
     history.innerHTML = '<p class="empty-state">No measurements yet.</p>';
     return;
   }
 
-  history.innerHTML = entries.slice().reverse().map((entry) => {
+  const orderedEntries = entries.slice().reverse();
+  activeProgressHistoryDeckIndex = Math.min(activeProgressHistoryDeckIndex, orderedEntries.length - 1);
+  const directionClass = clientProgressHistoryDirection > 0
+    ? " is-forward"
+    : clientProgressHistoryDirection < 0
+    ? " is-backward"
+    : "";
+  const cards = orderedEntries.map((entry, index) => {
     const measurements = progressMeasurements(entry);
     const values = [
       ["Weight", entry.bodyweight, "lb"],
@@ -2301,14 +2318,88 @@ function renderClientProgressHistory(entries) {
       ["Thigh", measurements.thigh, "in"],
       ...bodySpecHistoryRows(entry)
     ].filter(([, value]) => value !== null && value !== undefined && value !== "");
+    const current = index === activeProgressHistoryDeckIndex;
 
     return `
-      <button class="client-progress-history-row" type="button" data-client-progress-id="${escapeHtml(entry.id)}">
-        <div><strong>${escapeHtml(entry.entry_date)}</strong>${entry.goal_note ? `<p>${escapeHtml(entry.goal_note)}</p>` : ""}</div>
+      <button class="client-progress-history-row${current ? " is-current" : ""}" type="button" data-client-progress-history-card data-client-progress-id="${escapeHtml(entry.id)}" aria-label="Edit measurements from ${escapeHtml(formatLogDate(entry.entry_date))}" aria-hidden="${String(!current)}" tabindex="${current ? "0" : "-1"}">
+        <div><strong>${escapeHtml(formatLogDate(entry.entry_date))}</strong>${entry.goal_note ? `<p>${escapeHtml(entry.goal_note)}</p>` : ""}</div>
         <div class="client-progress-history-values">${values.map(([label, value, unit]) => `<span><small>${escapeHtml(label)}</small><strong>${escapeHtml(value)}${escapeHtml(unit)}</strong></span>`).join("") || '<span class="empty-state">No values recorded.</span>'}</div>
       </button>
     `;
   }).join("");
+
+  history.innerHTML = `
+    <div class="client-progress-history-deck-heading">
+      <strong>${activeProgressHistoryDeckIndex + 1} of ${orderedEntries.length}</strong>
+      <div class="client-progress-history-deck-controls" aria-label="Measurement history navigation">
+        <button type="button" data-client-progress-history-previous aria-label="Previous measurement" ${activeProgressHistoryDeckIndex === 0 ? "disabled" : ""}>‹</button>
+        <button type="button" data-client-progress-history-next aria-label="Next measurement" ${activeProgressHistoryDeckIndex === orderedEntries.length - 1 ? "disabled" : ""}>›</button>
+      </div>
+    </div>
+    <div class="client-progress-history-deck${directionClass}" data-client-progress-history-deck tabindex="0" aria-label="Measurement history card ${activeProgressHistoryDeckIndex + 1} of ${orderedEntries.length}">
+      ${cards}
+    </div>
+    <small class="client-progress-history-hint">Choose a card to edit that measurement.</small>
+  `;
+
+  clientProgressHistoryDirection = 0;
+}
+
+function moveClientProgressHistoryDeck(step) {
+  const count = progressEntries.length;
+
+  if (!count) {
+    return;
+  }
+
+  const nextIndex = Math.max(0, Math.min(activeProgressHistoryDeckIndex + step, count - 1));
+
+  if (nextIndex === activeProgressHistoryDeckIndex) {
+    return;
+  }
+
+  clientProgressHistoryDirection = step;
+  activeProgressHistoryDeckIndex = nextIndex;
+  renderClientProgressHistory(progressEntries);
+  document.querySelector("[data-client-progress-history-deck]")?.focus({ preventScroll: true });
+}
+
+function handleClientProgressHistoryDeck() {
+  document.addEventListener("click", (event) => {
+    if (event.target.closest("[data-client-progress-history-previous]")) {
+      moveClientProgressHistoryDeck(-1);
+    } else if (event.target.closest("[data-client-progress-history-next]")) {
+      moveClientProgressHistoryDeck(1);
+    }
+  });
+
+  document.addEventListener("keydown", (event) => {
+    const deck = event.target.closest("[data-client-progress-history-deck]");
+
+    if (!deck || event.target !== deck) {
+      return;
+    }
+
+    if (event.key === "ArrowLeft") {
+      event.preventDefault();
+      moveClientProgressHistoryDeck(-1);
+    } else if (event.key === "ArrowRight") {
+      event.preventDefault();
+      moveClientProgressHistoryDeck(1);
+    } else if (event.key === "Home") {
+      event.preventDefault();
+      clientProgressHistoryDirection = -1;
+      activeProgressHistoryDeckIndex = 0;
+      renderClientProgressHistory(progressEntries);
+      document.querySelector("[data-client-progress-history-deck]")?.focus({ preventScroll: true });
+    } else if (event.key === "End") {
+      event.preventDefault();
+      clientProgressHistoryDirection = 1;
+      activeProgressHistoryDeckIndex = Math.max(0, progressEntries.length - 1);
+      renderClientProgressHistory(progressEntries);
+      document.querySelector("[data-client-progress-history-deck]")?.focus({ preventScroll: true });
+    }
+  });
 }
 
 function exerciseProgressNumber(value) {
@@ -3433,6 +3524,31 @@ function dexaReportExtractedValues(report = {}) {
   return values;
 }
 
+function clientDexaReportMarkup(report, { archived = false, readOnly = false } = {}) {
+  const dateLabel = report.extracted_scan_date
+    ? formatLogDate(report.extracted_scan_date)
+    : formatLogDate(String(report.created_at || "").slice(0, 10));
+  const canReview = report.status === "ready" && !archived && !readOnly;
+  const canRetry = report.status === "failed" && !archived && !readOnly;
+  const canDelete = report.status === "confirmed" && !readOnly;
+
+  return `
+    <article class="dexa-report-row${archived ? " is-archived" : ""}">
+      <div class="dexa-report-summary">
+        <strong class="client-dexa-report-filename" title="${escapeHtml(report.original_filename || "DEXA report")}">${escapeHtml(report.original_filename || "DEXA report")}</strong>
+        <span>${escapeHtml(dateLabel || "Date unavailable")} · ${escapeHtml(dexaReportStatusLabel(report.status))}</span>
+      </div>
+      <div class="dexa-report-actions">
+        ${canReview ? `<button class="button button-accent" type="button" data-client-dexa-report-review="${escapeHtml(report.id)}">Review values</button>` : ""}
+        ${canRetry ? `<button class="button button-ghost" type="button" data-client-dexa-report-retry="${escapeHtml(report.id)}">Try extraction again</button>` : ""}
+        <button class="button button-ghost" type="button" data-client-dexa-report-view="${escapeHtml(report.id)}">View</button>
+        ${!readOnly ? `<button class="button button-ghost" type="button" data-client-dexa-report-${archived ? "restore" : "archive"}="${escapeHtml(report.id)}">${archived ? "Restore" : "Archive"}</button>` : ""}
+        ${canDelete ? `<button class="button button-ghost dexa-report-delete" type="button" data-client-dexa-report-delete="${escapeHtml(report.id)}">Delete</button>` : ""}
+      </div>
+    </article>
+  `;
+}
+
 function renderClientDexaReports(records) {
   dexaReports = Array.isArray(records) ? records : [];
   const list = document.getElementById("client-dexa-report-list");
@@ -3442,32 +3558,33 @@ function renderClientDexaReports(records) {
   }
 
   if (!dexaReports.length) {
+    archivedDexaReportsExpanded = false;
     list.innerHTML = '<p class="empty-state">No DEXA reports uploaded yet.</p>';
     return;
   }
 
   const readOnly = isCoachPortalEmail(activeDashboardUser?.email);
-  list.innerHTML = dexaReports.map((report) => {
-    const dateLabel = report.extracted_scan_date
-      ? formatLogDate(report.extracted_scan_date)
-      : formatLogDate(String(report.created_at || "").slice(0, 10));
-    const canReview = report.status === "ready" && !readOnly;
-    const canRetry = report.status === "failed" && !readOnly;
+  const activeReports = dexaReports.filter((report) => !report.archived_at);
+  const archivedReports = dexaReports.filter((report) => Boolean(report.archived_at));
 
-    return `
-      <article class="dexa-report-row">
-        <div class="dexa-report-summary">
-          <strong class="client-dexa-report-filename" title="${escapeHtml(report.original_filename || "DEXA report")}">${escapeHtml(report.original_filename || "DEXA report")}</strong>
-          <span>${escapeHtml(dateLabel || "Date unavailable")} · ${escapeHtml(dexaReportStatusLabel(report.status))}</span>
-        </div>
-        <div class="dexa-report-actions">
-          ${canReview ? `<button class="button button-accent" type="button" data-client-dexa-report-review="${escapeHtml(report.id)}">Review values</button>` : ""}
-          ${canRetry ? `<button class="button button-ghost" type="button" data-client-dexa-report-retry="${escapeHtml(report.id)}">Try extraction again</button>` : ""}
-          <button class="button button-ghost" type="button" data-client-dexa-report-view="${escapeHtml(report.id)}">View report</button>
-        </div>
-      </article>
-    `;
-  }).join("");
+  if (!archivedReports.length) {
+    archivedDexaReportsExpanded = false;
+  }
+
+  list.innerHTML = `
+    <div class="dexa-report-active-list">
+      ${activeReports.map((report) => clientDexaReportMarkup(report, { readOnly })).join("") || '<p class="empty-state">No active reports. Archived reports stay available below.</p>'}
+    </div>
+    ${archivedReports.length ? `
+      <button class="dexa-archive-toggle" type="button" data-client-dexa-archived-toggle aria-expanded="${String(archivedDexaReportsExpanded)}" aria-controls="client-dexa-archived-list">
+        <span>Archived reports (${archivedReports.length})</span>
+        <strong aria-hidden="true">${archivedDexaReportsExpanded ? "−" : "+"}</strong>
+      </button>
+      <div class="dexa-report-archived-list" id="client-dexa-archived-list" ${archivedDexaReportsExpanded ? "" : "hidden"}>
+        ${archivedReports.map((report) => clientDexaReportMarkup(report, { archived: true, readOnly })).join("")}
+      </div>
+    ` : ""}
+  `;
 }
 
 async function loadClientDexaReports(email = activeClientEmail) {
@@ -3478,7 +3595,7 @@ async function loadClientDexaReports(email = activeClientEmail) {
 
   const { data, error } = await supabaseClient
     .from("client_dexa_reports")
-    .select("id,client_email,storage_path,original_filename,mime_type,file_size_bytes,status,extracted_scan_date,extracted_bodyweight_lb,extracted_bodyfat_percent,extracted_lean_mass_lb,extraction_confidence,extraction_data,extraction_warnings,extraction_error,progress_entry_id,processed_at,confirmed_at,created_at")
+    .select("id,client_email,storage_path,original_filename,mime_type,file_size_bytes,status,extracted_scan_date,extracted_bodyweight_lb,extracted_bodyfat_percent,extracted_lean_mass_lb,extraction_confidence,extraction_data,extraction_warnings,extraction_error,progress_entry_id,processed_at,confirmed_at,archived_at,created_at")
     .ilike("client_email", email)
     .order("created_at", { ascending: false });
 
@@ -3727,10 +3844,27 @@ function handleClientDexaReports() {
   const list = document.getElementById("client-dexa-report-list");
 
   list?.addEventListener("click", async (event) => {
+    const archivedToggle = event.target.closest("[data-client-dexa-archived-toggle]");
+
+    if (archivedToggle) {
+      archivedDexaReportsExpanded = !archivedDexaReportsExpanded;
+      renderClientDexaReports(dexaReports);
+      document.querySelector("[data-client-dexa-archived-toggle]")?.focus({ preventScroll: true });
+      return;
+    }
+
     const reviewButton = event.target.closest("[data-client-dexa-report-review]");
     const retryButton = event.target.closest("[data-client-dexa-report-retry]");
     const viewButton = event.target.closest("[data-client-dexa-report-view]");
-    const reportId = reviewButton?.dataset.clientDexaReportReview || retryButton?.dataset.clientDexaReportRetry || viewButton?.dataset.clientDexaReportView;
+    const archiveButton = event.target.closest("[data-client-dexa-report-archive]");
+    const restoreButton = event.target.closest("[data-client-dexa-report-restore]");
+    const deleteButton = event.target.closest("[data-client-dexa-report-delete]");
+    const reportId = reviewButton?.dataset.clientDexaReportReview ||
+      retryButton?.dataset.clientDexaReportRetry ||
+      viewButton?.dataset.clientDexaReportView ||
+      archiveButton?.dataset.clientDexaReportArchive ||
+      restoreButton?.dataset.clientDexaReportRestore ||
+      deleteButton?.dataset.clientDexaReportDelete;
     const report = dexaReports.find((item) => String(item.id) === String(reportId));
 
     if (!report || !supabaseClient) {
@@ -3757,6 +3891,78 @@ function handleClientDexaReports() {
         setClientDexaStatus(error?.message || "Automatic extraction could not finish.");
       } finally {
         retryButton.disabled = false;
+      }
+      return;
+    }
+
+    if ((archiveButton || restoreButton) && !isCoachPortalEmail(activeDashboardUser?.email)) {
+      const shouldArchive = Boolean(archiveButton);
+      const actionButton = archiveButton || restoreButton;
+
+      actionButton.disabled = true;
+      setClientDexaStatus(shouldArchive ? "Archiving report..." : "Restoring report...");
+      try {
+        const { data, error } = await withTimeout(
+          supabaseClient.functions.invoke("extract-dexa-report", {
+            body: { action: "archive", report_id: report.id, archived: shouldArchive }
+          }),
+          "The report archive request timed out. Try again."
+        );
+
+        if (error || data?.error) {
+          throw new Error(data?.error || error?.message || "The report could not be updated.");
+        }
+
+        if (shouldArchive && String(activeDexaReviewId) === String(report.id)) {
+          hideClientDexaReview();
+        }
+        await loadClientDexaReports();
+        setClientDexaStatus(shouldArchive
+          ? "Report archived. Its saved measurements were not changed."
+          : "Report restored to Uploaded reports.");
+      } catch (error) {
+        actionButton.disabled = false;
+        setClientDexaStatus(error?.message || "The report could not be updated.");
+      }
+      return;
+    }
+
+    if (deleteButton && !isCoachPortalEmail(activeDashboardUser?.email)) {
+      if (report.status !== "confirmed") {
+        setClientDexaStatus("Review and save this report before deleting it.");
+        return;
+      }
+
+      const confirmed = window.confirm(
+        "Permanently delete this reviewed report file? Its saved measurements will stay in your progress history."
+      );
+
+      if (!confirmed) {
+        return;
+      }
+
+      deleteButton.disabled = true;
+      setClientDexaStatus("Deleting reviewed report...");
+      try {
+        const { data, error } = await withTimeout(
+          supabaseClient.functions.invoke("extract-dexa-report", {
+            body: { action: "delete", report_id: report.id }
+          }),
+          "The report delete request timed out. Try again."
+        );
+
+        if (error || data?.error) {
+          throw new Error(data?.error || error?.message || "The reviewed report could not be deleted.");
+        }
+
+        if (String(activeDexaReviewId) === String(report.id)) {
+          hideClientDexaReview();
+        }
+        await loadClientDexaReports();
+        setClientDexaStatus("Reviewed report deleted. Its saved measurements remain in your progress history.");
+      } catch (error) {
+        deleteButton.disabled = false;
+        setClientDexaStatus(error?.message || "The reviewed report could not be deleted.");
       }
       return;
     }
@@ -12423,7 +12629,7 @@ async function loadDashboard() {
       withTimeout(
         supabaseClient
           .from("client_dexa_reports")
-          .select("id,client_email,storage_path,original_filename,mime_type,file_size_bytes,status,extracted_scan_date,extracted_bodyweight_lb,extracted_bodyfat_percent,extracted_lean_mass_lb,extraction_confidence,extraction_data,extraction_warnings,extraction_error,progress_entry_id,processed_at,confirmed_at,created_at")
+          .select("id,client_email,storage_path,original_filename,mime_type,file_size_bytes,status,extracted_scan_date,extracted_bodyweight_lb,extracted_bodyfat_percent,extracted_lean_mass_lb,extraction_confidence,extraction_data,extraction_warnings,extraction_error,progress_entry_id,processed_at,confirmed_at,archived_at,created_at")
           .ilike("client_email", activeClientEmail)
           .order("created_at", { ascending: false }),
         "DEXA report request timed out."
@@ -12951,6 +13157,7 @@ async function handleSignOut() {
     button.addEventListener("click", async () => {
       clearClientQuestionnaire();
       dexaReports = [];
+      archivedDexaReportsExpanded = false;
       sharedFoodLibrary = [];
       hideClientDexaReview();
       renderClientDexaReports([]);
@@ -13003,6 +13210,7 @@ handleClientWorkoutTabs();
 handleWorkoutInteractions();
 handleSkipToggle();
 handleTrainingLogSave();
+handleClientProgressHistoryDeck();
 handleClientProgressHistorySelect();
 handleClientProgressSave();
 handleClientNutritionSave();

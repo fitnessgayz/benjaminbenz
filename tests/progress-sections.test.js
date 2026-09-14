@@ -103,3 +103,31 @@ test("does not initialize removed progress minimize behavior", () => {
   assert.doesNotMatch(clientPortal, /function handleProgressSectionToggles\(/);
   assert.doesNotMatch(clientPortal, /handleProgressSectionToggles\(\);/);
 });
+
+test("measurement history uses a keyboard-accessible animated card deck", () => {
+  const renderHistory = sourceForFunction("renderClientProgressHistory");
+  const moveHistory = sourceForFunction("moveClientProgressHistoryDeck");
+  const handleHistory = sourceForFunction("handleClientProgressHistoryDeck");
+
+  assert.match(renderHistory, /client-progress-history-deck-heading/);
+  assert.match(renderHistory, /data-client-progress-history-card/);
+  assert.match(renderHistory, /data-client-progress-history-previous/);
+  assert.match(renderHistory, /data-client-progress-history-next/);
+  assert.match(renderHistory, /aria-hidden=/);
+  assert.match(moveHistory, /Math\.max\(0, Math\.min/);
+  assert.match(handleHistory, /ArrowLeft/);
+  assert.match(handleHistory, /ArrowRight/);
+  assert.match(clientPortal, /handleClientProgressHistoryDeck\(\);/);
+  assert.match(styles, /@keyframes client-progress-history-forward/);
+  assert.match(styles, /@keyframes client-progress-history-backward/);
+  assert.match(styles, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?client-progress-history-deck/);
+});
+
+test("progress graph labels every plotted point with its value and unit", () => {
+  const renderGraph = sourceForFunction("renderProgressGraph");
+
+  assert.match(renderGraph, /class="progress-chart-value"/);
+  assert.match(renderGraph, /values\[index\]/);
+  assert.match(renderGraph, /metric\.suffix/);
+  assert.match(styles, /\.progress-chart \.progress-chart-value/);
+});
