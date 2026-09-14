@@ -6519,6 +6519,15 @@ function readWorkoutElapsedTimerState() {
     const state = {
       clientEmail: String(parsed.clientEmail || "").trim().toLowerCase(),
       workoutTitle: String(parsed.workoutTitle || "Workout").trim() || "Workout",
+      workoutDate: /^\d{4}-\d{2}-\d{2}$/.test(String(parsed.workoutDate || ""))
+        ? String(parsed.workoutDate)
+        : "",
+      panelIndex: parsed.panelIndex !== null &&
+        parsed.panelIndex !== "" &&
+        Number.isInteger(Number(parsed.panelIndex)) &&
+        Number(parsed.panelIndex) >= 0
+        ? Number(parsed.panelIndex)
+        : null,
       accumulatedMilliseconds: Math.max(0, Number(parsed.accumulatedMilliseconds) || 0),
       startedAt: Math.max(0, Number(parsed.startedAt) || 0),
       updatedAt: Math.max(0, Number(parsed.updatedAt) || Number(parsed.startedAt) || 0),
@@ -6641,6 +6650,8 @@ function renderWorkoutElapsedTimer() {
   const timer = ensureWorkoutElapsedTimer();
   const timerIsVisible = Boolean(workoutElapsedTimerState && !workoutElapsedTimerState.dismissed);
 
+  renderWorkoutResumeActions();
+
   document.body.classList.toggle("workout-elapsed-timer-visible", timerIsVisible);
 
   if (!timerIsVisible) {
@@ -6691,6 +6702,32 @@ function renderWorkoutElapsedTimer() {
   syncWorkoutStartButtons();
 }
 
+function renderWorkoutResumeActions() {
+  const hasActiveWorkout = Boolean(workoutElapsedTimerState);
+  const elapsedLabel = hasActiveWorkout
+    ? workoutElapsedTimeLabel(workoutElapsedMilliseconds())
+    : "00:00";
+  const statusLabel = workoutElapsedTimerState?.running
+    ? "Workout in progress"
+    : "Workout paused";
+
+  document.querySelectorAll("[data-workout-resume-card]").forEach((card) => {
+    card.hidden = !hasActiveWorkout;
+
+    if (!hasActiveWorkout) {
+      return;
+    }
+
+    const status = card.querySelector("[data-workout-resume-status]");
+    const title = card.querySelector("[data-workout-resume-title]");
+    const time = card.querySelector("[data-workout-resume-time]");
+
+    if (status) status.textContent = statusLabel;
+    if (title) title.textContent = workoutElapsedTimerState.workoutTitle || "Workout";
+    if (time) time.textContent = elapsedLabel;
+  });
+}
+
 function syncWorkoutStartButtons() {
   document.querySelectorAll("[data-workout-start]").forEach((button) => {
     const workoutTitle = String(button.dataset.workoutTitle || "").trim();
@@ -6722,16 +6759,27 @@ function runWorkoutElapsedTimer() {
   renderWorkoutElapsedTimer();
 }
 
-function startWorkoutElapsedTimer(workoutTitle = "") {
+function startWorkoutElapsedTimer(workoutTitle = "", context = {}) {
   const clientEmail = workoutElapsedTimerClientEmail();
   const storedState = readWorkoutElapsedTimerState();
   const canResumeStoredState = storedState && (!storedState.clientEmail || storedState.clientEmail === clientEmail);
+  const workoutDate = /^\d{4}-\d{2}-\d{2}$/.test(String(context.workoutDate || ""))
+    ? String(context.workoutDate)
+    : "";
+  const panelIndex = context.panelIndex !== null &&
+    context.panelIndex !== "" &&
+    Number.isInteger(Number(context.panelIndex)) &&
+    Number(context.panelIndex) >= 0
+    ? Number(context.panelIndex)
+    : null;
 
   workoutElapsedTimerState = canResumeStoredState
     ? storedState
     : {
         clientEmail,
         workoutTitle: String(workoutTitle || activeWorkoutElapsedTitle()).trim() || "Workout",
+        workoutDate,
+        panelIndex,
         accumulatedMilliseconds: 0,
         startedAt: Date.now(),
         running: true,
@@ -6742,6 +6790,8 @@ function startWorkoutElapsedTimer(workoutTitle = "") {
   workoutElapsedTimerState.workoutTitle = String(
     workoutTitle || workoutElapsedTimerState.workoutTitle || activeWorkoutElapsedTitle()
   ).trim() || "Workout";
+  workoutElapsedTimerState.workoutDate = workoutDate || workoutElapsedTimerState.workoutDate || todayDate();
+  workoutElapsedTimerState.panelIndex = panelIndex ?? workoutElapsedTimerState.panelIndex ?? null;
 
   if (!workoutElapsedTimerState.running) {
     workoutElapsedTimerState.startedAt = Date.now();
@@ -6750,6 +6800,48 @@ function startWorkoutElapsedTimer(workoutTitle = "") {
 
   persistWorkoutElapsedTimerState();
   runWorkoutElapsedTimer();
+}
+
+function resumeActiveWorkout() {
+  if (!workoutElapsedTimerState) {
+    restoreWorkoutElapsedTimer();
+  }
+
+  if (!workoutElapsedTimerState) {
+    return;
+  }
+
+  if (!workoutElapsedTimerState.running) {
+    workoutElapsedTimerState.startedAt = Date.now();
+    workoutElapsedTimerState.running = true;
+  }
+  workoutElapsedTimerState.dismissed = false;
+  persistWorkoutElapsedTimerState();
+  runWorkoutElapsedTimer();
+  setClientDashboardTab("workouts");
+
+  const panels = Array.from(document.querySelectorAll(".client-workout-panel"));
+  const activeTitle = String(workoutElapsedTimerState.workoutTitle || "").trim();
+  let panelIndex = panels.findIndex((panel) => (
+    String(panel.querySelector("[data-workout-start]")?.dataset.workoutTitle || "").trim() === activeTitle
+  ));
+
+  if (panelIndex < 0 && Number.isInteger(workoutElapsedTimerState.panelIndex)) {
+    panelIndex = workoutElapsedTimerState.panelIndex;
+  }
+
+  const panel = panels[panelIndex];
+
+  if (!panel) {
+    showClientWorkoutPicker();
+    return;
+  }
+
+  activeWorkoutTabIndex = panelIndex;
+  if (workoutElapsedTimerState.workoutDate) {
+    syncWorkoutPanelDate(panel, workoutElapsedTimerState.workoutDate);
+  }
+  activateClientWorkoutPanel(panelIndex, { focus: true, scroll: true });
 }
 
 function restoreWorkoutElapsedTimer() {
@@ -9306,6 +9398,17 @@ function handleTrainingDateChange() {
       const panel = workoutDate.closest(".client-workout-panel");
       syncWorkoutPanelDate(panel, workoutDate.value || todayDate());
       persistCustomWorkoutDraftFromPanel(panel);
+      const panelWorkoutTitle = String(
+        panel?.querySelector("[data-workout-start]")?.dataset.workoutTitle || ""
+      ).trim();
+      if (
+        workoutElapsedTimerState &&
+        panelWorkoutTitle === String(workoutElapsedTimerState.workoutTitle || "").trim()
+      ) {
+        workoutElapsedTimerState.workoutDate = workoutDate.value || todayDate();
+        persistWorkoutElapsedTimerState();
+        renderWorkoutResumeActions();
+      }
       return;
     }
 
@@ -12043,6 +12146,7 @@ function handleWorkoutInteractions() {
     const nextExerciseNoButton = event.target.closest("[data-next-exercise-no]");
     const nextExerciseCloseButton = event.target.closest("[data-next-exercise-close]");
     const workoutStartButton = event.target.closest("[data-workout-start]");
+    const resumeActiveWorkoutButton = event.target.closest("[data-resume-active-workout]");
     const workoutElapsedToggleButton = event.target.closest("[data-workout-elapsed-toggle]");
     const workoutElapsedResetButton = event.target.closest("[data-workout-elapsed-reset]");
     const workoutElapsedCompactButton = event.target.closest("[data-workout-elapsed-compact]");
@@ -12083,8 +12187,17 @@ function handleWorkoutInteractions() {
       return;
     }
 
+    if (resumeActiveWorkoutButton) {
+      resumeActiveWorkout();
+      return;
+    }
+
     if (workoutStartButton) {
       const workoutTitle = String(workoutStartButton.dataset.workoutTitle || activeWorkoutElapsedTitle()).trim();
+      const workoutPanel = workoutStartButton.closest(".client-workout-panel");
+      const workoutPanels = Array.from(document.querySelectorAll(".client-workout-panel"));
+      const workoutDate = workoutPanel?.querySelector("[data-workout-date]")?.value || todayDate();
+      const panelIndex = workoutPanels.indexOf(workoutPanel);
       const isActiveWorkout = Boolean(
         workoutElapsedTimerState &&
         workoutTitle === String(workoutElapsedTimerState.workoutTitle || "").trim()
@@ -12095,7 +12208,7 @@ function handleWorkoutInteractions() {
       } else if (isActiveWorkout) {
         toggleWorkoutElapsedTimer();
       } else if (!workoutElapsedTimerState) {
-        startWorkoutElapsedTimer(workoutTitle);
+        startWorkoutElapsedTimer(workoutTitle, { workoutDate, panelIndex });
       }
       return;
     }

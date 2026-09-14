@@ -4,6 +4,7 @@ const path = require("node:path");
 const test = require("node:test");
 
 const projectRoot = path.resolve(__dirname, "..");
+const dashboardSource = fs.readFileSync(path.join(projectRoot, "client-dashboard.html"), "utf8");
 const portalSource = fs.readFileSync(path.join(projectRoot, "js/client-portal.js"), "utf8");
 const styleSource = fs.readFileSync(path.join(projectRoot, "css/style.css"), "utf8");
 
@@ -68,4 +69,64 @@ test("orphaned and day-old timer state expires by wall-clock age", () => {
 
   assert.match(sourceForFunction("readWorkoutElapsedTimerState"), /workoutElapsedTimerIsStale\(state\)/);
   assert.match(sourceForFunction("persistWorkoutElapsedTimerState"), /workoutElapsedTimerState\.updatedAt = Date\.now\(\)/);
+});
+
+test("active workouts expose resume actions on Home and Workouts", () => {
+  assert.equal((dashboardSource.match(/data-workout-resume-card/g) || []).length, 2);
+  assert.equal((dashboardSource.match(/data-resume-active-workout/g) || []).length, 2);
+  assert.match(dashboardSource, /client-home-resume-card/);
+  assert.match(dashboardSource, /client-workouts-resume-card/);
+  assert.match(styleSource, /\.client-home-resume-card\s*\{[^}]*grid-column:\s*1 \/ -1/s);
+  assert.match(styleSource, /\.client-workout-resume-card\[hidden\]\s*\{[^}]*display:\s*none !important/s);
+  assert.match(styleSource, /@media \(max-width: 620px\)[\s\S]*\.client-workout-resume-card\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\)/);
+});
+
+test("resume state preserves the workout date and exact workout panel", () => {
+  const readStateSource = sourceForFunction("readWorkoutElapsedTimerState");
+  const startSource = sourceForFunction("startWorkoutElapsedTimer");
+  const resumeSource = sourceForFunction("resumeActiveWorkout");
+  const storedValue = JSON.stringify({
+    workoutTitle: "Lower Body",
+    workoutDate: "2026-09-14",
+    panelIndex: null,
+    updatedAt: Date.now(),
+    running: false
+  });
+  const readState = Function(
+    "window",
+    "workoutElapsedTimerStorageKey",
+    "workoutElapsedTimerMaximumMilliseconds",
+    "workoutElapsedTimerIsStale",
+    `${readStateSource}; return readWorkoutElapsedTimerState;`
+  )(
+    { localStorage: { getItem: () => storedValue, removeItem: () => {} } },
+    "timer-key",
+    24 * 60 * 60 * 1000,
+    () => false
+  );
+  const parsedState = readState();
+
+  assert.match(readStateSource, /workoutDate:/);
+  assert.match(readStateSource, /panelIndex:/);
+  assert.equal(parsedState.workoutDate, "2026-09-14");
+  assert.equal(parsedState.panelIndex, null);
+  assert.match(startSource, /context\.workoutDate/);
+  assert.match(startSource, /context\.panelIndex/);
+  assert.match(resumeSource, /setClientDashboardTab\("workouts"\)/);
+  assert.match(resumeSource, /dataset\.workoutTitle/);
+  assert.match(resumeSource, /syncWorkoutPanelDate\(panel, workoutElapsedTimerState\.workoutDate\)/);
+  assert.match(resumeSource, /activateClientWorkoutPanel\(panelIndex, \{ focus: true, scroll: true \}\)/);
+  assert.doesNotMatch(resumeSource, /startWorkoutElapsedTimer/);
+});
+
+test("resume cards mirror running, paused, title, and elapsed timer state", () => {
+  const renderSource = sourceForFunction("renderWorkoutResumeActions");
+  const timerRenderSource = sourceForFunction("renderWorkoutElapsedTimer");
+
+  assert.match(timerRenderSource, /renderWorkoutResumeActions\(\)/);
+  assert.match(renderSource, /Workout in progress/);
+  assert.match(renderSource, /Workout paused/);
+  assert.match(renderSource, /workoutElapsedTimerState\.workoutTitle/);
+  assert.match(renderSource, /workoutElapsedTimeLabel\(workoutElapsedMilliseconds\(\)\)/);
+  assert.match(portalSource, /resumeActiveWorkoutButton[\s\S]*resumeActiveWorkout\(\)/);
 });

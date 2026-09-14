@@ -14500,6 +14500,101 @@ body.client-dashboard-page {
   }
 }
 
+/* Persistent workout recovery actions on Home and Workouts. */
+.client-workout-resume-card {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 18px;
+  min-width: 0;
+  padding: 20px;
+  overflow: hidden;
+  border: 1px solid var(--lime);
+  border-radius: 4px;
+  color: #fff;
+  background: #111310;
+  box-shadow: 8px 8px 0 rgba(190, 255, 0, .2);
+}
+
+.client-workout-resume-card[hidden] {
+  display: none !important;
+}
+
+.client-home-resume-card {
+  grid-column: 1 / -1;
+}
+
+.client-workout-resume-card::before {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 6px;
+  background: var(--lime);
+  content: "";
+}
+
+.client-workout-resume-card > div {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.client-workout-resume-card .kicker,
+.client-workout-resume-card h3,
+.client-workout-resume-card p {
+  margin: 0;
+}
+
+.client-workout-resume-card .kicker {
+  color: var(--lime);
+}
+
+.client-workout-resume-card h3 {
+  color: #fff;
+  font-size: clamp(1.45rem, 4vw, 2rem);
+  font-weight: 900;
+  line-height: 1.05;
+  overflow-wrap: anywhere;
+}
+
+.client-workout-resume-card p:not(.kicker) {
+  color: #d4d6d1;
+  font-size: 1rem;
+  line-height: 1.4;
+}
+
+.dashboard-page .client-workout-resume-card .button {
+  width: auto;
+  min-width: 180px;
+  min-height: 48px;
+  border-color: var(--lime);
+  border-radius: 2px;
+  color: #050505;
+  background: var(--lime);
+  white-space: nowrap;
+}
+
+.dashboard-page .client-workout-resume-card .button:hover,
+.dashboard-page .client-workout-resume-card .button:focus-visible {
+  color: #fff;
+  background: transparent;
+}
+
+@media (max-width: 620px) {
+  .client-workout-resume-card {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+    padding: 18px 16px 18px 20px;
+    box-shadow: 5px 5px 0 rgba(190, 255, 0, .2);
+  }
+
+  .dashboard-page .client-workout-resume-card .button {
+    width: 100%;
+    min-width: 0;
+    white-space: normal;
+  }
+}
+
 /* Keep measurement deck controls compact after the global mobile containment rules. */
 @media (max-width: 760px) {
   body.client-dashboard-page .client-progress-history-deck-controls button {

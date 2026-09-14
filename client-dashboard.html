@@ -30,7 +30,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=physical-card-decks-1" />
+  <link rel="stylesheet" href="css/style.css?v=resume-workout-1" />
   <link rel="stylesheet" href="css/custom-workout-mobile-fix.css?v=physical-card-decks-1" />
 </head>
 <body class="dashboard-page client-dashboard-page is-loading">
@@ -112,6 +112,14 @@
           </div>
           <div class="client-home-checkin-backdrop" data-client-home-checkin-backdrop hidden></div>
           <div class="client-home-grid" id="client-home-grid">
+            <article class="client-workout-resume-card client-home-resume-card" data-workout-resume-card hidden>
+              <div>
+                <p class="kicker" data-workout-resume-status>Workout in progress</p>
+                <h3 data-workout-resume-title>Workout</h3>
+                <p><span data-workout-resume-time>00:00</span> elapsed · Your workout is ready to continue.</p>
+              </div>
+              <button class="button button-dark" type="button" data-resume-active-workout>Resume workout <span aria-hidden="true">→</span></button>
+            </article>
             <section class="client-home-snapshot-section" aria-labelledby="client-home-snapshot-title">
               <div class="client-home-snapshot-heading">
                 <div>
@@ -323,6 +331,14 @@
             </div>
             <span class="status-pill" id="client-workouts-count"></span>
           </div>
+          <article class="client-workout-resume-card client-workouts-resume-card" data-workout-resume-card hidden>
+            <div>
+              <p class="kicker" data-workout-resume-status>Workout in progress</p>
+              <h3 data-workout-resume-title>Workout</h3>
+              <p><span data-workout-resume-time>00:00</span> elapsed · Continue where you stopped.</p>
+            </div>
+            <button class="button button-dark" type="button" data-resume-active-workout>Resume workout <span aria-hidden="true">→</span></button>
+          </article>
           <div class="client-workout-picker" id="client-workout-tabs" aria-label="Choose a workout"></div>
           <button class="client-workout-selection-summary" id="client-workout-selection-summary" type="button" data-client-workout-picker-back aria-label="Back to workout choices" hidden>
             <span class="client-workout-selection-arrow" aria-hidden="true">←</span>
@@ -879,6 +895,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js?v=manual-sessions-1"></script>
   <script src="js/exercise-name-matcher.js?v=exercise-consolidation-1"></script>
-  <script src="js/client-portal.js?v=physical-card-decks-1"></script>
+  <script src="js/client-portal.js?v=resume-workout-1"></script>
 </body>
 </html>
