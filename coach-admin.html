@@ -30,7 +30,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=coach-admin-onboarding-1" />
+  <link rel="stylesheet" href="css/style.css?v=client-exercise-names-1" />
 </head>
 <body class="dashboard-page coach-admin-page">
   <header class="site-header dashboard-header">
@@ -628,6 +628,56 @@
             <button class="button button-ghost" type="button" id="clear-exercise-library">New exercise</button>
           </div>
 
+          <section class="client-exercise-name-manager" aria-labelledby="client-exercise-name-manager-title">
+            <div class="client-exercise-name-manager-heading">
+              <div>
+                <p class="kicker">Selected client</p>
+                <h3 id="client-exercise-name-manager-title">Client custom exercise names</h3>
+                <p id="client-exercise-name-manager-summary">Choose a client to review names saved from their custom workouts.</p>
+              </div>
+              <span class="status-pill" id="client-exercise-name-manager-pill">No client selected</span>
+            </div>
+
+            <div class="client-exercise-name-manager-layout">
+              <div class="client-exercise-name-browser">
+                <label>
+                  Search client names
+                  <input type="search" id="client-exercise-name-search" placeholder="Exercise name..." autocomplete="off" />
+                </label>
+                <p class="exercise-library-count" id="client-exercise-name-count" role="status">Choose a client first.</p>
+                <div class="client-exercise-name-list" id="client-exercise-name-list" aria-live="polite">
+                  <p class="exercise-library-empty">Custom workout names will appear here.</p>
+                </div>
+              </div>
+
+              <div class="client-exercise-name-editor" id="client-exercise-name-editor">
+                <div>
+                  <small>Selected exercise</small>
+                  <h4 id="client-exercise-name-selected">Choose a name to manage</h4>
+                </div>
+                <p id="client-exercise-name-impact">You can correct a typo without losing weights, reps, dates, or notes.</p>
+                <label>
+                  Corrected exercise name
+                  <input
+                    type="text"
+                    id="client-exercise-name-correction"
+                    list="client-exercise-name-correction-options"
+                    placeholder="Choose or type the correct name"
+                    autocomplete="off"
+                    disabled
+                  />
+                </label>
+                <datalist id="client-exercise-name-correction-options"></datalist>
+                <p class="client-exercise-name-guidance" id="client-exercise-name-guidance">Select a client exercise name to see its source and usage.</p>
+                <div class="client-exercise-name-actions">
+                  <button class="button button-dark" type="button" id="correct-client-exercise-name" disabled>Fix spelling</button>
+                  <button class="button button-ghost danger-button" type="button" id="delete-client-exercise-name" disabled>Delete saved sets permanently</button>
+                </div>
+                <p class="client-exercise-name-status" id="client-exercise-name-status" role="status" aria-live="polite">No changes made.</p>
+              </div>
+            </div>
+          </section>
+
           <div class="exercise-library-layout">
             <div class="exercise-library-editor">
               <label class="exercise-library-name-field">
@@ -773,6 +823,6 @@
   <script src="js/script.js?v=client-session-link-1"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js?v=client-session-link-1"></script>
-  <script src="js/coach-admin.js?v=dexa-reports-1"></script>
+  <script src="js/coach-admin.js?v=client-exercise-names-1"></script>
 </body>
 </html>

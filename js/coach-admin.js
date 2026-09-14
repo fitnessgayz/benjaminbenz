@@ -48,6 +48,14 @@ let pendingProgramCopy = null;
 let exerciseLibraryRecords = [];
 let selectedExerciseLibraryId = "";
 let exerciseLibrarySearchTerm = "";
+let clientCustomExerciseLogs = [];
+let clientExerciseNameClientEmail = "";
+let clientExerciseNameSearchTerm = "";
+let selectedClientExerciseNameKey = "";
+let clientExerciseNameLoadToken = 0;
+let isClientExerciseNameLoading = false;
+let clientExerciseNameLoadError = "";
+let isClientExerciseNameMutating = false;
 
 function adminStatus(message) {
   const status = document.getElementById("admin-save-status");
@@ -807,6 +815,7 @@ function setAdminTab(tabName) {
 
   if (nextTab === "library") {
     renderExerciseLibrary();
+    loadClientCustomExerciseNames(selectedProgram()?.client_email);
   }
 
   if (nextTab === "progress") {
@@ -3565,6 +3574,543 @@ function exerciseLibraryList(value) {
     .filter((item, index, items) => items.indexOf(item) === index);
 }
 
+function normalizeClientExerciseName(value) {
+  return String(value || "")
+    .trim()
+    .replace(/\s+/g, " ")
+    .toLowerCase();
+}
+
+function clientExerciseLibraryMatch(name) {
+  const key = normalizeClientExerciseName(name);
+  const resultFor = (record, matchType) => ({
+    record,
+    matchType,
+    availableToClients: record.is_active !== false && record.is_approved !== false
+  });
+  const exactMatch = exerciseLibraryRecords.find((record) => (
+    normalizeClientExerciseName(record.name) === key
+  ));
+
+  if (exactMatch) {
+    return resultFor(exactMatch, "name");
+  }
+
+  const aliasMatch = exerciseLibraryRecords.find((record) => (
+    (record.aliases || []).some((alias) => normalizeClientExerciseName(alias) === key)
+  ));
+
+  return aliasMatch ? resultFor(aliasMatch, "alias") : null;
+}
+
+function clientCustomExerciseNameGroups(logs = clientCustomExerciseLogs) {
+  const groups = new Map();
+
+  logs.forEach((log) => {
+    const exerciseCode = String(log.exercise_code || "").trim().toUpperCase();
+    const workoutTitle = String(log.workout_title || "").trim().toLowerCase();
+    const exerciseName = String(log.exercise_name || "").trim().replace(/\s+/g, " ");
+    const key = normalizeClientExerciseName(exerciseName);
+
+    if (
+      !key ||
+      !workoutTitle.startsWith("custom workout") ||
+      exerciseCode === warmupExerciseCode ||
+      exerciseCode === cardioExerciseCode
+    ) {
+      return;
+    }
+
+    if (!groups.has(key)) {
+      groups.set(key, {
+        key,
+        name: exerciseName,
+        logs: [],
+        workoutKeys: new Set(),
+        latestDate: "",
+        libraryMatch: clientExerciseLibraryMatch(exerciseName)
+      });
+    }
+
+    const group = groups.get(key);
+    const workoutKey = log.workout_session_id || [log.entry_date, log.workout_title].join("::");
+
+    group.logs.push(log);
+    group.workoutKeys.add(workoutKey);
+    if (String(log.entry_date || "") > group.latestDate) {
+      group.latestDate = String(log.entry_date || "");
+    }
+  });
+
+  return Array.from(groups.values())
+    .sort((left, right) => (
+      right.latestDate.localeCompare(left.latestDate) || left.name.localeCompare(right.name)
+    ));
+}
+
+function clientExerciseNameStatus(message) {
+  const status = document.getElementById("client-exercise-name-status");
+
+  if (status) {
+    status.textContent = message;
+  }
+}
+
+function selectedClientExerciseNameGroup(groups = clientCustomExerciseNameGroups()) {
+  return groups.find((group) => group.key === selectedClientExerciseNameKey) || null;
+}
+
+function renderClientExerciseNameCorrectionOptions() {
+  const datalist = document.getElementById("client-exercise-name-correction-options");
+
+  if (!datalist) {
+    return;
+  }
+
+  datalist.replaceChildren(...exerciseLibraryRecords
+    .filter((exercise) => exercise.is_active !== false && exercise.is_approved !== false)
+    .map((exercise) => new Option(exercise.name, exercise.name)));
+}
+
+function syncClientExerciseNameCorrectionButton() {
+  const input = document.getElementById("client-exercise-name-correction");
+  const button = document.getElementById("correct-client-exercise-name");
+  const group = selectedClientExerciseNameGroup();
+  const correctedName = String(input?.value || "").trim().replace(/\s+/g, " ");
+
+  if (button) {
+    button.disabled = isClientExerciseNameMutating ||
+      !group ||
+      correctedName.length < 2 ||
+      correctedName.length > 120 ||
+      correctedName === group.name;
+  }
+}
+
+function renderClientCustomExerciseNames() {
+  const summary = document.getElementById("client-exercise-name-manager-summary");
+  const pill = document.getElementById("client-exercise-name-manager-pill");
+  const count = document.getElementById("client-exercise-name-count");
+  const list = document.getElementById("client-exercise-name-list");
+  const selectedName = document.getElementById("client-exercise-name-selected");
+  const impact = document.getElementById("client-exercise-name-impact");
+  const guidance = document.getElementById("client-exercise-name-guidance");
+  const searchInput = document.getElementById("client-exercise-name-search");
+  const correctionInput = document.getElementById("client-exercise-name-correction");
+  const deleteButton = document.getElementById("delete-client-exercise-name");
+  const program = selectedProgram();
+  const clientEmail = normalizeEmail(program?.client_email);
+
+  if (!summary || !pill || !count || !list || !selectedName || !impact || !guidance || !searchInput || !correctionInput || !deleteButton) {
+    return;
+  }
+
+  renderClientExerciseNameCorrectionOptions();
+
+  if (!clientEmail) {
+    searchInput.disabled = true;
+    summary.textContent = "Choose a client to review names saved from their custom workouts.";
+    pill.textContent = "No client selected";
+    count.textContent = "Choose a client first.";
+    list.innerHTML = '<p class="exercise-library-empty">Custom workout names will appear here.</p>';
+    selectedName.textContent = "Choose a name to manage";
+    impact.textContent = "You can correct a typo without losing weights, reps, dates, or notes.";
+    guidance.textContent = "Select a client exercise name to see its source and usage.";
+    correctionInput.value = "";
+    correctionInput.disabled = true;
+    deleteButton.disabled = true;
+    syncClientExerciseNameCorrectionButton();
+    return;
+  }
+
+  const clientName = program?.client_name || "Client";
+  summary.textContent = `${clientName} · ${clientEmail}`;
+
+  if (isClientExerciseNameLoading) {
+    searchInput.disabled = true;
+    pill.textContent = "Loading";
+    count.textContent = "Loading custom workout names…";
+    list.innerHTML = '<p class="exercise-library-empty">Checking saved custom workouts…</p>';
+    selectedName.textContent = "Loading exercise names";
+    impact.textContent = "Checking this client's saved custom workout history.";
+    guidance.textContent = "The editing controls will be available after the names load.";
+    correctionInput.value = "";
+    correctionInput.disabled = true;
+    deleteButton.disabled = true;
+    syncClientExerciseNameCorrectionButton();
+    return;
+  }
+
+  if (clientExerciseNameLoadError) {
+    searchInput.disabled = true;
+    pill.textContent = "Unavailable";
+    count.textContent = clientExerciseNameLoadError;
+    list.innerHTML = '<p class="exercise-library-empty">Refresh or reopen the Exercise Library tab to try again.</p>';
+    selectedName.textContent = "Exercise names unavailable";
+    impact.textContent = "No client workout history was changed.";
+    guidance.textContent = "Reopen this tab to try loading the names again.";
+    correctionInput.value = "";
+    correctionInput.disabled = true;
+    deleteButton.disabled = true;
+    syncClientExerciseNameCorrectionButton();
+    return;
+  }
+
+  const allGroups = clientCustomExerciseNameGroups();
+  searchInput.disabled = isClientExerciseNameMutating;
+  const term = clientExerciseNameSearchTerm.trim().toLowerCase();
+  const visibleGroups = allGroups.filter((group) => (
+    !term || [
+      group.name,
+      group.libraryMatch?.record?.name || "",
+      ...(group.libraryMatch?.record?.aliases || [])
+    ].join(" ").toLowerCase().includes(term)
+  ));
+
+  if (selectedClientExerciseNameKey && !allGroups.some((group) => group.key === selectedClientExerciseNameKey)) {
+    selectedClientExerciseNameKey = "";
+  }
+
+  pill.textContent = `${allGroups.length} name${allGroups.length === 1 ? "" : "s"}`;
+  count.textContent = `${visibleGroups.length} of ${allGroups.length} custom workout name${allGroups.length === 1 ? "" : "s"}`;
+  list.innerHTML = visibleGroups.length > 0
+    ? visibleGroups.map((group) => {
+      const libraryLabel = !group.libraryMatch
+        ? "Client-created"
+        : !group.libraryMatch.record.is_active
+          ? "Archived library"
+          : !group.libraryMatch.record.is_approved
+            ? "Hidden library"
+            : group.libraryMatch.matchType === "alias"
+              ? `Library alias for ${group.libraryMatch.record.name}`
+              : "Shared library";
+      const latestLabel = group.latestDate ? `Latest ${formatAdminDate(group.latestDate)}` : "No date";
+
+      return `
+        <button
+          class="client-exercise-name-row${group.key === selectedClientExerciseNameKey ? " is-selected" : ""}"
+          type="button"
+          data-client-exercise-name-key="${escapeHtml(group.key)}"
+          aria-pressed="${group.key === selectedClientExerciseNameKey ? "true" : "false"}"
+          ${isClientExerciseNameMutating ? "disabled" : ""}
+        >
+          <span>
+            <strong>${escapeHtml(group.name)}</strong>
+            <small>${group.logs.length} saved set${group.logs.length === 1 ? "" : "s"} · ${group.workoutKeys.size} workout${group.workoutKeys.size === 1 ? "" : "s"} · ${escapeHtml(latestLabel)}</small>
+          </span>
+          <small class="${group.libraryMatch?.availableToClients ? "is-library-match" : "is-client-created"}">${escapeHtml(libraryLabel)}</small>
+        </button>
+      `;
+    }).join("")
+    : '<p class="exercise-library-empty">No custom workout names match that search.</p>';
+
+  const group = selectedClientExerciseNameGroup(allGroups);
+
+  if (!group) {
+    selectedName.textContent = allGroups.length > 0 ? "Choose a name to manage" : "No custom exercise names yet";
+    impact.textContent = allGroups.length > 0
+      ? "Select a name to see how often it was used."
+      : `${clientName} has no saved custom workout exercise names.`;
+    guidance.textContent = "Fixing a spelling mistake keeps the client's complete workout history.";
+    correctionInput.value = "";
+    correctionInput.disabled = true;
+    deleteButton.disabled = true;
+    syncClientExerciseNameCorrectionButton();
+    return;
+  }
+
+  selectedName.textContent = group.name;
+  impact.textContent = `${group.logs.length} saved set${group.logs.length === 1 ? "" : "s"} across ${group.workoutKeys.size} custom workout${group.workoutKeys.size === 1 ? "" : "s"}.`;
+  correctionInput.disabled = isClientExerciseNameMutating;
+  correctionInput.value = group.libraryMatch?.matchType === "alias"
+    ? group.libraryMatch.record.name
+    : "";
+  deleteButton.disabled = isClientExerciseNameMutating;
+
+  if (group.libraryMatch && !group.libraryMatch.availableToClients) {
+    guidance.textContent = `${group.libraryMatch.record.name} exists in the shared catalog but is ${group.libraryMatch.record.is_active === false ? "archived" : "hidden"}, so clients cannot currently choose it.`;
+  } else if (group.libraryMatch?.matchType === "alias") {
+    guidance.textContent = `This is an alias for ${group.libraryMatch.record.name}. Fix spelling will combine its progress under that library name.`;
+  } else if (group.libraryMatch) {
+    guidance.textContent = "This exact name already matches the shared exercise library.";
+  } else {
+    guidance.textContent = "This name came from the client's custom workout history and is not in the shared library.";
+  }
+
+  syncClientExerciseNameCorrectionButton();
+}
+
+async function loadClientCustomExerciseNames(email = selectedProgram()?.client_email) {
+  const normalizedEmail = normalizeEmail(email);
+  const loadToken = ++clientExerciseNameLoadToken;
+
+  if (!coachSupabase || !normalizedEmail) {
+    clientExerciseNameClientEmail = "";
+    clientCustomExerciseLogs = [];
+    selectedClientExerciseNameKey = "";
+    isClientExerciseNameLoading = false;
+    clientExerciseNameLoadError = "";
+    clientExerciseNameStatus("No changes made.");
+    renderClientCustomExerciseNames();
+    return;
+  }
+
+  if (clientExerciseNameClientEmail !== normalizedEmail) {
+    selectedClientExerciseNameKey = "";
+    clientExerciseNameSearchTerm = "";
+    const searchInput = document.getElementById("client-exercise-name-search");
+    if (searchInput) {
+      searchInput.value = "";
+    }
+    clientExerciseNameStatus("No changes made.");
+  }
+
+  clientExerciseNameClientEmail = normalizedEmail;
+  clientCustomExerciseLogs = [];
+  isClientExerciseNameLoading = true;
+  clientExerciseNameLoadError = "";
+  renderClientCustomExerciseNames();
+
+  try {
+    const rows = [];
+    const pageSize = 1000;
+
+    for (let from = 0; ; from += pageSize) {
+      const { data, error } = await withRequestTimeout(
+        coachSupabase
+          .from("client_workout_logs")
+          .select("id,client_email,entry_date,workout_title,workout_session_id,exercise_code,exercise_name,set_number,original_exercise_name,created_at")
+          .eq("client_email", normalizedEmail)
+          .ilike("workout_title", "Custom workout%")
+          .order("entry_date", { ascending: false })
+          .order("created_at", { ascending: false })
+          .range(from, from + pageSize - 1),
+        "Client custom workout names took too long to load."
+      );
+
+      if (error) {
+        throw error;
+      }
+
+      rows.push(...(data || []));
+      if ((data || []).length < pageSize) {
+        break;
+      }
+    }
+
+    if (loadToken !== clientExerciseNameLoadToken || normalizeEmail(selectedProgram()?.client_email) !== normalizedEmail) {
+      return;
+    }
+
+    clientCustomExerciseLogs = rows;
+    isClientExerciseNameLoading = false;
+    renderClientCustomExerciseNames();
+  } catch (error) {
+    if (loadToken !== clientExerciseNameLoadToken) {
+      return;
+    }
+
+    clientCustomExerciseLogs = [];
+    isClientExerciseNameLoading = false;
+    clientExerciseNameLoadError = error?.message || "Client custom workout names could not be loaded.";
+    renderClientCustomExerciseNames();
+  }
+}
+
+function setClientExerciseNameManagerBusy(isBusy) {
+  isClientExerciseNameMutating = isBusy;
+  const searchInput = document.getElementById("client-exercise-name-search");
+  const correctionInput = document.getElementById("client-exercise-name-correction");
+  const correctButton = document.getElementById("correct-client-exercise-name");
+  const deleteButton = document.getElementById("delete-client-exercise-name");
+
+  if (searchInput) {
+    searchInput.disabled = isBusy || isClientExerciseNameLoading || !clientExerciseNameClientEmail;
+  }
+  document.querySelectorAll("[data-client-exercise-name-key]").forEach((button) => {
+    button.disabled = isBusy;
+  });
+  if (correctionInput) {
+    correctionInput.disabled = isBusy || !selectedClientExerciseNameKey;
+  }
+  if (correctButton) {
+    correctButton.disabled = isBusy;
+  }
+  if (deleteButton) {
+    deleteButton.disabled = isBusy || !selectedClientExerciseNameKey;
+  }
+
+  if (!isBusy) {
+    syncClientExerciseNameCorrectionButton();
+  }
+}
+
+async function correctSelectedClientExerciseName() {
+  const program = selectedProgram();
+  const clientEmail = normalizeEmail(program?.client_email);
+  const group = selectedClientExerciseNameGroup();
+  const input = document.getElementById("client-exercise-name-correction");
+  const correctedName = String(input?.value || "").trim().replace(/\s+/g, " ");
+
+  if (isClientExerciseNameMutating || isClientExerciseNameLoading) {
+    return;
+  }
+
+  if (!coachSupabase || !clientEmail || !group) {
+    clientExerciseNameStatus("Choose a client exercise name first.");
+    return;
+  }
+
+  if (
+    correctedName.length < 2 ||
+    correctedName.length > 120 ||
+    correctedName === group.name
+  ) {
+    clientExerciseNameStatus("Enter a different corrected exercise name.");
+    return;
+  }
+
+  const clientName = program?.client_name || clientEmail;
+  const confirmed = window.confirm(
+    `Fix “${group.name}” to “${correctedName}” everywhere in ${clientName}'s saved workout history?\n\nWeights, reps, dates, notes, and progress will be preserved.`
+  );
+
+  if (!confirmed) {
+    clientExerciseNameStatus("Spelling correction canceled.");
+    return;
+  }
+
+  setClientExerciseNameManagerBusy(true);
+  clientExerciseNameStatus(`Correcting ${group.name}…`);
+
+  try {
+    const { data, error } = await coachSupabase.rpc("correct_client_exercise_name", {
+      target_client_email: clientEmail,
+      previous_exercise_name: group.name,
+      corrected_exercise_name: correctedName
+    });
+
+    if (error) {
+      throw error;
+    }
+
+    const affectedCount = Number(data || 0);
+    selectedClientExerciseNameKey = normalizeClientExerciseName(correctedName);
+    await Promise.all([
+      loadTrainingLogsForEmail(clientEmail),
+      loadClientCustomExerciseNames(clientEmail)
+    ]);
+    clientExerciseNameStatus(
+      affectedCount > 0
+        ? `${affectedCount} saved set${affectedCount === 1 ? "" : "s"} corrected to ${correctedName}.`
+        : "That spelling was already corrected."
+    );
+  } catch (error) {
+    clientExerciseNameStatus(error?.message || "The exercise name could not be corrected.");
+  } finally {
+    setClientExerciseNameManagerBusy(false);
+  }
+}
+
+async function deleteSelectedClientExerciseName() {
+  const program = selectedProgram();
+  const clientEmail = normalizeEmail(program?.client_email);
+  const group = selectedClientExerciseNameGroup();
+
+  if (isClientExerciseNameMutating || isClientExerciseNameLoading) {
+    return;
+  }
+
+  if (!coachSupabase || !clientEmail || !group) {
+    clientExerciseNameStatus("Choose a client exercise name first.");
+    return;
+  }
+
+  const clientName = program?.client_name || clientEmail;
+  const confirmed = window.confirm(
+    `Permanently delete ${group.logs.length} saved custom-workout set${group.logs.length === 1 ? "" : "s"} named “${group.name}” for ${clientName}?\n\nThis removes their weights and reps from workout history and progress. It cannot be undone.`
+  );
+
+  if (!confirmed) {
+    clientExerciseNameStatus("Permanent deletion canceled.");
+    return;
+  }
+
+  setClientExerciseNameManagerBusy(true);
+  clientExerciseNameStatus(`Deleting saved sets for ${group.name}…`);
+
+  try {
+    const { data, error } = await coachSupabase.rpc("delete_client_custom_exercise_history", {
+      target_client_email: clientEmail,
+      exercise_name_to_delete: group.name
+    });
+
+    if (error) {
+      throw error;
+    }
+
+    const affectedCount = Number(data || 0);
+    selectedClientExerciseNameKey = "";
+    await Promise.all([
+      loadTrainingLogsForEmail(clientEmail),
+      loadClientCustomExerciseNames(clientEmail)
+    ]);
+    clientExerciseNameStatus(
+      affectedCount > 0
+        ? `${affectedCount} saved custom-workout set${affectedCount === 1 ? "" : "s"} permanently deleted.`
+        : "Those saved sets were already removed."
+    );
+  } catch (error) {
+    clientExerciseNameStatus(error?.message || "The saved exercise data could not be deleted.");
+  } finally {
+    setClientExerciseNameManagerBusy(false);
+  }
+}
+
+function handleClientExerciseNameManager() {
+  const searchInput = document.getElementById("client-exercise-name-search");
+  const list = document.getElementById("client-exercise-name-list");
+  const correctionInput = document.getElementById("client-exercise-name-correction");
+  const correctButton = document.getElementById("correct-client-exercise-name");
+  const deleteButton = document.getElementById("delete-client-exercise-name");
+
+  if (!searchInput || !list || !correctionInput || !correctButton || !deleteButton) {
+    return;
+  }
+
+  searchInput.addEventListener("input", () => {
+    if (isClientExerciseNameMutating) {
+      return;
+    }
+
+    clientExerciseNameSearchTerm = searchInput.value;
+    renderClientCustomExerciseNames();
+  });
+
+  list.addEventListener("click", (event) => {
+    if (isClientExerciseNameMutating) {
+      return;
+    }
+
+    const button = event.target.closest("[data-client-exercise-name-key]");
+
+    if (!button) {
+      return;
+    }
+
+    selectedClientExerciseNameKey = button.dataset.clientExerciseNameKey || "";
+    renderClientCustomExerciseNames();
+    Array.from(list.querySelectorAll("[data-client-exercise-name-key]"))
+      .find((row) => row.dataset.clientExerciseNameKey === selectedClientExerciseNameKey)
+      ?.focus();
+    clientExerciseNameStatus(`Managing ${selectedClientExerciseNameGroup()?.name || "client exercise"}.`);
+  });
+
+  correctionInput.addEventListener("input", syncClientExerciseNameCorrectionButton);
+  correctButton.addEventListener("click", correctSelectedClientExerciseName);
+  deleteButton.addEventListener("click", deleteSelectedClientExerciseName);
+}
+
 function fillExerciseLibraryEditor(record = null) {
   const values = record || {
     name: "",
@@ -3703,6 +4249,8 @@ async function loadExerciseLibrary() {
   exerciseLibraryRecords = data || [];
   renderExerciseLibrary();
   renderCoachWorkoutExerciseSuggestions();
+  renderClientExerciseNameCorrectionOptions();
+  renderClientCustomExerciseNames();
 }
 
 function handleExerciseLibraryEditor() {
@@ -5302,6 +5850,7 @@ async function bootCoachAdmin() {
   handleAdminTabs();
   handleCoachAdminSidebar();
   handleExerciseLibraryEditor();
+  handleClientExerciseNameManager();
   handleSelectedClientActions();
   handleNutritionEditor();
   handleSessionManualEditor();

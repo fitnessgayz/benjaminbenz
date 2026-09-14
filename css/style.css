@@ -9690,6 +9690,174 @@ textarea:focus {
   color: var(--muted);
 }
 
+.client-exercise-name-manager {
+  min-width: 0;
+  margin-top: 24px;
+  padding: clamp(16px, 2.5vw, 24px);
+  border: 1px solid var(--line);
+  border-left: 5px solid var(--lime);
+  background: color-mix(in srgb, var(--paper) 88%, var(--lime) 12%);
+}
+
+.client-exercise-name-manager-heading {
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.client-exercise-name-manager-heading > div {
+  min-width: 0;
+}
+
+.client-exercise-name-manager-heading h3,
+.client-exercise-name-editor h4 {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.client-exercise-name-manager-heading p:not(.kicker) {
+  margin: 7px 0 0;
+  color: var(--muted);
+}
+
+.client-exercise-name-manager-layout {
+  display: grid;
+  grid-template-columns: minmax(260px, .9fr) minmax(0, 1.1fr);
+  min-width: 0;
+  gap: 16px;
+  margin-top: 18px;
+}
+
+.client-exercise-name-browser,
+.client-exercise-name-editor {
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--line);
+  background: var(--paper);
+}
+
+.client-exercise-name-browser label,
+.client-exercise-name-editor label {
+  display: grid;
+  min-width: 0;
+  gap: 8px;
+  font-weight: 800;
+}
+
+.client-exercise-name-browser input,
+.client-exercise-name-editor input {
+  min-width: 0;
+  width: 100%;
+}
+
+.client-exercise-name-list {
+  display: grid;
+  max-height: 390px;
+  overflow-y: auto;
+  border-top: 1px solid var(--line);
+}
+
+.client-exercise-name-row {
+  display: flex;
+  min-width: 0;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px 5px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  color: inherit;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.client-exercise-name-row:hover,
+.client-exercise-name-row.is-selected {
+  background: color-mix(in srgb, var(--lime) 17%, transparent);
+}
+
+.client-exercise-name-row:focus-visible {
+  outline: 3px solid var(--blue);
+  outline-offset: -3px;
+}
+
+.client-exercise-name-row > span {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+}
+
+.client-exercise-name-row strong,
+.client-exercise-name-row small {
+  overflow-wrap: anywhere;
+}
+
+.client-exercise-name-row small {
+  color: var(--muted);
+}
+
+.client-exercise-name-row > small {
+  flex: 0 0 auto;
+  padding: 5px 7px;
+  border: 1px solid var(--line);
+  font-size: .66rem;
+  font-weight: 900;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.client-exercise-name-row > small.is-library-match {
+  color: var(--ink);
+  background: var(--lime);
+  border-color: var(--ink);
+}
+
+.client-exercise-name-editor {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+}
+
+.client-exercise-name-editor > div:first-child {
+  display: grid;
+  gap: 5px;
+}
+
+.client-exercise-name-editor > div:first-child small {
+  color: var(--muted);
+  font-size: .72rem;
+  font-weight: 900;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.client-exercise-name-editor > p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.client-exercise-name-guidance {
+  padding: 11px 12px;
+  border-left: 4px solid var(--lime);
+  background: color-mix(in srgb, var(--paper) 88%, var(--lime) 12%);
+}
+
+.client-exercise-name-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.client-exercise-name-status {
+  min-height: 1.4em;
+  font-weight: 800;
+}
+
 .exercise-library-layout {
   display: grid;
   grid-template-columns: minmax(0, 1.35fr) minmax(280px, .8fr);
@@ -9821,6 +9989,10 @@ textarea:focus {
 }
 
 @media (max-width: 900px) {
+  .client-exercise-name-manager-layout {
+    grid-template-columns: 1fr;
+  }
+
   .exercise-library-layout {
     grid-template-columns: 1fr;
   }
@@ -9835,6 +10007,28 @@ textarea:focus {
 }
 
 @media (max-width: 620px) {
+  .client-exercise-name-manager-heading,
+  .client-exercise-name-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .client-exercise-name-manager-heading .status-pill,
+  .client-exercise-name-row > small {
+    align-self: flex-start;
+  }
+
+  .client-exercise-name-actions {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .client-exercise-name-actions .button {
+    width: 100%;
+    min-height: 48px;
+    white-space: normal;
+  }
+
   .exercise-library-editor {
     grid-template-columns: 1fr;
   }
