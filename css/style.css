@@ -11236,8 +11236,8 @@ textarea,
   display: flex;
   min-width: 0;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 4px 20px;
+  flex-wrap: nowrap;
+  gap: 20px;
   margin: 0 14px;
   padding: 3px 0;
   border-top: 1px solid var(--line);
@@ -11250,21 +11250,43 @@ textarea,
 
 .custom-workout-inline-group-options label {
   display: inline-flex;
+  flex: 0 0 auto;
+  width: auto;
+  min-width: max-content;
   min-height: 44px;
   align-items: center;
   gap: 7px;
   color: var(--black);
   font-size: .9rem;
   font-weight: 800;
+  white-space: nowrap;
+  word-break: normal;
+  overflow-wrap: normal;
   cursor: pointer;
 }
 
 .custom-workout-inline-group-options input {
-  width: 16px;
-  min-width: 16px;
-  height: 16px;
-  margin: 0;
+  flex: 0 0 16px !important;
+  width: 16px !important;
+  inline-size: 16px !important;
+  min-width: 16px !important;
+  max-width: 16px !important;
+  min-height: 16px !important;
+  height: 16px !important;
+  max-height: 16px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: visible !important;
   accent-color: var(--lime);
+}
+
+.custom-workout-inline-group-options span {
+  display: inline-block;
+  width: auto;
+  min-width: max-content;
+  white-space: nowrap;
+  word-break: normal;
+  overflow-wrap: normal;
 }
 
 .custom-workout-inline-group-options label:has(input:checked) {

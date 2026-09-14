@@ -5128,7 +5128,9 @@ function customWorkoutMixedGroups(items = []) {
     const format = entry.groupType !== "single" && (memberCounts.get(groupedKey) || 0) > 1
       ? entry.groupType
       : "single";
-    const key = format === "single" ? "single" : groupedKey;
+    // Every unchecked exercise remains its own straight-set card. Only cards
+    // with an explicit matching group type and id belong in one carousel.
+    const key = format === "single" ? `single:${entry.index}` : groupedKey;
     const previous = groups[groups.length - 1];
 
     if (previous?.key === key) {
@@ -7514,7 +7516,7 @@ function renderCustomWorkoutCarousel(carousel) {
   const groupIndex = Number(carousel?.dataset.customWorkoutGroup) || 0;
   const mobile = window.matchMedia("(max-width: 760px)").matches;
   const isCustomPanel = panel?.classList.contains("client-workout-panel-custom") || false;
-  const straightDeckEnabled = mobile && isCustomPanel && format === "single" && cards.length > 0;
+  const straightDeckEnabled = mobile && isCustomPanel && format === "single" && cards.length > 1;
   const groupDeckEnabled = mobile && format !== "single" && cards.length > 1;
   const deckEnabled = straightDeckEnabled || groupDeckEnabled;
   const canAddExercise = straightDeckEnabled && carousel?.dataset.customWorkoutInlineAdd !== "false";

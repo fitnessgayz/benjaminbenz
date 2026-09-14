@@ -27,8 +27,9 @@ test("straight-set custom cards expose compact Superset and Circuit checkboxes",
   assert.match(optionsMarkup, /isVisible \? "" : "hidden"/);
   assert.match(cardMarkup, /panelFormat === "single"/);
   assert.match(cardMarkup, /customWorkoutInlineGroupOptionsMarkup\(cardFormat, panelFormat === "single"\)/);
-  assert.match(styles, /\.custom-workout-inline-group-options input\s*\{[^}]*width:\s*16px;[^}]*height:\s*16px;/s);
+  assert.match(styles, /\.custom-workout-inline-group-options input\s*\{[^}]*width:\s*16px\s*!important;[^}]*height:\s*16px\s*!important;/s);
   assert.match(styles, /\.custom-workout-inline-group-options label\s*\{[^}]*min-height:\s*44px;/s);
+  assert.match(styles, /\.custom-workout-inline-group-options label\s*\{[^}]*white-space:\s*nowrap;/s);
 });
 
 test("mixed grouping leaves ordinary exercises straight and isolates selected groups", () => {
@@ -54,11 +55,28 @@ test("mixed grouping leaves ordinary exercises straight and isolates selected gr
     ["Curl"],
     ["Carry", "Bike", "Plank"]
   ]);
-  assert.deepEqual(groupItems([
+  const singletonFallback = groupItems([
     { name: "Squat", groupType: "single", group: 0 },
     { name: "Press", groupType: "superset", group: 4 },
     { name: "Row", groupType: "single", group: 0 }
-  ]).map((group) => group.format), ["single"]);
+  ]);
+  assert.deepEqual(singletonFallback.map((group) => group.format), ["single", "single", "single"]);
+  assert.deepEqual(singletonFallback.map((group) => group.items.map((item) => item.name)), [
+    ["Squat"],
+    ["Press"],
+    ["Row"]
+  ]);
+  assert.deepEqual(groupItems([
+    { name: "Squat" },
+    { name: "Press" },
+    { name: "Row" },
+    { name: "Curl" }
+  ]).map((group) => group.items.map((item) => item.name)), [
+    ["Squat"],
+    ["Press"],
+    ["Row"],
+    ["Curl"]
+  ]);
 });
 
 test("checkbox changes are mutually exclusive, reversible, and saved in the draft", () => {
@@ -86,6 +104,6 @@ test("mixed groups reuse the existing mobile carousel and keep one add-card endp
   assert.match(regroupSource, /existing\[groupIndex\]\.dataset\.customWorkoutFormat === group\.format/);
   assert.match(regroupSource, /panelFormat:\s*format/);
   assert.match(renderSource, /customWorkoutInlineAdd !== "false"/);
-  assert.match(dashboard, /css\/style\.css\?v=inline-custom-groups-1/);
-  assert.match(dashboard, /js\/client-portal\.js\?v=inline-custom-groups-1/);
+  assert.match(dashboard, /css\/style\.css\?v=inline-custom-groups-2/);
+  assert.match(dashboard, /js\/client-portal\.js\?v=inline-custom-groups-2/);
 });
