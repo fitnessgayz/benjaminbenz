@@ -8,6 +8,30 @@ const dashboard = fs.readFileSync(path.join(root, "client-dashboard.html"), "utf
 const styles = fs.readFileSync(path.join(root, "css", "style.css"), "utf8");
 const portal = fs.readFileSync(path.join(root, "js", "client-portal.js"), "utf8");
 
+function sourceForFunction(name) {
+  const start = portal.indexOf(`function ${name}`);
+
+  assert.notEqual(start, -1, `${name} should exist`);
+
+  let depth = 0;
+  let opened = false;
+
+  for (let index = start; index < portal.length; index += 1) {
+    if (portal[index] === "{") {
+      depth += 1;
+      opened = true;
+    } else if (portal[index] === "}") {
+      depth -= 1;
+
+      if (opened && depth === 0) {
+        return portal.slice(start, index + 1);
+      }
+    }
+  }
+
+  throw new Error(`Unable to read ${name}`);
+}
+
 test("home uses one editorial card deck for the three requested snapshots", () => {
   const homePanel = dashboard.match(/data-client-dashboard-panel="home"[\s\S]*?data-client-dashboard-panel="workouts"/)?.[0] || "";
 
@@ -39,7 +63,23 @@ test("snapshot cards show live progress, target, and weekly training fields", ()
   assert.match(portal, /function renderClientHomeSnapshots/);
   assert.match(portal, /function clientHomeTrainingSnapshot/);
   assert.match(portal, /function latestClientRmrEntry/);
-  assert.match(portal, /renderClientHomeSnapshots\(nutrition, latestProgress\)/);
+  assert.match(portal, /function latestClientProgressValue/);
+  assert.match(portal, /renderClientHomeSnapshots\(nutrition\)/);
+});
+
+test("snapshot metrics keep the newest saved value for each field independently", () => {
+  const source = sourceForFunction("latestClientProgressValue");
+  const latestValue = Function(`${source}; return latestClientProgressValue;`)();
+  const entries = [
+    { lean_mass: 126.4, measurements: { waist: 31.5 } },
+    { bodyweight: 160, bodyfat: 12, lean_mass: null, measurements: { waist: "" } }
+  ];
+
+  assert.equal(latestValue(entries, (entry) => entry.lean_mass), 126.4);
+  assert.equal(latestValue(entries, (entry) => entry.measurements.waist), 31.5);
+  assert.equal(latestValue(entries, (entry) => entry.bodyweight), 160);
+  assert.match(portal, /const leanMass = latestClientProgressValue\(progressEntries, \(entry\) => entry\?\.lean_mass\)/);
+  assert.match(portal, /const waist = latestClientProgressValue\(progressEntries, \(entry\) => progressMeasurements\(entry\)\.waist\)/);
 });
 
 test("deck supports native swiping, dots, and keyboard navigation without undersized controls", () => {

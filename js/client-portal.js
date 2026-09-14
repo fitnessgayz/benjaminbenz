@@ -544,6 +544,20 @@ function latestClientRmrEntry(entries = progressEntries) {
     .find((entry) => clientProgressRmr(entry) !== null) || null;
 }
 
+function latestClientProgressValue(entries = progressEntries, valueForEntry = () => null) {
+  const orderedEntries = Array.isArray(entries) ? entries : [];
+
+  for (let index = orderedEntries.length - 1; index >= 0; index -= 1) {
+    const value = valueForEntry(orderedEntries[index]);
+
+    if (value !== null && value !== undefined && String(value).trim() !== "") {
+      return value;
+    }
+  }
+
+  return null;
+}
+
 function localDateKey(date) {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -637,20 +651,23 @@ function clientHomeTrainingSnapshot(logs = trainingLogs, feedback = workoutSessi
   };
 }
 
-function renderClientHomeSnapshots(nutrition = nutritionPlanFromProgram(currentProgram || {}), latestProgress = progressEntries[progressEntries.length - 1]) {
-  const measurements = progressMeasurements(latestProgress || {});
-  const rmrEntry = latestClientRmrEntry();
+function renderClientHomeSnapshots(nutrition = nutritionPlanFromProgram(currentProgram || {})) {
+  const bodyweight = latestClientProgressValue(progressEntries, (entry) => entry?.bodyweight);
+  const bodyfat = latestClientProgressValue(progressEntries, (entry) => entry?.bodyfat);
+  const leanMass = latestClientProgressValue(progressEntries, (entry) => entry?.lean_mass);
+  const waist = latestClientProgressValue(progressEntries, (entry) => progressMeasurements(entry).waist);
+  const rmr = latestClientProgressValue(progressEntries, clientProgressRmr);
   const training = clientHomeTrainingSnapshot();
   const weekStart = new Date(`${training.range.start}T12:00:00`).toLocaleDateString("en-US", {
     month: "short",
     day: "numeric"
   });
 
-  setText("#client-home-snapshot-bodyweight", clientHomeSnapshotValue(latestProgress?.bodyweight, " lb"));
-  setText("#client-home-snapshot-bodyfat", clientHomeSnapshotValue(latestProgress?.bodyfat, "%"));
-  setText("#client-home-snapshot-lean-mass", clientHomeSnapshotValue(latestProgress?.lean_mass, " lb"));
-  setText("#client-home-snapshot-waist", clientHomeSnapshotValue(measurements.waist, " in"));
-  setText("#client-home-snapshot-rmr", clientHomeSnapshotValue(clientProgressRmr(rmrEntry), " cal/day"));
+  setText("#client-home-snapshot-bodyweight", clientHomeSnapshotValue(bodyweight, " lb"));
+  setText("#client-home-snapshot-bodyfat", clientHomeSnapshotValue(bodyfat, "%"));
+  setText("#client-home-snapshot-lean-mass", clientHomeSnapshotValue(leanMass, " lb"));
+  setText("#client-home-snapshot-waist", clientHomeSnapshotValue(waist, " in"));
+  setText("#client-home-snapshot-rmr", clientHomeSnapshotValue(rmr, " cal/day"));
   setText("#client-home-snapshot-calories", clientHomeSnapshotValue(nutrition.calories));
   setText("#client-home-snapshot-protein", clientHomeSnapshotValue(nutrition.protein, "g"));
   setText("#client-home-snapshot-carbs", clientHomeSnapshotValue(nutrition.carbs, "g"));
@@ -702,7 +719,7 @@ function renderClientHomeSummary() {
     : "Log mood, energy, body readiness, or anything Benjamin should know today.");
   setText("#client-home-note-title", noteTitle || "No note yet");
   setText("#client-home-note-body", noteBody || "Coach notes will appear here when Benjamin adds one.");
-  renderClientHomeSnapshots(nutrition, latestProgress);
+  renderClientHomeSnapshots(nutrition);
 
   if (checklist) {
     const todayFoodLogged = foodLogs.some((log) => String(log.entry_date || "") === todayDate());
