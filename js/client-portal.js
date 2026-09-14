@@ -5102,6 +5102,51 @@ function normalizeCustomWorkoutFormat(value) {
   return Object.hasOwn(customWorkoutFormats, value) ? value : "single";
 }
 
+function normalizeCustomWorkoutInlineGroupType(value) {
+  const normalized = String(value || "").trim().toLowerCase();
+
+  return normalized === "superset" || normalized === "circuit" ? normalized : "single";
+}
+
+function customWorkoutMixedGroups(items = []) {
+  const normalizedItems = items.map((item, index) => ({
+    item,
+    index,
+    groupType: normalizeCustomWorkoutInlineGroupType(item?.groupType),
+    group: Math.max(Number(item?.group) || 0, 0)
+  }));
+  const memberCounts = new Map();
+
+  normalizedItems.forEach((entry) => {
+    if (entry.groupType === "single") return;
+    const key = `${entry.groupType}:${entry.group}`;
+    memberCounts.set(key, (memberCounts.get(key) || 0) + 1);
+  });
+
+  return normalizedItems.reduce((groups, entry) => {
+    const groupedKey = `${entry.groupType}:${entry.group}`;
+    const format = entry.groupType !== "single" && (memberCounts.get(groupedKey) || 0) > 1
+      ? entry.groupType
+      : "single";
+    const key = format === "single" ? "single" : groupedKey;
+    const previous = groups[groups.length - 1];
+
+    if (previous?.key === key) {
+      previous.items.push(entry.item);
+      return groups;
+    }
+
+    groups.push({
+      key,
+      format,
+      index: format === "single" ? groups.length : entry.group,
+      startIndex: entry.index,
+      items: [entry.item]
+    });
+    return groups;
+  }, []);
+}
+
 function customWorkoutFormatPreferenceKey() {
   const programId = String(currentProgram?.id || "").trim();
 
@@ -5296,6 +5341,7 @@ function customWorkoutExercises() {
         code,
         name: exerciseName,
         group: Math.max(Number(draftExercise?.group) || 0, 0),
+        groupType: normalizeCustomWorkoutInlineGroupType(draftExercise?.groupType),
         prescription: "Custom sets",
         rest: ""
       });
@@ -5315,6 +5361,7 @@ function customWorkoutExercises() {
       code: customExerciseCode(0),
       name: "",
       group: 0,
+      groupType: "single",
       prescription: "Custom sets",
       rest: ""
     }];
@@ -5345,6 +5392,9 @@ function serializeCustomExerciseDraft(logElement, index) {
     code,
     name: exerciseNameInputForLog(logElement)?.value || logElement.dataset.exerciseName || "",
     group: Math.max(Number(logElement.closest("[data-custom-exercise-card]")?.dataset.customWorkoutGroup) || 0, 0),
+    groupType: normalizeCustomWorkoutInlineGroupType(
+      logElement.closest("[data-custom-exercise-card]")?.dataset.customWorkoutGroupType
+    ),
     date: logElement.querySelector("[data-log-date]")?.value || "",
     notes: logElement.querySelector("[data-log-notes]")?.value || "",
     skipped: logElement.dataset.exerciseSkipped === "true",
@@ -5458,6 +5508,7 @@ function applyCustomExerciseDraft(logElement, exerciseDraft) {
   const customCard = logElement.closest("[data-custom-exercise-card]");
   if (customCard) {
     customCard.dataset.customWorkoutGroup = String(Math.max(Number(exerciseDraft.group) || 0, 0));
+    customCard.dataset.customWorkoutGroupType = normalizeCustomWorkoutInlineGroupType(exerciseDraft.groupType);
   }
 
   renderExerciseNotesState(logElement);
@@ -7051,16 +7102,37 @@ function workoutActionsMarkup(workout, options = {}) {
   `;
 }
 
+function customWorkoutInlineGroupOptionsMarkup(groupType = "single", isVisible = true) {
+  const normalizedType = normalizeCustomWorkoutInlineGroupType(groupType);
+
+  return `
+    <div class="custom-workout-inline-group-options" data-custom-workout-inline-group-options ${isVisible ? "" : "hidden"}>
+      <label>
+        <input type="checkbox" data-custom-workout-inline-group-option="superset" ${normalizedType === "superset" ? "checked" : ""} />
+        <span>Superset</span>
+      </label>
+      <label>
+        <input type="checkbox" data-custom-workout-inline-group-option="circuit" ${normalizedType === "circuit" ? "checked" : ""} />
+        <span>Circuit</span>
+      </label>
+    </div>
+  `;
+}
+
 function customWorkoutCardMarkup(exercise, workoutTitle, index = 0, options = {}) {
   const exerciseName = String(exercise.name || "").trim();
   const groupIndex = Math.max(Number(exercise.group) || 0, 0);
+  const panelFormat = normalizeCustomWorkoutFormat(options.panelFormat || activeCustomWorkoutFormat);
+  const cardFormat = panelFormat === "single"
+    ? normalizeCustomWorkoutInlineGroupType(options.format || exercise.groupType)
+    : panelFormat;
   const supersetPosition = Number.isInteger(options.groupPosition) ? options.groupPosition : index % 2;
-  const isFirstSupersetExercise = activeCustomWorkoutFormat === "superset" && supersetPosition === 0;
-  const isSecondSupersetExercise = activeCustomWorkoutFormat === "superset" && supersetPosition === 1;
+  const isFirstSupersetExercise = cardFormat === "superset" && supersetPosition === 0;
+  const isSecondSupersetExercise = cardFormat === "superset" && supersetPosition === 1;
   const suggestionMenuId = `custom-exercise-options-${String(exercise.code || index + 1).toLowerCase().replace(/[^a-z0-9-]/g, "-")}`;
 
   return `
-    <article class="workout-exercise-card workout-entry-card custom-workout-card is-open" data-custom-exercise-card data-custom-workout-group="${groupIndex}">
+    <article class="workout-exercise-card workout-entry-card custom-workout-card is-open" data-custom-exercise-card data-custom-workout-group="${groupIndex}" data-custom-workout-group-type="${escapeHtml(cardFormat)}">
       <div class="exercise-card-summary custom-workout-card-summary">
         <span>
           <span class="custom-workout-name-field-label" aria-hidden="true">Exercise name</span>
@@ -7099,6 +7171,7 @@ function customWorkoutCardMarkup(exercise, workoutTitle, index = 0, options = {}
           <button class="custom-workout-card-toggle" type="button" data-exercise-toggle aria-label="Toggle exercise ${index + 1}" aria-expanded="true"><i>›</i></button>
         </div>
       </div>
+      ${customWorkoutInlineGroupOptionsMarkup(cardFormat, panelFormat === "single")}
       <div class="exercise-detail custom-workout-detail">
         ${exerciseLogFields({
           code: exercise.code,
@@ -7131,14 +7204,16 @@ function customWorkoutListMarkup(workoutTitle = customWorkoutTitle) {
   return exercises.map((exercise, index) => customWorkoutCardMarkup(exercise, workoutTitle, index)).join("");
 }
 
-function customWorkoutCarouselGroupMarkup(format, exercises, groupIndex = 0, startIndex = 0, workoutTitle = customWorkoutTitle) {
+function customWorkoutCarouselGroupMarkup(format, exercises, groupIndex = 0, startIndex = 0, workoutTitle = customWorkoutTitle, options = {}) {
+  const panelFormat = normalizeCustomWorkoutFormat(options.panelFormat || format);
   const label = format === "superset"
     ? `Superset ${groupIndex + 1}`
     : format === "circuit"
       ? `Circuit ${groupIndex + 1}`
       : "Custom workout";
   const nextExerciseNumber = startIndex + exercises.length + 1;
-  const newExerciseCard = format === "single" ? `
+  const canAddExercise = format === "single" && options.canAddExercise !== false;
+  const newExerciseCard = canAddExercise ? `
     <button
       class="custom-workout-new-exercise-card"
       type="button"
@@ -7158,14 +7233,14 @@ function customWorkoutCarouselGroupMarkup(format, exercises, groupIndex = 0, sta
   const groupNextCard = format === "single" ? "" : workoutGroupDeckNextCardMarkup();
 
   return `
-    <section class="custom-workout-carousel" data-custom-workout-carousel data-custom-workout-group="${groupIndex}" data-custom-workout-format="${escapeHtml(format)}" aria-label="${escapeHtml(label)} exercise carousel">
+    <section class="custom-workout-carousel" data-custom-workout-carousel data-custom-workout-group="${groupIndex}" data-custom-workout-format="${escapeHtml(format)}" data-custom-workout-inline-add="${canAddExercise ? "true" : "false"}" aria-label="${escapeHtml(label)} exercise carousel">
       <div class="workout-group-progress" data-workout-group-progress aria-live="polite"></div>
       <div class="custom-workout-carousel-heading" data-custom-workout-carousel-status aria-live="polite"></div>
       <div class="custom-workout-exercise-deck" data-custom-workout-exercise-deck>
         <span class="custom-workout-deck-layer custom-workout-deck-layer-two" aria-hidden="true"></span>
         <span class="custom-workout-deck-layer custom-workout-deck-layer-one" aria-hidden="true"></span>
         <div class="workout-app-list custom-workout-list" data-custom-workout-list data-custom-workout-format="${escapeHtml(format)}" role="list" aria-label="Custom workout exercises" tabindex="0">
-          ${exercises.map((exercise, index) => customWorkoutCardMarkup(exercise, workoutTitle, startIndex + index, { groupPosition: index })).join("")}
+          ${exercises.map((exercise, index) => customWorkoutCardMarkup(exercise, workoutTitle, startIndex + index, { groupPosition: index, format, panelFormat })).join("")}
         </div>
         ${newExerciseCard}
         ${groupNextCard}
@@ -7216,12 +7291,27 @@ function customWorkoutCarouselMarkup(format, workoutTitle = customWorkoutTitle) 
     });
     groups = Array.from(circuitGroups.values()).map((group, index) => ({ ...group, index }));
   } else {
-    groups = [{ index: 0, exercises, startIndex: 0 }];
+    groups = customWorkoutMixedGroups(exercises).map((group) => ({
+      ...group,
+      exercises: group.items
+    }));
   }
 
   return `
     <div class="custom-workout-carousel-stack" data-custom-workout-carousel-stack>
-      ${groups.map((group) => customWorkoutCarouselGroupMarkup(format, group.exercises, group.index, group.startIndex, workoutTitle)).join("")}
+      ${groups.map((group, index) => {
+        const groupFormat = group.format || format;
+        const canAddExercise = groupFormat === "single" && index === groups.length - 1;
+
+        return customWorkoutCarouselGroupMarkup(
+          groupFormat,
+          group.exercises,
+          group.index,
+          group.startIndex,
+          workoutTitle,
+          { panelFormat: format, canAddExercise }
+        );
+      }).join("")}
     </div>
   `;
 }
@@ -7427,7 +7517,7 @@ function renderCustomWorkoutCarousel(carousel) {
   const straightDeckEnabled = mobile && isCustomPanel && format === "single" && cards.length > 0;
   const groupDeckEnabled = mobile && format !== "single" && cards.length > 1;
   const deckEnabled = straightDeckEnabled || groupDeckEnabled;
-  const canAddExercise = straightDeckEnabled;
+  const canAddExercise = straightDeckEnabled && carousel?.dataset.customWorkoutInlineAdd !== "false";
   const enabled = deckEnabled;
   const groupProgressEnabled = enabled && format !== "single";
   const activeIndex = Math.min(Math.max(Number(carousel?.dataset.activeIndex) || 0, 0), Math.max(cards.length - 1, 0));
@@ -8002,11 +8092,12 @@ function regroupCustomWorkoutCarousels(panel) {
         group.cards.forEach((card) => {
           card.dataset.customWorkoutGroup = String(index);
         });
-        return { index, cards: group.cards };
+        return { index, format, cards: group.cards };
       });
     } else {
       desiredGroups = Array.from({ length: Math.max(Math.ceil(cards.length / 2), 1) }, (_, index) => ({
         index,
+        format,
         cards: cards.slice(index * 2, (index * 2) + 2)
       }));
     }
@@ -8021,36 +8112,68 @@ function regroupCustomWorkoutCarousels(panel) {
       group.cards.forEach((card) => {
         card.dataset.customWorkoutGroup = String(index);
       });
-      return { index, cards: group.cards };
+      return { index, format, cards: group.cards };
     });
-    if (desiredGroups.length === 0) desiredGroups = [{ index: 0, cards: [] }];
+    if (desiredGroups.length === 0) desiredGroups = [{ index: 0, format, cards: [] }];
   } else {
-    desiredGroups = [{ index: 0, cards }];
+    desiredGroups = customWorkoutMixedGroups(cards.map((card) => ({
+      card,
+      group: Math.max(Number(card.dataset.customWorkoutGroup) || 0, 0),
+      groupType: normalizeCustomWorkoutInlineGroupType(card.dataset.customWorkoutGroupType)
+    }))).map((group) => {
+      const groupedCards = group.items.map((item) => item.card);
+
+      groupedCards.forEach((card) => {
+        card.dataset.customWorkoutGroupType = group.format;
+        if (group.format === "single") card.dataset.customWorkoutGroup = "0";
+      });
+
+      return {
+        index: group.index,
+        format: group.format,
+        cards: groupedCards
+      };
+    });
   }
   const existing = customWorkoutCarousels(panel);
-  const hasExpectedNewExerciseCards = existing.every((carousel) => (
-    Boolean(carousel.querySelector("[data-custom-workout-new-exercise]")) === (format === "single")
+  const hasExpectedNewExerciseCards = existing.every((carousel, index) => (
+    Boolean(carousel.querySelector("[data-custom-workout-new-exercise]")) === (
+      desiredGroups[index]?.format === "single" && index === desiredGroups.length - 1
+    )
   ));
   const alreadyGrouped = hasExpectedNewExerciseCards && existing.length === desiredGroups.length && desiredGroups.every((group, groupIndex) => {
     const currentCards = customWorkoutCarouselCards(existing[groupIndex]);
-    return Number(existing[groupIndex].dataset.customWorkoutGroup) === group.index &&
+    return existing[groupIndex].dataset.customWorkoutFormat === group.format &&
+      Number(existing[groupIndex].dataset.customWorkoutGroup) === group.index &&
       currentCards.length === group.cards.length && currentCards.every((card, index) => card === group.cards[index]);
   });
 
   if (!stack || alreadyGrouped) {
     existing.forEach((carousel, index) => {
-      carousel.dataset.customWorkoutFormat = format;
+      const groupFormat = desiredGroups[index]?.format || format;
+      carousel.dataset.customWorkoutFormat = groupFormat;
       carousel.dataset.customWorkoutGroup = String(desiredGroups[index]?.index ?? index);
+      carousel.dataset.customWorkoutInlineAdd = String(groupFormat === "single" && index === desiredGroups.length - 1);
       const list = carousel.querySelector("[data-custom-workout-list]");
-      if (list) list.dataset.customWorkoutFormat = format;
+      if (list) list.dataset.customWorkoutFormat = groupFormat;
     });
     return;
   }
 
   const fragment = document.createDocumentFragment();
-  desiredGroups.forEach((group) => {
+  desiredGroups.forEach((group, index) => {
     const template = document.createElement("template");
-    template.innerHTML = customWorkoutCarouselGroupMarkup(format, [], group.index, 0, workoutTitle);
+    template.innerHTML = customWorkoutCarouselGroupMarkup(
+      group.format,
+      [],
+      group.index,
+      0,
+      workoutTitle,
+      {
+        panelFormat: format,
+        canAddExercise: group.format === "single" && index === desiredGroups.length - 1
+      }
+    );
     const carousel = template.content.firstElementChild;
     const list = carousel.querySelector("[data-custom-workout-list]");
     group.cards.forEach((card) => list.append(card));
@@ -8082,6 +8205,8 @@ function syncCustomWorkoutCarousel(panel, options = {}) {
       moveCustomWorkoutCarousel(carousel, Number(carousel.dataset.activeIndex) || 0, { instant: options.instant });
     });
   }
+
+  syncCustomWorkoutFormatMarkers(panel);
 }
 
 function syncCustomWorkoutCarousels() {
@@ -8213,12 +8338,17 @@ function syncWorkoutPanelDate(panel, value, refresh = true) {
 }
 
 function syncCustomWorkoutFormatMarkers(panel) {
-  const format = normalizeCustomWorkoutFormat(panel?.dataset.customWorkoutFormat || activeCustomWorkoutFormat);
+  const panelFormat = normalizeCustomWorkoutFormat(panel?.dataset.customWorkoutFormat || activeCustomWorkoutFormat);
   const circuitPositions = new Map();
 
   panel?.querySelectorAll("[data-custom-exercise-card]").forEach((card, index) => {
     const marker = card.querySelector("[data-custom-workout-format-marker]");
     const carousel = card.closest("[data-custom-workout-carousel]");
+    const format = panelFormat === "single"
+      ? normalizeCustomWorkoutInlineGroupType(
+        card.dataset.customWorkoutGroupType || carousel?.dataset.customWorkoutFormat
+      )
+      : panelFormat;
     const groupIndex = Math.max(Number(carousel?.dataset.customWorkoutGroup ?? card.dataset.customWorkoutGroup) || 0, 0);
     const groupPosition = Math.max(customWorkoutCarouselCards(carousel).indexOf(card), 0);
     const circuitPosition = (circuitPositions.get(groupIndex) || 0) + 1;
@@ -8249,6 +8379,15 @@ function syncCustomWorkoutFormatMarkers(panel) {
         : (format === "superset" ? "Superset Completed" : "Set Finished");
     }
 
+    const inlineOptions = card.querySelector("[data-custom-workout-inline-group-options]");
+    if (inlineOptions) {
+      inlineOptions.hidden = panelFormat !== "single";
+      inlineOptions.querySelectorAll("[data-custom-workout-inline-group-option]").forEach((input) => {
+        input.checked = input.dataset.customWorkoutInlineGroupOption === format && format !== "single";
+      });
+    }
+    card.dataset.customWorkoutGroupType = format;
+
     card.querySelector("[data-exercise-title-name]")?.setAttribute("aria-label", `Exercise ${index + 1} name`);
     card.querySelector("[data-exercise-toggle]")?.setAttribute("aria-label", `Toggle exercise ${index + 1}`);
     card.querySelector("[data-delete-exercise]")?.setAttribute("aria-label", `Delete exercise ${index + 1}`);
@@ -8273,6 +8412,7 @@ function updateCustomWorkoutFormat(panel, value, options = {}) {
   if (format !== previousFormat) {
     panel.querySelectorAll("[data-custom-exercise-card]").forEach((card) => {
       card.dataset.customWorkoutGroup = "0";
+      card.dataset.customWorkoutGroupType = "single";
     });
   }
 
@@ -12021,6 +12161,137 @@ function ensureDefaultCustomExercise(panel) {
   syncCustomWorkoutCarousel(panel, { activeIndex: 0, scrollToActive: true, instant: true });
 }
 
+function appendInlineGroupingPartner(panel) {
+  const lists = Array.from(panel?.querySelectorAll("[data-custom-workout-list]") || []);
+  const list = lists[lists.length - 1];
+
+  if (!panel || !list) {
+    return null;
+  }
+
+  const nextIndex = panel.querySelectorAll("[data-custom-exercise-card]").length;
+  list.insertAdjacentHTML("beforeend", customWorkoutCardMarkup({
+    code: nextCustomExerciseCode(panel),
+    name: "",
+    group: 0,
+    groupType: "single",
+    prescription: "Custom sets",
+    rest: ""
+  }, panel.dataset.customWorkoutTitle || customWorkoutTitle, nextIndex, {
+    format: "single",
+    panelFormat: "single"
+  }));
+
+  const newCard = list.querySelector("[data-custom-exercise-card]:last-child");
+  const logElement = newCard?.querySelector("[data-exercise-log]");
+  const hiddenDate = logElement?.querySelector("[data-log-date]");
+
+  if (hiddenDate) {
+    hiddenDate.value = panel.querySelector("[data-workout-date]")?.value || todayDate();
+  }
+  if (logElement) {
+    updateExerciseLogField(logElement);
+  }
+
+  return newCard;
+}
+
+function clearCustomWorkoutInlineGroup(cards, card) {
+  const groupType = normalizeCustomWorkoutInlineGroupType(card?.dataset.customWorkoutGroupType);
+  const groupIndex = Math.max(Number(card?.dataset.customWorkoutGroup) || 0, 0);
+  const members = groupType === "single"
+    ? [card]
+    : cards.filter((candidate) => (
+      normalizeCustomWorkoutInlineGroupType(candidate.dataset.customWorkoutGroupType) === groupType &&
+      Math.max(Number(candidate.dataset.customWorkoutGroup) || 0, 0) === groupIndex
+    ));
+
+  members.filter(Boolean).forEach((member) => {
+    member.dataset.customWorkoutGroupType = "single";
+    member.dataset.customWorkoutGroup = "0";
+  });
+}
+
+function updateCustomWorkoutInlineGrouping(input) {
+  const card = input?.closest("[data-custom-exercise-card]");
+  const panel = card?.closest(".client-workout-panel-custom");
+  const panelFormat = normalizeCustomWorkoutFormat(panel?.dataset.customWorkoutFormat || activeCustomWorkoutFormat);
+
+  if (!input || !card || !panel || panelFormat !== "single") {
+    return;
+  }
+
+  const requestedType = normalizeCustomWorkoutInlineGroupType(input.dataset.customWorkoutInlineGroupOption);
+  let cards = Array.from(panel.querySelectorAll("[data-custom-exercise-card]"));
+  const currentIndex = cards.indexOf(card);
+
+  if (requestedType === "single" || currentIndex < 0) {
+    return;
+  }
+
+  if (!input.checked) {
+    clearCustomWorkoutInlineGroup(cards, card);
+    syncCustomWorkoutCarousel(panel, { focusCard: card, instant: true });
+    syncCustomWorkoutFormatMarkers(panel);
+    persistCustomWorkoutDraftFromPanel(panel);
+    return;
+  }
+
+  const previousCard = cards[currentIndex - 1] || null;
+  const nextCard = cards[currentIndex + 1] || null;
+  const adjacentCircuit = requestedType === "circuit"
+    ? [previousCard, nextCard].find((candidate) => (
+      normalizeCustomWorkoutInlineGroupType(candidate?.dataset.customWorkoutGroupType) === "circuit"
+    ))
+    : null;
+
+  clearCustomWorkoutInlineGroup(cards, card);
+
+  if (adjacentCircuit) {
+    card.dataset.customWorkoutGroupType = "circuit";
+    card.dataset.customWorkoutGroup = adjacentCircuit.dataset.customWorkoutGroup;
+  } else {
+    let partner = nextCard || previousCard;
+
+    if (!partner) {
+      partner = appendInlineGroupingPartner(panel);
+      cards = Array.from(panel.querySelectorAll("[data-custom-exercise-card]"));
+    }
+
+    if (!partner) {
+      input.checked = false;
+      return;
+    }
+
+    clearCustomWorkoutInlineGroup(cards, partner);
+    const existingGroupIndices = cards
+      .filter((candidate) => normalizeCustomWorkoutInlineGroupType(candidate.dataset.customWorkoutGroupType) === requestedType)
+      .map((candidate) => Math.max(Number(candidate.dataset.customWorkoutGroup) || 0, 0));
+    const nextGroupIndex = existingGroupIndices.length > 0
+      ? Math.max(...existingGroupIndices) + 1
+      : 0;
+
+    [card, partner].forEach((member) => {
+      member.dataset.customWorkoutGroupType = requestedType;
+      member.dataset.customWorkoutGroup = String(nextGroupIndex);
+    });
+  }
+
+  syncCustomWorkoutCarousel(panel, { focusCard: card, instant: true });
+  syncCustomWorkoutFormatMarkers(panel);
+  persistCustomWorkoutDraftFromPanel(panel);
+}
+
+function handleCustomWorkoutInlineGrouping() {
+  document.addEventListener("change", (event) => {
+    const input = event.target.closest("[data-custom-workout-inline-group-option]");
+
+    if (input) {
+      updateCustomWorkoutInlineGrouping(input);
+    }
+  });
+}
+
 function addOrOpenSupersetExercise(button) {
   const card = button?.closest("[data-custom-exercise-card]");
   const carousel = card?.closest("[data-custom-workout-carousel]");
@@ -13765,6 +14036,7 @@ handleClientHomeCheckin();
 handleClientSummaryActions();
 handleClientWorkoutTabs();
 handleWorkoutInteractions();
+handleCustomWorkoutInlineGrouping();
 handleSkipToggle();
 handleTrainingLogSave();
 handleClientProgressHistoryDeck();

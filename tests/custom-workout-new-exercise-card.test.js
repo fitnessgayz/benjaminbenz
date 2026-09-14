@@ -171,7 +171,7 @@ test("rebuilds when switching between grouped cards and the straight-set add car
   const formatUpdate = sourceForFunction("updateCustomWorkoutFormat");
 
   assert.match(regroup, /hasExpectedNewExerciseCards/);
-  assert.match(regroup, /Boolean\(carousel\.querySelector\("\[data-custom-workout-new-exercise\]"\)\) === \(format === "single"\)/);
+  assert.match(regroup, /desiredGroups\[index\]\?\.format === "single" && index === desiredGroups\.length - 1/);
   assert.match(regroup, /const alreadyGrouped = hasExpectedNewExerciseCards &&/);
   assert.match(formatUpdate, /\[data-custom-workout-add-actions\] \[data-add-custom-exercise\]/);
 });

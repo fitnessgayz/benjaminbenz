@@ -11232,6 +11232,45 @@ textarea,
   gap: 3px;
 }
 
+.custom-workout-inline-group-options {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 20px;
+  margin: 0 14px;
+  padding: 3px 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.custom-workout-inline-group-options[hidden] {
+  display: none !important;
+}
+
+.custom-workout-inline-group-options label {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 7px;
+  color: var(--black);
+  font-size: .9rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.custom-workout-inline-group-options input {
+  width: 16px;
+  min-width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--lime);
+}
+
+.custom-workout-inline-group-options label:has(input:checked) {
+  color: #507000;
+}
+
 .custom-workout-card-marker-row {
   display: flex;
   width: fit-content;
