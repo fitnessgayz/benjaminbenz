@@ -10808,6 +10808,25 @@ function syncClientDashboardMobileNavigationIcon(tabName = activeClientDashboard
   toggle.setAttribute("aria-label", `Open navigation, ${selectedLabel} selected`);
 }
 
+function centerActiveClientDashboardMobileTab(navigation = document.querySelector(".client-dashboard-tabs")) {
+  const activeTab = navigation?.querySelector(".client-dashboard-tab.is-active");
+  const mobileNavigation = window.matchMedia?.("(max-width: 900px)")?.matches ?? false;
+
+  if (!navigation || !activeTab || !mobileNavigation) {
+    return;
+  }
+
+  const maximumScroll = Math.max(0, navigation.scrollWidth - navigation.clientWidth);
+  const centeredScroll = activeTab.offsetLeft - ((navigation.clientWidth - activeTab.offsetWidth) / 2);
+  const left = Math.max(0, Math.min(maximumScroll, centeredScroll));
+
+  if (typeof navigation.scrollTo === "function") {
+    navigation.scrollTo({ left, behavior: "smooth" });
+  } else {
+    navigation.scrollLeft = left;
+  }
+}
+
 function setClientDashboardMobileNavigationExpanded(expanded, options = {}) {
   const navigation = document.querySelector(".client-dashboard-tabs");
   const toggle = document.querySelector("[data-client-mobile-nav-toggle]");
@@ -10838,7 +10857,12 @@ function setClientDashboardMobileNavigationExpanded(expanded, options = {}) {
     navigation.querySelector(".client-dashboard-tab.is-active")?.focus({ preventScroll: true });
   }
 
-  window.requestAnimationFrame?.(() => applyWorkoutElapsedTimerPosition());
+  window.requestAnimationFrame?.(() => {
+    if (isExpanded) {
+      centerActiveClientDashboardMobileTab(navigation);
+    }
+    applyWorkoutElapsedTimerPosition();
+  });
 }
 
 function handleClientDashboardMobileNavigation() {

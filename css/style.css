@@ -12487,7 +12487,7 @@ body.client-dashboard-page {
 
 @media (max-width: 900px) {
   body.client-dashboard-page {
-    padding-bottom: calc(94px + env(safe-area-inset-bottom));
+    padding-bottom: calc(116px + env(safe-area-inset-bottom));
   }
 
   .client-dashboard-page .dashboard-shell {
@@ -12504,26 +12504,32 @@ body.client-dashboard-page {
     bottom: calc(10px + env(safe-area-inset-bottom));
     left: 50%;
     z-index: 85;
-    display: grid;
-    grid-template-columns: repeat(8, minmax(0, 1fr));
+    display: flex;
+    align-items: stretch;
     width: min(720px, calc(100% - 24px));
     max-width: none;
-    gap: 4px;
+    gap: 6px;
     margin: 0;
-    padding: 6px 8px 4px;
-    overflow: visible;
+    padding: 8px 10px 6px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-x: contain;
     visibility: hidden;
     opacity: 0;
     pointer-events: none;
     transform: translateX(-50%) scale(.72);
-    transform-origin: left bottom;
-    background: rgba(251, 251, 248, .97);
-    border: 1px solid var(--line);
-    border-radius: 12px !important;
+    transform-origin: center bottom;
+    touch-action: pan-x;
+    scroll-padding-inline: 10px;
+    scroll-snap-type: x proximity;
+    background: rgba(23, 26, 23, .98);
+    border: 1px solid #31342f;
+    border-radius: 34px !important;
     box-shadow: 0 12px 34px rgba(0, 0, 0, .2);
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
-    scrollbar-width: none;
+    scrollbar-width: thin;
+    scrollbar-color: var(--lime) rgba(255, 255, 255, .16);
     transition: opacity .18s ease, transform .22s cubic-bezier(.2, .8, .2, 1), visibility 0s linear .22s;
   }
 
@@ -12554,7 +12560,8 @@ body.client-dashboard-page {
     color: var(--lime);
     background: var(--black);
     border: 2px solid var(--lime);
-    border-radius: 18px;
+    border-radius: 50% !important;
+    aspect-ratio: 1 / 1;
     box-shadow: 0 12px 34px rgba(0, 0, 0, .24);
     cursor: pointer;
     transition: opacity .18s ease, transform .18s ease;
@@ -12581,7 +12588,19 @@ body.client-dashboard-page {
   }
 
   .dashboard-page .client-dashboard-tabs::-webkit-scrollbar {
-    display: none;
+    display: block;
+    height: 4px;
+  }
+
+  .dashboard-page .client-dashboard-tabs::-webkit-scrollbar-track {
+    margin-inline: 28px;
+    background: rgba(255, 255, 255, .16);
+    border-radius: 999px;
+  }
+
+  .dashboard-page .client-dashboard-tabs::-webkit-scrollbar-thumb {
+    background: var(--lime);
+    border-radius: 999px;
   }
 
   .dashboard-page .client-dashboard-tab,
@@ -12592,35 +12611,38 @@ body.client-dashboard-page {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    width: auto;
-    min-width: 0;
-    max-width: none;
-    min-height: 56px !important;
-    gap: 0;
-    padding: 7px 2px 9px !important;
-    color: var(--muted);
+    width: 82px !important;
+    min-width: 82px !important;
+    max-width: 82px !important;
+    inline-size: 82px !important;
+    min-inline-size: 82px !important;
+    max-inline-size: 82px !important;
+    min-height: 78px !important;
+    gap: 3px;
+    padding: 6px 3px 10px !important;
+    color: #e4e6df;
     background: transparent;
     border: 0;
-    border-radius: 8px !important;
-    font-size: .64rem;
+    border-radius: 12px !important;
+    font-size: .63rem !important;
     line-height: 1;
     text-align: center;
-    scroll-snap-align: none;
+    scroll-snap-align: center;
   }
 
   .dashboard-page .client-dashboard-tab::after {
     content: "";
     position: absolute;
-    right: 9px;
-    bottom: 0;
-    left: 9px;
+    right: 16px;
+    bottom: 1px;
+    left: 16px;
     height: 4px;
     background: transparent;
     border-radius: 3px 3px 0 0;
   }
 
   .dashboard-page .client-dashboard-tab.is-active {
-    color: var(--black);
+    color: var(--lime);
     background: transparent;
     border-color: transparent;
   }
@@ -12631,9 +12653,9 @@ body.client-dashboard-page {
 
   .dashboard-page .client-dashboard-tab-icon {
     display: block;
-    width: 30px;
-    height: 30px;
-    flex: 0 0 30px;
+    width: 28px;
+    height: 28px;
+    flex: 0 0 28px;
     padding: 1px;
     color: inherit;
     background: transparent;
@@ -12646,13 +12668,23 @@ body.client-dashboard-page {
     height: 42px;
     flex-basis: 42px;
     padding: 7px;
-    color: var(--lime);
-    background: var(--black);
+    color: var(--black);
+    background: var(--lime);
     border-radius: 50%;
     box-shadow: 0 4px 10px rgba(0, 0, 0, .18);
   }
 
-  .dashboard-page .client-dashboard-tab-label,
+  .dashboard-page .client-dashboard-tab-label {
+    display: block !important;
+    width: 100%;
+    overflow: hidden;
+    color: inherit;
+    font-size: .63rem;
+    line-height: 1.1;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   .dashboard-page .client-dashboard-nav-title,
   .dashboard-page .client-dashboard-sidebar-toggle {
     display: none !important;
@@ -12661,14 +12693,14 @@ body.client-dashboard-page {
 
 @media (max-width: 420px) {
   body.client-dashboard-page {
-    padding-bottom: calc(88px + env(safe-area-inset-bottom));
+    padding-bottom: calc(110px + env(safe-area-inset-bottom));
   }
 
   .dashboard-page .client-dashboard-tabs {
     bottom: calc(6px + env(safe-area-inset-bottom));
     width: calc(100% - 12px);
-    gap: 1px;
-    padding: 4px 3px 3px;
+    gap: 4px;
+    padding: 7px 8px 5px;
   }
 
   .dashboard-page .client-dashboard-mobile-nav-toggle {
@@ -12678,15 +12710,21 @@ body.client-dashboard-page {
 
   .dashboard-page .client-dashboard-tab,
   .dashboard-page .client-dashboard-tab[data-client-dashboard-tab] {
-    min-height: 54px !important;
-    gap: 0;
-    padding: 7px 1px 9px !important;
+    width: 78px !important;
+    min-width: 78px !important;
+    max-width: 78px !important;
+    inline-size: 78px !important;
+    min-inline-size: 78px !important;
+    max-inline-size: 78px !important;
+    min-height: 76px !important;
+    gap: 3px;
+    padding: 6px 2px 9px !important;
   }
 
   .dashboard-page .client-dashboard-tab-icon {
-    width: 28px;
-    height: 28px;
-    flex-basis: 28px;
+    width: 27px;
+    height: 27px;
+    flex-basis: 27px;
     padding: 1px;
   }
 
@@ -12698,8 +12736,12 @@ body.client-dashboard-page {
   }
 
   .dashboard-page .client-dashboard-tab::after {
-    right: 6px;
-    left: 6px;
+    right: 14px;
+    left: 14px;
+  }
+
+  .dashboard-page .client-dashboard-tab-label {
+    font-size: .6rem;
   }
 }
 

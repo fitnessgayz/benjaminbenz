@@ -30,8 +30,8 @@ test("scopes the client navigation styles and cache-busts dashboard assets", () 
   assert.match(dashboardHtml, /href="css\/style\.css\?v=[^"\s]+"/);
   assert.match(dashboardHtml, /src="js\/client-portal\.js\?v=[^"\s]+"/);
   assert.match(styleSource, /body\.client-dashboard-page\s*\{[^}]*padding-bottom:\s*0;/s);
-  assert.match(dashboardHtml, /css\/style\.css\?v=home-snapshot-deck-3/);
-  assert.match(dashboardHtml, /js\/client-portal\.js\?v=home-snapshot-deck-3/);
+  assert.match(dashboardHtml, /css\/style\.css\?v=mobile-labeled-nav-1/);
+  assert.match(dashboardHtml, /js\/client-portal\.js\?v=mobile-labeled-nav-1/);
 });
 
 test("renders eight labeled client destinations in order with current-page semantics", () => {
@@ -91,15 +91,16 @@ test("uses a sticky 240px desktop sidebar with a persistent 78px icon rail", () 
   assert.match(dashboardHtml, /client-dashboard-sidebar-toggle-label">Minimize</);
 });
 
-test("keeps the eight-column safe-area bottom dock on mobile and hides desktop-only labels", () => {
+test("keeps a labeled horizontally scrollable safe-area bottom dock on mobile", () => {
   const mobileStyles = sourceBetween("@media (max-width: 900px)", "@media (max-width: 420px)");
 
-  assert.match(mobileStyles, /body\.client-dashboard-page\s*\{[^}]*padding-bottom:\s*calc\(94px \+ env\(safe-area-inset-bottom\)\)/s);
+  assert.match(mobileStyles, /body\.client-dashboard-page\s*\{[^}]*padding-bottom:\s*calc\(116px \+ env\(safe-area-inset-bottom\)\)/s);
   assert.match(mobileStyles, /\.client-dashboard-page \.dashboard-shell\s*\{[^}]*padding-top:\s*10px/s);
   assert.match(mobileStyles, /\.client-dashboard-page \.dashboard-grid\s*\{[^}]*padding-top:\s*0/s);
-  assert.match(mobileStyles, /\.dashboard-page \.client-dashboard-tabs\s*\{[^}]*position:\s*fixed[^}]*bottom:\s*calc\(10px \+ env\(safe-area-inset-bottom\)\)[^}]*grid-template-columns:\s*repeat\(8, minmax\(0, 1fr\)\)[^}]*width:\s*min\(720px, calc\(100% - 24px\)\)/s);
-  assert.match(mobileStyles, /\.client-dashboard-tab\.is-active \.client-dashboard-tab-icon\s*\{[^}]*color:\s*var\(--lime\)[^}]*background:\s*var\(--black\)[^}]*border-radius:\s*50%/s);
-  assert.match(mobileStyles, /\.client-dashboard-tab-label,[\s\S]*?\.client-dashboard-nav-title,[\s\S]*?\.client-dashboard-sidebar-toggle\s*\{[^}]*display:\s*none !important/s);
+  assert.match(mobileStyles, /\.dashboard-page \.client-dashboard-tabs\s*\{[^}]*position:\s*fixed[^}]*bottom:\s*calc\(10px \+ env\(safe-area-inset-bottom\)\)[^}]*display:\s*flex[^}]*width:\s*min\(720px, calc\(100% - 24px\)\)[^}]*overflow-x:\s*auto[^}]*scroll-snap-type:\s*x proximity[^}]*background:\s*rgba\(23, 26, 23, \.98\)/s);
+  assert.match(mobileStyles, /\.client-dashboard-tab\.is-active \.client-dashboard-tab-icon\s*\{[^}]*color:\s*var\(--black\)[^}]*background:\s*var\(--lime\)[^}]*border-radius:\s*50%/s);
+  assert.match(mobileStyles, /\.client-dashboard-tab-label\s*\{[^}]*display:\s*block !important[^}]*font-size:\s*\.63rem/s);
+  assert.match(mobileStyles, /\.client-dashboard-nav-title,[\s\S]*?\.client-dashboard-sidebar-toggle\s*\{[^}]*display:\s*none !important/s);
 });
 
 test("collapses mobile navigation to the selected destination icon", () => {
@@ -112,6 +113,7 @@ test("collapses mobile navigation to the selected destination icon", () => {
   assert.match(dashboardHtml, /class="client-dashboard-mobile-nav-toggle"[\s\S]*?aria-label="Open navigation, Home selected"[\s\S]*?aria-controls="client-dashboard-navigation"[\s\S]*?data-client-mobile-nav-toggle/);
   assert.match(dashboardHtml, /<nav class="client-dashboard-tabs" id="client-dashboard-navigation"/);
   assert.match(mobileStyles, /\.dashboard-page \.client-dashboard-mobile-nav-toggle\s*\{[^}]*position:\s*fixed[^}]*left:\s*12px[^}]*width:\s*62px !important[^}]*min-width:\s*62px !important[^}]*max-width:\s*62px !important[^}]*inline-size:\s*62px !important[^}]*max-inline-size:\s*62px !important[^}]*height:\s*62px !important/s);
+  assert.match(mobileStyles, /\.dashboard-page \.client-dashboard-mobile-nav-toggle\s*\{[^}]*border-radius:\s*50% !important[^}]*aspect-ratio:\s*1 \/ 1/s);
   assert.match(mobileStyles, /\.client-dashboard-tabs\s*\{[^}]*visibility:\s*hidden[^}]*opacity:\s*0[^}]*pointer-events:\s*none[^}]*scale\(\.72\)/s);
   assert.match(mobileStyles, /\.client-dashboard-tabs\.is-mobile-expanded\s*\{[^}]*visibility:\s*visible[^}]*opacity:\s*1[^}]*pointer-events:\s*auto/s);
   assert.match(syncSource, /selectedIcon\.cloneNode\(true\)/);
@@ -120,17 +122,20 @@ test("collapses mobile navigation to the selected destination icon", () => {
   assert.match(setMobileSource, /navigation\.inert = !isExpanded/);
   assert.match(setMobileSource, /navigation\.setAttribute\("aria-hidden", String\(!isExpanded\)\)/);
   assert.match(handlerSource, /setClientDashboardMobileNavigationExpanded\(true, \{ focusNavigation: true \}\)/);
+  assert.match(setMobileSource, /centerActiveClientDashboardMobileTab\(navigation\)/);
   assert.match(tabHandlerSource, /setClientDashboardMobileNavigationExpanded\(false, \{ focusToggle: true \}\)/);
   assert.match(portalSource, /handleClientDashboardMobileNavigation\(\);/);
 });
 
-test("uses the approved balanced icon scale in the expanded mobile dock", () => {
+test("uses balanced icon and label sizing in the expanded mobile dock", () => {
   const mobileStyles = sourceBetween("@media (max-width: 900px)", "@media (max-width: 420px)");
   const narrowStyles = sourceBetween("@media (max-width: 420px)", "@media (prefers-reduced-motion: reduce)");
 
-  assert.match(mobileStyles, /\.client-dashboard-tab-icon\s*\{[^}]*width:\s*30px[^}]*height:\s*30px[^}]*padding:\s*1px/s);
+  assert.match(mobileStyles, /\.client-dashboard-tab-icon\s*\{[^}]*width:\s*28px[^}]*height:\s*28px[^}]*padding:\s*1px/s);
+  assert.match(mobileStyles, /\.client-dashboard-tab\[data-client-dashboard-tab\]\s*\{[^}]*width:\s*82px !important[^}]*min-width:\s*82px !important[^}]*max-width:\s*82px !important/s);
   assert.match(mobileStyles, /\.client-dashboard-tab\.is-active \.client-dashboard-tab-icon\s*\{[^}]*width:\s*42px[^}]*height:\s*42px[^}]*padding:\s*7px/s);
-  assert.match(narrowStyles, /\.client-dashboard-tab-icon\s*\{[^}]*width:\s*28px[^}]*height:\s*28px/s);
+  assert.match(narrowStyles, /\.client-dashboard-tab-icon\s*\{[^}]*width:\s*27px[^}]*height:\s*27px/s);
+  assert.match(narrowStyles, /\.client-dashboard-tab\[data-client-dashboard-tab\]\s*\{[^}]*width:\s*78px !important[^}]*min-width:\s*78px !important[^}]*max-width:\s*78px !important/s);
   assert.match(narrowStyles, /\.client-dashboard-tab\.is-active \.client-dashboard-tab-icon\s*\{[^}]*width:\s*40px[^}]*height:\s*40px/s);
 });
 
