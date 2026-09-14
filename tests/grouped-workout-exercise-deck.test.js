@@ -25,9 +25,11 @@ test("renders the same lifted deck shell for custom and assigned grouped workout
     assert.equal((markup.match(/custom-workout-deck-layer/g) || []).length, 4);
     assert.match(markup, /workoutGroupDeckNextCardMarkup\(\)/);
   });
+  assert.match(nextCardMarkup, /<button[\s\S]*?type="button"[\s\S]*?data-workout-group-next-card/);
   assert.match(nextCardMarkup, /data-workout-group-next-card/);
   assert.match(nextCardMarkup, /data-workout-group-next-label/);
   assert.match(nextCardMarkup, /data-workout-group-next-name/);
+  assert.doesNotMatch(nextCardMarkup, /aria-hidden="true" hidden/);
 });
 
 test("keeps grouped deck visuals separate from straight-set add permission", () => {
@@ -80,7 +82,13 @@ test("builds the next-card cue for superset and circuit sequences", () => {
     targetIndex: 0
   });
   assert.equal(cueFor(circuitProgress, 0, "circuit").label, "Up next · Station 2");
-  assert.equal(cueFor(circuitProgress, 2, "circuit").label, "Next round · Station 1");
+  assert.deepEqual(cueFor(circuitProgress, 2, "circuit"), {
+    hidden: false,
+    complete: false,
+    label: "Next round · Station 1",
+    name: "Kettlebell Deadlift",
+    targetIndex: 0
+  });
   assert.deepEqual(cueFor({ ...supersetProgress, isComplete: true }, 1, "superset"), {
     hidden: false,
     complete: true,
@@ -130,6 +138,70 @@ test("group decks wrap into the next round by arrow, swipe, and keyboard", () =>
   assert.match(render, /next\.disabled = !addsExercise && !wrapsGroupDeck && activeIndex === cards\.length - 1/);
   assert.match(move, /carousel\.dataset\.groupWorkoutDeck === "true"/);
   assert.match(move, /customWorkoutCarouselNavigationDecision\([\s\S]*?wrapsGroupDeck/);
+});
+
+test("opens the next grouped exercise when the bottom preview card is clicked", () => {
+  const render = sourceForFunction("renderCustomWorkoutCarousel");
+  const bind = sourceForFunction("bindCustomWorkoutCarousel");
+
+  assert.match(render, /const canOpenNextCard = groupDeckEnabled[\s\S]*?!deckCue\.complete[\s\S]*?deckCue\.targetIndex >= 0/);
+  assert.match(render, /groupNextCard\.dataset\.workoutGroupNextIndex = canOpenNextCard \? String\(deckCue\.targetIndex\) : ""/);
+  assert.match(render, /groupNextCard\.disabled = !canOpenNextCard/);
+  assert.match(render, /`Show \$\{deckCue\.label\}: \$\{deckCue\.name\}`/);
+  assert.match(bind, /closest\("\[data-workout-group-next-card\]"\)/);
+  assert.match(bind, /groupNextCard\s*\?\s*previewIndex[\s\S]*?const direction = groupNextCard \? 1/);
+  assert.match(bind, /groupNextCard && \(groupNextCard\.hasAttribute\("disabled"\)[\s\S]*?previewIndex < 0\)\) return/);
+  assert.match(bind, /moveCustomWorkoutCarousel\(carousel, nextIndex, \{ direction \}\)/);
+  assert.match(mobileStyles, /\.custom-workout-group-next-card \{[\s\S]*?pointer-events:\s*auto;[\s\S]*?touch-action:\s*manipulation/);
+  assert.match(mobileStyles, /\.custom-workout-group-next-card:focus-visible \{[\s\S]*?outline:\s*3px solid/);
+});
+
+test("routes preview taps to the represented exercise and ignores a disabled completion preview", () => {
+  const listeners = {};
+  const moves = [];
+  class FakeElement {}
+  const list = {
+    classList: { contains: () => false },
+    addEventListener() {}
+  };
+  const carousel = {
+    dataset: { activeIndex: "1" },
+    querySelector(selector) {
+      return selector === "[data-custom-workout-list]" ? list : null;
+    },
+    addEventListener(type, handler) {
+      listeners[type] = handler;
+    }
+  };
+  const bind = Function(
+    "Element",
+    "moveCustomWorkoutCarousel",
+    `${sourceForFunction("bindCustomWorkoutCarousel")}; return bindCustomWorkoutCarousel;`
+  )(FakeElement, (...args) => moves.push(args));
+  const preview = new FakeElement();
+  preview.dataset = { workoutGroupNextIndex: "0" };
+  preview.closest = (selector) => selector === "[data-workout-group-next-card]" ? preview : null;
+  preview.hasAttribute = () => false;
+
+  bind(carousel);
+  listeners.click({
+    target: preview,
+    preventDefault() {},
+    stopPropagation() {}
+  });
+
+  assert.equal(moves.length, 1);
+  assert.equal(moves[0][0], carousel);
+  assert.equal(moves[0][1], 0);
+  assert.deepEqual(moves[0][2], { direction: 1 });
+
+  preview.hasAttribute = (name) => name === "disabled";
+  listeners.click({
+    target: preview,
+    preventDefault() {},
+    stopPropagation() {}
+  });
+  assert.equal(moves.length, 1);
 });
 
 test("changing workout dates recalculates grouped completion before rerendering", () => {

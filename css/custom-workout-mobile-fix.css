@@ -923,7 +923,12 @@
     bottom: 10px;
     left: 20px;
     display: flex;
+    width: auto !important;
+    inline-size: auto !important;
+    max-width: none !important;
+    max-inline-size: none !important;
     min-width: 0;
+    min-inline-size: 0 !important;
     padding: 16px;
     align-items: flex-end;
     justify-content: space-between;
@@ -935,9 +940,29 @@
     background: #efffc7;
     box-shadow: 0 14px 30px rgba(17, 20, 17, .15);
     color: #111411;
-    pointer-events: none;
+    -webkit-appearance: none;
+    appearance: none;
+    font: inherit;
+    text-align: left !important;
+    cursor: pointer;
+    pointer-events: auto;
+    touch-action: manipulation;
     transform: translate3d(8px, 0, -118px) scale(.97);
     transform-origin: 50% 92%;
+  }
+
+  .dashboard-page .custom-workout-group-next-card:not(:disabled):active {
+    transform: translate3d(8px, 2px, -118px) scale(.965);
+  }
+
+  .dashboard-page .custom-workout-group-next-card:focus-visible {
+    outline: 3px solid var(--blue, #2878ff);
+    outline-offset: -5px;
+  }
+
+  .dashboard-page .custom-workout-group-next-card:disabled {
+    cursor: default;
+    pointer-events: none;
   }
 
   .dashboard-page .custom-workout-group-next-card[hidden] {

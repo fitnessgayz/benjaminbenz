@@ -4812,13 +4812,13 @@ function exerciseCardRows(exercises, workoutTitle, openMode = "first", workoutFo
 
 function workoutGroupDeckNextCardMarkup() {
   return `
-    <span class="custom-workout-group-next-card" data-workout-group-next-card aria-hidden="true" hidden>
+    <button class="custom-workout-group-next-card" type="button" data-workout-group-next-card hidden>
       <span>
         <small data-workout-group-next-label>Up next</small>
         <strong data-workout-group-next-name>Next exercise</strong>
       </span>
       <span aria-hidden="true">↗</span>
-    </span>
+    </button>
   `;
 }
 
@@ -7298,7 +7298,16 @@ function renderCustomWorkoutCarousel(carousel) {
     const deckCue = workoutCarouselDeckCue(progress, activeIndex, format);
     const label = groupNextCard.querySelector("[data-workout-group-next-label]");
     const name = groupNextCard.querySelector("[data-workout-group-next-name]");
+    const canOpenNextCard = groupDeckEnabled && !deckCue.hidden && !deckCue.complete && deckCue.targetIndex >= 0;
     groupNextCard.hidden = !groupDeckEnabled || deckCue.hidden;
+    groupNextCard.disabled = !canOpenNextCard;
+    groupNextCard.dataset.workoutGroupNextIndex = canOpenNextCard ? String(deckCue.targetIndex) : "";
+    groupNextCard.setAttribute(
+      "aria-label",
+      deckCue.complete
+        ? `${groupTypeLabel(format)} complete. All rounds are saved.`
+        : `Show ${deckCue.label}: ${deckCue.name}`
+    );
     groupNextCard.classList.toggle("is-complete", groupDeckEnabled && deckCue.complete);
     if (label) label.textContent = deckCue.label;
     if (name) name.textContent = deckCue.name;
@@ -7587,17 +7596,22 @@ function bindCustomWorkoutCarousel(carousel) {
     const previous = target?.closest("[data-custom-workout-carousel-previous]");
     const next = target?.closest("[data-custom-workout-carousel-next]");
     const dot = target?.closest("[data-custom-workout-carousel-dot]");
+    const groupNextCard = target?.closest("[data-workout-group-next-card]");
 
-    if (!previous && !next && !dot) return;
+    if (!previous && !next && !dot && !groupNextCard) return;
     event.preventDefault();
     event.stopPropagation();
     if (list.classList.contains("is-deck-settling")) return;
 
     const current = Number(carousel.dataset.activeIndex) || 0;
-    const nextIndex = dot
-      ? Number(dot.dataset.customWorkoutCarouselDot)
-      : current + (next ? 1 : -1);
-    const direction = dot ? Math.sign(nextIndex - current) : (next ? 1 : -1);
+    const previewIndex = Number(groupNextCard?.dataset.workoutGroupNextIndex);
+    if (groupNextCard && (groupNextCard.hasAttribute("disabled") || !Number.isInteger(previewIndex) || previewIndex < 0)) return;
+    const nextIndex = groupNextCard
+      ? previewIndex
+      : dot
+        ? Number(dot.dataset.customWorkoutCarouselDot)
+        : current + (next ? 1 : -1);
+    const direction = groupNextCard ? 1 : dot ? Math.sign(nextIndex - current) : (next ? 1 : -1);
     moveCustomWorkoutCarousel(carousel, nextIndex, { direction });
   });
 
