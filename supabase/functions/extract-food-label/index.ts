@@ -3,6 +3,17 @@ import { encodeBase64 } from "https://deno.land/std@0.224.0/encoding/base64.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
+const OPEN_FOOD_FACTS_PRODUCT_FIELDS = [
+  "code",
+  "product_name",
+  "product_name_en",
+  "brands",
+  "serving_size",
+  "serving_quantity",
+  "serving_quantity_unit",
+  "nutriments"
+].join(",");
+const OPEN_FOOD_FACTS_USER_AGENT = "FitnessWithBenjamin/1.0 (fwb@benjaminbenz.com)";
 const allowedOrigins = new Set([
   "https://benjaminbenz.com",
   "https://www.benjaminbenz.com",
@@ -145,6 +156,80 @@ function boundedNumber(value: unknown, maximum: number) {
     : null;
 }
 
+function canonicalBarcode(value: unknown) {
+  const digits = String(value ?? "").replace(/\D/g, "");
+  const canonical = digits.length === 12 ? `0${digits}` : digits;
+
+  if (![8, 13, 14].includes(canonical.length)) {
+    return "";
+  }
+
+  const checkDigit = Number(canonical.at(-1));
+  const body = canonical.slice(0, -1);
+  const sum = Array.from(body).reduce((total, digit, index) => {
+    const positionFromRight = body.length - index;
+    return total + Number(digit) * (positionFromRight % 2 === 1 ? 3 : 1);
+  }, 0);
+
+  return (10 - (sum % 10)) % 10 === checkDigit ? canonical : "";
+}
+
+function normalizeOpenFoodFactsProduct(value: unknown, barcode: string) {
+  const product = isRecord(value) ? value : {};
+  const nutriments = isRecord(product.nutriments) ? product.nutriments : {};
+  const productName = stringValue(product.product_name_en || product.product_name, 160);
+  const brand = stringValue(product.brands, 120);
+  const servingSize = stringValue(product.serving_size, 120);
+  const servingQuantity = boundedNumber(product.serving_quantity, 100000);
+  const servingUnit = stringValue(product.serving_quantity_unit, 20);
+  const hasServing = Boolean(servingSize || (servingQuantity !== null && servingUnit));
+  const multiplier = hasServing && servingQuantity !== null && /^(?:g|ml)$/i.test(servingUnit)
+    ? servingQuantity / 100
+    : null;
+  const warnings: string[] = [];
+
+  const macroValue = (name: string, maximum: number) => {
+    const perServing = boundedNumber(nutriments[`${name}_serving`], maximum);
+    if (perServing !== null && hasServing) {
+      return perServing;
+    }
+
+    const per100 = boundedNumber(nutriments[`${name}_100g`], maximum);
+    if (per100 === null) {
+      warnings.push(`${name === "energy-kcal" ? "Calories" : name} was not available.`);
+      return null;
+    }
+
+    if (multiplier !== null) {
+      return Math.round(per100 * multiplier * 10) / 10;
+    }
+
+    return per100;
+  };
+
+  const food = {
+    food_name: productName,
+    brand,
+    serving: servingSize || (servingQuantity !== null && servingUnit ? `${servingQuantity} ${servingUnit}` : "100 g"),
+    calories: macroValue("energy-kcal", 10000),
+    protein: macroValue("proteins", 1000),
+    carbs: macroValue("carbohydrates", 1000),
+    fat: macroValue("fat", 1000),
+    confidence: "medium",
+    warnings,
+    barcode,
+    source: "Open Food Facts barcode"
+  };
+
+  if (!hasServing) {
+    food.warnings.unshift("No serving size was listed, so values are shown per 100 g.");
+  }
+
+  return sanitizedFood(food)
+    ? food
+    : null;
+}
+
 function sanitizedFood(value: unknown) {
   const source = isRecord(value) ? value : {};
   const food = {
@@ -180,8 +265,73 @@ function foodLibraryResult(row: JsonRecord) {
     protein: boundedNumber(row.protein, 1000),
     carbs: boundedNumber(row.carbs, 1000),
     fat: boundedNumber(row.fat, 1000),
-    source: "Shared food label"
+    barcode: canonicalBarcode(row.barcode),
+    source: stringValue(row.source, 20) === "barcode" ? "Shared barcode food" : "Shared food label"
   };
+}
+
+async function lookupBarcode(
+  request: Request,
+  body: JsonRecord,
+  adminClient: ReturnType<typeof createClient> | null
+) {
+  if (!adminClient) {
+    return jsonResponse(request, { error: "Barcode lookup is not configured yet." }, 503);
+  }
+
+  const barcode = canonicalBarcode(body.barcode);
+  if (!barcode) {
+    return jsonResponse(request, { error: "Scan a valid UPC, EAN, or GTIN barcode." }, 400);
+  }
+
+  const { data: cached, error: cachedError } = await adminClient
+    .from("shared_food_library")
+    .select("id,food_name,brand,serving,calories,protein,carbs,fat,barcode,source")
+    .eq("barcode", barcode)
+    .maybeSingle();
+
+  if (cachedError) {
+    return jsonResponse(request, { error: "The shared food library could not be checked right now." }, 500);
+  }
+
+  if (cached) {
+    return jsonResponse(request, { food: foodLibraryResult(cached as JsonRecord), cached: true });
+  }
+
+  let response: Response;
+  try {
+    response = await fetch(
+      `https://world.openfoodfacts.org/api/v3/product/${encodeURIComponent(barcode)}?fields=${encodeURIComponent(OPEN_FOOD_FACTS_PRODUCT_FIELDS)}`,
+      {
+        headers: {
+          "Accept": "application/json",
+          "User-Agent": OPEN_FOOD_FACTS_USER_AGENT
+        },
+        signal: AbortSignal.timeout(15_000)
+      }
+    );
+  } catch {
+    return jsonResponse(request, { error: "The barcode service could not be reached. Try the Nutrition Facts photo instead." }, 502);
+  }
+
+  if (!response.ok) {
+    const status = response.status === 404 ? 404 : 502;
+    return jsonResponse(request, {
+      error: status === 404
+        ? "That barcode was not found. Scan the Nutrition Facts label instead."
+        : "The barcode service is temporarily unavailable. Try the Nutrition Facts photo instead."
+    }, status);
+  }
+
+  const payload = await response.json().catch(() => ({}));
+  const product = isRecord(payload) ? payload.product : null;
+  const food = normalizeOpenFoodFactsProduct(product, barcode);
+
+  if (!food) {
+    return jsonResponse(request, { error: "Nutrition facts were not available for that barcode. Scan the Nutrition Facts label instead." }, 404);
+  }
+
+  return jsonResponse(request, { food, cached: false, attribution: "Open Food Facts" });
 }
 
 async function fingerprintForFood(food: ReturnType<typeof sanitizedFood>) {
@@ -298,6 +448,7 @@ async function publishFoodLabel(
     return jsonResponse(request, { error: "Review the food name, serving, and calories before saving." }, 400);
   }
 
+  const barcode = canonicalBarcode(body.barcode || (isRecord(body.food) ? body.food.barcode : ""));
   const fingerprint = await fingerprintForFood(food);
   const row = {
     fingerprint,
@@ -308,16 +459,27 @@ async function publishFoodLabel(
     protein: food.protein ?? 0,
     carbs: food.carbs ?? 0,
     fat: food.fat ?? 0,
-    source: "food_label",
+    barcode: barcode || null,
+    source: barcode ? "barcode" : "food_label",
     created_by_user_id: userId
   };
   const { data, error } = await adminClient
     .from("shared_food_library")
     .upsert(row, { onConflict: "fingerprint", ignoreDuplicates: true })
-    .select("id,food_name,brand,serving,calories,protein,carbs,fat")
+    .select("id,food_name,brand,serving,calories,protein,carbs,fat,barcode,source")
     .maybeSingle();
 
   if (error) {
+    if (barcode) {
+      const { data: barcodeMatch } = await adminClient
+        .from("shared_food_library")
+        .select("id,food_name,brand,serving,calories,protein,carbs,fat,barcode,source")
+        .eq("barcode", barcode)
+        .maybeSingle();
+      if (barcodeMatch) {
+        return jsonResponse(request, { food: foodLibraryResult(barcodeMatch as JsonRecord) });
+      }
+    }
     return jsonResponse(request, { error: "The food was logged, but could not be added to the shared library." }, 500);
   }
 
@@ -325,13 +487,24 @@ async function publishFoodLabel(
   if (!saved) {
     const { data: existing, error: existingError } = await adminClient
       .from("shared_food_library")
-      .select("id,food_name,brand,serving,calories,protein,carbs,fat")
+      .select("id,food_name,brand,serving,calories,protein,carbs,fat,barcode,source")
       .eq("fingerprint", fingerprint)
       .maybeSingle();
     if (existingError || !existing) {
       return jsonResponse(request, { error: "The food was logged, but the shared library could not be confirmed." }, 500);
     }
     saved = existing;
+  }
+
+  if (barcode && saved && !canonicalBarcode((saved as JsonRecord).barcode)) {
+    const { data: updated } = await adminClient
+      .from("shared_food_library")
+      .update({ barcode, source: "barcode" })
+      .eq("id", (saved as JsonRecord).id)
+      .is("barcode", null)
+      .select("id,food_name,brand,serving,calories,protein,carbs,fat,barcode,source")
+      .maybeSingle();
+    saved = updated || saved;
   }
 
   return jsonResponse(request, { food: foodLibraryResult(saved as JsonRecord) });
@@ -376,12 +549,16 @@ serve(async (request) => {
 
   const body = await request.json().catch(() => ({}));
   const safeBody = isRecord(body) ? body : {};
-  if (stringValue(safeBody.action, 20) !== "publish") {
-    return jsonResponse(request, { error: "Choose a food-label photo to read." }, 400);
-  }
-
   const adminClient = serviceRoleKey
     ? createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false } })
     : null;
-  return publishFoodLabel(request, safeBody, user.id, adminClient);
+  const action = stringValue(safeBody.action, 30);
+  if (action === "lookup_barcode") {
+    return lookupBarcode(request, safeBody, adminClient);
+  }
+  if (action === "publish") {
+    return publishFoodLabel(request, safeBody, user.id, adminClient);
+  }
+
+  return jsonResponse(request, { error: "Choose a food-label photo or scan a barcode." }, 400);
 });

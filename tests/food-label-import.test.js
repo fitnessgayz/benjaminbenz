@@ -111,7 +111,7 @@ test("loads recent shared labels and includes them in food search for every clie
   assert.match(selectSource, /applyFoodResult\(food\)/);
   assert.match(foodSearchFunction, /\.from\("shared_food_library"\)/);
   assert.match(foodSearchFunction, /source:\s*"Shared food label"/);
-  assert.match(portal, /source:\s*"Shared food label"/);
+  assert.match(portal, /"Shared food label"/);
 });
 
 test("discloses transient label processing and the shared reviewed-food library", () => {

@@ -30,7 +30,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=set-complete-rest-1" />
+  <link rel="stylesheet" href="css/style.css?v=food-barcode-scanner-1" />
   <link rel="stylesheet" href="css/custom-workout-mobile-fix.css?v=set-complete-rest-1" />
 </head>
 <body class="dashboard-page client-dashboard-page is-loading">
@@ -456,15 +456,19 @@
             <section class="food-label-import-card" aria-labelledby="food-label-import-title">
               <div class="food-label-import-heading">
                 <div>
-                  <p class="kicker">Food label</p>
-                  <h4 id="food-label-import-title">Scan nutrition facts</h4>
+                  <p class="kicker">Barcode + food label</p>
+                  <h4 id="food-label-import-title">Scan packaged food</h4>
                 </div>
-                <span aria-hidden="true">▣</span>
+                <span aria-hidden="true">▥</span>
               </div>
-              <p>Take or upload a clear photo. We’ll fill the food fields for you to review before anything is saved.</p>
+              <p>Scan the barcode first. We’ll fill the food fields for you to review before anything is saved.</p>
+              <button class="button button-dark food-barcode-open-button" type="button" id="open-food-barcode-scanner">
+                <span aria-hidden="true">▥</span> Scan barcode
+              </button>
+              <div class="food-label-divider"><span>Barcode not found?</span></div>
               <div class="food-label-import-controls">
                 <label class="food-label-photo-field">
-                  Food-label photo
+                  Nutrition Facts photo
                   <input id="client-food-label-photo" type="file" accept="image/jpeg,image/png,image/webp" capture="environment" />
                 </label>
                 <button class="button button-accent" type="button" id="read-food-label-button">Read label</button>
@@ -476,7 +480,30 @@
                 </select>
               </label>
               <p class="food-label-import-status" id="food-label-import-status" role="status">JPG, PNG, or WebP up to 8 MB. The photo is processed securely and is not stored.</p>
+              <small class="food-data-attribution">Barcode product data from <a href="https://world.openfoodfacts.org/" target="_blank" rel="noopener noreferrer">Open Food Facts</a> (ODbL). Always review the serving and macros.</small>
             </section>
+            <dialog class="food-barcode-dialog" id="food-barcode-dialog" aria-labelledby="food-barcode-dialog-title">
+              <div class="food-barcode-dialog-heading">
+                <div>
+                  <p class="kicker">Nutrition scanner</p>
+                  <h3 id="food-barcode-dialog-title">Scan a barcode</h3>
+                </div>
+                <button type="button" class="food-barcode-close" data-close-food-barcode aria-label="Close barcode scanner">×</button>
+              </div>
+              <div class="food-barcode-camera-shell">
+                <video id="food-barcode-camera" playsinline muted aria-label="Live camera preview for barcode scanning"></video>
+                <span class="food-barcode-scan-line" aria-hidden="true"></span>
+              </div>
+              <p class="food-barcode-dialog-status" id="food-barcode-dialog-status" role="status">Point the rear camera at the UPC or EAN barcode.</p>
+              <div class="food-barcode-manual">
+                <label for="food-barcode-manual-input">Or enter the numbers</label>
+                <div>
+                  <input id="food-barcode-manual-input" type="text" inputmode="numeric" autocomplete="off" maxlength="18" placeholder="UPC, EAN, or GTIN" />
+                  <button class="button" type="button" id="lookup-food-barcode-button">Look up</button>
+                </div>
+              </div>
+              <button class="button button-ghost food-barcode-photo-fallback" type="button" id="food-barcode-photo-fallback">Use Nutrition Facts photo</button>
+            </dialog>
             <div class="food-entry-grid" id="client-food-entry-form">
               <label class="food-date-field">
                 Date
@@ -895,6 +922,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js?v=manual-sessions-1"></script>
   <script src="js/exercise-name-matcher.js?v=exercise-consolidation-1"></script>
-  <script src="js/client-portal.js?v=set-complete-rest-1"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@zxing/browser@0.2.1/umd/zxing-browser.min.js" integrity="sha384-HRtzk9lZgkbSgvUyQrnfC/GxiXZgwaNyD7hC9wcXlsBpDhkS80ISl73juef2FRuf" crossorigin="anonymous"></script>
+  <script src="js/client-portal.js?v=food-barcode-scanner-1"></script>
 </body>
 </html>

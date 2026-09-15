@@ -7618,6 +7618,39 @@ body.is-client-checkin-prompt-open {
   line-height: 1.35;
 }
 
+.food-barcode-open-button {
+  width: 100%;
+  min-height: 54px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+}
+
+.food-barcode-open-button span {
+  color: var(--lime);
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+.food-label-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--muted);
+  font-size: .7rem;
+  font-weight: 900;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.food-label-divider::before,
+.food-label-divider::after {
+  content: "";
+  flex: 1;
+  border-top: 1px solid var(--line);
+}
+
 .food-label-import-controls {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -7673,6 +7706,181 @@ body.is-client-checkin-prompt-open {
 
 .food-label-import-status {
   min-height: 1.2em;
+}
+
+.food-data-attribution {
+  color: var(--muted);
+  font-size: .66rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.food-data-attribution a {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.food-barcode-dialog {
+  width: min(520px, calc(100% - 28px));
+  max-height: calc(100dvh - 28px);
+  padding: 18px;
+  border: 2px solid var(--black);
+  border-radius: 14px;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 0 18px 60px rgba(0, 0, 0, .3);
+}
+
+.food-barcode-dialog::backdrop {
+  background: rgba(15, 16, 15, .72);
+  backdrop-filter: blur(3px);
+}
+
+.food-barcode-dialog-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.food-barcode-dialog-heading p,
+.food-barcode-dialog-heading h3 {
+  margin: 0;
+}
+
+.food-barcode-dialog-heading h3 {
+  margin-top: 3px;
+  font-size: clamp(1.6rem, 6vw, 2.25rem);
+  line-height: .95;
+  text-transform: uppercase;
+}
+
+.food-barcode-close {
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid var(--black);
+  border-radius: 50%;
+  background: var(--paper);
+  color: var(--black);
+  font: inherit;
+  font-size: 1.8rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.food-barcode-camera-shell {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  margin-top: 16px;
+  overflow: hidden;
+  border: 2px solid var(--black);
+  border-radius: 10px;
+  background: #161816;
+}
+
+.food-barcode-camera-shell::before,
+.food-barcode-camera-shell::after {
+  position: absolute;
+  z-index: 2;
+  top: 19%;
+  bottom: 19%;
+  width: 22%;
+  content: "";
+  pointer-events: none;
+}
+
+.food-barcode-camera-shell::before {
+  left: 8%;
+  border-block: 3px solid var(--lime);
+  border-left: 3px solid var(--lime);
+}
+
+.food-barcode-camera-shell::after {
+  right: 8%;
+  border-block: 3px solid var(--lime);
+  border-right: 3px solid var(--lime);
+}
+
+.food-barcode-camera-shell video {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+.food-barcode-scan-line {
+  position: absolute;
+  z-index: 3;
+  top: 50%;
+  right: 10%;
+  left: 10%;
+  height: 2px;
+  background: var(--lime);
+  box-shadow: 0 0 10px rgba(200, 255, 46, .8);
+  animation: food-barcode-scan 1.8s ease-in-out infinite alternate;
+}
+
+@keyframes food-barcode-scan {
+  from { transform: translateY(-54px); }
+  to { transform: translateY(54px); }
+}
+
+.food-barcode-dialog-status {
+  min-height: 2.7em;
+  margin: 12px 0;
+  color: var(--muted);
+  font-size: .82rem;
+  font-weight: 850;
+  line-height: 1.35;
+}
+
+.food-barcode-manual {
+  display: grid;
+  gap: 6px;
+}
+
+.food-barcode-manual > label {
+  font-size: .76rem;
+  font-weight: 900;
+}
+
+.food-barcode-manual > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+.food-barcode-manual input {
+  min-width: 0;
+  min-height: 48px;
+  padding: 11px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfbf8;
+  color: var(--black);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.food-barcode-manual .button {
+  width: auto;
+  min-height: 48px;
+}
+
+.food-barcode-photo-fallback {
+  width: 100%;
+  margin-top: 10px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .food-barcode-scan-line {
+    animation: none;
+  }
 }
 
 .food-entry-grid {
@@ -9297,6 +9505,22 @@ textarea:focus {
   }
 
   .food-label-import-controls .button {
+    width: 100%;
+  }
+
+  .food-barcode-dialog {
+    padding: 14px;
+  }
+
+  .food-barcode-camera-shell {
+    aspect-ratio: 1.25 / 1;
+  }
+
+  .food-barcode-manual > div {
+    grid-template-columns: 1fr;
+  }
+
+  .food-barcode-manual .button {
     width: 100%;
   }
 
@@ -14777,6 +15001,15 @@ body.client-dashboard-page {
   body.client-dashboard-page #client-food-entry-form {
     grid-template-columns: minmax(0, 1fr) !important;
   }
+}
+
+.client-dashboard-page .food-barcode-dialog .food-barcode-close {
+  flex: 0 0 44px;
+  width: 44px !important;
+  min-width: 44px !important;
+  max-width: 44px !important;
+  height: 44px;
+  border-radius: 50% !important;
 }
 
 /* Persistent workout recovery actions on Home and Workouts. */

@@ -18,6 +18,9 @@ let workoutSessionFeedback = [];
 let foodLogs = [];
 let foodSearchResults = [];
 let sharedFoodLibrary = [];
+let foodBarcodeScanControls = null;
+let foodBarcodeLookupInFlight = false;
+let foodBarcodeReturnFocus = null;
 let progressEntries = [];
 let progressPhotos = [];
 let dexaReports = [];
@@ -1206,6 +1209,32 @@ function setFoodLabelImportStatus(message) {
   }
 }
 
+function setFoodBarcodeDialogStatus(message) {
+  const status = document.getElementById("food-barcode-dialog-status");
+
+  if (status) {
+    status.textContent = message;
+  }
+}
+
+function canonicalFoodBarcode(value) {
+  const digits = String(value ?? "").replace(/\D/g, "");
+  const canonical = digits.length === 12 ? `0${digits}` : digits;
+
+  if (![8, 13, 14].includes(canonical.length)) {
+    return "";
+  }
+
+  const checkDigit = Number(canonical.at(-1));
+  const body = canonical.slice(0, -1);
+  const sum = Array.from(body).reduce((total, digit, index) => {
+    const positionFromRight = body.length - index;
+    return total + Number(digit) * (positionFromRight % 2 === 1 ? 3 : 1);
+  }, 0);
+
+  return (10 - (sum % 10)) % 10 === checkDigit ? canonical : "";
+}
+
 function foodLabelFileDetails(file) {
   const allowedTypes = {
     "image/jpeg": "jpg",
@@ -1226,6 +1255,8 @@ function foodLabelFileDetails(file) {
 }
 
 function normalizeSharedFoodLibraryResult(food = {}) {
+  const source = String(food.source || "");
+
   return {
     libraryId: String(food.id || food.libraryId || ""),
     description: String(food.food_name || food.description || "").trim(),
@@ -1235,7 +1266,14 @@ function normalizeSharedFoodLibraryResult(food = {}) {
     protein: foodLogNumber(food.protein),
     carbs: foodLogNumber(food.carbs),
     fat: foodLogNumber(food.fat),
-    source: "Shared food label"
+    barcode: canonicalFoodBarcode(food.barcode),
+    confidence: String(food.confidence || ""),
+    warnings: Array.isArray(food.warnings) ? food.warnings.filter(Boolean).slice(0, 5) : [],
+    source: source === "Open Food Facts barcode"
+      ? source
+      : source === "barcode" || source === "Shared barcode food"
+        ? "Shared barcode food"
+        : "Shared food label"
   };
 }
 
@@ -1269,7 +1307,7 @@ async function loadSharedFoodLibrary() {
 
   const { data, error } = await supabaseClient
     .from("shared_food_library")
-    .select("id,food_name,brand,serving,calories,protein,carbs,fat,created_at")
+    .select("id,food_name,brand,serving,calories,protein,carbs,fat,barcode,source,created_at")
     .order("created_at", { ascending: false })
     .limit(50);
 
@@ -1448,6 +1486,7 @@ function applyFoodResult(food, options = {}) {
   form.dataset.foodLibraryId = food.libraryId || "";
   form.dataset.foodLabelPending = options.foodLabelPending ? "true" : "";
   form.dataset.foodLabelBrand = food.brandOwner || food.brand || "";
+  form.dataset.foodBarcode = canonicalFoodBarcode(options.foodBarcode || food.barcode);
 }
 
 function applyExtractedFoodLabel(food = {}) {
@@ -1472,6 +1511,7 @@ async function publishPendingFoodLabel(payload) {
   const { data, error } = await supabaseClient.functions.invoke("extract-food-label", {
     body: {
       action: "publish",
+      barcode: form.dataset.foodBarcode || "",
       food: {
         food_name: payload.food_name,
         brand: form.dataset.foodLabelBrand || "",
@@ -1496,6 +1536,164 @@ async function publishPendingFoodLabel(payload) {
 
   await loadSharedFoodLibrary();
   return { saved: true, skipped: false };
+}
+
+function stopFoodBarcodeScanner() {
+  try {
+    foodBarcodeScanControls?.stop?.();
+  } catch {
+    // A scanner that already stopped does not need further cleanup.
+  }
+  foodBarcodeScanControls = null;
+
+  const video = document.getElementById("food-barcode-camera");
+  const stream = video?.srcObject;
+  if (stream && typeof stream.getTracks === "function") {
+    stream.getTracks().forEach((track) => track.stop());
+  }
+  if (video) {
+    video.srcObject = null;
+  }
+}
+
+function closeFoodBarcodeDialog() {
+  const dialog = document.getElementById("food-barcode-dialog");
+  stopFoodBarcodeScanner();
+  if (dialog?.open) {
+    dialog.close();
+  }
+}
+
+async function lookupFoodBarcode(value) {
+  const barcode = canonicalFoodBarcode(value);
+  const input = document.getElementById("food-barcode-manual-input");
+  const lookupButton = document.getElementById("lookup-food-barcode-button");
+
+  if (!barcode) {
+    setFoodBarcodeDialogStatus("That does not look like a valid UPC, EAN, or GTIN. Check the numbers and try again.");
+    input?.focus();
+    return false;
+  }
+
+  if (foodBarcodeLookupInFlight) {
+    return false;
+  }
+
+  if (!supabaseClient || !activeDashboardUser || isCoachPortalEmail(activeDashboardUser.email)) {
+    setFoodBarcodeDialogStatus("Sign in as the client before looking up a barcode.");
+    return false;
+  }
+
+  foodBarcodeLookupInFlight = true;
+  if (lookupButton) {
+    lookupButton.disabled = true;
+  }
+  stopFoodBarcodeScanner();
+  setFoodBarcodeDialogStatus("Looking up nutrition facts…");
+
+  try {
+    const { data, error } = await withTimeout(
+      supabaseClient.functions.invoke("extract-food-label", {
+        body: { action: "lookup_barcode", barcode }
+      }),
+      "Barcode lookup timed out. Try the Nutrition Facts photo instead.",
+      25000
+    );
+
+    if (error || data?.error || !data?.food) {
+      throw new Error(data?.error || error?.message || "That barcode was not found. Try the Nutrition Facts photo instead.");
+    }
+
+    const food = normalizeSharedFoodLibraryResult(data.food);
+    applyFoodResult(food, {
+      foodLabelPending: !data.cached,
+      foodBarcode: barcode
+    });
+    resetFoodSearchResults();
+    setFoodEntryStatus("Barcode values filled in. Review the serving and every macro, then tap Save food.");
+    setFoodLabelImportStatus(`${data.cached ? "Saved barcode food" : "Barcode found"}. Review every value before saving.`);
+    closeFoodBarcodeDialog();
+    foodEntryForm()?.querySelector('[name="food_name"]')?.focus();
+    return true;
+  } catch (error) {
+    setFoodBarcodeDialogStatus(error?.message || "That barcode could not be found. Try the Nutrition Facts photo instead.");
+    return false;
+  } finally {
+    foodBarcodeLookupInFlight = false;
+    if (lookupButton) {
+      lookupButton.disabled = false;
+    }
+  }
+}
+
+async function startFoodBarcodeScanner() {
+  const video = document.getElementById("food-barcode-camera");
+  const Reader = window.ZXingBrowser?.BrowserMultiFormatOneDReader;
+
+  stopFoodBarcodeScanner();
+  if (!video || !Reader || !navigator.mediaDevices?.getUserMedia) {
+    setFoodBarcodeDialogStatus("Live scanning is not available in this browser. Enter the barcode numbers below or use a Nutrition Facts photo.");
+    document.getElementById("food-barcode-manual-input")?.focus();
+    return;
+  }
+
+  setFoodBarcodeDialogStatus("Point the rear camera at the UPC or EAN barcode.");
+  try {
+    const reader = new Reader();
+    foodBarcodeScanControls = await reader.decodeFromConstraints(
+      { audio: false, video: { facingMode: { ideal: "environment" } } },
+      video,
+      (result) => {
+        const value = result?.getText?.() || result?.text || "";
+        if (value && !foodBarcodeLookupInFlight) {
+          const input = document.getElementById("food-barcode-manual-input");
+          if (input) {
+            input.value = value;
+          }
+          lookupFoodBarcode(value);
+        }
+      }
+    );
+  } catch {
+    stopFoodBarcodeScanner();
+    setFoodBarcodeDialogStatus("Camera access was unavailable. Allow camera access, enter the barcode numbers, or use a Nutrition Facts photo.");
+    document.getElementById("food-barcode-manual-input")?.focus();
+  }
+}
+
+function handleFoodBarcodeScanner() {
+  const openButton = document.getElementById("open-food-barcode-scanner");
+  const dialog = document.getElementById("food-barcode-dialog");
+  const input = document.getElementById("food-barcode-manual-input");
+  const lookupButton = document.getElementById("lookup-food-barcode-button");
+  const photoFallback = document.getElementById("food-barcode-photo-fallback");
+
+  openButton?.addEventListener("click", () => {
+    foodBarcodeReturnFocus = openButton;
+    if (input) {
+      input.value = "";
+    }
+    dialog?.showModal();
+    startFoodBarcodeScanner();
+  });
+
+  dialog?.querySelector("[data-close-food-barcode]")?.addEventListener("click", closeFoodBarcodeDialog);
+  dialog?.addEventListener("cancel", stopFoodBarcodeScanner);
+  dialog?.addEventListener("close", () => {
+    stopFoodBarcodeScanner();
+    foodBarcodeReturnFocus?.focus?.();
+  });
+  lookupButton?.addEventListener("click", () => lookupFoodBarcode(input?.value));
+  input?.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      lookupFoodBarcode(input.value);
+    }
+  });
+  photoFallback?.addEventListener("click", () => {
+    closeFoodBarcodeDialog();
+    document.getElementById("client-food-label-photo")?.click();
+  });
 }
 
 function handleFoodLabelUpload() {
@@ -1779,6 +1977,7 @@ function resetFoodEntryForm() {
   form.dataset.foodLibraryId = "";
   form.dataset.foodLabelPending = "";
   form.dataset.foodLabelBrand = "";
+  form.dataset.foodBarcode = "";
   const librarySelect = document.getElementById("shared-food-library-select");
   if (librarySelect) {
     librarySelect.value = "";
@@ -14114,6 +14313,7 @@ handleClientProgressHistoryDeck();
 handleClientProgressHistorySelect();
 handleClientProgressSave();
 handleClientNutritionSave();
+handleFoodBarcodeScanner();
 handleFoodLabelUpload();
 handleSharedFoodLibrarySelect();
 handleFoodSearch();
