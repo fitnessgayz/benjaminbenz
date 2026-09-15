@@ -30,8 +30,10 @@ test("workout timer drag position is snapped, constrained, and persisted", () =>
   assert.match(portalSource, /window\.addEventListener\("resize", \(\) => applyWorkoutElapsedTimerPosition\(\)\)/);
 });
 
-test("workout timer starts above navigation and can be hidden without clearing elapsed time", () => {
-  assert.match(portalSource, /workoutElapsedTimerPosition = \{ edge: "right", topRatio: 1 \}/);
+test("workout timer starts at the top left and can be hidden without clearing elapsed time", () => {
+  assert.match(portalSource, /workoutElapsedTimerPositionStorageKey = "fwb_workout_elapsed_timer_position_v3"/);
+  assert.match(portalSource, /workoutElapsedTimerPosition = \{ edge: "left", topRatio: 0 \}/);
+  assert.match(styleSource, /\.workout-elapsed-timer\s*\{[^}]*top:\s*max\(8px, env\(safe-area-inset-top\)\)[^}]*right:\s*auto[^}]*bottom:\s*auto[^}]*left:\s*8px/s);
   assert.match(portalSource, /navigationIsBottomDock/);
   assert.match(portalSource, /window\.matchMedia\?\.\("\(max-width: 900px\)"\)\?\.matches/);
   assert.match(portalSource, /navigationRect\.top - rect\.height - gap/);

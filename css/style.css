@@ -4510,9 +4510,10 @@ body.is-client-checkin-prompt-open {
 
 .workout-elapsed-timer {
   position: fixed;
-  right: 8px;
-  bottom: max(12px, env(safe-area-inset-bottom));
-  left: auto;
+  top: max(8px, env(safe-area-inset-top));
+  right: auto;
+  bottom: auto;
+  left: 8px;
   z-index: 90;
   display: grid;
   grid-template-columns: 20px 40px minmax(0, 1fr) 40px 40px 36px;
@@ -4658,8 +4659,8 @@ body.is-client-checkin-prompt-open {
 }
 
 .workout-elapsed-timer.is-compact {
-  right: 8px;
-  left: auto;
+  right: auto;
+  left: 8px;
   grid-template-columns: auto auto auto auto;
   width: auto;
   min-height: 44px;

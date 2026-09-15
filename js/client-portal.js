@@ -164,7 +164,7 @@ const clientHomeCheckinPromptStoragePrefix = "fwb_home_checkin_prompt_seen_v1";
 const clientExerciseProgressPageSize = 10;
 const workoutElapsedTimerStorageKey = "fwb_workout_elapsed_timer_v1";
 const workoutElapsedTimerCompactStorageKey = "fwb_workout_elapsed_timer_compact_v1";
-const workoutElapsedTimerPositionStorageKey = "fwb_workout_elapsed_timer_position_v2";
+const workoutElapsedTimerPositionStorageKey = "fwb_workout_elapsed_timer_position_v3";
 const workoutElapsedTimerMaximumMilliseconds = 24 * 60 * 60 * 1000;
 let exerciseLibraryEntries = [];
 let activeCustomWorkoutFormat = "single";
@@ -177,6 +177,7 @@ let workoutElapsedTimerState = null;
 let workoutElapsedTimerIntervalId = null;
 let workoutElapsedTimerIsCompact = null;
 let workoutElapsedTimerPosition = null;
+let lastClientDashboardMobileTabPress = "";
 let activeRirButton = null;
 let pendingRirValue = null;
 let workoutDifficultyPromptResolve = null;
@@ -6375,10 +6376,10 @@ function workoutElapsedTimerPositionPreference() {
       return workoutElapsedTimerPosition;
     }
   } catch (_error) {
-    // Use the top-right default when storage is unavailable or invalid.
+    // Use the top-left default when storage is unavailable or invalid.
   }
 
-  workoutElapsedTimerPosition = { edge: "right", topRatio: 1 };
+  workoutElapsedTimerPosition = { edge: "left", topRatio: 0 };
   return workoutElapsedTimerPosition;
 }
 
@@ -11279,20 +11280,23 @@ function handleClientDashboardMobileNavigation() {
   }
 
   syncClientDashboardMobileNavigationIcon();
-  setClientDashboardMobileNavigationExpanded(false);
+  setClientDashboardMobileNavigationExpanded(true);
 
   toggle.addEventListener("click", () => {
+    lastClientDashboardMobileTabPress = "";
     setClientDashboardMobileNavigationExpanded(true, { focusNavigation: true });
   });
 
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape" && mobileQuery.matches) {
+      lastClientDashboardMobileTabPress = "";
       setClientDashboardMobileNavigationExpanded(false, { focusToggle: true });
     }
   });
 
   const handleMobileChange = () => {
-    setClientDashboardMobileNavigationExpanded(false);
+    lastClientDashboardMobileTabPress = "";
+    setClientDashboardMobileNavigationExpanded(mobileQuery.matches);
   };
 
   if (typeof mobileQuery.addEventListener === "function") {
@@ -11300,6 +11304,20 @@ function handleClientDashboardMobileNavigation() {
   } else if (typeof mobileQuery.addListener === "function") {
     mobileQuery.addListener(handleMobileChange);
   }
+}
+
+function clientDashboardMobileTabPressAction(tabName, activeTab, previousTabPress, expanded) {
+  const targetTab = String(tabName || "home");
+  const shouldCollapse = Boolean(
+    expanded &&
+    targetTab === String(activeTab || "") &&
+    targetTab === String(previousTabPress || "")
+  );
+
+  return {
+    shouldCollapse,
+    nextTabPress: shouldCollapse ? "" : targetTab
+  };
 }
 
 function setClientDashboardTab(tabName) {
@@ -12087,9 +12105,24 @@ function handleClientDashboardTabs() {
       return;
     }
 
-    setClientDashboardTab(tab.dataset.clientDashboardTab);
-    setClientDashboardMobileNavigationExpanded(false, { focusToggle: true });
-    if (tab.dataset.clientDashboardTab === "home") {
+    const tabName = tab.dataset.clientDashboardTab;
+    const navigation = tab.closest(".client-dashboard-tabs");
+    const mobileNavigation = window.matchMedia?.("(max-width: 900px)")?.matches ?? false;
+    const action = clientDashboardMobileTabPressAction(
+      tabName,
+      activeClientDashboardTab,
+      lastClientDashboardMobileTabPress,
+      navigation?.classList.contains("is-mobile-expanded")
+    );
+
+    setClientDashboardTab(tabName);
+    if (mobileNavigation) {
+      lastClientDashboardMobileTabPress = action.nextTabPress;
+      if (action.shouldCollapse) {
+        setClientDashboardMobileNavigationExpanded(false, { focusToggle: true });
+      }
+    }
+    if (tabName === "home") {
       window.requestAnimationFrame?.(() => maybeShowClientHomeCheckinPrompt());
     }
   });

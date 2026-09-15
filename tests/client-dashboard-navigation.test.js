@@ -30,8 +30,8 @@ test("scopes the client navigation styles and cache-busts dashboard assets", () 
   assert.match(dashboardHtml, /href="css\/style\.css\?v=[^"\s]+"/);
   assert.match(dashboardHtml, /src="js\/client-portal\.js\?v=[^"\s]+"/);
   assert.match(styleSource, /body\.client-dashboard-page\s*\{[^}]*padding-bottom:\s*0;/s);
-  assert.match(dashboardHtml, /css\/style\.css\?v=inline-custom-groups-2/);
-  assert.match(dashboardHtml, /js\/client-portal\.js\?v=inline-custom-groups-2/);
+  assert.match(dashboardHtml, /css\/style\.css\?v=timer-nav-position-1/);
+  assert.match(dashboardHtml, /js\/client-portal\.js\?v=timer-nav-position-1/);
 });
 
 test("renders eight labeled client destinations in order with current-page semantics", () => {
@@ -103,12 +103,14 @@ test("keeps a labeled horizontally scrollable safe-area bottom dock on mobile", 
   assert.match(mobileStyles, /\.client-dashboard-nav-title,[\s\S]*?\.client-dashboard-sidebar-toggle\s*\{[^}]*display:\s*none !important/s);
 });
 
-test("collapses mobile navigation to the selected destination icon", () => {
+test("starts expanded and collapses mobile navigation after the selected icon is pressed twice", () => {
   const mobileStyles = sourceBetween("@media (max-width: 900px)", "@media (max-width: 420px)");
   const syncSource = sourceForFunction("syncClientDashboardMobileNavigationIcon");
   const setMobileSource = sourceForFunction("setClientDashboardMobileNavigationExpanded");
   const handlerSource = sourceForFunction("handleClientDashboardMobileNavigation");
   const tabHandlerSource = sourceForFunction("handleClientDashboardTabs");
+  const pressDecisionSource = sourceForFunction("clientDashboardMobileTabPressAction");
+  const pressDecision = Function(`${pressDecisionSource}; return clientDashboardMobileTabPressAction;`)();
 
   assert.match(dashboardHtml, /class="client-dashboard-mobile-nav-toggle"[\s\S]*?aria-label="Open navigation, Home selected"[\s\S]*?aria-controls="client-dashboard-navigation"[\s\S]*?data-client-mobile-nav-toggle/);
   assert.match(dashboardHtml, /<nav class="client-dashboard-tabs" id="client-dashboard-navigation"/);
@@ -121,9 +123,28 @@ test("collapses mobile navigation to the selected destination icon", () => {
   assert.match(syncSource, /`Open navigation, \$\{selectedLabel\} selected`/);
   assert.match(setMobileSource, /navigation\.inert = !isExpanded/);
   assert.match(setMobileSource, /navigation\.setAttribute\("aria-hidden", String\(!isExpanded\)\)/);
+  assert.match(handlerSource, /setClientDashboardMobileNavigationExpanded\(true\);/);
   assert.match(handlerSource, /setClientDashboardMobileNavigationExpanded\(true, \{ focusNavigation: true \}\)/);
   assert.match(setMobileSource, /centerActiveClientDashboardMobileTab\(navigation\)/);
+  assert.match(tabHandlerSource, /clientDashboardMobileTabPressAction\(/);
+  assert.match(tabHandlerSource, /if \(action\.shouldCollapse\)/);
   assert.match(tabHandlerSource, /setClientDashboardMobileNavigationExpanded\(false, \{ focusToggle: true \}\)/);
+  assert.deepEqual(pressDecision("home", "home", "", true), {
+    shouldCollapse: false,
+    nextTabPress: "home"
+  });
+  assert.deepEqual(pressDecision("home", "home", "home", true), {
+    shouldCollapse: true,
+    nextTabPress: ""
+  });
+  assert.deepEqual(pressDecision("workouts", "home", "home", true), {
+    shouldCollapse: false,
+    nextTabPress: "workouts"
+  });
+  assert.deepEqual(pressDecision("workouts", "workouts", "workouts", false), {
+    shouldCollapse: false,
+    nextTabPress: "workouts"
+  });
   assert.match(portalSource, /handleClientDashboardMobileNavigation\(\);/);
 });
 
