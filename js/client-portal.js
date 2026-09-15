@@ -974,23 +974,32 @@ function nutritionHeightInches(value) {
 function nutritionActivityFactor(workoutsPerWeek, movement, intensity) {
   const movementBase = {
     mostly_sitting: 1.2,
-    mixed: 1.35,
-    active_job: 1.5
+    mixed: 1.3,
+    active_job: 1.4
   };
   const workoutNumber = Math.min(Math.max(Number.parseInt(workoutsPerWeek, 10) || 0, 0), 7);
   const workoutBoost = workoutNumber === 0
     ? 0
     : workoutNumber <= 2
-      ? 0.1
+      ? 0.05
       : workoutNumber <= 4
-        ? 0.2
+        ? 0.1
         : workoutNumber <= 6
-          ? 0.3
-          : 0.35;
-  const intensityBoost = intensity === "hard" ? 0.05 : intensity === "light" ? -0.03 : 0;
+          ? 0.15
+          : 0.18;
+  // Daily movement already captures most non-exercise activity. Keep the
+  // workout adjustment incremental so active jobs and training are not
+  // counted as two full activity multipliers.
+  const intensityBoost = workoutNumber === 0
+    ? 0
+    : intensity === "hard"
+      ? 0.03
+      : intensity === "light"
+        ? -0.02
+        : 0;
   const factor = (movementBase[movement] || movementBase.mixed) + workoutBoost + intensityBoost;
 
-  return Math.min(Math.max(factor, 1.2), 1.85);
+  return Number(Math.min(Math.max(factor, 1.2), 1.65).toFixed(2));
 }
 
 function nutritionGoalMultiplier(goal) {
@@ -999,7 +1008,7 @@ function nutritionGoalMultiplier(goal) {
   }
 
   if (goal === "muscle_gain") {
-    return 1.1;
+    return 1.05;
   }
 
   if (goal === "recomposition") {

@@ -153,16 +153,16 @@ function inviteHeightInches(value) {
 }
 
 function inviteActivityFactor(workoutsPerWeek, movement, intensity) {
-  const movementBase = { mostly_sitting: 1.2, mixed: 1.35, active_job: 1.5 };
+  const movementBase = { mostly_sitting: 1.2, mixed: 1.3, active_job: 1.4 };
   const workoutNumber = Math.min(Math.max(Number.parseInt(workoutsPerWeek, 10) || 0, 0), 7);
-  const workoutBoost = workoutNumber === 0 ? 0 : workoutNumber <= 2 ? 0.1 : workoutNumber <= 4 ? 0.2 : workoutNumber <= 6 ? 0.3 : 0.35;
-  const intensityBoost = intensity === "hard" ? 0.05 : intensity === "light" ? -0.03 : 0;
-  return Math.min(Math.max((movementBase[movement] || movementBase.mixed) + workoutBoost + intensityBoost, 1.2), 1.85);
+  const workoutBoost = workoutNumber === 0 ? 0 : workoutNumber <= 2 ? 0.05 : workoutNumber <= 4 ? 0.1 : workoutNumber <= 6 ? 0.15 : 0.18;
+  const intensityBoost = workoutNumber === 0 ? 0 : intensity === "hard" ? 0.03 : intensity === "light" ? -0.02 : 0;
+  return Number(Math.min(Math.max((movementBase[movement] || movementBase.mixed) + workoutBoost + intensityBoost, 1.2), 1.65).toFixed(2));
 }
 
 function inviteNutritionGoalMultiplier(goal) {
   if (goal === "fat_loss") return 0.85;
-  if (goal === "muscle_gain") return 1.1;
+  if (goal === "muscle_gain") return 1.05;
   if (goal === "recomposition") return 0.98;
   return 1;
 }
