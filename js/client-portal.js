@@ -4562,6 +4562,9 @@ function setRowMarkup(setNumber, repPlaceholder = "", setType = workingSetType, 
         <span>RIR</span>
         <strong data-set-rir-value>—</strong>
       </button>
+      <button class="set-complete-button" type="button" data-complete-set aria-label="Complete ${normalizedType === warmUpSetType ? `warm-up set ${ordinal}` : `set ${Number(setNumber) || 1}`} and start rest timer" aria-pressed="false">
+        <span aria-hidden="true">✓</span>
+      </button>
     </div>
   `;
 }
@@ -5371,12 +5374,15 @@ function customWorkoutExercises() {
 }
 
 function serializeSetRowDraft(row) {
+  const completeButton = row.querySelector("[data-complete-set]");
+
   return {
     label: row.querySelector("[data-set-label]")?.value || "",
     weight: row.querySelector("[data-set-weight]")?.value || "",
     reps: row.querySelector("[data-set-reps]")?.value || "",
     setType: setTypeForRow(row),
-    rir: row.dataset.repsInReserve || ""
+    rir: row.dataset.repsInReserve || "",
+    complete: row.classList.contains("is-complete") || completeButton?.getAttribute("aria-pressed") === "true"
   };
 }
 
@@ -5437,6 +5443,8 @@ function applyCustomSetDraft(row, draftSet) {
   const labelInput = row.querySelector("[data-set-label]");
   const weightInput = row.querySelector("[data-set-weight]");
   const repsInput = row.querySelector("[data-set-reps]");
+  const completeButton = row.querySelector("[data-complete-set]");
+  const complete = Boolean(draftSet?.complete);
   const setType = normalizedSetType(draftSet?.setType, row.dataset.setNumber);
 
   row.dataset.setType = setType;
@@ -5459,6 +5467,8 @@ function applyCustomSetDraft(row, draftSet) {
   } else {
     delete row.dataset.repsInReserve;
   }
+  row.classList.toggle("is-complete", complete);
+  completeButton?.setAttribute("aria-pressed", complete ? "true" : "false");
   renderSetRirValue(row);
 }
 
@@ -9413,6 +9423,7 @@ function updateExerciseLogField(logElement) {
     const selectedLog = selectedLogs.find((log) => Number(log.set_number || 1) === setNumber);
     const weightInput = row.querySelector("[data-set-weight]");
     const repsInput = row.querySelector("[data-set-reps]");
+    const completeButton = row.querySelector("[data-complete-set]");
     const savedRir = Number(selectedLog?.effort_value);
 
     if (weightInput) {
@@ -9429,6 +9440,8 @@ function updateExerciseLogField(logElement) {
       delete row.dataset.repsInReserve;
     }
 
+    row.classList.toggle("is-complete", Boolean(selectedLog));
+    completeButton?.setAttribute("aria-pressed", selectedLog ? "true" : "false");
     renderSetRirValue(row);
   });
 
@@ -10986,6 +10999,7 @@ function renumberSetRows(logElement) {
     const friendlyName = isWarmUp ? `warm-up set ${warmUpIndex}` : `set ${workingIndex}`;
     row.querySelector("[data-set-rir]")?.setAttribute("aria-label", `Choose reps in reserve for ${friendlyName}`);
     row.querySelector("[data-set-rest]")?.setAttribute("aria-label", `Start rest timer after ${friendlyName}`);
+    row.querySelector("[data-complete-set]")?.setAttribute("aria-label", `Complete ${friendlyName} and start rest timer`);
     renderSetRirValue(row);
   });
 }
@@ -12144,7 +12158,7 @@ function setExerciseSkipped(logElement, skipped, options = {}) {
   }
 
   logElement.classList.toggle("is-exercise-skipped", skipped);
-  logElement.querySelectorAll("input, select, textarea, [data-add-set], [data-delete-last-set], [data-finish-set], [data-set-rir], [data-set-rest], [data-exercise-notes-toggle]").forEach((control) => {
+  logElement.querySelectorAll("input, select, textarea, [data-add-set], [data-delete-last-set], [data-finish-set], [data-complete-set], [data-set-rir], [data-set-rest], [data-exercise-notes-toggle]").forEach((control) => {
     control.disabled = skipped;
   });
   const exerciseNameInput = exerciseNameInputForLog(logElement);
@@ -12426,6 +12440,7 @@ function handleWorkoutInteractions() {
     const deleteLastSetButton = event.target.closest("[data-delete-last-set]");
     const addSupersetButton = event.target.closest("[data-add-superset]");
     const finishSetButton = event.target.closest("[data-finish-set]");
+    const completeSetButton = event.target.closest("[data-complete-set]");
     const exerciseNotesToggle = event.target.closest("[data-exercise-notes-toggle]");
     const setRirButton = event.target.closest("[data-set-rir]");
     const setRestButton = event.target.closest("[data-set-rest]");
@@ -12562,6 +12577,26 @@ function handleWorkoutInteractions() {
       }
       resetRestTimer();
       openRestTimer(setRestButton);
+      startOrPauseRestTimer();
+      return;
+    }
+
+    if (completeSetButton) {
+      const setRow = completeSetButton.closest("[data-set-row]");
+      const logElement = completeSetButton.closest("[data-exercise-log]");
+
+      if (!workoutElapsedTimerState) {
+        startWorkoutElapsedTimer(logElement?.dataset.workoutTitle || activeWorkoutElapsedTitle());
+      }
+      setRow?.classList.add("is-complete");
+      completeSetButton.setAttribute("aria-pressed", "true");
+      if (logElement) {
+        updateVisibleSetProgress(logElement);
+        persistCustomWorkoutDraftForElement(logElement);
+        scheduleTrainingLogAutosave(logElement);
+      }
+      resetRestTimer();
+      openRestTimer(completeSetButton);
       startOrPauseRestTimer();
       return;
     }
@@ -12758,6 +12793,7 @@ function handleWorkoutInteractions() {
           }
 
           setRow.classList.remove("is-complete");
+          setRow.querySelector("[data-complete-set]")?.setAttribute("aria-pressed", "false");
           delete setRow.dataset.repsInReserve;
           renderSetRirValue(setRow);
 

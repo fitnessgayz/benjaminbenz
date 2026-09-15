@@ -54,6 +54,22 @@ test("expanded workout timer uses compact icon controls without overflow", () =>
   assert.match(styleSource, /\.workout-elapsed-timer button svg/);
 });
 
+test("set completion checkmark sits after RIR and starts the rest timer", () => {
+  const rowMarkupSource = sourceForFunction("setRowMarkup");
+  const interactionsSource = sourceForFunction("handleWorkoutInteractions");
+  const rirPosition = rowMarkupSource.indexOf("data-set-rir");
+  const completePosition = rowMarkupSource.indexOf("data-complete-set");
+
+  assert.ok(rirPosition >= 0);
+  assert.ok(completePosition > rirPosition);
+  assert.match(rowMarkupSource, /set-complete-button/);
+  assert.match(rowMarkupSource, /aria-pressed="false"/);
+  assert.match(interactionsSource, /completeSetButton[\s\S]*classList\.add\("is-complete"\)/);
+  assert.match(interactionsSource, /completeSetButton[\s\S]*scheduleTrainingLogAutosave\(logElement\)[\s\S]*resetRestTimer\(\)[\s\S]*openRestTimer\(completeSetButton\)[\s\S]*startOrPauseRestTimer\(\)/);
+  assert.match(styleSource, /grid-template-columns:\s*52px minmax\(0, 1fr\) minmax\(0, 1fr\) 60px 48px/);
+  assert.match(styleSource, /\.set-complete-button\s*\{[^}]*width:\s*48px;[^}]*height:\s*48px;/s);
+});
+
 test("orphaned and day-old timer state expires by wall-clock age", () => {
   const source = sourceForFunction("workoutElapsedTimerIsStale");
   const maximumAge = 24 * 60 * 60 * 1000;

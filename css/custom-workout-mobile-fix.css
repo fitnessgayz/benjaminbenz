@@ -591,7 +591,7 @@
 
   .dashboard-page .custom-workout-carousel[data-carousel-enabled="true"] .custom-workout-card .set-header,
   .dashboard-page .custom-workout-carousel[data-carousel-enabled="true"] .custom-workout-card .set-row {
-    grid-template-columns: 40px minmax(0, 1fr) minmax(0, 1fr) 50px !important;
+    grid-template-columns: 40px minmax(0, 1fr) minmax(0, 1fr) 50px 40px !important;
     gap: 6px !important;
     width: 100% !important;
     max-width: 100% !important;

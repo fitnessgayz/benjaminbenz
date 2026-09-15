@@ -11,10 +11,10 @@
   --max: 1320px;
 }
 
-/* Unified workout logger: editable set label and RIR picker. */
+/* Unified workout logger: editable set label, RIR picker, and completion control. */
 .set-header,
 .set-row {
-  grid-template-columns: 52px minmax(0, 1fr) minmax(0, 1fr) 60px;
+  grid-template-columns: 52px minmax(0, 1fr) minmax(0, 1fr) 60px 48px;
   gap: 6px;
 }
 
@@ -462,7 +462,7 @@
   .dashboard-page .set-row,
   .coach-admin-page .set-row {
     display: grid !important;
-    grid-template-columns: 44px minmax(0, 1fr) minmax(0, 1fr) 56px !important;
+    grid-template-columns: 44px minmax(0, 1fr) minmax(0, 1fr) 56px 44px !important;
     gap: 4px !important;
   }
 
@@ -494,7 +494,9 @@
   .dashboard-page .set-rir-button,
   .coach-admin-page .set-rir-button { grid-column: 4 !important; }
   .dashboard-page .set-rest-button,
-  .coach-admin-page .set-rest-button { grid-column: 5 !important; }
+  .coach-admin-page .set-rest-button,
+  .dashboard-page .set-complete-button,
+  .coach-admin-page .set-complete-button { grid-column: 5 !important; }
 
   .dashboard-page .set-row :is(input, .set-rir-button, .set-rest-button),
   .coach-admin-page .set-row :is(input, .set-rir-button, .set-rest-button) {
@@ -720,7 +722,9 @@
   }
 
   .dashboard-page .custom-workout-card .set-rest-button,
-  .coach-admin-page .custom-workout-card .set-rest-button {
+  .coach-admin-page .custom-workout-card .set-rest-button,
+  .dashboard-page .custom-workout-card .set-complete-button,
+  .coach-admin-page .custom-workout-card .set-complete-button {
     grid-column: 5 !important;
   }
 
@@ -4363,13 +4367,13 @@ body.is-client-checkin-prompt-open {
 }
 
 .set-complete-button {
-  width: 58px;
-  min-width: 58px;
-  height: 58px;
-  min-height: 58px;
+  width: 48px;
+  min-width: 48px;
+  height: 48px;
+  min-height: 48px;
   padding: 0;
   border: 1px solid var(--black);
-  border-radius: 14px;
+  border-radius: 8px;
   color: var(--black);
   background: var(--lime);
   font-size: 1.3rem;
@@ -12290,7 +12294,7 @@ textarea,
 .dashboard-page .set-row,
 .coach-admin-page .set-header,
 .coach-admin-page .set-row {
-  grid-template-columns: 52px minmax(0, 1fr) minmax(0, 1fr) 60px;
+  grid-template-columns: 52px minmax(0, 1fr) minmax(0, 1fr) 60px 48px;
   gap: 6px;
 }
 
@@ -12328,7 +12332,7 @@ textarea,
   .coach-admin-page .set-header,
   .coach-admin-page .set-row {
     display: grid !important;
-    grid-template-columns: 44px minmax(0, 1fr) minmax(0, 1fr) 56px !important;
+    grid-template-columns: 44px minmax(0, 1fr) minmax(0, 1fr) 56px 44px !important;
     gap: 4px !important;
   }
 
@@ -12360,7 +12364,9 @@ textarea,
   .dashboard-page .set-rir-button,
   .coach-admin-page .set-rir-button { grid-column: 4 !important; }
   .dashboard-page .set-rest-button,
-  .coach-admin-page .set-rest-button { grid-column: 5 !important; }
+  .coach-admin-page .set-rest-button,
+  .dashboard-page .set-complete-button,
+  .coach-admin-page .set-complete-button { grid-column: 5 !important; }
 
   .dashboard-page .set-row :is(input, .set-rir-button, .set-rest-button),
   .coach-admin-page .set-row :is(input, .set-rir-button, .set-rest-button) {
