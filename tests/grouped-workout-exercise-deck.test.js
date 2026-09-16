@@ -133,6 +133,40 @@ test("keeps grouped deck visuals separate from straight-set add permission", () 
   assert.match(move, /isVisualDeck && index !== currentIndex/);
 });
 
+test("places collapsible A1 A2 exercise-name editors above the grouped swipe deck", () => {
+  const groupMarkup = sourceForFunction("customWorkoutCarouselGroupMarkup");
+  const editorMarkup = sourceForFunction("customWorkoutGroupNameEditorMarkup");
+  const rowMarkup = sourceForFunction("customWorkoutGroupNameRowMarkup");
+  const syncEditor = sourceForFunction("syncCustomWorkoutGroupNameEditor");
+  const cardMarkup = sourceForFunction("customWorkoutCardMarkup");
+  const interactions = sourceForFunction("handleWorkoutInteractions");
+
+  assert.match(groupMarkup, /customWorkoutGroupNameEditorMarkup\(format, exercises, groupIndex\)/);
+  assert.match(groupMarkup, /customWorkoutGroupNameEditorMarkup[\s\S]*?data-custom-workout-exercise-deck/);
+  assert.match(editorMarkup, /format === "single"[\s\S]*?return ""/);
+  assert.match(editorMarkup, /data-custom-workout-group-name-toggle/);
+  assert.match(editorMarkup, /data-custom-workout-group-name-fields/);
+  assert.match(rowMarkup, /workoutCarouselExerciseCode\(format, groupIndex, index\)/);
+  assert.match(rowMarkup, /data-custom-workout-group-name-input="\$\{index\}"/);
+  assert.match(syncEditor, /cardCode\.textContent = position/);
+  assert.match(cardMarkup, /data-custom-workout-group-card-code hidden/);
+  assert.match(interactions, /data-custom-workout-group-name-toggle/);
+  assert.match(interactions, /data-custom-workout-group-name-input/);
+  assert.match(interactions, /groupedCardInput\.value = exerciseNameInput\.value/);
+  assert.match(mobileStyles, /data-custom-workout-format="superset"[\s\S]*?\.custom-workout-editable-title[\s\S]*?display: none !important/);
+  assert.match(mobileStyles, /\.custom-workout-group-card-code \{[\s\S]*?display: inline-flex !important/);
+});
+
+test("uses A1 A2 labels for both superset and circuit groups", () => {
+  const codeSource = sourceForFunction("workoutCarouselExerciseCode");
+  const codeFor = Function(`${codeSource}; return workoutCarouselExerciseCode;`)();
+
+  assert.equal(codeFor("superset", 0, 0), "A1");
+  assert.equal(codeFor("superset", 0, 1), "A2");
+  assert.equal(codeFor("circuit", 0, 2), "A3");
+  assert.equal(codeFor("circuit", 1, 0), "B1");
+});
+
 test("builds the next-card cue for superset and circuit sequences", () => {
   const cueSource = sourceForFunction("workoutCarouselDeckCue");
   const cueFor = Function(
@@ -149,9 +183,9 @@ test("builds the next-card cue for superset and circuit sequences", () => {
   const circuitProgress = {
     isComplete: false,
     exercises: [
-      { code: "C1", name: "Kettlebell Deadlift" },
-      { code: "C2", name: "Incline Push-Up" },
-      { code: "C3", name: "Reverse Lunge" }
+      { code: "A1", name: "Kettlebell Deadlift" },
+      { code: "A2", name: "Incline Push-Up" },
+      { code: "A3", name: "Reverse Lunge" }
     ]
   };
 
@@ -169,11 +203,11 @@ test("builds the next-card cue for superset and circuit sequences", () => {
     name: "Shoulder Press",
     targetIndex: 0
   });
-  assert.equal(cueFor(circuitProgress, 0, "circuit").label, "Up next · Station 2");
+  assert.equal(cueFor(circuitProgress, 0, "circuit").label, "Up next · A2");
   assert.deepEqual(cueFor(circuitProgress, 2, "circuit"), {
     hidden: false,
     complete: false,
-    label: "Next round · Station 1",
+    label: "Next round · A1",
     name: "Kettlebell Deadlift",
     targetIndex: 0
   });
