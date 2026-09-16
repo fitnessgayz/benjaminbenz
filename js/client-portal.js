@@ -189,6 +189,9 @@ let workoutDifficultyPromptResolve = null;
 let workoutDifficultyReturnFocus = null;
 let pendingWorkoutDifficulty = null;
 let lastWorkoutCompletionMessageIndex = -1;
+let workoutCompletionShareReturnFocus = null;
+let pendingWorkoutCompletionShare = null;
+let pendingWorkoutCompletionShareFile = null;
 let nextExercisePromptPanel = null;
 let nextExercisePromptReturnFocus = null;
 
@@ -6572,6 +6575,327 @@ function saveWorkoutDifficultySelection() {
   }
 
   closeWorkoutDifficultyPrompt(pendingWorkoutDifficulty);
+}
+
+function completedWorkoutCountForWeek(entryDate = todayDate(), logs = trainingLogs, feedback = workoutSessionFeedback) {
+  const range = clientHomeWeekRange(entryDate);
+  const sessionKeys = new Set();
+  const addSession = (record) => {
+    const date = String(record?.entry_date || "");
+
+    if (date < range.start || date > range.end) {
+      return;
+    }
+
+    sessionKeys.add(
+      workoutFeedbackSessionId(record) || `${date}|${record?.workout_title || "Workout"}`
+    );
+  };
+
+  (Array.isArray(feedback) ? feedback : []).forEach(addSession);
+  (Array.isArray(logs) ? logs : [])
+    .filter((record) => String(record?.completed_at || "").trim())
+    .forEach(addSession);
+
+  return sessionKeys.size;
+}
+
+function workoutCompletionShareSummary(rows = [], workoutCompletion = {}, difficultyRating = null) {
+  const savedRows = Array.isArray(rows) ? rows : [];
+  const workoutRows = savedRows.filter((row) => (
+    String(row?.exercise_code || "").toUpperCase() !== warmupExerciseCode
+  ));
+  const exerciseNamesByKey = new Map();
+
+  workoutRows.forEach((row) => {
+    const exerciseName = String(row?.exercise_name || row?.exercise_code || "Exercise").trim();
+    const exerciseKey = String(row?.exercise_code || exerciseName).trim().toLowerCase();
+
+    if (exerciseKey && !exerciseNamesByKey.has(exerciseKey)) {
+      exerciseNamesByKey.set(exerciseKey, exerciseName || "Exercise");
+    }
+  });
+
+  const title = String(savedRows[0]?.workout_title || "Workout").trim() || "Workout";
+  const entryDate = String(savedRows[0]?.entry_date || todayDate());
+  const durationSeconds = Math.max(
+    0,
+    Number(workoutCompletion?.workout_duration_seconds || savedRows[0]?.workout_duration_seconds) || 0
+  );
+  const exerciseNames = Array.from(exerciseNamesByKey.values());
+
+  return {
+    title,
+    entryDate,
+    durationSeconds,
+    durationLabel: durationSeconds ? workoutElapsedTimeLabel(durationSeconds * 1000) : "—",
+    exerciseCount: exerciseNames.length,
+    exerciseNames,
+    weeklyWorkoutCount: completedWorkoutCountForWeek(entryDate),
+    difficultyLabel: workoutDifficultyLabel(difficultyRating) || "Completed"
+  };
+}
+
+function workoutCompletionShareText(summary = {}) {
+  const details = [
+    summary.durationSeconds ? `${summary.durationLabel} workout` : "Workout complete",
+    summary.exerciseCount ? `${summary.exerciseCount} exercise${summary.exerciseCount === 1 ? "" : "s"} today` : "",
+    summary.weeklyWorkoutCount
+      ? `${summary.weeklyWorkoutCount} workout${summary.weeklyWorkoutCount === 1 ? "" : "s"} this week`
+      : ""
+  ].filter(Boolean).join(" · ");
+
+  return `Workout complete 💪\n${summary.title || "Workout"}\n${details}\n#FitnessWithBenjamin`;
+}
+
+function workoutCompletionSharePromptMarkup() {
+  return `
+    <div class="workout-completion-share-overlay" data-workout-share-overlay hidden>
+      <section class="workout-completion-share-sheet" role="dialog" aria-modal="true" aria-labelledby="workout-share-title">
+        <header class="workout-completion-share-heading">
+          <div>
+            <small>Workout saved</small>
+            <strong id="workout-share-title">Share your win?</strong>
+          </div>
+          <button type="button" data-workout-share-dismiss aria-label="Close workout sharing prompt">×</button>
+        </header>
+        <article class="workout-completion-share-card" aria-label="Workout completion share preview">
+          <span class="workout-completion-share-brand">FWB</span>
+          <p>Workout complete</p>
+          <h2 data-workout-share-workout-title>Workout</h2>
+          <div class="workout-completion-share-metrics">
+            <span><strong data-workout-share-duration>—</strong><small>Time</small></span>
+            <span><strong data-workout-share-exercises>0 exercises</strong><small>Today</small></span>
+            <span><strong data-workout-share-week>0 workouts</strong><small>This week</small></span>
+          </div>
+          <div class="workout-completion-share-exercises">
+            <small>Exercises completed</small>
+            <ul data-workout-share-exercise-list></ul>
+          </div>
+          <strong class="workout-completion-share-praise" data-workout-share-praise>Strong work. You showed up.</strong>
+        </article>
+        <p class="workout-completion-share-copy">Open your phone’s share menu to post this achievement to any available social app.</p>
+        <p class="workout-completion-share-status" data-workout-share-status aria-live="polite"></p>
+        <div class="workout-completion-share-actions">
+          <button class="workout-completion-share-button" type="button" data-workout-share>Share workout</button>
+          <button class="workout-completion-share-not-now" type="button" data-workout-share-dismiss>Not now</button>
+        </div>
+      </section>
+    </div>
+  `;
+}
+
+function ensureWorkoutCompletionSharePrompt() {
+  let overlay = document.querySelector("[data-workout-share-overlay]");
+
+  if (!overlay) {
+    document.body.insertAdjacentHTML("beforeend", workoutCompletionSharePromptMarkup());
+    overlay = document.querySelector("[data-workout-share-overlay]");
+  }
+
+  return overlay;
+}
+
+function workoutCompletionShareImage(summary = {}) {
+  if (typeof File === "undefined") {
+    return Promise.resolve(null);
+  }
+
+  const canvas = document.createElement("canvas");
+  canvas.width = 1080;
+  canvas.height = 1350;
+  const context = canvas.getContext("2d");
+
+  if (!context) {
+    return Promise.resolve(null);
+  }
+
+  context.fillStyle = "#171a17";
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  context.fillStyle = "#d7ff3f";
+  context.fillRect(72, 72, 190, 190);
+  context.fillStyle = "#050505";
+  context.font = "900 72px Inter, Arial, sans-serif";
+  context.textAlign = "center";
+  context.textBaseline = "middle";
+  context.fillText("FWB", 167, 167);
+
+  context.textAlign = "left";
+  context.textBaseline = "alphabetic";
+  context.fillStyle = "#d7ff3f";
+  context.font = "900 42px Inter, Arial, sans-serif";
+  context.fillText("WORKOUT COMPLETE", 72, 360);
+  context.fillStyle = "#f7f7f2";
+  context.font = "900 88px Inter, Arial, sans-serif";
+  const title = String(summary.title || "Workout");
+  const titleWords = title.split(/\s+/).filter(Boolean);
+  const titleLines = [];
+  let currentLine = "";
+
+  titleWords.forEach((word) => {
+    const candidate = currentLine ? `${currentLine} ${word}` : word;
+    if (context.measureText(candidate).width > 930 && currentLine) {
+      titleLines.push(currentLine);
+      currentLine = word;
+    } else {
+      currentLine = candidate;
+    }
+  });
+  if (currentLine) titleLines.push(currentLine);
+  titleLines.slice(0, 3).forEach((line, index) => {
+    context.fillText(line, 72, 475 + (index * 96), 930);
+  });
+
+  const metricTop = 730;
+  const metrics = [
+    [summary.durationLabel || "—", "TIME"],
+    [`${summary.exerciseCount || 0} EXERCISES`, "TODAY"],
+    [`${summary.weeklyWorkoutCount || 0} WORKOUTS`, "THIS WEEK"]
+  ];
+  metrics.forEach(([value, label], index) => {
+    const x = 72 + (index * 312);
+    context.strokeStyle = "#555a53";
+    context.lineWidth = 3;
+    context.strokeRect(x, metricTop, 280, 180);
+    context.fillStyle = "#f7f7f2";
+    context.font = "900 42px Inter, Arial, sans-serif";
+    context.fillText(value, x + 24, metricTop + 76, 232);
+    context.fillStyle = "#d7ff3f";
+    context.font = "900 25px Inter, Arial, sans-serif";
+    context.fillText(label, x + 24, metricTop + 135, 232);
+  });
+
+  context.fillStyle = "#d7ff3f";
+  context.font = "900 27px Inter, Arial, sans-serif";
+  context.fillText("EXERCISES COMPLETED", 72, 978);
+  context.fillStyle = "#f7f7f2";
+  context.font = "700 28px Inter, Arial, sans-serif";
+  (summary.exerciseNames || []).slice(0, 6).forEach((exerciseName, index) => {
+    const column = index % 2;
+    const row = Math.floor(index / 2);
+    context.fillText(String(exerciseName), 72 + (column * 480), 1032 + (row * 56), 420);
+  });
+
+  context.fillStyle = "#f7f7f2";
+  context.font = "800 38px Inter, Arial, sans-serif";
+  context.fillText("Strong work. You showed up.", 72, 1235);
+  context.fillStyle = "#9ba096";
+  context.font = "700 28px Inter, Arial, sans-serif";
+  context.fillText("Fitness with Benjamin · benjaminbenz.com", 72, 1305);
+
+  return new Promise((resolve) => {
+    canvas.toBlob((blob) => {
+      resolve(blob ? new File([blob], "fwb-workout-complete.png", { type: "image/png" }) : null);
+    }, "image/png");
+  });
+}
+
+function openWorkoutCompletionSharePrompt(summary, returnFocus = null) {
+  const overlay = ensureWorkoutCompletionSharePrompt();
+
+  pendingWorkoutCompletionShare = summary;
+  pendingWorkoutCompletionShareFile = null;
+  workoutCompletionShareReturnFocus = returnFocus;
+  overlay.querySelector("[data-workout-share-workout-title]").textContent = summary.title;
+  overlay.querySelector("[data-workout-share-duration]").textContent = summary.durationLabel;
+  overlay.querySelector("[data-workout-share-exercises]").textContent = `${summary.exerciseCount} exercise${summary.exerciseCount === 1 ? "" : "s"}`;
+  overlay.querySelector("[data-workout-share-week]").textContent = `${summary.weeklyWorkoutCount} workout${summary.weeklyWorkoutCount === 1 ? "" : "s"}`;
+  overlay.querySelector("[data-workout-share-exercise-list]").innerHTML = (summary.exerciseNames || [])
+    .slice(0, 6)
+    .map((exerciseName) => `<li>${escapeHtml(exerciseName)}</li>`)
+    .join("");
+  overlay.querySelector("[data-workout-share-praise]").textContent = randomWorkoutCompletionMessage();
+  overlay.querySelector("[data-workout-share-status]").textContent = "";
+  overlay.hidden = false;
+  document.body.classList.add("workout-completion-share-open");
+  overlay.querySelector("[data-workout-share]")?.focus();
+
+  workoutCompletionShareImage(summary).then((file) => {
+    if (pendingWorkoutCompletionShare === summary) {
+      pendingWorkoutCompletionShareFile = file;
+    }
+  });
+}
+
+function closeWorkoutCompletionSharePrompt(options = {}) {
+  const overlay = document.querySelector("[data-workout-share-overlay]");
+  const returnFocus = workoutCompletionShareReturnFocus;
+
+  if (overlay) overlay.hidden = true;
+  document.body.classList.remove("workout-completion-share-open");
+  workoutCompletionShareReturnFocus = null;
+  pendingWorkoutCompletionShare = null;
+  pendingWorkoutCompletionShareFile = null;
+  if (options.restoreFocus !== false) returnFocus?.focus();
+}
+
+async function shareCompletedWorkout(button) {
+  const overlay = button?.closest("[data-workout-share-overlay]");
+  const status = overlay?.querySelector("[data-workout-share-status]");
+  const summary = pendingWorkoutCompletionShare;
+
+  if (!button || !summary) {
+    return;
+  }
+
+  const text = workoutCompletionShareText(summary);
+  const url = `${window.location.origin}/`;
+  const shareData = { title: "Workout complete", text, url };
+  const file = pendingWorkoutCompletionShareFile;
+
+  if (file && typeof navigator.canShare === "function" && navigator.canShare({ files: [file] })) {
+    shareData.files = [file];
+    delete shareData.url;
+  }
+
+  button.disabled = true;
+  if (status) status.textContent = "Opening your share menu...";
+
+  try {
+    if (typeof navigator.share === "function") {
+      await navigator.share(shareData);
+      closeWorkoutCompletionSharePrompt({ restoreFocus: false });
+      return;
+    }
+
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(`${text}\n${url}`);
+      if (status) status.textContent = "Workout message copied. Paste it into any social app.";
+      return;
+    }
+
+    if (status) status.textContent = "Sharing is not available in this browser.";
+  } catch (error) {
+    if (error?.name === "AbortError") {
+      if (status) status.textContent = "Sharing canceled. You can try again.";
+    } else if (status) {
+      status.textContent = "Could not open sharing. Please try again.";
+    }
+  } finally {
+    button.disabled = false;
+  }
+}
+
+function handleWorkoutCompletionSharePrompt() {
+  document.addEventListener("click", async (event) => {
+    const shareButton = event.target.closest("[data-workout-share]");
+    const dismissButton = event.target.closest("[data-workout-share-dismiss]");
+
+    if (shareButton) {
+      await shareCompletedWorkout(shareButton);
+      return;
+    }
+
+    if (dismissButton || event.target.matches("[data-workout-share-overlay]")) {
+      closeWorkoutCompletionSharePrompt();
+    }
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && document.querySelector("[data-workout-share-overlay]")?.hidden === false) {
+      closeWorkoutCompletionSharePrompt();
+    }
+  });
 }
 
 function nextExercisePromptMarkup() {
@@ -14524,6 +14848,9 @@ async function handleTrainingLogSave() {
         if (section?.classList.contains("client-workout-panel-custom")) {
           clearCustomWorkoutDraft();
         }
+        openWorkoutCompletionSharePrompt(
+          workoutCompletionShareSummary(saveResult.rows, workoutCompletion, workoutDifficulty)
+        );
       }
       return;
     }
@@ -14602,6 +14929,7 @@ handleWorkoutInteractions();
 handleCustomWorkoutInlineGrouping();
 handleSkipToggle();
 handleTrainingLogSave();
+handleWorkoutCompletionSharePrompt();
 handleClientProgressHistoryDeck();
 handleClientProgressHistorySelect();
 handleClientProgressSave();
