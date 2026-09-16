@@ -347,20 +347,42 @@
 
 .dashboard-page .client-workout-panel-custom .custom-workout-group-name-row {
   display: grid;
-  grid-template-columns: 42px minmax(0, 1fr);
-  gap: 9px;
-  align-items: center;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 6px;
+  align-items: stretch;
 }
 
 .dashboard-page .client-workout-panel-custom .custom-workout-group-name-row > strong {
-  display: grid;
-  min-height: 46px;
-  place-items: center;
+  display: inline-flex;
+  width: fit-content;
+  min-width: 42px;
+  min-height: 32px;
+  padding: 5px 10px;
+  align-items: center;
+  justify-content: center;
   border-radius: 10px;
   background: var(--lime, #caff2c);
   color: #111411;
   font-size: 14px;
   font-weight: 900;
+}
+
+.dashboard-page .custom-workout-carousel:is(
+  [data-custom-workout-format="superset"],
+  [data-custom-workout-format="circuit"]
+) .custom-workout-card .set-header,
+.dashboard-page .custom-workout-carousel:is(
+  [data-custom-workout-format="superset"],
+  [data-custom-workout-format="circuit"]
+) .custom-workout-card .set-row {
+  grid-template-columns: 40px minmax(0, 1fr) minmax(0, 1fr) 50px !important;
+}
+
+.dashboard-page .custom-workout-carousel:is(
+  [data-custom-workout-format="superset"],
+  [data-custom-workout-format="circuit"]
+) .custom-workout-card .set-complete-button {
+  display: none !important;
 }
 
 .dashboard-page .client-workout-panel-custom .custom-workout-group-name-row .custom-workout-name-editor,
@@ -748,6 +770,17 @@
     width: 100% !important;
     max-width: 100% !important;
     min-width: 0 !important;
+  }
+
+  .dashboard-page .custom-workout-carousel[data-carousel-enabled="true"]:is(
+    [data-custom-workout-format="superset"],
+    [data-custom-workout-format="circuit"]
+  ) .custom-workout-card .set-header,
+  .dashboard-page .custom-workout-carousel[data-carousel-enabled="true"]:is(
+    [data-custom-workout-format="superset"],
+    [data-custom-workout-format="circuit"]
+  ) .custom-workout-card .set-row {
+    grid-template-columns: 40px minmax(0, 1fr) minmax(0, 1fr) 50px !important;
   }
 
   .dashboard-page .custom-workout-carousel[data-carousel-enabled="true"] .custom-workout-card .set-table-actions {

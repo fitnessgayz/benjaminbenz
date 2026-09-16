@@ -49,6 +49,28 @@ test("renders the group log action inside each grouped exercise card", () => {
   assert.doesNotMatch(assignedCarousel, /data-workout-group-primary-action/);
 });
 
+test("removes per-row completion buttons from superset and circuit cards", () => {
+  const rowMarkup = sourceForFunction("setRowMarkup");
+  const rowsMarkup = sourceForFunction("setRows");
+  const logFields = sourceForFunction("exerciseLogFields");
+  const customCard = sourceForFunction("customWorkoutCardMarkup");
+  const assignedCard = sourceForFunction("exerciseCard");
+
+  assert.match(rowMarkup, /options\.showComplete === false \? ""/);
+  assert.match(rowsMarkup, /setRowMarkup\([\s\S]*?options\)/);
+  assert.match(logFields, /showComplete: options\.showSetComplete !== false/);
+  assert.match(customCard, /showSetComplete: cardFormat === "single"/);
+  assert.match(assignedCard, /showSetComplete: format === "single"/);
+  assert.match(
+    mobileStyles,
+    /data-custom-workout-format="superset"[\s\S]*?data-custom-workout-format="circuit"[\s\S]*?\.set-row \{[\s\S]*?grid-template-columns: 40px minmax\(0, 1fr\) minmax\(0, 1fr\) 50px !important;/
+  );
+  assert.match(
+    mobileStyles,
+    /data-custom-workout-format="superset"[\s\S]*?data-custom-workout-format="circuit"[\s\S]*?\.set-complete-button \{[\s\S]*?display: none !important;/
+  );
+});
+
 test("keeps a dormant log-action slot when a straight custom card is regrouped", () => {
   const customCard = sourceForFunction("customWorkoutCardMarkup");
   const regroup = sourceForFunction("regroupCustomWorkoutCarousels");
@@ -155,6 +177,8 @@ test("places collapsible A1 A2 exercise-name editors above the grouped swipe dec
   assert.match(interactions, /groupedCardInput\.value = exerciseNameInput\.value/);
   assert.match(mobileStyles, /data-custom-workout-format="superset"[\s\S]*?\.custom-workout-editable-title[\s\S]*?display: none !important/);
   assert.match(mobileStyles, /\.custom-workout-group-card-code \{[\s\S]*?display: inline-flex !important/);
+  assert.match(mobileStyles, /\.custom-workout-group-name-row \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\);/);
+  assert.match(mobileStyles, /\.custom-workout-group-name-row > strong \{[\s\S]*?width: fit-content;[\s\S]*?min-height: 32px;/);
 });
 
 test("uses A1 A2 labels for both superset and circuit groups", () => {

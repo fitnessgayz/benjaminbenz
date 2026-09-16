@@ -4780,7 +4780,7 @@ function setTypeForRow(row) {
   return normalizedSetType(row?.dataset.setType, row?.dataset.setNumber);
 }
 
-function setRowMarkup(setNumber, repPlaceholder = "", setType = workingSetType, weightPlaceholder = "0") {
+function setRowMarkup(setNumber, repPlaceholder = "", setType = workingSetType, weightPlaceholder = "0", options = {}) {
   const normalizedType = normalizedSetType(setType, setNumber);
   const ordinal = warmUpOrdinal(setNumber);
   const isWarmUp = normalizedType === warmUpSetType;
@@ -4804,21 +4804,23 @@ function setRowMarkup(setNumber, repPlaceholder = "", setType = workingSetType, 
         <span>RIR</span>
         <strong data-set-rir-value>—</strong>
       </button>
-      <button class="set-complete-button" type="button" data-complete-set aria-label="Complete ${normalizedType === warmUpSetType ? `warm-up set ${ordinal}` : `set ${Number(setNumber) || 1}`} and start rest timer" aria-pressed="false">
-        <span aria-hidden="true">✓</span>
-      </button>
+      ${options.showComplete === false ? "" : `
+        <button class="set-complete-button" type="button" data-complete-set aria-label="Complete ${normalizedType === warmUpSetType ? `warm-up set ${ordinal}` : `set ${Number(setNumber) || 1}`} and start rest timer" aria-pressed="false">
+          <span aria-hidden="true">✓</span>
+        </button>
+      `}
     </div>
   `;
 }
 
-function setRows(exercise, setCount = setCountFromPrescription(exercise.prescription)) {
+function setRows(exercise, setCount = setCountFromPrescription(exercise.prescription), options = {}) {
   const repTargets = repTargetsFromPrescription(exercise.prescription);
   const workingRows = Array.from({ length: Math.max(Number(setCount) || 0, 0) }, (_, index) => (
-    setRowMarkup(index + 1, repTargets[index] || repTargets[0] || "", workingSetType)
+    setRowMarkup(index + 1, repTargets[index] || repTargets[0] || "", workingSetType, "0", options)
   ));
 
   return [
-    setRowMarkup(warmUpSetNumberBase + 1, repTargets[0] || "", warmUpSetType),
+    setRowMarkup(warmUpSetNumberBase + 1, repTargets[0] || "", warmUpSetType, "0", options),
     ...workingRows
   ].join("");
 }
@@ -4945,7 +4947,7 @@ function exerciseLogFields(exercise, workoutTitle, options = {}) {
         <span>RIR</span>
       </div>
         <div data-set-rows>
-          ${setRows(exercise, setCount)}
+          ${setRows(exercise, setCount, { showComplete: options.showSetComplete !== false })}
         </div>
         <div class="set-table-actions${addsSupersetExercise ? " has-add-superset-action" : ""}">
           <button class="add-set-button" type="button" data-add-set>+ Add Set</button>
@@ -5144,7 +5146,8 @@ function exerciseCard(exercise, workoutTitle, isOpen = false, workoutFocus = "",
           suggestExerciseNames: true,
           setCount,
           userManagedSets: clientAdded,
-          groupActionSlot: format !== "single"
+          groupActionSlot: format !== "single",
+          showSetComplete: format === "single"
         })}
       </div>
     </article>
@@ -7910,6 +7913,7 @@ function customWorkoutCardMarkup(exercise, workoutTitle, index = 0, options = {}
           // Custom cards can be regrouped in place after they render, so every
           // card keeps a dormant slot ready for Superset or Circuit mode.
           groupActionSlot: true,
+          showSetComplete: cardFormat === "single",
           finishButtonLabel: isFirstSupersetExercise
             ? "Add Superset"
             : (isSecondSupersetExercise ? "Superset Completed" : "Set Finished"),
