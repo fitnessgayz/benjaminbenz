@@ -60,6 +60,8 @@ test("provides an accessible inline review that requires confirmation", () => {
   assert.match(dashboard, /name="dexa_vat_mass"/i);
   assert.match(dashboard, /name="dexa_bone_density"/i);
   assert.match(dashboard, /name="dexa_right_arm_lean_mass"/i);
+  assert.match(dashboard, /name="dexa_left_arm_lean_mass"/i);
+  assert.match(dashboard, /name="dexa_right_leg_lean_mass"/i);
   assert.match(dashboard, /name="dexa_left_leg_lean_mass"/i);
   assert.match(dashboard, /Automatic extraction can be wrong/i);
   assert.match(dashboard, /Compare every value[^<]*(?:DEXA|report)/i);
@@ -141,7 +143,10 @@ test("extracts and saves the extended BodySpec result fields", () => {
   assert.match(edgeFunction, /vat_volume_in3/);
   assert.match(edgeFunction, /bone_z_score/);
   assert.match(edgeFunction, /right_arm_lean_mass_lb/);
+  assert.match(edgeFunction, /left_arm_lean_mass_lb/);
+  assert.match(edgeFunction, /right_leg_lean_mass_lb/);
   assert.match(edgeFunction, /left_leg_lean_mass_lb/);
+  assert.match(edgeFunction, /match each printed row and side exactly/i);
   assert.match(edgeFunction, /measurements\s*=\s*\{[\s\S]*?bodyspec:/);
   assert.match(portal, /bodySpecDexaFields\.forEach/);
   assert.match(portal, /bodySpecHistoryRows\(entry\)/);

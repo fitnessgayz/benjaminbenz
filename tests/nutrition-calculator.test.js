@@ -89,7 +89,23 @@ test("uses a five percent starting surplus for muscle gain", () => {
   assert.equal(result.plan.calories, "2525 cal");
 });
 
+test("matches the nutrition setup weight to the latest saved DEXA scan", () => {
+  const source = ["numberValue", "progressMeasurements", "latestDexaWeight"]
+    .map((name) => sourceForFunction(portalSource, name))
+    .join("\n");
+  const latestDexaWeight = Function(`${source}; return latestDexaWeight;`)();
+  const entries = [
+    { entry_date: "2026-07-10", bodyweight: 156.9, measurements: { bodyspec: { fat_mass_lb: 17.3 } } },
+    { entry_date: "2026-08-25", bodyweight: 160, measurements: { bodyspec: { left_arm_lean_mass_lb: 8.2 } } },
+    { entry_date: "2026-09-01", bodyweight: 159, measurements: { waist: 31 } }
+  ];
+
+  assert.deepEqual(latestDexaWeight(entries), { value: "160", date: "2026-08-25" });
+  assert.equal(latestDexaWeight([{ entry_date: "2026-09-01", bodyweight: 159, measurements: { waist: 31 } }]), null);
+  assert.match(dashboardHtml, /id="client-nutrition-weight-source"[^>]*hidden/);
+});
+
 test("cache-busts both live calculator scripts", () => {
-  assert.match(dashboardHtml, /js\/client-portal\.js\?v=nutrition-calculator-1/);
+  assert.match(dashboardHtml, /js\/client-portal\.js\?v=warmup-label-w-1/);
   assert.match(inviteHtml, /js\/client-invite\.js\?v=nutrition-calculator-1/);
 });

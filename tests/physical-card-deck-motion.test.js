@@ -38,7 +38,7 @@ test("live pages cache-bust every updated deck asset", () => {
   assert.match(dashboard, /css\/style\.css\?v=food-barcode-scanner-1/);
   assert.match(dashboard, /css\/custom-workout-mobile-fix\.css\?v=set-complete-rest-1/);
   assert.match(dashboard, /js\/script\.js\?v=physical-card-decks-1/);
-  assert.match(dashboard, /js\/client-portal\.js\?v=nutrition-calculator-1/);
+  assert.match(dashboard, /js\/client-portal\.js\?v=warmup-label-w-1/);
   assert.match(homepage, /css\/style\.css\?v=physical-card-decks-1/);
   assert.match(homepage, /js\/script\.js\?v=physical-card-decks-1/);
 });

@@ -160,6 +160,8 @@ const cardioExerciseCode = "CARDIO";
 const warmUpSetNumberBase = 1000;
 const workingSetType = "working";
 const warmUpSetType = "warm_up";
+const customWorkoutDefaultWorkingSetCount = 3;
+const customWorkoutDraftVersion = 2;
 const clientDashboardUrl = "client-dashboard.html?v=manual-sessions-1";
 const clientDashboardSidebarStorageKey = "fwb_client_dashboard_sidebar_collapsed_v1";
 const clientHomeCheckinPromptMetadataKey = "home_checkin_prompt_seen_v1";
@@ -1092,7 +1094,27 @@ function setSelectValue(select, value, fallback) {
   select.value = value || fallback || "";
 }
 
-function fillClientNutritionSetup(program) {
+function latestDexaWeight(entries = []) {
+  const latest = [...entries].reverse().find((entry) => {
+    const measurements = progressMeasurements(entry);
+    const hasDexaMeasurements = measurements.bodyspec &&
+      typeof measurements.bodyspec === "object" &&
+      !Array.isArray(measurements.bodyspec);
+
+    return hasDexaMeasurements && numberValue(entry.bodyweight) > 0;
+  });
+
+  if (!latest) {
+    return null;
+  }
+
+  return {
+    value: String(numberValue(latest.bodyweight)),
+    date: String(latest.entry_date || "")
+  };
+}
+
+function fillClientNutritionSetup(program = {}) {
   const setup = document.getElementById("client-nutrition-setup");
 
   if (!setup) {
@@ -1109,6 +1131,8 @@ function fillClientNutritionSetup(program) {
   const ageInput = setup.querySelector('[name="nutrition_age"]');
   const heightInput = setup.querySelector('[name="nutrition_height"]');
   const weightInput = setup.querySelector('[name="nutrition_weight"]');
+  const weightSource = document.getElementById("client-nutrition-weight-source");
+  const dexaWeight = latestDexaWeight(progressEntries);
 
   if (ageInput) {
     ageInput.value = nutrition.age || "";
@@ -1117,7 +1141,13 @@ function fillClientNutritionSetup(program) {
     heightInput.value = nutrition.height || (program.height === "Not set" ? "" : (program.height || ""));
   }
   if (weightInput) {
-    weightInput.value = nutrition.current_weight || (program.starting_weight === "Not set" ? "" : (program.starting_weight || ""));
+    weightInput.value = dexaWeight?.value || nutrition.current_weight || (program.starting_weight === "Not set" ? "" : (program.starting_weight || ""));
+  }
+  if (weightSource) {
+    weightSource.hidden = !dexaWeight;
+    weightSource.textContent = dexaWeight
+      ? `Matched to ${formatLogDate(dexaWeight.date)} DEXA scan.`
+      : "";
   }
 }
 
@@ -3796,6 +3826,7 @@ function renderProgress(entries) {
   renderProgressGraph(safeEntries);
   renderClientProgressHistory(safeEntries);
   fillClientProgressForm(safeEntries.find((entry) => entry.entry_date === todayDate()) || {});
+  fillClientNutritionSetup(currentProgram || {});
   renderClientHomeSummary();
 }
 
@@ -4750,7 +4781,7 @@ function setRowMarkup(setNumber, repPlaceholder = "", setType = workingSetType, 
   const normalizedType = normalizedSetType(setType, setNumber);
   const ordinal = warmUpOrdinal(setNumber);
   const isWarmUp = normalizedType === warmUpSetType;
-  const label = isWarmUp ? "" : String(Number(setNumber) || 1);
+  const label = setNumberLabel(setNumber, normalizedType);
   const labelAria = isWarmUp ? `Warm-up set ${ordinal} label` : `Set label ${label}`;
   return `
     <div class="set-row${normalizedType === warmUpSetType ? " is-warm-up" : ""}" data-set-row data-set-number="${setNumber}" data-set-type="${normalizedType}">
@@ -4777,10 +4808,16 @@ function setRowMarkup(setNumber, repPlaceholder = "", setType = workingSetType, 
   `;
 }
 
-function setRows(exercise) {
+function setRows(exercise, setCount = setCountFromPrescription(exercise.prescription)) {
   const repTargets = repTargetsFromPrescription(exercise.prescription);
+  const workingRows = Array.from({ length: Math.max(Number(setCount) || 0, 0) }, (_, index) => (
+    setRowMarkup(index + 1, repTargets[index] || repTargets[0] || "", workingSetType)
+  ));
 
-  return setRowMarkup(warmUpSetNumberBase + 1, repTargets[0] || "", warmUpSetType);
+  return [
+    setRowMarkup(warmUpSetNumberBase + 1, repTargets[0] || "", warmUpSetType),
+    ...workingRows
+  ].join("");
 }
 
 function exerciseDisplayName(code, name) {
@@ -4896,7 +4933,7 @@ function exerciseLogFields(exercise, workoutTitle, options = {}) {
         <span>RIR</span>
       </div>
         <div data-set-rows>
-          ${setRows(exercise)}
+          ${setRows(exercise, setCount)}
         </div>
         <div class="set-table-actions${addsSupersetExercise ? " has-add-superset-action" : ""}">
           <button class="add-set-button" type="button" data-add-set>+ Add Set</button>
@@ -5474,13 +5511,60 @@ function storeCustomWorkoutDraft(draft) {
 
   try {
     window.localStorage.setItem(key, JSON.stringify({
-      version: 1,
+      version: customWorkoutDraftVersion,
       updatedAt: new Date().toISOString(),
       ...draft
     }));
   } catch (_) {
     // Draft persistence is best-effort only.
   }
+}
+
+function upgradeCustomWorkoutDraft(draft) {
+  if (!draft || Number(draft.version || 1) >= customWorkoutDraftVersion) {
+    return draft;
+  }
+
+  const exercises = Array.isArray(draft.exercises) ? draft.exercises : [];
+  const upgradedExercises = exercises.map((exercise) => {
+    const sets = Array.isArray(exercise?.sets) ? exercise.sets : [];
+    const hasEnteredSetData = sets.some((set) => (
+      String(set?.weight || "").trim() ||
+      String(set?.reps || "").trim() ||
+      String(set?.rir || "").trim() ||
+      set?.complete
+    ));
+    const workingSets = sets.filter((set, index) => (
+      normalizedSetType(set?.setType, index + 1) !== warmUpSetType
+    ));
+
+    if (draft.copiedFrom || hasEnteredSetData || workingSets.length >= customWorkoutDefaultWorkingSetCount) {
+      return exercise;
+    }
+
+    const nextSets = sets.length > 0
+      ? [...sets]
+      : [{ label: "W", weight: "", reps: "", setType: warmUpSetType, rir: "" }];
+
+    for (let index = workingSets.length; index < customWorkoutDefaultWorkingSetCount; index += 1) {
+      nextSets.push({
+        label: String(index + 1),
+        weight: "",
+        reps: "",
+        setType: workingSetType,
+        rir: "",
+        complete: false
+      });
+    }
+
+    return { ...exercise, sets: nextSets };
+  });
+
+  return {
+    ...draft,
+    version: customWorkoutDraftVersion,
+    exercises: upgradedExercises
+  };
 }
 
 function clearCustomWorkoutDraft() {
@@ -5517,7 +5601,13 @@ function activeCustomWorkoutDraft() {
     return null;
   }
 
-  return draft;
+  const upgradedDraft = upgradeCustomWorkoutDraft(draft);
+
+  if (upgradedDraft !== draft) {
+    storeCustomWorkoutDraft(upgradedDraft);
+  }
+
+  return upgradedDraft;
 }
 
 function customWorkoutCopyStatusMessage(draft = activeCustomWorkoutDraft()) {
@@ -5657,7 +5747,7 @@ function applyCustomSetDraft(row, draftSet) {
 
   row.dataset.setType = setType;
   if (labelInput && setType === warmUpSetType) {
-    labelInput.value = "";
+    labelInput.value = setNumberLabel(row.dataset.setNumber, setType);
   } else if (labelInput && draftSet?.label) {
     labelInput.value = draftSet.label;
   }
@@ -7381,7 +7471,7 @@ function customWorkoutCardMarkup(exercise, workoutTitle, index = 0, options = {}
               ></span>
             </span>
           </strong>
-          <small data-set-progress>0 / 1 sets completed</small>
+          <small data-set-progress>0 / ${customWorkoutDefaultWorkingSetCount} working sets completed</small>
         </span>
         <div class="custom-workout-card-actions">
             <button class="custom-workout-delete-icon" type="button" data-delete-exercise aria-label="Delete exercise ${index + 1}">
@@ -7407,7 +7497,7 @@ function customWorkoutCardMarkup(exercise, workoutTitle, index = 0, options = {}
           showActions: false,
           showDate: false,
           showDemo: false,
-          setCount: 1,
+          setCount: customWorkoutDefaultWorkingSetCount,
           userManagedSets: true,
           finishButtonLabel: isFirstSupersetExercise
             ? "Add Superset"
@@ -9415,9 +9505,10 @@ function restoreStrengthSetRows(logElement, selectedLogs) {
   }
 
   const defaultReps = rows.querySelector("[data-set-reps]")?.dataset.defaultPlaceholder || "0";
-  const workingMinimum = logElement.dataset.setTargetMode === "visible"
-    ? 0
-    : Math.max(Number(logElement.dataset.prescribedSets || 1), 1);
+  const workingMinimum = Math.max(
+    Number(logElement.dataset.prescribedSets || (logElement.dataset.setTargetMode === "visible" ? 0 : 1)),
+    0
+  );
   const specs = savedStrengthSetSpecs(selectedLogs, workingMinimum);
 
   rows.innerHTML = specs
@@ -11197,7 +11288,7 @@ function renumberSetRows(logElement) {
     row.dataset.setType = setType;
     row.classList.toggle("is-warm-up", isWarmUp);
     const labelInput = row.querySelector("[data-set-label]");
-    const setLabel = isWarmUp ? "" : String(workingIndex);
+    const setLabel = setNumberLabel(setNumber, setType);
 
     if (labelInput) {
       labelInput.value = setLabel;

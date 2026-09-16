@@ -656,6 +656,7 @@ function extractionPrompt() {
     "Do not treat older comparison rows as the current scan and do not return null merely because previous scan dates also appear.",
     "Extract whole-body Total Mass or Body Mass, whole-body Body Fat %, whole-body Total Lean Mass, fat mass, and bone mineral content.",
     "When printed, also extract RMR, VAT mass and volume, Android fat %, Gynoid fat %, A/G ratio, total bone density/T-score/Z-score, regional arm/leg/trunk fat %, regional arm/leg/trunk lean mass, and right/left arm and leg lean mass.",
+    "For BodySpec regional lean-mass tables, match each printed row and side exactly: return Right Arm, Left Arm, Right Leg, and Left Leg separately whenever those four values are present. Never substitute a limb total or the opposite side.",
     "Use only the values belonging to the chosen current scan date. Ignore reference ranges, percentile tables, chart axes, changes versus baseline, and changes versus previous.",
     "Do not calculate or infer a missing value from other values.",
     "If multiple dates or candidate values are ambiguous, return null for that field and add a short warning.",

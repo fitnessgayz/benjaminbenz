@@ -15,6 +15,65 @@ function sourceForFunction(name) {
   return portal.slice(start, end >= 0 ? end : undefined);
 }
 
+test("starts every custom exercise with one warm-up and three working sets", () => {
+  const helpers = [
+    "repTargetsFromPrescription",
+    "normalizedSetType",
+    "warmUpOrdinal",
+    "setNumberLabel",
+    "setRowMarkup",
+    "setRows"
+  ].map(sourceForFunction).join("\n");
+  const setRows = Function(
+    "warmUpSetType",
+    "workingSetType",
+    "warmUpSetNumberBase",
+    "escapeHtml",
+    `${helpers}; return setRows;`
+  )("warm_up", "working", 1000, (value) => String(value || ""));
+  const markup = setRows({ prescription: "Custom sets" }, 3);
+  const cardMarkup = sourceForFunction("customWorkoutCardMarkup");
+  const groupMarkup = sourceForFunction("customWorkoutCarouselGroupMarkup");
+
+  assert.equal((markup.match(/data-set-row/g) || []).length, 4);
+  assert.equal((markup.match(/data-set-type="warm_up"/g) || []).length, 1);
+  assert.equal((markup.match(/data-set-type="working"/g) || []).length, 3);
+  assert.match(markup, /data-set-number="1001"[\s\S]*?value="W"/);
+  assert.match(markup, /data-set-number="1"[\s\S]*data-set-number="2"[\s\S]*data-set-number="3"/);
+  assert.match(cardMarkup, /0 \/ \$\{customWorkoutDefaultWorkingSetCount\} working sets completed/);
+  assert.match(cardMarkup, /setCount: customWorkoutDefaultWorkingSetCount/);
+  assert.match(groupMarkup, /customWorkoutCardMarkup\([\s\S]*?\{ groupPosition: index, format, panelFormat \}/);
+});
+
+test("upgrades an untouched legacy draft without overwriting entered sets", () => {
+  const normalize = sourceForFunction("normalizedSetType");
+  const upgrade = sourceForFunction("upgradeCustomWorkoutDraft");
+  const upgradeDraft = Function(
+    "warmUpSetType",
+    "workingSetType",
+    "warmUpSetNumberBase",
+    "customWorkoutDefaultWorkingSetCount",
+    "customWorkoutDraftVersion",
+    `${normalize}; ${upgrade}; return upgradeCustomWorkoutDraft;`
+  )("warm_up", "working", 1000, 3, 2);
+  const blankLegacy = upgradeDraft({
+    version: 1,
+    exercises: [{ sets: [{ label: "W", setType: "warm_up", weight: "", reps: "" }] }]
+  });
+  const enteredLegacy = upgradeDraft({
+    version: 1,
+    exercises: [{ sets: [
+      { label: "W", setType: "warm_up", weight: "", reps: "" },
+      { label: "1", setType: "working", weight: "40", reps: "8" }
+    ] }]
+  });
+
+  assert.equal(blankLegacy.version, 2);
+  assert.equal(blankLegacy.exercises[0].sets.length, 4);
+  assert.equal(blankLegacy.exercises[0].sets.filter((set) => set.setType === "working").length, 3);
+  assert.equal(enteredLegacy.exercises[0].sets.length, 2);
+});
+
 test("renders a distinct bottom add card that stays out of exercise counts", () => {
   const markup = sourceForFunction("customWorkoutCarouselGroupMarkup");
   const cards = sourceForFunction("customWorkoutCarouselCards");
