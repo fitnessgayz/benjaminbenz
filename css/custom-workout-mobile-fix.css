@@ -709,28 +709,42 @@
   .dashboard-page .custom-workout-carousel[data-carousel-enabled="true"] .workout-group-primary-action {
     display: grid;
     gap: 8px;
-    padding: 10px 12px 0;
+    width: 100%;
+    min-width: 0;
+    padding: 10px 0 0;
+    box-sizing: border-box;
+  }
+
+  .dashboard-page .custom-workout-carousel[data-carousel-enabled="true"] .workout-group-primary-action[hidden] {
+    display: none !important;
   }
 
   .dashboard-page .workout-group-primary-action [data-workout-group-log-set] {
     width: 100%;
-    min-height: 50px;
-    padding: 12px 14px;
-    border: 1px solid #caff31;
-    border-radius: 0;
+    min-width: 0;
+    min-height: 56px;
+    padding: 13px 14px;
+    border: 2px solid #111411;
+    border-radius: 8px;
     background: #caff31;
+    box-shadow: 0 5px 0 #111411;
     color: #111411;
     font: inherit;
     font-size: 15px;
     font-weight: 900;
     letter-spacing: .035em;
     text-transform: uppercase;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    cursor: pointer;
   }
 
   .dashboard-page .workout-group-primary-action [data-workout-group-log-set]:disabled {
     border-color: #c9ccc6;
     background: #e5e7e1;
+    box-shadow: none;
     color: #676b65;
+    cursor: default;
   }
 
   /* Option 1: mobile exercises use one full-width card in a lifted, swipeable deck. */

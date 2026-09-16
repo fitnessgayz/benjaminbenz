@@ -32,6 +32,94 @@ test("renders the same lifted deck shell for custom and assigned grouped workout
   assert.doesNotMatch(nextCardMarkup, /aria-hidden="true" hidden/);
 });
 
+test("renders the group log action inside each grouped exercise card", () => {
+  const logFields = sourceForFunction("exerciseLogFields");
+  const customCard = sourceForFunction("customWorkoutCardMarkup");
+  const assignedCard = sourceForFunction("exerciseCard");
+  const customCarousel = sourceForFunction("customWorkoutCarouselGroupMarkup");
+  const assignedCarousel = sourceForFunction("assignedWorkoutCarouselMarkup");
+
+  assert.match(
+    logFields,
+    /<\/div>\s*\$\{options\.groupActionSlot \? `[\s\S]*?data-workout-group-primary-action[\s\S]*?data-workout-group-log-set[\s\S]*?` : ""\}\s*<div class="exercise-notes/,
+  );
+  assert.match(customCard, /groupActionSlot: true/);
+  assert.match(assignedCard, /groupActionSlot: format !== "single"/);
+  assert.doesNotMatch(customCarousel, /data-workout-group-primary-action/);
+  assert.doesNotMatch(assignedCarousel, /data-workout-group-primary-action/);
+});
+
+test("keeps a dormant log-action slot when a straight custom card is regrouped", () => {
+  const customCard = sourceForFunction("customWorkoutCardMarkup");
+  const regroup = sourceForFunction("regroupCustomWorkoutCarousels");
+  const updateFormat = sourceForFunction("updateCustomWorkoutFormat");
+
+  assert.match(customCard, /groupActionSlot: true/);
+  assert.match(regroup, /existing\[groupIndex\]/);
+  assert.match(updateFormat, /syncCustomWorkoutCarousel\(panel, \{ activeIndex: 0/);
+  assert.match(sourceForFunction("syncCustomWorkoutCarousel"), /regroupCustomWorkoutCarousels\(panel\)/);
+});
+
+test("shows the log action only on the visible exercise that is next to save", () => {
+  const syncSource = sourceForFunction("syncWorkoutGroupPrimaryActions");
+  const syncActions = Function(
+    "groupTypeLabel",
+    `${syncSource}; return syncWorkoutGroupPrimaryActions;`
+  )((format) => format === "circuit" ? "Circuit" : "Superset");
+
+  function fakeCard() {
+    const button = { textContent: "", disabled: false };
+    const cue = { textContent: "" };
+    const action = {
+      hidden: true,
+      dataset: {},
+      classList: { toggle(name, value) { this[name] = value; } },
+      querySelector(selector) {
+        if (selector === "[data-workout-group-log-set]") return button;
+        if (selector === "[data-custom-workout-carousel-cue]") return cue;
+        return null;
+      }
+    };
+    return {
+      action,
+      button,
+      cue,
+      querySelector(selector) {
+        return selector === "[data-workout-group-primary-action]" ? action : null;
+      }
+    };
+  }
+
+  const cards = [fakeCard(), fakeCard()];
+  const progress = {
+    isComplete: false,
+    current: { index: 0 },
+    nextIndex: 1,
+    exercises: [{ code: "A1" }, { code: "A2" }]
+  };
+
+  syncActions(cards, progress, 0, true, "superset");
+  assert.equal(cards[0].action.hidden, false);
+  assert.equal(cards[0].button.textContent, "Log set · Next: A2");
+  assert.equal(cards[0].cue.textContent, "No rest until the full superset round is complete.");
+  assert.equal(cards[1].action.hidden, true);
+
+  syncActions(cards, progress, 1, true, "superset");
+  assert.equal(cards[0].action.hidden, true);
+  assert.equal(cards[1].action.hidden, true);
+
+  syncActions(cards, { ...progress, isComplete: true, current: null, nextIndex: -1 }, 1, true, "superset");
+  assert.equal(cards[1].action.hidden, false);
+  assert.equal(cards[1].button.textContent, "Superset complete ✓");
+  assert.equal(cards[1].button.disabled, true);
+});
+
+test("keeps the in-card group action full-width and overflow-safe on mobile", () => {
+  assert.match(mobileStyles, /\.workout-group-primary-action \{[\s\S]*?width: 100%;[\s\S]*?min-width: 0;[\s\S]*?padding: 10px 0 0;/);
+  assert.match(mobileStyles, /\.workout-group-primary-action\[hidden\] \{[\s\S]*?display: none !important;/);
+  assert.match(mobileStyles, /\[data-workout-group-log-set\] \{[\s\S]*?width: 100%;[\s\S]*?min-width: 0;[\s\S]*?white-space: normal;[\s\S]*?overflow-wrap: anywhere;/);
+});
+
 test("keeps grouped deck visuals separate from straight-set add permission", () => {
   const render = sourceForFunction("renderCustomWorkoutCarousel");
   const move = sourceForFunction("moveCustomWorkoutCarousel");

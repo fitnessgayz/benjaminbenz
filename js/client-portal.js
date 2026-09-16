@@ -4941,6 +4941,12 @@ function exerciseLogFields(exercise, workoutTitle, options = {}) {
           <button class="set-finished-button" type="button" data-finish-set${addsSupersetExercise ? " data-add-superset" : ""}>${escapeHtml(finishButtonLabel)}</button>
         </div>
       </div>
+      ${options.groupActionSlot ? `
+        <div class="workout-group-primary-action" data-workout-group-primary-action hidden>
+          <button type="button" data-workout-group-log-set></button>
+          <p class="custom-workout-carousel-cue" data-custom-workout-carousel-cue></p>
+        </div>
+      ` : ""}
       <div class="exercise-notes exercise-notes-disclosure">
         <button class="exercise-notes-toggle" type="button" data-exercise-notes-toggle aria-expanded="false" aria-controls="${notesContentId}">
           <span>Notes</span>
@@ -5125,7 +5131,8 @@ function exerciseCard(exercise, workoutTitle, isOpen = false, workoutFocus = "",
           showActions: false,
           suggestExerciseNames: true,
           setCount,
-          userManagedSets: clientAdded
+          userManagedSets: clientAdded,
+          groupActionSlot: format !== "single"
         })}
       </div>
     </article>
@@ -5186,10 +5193,6 @@ function assignedWorkoutCarouselMarkup(exercises, workoutTitle, workoutFocus, fo
         <button class="custom-workout-carousel-arrow" type="button" data-custom-workout-carousel-previous aria-label="Previous exercise">←</button>
         <div class="custom-workout-carousel-dots" data-custom-workout-carousel-dots aria-label="Choose exercise"></div>
         <button class="custom-workout-carousel-arrow" type="button" data-custom-workout-carousel-next aria-label="Next exercise">→</button>
-      </div>
-      <div class="workout-group-primary-action" data-workout-group-primary-action hidden>
-        <button type="button" data-workout-group-log-set></button>
-        <p class="custom-workout-carousel-cue" data-custom-workout-carousel-cue></p>
       </div>
     </section>
   `;
@@ -7499,6 +7502,9 @@ function customWorkoutCardMarkup(exercise, workoutTitle, index = 0, options = {}
           showDemo: false,
           setCount: customWorkoutDefaultWorkingSetCount,
           userManagedSets: true,
+          // Custom cards can be regrouped in place after they render, so every
+          // card keeps a dormant slot ready for Superset or Circuit mode.
+          groupActionSlot: true,
           finishButtonLabel: isFirstSupersetExercise
             ? "Add Superset"
             : (isSecondSupersetExercise ? "Superset Completed" : "Set Finished"),
@@ -7560,10 +7566,6 @@ function customWorkoutCarouselGroupMarkup(format, exercises, groupIndex = 0, sta
         <button class="custom-workout-carousel-arrow" type="button" data-custom-workout-carousel-previous aria-label="Previous exercise">←</button>
         <div class="custom-workout-carousel-dots" data-custom-workout-carousel-dots aria-label="Choose exercise"></div>
         <button class="custom-workout-carousel-arrow" type="button" data-custom-workout-carousel-next aria-label="Next exercise">→</button>
-      </div>
-      <div class="workout-group-primary-action" data-workout-group-primary-action hidden>
-        <button type="button" data-workout-group-log-set></button>
-        <p class="custom-workout-carousel-cue" data-custom-workout-carousel-cue></p>
       </div>
     </section>
   `;
@@ -7813,6 +7815,44 @@ function workoutCarouselDeckCue(progress, activeIndex, format) {
   };
 }
 
+function syncWorkoutGroupPrimaryActions(cards, progress, activeIndex, visible, format) {
+  const safeCards = Array.isArray(cards) ? cards : [];
+  const progressIndex = Number(progress?.current?.index);
+  const hasProgressIndex = Number.isInteger(progressIndex) && progressIndex >= 0 && progressIndex < safeCards.length;
+  const targetIndex = progress?.isComplete
+    ? activeIndex
+    : (hasProgressIndex ? progressIndex : activeIndex);
+  const nextCode = progress?.nextIndex >= 0 ? progress.exercises?.[progress.nextIndex]?.code : "";
+
+  safeCards.forEach((card, index) => {
+    const primaryAction = card.querySelector("[data-workout-group-primary-action]");
+    const logSetButton = primaryAction?.querySelector("[data-workout-group-log-set]");
+    const cue = primaryAction?.querySelector("[data-custom-workout-carousel-cue]");
+    const isCurrentVisibleCard = Boolean(visible && index === targetIndex && index === activeIndex);
+
+    if (!primaryAction) {
+      return;
+    }
+
+    primaryAction.hidden = !isCurrentVisibleCard;
+    primaryAction.dataset.workoutGroupActionIndex = String(index);
+    primaryAction.classList.toggle("is-complete", Boolean(progress?.isComplete));
+
+    if (cue) {
+      cue.textContent = progress?.isComplete
+        ? `${groupTypeLabel(format)} complete. All rounds are saved.`
+        : `No rest until the full ${groupTypeLabel(format).toLowerCase()} round is complete.`;
+    }
+
+    if (logSetButton) {
+      logSetButton.textContent = progress?.isComplete
+        ? `${groupTypeLabel(format)} complete ✓`
+        : nextCode ? `Log set · Next: ${nextCode}` : "Log set · Finish group";
+      logSetButton.disabled = Boolean(progress?.isComplete);
+    }
+  });
+}
+
 function renderCustomWorkoutCarousel(carousel) {
   const panel = carousel?.closest(".client-workout-panel-custom, .client-workout-panel-assigned");
   const cards = customWorkoutCarouselCards(carousel);
@@ -7835,10 +7875,7 @@ function renderCustomWorkoutCarousel(carousel) {
   const status = carousel?.querySelector("[data-custom-workout-carousel-status]");
   const controls = carousel?.querySelector("[data-custom-workout-carousel-controls]");
   const dots = carousel?.querySelector("[data-custom-workout-carousel-dots]");
-  const cue = carousel?.querySelector("[data-custom-workout-carousel-cue]");
   const progressHeader = carousel?.querySelector("[data-workout-group-progress]");
-  const primaryAction = carousel?.querySelector("[data-workout-group-primary-action]");
-  const logSetButton = carousel?.querySelector("[data-workout-group-log-set]");
   const newExerciseCard = carousel?.querySelector("[data-custom-workout-new-exercise]");
   const groupNextCard = carousel?.querySelector("[data-workout-group-next-card]");
 
@@ -7867,7 +7904,7 @@ function renderCustomWorkoutCarousel(carousel) {
   if (controls) controls.hidden = !enabled;
   if (status) status.hidden = !enabled;
   if (progressHeader) progressHeader.hidden = !groupProgressEnabled || groupDeckEnabled;
-  if (primaryAction) primaryAction.hidden = !groupProgressEnabled;
+  syncWorkoutGroupPrimaryActions(cards, progress, activeIndex, groupProgressEnabled, format);
   if (newExerciseCard) {
     const nextExerciseNumber = (panel?.querySelectorAll("[data-custom-exercise-card]").length || cards.length) + 1;
     const label = newExerciseCard.querySelector("[data-custom-workout-new-exercise-label]");
@@ -7922,18 +7959,6 @@ function renderCustomWorkoutCarousel(carousel) {
   }
   if (status) {
     status.innerHTML = `<strong>${escapeHtml(meta.title)}</strong><span>${escapeHtml(meta.count)}</span>`;
-  }
-  if (cue) {
-    cue.textContent = progress.isComplete
-      ? `${groupTypeLabel(format)} complete. All rounds are saved.`
-      : `No rest until the full ${groupTypeLabel(format).toLowerCase()} round is complete.`;
-  }
-  if (logSetButton) {
-    const nextCode = progress.nextIndex >= 0 ? progress.exercises[progress.nextIndex]?.code : "";
-    logSetButton.textContent = progress.isComplete
-      ? `${groupTypeLabel(format)} complete ✓`
-      : nextCode ? `Log set · Next: ${nextCode}` : "Log set · Finish group";
-    logSetButton.disabled = progress.isComplete;
   }
   if (dots) {
     dots.innerHTML = cards.map((card, index) => `
