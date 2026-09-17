@@ -132,9 +132,35 @@ test("renders the exercise key, compact round stepper, round rows, and grouped a
   );
 });
 
-test("requires valid grouped values while accepting zero for body-weight loads", () => {
+test("accepts skipped warm-ups and optional RIR while validating working reps", () => {
   const fieldMarkup = sourceForFunction("customWorkoutGroupedFieldMarkup");
   const validate = sourceForFunction("validateCustomWorkoutGroupedSection");
+  const validateSection = Function(
+    "customWorkoutGroupedStatus",
+    "warmUpSetType",
+    `${validate}; return validateCustomWorkoutGroupedSection;`,
+  )(() => null, "warm_up");
+  const input = (value) => ({
+    value,
+    invalid: false,
+    setAttribute(name) { if (name === "aria-invalid") this.invalid = true; },
+    removeAttribute(name) { if (name === "aria-invalid") this.invalid = false; },
+    focus() {},
+  });
+  const row = (setType, weight, reps, rir) => {
+    const fields = { weight: input(weight), reps: input(reps), rir: input(rir) };
+    return {
+      dataset: { customGroupedSetType: setType },
+      fields,
+      querySelector(selector) {
+        return fields[selector.match(/="([^"]+)"/)?.[1]] || null;
+      },
+    };
+  };
+  const section = (rows) => ({
+    querySelectorAll: () => rows,
+    closest: () => null,
+  });
 
   assert.match(fieldMarkup, /min="0"/);
   assert.match(fieldMarkup, /field === "rir" \? ' max="5"'/);
@@ -146,7 +172,23 @@ test("requires valid grouped values while accepting zero for body-weight loads",
   assert.match(validate, /< 0/);
   assert.match(validate, /<= 0/);
   assert.match(validate, /> 5/);
+  assert.match(validate, /rirRaw !== ""/);
   assert.doesNotMatch(validate, /field === "weight"[^\n]*<= 0/);
+
+  const skippedWarmUp = row("warm_up", "0", "0", "");
+  assert.equal(validateSection(section([skippedWarmUp]), { focus: false }).valid, true);
+  assert.equal(skippedWarmUp.fields.rir.invalid, false);
+
+  const workingSet = row("working", "0", "1", "");
+  assert.equal(validateSection(section([workingSet]), { focus: false }).valid, true);
+
+  const zeroRepWorkingSet = row("working", "0", "0", "");
+  assert.equal(validateSection(section([zeroRepWorkingSet]), { focus: false }).valid, false);
+  assert.equal(zeroRepWorkingSet.fields.reps.invalid, true);
+
+  const invalidRir = row("working", "0", "1", "6");
+  assert.equal(validateSection(section([invalidRir]), { focus: false }).valid, false);
+  assert.equal(invalidRir.fields.rir.invalid, true);
 });
 
 test("starts the persistent workout timer and rest timer after a successful round log", () => {

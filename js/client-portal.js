@@ -9021,12 +9021,16 @@ function validateCustomWorkoutGroupedSection(section, options = {}) {
     const weight = row.querySelector('[data-custom-grouped-field="weight"]');
     const reps = row.querySelector('[data-custom-grouped-field="reps"]');
     const rir = row.querySelector('[data-custom-grouped-field="rir"]');
+    const isWarmUp = row.dataset.customGroupedSetType === warmUpSetType;
+    const weightRaw = String(weight?.value || "").trim();
+    const repsRaw = String(reps?.value || "").trim();
+    const rirRaw = String(rir?.value || "").trim();
     const weightValue = Number(weight?.value);
     const repsValue = Number(reps?.value);
     const rirValue = Number(rir?.value);
-    const weightInvalid = String(weight?.value || "").trim() === "" || !Number.isFinite(weightValue) || weightValue < 0;
-    const repsInvalid = String(reps?.value || "").trim() === "" || !Number.isFinite(repsValue) || repsValue <= 0;
-    const rirInvalid = String(rir?.value || "").trim() === "" || !Number.isFinite(rirValue) || rirValue < 0 || rirValue > 5;
+    const weightInvalid = weightRaw === "" || !Number.isFinite(weightValue) || weightValue < 0;
+    const repsInvalid = repsRaw === "" || !Number.isFinite(repsValue) || (isWarmUp ? repsValue < 0 : repsValue <= 0);
+    const rirInvalid = rirRaw !== "" && (!Number.isFinite(rirValue) || rirValue < 0 || rirValue > 5);
     const weightValid = !weightInvalid;
     const repsValid = !repsInvalid;
     const rirValid = !rirInvalid;
@@ -9043,7 +9047,7 @@ function validateCustomWorkoutGroupedSection(section, options = {}) {
   });
 
   if (firstInvalid && status) {
-    status.textContent = "Enter weight (0 is allowed), reps above 0, and RIR from 0 to 5 for every exercise in this round.";
+    status.textContent = "Enter weight (0 is allowed) and reps (0 is allowed for warm-ups). Working reps must be above 0. RIR is optional and must be 0 to 5 when entered.";
   }
   if (firstInvalid && options.focus !== false) firstInvalid.focus();
 
