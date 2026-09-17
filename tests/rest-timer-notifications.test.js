@@ -405,7 +405,7 @@ test("client PWA opens at the dashboard and cache-busts notification assets", ()
   assert.match(dashboard, /href="\/client\.webmanifest"/);
   assert.match(dashboard, /css\/style\.css\?v=client-notification-settings-1/);
   assert.match(dashboard, /js\/web-notifications\.js\?v=notification-settings-1/);
-  assert.match(dashboard, /js\/client-portal\.js\?v=grouped-round-labels-1/);
+  assert.match(dashboard, /js\/client-portal\.js\?v=unified-workout-layout-1/);
 });
 
 test("Pages deployment includes the client manifest and timer service worker", () => {

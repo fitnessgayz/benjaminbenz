@@ -88,10 +88,10 @@ test("renders a distinct bottom add card that stays out of exercise counts", () 
   assert.doesNotMatch(cards, /data-custom-workout-new-exercise/);
 });
 
-test("enables the lifted deck for straight custom and grouped mobile workouts", () => {
+test("keeps straight custom workouts stacked while legacy decks remain isolated", () => {
   const render = sourceForFunction("renderCustomWorkoutCarousel");
 
-  assert.match(render, /const straightDeckEnabled = mobile && isCustomPanel && format === "single" && cards\.length > 1/);
+  assert.match(render, /const straightDeckEnabled = false/);
   assert.match(render, /const groupDeckEnabled = mobile && format !== "single" && cards\.length > 1/);
   assert.match(render, /const deckEnabled = straightDeckEnabled \|\| groupDeckEnabled/);
   assert.match(render, /const canAddExercise = straightDeckEnabled/);

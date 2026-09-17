@@ -57,5 +57,5 @@ test("keeps the completion sheet and share card mobile-safe", () => {
   assert.match(styles, /body\.client-dashboard-page \.workout-completion-share-heading > div[\s\S]*?flex: 1 1 auto[\s\S]*?min-width: 0/);
   assert.match(styles, /body\.client-dashboard-page \.workout-completion-share-heading :is\(small, strong\)[\s\S]*?overflow-wrap: normal !important/);
   assert.match(dashboard, /style\.css\?v=client-notification-settings-1/);
-  assert.match(dashboard, /client-portal\.js\?v=grouped-round-labels-1/);
+  assert.match(dashboard, /client-portal\.js\?v=unified-workout-layout-1/);
 });

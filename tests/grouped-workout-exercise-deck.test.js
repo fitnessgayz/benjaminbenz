@@ -15,21 +15,16 @@ function sourceForFunction(name) {
   return portal.slice(start, end >= 0 ? end : undefined);
 }
 
-test("renders the same lifted deck shell for custom and assigned grouped workouts", () => {
-  const customMarkup = sourceForFunction("customWorkoutCarouselGroupMarkup");
+test("renders assigned grouped workouts through the full-width round shell", () => {
+  const groupedMarkup = sourceForFunction("customWorkoutGroupedRoundCardMarkup");
   const assignedMarkup = sourceForFunction("assignedWorkoutCarouselMarkup");
-  const nextCardMarkup = sourceForFunction("workoutGroupDeckNextCardMarkup");
 
-  [customMarkup, assignedMarkup].forEach((markup) => {
-    assert.match(markup, /data-custom-workout-exercise-deck/);
-    assert.equal((markup.match(/custom-workout-deck-layer/g) || []).length, 4);
-    assert.match(markup, /workoutGroupDeckNextCardMarkup\(\)/);
-  });
-  assert.match(nextCardMarkup, /<button[\s\S]*?type="button"[\s\S]*?data-workout-group-next-card/);
-  assert.match(nextCardMarkup, /data-workout-group-next-card/);
-  assert.match(nextCardMarkup, /data-workout-group-next-label/);
-  assert.match(nextCardMarkup, /data-workout-group-next-name/);
-  assert.doesNotMatch(nextCardMarkup, /aria-hidden="true" hidden/);
+  assert.match(assignedMarkup, /customWorkoutGroupedRoundCardMarkup/);
+  assert.match(assignedMarkup, /source: "assigned"/);
+  assert.match(groupedMarkup, /data-custom-workout-grouped="true"/);
+  assert.match(groupedMarkup, /custom-workout-grouped-card/);
+  assert.match(groupedMarkup, /custom-workout-grouped-source/);
+  assert.doesNotMatch(assignedMarkup, /data-custom-workout-exercise-deck|workoutGroupDeckNextCardMarkup/);
 });
 
 test("renders the group log action inside each grouped exercise card", () => {
@@ -142,11 +137,11 @@ test("keeps the in-card group action full-width and overflow-safe on mobile", ()
   assert.match(mobileStyles, /\[data-workout-group-log-set\] \{[\s\S]*?width: 100%;[\s\S]*?min-width: 0;[\s\S]*?white-space: normal;[\s\S]*?overflow-wrap: anywhere;/);
 });
 
-test("keeps grouped deck visuals separate from straight-set add permission", () => {
+test("keeps straight-set cards out of the lifted deck", () => {
   const render = sourceForFunction("renderCustomWorkoutCarousel");
   const move = sourceForFunction("moveCustomWorkoutCarousel");
 
-  assert.match(render, /const straightDeckEnabled = mobile && isCustomPanel && format === "single"/);
+  assert.match(render, /const straightDeckEnabled = false/);
   assert.match(render, /const groupDeckEnabled = mobile && format !== "single"/);
   assert.match(render, /dataset\.customWorkoutDeck = deckEnabled/);
   assert.match(render, /dataset\.customWorkoutCanAddExercise = canAddExercise/);

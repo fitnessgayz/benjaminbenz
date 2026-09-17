@@ -1314,6 +1314,335 @@
   }
 }
 
+/* Straight-set workouts keep their established autosave, notes, history, and
+   rest-timer controls while sharing the full-width grouped-workout language. */
+.dashboard-page [data-workout-logger-layout="unified"] {
+  --unified-ink: #111411;
+  --unified-muted: #676b65;
+  --unified-line: #d7d9d2;
+  --unified-paper: #fff;
+  --unified-cream: #f8f8f3;
+  --unified-lime: var(--lime, #d7ff3f);
+  --unified-blue: var(--blue, #2878ff);
+  --unified-gold: #d5a239;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  color: var(--unified-ink);
+  color-scheme: light;
+}
+
+.dashboard-page [data-workout-logger-layout="unified"],
+.dashboard-page [data-workout-logger-layout="unified"] *,
+.dashboard-page [data-workout-logger-layout="unified"] *::before,
+.dashboard-page [data-workout-logger-layout="unified"] *::after {
+  box-sizing: border-box;
+}
+
+.dashboard-page [data-workout-logger-layout="unified"] :is(
+  .custom-workout-carousel-heading,
+  .custom-workout-carousel-footer,
+  .custom-workout-deck-layer,
+  .custom-workout-group-next-card,
+  .custom-workout-new-exercise-card,
+  .workout-group-progress,
+  .workout-group-primary-action
+) {
+  display: none !important;
+}
+
+.dashboard-page [data-workout-logger-layout="unified"] :is(
+  .custom-workout-exercise-deck,
+  .custom-workout-list
+) {
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  padding: 0 !important;
+  overflow: visible !important;
+  transform: none !important;
+}
+
+.dashboard-page [data-workout-logger-layout="unified"] .custom-workout-card {
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+  border: 1px solid var(--unified-line) !important;
+  border-radius: 20px !important;
+  background: var(--unified-paper) !important;
+  box-shadow: 0 12px 28px rgba(17, 20, 17, .09) !important;
+  color: var(--unified-ink) !important;
+  transform: none !important;
+}
+
+.dashboard-page [data-workout-logger-layout="unified"] .custom-workout-card-summary {
+  min-height: 82px;
+  padding: 14px 104px 14px 16px !important;
+  border-bottom: 1px solid var(--unified-line) !important;
+  background: var(--unified-cream) !important;
+}
+
+.dashboard-page [data-workout-logger-layout="unified"] .custom-workout-card-actions {
+  top: 14px;
+  right: 12px;
+  gap: 6px;
+}
+
+.dashboard-page [data-workout-logger-layout="unified"] .custom-workout-card-actions :is(
+  .custom-workout-delete-icon,
+  .custom-workout-card-toggle
+) {
+  width: 44px !important;
+  min-width: 44px !important;
+  height: 44px !important;
+  min-height: 44px !important;
+  border-radius: 50% !important;
+}
+
+.dashboard-page [data-workout-logger-layout="unified"] .custom-workout-collapsed-name {
+  color: var(--unified-ink) !important;
+  font-size: clamp(1.2rem, 5.8vw, 1.75rem) !important;
+  font-style: italic !important;
+  font-weight: 950 !important;
+  line-height: 1.05 !important;
+  text-transform: uppercase !important;
+}
+
+.dashboard-page [data-workout-logger-layout="unified"] .custom-workout-editable-title input {
+  min-height: 48px;
+  border: 1px solid var(--unified-ink) !important;
+  border-radius: 11px !important;
+  background: var(--unified-paper) !important;
+  color: var(--unified-ink) !important;
+}
+
+.dashboard-page [data-workout-logger-layout="unified"] .custom-workout-detail {
+  padding: 0 !important;
+  background: var(--unified-paper) !important;
+  color: var(--unified-ink) !important;
+}
+
+.dashboard-page [data-workout-logger-layout="unified"] .set-table {
+  display: grid;
+  gap: 0;
+  padding: 0 !important;
+  border: 0 !important;
+  background: var(--unified-paper) !important;
+}
+
+.dashboard-page [data-workout-logger-layout="unified"] .set-header {
+  display: none !important;
+}
+
+.dashboard-page [data-workout-logger-layout="unified"] [data-set-rows] {
+  display: grid;
+  gap: 0;
+}
+
+.dashboard-page [data-workout-logger-layout="unified"] .set-row {
+  display: grid !important;
+  grid-template-columns: 44px repeat(3, minmax(0, 1fr)) 44px !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  padding: 10px 10px 12px 7px !important;
+  align-items: end !important;
+  gap: 5px !important;
+  border: 0 !important;
+  border-top: 1px solid var(--unified-line) !important;
+  border-left: 5px solid var(--unified-blue) !important;
+  background: var(--unified-paper) !important;
+}
+
+.dashboard-page [data-workout-logger-layout="unified"] .set-row.is-warm-up {
+  border-left-color: var(--unified-gold) !important;
+  background: #fffcf1 !important;
+}
+
+.dashboard-page [data-workout-logger-layout="unified"] .set-row :is(
+  .set-label-field,
+  .set-input-field,
+  .set-rir-button
+) {
+  display: grid !important;
+  grid-template-rows: 18px 48px;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  align-items: end;
+  gap: 3px;
+  border: 0 !important;
+  background: transparent !important;
+}
+
+.dashboard-page [data-workout-logger-layout="unified"] .set-row :is(
+  .set-label-field em,
+  .set-input-field em,
+  .set-rir-button span
+) {
+  position: static !important;
+  display: block !important;
+  width: auto !important;
+  height: auto !important;
+  padding: 0 !important;
+  overflow: visible !important;
+  clip: auto !important;
+  color: var(--unified-muted) !important;
+  font-size: .56rem !important;
+  font-style: normal !important;
+  font-weight: 900 !important;
+  letter-spacing: .025em !important;
+  line-height: 1 !important;
+  text-align: center !important;
+  text-transform: uppercase !important;
+  white-space: nowrap !important;
+}
+
+.dashboard-page [data-workout-logger-layout="unified"] .set-row :is(
+  .set-label-field input,
+  .set-input-field input,
+  .set-rir-button strong
+) {
+  display: grid !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  min-height: 48px !important;
+  margin: 0 !important;
+  padding: 6px 2px !important;
+  place-items: center;
+  border: 1px solid var(--unified-line) !important;
+  border-radius: 11px !important;
+  background: var(--unified-cream) !important;
+  color: var(--unified-ink) !important;
+  font-size: 16px !important;
+  font-style: normal !important;
+  font-variant-numeric: tabular-nums;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+  text-align: center !important;
+}
+
+.dashboard-page [data-workout-logger-layout="unified"] .set-row .set-label-field input {
+  border-color: #9dbd24 !important;
+  background: #fbffe9 !important;
+  color: #486000 !important;
+  font-size: .78rem !important;
+}
+
+.dashboard-page [data-workout-logger-layout="unified"] .set-row.is-warm-up .set-label-field input {
+  border-color: #c7932b !important;
+  background: #fffaf0 !important;
+  color: #895c00 !important;
+}
+
+.dashboard-page [data-workout-logger-layout="unified"] .set-rir-button {
+  height: auto !important;
+  min-height: 0 !important;
+}
+
+.dashboard-page [data-workout-logger-layout="unified"] .set-rir-button strong {
+  align-content: center;
+}
+
+.dashboard-page [data-workout-logger-layout="unified"] .set-complete-button {
+  display: grid !important;
+  width: 44px !important;
+  min-width: 44px !important;
+  height: 48px !important;
+  min-height: 48px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  place-items: center;
+  border: 1px solid var(--unified-ink) !important;
+  border-radius: 11px !important;
+  background: var(--unified-lime) !important;
+  color: var(--unified-ink) !important;
+  font-size: 1rem !important;
+}
+
+.dashboard-page [data-workout-logger-layout="unified"] .set-row.is-complete {
+  background: #f2faef !important;
+}
+
+.dashboard-page [data-workout-logger-layout="unified"] .set-row.is-complete .set-complete-button {
+  border-color: #16852a !important;
+  background: #e6f8e4 !important;
+  color: #126f24 !important;
+}
+
+.dashboard-page [data-workout-logger-layout="unified"] .set-table-actions {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  padding: 14px !important;
+  gap: 8px !important;
+  border-top: 1px solid var(--unified-line);
+  background: var(--unified-cream) !important;
+}
+
+.dashboard-page [data-workout-logger-layout="unified"] .set-table-actions button {
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 48px !important;
+  padding: 10px 8px !important;
+  border-radius: 11px !important;
+  font-size: .72rem !important;
+  font-weight: 950 !important;
+  line-height: 1.15 !important;
+  overflow-wrap: anywhere;
+  text-transform: uppercase;
+}
+
+.dashboard-page [data-workout-logger-layout="unified"] .set-table-actions .set-finished-button {
+  grid-column: 1 / -1;
+  border-color: var(--unified-ink) !important;
+  background: var(--unified-ink) !important;
+  color: #fff !important;
+}
+
+.dashboard-page [data-workout-logger-layout="unified"] :is(
+  .custom-workout-inline-group-options,
+  .exercise-notes,
+  .previous-weights,
+  [data-log-status]
+) {
+  margin-inline: 14px !important;
+}
+
+.dashboard-page [data-workout-logger-layout="unified"] .exercise-notes {
+  width: calc(100% - 28px) !important;
+  max-width: calc(100% - 28px) !important;
+  margin-top: 14px !important;
+  border: 1px solid var(--unified-line) !important;
+  border-radius: 12px !important;
+  background: var(--unified-paper) !important;
+}
+
+.dashboard-page [data-workout-logger-layout="unified"] .previous-weights {
+  padding-block: 12px 16px !important;
+  color: var(--unified-muted) !important;
+}
+
+@media (max-width: 360px) {
+  .dashboard-page [data-workout-logger-layout="unified"] .set-row {
+    grid-template-columns: 38px repeat(3, minmax(0, 1fr)) 40px !important;
+    padding-inline: 5px 7px !important;
+    gap: 4px !important;
+  }
+
+  .dashboard-page [data-workout-logger-layout="unified"] .set-complete-button {
+    width: 40px !important;
+    min-width: 40px !important;
+  }
+}
+
 /* Prevent accidental iOS focus and double-tap zoom on workout controls. */
 @media (max-width: 760px) {
   .dashboard-page :where(input, select, textarea),

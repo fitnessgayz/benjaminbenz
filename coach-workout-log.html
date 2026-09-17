@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=coach-session-finish-warmup-1" />
+  <link rel="stylesheet" href="css/style.css?v=coach-session-grouped-layout-1" />
 </head>
 <body class="dashboard-page coach-workout-log-page">
   <header class="site-header dashboard-header">
@@ -90,13 +90,8 @@
           </div>
         </div>
         <div class="coach-workout-carousel" id="coach-workout-carousel" data-coach-workout-format="single">
-          <div class="coach-workout-carousel-status" id="coach-workout-carousel-status" aria-live="polite" hidden></div>
           <div class="coach-workout-exercise-list" id="coach-workout-exercises" aria-live="polite"></div>
-          <div class="coach-workout-carousel-controls" id="coach-workout-carousel-controls" hidden>
-            <button type="button" data-coach-workout-previous aria-label="Previous exercise">←</button>
-            <div id="coach-workout-carousel-dots" aria-label="Choose exercise"></div>
-            <button type="button" data-coach-workout-next aria-label="Next exercise">→</button>
-          </div>
+          <div class="coach-workout-grouped-view" id="coach-workout-grouped-view" aria-live="polite" hidden></div>
         </div>
         <button class="button button-ghost coach-workout-add-exercise" type="button" id="coach-workout-add-exercise">Add exercise</button>
       </section>
@@ -116,6 +111,6 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js?v=client-session-link-1"></script>
-  <script src="js/coach-workout-log.js?v=coach-session-finish-warmup-1"></script>
+  <script src="js/coach-workout-log.js?v=coach-session-grouped-layout-1"></script>
 </body>
 </html>

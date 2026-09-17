@@ -144,7 +144,7 @@ test("requires valid grouped values while accepting zero for body-weight loads",
   assert.doesNotMatch(validate, /field === "weight"[^\n]*<= 0/);
 });
 
-test("starts the persistent workout timer only after the first successful round log", () => {
+test("starts the persistent workout timer only for custom grouped rounds", () => {
   const logRound = sourceForFunction("logCustomWorkoutGroupedRound");
   const readTimer = sourceForFunction("readWorkoutElapsedTimerState");
   const startTimer = sourceForFunction("startWorkoutElapsedTimer");
@@ -153,8 +153,9 @@ test("starts the persistent workout timer only after the first successful round 
   assert.match(logRound, /validateCustomWorkoutGroupedSection/);
   assert.match(logRound, /saveTrainingLogRows/);
   assert.match(logRound, /if \(!workoutElapsedTimerState\)/);
+  assert.match(logRound, /if \(source === "custom"\)/);
   assert.match(logRound, /startWorkoutElapsedTimer\([\s\S]*?startedAfterRound: roundNumber/);
-  assert.doesNotMatch(logRound, /startRestTimer|openRestTimer|restTimerState/);
+  assert.match(logRound, /if \(source === "assigned"[\s\S]*?openRestTimer\(button\)/);
   assert.match(readTimer, /startedAfterRound/);
   assert.match(startTimer, /context\.startedAfterRound/);
   assert.match(renderTimer, /renderCustomWorkoutGroupedTimerPanels\(\)/);
@@ -202,7 +203,7 @@ test("starts a fresh custom session with a unique storage title after completion
   assert.match(finishSave, /startFreshGroupedCustomWorkout\(groupedRestart\)/);
 });
 
-test("keeps the grouped round renderer custom-only", () => {
+test("shares the grouped round renderer with assigned supersets and circuits", () => {
   const customGroup = sourceForFunction("customWorkoutCarouselGroupMarkup");
   const customRender = sourceForFunction("renderCustomWorkoutCarousel");
   const assignedGroup = sourceForFunction("assignedWorkoutCarouselMarkup");
@@ -210,7 +211,10 @@ test("keeps the grouped round renderer custom-only", () => {
   assert.match(customGroup, /customWorkoutGroupedRoundCardMarkup/);
   assert.match(customRender, /carousel\.dataset\.customWorkoutGrouped === "true"/);
   assert.match(customRender, /renderCustomWorkoutGroupedCard\(carousel\)/);
-  assert.doesNotMatch(assignedGroup, /customWorkoutGroupedRoundCardMarkup|data-custom-workout-grouped/);
+  assert.match(assignedGroup, /customWorkoutGroupedRoundCardMarkup/);
+  assert.match(assignedGroup, /source: "assigned"/);
+  assert.match(assignedGroup, /normalizeRounds: false/);
+  assert.match(assignedGroup, /showSessionControls: false/);
   assert.match(mobileStyles, /\[data-custom-workout-grouped="true"\]/);
 });
 
@@ -219,7 +223,7 @@ test("shows the grouped session timer and finish action on the last group only",
   const initialGroups = sourceForFunction("customWorkoutCarouselMarkup");
   const regroup = sourceForFunction("regroupCustomWorkoutCarousels");
 
-  assert.match(groupedMarkup, /const showSessionControls = options\.isLastGroup !== false/);
+  assert.match(groupedMarkup, /source === "custom" && options\.isLastGroup !== false/);
   assert.match(groupedMarkup, /\$\{showSessionControls \? `[\s\S]*?data-custom-grouped-timer[\s\S]*?` : ""\}/);
   assert.match(
     groupedMarkup,
@@ -374,11 +378,16 @@ test("validates exercise names in every grouped carousel before opening Finish",
 
 test("keys grouped timer rendering, conflicts, and start-resume behavior by title and date", () => {
   const renderTimer = sourceForFunction("renderCustomWorkoutGroupedTimerPanels");
+  const title = sourceForFunction("groupedWorkoutTitle");
+  const date = sourceForFunction("groupedWorkoutDate");
   const timerConflict = sourceForFunction("customWorkoutGroupedTimerConflict");
   const interactions = sourceForFunction("handleWorkoutInteractions");
 
-  assert.match(renderTimer, /const workoutTitle = String\(panel\?\.dataset\.customWorkoutTitle/);
-  assert.match(renderTimer, /const workoutDate = panel\?\.querySelector\("\[data-workout-date\]"\)\?\.value \|\| todayDate\(\)/);
+  assert.match(title, /firstLog\?\.dataset\.workoutTitle/);
+  assert.match(title, /panel\?\.querySelector\("\.panel-heading h2"\)/);
+  assert.match(date, /panel\?\.querySelector\("\[data-workout-date\]"\)/);
+  assert.match(renderTimer, /const workoutTitle = groupedWorkoutTitle\(carousel\)/);
+  assert.match(renderTimer, /const workoutDate = groupedWorkoutDate\(carousel\)/);
   assert.match(
     renderTimer,
     /workoutTitle === String\(workoutElapsedTimerState\.workoutTitle \|\| ""\)\.trim\(\) &&[\s\S]*?workoutDate === String\(workoutElapsedTimerState\.workoutDate \|\| ""\)/,
