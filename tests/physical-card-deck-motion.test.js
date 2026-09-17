@@ -38,7 +38,7 @@ test("live pages cache-bust every updated deck asset", () => {
   assert.match(dashboard, /css\/style\.css\?v=client-notification-settings-1/);
   assert.match(dashboard, /css\/custom-workout-mobile-fix\.css\?v=grouped-round-logger-1/);
   assert.match(dashboard, /js\/script\.js\?v=physical-card-decks-1/);
-  assert.match(dashboard, /js\/client-portal\.js\?v=client-notification-settings-1/);
+  assert.match(dashboard, /js\/client-portal\.js\?v=grouped-round-labels-1/);
   assert.match(homepage, /css\/style\.css\?v=physical-card-decks-1/);
   assert.match(homepage, /js\/script\.js\?v=physical-card-decks-1/);
 });

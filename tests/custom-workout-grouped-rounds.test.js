@@ -109,6 +109,13 @@ test("renders the exercise key, warm-up rows, round rows, and grouped actions", 
   assert.match(sections, /<h4>Warm-up<\/h4>/);
   assert.match(sections, /Excluded from working volume/);
   assert.match(sections, /<h4>Round \$\{roundNumber\}<\/h4>/);
+  assert.match(sections, /const columnLabelsMarkup = `[\s\S]*?<span>Weight<\/span><span>Reps<\/span><span>RIR<\/span>/);
+  assert.equal(
+    (sections.match(/\$\{columnLabelsMarkup\}/g) || []).length,
+    2,
+    "Column labels should render in the warm-up and every generated round",
+  );
+  assert.doesNotMatch(groupedMarkup, /custom-workout-grouped-columns/);
   assert.match(sections, /data-custom-grouped-log-round="\$\{roundNumber\}"/);
   assert.match(sections, />\$\{logged \? `✓ Round \$\{roundNumber\} logged` : "Log round"\}<\/button>/);
   assert.match(rowMarkup, /data-custom-grouped-set-toggle/);

@@ -8279,9 +8279,6 @@ function customWorkoutGroupedRoundCardMarkup(format, exercises, groupIndex = 0, 
           <p class="custom-workout-grouped-progress" data-custom-grouped-progress aria-live="polite">0 / 0 complete</p>
         </header>
         <div class="custom-workout-grouped-exercise-key" data-custom-grouped-exercise-key role="list" aria-label="Exercises in this group"></div>
-        <div class="custom-workout-grouped-columns" aria-hidden="true">
-          <span>Set</span><span>Weight</span><span>Reps</span><span>RIR</span>
-        </div>
         <div data-custom-grouped-sections></div>
         ${showSessionControls ? `
           <div class="custom-workout-grouped-timer" data-custom-grouped-timer role="timer" aria-label="Workout timer" hidden>
@@ -8620,6 +8617,11 @@ function syncCustomWorkoutGroupedAccessibleNames(carousel, exerciseIndex, exerci
 function customWorkoutGroupedSectionsMarkup(carousel) {
   const logElements = customWorkoutGroupedLogElements(carousel);
   const warmUps = [];
+  const columnLabelsMarkup = `
+    <div class="custom-workout-grouped-columns" aria-hidden="true">
+      <span>Set</span><span>Weight</span><span>Reps</span><span>RIR</span>
+    </div>
+  `;
 
   logElements.forEach((logElement, exerciseIndex) => {
     const exerciseName = currentExerciseLabel(logElement) || `Exercise ${exerciseIndex + 1}`;
@@ -8634,6 +8636,7 @@ function customWorkoutGroupedSectionsMarkup(carousel) {
         <h4>Warm-up</h4>
         <p>Excluded from working volume</p>
       </header>
+      ${columnLabelsMarkup}
       ${warmUps.map((item, index) => customWorkoutGroupedSetRowMarkup(
         item.row,
         `W${index + 1}`,
@@ -8661,6 +8664,7 @@ function customWorkoutGroupedSectionsMarkup(carousel) {
           <h4>Round ${roundNumber}</h4>
           <p>${escapeHtml(codes.join(" + "))}</p>
         </header>
+        ${columnLabelsMarkup}
         ${rows.map((item) => customWorkoutGroupedSetRowMarkup(
           item.row,
           customWorkoutGroupedRoundCode(roundNumber, item.exerciseIndex),
