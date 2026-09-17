@@ -23,7 +23,7 @@ const coachPreferenceKeys = [
   "client_inactivity"
 ];
 
-test("keeps Session Logger first and adds a coach Notifications destination", () => {
+test("keeps Session Logger first and adds a coach Settings destination", () => {
   const navigationStart = adminHtml.indexOf('id="coach-admin-sidebar-nav"');
   const navigationEnd = adminHtml.indexOf("</nav>", navigationStart);
   const navigation = adminHtml.slice(navigationStart, navigationEnd);
@@ -32,18 +32,26 @@ test("keeps Session Logger first and adds a coach Notifications destination", ()
 
   assert.ok(sessionLogger >= 0);
   assert.ok(sessionLogger < firstPanelTab);
-  assert.match(navigation, /data-admin-tab="notifications"[^>]*aria-label="Notifications"/);
+  assert.match(navigation, /data-admin-tab="notifications"[^>]*aria-label="Settings"/);
+  assert.match(navigation, /admin-nav-settings-icon/);
+  assert.match(navigation, /<span class="admin-nav-label">Settings<\/span>/);
   assert.match(navigation, /data-web-notification-unread/);
 });
 
-test("coach notification panel exposes push controls and an accessible inbox", () => {
-  assert.match(adminHtml, /data-admin-panel="notifications"/);
-  assert.match(adminHtml, /data-web-notification-enable/);
-  assert.match(adminHtml, /data-web-notification-test[^>]*disabled/);
-  assert.match(adminHtml, /data-web-notification-status[^>]*role="status"[^>]*aria-live="polite"/);
-  assert.match(adminHtml, /data-web-notification-list[^>]*aria-live="polite"/);
-  assert.match(adminHtml, /data-web-notification-empty/);
-  assert.match(adminHtml, /data-web-notification-mark-all[^>]*hidden/);
+test("Settings panel keeps every notification feature together", () => {
+  const panelStart = adminHtml.indexOf('data-admin-panel="notifications"');
+  const panelEnd = adminHtml.indexOf("</section>", panelStart);
+  const settingsPanel = adminHtml.slice(panelStart, panelEnd);
+
+  assert.ok(panelStart >= 0);
+  assert.match(settingsPanel, /<p class="kicker">Settings<\/p>/);
+  assert.match(settingsPanel, /<h2 id="coach-notification-title">Notification settings<\/h2>/);
+  assert.match(settingsPanel, /data-web-notification-enable/);
+  assert.match(settingsPanel, /data-web-notification-test[^>]*disabled/);
+  assert.match(settingsPanel, /data-web-notification-status[^>]*role="status"[^>]*aria-live="polite"/);
+  assert.match(settingsPanel, /data-web-notification-list[^>]*aria-live="polite"/);
+  assert.match(settingsPanel, /data-web-notification-empty/);
+  assert.match(settingsPanel, /data-web-notification-mark-all[^>]*hidden/);
   assert.match(adminHtml, /src="js\/web-notifications\.js\?v=coach-workout-alerts-1"[\s\S]*src="js\/coach-admin\.js\?v=coach-home-dashboard-1"/);
 });
 
