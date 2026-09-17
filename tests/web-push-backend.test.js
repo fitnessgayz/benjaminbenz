@@ -20,6 +20,10 @@ const coachWorkoutMigration = fs.readFileSync(
   path.join(root, "supabase/migrations/20260917160557_enable_coach_workout_completion_notifications.sql"),
   "utf8"
 );
+const personalizedWorkoutMigration = fs.readFileSync(
+  path.join(root, "supabase/migrations/20260917205457_personalize_coach_workout_notifications.sql"),
+  "utf8"
+);
 const config = fs.readFileSync(path.join(root, "supabase/config.toml"), "utf8");
 
 test("web-push tables use explicit RLS, grants, and account-safe endpoint ownership", () => {
@@ -70,12 +74,31 @@ test("deployed push backend supports authenticated setup, tests, and coach worko
   assert.match(deployedEdgeFunction, /admin\.auth\.getUser\(token\)/);
   assert.match(deployedEdgeFunction, /from\("fwb_web_push_subscriptions"\)/);
   assert.match(deployedEdgeFunction, /web_dedupe_key:\s*`web-push-test:/);
-  assert.match(deployedEdgeFunction, /body:\s*"Open FWB to view your update\."/);
-  assert.match(deployedEdgeFunction, /title:\s*safePushTitle\(category\)/);
+  assert.match(deployedEdgeFunction, /return "Open FWB to view your update\."/);
+  assert.match(deployedEdgeFunction, /title:\s*safePushTitle\(category, notification\)/);
+  assert.match(deployedEdgeFunction, /body:\s*safePushBody\(category, notification\)/);
   assert.doesNotMatch(deployedEdgeFunction, /title:\s*notification\.title/);
   assert.match(deployedEdgeFunction, /requireMutation\([\s\S]*?Could not finalize push delivery/);
   assert.match(deployedEdgeFunction, /Could not schedule a push retry/);
   assert.match(coachWorkoutMigration, /workout_completed/);
   assert.match(coachWorkoutMigration, /client_workout_completed/);
   assert.match(coachWorkoutMigration, /push_enabled = true/);
+});
+
+test("coach workout alerts name the client and identify the completed workout", () => {
+  assert.match(personalizedWorkoutMigration, /from public\.client_programs as program/);
+  assert.match(personalizedWorkoutMigration, /lower\(btrim\(program\.client_email\)\) = lower\(btrim\(new\.client_email\)\)/);
+  assert.match(personalizedWorkoutMigration, /client_label \|\| ' completed a workout'/);
+  assert.match(personalizedWorkoutMigration, /workout_label \|\| ' is ready to review\.'/);
+  assert.match(personalizedWorkoutMigration, /create or replace function fwb_private\.notify_workout\(\)/);
+  assert.match(personalizedWorkoutMigration, /perform fwb_private\.emit\(/);
+  assert.match(personalizedWorkoutMigration, /revoke all on function fwb_private\.notify_workout\(\) from public, anon, authenticated/);
+
+  assert.match(edgeFunction, /notification\.recipient_role === "coach" && notification\.kind === "workout_completed"/);
+  assert.match(edgeFunction, /safeTitle \|\| "Client workout completed"/);
+  assert.match(edgeFunction, /safeBody \|\| "Open Coach Admin to review the completed workout log\."/);
+  assert.match(deployedEdgeFunction, /category === "workout_completed"/);
+  assert.match(deployedEdgeFunction, /safeNotificationText\(notification\.title, 160\)/);
+  assert.match(deployedEdgeFunction, /safeNotificationText\(notification\.body, 240\)/);
+  assert.doesNotMatch(deployedEdgeFunction, /title:\s*notification\.title/);
 });

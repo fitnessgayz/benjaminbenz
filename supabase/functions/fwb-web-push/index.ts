@@ -76,7 +76,15 @@ export function quietNow(settings: Record<string, unknown>, now = new Date()) {
   return start < end ? time >= start && time < end : time >= start || time < end;
 }
 
-function safePushTitle(category: string) {
+function safeNotificationText(value: unknown, maxLength: number) {
+  return String(value || "").replace(/\s+/g, " ").trim().slice(0, maxLength);
+}
+
+function safePushTitle(category: string, notification: Record<string, unknown> = {}) {
+  if (category === "workout_completed") {
+    return safeNotificationText(notification.title, 160) || "Client workout completed";
+  }
+
   const titles: Record<string, string> = {
     workout_completed: "Client workout completed",
     check_in_submitted: "Client check-in submitted",
@@ -91,6 +99,15 @@ function safePushTitle(category: string) {
   };
 
   return titles[category] || "FWB notification";
+}
+
+function safePushBody(category: string, notification: Record<string, unknown> = {}) {
+  if (category === "workout_completed") {
+    return safeNotificationText(notification.body, 240) ||
+      "Open Coach Admin to review the completed workout log.";
+  }
+
+  return "Open FWB to view your update.";
 }
 
 async function requireMutation(
@@ -243,8 +260,8 @@ Deno.serve(async (request) => {
               keys: { p256dh: subscription.p256dh, auth: subscription.auth }
             },
             JSON.stringify({
-              title: safePushTitle(category),
-              body: "Open FWB to view your update.",
+              title: safePushTitle(category, notification),
+              body: safePushBody(category, notification),
               tag: `fwb-${notification.id}`,
               data: { url: notification.web_url || "/client-dashboard.html?notifications=1" }
             }),

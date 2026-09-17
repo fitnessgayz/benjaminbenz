@@ -216,6 +216,22 @@ function preferenceColumn(notification: NotificationRow) {
 }
 
 function pushCopy(notification: NotificationRow) {
+  if (notification.recipient_role === "coach" && notification.kind === "workout_completed") {
+    const safeTitle = String(notification.title || "")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 160);
+    const safeBody = String(notification.body || "")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 240);
+
+    return {
+      title: safeTitle || "Client workout completed",
+      body: safeBody || "Open Coach Admin to review the completed workout log."
+    };
+  }
+
   const copy: Record<string, { title: string; body: string }> = {
     "client:coach_reply": {
       title: "New coaching update",
