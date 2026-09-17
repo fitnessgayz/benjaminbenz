@@ -30,18 +30,18 @@ test("scopes the client navigation styles and cache-busts dashboard assets", () 
   assert.match(dashboardHtml, /href="css\/style\.css\?v=[^"\s]+"/);
   assert.match(dashboardHtml, /src="js\/client-portal\.js\?v=[^"\s]+"/);
   assert.match(styleSource, /body\.client-dashboard-page\s*\{[^}]*padding-bottom:\s*0;/s);
-  assert.match(dashboardHtml, /css\/style\.css\?v=custom-workout-reset-2/);
-  assert.match(dashboardHtml, /js\/client-portal\.js\?v=grouped-round-logger-1/);
+  assert.match(dashboardHtml, /css\/style\.css\?v=client-notification-settings-1/);
+  assert.match(dashboardHtml, /js\/client-portal\.js\?v=client-notification-settings-1/);
 });
 
-test("renders eight labeled client destinations in order with current-page semantics", () => {
+test("renders nine labeled client destinations in order with current-page semantics", () => {
   const navStart = dashboardHtml.indexOf('<nav class="client-dashboard-tabs"');
   const navEnd = dashboardHtml.indexOf("</nav>", navStart);
   const navMarkup = dashboardHtml.slice(navStart, navEnd);
   const buttons = [...navMarkup.matchAll(/<button\b([^>]*data-client-dashboard-tab="([^"]+)"[^>]*)>([\s\S]*?)<\/button>/g)];
 
   assert.ok(navStart >= 0);
-  assert.equal(buttons.length, 8);
+  assert.equal(buttons.length, 9);
   assert.deepEqual(buttons.map((match) => match[2]), [
     "home",
     "workouts",
@@ -50,7 +50,8 @@ test("renders eight labeled client destinations in order with current-page seman
     "stats",
     "nutrition",
     "questionnaire",
-    "sessions"
+    "sessions",
+    "notifications"
   ]);
   assert.deepEqual(buttons.map((match) => match[1].match(/aria-label="([^"]+)"/)?.[1]), [
     "Home",
@@ -60,7 +61,8 @@ test("renders eight labeled client destinations in order with current-page seman
     "Stats and measurements",
     "Food",
     "PAR-Q",
-    "Sessions"
+    "Sessions",
+    "Settings"
   ]);
   assert.deepEqual(buttons.map((match) => match[3].match(/client-dashboard-tab-label">([^<]+)</)?.[1]), [
     "Home",
@@ -70,11 +72,16 @@ test("renders eight labeled client destinations in order with current-page seman
     "Stats",
     "Food",
     "PAR-Q",
-    "Sessions"
+    "Sessions",
+    "Settings"
   ]);
   assert.equal(buttons.filter((match) => /aria-current="page"/.test(match[1])).length, 1);
   assert.equal(buttons.find((match) => /aria-current="page"/.test(match[1]))?.[2], "home");
   assert.doesNotMatch(navMarkup, /aria-selected=/);
+  assert.match(navMarkup, /data-client-dashboard-tab="notifications"[\s\S]*?client-dashboard-settings-icon/);
+  assert.equal((dashboardHtml.match(/data-client-notification-unread hidden/g) || []).length, 2);
+  assert.equal((dashboardHtml.match(/aria-describedby="client-notification-unread-status"/g) || []).length, 2);
+  assert.match(dashboardHtml, /data-client-notification-unread-status aria-live="polite">0 unread notifications/);
 });
 
 test("uses a sticky 240px desktop sidebar with a persistent 78px icon rail", () => {

@@ -85,6 +85,27 @@ function createNotificationPreferenceHarness() {
   let permissionRequests = 0;
   let workerRegistrations = 0;
   const messageListeners = [];
+  const timerButtons = Array.from({ length: 2 }, () => ({
+    textContent: "",
+    disabled: false,
+    pressed: "false",
+    enabledClass: false,
+    classList: {
+      toggle(_name, enabled) {
+        this.owner.enabledClass = enabled;
+      },
+      owner: null
+    },
+    setAttribute(name, value) {
+      if (name === "aria-pressed") {
+        this.pressed = value;
+      }
+    }
+  }));
+  timerButtons.forEach((button) => {
+    button.classList.owner = button;
+  });
+  const timerHelpItems = [{ textContent: "" }, { textContent: "" }];
   const Notification = {
     permission: "default",
     async requestPermission() {
@@ -140,11 +161,23 @@ function createNotificationPreferenceHarness() {
       ${notificationFunctions}
       return { initializeRestTimerNotifications, toggleRestTimerNotifications };
     `
-  )(window, navigator, { querySelector: () => null });
+  )(window, navigator, {
+    querySelectorAll(selector) {
+      if (selector === "[data-rest-timer-notifications]") {
+        return timerButtons;
+      }
+      if (selector === "[data-rest-timer-notification-help]") {
+        return timerHelpItems;
+      }
+      return [];
+    }
+  });
 
   return {
     ...api,
-    counts: () => ({ permissionRequests, workerRegistrations, messageListeners: messageListeners.length })
+    counts: () => ({ permissionRequests, workerRegistrations, messageListeners: messageListeners.length }),
+    timerButtons,
+    timerHelpItems
   };
 }
 
@@ -198,6 +231,11 @@ test("initialization does not request permission and explicit enable requests it
     workerRegistrations: 0,
     messageListeners: 1
   });
+  harness.timerButtons.forEach((button) => {
+    assert.equal(button.textContent, "Enable timer alerts");
+    assert.equal(button.pressed, "false");
+    assert.equal(button.enabledClass, false);
+  });
 
   assert.equal(await harness.toggleRestTimerNotifications(), true);
   assert.deepEqual(harness.counts(), {
@@ -205,8 +243,18 @@ test("initialization does not request permission and explicit enable requests it
     workerRegistrations: 1,
     messageListeners: 1
   });
+  harness.timerButtons.forEach((button) => {
+    assert.equal(button.textContent, "Timer alerts on");
+    assert.equal(button.pressed, "true");
+    assert.equal(button.enabledClass, true);
+  });
 
   assert.equal(await harness.toggleRestTimerNotifications(), false, "the second click disables alerts");
+  harness.timerButtons.forEach((button) => {
+    assert.equal(button.textContent, "Enable timer alerts");
+    assert.equal(button.pressed, "false");
+    assert.equal(button.enabledClass, false);
+  });
   assert.equal(await harness.toggleRestTimerNotifications(), true, "alerts can be enabled again");
   assert.deepEqual(harness.counts(), {
     permissionRequests: 1,
@@ -355,9 +403,9 @@ test("client PWA opens at the dashboard and cache-busts notification assets", ()
   assert.equal(manifest.start_url, "/client-dashboard.html");
   assert.equal(manifest.display, "standalone");
   assert.match(dashboard, /href="\/client\.webmanifest"/);
-  assert.match(dashboard, /css\/style\.css\?v=custom-workout-reset-2/);
-  assert.match(dashboard, /js\/web-notifications\.js\?v=coach-workout-alerts-1/);
-  assert.match(dashboard, /js\/client-portal\.js\?v=grouped-round-logger-1/);
+  assert.match(dashboard, /css\/style\.css\?v=client-notification-settings-1/);
+  assert.match(dashboard, /js\/web-notifications\.js\?v=notification-settings-1/);
+  assert.match(dashboard, /js\/client-portal\.js\?v=client-notification-settings-1/);
 });
 
 test("Pages deployment includes the client manifest and timer service worker", () => {

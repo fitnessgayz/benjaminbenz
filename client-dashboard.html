@@ -30,7 +30,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=custom-workout-reset-2" />
+  <link rel="stylesheet" href="css/style.css?v=client-notification-settings-1" />
   <link rel="stylesheet" href="css/custom-workout-mobile-fix.css?v=grouped-round-logger-1" />
 </head>
 <body class="dashboard-page client-dashboard-page is-loading">
@@ -47,6 +47,7 @@
           class="client-dashboard-mobile-nav-toggle"
           type="button"
           aria-label="Open navigation, Home selected"
+          aria-describedby="client-notification-unread-status"
           aria-controls="client-dashboard-navigation"
           aria-expanded="false"
           data-client-mobile-nav-toggle
@@ -54,6 +55,7 @@
           <span class="client-dashboard-mobile-nav-icon-wrap" data-client-mobile-nav-icon>
             <svg class="client-dashboard-mobile-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10.5V20h14v-9.5"/><path d="M9 20v-6h6v6"/></svg>
           </span>
+          <span class="client-dashboard-nav-unread" data-client-notification-unread hidden aria-label="0 unread notifications">0</span>
         </button>
         <nav class="client-dashboard-tabs" id="client-dashboard-navigation" aria-label="Client dashboard sections">
           <p class="client-dashboard-nav-title">Your app</p>
@@ -89,6 +91,11 @@
             <svg class="client-dashboard-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></svg>
             <span class="client-dashboard-tab-label">Sessions</span>
           </button>
+          <button class="client-dashboard-tab" type="button" data-client-dashboard-tab="notifications" aria-label="Settings" aria-describedby="client-notification-unread-status">
+            <svg class="client-dashboard-tab-icon client-dashboard-settings-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.09a2 2 0 0 1 1 1.74v.5a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.09a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+            <span class="client-dashboard-tab-label">Settings</span>
+            <span class="client-dashboard-nav-unread" data-client-notification-unread hidden aria-label="0 unread notifications">0</span>
+          </button>
           <button
             class="client-dashboard-sidebar-toggle"
             type="button"
@@ -101,6 +108,7 @@
             <span class="client-dashboard-sidebar-toggle-label">Minimize</span>
           </button>
         </nav>
+        <span class="client-notification-unread-status" id="client-notification-unread-status" data-client-notification-unread-status aria-live="polite">0 unread notifications</span>
 
         <section class="progress-panel client-home-panel" data-client-dashboard-panel="home" aria-labelledby="client-home-title">
           <div class="panel-heading">
@@ -188,42 +196,6 @@
                 <span class="client-monthly-report-cta">View report <span aria-hidden="true">→</span></span>
               </a>
               <p>Same private report shared in your monthly email.</p>
-            </article>
-            <article class="client-home-card client-home-card-notifications web-notification-center" data-web-notifications hidden>
-              <div class="web-notification-heading">
-                <div>
-                  <p class="kicker">Notifications</p>
-                  <h3>Stay in the loop <span class="web-notification-unread" data-web-notification-unread hidden></span></h3>
-                </div>
-                <button class="button button-dark web-notification-enable" type="button" data-web-notification-enable aria-pressed="false">Enable alerts</button>
-              </div>
-              <p class="web-notification-help" data-web-notification-help>Private FWB updates appear here. Background alerts are optional.</p>
-              <p class="web-notification-status" data-web-notification-status role="status" aria-live="polite"></p>
-              <div class="web-notification-actions">
-                <button class="button button-ghost" type="button" data-web-notification-test disabled>Send test alert</button>
-              </div>
-              <details class="web-notification-settings">
-                <summary>Choose notification types</summary>
-                <div class="web-notification-preference-grid">
-                  <label><input type="checkbox" data-web-notification-preference="coach_replies" checked /> Coach replies + form reviews</label>
-                  <label><input type="checkbox" data-web-notification-preference="program_updates" checked /> Program + nutrition updates</label>
-                  <label><input type="checkbox" data-web-notification-preference="workout_reminders" checked /> Workout reminders</label>
-                  <label><input type="checkbox" data-web-notification-preference="weekly_check_ins" checked /> Weekly check-ins</label>
-                  <label><input type="checkbox" data-web-notification-preference="monthly_reports" checked /> Monthly reports</label>
-                  <label><input type="checkbox" data-web-notification-preference="session_balance" checked /> Session balance</label>
-                  <label><input type="checkbox" data-web-notification-preference="nutrition_reminders" checked /> Nutrition reminders</label>
-                  <label><input type="checkbox" data-web-notification-preference="progress_reminders" checked /> Progress reminders</label>
-                  <label><input type="checkbox" data-web-notification-preference="achievements" checked /> Achievements</label>
-                </div>
-              </details>
-              <section class="web-notification-inbox" aria-labelledby="client-notification-inbox-title">
-                <div class="web-notification-inbox-heading">
-                  <h4 id="client-notification-inbox-title">Recent updates</h4>
-                  <button type="button" data-web-notification-mark-all hidden>Mark all read</button>
-                </div>
-                <p class="web-notification-empty" data-web-notification-empty>No updates yet.</p>
-                <ul class="web-notification-list" data-web-notification-list></ul>
-              </section>
             </article>
             <article class="client-home-card client-home-card-mood" data-client-home-checkin>
               <div class="client-home-checkin-heading">
@@ -938,6 +910,57 @@
           </div>
         </section>
 
+        <section class="progress-panel client-settings-panel" data-client-dashboard-panel="notifications" aria-labelledby="client-notification-settings-title" hidden>
+          <div class="panel-heading">
+            <div>
+              <p class="kicker">Settings</p>
+              <h2 id="client-notification-settings-title">Notification settings</h2>
+            </div>
+          </div>
+          <article class="client-home-card client-home-card-notifications web-notification-center" data-web-notifications hidden>
+            <div class="web-notification-heading">
+              <div>
+                <p class="kicker">Client alerts</p>
+                <h3>Stay in the loop <span class="web-notification-unread" data-web-notification-unread hidden></span></h3>
+              </div>
+              <button class="button button-dark web-notification-enable" type="button" data-web-notification-enable aria-pressed="false">Enable alerts</button>
+            </div>
+            <p class="web-notification-help" data-web-notification-help>Private FWB updates appear here. Background alerts are optional.</p>
+            <p class="web-notification-status" data-web-notification-status role="status" aria-live="polite"></p>
+            <div class="web-notification-actions">
+              <button class="button button-ghost" type="button" data-web-notification-test disabled>Send test alert</button>
+            </div>
+            <div class="rest-timer-notification-setting">
+              <strong>Rest timer alerts</strong>
+              <button type="button" data-rest-timer-notifications aria-pressed="false">Enable timer alerts</button>
+              <small data-rest-timer-notification-help>Turn this on once, then keep FWB open while the timer runs.</small>
+            </div>
+            <details class="web-notification-settings" open>
+              <summary>Choose notification types</summary>
+              <div class="web-notification-preference-grid">
+                <label><input type="checkbox" data-web-notification-preference="coach_replies" checked /> Coach replies + form reviews</label>
+                <label><input type="checkbox" data-web-notification-preference="program_updates" checked /> Program + nutrition updates</label>
+                <label><input type="checkbox" data-web-notification-preference="workout_reminders" checked /> Workout reminders</label>
+                <label><input type="checkbox" data-web-notification-preference="weekly_check_ins" checked /> Weekly check-ins</label>
+                <label><input type="checkbox" data-web-notification-preference="monthly_reports" checked /> Monthly reports</label>
+                <label><input type="checkbox" data-web-notification-preference="session_reminders" checked /> Session reminders</label>
+                <label><input type="checkbox" data-web-notification-preference="session_balance" checked /> Session balance</label>
+                <label><input type="checkbox" data-web-notification-preference="nutrition_reminders" checked /> Nutrition reminders</label>
+                <label><input type="checkbox" data-web-notification-preference="progress_reminders" checked /> Progress reminders</label>
+                <label><input type="checkbox" data-web-notification-preference="achievements" checked /> Achievements</label>
+              </div>
+            </details>
+            <section class="web-notification-inbox" aria-labelledby="client-notification-inbox-title">
+              <div class="web-notification-inbox-heading">
+                <h4 id="client-notification-inbox-title">Recent updates</h4>
+                <button type="button" data-web-notification-mark-all hidden>Mark all read</button>
+              </div>
+              <p class="web-notification-empty" data-web-notification-empty>No updates yet.</p>
+              <ul class="web-notification-list" data-web-notification-list aria-live="polite"></ul>
+            </section>
+          </article>
+        </section>
+
         <dialog class="client-monthly-report-dialog" id="client-monthly-report-dialog" aria-labelledby="client-monthly-report-dialog-title">
           <div class="client-monthly-report-dialog-bar">
             <button type="button" data-close-monthly-report aria-label="Close report">←</button>
@@ -959,8 +982,8 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js?v=manual-sessions-1"></script>
   <script src="js/exercise-name-matcher.js?v=exercise-consolidation-1"></script>
-  <script src="js/web-notifications.js?v=coach-workout-alerts-1"></script>
+  <script src="js/web-notifications.js?v=notification-settings-1"></script>
   <script src="https://cdn.jsdelivr.net/npm/@zxing/browser@0.2.1/umd/zxing-browser.min.js" integrity="sha384-HRtzk9lZgkbSgvUyQrnfC/GxiXZgwaNyD7hC9wcXlsBpDhkS80ISl73juef2FRuf" crossorigin="anonymous"></script>
-  <script src="js/client-portal.js?v=grouped-round-logger-1"></script>
+  <script src="js/client-portal.js?v=client-notification-settings-1"></script>
 </body>
 </html>

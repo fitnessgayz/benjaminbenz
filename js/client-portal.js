@@ -6269,21 +6269,23 @@ function restTimerNotificationRegistration() {
 }
 
 function renderRestTimerNotificationSetting() {
-  const button = document.querySelector("[data-rest-timer-notifications]");
-  const help = document.querySelector("[data-rest-timer-notification-help]");
+  const buttons = Array.from(document.querySelectorAll?.("[data-rest-timer-notifications]") || []);
+  const helpItems = Array.from(document.querySelectorAll?.("[data-rest-timer-notification-help]") || []);
 
-  if (!button) {
+  if (!buttons.length) {
     return;
   }
 
   const state = restTimerNotificationUiState();
-  button.textContent = state.label;
-  button.disabled = state.disabled;
-  button.classList.toggle("is-enabled", state.enabled);
-  button.setAttribute("aria-pressed", state.enabled ? "true" : "false");
-  if (help) {
+  buttons.forEach((button) => {
+    button.textContent = state.label;
+    button.disabled = state.disabled;
+    button.classList.toggle("is-enabled", state.enabled);
+    button.setAttribute("aria-pressed", state.enabled ? "true" : "false");
+  });
+  helpItems.forEach((help) => {
     help.textContent = state.help;
-  }
+  });
 }
 
 async function toggleRestTimerNotifications() {
@@ -6368,10 +6370,11 @@ function initializeRestTimerNotifications() {
   if (restTimerNotificationsEnabled()) {
     void restTimerNotificationRegistration();
   }
+  renderRestTimerNotificationSetting();
 }
 
 async function initializeClientWebNotifications(user) {
-  const root = document.querySelector('[data-client-dashboard-panel="home"] [data-web-notifications]');
+  const root = document.querySelector('[data-client-dashboard-panel="notifications"] [data-web-notifications]');
 
   if (!root || !supabaseClient || !user?.id || isCoachDashboardPreview) {
     if (root) {
@@ -6386,6 +6389,8 @@ async function initializeClientWebNotifications(user) {
     user,
     role: "client",
     root,
+    unreadBadges: document.querySelectorAll("[data-client-notification-unread]"),
+    unreadStatus: document.querySelector("[data-client-notification-unread-status]"),
     serviceWorkerUrl: restTimerNotificationServiceWorkerUrl
   }) || null;
 
@@ -13433,6 +13438,28 @@ function setClientDashboardTab(tabName) {
 
     panel.hidden = !isActive;
   });
+
+  if (nextTab === "notifications" && clientWebNotificationController) {
+    clientWebNotificationController.refresh().catch(() => {
+      // The notification center renders a user-facing retry message.
+    });
+  }
+}
+
+function setClientNotificationSettingsAvailable(available) {
+  const settingsTab = document.querySelector('[data-client-dashboard-tab="notifications"]');
+  const settingsPanel = document.querySelector('[data-client-dashboard-panel="notifications"]');
+  const isAvailable = Boolean(available);
+
+  if (settingsTab) {
+    settingsTab.hidden = !isAvailable;
+  }
+  if (!isAvailable && settingsPanel) {
+    settingsPanel.hidden = true;
+  }
+  if (!isAvailable && activeClientDashboardTab === "notifications") {
+    activeClientDashboardTab = "home";
+  }
 }
 
 function clientHomeCheckinPromptStorageKey(user = activeDashboardUser) {
@@ -15691,6 +15718,7 @@ async function loadDashboard() {
     const targetClientEmail = isCoachPortalEmail(signedInEmail) ? previewEmail : signedInEmail;
     signedInDashboardEmail = signedInEmail;
     isCoachDashboardPreview = isCoachPortalEmail(signedInEmail) && Boolean(previewEmail);
+    setClientNotificationSettingsAvailable(!isCoachDashboardPreview);
 
     if (!targetClientEmail) {
       setDashboardMessage(

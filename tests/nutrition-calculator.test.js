@@ -106,6 +106,6 @@ test("matches the nutrition setup weight to the latest saved DEXA scan", () => {
 });
 
 test("cache-busts both live calculator scripts", () => {
-  assert.match(dashboardHtml, /js\/client-portal\.js\?v=grouped-round-logger-1/);
+  assert.match(dashboardHtml, /js\/client-portal\.js\?v=client-notification-settings-1/);
   assert.match(inviteHtml, /js\/client-invite\.js\?v=nutrition-calculator-1/);
 });

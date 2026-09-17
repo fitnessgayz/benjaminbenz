@@ -123,6 +123,8 @@
     const user = options.user;
     const role = options.role === "coach" ? "coach" : "client";
     const root = options.root || global.document?.querySelector("[data-web-notifications]");
+    const externalUnreadBadges = Array.from(options.unreadBadges || (options.unreadBadge ? [options.unreadBadge] : []));
+    const externalUnreadStatus = options.unreadStatus || null;
     const serviceWorkerUrl = options.serviceWorkerUrl || defaultServiceWorkerUrl;
     const allowedPreferenceKeys = role === "coach" ? coachPreferenceKeys : clientPreferenceKeys;
     let preferences = null;
@@ -133,6 +135,7 @@
     let initialized = false;
     let destroyed = false;
     let busy = false;
+    let refreshPromise = null;
 
     function element(selector) {
       return root?.querySelector(selector) || null;
@@ -501,9 +504,13 @@
     function renderInbox(rows) {
       const list = element("[data-web-notification-list]");
       const empty = element("[data-web-notification-empty]");
-      const unreadBadge = element("[data-web-notification-unread]");
+      const unreadBadges = Array.from(new Set([
+        element("[data-web-notification-unread]"),
+        ...externalUnreadBadges
+      ].filter(Boolean)));
       const markAllButton = element("[data-web-notification-mark-all]");
       const unreadCount = rows.filter((row) => !row.read_at).length;
+      const unreadLabel = `${unreadCount} unread notification${unreadCount === 1 ? "" : "s"}`;
 
       if (list) {
         list.replaceChildren(...rows.map(notificationItem));
@@ -511,10 +518,13 @@
       if (empty) {
         empty.hidden = rows.length > 0;
       }
-      if (unreadBadge) {
+      unreadBadges.forEach((unreadBadge) => {
         unreadBadge.textContent = unreadCount ? String(unreadCount) : "";
         unreadBadge.hidden = unreadCount === 0;
-        unreadBadge.setAttribute("aria-label", `${unreadCount} unread notification${unreadCount === 1 ? "" : "s"}`);
+        unreadBadge.setAttribute("aria-label", unreadLabel);
+      });
+      if (externalUnreadStatus) {
+        externalUnreadStatus.textContent = unreadLabel;
       }
       if (markAllButton) {
         markAllButton.hidden = unreadCount === 0;
@@ -720,21 +730,33 @@
       if (!initialized || destroyed) {
         return false;
       }
+      if (!refreshPromise) {
+        refreshPromise = (async () => {
+          try {
+            await ensurePreferences();
+            await loadInbox();
+            subscription = pushSupport().supported && global.Notification.permission === "granted"
+              ? await currentSubscription()
+              : null;
+            if (subscription && preferences?.push_enabled !== false) {
+              await storeSubscription(subscription);
+            }
+            renderPreferences();
+            renderEnableState();
+            return true;
+          } catch (error) {
+            setStatus("Notifications are being connected. Please try again soon.", "error");
+            return false;
+          }
+        })();
+      }
+      const pendingRefresh = refreshPromise;
       try {
-        await ensurePreferences();
-        await loadInbox();
-        subscription = pushSupport().supported && global.Notification.permission === "granted"
-          ? await currentSubscription()
-          : null;
-        if (subscription && preferences?.push_enabled !== false) {
-          await storeSubscription(subscription);
+        return await pendingRefresh;
+      } finally {
+        if (refreshPromise === pendingRefresh) {
+          refreshPromise = null;
         }
-        renderPreferences();
-        renderEnableState();
-        return true;
-      } catch (error) {
-        setStatus("Notifications are being connected. Please try again soon.", "error");
-        return false;
       }
     }
 
@@ -746,8 +768,11 @@
       root.hidden = false;
       root.addEventListener("click", handleClick);
       root.addEventListener("change", handleChange);
+      setBusy(true);
       setStatus("Loading notification settings…");
       const loaded = await refresh();
+      setBusy(false);
+      renderEnableState();
       if (!loaded) {
         return false;
       }
