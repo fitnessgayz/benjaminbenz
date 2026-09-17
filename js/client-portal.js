@@ -171,6 +171,8 @@ const workoutElapsedTimerStorageKey = "fwb_workout_elapsed_timer_v1";
 const workoutElapsedTimerCompactStorageKey = "fwb_workout_elapsed_timer_compact_v1";
 const workoutElapsedTimerPositionStorageKey = "fwb_workout_elapsed_timer_position_v3";
 const workoutElapsedTimerMaximumMilliseconds = 24 * 60 * 60 * 1000;
+const restTimerNotificationPreferenceStorageKey = "fwb_rest_timer_notifications_v1";
+const restTimerNotificationServiceWorkerUrl = "/timer-notifications-sw.js?v=rest-timer-alerts-1";
 let exerciseLibraryEntries = [];
 let activeCustomWorkoutFormat = "single";
 let restTimerDurationSeconds = 60;
@@ -178,6 +180,11 @@ let restTimerRemainingSeconds = 60;
 let restTimerEndsAt = 0;
 let restTimerIntervalId = null;
 let restTimerReturnFocus = null;
+let restTimerRunSequence = 0;
+let restTimerActiveRunId = 0;
+let restTimerLastNotifiedRunId = 0;
+let restTimerNotificationRegistrationPromise = null;
+let restTimerNotificationPreferenceFallback = false;
 let workoutElapsedTimerState = null;
 let workoutElapsedTimerIntervalId = null;
 let workoutElapsedTimerIsCompact = null;
@@ -6110,6 +6117,204 @@ function restTimerTimeLabel(seconds) {
   return `${String(minutes).padStart(2, "0")}:${String(remainingSeconds).padStart(2, "0")}`;
 }
 
+function isIosDevice() {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent || "") ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+}
+
+function isStandaloneWebApp() {
+  return Boolean(
+    window.matchMedia?.("(display-mode: standalone)")?.matches ||
+    window.navigator.standalone === true
+  );
+}
+
+function restTimerNotificationSupport() {
+  if (!window.isSecureContext || !("Notification" in window) || !("serviceWorker" in navigator)) {
+    return { supported: false, reason: "unsupported" };
+  }
+  if (isIosDevice() && !isStandaloneWebApp()) {
+    return { supported: false, reason: "ios-home-screen" };
+  }
+  return { supported: true, reason: "" };
+}
+
+function readRestTimerNotificationPreference() {
+  try {
+    const storedPreference = window.localStorage.getItem(restTimerNotificationPreferenceStorageKey);
+    return storedPreference === null
+      ? restTimerNotificationPreferenceFallback
+      : storedPreference === "true";
+  } catch (error) {
+    return restTimerNotificationPreferenceFallback;
+  }
+}
+
+function storeRestTimerNotificationPreference(enabled) {
+  restTimerNotificationPreferenceFallback = Boolean(enabled);
+  try {
+    window.localStorage.setItem(restTimerNotificationPreferenceStorageKey, String(restTimerNotificationPreferenceFallback));
+  } catch (error) {
+    // Notifications can still work for this page even when storage is blocked.
+  }
+}
+
+function restTimerNotificationsEnabled() {
+  const support = restTimerNotificationSupport();
+  return support.supported && window.Notification.permission === "granted" && readRestTimerNotificationPreference();
+}
+
+function restTimerNotificationUiState() {
+  const support = restTimerNotificationSupport();
+
+  if (!support.supported) {
+    return {
+      enabled: false,
+      disabled: true,
+      label: "Timer alerts unavailable",
+      help: support.reason === "ios-home-screen"
+        ? "On iPhone, add FWB to your Home Screen, then open it there to enable alerts."
+        : "This browser cannot show timer notifications. Vibration and the on-screen timer still work."
+    };
+  }
+  if (window.Notification.permission === "denied") {
+    return {
+      enabled: false,
+      disabled: true,
+      label: "Timer alerts blocked",
+      help: "Allow notifications for FWB in your browser or device settings."
+    };
+  }
+
+  const enabled = restTimerNotificationsEnabled();
+  return {
+    enabled,
+    disabled: false,
+    label: enabled ? "Timer alerts on" : "Enable timer alerts",
+    help: enabled
+      ? "Keep FWB open while the timer runs; you’ll get a system alert when rest ends."
+      : "Turn this on once, then keep FWB open while the timer runs."
+  };
+}
+
+function restTimerNotificationRegistration() {
+  if (!restTimerNotificationSupport().supported) {
+    return Promise.resolve(null);
+  }
+  if (!restTimerNotificationRegistrationPromise) {
+    restTimerNotificationRegistrationPromise = navigator.serviceWorker
+      .register(restTimerNotificationServiceWorkerUrl, { scope: "/" })
+      .then(() => navigator.serviceWorker.ready)
+      .catch(() => {
+        restTimerNotificationRegistrationPromise = null;
+        return null;
+      });
+  }
+  return restTimerNotificationRegistrationPromise;
+}
+
+function renderRestTimerNotificationSetting() {
+  const button = document.querySelector("[data-rest-timer-notifications]");
+  const help = document.querySelector("[data-rest-timer-notification-help]");
+
+  if (!button) {
+    return;
+  }
+
+  const state = restTimerNotificationUiState();
+  button.textContent = state.label;
+  button.disabled = state.disabled;
+  button.classList.toggle("is-enabled", state.enabled);
+  button.setAttribute("aria-pressed", state.enabled ? "true" : "false");
+  if (help) {
+    help.textContent = state.help;
+  }
+}
+
+async function toggleRestTimerNotifications() {
+  const support = restTimerNotificationSupport();
+
+  if (!support.supported || window.Notification.permission === "denied") {
+    renderRestTimerNotificationSetting();
+    return false;
+  }
+  if (restTimerNotificationsEnabled()) {
+    storeRestTimerNotificationPreference(false);
+    renderRestTimerNotificationSetting();
+    return false;
+  }
+
+  let permission = window.Notification.permission;
+  if (permission === "default") {
+    try {
+      permission = await window.Notification.requestPermission();
+    } catch (error) {
+      permission = "denied";
+    }
+  }
+
+  const registration = permission === "granted"
+    ? await restTimerNotificationRegistration()
+    : null;
+  const enabled = Boolean(permission === "granted" && registration);
+  storeRestTimerNotificationPreference(enabled);
+  renderRestTimerNotificationSetting();
+  return enabled;
+}
+
+async function showRestTimerCompleteNotification() {
+  if (!restTimerNotificationsEnabled()) {
+    return false;
+  }
+
+  const options = {
+    body: "Your next set is ready.",
+    icon: "/fwb-home-icon-192.png",
+    badge: "/favicon-32.png",
+    tag: "fwb-rest-timer-complete",
+    renotify: true,
+    silent: false,
+    timestamp: Date.now(),
+    data: { url: "/client-dashboard.html?tab=workouts" }
+  };
+
+  try {
+    const registration = await restTimerNotificationRegistration();
+    if (registration?.showNotification) {
+      await registration.showNotification("Rest complete", options);
+      return true;
+    }
+    if (typeof window.Notification === "function") {
+      new window.Notification("Rest complete", options);
+      return true;
+    }
+  } catch (error) {
+    // Vibration and the visible timer remain available if the OS rejects an alert.
+  }
+  return false;
+}
+
+function restTimerCompletionShouldNotify(runId, lastNotifiedRunId) {
+  const safeRunId = Number(runId) || 0;
+  return safeRunId > 0 && safeRunId !== (Number(lastNotifiedRunId) || 0);
+}
+
+function initializeRestTimerNotifications() {
+  if (typeof window === "undefined" || typeof navigator === "undefined") {
+    return;
+  }
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.addEventListener("message", (event) => {
+      if (event.data?.type === "FWB_OPEN_WORKOUTS") {
+        setClientDashboardTab("workouts");
+      }
+    });
+  }
+  if (restTimerNotificationsEnabled()) {
+    void restTimerNotificationRegistration();
+  }
+}
+
 function restTimerMarkup() {
   return `
     <div class="rest-timer-overlay" data-rest-timer-overlay hidden>
@@ -6131,6 +6336,10 @@ function restTimerMarkup() {
         <div class="rest-timer-actions">
           <button class="rest-timer-start" type="button" data-rest-timer-start>Start</button>
           <button class="rest-timer-reset" type="button" data-rest-timer-reset>Reset</button>
+        </div>
+        <div class="rest-timer-notification-setting">
+          <button type="button" data-rest-timer-notifications aria-pressed="false">Enable timer alerts</button>
+          <small data-rest-timer-notification-help>Turn this on once, then keep FWB open while the timer runs.</small>
         </div>
       </section>
     </div>
@@ -6163,11 +6372,17 @@ function syncRestTimerRemaining() {
   restTimerRemainingSeconds = Math.max(0, Math.ceil((restTimerEndsAt - Date.now()) / 1000));
 
   if (restTimerRemainingSeconds === 0) {
+    const completedRunId = restTimerActiveRunId;
     restTimerEndsAt = 0;
+    restTimerActiveRunId = 0;
     clearRestTimerInterval();
 
     if (typeof navigator.vibrate === "function") {
       navigator.vibrate([200, 100, 200]);
+    }
+    if (restTimerCompletionShouldNotify(completedRunId, restTimerLastNotifiedRunId)) {
+      restTimerLastNotifiedRunId = completedRunId;
+      void showRestTimerCompleteNotification();
     }
   }
 }
@@ -6196,6 +6411,7 @@ function renderRestTimer() {
     button.classList.toggle("is-active", isActive);
     button.setAttribute("aria-pressed", isActive ? "true" : "false");
   });
+  renderRestTimerNotificationSetting();
 
 }
 
@@ -6208,6 +6424,7 @@ function startOrPauseRestTimer() {
   if (restTimerEndsAt) {
     syncRestTimerRemaining();
     restTimerEndsAt = 0;
+    restTimerActiveRunId = 0;
     clearRestTimerInterval();
     renderRestTimer();
     return;
@@ -6218,6 +6435,7 @@ function startOrPauseRestTimer() {
   }
 
   restTimerEndsAt = Date.now() + restTimerRemainingSeconds * 1000;
+  restTimerActiveRunId = ++restTimerRunSequence;
   clearRestTimerInterval();
   restTimerIntervalId = window.setInterval(tickRestTimer, 250);
   renderRestTimer();
@@ -6225,6 +6443,7 @@ function startOrPauseRestTimer() {
 
 function resetRestTimer() {
   restTimerEndsAt = 0;
+  restTimerActiveRunId = 0;
   restTimerRemainingSeconds = restTimerDurationSeconds;
   clearRestTimerInterval();
   renderRestTimer();
@@ -13253,6 +13472,7 @@ function handleWorkoutInteractions() {
     const restTimerPresetButton = event.target.closest("[data-rest-timer-preset]");
     const restTimerStartButton = event.target.closest("[data-rest-timer-start]");
     const restTimerResetButton = event.target.closest("[data-rest-timer-reset]");
+    const restTimerNotificationButton = event.target.closest("[data-rest-timer-notifications]");
     const rirOptionButton = event.target.closest("[data-rir-option]");
     const rirSaveButton = event.target.closest("[data-rir-save]");
     const rirCloseButton = event.target.closest("[data-rir-close]");
@@ -13520,6 +13740,11 @@ function handleWorkoutInteractions() {
 
     if (restTimerResetButton) {
       resetRestTimer();
+      return;
+    }
+
+    if (restTimerNotificationButton) {
+      await toggleRestTimerNotifications();
       return;
     }
 
@@ -14908,6 +15133,7 @@ function disableClientDashboardZoom() {
 }
 
 disableClientDashboardZoom();
+initializeRestTimerNotifications();
 handleClientDashboardSidebar();
 handleClientDashboardMobileNavigation();
 handleLogin();

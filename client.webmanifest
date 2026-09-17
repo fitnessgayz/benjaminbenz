@@ -1,0 +1,37 @@
+{
+  "id": "/client-dashboard.html",
+  "name": "Fitness with Benjamin",
+  "short_name": "FWB",
+  "description": "Fitness with Benjamin client workouts, progress, and coaching.",
+  "start_url": "/client-dashboard.html",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f5f6f2",
+  "theme_color": "#050505",
+  "icons": [
+    {
+      "src": "/fwb-home-icon-180.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/fwb-home-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/fwb-home-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/fwb-home-icon-1024.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

@@ -4646,16 +4646,29 @@ body.is-client-checkin-prompt-open {
   z-index: 100;
   display: grid;
   align-items: end;
-  padding: 16px;
+  padding:
+    max(16px, env(safe-area-inset-top))
+    max(16px, env(safe-area-inset-right))
+    max(16px, env(safe-area-inset-bottom))
+    max(16px, env(safe-area-inset-left));
   background: rgba(0, 0, 0, .58);
 }
 
 .rest-timer-sheet {
   display: grid;
+  box-sizing: border-box;
   width: min(440px, 100%);
+  max-height: calc(
+    100dvh
+    - max(16px, env(safe-area-inset-top))
+    - max(16px, env(safe-area-inset-bottom))
+  );
   gap: 16px;
   margin: 0 auto;
   padding: 20px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   border: 1px solid var(--line);
   border-radius: 24px;
   background: var(--paper);
@@ -4758,6 +4771,47 @@ body.is-client-checkin-prompt-open {
   color: var(--paper);
   background: var(--black);
   border-color: var(--black);
+}
+
+.rest-timer-notification-setting {
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #f5f6f2;
+}
+
+.rest-timer-notification-setting button {
+  width: 100%;
+  min-height: 44px;
+  padding: 9px 12px;
+  border: 1px solid var(--black);
+  border-radius: 10px;
+  color: var(--black);
+  background: var(--paper);
+  font: inherit;
+  font-size: .78rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.rest-timer-notification-setting button.is-enabled {
+  background: var(--lime);
+}
+
+.rest-timer-notification-setting button:disabled {
+  border-color: var(--line);
+  color: var(--muted);
+  background: #eceee8;
+  cursor: default;
+}
+
+.rest-timer-notification-setting small {
+  color: var(--muted);
+  font-size: .72rem;
+  font-weight: 700;
+  line-height: 1.4;
 }
 
 .workout-elapsed-timer {
