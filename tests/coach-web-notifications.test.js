@@ -52,7 +52,7 @@ test("Settings panel keeps every notification feature together", () => {
   assert.match(settingsPanel, /data-web-notification-list[^>]*aria-live="polite"/);
   assert.match(settingsPanel, /data-web-notification-empty/);
   assert.match(settingsPanel, /data-web-notification-mark-all[^>]*hidden/);
-  assert.match(adminHtml, /src="js\/web-notifications\.js\?v=notification-settings-1"[\s\S]*src="js\/coach-admin\.js\?v=coach-home-dashboard-1"/);
+  assert.match(adminHtml, /src="js\/web-notifications\.js\?v=notification-default-on-1"[\s\S]*src="js\/coach-admin\.js\?v=coach-home-dashboard-1"/);
 });
 
 test("all feasible coach notification categories start enabled", () => {

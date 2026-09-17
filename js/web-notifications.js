@@ -607,6 +607,26 @@
       return false;
     }
 
+    async function restoreAlertsByDefault() {
+      const support = pushSupport();
+
+      if (
+        !support.supported ||
+        global.Notification.permission !== "granted" ||
+        subscription ||
+        preferences?.push_enabled === false
+      ) {
+        return false;
+      }
+
+      try {
+        return await enableAlerts();
+      } catch (error) {
+        // The in-app inbox remains available if this device cannot restore push.
+        return false;
+      }
+    }
+
     async function toggleAlerts() {
       if (busy) {
         return false;
@@ -738,6 +758,9 @@
             subscription = pushSupport().supported && global.Notification.permission === "granted"
               ? await currentSubscription()
               : null;
+            if (!subscription) {
+              await restoreAlertsByDefault();
+            }
             if (subscription && preferences?.push_enabled !== false) {
               await storeSubscription(subscription);
             }

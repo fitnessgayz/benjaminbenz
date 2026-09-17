@@ -404,7 +404,7 @@ test("client PWA opens at the dashboard and cache-busts notification assets", ()
   assert.equal(manifest.display, "standalone");
   assert.match(dashboard, /href="\/client\.webmanifest"/);
   assert.match(dashboard, /css\/style\.css\?v=client-notification-settings-1/);
-  assert.match(dashboard, /js\/web-notifications\.js\?v=notification-settings-1/);
+  assert.match(dashboard, /js\/web-notifications\.js\?v=notification-default-on-1/);
   assert.match(dashboard, /js\/client-portal\.js\?v=grouped-round-labels-1/);
 });
 

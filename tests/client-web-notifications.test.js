@@ -10,6 +10,10 @@ const portal = fs.readFileSync(path.join(root, "js/client-portal.js"), "utf8");
 const notifications = fs.readFileSync(path.join(root, "js/web-notifications.js"), "utf8");
 const worker = fs.readFileSync(path.join(root, "timer-notifications-sw.js"), "utf8");
 const styles = fs.readFileSync(path.join(root, "css/style.css"), "utf8");
+const notificationMigration = fs.readFileSync(
+  path.join(root, "supabase/migrations/20260917124828_add_web_push_notifications.sql"),
+  "utf8"
+);
 
 function fakeElement() {
   const classes = new Set();
@@ -198,6 +202,11 @@ test("client initializes the shared controller after authentication and disconne
 
 test("push permission remains user initiated and subscriptions are stored per signed-in user", () => {
   assert.match(notifications, /async function enableAlerts\(\)[\s\S]*?Notification\.requestPermission\(\)/);
+  assert.match(notifications, /async function restoreAlertsByDefault\(\)/);
+  assert.match(notifications, /global\.Notification\.permission !== "granted"/);
+  assert.match(notifications, /preferences\?\.push_enabled === false/);
+  assert.match(notifications, /return await enableAlerts\(\)/);
+  assert.match(notifications, /if \(!subscription\) \{\s*await restoreAlertsByDefault\(\);\s*\}/);
   assert.match(notifications, /pushManager\.subscribe\(\{[\s\S]*?userVisibleOnly:\s*true/);
   assert.match(notifications, /"fwb_web_push_subscriptions"/);
   assert.match(notifications, /"web_push_subscriptions"/);
@@ -213,6 +222,32 @@ test("push permission remains user initiated and subscriptions are stored per si
   assert.match(notifications, /if \(!refreshPromise\)[\s\S]*?const pendingRefresh = refreshPromise/);
   assert.match(notifications, /if \(refreshPromise === pendingRefresh\)[\s\S]*?refreshPromise = null/);
   assert.match(notifications, /setBusy\(true\)[\s\S]*?const loaded = await refresh\(\)[\s\S]*?setBusy\(false\)/);
+});
+
+test("notification categories and database preferences default on without forcing permission", () => {
+  assert.match(notifications, /input\.checked = preferences\?\.\[key\] !== false/);
+  assert.match(notifications, /preferences\?\.push_enabled !== false/);
+  assert.doesNotMatch(notifications, /init\(\)[\s\S]*?Notification\.requestPermission\(\)/);
+  assert.match(dashboard, /src="js\/web-notifications\.js\?v=notification-default-on-1"/);
+  [
+    "push_enabled",
+    "coach_replies",
+    "program_updates",
+    "workout_reminders",
+    "achievements",
+    "weekly_check_ins",
+    "session_reminders",
+    "monthly_reports",
+    "session_balance",
+    "nutrition_reminders",
+    "progress_reminders"
+  ].forEach((column) => {
+    assert.match(
+      notificationMigration,
+      new RegExp(`${column}\\s+boolean\\s+not null\\s+default true`),
+      `${column} should default on for new notification preference rows`
+    );
+  });
 });
 
 test("client unread badges stay synchronized and refresh initialization is deduplicated", async () => {
