@@ -5660,6 +5660,24 @@ function customWorkoutStorageTitle(draft = activeCustomWorkoutDraft()) {
   return String(draft?.workoutTitle || customWorkoutTitle).trim() || customWorkoutTitle;
 }
 
+function freshCustomWorkoutStorageTitle(createdAt = new Date()) {
+  const time = [createdAt.getHours(), createdAt.getMinutes(), createdAt.getSeconds()]
+    .map((value) => String(value).padStart(2, "0"))
+    .join(":");
+  const milliseconds = String(createdAt.getMilliseconds()).padStart(3, "0");
+
+  return `${customWorkoutTitle} · New · ${time}.${milliseconds}`;
+}
+
+function freshCustomWorkoutDraft(createdAt = new Date()) {
+  return {
+    format: "single",
+    date: todayDate(),
+    workoutTitle: freshCustomWorkoutStorageTitle(createdAt),
+    exercises: []
+  };
+}
+
 function customWorkoutDraftExercises() {
   const exercises = activeCustomWorkoutDraft()?.exercises;
   return Array.isArray(exercises) ? exercises : [];
@@ -9347,6 +9365,10 @@ function customWorkoutPanelMarkup(index) {
         ${customWorkoutFormatPickerMarkup()}
         ${warmupLogFields(workoutStorageTitle, { showDate: false })}
         ${workoutStartControlMarkup(workoutStorageTitle)}
+        <div class="custom-workout-reset-control">
+          <button class="button button-ghost custom-workout-reset-button" type="button" data-reset-custom-workout>Reset workout</button>
+        </div>
+        <p class="custom-workout-reset-status" data-custom-workout-reset-status role="status" aria-live="polite" hidden></p>
         ${customWorkoutCarouselMarkup(format, workoutStorageTitle)}
         <div class="custom-workout-add-actions" data-custom-workout-add-actions>
           <button class="button button-ghost custom-workout-add-bottom" type="button" data-add-custom-exercise data-custom-exercise-placement="current">${format === "circuit" ? "Add to current circuit" : "Add exercise"}</button>
@@ -9377,6 +9399,61 @@ function replaceCustomWorkoutPanelFromDraft(index) {
   currentPanel.replaceWith(replacement);
   applyCustomWorkoutDraft(replacement);
   syncWorkoutStartButtons();
+
+  return replacement;
+}
+
+function resetCustomWorkout(panel) {
+  if (
+    !panel ||
+    !window.confirm(
+      "Reset this Custom Workout and create a new one? Unsaved exercise names, sets, notes, warm-up, and cardio entries will be cleared. Saved workout history will not be deleted."
+    )
+  ) {
+    return null;
+  }
+
+  const workoutPanels = Array.from(document.querySelectorAll(".client-workout-panel"));
+  const panelIndex = Math.max(workoutPanels.indexOf(panel), 0);
+  const currentWorkoutTitle = String(panel.dataset.customWorkoutTitle || customWorkoutTitle).trim();
+  const endsCurrentTimer = Boolean(
+    workoutElapsedTimerState &&
+    currentWorkoutTitle === String(workoutElapsedTimerState.workoutTitle || "").trim()
+  );
+
+  cancelTrainingLogAutosaves(panel);
+  closeCustomExerciseSuggestions();
+  closeRirDialog();
+  closeRestTimer();
+  resetRestTimer();
+
+  if (endsCurrentTimer) {
+    finishWorkoutElapsedTimer();
+  }
+
+  clearCustomWorkoutDraft();
+  activeCustomWorkoutFormat = "single";
+  storeCustomWorkoutFormat("single");
+  storeCustomWorkoutDraft(freshCustomWorkoutDraft());
+
+  const replacement = replaceCustomWorkoutPanelFromDraft(panelIndex);
+
+  if (!replacement) {
+    return null;
+  }
+
+  replacement.querySelectorAll("[data-exercise-log]").forEach(updateExerciseLogField);
+  activateClientWorkoutPanel(panelIndex, { scroll: false, focus: false });
+
+  const status = replacement.querySelector("[data-custom-workout-reset-status]");
+  if (status) {
+    status.textContent = "New custom workout ready.";
+    status.hidden = false;
+  }
+
+  window.requestAnimationFrame(() => {
+    replacement.querySelector("#custom-workout-panel-title")?.focus({ preventScroll: true });
+  });
 
   return replacement;
 }
@@ -13543,6 +13620,7 @@ function handleWorkoutInteractions() {
     const workoutElapsedResetButton = event.target.closest("[data-workout-elapsed-reset]");
     const workoutElapsedCompactButton = event.target.closest("[data-workout-elapsed-compact]");
     const workoutElapsedCloseButton = event.target.closest("[data-workout-elapsed-close]");
+    const resetCustomWorkoutButton = event.target.closest("[data-reset-custom-workout]");
 
     if (customWorkoutGroupNameToggle) {
       const carousel = customWorkoutGroupNameToggle.closest("[data-custom-workout-carousel]");
@@ -13598,6 +13676,11 @@ function handleWorkoutInteractions() {
 
     if (resumeActiveWorkoutButton) {
       resumeActiveWorkout();
+      return;
+    }
+
+    if (resetCustomWorkoutButton) {
+      resetCustomWorkout(resetCustomWorkoutButton.closest(".client-workout-panel-custom"));
       return;
     }
 
@@ -14915,6 +14998,17 @@ function workoutSectionForButton(button) {
 
 const trainingLogAutosaveTimers = new WeakMap();
 const trainingLogAutosaveDelayMs = 10000;
+
+function cancelTrainingLogAutosaves(container) {
+  container?.querySelectorAll("[data-exercise-log]").forEach((logElement) => {
+    const timer = trainingLogAutosaveTimers.get(logElement);
+
+    if (timer) {
+      window.clearTimeout(timer);
+      trainingLogAutosaveTimers.delete(logElement);
+    }
+  });
+}
 
 function trainingLogHasAutosavePayload(logElement) {
   if (!logElement) {

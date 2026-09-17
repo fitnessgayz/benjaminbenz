@@ -5323,6 +5323,31 @@ body.is-client-checkin-prompt-open {
   opacity: 1;
 }
 
+.custom-workout-reset-control {
+  display: flex;
+  justify-content: flex-end;
+  margin: -8px 0 4px;
+}
+
+.custom-workout-reset-button {
+  min-height: 44px;
+  border-color: rgba(255, 59, 48, .45) !important;
+  color: var(--red) !important;
+  background: transparent !important;
+}
+
+.custom-workout-reset-button:hover,
+.custom-workout-reset-button:focus-visible {
+  border-color: var(--red) !important;
+  background: rgba(255, 59, 48, .06) !important;
+}
+
+.custom-workout-reset-status {
+  margin: 0;
+  color: var(--green);
+  font-weight: 800;
+}
+
 .exercise-notes textarea {
   min-height: 92px;
   border-radius: 14px;
