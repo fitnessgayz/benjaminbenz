@@ -5,8 +5,62 @@ const path = require("node:path");
 
 const root = path.resolve(__dirname, "..");
 const adminHtml = fs.readFileSync(path.join(root, "coach-admin.html"), "utf8");
+const loggerHtml = fs.readFileSync(path.join(root, "coach-workout-log.html"), "utf8");
 const loggerScript = fs.readFileSync(path.join(root, "js/coach-workout-log.js"), "utf8");
 const styles = fs.readFileSync(path.join(root, "css/style.css"), "utf8");
+
+function sourceForFunction(name) {
+  const plainStart = loggerScript.indexOf(`function ${name}(`);
+  const asyncStart = loggerScript.indexOf(`async function ${name}(`);
+  const start = plainStart >= 0 ? plainStart : asyncStart;
+
+  assert.ok(start >= 0, `Expected ${name} to exist`);
+
+  const signatureEnd = loggerScript.indexOf("\n", start);
+  const bodyStart = loggerScript.lastIndexOf("{", signatureEnd);
+  let depth = 0;
+  let quote = "";
+  let escaped = false;
+  let templateDepth = 0;
+
+  for (let index = bodyStart; index < loggerScript.length; index += 1) {
+    const character = loggerScript[index];
+    const next = loggerScript[index + 1];
+
+    if (escaped) {
+      escaped = false;
+      continue;
+    }
+    if (character === "\\") {
+      escaped = true;
+      continue;
+    }
+    if (quote) {
+      if (quote === "`" && character === "$" && next === "{") {
+        templateDepth += 1;
+        index += 1;
+        continue;
+      }
+      if (quote === "`" && character === "}" && templateDepth > 0) {
+        templateDepth -= 1;
+        continue;
+      }
+      if (character === quote && templateDepth === 0) quote = "";
+      continue;
+    }
+    if (character === "'" || character === '"' || character === "`") {
+      quote = character;
+      continue;
+    }
+    if (character === "{") depth += 1;
+    if (character === "}") {
+      depth -= 1;
+      if (depth === 0) return loggerScript.slice(start, index + 1);
+    }
+  }
+
+  assert.fail(`Could not read ${name}`);
+}
 
 test("keeps Session logger as the first coach navigation link", () => {
   const navigationIndex = adminHtml.indexOf('id="coach-admin-sidebar-nav"');
@@ -40,14 +94,124 @@ test("matches the custom workout card per-set controls and actions", () => {
   assert.match(styles, /\.coach-workout-set-header,[\s\S]*?grid-template-columns:\s*54px minmax\(0, 1fr\) minmax\(0, 1fr\) 72px/);
 });
 
-test("uses a carousel for superset and circuit while straight sets stay stacked", () => {
-  assert.match(styles, /\.coach-workout-carousel\[data-coach-workout-format="superset"\],[\s\S]*?\.coach-workout-carousel\[data-coach-workout-format="circuit"\]/);
-  assert.match(styles, /\.coach-workout-carousel\[data-carousel-enabled="true"\] \.coach-workout-exercise-list[\s\S]*?scroll-snap-type:\s*x mandatory/);
-  assert.match(loggerScript, /const enabled = format !== "single" && exercises\.length > 1/);
-  assert.match(loggerScript, /data-coach-workout-dot/);
-  assert.match(loggerScript, /querySelector\("button\[data-coach-workout-previous\]"\)/);
-  assert.match(loggerScript, /querySelector\("button\[data-coach-workout-next\]"\)/);
-  assert.match(loggerScript, /\.forEach\(\(values\) => \{\s*addCoachWorkoutExercise\(values\);/s);
+test("renders supersets and circuits as full-width grouped cards instead of a swipe carousel", () => {
+  const groupedMarkup = sourceForFunction("coachWorkoutGroupedCardMarkup");
+  const layout = sourceForFunction("renderCoachWorkoutCardLayout");
+
+  assert.match(loggerHtml, /data-coach-workout-group-stack/);
+  assert.match(groupedMarkup, /data-coach-workout-grouped="true"/);
+  assert.match(groupedMarkup, /class="coach-workout-grouped-card/);
+  assert.match(layout, /format === "single"/);
+  assert.match(layout, /coachWorkoutGroupedCardMarkup/);
+  assert.doesNotMatch(loggerHtml, /data-coach-workout-previous|data-coach-workout-next|coach-workout-carousel-dots/);
+  assert.doesNotMatch(styles, /\.coach-workout[^}]*scroll-snap-type:\s*x mandatory/);
+  assert.match(
+    styles,
+    /\.coach-workout-grouped-card\s*\{[\s\S]*?width:\s*100%;[\s\S]*?max-width:\s*100%;[\s\S]*?min-width:\s*0;[\s\S]*?overflow:\s*hidden;/,
+  );
+});
+
+test("uses a compact collapsible exercise-name editor for grouped workouts", () => {
+  const editorMarkup = sourceForFunction("coachWorkoutGroupedNameEditorMarkup");
+  const rowMarkup = sourceForFunction("coachWorkoutGroupedNameRowMarkup");
+  const groupedMarkup = sourceForFunction("coachWorkoutGroupedCardMarkup");
+
+  assert.match(editorMarkup, /data-coach-grouped-name-toggle/);
+  assert.match(editorMarkup, /aria-expanded=/);
+  assert.match(editorMarkup, /data-coach-grouped-name-fields/);
+  assert.match(rowMarkup, /data-coach-grouped-name-input/);
+  assert.match(groupedMarkup, /coachWorkoutGroupedNameEditorMarkup/);
+  assert.match(loggerScript, /data-coach-grouped-name-toggle/);
+  assert.match(loggerScript, /data-coach-grouped-name-input/);
+});
+
+test("reopens a collapsed grouped name editor before focusing a validation error", () => {
+  const rowMarkup = sourceForFunction("coachWorkoutGroupedNameRowMarkup");
+  const focusVisible = sourceForFunction("focusCoachWorkoutVisibleField");
+
+  assert.doesNotMatch(rowMarkup, /data-coach-grouped-name-input[^>]*required/);
+  assert.match(focusVisible, /fields\?\.hidden/);
+  assert.match(focusVisible, /fields\.hidden = false/);
+  assert.match(focusVisible, /aria-expanded", "true"/);
+  assert.match(focusVisible, /visible\.focus\(\)/);
+});
+
+test("repeats Set Weight Reps and RIR labels in warm-up and round sections", () => {
+  const columns = sourceForFunction("coachWorkoutGroupedColumnLabelsMarkup");
+  const sections = sourceForFunction("coachWorkoutGroupedSectionsMarkup");
+
+  assert.match(columns, /<span>Set<\/span>/);
+  assert.match(columns, /<span>Weight<\/span>/);
+  assert.match(columns, /<span>Reps<\/span>/);
+  assert.match(columns, /<span>RIR<\/span>/);
+  assert.match(sections, /data-coach-grouped-section="warm-up"/);
+  assert.match(sections, /data-coach-grouped-section="round"/);
+  assert.match(sections, /Warm-up/);
+  assert.match(sections, /Round \$\{roundNumber\}/);
+  assert.ok(
+    (sections.match(/coachWorkoutGroupedColumnLabelsMarkup\(\)/g) || []).length >= 2,
+    "Column labels should render in the warm-up and every generated round",
+  );
+});
+
+test("adds and deletes a whole grouped round across every exercise", () => {
+  const groupedMarkup = sourceForFunction("coachWorkoutGroupedCardMarkup");
+  const addRound = sourceForFunction("addCoachWorkoutGroupedRound");
+  const deleteRound = sourceForFunction("deleteCoachWorkoutGroupedRound");
+  const interactions = sourceForFunction("handleCoachWorkoutForm");
+
+  assert.match(groupedMarkup, /data-coach-grouped-add-round/);
+  assert.match(groupedMarkup, /data-coach-grouped-delete-round/);
+  assert.match(addRound, /data-coach-workout-set-rows/);
+  assert.match(addRound, /coachWorkoutSetMarkup/);
+  assert.match(deleteRound, /coachWorkoutSetRowsByType/);
+  assert.match(interactions, /data-coach-grouped-add-round/);
+  assert.match(interactions, /data-coach-grouped-delete-round/);
+  assert.match(interactions, /scheduleCoachWorkoutAutosave/);
+});
+
+test("keeps grouped RIR within the same optional zero-to-four choices as saved sets", () => {
+  const fieldMarkup = sourceForFunction("coachWorkoutGroupedFieldMarkup");
+  const interactions = sourceForFunction("handleCoachWorkoutForm");
+
+  assert.match(fieldMarkup, /if \(field === "rir"\)/);
+  assert.match(fieldMarkup, /<select \$\{attributes\}>/);
+  assert.match(fieldMarkup, /\[0, 1, 2, 3, 4\]/);
+  assert.match(interactions, /data-coach-grouped-field="rir"/);
+});
+
+test("starts untouched straight superset and circuit sessions with 1 2 and 3 exercises", () => {
+  const defaultsSource = sourceForFunction("coachWorkoutDefaultExerciseCount");
+  const defaultCount = Function(`${defaultsSource}; return coachWorkoutDefaultExerciseCount;`)();
+  const formatChange = sourceForFunction("handleCoachWorkoutForm");
+  const resize = sourceForFunction("resizeUntouchedCoachWorkoutExercises");
+
+  assert.equal(defaultCount("single"), 1);
+  assert.equal(defaultCount("superset"), 2);
+  assert.equal(defaultCount("circuit"), 3);
+  assert.match(formatChange, /coachWorkoutDefaultExerciseCount/);
+  assert.match(formatChange, /input\[name="coach_workout_format"\]/);
+  assert.match(resize, /format === "single"/);
+  assert.match(resize, /rows\.innerHTML = coachWorkoutSetMarkup\(\{\}, 0\)/);
+});
+
+test("keeps the coach autosave save and finish controls with the new card layout", () => {
+  const save = sourceForFunction("saveCoachWorkout");
+
+  assert.match(loggerHtml, /id="coach-workout-save"[^>]*>Save Workout<\/button>/);
+  assert.match(loggerHtml, /id="coach-workout-finish"[^>]*>Finish Workout<\/button>/);
+  assert.match(loggerHtml, /id="coach-workout-reset"[^>]*>Clear form<\/button>/);
+  assert.match(loggerScript, /function scheduleCoachWorkoutAutosave/);
+  assert.match(save, /client_workout_logs/);
+  assert.match(save, /coachWorkoutExerciseValues/);
+  assert.match(save, /coachWorkoutLastSavedSignature/);
+});
+
+test("locks zoom only on the coach session logger", () => {
+  assert.match(
+    loggerHtml,
+    /name="viewport" content="width=device-width, initial-scale=1\.0, maximum-scale=1\.0, user-scalable=no"/,
+  );
 });
 
 test("saves each set's weight reps and optional RIR", () => {
