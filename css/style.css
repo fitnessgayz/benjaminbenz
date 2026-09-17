@@ -16327,3 +16327,43 @@ body.client-dashboard-page {
     border-bottom: 0;
   }
 }
+
+/* Keep the completion dialog header intact after the broad mobile form controls. */
+@media (max-width: 760px) {
+  body.client-dashboard-page .workout-completion-share-heading {
+    display: flex !important;
+    align-items: flex-start !important;
+    width: 100%;
+    min-width: 0;
+  }
+
+  body.client-dashboard-page .workout-completion-share-heading > div {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  body.client-dashboard-page .workout-completion-share-heading :is(small, strong) {
+    overflow-wrap: normal !important;
+    word-break: normal !important;
+  }
+
+  body.client-dashboard-page .workout-completion-share-heading > button {
+    display: grid !important;
+    width: 44px !important;
+    inline-size: 44px !important;
+    min-width: 44px !important;
+    min-inline-size: 44px !important;
+    max-width: 44px !important;
+    max-inline-size: 44px !important;
+    height: 44px !important;
+    min-height: 44px !important;
+    flex: 0 0 44px !important;
+    padding: 0 !important;
+    border-radius: 50% !important;
+    font-size: 1.7rem !important;
+    line-height: 1 !important;
+    white-space: nowrap !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+  }
+}

@@ -48,6 +48,14 @@ test("keeps the completion sheet and share card mobile-safe", () => {
   assert.match(styles, /\.workout-completion-share-sheet[\s\S]*?max-height: min\(94dvh, 820px\)/);
   assert.match(styles, /\.workout-completion-share-metrics[\s\S]*?grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/);
   assert.match(styles, /@media \(max-width: 380px\)[\s\S]*?\.workout-completion-share-exercises ul[\s\S]*?grid-template-columns: 1fr/);
-  assert.match(dashboard, /style\.css\?v=workout-selection-fixes-1/);
+  const broadMobileControls = styles.indexOf(".dashboard-page :where(input, select, textarea, button");
+  const completionHeaderFix = styles.lastIndexOf("body.client-dashboard-page .workout-completion-share-heading > button");
+
+  assert.ok(completionHeaderFix > broadMobileControls, "The completion header fix must follow the broad mobile button rule");
+  assert.match(styles.slice(completionHeaderFix), /width: 44px !important/);
+  assert.match(styles.slice(completionHeaderFix), /max-width: 44px !important/);
+  assert.match(styles, /body\.client-dashboard-page \.workout-completion-share-heading > div[\s\S]*?flex: 1 1 auto[\s\S]*?min-width: 0/);
+  assert.match(styles, /body\.client-dashboard-page \.workout-completion-share-heading :is\(small, strong\)[\s\S]*?overflow-wrap: normal !important/);
+  assert.match(dashboard, /style\.css\?v=workout-completion-layout-1/);
   assert.match(dashboard, /client-portal\.js\?v=workout-selection-fixes-1/);
 });

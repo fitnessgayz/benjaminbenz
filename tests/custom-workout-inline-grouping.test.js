@@ -104,6 +104,6 @@ test("mixed groups reuse the existing mobile carousel and keep one add-card endp
   assert.match(regroupSource, /existing\[groupIndex\]\.dataset\.customWorkoutFormat === group\.format/);
   assert.match(regroupSource, /panelFormat:\s*format/);
   assert.match(renderSource, /customWorkoutInlineAdd !== "false"/);
-  assert.match(dashboard, /css\/style\.css\?v=workout-selection-fixes-1/);
+  assert.match(dashboard, /css\/style\.css\?v=workout-completion-layout-1/);
   assert.match(dashboard, /js\/client-portal\.js\?v=workout-selection-fixes-1/);
 });
