@@ -30,7 +30,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=client-exercise-names-1" />
+  <link rel="stylesheet" href="css/style.css?v=web-notifications-1" />
 </head>
 <body class="dashboard-page coach-admin-page">
   <header class="site-header dashboard-header">
@@ -57,7 +57,7 @@
       </div>
     </section>
 
-    <section class="admin-workspace" id="coach-admin-workspace" hidden>
+    <section class="admin-workspace" id="coach-admin-workspace" data-web-notifications hidden>
       <button
         class="coach-admin-sidebar-backdrop"
         type="button"
@@ -112,6 +112,11 @@
           </button>
 
           <p class="admin-nav-group-title">Coach</p>
+          <button class="admin-tab" type="button" data-admin-tab="notifications" aria-label="Notifications">
+            <span class="admin-nav-icon admin-nav-notification-icon" aria-hidden="true">AL</span>
+            <span class="admin-nav-label">Notifications</span>
+            <span class="admin-nav-unread-count" data-web-notification-unread hidden aria-label="0 unread notifications">0</span>
+          </button>
           <button class="admin-tab" type="button" data-admin-tab="nutrition" aria-label="Food">
             <span class="admin-nav-icon" aria-hidden="true">FD</span>
             <span class="admin-nav-label">Food</span>
@@ -140,7 +145,7 @@
         <input type="hidden" name="sheet_url" />
         <input type="hidden" name="session_package_history" />
 
-        <section class="admin-card selected-client-panel" aria-label="Selected client">
+        <section class="admin-card selected-client-panel" aria-label="Selected client" data-admin-client-context>
           <div class="selected-client-copy">
             <p class="kicker">Selected client</p>
             <h2 id="selected-client-name">Choose a client</h2>
@@ -155,6 +160,99 @@
               <strong id="selected-session-count-value">--</strong>
             </div>
             <button class="button button-ghost" type="button" id="selected-save-profile-button">Save changes</button>
+          </div>
+        </section>
+
+        <section
+          class="admin-card coach-notification-panel"
+          data-admin-panel="notifications"
+          aria-labelledby="coach-notification-title"
+          hidden
+        >
+          <div class="admin-section-heading coach-notification-heading">
+            <div>
+              <p class="kicker">Coach alerts</p>
+              <h2 id="coach-notification-title">Notifications</h2>
+              <p>Get private alerts when a client takes an important action. You can change these choices anytime.</p>
+            </div>
+            <div class="coach-notification-actions">
+              <button class="button button-dark" type="button" data-web-notification-enable>Enable browser alerts</button>
+              <button class="button button-ghost" type="button" data-web-notification-test disabled>Send test</button>
+            </div>
+          </div>
+
+          <p class="coach-notification-status" data-web-notification-status role="status" aria-live="polite">
+            Choose Enable browser alerts to receive notifications on this device.
+          </p>
+
+          <div class="coach-notification-settings" aria-labelledby="coach-notification-settings-title">
+            <div class="coach-notification-section-heading">
+              <div>
+                <p class="kicker">Alert choices</p>
+                <h3 id="coach-notification-settings-title">Notify me when…</h3>
+              </div>
+              <p>All coach alerts start on. Turn off only the categories you do not want.</p>
+            </div>
+            <div class="coach-notification-preference-grid">
+              <label class="coach-notification-preference">
+                <input type="checkbox" data-web-notification-preference="client_workout_completed" checked />
+                <span><strong>A workout is completed</strong><small>Know when a client finishes and saves a workout.</small></span>
+              </label>
+              <label class="coach-notification-preference">
+                <input type="checkbox" data-web-notification-preference="client_check_ins" checked />
+                <span><strong>A check-in is submitted</strong><small>See new weekly check-ins and client updates.</small></span>
+              </label>
+              <label class="coach-notification-preference">
+                <input type="checkbox" data-web-notification-preference="client_workout_comments" checked />
+                <span><strong>A workout comment is added</strong><small>Follow up on notes a client leaves with a workout.</small></span>
+              </label>
+              <label class="coach-notification-preference">
+                <input type="checkbox" data-web-notification-preference="client_form_checks" checked />
+                <span><strong>A form check is submitted</strong><small>Review a client’s new form-check request.</small></span>
+              </label>
+              <label class="coach-notification-preference">
+                <input type="checkbox" data-web-notification-preference="client_progress_updates" checked />
+                <span><strong>Progress is updated</strong><small>Receive an alert for a new progress entry.</small></span>
+              </label>
+              <label class="coach-notification-preference">
+                <input type="checkbox" data-web-notification-preference="client_dexa_uploads" checked />
+                <span><strong>A DEXA report is uploaded</strong><small>Review a newly uploaded scan when you are ready.</small></span>
+              </label>
+              <label class="coach-notification-preference">
+                <input type="checkbox" data-web-notification-preference="client_questionnaires" checked />
+                <span><strong>A questionnaire arrives</strong><small>See when a client fitness questionnaire is available.</small></span>
+              </label>
+              <label class="coach-notification-preference">
+                <input type="checkbox" data-web-notification-preference="client_coach_requests" checked />
+                <span><strong>A client asks for help</strong><small>Respond to direct coach requests more quickly.</small></span>
+              </label>
+              <label class="coach-notification-preference">
+                <input type="checkbox" data-web-notification-preference="client_session_balance" checked />
+                <span><strong>Sessions are running low</strong><small>Get a reminder when a package needs attention.</small></span>
+              </label>
+              <label class="coach-notification-preference">
+                <input type="checkbox" data-web-notification-preference="client_nutrition_activity" checked />
+                <span><strong>Nutrition activity needs review</strong><small>Receive a concise digest of client food-log activity.</small></span>
+              </label>
+              <label class="coach-notification-preference">
+                <input type="checkbox" data-web-notification-preference="client_inactivity" checked />
+                <span><strong>A client becomes inactive</strong><small>Follow up when a client has not logged training.</small></span>
+              </label>
+            </div>
+          </div>
+
+          <div class="coach-notification-inbox" aria-labelledby="coach-notification-inbox-title">
+            <div class="coach-notification-section-heading">
+              <div>
+                <p class="kicker">Inbox</p>
+                <h3 id="coach-notification-inbox-title">Recent alerts</h3>
+              </div>
+              <button class="button button-ghost coach-notification-mark-all" type="button" data-web-notification-mark-all hidden>
+                Mark all read
+              </button>
+            </div>
+            <ul class="web-notification-list" data-web-notification-list aria-live="polite"></ul>
+            <p class="web-notification-empty" data-web-notification-empty>Your recent coach alerts will appear here.</p>
           </div>
         </section>
 
@@ -823,6 +921,7 @@
   <script src="js/script.js?v=client-session-link-1"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js?v=client-session-link-1"></script>
-  <script src="js/coach-admin.js?v=client-exercise-names-1"></script>
+  <script src="js/web-notifications.js?v=web-notifications-1"></script>
+  <script src="js/coach-admin.js?v=web-notifications-1"></script>
 </body>
 </html>

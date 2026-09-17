@@ -30,7 +30,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=rest-timer-alerts-1" />
+  <link rel="stylesheet" href="css/style.css?v=web-push-notifications-1" />
   <link rel="stylesheet" href="css/custom-workout-mobile-fix.css?v=grouped-set-layout-1" />
 </head>
 <body class="dashboard-page client-dashboard-page is-loading">
@@ -188,6 +188,42 @@
                 <span class="client-monthly-report-cta">View report <span aria-hidden="true">→</span></span>
               </a>
               <p>Same private report shared in your monthly email.</p>
+            </article>
+            <article class="client-home-card client-home-card-notifications web-notification-center" data-web-notifications hidden>
+              <div class="web-notification-heading">
+                <div>
+                  <p class="kicker">Notifications</p>
+                  <h3>Stay in the loop <span class="web-notification-unread" data-web-notification-unread hidden></span></h3>
+                </div>
+                <button class="button button-dark web-notification-enable" type="button" data-web-notification-enable aria-pressed="false">Enable alerts</button>
+              </div>
+              <p class="web-notification-help" data-web-notification-help>Private FWB updates appear here. Background alerts are optional.</p>
+              <p class="web-notification-status" data-web-notification-status role="status" aria-live="polite"></p>
+              <div class="web-notification-actions">
+                <button class="button button-ghost" type="button" data-web-notification-test disabled>Send test alert</button>
+              </div>
+              <details class="web-notification-settings">
+                <summary>Choose notification types</summary>
+                <div class="web-notification-preference-grid">
+                  <label><input type="checkbox" data-web-notification-preference="coach_replies" checked /> Coach replies + form reviews</label>
+                  <label><input type="checkbox" data-web-notification-preference="program_updates" checked /> Program + nutrition updates</label>
+                  <label><input type="checkbox" data-web-notification-preference="workout_reminders" checked /> Workout reminders</label>
+                  <label><input type="checkbox" data-web-notification-preference="weekly_check_ins" checked /> Weekly check-ins</label>
+                  <label><input type="checkbox" data-web-notification-preference="monthly_reports" checked /> Monthly reports</label>
+                  <label><input type="checkbox" data-web-notification-preference="session_balance" checked /> Session balance</label>
+                  <label><input type="checkbox" data-web-notification-preference="nutrition_reminders" checked /> Nutrition reminders</label>
+                  <label><input type="checkbox" data-web-notification-preference="progress_reminders" checked /> Progress reminders</label>
+                  <label><input type="checkbox" data-web-notification-preference="achievements" checked /> Achievements</label>
+                </div>
+              </details>
+              <section class="web-notification-inbox" aria-labelledby="client-notification-inbox-title">
+                <div class="web-notification-inbox-heading">
+                  <h4 id="client-notification-inbox-title">Recent updates</h4>
+                  <button type="button" data-web-notification-mark-all hidden>Mark all read</button>
+                </div>
+                <p class="web-notification-empty" data-web-notification-empty>No updates yet.</p>
+                <ul class="web-notification-list" data-web-notification-list></ul>
+              </section>
             </article>
             <article class="client-home-card client-home-card-mood" data-client-home-checkin>
               <div class="client-home-checkin-heading">
@@ -923,7 +959,8 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js?v=manual-sessions-1"></script>
   <script src="js/exercise-name-matcher.js?v=exercise-consolidation-1"></script>
+  <script src="js/web-notifications.js?v=web-push-notifications-1"></script>
   <script src="https://cdn.jsdelivr.net/npm/@zxing/browser@0.2.1/umd/zxing-browser.min.js" integrity="sha384-HRtzk9lZgkbSgvUyQrnfC/GxiXZgwaNyD7hC9wcXlsBpDhkS80ISl73juef2FRuf" crossorigin="anonymous"></script>
-  <script src="js/client-portal.js?v=rest-alerts-custom-workout-label-1"></script>
+  <script src="js/client-portal.js?v=web-push-notifications-1"></script>
 </body>
 </html>

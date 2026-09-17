@@ -329,10 +329,13 @@ test("service worker opens a same-origin dashboard when no dashboard is open", a
   assert.deepEqual(harness.openedDestinations, ["https://fitness.test/client-dashboard.html?tab=workouts"]);
 });
 
-test("service worker handles future pushes and returns clients to Workouts", () => {
+test("service worker handles timer and dynamic same-origin pushes", () => {
   assert.match(worker, /addEventListener\("push"/);
   assert.match(worker, /self\.registration\.showNotification/);
-  assert.match(worker, /showNotification\(defaultTimerNotification\.title/);
+  assert.match(worker, /timerNotificationContent\(event\)/);
+  assert.match(worker, /showNotification\(content\.title/);
+  assert.match(worker, /body: content\.body/);
+  assert.match(worker, /tag: content\.tag/);
   assert.doesNotMatch(worker, /\.\.\..*value/);
   assert.match(worker, /addEventListener\("notificationclick"/);
   assert.match(worker, /destination\.origin === self\.location\.origin/);
@@ -352,8 +355,9 @@ test("client PWA opens at the dashboard and cache-busts notification assets", ()
   assert.equal(manifest.start_url, "/client-dashboard.html");
   assert.equal(manifest.display, "standalone");
   assert.match(dashboard, /href="\/client\.webmanifest"/);
-  assert.match(dashboard, /css\/style\.css\?v=rest-timer-alerts-1/);
-  assert.match(dashboard, /js\/client-portal\.js\?v=rest-alerts-custom-workout-label-1/);
+  assert.match(dashboard, /css\/style\.css\?v=web-push-notifications-1/);
+  assert.match(dashboard, /js\/web-notifications\.js\?v=web-push-notifications-1/);
+  assert.match(dashboard, /js\/client-portal\.js\?v=web-push-notifications-1/);
 });
 
 test("Pages deployment includes the client manifest and timer service worker", () => {

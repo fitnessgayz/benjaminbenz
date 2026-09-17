@@ -215,9 +215,9 @@ test("library matching differentiates exact names, aliases, and client-created n
   assert.equal(helpers.clientExerciseLibraryMatch("Cabel Curl"), null);
 });
 
-test("coach admin cache-busts both assets for the client-name manager", () => {
-  assert.match(adminHtml, /href="css\/style\.css\?v=client-exercise-names-1"/);
-  assert.match(adminHtml, /src="js\/coach-admin\.js\?v=client-exercise-names-1"/);
+test("coach admin cache-busts both assets", () => {
+  assert.match(adminHtml, /href="css\/style\.css\?v=web-notifications-1"/);
+  assert.match(adminHtml, /src="js\/coach-admin\.js\?v=web-notifications-1"/);
 });
 
 test("spelling correction uses the protected RPC and keeps deletion separate", () => {

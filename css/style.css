@@ -3562,6 +3562,256 @@ body.is-client-checkin-prompt-open {
   border-color: var(--black);
 }
 
+/* Shared, privacy-safe notification center used by client and coach portals. */
+.web-notification-center {
+  min-width: 0;
+}
+
+.client-home-card-notifications {
+  grid-column: 1 / -1;
+  min-height: 0;
+}
+
+.web-notification-heading,
+.web-notification-inbox-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-width: 0;
+  gap: 14px;
+}
+
+.web-notification-heading > div {
+  display: grid;
+  min-width: 0;
+  gap: 7px;
+}
+
+.web-notification-heading h3,
+.web-notification-inbox-heading h4 {
+  margin: 0;
+}
+
+.web-notification-unread {
+  display: inline-grid;
+  min-width: 26px;
+  height: 26px;
+  margin-left: 4px;
+  padding: 0 7px;
+  place-items: center;
+  border-radius: 999px;
+  color: var(--black);
+  background: var(--lime);
+  font-size: .75rem;
+  font-style: normal;
+  line-height: 1;
+  vertical-align: middle;
+}
+
+.web-notification-unread[hidden] {
+  display: none;
+}
+
+.dashboard-page .client-home-card .web-notification-enable,
+.web-notification-center .web-notification-enable {
+  width: auto;
+  min-width: 150px;
+  flex: 0 0 auto;
+}
+
+.web-notification-center.is-enabled .web-notification-enable {
+  color: var(--black);
+  background: var(--lime);
+  border-color: var(--black);
+}
+
+.web-notification-help,
+.web-notification-status {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.web-notification-status {
+  min-height: 1.25em;
+  color: var(--muted);
+  font-size: .82rem;
+  font-weight: 800;
+}
+
+.web-notification-status[data-state="success"] {
+  color: #087c31;
+}
+
+.web-notification-status[data-state="error"] {
+  color: var(--red);
+}
+
+.web-notification-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.dashboard-page .client-home-card .web-notification-actions .button,
+.web-notification-actions .button {
+  width: auto;
+  min-width: 150px;
+}
+
+.web-notification-settings {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, .56);
+}
+
+.web-notification-settings summary {
+  padding: 13px 15px;
+  font-size: .86rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.web-notification-settings[open] summary {
+  border-bottom: 1px solid var(--line);
+}
+
+.web-notification-preference-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  background: var(--line);
+}
+
+.web-notification-preference-grid label {
+  display: flex;
+  min-width: 0;
+  min-height: 50px;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 13px;
+  overflow-wrap: anywhere;
+  background: var(--paper);
+  font-size: .78rem;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.web-notification-preference-grid label[hidden] {
+  display: none;
+}
+
+.web-notification-preference-grid input {
+  width: 19px;
+  height: 19px;
+  flex: 0 0 19px;
+  accent-color: var(--lime);
+}
+
+.web-notification-inbox {
+  display: grid;
+  gap: 10px;
+  padding-top: 4px;
+}
+
+.web-notification-inbox-heading h4 {
+  font-size: .92rem;
+  text-transform: uppercase;
+}
+
+.web-notification-inbox-heading button {
+  min-height: 38px;
+  padding: 6px 10px;
+  border: 0;
+  color: var(--black);
+  background: transparent;
+  font: inherit;
+  font-size: .72rem;
+  font-weight: 900;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.web-notification-empty {
+  margin: 0;
+  color: var(--muted);
+  font-size: .86rem;
+  font-weight: 800;
+}
+
+.web-notification-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.web-notification-item a {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+  padding: 12px 13px;
+  border: 1px solid var(--line);
+  border-left: 4px solid transparent;
+  color: var(--black);
+  background: #fff;
+  text-decoration: none;
+}
+
+.web-notification-item.is-unread a {
+  border-left-color: var(--lime);
+  background: #fbfff0;
+}
+
+.web-notification-item a:hover,
+.web-notification-item a:focus-visible {
+  border-color: var(--black);
+  outline: 0;
+}
+
+.web-notification-item strong,
+.web-notification-item span,
+.web-notification-item time {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.web-notification-item strong {
+  font-size: .9rem;
+}
+
+.web-notification-item span {
+  color: var(--muted);
+  font-size: .82rem;
+  font-weight: 700;
+}
+
+.web-notification-item time {
+  color: #858981;
+  font-size: .68rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+@media (max-width: 600px) {
+  .web-notification-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .dashboard-page .client-home-card .web-notification-enable,
+  .web-notification-center .web-notification-enable,
+  .dashboard-page .client-home-card .web-notification-actions .button,
+  .web-notification-actions .button {
+    width: 100%;
+  }
+
+  .web-notification-preference-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .panel-heading {
   display: flex;
   align-items: start;
@@ -12812,6 +13062,202 @@ textarea,
 
   .coach-workout-submit-panel .button {
     width: 100%;
+  }
+}
+
+/* Coach notification center. */
+.coach-admin-page .admin-tab[data-admin-tab="notifications"] {
+  position: relative;
+  padding-right: 42px !important;
+}
+
+.admin-nav-unread-count {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  display: inline-grid;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 6px;
+  place-items: center;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  color: #050505;
+  background: var(--lime);
+  font-size: .68rem;
+  font-weight: 900;
+  line-height: 1;
+  transform: translateY(-50%);
+}
+
+.admin-tab.is-active .admin-nav-unread-count {
+  color: #f7f7f2;
+  background: #171a17;
+}
+
+.admin-nav-unread-count[hidden] {
+  display: none;
+}
+
+.coach-admin-page .admin-workspace.is-sidebar-collapsed .admin-tab[data-admin-tab="notifications"] {
+  padding-right: 4px !important;
+}
+
+.admin-workspace.is-sidebar-collapsed .admin-nav-unread-count {
+  top: 4px;
+  right: 3px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  font-size: .56rem;
+  transform: none;
+}
+
+.coach-notification-panel {
+  display: grid;
+  gap: 22px;
+}
+
+.coach-notification-panel[hidden] {
+  display: none;
+}
+
+.coach-notification-heading {
+  align-items: start;
+}
+
+.coach-notification-heading p,
+.coach-notification-section-heading p {
+  max-width: 68ch;
+  margin-bottom: 0;
+}
+
+.coach-notification-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.coach-notification-actions .button,
+.coach-notification-mark-all {
+  width: auto;
+}
+
+.coach-notification-status {
+  margin: -6px 0 0;
+  padding: 12px 14px;
+  border-left: 4px solid var(--lime);
+  background: #f2f3ed;
+  color: #555a52;
+  font-weight: 800;
+}
+
+.coach-notification-settings,
+.coach-notification-inbox {
+  display: grid;
+  gap: 14px;
+  padding-top: 20px;
+  border-top: 1px solid #d8dad3;
+}
+
+.coach-notification-section-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.coach-notification-section-heading h3 {
+  margin-bottom: 0;
+}
+
+.coach-notification-section-heading > p {
+  max-width: 34rem;
+  color: #70746c;
+  text-align: right;
+}
+
+.coach-notification-preference-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.coach-notification-preference {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  align-items: start;
+  gap: 11px;
+  min-width: 0;
+  margin: 0;
+  padding: 14px;
+  border: 1px solid #d8dad3;
+  border-radius: 12px;
+  background: #fafbf7;
+  cursor: pointer;
+}
+
+.coach-notification-preference:hover {
+  border-color: #aeb2a8;
+}
+
+.coach-notification-preference input {
+  width: 22px;
+  height: 22px;
+  margin: 1px 0 0;
+  accent-color: #050505;
+}
+
+.coach-notification-preference span,
+.coach-notification-preference strong,
+.coach-notification-preference small {
+  display: block;
+  min-width: 0;
+}
+
+.coach-notification-preference strong {
+  color: #171a17;
+  line-height: 1.25;
+}
+
+.coach-notification-preference small {
+  margin-top: 4px;
+  color: #70746c;
+  font-size: .78rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+@media (max-width: 780px) {
+  .coach-notification-heading,
+  .coach-notification-section-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .coach-notification-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .coach-notification-actions .button,
+  .coach-notification-mark-all {
+    width: 100%;
+  }
+
+  .coach-notification-section-heading > p {
+    text-align: left;
+  }
+
+  .coach-notification-preference-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 419px) {
+  .coach-notification-actions {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 

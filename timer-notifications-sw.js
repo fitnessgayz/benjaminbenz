@@ -14,10 +14,41 @@ function timerNotificationUrl(event) {
 
   try {
     const value = event.data.json();
+    if (typeof value?.data?.url === "string") {
+      return value.data.url;
+    }
     return typeof value?.url === "string" ? value.url : defaultTimerNotification.url;
   } catch (error) {
     return defaultTimerNotification.url;
   }
+}
+
+function timerNotificationContent(event) {
+  let value = null;
+  try {
+    value = event?.data?.json?.() || null;
+  } catch (error) {
+    value = null;
+  }
+
+  const safeText = (candidate, fallback, maximumLength) => {
+    const text = typeof candidate === "string" ? candidate.trim() : "";
+    return (text || fallback).slice(0, maximumLength);
+  };
+
+  return {
+    title: safeText(value?.title, defaultTimerNotification.title, 160),
+    body: safeText(value?.body, defaultTimerNotification.body, 500),
+    icon: typeof value?.icon === "string" && value.icon.startsWith("/") && !value.icon.startsWith("//")
+      ? value.icon
+      : defaultTimerNotification.icon,
+    badge: typeof value?.badge === "string" && value.badge.startsWith("/") && !value.badge.startsWith("//")
+      ? value.badge
+      : defaultTimerNotification.badge,
+    tag: safeText(value?.tag, defaultTimerNotification.tag, 300),
+    url: timerNotificationDestination(timerNotificationUrl(event)),
+    notificationId: safeText(value?.data?.notificationId, "", 100)
+  };
 }
 
 function timerNotificationDestination(value) {
@@ -32,17 +63,20 @@ function timerNotificationDestination(value) {
 }
 
 self.addEventListener("push", (event) => {
-  const destination = timerNotificationDestination(timerNotificationUrl(event));
+  const content = timerNotificationContent(event);
 
-  event.waitUntil(self.registration.showNotification(defaultTimerNotification.title, {
-    body: defaultTimerNotification.body,
-    icon: defaultTimerNotification.icon,
-    badge: defaultTimerNotification.badge,
-    tag: defaultTimerNotification.tag,
+  event.waitUntil(self.registration.showNotification(content.title, {
+    body: content.body,
+    icon: content.icon,
+    badge: content.badge,
+    tag: content.tag,
     renotify: true,
     silent: false,
     timestamp: Date.now(),
-    data: { url: destination }
+    data: {
+      url: content.url,
+      notificationId: content.notificationId
+    }
   }));
 });
 
@@ -55,10 +89,24 @@ self.addEventListener("notificationclick", (event) => {
       type: "window",
       includeUncontrolled: true
     });
-    const dashboard = windows.find((client) => client.url.includes("client-dashboard.html"));
+    const destinationUrl = new URL(destination);
+    const dashboard = windows.find((client) => {
+      try {
+        return new URL(client.url).pathname === destinationUrl.pathname;
+      } catch (error) {
+        return false;
+      }
+    });
 
     if (dashboard) {
-      dashboard.postMessage({ type: "FWB_OPEN_WORKOUTS" });
+      if (
+        destinationUrl.pathname.endsWith("/client-dashboard.html") &&
+        destinationUrl.searchParams.get("tab") === "workouts"
+      ) {
+        dashboard.postMessage({ type: "FWB_OPEN_WORKOUTS" });
+      } else if (typeof dashboard.navigate === "function") {
+        await dashboard.navigate(destination);
+      }
       return dashboard.focus();
     }
     return self.clients.openWindow(destination);

@@ -7,7 +7,13 @@ const hasCoachConfig = Boolean(
   !coachConfig.anonKey.includes("PASTE_")
 );
 const coachSupabase = hasCoachConfig && window.supabase
-  ? window.supabase.createClient(coachConfig.url, coachConfig.anonKey)
+  ? window.supabase.createClient(coachConfig.url, coachConfig.anonKey, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true
+      }
+    })
   : null;
 const workoutSlots = [1, 2, 3, 4, 5, 6, 7];
 const coachLoginUrl = "client-login.html?v=manual-invite-copy-1";
@@ -15,6 +21,24 @@ const warmupExerciseCode = "WARMUP";
 const cardioExerciseCode = "CARDIO";
 const warmUpSetNumberBase = 1000;
 const coachAdminSidebarStorageKey = "fwb_coach_admin_sidebar_collapsed";
+const coachAdminTabNames = new Set([
+  "clients",
+  "profile",
+  "program",
+  "workouts",
+  "library",
+  "notifications",
+  "nutrition",
+  "progress",
+  "notes",
+  "logs",
+  "sessions"
+]);
+
+function requestedCoachAdminTab() {
+  const requestedTab = new URLSearchParams(window.location.search).get("tab") || "clients";
+  return coachAdminTabNames.has(requestedTab) ? requestedTab : "clients";
+}
 
 function isWarmUpWorkoutSet(set) {
   return set?.set_type === "warm_up" || (!set?.set_type && Number(set?.set_number) > warmUpSetNumberBase);
@@ -43,7 +67,7 @@ let workoutAnalysisStatusText = "Choose a client to analyze workout logs.";
 let isWorkoutAnalysisLoading = false;
 let showingArchivedClients = false;
 let clientSearchTerm = "";
-let activeAdminTab = "clients";
+let activeAdminTab = requestedCoachAdminTab();
 let pendingProgramCopy = null;
 let exerciseLibraryRecords = [];
 let selectedExerciseLibraryId = "";
@@ -56,6 +80,7 @@ let clientExerciseNameLoadToken = 0;
 let isClientExerciseNameLoading = false;
 let clientExerciseNameLoadError = "";
 let isClientExerciseNameMutating = false;
+let coachNotificationsController = null;
 
 function adminStatus(message) {
   const status = document.getElementById("admin-save-status");
@@ -791,7 +816,7 @@ function updateClientViewLink(program = selectedProgram()) {
 }
 
 function setAdminTab(tabName) {
-  const nextTab = tabName || "profile";
+  const nextTab = coachAdminTabNames.has(tabName) ? tabName : "clients";
 
   activeAdminTab = nextTab;
   document.querySelectorAll("[data-admin-tab]").forEach((button) => {
@@ -808,6 +833,16 @@ function setAdminTab(tabName) {
   document.querySelectorAll("[data-admin-panel]").forEach((panel) => {
     panel.hidden = panel.dataset.adminPanel !== nextTab;
   });
+
+  document.querySelectorAll("[data-admin-client-context]").forEach((panel) => {
+    panel.hidden = nextTab === "notifications";
+  });
+
+  if (nextTab === "notifications" && coachNotificationsController) {
+    coachNotificationsController.refresh().catch(() => {
+      // The controller renders a user-facing retry message.
+    });
+  }
 
   if (nextTab === "clients") {
     loadRecentTrainingLogs();
@@ -4333,7 +4368,43 @@ async function showAdminWorkspace(user) {
     signOutButton.hidden = false;
   }
 
-  await Promise.all([loadPrograms(), loadExerciseLibrary()]);
+  await Promise.all([
+    loadPrograms(),
+    loadExerciseLibrary(),
+    initializeCoachNotifications(user)
+  ]);
+}
+
+async function initializeCoachNotifications(user) {
+  const root = document.querySelector("[data-web-notifications]");
+  const status = root?.querySelector("[data-web-notification-status]");
+  const factory = window.FWBWebNotifications?.createController;
+
+  if (!root || !user?.id) {
+    return;
+  }
+
+  if (!coachSupabase || typeof factory !== "function") {
+    if (status) {
+      status.textContent = "Notifications are temporarily unavailable. Refresh and try again.";
+    }
+    return;
+  }
+
+  coachNotificationsController = factory({
+    supabaseClient: coachSupabase,
+    user,
+    role: "coach",
+    root
+  });
+
+  try {
+    await coachNotificationsController.init();
+  } catch (_error) {
+    if (status) {
+      status.textContent = "Notifications could not be loaded. Your other coach tools still work.";
+    }
+  }
 }
 
 function handleAdminTabs() {
@@ -5768,6 +5839,14 @@ async function handleCoachSignOut() {
   }
 
   button.addEventListener("click", async () => {
+    if (coachNotificationsController) {
+      try {
+        await coachNotificationsController.prepareForSignOut();
+      } catch (_error) {
+        // Signing out should still work if notification cleanup is interrupted.
+      }
+    }
+
     if (coachSupabase) {
       await coachSupabase.auth.signOut();
     }

@@ -6,7 +6,13 @@ const isConfigured = Boolean(
   !config.anonKey.includes("PASTE_")
 );
 const supabaseClient = isConfigured && window.supabase
-  ? window.supabase.createClient(config.url, config.anonKey)
+  ? window.supabase.createClient(config.url, config.anonKey, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true
+      }
+    })
   : null;
 const exerciseNameMatcher = window.FWB_EXERCISE_NAME_MATCHER || null;
 const coachPortalEmails = ["benjaminbenz.fit@gmail.com"];
@@ -45,6 +51,7 @@ let activeProgressHistoryDeckIndex = 0;
 let clientProgressHistoryDirection = 0;
 let archivedDexaReportsExpanded = false;
 let currentProgram = null;
+let clientWebNotificationController = null;
 const dashboardRequestTimeout = 15000;
 const customWorkoutTitle = "Custom workout";
 const customWorkoutFormats = {
@@ -172,7 +179,7 @@ const workoutElapsedTimerCompactStorageKey = "fwb_workout_elapsed_timer_compact_
 const workoutElapsedTimerPositionStorageKey = "fwb_workout_elapsed_timer_position_v3";
 const workoutElapsedTimerMaximumMilliseconds = 24 * 60 * 60 * 1000;
 const restTimerNotificationPreferenceStorageKey = "fwb_rest_timer_notifications_v1";
-const restTimerNotificationServiceWorkerUrl = "/timer-notifications-sw.js?v=rest-timer-alerts-1";
+const restTimerNotificationServiceWorkerUrl = "/timer-notifications-sw.js?v=web-push-notifications-1";
 let exerciseLibraryEntries = [];
 let activeCustomWorkoutFormat = "single";
 let restTimerDurationSeconds = 60;
@@ -6313,6 +6320,30 @@ function initializeRestTimerNotifications() {
   if (restTimerNotificationsEnabled()) {
     void restTimerNotificationRegistration();
   }
+}
+
+async function initializeClientWebNotifications(user) {
+  const root = document.querySelector('[data-client-dashboard-panel="home"] [data-web-notifications]');
+
+  if (!root || !supabaseClient || !user?.id || isCoachDashboardPreview) {
+    if (root) {
+      root.hidden = true;
+    }
+    return false;
+  }
+
+  clientWebNotificationController?.destroy?.();
+  clientWebNotificationController = window.FWBWebNotifications?.createController?.({
+    supabaseClient,
+    user,
+    role: "client",
+    root,
+    serviceWorkerUrl: restTimerNotificationServiceWorkerUrl
+  }) || null;
+
+  return clientWebNotificationController
+    ? clientWebNotificationController.init()
+    : false;
 }
 
 function restTimerMarkup() {
@@ -14538,6 +14569,7 @@ async function loadDashboard() {
 
     activeClientEmail = data.client_email || targetClientEmail;
     renderProgram(data);
+    void initializeClientWebNotifications(user);
     const questionnaireQuery = supabaseClient
       .from("client_fitness_questionnaires")
       .select("id,respondent_email,respondent_name,submitted_at,answers,linked_client_email,match_status,profile_imported_at")
@@ -15109,6 +15141,7 @@ async function handleSignOut() {
       renderClientDexaReports([]);
       renderSharedFoodLibrary([]);
       if (supabaseClient) {
+        await clientWebNotificationController?.prepareForSignOut?.();
         await supabaseClient.auth.signOut();
       }
 
