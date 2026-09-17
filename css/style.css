@@ -523,7 +523,7 @@
   cursor: pointer;
 }
 
-.next-exercise-decline {
+.next-exercise-finish {
   border: 1px solid var(--line);
   color: var(--black);
   background: var(--paper);

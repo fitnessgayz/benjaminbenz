@@ -5665,7 +5665,7 @@ function customWorkoutDraftExercises() {
   return Array.isArray(exercises) ? exercises : [];
 }
 
-function customWorkoutExercises() {
+function customWorkoutExercises(format = activeCustomWorkoutFormat) {
   const grouped = new Map();
 
   customWorkoutDraftExercises().forEach((draftExercise, index) => {
@@ -5691,16 +5691,20 @@ function customWorkoutExercises() {
 
   const exercises = Array.from(grouped.values()).sort((left, right) => left.code.localeCompare(right.code, undefined, { numeric: true }));
 
-  return exercises.length > 0
-    ? exercises
-    : [{
-      code: customExerciseCode(0),
-      name: "",
-      group: 0,
-      groupType: "single",
-      prescription: "Custom sets",
-      rest: ""
-    }];
+  if (exercises.length > 0) {
+    return exercises;
+  }
+
+  const defaultExerciseCount = normalizeCustomWorkoutFormat(format) === "superset" ? 2 : 1;
+
+  return Array.from({ length: defaultExerciseCount }, (_, index) => ({
+    code: customExerciseCode(index),
+    name: "",
+    group: 0,
+    groupType: "single",
+    prescription: "Custom sets",
+    rest: ""
+  }));
 }
 
 function serializeSetRowDraft(row) {
@@ -6009,6 +6013,23 @@ function closeCustomExerciseSuggestions(exceptEditor = null) {
     editor?.closest("[data-custom-exercise-card]")?.classList.remove("is-showing-suggestions");
     editor?.querySelector("[data-exercise-title-name]")?.setAttribute("aria-expanded", "false");
   });
+}
+
+function selectCustomExerciseSuggestion(button) {
+  const editor = button?.closest(".custom-workout-name-editor");
+  const input = editor?.querySelector("[data-exercise-title-name]");
+
+  if (!input) {
+    return false;
+  }
+
+  input.value = button.dataset.customExerciseSuggestion || "";
+  input.dispatchEvent(new Event("input", { bubbles: true }));
+  input.blur();
+  button.blur();
+  closeCustomExerciseSuggestions();
+
+  return true;
 }
 
 function renderCustomExerciseSuggestions(input) {
@@ -7156,16 +7177,11 @@ function nextExercisePromptMarkup() {
     <div class="next-exercise-overlay" data-next-exercise-overlay hidden>
       <section class="next-exercise-sheet" role="dialog" aria-modal="true" aria-labelledby="next-exercise-title">
         <header class="rir-heading">
-          <div>
-            <small>Exercise finished</small>
-            <strong id="next-exercise-title">Start a new exercise?</strong>
-          </div>
-          <button class="rir-close" type="button" data-next-exercise-close aria-label="Close new exercise prompt">×</button>
+          <strong id="next-exercise-title">Exercise finished</strong>
         </header>
-        <p>Would you like to add another exercise to this workout?</p>
         <div class="next-exercise-actions">
-          <button class="next-exercise-decline" type="button" data-next-exercise-no>Not now</button>
           <button class="next-exercise-confirm" type="button" data-next-exercise-yes>Start New Exercise</button>
+          <button class="next-exercise-finish" type="button" data-next-exercise-finish>Workout Finished</button>
         </div>
       </section>
     </div>
@@ -8026,7 +8042,7 @@ function customWorkoutGroupNameRowMarkup(exercise, format, groupIndex, index) {
   const suggestionMenuId = `custom-group-exercise-options-${groupKey}-${index}`;
 
   return `
-    <label class="custom-workout-group-name-row" for="custom-group-exercise-name-${groupKey}-${index}">
+    <div class="custom-workout-group-name-row">
       <strong>${escapeHtml(position)}</strong>
       <span class="custom-workout-name-editor">
         <input
@@ -8051,7 +8067,7 @@ function customWorkoutGroupNameRowMarkup(exercise, format, groupIndex, index) {
           hidden
         ></span>
       </span>
-    </label>
+    </div>
   `;
 }
 
@@ -8232,7 +8248,7 @@ function customWorkoutCarouselGroupMarkup(format, exercises, groupIndex = 0, sta
 }
 
 function customWorkoutCarouselMarkup(format, workoutTitle = customWorkoutTitle) {
-  const exercises = customWorkoutExercises();
+  const exercises = customWorkoutExercises(format);
   let groups;
 
   if (format === "superset") {
@@ -9292,8 +9308,8 @@ function syncAssignedWorkoutCarousels(panel = null) {
 
 function customWorkoutPanelMarkup(index) {
   const activeDraft = activeCustomWorkoutDraft();
-  const exercises = customWorkoutExercises();
   const format = normalizeCustomWorkoutFormat(activeCustomWorkoutFormat);
+  const exercises = customWorkoutExercises(format);
   const formatConfig = customWorkoutFormats[format];
   const copyStatusMessage = customWorkoutCopyStatusMessage(activeDraft);
   const workoutStorageTitle = customWorkoutStorageTitle(activeDraft);
@@ -9471,6 +9487,15 @@ function updateCustomWorkoutFormat(panel, value, options = {}) {
       card.dataset.customWorkoutGroup = "0";
       card.dataset.customWorkoutGroupType = "single";
     });
+  }
+
+  const currentCards = Array.from(panel.querySelectorAll("[data-custom-exercise-card]"));
+  if (
+    format === "superset" &&
+    customWorkoutDraftExercises().length === 0 &&
+    currentCards.length === 1
+  ) {
+    appendInlineGroupingPartner(panel);
   }
 
   panel.querySelectorAll("[data-custom-workout-format-option]").forEach((button) => {
@@ -13511,8 +13536,7 @@ function handleWorkoutInteractions() {
     const workoutDifficultySaveButton = event.target.closest("[data-workout-difficulty-save]");
     const workoutDifficultyCloseButton = event.target.closest("[data-workout-difficulty-close]");
     const nextExerciseYesButton = event.target.closest("[data-next-exercise-yes]");
-    const nextExerciseNoButton = event.target.closest("[data-next-exercise-no]");
-    const nextExerciseCloseButton = event.target.closest("[data-next-exercise-close]");
+    const nextExerciseFinishButton = event.target.closest("[data-next-exercise-finish]");
     const workoutStartButton = event.target.closest("[data-workout-start]");
     const resumeActiveWorkoutButton = event.target.closest("[data-resume-active-workout]");
     const workoutElapsedToggleButton = event.target.closest("[data-workout-elapsed-toggle]");
@@ -13560,12 +13584,15 @@ function handleWorkoutInteractions() {
       return;
     }
 
-    if (
-      nextExerciseNoButton ||
-      nextExerciseCloseButton ||
-      event.target.matches("[data-next-exercise-overlay]")
-    ) {
-      closeNextExercisePrompt();
+    if (nextExerciseFinishButton) {
+      const panel = nextExercisePromptPanel;
+      const finishWorkoutButton = panel?.querySelector("[data-workout-finish]");
+
+      closeNextExercisePrompt({ restoreFocus: false });
+      if (finishWorkoutButton) {
+        finishWorkoutButton.dataset.allowIncompleteWorkoutFinish = "true";
+        finishWorkoutButton.click();
+      }
       return;
     }
 
@@ -13620,14 +13647,8 @@ function handleWorkoutInteractions() {
     }
 
     if (exerciseSuggestionButton) {
-      const editor = exerciseSuggestionButton.closest(".custom-workout-name-editor");
-      const input = editor?.querySelector("[data-exercise-title-name]");
-
-      if (input) {
-        input.value = exerciseSuggestionButton.dataset.customExerciseSuggestion || "";
-        input.dispatchEvent(new Event("input", { bubbles: true }));
-        closeCustomExerciseSuggestions();
-      }
+      event.preventDefault();
+      selectCustomExerciseSuggestion(exerciseSuggestionButton);
       return;
     }
 
@@ -14138,6 +14159,31 @@ function handleWorkoutInteractions() {
   });
 
   document.addEventListener("keydown", (event) => {
+    const nextExerciseOverlay = document.querySelector("[data-next-exercise-overlay]");
+
+    if (event.key === "Tab" && nextExerciseOverlay?.hidden === false) {
+      const buttons = Array.from(nextExerciseOverlay.querySelectorAll("button:not([disabled])"));
+      const firstButton = buttons[0];
+      const lastButton = buttons[buttons.length - 1];
+
+      if (!firstButton || !lastButton) {
+        event.preventDefault();
+        return;
+      }
+
+      if (event.shiftKey && (event.target === firstButton || !nextExerciseOverlay.contains(event.target))) {
+        event.preventDefault();
+        lastButton.focus();
+        return;
+      }
+
+      if (!event.shiftKey && (event.target === lastButton || !nextExerciseOverlay.contains(event.target))) {
+        event.preventDefault();
+        firstButton.focus();
+        return;
+      }
+    }
+
     if (event.key === "Escape" && document.querySelector("[data-rir-overlay]")?.hidden === false) {
       closeRirDialog();
       return;
@@ -15039,6 +15085,11 @@ async function handleTrainingLogSave() {
     const supersetButton = event.target.closest("[data-superset-submit]");
     const workoutButton = finishWorkoutButton;
     const button = workoutButton || supersetButton;
+    const allowIncompleteWorkoutFinish = workoutButton?.dataset.allowIncompleteWorkoutFinish === "true";
+
+    if (workoutButton) {
+      delete workoutButton.dataset.allowIncompleteWorkoutFinish;
+    }
 
     if (!button) {
       return;
@@ -15051,7 +15102,7 @@ async function handleTrainingLogSave() {
 
       const incompleteExercises = incompleteWorkoutExercises(logElements);
 
-      if (incompleteExercises.length > 0) {
+      if (incompleteExercises.length > 0 && !allowIncompleteWorkoutFinish) {
         const saveResult = await saveTrainingLogRows(finishWorkoutButton, logElements, status, {
           savingMessage: "Saving progress...",
           successMessage: "Workout progress saved."
@@ -15091,28 +15142,36 @@ async function handleTrainingLogSave() {
         workoutCompletion
       });
 
-      if (saveResult.saved) {
-        const feedbackResult = await saveWorkoutDifficultyFeedback(saveResult.rows, workoutDifficulty);
-
-        if (!feedbackResult.saved) {
-          if (status) {
-            status.textContent = "Workout saved, but the difficulty rating could not be saved. Tap Finish workout to try again.";
-          }
-          return;
+      if (!saveResult.saved) {
+        if (allowIncompleteWorkoutFinish) {
+          workoutButton.dataset.allowIncompleteWorkoutFinish = "true";
         }
-
-        renderClientTrainingLogs();
-        if (status) {
-          status.textContent = `Workout finished · ${difficultySummary}.`;
-        }
-        finishWorkoutElapsedTimer();
-        if (section?.classList.contains("client-workout-panel-custom")) {
-          clearCustomWorkoutDraft();
-        }
-        openWorkoutCompletionSharePrompt(
-          workoutCompletionShareSummary(saveResult.rows, workoutCompletion, workoutDifficulty)
-        );
+        return;
       }
+
+      const feedbackResult = await saveWorkoutDifficultyFeedback(saveResult.rows, workoutDifficulty);
+
+      if (!feedbackResult.saved) {
+        if (allowIncompleteWorkoutFinish) {
+          workoutButton.dataset.allowIncompleteWorkoutFinish = "true";
+        }
+        if (status) {
+          status.textContent = "Workout saved, but the difficulty rating could not be saved. Tap Finish workout to try again.";
+        }
+        return;
+      }
+
+      renderClientTrainingLogs();
+      if (status) {
+        status.textContent = `Workout finished · ${difficultySummary}.`;
+      }
+      finishWorkoutElapsedTimer();
+      if (section?.classList.contains("client-workout-panel-custom")) {
+        clearCustomWorkoutDraft();
+      }
+      openWorkoutCompletionSharePrompt(
+        workoutCompletionShareSummary(saveResult.rows, workoutCompletion, workoutDifficulty)
+      );
       return;
     }
 
