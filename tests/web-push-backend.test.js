@@ -12,6 +12,14 @@ const edgeFunction = fs.readFileSync(
   path.join(root, "supabase/functions/send-web-push/index.ts"),
   "utf8"
 );
+const deployedEdgeFunction = fs.readFileSync(
+  path.join(root, "supabase/functions/fwb-web-push/index.ts"),
+  "utf8"
+);
+const coachWorkoutMigration = fs.readFileSync(
+  path.join(root, "supabase/migrations/20260917160557_enable_coach_workout_completion_notifications.sql"),
+  "utf8"
+);
 const config = fs.readFileSync(path.join(root, "supabase/config.toml"), "utf8");
 
 test("web-push tables use explicit RLS, grants, and account-safe endpoint ownership", () => {
@@ -54,4 +62,20 @@ test("push delivery is generic, retry-safe, and cron uses custom authorization",
   assert.match(migration, /X-FWB-Dispatch-Secret/);
   assert.match(migration, /vault\.decrypted_secrets/);
   assert.match(config, /\[functions\.send-web-push\]\s*\nverify_jwt = false/);
+});
+
+test("deployed push backend supports authenticated setup, tests, and coach workout alerts", () => {
+  assert.match(config, /\[functions\.fwb-web-push\]\s*\nverify_jwt = false/);
+  assert.match(deployedEdgeFunction, /input\.action === "public-key" \|\| input\.action === "test"/);
+  assert.match(deployedEdgeFunction, /admin\.auth\.getUser\(token\)/);
+  assert.match(deployedEdgeFunction, /from\("fwb_web_push_subscriptions"\)/);
+  assert.match(deployedEdgeFunction, /web_dedupe_key:\s*`web-push-test:/);
+  assert.match(deployedEdgeFunction, /body:\s*"Open FWB to view your update\."/);
+  assert.match(deployedEdgeFunction, /title:\s*safePushTitle\(category\)/);
+  assert.doesNotMatch(deployedEdgeFunction, /title:\s*notification\.title/);
+  assert.match(deployedEdgeFunction, /requireMutation\([\s\S]*?Could not finalize push delivery/);
+  assert.match(deployedEdgeFunction, /Could not schedule a push retry/);
+  assert.match(coachWorkoutMigration, /workout_completed/);
+  assert.match(coachWorkoutMigration, /client_workout_completed/);
+  assert.match(coachWorkoutMigration, /push_enabled = true/);
 });

@@ -55,10 +55,14 @@ test("client initializes the shared controller after authentication and disconne
 test("push permission remains user initiated and subscriptions are stored per signed-in user", () => {
   assert.match(notifications, /async function enableAlerts\(\)[\s\S]*?Notification\.requestPermission\(\)/);
   assert.match(notifications, /pushManager\.subscribe\(\{[\s\S]*?userVisibleOnly:\s*true/);
-  assert.match(notifications, /from\("web_push_subscriptions"\)[\s\S]*?\.upsert\(\{/);
+  assert.match(notifications, /"fwb_web_push_subscriptions"/);
+  assert.match(notifications, /"web_push_subscriptions"/);
+  assert.match(notifications, /\.upsert\(subscriptionPayload/);
   assert.match(notifications, /user_id:\s*user\.id/);
-  assert.match(notifications, /onConflict:\s*"user_id,endpoint"/);
+  assert.match(notifications, /backend === "deployed" \? "endpoint" : "user_id,endpoint"/);
   assert.match(notifications, /from\("client_notification_preferences"\)/);
+  assert.match(notifications, /from\("fwb_notification_settings"\)/);
+  assert.match(notifications, /web_url/);
   assert.match(notifications, /functions\.invoke\(functionName/);
 });
 

@@ -44,7 +44,7 @@ test("coach notification panel exposes push controls and an accessible inbox", (
   assert.match(adminHtml, /data-web-notification-list[^>]*aria-live="polite"/);
   assert.match(adminHtml, /data-web-notification-empty/);
   assert.match(adminHtml, /data-web-notification-mark-all[^>]*hidden/);
-  assert.match(adminHtml, /src="js\/web-notifications\.js\?v=web-notifications-1"[\s\S]*src="js\/coach-admin\.js\?v=web-notifications-1"/);
+  assert.match(adminHtml, /src="js\/web-notifications\.js\?v=coach-workout-alerts-1"[\s\S]*src="js\/coach-admin\.js\?v=web-notifications-1"/);
 });
 
 test("all feasible coach notification categories start enabled", () => {
@@ -58,6 +58,14 @@ test("all feasible coach notification categories start enabled", () => {
   }
 
   assert.doesNotMatch(adminHtml, /appointment reminder/i);
+  assert.match(sharedSource, /client_workout_completed:\s*"workout_completed"/);
+  assert.match(sharedSource, /deployedFunctionName\s*=\s*"fwb-web-push"/);
+  assert.match(sharedSource, /from\("fwb_notification_settings"\)/);
+  assert.match(sharedSource, /from\("fwb_web_push_subscriptions"\)|fwb_web_push_subscriptions/);
+  assert.match(sharedSource, /deployedSchemaErrorCodes = new Set\(\["42703", "42P01", "PGRST204", "PGRST205"\]\)/);
+  assert.match(sharedSource, /if \(!isDeployedSchemaFallback\(probe\.error\)\) \{\s*throw probe\.error;/);
+  assert.match(sharedSource, /preferenceSavePromise\.then\(\(\) => persistPreferences\(updates\)\)/);
+  assert.match(sharedSource, /await savePreferences\(\{ \[key\]: input\.checked \}\);\s*renderPreferences\(\);/);
 });
 
 test("coach auth explicitly persists and refreshes its Supabase session", () => {

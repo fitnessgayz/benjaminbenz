@@ -2,7 +2,8 @@
   "use strict";
 
   const defaultServiceWorkerUrl = "/timer-notifications-sw.js?v=web-push-notifications-1";
-  const functionName = "send-web-push";
+  const modernFunctionName = "send-web-push";
+  const deployedFunctionName = "fwb-web-push";
   const maximumInboxItems = 12;
   const clientPreferenceKeys = new Set([
     "coach_replies",
@@ -29,6 +30,30 @@
     "client_session_balance",
     "client_inactivity"
   ]);
+  const deployedPreferenceCategories = Object.freeze({
+    coach_replies: "coach_reply",
+    program_updates: "program_update",
+    session_reminders: "session_reminder",
+    workout_reminders: "workout_reminder",
+    weekly_check_ins: "weekly_check_in",
+    monthly_reports: "monthly_report",
+    session_balance: "low_sessions",
+    nutrition_reminders: "nutrition_reminder",
+    progress_reminders: "progress_reminder",
+    achievements: "achievement",
+    client_workout_completed: "workout_completed",
+    client_workout_comments: "client_message",
+    client_check_ins: "check_in_submitted",
+    client_progress_updates: "progress_submitted",
+    client_nutrition_activity: "nutrition_activity",
+    client_form_checks: "form_check_submitted",
+    client_dexa_uploads: "dexa_uploaded",
+    client_questionnaires: "questionnaire_submitted",
+    client_coach_requests: "client_message",
+    client_session_balance: "low_sessions",
+    client_inactivity: "inactivity"
+  });
+  const deployedSchemaErrorCodes = new Set(["42703", "42P01", "PGRST204", "PGRST205"]);
 
   function isIosDevice() {
     return /iPad|iPhone|iPod/.test(global.navigator?.userAgent || "") ||
@@ -103,6 +128,8 @@
     let preferences = null;
     let registrationPromise = null;
     let subscription = null;
+    let backend = "modern";
+    let preferenceSavePromise = Promise.resolve();
     let initialized = false;
     let destroyed = false;
     let busy = false;
@@ -167,6 +194,7 @@
     }
 
     async function invokeNotificationFunction(action) {
+      const functionName = backend === "deployed" ? deployedFunctionName : modernFunctionName;
       const { data, error } = await supabaseClient.functions.invoke(functionName, {
         body: { action }
       });
@@ -179,7 +207,81 @@
       return data || {};
     }
 
+    function normalizeDeployedPreferences(row) {
+      const categories = row?.categories && typeof row.categories === "object" ? row.categories : {};
+      const normalized = {
+        ...row,
+        push_enabled: row?.push_enabled === true,
+        _deployed_categories: categories
+      };
+
+      allowedPreferenceKeys.forEach((key) => {
+        const category = deployedPreferenceCategories[key] || key;
+        normalized[key] = categories[category] !== false;
+      });
+
+      return normalized;
+    }
+
+    async function modernPreferencesProbe() {
+      return supabaseClient
+        .from("client_notification_preferences")
+        .select("user_id,push_enabled,client_workout_completed")
+        .eq("user_id", user.id)
+        .maybeSingle();
+    }
+
+    function isDeployedSchemaFallback(error) {
+      return deployedSchemaErrorCodes.has(String(error?.code || ""));
+    }
+
     async function ensurePreferences() {
+      const probe = await modernPreferencesProbe();
+      if (probe.error) {
+        if (!isDeployedSchemaFallback(probe.error)) {
+          throw probe.error;
+        }
+        backend = "deployed";
+        const { data, error } = await supabaseClient
+          .from("fwb_notification_settings")
+          .select("*")
+          .eq("user_id", user.id)
+          .maybeSingle();
+
+        if (error) {
+          throw error;
+        }
+        if (data) {
+          preferences = normalizeDeployedPreferences(data);
+          return preferences;
+        }
+
+        const { data: created, error: createError } = await supabaseClient
+          .from("fwb_notification_settings")
+          .insert({ user_id: user.id })
+          .select("*")
+          .single();
+        if (createError) {
+          throw createError;
+        }
+        preferences = normalizeDeployedPreferences(created);
+        return preferences;
+      }
+
+      backend = "modern";
+      if (probe.data) {
+        const { data, error } = await supabaseClient
+          .from("client_notification_preferences")
+          .select("*")
+          .eq("user_id", user.id)
+          .single();
+        if (error) {
+          throw error;
+        }
+        preferences = data;
+        return preferences;
+      }
+
       const { data, error } = await supabaseClient
         .from("client_notification_preferences")
         .select("*")
@@ -206,7 +308,47 @@
       return preferences;
     }
 
-    async function savePreferences(updates) {
+    async function persistPreferences(updates) {
+      if (backend === "deployed") {
+        const { data: latest, error: latestError } = await supabaseClient
+          .from("fwb_notification_settings")
+          .select("*")
+          .eq("user_id", user.id)
+          .single();
+        if (latestError) {
+          throw latestError;
+        }
+
+        const categories = {
+          ...(latest?.categories && typeof latest.categories === "object" ? latest.categories : {})
+        };
+        const payload = {};
+
+        Object.entries(updates).forEach(([key, value]) => {
+          if (key === "push_enabled") {
+            payload.push_enabled = Boolean(value);
+            return;
+          }
+          const category = deployedPreferenceCategories[key];
+          if (category) {
+            categories[category] = Boolean(value);
+          }
+        });
+        payload.categories = categories;
+
+        const { data, error } = await supabaseClient
+          .from("fwb_notification_settings")
+          .update(payload)
+          .eq("user_id", user.id)
+          .select("*")
+          .single();
+        if (error) {
+          throw error;
+        }
+        preferences = normalizeDeployedPreferences(data);
+        return preferences;
+      }
+
       const payload = { ...updates, updated_at: new Date().toISOString() };
       const { data, error } = await supabaseClient
         .from("client_notification_preferences")
@@ -221,6 +363,12 @@
       return data;
     }
 
+    function savePreferences(updates) {
+      const nextSave = preferenceSavePromise.then(() => persistPreferences(updates));
+      preferenceSavePromise = nextSave.catch(() => {});
+      return nextSave;
+    }
+
     async function storeSubscription(pushSubscription) {
       const serialized = pushSubscription?.toJSON?.() || {};
       const endpoint = String(serialized.endpoint || pushSubscription?.endpoint || "");
@@ -230,18 +378,29 @@
         throw new Error("The browser did not return a complete push subscription.");
       }
 
-      const { error } = await supabaseClient
-        .from("web_push_subscriptions")
-        .upsert({
-          user_id: user.id,
-          endpoint,
-          p256dh,
-          auth,
+      const subscriptionTable = backend === "deployed"
+        ? "fwb_web_push_subscriptions"
+        : "web_push_subscriptions";
+      const subscriptionPayload = {
+        user_id: user.id,
+        endpoint,
+        p256dh,
+        auth
+      };
+      if (backend !== "deployed") {
+        Object.assign(subscriptionPayload, {
           expiration_time: serialized.expirationTime || null,
           user_agent: String(global.navigator.userAgent || "").slice(0, 500),
           is_active: true,
           last_seen_at: new Date().toISOString()
-        }, { onConflict: "user_id,endpoint" });
+        });
+      }
+
+      const { error } = await supabaseClient
+        .from(subscriptionTable)
+        .upsert(subscriptionPayload, {
+          onConflict: backend === "deployed" ? "endpoint" : "user_id,endpoint"
+        });
       if (error) {
         throw error;
       }
@@ -250,11 +409,20 @@
     async function deactivateSubscription(pushSubscription, { unsubscribe = true } = {}) {
       const endpoint = String(pushSubscription?.endpoint || "");
       if (endpoint) {
-        await supabaseClient
-          .from("web_push_subscriptions")
-          .update({ is_active: false, last_seen_at: new Date().toISOString() })
-          .eq("user_id", user.id)
-          .eq("endpoint", endpoint);
+        const query = supabaseClient
+          .from(backend === "deployed" ? "fwb_web_push_subscriptions" : "web_push_subscriptions");
+        let result;
+        if (backend === "deployed") {
+          result = await query.delete().eq("user_id", user.id).eq("endpoint", endpoint);
+        } else {
+          result = await query
+            .update({ is_active: false, last_seen_at: new Date().toISOString() })
+            .eq("user_id", user.id)
+            .eq("endpoint", endpoint);
+        }
+        if (result.error) {
+          throw result.error;
+        }
       }
       if (unsubscribe && pushSubscription?.unsubscribe) {
         try {
@@ -354,18 +522,25 @@
     }
 
     async function loadInbox() {
-      const { data, error } = await supabaseClient
-        .from("client_notifications")
-        .select("id,recipient_role,kind,title,body,action_url,created_at,read_at")
-        .eq("user_id", user.id)
-        .eq("recipient_role", role)
-        .order("created_at", { ascending: false })
-        .limit(maximumInboxItems);
+      let query = supabaseClient.from("client_notifications");
+      if (backend === "deployed") {
+        query = query.select("id,kind,title,body,web_url,created_at,read_at").eq("user_id", user.id);
+      } else {
+        query = query
+          .select("id,recipient_role,kind,title,body,action_url,created_at,read_at")
+          .eq("user_id", user.id)
+          .eq("recipient_role", role);
+      }
+      const { data, error } = await query.order("created_at", { ascending: false }).limit(maximumInboxItems);
       if (error) {
         throw error;
       }
-      renderInbox(data || []);
-      return data || [];
+      const rows = (data || []).map((row) => ({
+        ...row,
+        action_url: row.action_url || row.web_url
+      }));
+      renderInbox(rows);
+      return rows;
     }
 
     async function enableAlerts() {
@@ -471,6 +646,7 @@
       setStatus("Saving notification choices…");
       try {
         await savePreferences({ [key]: input.checked });
+        renderPreferences();
         setStatus("Notification choices saved.", "success");
       } catch (error) {
         input.checked = !input.checked;
@@ -490,12 +666,14 @@
     }
 
     async function markAllRead() {
-      const { error } = await supabaseClient
+      let query = supabaseClient
         .from("client_notifications")
         .update({ read_at: new Date().toISOString() })
-        .eq("user_id", user.id)
-        .eq("recipient_role", role)
-        .is("read_at", null);
+        .eq("user_id", user.id);
+      if (backend !== "deployed") {
+        query = query.eq("recipient_role", role);
+      }
+      const { error } = await query.is("read_at", null);
       if (error) {
         setStatus("Could not mark notifications as read.", "error");
         return;
@@ -543,7 +721,8 @@
         return false;
       }
       try {
-        await Promise.all([ensurePreferences(), loadInbox()]);
+        await ensurePreferences();
+        await loadInbox();
         subscription = pushSupport().supported && global.Notification.permission === "granted"
           ? await currentSubscription()
           : null;

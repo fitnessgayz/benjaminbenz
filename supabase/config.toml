@@ -53,3 +53,8 @@ verify_jwt = true
 # user test sends and Vault-backed cron dispatches.
 [functions.send-web-push]
 verify_jwt = false
+
+# Production currently uses this compatibility endpoint for the Vault-backed
+# notification dispatcher and authenticated browser test alerts.
+[functions.fwb-web-push]
+verify_jwt = false
