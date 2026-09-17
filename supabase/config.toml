@@ -49,6 +49,9 @@ verify_jwt = true
 [functions.extract-food-label]
 verify_jwt = true
 
+[functions.coach-calendar-events]
+verify_jwt = true
+
 # This function exposes a public VAPID key and uses its own authorization for
 # user test sends and Vault-backed cron dispatches.
 [functions.send-web-push]

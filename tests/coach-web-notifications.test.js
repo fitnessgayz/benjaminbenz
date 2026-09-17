@@ -29,9 +29,13 @@ test("keeps Session Logger first and adds a coach Settings destination", () => {
   const navigation = adminHtml.slice(navigationStart, navigationEnd);
   const sessionLogger = navigation.indexOf('href="coach-workout-log.html"');
   const firstPanelTab = navigation.indexOf("data-admin-tab=");
+  const sessionsTab = navigation.indexOf('data-admin-tab="sessions"');
+  const settingsTab = navigation.indexOf('data-admin-tab="notifications"');
 
   assert.ok(sessionLogger >= 0);
   assert.ok(sessionLogger < firstPanelTab);
+  assert.ok(settingsTab > sessionsTab);
+  assert.equal(settingsTab, navigation.lastIndexOf("data-admin-tab="));
   assert.match(navigation, /data-admin-tab="notifications"[^>]*aria-label="Settings"/);
   assert.match(navigation, /admin-nav-settings-icon/);
   assert.match(navigation, /<span class="admin-nav-label">Settings<\/span>/);
@@ -52,7 +56,7 @@ test("Settings panel keeps every notification feature together", () => {
   assert.match(settingsPanel, /data-web-notification-list[^>]*aria-live="polite"/);
   assert.match(settingsPanel, /data-web-notification-empty/);
   assert.match(settingsPanel, /data-web-notification-mark-all[^>]*hidden/);
-  assert.match(adminHtml, /src="js\/web-notifications\.js\?v=notification-default-on-1"[\s\S]*src="js\/coach-admin\.js\?v=coach-home-dashboard-1"/);
+  assert.match(adminHtml, /src="js\/web-notifications\.js\?v=notification-default-on-1"[\s\S]*src="js\/coach-admin\.js\?v=fwb-calendar-sync-1"/);
 });
 
 test("all feasible coach notification categories start enabled", () => {

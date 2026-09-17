@@ -30,7 +30,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=coach-home-dashboard-1" />
+  <link rel="stylesheet" href="css/style.css?v=fwb-calendar-sync-1" />
 </head>
 <body class="dashboard-page coach-admin-page">
   <header class="site-header dashboard-header">
@@ -117,11 +117,6 @@
           </button>
 
           <p class="admin-nav-group-title">Coach</p>
-          <button class="admin-tab" type="button" data-admin-tab="notifications" aria-label="Settings">
-            <svg class="admin-nav-icon admin-nav-settings-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.09a2 2 0 0 1 1 1.74v.5a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.09a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
-            <span class="admin-nav-label">Settings</span>
-            <span class="admin-nav-unread-count" data-web-notification-unread hidden aria-label="0 unread notifications">0</span>
-          </button>
           <button class="admin-tab" type="button" data-admin-tab="nutrition" aria-label="Food">
             <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3v8M4 3v5a3 3 0 0 0 6 0V3M7 11v10M16 3v18M16 3c3 2 4 5 4 8h-4"/></svg>
             <span class="admin-nav-label">Food</span>
@@ -141,6 +136,11 @@
           <button class="admin-tab" type="button" data-admin-tab="sessions" aria-label="Sessions">
             <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></svg>
             <span class="admin-nav-label">Sessions</span>
+          </button>
+          <button class="admin-tab" type="button" data-admin-tab="notifications" aria-label="Settings">
+            <svg class="admin-nav-icon admin-nav-settings-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.09a2 2 0 0 1 1 1.74v.5a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.09a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+            <span class="admin-nav-label">Settings</span>
+            <span class="admin-nav-unread-count" data-web-notification-unread hidden aria-label="0 unread notifications">0</span>
           </button>
         </nav>
       </aside>
@@ -200,14 +200,18 @@
             <section class="coach-home-module coach-home-schedule" aria-labelledby="coach-home-schedule-title">
               <div class="coach-home-module-heading">
                 <div>
-                  <p class="kicker">Calendar</p>
+                  <p class="kicker">FWB Calendar</p>
                   <h3 id="coach-home-schedule-title">Session schedule</h3>
                 </div>
-                <button class="coach-home-text-link" type="button" data-coach-home-tab="sessions">Session editor</button>
+                <div class="coach-home-calendar-actions">
+                  <button class="coach-home-text-link" type="button" data-coach-home-refresh-calendar>Refresh</button>
+                  <a class="coach-home-text-link" href="https://calendar.google.com/calendar/u/0/r?cid=ms1pdspk1qona0lr8d8est34ek%40group.calendar.google.com" target="_blank" rel="noopener noreferrer">Open calendar</a>
+                </div>
               </div>
+              <p class="coach-home-calendar-status" id="coach-home-calendar-status" role="status">Connecting to FWB Calendar…</p>
               <div class="coach-home-calendar" id="coach-home-calendar" aria-label="Session calendar"></div>
               <div class="coach-home-list coach-home-schedule-list" id="coach-home-schedule-list">
-                <p class="empty-state">Saved session dates will appear here.</p>
+                <p class="empty-state">FWB Calendar events will appear here.</p>
               </div>
             </section>
 
@@ -1053,6 +1057,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js?v=client-session-link-1"></script>
   <script src="js/web-notifications.js?v=notification-default-on-1"></script>
-  <script src="js/coach-admin.js?v=coach-home-dashboard-1"></script>
+  <script src="js/coach-admin.js?v=fwb-calendar-sync-1"></script>
 </body>
 </html>

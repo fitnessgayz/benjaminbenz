@@ -190,6 +190,7 @@ let restTimerReturnFocus = null;
 let restTimerRunSequence = 0;
 let restTimerActiveRunId = 0;
 let restTimerLastNotifiedRunId = 0;
+let customWorkoutGroupedRestAction = null;
 let restTimerNotificationRegistrationPromise = null;
 let restTimerNotificationPreferenceFallback = false;
 let workoutElapsedTimerState = null;
@@ -6539,8 +6540,32 @@ function renderRestTimer() {
     button.classList.toggle("is-active", isActive);
     button.setAttribute("aria-pressed", isActive ? "true" : "false");
   });
+  renderCustomWorkoutGroupedRestControls();
   renderRestTimerNotificationSetting();
 
+}
+
+function renderCustomWorkoutGroupedRestControls() {
+  if (customWorkoutGroupedRestAction && !customWorkoutGroupedRestAction.isConnected) {
+    customWorkoutGroupedRestAction = null;
+  }
+
+  document.querySelectorAll("[data-custom-grouped-round-action]").forEach((action) => {
+    const isActive = action === customWorkoutGroupedRestAction;
+    const logButton = action.querySelector("[data-custom-grouped-log-round]");
+    const controls = action.querySelector("[data-custom-grouped-rest-controls]");
+    const toggle = action.querySelector("[data-custom-grouped-rest-toggle]");
+
+    if (logButton) logButton.hidden = isActive;
+    if (controls) controls.hidden = !isActive;
+    if (!isActive || !toggle) return;
+
+    const timerAction = restTimerEndsAt
+      ? "Pause"
+      : (restTimerRemainingSeconds === 0 ? "Start" : "Resume");
+    toggle.textContent = `Rest ${restTimerTimeLabel(restTimerRemainingSeconds)} · ${timerAction}`;
+    toggle.setAttribute("aria-label", `${timerAction} rest timer at ${restTimerTimeLabel(restTimerRemainingSeconds)}`);
+  });
 }
 
 function tickRestTimer() {
@@ -6582,9 +6607,25 @@ function setRestTimerDuration(seconds) {
   resetRestTimer();
 }
 
+function adjustRestTimer(seconds) {
+  const adjustment = Math.round(Number(seconds) || 0);
+
+  syncRestTimerRemaining();
+  restTimerRemainingSeconds = Math.max(0, restTimerRemainingSeconds + adjustment);
+  if (restTimerEndsAt && restTimerRemainingSeconds > 0) {
+    restTimerEndsAt = Date.now() + restTimerRemainingSeconds * 1000;
+  } else if (restTimerRemainingSeconds === 0) {
+    restTimerEndsAt = 0;
+    restTimerActiveRunId = 0;
+    clearRestTimerInterval();
+  }
+  renderRestTimer();
+}
+
 function openRestTimer(button) {
   const overlay = ensureRestTimer();
 
+  customWorkoutGroupedRestAction = null;
   restTimerReturnFocus = button || null;
   overlay.hidden = false;
   document.body.classList.add("rest-timer-open");
@@ -8323,6 +8364,11 @@ function customWorkoutGroupedRoundCardMarkup(format, exercises, groupIndex = 0, 
           <p class="custom-workout-grouped-progress" data-custom-grouped-progress aria-live="polite">0 / 0 complete</p>
         </header>
         <div class="custom-workout-grouped-exercise-key" data-custom-grouped-exercise-key role="list" aria-label="Exercises in this group"></div>
+        <div class="custom-workout-grouped-round-stepper" role="group" aria-label="Number of rounds">
+          <button type="button" data-custom-grouped-remove-round aria-label="Remove last round">−</button>
+          <output aria-live="polite"><span>Rounds</span> <strong data-custom-grouped-round-count>1</strong></output>
+          <button type="button" data-custom-grouped-add-round aria-label="Add round">+</button>
+        </div>
         <div data-custom-grouped-sections></div>
         ${showSessionControls ? `
           <div class="custom-workout-grouped-timer" data-custom-grouped-timer role="timer" aria-label="Workout timer" hidden>
@@ -8333,10 +8379,7 @@ function customWorkoutGroupedRoundCardMarkup(format, exercises, groupIndex = 0, 
             <time data-custom-grouped-timer-time datetime="PT0S">00:00</time>
           </div>
         ` : ""}
-        <footer class="custom-workout-grouped-actions${showSessionControls ? "" : " is-round-only"}">
-          <button type="button" data-custom-grouped-add-round>+ Add round</button>
-          ${showSessionControls ? '<button type="button" data-custom-grouped-finish-workout>Finish workout</button>' : ""}
-        </footer>
+        ${showSessionControls ? '<footer class="custom-workout-grouped-actions"><button type="button" data-custom-grouped-finish-workout>Finish workout</button></footer>' : ""}
         <p class="custom-workout-grouped-status" data-custom-grouped-status aria-live="polite"></p>
       </article>
       <div class="custom-workout-grouped-source" data-custom-workout-grouped-source hidden aria-hidden="true">
@@ -8717,13 +8760,18 @@ function customWorkoutGroupedSectionsMarkup(carousel) {
           roundNumber,
           item.exerciseName
         )).join("")}
-        <div class="custom-workout-grouped-round-action">
+        <div class="custom-workout-grouped-round-action" data-custom-grouped-round-action>
           <button
             class="custom-workout-grouped-log-round"
             type="button"
             data-custom-grouped-log-round="${roundNumber}"
             aria-pressed="${logged}"
           >${logged ? `✓ Round ${roundNumber} logged` : "Log round"}</button>
+          <div class="custom-workout-grouped-rest-controls" data-custom-grouped-rest-controls hidden>
+            <button type="button" data-custom-grouped-rest-adjust="-15" aria-label="Remove 15 seconds from rest timer">−15</button>
+            <button type="button" data-custom-grouped-rest-toggle>Rest 01:00 · Pause</button>
+            <button type="button" data-custom-grouped-rest-adjust="15" aria-label="Add 15 seconds to rest timer">+15</button>
+          </div>
         </div>
       </section>
     `;
@@ -8836,8 +8884,19 @@ function renderCustomWorkoutGroupedCard(carousel) {
   carousel.dataset.groupWorkoutDeck = "false";
   renderCustomWorkoutGroupedExerciseKey(carousel);
   sections.innerHTML = customWorkoutGroupedSectionsMarkup(carousel);
+  syncCustomWorkoutGroupedRoundStepper(carousel);
   refreshCustomWorkoutGroupedCompletion(carousel);
   renderCustomWorkoutGroupedTimerPanels();
+  renderCustomWorkoutGroupedRestControls();
+}
+
+function syncCustomWorkoutGroupedRoundStepper(carousel) {
+  const count = customWorkoutGroupedRoundCount(carousel);
+  const output = carousel?.querySelector("[data-custom-grouped-round-count]");
+  const removeButton = carousel?.querySelector("[data-custom-grouped-remove-round]");
+
+  if (output) output.textContent = String(count);
+  if (removeButton) removeButton.disabled = count <= 1;
 }
 
 function customWorkoutGroupedStatus(carousel) {
@@ -9082,9 +9141,57 @@ async function logCustomWorkoutGroupedRound(button) {
   }
 
   renderCustomWorkoutGroupedCard(carousel);
+  customWorkoutGroupedRestAction = carousel.querySelector(
+    `[data-custom-grouped-round="${roundNumber}"] [data-custom-grouped-round-action]`
+  );
+  resetRestTimer();
+  startOrPauseRestTimer();
   const nextButton = carousel.querySelector(`[data-custom-grouped-log-round="${roundNumber + 1}"]`);
   nextButton?.scrollIntoView?.({ block: "nearest", behavior: "smooth" });
   return result;
+}
+
+function removeCustomWorkoutGroupedRound(button) {
+  const carousel = button?.closest("[data-custom-workout-grouped='true']");
+  const logElements = customWorkoutGroupedLogElements(carousel);
+  const roundCount = customWorkoutGroupedRoundCount(carousel);
+  const status = customWorkoutGroupedStatus(carousel);
+
+  if (!carousel || logElements.length === 0 || roundCount <= 1) {
+    if (status) status.textContent = "Keep at least one round.";
+    syncCustomWorkoutGroupedRoundStepper(carousel);
+    return false;
+  }
+  if (customWorkoutGroupedRoundIsLogged(carousel, roundCount)) {
+    if (status) status.textContent = `Round ${roundCount} is already logged and cannot be removed.`;
+    return false;
+  }
+
+  const rows = logElements
+    .map((logElement) => customWorkoutGroupedRows(logElement, workingSetType)[roundCount - 1])
+    .filter(Boolean);
+  const hasEntries = rows.some((row) => {
+    const values = setRowInputValues(row);
+    return Boolean(values.weightRaw || values.repsRaw || row.dataset.repsInReserve);
+  });
+
+  if (hasEntries && !window.confirm(`Remove round ${roundCount} and its entered values?`)) {
+    return false;
+  }
+
+  rows.forEach((row) => row.remove());
+  logElements.forEach((logElement) => {
+    renumberSetRows(logElement);
+    syncVisibleSetTarget(logElement);
+    updateVisibleSetProgress(logElement);
+  });
+  if (customWorkoutGroupedRestAction?.closest(`[data-custom-grouped-round="${roundCount}"]`)) {
+    customWorkoutGroupedRestAction = null;
+  }
+  persistCustomWorkoutDraftForElement(carousel);
+  renderCustomWorkoutGroupedCard(carousel);
+  if (status) status.textContent = `Round ${roundCount} removed.`;
+  return true;
 }
 
 function addCustomWorkoutGroupedRound(button) {
@@ -14587,6 +14694,9 @@ function handleWorkoutInteractions() {
     const customWorkoutGroupDelete = event.target.closest("[data-custom-workout-group-delete]");
     const customGroupedLogRoundButton = event.target.closest("[data-custom-grouped-log-round]");
     const customGroupedAddRoundButton = event.target.closest("[data-custom-grouped-add-round]");
+    const customGroupedRemoveRoundButton = event.target.closest("[data-custom-grouped-remove-round]");
+    const customGroupedRestAdjustButton = event.target.closest("[data-custom-grouped-rest-adjust]");
+    const customGroupedRestToggleButton = event.target.closest("[data-custom-grouped-rest-toggle]");
     const customGroupedFinishButton = event.target.closest("[data-custom-grouped-finish-workout]");
     const customGroupedSetToggle = event.target.closest("[data-custom-grouped-set-toggle]");
     const customGroupedFinishClose = event.target.closest("[data-custom-grouped-finish-close]");
@@ -14660,6 +14770,21 @@ function handleWorkoutInteractions() {
 
     if (customGroupedAddRoundButton) {
       addCustomWorkoutGroupedRound(customGroupedAddRoundButton);
+      return;
+    }
+
+    if (customGroupedRemoveRoundButton) {
+      removeCustomWorkoutGroupedRound(customGroupedRemoveRoundButton);
+      return;
+    }
+
+    if (customGroupedRestAdjustButton) {
+      adjustRestTimer(customGroupedRestAdjustButton.dataset.customGroupedRestAdjust);
+      return;
+    }
+
+    if (customGroupedRestToggleButton) {
+      startOrPauseRestTimer();
       return;
     }
 

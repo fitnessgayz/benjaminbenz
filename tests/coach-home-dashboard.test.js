@@ -38,6 +38,9 @@ test("Coach Home exposes live workout, schedule, session, sheet, and follow-up m
 
   assert.match(home, /id="coach-home-recent-list"/);
   assert.match(home, /id="coach-home-calendar"/);
+  assert.match(home, /id="coach-home-calendar-status"/);
+  assert.match(home, /data-coach-home-refresh-calendar/);
+  assert.match(home, /Open calendar/);
   assert.match(home, /id="coach-home-schedule-list"/);
   assert.match(home, /id="coach-home-sheet-list"/);
   assert.match(home, /Alex Fitness, B2 Master Session/);
@@ -79,6 +82,7 @@ test("home actions open the selected client's training logs or sessions", () => 
   assert.match(handler, /data-coach-home-open-logs/);
   assert.match(handler, /data-coach-home-open-sessions/);
   assert.match(handler, /data-coach-home-tab/);
+  assert.match(handler, /data-coach-home-refresh-calendar/);
   assert.match(opener, /fillForm\(program\)/);
   assert.match(opener, /setAdminTab\(tabName\)/);
 });

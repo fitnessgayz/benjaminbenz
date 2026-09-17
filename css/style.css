@@ -13297,6 +13297,43 @@ textarea,
   letter-spacing: -.035em;
 }
 
+.coach-home-calendar-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 14px;
+}
+
+.coach-home-calendar-actions a {
+  display: inline-block;
+}
+
+.coach-home-calendar-actions button:disabled {
+  cursor: wait;
+  opacity: .45;
+}
+
+.coach-home-calendar-status {
+  margin: -8px 0 12px;
+  color: var(--muted);
+  font-size: .76rem;
+  font-weight: 900;
+}
+
+.coach-home-calendar-status.is-synced::before {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 7px;
+  border-radius: 50%;
+  background: #60a800;
+}
+
+.coach-home-calendar-status.is-error {
+  color: #8c6200;
+}
+
 .coach-home-text-link,
 .coach-home-row-action {
   padding: 0;
@@ -13480,11 +13517,30 @@ textarea,
   font-weight: 900;
 }
 
+.coach-home-session-date {
+  display: grid;
+  gap: 2px;
+}
+
+.coach-home-session-date small {
+  color: var(--muted);
+  font-size: .67rem;
+  font-weight: 900;
+}
+
 .coach-home-session-row em {
   color: var(--muted);
   font-size: .74rem;
   font-style: normal;
   font-weight: 900;
+}
+
+.coach-home-session-row.is-canceled {
+  opacity: .62;
+}
+
+.coach-home-session-row.is-canceled strong {
+  text-decoration: line-through;
 }
 
 .coach-home-sheet-grid {
@@ -13595,6 +13651,11 @@ textarea,
 
   .coach-home-text-link {
     justify-self: start;
+  }
+
+  .coach-home-calendar-actions {
+    justify-content: space-between;
+    width: 100%;
   }
 
   .coach-home-list-row,

@@ -98,7 +98,7 @@ test("uses a compact collapsible EXERCISES editor with per-exercise delete contr
   );
 });
 
-test("renders the exercise key, warm-up rows, round rows, and grouped actions", () => {
+test("renders the exercise key, compact round stepper, round rows, and grouped actions", () => {
   const groupedMarkup = sourceForFunction("customWorkoutGroupedRoundCardMarkup");
   const exerciseKey = sourceForFunction("customWorkoutGroupedExerciseKeyMarkup");
   const sections = sourceForFunction("customWorkoutGroupedSectionsMarkup");
@@ -118,8 +118,13 @@ test("renders the exercise key, warm-up rows, round rows, and grouped actions", 
   assert.doesNotMatch(groupedMarkup, /custom-workout-grouped-columns/);
   assert.match(sections, /data-custom-grouped-log-round="\$\{roundNumber\}"/);
   assert.match(sections, />\$\{logged \? `✓ Round \$\{roundNumber\} logged` : "Log round"\}<\/button>/);
+  assert.match(sections, /data-custom-grouped-rest-adjust="-15"/);
+  assert.match(sections, /data-custom-grouped-rest-toggle/);
+  assert.match(sections, /data-custom-grouped-rest-adjust="15"/);
   assert.match(rowMarkup, /data-custom-grouped-set-toggle/);
-  assert.match(groupedMarkup, /data-custom-grouped-add-round>\+ Add round<\/button>/);
+  assert.match(groupedMarkup, /data-custom-grouped-remove-round/);
+  assert.match(groupedMarkup, /data-custom-grouped-round-count/);
+  assert.match(groupedMarkup, /data-custom-grouped-add-round/);
   assert.match(groupedMarkup, /data-custom-grouped-finish-workout>Finish workout<\/button>/);
   assert.match(
     mobileStyles,
@@ -144,7 +149,7 @@ test("requires valid grouped values while accepting zero for body-weight loads",
   assert.doesNotMatch(validate, /field === "weight"[^\n]*<= 0/);
 });
 
-test("starts the persistent workout timer only after the first successful round log", () => {
+test("starts the persistent workout timer and rest timer after a successful round log", () => {
   const logRound = sourceForFunction("logCustomWorkoutGroupedRound");
   const readTimer = sourceForFunction("readWorkoutElapsedTimerState");
   const startTimer = sourceForFunction("startWorkoutElapsedTimer");
@@ -154,7 +159,9 @@ test("starts the persistent workout timer only after the first successful round 
   assert.match(logRound, /saveTrainingLogRows/);
   assert.match(logRound, /if \(!workoutElapsedTimerState\)/);
   assert.match(logRound, /startWorkoutElapsedTimer\([\s\S]*?startedAfterRound: roundNumber/);
-  assert.doesNotMatch(logRound, /startRestTimer|openRestTimer|restTimerState/);
+  assert.match(logRound, /customWorkoutGroupedRestAction/);
+  assert.match(logRound, /resetRestTimer\(\)/);
+  assert.match(logRound, /startOrPauseRestTimer\(\)/);
   assert.match(readTimer, /startedAfterRound/);
   assert.match(startTimer, /context\.startedAfterRound/);
   assert.match(renderTimer, /renderCustomWorkoutGroupedTimerPanels\(\)/);
@@ -163,15 +170,26 @@ test("starts the persistent workout timer only after the first successful round 
 test("routes grouped controls through explicit round, add, finish, and edit handlers", () => {
   const interactions = sourceForFunction("handleWorkoutInteractions");
   const addRound = sourceForFunction("addCustomWorkoutGroupedRound");
+  const removeRound = sourceForFunction("removeCustomWorkoutGroupedRound");
+  const adjustRest = sourceForFunction("adjustRestTimer");
   const finishPrompt = sourceForFunction("ensureCustomWorkoutGroupedFinishPanel");
 
   assert.match(interactions, /data-custom-grouped-log-round/);
   assert.match(interactions, /data-custom-grouped-add-round/);
+  assert.match(interactions, /data-custom-grouped-remove-round/);
+  assert.match(interactions, /data-custom-grouped-rest-adjust/);
+  assert.match(interactions, /data-custom-grouped-rest-toggle/);
   assert.match(interactions, /data-custom-grouped-finish-workout/);
   assert.match(interactions, /data-custom-grouped-set-toggle/);
   assert.match(interactions, /data-custom-grouped-field/);
   assert.match(addRound, /addSetRow/);
   assert.match(addRound, /renderCustomWorkoutGroupedCard/);
+  assert.match(removeRound, /roundCount <= 1/);
+  assert.match(removeRound, /customWorkoutGroupedRoundIsLogged/);
+  assert.match(removeRound, /window\.confirm/);
+  assert.match(removeRound, /row\.remove\(\)/);
+  assert.match(adjustRest, /restTimerRemainingSeconds \+ adjustment/);
+  assert.match(adjustRest, /Date\.now\(\) \+ restTimerRemainingSeconds \* 1000/);
   assert.match(finishPrompt, /Start new workout/i);
   assert.match(finishPrompt, /Workout done/i);
 });
@@ -279,7 +297,7 @@ test("shows the grouped session timer and finish action on the last group only",
   assert.match(groupedMarkup, /\$\{showSessionControls \? `[\s\S]*?data-custom-grouped-timer[\s\S]*?` : ""\}/);
   assert.match(
     groupedMarkup,
-    /\$\{showSessionControls \? '<button type="button" data-custom-grouped-finish-workout>Finish workout<\/button>' : ""\}/,
+    /\$\{showSessionControls \? '<footer class="custom-workout-grouped-actions"><button type="button" data-custom-grouped-finish-workout>Finish workout<\/button><\/footer>' : ""\}/,
   );
   assert.match(initialGroups, /isLastGroup: index === groups\.length - 1/);
   assert.match(regroup, /isLastGroup: index === desiredGroups\.length - 1/);
