@@ -27,9 +27,11 @@ test("coach admin sidebar can collapse and remembers the preference", () => {
   assert.match(styleSource, /\.coach-admin-page \.admin-workspace\.is-sidebar-collapsed\s*\{[^}]*grid-template-columns:\s*78px minmax\(0, 1fr\)/s);
 });
 
-test("coach admin sidebar defaults to a compact rail on smaller screens", () => {
+test("coach admin navigation becomes a scrollable client-style bottom dock on smaller screens", () => {
   assert.match(adminSource, /matchMedia\("\(max-width: 900px\)"\)/);
-  assert.match(styleSource, /@media \(max-width: 900px\)[\s\S]*grid-template-columns:\s*64px minmax\(0, 1fr\)/);
+  assert.match(styleSource, /@media \(max-width: 900px\)[\s\S]*?\.coach-admin-sidebar\s*\{[\s\S]*?position:\s*fixed[\s\S]*?bottom:\s*calc\(10px \+ env\(safe-area-inset-bottom\)\)[\s\S]*?border-radius:\s*34px/);
+  assert.match(styleSource, /@media \(max-width: 900px\)[\s\S]*?\.coach-admin-page \.admin-tabs\s*\{[\s\S]*?display:\s*flex[\s\S]*?overflow-x:\s*auto[\s\S]*?scroll-snap-type:\s*x proximity/);
+  assert.match(styleSource, /body\.coach-admin-page\s*\{[^}]*padding-bottom:\s*calc\(116px \+ env\(safe-area-inset-bottom\)\)/s);
 });
 
 test("collapsed sidebar controls retain accessible names and navigation state semantics", () => {
@@ -44,13 +46,15 @@ test("collapsed sidebar controls retain accessible names and navigation state se
   assert.match(adminSource, /button\.removeAttribute\("aria-current"\)/);
 });
 
-test("mobile sidebar uses a dismissible fixed drawer", () => {
-  assert.match(adminHtml, /data-admin-sidebar-backdrop/);
-  assert.match(adminSource, /event\.key === "Escape"/);
-  assert.match(adminSource, /closeCoachAdminSidebarDrawer\(\{ restoreFocus: true \}\)/);
-  assert.match(adminSource, /window\.requestAnimationFrame\(\(\) => toggle\.focus\(\)\)/);
-  assert.match(styleSource, /\.admin-workspace:not\(\.is-sidebar-collapsed\) \.coach-admin-sidebar\s*\{[^}]*position:\s*fixed/s);
-  assert.match(styleSource, /\.coach-admin-sidebar-toggle\s*\{[^}]*width:\s*34px !important[^}]*font-size:\s*1\.45rem !important/s);
+test("mobile coach tabs use client-style icons, labels, and selected state", () => {
+  const navStart = adminHtml.indexOf('id="coach-admin-sidebar-nav"');
+  const navEnd = adminHtml.indexOf("</nav>", navStart);
+  const navMarkup = adminHtml.slice(navStart, navEnd);
+
+  assert.equal((navMarkup.match(/<svg class="admin-nav-icon/g) || []).length, 12);
+  assert.doesNotMatch(navMarkup, /<span class="admin-nav-icon"[^>]*>(?:SL|CL|PR|PG|WO|EX|AL|FD|PS|NT|LG|SE)<\/span>/);
+  assert.match(styleSource, /\.coach-admin-page \.admin-tab\.is-active \.admin-nav-icon\s*\{[\s\S]*?background:\s*var\(--lime\)[\s\S]*?border-radius:\s*50%/);
+  assert.match(styleSource, /\.coach-admin-page \.admin-workspace\.is-sidebar-collapsed \.admin-nav-label,[\s\S]*?display:\s*block/);
 });
 
 test("Session Logger is distinct without looking like the selected admin section", () => {

@@ -14108,8 +14108,7 @@ body.client-dashboard-page {
   text-decoration: none;
 }
 
-.coach-admin-sidebar-mark,
-.admin-nav-icon {
+.coach-admin-sidebar-mark {
   display: inline-grid;
   flex: 0 0 38px;
   width: 38px;
@@ -14121,6 +14120,15 @@ body.client-dashboard-page {
   font-size: .68rem;
   font-weight: 900;
   letter-spacing: -.02em;
+}
+
+.admin-nav-icon {
+  display: block;
+  flex: 0 0 22px;
+  width: 22px;
+  height: 22px;
+  justify-self: center;
+  color: inherit;
 }
 
 .coach-admin-sidebar-mark {
@@ -14215,7 +14223,6 @@ body.client-dashboard-page {
 
 .coach-admin-page .admin-tab.is-active .admin-nav-icon {
   color: #050505;
-  border-color: rgba(5, 5, 5, .25);
 }
 
 .coach-admin-page .admin-tab-session-logger {
@@ -14227,7 +14234,6 @@ body.client-dashboard-page {
 
 .coach-admin-page .admin-tab-session-logger .admin-nav-icon {
   color: var(--lime);
-  border-color: rgba(215, 255, 63, .38);
 }
 
 .coach-admin-sidebar-backdrop {
@@ -14276,91 +14282,224 @@ body.client-dashboard-page {
 }
 
 @media (max-width: 900px) {
+  body.coach-admin-page {
+    padding-bottom: calc(116px + env(safe-area-inset-bottom));
+  }
+
+  .coach-admin-page .admin-shell {
+    width: min(1180px, calc(100% - 24px));
+  }
+
   .coach-admin-page .admin-workspace,
   .coach-admin-page .admin-workspace.is-sidebar-collapsed {
-    grid-template-columns: 64px minmax(0, 1fr);
-    gap: 10px;
+    display: block;
   }
 
   .coach-admin-sidebar {
-    width: 232px;
-    max-width: calc(100vw - 24px);
-    box-sizing: border-box;
-    box-shadow: 0 18px 48px rgba(0, 0, 0, .28);
-  }
-
-  .coach-admin-page .admin-workspace:not(.is-sidebar-collapsed) .coach-admin-sidebar {
     position: fixed;
-    top: 78px;
+    top: auto;
     right: auto;
-    bottom: auto;
-    left: 12px;
-    z-index: 14;
-    width: min(232px, calc(100vw - 24px));
-    max-height: calc(100dvh - 90px);
-  }
-
-  .coach-admin-page .admin-workspace.is-sidebar-drawer-open .coach-admin-sidebar-backdrop {
-    position: fixed !important;
-    inset: 0 !important;
-    z-index: 13;
-    display: block !important;
-    width: 100vw !important;
-    inline-size: 100vw !important;
+    bottom: calc(10px + env(safe-area-inset-bottom));
+    left: 50%;
+    z-index: 85;
+    display: block;
+    width: min(720px, calc(100% - 24px));
     max-width: none !important;
-    min-height: 100dvh !important;
-    padding: 0 !important;
-    border: 0 !important;
-    border-radius: 0 !important;
-    background: rgba(5, 5, 5, .46);
-    cursor: default;
+    max-height: none;
+    padding: 8px 10px 6px;
+    overflow: visible;
+    transform: translateX(-50%);
+    background: rgba(23, 26, 23, .98);
+    border: 1px solid #31342f;
+    border-radius: 34px;
+    box-shadow: 0 12px 34px rgba(0, 0, 0, .2);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
   }
 
-  body.is-coach-admin-drawer-open {
-    overflow: hidden;
+  .coach-admin-sidebar-header,
+  .coach-admin-sidebar-backdrop,
+  .coach-admin-page .admin-nav-group-title {
+    display: none !important;
   }
 
-  .coach-admin-page .admin-workspace.is-sidebar-collapsed .coach-admin-sidebar {
-    width: 64px;
-    padding-inline: 7px;
-    box-shadow: 0 12px 28px rgba(0, 0, 0, .14);
+  .coach-admin-page .admin-tabs {
+    display: flex;
+    align-items: stretch;
+    width: 100%;
+    max-height: none;
+    gap: 6px;
+    padding: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-x: contain;
+    scroll-padding-inline: 10px;
+    scroll-snap-type: x proximity;
+    touch-action: pan-x;
+    scrollbar-width: thin;
+    scrollbar-color: var(--lime) rgba(255, 255, 255, .16);
   }
 
   .coach-admin-page .admin-tab,
   .coach-admin-page .admin-workspace.is-sidebar-collapsed .admin-tab {
-    width: 100% !important;
-    min-width: 0 !important;
+    position: relative;
+    display: flex !important;
+    flex: 0 0 82px !important;
+    flex-direction: column;
+    width: 82px !important;
+    min-width: 82px !important;
+    max-width: 82px !important;
+    min-height: 78px !important;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    margin: 0;
+    padding: 6px 3px 10px !important;
+    overflow: visible !important;
+    color: #e4e6df;
+    background: transparent;
+    border: 0;
+    border-radius: 12px !important;
+    font-size: .63rem !important;
+    line-height: 1 !important;
+    text-align: center;
+    scroll-snap-align: center;
+  }
+
+  .coach-admin-page .admin-tab::after {
+    content: "";
+    position: absolute;
+    right: 16px;
+    bottom: 1px;
+    left: 16px;
+    height: 4px;
+    background: transparent;
+    border-radius: 3px 3px 0 0;
+  }
+
+  .coach-admin-page .admin-tab:hover,
+  .coach-admin-page .admin-tab-session-logger {
+    color: #e4e6df;
+    background: transparent;
+    border-color: transparent;
+  }
+
+  .coach-admin-page .admin-tab.is-active {
+    color: var(--lime);
+    background: transparent;
+    border-color: transparent;
+  }
+
+  .coach-admin-page .admin-tab.is-active::after {
+    background: var(--lime);
+  }
+
+  .coach-admin-page .admin-nav-icon,
+  .coach-admin-page .admin-tab-session-logger .admin-nav-icon {
+    display: block;
+    width: 28px;
+    height: 28px;
+    flex: 0 0 28px;
+    padding: 1px;
+    color: inherit;
+    background: transparent;
+    border-radius: 50%;
+    transition: color .16s ease, background-color .16s ease, box-shadow .16s ease;
+  }
+
+  .coach-admin-page .admin-tab.is-active .admin-nav-icon {
+    width: 42px;
+    height: 42px;
+    flex-basis: 42px;
+    padding: 7px;
+    color: var(--black);
+    background: var(--lime);
+    border-radius: 50%;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, .18);
+  }
+
+  .coach-admin-page .admin-workspace.is-sidebar-collapsed .admin-nav-label,
+  .coach-admin-page .admin-nav-label {
+    display: block;
+    width: 100%;
+    overflow: hidden;
+    color: inherit;
+    font-size: .63rem;
+    line-height: 1.1;
+    overflow-wrap: normal;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .coach-admin-page .admin-tab[data-admin-tab="notifications"] .admin-nav-unread-count {
+    top: 3px;
+    right: 8px;
+  }
+
+  .coach-admin-page .admin-tabs::-webkit-scrollbar {
+    display: block;
+    height: 4px;
+  }
+
+  .coach-admin-page .admin-tabs::-webkit-scrollbar-track {
+    margin-inline: 28px;
+    background: rgba(255, 255, 255, .16);
+    border-radius: 999px;
+  }
+
+  .coach-admin-page .admin-tabs::-webkit-scrollbar-thumb {
+    background: var(--lime);
+    border-radius: 999px;
   }
 }
 
 @media (max-width: 520px) {
+  body.coach-admin-page {
+    padding-bottom: calc(110px + env(safe-area-inset-bottom));
+  }
+
   .coach-admin-page .admin-shell {
     width: calc(100% - 16px);
   }
 
-  .coach-admin-page .admin-workspace,
-  .coach-admin-page .admin-workspace.is-sidebar-collapsed {
-    grid-template-columns: 58px minmax(0, 1fr);
-    gap: 8px;
-  }
-
-  .coach-admin-page .admin-workspace.is-sidebar-collapsed .coach-admin-sidebar {
-    width: 58px;
-    padding-inline: 6px;
-  }
-
   .coach-admin-sidebar {
-    top: 70px;
-    max-height: calc(100dvh - 82px);
+    bottom: calc(6px + env(safe-area-inset-bottom));
+    width: calc(100% - 12px);
+    gap: 4px;
+    padding: 7px 8px 5px;
   }
 
-  .coach-admin-page .admin-workspace:not(.is-sidebar-collapsed) .coach-admin-sidebar {
-    top: 70px;
-    max-height: calc(100dvh - 82px);
+  .coach-admin-page .admin-tab,
+  .coach-admin-page .admin-workspace.is-sidebar-collapsed .admin-tab {
+    flex-basis: 78px !important;
+    width: 78px !important;
+    min-width: 78px !important;
+    max-width: 78px !important;
+    min-height: 76px !important;
+    padding: 6px 2px 9px !important;
   }
 
-  .coach-admin-page .admin-tabs {
-    max-height: calc(100dvh - 146px);
+  .coach-admin-page .admin-nav-icon,
+  .coach-admin-page .admin-tab-session-logger .admin-nav-icon {
+    width: 27px;
+    height: 27px;
+    flex-basis: 27px;
+  }
+
+  .coach-admin-page .admin-tab.is-active .admin-nav-icon {
+    width: 40px;
+    height: 40px;
+    flex-basis: 40px;
+    padding: 7px;
+  }
+
+  .coach-admin-page .admin-tab::after {
+    right: 14px;
+    left: 14px;
+  }
+
+  .coach-admin-page .admin-nav-label {
+    font-size: .6rem;
   }
 }
 

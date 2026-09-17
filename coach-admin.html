@@ -30,7 +30,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=web-notifications-1" />
+  <link rel="stylesheet" href="css/style.css?v=coach-client-navigation-1" />
 </head>
 <body class="dashboard-page coach-admin-page">
   <header class="site-header dashboard-header">
@@ -85,56 +85,56 @@
 
         <nav class="admin-tabs" id="coach-admin-sidebar-nav" aria-label="Admin editor sections">
           <a class="admin-tab admin-tab-link admin-tab-session-logger" href="coach-workout-log.html" aria-label="Session logger">
-            <span class="admin-nav-icon" aria-hidden="true">SL</span>
+            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-3"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="m9 14 2 2 4-5"/></svg>
             <span class="admin-nav-label">Session logger</span>
           </a>
 
           <p class="admin-nav-group-title">Manage</p>
           <button class="admin-tab is-active" type="button" data-admin-tab="clients" aria-label="Clients" aria-current="page">
-            <span class="admin-nav-icon" aria-hidden="true">CL</span>
+            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
             <span class="admin-nav-label">Clients</span>
           </button>
           <button class="admin-tab" type="button" data-admin-tab="profile" aria-label="Profile">
-            <span class="admin-nav-icon" aria-hidden="true">PR</span>
+            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
             <span class="admin-nav-label">Profile</span>
           </button>
           <button class="admin-tab" type="button" data-admin-tab="program" aria-label="Program">
-            <span class="admin-nav-icon" aria-hidden="true">PG</span>
+            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 2 9 5-9 5-9-5 9-5Z"/><path d="m3 12 9 5 9-5M3 17l9 5 9-5"/></svg>
             <span class="admin-nav-label">Program</span>
           </button>
           <button class="admin-tab" type="button" data-admin-tab="workouts" aria-label="Workouts">
-            <span class="admin-nav-icon" aria-hidden="true">WO</span>
+            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 7v10M3.5 9v6M18 7v10M20.5 9v6M6 12h12"/></svg>
             <span class="admin-nav-label">Workouts</span>
           </button>
           <button class="admin-tab" type="button" data-admin-tab="library" aria-label="Exercise library">
-            <span class="admin-nav-icon" aria-hidden="true">EX</span>
+            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/><path d="M9 7h7M9 11h5"/></svg>
             <span class="admin-nav-label">Exercise library</span>
           </button>
 
           <p class="admin-nav-group-title">Coach</p>
           <button class="admin-tab" type="button" data-admin-tab="notifications" aria-label="Notifications">
-            <span class="admin-nav-icon admin-nav-notification-icon" aria-hidden="true">AL</span>
+            <svg class="admin-nav-icon admin-nav-notification-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg>
             <span class="admin-nav-label">Notifications</span>
             <span class="admin-nav-unread-count" data-web-notification-unread hidden aria-label="0 unread notifications">0</span>
           </button>
           <button class="admin-tab" type="button" data-admin-tab="nutrition" aria-label="Food">
-            <span class="admin-nav-icon" aria-hidden="true">FD</span>
+            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3v8M4 3v5a3 3 0 0 0 6 0V3M7 11v10M16 3v18M16 3c3 2 4 5 4 8h-4"/></svg>
             <span class="admin-nav-label">Food</span>
           </button>
           <button class="admin-tab" type="button" data-admin-tab="progress" aria-label="Progress and stats">
-            <span class="admin-nav-icon" aria-hidden="true">PS</span>
+            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V5M4 20h16"/><path d="m7 15 4-4 3 3 5-7"/></svg>
             <span class="admin-nav-label">Progress &amp; stats</span>
           </button>
           <button class="admin-tab" type="button" data-admin-tab="notes" aria-label="Notes">
-            <span class="admin-nav-icon" aria-hidden="true">NT</span>
+            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M8 13h8M8 17h6"/></svg>
             <span class="admin-nav-label">Notes</span>
           </button>
           <button class="admin-tab" type="button" data-admin-tab="logs" aria-label="Logs">
-            <span class="admin-nav-icon" aria-hidden="true">LG</span>
+            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-3"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M8 12h8M8 16h8"/></svg>
             <span class="admin-nav-label">Logs</span>
           </button>
           <button class="admin-tab" type="button" data-admin-tab="sessions" aria-label="Sessions">
-            <span class="admin-nav-icon" aria-hidden="true">SE</span>
+            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></svg>
             <span class="admin-nav-label">Sessions</span>
           </button>
         </nav>
