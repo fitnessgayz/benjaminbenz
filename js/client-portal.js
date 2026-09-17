@@ -9707,7 +9707,7 @@ function clientWorkoutPickerCardMarkup(workout, index, total) {
           class="client-workout-picker-choose"
           type="button"
           data-client-workout-picker-choose="${index}"
-        >${workout.isCustom ? "Build custom workout" : "Choose workout"}</button>
+        >${workout.isCustom ? "Start custom workout" : "Choose workout"}</button>
       </div>
     </article>
   `;

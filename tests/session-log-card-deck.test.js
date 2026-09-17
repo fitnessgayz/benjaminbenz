@@ -169,6 +169,6 @@ test("mobile deck styles layer cards without clipping long workout content", () 
 
 test("cache-busts the live dashboard assets after the Session Log release", () => {
   assert.match(dashboard, /css\/style\.css\?v=rest-timer-alerts-1/);
-  assert.match(dashboard, /js\/client-portal\.js\?v=rest-timer-alerts-1/);
+  assert.match(dashboard, /js\/client-portal\.js\?v=rest-alerts-custom-workout-label-1/);
   assert.match(portal, /handleClientWorkoutHistoryDeck\(\);/);
 });

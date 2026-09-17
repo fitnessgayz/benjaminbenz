@@ -49,5 +49,5 @@ test("keeps the completion sheet and share card mobile-safe", () => {
   assert.match(styles, /\.workout-completion-share-metrics[\s\S]*?grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/);
   assert.match(styles, /@media \(max-width: 380px\)[\s\S]*?\.workout-completion-share-exercises ul[\s\S]*?grid-template-columns: 1fr/);
   assert.match(dashboard, /style\.css\?v=rest-timer-alerts-1/);
-  assert.match(dashboard, /client-portal\.js\?v=rest-timer-alerts-1/);
+  assert.match(dashboard, /client-portal\.js\?v=rest-alerts-custom-workout-label-1/);
 });

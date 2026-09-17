@@ -69,7 +69,7 @@ test("renders a compact accessible 3D deck with descriptions and direct controls
   assert.match(cardSource, /client-workout-picker-facts/);
   assert.match(cardSource, /client-workout-picker-preview/);
   assert.match(cardSource, /data-client-workout-picker-choose/);
-  assert.match(cardSource, /Build custom workout/);
+  assert.match(cardSource, /Start custom workout/);
   assert.match(cardSource, /workout\.isCustom \? `[\s\S]*?data-client-workout-copy-history/);
   assert.match(markupSource, /workout\.pickerLabel \|\| "workout"/);
   assert.match(renderSource, /workout\.assignedWorkoutIndex \+ 1/);
@@ -123,7 +123,7 @@ test("keeps the deck compact and clear of the fixed mobile dock", () => {
   assert.match(styles, /@media \(max-width: 420px\)[\s\S]*?\.client-workout-picker-controls \{[\s\S]*?width:\s*100%;[\s\S]*?justify-content:\s*space-between/);
   assert.match(styles, /scroll-margin-bottom:\s*var\(--client-bottom-dock-clearance\)/);
   assert.match(dashboard, /css\/style\.css\?v=rest-timer-alerts-1/);
-  assert.match(dashboard, /js\/client-portal\.js\?v=rest-timer-alerts-1/);
+  assert.match(dashboard, /js\/client-portal\.js\?v=rest-alerts-custom-workout-label-1/);
 });
 
 test("shows a workout day separately from its training target", () => {
