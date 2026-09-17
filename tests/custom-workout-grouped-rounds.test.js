@@ -190,9 +190,48 @@ test("saves only explicitly completed grouped rows without deleting future round
 });
 
 test("starts a fresh custom session with a unique storage title after completion", () => {
+  const defaultCount = sourceForFunction("customWorkoutDefaultExerciseCount");
+  const restartConfig = sourceForFunction("groupedCustomWorkoutRestartConfig");
   const freshTitle = sourceForFunction("freshCustomWorkoutStorageTitle");
   const restart = sourceForFunction("startFreshGroupedCustomWorkout");
   const finishSave = sourceForFunction("handleTrainingLogSave");
+  const storedDrafts = [];
+  const panel = {
+    dataset: { customWorkoutFormat: "superset" },
+    querySelector(selector) {
+      return selector === "[data-workout-date]" ? { value: "2026-09-17" } : null;
+    }
+  };
+  const restartApi = Function(
+    "normalizeCustomWorkoutFormat",
+    "activeCustomWorkoutFormat",
+    "todayDate",
+    "document",
+    "customWorkoutDefaultWorkingSetCount",
+    "warmUpSetType",
+    "workingSetType",
+    "storeCustomWorkoutFormat",
+    "storeCustomWorkoutDraft",
+    "freshCustomWorkoutStorageTitle",
+    "customExerciseCode",
+    "replaceCustomWorkoutPanelFromDraft",
+    "activateClientWorkoutPanel",
+    `${defaultCount}; ${restartConfig}; ${restart}; return { groupedCustomWorkoutRestartConfig, startFreshGroupedCustomWorkout };`
+  )(
+    (value) => ["superset", "circuit"].includes(value) ? value : "single",
+    "single",
+    () => "2026-09-17",
+    { querySelectorAll: () => [panel] },
+    2,
+    "warm_up",
+    "working",
+    () => {},
+    (draft) => storedDrafts.push(draft),
+    () => `Custom workout · New · ${storedDrafts.length}`,
+    (index) => `CW${String(index + 1).padStart(2, "0")}`,
+    () => ({}),
+    () => {}
+  );
 
   assert.match(freshTitle, /Custom workout|customWorkoutTitle/);
   assert.match(freshTitle, /getMilliseconds/);
@@ -200,6 +239,23 @@ test("starts a fresh custom session with a unique storage title after completion
   assert.match(restart, /workoutTitle: freshCustomWorkoutStorageTitle\(\)/);
   assert.match(restart, /complete: false/);
   assert.match(finishSave, /startFreshGroupedCustomWorkout\(groupedRestart\)/);
+
+  const supersetConfig = restartApi.groupedCustomWorkoutRestartConfig(panel);
+  assert.equal(Object.hasOwn(supersetConfig, "exerciseCount"), false);
+  restartApi.startFreshGroupedCustomWorkout({ ...supersetConfig, exerciseCount: 8 });
+  assert.equal(storedDrafts[0].format, "superset");
+  assert.equal(storedDrafts[0].date, "2026-09-17");
+  assert.deepEqual(storedDrafts[0].exercises.map((exercise) => exercise.code), ["CW01", "CW02"]);
+  assert.deepEqual(storedDrafts[0].exercises.map((exercise) => exercise.group), [0, 0]);
+  assert.ok(storedDrafts[0].exercises.every((exercise) => exercise.name === "" && exercise.groupType === "superset"));
+
+  panel.dataset.customWorkoutFormat = "circuit";
+  const circuitConfig = restartApi.groupedCustomWorkoutRestartConfig(panel);
+  restartApi.startFreshGroupedCustomWorkout({ ...circuitConfig, exerciseCount: 8 });
+  assert.equal(storedDrafts[1].format, "circuit");
+  assert.deepEqual(storedDrafts[1].exercises.map((exercise) => exercise.code), ["CW01", "CW02", "CW03"]);
+  assert.deepEqual(storedDrafts[1].exercises.map((exercise) => exercise.group), [0, 0, 0]);
+  assert.ok(storedDrafts[1].exercises.every((exercise) => exercise.name === "" && exercise.groupType === "circuit"));
 });
 
 test("keeps the grouped round renderer custom-only", () => {

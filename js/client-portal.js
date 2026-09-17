@@ -5386,6 +5386,50 @@ function normalizeCustomWorkoutFormat(value) {
   return Object.hasOwn(customWorkoutFormats, value) ? value : "single";
 }
 
+function customWorkoutDefaultExerciseCount(format) {
+  switch (normalizeCustomWorkoutFormat(format)) {
+    case "superset": return 2;
+    case "circuit": return 3;
+    default: return 1;
+  }
+}
+
+function customWorkoutPanelHasEnteredExerciseContent(panel) {
+  return Array.from(panel?.querySelectorAll("[data-custom-exercise-card] [data-exercise-log]") || []).some((logElement) => {
+    const name = exerciseNameInputForLog(logElement)?.value || logElement.dataset.exerciseName || "";
+    const notes = logElement.querySelector("[data-log-notes]")?.value || "";
+
+    if (String(name).trim() || String(notes).trim() || logElement.dataset.exerciseSkipped === "true") {
+      return true;
+    }
+
+    return Array.from(logElement.querySelectorAll("[data-set-row]")).some((row) => (
+      String(row.querySelector("[data-set-weight]")?.value || "").trim() ||
+      String(row.querySelector("[data-set-reps]")?.value || "").trim() ||
+      String(row.dataset.repsInReserve || "").trim() ||
+      row.classList.contains("is-complete") ||
+      row.querySelector("[data-complete-set]")?.getAttribute("aria-pressed") === "true"
+    ));
+  });
+}
+
+function setUntouchedCustomWorkoutDefaultExercises(panel, format, cards = []) {
+  const defaultExerciseCount = customWorkoutDefaultExerciseCount(format);
+  const adjustedCards = Array.from(cards);
+
+  while (adjustedCards.length < defaultExerciseCount) {
+    const newCard = appendInlineGroupingPartner(panel);
+    if (!newCard) break;
+    adjustedCards.push(newCard);
+  }
+
+  while (adjustedCards.length > defaultExerciseCount) {
+    adjustedCards.pop()?.remove();
+  }
+
+  return adjustedCards;
+}
+
 function normalizeCustomWorkoutInlineGroupType(value) {
   const normalized = String(value || "").trim().toLowerCase();
 
@@ -5716,7 +5760,7 @@ function customWorkoutExercises(format = activeCustomWorkoutFormat) {
     return exercises;
   }
 
-  const defaultExerciseCount = normalizeCustomWorkoutFormat(format) === "superset" ? 2 : 1;
+  const defaultExerciseCount = customWorkoutDefaultExerciseCount(format);
 
   return Array.from({ length: defaultExerciseCount }, (_, index) => ({
     code: customExerciseCode(index),
@@ -9171,11 +9215,7 @@ function openCustomWorkoutGroupedFinishPanel(button) {
 
 function groupedCustomWorkoutRestartConfig(panel) {
   const format = normalizeCustomWorkoutFormat(panel?.dataset.customWorkoutFormat || activeCustomWorkoutFormat);
-  const exerciseCount = Math.max(
-    panel?.querySelectorAll("[data-custom-exercise-card]").length || 0,
-    format === "superset" ? 2 : 1
-  );
-  return { panel, format, exerciseCount, date: panel?.querySelector("[data-workout-date]")?.value || todayDate() };
+  return { panel, format, date: panel?.querySelector("[data-workout-date]")?.value || todayDate() };
 }
 
 function freshCustomWorkoutStorageTitle(now = new Date()) {
@@ -9187,7 +9227,7 @@ function freshCustomWorkoutStorageTitle(now = new Date()) {
 
 function startFreshGroupedCustomWorkout(config = {}) {
   const format = normalizeCustomWorkoutFormat(config.format || activeCustomWorkoutFormat);
-  const exerciseCount = Math.max(Number(config.exerciseCount) || 0, format === "superset" ? 2 : 1);
+  const exerciseCount = customWorkoutDefaultExerciseCount(format);
   const date = config.date || todayDate();
   const panels = Array.from(document.querySelectorAll(".client-workout-panel"));
   const panelIndex = Math.max(panels.indexOf(config.panel), 0);
@@ -10472,11 +10512,20 @@ function updateCustomWorkoutFormat(panel, value, options = {}) {
   panel.dataset.customWorkoutFormat = format;
   storeCustomWorkoutFormat(format);
 
+  let currentCards = Array.from(panel.querySelectorAll("[data-custom-exercise-card]"));
   if (format !== previousFormat) {
-    panel.querySelectorAll("[data-custom-exercise-card]").forEach((card) => {
+    currentCards.forEach((card) => {
       card.dataset.customWorkoutGroup = "0";
       card.dataset.customWorkoutGroupType = "single";
     });
+  }
+
+  if (
+    format !== previousFormat &&
+    !options.skipDraft &&
+    !customWorkoutPanelHasEnteredExerciseContent(panel)
+  ) {
+    currentCards = setUntouchedCustomWorkoutDefaultExercises(panel, format, currentCards);
   }
 
   if (format === "single" && previousFormat !== "single" && !options.skipDraft) {
@@ -10495,15 +10544,6 @@ function updateCustomWorkoutFormat(panel, value, options = {}) {
     }
     replacement?.querySelector('[data-custom-workout-format-option="single"]')?.focus();
     return;
-  }
-
-  const currentCards = Array.from(panel.querySelectorAll("[data-custom-exercise-card]"));
-  if (
-    format === "superset" &&
-    customWorkoutDraftExercises().length === 0 &&
-    currentCards.length === 1
-  ) {
-    appendInlineGroupingPartner(panel);
   }
 
   panel.querySelectorAll("[data-custom-workout-format-option]").forEach((button) => {
