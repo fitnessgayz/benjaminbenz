@@ -40,7 +40,8 @@ test("collapsed sidebar controls retain accessible names and navigation state se
   const navMarkup = adminHtml.slice(navStart, navEnd);
 
   assert.doesNotMatch(navMarkup, /aria-selected=/);
-  assert.match(navMarkup, /data-admin-tab="clients"[^>]*aria-label="Clients"[^>]*aria-current="page"/);
+  assert.match(navMarkup, /data-admin-tab="home"[^>]*aria-label="Home"[^>]*aria-current="page"/);
+  assert.match(navMarkup, /data-admin-tab="clients"[^>]*aria-label="Clients"/);
   assert.match(navMarkup, /data-admin-tab="sessions"[^>]*aria-label="Sessions"/);
   assert.match(adminSource, /button\.setAttribute\("aria-current", "page"\)/);
   assert.match(adminSource, /button\.removeAttribute\("aria-current"\)/);
@@ -51,7 +52,7 @@ test("mobile coach tabs use client-style icons, labels, and selected state", () 
   const navEnd = adminHtml.indexOf("</nav>", navStart);
   const navMarkup = adminHtml.slice(navStart, navEnd);
 
-  assert.equal((navMarkup.match(/<svg class="admin-nav-icon/g) || []).length, 12);
+  assert.equal((navMarkup.match(/<svg class="admin-nav-icon/g) || []).length, 13);
   assert.doesNotMatch(navMarkup, /<span class="admin-nav-icon"[^>]*>(?:SL|CL|PR|PG|WO|EX|AL|FD|PS|NT|LG|SE)<\/span>/);
   assert.match(styleSource, /\.coach-admin-page \.admin-tab\.is-active \.admin-nav-icon\s*\{[\s\S]*?background:\s*var\(--lime\)[\s\S]*?border-radius:\s*50%/);
   assert.match(styleSource, /\.coach-admin-page \.admin-workspace\.is-sidebar-collapsed \.admin-nav-label,[\s\S]*?display:\s*block/);

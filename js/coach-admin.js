@@ -22,6 +22,7 @@ const cardioExerciseCode = "CARDIO";
 const warmUpSetNumberBase = 1000;
 const coachAdminSidebarStorageKey = "fwb_coach_admin_sidebar_collapsed";
 const coachAdminTabNames = new Set([
+  "home",
   "clients",
   "profile",
   "program",
@@ -36,8 +37,8 @@ const coachAdminTabNames = new Set([
 ]);
 
 function requestedCoachAdminTab() {
-  const requestedTab = new URLSearchParams(window.location.search).get("tab") || "clients";
-  return coachAdminTabNames.has(requestedTab) ? requestedTab : "clients";
+  const requestedTab = new URLSearchParams(window.location.search).get("tab") || "home";
+  return coachAdminTabNames.has(requestedTab) ? requestedTab : "home";
 }
 
 function isWarmUpWorkoutSet(set) {
@@ -81,6 +82,7 @@ let isClientExerciseNameLoading = false;
 let clientExerciseNameLoadError = "";
 let isClientExerciseNameMutating = false;
 let coachNotificationsController = null;
+let inviteClientReturnFocus = null;
 
 function adminStatus(message) {
   const status = document.getElementById("admin-save-status");
@@ -136,6 +138,7 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = 20000) {
 function setClientInviteBusy(isBusy) {
   const saveButton = document.getElementById("save-client-button");
   const inviteButton = document.getElementById("send-invite-button");
+  const closeButtons = document.querySelectorAll("[data-close-invite-client]");
 
   if (saveButton) {
     saveButton.disabled = isBusy;
@@ -144,6 +147,10 @@ function setClientInviteBusy(isBusy) {
   if (inviteButton) {
     inviteButton.disabled = isBusy;
   }
+
+  closeButtons.forEach((button) => {
+    button.disabled = isBusy;
+  });
 }
 
 function errorMentionsMissingColumn(error, columnName) {
@@ -816,7 +823,7 @@ function updateClientViewLink(program = selectedProgram()) {
 }
 
 function setAdminTab(tabName) {
-  const nextTab = coachAdminTabNames.has(tabName) ? tabName : "clients";
+  const nextTab = coachAdminTabNames.has(tabName) ? tabName : "home";
 
   activeAdminTab = nextTab;
   document.querySelectorAll("[data-admin-tab]").forEach((button) => {
@@ -835,8 +842,12 @@ function setAdminTab(tabName) {
   });
 
   document.querySelectorAll("[data-admin-client-context]").forEach((panel) => {
-    panel.hidden = nextTab === "notifications";
+    panel.hidden = nextTab === "notifications" || nextTab === "home";
   });
+
+  if (nextTab === "home") {
+    renderCoachHome();
+  }
 
   if (nextTab === "notifications" && coachNotificationsController) {
     coachNotificationsController.refresh().catch(() => {
@@ -1899,6 +1910,48 @@ function programFromForm(form) {
   };
 }
 
+function newClientProgramFromInvite(form) {
+  const clientEmail = normalizeEmail(formValue(form, "invite_client_email"));
+  const clientName = formValue(form, "invite_client_name");
+  const fallbackClientName = clientEmail ? clientEmail.split("@")[0] : "";
+
+  return {
+    client_email: clientEmail,
+    client_name: clientName || fallbackClientName || "Client",
+    client_phone: formValue(form, "invite_client_phone"),
+    initials: initialsFromName(clientName || fallbackClientName),
+    program_title: "Client Program",
+    program_summary: "",
+    session_count_used: 0,
+    session_count_total: 0,
+    session_dates: [],
+    sheet_url: null,
+    session_package_history: [],
+    fitness_goal: "",
+    focus_target: "",
+    height: "Not set",
+    starting_weight: "Not set",
+    starting_bodyfat: "Not set",
+    nutrition_plan: {
+      calories: "",
+      protein: "",
+      carbs: "",
+      fat: "",
+      guide: ""
+    },
+    coach_note_title: "",
+    coach_note_body: "",
+    workouts: [{
+      title: "Workout 1",
+      focus: "",
+      format: "single",
+      exercises: []
+    }],
+    active: true,
+    client_archived: false
+  };
+}
+
 function profileFromForm(form) {
   const clientEmail = normalizeEmail(formValue(form, "client_email"));
   const clientName = formValue(form, "client_name");
@@ -2188,6 +2241,34 @@ async function saveProgramFromForm(form) {
   selectedProgramId = data.id;
   programs.sort((a, b) => String(a.client_name).localeCompare(String(b.client_name)));
   fillForm(data);
+  renderClientList();
+  renderProgramHistory(data.client_email);
+
+  return { data };
+}
+
+async function saveNewClientFromInvite(form) {
+  const payload = newClientProgramFromInvite(form);
+  const { data, error } = await saveClientProgramWithCoachAccess(payload);
+
+  if (error) {
+    return { error };
+  }
+
+  const existingIndex = programs.findIndex((program) => program.id === data.id);
+
+  if (existingIndex >= 0) {
+    programs[existingIndex] = data;
+  } else {
+    programs.push(data);
+  }
+
+  selectedProgramId = data.id;
+  programs.sort((a, b) => String(a.client_name).localeCompare(String(b.client_name)));
+  fillForm(data);
+  form.elements.invite_client_email.value = data.client_email || payload.client_email;
+  form.elements.invite_client_name.value = data.client_name || payload.client_name;
+  form.elements.invite_client_phone.value = data.client_phone || payload.client_phone;
   renderClientList();
   renderProgramHistory(data.client_email);
 
@@ -3204,6 +3285,7 @@ function summarizeTrainingLogs(logs = []) {
         client_email: clientEmail,
         entry_date: log.entry_date || "",
         workout_title: log.workout_title || "Workout",
+        completed_at: String(log.completed_at || ""),
         last_updated: lastUpdated,
         exercise_codes: new Set(),
         set_count: 0
@@ -3211,12 +3293,17 @@ function summarizeTrainingLogs(logs = []) {
     }
 
     const entry = grouped.get(key);
+    const completedAt = String(log.completed_at || "");
 
     entry.exercise_codes.add(`${log.exercise_code || ""}:${log.exercise_name || ""}`);
     entry.set_count += 1;
 
     if (lastUpdated && String(entry.last_updated || "") < lastUpdated) {
       entry.last_updated = lastUpdated;
+    }
+
+    if (completedAt && String(entry.completed_at || "") < completedAt) {
+      entry.completed_at = completedAt;
     }
   });
 
@@ -3225,7 +3312,302 @@ function summarizeTrainingLogs(logs = []) {
       ...entry,
       exercise_count: entry.exercise_codes.size
     }))
-    .sort((a, b) => String(b.last_updated || b.entry_date || "").localeCompare(String(a.last_updated || a.entry_date || "")));
+    .sort((a, b) => String(b.completed_at || b.last_updated || b.entry_date || "").localeCompare(String(a.completed_at || a.last_updated || a.entry_date || "")));
+}
+
+function isoDateFromLocalDate(date = new Date()) {
+  return [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, "0"),
+    String(date.getDate()).padStart(2, "0")
+  ].join("-");
+}
+
+function dateFromIsoDate(value) {
+  const normalized = normalizeSessionDate(value);
+
+  if (!normalized) {
+    return null;
+  }
+
+  const [year, month, day] = normalized.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function daysSinceIsoDate(value, today = isoDateFromLocalDate()) {
+  const date = dateFromIsoDate(value);
+  const currentDate = dateFromIsoDate(today);
+
+  if (!date || !currentDate) {
+    return null;
+  }
+
+  return Math.floor((currentDate.getTime() - date.getTime()) / 86400000);
+}
+
+function latestWorkoutByClient(logs = recentTrainingLogs) {
+  const latestByEmail = new Map();
+
+  summarizeTrainingLogs(logs).filter((workout) => workout.completed_at).forEach((workout) => {
+    const email = normalizeEmail(workout.client_email);
+
+    if (email && !latestByEmail.has(email)) {
+      latestByEmail.set(email, workout);
+    }
+  });
+
+  return latestByEmail;
+}
+
+function coachHomeScheduleEntries() {
+  const seen = new Set();
+
+  return activeClientPrograms()
+    .flatMap((program) => sessionDatesFromProgram(program).map((date) => ({
+      date,
+      client_email: normalizeEmail(program.client_email),
+      client_name: program.client_name || program.client_email || "Client"
+    })))
+    .filter((entry) => {
+      const key = `${entry.client_email}:${entry.date}`;
+
+      if (!entry.date || seen.has(key)) {
+        return false;
+      }
+
+      seen.add(key);
+      return true;
+    })
+    .sort((a, b) => a.date.localeCompare(b.date));
+}
+
+function coachHomeSessionAlerts() {
+  return activeClientPrograms()
+    .map((program) => {
+      const used = normalizeSessionCount(program.session_count_used);
+      const total = normalizeSessionCount(program.session_count_total);
+
+      return {
+        program,
+        used,
+        total,
+        remaining: Math.max(0, total - used)
+      };
+    })
+    .filter((entry) => entry.total > 0 && entry.remaining <= 3)
+    .sort((a, b) => a.remaining - b.remaining || String(a.program.client_name).localeCompare(String(b.program.client_name)));
+}
+
+function coachHomeInactiveClients(latestByEmail = latestWorkoutByClient()) {
+  return activeClientPrograms()
+    .map((program) => {
+      const workout = latestByEmail.get(normalizeEmail(program.client_email));
+      const daysSince = workout ? daysSinceIsoDate(workout.entry_date) : null;
+
+      return { program, workout, daysSince };
+    })
+    .filter((entry) => !entry.workout || entry.daysSince === null || entry.daysSince >= 14)
+    .sort((a, b) => {
+      if (!a.workout && b.workout) return -1;
+      if (a.workout && !b.workout) return 1;
+      return Number(b.daysSince || 0) - Number(a.daysSince || 0);
+    });
+}
+
+function renderCoachHomeCalendar(entries = coachHomeScheduleEntries()) {
+  const calendar = document.getElementById("coach-home-calendar");
+
+  if (!calendar) {
+    return;
+  }
+
+  const today = isoDateFromLocalDate();
+  const upcoming = entries.find((entry) => entry.date >= today);
+  const target = dateFromIsoDate(upcoming?.date || today) || new Date();
+  const year = target.getUTCFullYear();
+  const month = target.getUTCMonth();
+  const firstWeekday = new Date(Date.UTC(year, month, 1)).getUTCDay();
+  const daysInMonth = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
+  const countsByDate = entries.reduce((counts, entry) => {
+    counts.set(entry.date, (counts.get(entry.date) || 0) + 1);
+    return counts;
+  }, new Map());
+  const cells = [];
+
+  for (let index = 0; index < firstWeekday; index += 1) {
+    cells.push('<span class="coach-home-calendar-day is-empty" aria-hidden="true"></span>');
+  }
+
+  for (let day = 1; day <= daysInMonth; day += 1) {
+    const date = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    const count = countsByDate.get(date) || 0;
+    const classes = [
+      "coach-home-calendar-day",
+      date === today ? "is-today" : "",
+      count > 0 ? "has-session" : ""
+    ].filter(Boolean).join(" ");
+    const label = count > 0 ? `${day}, ${count} session${count === 1 ? "" : "s"}` : String(day);
+
+    cells.push(`<span class="${classes}" aria-label="${escapeHtml(label)}"><b>${day}</b>${count > 0 ? `<i>${count}</i>` : ""}</span>`);
+  }
+
+  calendar.innerHTML = `
+    <div class="coach-home-calendar-heading">
+      <strong>${target.toLocaleDateString("en-US", { month: "long", year: "numeric", timeZone: "UTC" })}</strong>
+      <span>${entries.length} saved date${entries.length === 1 ? "" : "s"}</span>
+    </div>
+    <div class="coach-home-calendar-weekdays" aria-hidden="true">
+      ${["S", "M", "T", "W", "T", "F", "S"].map((day) => `<span>${day}</span>`).join("")}
+    </div>
+    <div class="coach-home-calendar-grid">${cells.join("")}</div>
+  `;
+}
+
+function renderCoachHome() {
+  const activeClients = activeClientPrograms();
+  const latestByEmail = latestWorkoutByClient();
+  const recentWorkouts = Array.from(latestByEmail.values())
+    .sort((a, b) => String(b.completed_at || b.last_updated || b.entry_date || "").localeCompare(String(a.completed_at || a.last_updated || a.entry_date || "")));
+  const sessionAlerts = coachHomeSessionAlerts();
+  const inactiveClients = coachHomeInactiveClients(latestByEmail);
+  const scheduledSessions = coachHomeScheduleEntries();
+  const activePackages = activeClients
+    .map((program) => ({
+      used: normalizeSessionCount(program.session_count_used),
+      total: normalizeSessionCount(program.session_count_total)
+    }))
+    .filter((entry) => entry.total > 0);
+  const totalSessions = activePackages.reduce((total, entry) => total + entry.total, 0);
+  const usedSessions = activePackages.reduce((total, entry) => total + Math.min(entry.used, entry.total), 0);
+  const remainingSessions = Math.max(0, totalSessions - usedSessions);
+  const recentSevenDayCount = summarizeTrainingLogs(recentTrainingLogs)
+    .filter((workout) => workout.completed_at)
+    .filter((workout) => {
+      const daysSince = daysSinceIsoDate(workout.entry_date);
+      return daysSince !== null && daysSince >= 0 && daysSince < 7;
+    }).length;
+  const attentionEmails = new Set([
+    ...sessionAlerts.map((entry) => normalizeEmail(entry.program.client_email)),
+    ...inactiveClients.map((entry) => normalizeEmail(entry.program.client_email))
+  ]);
+  const setText = (id, value) => {
+    const node = document.getElementById(id);
+    if (node) node.textContent = String(value);
+  };
+
+  setText("coach-home-active-clients", activeClients.length);
+  setText("coach-home-recent-workouts", recentSevenDayCount);
+  setText("coach-home-sessions-left", remainingSessions);
+  setText("coach-home-session-total", activePackages.length > 0
+    ? `${usedSessions} used of ${totalSessions} across active packages`
+    : "no active session packages yet");
+  setText("coach-home-needs-attention", attentionEmails.size);
+
+  const recentList = document.getElementById("coach-home-recent-list");
+
+  if (recentList) {
+    recentList.innerHTML = recentWorkouts.length > 0
+      ? recentWorkouts.slice(0, 8).map((workout) => `
+          <article class="coach-home-list-row">
+            <div class="coach-home-row-date">
+              <strong>${escapeHtml(formatAdminDate(workout.entry_date))}</strong>
+              <span>${escapeHtml(formatAdminTime(workout.completed_at || workout.last_updated) || "Completed")}</span>
+            </div>
+            <div class="coach-home-row-copy">
+              <strong>${escapeHtml(clientNameForEmail(workout.client_email))}</strong>
+              <span>${escapeHtml(workout.workout_title || "Workout")} · ${workout.exercise_count} exercise${workout.exercise_count === 1 ? "" : "s"}</span>
+            </div>
+            <button class="coach-home-row-action" type="button" data-coach-home-open-logs="${escapeHtml(workout.client_email)}">Training logs</button>
+          </article>
+        `).join("")
+      : '<p class="empty-state">No client workouts have been saved yet.</p>';
+  }
+
+  renderCoachHomeCalendar(scheduledSessions);
+  const scheduleList = document.getElementById("coach-home-schedule-list");
+
+  if (scheduleList) {
+    const today = isoDateFromLocalDate();
+    const futureDates = scheduledSessions.filter((entry) => entry.date >= today).slice(0, 6);
+    const displayedDates = futureDates.length > 0
+      ? futureDates
+      : scheduledSessions.slice(-6).reverse();
+
+    scheduleList.innerHTML = displayedDates.length > 0
+      ? displayedDates.map((entry) => `
+          <button class="coach-home-list-row coach-home-session-row" type="button" data-coach-home-open-sessions="${escapeHtml(entry.client_email)}">
+            <span class="coach-home-session-date">${escapeHtml(formatSessionDate(entry.date))}</span>
+            <strong>${escapeHtml(entry.client_name)}</strong>
+            <em>${entry.date >= today ? "Upcoming" : "Completed"}</em>
+          </button>
+        `).join("")
+      : '<p class="empty-state">Add session dates from a client’s Sessions tab to build the calendar.</p>';
+  }
+
+  const sheetList = document.getElementById("coach-home-sheet-list");
+
+  if (sheetList) {
+    const sheetPrograms = activeClients
+      .filter((program) => trustedSheetUrl(program.sheet_url))
+      .sort((a, b) => {
+        const priority = (program) => /alex|b2|master|fitness/i.test(`${program.client_name || ""} ${program.program_title || ""}`) ? 0 : 1;
+        return priority(a) - priority(b) || String(a.client_name).localeCompare(String(b.client_name));
+      });
+
+    sheetList.innerHTML = sheetPrograms.length > 0
+      ? sheetPrograms.slice(0, 6).map((program) => {
+          const summary = sessionSummaryFromProgram(program);
+          const latestDate = summary.recentDates.slice().sort().at(-1);
+
+          return `
+            <article class="coach-home-sheet-card">
+              <div>
+                <span>${escapeHtml(program.program_title || "Master session")}</span>
+                <strong>${escapeHtml(program.client_name || program.client_email || "Client")}</strong>
+                <small>${summary.countDisplay === "--" ? "Session count not set" : `${summary.countDisplay} sessions`}${latestDate ? ` · Last ${escapeHtml(formatSessionDate(latestDate))}` : ""}</small>
+              </div>
+              <a href="${escapeHtml(trustedSheetUrl(program.sheet_url))}" target="_blank" rel="noopener noreferrer">Open Google Sheet</a>
+            </article>
+          `;
+        }).join("")
+      : '<p class="empty-state">Add a Google Sheet link in a client’s Sessions tab to see it here.</p>';
+  }
+
+  const alertList = document.getElementById("coach-home-session-alert-list");
+
+  if (alertList) {
+    alertList.innerHTML = sessionAlerts.length > 0
+      ? sessionAlerts.slice(0, 8).map(({ program, used, total, remaining }) => `
+          <article class="coach-home-list-row">
+            <span class="coach-home-status-badge ${remaining === 0 ? "is-out" : "is-low"}">${remaining === 0 ? "Out" : `${remaining} left`}</span>
+            <div class="coach-home-row-copy">
+              <strong>${escapeHtml(program.client_name || program.client_email || "Client")}</strong>
+              <span>${used} used of ${total} sessions</span>
+            </div>
+            <button class="coach-home-row-action" type="button" data-coach-home-open-sessions="${escapeHtml(normalizeEmail(program.client_email))}">Sessions</button>
+          </article>
+        `).join("")
+      : '<p class="empty-state">No session packages are low or empty.</p>';
+  }
+
+  const inactiveList = document.getElementById("coach-home-inactive-list");
+
+  if (inactiveList) {
+    inactiveList.innerHTML = inactiveClients.length > 0
+      ? inactiveClients.slice(0, 8).map(({ program, workout, daysSince }) => `
+          <article class="coach-home-list-row">
+            <span class="coach-home-status-badge is-inactive">${workout ? `${daysSince} days` : "No logs"}</span>
+            <div class="coach-home-row-copy">
+              <strong>${escapeHtml(program.client_name || program.client_email || "Client")}</strong>
+              <span>${workout ? `Last trained ${escapeHtml(formatAdminDate(workout.entry_date))}` : "No saved workout yet"}</span>
+            </div>
+            <button class="coach-home-row-action" type="button" data-coach-home-open-logs="${escapeHtml(normalizeEmail(program.client_email))}">Training logs</button>
+          </article>
+        `).join("")
+      : '<p class="empty-state">Every active client has logged a workout in the last 14 days.</p>';
+  }
 }
 
 function renderTrainingLogSummaryList(targetId, logs = [], options = {}) {
@@ -3422,24 +3804,30 @@ async function loadFoodLogsForEmail(email) {
 
 async function loadRecentTrainingLogs() {
   if (!coachSupabase) {
+    recentTrainingLogs = [];
+    renderRecentClientTrainingLogs();
+    renderCoachHome();
     return;
   }
 
   const { data, error } = await coachSupabase
     .from("client_workout_logs")
-    .select("*")
-    .order("updated_at", { ascending: false })
+    .select("client_email, entry_date, workout_title, exercise_code, exercise_name, set_number, completed_at, updated_at, created_at")
+    .not("completed_at", "is", null)
+    .order("completed_at", { ascending: false })
     .order("entry_date", { ascending: false })
-    .limit(120);
+    .limit(1000);
 
   if (error) {
     recentTrainingLogs = [];
     renderRecentClientTrainingLogs();
+    renderCoachHome();
     return;
   }
 
   recentTrainingLogs = data || [];
   renderRecentClientTrainingLogs();
+  renderCoachHome();
 }
 
 function programHistoryLabel(program) {
@@ -3490,6 +3878,8 @@ function renderClientList() {
   const deleteArchivedButton = document.getElementById("delete-archived-client-button");
   const visiblePrograms = programsForCurrentClientView();
   const currentProgram = selectedProgram();
+
+  renderCoachHome();
 
   if (!select) {
     return;
@@ -4424,6 +4814,53 @@ function handleAdminTabs() {
   setAdminTab(activeAdminTab);
 }
 
+function openCoachHomeClientSection(email, tabName) {
+  const normalizedEmail = normalizeEmail(email);
+  const program = activeClientPrograms().find((item) => normalizeEmail(item.client_email) === normalizedEmail);
+
+  if (!program) {
+    adminStatus("That client is no longer active.");
+    renderCoachHome();
+    return;
+  }
+
+  fillForm(program);
+  renderClientList();
+  setAdminTab(tabName);
+  adminStatus("Ready.");
+  window.requestAnimationFrame(() => {
+    document.querySelector(`[data-admin-panel="${tabName}"]`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+}
+
+function handleCoachHomeActions() {
+  const panel = document.querySelector('[data-admin-panel="home"]');
+
+  if (!panel) {
+    return;
+  }
+
+  panel.addEventListener("click", (event) => {
+    const logsButton = event.target.closest("[data-coach-home-open-logs]");
+    const sessionsButton = event.target.closest("[data-coach-home-open-sessions]");
+    const tabButton = event.target.closest("[data-coach-home-tab]");
+
+    if (logsButton) {
+      openCoachHomeClientSection(logsButton.dataset.coachHomeOpenLogs, "logs");
+      return;
+    }
+
+    if (sessionsButton) {
+      openCoachHomeClientSection(sessionsButton.dataset.coachHomeOpenSessions, "sessions");
+      return;
+    }
+
+    if (tabButton) {
+      setAdminTab(tabButton.dataset.coachHomeTab);
+    }
+  });
+}
+
 function handleSelectedClientActions() {
   const saveProfileButton = document.getElementById("selected-save-profile-button");
 
@@ -4769,25 +5206,25 @@ function handleCopyWorkouts() {
 }
 
 function validateClientDetails(form) {
-  const clientEmail = normalizeEmail(formValue(form, "client_email"));
-  const clientName = formValue(form, "client_name");
+  const clientEmail = normalizeEmail(formValue(form, "invite_client_email"));
+  const clientName = formValue(form, "invite_client_name");
 
   if (!clientEmail) {
-    form.elements.client_email?.reportValidity();
+    form.elements.invite_client_email?.reportValidity();
     inviteStatus("Add the client email first.");
     adminStatus("Add the client email first.");
     return false;
   }
 
   if (!isValidEmail(clientEmail)) {
-    form.elements.client_email?.reportValidity();
+    form.elements.invite_client_email?.reportValidity();
     inviteStatus("Add a valid client email.");
     adminStatus("Add a valid client email.");
     return false;
   }
 
   if (!clientName) {
-    form.elements.client_name?.reportValidity();
+    form.elements.invite_client_name?.reportValidity();
     inviteStatus("Add the client name first.");
     adminStatus("Add the client name first.");
     return false;
@@ -4816,7 +5253,7 @@ function handleSaveClientDetails() {
     try {
       const { error } = await withSlowStatus(
         withRequestTimeout(
-          saveProgramFromForm(form),
+          saveNewClientFromInvite(form),
           "Saving the client is taking too long. Check your connection and try again.",
           45000
         ),
@@ -4834,6 +5271,7 @@ function handleSaveClientDetails() {
       setAdminTab("clients");
       inviteStatus("Client saved. Send invite link when ready.");
       adminStatus("Client saved.");
+      closeInviteClientModal({ completed: true });
     } catch (error) {
       const message = readableClientRequestError(
         error,
@@ -5659,7 +6097,11 @@ async function handleSendInvite() {
   }
 
   button.addEventListener("click", async () => {
-    const requestedEmail = normalizeEmail(formValue(form, "client_email"));
+    if (!validateClientDetails(form)) {
+      return;
+    }
+
+    const requestedEmail = normalizeEmail(formValue(form, "invite_client_email"));
 
     if (!requestedEmail) {
       inviteStatus("Add the client email first.");
@@ -5667,7 +6109,7 @@ async function handleSendInvite() {
     }
 
     if (!isValidEmail(requestedEmail)) {
-      form.elements.client_email?.reportValidity();
+      form.elements.invite_client_email?.reportValidity();
       inviteStatus("Add a valid client email.");
       return;
     }
@@ -5691,7 +6133,7 @@ async function handleSendInvite() {
     try {
       const saveResult = await withSlowStatus(
         withRequestTimeout(
-          saveProgramFromForm(form),
+          saveNewClientFromInvite(form),
           "Saving the client is taking too long. Check your connection and try again.",
           45000
         ),
@@ -5707,7 +6149,7 @@ async function handleSendInvite() {
 
       const savedProgram = saveResult.data || {};
       const inviteEmail = normalizeEmail(savedProgram.client_email || requestedEmail);
-      const clientName = String(savedProgram.client_name || formValue(form, "client_name")).trim();
+      const clientName = String(savedProgram.client_name || formValue(form, "invite_client_name")).trim();
 
       if (!isValidEmail(inviteEmail)) {
         inviteStatus("Saved client email is not valid. Fix it, save, then send the invite again.");
@@ -5745,7 +6187,11 @@ async function handleSendInvite() {
         return;
       }
 
-      inviteStatus(safeResult.message || `Invite sent to ${inviteEmail}.`);
+      const successMessage = safeResult.message || `Invite sent to ${inviteEmail}.`;
+
+      inviteStatus(successMessage);
+      adminStatus(successMessage);
+      closeInviteClientModal({ completed: true });
     } catch (error) {
       const message = error.name === "AbortError"
         ? "Invite email is taking too long to send. The client was saved. Try sending the invite again."
@@ -5855,24 +6301,96 @@ async function handleCoachSignOut() {
   });
 }
 
-function handleNewClient() {
-  const button = document.getElementById("new-client-button");
+function closeInviteClientModal(options = {}) {
+  const modal = document.getElementById("invite-client-modal");
 
-  if (!button) {
+  if (!modal || modal.hidden) {
     return;
   }
 
-  button.addEventListener("click", () => {
-    const searchInput = document.getElementById("client-search-input");
+  modal.hidden = true;
+  document.body.classList.remove("is-invite-client-modal-open");
 
-    clientSearchTerm = "";
-    if (searchInput) {
-      searchInput.value = "";
+  if (!options.completed) {
+    adminStatus("Invite canceled.");
+  }
+
+  const returnFocus = inviteClientReturnFocus;
+
+  inviteClientReturnFocus = null;
+  window.requestAnimationFrame(() => returnFocus?.focus({ preventScroll: true }));
+}
+
+function openInviteClientModal(button) {
+  const modal = document.getElementById("invite-client-modal");
+  const form = document.getElementById("program-editor");
+  const emailInput = form?.elements.invite_client_email;
+
+  if (!modal || !form) {
+    return;
+  }
+
+  inviteClientReturnFocus = button || document.activeElement;
+  form.elements.invite_client_email.value = "";
+  form.elements.invite_client_name.value = "";
+  form.elements.invite_client_phone.value = "";
+  inviteStatus("Enter the client details, then send their invite.");
+  modal.hidden = false;
+  document.body.classList.add("is-invite-client-modal-open");
+  adminStatus("New client invite ready.");
+  window.requestAnimationFrame(() => emailInput?.focus({ preventScroll: true }));
+}
+
+function handleNewClient() {
+  const button = document.getElementById("new-client-button");
+  const modal = document.getElementById("invite-client-modal");
+  const closeButtons = document.querySelectorAll("[data-close-invite-client]");
+
+  if (!button || !modal) {
+    return;
+  }
+
+  button.addEventListener("click", () => openInviteClientModal(button));
+  closeButtons.forEach((closeButton) => {
+    closeButton.addEventListener("click", () => closeInviteClientModal());
+  });
+  modal.addEventListener("click", (event) => {
+    if (event.target === modal) {
+      closeInviteClientModal();
+    }
+  });
+  document.addEventListener("keydown", (event) => {
+    if (modal.hidden) {
+      return;
     }
 
-    fillForm();
-    renderClientList();
-    adminStatus("New client ready.");
+    if (event.key === "Escape") {
+      event.preventDefault();
+      closeInviteClientModal();
+      return;
+    }
+
+    if (event.key !== "Tab") {
+      return;
+    }
+
+    const focusable = Array.from(modal.querySelectorAll("button:not([disabled]), input:not([disabled])"))
+      .filter((element) => !element.hidden && element.getClientRects().length > 0);
+
+    if (focusable.length === 0) {
+      return;
+    }
+
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
   });
 }
 
@@ -5927,6 +6445,7 @@ async function bootCoachAdmin() {
 
   renderWorkoutFields();
   handleAdminTabs();
+  handleCoachHomeActions();
   handleCoachAdminSidebar();
   handleExerciseLibraryEditor();
   handleClientExerciseNameManager();

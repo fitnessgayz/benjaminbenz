@@ -44,7 +44,7 @@ test("coach notification panel exposes push controls and an accessible inbox", (
   assert.match(adminHtml, /data-web-notification-list[^>]*aria-live="polite"/);
   assert.match(adminHtml, /data-web-notification-empty/);
   assert.match(adminHtml, /data-web-notification-mark-all[^>]*hidden/);
-  assert.match(adminHtml, /src="js\/web-notifications\.js\?v=coach-workout-alerts-1"[\s\S]*src="js\/coach-admin\.js\?v=web-notifications-1"/);
+  assert.match(adminHtml, /src="js\/web-notifications\.js\?v=coach-workout-alerts-1"[\s\S]*src="js\/coach-admin\.js\?v=coach-home-dashboard-1"/);
 });
 
 test("all feasible coach notification categories start enabled", () => {
@@ -89,7 +89,7 @@ test("notification deep links open only allowlisted coach panels", () => {
   assert.match(adminSource, /const coachAdminTabNames = new Set\(\[/);
   assert.match(adminSource, /"notifications"/);
   assert.match(adminSource, /new URLSearchParams\(window\.location\.search\)\.get\("tab"\)/);
-  assert.match(adminSource, /coachAdminTabNames\.has\(requestedTab\) \? requestedTab : "clients"/);
+  assert.match(adminSource, /coachAdminTabNames\.has\(requestedTab\) \? requestedTab : "home"/);
   assert.match(adminSource, /let activeAdminTab = requestedCoachAdminTab\(\)/);
 });
 

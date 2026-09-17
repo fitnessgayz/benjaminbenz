@@ -30,7 +30,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=coach-client-navigation-1" />
+  <link rel="stylesheet" href="css/style.css?v=coach-home-dashboard-1" />
 </head>
 <body class="dashboard-page coach-admin-page">
   <header class="site-header dashboard-header">
@@ -89,8 +89,13 @@
             <span class="admin-nav-label">Session logger</span>
           </a>
 
+          <button class="admin-tab is-active" type="button" data-admin-tab="home" aria-label="Home" aria-current="page">
+            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 11 9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg>
+            <span class="admin-nav-label">Home</span>
+          </button>
+
           <p class="admin-nav-group-title">Manage</p>
-          <button class="admin-tab is-active" type="button" data-admin-tab="clients" aria-label="Clients" aria-current="page">
+          <button class="admin-tab" type="button" data-admin-tab="clients" aria-label="Clients">
             <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
             <span class="admin-nav-label">Clients</span>
           </button>
@@ -145,7 +150,108 @@
         <input type="hidden" name="sheet_url" />
         <input type="hidden" name="session_package_history" />
 
-        <section class="admin-card selected-client-panel" aria-label="Selected client" data-admin-client-context>
+        <section class="admin-card coach-home-panel" data-admin-panel="home" aria-labelledby="coach-home-title">
+          <div class="coach-home-heading">
+            <div>
+              <p class="kicker">Coach home</p>
+              <h2 id="coach-home-title">Today at a glance</h2>
+              <p>Recent training, upcoming sessions, and the clients who may need a check-in.</p>
+            </div>
+            <button class="button button-dark" type="button" id="new-client-button">Invite new client</button>
+          </div>
+
+          <div class="coach-home-metrics" aria-label="Coach summary">
+            <article>
+              <span>Active clients</span>
+              <strong id="coach-home-active-clients">0</strong>
+              <small>currently on your roster</small>
+            </article>
+            <article>
+              <span>Workouts</span>
+              <strong id="coach-home-recent-workouts">0</strong>
+              <small>completed in the last 7 days</small>
+            </article>
+            <article>
+              <span>Sessions left</span>
+              <strong id="coach-home-sessions-left">0</strong>
+              <small id="coach-home-session-total">across active packages</small>
+            </article>
+            <article class="coach-home-attention-metric">
+              <span>Needs attention</span>
+              <strong id="coach-home-needs-attention">0</strong>
+              <small>low sessions or training inactivity</small>
+            </article>
+          </div>
+
+          <div class="coach-home-dashboard-grid">
+            <section class="coach-home-module coach-home-recent" aria-labelledby="coach-home-recent-title">
+              <div class="coach-home-module-heading">
+                <div>
+                  <p class="kicker">Training activity</p>
+                  <h3 id="coach-home-recent-title">Last workout by client</h3>
+                </div>
+                <button class="coach-home-text-link" type="button" data-coach-home-tab="clients">All clients</button>
+              </div>
+              <div class="coach-home-list" id="coach-home-recent-list">
+                <p class="empty-state">Workout activity will appear here.</p>
+              </div>
+            </section>
+
+            <section class="coach-home-module coach-home-schedule" aria-labelledby="coach-home-schedule-title">
+              <div class="coach-home-module-heading">
+                <div>
+                  <p class="kicker">Calendar</p>
+                  <h3 id="coach-home-schedule-title">Session schedule</h3>
+                </div>
+                <button class="coach-home-text-link" type="button" data-coach-home-tab="sessions">Session editor</button>
+              </div>
+              <div class="coach-home-calendar" id="coach-home-calendar" aria-label="Session calendar"></div>
+              <div class="coach-home-list coach-home-schedule-list" id="coach-home-schedule-list">
+                <p class="empty-state">Saved session dates will appear here.</p>
+              </div>
+            </section>
+
+            <section class="coach-home-module" aria-labelledby="coach-home-sheets-title">
+              <div class="coach-home-module-heading">
+                <div>
+                  <p class="kicker">Master sessions</p>
+                  <h3 id="coach-home-sheets-title">Session sheets</h3>
+                </div>
+              </div>
+              <p class="coach-home-module-copy">Alex Fitness, B2 Master Session, and other saved client sheets stay one tap away.</p>
+              <div class="coach-home-sheet-grid" id="coach-home-sheet-list">
+                <p class="empty-state">Add a Google Sheet link in a client’s Sessions tab to see it here.</p>
+              </div>
+            </section>
+
+            <section class="coach-home-module" aria-labelledby="coach-home-session-alert-title">
+              <div class="coach-home-module-heading">
+                <div>
+                  <p class="kicker">Session count</p>
+                  <h3 id="coach-home-session-alert-title">Low or out of sessions</h3>
+                </div>
+              </div>
+              <div class="coach-home-list" id="coach-home-session-alert-list">
+                <p class="empty-state">No session packages need attention.</p>
+              </div>
+            </section>
+
+            <section class="coach-home-module coach-home-inactive" aria-labelledby="coach-home-inactive-title">
+              <div class="coach-home-module-heading">
+                <div>
+                  <p class="kicker">Follow-up</p>
+                  <h3 id="coach-home-inactive-title">No workout in a while</h3>
+                </div>
+              </div>
+              <p class="coach-home-module-copy">Clients appear here after 14 days without a saved workout.</p>
+              <div class="coach-home-list" id="coach-home-inactive-list">
+                <p class="empty-state">Everyone has trained recently.</p>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <section class="admin-card selected-client-panel" aria-label="Selected client" data-admin-client-context hidden>
           <div class="selected-client-copy">
             <p class="kicker">Selected client</p>
             <h2 id="selected-client-name">Choose a client</h2>
@@ -273,7 +379,6 @@
               <h2>Client selector</h2>
             </div>
             <div class="client-list-actions">
-              <button class="button button-dark" type="button" id="new-client-button">New</button>
               <button class="button button-ghost" type="button" id="archived-clients-button">Archived clients</button>
             </div>
           </div>
@@ -286,38 +391,6 @@
             <select id="client-select" autocomplete="off"></select>
           </label>
           <p class="client-selector-status" id="client-selector-status" aria-live="polite"></p>
-          <div class="client-contact-panel">
-            <div class="admin-section-heading compact-heading">
-              <div>
-                <p class="kicker">Invite</p>
-                <h2>Client details</h2>
-              </div>
-            </div>
-            <div class="admin-field-grid">
-              <label>
-                Client email
-                <input type="email" name="client_email" placeholder="client@example.com" required />
-              </label>
-              <label>
-                Client name
-                <input type="text" name="client_name" placeholder="Client name" required />
-              </label>
-              <label>
-                Client phone number
-                <input type="tel" name="client_phone" placeholder="(555) 555-5555" autocomplete="tel" />
-              </label>
-            </div>
-            <div class="invite-row">
-              <div>
-                <strong>Client login</strong>
-                <p id="invite-status" role="status">Save the client, then send an invite when ready.</p>
-              </div>
-              <div class="client-contact-actions">
-                <button class="button button-ghost" type="button" id="save-client-button">Save client</button>
-                <button class="button button-dark" type="button" id="send-invite-button">Send invite link</button>
-              </div>
-            </div>
-          </div>
           <section class="admin-card recent-client-logs-panel" aria-label="Recent workout logs">
             <div class="admin-section-heading compact-heading">
               <div>
@@ -343,6 +416,18 @@
             </label>
           </div>
           <div class="admin-field-grid">
+            <label>
+              Client email
+              <input type="email" name="client_email" placeholder="client@example.com" autocomplete="email" required />
+            </label>
+            <label>
+              Client name
+              <input type="text" name="client_name" placeholder="Client name" autocomplete="name" required />
+            </label>
+            <label>
+              Client phone number
+              <input type="tel" name="client_phone" placeholder="(555) 555-5555" autocomplete="tel" />
+            </label>
             <label>
               Initials
               <input type="text" name="initials" placeholder="BG" maxlength="4" />
@@ -895,6 +980,52 @@
           <div class="workout-fields" id="workout-fields"></div>
         </section>
 
+        <div
+          class="invite-client-modal"
+          id="invite-client-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="invite-client-title"
+          aria-describedby="invite-client-description"
+          hidden
+        >
+          <section class="invite-client-dialog admin-card">
+            <div class="invite-client-heading">
+              <div>
+                <p class="kicker">New client</p>
+                <h2 id="invite-client-title">Invite a client</h2>
+                <p id="invite-client-description">Create their client profile and email a secure account setup link.</p>
+              </div>
+              <button class="invite-client-close" type="button" aria-label="Close invite client" data-close-invite-client>×</button>
+            </div>
+            <div class="admin-field-grid invite-client-fields">
+              <label>
+                Client email
+                <input type="email" name="invite_client_email" placeholder="client@example.com" autocomplete="email" required />
+              </label>
+              <label>
+                Client name
+                <input type="text" name="invite_client_name" placeholder="Client name" autocomplete="name" required />
+              </label>
+              <label>
+                Client phone number
+                <input type="tel" name="invite_client_phone" placeholder="(555) 555-5555" autocomplete="tel" />
+              </label>
+            </div>
+            <div class="invite-row">
+              <div>
+                <strong>Client login</strong>
+                <p id="invite-status" role="status" aria-live="polite">Enter the client details, then send their invite.</p>
+              </div>
+              <div class="client-contact-actions">
+                <button class="button button-ghost" type="button" data-close-invite-client>Cancel</button>
+                <button class="button button-ghost" type="button" id="save-client-button">Save without invite</button>
+                <button class="button button-dark" type="button" id="send-invite-button">Save &amp; send invite</button>
+              </div>
+            </div>
+          </section>
+        </div>
+
       </form>
 
       <div class="copy-client-modal" id="copy-client-modal" role="dialog" aria-modal="true" aria-labelledby="copy-client-title" hidden>
@@ -922,6 +1053,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js?v=client-session-link-1"></script>
   <script src="js/web-notifications.js?v=coach-workout-alerts-1"></script>
-  <script src="js/coach-admin.js?v=web-notifications-1"></script>
+  <script src="js/coach-admin.js?v=coach-home-dashboard-1"></script>
 </body>
 </html>
