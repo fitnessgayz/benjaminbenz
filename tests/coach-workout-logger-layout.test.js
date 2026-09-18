@@ -199,6 +199,7 @@ test("selects the latest previous session for each normalized exercise name", ()
 test("loads client-scoped history only from dates before the active session", () => {
   const loader = sourceForFunction("loadCoachWorkoutPreviousHistory");
   const contextSwitch = sourceForFunction("switchCoachWorkoutContext");
+  const reset = sourceForFunction("resetCoachWorkoutForm");
   const boot = sourceForFunction("bootCoachWorkoutPage");
 
   assert.match(loader, /\.from\("client_workout_logs"\)/);
@@ -209,6 +210,7 @@ test("loads client-scoped history only from dates before the active session", ()
   assert.match(loader, /requestId !== coachWorkoutPreviousHistoryRequest/);
   assert.match(loader, /buildCoachWorkoutPreviousHistory/);
   assert.match(contextSwitch, /loadCoachWorkoutPreviousHistory\(nextContext\)/);
+  assert.match(reset, /loadCoachWorkoutPreviousHistory\(coachWorkoutActiveContext\)/);
   assert.match(boot, /loadCoachWorkoutPreviousHistory\(coachWorkoutActiveContext\)/);
 });
 

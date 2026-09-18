@@ -8497,7 +8497,7 @@ function setCustomWorkoutGroupedRowComplete(row, complete) {
   if (isComplete && row) delete row.dataset.customGroupedReopened;
 }
 
-function customWorkoutGroupedFieldMarkup(field, value, context) {
+function customWorkoutGroupedFieldMarkup(field, value, context, placeholder = "") {
   const fieldLabel = field === "weight" ? "Weight" : field === "reps" ? "Reps" : "RIR";
   const max = field === "rir" ? ' max="5"' : "";
   const step = field === "weight" ? "0.5" : "1";
@@ -8511,6 +8511,7 @@ function customWorkoutGroupedFieldMarkup(field, value, context) {
         step="${step}"
         inputmode="decimal"
         value="${escapeHtml(value)}"
+        placeholder="${escapeHtml(placeholder)}"
         data-custom-grouped-field="${field}"
         aria-label="${escapeHtml(`${fieldLabel}, ${context}`)}"
       />
@@ -8543,8 +8544,8 @@ function customWorkoutGroupedSetRowMarkup(row, code, exerciseIndex, setType, rou
         aria-pressed="${complete}"
         ${workingPending ? "disabled" : ""}
       >${escapeHtml(code)}</button>
-      ${customWorkoutGroupedFieldMarkup("weight", values.weightRaw, context)}
-      ${customWorkoutGroupedFieldMarkup("reps", values.repsRaw, context)}
+      ${customWorkoutGroupedFieldMarkup("weight", values.weightRaw, context, row?.querySelector("[data-set-weight]")?.placeholder || "")}
+      ${customWorkoutGroupedFieldMarkup("reps", values.repsRaw, context, row?.querySelector("[data-set-reps]")?.placeholder || "")}
       ${customWorkoutGroupedFieldMarkup("rir", rir, context)}
     </div>
   `;
@@ -8639,6 +8640,31 @@ function syncCustomWorkoutGroupedAccessibleNames(carousel, exerciseIndex, exerci
       const field = input.dataset.customGroupedField;
       const fieldLabel = field === "weight" ? "Weight" : field === "reps" ? "Reps" : "RIR";
       input.setAttribute("aria-label", `${fieldLabel}, ${context}`);
+    });
+  });
+}
+
+function syncCustomWorkoutGroupedHistoryPlaceholders(logElement) {
+  const carousel = logElement?.closest("[data-custom-workout-grouped='true']");
+  if (!carousel) return;
+
+  const exerciseIndex = customWorkoutGroupedLogElements(carousel).indexOf(logElement);
+  if (exerciseIndex < 0) return;
+
+  carousel.querySelectorAll(
+    `.custom-workout-grouped-row[data-custom-grouped-exercise-index="${exerciseIndex}"]`
+  ).forEach((visibleRow) => {
+    const canonicalRow = customWorkoutGroupedCanonicalRow(
+      carousel,
+      exerciseIndex,
+      visibleRow.dataset.customGroupedSetType,
+      visibleRow.dataset.customGroupedSetNumber
+    );
+    ["weight", "reps"].forEach((field) => {
+      const input = visibleRow.querySelector(`[data-custom-grouped-field="${field}"]`);
+      if (input) {
+        input.placeholder = canonicalRow?.querySelector(`[data-set-${field}]`)?.placeholder || "";
+      }
     });
   });
 }
@@ -8815,6 +8841,7 @@ function renderCustomWorkoutGroupedCard(carousel) {
   }
 
   logElements.forEach((logElement) => {
+    updateSetHistoryPlaceholders(logElement);
     logElement.querySelectorAll("[data-set-row]").forEach((row) => {
       row.dataset.groupedRoundRequired = "true";
     });
@@ -11704,6 +11731,7 @@ function updateSetHistoryPlaceholders(logElement, logs = logsForExerciseDisplay(
       );
     }
   });
+  syncCustomWorkoutGroupedHistoryPlaceholders(logElement);
 }
 
 function updateExerciseLogField(logElement) {

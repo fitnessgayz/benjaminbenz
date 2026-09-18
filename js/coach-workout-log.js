@@ -471,7 +471,7 @@ function coachWorkoutGroupedRoundCode(roundNumber, exerciseIndex) {
   return `${roundLetter}${Number(exerciseIndex) + 1}`;
 }
 
-function coachWorkoutGroupedFieldMarkup(field, value, context, exerciseIndex, setType, setIndex) {
+function coachWorkoutGroupedFieldMarkup(field, value, context, exerciseIndex, setType, setIndex, placeholder = "") {
   const label = field === "weight" ? "Weight" : field === "reps" ? "Reps" : "RIR";
   const step = field === "weight" ? "0.5" : "1";
   const attributes = `data-coach-grouped-field="${field}" data-coach-grouped-exercise-index="${exerciseIndex}" data-coach-grouped-set-type="${setType}" data-coach-grouped-set-index="${setIndex}" aria-label="${escapeCoachWorkoutHtml(`${label}, ${context}`)}"`;
@@ -497,6 +497,7 @@ function coachWorkoutGroupedFieldMarkup(field, value, context, exerciseIndex, se
         step="${step}"
         inputmode="decimal"
         value="${escapeCoachWorkoutHtml(value)}"
+        placeholder="${escapeCoachWorkoutHtml(placeholder)}"
         ${attributes}
       />
     </label>
@@ -507,8 +508,8 @@ function coachWorkoutGroupedSetRowMarkup(row, code, exerciseIndex, setType, setI
   return `
     <div class="coach-workout-grouped-row${setType === coachWorkoutWarmUpSetType ? " is-warm-up" : ""}" data-coach-grouped-row>
       <span class="coach-workout-grouped-code">${escapeCoachWorkoutHtml(code)}</span>
-      ${coachWorkoutGroupedFieldMarkup("weight", row?.querySelector("[data-coach-workout-weight]")?.value || "", context, exerciseIndex, setType, setIndex)}
-      ${coachWorkoutGroupedFieldMarkup("reps", row?.querySelector("[data-coach-workout-reps]")?.value || "", context, exerciseIndex, setType, setIndex)}
+      ${coachWorkoutGroupedFieldMarkup("weight", row?.querySelector("[data-coach-workout-weight]")?.value || "", context, exerciseIndex, setType, setIndex, row?.querySelector("[data-coach-workout-weight]")?.placeholder || "0")}
+      ${coachWorkoutGroupedFieldMarkup("reps", row?.querySelector("[data-coach-workout-reps]")?.value || "", context, exerciseIndex, setType, setIndex, row?.querySelector("[data-coach-workout-reps]")?.placeholder || "0")}
       ${coachWorkoutGroupedFieldMarkup("rir", row?.querySelector("[data-coach-workout-rir]")?.value || "", context, exerciseIndex, setType, setIndex)}
     </div>
   `;
@@ -648,6 +649,27 @@ function coachWorkoutHistoryDateLabel(value) {
   }).format(date);
 }
 
+function updateCoachWorkoutHistoryPlaceholders(exercise) {
+  const name = exercise.querySelector("[data-coach-workout-name]")?.value || "";
+  const history = coachWorkoutPreviousHistoryStatus === "ready"
+    ? coachWorkoutPreviousHistory.get(normalizeCoachWorkoutHistoryName(name))
+    : null;
+
+  [coachWorkoutWarmUpSetType, coachWorkoutWorkingSetType].forEach((setType) => {
+    const previousRows = (history?.rows || []).filter((row) => (
+      coachWorkoutSetType(row.set_type, row.set_number) === setType
+    ));
+    coachWorkoutSetRowsByType(exercise, setType).forEach((row, index) => {
+      const previous = previousRows.find((entry) => Number(entry.set_number) === Number(row.dataset.coachWorkoutSetNumber))
+        || previousRows[Math.min(index, previousRows.length - 1)];
+      [["weight", previous?.weight_used], ["reps", previous?.reps]].forEach(([field, value]) => {
+        const input = row.querySelector(`[data-coach-workout-${field}]`);
+        if (input) input.placeholder = value === null || value === undefined || value === "" ? "0" : String(value);
+      });
+    });
+  });
+}
+
 function coachWorkoutHistoryValue(value) {
   const number = Number(value);
 
@@ -765,6 +787,7 @@ function coachWorkoutGroupedSectionsMarkup(group) {
 function coachWorkoutGroupedCardMarkup(format, group, groupIndex) {
   const exercises = group.map(({ exercise }) => exercise);
   const roundCount = normalizeCoachWorkoutGroupedRows(exercises);
+  exercises.forEach(updateCoachWorkoutHistoryPlaceholders);
   const title = format === "circuit"
     ? `Circuit ${groupIndex + 1}`
     : format === "superset"
@@ -834,6 +857,7 @@ function refreshCoachWorkoutGroupedProgress(card) {
 }
 
 function refreshCoachWorkoutPreviousHistoryCards() {
+  coachWorkoutExerciseElements().forEach(updateCoachWorkoutHistoryPlaceholders);
   document.querySelectorAll("[data-coach-workout-group-card]").forEach((card) => {
     const indexes = coachWorkoutGroupedExerciseIndexes(card);
     const format = card.dataset.coachWorkoutFormat || coachWorkoutFormatValue();
@@ -845,6 +869,15 @@ function refreshCoachWorkoutPreviousHistoryCards() {
       format === "superset" ? Math.floor((indexes[0] || 0) / 2) : 0
     );
     const history = card.querySelector("[data-coach-grouped-history]");
+
+    card.querySelectorAll('[data-coach-grouped-field="weight"], [data-coach-grouped-field="reps"]').forEach((input) => {
+      const row = coachWorkoutCanonicalGroupedRow(
+        input.dataset.coachGroupedExerciseIndex,
+        input.dataset.coachGroupedSetType,
+        input.dataset.coachGroupedSetIndex
+      );
+      input.placeholder = row?.querySelector(`[data-coach-workout-${input.dataset.coachGroupedField}]`)?.placeholder || "0";
+    });
 
     if (history && group.length > 0) {
       history.outerHTML = coachWorkoutGroupedHistoryMarkup(
@@ -1991,6 +2024,9 @@ function resetCoachWorkoutForm(options = {}) {
   if (options.persistContext !== false) {
     storeCoachWorkoutActiveContext(coachWorkoutActiveContext);
   }
+  if (options.refreshHistory !== false) {
+    void loadCoachWorkoutPreviousHistory(coachWorkoutActiveContext);
+  }
   setCoachWorkoutStatus("Autosave is on. Choose a client and add the exercises completed today.");
 }
 
@@ -2044,6 +2080,7 @@ function handleCoachWorkoutForm() {
     const exercise = event.target.closest("[data-coach-workout-exercise]");
 
     if (event.target.matches("[data-coach-workout-name]")) {
+      refreshCoachWorkoutPreviousHistoryCards();
       renderCoachWorkoutSuggestions(event.target);
       return;
     }
@@ -2348,7 +2385,7 @@ async function bootCoachWorkoutPage() {
 
   try {
     await loadCoachWorkoutData();
-    resetCoachWorkoutForm({ clearDraft: false, persistContext: false });
+    resetCoachWorkoutForm({ clearDraft: false, persistContext: false, refreshHistory: false });
     // Reopen on the current local date; older drafts remain available by selecting their date.
     const initialContext = {
       clientEmail: "",
