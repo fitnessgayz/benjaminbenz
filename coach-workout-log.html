@@ -55,7 +55,9 @@
         <div class="coach-workout-session-grid">
           <label>
             Client
-            <select id="coach-workout-client" required autocomplete="off">
+            <input type="text" id="coach-workout-client-name" list="coach-workout-client-suggestions" placeholder="Type client name" required autocomplete="off" />
+            <datalist id="coach-workout-client-suggestions"></datalist>
+            <select id="coach-workout-client" hidden aria-hidden="true" tabindex="-1">
               <option value="">Choose a client</option>
             </select>
           </label>
@@ -132,6 +134,6 @@
     </div>
   </aside>
   <script src="js/coach-rest-timer.js?v=1"></script>
-  <script src="js/coach-workout-log.js?v=straight-set-cards-1"></script>
+  <script src="js/coach-workout-log.js?v=client-name-search-1"></script>
 </body>
 </html>

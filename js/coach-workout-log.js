@@ -113,6 +113,38 @@ function activeCoachWorkoutClients() {
     .sort((a, b) => String(a.client_name || a.client_email).localeCompare(String(b.client_name || b.client_email)));
 }
 
+function coachWorkoutClientNameOptions() {
+  const clients = activeCoachWorkoutClients();
+  return clients.map(client => {
+    const name = String(client.client_name || client.client_email).trim();
+    const duplicates = clients.filter(item => String(item.client_name || item.client_email).trim().toLowerCase() === name.toLowerCase()).length;
+    return { email: normalizeCoachWorkoutEmail(client.client_email), name,
+      value: duplicates > 1 ? `${name} — ${client.client_email}` : name };
+  });
+}
+
+function syncCoachWorkoutClientName() {
+  const input = document.getElementById("coach-workout-client-name");
+  if (!input) return;
+  const email = normalizeCoachWorkoutEmail(document.getElementById("coach-workout-client")?.value);
+  input.value = coachWorkoutClientNameOptions().find(client => client.email === email)?.value || "";
+  input.setCustomValidity("");
+}
+
+function handleCoachWorkoutClientNameInput(input) {
+  const select = document.getElementById("coach-workout-client");
+  if (!select) return;
+  const query = input.value.trim().toLowerCase();
+  const match = coachWorkoutClientNameOptions().find(client => client.value.toLowerCase() === query || client.email === query);
+  input.setCustomValidity(query && !match ? "Choose an active client from the suggestions to save this workout." : "");
+  const email = match?.email || "";
+  if (select.value !== email) {
+    select.value = email;
+    // Clear the old client immediately so typing cannot save to the previous client.
+    switchCoachWorkoutContext();
+  }
+}
+
 function renderCoachWorkoutClients() {
   const select = document.getElementById("coach-workout-client");
 
@@ -131,6 +163,9 @@ function renderCoachWorkoutClients() {
   select.value = clients.some((program) => normalizeCoachWorkoutEmail(program.client_email) === currentEmail)
     ? currentEmail
     : "";
+  const suggestions = document.getElementById("coach-workout-client-suggestions");
+  suggestions?.replaceChildren(...coachWorkoutClientNameOptions().map(client => new Option(client.email, client.value)));
+  syncCoachWorkoutClientName();
 }
 
 function closeCoachWorkoutSuggestions(exceptInput = null) {
@@ -1218,6 +1253,7 @@ function restoreCoachWorkoutDraft(options = {}) {
   if (options.updateFields !== false) {
     if (clientSelect) {
       clientSelect.value = context.clientEmail;
+      syncCoachWorkoutClientName();
     }
 
     if (dateInput && context.entryDate) {
@@ -1933,6 +1969,7 @@ function resetCoachWorkoutForm(options = {}) {
 
   if (clientSelect && Array.from(clientSelect.options).some((option) => option.value === selectedClient)) {
     clientSelect.value = selectedClient;
+    syncCoachWorkoutClientName();
   }
 
   const dateInput = document.getElementById("coach-workout-date");
@@ -1978,6 +2015,10 @@ function handleCoachWorkoutForm() {
   document.getElementById("coach-workout-finish")?.addEventListener("click", finishCoachWorkout);
   form.addEventListener("submit", saveCoachWorkout);
   form.addEventListener("input", (event) => {
+    if (event.target.matches("#coach-workout-client-name")) {
+      handleCoachWorkoutClientNameInput(event.target);
+      return;
+    }
     if (event.target.matches("#coach-workout-client, #coach-workout-date")) {
       return;
     }
@@ -1985,6 +2026,7 @@ function handleCoachWorkoutForm() {
     scheduleCoachWorkoutAutosave();
   });
   form.addEventListener("change", (event) => {
+    if (event.target.matches("#coach-workout-client-name")) return;
     if (event.target.matches("#coach-workout-client, #coach-workout-date")) {
       switchCoachWorkoutContext();
       return;
@@ -2305,13 +2347,11 @@ async function bootCoachWorkoutPage() {
   coachWorkoutDraftOwner = normalizeCoachWorkoutEmail(user.email);
 
   try {
-    const storedContext = readCoachWorkoutActiveContext();
-
     await loadCoachWorkoutData();
     resetCoachWorkoutForm({ clearDraft: false, persistContext: false });
     // Reopen on the current local date; older drafts remain available by selecting their date.
     const initialContext = {
-      ...(storedContext || currentCoachWorkoutContext()),
+      clientEmail: "",
       entryDate: coachWorkoutToday()
     };
     const clientSelect = document.getElementById("coach-workout-client");
