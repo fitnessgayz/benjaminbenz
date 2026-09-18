@@ -1911,7 +1911,6 @@ async function finishCoachWorkout() {
 function resetCoachWorkoutForm(options = {}) {
   const form = document.getElementById("coach-workout-log-form");
   const selectedClient = document.getElementById("coach-workout-client")?.value || "";
-  const selectedDate = document.getElementById("coach-workout-date")?.value || coachWorkoutToday();
   const previousContext = normalizeCoachWorkoutContext(coachWorkoutActiveContext);
 
   cancelCoachWorkoutAutosave();
@@ -1935,7 +1934,7 @@ function resetCoachWorkoutForm(options = {}) {
   const dateInput = document.getElementById("coach-workout-date");
 
   if (dateInput) {
-    dateInput.value = selectedDate;
+    dateInput.value = coachWorkoutToday();
   }
 
   resetCoachWorkoutEditor();
@@ -2290,7 +2289,16 @@ async function bootCoachWorkoutPage() {
 
     await loadCoachWorkoutData();
     resetCoachWorkoutForm({ clearDraft: false, persistContext: false });
-    const restoredDraft = restoreCoachWorkoutDraft({ context: storedContext || currentCoachWorkoutContext() });
+    // Reopen on the current local date; older drafts remain available by selecting their date.
+    const initialContext = {
+      ...(storedContext || currentCoachWorkoutContext()),
+      entryDate: coachWorkoutToday()
+    };
+    const clientSelect = document.getElementById("coach-workout-client");
+    if (Array.from(clientSelect?.options || []).some((option) => option.value === initialContext.clientEmail)) {
+      clientSelect.value = initialContext.clientEmail;
+    }
+    const restoredDraft = restoreCoachWorkoutDraft({ context: initialContext });
 
     if (restoredDraft) {
       scheduleCoachWorkoutAutosave({ recordChange: false });

@@ -12489,6 +12489,23 @@ textarea,
   gap: 14px;
 }
 
+.coach-workout-session-grid > label {
+  min-width: 0;
+}
+
+#coach-workout-date {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+#coach-workout-date::-webkit-date-and-time-value {
+  min-width: 0;
+  text-align: left;
+}
+
 .coach-workout-session-grid input,
 .coach-workout-session-grid select,
 .coach-workout-exercise-grid input,
