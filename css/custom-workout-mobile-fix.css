@@ -1495,6 +1495,18 @@
   text-transform: uppercase;
 }
 
+.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-history-suggestion {
+  grid-column: 2;
+  color: #68705f;
+  font-size: .68rem;
+  font-style: normal;
+  font-weight: 850;
+  letter-spacing: 0;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+  text-transform: none;
+}
+
 .dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-round-stepper {
   display: grid;
   grid-template-columns: 46px minmax(0, 1fr) 46px;
@@ -1726,6 +1738,11 @@
   touch-action: manipulation;
   -webkit-appearance: none;
   appearance: none;
+}
+
+.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-field > input::placeholder {
+  color: #7c8376;
+  opacity: .78;
 }
 
 .dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-field > input::-webkit-inner-spin-button,

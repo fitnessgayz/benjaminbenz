@@ -245,7 +245,7 @@ test("opens the copied draft in Custom Workout and restores focus visibly", () =
   assert.match(handlerSource, /heading\?\.focus\(\{ preventScroll: true \}\)/);
   assert.match(panelIndexSource, /querySelectorAll\("\.client-workout-panel"\)/);
   assert.match(panelIndexSource, /client-workout-panel-custom/);
-  assert.match(previousWeightsSource, /normalizeExerciseHistoryName\(log\.exercise_name\) === exerciseName/);
+  assert.match(previousWeightsSource, /canonicalExerciseHistoryName\(log\.exercise_name\) === exerciseName/);
   assert.doesNotMatch(previousWeightsSource, /log\.workout_title === logElement\.dataset\.workoutTitle/);
   assert.match(portal, /const exactSessionLogs = logsForExercise\(logElement\.dataset\.workoutTitle, logElement\.dataset\.exerciseCode\);/);
   assert.match(portal, /const selectedLogs = exactSessionLogs\.filter\(\(log\) => log\.entry_date === selectedDate\);/);

@@ -106,6 +106,8 @@ test("renders the exercise key, compact round stepper, round rows, and grouped a
 
   assert.match(exerciseKey, /custom-workout-grouped-exercise-number/);
   assert.match(exerciseKey, /data-custom-grouped-exercise-name/);
+  assert.match(exerciseKey, /exerciseHistorySuggestionText\(logElement\)/);
+  assert.match(exerciseKey, /data-custom-grouped-history-suggestion/);
   assert.match(sections, /<h4>Warm-up<\/h4>/);
   assert.match(sections, /Excluded from working volume/);
   assert.match(sections, /<h4>Round \$\{roundNumber\}<\/h4>/);
@@ -129,6 +131,58 @@ test("renders the exercise key, compact round stepper, round rows, and grouped a
   assert.match(
     mobileStyles,
     /\.custom-workout-grouped-exercise-key-item \{[\s\S]*?font-style: italic;[\s\S]*?font-weight: 950;[\s\S]*?text-transform: uppercase;/,
+  );
+});
+
+test("restores last-workout and PR suggestions in the grouped layout", () => {
+  const normalizeNameSource = sourceForFunction("normalizeExerciseHistoryName");
+  const canonicalNameSource = sourceForFunction("canonicalExerciseHistoryName");
+  const historySource = sourceForFunction("previousStrengthHistory");
+  const labelSource = sourceForFunction("strengthHistorySetLabel");
+  const suggestionSource = sourceForFunction("exerciseHistorySuggestionText");
+  const fieldMarkup = sourceForFunction("customWorkoutGroupedFieldMarkup");
+  const rowMarkup = sourceForFunction("customWorkoutGroupedSetRowMarkup");
+  const placeholders = sourceForFunction("updateSetHistoryPlaceholders");
+  const history = Function(
+    "normalizedSetType",
+    "warmUpSetType",
+    `${historySource}; return previousStrengthHistory;`,
+  )((setType) => setType || "working", "warm_up");
+  const canonicalName = Function(
+    "approvedExerciseForName",
+    `${normalizeNameSource}; ${canonicalNameSource}; return canonicalExerciseHistoryName;`,
+  )((name) => name === "DB bench" ? { name: "Dumbbell Bench Press" } : null);
+  const logs = [
+    { entry_date: "2026-09-17", set_number: 1, set_type: "working", weight_used: 100, reps: 10 },
+    { entry_date: "2026-09-17", set_number: 2, set_type: "working", weight_used: 105, reps: 8 },
+    { entry_date: "2026-08-20", set_number: 1, set_type: "working", weight_used: 130, reps: 5 },
+    { entry_date: "2026-09-17", set_number: 10001, set_type: "warm_up", weight_used: 200, reps: 20 },
+  ];
+  const result = history(logs, "2026-09-18");
+
+  assert.equal(canonicalName("DB bench"), "dumbbell bench press");
+  assert.equal(canonicalName("  Chest   Press  "), "chest press");
+  assert.equal(result.latestDate, "2026-09-17");
+  assert.deepEqual(result.latestLogs.map((log) => log.weight_used), [100, 105]);
+  assert.equal(result.prLog.weight_used, 130);
+  assert.match(labelSource, /lb.*×/);
+  assert.match(suggestionSource, /Suggested from/);
+  assert.match(suggestionSource, /PR:/);
+  assert.match(fieldMarkup, /placeholderAttribute/);
+  assert.match(fieldMarkup, /placeholder="\$\{escapeHtml\(placeholder\)\}"/);
+  assert.match(rowMarkup, /\[data-set-weight\].*\.placeholder/s);
+  assert.match(rowMarkup, /\[data-set-reps\].*\.placeholder/s);
+  assert.ok(
+    placeholders.indexOf("previousLogs.find") < placeholders.indexOf("||\n      prLog"),
+    "The last matching set should be suggested before falling back to the PR",
+  );
+  assert.match(
+    portal,
+    /\.from\("client_workout_logs"\)[\s\S]*?\.order\("entry_date", \{ ascending: false \}\)[\s\S]*?\.limit\(500\)/,
+  );
+  assert.match(
+    mobileStyles,
+    /\.custom-workout-grouped-history-suggestion\s*\{[\s\S]*?grid-column:\s*2;[\s\S]*?text-transform:\s*none;/,
   );
 });
 

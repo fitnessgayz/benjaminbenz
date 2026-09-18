@@ -82,7 +82,26 @@ test("straight-set entry validation preserves exact zero values", () => {
   assert.match(portal, /Zero is allowed\./);
 });
 
+test("straight-set and assigned cards restore prior exercise suggestions", () => {
+  const exerciseLog = sourceForFunction("exerciseLogFields");
+  const customCard = sourceForFunction("customWorkoutCardMarkup");
+  const assignedCard = sourceForFunction("exerciseCard");
+  const historyLookup = sourceForFunction("logsForExerciseDisplay");
+  const placeholders = sourceForFunction("updateSetHistoryPlaceholders");
+  const updater = sourceForFunction("updateExerciseLogField");
+
+  assert.match(customCard, /data-custom-exercise-card/);
+  assert.match(assignedCard, /data-custom-exercise-card data-assigned-exercise-card/);
+  assert.match(exerciseLog, /<div class="previous-weights" data-previous-weights>Previous: none<\/div>/);
+  assert.match(historyLookup, /canonicalExerciseHistoryName\(log\.exercise_name\) === exerciseName/);
+  assert.match(placeholders, /previousLogs\.find/);
+  assert.match(placeholders, /\|\|\s*prLog/);
+  assert.match(placeholders, /weightInput\.placeholder = historyPlaceholder/);
+  assert.match(placeholders, /repsInput\.placeholder = historyPlaceholder/);
+  assert.match(updater, /renderPreviousExerciseWeights\(logElement, logs\)/);
+});
+
 test("loads the updated straight-set layout assets", () => {
-  assert.match(dashboard, /custom-workout-mobile-fix\.css\?v=grouped-add-counts-1/);
-  assert.match(dashboard, /client-portal\.js\?v=grouped-add-counts-1/);
+  assert.match(dashboard, /custom-workout-mobile-fix\.css\?v=history-suggestions-1/);
+  assert.match(dashboard, /client-portal\.js\?v=history-suggestions-1/);
 });

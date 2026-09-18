@@ -8633,10 +8633,13 @@ function setCustomWorkoutGroupedRowComplete(row, complete) {
   if (isComplete && row) delete row.dataset.customGroupedReopened;
 }
 
-function customWorkoutGroupedFieldMarkup(field, value, context) {
+function customWorkoutGroupedFieldMarkup(field, value, context, placeholder = "") {
   const fieldLabel = field === "weight" ? "Weight" : field === "reps" ? "Reps" : "RIR";
   const max = field === "rir" ? ' max="5"' : "";
   const step = field === "weight" ? "0.5" : "1";
+  const placeholderAttribute = field === "rir" || placeholder === ""
+    ? ""
+    : ` placeholder="${escapeHtml(placeholder)}"`;
 
   return `
     <label class="custom-workout-grouped-field">
@@ -8648,6 +8651,7 @@ function customWorkoutGroupedFieldMarkup(field, value, context) {
         inputmode="decimal"
         autocomplete="off"
         value="${escapeHtml(value)}"
+        ${placeholderAttribute}
         data-custom-grouped-field="${field}"
         aria-label="${escapeHtml(`${fieldLabel}, ${context}`)}"
       />
@@ -8657,6 +8661,8 @@ function customWorkoutGroupedFieldMarkup(field, value, context) {
 
 function customWorkoutGroupedSetRowMarkup(row, code, exerciseIndex, setType, roundNumber, exerciseName) {
   const values = setRowInputValues(row);
+  const weightPlaceholder = row?.querySelector("[data-set-weight]")?.placeholder || "";
+  const repsPlaceholder = row?.querySelector("[data-set-reps]")?.placeholder || "";
   const rir = String(row?.dataset.repsInReserve || "");
   const isWarmUp = setType === warmUpSetType;
   const context = isWarmUp
@@ -8680,8 +8686,8 @@ function customWorkoutGroupedSetRowMarkup(row, code, exerciseIndex, setType, rou
         aria-pressed="${complete}"
         ${workingPending ? "disabled" : ""}
       >${escapeHtml(code)}</button>
-      ${customWorkoutGroupedFieldMarkup("weight", values.weightRaw, context)}
-      ${customWorkoutGroupedFieldMarkup("reps", values.repsRaw, context)}
+      ${customWorkoutGroupedFieldMarkup("weight", values.weightRaw, context, weightPlaceholder)}
+      ${customWorkoutGroupedFieldMarkup("reps", values.repsRaw, context, repsPlaceholder)}
       ${customWorkoutGroupedFieldMarkup("rir", rir, context)}
     </div>
   `;
@@ -8736,11 +8742,13 @@ function customWorkoutGroupedRoundIsLogged(carousel, roundNumber) {
 function customWorkoutGroupedExerciseKeyMarkup(carousel) {
   return customWorkoutGroupedLogElements(carousel).map((logElement, index) => {
     const name = currentExerciseLabel(logElement) || `Exercise ${index + 1}`;
+    const historySuggestion = exerciseHistorySuggestionText(logElement);
 
     return `
       <div class="custom-workout-grouped-exercise-key-item" role="listitem">
         <span class="custom-workout-grouped-exercise-number">${index + 1}</span>
         <strong data-custom-grouped-exercise-name="${index}">${escapeHtml(name)}</strong>
+        ${historySuggestion ? `<small data-custom-grouped-history-suggestion>${escapeHtml(historySuggestion)}</small>` : ""}
       </div>
     `;
   }).join("");
@@ -11324,8 +11332,13 @@ function normalizeExerciseHistoryName(value) {
   return String(value || "").trim().toLowerCase().replace(/\s+/g, " ");
 }
 
+function canonicalExerciseHistoryName(value) {
+  const approvedExercise = approvedExerciseForName(value);
+  return normalizeExerciseHistoryName(approvedExercise?.name || value);
+}
+
 function currentExerciseHistoryName(logElement) {
-  return normalizeExerciseHistoryName(
+  return canonicalExerciseHistoryName(
     exerciseNameInputForLog(logElement)?.value ||
     logElement?.dataset.exerciseName ||
     ""
@@ -11347,7 +11360,7 @@ function logsForExerciseDisplay(logElement) {
     .filter((log) => (
       String(log.exercise_code || "").trim().toUpperCase() !== warmupExerciseCode &&
       String(log.exercise_code || "").trim().toUpperCase() !== cardioExerciseCode &&
-      normalizeExerciseHistoryName(log.exercise_name) === exerciseName
+      canonicalExerciseHistoryName(log.exercise_name) === exerciseName
     ))
     .sort((left, right) => {
       const dateCompare = String(right.entry_date).localeCompare(String(left.entry_date));
@@ -11554,6 +11567,55 @@ function latestPreviousSetLogs(logs, selectedDate) {
     .sort((left, right) => Number(left.set_number || 1) - Number(right.set_number || 1));
 }
 
+function previousStrengthHistory(logs, selectedDate) {
+  const workingLogs = logs.filter((log) => (
+    String(log.entry_date || "") < selectedDate &&
+    normalizedSetType(log.set_type, log.set_number) !== warmUpSetType
+  ));
+  const latestDate = workingLogs.reduce((latest, log) => (
+    String(log.entry_date || "") > latest ? String(log.entry_date || "") : latest
+  ), "");
+  const latestLogs = workingLogs
+    .filter((log) => String(log.entry_date || "") === latestDate)
+    .sort((left, right) => Number(left.set_number || 1) - Number(right.set_number || 1));
+  const prLog = workingLogs.reduce((record, log) => {
+    const weight = Number(log.weight_used);
+    const recordWeight = Number(record?.weight_used);
+
+    if (!Number.isFinite(weight)) return record;
+    if (!record || !Number.isFinite(recordWeight) || weight > recordWeight) return log;
+    if (weight === recordWeight && Number(log.reps || 0) > Number(record.reps || 0)) return log;
+    return record;
+  }, null);
+
+  return { latestDate, latestLogs, prLog };
+}
+
+function strengthHistorySetLabel(log) {
+  if (!log) return "";
+  const hasWeight = log.weight_used !== null && log.weight_used !== undefined && log.weight_used !== "";
+  const hasReps = log.reps !== null && log.reps !== undefined && log.reps !== "";
+
+  if (!hasWeight && !hasReps) return "";
+  if (!hasWeight) return `${log.reps} reps`;
+  return `${log.weight_used} lb${hasReps ? ` × ${log.reps}` : ""}`;
+}
+
+function exerciseHistorySuggestionText(logElement, logs = logsForExerciseDisplay(logElement)) {
+  const selectedDate = logElement?.querySelector("[data-log-date]")?.value || todayDate();
+  const { latestDate, latestLogs, prLog } = previousStrengthHistory(logs, selectedDate);
+  const latestLog = latestLogs[0] || prLog;
+  const latestLabel = strengthHistorySetLabel(latestLog);
+  const prLabel = strengthHistorySetLabel(prLog);
+
+  if (!latestLabel) return "";
+
+  const latestPrefix = latestDate ? `Suggested from ${formatLogDate(latestDate)}` : "Suggested";
+  return prLabel && prLabel !== latestLabel
+    ? `${latestPrefix}: ${latestLabel} · PR: ${prLabel}`
+    : `${latestPrefix}: ${latestLabel}`;
+}
+
 function heaviestPreviousSetLog(logs, selectedDate) {
   return logs.reduce((heaviestLog, log) => {
     const rawWeight = log.weight_used;
@@ -11614,15 +11676,13 @@ function syncExerciseFinishedState(logElement) {
 function updateSetHistoryPlaceholders(logElement, logs = logsForExerciseDisplay(logElement)) {
   const selectedDate = logElement?.querySelector("[data-log-date]")?.value || todayDate();
   const previousLogs = latestPreviousSetLogs(logs, selectedDate);
-  const customHeaviestLog = logElement?.closest("[data-custom-exercise-card]")
-    ? heaviestPreviousSetLog(logs, selectedDate)
-    : null;
+  const prLog = heaviestPreviousSetLog(logs, selectedDate);
 
   logElement?.querySelectorAll("[data-set-row]").forEach((row, index) => {
     const setNumber = Number(row.dataset.setNumber || index + 1);
-    const previousLog = customHeaviestLog ||
-      previousLogs.find((log) => Number(log.set_number || 1) === setNumber) ||
-      previousLogs[Math.min(index, Math.max(previousLogs.length - 1, 0))];
+    const previousLog = previousLogs.find((log) => Number(log.set_number || 1) === setNumber) ||
+      previousLogs[Math.min(index, Math.max(previousLogs.length - 1, 0))] ||
+      prLog;
     const weightInput = row.querySelector("[data-set-weight]");
     const repsInput = row.querySelector("[data-set-reps]");
 
@@ -16197,7 +16257,7 @@ async function loadDashboard() {
           .from("client_workout_logs")
           .select("*")
           .ilike("client_email", activeClientEmail)
-          .order("entry_date", { ascending: true })
+          .order("entry_date", { ascending: false })
           .limit(500),
         "Training log request timed out."
       ),
