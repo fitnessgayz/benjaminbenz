@@ -5205,34 +5205,13 @@ function workoutGroupDeckNextCardMarkup() {
 }
 
 function assignedWorkoutCarouselMarkup(exercises, workoutTitle, workoutFocus, format, groupIndex = 0, startIndex = 0) {
-  const label = format === "superset" ? `Superset ${groupIndex + 1}` : "Circuit";
-
-  return `
-    <section
-      class="custom-workout-carousel assigned-workout-carousel"
-      data-custom-workout-carousel
-      data-assigned-workout-carousel
-      data-custom-workout-group="${groupIndex}"
-      data-custom-workout-format="${escapeHtml(format)}"
-      aria-label="${escapeHtml(label)} exercise carousel"
-    >
-      <div class="workout-group-progress" data-workout-group-progress aria-live="polite"></div>
-      <div class="custom-workout-carousel-heading" data-custom-workout-carousel-status aria-live="polite"></div>
-      <div class="custom-workout-exercise-deck" data-custom-workout-exercise-deck>
-        <span class="custom-workout-deck-layer custom-workout-deck-layer-two" aria-hidden="true"></span>
-        <span class="custom-workout-deck-layer custom-workout-deck-layer-one" aria-hidden="true"></span>
-        <div class="workout-app-list custom-workout-list assigned-workout-carousel-list" data-custom-workout-list data-custom-workout-format="${escapeHtml(format)}" role="list" aria-label="${escapeHtml(label)} exercises" tabindex="0">
-          ${exercises.length > 0 ? exerciseCardRows(exercises, workoutTitle, "all", workoutFocus, { format, startIndex }) : ""}
-        </div>
-        ${workoutGroupDeckNextCardMarkup()}
-      </div>
-      <div class="custom-workout-carousel-footer" data-custom-workout-carousel-controls hidden>
-        <button class="custom-workout-carousel-arrow" type="button" data-custom-workout-carousel-previous aria-label="Previous exercise">←</button>
-        <div class="custom-workout-carousel-dots" data-custom-workout-carousel-dots aria-label="Choose exercise"></div>
-        <button class="custom-workout-carousel-arrow" type="button" data-custom-workout-carousel-next aria-label="Next exercise">→</button>
-      </div>
-    </section>
-  `;
+  return customWorkoutCarouselGroupMarkup(format, exercises, groupIndex, startIndex, workoutTitle, {
+    assigned: true,
+    workoutFocus,
+    panelFormat: format,
+    canAddExercise: false,
+    isLastGroup: false
+  });
 }
 
 function groupKeyForExercise(exercise, index) {
@@ -8057,18 +8036,7 @@ function circuitRows(workout, workoutTitle) {
 }
 
 function straightSetRows(workout, workoutTitle) {
-  const groups = groupedExercises(workout.exercises || []);
-  let exerciseOffset = 0;
-
-  return groups.map((group) => {
-    const startIndex = exerciseOffset;
-    exerciseOffset += group.exercises.length;
-
-    return exerciseCardRows(group.exercises, workoutTitle, "all", workout.focus, {
-      format: "single",
-      startIndex
-    });
-  }).join("");
+  return assignedWorkoutCarouselMarkup(workout.exercises || [], workoutTitle, workout.focus, "single");
 }
 
 function assignedWorkoutExercises(workout, workoutTitle) {
@@ -8174,10 +8142,10 @@ function customWorkoutInlineGroupOptionsMarkup(groupType = "single", isVisible =
   `;
 }
 
-function customWorkoutGroupNameRowMarkup(exercise, format, groupIndex, index) {
+function customWorkoutGroupNameRowMarkup(exercise, format, groupIndex, index, namespace = "") {
   const exerciseName = String(exercise?.name || "").trim();
   const position = workoutCarouselExerciseCode(format, groupIndex, index);
-  const groupKey = `${format}-${groupIndex}`;
+  const groupKey = `${namespace}${format}-${groupIndex}`;
   const suggestionMenuId = `custom-group-exercise-options-${groupKey}-${index}`;
 
   return `
@@ -8220,14 +8188,14 @@ function customWorkoutGroupNameRowMarkup(exercise, format, groupIndex, index) {
   `;
 }
 
-function customWorkoutGroupNameEditorMarkup(format, exercises, groupIndex) {
+function customWorkoutGroupNameEditorMarkup(format, exercises, groupIndex, namespace = "") {
   if (format === "single") {
     return "";
   }
 
   const names = Array.isArray(exercises) ? exercises : [];
   const positions = names.map((exercise, index) => workoutCarouselExerciseCode(format, groupIndex, index));
-  const groupKey = `${format}-${groupIndex}`;
+  const groupKey = `${namespace}${format}-${groupIndex}`;
 
   return `
     <section class="custom-workout-group-name-section" data-custom-workout-group-name-section>
@@ -8249,7 +8217,7 @@ function customWorkoutGroupNameEditorMarkup(format, exercises, groupIndex) {
         id="custom-workout-group-names-${groupKey}"
         data-custom-workout-group-name-fields
       >
-        ${names.map((exercise, index) => customWorkoutGroupNameRowMarkup(exercise, format, groupIndex, index)).join("")}
+        ${names.map((exercise, index) => customWorkoutGroupNameRowMarkup(exercise, format, groupIndex, index, namespace)).join("")}
       </div>
     </section>
   `;
@@ -8356,12 +8324,14 @@ function customWorkoutGroupedRoundCardMarkup(format, exercises, groupIndex = 0, 
     <section
       class="custom-workout-carousel custom-workout-grouped-rounds"
       data-custom-workout-carousel
+      ${options.assigned ? "data-assigned-workout-carousel" : ""}
+      data-exercise-editor-namespace="${options.assigned ? escapeHtml(`${encodeURIComponent(workoutTitle)}-`) : ""}"
       data-custom-workout-grouped="true"
       data-custom-workout-group="${groupIndex}"
       data-custom-workout-format="${escapeHtml(format)}"
       aria-label="${escapeHtml(groupTitle)}"
     >
-      ${customWorkoutGroupNameEditorMarkup(format, exercises, groupIndex)}
+      ${customWorkoutGroupNameEditorMarkup(format, exercises, groupIndex, options.assigned ? `${encodeURIComponent(workoutTitle)}-` : "")}
       <article class="custom-workout-grouped-card">
         <header class="custom-workout-grouped-card-heading">
           <h3>${escapeHtml(groupTitle)}</h3>
@@ -8388,7 +8358,9 @@ function customWorkoutGroupedRoundCardMarkup(format, exercises, groupIndex = 0, 
       </article>
       <div class="custom-workout-grouped-source" data-custom-workout-grouped-source hidden aria-hidden="true">
         <div class="workout-app-list custom-workout-list" data-custom-workout-list data-custom-workout-format="${escapeHtml(format)}">
-          ${exercises.map((exercise, index) => customWorkoutCardMarkup(exercise, workoutTitle, startIndex + index, { groupPosition: index, format, panelFormat })).join("")}
+          ${options.assigned
+            ? exerciseCardRows(exercises, workoutTitle, "all", options.workoutFocus, { format, startIndex })
+            : exercises.map((exercise, index) => customWorkoutCardMarkup(exercise, workoutTitle, startIndex + index, { groupPosition: index, format, panelFormat })).join("")}
         </div>
       </div>
     </section>
@@ -8411,7 +8383,7 @@ function customWorkoutCarouselGroupMarkup(format, exercises, groupIndex = 0, sta
     ? `Superset ${groupIndex + 1}`
     : format === "circuit"
       ? `Circuit ${groupIndex + 1}`
-      : "Custom workout";
+      : (options.assigned ? workoutTitle : "Custom workout");
   const nextExerciseNumber = startIndex + exercises.length + 1;
   const canAddExercise = format === "single" && options.canAddExercise !== false;
   const newExerciseCard = canAddExercise ? `
@@ -8434,15 +8406,17 @@ function customWorkoutCarouselGroupMarkup(format, exercises, groupIndex = 0, sta
   const groupNextCard = format === "single" ? "" : workoutGroupDeckNextCardMarkup();
 
   return `
-    <section class="custom-workout-carousel" data-custom-workout-carousel data-custom-workout-group="${groupIndex}" data-custom-workout-format="${escapeHtml(format)}" data-custom-workout-inline-add="${canAddExercise ? "true" : "false"}" aria-label="${escapeHtml(label)} exercise carousel">
+    <section class="custom-workout-carousel" data-custom-workout-carousel ${options.assigned ? "data-assigned-workout-carousel" : ""} data-custom-workout-group="${groupIndex}" data-custom-workout-format="${escapeHtml(format)}" data-custom-workout-inline-add="${canAddExercise ? "true" : "false"}" aria-label="${escapeHtml(label)} exercise carousel">
       <div class="workout-group-progress" data-workout-group-progress aria-live="polite"></div>
       <div class="custom-workout-carousel-heading" data-custom-workout-carousel-status aria-live="polite"></div>
-      ${customWorkoutGroupNameEditorMarkup(format, exercises, groupIndex)}
+      ${customWorkoutGroupNameEditorMarkup(format, exercises, groupIndex, options.assigned ? `${encodeURIComponent(workoutTitle)}-` : "")}
       <div class="custom-workout-exercise-deck" data-custom-workout-exercise-deck>
         <span class="custom-workout-deck-layer custom-workout-deck-layer-two" aria-hidden="true"></span>
         <span class="custom-workout-deck-layer custom-workout-deck-layer-one" aria-hidden="true"></span>
-        <div class="workout-app-list custom-workout-list" data-custom-workout-list data-custom-workout-format="${escapeHtml(format)}" role="list" aria-label="Custom workout exercises" tabindex="0">
-          ${exercises.map((exercise, index) => customWorkoutCardMarkup(exercise, workoutTitle, startIndex + index, { groupPosition: index, format, panelFormat })).join("")}
+        <div class="workout-app-list custom-workout-list" data-custom-workout-list data-custom-workout-format="${escapeHtml(format)}" role="list" aria-label="${escapeHtml(label)} exercises" tabindex="0">
+          ${options.assigned
+            ? exerciseCardRows(exercises, workoutTitle, "all", options.workoutFocus, { format, startIndex })
+            : exercises.map((exercise, index) => customWorkoutCardMarkup(exercise, workoutTitle, startIndex + index, { groupPosition: index, format, panelFormat })).join("")}
         </div>
         ${newExerciseCard}
         ${groupNextCard}
@@ -8786,7 +8760,7 @@ function customWorkoutGroupedSectionsMarkup(carousel) {
 
 function renderCustomWorkoutGroupedTimerPanels() {
   document.querySelectorAll("[data-custom-workout-grouped='true']").forEach((carousel) => {
-    const panel = carousel.closest(".client-workout-panel-custom");
+    const panel = carousel.closest(".client-workout-panel-custom, .client-workout-panel-assigned");
     const timer = carousel.querySelector("[data-custom-grouped-timer]");
     const time = timer?.querySelector("[data-custom-grouped-timer-time]");
     const state = timer?.querySelector("[data-custom-grouped-timer-state]");
@@ -8908,7 +8882,7 @@ function customWorkoutGroupedStatus(carousel) {
 }
 
 function customWorkoutGroupedTimerConflict(carousel) {
-  const panel = carousel?.closest(".client-workout-panel-custom");
+  const panel = carousel?.closest(".client-workout-panel-custom, .client-workout-panel-assigned");
   const workoutTitle = String(panel?.dataset.customWorkoutTitle || customWorkoutTitle).trim();
   const workoutDate = panel?.querySelector("[data-workout-date]")?.value || todayDate();
 
@@ -9139,7 +9113,7 @@ async function logCustomWorkoutGroupedRound(button) {
   }
 
   if (!workoutElapsedTimerState) {
-    const panel = carousel.closest(".client-workout-panel-custom");
+    const panel = carousel.closest(".client-workout-panel-custom, .client-workout-panel-assigned");
     const panels = Array.from(document.querySelectorAll(".client-workout-panel"));
     startWorkoutElapsedTimer(panel?.dataset.customWorkoutTitle || customWorkoutTitle, {
       workoutDate: panel?.querySelector("[data-workout-date]")?.value || todayDate(),
@@ -9400,7 +9374,7 @@ function syncCustomWorkoutGroupNameEditor(carousel, cards, format, groupIndex) {
 
   if (fields.children.length !== exercises.length) {
     fields.innerHTML = exercises
-      .map((exercise, index) => customWorkoutGroupNameRowMarkup(exercise, format, groupIndex, index))
+      .map((exercise, index) => customWorkoutGroupNameRowMarkup(exercise, format, groupIndex, index, carousel.dataset.exerciseEditorNamespace || ""))
       .join("");
   }
 
@@ -9660,10 +9634,10 @@ function renderCustomWorkoutCarousel(carousel) {
   const groupIndex = Number(carousel?.dataset.customWorkoutGroup) || 0;
   const mobile = window.matchMedia("(max-width: 760px)").matches;
   const isCustomPanel = panel?.classList.contains("client-workout-panel-custom") || false;
-  const straightDeckEnabled = mobile && isCustomPanel && format === "single" && cards.length > 1;
+  const straightDeckEnabled = mobile && format === "single" && cards.length > 1;
   const groupDeckEnabled = mobile && format !== "single" && cards.length > 1;
   const deckEnabled = straightDeckEnabled || groupDeckEnabled;
-  const canAddExercise = straightDeckEnabled && carousel?.dataset.customWorkoutInlineAdd !== "false";
+  const canAddExercise = straightDeckEnabled && isCustomPanel && carousel?.dataset.customWorkoutInlineAdd !== "false";
   const enabled = deckEnabled;
   const groupProgressEnabled = enabled && format !== "single";
   const activeIndex = Math.min(Math.max(Number(carousel?.dataset.activeIndex) || 0, 0), Math.max(cards.length - 1, 0));
@@ -9762,6 +9736,9 @@ function renderCustomWorkoutCarousel(carousel) {
   const meta = groupDeckEnabled
     ? workoutCarouselDeckMeta(format, activeIndex, cards.length, groupIndex, progress)
     : customWorkoutCarouselMeta(format, activeIndex, cards.length, groupIndex);
+  if (format === "single" && !canAddExercise) {
+    meta.count = "Swipe between exercises";
+  }
   if (progressHeader) {
     progressHeader.innerHTML = workoutCarouselProgressMarkup(carousel, progress, format, groupIndex);
   }
@@ -11389,6 +11366,7 @@ function renderClientWorkoutTabs(workouts = []) {
         class="client-workout-panel client-workout-panel-assigned"
         id="client-workout-panel-${index}"
         data-assigned-workout-format="${escapeHtml(workoutFormat)}"
+        data-custom-workout-title="${escapeHtml(title)}"
         role="region"
         aria-labelledby="client-workout-card-title-${index}"
         hidden
@@ -11397,7 +11375,7 @@ function renderClientWorkoutTabs(workouts = []) {
         <div>
           <h2>${escapeHtml(title)}</h2>
         </div>
-        <span class="status-pill">${escapeHtml(workout.focus || "")}</span>
+        ${workout.focus ? `<span class="status-pill">${escapeHtml(workout.focus)}</span>` : ""}
       </div>
       <label class="custom-workout-session-date workout-session-date">
         <span>Workout date</span>
@@ -11408,7 +11386,7 @@ function renderClientWorkoutTabs(workouts = []) {
         <small>This date applies to every exercise in this workout.</small>
       </label>
       <div class="workout-format-pill">${escapeHtml(formatLabel(workoutFormat))}</div>
-      <div class="workout-app-list" data-assigned-workout-list role="list" aria-label="${escapeHtml(title)} exercises">
+      <div class="custom-workout-builder" data-assigned-workout-list role="list" aria-label="${escapeHtml(title)} exercises">
         ${warmupLogFields(title, { showDate: false })}
         ${workoutStartControlMarkup(title)}
         ${workoutExerciseMarkup(workout, title)}
@@ -15515,7 +15493,7 @@ function handleWorkoutInteractions() {
         const workoutTitle = panel.querySelector(".panel-heading h2")?.textContent || "Workout";
         let targetList = list;
 
-        if (format === "circuit") {
+        if (format === "circuit" || format === "single") {
           targetList = panel.querySelector("[data-assigned-workout-carousel] [data-custom-workout-list]") || list;
         } else if (format === "superset") {
           let carousels = Array.from(panel.querySelectorAll("[data-assigned-workout-carousel]"));

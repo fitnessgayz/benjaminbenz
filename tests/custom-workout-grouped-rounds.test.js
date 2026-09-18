@@ -318,7 +318,7 @@ test("starts a fresh custom session with a unique storage title after completion
   assert.ok(storedDrafts[1].exercises.every((exercise) => exercise.name === "" && exercise.groupType === "circuit"));
 });
 
-test("keeps the grouped round renderer custom-only", () => {
+test("shares the grouped round renderer with assigned workouts", () => {
   const customGroup = sourceForFunction("customWorkoutCarouselGroupMarkup");
   const customRender = sourceForFunction("renderCustomWorkoutCarousel");
   const assignedGroup = sourceForFunction("assignedWorkoutCarouselMarkup");
@@ -326,7 +326,8 @@ test("keeps the grouped round renderer custom-only", () => {
   assert.match(customGroup, /customWorkoutGroupedRoundCardMarkup/);
   assert.match(customRender, /carousel\.dataset\.customWorkoutGrouped === "true"/);
   assert.match(customRender, /renderCustomWorkoutGroupedCard\(carousel\)/);
-  assert.doesNotMatch(assignedGroup, /customWorkoutGroupedRoundCardMarkup|data-custom-workout-grouped/);
+  assert.match(assignedGroup, /customWorkoutCarouselGroupMarkup/);
+  assert.match(assignedGroup, /assigned: true/);
   assert.match(mobileStyles, /\[data-custom-workout-grouped="true"\]/);
 });
 

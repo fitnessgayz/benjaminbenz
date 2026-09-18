@@ -20,11 +20,13 @@ test("renders the same lifted deck shell for custom and assigned grouped workout
   const assignedMarkup = sourceForFunction("assignedWorkoutCarouselMarkup");
   const nextCardMarkup = sourceForFunction("workoutGroupDeckNextCardMarkup");
 
-  [customMarkup, assignedMarkup].forEach((markup) => {
+  [customMarkup].forEach((markup) => {
     assert.match(markup, /data-custom-workout-exercise-deck/);
     assert.equal((markup.match(/custom-workout-deck-layer/g) || []).length, 4);
     assert.match(markup, /workoutGroupDeckNextCardMarkup\(\)/);
   });
+  assert.match(assignedMarkup, /customWorkoutCarouselGroupMarkup/);
+  assert.match(assignedMarkup, /assigned: true/);
   assert.match(nextCardMarkup, /<button[\s\S]*?type="button"[\s\S]*?data-workout-group-next-card/);
   assert.match(nextCardMarkup, /data-workout-group-next-card/);
   assert.match(nextCardMarkup, /data-workout-group-next-label/);
@@ -146,7 +148,7 @@ test("keeps grouped deck visuals separate from straight-set add permission", () 
   const render = sourceForFunction("renderCustomWorkoutCarousel");
   const move = sourceForFunction("moveCustomWorkoutCarousel");
 
-  assert.match(render, /const straightDeckEnabled = mobile && isCustomPanel && format === "single"/);
+  assert.match(render, /const straightDeckEnabled = mobile && format === "single"/);
   assert.match(render, /const groupDeckEnabled = mobile && format !== "single"/);
   assert.match(render, /dataset\.customWorkoutDeck = deckEnabled/);
   assert.match(render, /dataset\.customWorkoutCanAddExercise = canAddExercise/);
@@ -163,7 +165,7 @@ test("places collapsible A1 A2 exercise-name editors above the grouped swipe dec
   const cardMarkup = sourceForFunction("customWorkoutCardMarkup");
   const interactions = sourceForFunction("handleWorkoutInteractions");
 
-  assert.match(groupMarkup, /customWorkoutGroupNameEditorMarkup\(format, exercises, groupIndex\)/);
+  assert.match(groupMarkup, /customWorkoutGroupNameEditorMarkup\(format, exercises, groupIndex,/);
   assert.match(groupMarkup, /customWorkoutGroupNameEditorMarkup[\s\S]*?data-custom-workout-exercise-deck/);
   assert.match(editorMarkup, /format === "single"[\s\S]*?return ""/);
   assert.match(editorMarkup, /data-custom-workout-group-name-toggle/);
