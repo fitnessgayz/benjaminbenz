@@ -51,6 +51,9 @@ let activeProgressHistoryDeckIndex = 0;
 let clientProgressHistoryDirection = 0;
 let archivedDexaReportsExpanded = false;
 let currentProgram = null;
+let clientAvailablePrograms = [];
+let clientPreviewProgramSelected = false;
+let clientWorkoutLayoutSaving = false;
 let clientWebNotificationController = null;
 const dashboardRequestTimeout = 15000;
 const customWorkoutTitle = "Custom workout";
@@ -10970,6 +10973,174 @@ function clientWorkoutPickerMarkup(workouts) {
   `;
 }
 
+function clientWorkoutListMarkup(workouts) {
+  if (!clientPreviewProgramSelected) {
+    const programs = clientAvailablePrograms.length ? clientAvailablePrograms : [currentProgram];
+    return `<div class="workout-program-picker"><h3>Select a program</h3>${programs.map((program, index) => `
+      <button type="button" class="workout-program-choice" data-preview-program="${index}">
+        <strong>${escapeHtml(program.program_title || "Your program")}</strong>
+        <span>${(program.workouts || []).length} workouts <span aria-hidden="true">→</span></span>
+      </button>`).join("")}</div>`;
+  }
+  const assigned = workouts.filter(workout => !workout.isCustom);
+  const locked = clientWorkoutLayoutSaving || Boolean(workoutElapsedTimerState);
+  return `<div class="workout-preview-heading">
+    <button type="button" class="workout-text-button" data-preview-programs>← Programs</button>
+    <h3>${escapeHtml(currentProgram?.program_title || "Your workouts")}</h3>
+    <p>Drag workouts to change the order.</p>
+    ${workoutElapsedTimerState ? '<p>Finish your current workout before changing the plan.</p>' : ""}
+    <p data-workout-layout-status role="status" aria-live="polite"></p>
+  </div><div class="workout-preview-list">${assigned.map((workout, position) => {
+    const index = workout.panelIndex;
+    const exercises = Array.isArray(workout.exercises) ? workout.exercises : [];
+    return `<article class="workout-preview-card" data-preview-position="${position}" data-client-workout-picker-card="${index}"
+      data-client-workout-selection-day="Workout ${position + 1}" data-client-workout-selection-target="${escapeHtml(workout.title || "Workout")}">
+      <div class="workout-preview-card-heading">
+        <button type="button" class="workout-drag" data-preview-drag ${locked ? "disabled" : ""} aria-label="Reorder workout ${position + 1}. Use up and down arrow keys.">⠿</button>
+        <button type="button" class="workout-preview-toggle" data-preview-toggle="${index}" aria-expanded="${position === 0}" aria-controls="workout-preview-body-${index}">
+          <span class="workout-row-number">${String(position + 1).padStart(2, "0")}</span>
+          <span><strong id="client-workout-card-title-${index}">${escapeHtml(workout.title || `Workout ${position + 1}`)}</strong><small>${exercises.length} exercises</small></span>
+          <span aria-hidden="true">⌄</span>
+        </button>
+        <details class="workout-preview-menu"><summary aria-label="Workout ${position + 1} options">•••</summary><div>
+          <button type="button" data-preview-substitute="${position}" ${locked ? "disabled" : ""}>Substitute workout</button>
+          <button type="button" data-preview-delete="${position}" ${locked ? "disabled" : ""}>Delete workout</button>
+        </div></details>
+      </div>
+      <div id="workout-preview-body-${index}" class="workout-preview-body" ${position === 0 ? "" : "hidden"}>
+        <div class="workout-preview-columns"><span>Exercises</span><span>Sets × reps</span></div>
+        <ol class="workout-preview-exercises">${exercises.map((exercise, exerciseIndex) => `<li><span class="workout-row-number">${exerciseIndex + 1}</span><strong>${escapeHtml(exercise.name || "Exercise")}</strong><span class="workout-prescription">${escapeHtml(WorkoutLayout.label(exercise.prescription))}</span></li>`).join("")}</ol>
+        <button type="button" class="button button-dark workout-preview-start" data-preview-start="${index}" ${exercises.length ? "" : "disabled"}>▶ Start workout</button>
+      </div>
+    </article>`;
+  }).join("")}</div>
+  ${assigned.length ? "" : '<p>No workouts in this plan. Restore the assigned plan or start a custom workout.</p>'}
+  <div class="workout-preview-footer">
+    <button type="button" class="button button-ghost" data-client-workout-picker-choose="0">+ Custom workout</button>
+    <button type="button" class="workout-text-button" data-client-workout-copy-history>Copy previous</button>
+    <button type="button" class="workout-text-button" data-preview-restore ${locked ? "disabled" : ""}>Restore assigned plan</button>
+  </div>`;
+}
+
+async function saveClientWorkoutLayout(order) {
+  if (clientWorkoutLayoutSaving || workoutElapsedTimerState) return false;
+  const program = currentProgram;
+  const source = program?.assignedWorkouts || [];
+  const layout = { source: JSON.stringify(source), order };
+  const status = document.querySelector("[data-workout-layout-status]");
+  if (!program?.id || !supabaseClient) {
+    if (status) status.textContent = "This program cannot be saved yet.";
+    return false;
+  }
+  clientWorkoutLayoutSaving = true;
+  if (status) status.textContent = "Saving your plan…";
+  document.querySelectorAll("#client-workout-tabs button").forEach(button => { button.disabled = true; });
+  try {
+    const { data, error } = await supabaseClient.from("client_programs")
+      .update({ client_workout_layout: layout }).eq("id", program.id)
+      .select("id, client_workout_layout").single();
+    if (error || !data) throw error || new Error("No program was saved.");
+    program.client_workout_layout = data.client_workout_layout;
+    program.workouts = WorkoutLayout.order(source, data.client_workout_layout).map(index => source[index]);
+    clientAvailablePrograms = clientAvailablePrograms.map(item => item.id === program.id ? { ...item, client_workout_layout: data.client_workout_layout } : item);
+    clientWorkoutLayoutSaving = false;
+    renderClientWorkoutTabs(program.workouts);
+    const savedStatus = document.querySelector("[data-workout-layout-status]");
+    if (savedStatus) savedStatus.textContent = "Your plan is saved.";
+    return true;
+  } catch (error) {
+    clientWorkoutLayoutSaving = false;
+    renderClientWorkoutTabs(program.workouts);
+    const failedStatus = document.querySelector("[data-workout-layout-status]");
+    if (failedStatus) failedStatus.textContent = "Could not save your changes. Your previous plan is still in place. Please try again.";
+    return false;
+  }
+}
+
+function handleClientWorkoutPreview() {
+  const picker = document.getElementById("client-workout-tabs");
+  if (!picker) return;
+  const currentOrder = () => WorkoutLayout.order(currentProgram.assignedWorkouts || [], currentProgram.client_workout_layout);
+  WorkoutLayout.bindReorder(picker, ".workout-preview-card", "[data-preview-drag]", async (from, to) => {
+    const order = currentOrder();
+    order.splice(to, 0, order.splice(from, 1)[0]);
+    if (await saveClientWorkoutLayout(order)) picker.querySelectorAll("[data-preview-drag]")[to]?.focus();
+  });
+  picker.addEventListener("click", async event => {
+    if (clientWorkoutLayoutSaving) return;
+    const programButton = event.target.closest("[data-preview-program]");
+    if (programButton) {
+      const program = clientAvailablePrograms[Number(programButton.dataset.previewProgram)];
+      if (workoutElapsedTimerState && program && program.id !== currentProgram.id) {
+        window.alert("Finish your current workout before switching programs.");
+        return;
+      }
+      clientPreviewProgramSelected = true;
+      if (program) renderProgram(program);
+      else renderClientWorkoutTabs(currentProgram.workouts);
+      picker.querySelector("[data-preview-toggle]")?.focus();
+      return;
+    }
+    if (event.target.closest("[data-preview-programs]")) {
+      clientPreviewProgramSelected = false;
+      renderClientWorkoutTabs(currentProgram.workouts);
+      return;
+    }
+    const toggle = event.target.closest("[data-preview-toggle]");
+    if (toggle) {
+      const body = document.getElementById(toggle.getAttribute("aria-controls"));
+      body.hidden = !body.hidden;
+      toggle.setAttribute("aria-expanded", String(!body.hidden));
+      return;
+    }
+    const start = event.target.closest("[data-preview-start]");
+    if (start) {
+      const index = Number(start.dataset.previewStart);
+      const panel = document.getElementById(`client-workout-panel-${index}`);
+      const title = panel?.querySelector("[data-workout-start]")?.dataset.workoutTitle;
+      if (workoutElapsedTimerState && workoutElapsedTimerState.workoutTitle !== title) {
+        document.querySelector("[data-workout-layout-status]").textContent = "Finish or resume your current workout before starting another.";
+        return;
+      }
+      activateClientWorkoutPanel(index);
+      if (!workoutElapsedTimerState) panel?.querySelector("[data-workout-start]")?.click();
+      else showWorkoutElapsedTimer();
+      return;
+    }
+    if (workoutElapsedTimerState) return;
+    const remove = event.target.closest("[data-preview-delete]");
+    if (remove && window.confirm("Remove this workout from your plan? You can restore the assigned plan later.")) {
+      const order = currentOrder();
+      order.splice(Number(remove.dataset.previewDelete), 1);
+      await saveClientWorkoutLayout(order);
+    }
+    if (event.target.closest("[data-preview-restore]") && window.confirm("Restore the workout order and workouts assigned by your coach?")) {
+      await saveClientWorkoutLayout(currentProgram.assignedWorkouts.map((_, index) => index));
+    }
+    const substitute = event.target.closest("[data-preview-substitute]");
+    if (substitute) {
+      const position = Number(substitute.dataset.previewSubstitute);
+      const order = currentOrder();
+      const choices = currentProgram.assignedWorkouts.map((workout, index) => ({ workout, index })).filter(item => item.index !== order[position]);
+      const dialog = document.createElement("dialog");
+      dialog.className = "workout-substitute-dialog";
+      dialog.innerHTML = `<h2>Substitute workout</h2><p>Choose another workout from your assigned program.</p>${choices.length ? choices.map(({ workout, index }) => `<button type="button" class="workout-program-choice" data-replacement="${index}">${escapeHtml(workout.title || `Workout ${index + 1}`)}</button>`).join("") : "<p>No other assigned workouts are available.</p>"}<button type="button" class="button button-ghost" data-close-substitute>Cancel</button>`;
+      document.body.append(dialog);
+      dialog.addEventListener("close", () => { dialog.remove(); substitute.focus(); });
+      dialog.addEventListener("click", async click => {
+        if (click.target.closest("[data-close-substitute]")) dialog.close();
+        const replacement = click.target.closest("[data-replacement]");
+        if (replacement) {
+          order[position] = Number(replacement.dataset.replacement);
+          dialog.close();
+          await saveClientWorkoutLayout(order);
+        }
+      });
+      dialog.showModal();
+    }
+  });
+}
+
 function syncClientWorkoutSelectionSummary(tab) {
   const summary = document.getElementById("client-workout-selection-summary");
 
@@ -10999,6 +11170,10 @@ function syncClientWorkoutSelectionSummary(tab) {
 
 function syncClientWorkoutPicker(nextIndex = activeWorkoutTabIndex) {
   const picker = document.getElementById("client-workout-tabs");
+  if (picker?.querySelector(".workout-preview-list, .workout-program-picker")) {
+    activeWorkoutTabIndex = nextIndex;
+    return;
+  }
   const cards = Array.from(picker?.querySelectorAll("[data-client-workout-picker-card]") || []);
 
   if (!picker || cards.length === 0) {
@@ -11072,7 +11247,7 @@ function activateClientWorkoutPanel(nextIndex, options = {}) {
   const cards = Array.from(picker?.querySelectorAll("[data-client-workout-picker-card]") || []);
   const index = clientWorkoutPickerIndex(nextIndex, panels.length);
   const activePanel = panels[index];
-  const activeCard = cards[index];
+  const activeCard = picker?.querySelector(`[data-client-workout-picker-card="${index}"]`);
 
   if (!picker || !activePanel) {
     return;
@@ -11164,7 +11339,7 @@ function renderClientWorkoutTabs(workouts = []) {
     activeWorkoutTabIndex = 0;
   }
 
-  tabs.innerHTML = clientWorkoutPickerMarkup(availableWorkouts);
+  tabs.innerHTML = clientWorkoutListMarkup(availableWorkouts);
 
   panels.innerHTML = availableWorkouts.map((workout, index) => {
     if (workout.isCustom) {
@@ -14347,7 +14522,8 @@ async function saveClientNutritionPlan() {
     return { error };
   }
 
-  currentProgram = data;
+  const assignedWorkouts = Array.isArray(data.workouts) ? data.workouts : [];
+  currentProgram = { ...data, assignedWorkouts, workouts: WorkoutLayout.order(assignedWorkouts, data.client_workout_layout).map(index => assignedWorkouts[index]) };
   renderClientNutrition(currentProgram);
   return { data };
 }
@@ -15556,6 +15732,7 @@ function handleClientWorkoutTabs() {
   let gesture = null;
 
   document.addEventListener("click", (event) => {
+    if (clientWorkoutLayoutSaving) return;
     const copyHistoryLink = event.target.closest("[data-client-workout-copy-history]");
 
     if (copyHistoryLink) {
@@ -15704,10 +15881,11 @@ function handleSkipToggle() {
 }
 
 function renderProgram(program) {
-  currentProgram = { ...program };
+  const assignedWorkouts = program.assignedWorkouts || (Array.isArray(program.workouts) ? program.workouts : []);
+  currentProgram = { ...program, assignedWorkouts, workouts: WorkoutLayout.order(assignedWorkouts, program.client_workout_layout).map(index => assignedWorkouts[index]) };
   activeCustomWorkoutFormat = storedCustomWorkoutFormat();
   const displayProgram = displayProgramForCurrentView(program);
-  const workouts = Array.isArray(program.workouts) ? program.workouts : [];
+  const workouts = currentProgram.workouts;
   const programTitle = displayProgram.program_title || "Your Program";
 
   document.title = `${programTitle} | Fitness with Benjamin`;
@@ -15934,8 +16112,7 @@ async function loadDashboard() {
         .select("*")
         .eq("active", true)
         .ilike("client_email", targetClientEmail)
-        .order("updated_at", { ascending: false })
-        .limit(1),
+        .order("updated_at", { ascending: false }),
       "Program request timed out."
     );
     const assignedProgram = Array.isArray(programRows) ? programRows[0] : null;
@@ -15957,6 +16134,7 @@ async function loadDashboard() {
     };
 
     activeClientEmail = data.client_email || targetClientEmail;
+    clientAvailablePrograms = Array.isArray(programRows) ? programRows : [];
     renderProgram(data);
     void initializeClientWebNotifications(user);
     const questionnaireQuery = supabaseClient
@@ -16640,6 +16818,7 @@ handleClientHomeSnapshotDeck();
 handleClientHomeCheckin();
 handleClientSummaryActions();
 handleClientWorkoutTabs();
+handleClientWorkoutPreview();
 handleWorkoutInteractions();
 handleCustomWorkoutInlineGrouping();
 handleSkipToggle();

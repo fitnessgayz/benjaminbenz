@@ -1070,14 +1070,13 @@ function handleCoachAdminSidebar() {
 
 function workoutSummaryFromForm(form, number) {
   const title = formValue(form, `workout_${number}_title`) || `Workout ${number}`;
-  const focus = formValue(form, `workout_${number}_focus`);
   const exercises = parseExercises(formValue(form, `workout_${number}_exercises`)).length;
   const included = form.elements[`workout_${number}_include`]?.checked;
   const exerciseLabel = `${exercises} exercise${exercises === 1 ? "" : "s"}`;
 
   return [
     included ? "Included" : "Off",
-    focus || title,
+    title,
     exerciseLabel
   ].filter(Boolean).join(" · ");
 }
@@ -1095,6 +1094,82 @@ function updateWorkoutSummaries() {
     if (summary) {
       summary.textContent = workoutSummaryFromForm(form, number);
     }
+    renderWorkoutExerciseRows(number);
+  });
+}
+
+function renderWorkoutExerciseRows(number) {
+  const card = document.querySelector(`[data-workout-card="${number}"]`);
+  const list = card?.querySelector("[data-builder-rows]");
+  const source = card?.querySelector("textarea");
+  if (!list || !source || list.contains(document.activeElement)) return;
+  list.innerHTML = parseExercises(source.value).map((exercise, index) => {
+    const target = WorkoutLayout.prescription(exercise.prescription);
+    return `<div class="builder-exercise-row" data-builder-row="${index}">
+      <div class="builder-exercise-line">
+        <button type="button" class="workout-drag" data-builder-drag aria-label="Reorder ${escapeHtml(exercise.name)}. Use up and down arrow keys.">⠿</button>
+        <input data-builder-field="name" aria-label="Exercise ${index + 1} name" value="${escapeHtml(exercise.name)}" placeholder="Exercise name" />
+        <input data-builder-field="sets" aria-label="Exercise ${index + 1} sets" type="number" min="1" max="20" value="${escapeHtml(target.sets)}" placeholder="—" />
+        <span aria-hidden="true">×</span>
+        <input data-builder-field="reps" aria-label="Exercise ${index + 1} reps or duration" value="${escapeHtml(target.reps)}" placeholder="Reps" />
+      </div>
+      <details class="builder-exercise-details"><summary>Details</summary>
+        ${["code", "prescription", "rest", "muscles", "video"].map(field => `<label>${field === "video" ? "Demo URL" : field}<input data-builder-field="${field}" value="${escapeHtml(exercise[field] || "")}" /></label>`).join("")}
+        <button type="button" data-builder-delete="${index}">Delete exercise</button>
+      </details>
+    </div>`;
+  }).join("");
+}
+
+function handleWorkoutExerciseRows() {
+  const container = document.getElementById("workout-fields");
+  if (!container) return;
+  const save = (card, exercises) => {
+    const source = card.querySelector("textarea");
+    source.value = exercisesToText(exercises);
+    source.dispatchEvent(new Event("input", { bubbles: true }));
+  };
+  container.addEventListener("input", event => {
+    const input = event.target.closest("[data-builder-field]");
+    if (!input) return;
+    const card = input.closest("[data-workout-card]");
+    const row = input.closest("[data-builder-row]");
+    const exercises = parseExercises(card.querySelector("textarea").value);
+    const exercise = exercises[Number(row.dataset.builderRow)];
+    const field = input.dataset.builderField;
+    if (["sets", "reps"].includes(field)) {
+      exercise.prescription = WorkoutLayout.compose(row.querySelector('[data-builder-field="sets"]').value, row.querySelector('[data-builder-field="reps"]').value);
+      row.querySelector('[data-builder-field="prescription"]').value = exercise.prescription;
+    } else {
+      exercise[field] = input.value.replace(/[|\n]/g, " ");
+      if (field === "prescription") {
+        const parsed = WorkoutLayout.prescription(input.value);
+        row.querySelector('[data-builder-field="sets"]').value = parsed.sets;
+        row.querySelector('[data-builder-field="reps"]').value = parsed.reps;
+      }
+    }
+    save(card, exercises);
+  });
+  container.addEventListener("click", event => {
+    const button = event.target.closest("[data-builder-add], [data-builder-delete]");
+    if (!button) return;
+    const card = button.closest("[data-workout-card]");
+    const exercises = parseExercises(card.querySelector("textarea").value);
+    if (button.hasAttribute("data-builder-add")) {
+      let code = 1;
+      while (exercises.some(exercise => exercise.code === `A${code}`)) code++;
+      exercises.push({ code: `A${code}`, name: "New exercise", prescription: "10 reps x 3 sets" });
+    } else exercises.splice(Number(button.dataset.builderDelete), 1);
+    button.blur();
+    save(card, exercises);
+  });
+  WorkoutLayout.bindReorder(container, ".builder-exercise-row", "[data-builder-drag]", (from, to, row) => {
+    const card = row.closest("[data-workout-card]");
+    const exercises = parseExercises(card.querySelector("textarea").value);
+    exercises.splice(to, 0, exercises.splice(from, 1)[0]);
+    document.activeElement?.blur();
+    save(card, exercises);
+    card.querySelectorAll("[data-builder-drag]")[to]?.focus();
   });
 }
 
@@ -2369,6 +2444,8 @@ function renderWorkoutFields() {
             Workout title
             <input type="text" name="workout_${number}_title" placeholder="Workout ${number}" />
           </label>
+        </div>
+        <details class="builder-settings"><summary>Workout settings</summary><div class="admin-field-grid">
           <label>
             Focus
             <input type="text" name="workout_${number}_focus" placeholder="Upper strength" />
@@ -2381,11 +2458,14 @@ function renderWorkoutFields() {
               <option value="circuit">Circuit training</option>
             </select>
           </label>
-        </div>
-        <label>
-          Exercises
+        </div></details>
+        <div class="builder-column-head"><strong>Exercises</strong><span>Sets</span><span>Reps</span></div>
+        <div data-builder-rows></div>
+        <button class="button button-ghost" type="button" data-builder-add>+ Add exercise</button>
+        <details class="builder-source"><summary>Advanced · bulk edit</summary><label>
+          Exercise source
           <textarea class="exercise-textarea" name="workout_${number}_exercises" placeholder="A1 | Exercise name | 15 reps x 4 sets | 60-90s rest | glutes, hamstrings | https://youtu.be/demo"></textarea>
-        </label>
+        </label></details>
       </div>
     </details>
   `).join("");
@@ -6657,6 +6737,7 @@ async function bootCoachAdmin() {
   handleSessionManualEditor();
   handleAdminLiveUpdates();
   handleWorkoutCards();
+  handleWorkoutExerciseRows();
   handleSaveProfileChanges();
   handleProfileClientManagement();
   handleSaveClientDetails();

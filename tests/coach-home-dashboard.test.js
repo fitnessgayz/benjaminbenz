@@ -76,7 +76,7 @@ test("Sessions Left uses only the Alex Fitness Master summary", () => {
   assert.match(renderer, /Alex Fitness Master/);
   assert.doesNotMatch(renderer, /const activePackages = activeClients/);
   assert.match(adminHtml, /id="coach-home-session-total">Alex Fitness Master only/);
-  assert.match(adminHtml, /coach-admin\.js\?v=workout-demo-links-1/);
+  assert.match(adminHtml, /coach-admin\.js\?v=workout-preview-1/);
 });
 
 test("home flags empty or low packages and clients inactive for 14 days", () => {

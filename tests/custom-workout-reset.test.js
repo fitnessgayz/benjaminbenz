@@ -64,6 +64,6 @@ test("wires the reset action and cache-busts its assets", () => {
 
   assert.match(interactions, /event\.target\.closest\("\[data-reset-custom-workout\]"\)/);
   assert.match(interactions, /resetCustomWorkout\(resetCustomWorkoutButton\.closest\("\.client-workout-panel-custom"\)\)/);
-  assert.match(dashboard, /css\/style\.css\?v=client-nav-scroll-cue-1/);
-  assert.match(dashboard, /js\/client-portal\.js\?v=client-nav-scroll-cue-1/);
+  assert.match(dashboard, /css\/style\.css\?v=workout-preview-1/);
+  assert.match(dashboard, /js\/client-portal\.js\?v=workout-preview-1/);
 });
