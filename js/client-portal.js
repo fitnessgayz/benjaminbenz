@@ -10981,7 +10981,13 @@ function clientWorkoutListMarkup(workouts) {
       <button type="button" class="workout-program-choice" data-preview-program="${index}">
         <strong>${escapeHtml(program.program_title || "Your program")}</strong>
         <span>${(program.workouts || []).length} workouts <span aria-hidden="true">→</span></span>
-      </button>`).join("")}</div>`;
+      </button>`).join("")}
+      <button type="button" class="button button-dark workout-preview-start"
+        data-client-workout-picker-choose="0" data-client-workout-picker-card="0"
+        data-client-workout-selection-target="Custom workout">
+        <span aria-hidden="true">+&nbsp;</span><span id="client-workout-card-title-0">Build custom workout</span>
+      </button>
+    </div>`;
   }
   const assigned = workouts.filter(workout => !workout.isCustom);
   const locked = clientWorkoutLayoutSaving || Boolean(workoutElapsedTimerState);
@@ -11019,9 +11025,8 @@ function clientWorkoutListMarkup(workouts) {
       </div>
     </article>`;
   }).join("")}</div>
-  ${assigned.length ? "" : '<p>No workouts in this plan. Restore the assigned plan or start a custom workout.</p>'}
+  ${assigned.length ? "" : '<p>No workouts in this plan. Restore the assigned plan or return to Programs to build a custom workout.</p>'}
   <div class="workout-preview-footer">
-    <button type="button" class="button button-ghost" data-client-workout-picker-choose="0">+ Custom workout</button>
     <button type="button" class="workout-text-button" data-client-workout-copy-history>Copy previous</button>
     <button type="button" class="workout-text-button" data-preview-restore ${locked ? "disabled" : ""}>Restore assigned exercises</button>
   </div>`;
