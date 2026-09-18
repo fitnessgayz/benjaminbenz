@@ -12949,7 +12949,7 @@ textarea,
   margin-top: 12px;
 }
 
-/* The coach logger mirrors the client workout-card layout for grouped work. */
+/* Every coach workout format uses the same structured full-width card layout. */
 .coach-workout-group-stack[hidden],
 .coach-workout-exercise-list.is-grouped-source {
   display: none !important;

@@ -94,14 +94,20 @@ test("matches the custom workout card per-set controls and actions", () => {
   assert.match(styles, /\.coach-workout-set-header,[\s\S]*?grid-template-columns:\s*54px minmax\(0, 1fr\) minmax\(0, 1fr\) 72px/);
 });
 
-test("renders supersets and circuits as full-width grouped cards instead of a swipe carousel", () => {
+test("renders straight sets supersets and circuits as full-width cards instead of a swipe carousel", () => {
   const groupedMarkup = sourceForFunction("coachWorkoutGroupedCardMarkup");
+  const groups = sourceForFunction("coachWorkoutGroups");
   const layout = sourceForFunction("renderCoachWorkoutCardLayout");
 
   assert.match(loggerHtml, /data-coach-workout-group-stack/);
   assert.match(groupedMarkup, /data-coach-workout-grouped="true"/);
   assert.match(groupedMarkup, /class="coach-workout-grouped-card/);
-  assert.match(layout, /format === "single"/);
+  assert.match(groupedMarkup, /`Straight set \$\{groupIndex \+ 1\}`/);
+  assert.match(groups, /if \(format === "single"\)/);
+  assert.match(groups, /exercises\.map\(\(exercise, exerciseIndex\) => \[\{ exercise, exerciseIndex \}\]\)/);
+  assert.match(layout, /\["single", "superset", "circuit"\]\.includes\(format\)/);
+  assert.match(layout, /classList\.toggle\("is-grouped-source", usesWorkoutCards\)/);
+  assert.match(layout, /stack\.hidden = !usesWorkoutCards/);
   assert.match(layout, /coachWorkoutGroupedCardMarkup/);
   assert.doesNotMatch(loggerHtml, /data-coach-workout-previous|data-coach-workout-next|coach-workout-carousel-dots/);
   assert.doesNotMatch(styles, /\.coach-workout[^}]*scroll-snap-type:\s*x mandatory/);
@@ -109,6 +115,23 @@ test("renders supersets and circuits as full-width grouped cards instead of a sw
     styles,
     /\.coach-workout-grouped-card\s*\{[\s\S]*?width:\s*100%;[\s\S]*?max-width:\s*100%;[\s\S]*?min-width:\s*0;[\s\S]*?overflow:\s*hidden;/,
   );
+});
+
+test("builds one card per straight-set exercise while preserving grouped formats", () => {
+  const groupsSource = sourceForFunction("coachWorkoutGroups");
+  const groupsFor = Function(
+    "coachWorkoutExerciseElements",
+    `${groupsSource}; return coachWorkoutGroups;`,
+  )(() => []);
+  const exercises = [{ id: 1 }, { id: 2 }, { id: 3 }];
+
+  assert.deepEqual(groupsFor("single", exercises), [
+    [{ exercise: exercises[0], exerciseIndex: 0 }],
+    [{ exercise: exercises[1], exerciseIndex: 1 }],
+    [{ exercise: exercises[2], exerciseIndex: 2 }],
+  ]);
+  assert.deepEqual(groupsFor("superset", exercises).map((group) => group.length), [2, 1]);
+  assert.deepEqual(groupsFor("circuit", exercises).map((group) => group.length), [3]);
 });
 
 test("uses a compact collapsible exercise-name editor for grouped workouts", () => {
@@ -134,6 +157,15 @@ test("reopens a collapsed grouped name editor before focusing a validation error
   assert.match(focusVisible, /fields\.hidden = false/);
   assert.match(focusVisible, /aria-expanded", "true"/);
   assert.match(focusVisible, /visible\.focus\(\)/);
+  assert.doesNotMatch(focusVisible, /coachWorkoutFormatValue\(\) === "single"/);
+});
+
+test("focuses the visible straight-set name editor after adding an exercise", () => {
+  const interactions = sourceForFunction("handleCoachWorkoutForm");
+
+  assert.match(interactions, /data-coach-grouped-name-input/);
+  assert.match(interactions, /\|\| exercise\?\.querySelector\("\[data-coach-workout-name\]"\)/);
+  assert.doesNotMatch(interactions, /coachWorkoutFormatValue\(\) === "single"/);
 });
 
 test("repeats Set Weight Reps and RIR labels in warm-up and round sections", () => {

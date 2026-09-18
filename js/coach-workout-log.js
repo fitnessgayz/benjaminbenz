@@ -593,7 +593,11 @@ function coachWorkoutGroupedSectionsMarkup(group) {
 function coachWorkoutGroupedCardMarkup(format, group, groupIndex) {
   const exercises = group.map(({ exercise }) => exercise);
   const roundCount = normalizeCoachWorkoutGroupedRows(exercises);
-  const title = format === "circuit" ? `Circuit ${groupIndex + 1}` : `Superset ${groupIndex + 1}`;
+  const title = format === "circuit"
+    ? `Circuit ${groupIndex + 1}`
+    : format === "superset"
+      ? `Superset ${groupIndex + 1}`
+      : `Straight set ${groupIndex + 1}`;
   const indexes = group.map(({ exerciseIndex }) => exerciseIndex).join(",");
 
   return `
@@ -632,6 +636,10 @@ function coachWorkoutGroups(format, exercises = coachWorkoutExerciseElements()) 
     return [exercises.map((exercise, exerciseIndex) => ({ exercise, exerciseIndex }))];
   }
 
+  if (format === "single") {
+    return exercises.map((exercise, exerciseIndex) => [{ exercise, exerciseIndex }]);
+  }
+
   return Array.from({ length: Math.ceil(exercises.length / 2) }, (_, groupIndex) => (
     exercises.slice(groupIndex * 2, (groupIndex * 2) + 2).map((exercise, position) => ({
       exercise,
@@ -657,15 +665,15 @@ function renderCoachWorkoutCardLayout() {
   const stack = document.getElementById("coach-workout-group-stack");
   const exercises = coachWorkoutExerciseElements();
   const format = coachWorkoutFormatValue();
-  const grouped = format === "single" ? false : true;
+  const usesWorkoutCards = ["single", "superset", "circuit"].includes(format);
 
   if (!carousel) return;
 
   carousel.dataset.coachWorkoutFormat = format;
   carousel.dataset.carouselEnabled = "false";
-  list?.classList.toggle("is-grouped-source", grouped);
-  if (stack) stack.hidden = !grouped;
-  if (stack && grouped) {
+  list?.classList.toggle("is-grouped-source", usesWorkoutCards);
+  if (stack) stack.hidden = !usesWorkoutCards;
+  if (stack && usesWorkoutCards) {
     stack.innerHTML = coachWorkoutGroups(format, exercises)
       .filter((group) => group.length > 0)
       .map((group, groupIndex) => coachWorkoutGroupedCardMarkup(format, group, groupIndex))
@@ -677,7 +685,7 @@ function renderCoachWorkoutCardLayout() {
 
   exercises.forEach((exercise, index) => {
     const nameInput = exercise.querySelector("[data-coach-workout-name]");
-    if (nameInput) nameInput.required = !grouped;
+    if (nameInput) nameInput.required = !usesWorkoutCards;
     exercise.setAttribute("aria-label", `Exercise ${index + 1} of ${exercises.length}`);
     exercise.setAttribute("aria-roledescription", "exercise");
   });
@@ -1113,11 +1121,6 @@ function cancelCoachWorkoutAutosave() {
 }
 
 function focusCoachWorkoutVisibleField(exerciseIndex, field, setType = "", setIndex = 0, fallback = null) {
-  if (coachWorkoutFormatValue() === "single") {
-    fallback?.focus();
-    return;
-  }
-
   const stack = document.getElementById("coach-workout-group-stack");
   const selector = field === "name"
     ? `[data-coach-grouped-name-input][data-coach-grouped-exercise-index="${exerciseIndex}"]`
@@ -1760,9 +1763,8 @@ function handleCoachWorkoutForm() {
     const exercise = addCoachWorkoutExercise();
     const index = coachWorkoutExerciseElements().indexOf(exercise);
     scheduleCoachWorkoutAutosave();
-    const visibleName = coachWorkoutFormatValue() === "single"
-      ? exercise?.querySelector("[data-coach-workout-name]")
-      : groupStack?.querySelector(`[data-coach-grouped-name-input][data-coach-grouped-exercise-index="${index}"]`);
+    const visibleName = groupStack?.querySelector(`[data-coach-grouped-name-input][data-coach-grouped-exercise-index="${index}"]`)
+      || exercise?.querySelector("[data-coach-workout-name]");
     visibleName?.focus();
   });
   document.getElementById("coach-workout-reset")?.addEventListener("click", () => resetCoachWorkoutForm());
