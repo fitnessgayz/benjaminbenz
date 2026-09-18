@@ -87,6 +87,24 @@ test("home actions open the selected client's training logs or sessions", () => 
   assert.match(opener, /setAdminTab\(tabName\)/);
 });
 
+test("coach summary metrics are accessible navigation shortcuts", () => {
+  const homeStart = adminHtml.indexOf('data-admin-panel="home"');
+  const homeEnd = adminHtml.indexOf('data-admin-client-context', homeStart);
+  const home = adminHtml.slice(homeStart, homeEnd);
+  const handler = javascriptFunction("handleCoachHomeActions");
+
+  assert.match(home, /class="coach-home-metric"[^>]*data-coach-home-tab="clients"[^>]*aria-label="View active clients"/);
+  assert.match(home, /class="coach-home-metric"[^>]*data-coach-home-scroll="workouts"/);
+  assert.match(home, /class="coach-home-metric"[^>]*data-coach-home-tab="sessions"/);
+  assert.match(home, /class="coach-home-metric coach-home-attention-metric"[^>]*data-coach-home-scroll="attention"/);
+  assert.equal((home.match(/<button class="coach-home-metric/g) || []).length, 4);
+  assert.match(handler, /event\.target\.closest\("\[data-coach-home-scroll\]"\)/);
+  assert.match(handler, /target\.scrollIntoView\(\{ behavior: "smooth", block: "start" \}\)/);
+  assert.match(handler, /target\.focus\(\{ preventScroll: true \}\)/);
+  assert.match(styleSource, /\.coach-home-metric:hover\s*\{[^}]*transform:\s*translateY\(-2px\)/s);
+  assert.match(styleSource, /\.coach-home-metric:focus-visible\s*\{[^}]*outline:/s);
+});
+
 test("home dashboard adapts its cards and lists for phone screens", () => {
   assert.match(styleSource, /\.coach-home-dashboard-grid\s*\{[^}]*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/s);
   assert.match(styleSource, /@media \(max-width: 720px\)[\s\S]*?\.coach-home-dashboard-grid\s*\{[^}]*grid-template-columns:\s*1fr/s);

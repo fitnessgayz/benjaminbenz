@@ -30,7 +30,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=fwb-calendar-sync-1" />
+  <link rel="stylesheet" href="css/style.css?v=coach-home-metric-links-1" />
 </head>
 <body class="dashboard-page coach-admin-page">
   <header class="site-header dashboard-header">
@@ -161,26 +161,26 @@
           </div>
 
           <div class="coach-home-metrics" aria-label="Coach summary">
-            <article>
+            <button class="coach-home-metric" type="button" data-coach-home-tab="clients" aria-label="View active clients">
               <span>Active clients</span>
               <strong id="coach-home-active-clients">0</strong>
               <small>currently on your roster</small>
-            </article>
-            <article>
+            </button>
+            <button class="coach-home-metric" type="button" data-coach-home-scroll="workouts" aria-label="View workouts completed in the last 7 days">
               <span>Workouts</span>
               <strong id="coach-home-recent-workouts">0</strong>
               <small>completed in the last 7 days</small>
-            </article>
-            <article>
+            </button>
+            <button class="coach-home-metric" type="button" data-coach-home-tab="sessions" aria-label="View client session balances">
               <span>Sessions left</span>
               <strong id="coach-home-sessions-left">0</strong>
               <small id="coach-home-session-total">across active packages</small>
-            </article>
-            <article class="coach-home-attention-metric">
+            </button>
+            <button class="coach-home-metric coach-home-attention-metric" type="button" data-coach-home-scroll="attention" aria-label="View clients who need attention">
               <span>Needs attention</span>
               <strong id="coach-home-needs-attention">0</strong>
               <small>low sessions or training inactivity</small>
-            </article>
+            </button>
           </div>
 
           <div class="coach-home-dashboard-grid">
@@ -1057,6 +1057,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js?v=client-session-link-1"></script>
   <script src="js/web-notifications.js?v=notification-default-on-1"></script>
-  <script src="js/coach-admin.js?v=fwb-calendar-sync-1"></script>
+  <script src="js/coach-admin.js?v=coach-home-metric-links-1"></script>
 </body>
 </html>

@@ -5019,6 +5019,7 @@ function handleCoachHomeActions() {
     const logsButton = event.target.closest("[data-coach-home-open-logs]");
     const sessionsButton = event.target.closest("[data-coach-home-open-sessions]");
     const tabButton = event.target.closest("[data-coach-home-tab]");
+    const scrollButton = event.target.closest("[data-coach-home-scroll]");
     const refreshCalendarButton = event.target.closest("[data-coach-home-refresh-calendar]");
 
     if (refreshCalendarButton) {
@@ -5036,6 +5037,23 @@ function handleCoachHomeActions() {
 
     if (sessionsButton) {
       openCoachHomeClientSection(sessionsButton.dataset.coachHomeOpenSessions, "sessions");
+      return;
+    }
+
+    if (scrollButton) {
+      const requestedTarget = scrollButton.dataset.coachHomeScroll;
+      const targetId = requestedTarget === "workouts"
+        ? "coach-home-recent-title"
+        : document.querySelector("#coach-home-session-alert-list .coach-home-list-row")
+          ? "coach-home-session-alert-title"
+          : "coach-home-inactive-title";
+      const target = document.getElementById(targetId);
+
+      if (target) {
+        target.setAttribute("tabindex", "-1");
+        target.scrollIntoView({ behavior: "smooth", block: "start" });
+        target.focus({ preventScroll: true });
+      }
       return;
     }
 
