@@ -83,6 +83,6 @@ test("straight-set entry validation preserves exact zero values", () => {
 });
 
 test("loads the updated straight-set layout assets", () => {
-  assert.match(dashboard, /custom-workout-mobile-fix\.css\?v=group-defaults-1/);
-  assert.match(dashboard, /client-portal\.js\?v=group-defaults-1/);
+  assert.match(dashboard, /custom-workout-mobile-fix\.css\?v=grouped-add-counts-1/);
+  assert.match(dashboard, /client-portal\.js\?v=grouped-add-counts-1/);
 });
