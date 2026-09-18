@@ -25,6 +25,15 @@
     }
     return layout.order.filter(index => Number.isInteger(index) && index >= 0 && index < workouts.length);
   }
+  // Version 2 personalizes exercises only; legacy workout-level edits are ignored.
+  function apply(workouts, layout) {
+    const valid = layout?.version === 2 && layout.source === JSON.stringify(workouts);
+    return workouts.map((workout, index) => ({
+      ...workout,
+      exercises: (valid && Array.isArray(layout.exercises?.[index])
+        ? layout.exercises[index] : (workout.exercises || [])).map(exercise => ({ ...exercise }))
+    }));
+  }
   function bindReorder(container, rowSelector, handleSelector, onMove) {
     let drag = null;
     const track = () => {
@@ -79,7 +88,7 @@
       if (to >= 0 && to < rows.length) onMove(from, to, row);
     });
   }
-  const api = { prescription, label, compose, order, bindReorder };
+  const api = { prescription, label, compose, order, apply, bindReorder };
   if (typeof module !== "undefined") module.exports = api;
   root.WorkoutLayout = api;
 })(typeof window !== "undefined" ? window : globalThis);

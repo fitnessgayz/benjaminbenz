@@ -25,3 +25,20 @@ test('personal plans support reorder, deletion, substitution and invalidate on c
   assert.deepEqual(layout.order([...workouts, { title: 'D' }], { source, order: [2] }), [0, 1, 2, 3]);
   assert.deepEqual(layout.order(workouts, null), [0, 1, 2]);
 });
+
+test('exercise edits persist without changing assigned workouts or their order', () => {
+  const workouts = [{ title: 'A', exercises: [{ name: 'Press', prescription: '8 reps x 3 sets' }, { name: 'Curl' }] }, { title: 'B', exercises: [{ name: 'Squat' }] }];
+  const original = JSON.stringify(workouts);
+  const saved = JSON.parse(JSON.stringify({ version: 2, source: original, order: [1], exercises: [[{ name: 'Row', prescription: '10 reps x 4 sets' }], []] }));
+  const result = layout.apply(workouts, saved);
+  assert.deepEqual(result.map(w => w.title), ['A', 'B']);
+  assert.deepEqual(result[0].exercises, saved.exercises[0]);
+  assert.deepEqual(result[1].exercises, []);
+  result[0].exercises[0].name = 'Changed';
+  assert.equal(saved.exercises[0][0].name, 'Row');
+  assert.equal(JSON.stringify(workouts), original);
+  assert.deepEqual(layout.apply(workouts, { source: original, order: [] }), workouts);
+  assert.deepEqual(layout.apply(workouts, { ...saved, exercises: [] }), workouts);
+  const updated = [...workouts, { title: 'New', exercises: [] }];
+  assert.deepEqual(layout.apply(updated, saved), updated);
+});
