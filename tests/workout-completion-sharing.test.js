@@ -6,13 +6,40 @@ const path = require("node:path");
 const root = path.resolve(__dirname, "..");
 const portal = fs.readFileSync(path.join(root, "js/client-portal.js"), "utf8");
 const styles = fs.readFileSync(path.join(root, "css/style.css"), "utf8");
+const mobileStyles = fs.readFileSync(path.join(root, "css/custom-workout-mobile-fix.css"), "utf8");
 const dashboard = fs.readFileSync(path.join(root, "client-dashboard.html"), "utf8");
 
 test("shows the approved workout completion share prompt after a successful finish", () => {
-  assert.match(portal, /openWorkoutCompletionSharePrompt\(\s*workoutCompletionShareSummary\(saveResult\.rows, workoutCompletion, workoutDifficulty\)/);
+  assert.match(portal, /const completionSummary = workoutCompletionShareSummary\(/);
+  assert.match(portal, /openWorkoutCompletionSharePrompt\(completionSummary\)/);
   assert.match(portal, /handleWorkoutCompletionSharePrompt\(\);/);
   assert.match(portal, /data-workout-share>Share workout</);
   assert.match(portal, /data-workout-share-dismiss>Not now</);
+});
+
+test("celebrates only after the full workout and feedback are saved", () => {
+  assert.match(portal, /function showWorkoutCompletionCelebration\(summary = \{\}\)/);
+  assert.match(portal, /dataset\.workoutCompletionCelebration = "true"/);
+  assert.match(portal, /setAttribute\("role", "status"\)/);
+  assert.match(portal, /Array\.from\(\{ length: 24 \}/);
+
+  const saveHandlerStart = portal.indexOf("async function handleTrainingLogSave");
+  const saveHandler = portal.slice(saveHandlerStart, portal.indexOf("async function handleSignOut", saveHandlerStart));
+  const feedbackSaved = saveHandler.indexOf("if (!feedbackResult.saved)");
+  const celebration = saveHandler.indexOf("showWorkoutCompletionCelebration(completionSummary)");
+
+  assert.ok(feedbackSaved >= 0, "The completion flow should verify feedback persistence");
+  assert.ok(celebration > feedbackSaved, "Celebration should run only after the completed workout is saved");
+  assert.match(saveHandler, /const completionSummary = workoutCompletionShareSummary\(/);
+  assert.match(saveHandler, /showWorkoutCompletionCelebration\(completionSummary\);[\s\S]*?if \(groupedRestart\)/);
+});
+
+test("keeps the workout celebration lightweight, nonblocking, and motion-safe", () => {
+  assert.match(mobileStyles, /\.workout-completion-celebration\s*\{[\s\S]*?position:\s*fixed;[\s\S]*?pointer-events:\s*none;/);
+  assert.match(mobileStyles, /\.workout-completion-celebration-burst i/);
+  assert.match(mobileStyles, /@keyframes workout-completion-confetti/);
+  assert.match(mobileStyles, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.workout-completion-celebration-burst\s*\{[\s\S]*?display:\s*none;/);
+  assert.match(dashboard, /custom-workout-mobile-fix\.css\?v=straight-set-layout-1/);
 });
 
 test("shares today's workout without volume or set totals", () => {
@@ -57,5 +84,5 @@ test("keeps the completion sheet and share card mobile-safe", () => {
   assert.match(styles, /body\.client-dashboard-page \.workout-completion-share-heading > div[\s\S]*?flex: 1 1 auto[\s\S]*?min-width: 0/);
   assert.match(styles, /body\.client-dashboard-page \.workout-completion-share-heading :is\(small, strong\)[\s\S]*?overflow-wrap: normal !important/);
   assert.match(dashboard, /style\.css\?v=client-notification-settings-1/);
-  assert.match(dashboard, /client-portal\.js\?v=grouped-optional-rir-1/);
+  assert.match(dashboard, /client-portal\.js\?v=straight-set-layout-1/);
 });

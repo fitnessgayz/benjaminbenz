@@ -7,6 +7,7 @@ const root = path.resolve(__dirname, "..");
 const dashboard = fs.readFileSync(path.join(root, "client-dashboard.html"), "utf8");
 const portal = fs.readFileSync(path.join(root, "js/client-portal.js"), "utf8");
 const styles = fs.readFileSync(path.join(root, "css/style.css"), "utf8");
+const mobileStyles = fs.readFileSync(path.join(root, "css/custom-workout-mobile-fix.css"), "utf8");
 
 function sourceForFunction(name) {
   const start = portal.indexOf(`function ${name}(`);
@@ -94,6 +95,101 @@ test("checkbox changes are mutually exclusive, reversible, and saved in the draf
   assert.match(portal, /handleCustomWorkoutInlineGrouping\(\);/);
 });
 
+test("mixed supersets and circuits can return to straight sets without dropping field values", () => {
+  const groupedMarkup = sourceForFunction("customWorkoutGroupedRoundCardMarkup");
+  const returnToStraight = sourceForFunction("returnCustomWorkoutInlineGroupToStraight");
+  const interactions = sourceForFunction("handleWorkoutInteractions");
+
+  assert.match(groupedMarkup, /panelFormat === "single"/);
+  assert.match(groupedMarkup, /data-custom-grouped-return-straight/);
+  assert.match(groupedMarkup, /Return to straight sets/);
+  assert.match(returnToStraight, /querySelectorAll\("\[data-custom-grouped-field\]"\)/);
+  assert.match(returnToStraight, /syncCustomWorkoutGroupedField/);
+  assert.match(returnToStraight, /if \(!fieldsSynced\) return false/);
+  assert.match(returnToStraight, /clearCustomWorkoutInlineGroup/);
+  assert.match(returnToStraight, /delete logElement\.dataset\.groupedRoundMode/);
+  assert.match(returnToStraight, /delete row\.dataset\.groupedRoundRequired/);
+  assert.match(returnToStraight, /syncCustomWorkoutCarousel/);
+  assert.match(returnToStraight, /persistCustomWorkoutDraftFromPanel/);
+  assert.match(interactions, /data-custom-grouped-return-straight/);
+  assert.match(interactions, /returnCustomWorkoutInlineGroupToStraight/);
+  assert.match(
+    mobileStyles,
+    /\.custom-workout-grouped-mode-actions button\s*\{[^}]*min-height:\s*44px;[^}]*touch-action:\s*manipulation;/s,
+  );
+
+  const rows = [{ dataset: { groupedRoundRequired: "true", customGroupedReopened: "true" } }];
+  const logs = [{
+    dataset: { groupedRoundMode: "true", groupLoggedSets: "0" },
+    querySelectorAll: () => rows,
+  }];
+  const card = (focusable) => ({
+    dataset: { customWorkoutGroupType: "superset", customWorkoutGroup: "0" },
+    inert: true,
+    removeAttribute() {},
+    querySelector: () => focusable ? { focus() {} } : null,
+    querySelectorAll: () => logs,
+  });
+  const cards = [card(true), card(false)];
+  const fields = [{ value: "0" }, { value: "12" }];
+  let synced = 0;
+  let regrouped = false;
+  let persisted = false;
+  const panel = {
+    dataset: { customWorkoutFormat: "single" },
+    querySelectorAll: () => cards,
+  };
+  const carousel = {
+    closest: () => panel,
+    querySelectorAll: () => fields,
+  };
+  const button = { closest: () => carousel };
+  const returnToStraightApi = Function(
+    "normalizeCustomWorkoutFormat",
+    "activeCustomWorkoutFormat",
+    "customWorkoutCarouselCards",
+    "syncCustomWorkoutGroupedField",
+    "clearCustomWorkoutInlineGroup",
+    "syncCustomWorkoutCarousel",
+    "syncCustomWorkoutFormatMarkers",
+    "persistCustomWorkoutDraftFromPanel",
+    "updateVisibleSetProgress",
+    "window",
+    `${returnToStraight}; return returnCustomWorkoutInlineGroupToStraight;`,
+  )(
+    (value) => value,
+    "single",
+    () => cards,
+    (field) => { synced += 1; return field.value === "0" || field.value === "12"; },
+    (_allCards, focusCard) => {
+      const groupType = focusCard.dataset.customWorkoutGroupType;
+      const groupIndex = focusCard.dataset.customWorkoutGroup;
+      cards.forEach((card) => {
+      if (card.dataset.customWorkoutGroupType === groupType && card.dataset.customWorkoutGroup === groupIndex) {
+        card.dataset.customWorkoutGroupType = "single";
+        card.dataset.customWorkoutGroup = "0";
+      }
+      });
+    },
+    () => { regrouped = true; },
+    () => {},
+    () => { persisted = true; },
+    () => {},
+    { requestAnimationFrame: (callback) => callback() },
+  );
+
+  assert.equal(returnToStraightApi(button), true);
+  assert.equal(synced, 2);
+  assert.equal(regrouped, true);
+  assert.equal(persisted, true);
+  assert.deepEqual(cards.map((card) => card.dataset.customWorkoutGroupType), ["single", "single"]);
+  assert.ok(cards.every((card) => card.inert === false));
+  assert.equal(logs[0].dataset.groupedRoundMode, undefined);
+  assert.equal(logs[0].dataset.groupLoggedSets, undefined);
+  assert.equal(rows[0].dataset.groupedRoundRequired, undefined);
+  assert.equal(rows[0].dataset.customGroupedReopened, undefined);
+});
+
 test("mixed groups reuse the existing mobile carousel and keep one add-card endpoint", () => {
   const carouselMarkup = sourceForFunction("customWorkoutCarouselMarkup");
   const regroupSource = sourceForFunction("regroupCustomWorkoutCarousels");
@@ -105,5 +201,5 @@ test("mixed groups reuse the existing mobile carousel and keep one add-card endp
   assert.match(regroupSource, /panelFormat:\s*format/);
   assert.match(renderSource, /customWorkoutInlineAdd !== "false"/);
   assert.match(dashboard, /css\/style\.css\?v=client-notification-settings-1/);
-  assert.match(dashboard, /js\/client-portal\.js\?v=grouped-optional-rir-1/);
+  assert.match(dashboard, /js\/client-portal\.js\?v=straight-set-layout-1/);
 });

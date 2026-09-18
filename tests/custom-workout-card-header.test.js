@@ -52,7 +52,7 @@ test("labels and collapses the exercise-name editor on both workout card types",
     mobileStyles,
     /\.custom-workout-card\.is-open \.custom-workout-collapsed-name \{[^}]*max-height:\s*none;[^}]*padding-right:\s*\.12em;[^}]*overflow:\s*hidden;/,
   );
-  assert.match(dashboard, /css\/custom-workout-mobile-fix\.css\?v=grouped-round-controls-1/);
+  assert.match(dashboard, /css\/custom-workout-mobile-fix\.css\?v=straight-set-layout-1/);
 });
 
 test("keeps the editable name normal while rendering the display title bold italic uppercase", () => {

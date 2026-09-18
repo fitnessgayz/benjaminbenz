@@ -207,6 +207,7 @@ let lastWorkoutCompletionMessageIndex = -1;
 let workoutCompletionShareReturnFocus = null;
 let pendingWorkoutCompletionShare = null;
 let pendingWorkoutCompletionShareFile = null;
+let workoutCompletionCelebrationTimerId = null;
 let nextExercisePromptPanel = null;
 let nextExercisePromptReturnFocus = null;
 let customGroupedFinishPanel = null;
@@ -4823,8 +4824,8 @@ function setRowMarkup(setNumber, repPlaceholder = "", setType = workingSetType, 
         <strong data-set-rir-value>—</strong>
       </button>
       ${options.showComplete === false ? "" : `
-        <button class="set-complete-button" type="button" data-complete-set aria-label="Complete ${normalizedType === warmUpSetType ? `warm-up set ${ordinal}` : `set ${Number(setNumber) || 1}`} and start rest timer" aria-pressed="false">
-          <span aria-hidden="true">✓</span>
+        <button class="set-complete-button${options.straightSetLayout ? " straight-set-log-button" : ""}" type="button" data-complete-set${options.straightSetLayout ? " data-straight-set-log" : ""} aria-label="Complete ${normalizedType === warmUpSetType ? `warm-up set ${ordinal}` : `set ${Number(setNumber) || 1}`} and start rest timer" aria-pressed="false">
+          <span${options.straightSetLayout ? "" : ' aria-hidden="true"'}>${options.straightSetLayout ? "Log Set" : "✓"}</span>
         </button>
       `}
     </div>
@@ -4924,6 +4925,7 @@ function exerciseLogFields(exercise, workoutTitle, options = {}) {
   const showInlineHeader = Boolean(options.showInlineHeader);
   const finishButtonLabel = String(options.finishButtonLabel || "Set Finished");
   const addsSupersetExercise = options.finishButtonAction === "add-superset";
+  const straightSetLayout = Boolean(options.straightSetLayout);
   const suggestionListAttr = options.suggestExerciseNames ? ' list="custom-exercise-suggestions"' : "";
   const notesContentId = `exercise-notes-${String(`${workoutTitle}-${exercise.code}`).toLowerCase().replace(/[^a-z0-9-]/g, "-")}`;
   const dateMarkup = options.showDate === false
@@ -4939,6 +4941,7 @@ function exerciseLogFields(exercise, workoutTitle, options = {}) {
       data-exercise-rest="${escapeHtml(exercise.rest || "")}"
       data-prescribed-sets="${setCount}"
       data-set-target-mode="${options.userManagedSets ? "visible" : "prescribed"}"
+      ${straightSetLayout ? 'data-straight-set-layout="true"' : ""}
     >
       ${showInlineHeader ? `
         <div class="superset-exercise-heading">
@@ -4957,7 +4960,7 @@ function exerciseLogFields(exercise, workoutTitle, options = {}) {
       ${options.showActions === false ? "" : exerciseLogActions({ showSkip: options.showSkipAction !== false })}
       ${options.showDemo === false ? "" : exerciseVideoMarkup(exercise)}
       ${dateMarkup}
-      <div class="set-table" aria-label="${escapeHtml(exercise.name)} set tracker">
+      <div class="set-table${straightSetLayout ? " straight-set-table" : ""}" aria-label="${escapeHtml(exercise.name)} set tracker">
       <div class="set-header">
         <span>Set</span>
         <span>Weight</span>
@@ -4965,13 +4968,25 @@ function exerciseLogFields(exercise, workoutTitle, options = {}) {
         <span>RIR</span>
       </div>
         <div data-set-rows>
-          ${setRows(exercise, setCount, { showComplete: options.showSetComplete !== false })}
+          ${setRows(exercise, setCount, {
+            showComplete: options.showSetComplete !== false,
+            straightSetLayout
+          })}
         </div>
-        <div class="set-table-actions${addsSupersetExercise ? " has-add-superset-action" : ""}">
-          <button class="add-set-button" type="button" data-add-set>+ Add Set</button>
-          <button class="set-delete-last-button" type="button" data-delete-last-set>Delete Set</button>
-          <button class="set-finished-button" type="button" data-finish-set${addsSupersetExercise ? " data-add-superset" : ""}>${escapeHtml(finishButtonLabel)}</button>
-        </div>
+        ${straightSetLayout ? `
+          <div class="set-table-actions straight-set-stepper">
+            <button class="set-delete-last-button" type="button" data-delete-last-set aria-label="Remove a working set">−</button>
+            <output aria-live="polite"><span>Sets</span> <strong data-straight-set-count>${setCount}</strong></output>
+            <button class="add-set-button" type="button" data-add-set aria-label="Add a working set">+</button>
+            <button class="set-finished-button" type="button" data-finish-set>Exercise Finished</button>
+          </div>
+        ` : `
+          <div class="set-table-actions${addsSupersetExercise ? " has-add-superset-action" : ""}">
+            <button class="add-set-button" type="button" data-add-set>+ Add Set</button>
+            <button class="set-delete-last-button" type="button" data-delete-last-set>Delete Set</button>
+            <button class="set-finished-button" type="button" data-finish-set${addsSupersetExercise ? " data-add-superset" : ""}>${escapeHtml(finishButtonLabel)}</button>
+          </div>
+        `}
       </div>
       ${options.groupActionSlot ? `
         <div class="workout-group-primary-action" data-workout-group-primary-action hidden>
@@ -5118,6 +5133,7 @@ function exerciseCard(exercise, workoutTitle, isOpen = false, workoutFocus = "",
     <article class="workout-exercise-card workout-entry-card custom-workout-card assigned-workout-card${isOpen ? " is-open" : ""}" data-custom-exercise-card data-assigned-exercise-card${clientAdded ? " data-client-added-exercise" : ""}>
       <div class="exercise-card-summary custom-workout-card-summary">
         <span>
+          ${format === "single" ? `<span class="straight-set-card-label">Straight Set ${exerciseIndex + 1}</span>` : ""}
           <span class="custom-workout-name-field-label" aria-hidden="true">Exercise name</span>
           <strong class="custom-workout-collapsed-name" data-exercise-collapsed-name>${escapeHtml(exerciseName || "Exercise name")}</strong>
           <strong class="custom-workout-editable-title" data-exercise-title>
@@ -5165,7 +5181,8 @@ function exerciseCard(exercise, workoutTitle, isOpen = false, workoutFocus = "",
           setCount,
           userManagedSets: clientAdded,
           groupActionSlot: format !== "single",
-          showSetComplete: format === "single"
+          showSetComplete: format === "single",
+          straightSetLayout: format === "single"
         })}
       </div>
     </article>
@@ -7039,6 +7056,56 @@ function workoutCompletionShareText(summary = {}) {
   return `Workout complete 💪\n${summary.title || "Workout"}\n${details}\n#FitnessWithBenjamin`;
 }
 
+function showWorkoutCompletionCelebration(summary = {}) {
+  document.querySelector("[data-workout-completion-celebration]")?.remove();
+  if (workoutCompletionCelebrationTimerId) {
+    window.clearTimeout(workoutCompletionCelebrationTimerId);
+  }
+
+  const celebration = document.createElement("div");
+  const burst = document.createElement("div");
+  const message = document.createElement("div");
+  const title = document.createElement("strong");
+  const workoutTitle = document.createElement("span");
+  const colors = ["#cbff31", "#38a3ff", "#ff4b43", "#ffffff"];
+
+  celebration.className = "workout-completion-celebration";
+  celebration.dataset.workoutCompletionCelebration = "true";
+  celebration.setAttribute("role", "status");
+  celebration.setAttribute("aria-live", "polite");
+  celebration.setAttribute("aria-atomic", "true");
+  burst.className = "workout-completion-celebration-burst";
+  burst.setAttribute("aria-hidden", "true");
+
+  Array.from({ length: 24 }, (_, index) => {
+    const confetti = document.createElement("i");
+    const angle = (Math.PI * 2 * index) / 24;
+    const distance = 120 + ((index % 5) * 20);
+    confetti.style.setProperty("--celebration-x", `${Math.round(Math.cos(angle) * distance)}px`);
+    confetti.style.setProperty("--celebration-y", `${Math.round(Math.sin(angle) * distance)}px`);
+    confetti.style.setProperty("--celebration-rotation", `${180 + (index * 47)}deg`);
+    confetti.style.setProperty("--celebration-delay", `${(index % 6) * 24}ms`);
+    confetti.style.setProperty("--celebration-color", colors[index % colors.length]);
+    burst.appendChild(confetti);
+  });
+
+  message.className = "workout-completion-celebration-message";
+  title.textContent = "Workout complete!";
+  workoutTitle.textContent = String(summary.title || "Strong work—you finished it.");
+  message.append(title, workoutTitle);
+  celebration.append(burst, message);
+  document.body.appendChild(celebration);
+  window.requestAnimationFrame(() => celebration.classList.add("is-active"));
+
+  workoutCompletionCelebrationTimerId = window.setTimeout(() => {
+    celebration.classList.add("is-leaving");
+    window.setTimeout(() => celebration.remove(), 320);
+    workoutCompletionCelebrationTimerId = null;
+  }, 2400);
+
+  return celebration;
+}
+
 function workoutCompletionSharePromptMarkup() {
   return `
     <div class="workout-completion-share-overlay" data-workout-share-overlay hidden>
@@ -8267,6 +8334,7 @@ function customWorkoutCardMarkup(exercise, workoutTitle, index = 0, options = {}
     <article class="workout-exercise-card workout-entry-card custom-workout-card is-open" data-custom-exercise-card data-custom-workout-group="${groupIndex}" data-custom-workout-group-type="${escapeHtml(cardFormat)}">
       <div class="exercise-card-summary custom-workout-card-summary">
         <span>
+          ${cardFormat === "single" ? `<span class="straight-set-card-label">Straight Set ${index + 1}</span>` : ""}
           <span class="custom-workout-group-card-code" data-custom-workout-group-card-code hidden></span>
           <span class="custom-workout-name-field-label" aria-hidden="true">Exercise name</span>
           <strong class="custom-workout-collapsed-name" data-exercise-collapsed-name>${escapeHtml(exerciseName || "Exercise name")}</strong>
@@ -8325,6 +8393,7 @@ function customWorkoutCardMarkup(exercise, workoutTitle, index = 0, options = {}
           // card keeps a dormant slot ready for Superset or Circuit mode.
           groupActionSlot: true,
           showSetComplete: cardFormat === "single",
+          straightSetLayout: cardFormat === "single",
           finishButtonLabel: isFirstSupersetExercise
             ? "Add Superset"
             : (isSecondSupersetExercise ? "Superset Completed" : "Set Finished"),
@@ -8369,6 +8438,11 @@ function customWorkoutGroupedRoundCardMarkup(format, exercises, groupIndex = 0, 
           <output aria-live="polite"><span>Rounds</span> <strong data-custom-grouped-round-count>1</strong></output>
           <button type="button" data-custom-grouped-add-round aria-label="Add round">+</button>
         </div>
+        ${panelFormat === "single" ? `
+          <div class="custom-workout-grouped-mode-actions">
+            <button type="button" data-custom-grouped-return-straight>Return to straight sets</button>
+          </div>
+        ` : ""}
         <div data-custom-grouped-sections></div>
         ${showSessionControls ? `
           <div class="custom-workout-grouped-timer" data-custom-grouped-timer role="timer" aria-label="Workout timer" hidden>
@@ -8568,6 +8642,7 @@ function customWorkoutGroupedFieldMarkup(field, value, context) {
         min="0"${max}
         step="${step}"
         inputmode="decimal"
+        autocomplete="off"
         value="${escapeHtml(value)}"
         data-custom-grouped-field="${field}"
         aria-label="${escapeHtml(`${fieldLabel}, ${context}`)}"
@@ -8967,7 +9042,7 @@ function syncCustomWorkoutGroupedField(input) {
   const visibleRow = input?.closest(".custom-workout-grouped-row");
   const carousel = input?.closest("[data-custom-workout-grouped='true']");
 
-  if (!visibleRow || !carousel) return;
+  if (!visibleRow || !carousel) return false;
 
   const canonicalRow = customWorkoutGroupedCanonicalRow(
     carousel,
@@ -8977,7 +9052,12 @@ function syncCustomWorkoutGroupedField(input) {
   );
   const field = input.dataset.customGroupedField;
 
-  if (!canonicalRow || !field) return;
+  if (!canonicalRow || !field) {
+    input.setAttribute("aria-invalid", "true");
+    const status = customWorkoutGroupedStatus(carousel);
+    if (status) status.textContent = "This field could not reconnect. Return to straight sets and try again without losing your entries.";
+    return false;
+  }
 
   if (field === "rir") {
     const value = String(input.value || "").trim();
@@ -9008,6 +9088,7 @@ function syncCustomWorkoutGroupedField(input) {
   input.removeAttribute("aria-invalid");
   persistCustomWorkoutDraftForElement(canonicalRow);
   refreshCustomWorkoutGroupedCompletion(carousel);
+  return true;
 }
 
 function validateCustomWorkoutGroupedSection(section, options = {}) {
@@ -11448,9 +11529,12 @@ function restoreStrengthSetRows(logElement, selectedLogs) {
     0
   );
   const specs = savedStrengthSetSpecs(selectedLogs, workingMinimum);
+  const straightSetLayout = logElement.dataset.straightSetLayout === "true";
 
   rows.innerHTML = specs
-    .map(({ setNumber, setType }) => setRowMarkup(setNumber, defaultReps, setType))
+    .map(({ setNumber, setType }) => setRowMarkup(setNumber, defaultReps, setType, "0", {
+      straightSetLayout
+    }))
     .join("");
 }
 
@@ -11518,7 +11602,9 @@ function syncExerciseFinishedState(logElement) {
   if (finishButton && !finishButton.matches("[data-add-superset]")) {
     finishButton.textContent = completed
       ? "Finished ✓"
-      : isCustomWorkout && format === "superset" ? "Superset Completed" : "Set Finished";
+      : logElement.dataset.straightSetLayout === "true"
+        ? "Exercise Finished"
+        : isCustomWorkout && format === "superset" ? "Superset Completed" : "Set Finished";
     finishButton.setAttribute("aria-pressed", completed ? "true" : "false");
   }
 
@@ -13166,7 +13252,9 @@ function addSetRow(logElement, options = {}) {
   const previousReps = lastRow?.querySelector("[data-set-reps]")?.value || "";
   const defaultReps = lastRow?.querySelector("[data-set-reps]")?.dataset.defaultPlaceholder || "0";
 
-  rows.insertAdjacentHTML("beforeend", setRowMarkup(nextSet, defaultReps, workingSetType));
+  rows.insertAdjacentHTML("beforeend", setRowMarkup(nextSet, defaultReps, workingSetType, "0", {
+    straightSetLayout: logElement.dataset.straightSetLayout === "true"
+  }));
 
   const nextRow = rows.querySelector("[data-set-row]:last-child");
   const nextWeightInput = nextRow?.querySelector("[data-set-weight]");
@@ -13239,6 +13327,7 @@ function renumberSetRows(logElement) {
     row.querySelector("[data-complete-set]")?.setAttribute("aria-label", `Complete ${friendlyName} and start rest timer`);
     renderSetRirValue(row);
   });
+  syncStraightSetLogButtons(logElement);
 }
 
 function ensureSetRows(logElement, count) {
@@ -13255,17 +13344,50 @@ function ensureSetRows(logElement, count) {
   }
 
   const defaultReps = rows.querySelector("[data-set-reps]")?.dataset.defaultPlaceholder || "0";
+  const straightSetLayout = logElement.dataset.straightSetLayout === "true";
 
   for (let index = existingCount; index < count; index += 1) {
-    rows.insertAdjacentHTML("beforeend", setRowMarkup(index + 1, defaultReps, workingSetType));
+    rows.insertAdjacentHTML("beforeend", setRowMarkup(index + 1, defaultReps, workingSetType, "0", {
+      straightSetLayout
+    }));
   }
   renumberSetRows(logElement);
+}
+
+function straightSetRowHasEntry(row) {
+  const { weightRaw, repsRaw, weightValue, repsValue } = setRowInputValues(row);
+  const hasWeight = weightRaw !== "" && Number.isFinite(weightValue) && weightValue >= 0;
+  const hasReps = repsRaw !== "" && Number.isFinite(repsValue) && repsValue >= 0;
+
+  return hasWeight || hasReps;
+}
+
+function syncStraightSetLogButtons(logElement) {
+  if (logElement?.dataset.straightSetLayout !== "true") {
+    return;
+  }
+
+  const rows = Array.from(logElement.querySelectorAll("[data-set-row]"));
+  const activeRow = rows.find((row) => !row.classList.contains("is-complete"));
+
+  rows.forEach((row) => {
+    const button = row.querySelector("[data-straight-set-log]");
+    if (!button) return;
+    const active = row === activeRow;
+    row.classList.toggle("is-straight-set-active", active);
+    button.hidden = !active;
+    button.disabled = false;
+    button.querySelector("span").textContent = "Log Set";
+  });
 }
 
 function visibleSetTarget(logElement) {
   const rowCount = Array.from(logElement?.querySelectorAll("[data-set-row]") || [])
     .filter((row) => setTypeForRow(row) !== warmUpSetType)
     .length;
+  if (logElement?.dataset.straightSetLayout === "true") {
+    return rowCount;
+  }
   const prescribedSets = Number(logElement?.dataset.prescribedSets || 0);
 
   return Math.max(rowCount, prescribedSets);
@@ -13276,7 +13398,10 @@ function syncVisibleSetTarget(logElement) {
     .filter((row) => setTypeForRow(row) !== warmUpSetType)
     .length;
 
-  if (logElement?.dataset.setTargetMode === "visible" && rowCount > 0) {
+  if (
+    rowCount > 0 &&
+    (logElement?.dataset.setTargetMode === "visible" || logElement?.dataset.straightSetLayout === "true")
+  ) {
     logElement.dataset.prescribedSets = String(rowCount);
   }
 }
@@ -13292,6 +13417,11 @@ function updateVisibleSetProgress(logElement) {
   if (progress) {
     progress.textContent = `${completedSets} / ${setTarget || completedSets || 0} working sets completed`;
   }
+  const straightSetCount = logElement?.querySelector("[data-straight-set-count]");
+  if (straightSetCount) {
+    straightSetCount.textContent = String(setTarget || 0);
+  }
+  syncStraightSetLogButtons(logElement);
 }
 
 function removeLocalTrainingLog(row) {
@@ -14520,6 +14650,47 @@ function clearCustomWorkoutInlineGroup(cards, card) {
   });
 }
 
+function returnCustomWorkoutInlineGroupToStraight(button) {
+  const carousel = button?.closest("[data-custom-workout-grouped='true']");
+  const panel = carousel?.closest(".client-workout-panel-custom");
+  const panelFormat = normalizeCustomWorkoutFormat(panel?.dataset.customWorkoutFormat || activeCustomWorkoutFormat);
+  const cards = customWorkoutCarouselCards(carousel);
+
+  if (!button || !carousel || !panel || panelFormat !== "single" || cards.length === 0) {
+    return false;
+  }
+
+  const fieldsSynced = Array.from(carousel.querySelectorAll("[data-custom-grouped-field]"))
+    .every((input) => syncCustomWorkoutGroupedField(input));
+  if (!fieldsSynced) return false;
+
+  const focusCard = cards[0];
+  clearCustomWorkoutInlineGroup(
+    Array.from(panel.querySelectorAll("[data-custom-exercise-card]")),
+    focusCard
+  );
+  cards.forEach((card) => {
+    card.querySelectorAll("[data-exercise-log]").forEach((logElement) => {
+      delete logElement.dataset.groupedRoundMode;
+      delete logElement.dataset.groupLoggedSets;
+      logElement.querySelectorAll("[data-set-row]").forEach((row) => {
+        delete row.dataset.groupedRoundRequired;
+        delete row.dataset.customGroupedReopened;
+      });
+      updateVisibleSetProgress(logElement);
+    });
+    card.inert = false;
+    card.removeAttribute("aria-hidden");
+  });
+  syncCustomWorkoutCarousel(panel, { focusCard, instant: true });
+  syncCustomWorkoutFormatMarkers(panel);
+  persistCustomWorkoutDraftFromPanel(panel);
+  window.requestAnimationFrame(() => {
+    focusCard.querySelector('[data-custom-workout-inline-group-option="superset"]')?.focus();
+  });
+  return true;
+}
+
 function updateCustomWorkoutInlineGrouping(input) {
   const card = input?.closest("[data-custom-exercise-card]");
   const panel = card?.closest(".client-workout-panel-custom");
@@ -14703,6 +14874,7 @@ function handleWorkoutInteractions() {
     const customGroupedRestToggleButton = event.target.closest("[data-custom-grouped-rest-toggle]");
     const customGroupedFinishButton = event.target.closest("[data-custom-grouped-finish-workout]");
     const customGroupedSetToggle = event.target.closest("[data-custom-grouped-set-toggle]");
+    const customGroupedReturnStraight = event.target.closest("[data-custom-grouped-return-straight]");
     const customGroupedFinishClose = event.target.closest("[data-custom-grouped-finish-close]");
     const customGroupedStartNew = event.target.closest("[data-custom-grouped-start-new]");
     const customGroupedWorkoutDone = event.target.closest("[data-custom-grouped-workout-done]");
@@ -14799,6 +14971,11 @@ function handleWorkoutInteractions() {
 
     if (customGroupedSetToggle) {
       toggleCustomWorkoutGroupedSet(customGroupedSetToggle);
+      return;
+    }
+
+    if (customGroupedReturnStraight) {
+      returnCustomWorkoutInlineGroupToStraight(customGroupedReturnStraight);
       return;
     }
 
@@ -14938,6 +15115,43 @@ function handleWorkoutInteractions() {
     if (completeSetButton) {
       const setRow = completeSetButton.closest("[data-set-row]");
       const logElement = completeSetButton.closest("[data-exercise-log]");
+
+      if (completeSetButton.matches("[data-straight-set-log]")) {
+        const status = logElement?.querySelector("[data-log-status]");
+
+        if (!setRow || !logElement || !straightSetRowHasEntry(setRow)) {
+          if (status) status.textContent = "Enter weight or reps before logging this set. Zero is allowed.";
+          return;
+        }
+        if (!workoutElapsedTimerState) {
+          startWorkoutElapsedTimer(logElement.dataset.workoutTitle || activeWorkoutElapsedTitle());
+        }
+
+        setRow.classList.add("is-complete");
+        completeSetButton.setAttribute("aria-pressed", "true");
+        updateVisibleSetProgress(logElement);
+        persistCustomWorkoutDraftForElement(logElement);
+        const saveResult = await saveTrainingLogRows(completeSetButton, [logElement], status, {
+          savingMessage: "Logging set...",
+          successMessage: "Set logged."
+        });
+
+        if (!saveResult.saved) {
+          setRow.classList.remove("is-complete");
+          completeSetButton.setAttribute("aria-pressed", "false");
+          updateVisibleSetProgress(logElement);
+          persistCustomWorkoutDraftForElement(logElement);
+          return;
+        }
+
+        updateVisibleSetProgress(logElement);
+        persistCustomWorkoutDraftForElement(logElement);
+        const nextLogButton = logElement.querySelector("[data-straight-set-log]:not([hidden])");
+        resetRestTimer();
+        openRestTimer(nextLogButton || completeSetButton);
+        startOrPauseRestTimer();
+        return;
+      }
 
       if (!workoutElapsedTimerState) {
         startWorkoutElapsedTimer(logElement?.dataset.workoutTitle || activeWorkoutElapsedTitle());
@@ -15136,10 +15350,14 @@ function handleWorkoutInteractions() {
     if (deleteLastSetButton) {
       const logElement = deleteLastSetButton.closest("[data-exercise-log]");
       const setRows = Array.from(logElement?.querySelectorAll("[data-set-row]") || []);
-      const setRow = setRows[setRows.length - 1];
+      const workingSetRows = setRows.filter((row) => setTypeForRow(row) !== warmUpSetType);
+      const isStraightSetLayout = logElement?.dataset.straightSetLayout === "true";
+      const setRow = isStraightSetLayout
+        ? workingSetRows[workingSetRows.length - 1]
+        : setRows[setRows.length - 1];
 
       if (logElement && setRow) {
-        if (setRows.length <= 1) {
+        if (isStraightSetLayout ? workingSetRows.length <= 1 : setRows.length <= 1) {
           const weightInput = setRow.querySelector("[data-set-weight]");
           const repsInput = setRow.querySelector("[data-set-reps]");
 
@@ -16188,6 +16406,14 @@ function setRowInputValues(setRow) {
 
 function isSetRowLogged(setRow) {
   if (
+    setRow?.closest("[data-straight-set-layout='true']") &&
+    !setRow.classList.contains("is-complete") &&
+    setRow.querySelector("[data-complete-set]")?.getAttribute("aria-pressed") !== "true"
+  ) {
+    return false;
+  }
+
+  if (
     (
       setRow?.dataset.groupedRoundRequired === "true" ||
       setRow?.closest("[data-custom-workout-grouped-source]")
@@ -16533,12 +16759,16 @@ async function handleTrainingLogSave() {
       if (section?.classList.contains("client-workout-panel-custom")) {
         clearCustomWorkoutDraft();
       }
+      const completionSummary = workoutCompletionShareSummary(
+        saveResult.rows,
+        workoutCompletion,
+        workoutDifficulty
+      );
+      showWorkoutCompletionCelebration(completionSummary);
       if (groupedRestart) {
         startFreshGroupedCustomWorkout(groupedRestart);
       } else {
-        openWorkoutCompletionSharePrompt(
-          workoutCompletionShareSummary(saveResult.rows, workoutCompletion, workoutDifficulty)
-        );
+        openWorkoutCompletionSharePrompt(completionSummary);
       }
       return;
     }

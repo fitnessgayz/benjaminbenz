@@ -351,6 +351,17 @@ function coachWorkoutDefaultExerciseCount(format = coachWorkoutFormatValue()) {
   return 1;
 }
 
+const coachWorkoutDefaultGroupedRoundCount = 3;
+
+function coachWorkoutDefaultGroupedSetMarkup() {
+  return [
+    coachWorkoutSetMarkup({}, 0),
+    ...Array.from({ length: coachWorkoutDefaultGroupedRoundCount }, (_, index) => (
+      coachWorkoutSetMarkup({ setType: coachWorkoutWorkingSetType }, index + 1)
+    ))
+  ].join("");
+}
+
 function coachWorkoutExerciseHasEnteredContent(exercise) {
   if (!exercise) return false;
 
@@ -388,6 +399,12 @@ function resizeUntouchedCoachWorkoutExercises(format, target = coachWorkoutDefau
       const rows = firstExercise?.querySelector("[data-coach-workout-set-rows]");
       if (rows) rows.innerHTML = coachWorkoutSetMarkup({}, 0);
       updateCoachWorkoutSetRows(firstExercise);
+    } else {
+      list.querySelectorAll("[data-coach-workout-exercise]").forEach((exercise) => {
+        const rows = exercise.querySelector("[data-coach-workout-set-rows]");
+        if (rows) rows.innerHTML = coachWorkoutDefaultGroupedSetMarkup();
+        updateCoachWorkoutSetRows(exercise);
+      });
     }
   }
 
@@ -403,10 +420,11 @@ function coachWorkoutSetRowsByType(exercise, setType) {
 }
 
 function normalizeCoachWorkoutGroupedRows(exercises) {
-  const target = Math.max(
-    1,
+  const currentRoundCount = Math.max(
+    0,
     ...exercises.map((exercise) => coachWorkoutSetRowsByType(exercise, coachWorkoutWorkingSetType).length)
   );
+  const target = currentRoundCount || coachWorkoutDefaultGroupedRoundCount;
 
   exercises.forEach((exercise) => {
     const rows = exercise.querySelector("[data-coach-workout-set-rows]");
@@ -466,8 +484,13 @@ function coachWorkoutGroupedFieldMarkup(field, value, context, exerciseIndex, se
 }
 
 function coachWorkoutGroupedSetRowMarkup(row, code, exerciseIndex, setType, setIndex, context) {
+  const complete = Boolean(
+    row?.querySelector("[data-coach-workout-weight]")?.value.trim() &&
+    row?.querySelector("[data-coach-workout-reps]")?.value.trim()
+  );
+
   return `
-    <div class="coach-workout-grouped-row${setType === coachWorkoutWarmUpSetType ? " is-warm-up" : ""}" data-coach-grouped-row>
+    <div class="coach-workout-grouped-row${setType === coachWorkoutWarmUpSetType ? " is-warm-up" : ""}${complete ? " is-complete" : ""}" data-coach-grouped-row>
       <span class="coach-workout-grouped-code">${escapeCoachWorkoutHtml(code)}</span>
       ${coachWorkoutGroupedFieldMarkup("weight", row?.querySelector("[data-coach-workout-weight]")?.value || "", context, exerciseIndex, setType, setIndex)}
       ${coachWorkoutGroupedFieldMarkup("reps", row?.querySelector("[data-coach-workout-reps]")?.value || "", context, exerciseIndex, setType, setIndex)}
@@ -609,6 +632,11 @@ function coachWorkoutGroupedCardMarkup(format, group, groupIndex) {
             <div role="listitem"><span>${position + 1}</span><strong data-coach-grouped-exercise-name="${position}">${escapeCoachWorkoutHtml(exercise.querySelector("[data-coach-workout-name]")?.value.trim() || `Exercise ${position + 1}`)}</strong></div>
           `).join("")}
         </div>
+        <div class="coach-workout-grouped-round-stepper" role="group" aria-label="Number of rounds">
+          <button type="button" data-coach-grouped-delete-round aria-label="Remove last round"${roundCount <= 1 ? " disabled" : ""}>−</button>
+          <output aria-live="polite"><span>Rounds</span> <strong data-coach-grouped-round-count>${roundCount}</strong></output>
+          <button type="button" data-coach-grouped-add-round aria-label="Add round">+</button>
+        </div>
         <div data-coach-grouped-sections>${coachWorkoutGroupedSectionsMarkup(group)}</div>
         <details class="coach-workout-grouped-notes">
           <summary>Exercise notes <span>Optional</span></summary>
@@ -618,10 +646,6 @@ function coachWorkoutGroupedCardMarkup(format, group, groupIndex) {
             `).join("")}
           </div>
         </details>
-        <footer class="coach-workout-grouped-actions">
-          <button type="button" data-coach-grouped-add-round>+ Add round</button>
-          <button type="button" data-coach-grouped-delete-round${roundCount <= 1 ? " disabled" : ""}>Delete round</button>
-        </footer>
       </article>
     </section>
   `;
@@ -642,10 +666,17 @@ function coachWorkoutGroups(format, exercises = coachWorkoutExerciseElements()) 
 
 function refreshCoachWorkoutGroupedProgress(card) {
   const rows = Array.from(card?.querySelectorAll("[data-coach-grouped-row]") || []);
-  const completed = rows.filter((row) => (
-    Boolean(row.querySelector('[data-coach-grouped-field="weight"]')?.value.trim()) &&
-    Boolean(row.querySelector('[data-coach-grouped-field="reps"]')?.value.trim())
-  )).length;
+  let completed = 0;
+
+  rows.forEach((row) => {
+    const complete = Boolean(
+      row.querySelector('[data-coach-grouped-field="weight"]')?.value.trim() &&
+      row.querySelector('[data-coach-grouped-field="reps"]')?.value.trim()
+    );
+
+    row.classList.toggle("is-complete", complete);
+    if (complete) completed += 1;
+  });
   const progress = card?.querySelector("[data-coach-grouped-progress]");
 
   if (progress) progress.textContent = `${completed} / ${rows.length} complete`;

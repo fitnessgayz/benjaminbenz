@@ -2,12 +2,36 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
+const vm = require("node:vm");
 
 const root = path.resolve(__dirname, "..");
 const adminHtml = fs.readFileSync(path.join(root, "coach-admin.html"), "utf8");
 const loggerHtml = fs.readFileSync(path.join(root, "coach-workout-log.html"), "utf8");
 const loggerScript = fs.readFileSync(path.join(root, "js/coach-workout-log.js"), "utf8");
 const styles = fs.readFileSync(path.join(root, "css/style.css"), "utf8");
+
+function coachLoggerRuntime() {
+  const runtime = {
+    console,
+    document: { querySelector: () => null },
+    window: { FWB_SUPABASE_CONFIG: {} },
+  };
+
+  vm.runInNewContext(loggerScript, runtime);
+  return runtime;
+}
+
+function fakeClassList(initial = []) {
+  const values = new Set(initial);
+
+  return {
+    contains: (name) => values.has(name),
+    toggle(name, force) {
+      if (force === undefined ? !values.has(name) : force) values.add(name);
+      else values.delete(name);
+    },
+  };
+}
 
 function sourceForFunction(name) {
   const plainStart = loggerScript.indexOf(`function ${name}(`);
@@ -140,10 +164,10 @@ test("repeats Set Weight Reps and RIR labels in warm-up and round sections", () 
   const columns = sourceForFunction("coachWorkoutGroupedColumnLabelsMarkup");
   const sections = sourceForFunction("coachWorkoutGroupedSectionsMarkup");
 
-  assert.match(columns, /<span>Set<\/span>/);
-  assert.match(columns, /<span>Weight<\/span>/);
-  assert.match(columns, /<span>Reps<\/span>/);
-  assert.match(columns, /<span>RIR<\/span>/);
+  assert.match(columns, /<span[^>]*>Set<\/span>/);
+  assert.match(columns, /<span[^>]*>Weight<\/span>/);
+  assert.match(columns, /<span[^>]*>Reps<\/span>/);
+  assert.match(columns, /<span[^>]*>RIR<\/span>/);
   assert.match(sections, /data-coach-grouped-section="warm-up"/);
   assert.match(sections, /data-coach-grouped-section="round"/);
   assert.match(sections, /Warm-up/);
@@ -152,9 +176,44 @@ test("repeats Set Weight Reps and RIR labels in warm-up and round sections", () 
     (sections.match(/coachWorkoutGroupedColumnLabelsMarkup\(\)/g) || []).length >= 2,
     "Column labels should render in the warm-up and every generated round",
   );
+  assert.match(
+    styles,
+    /\.coach-workout-grouped-columns,[\s\S]*?\.coach-workout-grouped-row\s*\{[\s\S]*?grid-template-columns:\s*44px repeat\(3, minmax\(0, 1fr\)\)/,
+  );
 });
 
-test("adds and deletes a whole grouped round across every exercise", () => {
+test("places a compact round stepper between the exercise key and sections", () => {
+  const groupedMarkup = sourceForFunction("coachWorkoutGroupedCardMarkup");
+  const keyIndex = groupedMarkup.indexOf("coach-workout-grouped-exercise-key");
+  const stepperIndex = groupedMarkup.indexOf("coach-workout-grouped-round-stepper");
+  const sectionsIndex = groupedMarkup.indexOf("data-coach-grouped-sections");
+  const stepperMarkup = groupedMarkup.slice(stepperIndex, sectionsIndex);
+
+  assert.ok(keyIndex >= 0, "Expected the grouped exercise key");
+  assert.ok(stepperIndex > keyIndex, "Expected the round stepper after the exercise key");
+  assert.ok(sectionsIndex > stepperIndex, "Expected grouped sections after the round stepper");
+  assert.match(stepperMarkup, /role="group"[^>]*aria-label="Number of rounds"/);
+  assert.match(stepperMarkup, /data-coach-grouped-delete-round/);
+  assert.match(stepperMarkup, /aria-label="Remove last round"/);
+  assert.match(stepperMarkup, />\s*(?:−|-)\s*<\/button>/);
+  assert.match(stepperMarkup, /roundCount\s*<=?\s*1[^\n]*disabled/);
+  assert.match(stepperMarkup, /<output[^>]*aria-live="polite"/);
+  assert.match(stepperMarkup, /data-coach-grouped-round-count[^>]*>\$\{roundCount\}/);
+  assert.match(stepperMarkup, /data-coach-grouped-add-round/);
+  assert.match(stepperMarkup, /aria-label="Add round"/);
+  assert.match(stepperMarkup, />\s*\+\s*<\/button>/);
+  assert.doesNotMatch(groupedMarkup, /coach-workout-grouped-actions|>\s*\+ Add round\s*<|>\s*Delete round\s*</);
+  assert.match(
+    styles,
+    /\.coach-workout-grouped-round-stepper\s*\{[^}]*grid-template-columns:\s*46px minmax\(0, 1fr\) 46px;[^}]*padding:\s*8px 12px;/,
+  );
+  assert.match(
+    styles,
+    /\.coach-workout-grouped-round-stepper :is\(button, output\)\s*\{[^}]*min-height:\s*44px;/,
+  );
+});
+
+test("routes the grouped round stepper across every exercise", () => {
   const groupedMarkup = sourceForFunction("coachWorkoutGroupedCardMarkup");
   const addRound = sourceForFunction("addCoachWorkoutGroupedRound");
   const deleteRound = sourceForFunction("deleteCoachWorkoutGroupedRound");
@@ -164,10 +223,127 @@ test("adds and deletes a whole grouped round across every exercise", () => {
   assert.match(groupedMarkup, /data-coach-grouped-delete-round/);
   assert.match(addRound, /data-coach-workout-set-rows/);
   assert.match(addRound, /coachWorkoutSetMarkup/);
+  assert.match(addRound, /renderCoachWorkoutCardLayout\(\)/);
   assert.match(deleteRound, /coachWorkoutSetRowsByType/);
+  assert.match(deleteRound, /renderCoachWorkoutCardLayout\(\)/);
   assert.match(interactions, /data-coach-grouped-add-round/);
   assert.match(interactions, /data-coach-grouped-delete-round/);
   assert.match(interactions, /scheduleCoachWorkoutAutosave/);
+});
+
+test("starts a fresh grouped session with three working rounds", () => {
+  const runtime = coachLoggerRuntime();
+  const resize = sourceForFunction("resizeUntouchedCoachWorkoutExercises");
+
+  function setRow(setType) {
+    const fields = {
+      label: {
+        value: setType === "warm_up" ? "W" : "",
+        setAttribute() {},
+      },
+      weight: { value: "" },
+      reps: { value: "" },
+      rir: { value: "" },
+    };
+
+    return {
+      classList: fakeClassList(setType === "warm_up" ? ["is-warm-up"] : []),
+      dataset: {
+        coachWorkoutSetNumber: setType === "warm_up" ? "1001" : "1",
+        coachWorkoutSetType: setType,
+      },
+      querySelector(selector) {
+        if (selector.includes("set-label")) return fields.label;
+        if (selector.includes("weight")) return fields.weight;
+        if (selector.includes("reps")) return fields.reps;
+        if (selector.includes("rir")) return fields.rir;
+        return null;
+      },
+    };
+  }
+
+  function freshExercise() {
+    const rows = [setRow("warm_up")];
+    const rowContainer = {
+      get children() { return rows; },
+      insertAdjacentHTML() { rows.push(setRow("working")); },
+    };
+    const progress = { textContent: "" };
+    const deleteSet = { disabled: false };
+
+    return {
+      rows,
+      querySelector(selector) {
+        if (selector === "[data-coach-workout-set-rows]") return rowContainer;
+        if (selector === "[data-coach-workout-progress]") return progress;
+        if (selector === "[data-coach-workout-delete-set]") return deleteSet;
+        return null;
+      },
+      querySelectorAll(selector) {
+        return selector === "[data-coach-workout-set-row]" ? rows : [];
+      },
+    };
+  }
+
+  const exercises = [freshExercise(), freshExercise()];
+  const normalizedRoundCount = runtime.normalizeCoachWorkoutGroupedRows(exercises);
+  const groupedMarkupFactory = resize.match(
+    /else\s*\{[\s\S]*?rows\.innerHTML\s*=\s*([A-Za-z_$][\w$]*)\(\)/,
+  )?.[1];
+  const freshGroupedMarkup = typeof runtime[groupedMarkupFactory] === "function"
+    ? runtime[groupedMarkupFactory]()
+    : "";
+  const seededRoundCount = (
+    freshGroupedMarkup.match(/data-coach-workout-set-type="working"/g) || []
+  ).length;
+
+  assert.ok(
+    normalizedRoundCount === 3 || seededRoundCount === 3,
+    "Fresh grouped workouts should seed or normalize to exactly three working rounds",
+  );
+
+  if (seededRoundCount === 3) {
+    assert.match(resize, /list\.querySelectorAll\("\[data-coach-workout-exercise\]"\)\.forEach/);
+  } else {
+    exercises.forEach((exercise) => {
+      assert.equal(
+        exercise.rows.filter((row) => row.dataset.coachWorkoutSetType === "working").length,
+        3,
+      );
+    });
+  }
+});
+
+test("marks filled grouped rows complete and gives them a green state", () => {
+  const { refreshCoachWorkoutGroupedProgress } = coachLoggerRuntime();
+  const row = (weight, reps) => {
+    const classList = fakeClassList();
+    const fields = { weight: { value: weight }, reps: { value: reps } };
+
+    return {
+      classList,
+      querySelector(selector) {
+        return fields[selector.match(/="([^"]+)"/)?.[1]] || null;
+      },
+    };
+  };
+  const filled = row("100", "12");
+  const partial = row("100", "");
+  const progress = { textContent: "" };
+  const card = {
+    querySelector: () => progress,
+    querySelectorAll: () => [filled, partial],
+  };
+
+  refreshCoachWorkoutGroupedProgress(card);
+
+  assert.equal(filled.classList.contains("is-complete"), true);
+  assert.equal(partial.classList.contains("is-complete"), false);
+  assert.equal(progress.textContent, "1 / 2 complete");
+  assert.match(
+    styles,
+    /\.coach-workout-grouped-row\.is-complete[^\{]*\{[^}]*background:\s*[^;}]*(?:lime|green|#[0-9a-f]{3,8})[^;}]*;/i,
+  );
 });
 
 test("keeps grouped RIR within the same optional zero-to-four choices as saved sets", () => {

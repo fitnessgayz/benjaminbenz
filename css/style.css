@@ -13186,14 +13186,14 @@ textarea,
 .coach-workout-grouped-exercise-key {
   display: grid;
   min-width: 0;
-  padding: 8px 16px;
+  padding: 4px 12px;
 }
 
 .coach-workout-grouped-exercise-key > div {
   display: grid;
   grid-template-columns: 34px minmax(0, 1fr);
   min-width: 0;
-  padding: 10px 0;
+  padding: 7px 0;
   align-items: baseline;
   gap: 8px;
   border-bottom: 1px solid var(--coach-grouped-line);
@@ -13214,10 +13214,72 @@ textarea,
   text-align: center;
 }
 
+.coach-workout-grouped-round-stepper {
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr) 46px;
+  min-width: 0;
+  padding: 8px 12px;
+  align-items: center;
+  gap: 8px;
+  border-top: 1px solid var(--coach-grouped-line);
+  background: var(--coach-grouped-cream);
+}
+
+.coach-workout-grouped-round-stepper :is(button, output) {
+  display: grid;
+  min-width: 0;
+  min-height: 44px;
+  margin: 0;
+  padding: 6px;
+  place-items: center;
+  border: 1px solid var(--coach-grouped-line);
+  border-radius: 11px;
+  background: var(--coach-grouped-paper);
+  color: var(--coach-grouped-ink);
+  font: inherit;
+  font-weight: 950;
+  line-height: 1;
+}
+
+.coach-workout-grouped-round-stepper button {
+  border: 2px solid var(--coach-grouped-ink);
+  font-size: 1.45rem;
+  touch-action: manipulation;
+  cursor: pointer;
+}
+
+.coach-workout-grouped-round-stepper button:last-child {
+  background: var(--coach-grouped-lime);
+}
+
+.coach-workout-grouped-round-stepper button:disabled {
+  border-color: var(--coach-grouped-line);
+  color: #a5a7a1;
+  background: #eceee9;
+  cursor: not-allowed;
+}
+
+.coach-workout-grouped-round-stepper output {
+  display: flex;
+  justify-content: center;
+  gap: 9px;
+  text-transform: uppercase;
+}
+
+.coach-workout-grouped-round-stepper output span {
+  color: var(--coach-grouped-muted);
+  font-size: .66rem;
+  letter-spacing: .08em;
+}
+
+.coach-workout-grouped-round-stepper output strong {
+  font-size: 1.05rem;
+}
+
 .coach-workout-grouped-section {
   display: grid;
   min-width: 0;
-  padding: 0 0 10px;
+  padding: 0 0 6px;
   border-top: 1px solid var(--coach-grouped-line);
   border-left: 5px solid var(--coach-grouped-blue);
   background: var(--coach-grouped-paper);
@@ -13231,8 +13293,8 @@ textarea,
 .coach-workout-grouped-section > header {
   display: flex;
   min-width: 0;
-  min-height: 50px;
-  padding: 11px 14px;
+  min-height: 44px;
+  padding: 8px 12px;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
@@ -13281,6 +13343,11 @@ textarea,
   text-transform: uppercase;
 }
 
+.coach-workout-grouped-columns > :first-child {
+  color: transparent;
+  user-select: none;
+}
+
 .coach-workout-grouped-row {
   padding: 6px 12px;
 }
@@ -13315,6 +13382,16 @@ textarea,
   border-color: #c7932b;
   background: #fffaf0;
   color: #895c00;
+}
+
+.coach-workout-grouped-row.is-complete {
+  background: #f2faef;
+}
+
+.coach-workout-grouped-row.is-complete .coach-workout-grouped-code {
+  border-color: #21a637;
+  background: #e6f8e4;
+  color: #126f24;
 }
 
 .coach-workout-grouped-field > span {
@@ -13423,43 +13500,9 @@ textarea,
   resize: vertical;
 }
 
-.coach-workout-grouped-actions {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  min-width: 0;
-  padding: 14px;
-  gap: 8px;
-  background: var(--coach-grouped-cream);
-}
-
-.coach-workout-grouped-actions button {
-  width: 100%;
-  min-width: 0;
-  min-height: 48px;
-  padding: 10px 8px;
-  border: 1px solid var(--coach-grouped-ink);
-  border-radius: 11px;
-  background: var(--coach-grouped-paper);
-  color: var(--coach-grouped-ink);
-  font: inherit;
-  font-size: .76rem;
-  font-weight: 950;
-  text-transform: uppercase;
-  cursor: pointer;
-}
-
-.coach-workout-grouped-actions button:first-child {
-  background: var(--coach-grouped-lime);
-}
-
-.coach-workout-grouped-actions button:disabled {
-  cursor: not-allowed;
-  opacity: .4;
-}
-
 .coach-workout-group-name-toggle:focus-visible,
 .coach-workout-group-name-row > button:focus-visible,
-.coach-workout-grouped-actions button:focus-visible {
+.coach-workout-grouped-round-stepper button:focus-visible {
   outline: 3px solid var(--coach-grouped-blue);
   outline-offset: 2px;
 }
@@ -13538,7 +13581,7 @@ textarea,
 
   .coach-workout-grouped-code,
   .coach-workout-grouped-field {
-    min-height: 54px;
+    min-height: 48px;
   }
 }
 
@@ -13648,10 +13691,6 @@ textarea,
     min-height: 46px;
     border-radius: 9px;
     font-size: .92rem;
-  }
-
-  .coach-workout-grouped-actions {
-    grid-template-columns: minmax(0, 1fr);
   }
 
   .coach-workout-submit-panel > .coach-workout-submit-actions {

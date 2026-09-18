@@ -134,6 +134,7 @@ test("renders the exercise key, compact round stepper, round rows, and grouped a
 
 test("accepts skipped warm-ups and optional RIR while validating working reps", () => {
   const fieldMarkup = sourceForFunction("customWorkoutGroupedFieldMarkup");
+  const syncField = sourceForFunction("syncCustomWorkoutGroupedField");
   const validate = sourceForFunction("validateCustomWorkoutGroupedSection");
   const validateSection = Function(
     "customWorkoutGroupedStatus",
@@ -163,6 +164,7 @@ test("accepts skipped warm-ups and optional RIR while validating working reps", 
   });
 
   assert.match(fieldMarkup, /min="0"/);
+  assert.doesNotMatch(fieldMarkup, /disabled|readonly/);
   assert.match(fieldMarkup, /field === "rir" \? ' max="5"'/);
   assert.match(validate, /data-custom-grouped-field/);
   assert.match(validate, /aria-invalid/);
@@ -174,6 +176,13 @@ test("accepts skipped warm-ups and optional RIR while validating working reps", 
   assert.match(validate, /> 5/);
   assert.match(validate, /rirRaw !== ""/);
   assert.doesNotMatch(validate, /field === "weight"[^\n]*<= 0/);
+  assert.match(syncField, /canonicalInput\.value = input\.value/);
+  assert.match(syncField, /return true/);
+  assert.match(syncField, /return false/);
+  assert.match(
+    mobileStyles,
+    /\.custom-workout-grouped-field > input\s*\{[^}]*pointer-events:\s*auto;[^}]*touch-action:\s*manipulation;/s,
+  );
 
   const skippedWarmUp = row("warm_up", "0", "0", "");
   assert.equal(validateSection(section([skippedWarmUp]), { focus: false }).valid, true);
@@ -181,6 +190,49 @@ test("accepts skipped warm-ups and optional RIR while validating working reps", 
 
   const workingSet = row("working", "0", "1", "");
   assert.equal(validateSection(section([workingSet]), { focus: false }).valid, true);
+
+  const zeroRirWorkingSet = row("working", "0", "1", "0");
+  assert.equal(validateSection(section([zeroRirWorkingSet]), { focus: false }).valid, true);
+
+  const canonicalWeight = { value: "" };
+  const canonicalRow = {
+    classList: { contains: () => false },
+    querySelector: (selector) => selector === "[data-set-weight]" ? canonicalWeight : null,
+  };
+  const carousel = {};
+  const visibleRow = {
+    dataset: {
+      customGroupedExerciseIndex: "0",
+      customGroupedSetType: "working",
+      customGroupedSetNumber: "1",
+    },
+  };
+  const groupedInput = {
+    value: "0",
+    dataset: { customGroupedField: "weight" },
+    closest(selector) {
+      return selector === ".custom-workout-grouped-row" ? visibleRow : carousel;
+    },
+    setAttribute() {},
+    removeAttribute() {},
+  };
+  const syncFieldApi = Function(
+    "customWorkoutGroupedCanonicalRow",
+    "customWorkoutGroupedStatus",
+    "setCustomWorkoutGroupedRowComplete",
+    "persistCustomWorkoutDraftForElement",
+    "refreshCustomWorkoutGroupedCompletion",
+    `${syncField}; return syncCustomWorkoutGroupedField;`,
+  )(
+    () => canonicalRow,
+    () => null,
+    () => {},
+    () => {},
+    () => {},
+  );
+
+  assert.equal(syncFieldApi(groupedInput), true);
+  assert.equal(canonicalWeight.value, "0");
 
   const zeroRepWorkingSet = row("working", "0", "0", "");
   assert.equal(validateSection(section([zeroRepWorkingSet]), { focus: false }).valid, false);
