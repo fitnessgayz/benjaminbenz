@@ -1,0 +1,355 @@
+/* Shared visual system. Load after page-specific layout styles.
+ * Layout, visibility, carousel transforms, and state colors stay component-owned.
+ * Important declarations below bridge the legacy mobile sizing/radius overrides.
+ */
+:root {
+  color-scheme: light;
+  --font-ui: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+  --black: #080a08;
+  --ink: #171a17;
+  --white: #f4f5f1;
+  --paper: #fff;
+  --muted: #666b62;
+  --line: #dcded7;
+  --lime: #d6ff35;
+  --surface: #f2f3ee;
+  --surface-soft: #f7f8f4;
+  --nav-surface: #1c1f1b;
+  --ui-radius: 12px;
+  --card-radius: 22px;
+  --panel-radius: 26px;
+  --shadow-soft: 0 8px 28px rgb(24 30 18 / 5%);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+:root body {
+  font-family: var(--font-ui);
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--ink);
+  background: var(--surface);
+  -webkit-font-smoothing: antialiased;
+}
+
+:root body :is(button, input, select, textarea) { font-family: var(--font-ui); }
+:root body :is(h1, h2, h3, h4, h5, h6) {
+  font-family: var(--font-ui) !important;
+  font-weight: 800;
+  line-height: 1.15 !important;
+  letter-spacing: -.035em !important;
+  text-transform: none !important;
+  overflow-wrap: break-word;
+}
+
+:root body h1 { font-size: clamp(2.25rem, 5vw, 4.5rem); }
+:root body h2 { font-size: clamp(1.75rem, 3vw, 2.5rem); }
+:root body h3 { font-size: clamp(1.25rem, 2vw, 1.65rem); }
+:root body h4 { font-size: 1.125rem; }
+:root body :is(.kicker, .eyebrow) {
+  color: var(--muted);
+  font-size: .75rem;
+  font-weight: 800;
+  letter-spacing: .09em;
+}
+
+:root body :is(.panel-heading, .access-panel-heading) { gap: 16px; }
+:root body :is(.panel-heading, .access-panel-heading) h2 {
+  font-size: clamp(1.75rem, 3.8vw, 2.75rem) !important;
+}
+:root body :is(.client-home-snapshot-heading, .nutrition-calculator-card, .coach-workout-grouped-card-heading) h3 {
+  font-size: clamp(1.25rem, 2.6vw, 1.75rem) !important;
+}
+
+/* Quiet outer panels; white cards and restrained shadows establish hierarchy. */
+:root body :is(.dashboard-card, .progress-panel, .notes-panel, .access-panel,
+  .questionnaire-card, .form-card, .form-section, .form-submit-panel,
+  .client-summary, .admin-card, .client-workouts-panel, .workout-insights-panel) {
+  border: 1px solid var(--line);
+  border-radius: var(--panel-radius) !important;
+  background: var(--paper);
+  box-shadow: var(--shadow-soft);
+}
+
+:root body :is(.service-card, .credential-card, .review-card, .program-history-card,
+  .saved-log-card, .client-card, .client-profile-card, .exercise-card,
+  .workout-exercise-card, .nutrition-card, .nutrition-macro-card,
+  .session-card, .session-package-card, .food-log-card, .coach-card,
+  .client-home-card, .client-home-snapshot-card, .client-weekly-summary,
+  .client-workout-picker-card, .custom-workout-card, .coach-workout-exercise,
+  .coach-workout-grouped-card, .training-log-history-card,
+  .client-progress-history-row, .client-questionnaire-group,
+  .nutrition-calculator-card, .nutrition-client-guide, .nutrition-guide-preview,
+  .nutrition-food-log-card, .coach-food-log-panel, .coach-home-sheet-card,
+  .progress-entry-card, .progress-dexa-card, .food-label-import-card,
+  .coach-home-module, .session-sheet-count-card, .session-sheet-link-card,
+  .programming-heading-card, .coaching-option-card, .invite-deck) {
+  border-radius: var(--card-radius) !important;
+  border-color: var(--line);
+  box-shadow: var(--shadow-soft);
+}
+
+:root body :is(.summary-metric, .progress-current > span, .coach-home-metrics article,
+  .client-questionnaire-identity, .nutrition-macro-overview, .training-log-row,
+  .training-log-day, .training-log-exercise-group) {
+  border-radius: 16px !important;
+  border-color: var(--line);
+}
+
+:root body :is(.workout-difficulty-sheet, .workout-completion-share-sheet,
+  .next-exercise-sheet, .rir-sheet, .rest-timer-sheet, .copy-client-dialog,
+  .invite-client-dialog, .food-barcode-dialog, .client-monthly-report-dialog) {
+  border-radius: var(--panel-radius);
+  border-color: var(--line);
+  box-shadow: 0 24px 64px rgb(24 30 18 / 16%);
+}
+
+:root body :is(.form-section, .form-submit-panel) h2 {
+  font-size: clamp(1.5rem, 3vw, 2rem);
+}
+
+:root body :is(.admin-section-heading, .coach-home-module-heading) :is(h2, h3) {
+  font-size: clamp(1.25rem, 2.4vw, 1.75rem);
+}
+
+:root body :is(.admin-card, .client-home-card, .nutrition-calculator-card,
+  .nutrition-client-guide, .nutrition-guide-preview, .progress-entry-card) p:not(.kicker) {
+  font-weight: 400;
+  line-height: 1.55;
+}
+
+:root body :is(.form-section, .login-form, .admin-card, .nutrition-setup-grid) label {
+  font-weight: 600;
+}
+
+:root body .workout-group-progress-heading strong {
+  font-family: var(--font-ui);
+  font-weight: 800;
+  font-size: clamp(1.25rem, 5vw, 1.75rem);
+  line-height: 1.2;
+  letter-spacing: -.025em;
+  text-transform: none;
+  white-space: normal;
+}
+
+:root body :is(.client-home-snapshot-section, .client-home-monthly-report-card) {
+  border-radius: var(--card-radius);
+  border-color: var(--line);
+  background: var(--surface-soft);
+}
+
+:root body :is(.client-home-card-note, .client-home-card-mood,
+  .client-home-snapshot-card, .nutrition-calculator-card) {
+  color: var(--ink);
+  background: var(--paper);
+}
+
+:root body :is(.client-home-snapshot-card.is-snapshot-active, .client-workout-picker-card.is-current) {
+  border-color: #b4c587;
+  box-shadow: 0 8px 24px rgb(24 30 18 / 8%);
+}
+
+:root body .client-workout-resume-card {
+  border: 1px solid #343a30;
+  border-radius: var(--card-radius);
+  background: var(--nav-surface);
+  box-shadow: var(--shadow-soft);
+}
+:root body .client-workout-resume-card::before { background: var(--lime); }
+:root body .client-workout-resume-card .kicker { color: var(--lime); }
+
+/* Primary actions share the reference's flat lime fill. */
+:root body .button {
+  min-height: 48px;
+  padding: 12px 20px;
+  border-radius: var(--ui-radius) !important;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.35;
+  letter-spacing: -.015em;
+  text-transform: none;
+  box-shadow: none;
+}
+:root body :is(.button-dark, .button-light, .client-gym-checkin) {
+  color: var(--black);
+  background: var(--lime);
+  border-color: transparent;
+}
+:root body :is(.button-ghost, .button-outline) {
+  color: inherit;
+  background: transparent;
+  border-color: var(--line);
+}
+:root body .danger-button { color: #b52d25; border-color: #e1b6b2; background: #fff5f4; }
+@media (hover: hover) {
+  :root body .button:hover { transform: none; filter: brightness(.96); }
+}
+:root body .button:disabled { opacity: .5; filter: none; }
+:root body .status-pill {
+  border-radius: 9px !important;
+  padding: 7px 12px;
+  font-size: .75rem;
+  font-weight: 800;
+  letter-spacing: .015em;
+}
+
+/* Do not restyle checkbox, range, file, hidden, or compact set-table controls. */
+:root body :is(.login-form, .contact-form, .questionnaire-form, .invite-step,
+  .client-checkin-form, .admin-panel) :is(input:not([type]),
+  input[type="text"], input[type="email"], input[type="password"],
+  input[type="number"], input[type="date"], input[type="tel"],
+  input[type="url"], input[type="search"], select, textarea) {
+  min-height: 48px;
+  padding: 12px 14px;
+  color: var(--ink);
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
+  border-radius: var(--ui-radius) !important;
+  font-size: 1rem;
+  line-height: 1.4;
+}
+:root body :is(input, textarea)::placeholder { color: #71766c; opacity: 1; }
+:root body :is(input[type="checkbox"], input[type="radio"], input[type="range"]) { accent-color: #678000; }
+:root body :is(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 3px solid #718a18;
+  outline-offset: 3px;
+}
+:root body :is(.client-dashboard-tabs, .coach-admin-sidebar) :focus-visible {
+  outline-color: var(--lime);
+  outline-offset: -3px;
+}
+:root body :is(.set-row input, .coach-workout-set-row input) { font-variant-numeric: tabular-nums; }
+
+/* Reference weekly summary: spacious metrics, fine rules, round week controls. */
+:root body .client-weekly-summary { padding: clamp(18px, 3vw, 28px); }
+:root body .client-weekly-header h3 { font-size: 1.375rem; }
+:root body .client-weekly-totals { margin-block: 26px; }
+:root body .client-weekly-totals strong {
+  font-size: clamp(3.25rem, 8vw, 4rem);
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -.045em;
+  font-variant-numeric: tabular-nums;
+}
+:root body .client-weekly-totals span { font-size: 1rem; }
+:root body :is(.client-weekly-caption, .client-weekly-header p, .client-weekly-totals small,
+  .client-weekly-day, .client-weekly-details li, .client-weekly-retry) { font-size: .875rem; }
+:root body .client-weekly-legend { font-size: .8125rem; }
+:root body .client-weekly-details summary { font-size: .9375rem; }
+:root body .client-weekly-mark { min-height: 38px; border-radius: 9px; }
+:root body .client-gym-checkin { font-size: 1rem; font-weight: 800; }
+
+:root body :is(.summary-metric strong, .progress-current strong, .coach-home-metrics strong,
+  .client-home-snapshot-metrics strong, .client-home-training-metrics strong) {
+  font-family: var(--font-ui);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -.04em;
+}
+:root body .client-home-snapshot-card :is(h4, small, header span) {
+  text-transform: none;
+  letter-spacing: -.015em;
+}
+:root body .client-home-snapshot-card :is(small, header span) { color: var(--muted); font-weight: 600; }
+
+/* Keep the existing sidebar collapse and mobile dock behavior. */
+:root body .client-dashboard-tabs,
+:root body .coach-admin-sidebar {
+  background: var(--nav-surface);
+  border-color: #353a31;
+  box-shadow: 0 12px 32px rgb(24 30 18 / 12%);
+}
+:root body .coach-admin-sidebar { border-radius: 22px; }
+:root body .client-dashboard-tab-label,
+:root body .admin-nav-label { font-weight: 700; }
+:root body.coach-admin-page .admin-tab { text-transform: none; }
+:root body .client-dashboard-sidebar-toggle { font-weight: 600; }
+:root body .site-header { border-bottom-color: var(--line); }
+:root body .brand strong { font-weight: 700; letter-spacing: -.025em; }
+
+@media (min-width: 901px) {
+  :root body.client-dashboard-page .client-dashboard-tabs { border-radius: 22px !important; }
+  :root body.client-dashboard-page .dashboard-grid { column-gap: 24px; }
+  :root body .client-dashboard-tab-label { font-size: .875rem; }
+  :root body.coach-admin-page .admin-tab { font-size: .875rem !important; }
+}
+
+@media (max-width: 900px) {
+  :root body.client-dashboard-page .client-dashboard-tabs { border-radius: 34px !important; }
+  :root body.client-dashboard-page .client-dashboard-tab-label { font-size: .6875rem; letter-spacing: 0; }
+  :root body.client-dashboard-page .client-dashboard-scroll-fade {
+    background: linear-gradient(90deg, rgb(28 31 27 / 0%), var(--nav-surface) 78%);
+  }
+}
+
+/* Account and public pages use the same type hierarchy and surfaces. */
+:root body :is(.access-intro, .questionnaire-hero, .dashboard-hero) h1 {
+  font-size: clamp(2rem, 4.8vw, 3.75rem);
+  line-height: 1.1 !important;
+}
+:root body .access-panel { padding: clamp(22px, 3vw, 36px); }
+:root body .invite-panel { padding: 0; border: 0; background: transparent; box-shadow: none; }
+:root body .invite-deck-peek { border-radius: 18px 18px 0 0; }
+:root body.homepage .hero h1 { font-size: clamp(3rem, 8vw, 7.5rem); line-height: 1.02 !important; }
+:root body.homepage .hero .kicker { color: var(--lime); }
+:root body.homepage .home-tabs { background: var(--nav-surface); border-radius: 999px; padding: 6px; }
+:root body.homepage .home-tab { border-radius: 999px !important; color: #e4e6df; background: transparent; }
+:root body.homepage .home-tab.is-active { color: var(--black); background: var(--lime); }
+:root body.homepage :is(.editorial, .contact, .coaching-options-heading) h2 {
+  font-size: clamp(2rem, 4.6vw, 4rem);
+}
+:root body.homepage .coaching-option-card { border-radius: 24px !important; }
+
+/* Shared layout for legal/support pages, which previously had separate themes. */
+:root body.fwb-document-page { margin: 0; min-height: 100svh; padding: clamp(20px, 5vw, 64px) 0; }
+:root body.fwb-document-page main {
+  width: min(780px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: clamp(24px, 5vw, 48px);
+  border: 1px solid var(--line);
+  border-radius: var(--panel-radius);
+  background: var(--paper);
+  box-shadow: var(--shadow-soft);
+}
+:root body.fwb-document-page h1 { margin: 0 0 24px; font-size: clamp(2rem, 5vw, 3rem); }
+:root body.fwb-document-page h2 { margin: 32px 0 12px; font-size: 1.375rem; }
+:root body.fwb-document-page :is(p, li) { color: var(--muted); line-height: 1.7; }
+:root body.fwb-document-page strong { color: var(--ink); }
+:root body.fwb-document-page a { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; overflow-wrap: anywhere; }
+:root body.fwb-document-page .eyebrow { margin-bottom: 16px; }
+:root body.fwb-document-page :is(.contact, .summary) {
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface-soft);
+}
+:root body.fwb-document-page footer { margin-top: 32px; padding-top: 20px; border-top: 1px solid var(--line); }
+:root body.fwb-consent-page { display: grid; place-items: center; }
+:root body.fwb-consent-page main { max-width: 560px; }
+:root body.fwb-consent-page .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
+:root body.fwb-consent-page .actions button { flex: 1 1 160px; min-height: 48px; border: 1px solid var(--line); border-radius: 12px; font: 700 1rem/1.4 var(--font-ui); cursor: pointer; }
+:root body.fwb-consent-page #approve { color: var(--black); background: var(--lime); border-color: transparent; }
+:root body.fwb-consent-page #deny { color: var(--ink); background: var(--surface-soft); }
+:root body.fwb-consent-page #status { color: #8c4b0a; min-height: 1.5em; }
+:root body.fwb-consent-page button:disabled { cursor: wait; opacity: .5; }
+
+@media (max-width: 600px) {
+  :root { --card-radius: 18px; --panel-radius: 22px; }
+  :root body :is(.panel-heading, .access-panel-heading) h2 { font-size: 1.875rem !important; }
+  :root body .client-home-snapshot-heading { align-items: start; gap: 12px; }
+  :root body .client-home-snapshot-heading > span { font-size: .75rem; letter-spacing: 0; text-transform: none; }
+  :root body .client-weekly-totals > div + div { padding-left: 12px; }
+  :root body .client-weekly-totals span { font-size: .9375rem; }
+  :root body .client-weekly-header { flex-wrap: wrap; }
+  :root body.fwb-document-page main { padding: 24px 20px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  :root body *, body *::before, body *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}
