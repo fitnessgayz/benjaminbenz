@@ -709,7 +709,7 @@ function coachWorkoutGroupedSectionsMarkup(group) {
 
     return `
       <section class="coach-workout-grouped-section" data-coach-grouped-section="round" data-coach-grouped-round="${roundNumber}">
-        <header><h4>Round ${roundNumber}</h4><p>${rows.map((item) => coachWorkoutGroupedRoundCode(roundNumber, item.position)).join(" + ")}</p></header>
+        <header><h4>${coachWorkoutFormatValue() === "single" ? "Set" : "Round"} ${roundNumber}</h4><p>${rows.map((item) => coachWorkoutGroupedRoundCode(roundNumber, item.position)).join(" + ")}</p></header>
         ${coachWorkoutGroupedColumnLabelsMarkup()}
         ${rows.map((item) => coachWorkoutGroupedSetRowMarkup(
           item.row,
@@ -750,6 +750,11 @@ function coachWorkoutGroupedCardMarkup(format, group, groupIndex) {
             <div role="listitem"><span>${position + 1}</span><strong data-coach-grouped-exercise-name="${position}">${escapeCoachWorkoutHtml(exercise.querySelector("[data-coach-workout-name]")?.value.trim() || `Exercise ${position + 1}`)}</strong></div>
           `).join("")}
         </div>
+        <div class="coach-workout-round-stepper" role="group" aria-label="Number of ${format === "single" ? "sets" : "rounds"}">
+          <button type="button" data-coach-grouped-delete-round aria-label="Remove last ${format === "single" ? "set" : "round"}"${roundCount <= 1 ? " disabled" : ""}>−</button>
+          <output><span>${format === "single" ? "Sets" : "Rounds"}</span> <strong>${roundCount}</strong></output>
+          <button type="button" data-coach-grouped-add-round aria-label="Add ${format === "single" ? "set" : "round"}">+</button>
+        </div>
         <div data-coach-grouped-sections>${coachWorkoutGroupedSectionsMarkup(group)}</div>
         <details class="coach-workout-grouped-notes">
           <summary>Exercise notes <span>Optional</span></summary>
@@ -760,10 +765,6 @@ function coachWorkoutGroupedCardMarkup(format, group, groupIndex) {
           </div>
         </details>
         ${coachWorkoutGroupedHistoryMarkup(group, groupIndex)}
-        <footer class="coach-workout-grouped-actions">
-          <button type="button" data-coach-grouped-add-round>+ Add round</button>
-          <button type="button" data-coach-grouped-delete-round${roundCount <= 1 ? " disabled" : ""}>Delete round</button>
-        </footer>
       </article>
     </section>
   `;

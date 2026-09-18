@@ -158,8 +158,8 @@ test("shows the latest earlier exercise history at the bottom of every workout c
     "History should render below exercise notes",
   );
   assert.ok(
-    groupedMarkup.indexOf("coachWorkoutGroupedHistoryMarkup") < groupedMarkup.indexOf("coach-workout-grouped-actions"),
-    "History should render before the bottom card actions",
+    groupedMarkup.indexOf("coachWorkoutGroupedHistoryMarkup") < groupedMarkup.indexOf("</article>"),
+    "History should render at the bottom of the card",
   );
   assert.match(historyMarkup, /Previous workout/);
   assert.match(historyMarkup, /Latest earlier session/);
@@ -243,7 +243,7 @@ test("repeats Set Weight Reps and RIR labels in warm-up and round sections", () 
   assert.match(sections, /data-coach-grouped-section="warm-up"/);
   assert.match(sections, /data-coach-grouped-section="round"/);
   assert.match(sections, /Warm-up/);
-  assert.match(sections, /Round \$\{roundNumber\}/);
+  assert.match(sections, /"Set" : "Round"\}\s*\$\{roundNumber\}/);
   assert.ok(
     (sections.match(/coachWorkoutGroupedColumnLabelsMarkup\(\)/g) || []).length >= 2,
     "Column labels should render in the warm-up and every generated round",

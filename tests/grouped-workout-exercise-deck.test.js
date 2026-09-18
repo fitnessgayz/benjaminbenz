@@ -15,16 +15,12 @@ function sourceForFunction(name) {
   return portal.slice(start, end >= 0 ? end : undefined);
 }
 
-test("renders the same lifted deck shell for custom and assigned grouped workouts", () => {
+test("shares the set and round card renderer for custom and assigned workouts", () => {
   const customMarkup = sourceForFunction("customWorkoutCarouselGroupMarkup");
   const assignedMarkup = sourceForFunction("assignedWorkoutCarouselMarkup");
   const nextCardMarkup = sourceForFunction("workoutGroupDeckNextCardMarkup");
 
-  [customMarkup].forEach((markup) => {
-    assert.match(markup, /data-custom-workout-exercise-deck/);
-    assert.equal((markup.match(/custom-workout-deck-layer/g) || []).length, 4);
-    assert.match(markup, /workoutGroupDeckNextCardMarkup\(\)/);
-  });
+  assert.match(customMarkup, /return customWorkoutGroupedRoundCardMarkup/);
   assert.match(assignedMarkup, /customWorkoutCarouselGroupMarkup/);
   assert.match(assignedMarkup, /assigned: true/);
   assert.match(nextCardMarkup, /<button[\s\S]*?type="button"[\s\S]*?data-workout-group-next-card/);
@@ -158,7 +154,7 @@ test("keeps grouped deck visuals separate from straight-set add permission", () 
 });
 
 test("places collapsible A1 A2 exercise-name editors above the grouped swipe deck", () => {
-  const groupMarkup = sourceForFunction("customWorkoutCarouselGroupMarkup");
+  const groupMarkup = sourceForFunction("customWorkoutGroupedRoundCardMarkup");
   const editorMarkup = sourceForFunction("customWorkoutGroupNameEditorMarkup");
   const rowMarkup = sourceForFunction("customWorkoutGroupNameRowMarkup");
   const syncEditor = sourceForFunction("syncCustomWorkoutGroupNameEditor");
@@ -166,8 +162,8 @@ test("places collapsible A1 A2 exercise-name editors above the grouped swipe dec
   const interactions = sourceForFunction("handleWorkoutInteractions");
 
   assert.match(groupMarkup, /customWorkoutGroupNameEditorMarkup\(format, exercises, groupIndex,/);
-  assert.match(groupMarkup, /customWorkoutGroupNameEditorMarkup[\s\S]*?data-custom-workout-exercise-deck/);
-  assert.match(editorMarkup, /format === "single"[\s\S]*?return ""/);
+  assert.match(groupMarkup, /customWorkoutGroupNameEditorMarkup[\s\S]*?custom-workout-grouped-card/);
+  assert.doesNotMatch(editorMarkup, /format === "single"[\s\S]*?return ""/);
   assert.match(editorMarkup, /data-custom-workout-group-name-toggle/);
   assert.match(editorMarkup, /data-custom-workout-group-name-fields/);
   assert.match(rowMarkup, /workoutCarouselExerciseCode\(format, groupIndex, index\)/);

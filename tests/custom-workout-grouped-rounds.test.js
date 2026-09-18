@@ -70,7 +70,7 @@ test("renders grouped custom workouts as one full-width card instead of a swipe 
   assert.doesNotMatch(groupedMarkup, /data-custom-workout-exercise-deck|data-workout-group-next-card/);
   assert.match(
     groupBranch,
-    /if \(format !== "single"\) \{[\s\S]*?return customWorkoutGroupedRoundCardMarkup\(/,
+    /return customWorkoutGroupedRoundCardMarkup\(/,
   );
   assert.match(
     mobileStyles,
@@ -108,7 +108,7 @@ test("renders the exercise key, compact round stepper, round rows, and grouped a
   assert.match(exerciseKey, /data-custom-grouped-exercise-name/);
   assert.match(sections, /<h4>Warm-up<\/h4>/);
   assert.match(sections, /Excluded from working volume/);
-  assert.match(sections, /<h4>Round \$\{roundNumber\}<\/h4>/);
+  assert.match(sections, /<h4>\$\{workoutSetUnit\(carousel\)\} \$\{roundNumber\}<\/h4>/);
   assert.match(sections, /const columnLabelsMarkup = `[\s\S]*?<span>Weight<\/span><span>Reps<\/span><span>RIR<\/span>/);
   assert.equal(
     (sections.match(/\$\{columnLabelsMarkup\}/g) || []).length,
@@ -117,7 +117,7 @@ test("renders the exercise key, compact round stepper, round rows, and grouped a
   );
   assert.doesNotMatch(groupedMarkup, /custom-workout-grouped-columns/);
   assert.match(sections, /data-custom-grouped-log-round="\$\{roundNumber\}"/);
-  assert.match(sections, />\$\{logged \? `✓ Round \$\{roundNumber\} logged` : "Log round"\}<\/button>/);
+  assert.match(sections, /logged \? `✓ \$\{workoutSetUnit\(carousel\)\}/);
   assert.match(sections, /data-custom-grouped-rest-adjust="-15"/);
   assert.match(sections, /data-custom-grouped-rest-toggle/);
   assert.match(sections, /data-custom-grouped-rest-adjust="15"/);
@@ -336,7 +336,7 @@ test("shows the grouped session timer and finish action on the last group only",
   const initialGroups = sourceForFunction("customWorkoutCarouselMarkup");
   const regroup = sourceForFunction("regroupCustomWorkoutCarousels");
 
-  assert.match(groupedMarkup, /const showSessionControls = options\.isLastGroup !== false/);
+  assert.match(groupedMarkup, /const showSessionControls = format !== "single" && options\.isLastGroup !== false/);
   assert.match(groupedMarkup, /\$\{showSessionControls \? `[\s\S]*?data-custom-grouped-timer[\s\S]*?` : ""\}/);
   assert.match(
     groupedMarkup,
