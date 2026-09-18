@@ -33,6 +33,7 @@
   <link rel="stylesheet" href="css/style.css?v=workout-preview-1" />
   <link rel="stylesheet" href="css/custom-workout-mobile-fix.css?v=grouped-round-controls-1" />
   <link rel="stylesheet" href="css/workout-layout.css?v=workout-preview-1" />
+  <link rel="stylesheet" href="css/client-weekly-activity.css?v=1" />
 </head>
 <body class="dashboard-page client-dashboard-page is-loading">
   <main class="dashboard-shell">
@@ -123,6 +124,28 @@
           </div>
           <div class="client-home-checkin-backdrop" data-client-home-checkin-backdrop hidden></div>
           <div class="client-home-grid" id="client-home-grid">
+            <section class="client-weekly-activity" id="client-weekly-activity" aria-labelledby="client-weekly-heading">
+              <button class="button client-gym-checkin" id="client-gym-checkin" type="button" disabled>Gym check-in</button>
+              <p class="client-weekly-caption" id="client-gym-checkin-status" role="status">At the gym? Check in for today.</p>
+              <div class="client-weekly-summary">
+                <header class="client-weekly-header">
+                  <div><h3 id="client-weekly-heading">This week</h3><p id="client-weekly-dates">Monday–Sunday</p></div>
+                  <div class="client-weekly-navigation">
+                    <button id="client-week-prev" type="button" aria-label="Previous week">‹</button>
+                    <button id="client-week-next" type="button" aria-label="Next week" disabled>›</button>
+                  </div>
+                </header>
+                <div class="client-weekly-totals" aria-live="polite">
+                  <div><strong id="client-weekly-workouts">…</strong><span>Gym workouts</span><small>logged this week</small></div>
+                  <div><strong id="client-weekly-checkins">…</strong><span>Gym check-ins</span><small>completed this week</small></div>
+                </div>
+                <div class="client-weekly-days" id="client-weekly-days"></div>
+                <div class="client-weekly-legend"><span>● Gym workout</span><span>■ Gym check-in</span></div>
+                <p class="client-weekly-caption" id="client-weekly-status" role="status">Loading weekly activity…</p>
+                <details class="client-weekly-details"><summary>View weekly activity</summary><ul id="client-weekly-list"></ul></details>
+                <button class="client-weekly-retry" id="client-weekly-retry" type="button">Refresh activity</button>
+              </div>
+            </section>
             <article class="client-workout-resume-card client-home-resume-card" data-workout-resume-card hidden>
               <div>
                 <p class="kicker" data-workout-resume-status>Workout in progress</p>
@@ -988,6 +1011,7 @@
   <script src="js/web-notifications.js?v=notification-default-on-1"></script>
   <script src="https://cdn.jsdelivr.net/npm/@zxing/browser@0.2.1/umd/zxing-browser.min.js" integrity="sha384-HRtzk9lZgkbSgvUyQrnfC/GxiXZgwaNyD7hC9wcXlsBpDhkS80ISl73juef2FRuf" crossorigin="anonymous"></script>
   <script src="js/workout-layout.js?v=workout-preview-1"></script>
-  <script src="js/client-portal.js?v=workout-preview-1"></script>
+  <script src="js/client-weekly-activity.js?v=1"></script>
+  <script src="js/client-portal.js?v=weekly-activity-1"></script>
 </body>
 </html>

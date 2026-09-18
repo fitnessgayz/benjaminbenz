@@ -710,6 +710,7 @@ function renderClientHomeSnapshots(nutrition = nutritionPlanFromProgram(currentP
 }
 
 function renderClientHomeSummary() {
+  window.FWB_WEEKLY_ACTIVITY?.configure(supabaseClient, activeClientEmail, isCoachDashboardPreview);
   const homePanel = document.querySelector('[data-client-dashboard-panel="home"]');
 
   if (!homePanel || !currentProgram) {
