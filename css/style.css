@@ -12420,6 +12420,49 @@ textarea,
 }
 
 /* Coach-only live Custom workout logger. */
+.coach-rest-timer {
+  position: sticky;
+  bottom: 12px;
+  z-index: 50;
+  width: min(480px, calc(100% - 24px));
+  margin: 12px auto;
+  padding: 16px;
+  border: 1px solid var(--black);
+  border-radius: 16px;
+  background: var(--lime);
+  color: var(--black);
+  box-shadow: 0 8px 24px #0002;
+}
+
+.coach-rest-timer[hidden] { display: none; }
+
+.coach-rest-timer-heading,
+.coach-rest-timer-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.coach-rest-timer-heading { margin-bottom: 10px; }
+.coach-rest-timer-heading strong { flex: 1; }
+.coach-rest-timer output { font-size: 32px; font-weight: 900; font-variant-numeric: tabular-nums; }
+.coach-rest-timer-controls label { display: grid; gap: 4px; font-size: 12px; font-weight: 800; }
+.coach-rest-timer button,
+.coach-rest-timer select,
+.coach-workout-log-round {
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid var(--black);
+  border-radius: 8px;
+  background: white;
+  color: var(--black);
+  font: inherit;
+  font-weight: 800;
+}
+.coach-workout-log-round { display: block; width: 100%; margin-top: 12px; background: var(--lime); }
+
 .coach-workout-log-shell {
   width: min(1120px, calc(100% - 32px));
   min-width: 0;

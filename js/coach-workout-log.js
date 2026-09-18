@@ -719,6 +719,7 @@ function coachWorkoutGroupedSectionsMarkup(group) {
           roundIndex,
           `round ${roundNumber}, ${item.name}`
         )).join("")}
+        <button class="coach-workout-log-round" type="button" data-coach-grouped-log-round>${coachWorkoutFormatValue() === "single" ? "Log Set" : "Log Round"}</button>
       </section>
     `;
   }).join("");
@@ -1267,6 +1268,7 @@ function switchCoachWorkoutContext() {
     return false;
   }
 
+  window.CoachRestTimer?.stop();
   cancelCoachWorkoutAutosave();
   const previousDraftStored = storeCoachWorkoutDraft({}, {
     context: previousContext,
@@ -1909,6 +1911,7 @@ async function finishCoachWorkout() {
 }
 
 function resetCoachWorkoutForm(options = {}) {
+  window.CoachRestTimer?.stop();
   const form = document.getElementById("coach-workout-log-form");
   const selectedClient = document.getElementById("coach-workout-client")?.value || "";
   const previousContext = normalizeCoachWorkoutContext(coachWorkoutActiveContext);
@@ -2153,6 +2156,21 @@ function handleCoachWorkoutForm() {
     const remove = event.target.closest("[data-coach-grouped-delete-exercise]");
     const addRound = event.target.closest("[data-coach-grouped-add-round]");
     const deleteRound = event.target.closest("[data-coach-grouped-delete-round]");
+    const logRound = event.target.closest("[data-coach-grouped-log-round]");
+
+    if (logRound && card) {
+      const section = logRound.closest("[data-coach-grouped-section]");
+      const fields = Array.from(section.querySelectorAll('input[data-coach-grouped-field]'));
+      const invalid = fields.find((field) => field.value === "" || !field.checkValidity());
+      if (invalid) {
+        invalid.focus();
+        setCoachWorkoutStatus("Enter valid weight and reps for each exercise before logging this set or round.", true);
+        return;
+      }
+      scheduleCoachWorkoutAutosave({ delayMs: 0 });
+      window.CoachRestTimer?.start();
+      return;
+    }
 
     if (suggestion) {
       const input = suggestion.closest("[data-coach-grouped-name-row]")?.querySelector("[data-coach-grouped-name-input]");
@@ -2243,6 +2261,7 @@ async function loadCoachWorkoutData() {
 }
 
 async function signOutCoachWorkout() {
+  window.CoachRestTimer?.stop();
   cancelCoachWorkoutAutosave();
   coachWorkoutSaveEpoch += 1;
   coachWorkoutAutosaveQueued = false;
