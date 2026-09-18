@@ -14805,6 +14805,11 @@ body.client-dashboard-page {
   display: none;
 }
 
+.client-dashboard-scroll-fade,
+.client-dashboard-scroll-cue {
+  display: none;
+}
+
 @media (min-width: 901px) {
   .client-dashboard-page .dashboard-grid {
     grid-template-columns: 240px minmax(0, 1fr);
@@ -14974,8 +14979,7 @@ body.client-dashboard-page {
     box-shadow: 0 12px 34px rgba(0, 0, 0, .2);
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
-    scrollbar-width: thin;
-    scrollbar-color: var(--lime) rgba(255, 255, 255, .16);
+    scrollbar-width: none;
     transition: opacity .18s ease, transform .22s cubic-bezier(.2, .8, .2, 1), visibility 0s linear .22s;
   }
 
@@ -14985,6 +14989,44 @@ body.client-dashboard-page {
     pointer-events: auto;
     transform: translateX(-50%) scale(1);
     transition-delay: 0s;
+  }
+
+  .client-dashboard-scroll-fade {
+    position: fixed;
+    right: max(12px, calc((100vw - 720px) / 2));
+    bottom: calc(10px + env(safe-area-inset-bottom));
+    z-index: 86;
+    display: block;
+    width: 72px;
+    height: 92px;
+    pointer-events: none;
+    background: linear-gradient(90deg, rgba(23, 26, 23, 0), rgba(23, 26, 23, .98) 78%);
+    border-radius: 0 34px 34px 0;
+  }
+
+  .client-dashboard-scroll-cue {
+    position: fixed;
+    right: max(19px, calc((100vw - 706px) / 2));
+    bottom: calc(33px + env(safe-area-inset-bottom));
+    z-index: 87;
+    display: grid;
+    width: 28px;
+    height: 46px;
+    place-items: center;
+    pointer-events: none;
+    color: var(--lime);
+    background: #272a26;
+    border: 1px solid #69705f;
+    border-radius: 18px;
+    box-shadow: 0 5px 14px rgba(0, 0, 0, .2);
+    font-size: 1.45rem;
+    font-weight: 900;
+    line-height: 1;
+  }
+
+  .client-dashboard-scroll-fade[hidden],
+  .client-dashboard-scroll-cue[hidden] {
+    display: none !important;
   }
 
   .dashboard-page .client-dashboard-mobile-nav-toggle {
@@ -15034,19 +15076,7 @@ body.client-dashboard-page {
   }
 
   .dashboard-page .client-dashboard-tabs::-webkit-scrollbar {
-    display: block;
-    height: 4px;
-  }
-
-  .dashboard-page .client-dashboard-tabs::-webkit-scrollbar-track {
-    margin-inline: 28px;
-    background: rgba(255, 255, 255, .16);
-    border-radius: 999px;
-  }
-
-  .dashboard-page .client-dashboard-tabs::-webkit-scrollbar-thumb {
-    background: var(--lime);
-    border-radius: 999px;
+    display: none;
   }
 
   .dashboard-page .client-dashboard-tab,
@@ -15153,6 +15183,17 @@ body.client-dashboard-page {
     width: calc(100% - 12px);
     gap: 4px;
     padding: 7px 8px 5px;
+  }
+
+  .client-dashboard-scroll-fade {
+    right: 6px;
+    bottom: calc(6px + env(safe-area-inset-bottom));
+    height: 88px;
+  }
+
+  .client-dashboard-scroll-cue {
+    right: 13px;
+    bottom: calc(27px + env(safe-area-inset-bottom));
   }
 
   .dashboard-page .client-dashboard-mobile-nav-toggle {

@@ -13484,6 +13484,24 @@ function centerActiveClientDashboardMobileTab(navigation = document.querySelecto
   }
 }
 
+function syncClientDashboardMobileNavigationScrollCue(navigation = document.querySelector(".client-dashboard-tabs")) {
+  const fade = document.querySelector("[data-client-nav-scroll-fade]");
+  const cue = document.querySelector("[data-client-nav-scroll-cue]");
+  const mobileNavigation = window.matchMedia?.("(max-width: 900px)")?.matches ?? false;
+  const maximumScroll = navigation ? Math.max(0, navigation.scrollWidth - navigation.clientWidth) : 0;
+  const isExpanded = Boolean(navigation?.classList.contains("is-mobile-expanded"));
+  const isAtEnd = !navigation || navigation.scrollLeft >= maximumScroll - 4;
+  const shouldShow = Boolean(mobileNavigation && isExpanded && maximumScroll > 4 && !isAtEnd);
+
+  if (fade) {
+    fade.hidden = !shouldShow;
+  }
+
+  if (cue) {
+    cue.hidden = !shouldShow;
+  }
+}
+
 function setClientDashboardMobileNavigationExpanded(expanded, options = {}) {
   const navigation = document.querySelector(".client-dashboard-tabs");
   const toggle = document.querySelector("[data-client-mobile-nav-toggle]");
@@ -13518,15 +13536,17 @@ function setClientDashboardMobileNavigationExpanded(expanded, options = {}) {
     if (isExpanded) {
       centerActiveClientDashboardMobileTab(navigation);
     }
+    syncClientDashboardMobileNavigationScrollCue(navigation);
     applyWorkoutElapsedTimerPosition();
   });
 }
 
 function handleClientDashboardMobileNavigation() {
   const toggle = document.querySelector("[data-client-mobile-nav-toggle]");
+  const navigation = document.querySelector(".client-dashboard-tabs");
   const mobileQuery = window.matchMedia?.("(max-width: 900px)");
 
-  if (!toggle || !mobileQuery) {
+  if (!toggle || !navigation || !mobileQuery) {
     return;
   }
 
@@ -13538,6 +13558,10 @@ function handleClientDashboardMobileNavigation() {
     setClientDashboardMobileNavigationExpanded(true, { focusNavigation: true });
   });
 
+  navigation.addEventListener("scroll", () => {
+    syncClientDashboardMobileNavigationScrollCue(navigation);
+  }, { passive: true });
+
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape" && mobileQuery.matches) {
       lastClientDashboardMobileTabPress = "";
@@ -13548,6 +13572,7 @@ function handleClientDashboardMobileNavigation() {
   const handleMobileChange = () => {
     lastClientDashboardMobileTabPress = "";
     setClientDashboardMobileNavigationExpanded(mobileQuery.matches);
+    syncClientDashboardMobileNavigationScrollCue(navigation);
   };
 
   if (typeof mobileQuery.addEventListener === "function") {

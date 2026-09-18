@@ -30,7 +30,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=client-notification-settings-1" />
+  <link rel="stylesheet" href="css/style.css?v=client-nav-scroll-cue-1" />
   <link rel="stylesheet" href="css/custom-workout-mobile-fix.css?v=grouped-round-controls-1" />
 </head>
 <body class="dashboard-page client-dashboard-page is-loading">
@@ -108,6 +108,8 @@
             <span class="client-dashboard-sidebar-toggle-label">Minimize</span>
           </button>
         </nav>
+        <span class="client-dashboard-scroll-fade" data-client-nav-scroll-fade aria-hidden="true" hidden></span>
+        <span class="client-dashboard-scroll-cue" data-client-nav-scroll-cue aria-hidden="true" hidden>›</span>
         <span class="client-notification-unread-status" id="client-notification-unread-status" data-client-notification-unread-status aria-live="polite">0 unread notifications</span>
 
         <section class="progress-panel client-home-panel" data-client-dashboard-panel="home" aria-labelledby="client-home-title">
@@ -984,6 +986,6 @@
   <script src="js/exercise-name-matcher.js?v=exercise-consolidation-1"></script>
   <script src="js/web-notifications.js?v=notification-default-on-1"></script>
   <script src="https://cdn.jsdelivr.net/npm/@zxing/browser@0.2.1/umd/zxing-browser.min.js" integrity="sha384-HRtzk9lZgkbSgvUyQrnfC/GxiXZgwaNyD7hC9wcXlsBpDhkS80ISl73juef2FRuf" crossorigin="anonymous"></script>
-  <script src="js/client-portal.js?v=grouped-optional-rir-1"></script>
+  <script src="js/client-portal.js?v=client-nav-scroll-cue-1"></script>
 </body>
 </html>

@@ -30,8 +30,8 @@ test("scopes the client navigation styles and cache-busts dashboard assets", () 
   assert.match(dashboardHtml, /href="css\/style\.css\?v=[^"\s]+"/);
   assert.match(dashboardHtml, /src="js\/client-portal\.js\?v=[^"\s]+"/);
   assert.match(styleSource, /body\.client-dashboard-page\s*\{[^}]*padding-bottom:\s*0;/s);
-  assert.match(dashboardHtml, /css\/style\.css\?v=client-notification-settings-1/);
-  assert.match(dashboardHtml, /js\/client-portal\.js\?v=grouped-optional-rir-1/);
+  assert.match(dashboardHtml, /css\/style\.css\?v=client-nav-scroll-cue-1/);
+  assert.match(dashboardHtml, /js\/client-portal\.js\?v=client-nav-scroll-cue-1/);
 });
 
 test("renders nine labeled client destinations in order with current-page semantics", () => {
@@ -108,6 +108,23 @@ test("keeps a labeled horizontally scrollable safe-area bottom dock on mobile", 
   assert.match(mobileStyles, /\.client-dashboard-tab\.is-active \.client-dashboard-tab-icon\s*\{[^}]*color:\s*var\(--black\)[^}]*background:\s*var\(--lime\)[^}]*border-radius:\s*50%/s);
   assert.match(mobileStyles, /\.client-dashboard-tab-label\s*\{[^}]*display:\s*block !important[^}]*font-size:\s*\.63rem/s);
   assert.match(mobileStyles, /\.client-dashboard-nav-title,[\s\S]*?\.client-dashboard-sidebar-toggle\s*\{[^}]*display:\s*none !important/s);
+});
+
+test("makes horizontal scrolling obvious with a fading edge and arrow cue", () => {
+  const mobileStyles = sourceBetween("@media (max-width: 900px)", "@media (max-width: 420px)");
+  const cueSource = sourceForFunction("syncClientDashboardMobileNavigationScrollCue");
+  const mobileHandler = sourceForFunction("handleClientDashboardMobileNavigation");
+
+  assert.match(dashboardHtml, /data-client-nav-scroll-fade[^>]*aria-hidden="true"[^>]*hidden/);
+  assert.match(dashboardHtml, /data-client-nav-scroll-cue[^>]*aria-hidden="true"[^>]*hidden>›<\/span>/);
+  assert.match(mobileStyles, /\.client-dashboard-scroll-fade\s*\{[^}]*position:\s*fixed[^}]*pointer-events:\s*none[^}]*linear-gradient\(90deg/s);
+  assert.match(mobileStyles, /\.client-dashboard-scroll-cue\s*\{[^}]*position:\s*fixed[^}]*color:\s*var\(--lime\)[^}]*border-radius:\s*18px/s);
+  assert.match(mobileStyles, /\.client-dashboard-tabs::-webkit-scrollbar\s*\{[^}]*display:\s*none/s);
+  assert.match(cueSource, /navigation\.scrollWidth - navigation\.clientWidth/);
+  assert.match(cueSource, /navigation\.scrollLeft >= maximumScroll - 4/);
+  assert.match(cueSource, /fade\.hidden = !shouldShow/);
+  assert.match(cueSource, /cue\.hidden = !shouldShow/);
+  assert.match(mobileHandler, /navigation\.addEventListener\("scroll"/);
 });
 
 test("starts expanded and collapses mobile navigation after the selected icon is pressed twice", () => {
