@@ -23,7 +23,9 @@ test("keeps the client selector separate from the new-client invite form", () =>
 
   assert.match(clientPanel, /Client selector/);
   assert.match(clientPanel, /client-search-input/);
-  assert.match(clientPanel, /client-select/);
+  assert.match(clientPanel, /role="combobox"/);
+  assert.match(clientPanel, /id="client-suggestions"[^>]*role="listbox"/);
+  assert.doesNotMatch(clientPanel, /id="client-select"/);
   assert.doesNotMatch(clientPanel, /name="client_email"/);
   assert.doesNotMatch(clientPanel, /id="send-invite-button"/);
 });

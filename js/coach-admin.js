@@ -72,6 +72,8 @@ let workoutAnalysisStatusText = "Choose a client to analyze workout logs.";
 let isWorkoutAnalysisLoading = false;
 let showingArchivedClients = false;
 let clientSearchTerm = "";
+let clientSuggestionsOpen = false;
+let activeClientSuggestion = -1;
 let activeAdminTab = requestedCoachAdminTab();
 let pendingProgramCopy = null;
 let exerciseLibraryRecords = [];
@@ -801,15 +803,6 @@ function programHistoryStatus(message) {
   }
 }
 
-function searchableClientText(program) {
-  return [
-    program.client_name,
-    program.client_email,
-    program.client_phone,
-    program.program_title
-  ].join(" ").toLowerCase();
-}
-
 function selectedProgram() {
   return programs.find((program) => program.id === selectedProgramId);
 }
@@ -1259,15 +1252,15 @@ function updateSelectedClientSummary(program = selectedProgram()) {
 }
 
 function programsForCurrentClientView() {
-  const basePrograms = showingArchivedClients
-    ? archivedClientPrograms()
-    : activeClientPrograms();
+  return showingArchivedClients ? archivedClientPrograms() : activeClientPrograms();
+}
 
-  if (!clientSearchTerm) {
-    return basePrograms;
-  }
-
-  return basePrograms.filter((program) => searchableClientText(program).includes(clientSearchTerm));
+function matchingClientSuggestions() {
+  if (!clientSearchTerm) return [];
+  return programsForCurrentClientView().filter((program) =>
+    (showingArchivedClients || program.active !== false) &&
+    [program.client_name, program.client_email].join(" ").toLowerCase().includes(clientSearchTerm)
+  );
 }
 
 function archivedClientPrograms() {
@@ -4144,17 +4137,15 @@ function renderProgramHistory(email = "") {
 }
 
 function renderClientList() {
-  const select = document.getElementById("client-select");
-  const statusNode = document.getElementById("client-selector-status");
+  const input = document.getElementById("client-search-input");
   const archiveButton = document.getElementById("archive-client-button");
   const archivedButton = document.getElementById("archived-clients-button");
   const deleteArchivedButton = document.getElementById("delete-archived-client-button");
-  const visiblePrograms = programsForCurrentClientView();
   const currentProgram = selectedProgram();
 
   renderCoachHome();
 
-  if (!select) {
+  if (!input) {
     return;
   }
 
@@ -4174,43 +4165,66 @@ function renderClientList() {
     deleteArchivedButton.disabled = currentProgram?.client_archived !== true;
   }
 
-  if (visiblePrograms.length === 0) {
-    const clientType = showingArchivedClients ? "archived" : "active";
-    const message = clientSearchTerm
-      ? `No ${clientType} clients match that search.`
-      : `No ${clientType} clients to show.`;
+  document.getElementById("client-search-label").textContent = showingArchivedClients ? "Archived client name" : "Client name";
+  input.placeholder = showingArchivedClients ? "Type an archived client name..." : "Type a client name...";
+  renderClientSuggestions();
+}
 
-    select.replaceChildren(new Option(message, ""));
-    select.disabled = true;
-    if (statusNode) {
-      statusNode.textContent = message;
+function closeClientSuggestions() {
+  clientSuggestionsOpen = false;
+  activeClientSuggestion = -1;
+  renderClientSuggestions();
+}
+
+function renderClientSuggestions() {
+  const input = document.getElementById("client-search-input");
+  const list = document.getElementById("client-suggestions");
+  const status = document.getElementById("client-selector-status");
+  if (!input || !list) return;
+
+  const matches = clientSuggestionsOpen ? matchingClientSuggestions() : [];
+  const expanded = matches.length > 0;
+  list.replaceChildren();
+  list.hidden = !expanded;
+  input.setAttribute("aria-expanded", String(expanded));
+  input.removeAttribute("aria-activedescendant");
+  if (activeClientSuggestion >= matches.length) activeClientSuggestion = -1;
+
+  matches.forEach((program, index) => {
+    const option = document.createElement("li");
+    option.id = `client-suggestion-${index}`;
+    option.setAttribute("role", "option");
+    option.setAttribute("aria-selected", String(index === activeClientSuggestion));
+    option.dataset.programId = program.id;
+    const name = document.createElement("strong");
+    name.textContent = program.client_name || program.client_email;
+    const email = document.createElement("span");
+    email.textContent = program.client_email;
+    option.append(name, email);
+    list.append(option);
+    if (index === activeClientSuggestion) {
+      input.setAttribute("aria-activedescendant", option.id);
+      option.scrollIntoView({ block: "nearest" });
     }
-    return;
-  }
-
-  const placeholder = new Option(
-    showingArchivedClients ? "Choose archived client" : "Choose client",
-    ""
-  );
-  const options = visiblePrograms.map((program) => {
-    const status = program.client_archived === true
-      ? "Archived"
-      : program.active === false
-        ? "Inactive"
-        : "Active";
-    const name = program.client_name || "Client";
-    const email = program.client_email ? ` - ${program.client_email}` : "";
-
-    return new Option(`${name}${email} (${status})`, program.id);
   });
-
-  select.disabled = false;
-  select.replaceChildren(placeholder, ...options);
-  select.value = visiblePrograms.some((program) => program.id === selectedProgramId) ? selectedProgramId : "";
-  if (statusNode) {
-    const label = showingArchivedClients ? "archived client" : "client";
-    statusNode.textContent = `${visiblePrograms.length} ${label}${visiblePrograms.length === 1 ? "" : "s"} available.`;
+  if (status) {
+    const type = showingArchivedClients ? "archived" : "active";
+    status.textContent = !clientSuggestionsOpen || !clientSearchTerm ? "" : matches.length
+      ? `${matches.length} matching ${type} client${matches.length === 1 ? "" : "s"}.`
+      : `No ${type} clients match that name or email.`;
   }
+}
+
+function selectClientSuggestion(programId) {
+  const program = matchingClientSuggestions().find((item) => item.id === programId);
+  if (!program) return;
+  document.getElementById("client-search-input").value = program.client_name || program.client_email;
+  clientSearchTerm = "";
+  closeClientSuggestions();
+  fillForm(program);
+  renderClientList();
+  setAdminTab("profile");
+  adminStatus("Ready.");
 }
 
 async function loadPrograms() {
@@ -5845,6 +5859,9 @@ function handleArchivedClientsToggle() {
 
   button.addEventListener("click", () => {
     showingArchivedClients = !showingArchivedClients;
+    clientSearchTerm = "";
+    document.getElementById("client-search-input").value = "";
+    closeClientSuggestions();
 
     const visiblePrograms = programsForCurrentClientView();
     const selectedVisible = visiblePrograms.some((program) => program.id === selectedProgramId);
@@ -5857,37 +5874,51 @@ function handleArchivedClientsToggle() {
   });
 }
 
-function handleClientSelect() {
-  const select = document.getElementById("client-select");
-
-  if (!select) {
-    return;
-  }
-
-  select.addEventListener("change", () => {
-    const program = programs.find((item) => item.id === select.value);
-
-    if (!program) {
-      return;
-    }
-
-    fillForm(program);
-    renderClientList();
-    setAdminTab("profile");
-    adminStatus("Ready.");
-  });
-}
-
 function handleClientSearch() {
   const input = document.getElementById("client-search-input");
+  const list = document.getElementById("client-suggestions");
+  const container = document.getElementById("client-autocomplete");
+  if (!input || !list || !container) return;
 
-  if (!input) {
-    return;
-  }
-
-  input.addEventListener("input", () => {
+  const search = () => {
     clientSearchTerm = input.value.trim().toLowerCase();
-    renderClientList();
+    clientSuggestionsOpen = Boolean(clientSearchTerm);
+    activeClientSuggestion = -1;
+    renderClientSuggestions();
+  };
+  input.addEventListener("input", search);
+  input.addEventListener("focus", search);
+  input.addEventListener("blur", closeClientSuggestions);
+  input.addEventListener("keydown", (event) => {
+    if (event.isComposing) return;
+    if (event.key === "Escape") {
+      closeClientSuggestions();
+      return;
+    }
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      event.preventDefault();
+      clientSearchTerm = input.value.trim().toLowerCase();
+      clientSuggestionsOpen = Boolean(clientSearchTerm);
+      const count = matchingClientSuggestions().length;
+      if (!count) return;
+      activeClientSuggestion = event.key === "ArrowDown"
+        ? (activeClientSuggestion + 1) % count
+        : (activeClientSuggestion <= 0 ? count - 1 : activeClientSuggestion - 1);
+      renderClientSuggestions();
+    } else if (event.key === "Enter" && clientSuggestionsOpen) {
+      event.preventDefault();
+      const program = matchingClientSuggestions()[activeClientSuggestion];
+      if (program) selectClientSuggestion(program.id);
+    }
+  });
+  // Keep input focus until the click selects the option (including touch taps).
+  list.addEventListener("pointerdown", (event) => event.preventDefault());
+  list.addEventListener("click", (event) => {
+    const option = event.target.closest("[data-program-id]");
+    if (option) selectClientSuggestion(option.dataset.programId);
+  });
+  document.addEventListener("pointerdown", (event) => {
+    if (!container.contains(event.target)) closeClientSuggestions();
   });
 }
 
@@ -6747,7 +6778,6 @@ async function bootCoachAdmin() {
   handleSaveCoachNotes();
   handleArchiveClient();
   handleArchivedClientsToggle();
-  handleClientSelect();
   handleClientSearch();
   handleDeleteArchivedClient();
   handleCopyClientDialog();

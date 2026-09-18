@@ -30,7 +30,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=fwb-calendar-sync-1" />
+  <link rel="stylesheet" href="css/style.css?v=client-autocomplete-1" />
   <link rel="stylesheet" href="css/workout-layout.css?v=workout-preview-1" />
   <link rel="stylesheet" href="/css/fwb-design-system.css?v=reference-overhaul-1" />
 </head>
@@ -388,15 +388,14 @@
               <button class="button button-ghost" type="button" id="archived-clients-button">Archived clients</button>
             </div>
           </div>
-          <label class="client-search-control">
-            <span>Search by name or email</span>
-            <input type="search" id="client-search-input" placeholder="Start typing a client name..." autocomplete="off" />
-          </label>
-          <label class="client-select-control">
-            <span>Choose client</span>
-            <select id="client-select" autocomplete="off"></select>
-          </label>
-          <p class="client-selector-status" id="client-selector-status" aria-live="polite"></p>
+          <div class="client-autocomplete" id="client-autocomplete">
+            <label class="client-search-control" for="client-search-input">
+              <span id="client-search-label">Client name</span>
+              <input type="text" id="client-search-input" placeholder="Type a client name..." autocomplete="off" spellcheck="false" role="combobox" aria-autocomplete="list" aria-controls="client-suggestions" aria-expanded="false" aria-describedby="client-selector-status" />
+            </label>
+            <ul class="client-suggestions" id="client-suggestions" role="listbox" aria-label="Matching clients" hidden></ul>
+          </div>
+          <p class="client-selector-status" id="client-selector-status" role="status" aria-live="polite"></p>
           <section class="admin-card recent-client-logs-panel" aria-label="Recent workout logs">
             <div class="admin-section-heading compact-heading">
               <div>
@@ -1060,6 +1059,6 @@
   <script src="js/supabase-config.js?v=client-session-link-1"></script>
   <script src="js/web-notifications.js?v=notification-default-on-1"></script>
   <script src="js/workout-layout.js?v=workout-preview-1"></script>
-  <script src="js/coach-admin.js?v=workout-preview-1"></script>
+  <script src="js/coach-admin.js?v=client-autocomplete-1"></script>
 </body>
 </html>
