@@ -5412,6 +5412,10 @@ function customWorkoutDefaultExerciseCount(format) {
   }
 }
 
+function customWorkoutAddedExerciseCount(format, startsNewGroup = false) {
+  return startsNewGroup ? customWorkoutDefaultExerciseCount(format) : 1;
+}
+
 function customWorkoutPanelHasEnteredExerciseContent(panel) {
   return Array.from(panel?.querySelectorAll("[data-custom-exercise-card] [data-exercise-log]") || []).some((logElement) => {
     const name = exerciseNameInputForLog(logElement)?.value || logElement.dataset.exerciseName || "";
@@ -15420,8 +15424,10 @@ function handleWorkoutInteractions() {
       let groupIndex = format === "circuit" || format === "superset"
         ? Math.max(Number(list?.closest("[data-custom-workout-carousel]")?.dataset.customWorkoutGroup) || 0, 0)
         : 0;
+      let startsNewGroup = false;
 
       if (format === "circuit" && placement === "new-circuit" && stack) {
+        startsNewGroup = true;
         const groupNumbers = customWorkoutCarousels(panel).map((carousel) => Number(carousel.dataset.customWorkoutGroup) || 0);
         groupIndex = groupNumbers.length > 0 ? Math.max(...groupNumbers) + 1 : 0;
         stack.insertAdjacentHTML("beforeend", customWorkoutCarouselGroupMarkup(
@@ -15434,6 +15440,7 @@ function handleWorkoutInteractions() {
         lists = Array.from(panel.querySelectorAll("[data-custom-workout-list]"));
         list = lists[lists.length - 1];
       } else if (format === "superset" && customWorkoutCarouselCards(list?.closest("[data-custom-workout-carousel]")).length >= 2 && stack) {
+        startsNewGroup = true;
         const groupNumbers = customWorkoutCarousels(panel).map((carousel) => Number(carousel.dataset.customWorkoutGroup) || 0);
         groupIndex = groupNumbers.length > 0 ? Math.max(...groupNumbers) + 1 : 0;
         stack.insertAdjacentHTML("beforeend", customWorkoutCarouselGroupMarkup(
@@ -15448,39 +15455,51 @@ function handleWorkoutInteractions() {
       }
 
       if (list) {
-        const nextCode = nextCustomExerciseCode(panel);
-        const nextIndex = panel.querySelectorAll("[data-custom-exercise-card]").length + 1;
+        const addedCards = [];
+        const exerciseCount = customWorkoutAddedExerciseCount(format, startsNewGroup);
 
-        list.insertAdjacentHTML("beforeend", customWorkoutCardMarkup({
-          code: nextCode,
-          name: "",
-          group: groupIndex,
-          prescription: "Custom sets",
-          rest: ""
-        }, panel.dataset.customWorkoutTitle || customWorkoutTitle, nextIndex - 1, {
-          groupPosition: customWorkoutCarouselCards(list.closest("[data-custom-workout-carousel]")).length
-        }));
+        for (let exerciseIndex = 0; exerciseIndex < exerciseCount; exerciseIndex += 1) {
+          const nextCode = nextCustomExerciseCode(panel);
+          const nextIndex = panel.querySelectorAll("[data-custom-exercise-card]").length + 1;
+          const groupPosition = customWorkoutCarouselCards(list.closest("[data-custom-workout-carousel]")).length;
 
-        const newCard = list.querySelector("[data-custom-exercise-card]:last-child");
-        const newLogElement = newCard?.querySelector("[data-exercise-log]");
+          list.insertAdjacentHTML("beforeend", customWorkoutCardMarkup({
+            code: nextCode,
+            name: "",
+            group: groupIndex,
+            groupType: format,
+            prescription: "Custom sets",
+            rest: ""
+          }, panel.dataset.customWorkoutTitle || customWorkoutTitle, nextIndex - 1, {
+            groupPosition,
+            format,
+            panelFormat: format
+          }));
 
-        if (isDeckRequest && newCard) {
-          newCard.classList.add("is-entering-deck");
-          window.setTimeout(() => newCard.classList.remove("is-entering-deck"), 420);
-        }
+          const newCard = list.querySelector("[data-custom-exercise-card]:last-child");
+          const newLogElement = newCard?.querySelector("[data-exercise-log]");
 
-        if (newLogElement) {
-          const sharedDate = panel.querySelector("[data-workout-date]")?.value || todayDate();
-          const hiddenDate = newLogElement.querySelector("[data-log-date]");
-          if (hiddenDate) {
-            hiddenDate.value = sharedDate;
+          if (isDeckRequest && newCard) {
+            newCard.classList.add("is-entering-deck");
+            window.setTimeout(() => newCard.classList.remove("is-entering-deck"), 420);
           }
-          updateExerciseLogField(newLogElement);
+
+          if (newLogElement) {
+            const sharedDate = panel.querySelector("[data-workout-date]")?.value || todayDate();
+            const hiddenDate = newLogElement.querySelector("[data-log-date]");
+            if (hiddenDate) {
+              hiddenDate.value = sharedDate;
+            }
+            updateExerciseLogField(newLogElement);
+          }
+
+          if (newCard) addedCards.push(newCard);
         }
 
         syncCustomWorkoutFormatMarkers(panel);
-        syncCustomWorkoutCarousel(panel, { focusCard: newCard });
-        customWorkoutEditableNameInput(newCard)?.focus();
+        const focusCard = addedCards[0];
+        syncCustomWorkoutCarousel(panel, { focusCard });
+        customWorkoutEditableNameInput(focusCard)?.focus();
         persistCustomWorkoutDraftFromPanel(panel);
       }
       return;

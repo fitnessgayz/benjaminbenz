@@ -183,6 +183,28 @@ test("fresh grouped workouts start with their exact default exercise counts", ()
   );
 });
 
+test("new superset and circuit groups start with complete default exercise counts", () => {
+  const defaultCountSource = sourceForFunction("customWorkoutDefaultExerciseCount");
+  const addedCountSource = sourceForFunction("customWorkoutAddedExerciseCount");
+  const addedCount = Function(
+    "normalizeCustomWorkoutFormat",
+    `${defaultCountSource}; ${addedCountSource}; return customWorkoutAddedExerciseCount;`
+  )((value) => ["superset", "circuit"].includes(value) ? value : "single");
+  const interactionStart = portal.indexOf("if (addCustomExerciseButton) {");
+  const interactionEnd = portal.indexOf("if (addAssignedExerciseButton) {", interactionStart);
+  const interaction = portal.slice(interactionStart, interactionEnd);
+
+  assert.equal(addedCount("superset", true), 2);
+  assert.equal(addedCount("circuit", true), 3);
+  assert.equal(addedCount("superset", false), 1);
+  assert.equal(addedCount("circuit", false), 1);
+  assert.match(interaction, /format === "circuit" && placement === "new-circuit"[\s\S]*?startsNewGroup = true/);
+  assert.match(interaction, /format === "superset"[\s\S]*?length >= 2[\s\S]*?startsNewGroup = true/);
+  assert.match(interaction, /const exerciseCount = customWorkoutAddedExerciseCount\(format, startsNewGroup\)/);
+  assert.match(interaction, /for \(let exerciseIndex = 0; exerciseIndex < exerciseCount; exerciseIndex \+= 1\)/);
+  assert.match(interaction, /const focusCard = addedCards\[0\]/);
+});
+
 test("the exercise-finished prompt offers two direct workout choices", () => {
   const promptMarkup = sourceForFunction("nextExercisePromptMarkup");
   const interactionSource = sourceForFunction("handleWorkoutInteractions");
