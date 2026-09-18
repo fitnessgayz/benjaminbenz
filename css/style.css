@@ -17397,6 +17397,18 @@ body.client-dashboard-page {
   background: transparent;
 }
 
+.dashboard-page .client-workout-resume-card .client-workout-cancel-button {
+  border-color: #777b72;
+  color: #fff;
+  background: transparent;
+}
+
+.dashboard-page .client-workout-resume-card .client-workout-cancel-button:hover,
+.dashboard-page .client-workout-resume-card .client-workout-cancel-button:focus-visible {
+  border-color: #fff;
+  background: rgba(255, 255, 255, .1);
+}
+
 @media (max-width: 620px) {
   .client-workout-resume-card {
     grid-template-columns: minmax(0, 1fr);

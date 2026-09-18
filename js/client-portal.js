@@ -7929,6 +7929,31 @@ function resumeActiveWorkout() {
   activateClientWorkoutPanel(panelIndex, { focus: true, scroll: true });
 }
 
+function cancelActiveWorkout() {
+  if (!workoutElapsedTimerState) {
+    return;
+  }
+
+  const title = workoutElapsedTimerState.workoutTitle || "this workout";
+  if (!window.confirm(
+    `Cancel ${title}? The workout timer will be cleared so you can choose another workout. This will not mark the workout complete. Any sets already saved will stay in your history.`
+  )) {
+    return;
+  }
+
+  closeRestTimer();
+  customWorkoutGroupedRestAction = null;
+  resetRestTimer();
+  finishWorkoutElapsedTimer();
+  clientPreviewProgramSelected = false;
+  const picker = document.getElementById("client-workout-tabs");
+  if (picker) {
+    picker.innerHTML = clientWorkoutListMarkup(clientWorkoutPickerItems(currentProgram.workouts));
+  }
+  setClientDashboardTab("workouts");
+  showClientWorkoutPicker();
+}
+
 function restoreWorkoutElapsedTimer() {
   const storedState = readWorkoutElapsedTimerState();
   const clientEmail = workoutElapsedTimerClientEmail();
@@ -10914,7 +10939,7 @@ function clientWorkoutListMarkup(workouts) {
     <button type="button" class="workout-text-button" data-preview-programs>← Programs</button>
     <h3>${escapeHtml(currentProgram?.program_title || "Your workouts")}</h3>
     <p>Drag exercises to reorder them. Use each exercise’s menu to edit, substitute, or delete.</p>
-    ${workoutElapsedTimerState ? '<p>Finish your current workout before editing exercises.</p>' : ""}
+    ${workoutElapsedTimerState ? '<p>Finish or cancel your current workout before editing exercises.</p>' : ""}
     <p data-workout-layout-status role="status" aria-live="polite"></p>
   </div><div class="workout-preview-list">${assigned.map((workout, position) => {
     const index = workout.panelIndex;
@@ -11008,7 +11033,7 @@ function handleClientWorkoutPreview() {
     if (programButton) {
       const program = clientAvailablePrograms[Number(programButton.dataset.previewProgram)];
       if (workoutElapsedTimerState && program && program.id !== currentProgram.id) {
-        window.alert("Finish your current workout before switching programs.");
+        window.alert("Finish or cancel your current workout before switching programs.");
         return;
       }
       clientPreviewProgramSelected = true;
@@ -11035,7 +11060,7 @@ function handleClientWorkoutPreview() {
       const panel = document.getElementById(`client-workout-panel-${index}`);
       const title = panel?.querySelector("[data-workout-start]")?.dataset.workoutTitle;
       if (workoutElapsedTimerState && workoutElapsedTimerState.workoutTitle !== title) {
-        document.querySelector("[data-workout-layout-status]").textContent = "Finish or resume your current workout before starting another.";
+        document.querySelector("[data-workout-layout-status]").textContent = "Finish or cancel your current workout before starting another.";
         return;
       }
       activateClientWorkoutPanel(index);
@@ -11266,7 +11291,7 @@ function showClientWorkoutPicker(options = {}) {
         behavior: window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches ? "auto" : "smooth",
         block: "start"
       });
-      picker.querySelector("[data-client-workout-picker-deck]")?.focus({ preventScroll: true });
+      picker.querySelector("[data-client-workout-picker-deck], [data-preview-program], [data-preview-toggle]")?.focus({ preventScroll: true });
     });
   }
 }
@@ -14895,6 +14920,7 @@ function handleWorkoutInteractions() {
     const nextExerciseFinishButton = event.target.closest("[data-next-exercise-finish]");
     const workoutStartButton = event.target.closest("[data-workout-start]");
     const resumeActiveWorkoutButton = event.target.closest("[data-resume-active-workout]");
+    const cancelActiveWorkoutButton = event.target.closest("[data-cancel-active-workout]");
     const workoutElapsedToggleButton = event.target.closest("[data-workout-elapsed-toggle]");
     const workoutElapsedResetButton = event.target.closest("[data-workout-elapsed-reset]");
     const workoutElapsedCompactButton = event.target.closest("[data-workout-elapsed-compact]");
@@ -15020,6 +15046,11 @@ function handleWorkoutInteractions() {
 
     if (resumeActiveWorkoutButton) {
       resumeActiveWorkout();
+      return;
+    }
+
+    if (cancelActiveWorkoutButton) {
+      cancelActiveWorkout();
       return;
     }
 

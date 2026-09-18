@@ -30,7 +30,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=workout-preview-1" />
+  <link rel="stylesheet" href="css/style.css?v=workout-preview-1&amp;cancel-workout=1" />
   <link rel="stylesheet" href="css/custom-workout-mobile-fix.css?v=assigned-layout-3" />
   <link rel="stylesheet" href="css/workout-layout.css?v=exercise-preview-2" />
   <link rel="stylesheet" href="css/client-weekly-activity.css?v=1" />
@@ -153,7 +153,10 @@
                 <h3 data-workout-resume-title>Workout</h3>
                 <p><span data-workout-resume-time>00:00</span> elapsed · Your workout is ready to continue.</p>
               </div>
-              <button class="button button-dark" type="button" data-resume-active-workout>Resume workout <span aria-hidden="true">→</span></button>
+              <div class="client-workout-resume-actions">
+                <button class="button button-dark" type="button" data-resume-active-workout>Resume workout <span aria-hidden="true">→</span></button>
+                <button class="button client-workout-cancel-button" type="button" data-cancel-active-workout>Cancel workout</button>
+              </div>
             </article>
             <section class="client-home-snapshot-section" aria-labelledby="client-home-snapshot-title">
               <div class="client-home-snapshot-heading">
@@ -372,7 +375,10 @@
               <h3 data-workout-resume-title>Workout</h3>
               <p><span data-workout-resume-time>00:00</span> elapsed · Continue where you stopped.</p>
             </div>
-            <button class="button button-dark" type="button" data-resume-active-workout>Resume workout <span aria-hidden="true">→</span></button>
+            <div class="client-workout-resume-actions">
+              <button class="button button-dark" type="button" data-resume-active-workout>Resume workout <span aria-hidden="true">→</span></button>
+              <button class="button client-workout-cancel-button" type="button" data-cancel-active-workout>Cancel workout</button>
+            </div>
           </article>
           <div class="client-workout-picker" id="client-workout-tabs" aria-label="Choose a workout"></div>
           <button class="client-workout-selection-summary" id="client-workout-selection-summary" type="button" data-client-workout-picker-back aria-label="Back to workout choices" hidden>
@@ -1013,6 +1019,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@zxing/browser@0.2.1/umd/zxing-browser.min.js" integrity="sha384-HRtzk9lZgkbSgvUyQrnfC/GxiXZgwaNyD7hC9wcXlsBpDhkS80ISl73juef2FRuf" crossorigin="anonymous"></script>
   <script src="js/workout-layout.js?v=exercise-preview-2"></script>
   <script src="js/client-weekly-activity.js?v=1"></script>
-  <script src="js/client-portal.js?v=straight-set-cards-1"></script>
+  <script src="js/client-portal.js?v=straight-set-cards-1&amp;cancel-workout=1"></script>
 </body>
 </html>
