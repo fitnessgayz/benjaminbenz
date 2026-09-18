@@ -75,6 +75,55 @@ function arrayValue(value: unknown) {
   return Array.isArray(value) ? value : [];
 }
 
+function youtubeExerciseSearchUrl(exerciseName: unknown) {
+  const name = stringValue(exerciseName) || "workout";
+
+  return `https://www.youtube.com/results?search_query=${encodeURIComponent(`${name} exercise demo`)}`;
+}
+
+function youtubeExerciseDemoUrl(exercise: Record<string, unknown>) {
+  let rawUrl = stringValue(
+    exercise.video ||
+    exercise.videoUrl ||
+    exercise.video_url ||
+    exercise.youtube_url
+  );
+
+  if (/^(www\.|m\.)?(youtube\.com|youtube-nocookie\.com|youtu\.be)\//i.test(rawUrl)) {
+    rawUrl = `https://${rawUrl}`;
+  }
+
+  try {
+    const url = new URL(rawUrl);
+    const host = url.hostname.replace(/^www\./i, "").toLowerCase();
+    const allowedHosts = new Set(["youtube.com", "youtube-nocookie.com", "m.youtube.com", "youtu.be"]);
+
+    if (["http:", "https:"].includes(url.protocol) && allowedHosts.has(host)) {
+      return url.href;
+    }
+  } catch {
+    // Missing and invalid URLs are replaced with a YouTube demo search.
+  }
+
+  return youtubeExerciseSearchUrl(exercise.name);
+}
+
+function cleanWorkout(value: unknown) {
+  const workout = objectValue(value);
+
+  return {
+    ...workout,
+    exercises: arrayValue(workout.exercises).map((value) => {
+      const exercise = objectValue(value);
+
+      return {
+        ...exercise,
+        video: youtubeExerciseDemoUrl(exercise)
+      };
+    })
+  };
+}
+
 function cleanProgramPayload(value: unknown) {
   const source = objectValue(value);
   const clientEmail = normalizeEmail(source.client_email);
@@ -100,7 +149,7 @@ function cleanProgramPayload(value: unknown) {
     nutrition_plan: objectValue(source.nutrition_plan),
     coach_note_title: stringValue(source.coach_note_title),
     coach_note_body: stringValue(source.coach_note_body),
-    workouts: arrayValue(source.workouts),
+    workouts: arrayValue(source.workouts).map(cleanWorkout),
     active: booleanValue(source.active, true),
     client_archived: booleanValue(source.client_archived, false)
   };

@@ -1309,7 +1309,7 @@ function parseExercises(value) {
       const fifthFieldIsVideo = /^https?:\/\//i.test(musclesOrVideo) ||
         /^(www\.|m\.)?(youtube\.com|youtube-nocookie\.com|youtu\.be)\//i.test(musclesOrVideo);
       const muscles = fifthFieldIsVideo ? "" : musclesOrVideo;
-      const video = fifthFieldIsVideo ? musclesOrVideo : videoUrl || youtubeExerciseSearchUrl(name);
+      const video = youtubeExerciseDemoUrl(fifthFieldIsVideo ? musclesOrVideo : videoUrl, name);
 
       return { code, name, prescription, rest, muscles, video };
     });
@@ -1325,6 +1325,28 @@ function youtubeExerciseSearchUrl(exerciseName) {
   return `https://www.youtube.com/results?search_query=${encodeURIComponent(`${name} exercise demo`)}`;
 }
 
+function youtubeExerciseDemoUrl(value, exerciseName) {
+  let rawUrl = String(value || "").trim();
+
+  if (/^(www\.|m\.)?(youtube\.com|youtube-nocookie\.com|youtu\.be)\//i.test(rawUrl)) {
+    rawUrl = `https://${rawUrl}`;
+  }
+
+  try {
+    const url = new URL(rawUrl);
+    const host = url.hostname.replace(/^www\./i, "").toLowerCase();
+    const allowedHosts = new Set(["youtube.com", "youtube-nocookie.com", "m.youtube.com", "youtu.be"]);
+
+    if (["http:", "https:"].includes(url.protocol) && allowedHosts.has(host)) {
+      return url.href;
+    }
+  } catch (_error) {
+    // A missing or invalid link receives a dependable YouTube search below.
+  }
+
+  return youtubeExerciseSearchUrl(exerciseName || "workout");
+}
+
 function exercisesToText(exercises) {
   if (!Array.isArray(exercises)) {
     return "";
@@ -1338,15 +1360,13 @@ function exercisesToText(exercises) {
         exercise.prescription || "",
         exercise.rest || ""
       ];
-      const video = exercise.video || exercise.videoUrl || exercise.video_url || exercise.youtube_url || "";
+      const video = youtubeExerciseDemoUrl(
+        exercise.video || exercise.videoUrl || exercise.video_url || exercise.youtube_url,
+        exercise.name
+      );
 
-      if (exercise.muscles || video) {
-        fields.push(exercise.muscles);
-      }
-
-      if (video) {
-        fields.push(video);
-      }
+      fields.push(exercise.muscles || "");
+      fields.push(video);
 
       return fields.join(" | ");
     })
