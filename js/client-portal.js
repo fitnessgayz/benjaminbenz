@@ -10381,8 +10381,7 @@ function customWorkoutPanelMarkup(index) {
         <p class="custom-workout-reset-status" data-custom-workout-reset-status role="status" aria-live="polite" hidden></p>
         ${customWorkoutCarouselMarkup(format, workoutStorageTitle)}
         <div class="custom-workout-add-actions" data-custom-workout-add-actions>
-          <button class="button button-ghost custom-workout-add-bottom" type="button" data-add-custom-exercise data-custom-exercise-placement="current">${format === "circuit" ? "Add to current circuit" : "Add exercise"}</button>
-          <button class="button button-ghost custom-workout-add-bottom" type="button" data-add-custom-exercise data-custom-exercise-placement="new-circuit" ${format === "circuit" ? "" : "hidden"}>Start new circuit</button>
+          <button class="button button-ghost custom-workout-add-bottom" type="button" data-add-custom-exercise data-custom-exercise-placement="current">${format === "single" ? "Add exercise" : format === "superset" ? "Add superset" : "Add circuit"}</button>
         </div>
         ${cardioLogFields(workoutStorageTitle, { showDate: false })}
         <div data-custom-workout-default-finish ${format === "single" ? "" : "hidden"}>
@@ -10622,12 +10621,8 @@ function updateCustomWorkoutFormat(panel, value, options = {}) {
   }
 
   const addCurrentButton = panel.querySelector('[data-custom-workout-add-actions] [data-add-custom-exercise][data-custom-exercise-placement="current"]');
-  const addCircuitButton = panel.querySelector('[data-add-custom-exercise][data-custom-exercise-placement="new-circuit"]');
   if (addCurrentButton) {
-    addCurrentButton.textContent = format === "circuit" ? "Add to current circuit" : "Add exercise";
-  }
-  if (addCircuitButton) {
-    addCircuitButton.hidden = format !== "circuit";
+    addCurrentButton.textContent = format === "single" ? "Add exercise" : format === "superset" ? "Add superset" : "Add circuit";
   }
   const defaultFinish = panel.querySelector("[data-custom-workout-default-finish]");
   if (defaultFinish) {
@@ -15382,39 +15377,41 @@ function handleWorkoutInteractions() {
       }
 
       const format = normalizeCustomWorkoutFormat(panel?.dataset.customWorkoutFormat || activeCustomWorkoutFormat);
-      const placement = addCustomExerciseButton.dataset.customExercisePlacement || "current";
       const stack = panel?.querySelector("[data-custom-workout-carousel-stack]");
-      let lists = Array.from(panel?.querySelectorAll("[data-custom-workout-list]") || []);
-      let list = lists[lists.length - 1];
-      let groupIndex = format === "circuit" || format === "superset"
-        ? Math.max(Number(list?.closest("[data-custom-workout-carousel]")?.dataset.customWorkoutGroup) || 0, 0)
-        : 0;
-
-      if (format === "circuit" && placement === "new-circuit" && stack) {
-        const groupNumbers = customWorkoutCarousels(panel).map((carousel) => Number(carousel.dataset.customWorkoutGroup) || 0);
-        groupIndex = groupNumbers.length > 0 ? Math.max(...groupNumbers) + 1 : 0;
+      if (format !== "single" && stack) {
+        const groupNumbers = customWorkoutCarousels(panel).map(carousel => Number(carousel.dataset.customWorkoutGroup) || 0);
+        const groupIndex = groupNumbers.length ? Math.max(...groupNumbers) + 1 : 0;
+        const startIndex = panel.querySelectorAll("[data-custom-exercise-card]").length;
+        const firstCodeNumber = Number(nextCustomExerciseCode(panel).match(/\d+/)?.[0]) || 1;
+        const exercises = Array.from({ length: customWorkoutDefaultExerciseCount(format) }, (_, index) => ({
+          code: customExerciseCode(firstCodeNumber - 1 + index),
+          name: "",
+          group: groupIndex,
+          groupType: format,
+          prescription: "Custom sets",
+          rest: ""
+        }));
         stack.insertAdjacentHTML("beforeend", customWorkoutCarouselGroupMarkup(
-          format,
-          [],
-          groupIndex,
-          0,
-          panel.dataset.customWorkoutTitle || customWorkoutTitle
+          format, exercises, groupIndex, startIndex,
+          panel.dataset.customWorkoutTitle || customWorkoutTitle,
+          { panelFormat: format, isLastGroup: true }
         ));
-        lists = Array.from(panel.querySelectorAll("[data-custom-workout-list]"));
-        list = lists[lists.length - 1];
-      } else if (format === "superset" && customWorkoutCarouselCards(list?.closest("[data-custom-workout-carousel]")).length >= 2 && stack) {
-        const groupNumbers = customWorkoutCarousels(panel).map((carousel) => Number(carousel.dataset.customWorkoutGroup) || 0);
-        groupIndex = groupNumbers.length > 0 ? Math.max(...groupNumbers) + 1 : 0;
-        stack.insertAdjacentHTML("beforeend", customWorkoutCarouselGroupMarkup(
-          format,
-          [],
-          groupIndex,
-          0,
-          panel.dataset.customWorkoutTitle || customWorkoutTitle
-        ));
-        lists = Array.from(panel.querySelectorAll("[data-custom-workout-list]"));
-        list = lists[lists.length - 1];
+        const newCards = Array.from(stack.lastElementChild.querySelectorAll("[data-custom-exercise-card]"));
+        const sharedDate = panel.querySelector("[data-workout-date]")?.value || todayDate();
+        newCards.forEach(card => {
+          const logElement = card.querySelector("[data-exercise-log]");
+          const date = logElement?.querySelector("[data-log-date]");
+          if (date) date.value = sharedDate;
+          if (logElement) updateExerciseLogField(logElement);
+        });
+        syncCustomWorkoutFormatMarkers(panel);
+        syncCustomWorkoutCarousel(panel, { focusCard: newCards[0] });
+        persistCustomWorkoutDraftFromPanel(panel);
+        return;
       }
+      const lists = Array.from(panel?.querySelectorAll("[data-custom-workout-list]") || []);
+      const list = lists[lists.length - 1];
+      const groupIndex = 0;
 
       if (list) {
         const nextCode = nextCustomExerciseCode(panel);
