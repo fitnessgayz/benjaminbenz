@@ -34,6 +34,9 @@ let coachWorkoutSaveEpoch = 0;
 let coachWorkoutDraftOwner = "";
 let coachWorkoutActiveContext = { clientEmail: "", entryDate: "" };
 const coachWorkoutDraftMemory = new Map();
+let coachWorkoutPreviousHistory = new Map();
+let coachWorkoutPreviousHistoryStatus = "idle";
+let coachWorkoutPreviousHistoryRequest = 0;
 
 function normalizeCoachWorkoutEmail(value) {
   return String(value || "").trim().toLowerCase();
@@ -534,6 +537,139 @@ function coachWorkoutGroupedNameEditorMarkup(group, groupIndex) {
   `;
 }
 
+function normalizeCoachWorkoutHistoryName(value) {
+  return String(value || "").trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+function coachWorkoutHistorySessionKey(row) {
+  return String(row?.workout_session_id || "").trim()
+    || `${String(row?.entry_date || "")}|${String(row?.workout_title || "")}`;
+}
+
+function coachWorkoutHistoryTimestamp(row) {
+  const timestamp = Date.parse(row?.completed_at || row?.created_at || `${row?.entry_date || ""}T00:00:00`);
+  return Number.isFinite(timestamp) ? timestamp : 0;
+}
+
+function buildCoachWorkoutPreviousHistory(rows = []) {
+  const sessionsByExercise = new Map();
+
+  rows.forEach((row) => {
+    const exerciseName = String(row?.exercise_name || "").trim();
+    const exerciseKey = normalizeCoachWorkoutHistoryName(exerciseName);
+    const sessionKey = coachWorkoutHistorySessionKey(row);
+
+    if (!exerciseKey || !row?.entry_date || !sessionKey) return;
+
+    if (!sessionsByExercise.has(exerciseKey)) {
+      sessionsByExercise.set(exerciseKey, new Map());
+    }
+
+    const exerciseSessions = sessionsByExercise.get(exerciseKey);
+    const session = exerciseSessions.get(sessionKey) || {
+      exerciseName,
+      entryDate: String(row.entry_date),
+      workoutTitle: String(row.workout_title || "Workout"),
+      timestamp: 0,
+      rows: []
+    };
+
+    session.timestamp = Math.max(session.timestamp, coachWorkoutHistoryTimestamp(row));
+    session.rows.push(row);
+    exerciseSessions.set(sessionKey, session);
+  });
+
+  const history = new Map();
+
+  sessionsByExercise.forEach((sessions, exerciseKey) => {
+    const latest = Array.from(sessions.values()).sort((first, second) => (
+      second.entryDate.localeCompare(first.entryDate) || second.timestamp - first.timestamp
+    ))[0];
+
+    if (!latest) return;
+
+    latest.rows.sort((first, second) => {
+      const firstWarmUp = coachWorkoutSetType(first.set_type, first.set_number) === coachWorkoutWarmUpSetType;
+      const secondWarmUp = coachWorkoutSetType(second.set_type, second.set_number) === coachWorkoutWarmUpSetType;
+
+      return Number(secondWarmUp) - Number(firstWarmUp)
+        || Number(first.set_number || 0) - Number(second.set_number || 0);
+    });
+    history.set(exerciseKey, latest);
+  });
+
+  return history;
+}
+
+function coachWorkoutHistoryDateLabel(value) {
+  const date = new Date(`${String(value || "")}T12:00:00`);
+
+  if (Number.isNaN(date.getTime())) return String(value || "Previous session");
+
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric"
+  }).format(date);
+}
+
+function coachWorkoutHistoryValue(value) {
+  const number = Number(value);
+
+  return Number.isFinite(number) ? String(Number(number.toFixed(2))) : "—";
+}
+
+function coachWorkoutPreviousExerciseMarkup(exercise, groupIndex, position) {
+  const exerciseName = exercise.querySelector("[data-coach-workout-name]")?.value.trim() || "";
+  const history = coachWorkoutPreviousHistory.get(normalizeCoachWorkoutHistoryName(exerciseName));
+  const code = coachWorkoutGroupedExerciseCode(groupIndex, position);
+
+  if (!exerciseName) {
+    return `<p class="coach-workout-history-empty">Enter an exercise name to see its previous workout.</p>`;
+  }
+
+  if (coachWorkoutPreviousHistoryStatus === "loading") {
+    return `<p class="coach-workout-history-empty">Checking previous workout history…</p>`;
+  }
+
+  if (coachWorkoutPreviousHistoryStatus === "error") {
+    return `<p class="coach-workout-history-empty">Previous workout history is temporarily unavailable.</p>`;
+  }
+
+  if (!history) {
+    return `<p class="coach-workout-history-empty"><strong>${escapeCoachWorkoutHtml(code)} · ${escapeCoachWorkoutHtml(exerciseName)}</strong><span>No earlier workout found.</span></p>`;
+  }
+
+  return `
+    <article class="coach-workout-history-exercise">
+      <header>
+        <strong>${escapeCoachWorkoutHtml(code)} · ${escapeCoachWorkoutHtml(exerciseName)}</strong>
+        <span>${escapeCoachWorkoutHtml(coachWorkoutHistoryDateLabel(history.entryDate))} · ${escapeCoachWorkoutHtml(history.workoutTitle)}</span>
+      </header>
+      <div class="coach-workout-history-sets">
+        ${history.rows.map((row, index) => {
+          const isWarmUp = coachWorkoutSetType(row.set_type, row.set_number) === coachWorkoutWarmUpSetType;
+          const setLabel = isWarmUp ? `W${index + 1}` : String(row.set_number || index + 1);
+          const rir = row.effort_scale === "rir" && row.effort_value !== null && row.effort_value !== undefined
+            ? `RIR ${coachWorkoutHistoryValue(row.effort_value)}`
+            : "RIR —";
+
+          return `<div><b>${escapeCoachWorkoutHtml(setLabel)}</b><span>${escapeCoachWorkoutHtml(coachWorkoutHistoryValue(row.weight_used))} lb</span><span>${escapeCoachWorkoutHtml(coachWorkoutHistoryValue(row.reps))} reps</span><span>${escapeCoachWorkoutHtml(rir)}</span></div>`;
+        }).join("")}
+      </div>
+    </article>
+  `;
+}
+
+function coachWorkoutGroupedHistoryMarkup(group, groupIndex) {
+  return `
+    <section class="coach-workout-grouped-history" data-coach-grouped-history>
+      <header><strong>Previous workout</strong><span>Latest earlier session</span></header>
+      ${group.map(({ exercise }, position) => coachWorkoutPreviousExerciseMarkup(exercise, groupIndex, position)).join("")}
+    </section>
+  `;
+}
+
 function coachWorkoutGroupedSectionsMarkup(group) {
   const warmUps = group.flatMap(({ exercise, exerciseIndex }, position) => (
     coachWorkoutSetRowsByType(exercise, coachWorkoutWarmUpSetType).map((row, warmUpIndex) => ({
@@ -622,6 +758,7 @@ function coachWorkoutGroupedCardMarkup(format, group, groupIndex) {
             `).join("")}
           </div>
         </details>
+        ${coachWorkoutGroupedHistoryMarkup(group, groupIndex)}
         <footer class="coach-workout-grouped-actions">
           <button type="button" data-coach-grouped-add-round>+ Add round</button>
           <button type="button" data-coach-grouped-delete-round${roundCount <= 1 ? " disabled" : ""}>Delete round</button>
@@ -657,6 +794,71 @@ function refreshCoachWorkoutGroupedProgress(card) {
   const progress = card?.querySelector("[data-coach-grouped-progress]");
 
   if (progress) progress.textContent = `${completed} / ${rows.length} complete`;
+}
+
+function refreshCoachWorkoutPreviousHistoryCards() {
+  document.querySelectorAll("[data-coach-workout-group-card]").forEach((card) => {
+    const indexes = coachWorkoutGroupedExerciseIndexes(card);
+    const format = card.dataset.coachWorkoutFormat || coachWorkoutFormatValue();
+    const group = indexes.map((exerciseIndex) => ({
+      exercise: coachWorkoutExerciseElements()[exerciseIndex],
+      exerciseIndex
+    })).filter(({ exercise }) => exercise);
+    const visibleGroupIndex = format === "single" ? indexes[0] : (
+      format === "superset" ? Math.floor((indexes[0] || 0) / 2) : 0
+    );
+    const history = card.querySelector("[data-coach-grouped-history]");
+
+    if (history && group.length > 0) {
+      history.outerHTML = coachWorkoutGroupedHistoryMarkup(
+        group,
+        Number.isFinite(visibleGroupIndex) ? visibleGroupIndex : 0
+      );
+    }
+  });
+}
+
+async function loadCoachWorkoutPreviousHistory(context = currentCoachWorkoutContext()) {
+  const normalizedContext = normalizeCoachWorkoutContext(context);
+  const requestId = ++coachWorkoutPreviousHistoryRequest;
+
+  coachWorkoutPreviousHistory = new Map();
+
+  if (!coachWorkoutSupabase || !normalizedContext.clientEmail || !normalizedContext.entryDate) {
+    coachWorkoutPreviousHistoryStatus = "idle";
+    refreshCoachWorkoutPreviousHistoryCards();
+    return { rows: 0, skipped: true };
+  }
+
+  coachWorkoutPreviousHistoryStatus = "loading";
+  refreshCoachWorkoutPreviousHistoryCards();
+
+  const { data, error } = await coachWorkoutSupabase
+    .from("client_workout_logs")
+    .select("entry_date,workout_title,workout_session_id,exercise_name,set_number,weight_used,reps,effort_scale,effort_value,set_type,completed_at,created_at")
+    .eq("client_email", normalizedContext.clientEmail)
+    .lt("entry_date", normalizedContext.entryDate)
+    .order("entry_date", { ascending: false })
+    .limit(1000);
+
+  if (
+    requestId !== coachWorkoutPreviousHistoryRequest ||
+    !coachWorkoutContextsMatch(normalizedContext, currentCoachWorkoutContext())
+  ) {
+    return { rows: 0, stale: true };
+  }
+
+  if (error) {
+    coachWorkoutPreviousHistoryStatus = "error";
+    coachWorkoutPreviousHistory = new Map();
+    refreshCoachWorkoutPreviousHistoryCards();
+    return { rows: 0, error };
+  }
+
+  coachWorkoutPreviousHistory = buildCoachWorkoutPreviousHistory(data || []);
+  coachWorkoutPreviousHistoryStatus = "ready";
+  refreshCoachWorkoutPreviousHistoryCards();
+  return { rows: (data || []).length };
 }
 
 function renderCoachWorkoutCardLayout() {
@@ -1109,6 +1311,8 @@ function switchCoachWorkoutContext() {
       true
     );
   }
+
+  void loadCoachWorkoutPreviousHistory(nextContext);
 
   return true;
 }
@@ -1909,6 +2113,7 @@ function handleCoachWorkoutForm() {
 
       if (canonicalName) canonicalName.value = event.target.value;
       if (keyName) keyName.textContent = event.target.value.trim() || `Exercise ${exerciseIndex + 1}`;
+      refreshCoachWorkoutPreviousHistoryCards();
       renderCoachWorkoutSuggestions(event.target);
       return;
     }
@@ -2093,6 +2298,7 @@ async function bootCoachWorkoutPage() {
       coachWorkoutActiveContext = currentCoachWorkoutContext();
       storeCoachWorkoutActiveContext(coachWorkoutActiveContext);
     }
+    void loadCoachWorkoutPreviousHistory(coachWorkoutActiveContext);
     document.getElementById("coach-workout-access-status")?.setAttribute("hidden", "");
     document.getElementById("coach-workout-log-form")?.removeAttribute("hidden");
     const signOutButton = document.querySelector("[data-coach-workout-sign-out]");

@@ -148,6 +148,70 @@ test("uses a compact collapsible exercise-name editor for grouped workouts", () 
   assert.match(loggerScript, /data-coach-grouped-name-input/);
 });
 
+test("shows the latest earlier exercise history at the bottom of every workout card", () => {
+  const groupedMarkup = sourceForFunction("coachWorkoutGroupedCardMarkup");
+  const historyMarkup = sourceForFunction("coachWorkoutGroupedHistoryMarkup");
+  const exerciseHistoryMarkup = sourceForFunction("coachWorkoutPreviousExerciseMarkup");
+
+  assert.ok(
+    groupedMarkup.indexOf("coachWorkoutGroupedHistoryMarkup") > groupedMarkup.indexOf("coach-workout-grouped-notes"),
+    "History should render below exercise notes",
+  );
+  assert.ok(
+    groupedMarkup.indexOf("coachWorkoutGroupedHistoryMarkup") < groupedMarkup.indexOf("coach-workout-grouped-actions"),
+    "History should render before the bottom card actions",
+  );
+  assert.match(historyMarkup, /Previous workout/);
+  assert.match(historyMarkup, /Latest earlier session/);
+  assert.match(exerciseHistoryMarkup, /coachWorkoutPreviousHistory\.get/);
+  assert.match(exerciseHistoryMarkup, /No earlier workout found/);
+  assert.match(exerciseHistoryMarkup, /weight_used/);
+  assert.match(exerciseHistoryMarkup, /row\.reps/);
+  assert.match(exerciseHistoryMarkup, /effort_value/);
+  assert.match(styles, /\.coach-workout-grouped-history\s*\{[\s\S]*?border-top:/);
+});
+
+test("selects the latest previous session for each normalized exercise name", () => {
+  const historyBuilder = Function(`
+    const coachWorkoutWarmUpSetNumberBase = 1000;
+    const coachWorkoutWarmUpSetType = "warm_up";
+    const coachWorkoutWorkingSetType = "working";
+    ${sourceForFunction("coachWorkoutSetType")}
+    ${sourceForFunction("normalizeCoachWorkoutHistoryName")}
+    ${sourceForFunction("coachWorkoutHistorySessionKey")}
+    ${sourceForFunction("coachWorkoutHistoryTimestamp")}
+    ${sourceForFunction("buildCoachWorkoutPreviousHistory")}
+    return buildCoachWorkoutPreviousHistory;
+  `)();
+  const history = historyBuilder([
+    { entry_date: "2026-09-01", workout_title: "Upper", exercise_name: "Cable Chest Fly", set_number: 1, set_type: "working", weight_used: 15, reps: 12, created_at: "2026-09-01T10:00:00Z" },
+    { entry_date: "2026-09-12", workout_title: "Chest", exercise_name: "  CABLE   CHEST FLY ", set_number: 1, set_type: "working", weight_used: 20, reps: 10, created_at: "2026-09-12T10:01:00Z" },
+    { entry_date: "2026-09-12", workout_title: "Chest", exercise_name: "Cable Chest Fly", set_number: 1001, set_type: "warm_up", weight_used: 12.5, reps: 12, created_at: "2026-09-12T10:00:00Z" },
+  ]);
+  const cableFly = history.get("cable chest fly");
+
+  assert.equal(cableFly.entryDate, "2026-09-12");
+  assert.equal(cableFly.workoutTitle, "Chest");
+  assert.deepEqual(cableFly.rows.map((row) => row.set_type), ["warm_up", "working"]);
+  assert.deepEqual(cableFly.rows.map((row) => row.weight_used), [12.5, 20]);
+});
+
+test("loads client-scoped history only from dates before the active session", () => {
+  const loader = sourceForFunction("loadCoachWorkoutPreviousHistory");
+  const contextSwitch = sourceForFunction("switchCoachWorkoutContext");
+  const boot = sourceForFunction("bootCoachWorkoutPage");
+
+  assert.match(loader, /\.from\("client_workout_logs"\)/);
+  assert.match(loader, /\.eq\("client_email", normalizedContext\.clientEmail\)/);
+  assert.match(loader, /\.lt\("entry_date", normalizedContext\.entryDate\)/);
+  assert.match(loader, /\.order\("entry_date", \{ ascending: false \}\)/);
+  assert.match(loader, /\.limit\(1000\)/);
+  assert.match(loader, /requestId !== coachWorkoutPreviousHistoryRequest/);
+  assert.match(loader, /buildCoachWorkoutPreviousHistory/);
+  assert.match(contextSwitch, /loadCoachWorkoutPreviousHistory\(nextContext\)/);
+  assert.match(boot, /loadCoachWorkoutPreviousHistory\(coachWorkoutActiveContext\)/);
+});
+
 test("reopens a collapsed grouped name editor before focusing a validation error", () => {
   const rowMarkup = sourceForFunction("coachWorkoutGroupedNameRowMarkup");
   const focusVisible = sourceForFunction("focusCoachWorkoutVisibleField");
