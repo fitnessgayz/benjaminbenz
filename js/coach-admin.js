@@ -21,6 +21,10 @@ const warmupExerciseCode = "WARMUP";
 const cardioExerciseCode = "CARDIO";
 const warmUpSetNumberBase = 1000;
 const coachAdminSidebarStorageKey = "fwb_coach_admin_sidebar_collapsed";
+const alexFitnessMasterSessions = Object.freeze({
+  used: 82,
+  total: 100
+});
 const coachAdminTabNames = new Set([
   "home",
   "clients",
@@ -3617,15 +3621,9 @@ function renderCoachHome() {
   const sessionAlerts = coachHomeSessionAlerts();
   const inactiveClients = coachHomeInactiveClients(latestByEmail);
   const scheduledSessions = coachHomeScheduleEntries();
-  const activePackages = activeClients
-    .map((program) => ({
-      used: normalizeSessionCount(program.session_count_used),
-      total: normalizeSessionCount(program.session_count_total)
-    }))
-    .filter((entry) => entry.total > 0);
-  const totalSessions = activePackages.reduce((total, entry) => total + entry.total, 0);
-  const usedSessions = activePackages.reduce((total, entry) => total + Math.min(entry.used, entry.total), 0);
-  const remainingSessions = Math.max(0, totalSessions - usedSessions);
+  const alexFitnessUsedSessions = normalizeSessionCount(alexFitnessMasterSessions.used);
+  const alexFitnessTotalSessions = normalizeSessionCount(alexFitnessMasterSessions.total);
+  const alexFitnessRemainingSessions = Math.max(0, alexFitnessTotalSessions - alexFitnessUsedSessions);
   const recentSevenDayCount = summarizeTrainingLogs(recentTrainingLogs)
     .filter((workout) => workout.completed_at)
     .filter((workout) => {
@@ -3643,10 +3641,11 @@ function renderCoachHome() {
 
   setText("coach-home-active-clients", activeClients.length);
   setText("coach-home-recent-workouts", recentSevenDayCount);
-  setText("coach-home-sessions-left", remainingSessions);
-  setText("coach-home-session-total", activePackages.length > 0
-    ? `${usedSessions} used of ${totalSessions} across active packages`
-    : "no active session packages yet");
+  setText("coach-home-sessions-left", alexFitnessRemainingSessions);
+  setText(
+    "coach-home-session-total",
+    `${alexFitnessUsedSessions} used of ${alexFitnessTotalSessions} · Alex Fitness Master`
+  );
   setText("coach-home-needs-attention", attentionEmails.size);
 
   const recentList = document.getElementById("coach-home-recent-list");

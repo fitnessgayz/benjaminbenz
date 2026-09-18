@@ -66,6 +66,19 @@ test("home summaries come from current programs and bounded workout-log history"
   assert.match(renderer, /trustedSheetUrl\(program\.sheet_url\)/);
 });
 
+test("Sessions Left uses only the Alex Fitness Master summary", () => {
+  const renderer = javascriptFunction("renderCoachHome");
+
+  assert.match(adminSource, /const alexFitnessMasterSessions = Object\.freeze\(\{/);
+  assert.match(adminSource, /used:\s*82/);
+  assert.match(adminSource, /total:\s*100/);
+  assert.match(renderer, /alexFitnessTotalSessions - alexFitnessUsedSessions/);
+  assert.match(renderer, /Alex Fitness Master/);
+  assert.doesNotMatch(renderer, /const activePackages = activeClients/);
+  assert.match(adminHtml, /id="coach-home-session-total">Alex Fitness Master only/);
+  assert.match(adminHtml, /coach-admin\.js\?v=alex-master-sessions-1/);
+});
+
 test("home flags empty or low packages and clients inactive for 14 days", () => {
   const alerts = javascriptFunction("coachHomeSessionAlerts");
   const inactive = javascriptFunction("coachHomeInactiveClients");
