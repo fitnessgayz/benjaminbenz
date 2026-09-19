@@ -8178,7 +8178,7 @@ function customWorkoutInlineGroupOptionsMarkup(groupType = "single", isVisible =
   const normalizedType = normalizeCustomWorkoutInlineGroupType(groupType);
 
   return `
-    <div class="custom-workout-inline-group-options" data-custom-workout-inline-group-options ${isVisible ? "" : "hidden"}>
+    <div class="custom-workout-inline-group-options" role="group" aria-label="Group exercises" data-custom-workout-inline-group-options ${isVisible ? "" : "hidden"}>
       <label>
         <input type="checkbox" data-custom-workout-inline-group-option="superset" ${normalizedType === "superset" ? "checked" : ""} />
         <span>Superset</span>
@@ -8382,6 +8382,9 @@ function customWorkoutGroupedRoundCardMarkup(format, exercises, groupIndex = 0, 
           <h3>${escapeHtml(groupTitle)}</h3>
           <p class="custom-workout-grouped-progress" data-custom-grouped-progress aria-live="polite">0 / 0 complete</p>
         </header>
+        ${!options.assigned && panelFormat === "single"
+          ? customWorkoutInlineGroupOptionsMarkup(format)
+          : ""}
         <div class="custom-workout-grouped-exercise-key" data-custom-grouped-exercise-key role="list" aria-label="Exercises in this group"></div>
         <div class="custom-workout-grouped-round-stepper" role="group" aria-label="Number of ${format === "single" ? "sets" : "rounds"}">
           <button type="button" data-custom-grouped-remove-round aria-label="Remove last ${format === "single" ? "set" : "round"}">−</button>
@@ -14763,7 +14766,9 @@ function clearCustomWorkoutInlineGroup(cards, card) {
 }
 
 function updateCustomWorkoutInlineGrouping(input) {
-  const card = input?.closest("[data-custom-exercise-card]");
+  // The round layout displays these controls outside its hidden source cards.
+  const card = input?.closest("[data-custom-exercise-card]")
+    || input?.closest("[data-custom-workout-carousel]")?.querySelector("[data-custom-exercise-card]");
   const panel = card?.closest(".client-workout-panel-custom");
   const panelFormat = normalizeCustomWorkoutFormat(panel?.dataset.customWorkoutFormat || activeCustomWorkoutFormat);
 
@@ -14837,7 +14842,15 @@ function handleCustomWorkoutInlineGrouping() {
     const input = event.target.closest("[data-custom-workout-inline-group-option]");
 
     if (input) {
+      const card = input.closest("[data-custom-exercise-card]")
+        || input.closest("[data-custom-workout-carousel]")?.querySelector("[data-custom-exercise-card]");
       updateCustomWorkoutInlineGrouping(input);
+      // Regrouping replaces the visible shell. Keep keyboard focus on its control.
+      if (!input.isConnected) {
+        card?.closest("[data-custom-workout-carousel]")?.querySelector(
+          `.custom-workout-grouped-card [data-custom-workout-inline-group-option="${input.dataset.customWorkoutInlineGroupOption}"]`
+        )?.focus({ preventScroll: true });
+      }
     }
   });
 }
