@@ -7,23 +7,9 @@ const root = path.resolve(__dirname, "..");
 const homepage = fs.readFileSync(path.join(root, "index.html"), "utf8");
 const script = fs.readFileSync(path.join(root, "js/script.js"), "utf8");
 
-function contactFormSource() {
-  const start = homepage.indexOf('<form class="contact-form" id="contact-message-form">');
-  const end = homepage.indexOf("</form>", start);
-
-  assert.ok(start >= 0, "Expected the homepage contact form");
-  assert.ok(end > start, "Expected the homepage contact form to close");
-  return homepage.slice(start, end);
-}
-
-test("keeps the contact form compact without a message field", () => {
-  const form = contactFormSource();
-
-  assert.match(form, /name="name"[\s\S]*?required/);
-  assert.match(form, /name="email"[\s\S]*?required/);
-  assert.match(form, /name="phone"/);
-  assert.doesNotMatch(form, /<textarea|name="message"|>Message\s*</i);
-  assert.match(form, />Send inquiry<\/button>/);
+test("directs visitors to the questionnaire without an inquiry form", () => {
+  assert.doesNotMatch(homepage, /id="contact-message-form"|name="(?:name|email|phone)"|Send inquiry/);
+  assert.match(homepage, /href="questionnaire\.html">Start Questionnaire<\/a>/);
 });
 
 test("sends a coaching inquiry without asking for message text", () => {
