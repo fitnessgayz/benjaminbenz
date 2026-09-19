@@ -4253,7 +4253,14 @@ async function loadPrograms() {
 
   const visiblePrograms = programsForCurrentClientView();
 
-  if (visiblePrograms.length > 0) {
+  const requestedClientId = new URLSearchParams(window.location.search).get("client");
+  const requestedClient = programs.find((program) => program.id === requestedClientId);
+  if (requestedClient) {
+    fillForm(requestedClient);
+  } else if (requestedClientId) {
+    // Never show another client's information for an expired notification link.
+    fillForm();
+  } else if (visiblePrograms.length > 0) {
     fillForm(visiblePrograms[0]);
   } else {
     fillForm();
@@ -4261,7 +4268,7 @@ async function loadPrograms() {
 
   renderClientList();
   await loadRecentTrainingLogs();
-  adminStatus("Ready.");
+  adminStatus(requestedClientId && !requestedClient ? "This client is no longer available. Choose a client to continue." : "Ready.");
 }
 
 function exerciseLibraryStatus(message) {

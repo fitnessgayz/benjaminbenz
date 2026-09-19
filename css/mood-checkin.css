@@ -1,0 +1,117 @@
+/* Shared treatment for the home check-in and its first-visit dialog. */
+:root body .client-home-card-mood {
+  padding: clamp(20px, 4vw, 32px);
+  gap: 24px;
+}
+:root body .client-home-card-mood .client-home-checkin-heading { align-items: flex-start; }
+:root body .client-home-card-mood h3 { font-size: clamp(1.65rem, 5vw, 2.25rem); }
+:root body .client-home-card-mood .client-home-checkin-heading > div { gap: 10px; }
+:root body .client-home-card-mood .client-home-checkin-content {
+  padding-top: 24px;
+  border-color: var(--line);
+}
+:root body .client-home-card-mood .client-home-mood-form { gap: 24px; }
+:root body .client-home-card-mood .client-home-mood-grid {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 20px;
+}
+:root body .client-home-card-mood .mood-rating {
+  min-width: 0;
+  margin: 0;
+  padding: 0 0 20px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+}
+:root body .client-home-card-mood .mood-rating legend {
+  width: 100%;
+  margin-bottom: 12px;
+  padding: 0;
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: -.02em;
+}
+.mood-rating-options { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+:root body .client-home-card-mood .mood-rating-choice { position: relative; display: block; cursor: pointer; }
+:root body .client-home-card-mood .mood-rating-choice input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+:root body .client-home-card-mood .mood-rating-choice > span {
+  display: grid;
+  place-items: center;
+  min-height: 52px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-soft);
+  color: var(--ink);
+  font-size: 1.3rem;
+  font-weight: 800;
+  line-height: 1;
+}
+:root body .client-home-card-mood .mood-rating-choice input:checked + span {
+  background: var(--lime);
+  border: 2px solid var(--ink);
+}
+:root body .client-home-card-mood .mood-rating-choice input:focus-visible + span {
+  outline: 3px solid #718a18;
+  outline-offset: 3px;
+}
+@media (hover: hover) {
+  .mood-rating-choice:hover > span { border-color: var(--ink) !important; }
+}
+.mood-rating-scale {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: .75rem;
+}
+.mood-rating-scale > span:last-child { text-align: right; }
+:root body .client-home-card-mood .client-home-mood-note {
+  display: block;
+  font-size: .95rem;
+  text-transform: none;
+  font-weight: 700;
+}
+.mood-note-optional { margin-left: 5px; color: var(--muted); font-size: .8rem; font-weight: 400; }
+:root body .client-home-card-mood .client-home-mood-note textarea {
+  display: block;
+  min-height: 96px;
+  margin-top: 10px;
+  padding: 14px;
+  border-radius: 14px;
+  background: var(--surface-soft);
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.5;
+}
+:root body .client-home-card-mood .client-home-mood-actions { gap: 12px; }
+:root body .client-home-card-mood .client-home-mood-actions p { font-size: .8rem; }
+:root body .client-home-card-mood #client-home-save-mood-button { min-height: 54px; font-weight: 800; }
+:root body .client-home-card-mood.is-first-login-prompt {
+  width: min(560px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  overscroll-behavior: contain;
+  background: var(--paper);
+  box-shadow: 0 24px 80px rgb(0 0 0 / 24%);
+  scroll-padding-block: 24px;
+}
+.client-home-checkin-backdrop { background: rgb(20 24 18 / 58%); backdrop-filter: blur(5px); }
+@media (max-width: 520px) {
+  :root body .client-home-card-mood { padding: 20px; }
+  :root body .client-home-card-mood.is-first-login-prompt {
+    top: max(12px, env(safe-area-inset-top));
+    left: 12px;
+    width: calc(100vw - 24px);
+    max-height: calc(100dvh - max(24px, env(safe-area-inset-top)) - max(12px, env(safe-area-inset-bottom)));
+  }
+  .mood-rating-options { gap: 6px; }
+  :root body .client-home-card-mood .mood-rating-choice > span { min-height: 48px; }
+}

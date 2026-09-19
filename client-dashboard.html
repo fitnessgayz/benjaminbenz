@@ -35,6 +35,7 @@
   <link rel="stylesheet" href="css/workout-layout.css?v=exercise-preview-2" />
   <link rel="stylesheet" href="css/client-weekly-activity.css?v=1" />
   <link rel="stylesheet" href="/css/fwb-design-system.css?v=reference-overhaul-1" />
+  <link rel="stylesheet" href="css/mood-checkin.css?v=1" />
 </head>
 <body class="dashboard-page client-dashboard-page is-loading">
   <main class="dashboard-shell">
@@ -241,69 +242,71 @@
               </div>
               <div class="client-home-checkin-content" id="client-home-checkin-content" data-client-home-checkin-content hidden>
                 <form class="client-home-mood-form" id="client-home-mood-form">
+                  <p class="mood-rating-intro">Your day, from 1 to 5. Tap a rating for each check-in.</p>
                   <div class="client-home-mood-grid">
-                    <label>
-                      Mood
-                      <select name="home_mood">
-                        <option value="">Choose</option>
-                        <option value="Strong">Strong</option>
-                        <option value="Good">Good</option>
-                        <option value="Okay">Okay</option>
-                        <option value="Low">Low</option>
-                        <option value="Sore">Sore</option>
-                      </select>
-                    </label>
-                    <label>
-                      Energy
-                      <select name="home_energy">
-                        <option value="">Choose</option>
-                        <option value="1">1 / 5</option>
-                        <option value="2">2 / 5</option>
-                        <option value="3">3 / 5</option>
-                        <option value="4">4 / 5</option>
-                        <option value="5">5 / 5</option>
-                      </select>
-                    </label>
-                    <label>
-                      Sleep
-                      <select name="home_sleep">
-                        <option value="">Choose</option>
-                        <option value="1">1 / 5</option>
-                        <option value="2">2 / 5</option>
-                        <option value="3">3 / 5</option>
-                        <option value="4">4 / 5</option>
-                        <option value="5">5 / 5</option>
-                      </select>
-                    </label>
-                    <label>
-                      Eating
-                      <select name="home_eating">
-                        <option value="">Choose</option>
-                        <option value="On track">On track</option>
-                        <option value="Mostly good">Mostly good</option>
-                        <option value="Missed meals">Missed meals</option>
-                        <option value="Need help">Need help</option>
-                      </select>
-                    </label>
-                    <label class="client-home-body-feeling">
-                      How’s the body feeling today?
-                      <select name="home_body_feeling">
-                        <option value="">Choose</option>
-                        <option value="Fresh and ready">Fresh and ready</option>
-                        <option value="Good">Good</option>
-                        <option value="A little tight">A little tight</option>
-                        <option value="Sore">Sore</option>
-                        <option value="Pain or discomfort">Pain or discomfort</option>
-                      </select>
-                    </label>
+                    <fieldset class="mood-rating" aria-describedby="home_mood-scale">
+                      <legend>Mood</legend>
+                      <div class="mood-rating-options">
+                        <label class="mood-rating-choice"><input type="radio" name="home_mood" value="1" aria-label="1 out of 5 — Low" /><span>1</span></label>
+                        <label class="mood-rating-choice"><input type="radio" name="home_mood" value="2" aria-label="2 out of 5" /><span>2</span></label>
+                        <label class="mood-rating-choice"><input type="radio" name="home_mood" value="3" aria-label="3 out of 5" /><span>3</span></label>
+                        <label class="mood-rating-choice"><input type="radio" name="home_mood" value="4" aria-label="4 out of 5" /><span>4</span></label>
+                        <label class="mood-rating-choice"><input type="radio" name="home_mood" value="5" aria-label="5 out of 5 — Great" /><span>5</span></label>
+                      </div>
+                      <div class="mood-rating-scale" id="home_mood-scale"><span>1 · Low</span><span>5 · Great</span></div>
+                    </fieldset>
+                    <fieldset class="mood-rating" aria-describedby="home_energy-scale">
+                      <legend>Energy</legend>
+                      <div class="mood-rating-options">
+                        <label class="mood-rating-choice"><input type="radio" name="home_energy" value="1" aria-label="1 out of 5 — Drained" /><span>1</span></label>
+                        <label class="mood-rating-choice"><input type="radio" name="home_energy" value="2" aria-label="2 out of 5" /><span>2</span></label>
+                        <label class="mood-rating-choice"><input type="radio" name="home_energy" value="3" aria-label="3 out of 5" /><span>3</span></label>
+                        <label class="mood-rating-choice"><input type="radio" name="home_energy" value="4" aria-label="4 out of 5" /><span>4</span></label>
+                        <label class="mood-rating-choice"><input type="radio" name="home_energy" value="5" aria-label="5 out of 5 — Energized" /><span>5</span></label>
+                      </div>
+                      <div class="mood-rating-scale" id="home_energy-scale"><span>1 · Drained</span><span>5 · Energized</span></div>
+                    </fieldset>
+                    <fieldset class="mood-rating" aria-describedby="home_sleep-scale">
+                      <legend>Sleep</legend>
+                      <div class="mood-rating-options">
+                        <label class="mood-rating-choice"><input type="radio" name="home_sleep" value="1" aria-label="1 out of 5 — Poor" /><span>1</span></label>
+                        <label class="mood-rating-choice"><input type="radio" name="home_sleep" value="2" aria-label="2 out of 5" /><span>2</span></label>
+                        <label class="mood-rating-choice"><input type="radio" name="home_sleep" value="3" aria-label="3 out of 5" /><span>3</span></label>
+                        <label class="mood-rating-choice"><input type="radio" name="home_sleep" value="4" aria-label="4 out of 5" /><span>4</span></label>
+                        <label class="mood-rating-choice"><input type="radio" name="home_sleep" value="5" aria-label="5 out of 5 — Rested" /><span>5</span></label>
+                      </div>
+                      <div class="mood-rating-scale" id="home_sleep-scale"><span>1 · Poor</span><span>5 · Rested</span></div>
+                    </fieldset>
+                    <fieldset class="mood-rating" aria-describedby="home_eating-scale">
+                      <legend>Eating</legend>
+                      <div class="mood-rating-options">
+                        <label class="mood-rating-choice"><input type="radio" name="home_eating" value="1" aria-label="1 out of 5 — Off track" /><span>1</span></label>
+                        <label class="mood-rating-choice"><input type="radio" name="home_eating" value="2" aria-label="2 out of 5" /><span>2</span></label>
+                        <label class="mood-rating-choice"><input type="radio" name="home_eating" value="3" aria-label="3 out of 5" /><span>3</span></label>
+                        <label class="mood-rating-choice"><input type="radio" name="home_eating" value="4" aria-label="4 out of 5" /><span>4</span></label>
+                        <label class="mood-rating-choice"><input type="radio" name="home_eating" value="5" aria-label="5 out of 5 — On track" /><span>5</span></label>
+                      </div>
+                      <div class="mood-rating-scale" id="home_eating-scale"><span>1 · Off track</span><span>5 · On track</span></div>
+                    </fieldset>
+                    <fieldset class="mood-rating" aria-describedby="home_body_feeling-scale">
+                      <legend>Body readiness</legend>
+                      <div class="mood-rating-options">
+                        <label class="mood-rating-choice"><input type="radio" name="home_body_feeling" value="1" aria-label="1 out of 5 — Uncomfortable" /><span>1</span></label>
+                        <label class="mood-rating-choice"><input type="radio" name="home_body_feeling" value="2" aria-label="2 out of 5" /><span>2</span></label>
+                        <label class="mood-rating-choice"><input type="radio" name="home_body_feeling" value="3" aria-label="3 out of 5" /><span>3</span></label>
+                        <label class="mood-rating-choice"><input type="radio" name="home_body_feeling" value="4" aria-label="4 out of 5" /><span>4</span></label>
+                        <label class="mood-rating-choice"><input type="radio" name="home_body_feeling" value="5" aria-label="5 out of 5 — Ready to move" /><span>5</span></label>
+                      </div>
+                      <div class="mood-rating-scale" id="home_body_feeling-scale"><span>1 · Uncomfortable</span><span>5 · Ready to move</span></div>
+                    </fieldset>
                   </div>
                   <label class="client-home-mood-note">
-                    Note
+                    Anything else? <span class="mood-note-optional">Optional</span>
                     <textarea name="home_mood_note" placeholder="Sleep, soreness, stress, wins, or anything to adjust today."></textarea>
                   </label>
                   <div class="client-home-mood-actions">
-                    <p id="client-home-mood-status" role="status">Quick check-in saves to today.</p>
-                    <button class="button button-ghost" type="submit" id="client-home-save-mood-button">Save mood</button>
+                    <p id="client-home-mood-status" role="status">Your check-in will be shared with Benjamin.</p>
+                    <button class="button button-dark" type="submit" id="client-home-save-mood-button">Save check-in</button>
                   </div>
                 </form>
               </div>
@@ -1019,6 +1022,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@zxing/browser@0.2.1/umd/zxing-browser.min.js" integrity="sha384-HRtzk9lZgkbSgvUyQrnfC/GxiXZgwaNyD7hC9wcXlsBpDhkS80ISl73juef2FRuf" crossorigin="anonymous"></script>
   <script src="js/workout-layout.js?v=exercise-preview-2"></script>
   <script src="js/client-weekly-activity.js?v=1"></script>
-  <script src="js/client-portal.js?v=custom-workout-history-1&amp;cancel-workout=1&amp;energy-feedback=1"></script>
+  <script src="js/client-portal.js?v=custom-workout-history-1&amp;cancel-workout=1&amp;energy-feedback=1&amp;mood-redesign=1"></script>
 </body>
 </html>

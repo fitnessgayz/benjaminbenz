@@ -2232,7 +2232,7 @@ function homeMoodNote(form) {
   const pieces = [];
 
   if (mood) {
-    pieces.push(`Mood: ${mood}`);
+    pieces.push(`Mood: ${/^[1-5]$/.test(mood) ? `${mood}/5` : mood}`);
   }
 
   if (energy) {
@@ -2244,11 +2244,11 @@ function homeMoodNote(form) {
   }
 
   if (eating) {
-    pieces.push(`Eating: ${eating}`);
+    pieces.push(`Eating: ${/^[1-5]$/.test(eating) ? `${eating}/5` : eating}`);
   }
 
   if (bodyFeeling) {
-    pieces.push(`Body: ${bodyFeeling}`);
+    pieces.push(`Body: ${/^[1-5]$/.test(bodyFeeling) ? `${bodyFeeling}/5` : bodyFeeling}`);
   }
 
   if (note) {
@@ -13930,6 +13930,7 @@ function dismissClientHomeCheckinPrompt(restoreFocus = true) {
   card.classList.remove("is-first-login-prompt");
   card.removeAttribute("role");
   card.removeAttribute("aria-modal");
+  card.removeAttribute("aria-labelledby");
   backdrop && (backdrop.hidden = true);
   document.body.classList.remove("is-client-checkin-prompt-open");
   setClientHomeCheckinExpanded(false);
@@ -13957,11 +13958,12 @@ function maybeShowClientHomeCheckinPrompt() {
   card.classList.add("is-first-login-prompt");
   card.setAttribute("role", "dialog");
   card.setAttribute("aria-modal", "true");
+  card.setAttribute("aria-labelledby", "client-home-mood");
   backdrop.hidden = false;
   document.body.classList.add("is-client-checkin-prompt-open");
   setClientHomeCheckinExpanded(true);
   void rememberClientHomeCheckinPromptSeen();
-  window.setTimeout?.(() => card.querySelector("select, textarea")?.focus(), 0);
+  window.setTimeout?.(() => card.querySelector("input[type=radio], select, textarea")?.focus(), 0);
 }
 
 function handleClientHomeCheckin() {
@@ -13990,6 +13992,19 @@ function handleClientHomeCheckin() {
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
       dismissClientHomeCheckinPrompt();
+    }
+    const card = document.querySelector(".client-home-card-mood.is-first-login-prompt");
+    if (event.key !== "Tab" || !card) return;
+    const controls = Array.from(card.querySelectorAll("button:not(:disabled), input:not(:disabled), textarea:not(:disabled)"))
+      .filter((control) => control.type !== "radio" || control === (card.querySelector(`input[name="${control.name}"]:checked`) || card.querySelector(`input[name="${control.name}"]`)));
+    const first = controls[0];
+    const last = controls[controls.length - 1];
+    if (event.shiftKey && (document.activeElement === first || !card.contains(document.activeElement))) {
+      event.preventDefault();
+      last?.focus();
+    } else if (!event.shiftKey && (document.activeElement === last || !card.contains(document.activeElement))) {
+      event.preventDefault();
+      first?.focus();
     }
   });
 }
@@ -14299,11 +14314,13 @@ function handleClientProgressSave() {
     const note = homeMoodNote(form);
 
     if (!note) {
-      setText("#client-home-mood-status", "Choose a mood, energy level, body feeling, or add a quick note.");
+      setText("#client-home-mood-status", "Choose a 1–5 rating or add a quick note.");
       return;
     }
 
     const button = document.getElementById("client-home-save-mood-button");
+
+    if (button?.disabled) return;
 
     if (button) {
       button.disabled = true;
@@ -14311,61 +14328,60 @@ function handleClientProgressSave() {
 
     setText("#client-home-mood-status", "Saving mood check-in...");
 
-    const entryDate = todayDate();
-    const existing = progressEntries.find((entry) => entry.entry_date === entryDate) || {};
-    const payload = {
-      client_email: email,
-      entry_date: entryDate,
-      bodyweight: existing.bodyweight ?? null,
-      bodyfat: existing.bodyfat ?? null,
-      lean_mass: existing.lean_mass ?? null,
-      muscle_mass: existing.muscle_mass ?? null,
-      measurements: progressMeasurements(existing),
-      goal_note: note
-    };
-    const { error } = await withTimeout(
-      supabaseClient
-        .from("client_progress")
-        .upsert(payload, { onConflict: "client_email,entry_date" }),
-      "Mood check-in save timed out."
-    );
+    let checkinSaved = false;
+    try {
+      const entryDate = todayDate();
+      const existing = progressEntries.find((entry) => entry.entry_date === entryDate) || {};
+      const payload = {
+        client_email: email,
+        entry_date: entryDate,
+        bodyweight: existing.bodyweight ?? null,
+        bodyfat: existing.bodyfat ?? null,
+        lean_mass: existing.lean_mass ?? null,
+        muscle_mass: existing.muscle_mass ?? null,
+        measurements: progressMeasurements(existing),
+        goal_note: note,
+        mood_checkin_submitted_at: new Date().toISOString()
+      };
+      const { error } = await withTimeout(
+        supabaseClient
+          .from("client_progress")
+          .upsert(payload, { onConflict: "client_email,entry_date" }),
+        "Mood check-in save timed out."
+      );
 
-    if (error) {
-      setText("#client-home-mood-status", error.message || "Could not save mood check-in.");
+      if (error) {
+        setText("#client-home-mood-status", error.message || "Could not save mood check-in.");
 
-      if (button) {
-        button.disabled = false;
+        return;
       }
 
-      return;
-    }
+      checkinSaved = true;
+      const { data, error: loadError } = await withTimeout(
+        supabaseClient
+          .from("client_progress")
+          .select("*")
+          .ilike("client_email", email)
+          .order("entry_date", { ascending: true }),
+        "Mood check-in reload timed out."
+      );
 
-    const { data, error: loadError } = await withTimeout(
-      supabaseClient
-        .from("client_progress")
-        .select("*")
-        .ilike("client_email", email)
-        .order("entry_date", { ascending: true }),
-      "Mood check-in reload timed out."
-    );
+      if (loadError) {
+        setText("#client-home-mood-status", "Mood saved. Refresh to reload it.");
 
-    if (loadError) {
-      setText("#client-home-mood-status", "Mood saved. Refresh to reload it.");
-
-      if (button) {
-        button.disabled = false;
+        return;
       }
 
-      return;
-    }
-
-    renderProgress(data || []);
-    form.reset();
-    setText("#client-home-mood-status", "Mood check-in saved for today.");
-    dismissClientHomeCheckinPrompt(false);
-
-    if (button) {
-      button.disabled = false;
+      renderProgress(data || []);
+      form.reset();
+      setText("#client-home-mood-status", "Mood check-in saved for today.");
+      dismissClientHomeCheckinPrompt();
+    } catch (_error) {
+      setText("#client-home-mood-status", checkinSaved
+        ? "Mood saved. Refresh to reload it."
+        : "Could not confirm your check-in. Please try again.");
+    } finally {
+      if (button) button.disabled = false;
     }
   });
 
