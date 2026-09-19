@@ -290,7 +290,18 @@
 :root body .access-panel { padding: clamp(22px, 3vw, 36px); }
 :root body .invite-panel { padding: 0; border: 0; background: transparent; box-shadow: none; }
 :root body .invite-deck-peek { border-radius: 18px 18px 0 0; }
-:root body.homepage .hero h1 { font-size: clamp(3rem, 8vw, 7.5rem); line-height: 1.02 !important; }
+:root body.homepage .hero h1 {
+  max-width: 100%;
+  font-size: clamp(3rem, 8vw, 7.5rem);
+  line-height: 1.02 !important;
+  overflow-wrap: normal;
+  text-wrap: balance;
+}
+:root body.homepage .hero img { object-position: center 60%; }
+@media (max-width: 600px) {
+  :root body.homepage .hero-content { width: calc(100% - 32px); min-width: 0; }
+  :root body.homepage .hero img { object-position: center; }
+}
 :root body.homepage .hero .kicker { color: var(--lime); }
 :root body.homepage .home-tabs { background: var(--nav-surface); border-radius: 999px; padding: 6px; }
 :root body.homepage .home-tab { border-radius: 999px !important; color: #e4e6df; background: transparent; }
