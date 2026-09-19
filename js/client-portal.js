@@ -206,6 +206,7 @@ let pendingRirValue = null;
 let workoutDifficultyPromptResolve = null;
 let workoutDifficultyReturnFocus = null;
 let pendingWorkoutDifficulty = null;
+let pendingWorkoutEnergy = { before: null, after: null };
 let lastWorkoutCompletionMessageIndex = -1;
 let workoutCompletionShareReturnFocus = null;
 let pendingWorkoutCompletionShare = null;
@@ -6817,7 +6818,7 @@ function upsertLocalWorkoutSessionFeedback(feedback) {
   }
 }
 
-async function saveWorkoutDifficultyFeedback(rows, difficultyRating) {
+async function saveWorkoutDifficultyFeedback(rows, difficultyRating, energy = {}) {
   const workoutRow = (rows || []).find((row) => workoutFeedbackSessionId(row));
   const sessionId = workoutFeedbackSessionId(workoutRow);
   const rating = Number(difficultyRating);
@@ -6826,6 +6827,9 @@ async function saveWorkoutDifficultyFeedback(rows, difficultyRating) {
     return { saved: false };
   }
 
+  if ([energy.before, energy.after].some(value => value != null && (!Number.isInteger(value) || value < 1 || value > 5))) {
+    return { saved: false, error: new Error("Energy ratings must be between 1 and 5.") };
+  }
   const now = new Date().toISOString();
   const payload = {
     session_id: sessionId,
@@ -6834,6 +6838,8 @@ async function saveWorkoutDifficultyFeedback(rows, difficultyRating) {
     entry_date: workoutRow.entry_date,
     workout_title: workoutRow.workout_title,
     difficulty_rating: rating,
+    energy_before: energy.before ?? null,
+    energy_after: energy.after ?? null,
     source: "website",
     source_version: 1,
     client_updated_at: now
@@ -6859,19 +6865,33 @@ function workoutDifficultyPromptMarkup() {
         <header class="rir-heading">
           <div>
             <small>Workout complete</small>
-            <strong id="workout-difficulty-title">How hard was this workout?</strong>
+            <strong id="workout-difficulty-title">How was your workout?</strong>
           </div>
           <button class="rir-close" type="button" data-workout-difficulty-close aria-label="Close workout difficulty prompt">×</button>
         </header>
         <p class="workout-difficulty-congratulations">Congratulations for completing the workout!</p>
-        <p class="workout-difficulty-question">Choose the rating that best describes the workout overall.</p>
+        <p class="workout-difficulty-question">How hard was it overall?</p>
         <div class="workout-difficulty-options" role="radiogroup" aria-label="Overall workout difficulty">
           ${workoutDifficultyOptions().map(([value, label]) => `
-            <button type="button" role="radio" data-workout-difficulty-option="${value}" aria-checked="false">
+            <button type="button" role="radio" data-workout-difficulty-option="${value}" aria-checked="false" aria-label="${value} — ${label}">
               <strong>${value}</strong>
-              <span>${label}</span>
             </button>
           `).join("")}
+        </div>
+        <div class="workout-energy-endpoints"><span>1 · Very easy</span><span>5 · Very hard</span></div>
+        <div class="workout-energy-ratings">
+          <h3>How was your energy?</h3>
+          <p>Rate your energy before and after this workout.</p>
+          ${["before", "after"].map(period => `<fieldset class="workout-energy-field">
+            <legend>${period === "before" ? "Before the workout" : "After the workout"}</legend>
+            <div class="workout-energy-options">
+              ${["Very low", "Low", "Moderate", "High", "Very high"].map((label, index) => `<label>
+                <input type="radio" name="workout-energy-${period}" value="${index + 1}" data-workout-energy="${period}" aria-label="${index + 1} — ${label}">
+                <span>${index + 1}</span>
+              </label>`).join("")}
+            </div>
+            <div class="workout-energy-endpoints"><span>1 · Very low</span><span>5 · Very high</span></div>
+          </fieldset>`).join("")}
         </div>
         <button class="workout-difficulty-save" type="button" data-workout-difficulty-save disabled>Save and finish workout</button>
       </section>
@@ -6901,7 +6921,7 @@ function renderWorkoutDifficultyPrompt() {
 
   const saveButton = overlay?.querySelector("[data-workout-difficulty-save]");
   if (saveButton) {
-    saveButton.disabled = pendingWorkoutDifficulty === null;
+    saveButton.disabled = pendingWorkoutDifficulty === null || !pendingWorkoutEnergy.before || !pendingWorkoutEnergy.after;
   }
 }
 
@@ -6913,6 +6933,8 @@ function requestWorkoutDifficulty(returnFocus) {
   const overlay = ensureWorkoutDifficultyPrompt();
   workoutDifficultyReturnFocus = returnFocus || null;
   pendingWorkoutDifficulty = null;
+  pendingWorkoutEnergy = { before: null, after: null };
+  overlay.querySelectorAll("[data-workout-energy]").forEach(input => { input.checked = false; });
   const congratulations = overlay.querySelector(".workout-difficulty-congratulations");
   if (congratulations) {
     congratulations.textContent = randomWorkoutCompletionMessage();
@@ -6944,11 +6966,11 @@ function closeWorkoutDifficultyPrompt(value = null) {
 }
 
 function saveWorkoutDifficultySelection() {
-  if (pendingWorkoutDifficulty === null) {
+  if (pendingWorkoutDifficulty === null || !pendingWorkoutEnergy.before || !pendingWorkoutEnergy.after) {
     return;
   }
 
-  closeWorkoutDifficultyPrompt(pendingWorkoutDifficulty);
+  closeWorkoutDifficultyPrompt({ difficulty: pendingWorkoutDifficulty, ...pendingWorkoutEnergy });
 }
 
 function completedWorkoutCountForWeek(entryDate = todayDate(), logs = trainingLogs, feedback = workoutSessionFeedback) {
@@ -15238,6 +15260,13 @@ function handleWorkoutInteractions() {
       return;
     }
 
+    const energyInput = event.target.closest("[data-workout-energy]");
+    if (energyInput) {
+      pendingWorkoutEnergy[energyInput.dataset.workoutEnergy] = Number(energyInput.value);
+      renderWorkoutDifficultyPrompt();
+      return;
+    }
+
     if (workoutDifficultyOptionButton) {
       pendingWorkoutDifficulty = Number(workoutDifficultyOptionButton.dataset.workoutDifficultyOption);
       renderWorkoutDifficultyPrompt();
@@ -15565,6 +15594,11 @@ function handleWorkoutInteractions() {
     const notesInput = event.target.closest("[data-log-notes]");
     const timedLogInput = event.target.closest("[data-warmup-duration], [data-cardio-duration], [data-cardio-distance], [data-cardio-calories]");
 
+    if (event.target.matches("[data-workout-energy]")) {
+      pendingWorkoutEnergy[event.target.dataset.workoutEnergy] = Number(event.target.value);
+      renderWorkoutDifficultyPrompt();
+      return;
+    }
     if (groupedField) {
       syncCustomWorkoutGroupedField(groupedField);
       return;
@@ -16202,7 +16236,7 @@ async function loadDashboard() {
       withTimeout(
         supabaseClient
           .from("workout_session_feedback")
-          .select("session_id,client_email,workout_template_id,entry_date,workout_title,difficulty_rating,source,source_version,client_updated_at")
+          .select("session_id,client_email,workout_template_id,entry_date,workout_title,difficulty_rating,energy_before,energy_after,source,source_version,client_updated_at")
           .ilike("client_email", activeClientEmail)
           .order("entry_date", { ascending: true })
           .limit(500),
@@ -16701,9 +16735,9 @@ async function handleTrainingLogSave() {
         startWorkoutElapsedTimer(logElements[0]?.dataset.workoutTitle || activeWorkoutElapsedTitle());
       }
       const difficultyTrigger = section?.querySelector("[data-custom-grouped-finish-workout]") || finishWorkoutButton;
-      const workoutDifficulty = await requestWorkoutDifficulty(difficultyTrigger);
+      const workoutFeedback = await requestWorkoutDifficulty(difficultyTrigger);
 
-      if (workoutDifficulty === null) {
+      if (workoutFeedback === null) {
         if (pendingGroupedCustomWorkoutRestart?.panel === section) {
           pendingGroupedCustomWorkoutRestart = null;
         }
@@ -16711,10 +16745,11 @@ async function handleTrainingLogSave() {
       }
 
       const workoutCompletion = workoutCompletionFields();
+      const workoutDifficulty = workoutFeedback.difficulty;
       const difficultySummary = workoutHistoryDifficultyLabel(workoutDifficulty);
       const saveResult = await saveTrainingLogRows(workoutButton, logElements, status, {
         savingMessage: "Finishing workout...",
-        successMessage: "Workout saved. Saving difficulty...",
+        successMessage: "Workout saved. Saving feedback...",
         workoutCompletion,
         ...groupedSaveOptions
       });
@@ -16726,14 +16761,14 @@ async function handleTrainingLogSave() {
         return;
       }
 
-      const feedbackResult = await saveWorkoutDifficultyFeedback(saveResult.rows, workoutDifficulty);
+      const feedbackResult = await saveWorkoutDifficultyFeedback(saveResult.rows, workoutDifficulty, workoutFeedback);
 
       if (!feedbackResult.saved) {
         if (allowIncompleteWorkoutFinish) {
           workoutButton.dataset.allowIncompleteWorkoutFinish = "true";
         }
         if (status) {
-          status.textContent = "Workout saved, but the difficulty rating could not be saved. Tap Finish workout to try again.";
+          status.textContent = "Workout saved, but the workout ratings could not be saved. Tap Finish workout to try again.";
         }
         return;
       }
