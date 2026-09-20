@@ -26,6 +26,7 @@ function adminExerciseHelpers() {
   return Function(`
     ${sourceForFunction("parseExercises")}
     ${sourceForFunction("youtubeExerciseSearchUrl")}
+    ${sourceForFunction("uploadedExerciseDemoUrl")}
     ${sourceForFunction("youtubeExerciseDemoUrl")}
     ${sourceForFunction("exercisesToText")}
     return { parseExercises, exercisesToText };

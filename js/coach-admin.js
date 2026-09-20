@@ -79,6 +79,8 @@ let pendingProgramCopy = null;
 let exerciseLibraryRecords = [];
 let selectedExerciseLibraryId = "";
 let exerciseLibrarySearchTerm = "";
+let isExerciseLibrarySaving = false;
+let exerciseVideoPreviewUrl = "";
 let clientCustomExerciseLogs = [];
 let clientExerciseNameClientEmail = "";
 let clientExerciseNameSearchTerm = "";
@@ -1395,6 +1397,8 @@ function youtubeExerciseSearchUrl(exerciseName) {
 
 function youtubeExerciseDemoUrl(value, exerciseName) {
   let rawUrl = String(value || "").trim();
+  const uploadedUrl = uploadedExerciseDemoUrl(rawUrl);
+  if (uploadedUrl) return uploadedUrl;
 
   if (/^(www\.|m\.)?(youtube\.com|youtube-nocookie\.com|youtu\.be)\//i.test(rawUrl)) {
     rawUrl = `https://${rawUrl}`;
@@ -4830,6 +4834,93 @@ function handleClientExerciseNameManager() {
   deleteButton.addEventListener("click", deleteSelectedClientExerciseName);
 }
 
+function uploadedExerciseDemoUrl(value) {
+  try {
+    const url = new URL(value);
+    const storageOrigin = new URL(window.FWB_SUPABASE_CONFIG.url).origin;
+    return url.protocol === "https:" && url.origin === storageOrigin
+      && !url.username && !url.password
+      && /^\/storage\/v1\/object\/public\/exercise-videos\/[a-z0-9/-]+\.(mp4|mov|m4v|webm)$/i.test(url.pathname)
+      ? url.href : "";
+  } catch {
+    return "";
+  }
+}
+
+function exerciseVideoFileDetails(file) {
+  const types = { mp4: "video/mp4", mov: "video/quicktime", m4v: "video/x-m4v", webm: "video/webm" };
+  const extension = String(file?.name || "").split(".").pop().toLowerCase();
+  const contentType = types[extension];
+  if (!contentType || (file.type && file.type !== "application/octet-stream" && !Object.values(types).includes(file.type))) {
+    throw new Error("Choose an MP4, MOV, M4V, or WebM video.");
+  }
+  if (!file.size || file.size > 50 * 1024 * 1024) {
+    throw new Error("Choose a video between 1 byte and 50 MB.");
+  }
+  return { extension, contentType };
+}
+
+function renderExerciseVideoPreview() {
+  const input = document.getElementById("exercise-library-video");
+  const preview = document.getElementById("exercise-library-video-preview");
+  const status = document.getElementById("exercise-library-video-status");
+  const cancel = document.getElementById("clear-exercise-library-video");
+  if (!input || !preview || !status || !cancel) return;
+
+  preview.pause();
+  preview.removeAttribute("src");
+  if (exerciseVideoPreviewUrl) URL.revokeObjectURL(exerciseVideoPreviewUrl);
+  exerciseVideoPreviewUrl = "";
+  const file = input.files?.[0];
+  const savedUrl = uploadedExerciseDemoUrl(document.getElementById("exercise-library-demo").value.trim());
+  let src = savedUrl;
+  status.textContent = savedUrl ? "Uploaded demo attached." : "";
+  if (file) {
+    try {
+      exerciseVideoFileDetails(file);
+      exerciseVideoPreviewUrl = URL.createObjectURL(file);
+      src = exerciseVideoPreviewUrl;
+      status.textContent = `${file.name} · ${(file.size / 1024 / 1024).toFixed(1)} MB · Ready to save`;
+    } catch (error) {
+      input.value = "";
+      status.textContent = error.message;
+    }
+  }
+  cancel.hidden = !input.files?.length;
+  preview.hidden = !src;
+  if (src) preview.src = src;
+  preview.load();
+}
+
+async function saveExerciseLibraryRecord(payload, id, file) {
+  let uploadedPath = "";
+  if (file) {
+    const { extension, contentType } = exerciseVideoFileDetails(file);
+    uploadedPath = `${id || crypto.randomUUID()}/${crypto.randomUUID()}.${extension}`;
+    exerciseLibraryStatus("Uploading video… Keep this page open until saving finishes.");
+    const bucket = coachSupabase.storage.from("exercise-videos");
+    const { error } = await bucket.upload(uploadedPath, file, { contentType, upsert: false });
+    if (error) throw new Error(`Video upload failed: ${error.message}. Your exercise has not been changed. Try saving again.`);
+    payload.demo_url = bucket.getPublicUrl(uploadedPath).data.publicUrl;
+  }
+
+  exerciseLibraryStatus("Saving exercise…");
+  const request = id
+    ? coachSupabase.from("exercise_library").update(payload).eq("id", id)
+    : coachSupabase.from("exercise_library").insert(payload);
+  const { data, error } = await request.select("*").single();
+  if (error) {
+    // Only remove a new upload after a definite database rejection. A lost
+    // response can still mean the save committed; keep that video's URL alive.
+    if (uploadedPath && /^[0-9A-Z]{5}$/.test(error.code || "")) {
+      await coachSupabase.storage.from("exercise-videos").remove([uploadedPath]).catch(() => {});
+    }
+    throw error;
+  }
+  // Keep older demos: previously saved workout plans may still link to them.
+  return data;
+}
+
 function fillExerciseLibraryEditor(record = null) {
   const values = record || {
     name: "",
@@ -4864,6 +4955,8 @@ function fillExerciseLibraryEditor(record = null) {
     ? Number(values.default_rest_seconds)
     : 90;
   document.getElementById("exercise-library-demo").value = values.demo_url || "";
+  document.getElementById("exercise-library-video").value = "";
+  renderExerciseVideoPreview();
   document.getElementById("exercise-library-instructions").value = values.instructions || "";
   document.getElementById("exercise-library-approved").checked = values.is_approved !== false;
   document.getElementById("exercise-library-active").checked = values.is_active !== false;
@@ -4880,8 +4973,10 @@ function exerciseLibraryPayload() {
     throw new Error("Add an exercise name before saving.");
   }
 
-  if (demoUrl && !/^https:\/\/(www\.)?(youtube\.com|youtu\.be)\//i.test(demoUrl)) {
-    throw new Error("The demo link must be a YouTube URL.");
+  if (demoUrl && !document.getElementById("exercise-library-video").files?.length
+      && !/^https:\/\/(www\.)?(youtube\.com|youtu\.be)\//i.test(demoUrl)
+      && !uploadedExerciseDemoUrl(demoUrl)) {
+    throw new Error("Use a YouTube link or upload a demo video.");
   }
 
   return {
@@ -4983,6 +5078,7 @@ function handleExerciseLibraryEditor() {
   }
 
   clearButton.addEventListener("click", () => {
+    if (isExerciseLibrarySaving) return;
     fillExerciseLibraryEditor();
     renderExerciseLibrary();
     document.getElementById("exercise-library-name").focus();
@@ -4994,6 +5090,7 @@ function handleExerciseLibraryEditor() {
   });
 
   list.addEventListener("click", (event) => {
+    if (isExerciseLibrarySaving) return;
     const button = event.target.closest("[data-exercise-library-id]");
     const record = exerciseLibraryRecords.find((item) => item.id === button?.dataset.exerciseLibraryId);
 
@@ -5003,20 +5100,26 @@ function handleExerciseLibraryEditor() {
     }
   });
 
+  document.getElementById("exercise-library-video").addEventListener("change", renderExerciseVideoPreview);
+  document.getElementById("exercise-library-demo").addEventListener("input", renderExerciseVideoPreview);
+  document.getElementById("clear-exercise-library-video").addEventListener("click", () => {
+    document.getElementById("exercise-library-video").value = "";
+    renderExerciseVideoPreview();
+  });
+
   saveButton.addEventListener("click", async () => {
-    saveButton.disabled = true;
+    if (isExerciseLibrarySaving) return;
+    isExerciseLibrarySaving = true;
+    const controls = [...document.querySelectorAll(".exercise-library-editor input, .exercise-library-editor textarea, .exercise-library-editor select, .exercise-library-editor button"), clearButton];
+    const disabledStates = controls.map((control) => control.disabled);
+    controls.forEach((control) => { control.disabled = true; });
+    saveButton.textContent = "Saving…";
     exerciseLibraryStatus("Saving exercise…");
 
     try {
       const payload = exerciseLibraryPayload();
-      const request = selectedExerciseLibraryId
-        ? coachSupabase.from("exercise_library").update(payload).eq("id", selectedExerciseLibraryId)
-        : coachSupabase.from("exercise_library").insert(payload);
-      const { data, error } = await request.select("*").single();
-
-      if (error) {
-        throw error;
-      }
+      const file = document.getElementById("exercise-library-video").files?.[0];
+      const data = await saveExerciseLibraryRecord(payload, selectedExerciseLibraryId, file);
 
       selectedExerciseLibraryId = data.id;
       await loadExerciseLibrary();
@@ -5026,7 +5129,9 @@ function handleExerciseLibraryEditor() {
     } catch (error) {
       exerciseLibraryStatus(error.message || "The exercise could not be saved.");
     } finally {
-      saveButton.disabled = false;
+      isExerciseLibrarySaving = false;
+      controls.forEach((control, index) => { control.disabled = disabledStates[index]; });
+      saveButton.textContent = "Save exercise";
     }
   });
 }

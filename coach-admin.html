@@ -30,7 +30,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=client-autocomplete-1" />
+  <link rel="stylesheet" href="css/style.css?v=exercise-video-upload-1" />
   <link rel="stylesheet" href="css/workout-layout.css?v=workout-preview-1" />
   <link rel="stylesheet" href="/css/fwb-design-system.css?v=reference-overhaul-1" />
 </head>
@@ -940,9 +940,17 @@
                 <input type="number" id="exercise-library-rest" min="0" max="600" value="90" inputmode="numeric" />
               </label>
               <label class="exercise-library-demo-field">
-                YouTube demo link
+                Demo video link
                 <input type="url" id="exercise-library-demo" placeholder="https://www.youtube.com/watch?v=..." autocomplete="url" />
               </label>
+              <div class="exercise-library-video-field">
+                <label for="exercise-library-video">Upload video</label>
+                <input type="file" id="exercise-library-video" accept="video/mp4,video/quicktime,video/x-m4v,video/webm,.mp4,.mov,.m4v,.webm" aria-describedby="exercise-library-video-help exercise-library-video-status" />
+                <p id="exercise-library-video-help">MP4, MOV, M4V, or WebM, up to 50 MB. MP4 works best across devices. Save the exercise to attach your video in place of its current demo link. Demo videos can be viewed by anyone with the link.</p>
+                <p id="exercise-library-video-status" role="status"></p>
+                <video id="exercise-library-video-preview" controls playsinline preload="metadata" aria-label="Exercise demo preview" hidden></video>
+                <button class="button button-ghost" type="button" id="clear-exercise-library-video" hidden>Cancel video selection</button>
+              </div>
               <label class="exercise-library-instructions-field">
                 Coaching instructions
                 <textarea id="exercise-library-instructions" maxlength="2000" placeholder="Add the cues clients should see."></textarea>
@@ -1059,6 +1067,6 @@
   <script src="js/supabase-config.js?v=client-session-link-1"></script>
   <script src="js/web-notifications.js?v=notification-default-on-1"></script>
   <script src="js/workout-layout.js?v=workout-preview-1"></script>
-  <script src="js/coach-admin.js?v=mood-notifications-1"></script>
+  <script src="js/coach-admin.js?v=exercise-video-upload-1"></script>
 </body>
 </html>

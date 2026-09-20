@@ -2340,8 +2340,25 @@ function approvedExerciseForName(exerciseName) {
   )) || null;
 }
 
+function uploadedExerciseDemoUrl(value) {
+  try {
+    const url = new URL(value);
+    const storageOrigin = new URL(window.FWB_SUPABASE_CONFIG.url).origin;
+    return url.protocol === "https:" && url.origin === storageOrigin
+      && !url.username && !url.password
+      && /^\/storage\/v1\/object\/public\/exercise-videos\/[a-z0-9/-]+\.(mp4|mov|m4v|webm)$/i.test(url.pathname)
+      ? url.href : "";
+  } catch {
+    return "";
+  }
+}
+
 function exerciseVideoUrl(exercise) {
   const approvedExercise = approvedExerciseForName(exercise.name);
+  // A newly uploaded library demo also applies to existing workout plans,
+  // which can already contain a generated YouTube search link.
+  const libraryUpload = uploadedExerciseDemoUrl(approvedExercise?.demo_url);
+  if (libraryUpload) return libraryUpload;
   let rawUrl = String(
     exercise.video ||
     exercise.videoUrl ||
@@ -2350,6 +2367,8 @@ function exerciseVideoUrl(exercise) {
     approvedExercise?.demo_url ||
     ""
   ).trim();
+  const uploadedUrl = uploadedExerciseDemoUrl(rawUrl);
+  if (uploadedUrl) return uploadedUrl;
 
   if (!rawUrl) {
     rawUrl = youtubeExerciseSearchUrl(exercise.name);

@@ -10774,11 +10774,47 @@ textarea:focus {
 }
 
 .exercise-library-name-field,
+.exercise-library-video-field,
 .exercise-library-demo-field,
 .exercise-library-instructions-field,
 .exercise-library-toggles,
 .exercise-library-actions {
   grid-column: 1 / -1;
+}
+
+.exercise-library-video-field {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--line);
+  background: var(--paper);
+}
+
+.exercise-library-video-field p {
+  margin: 0;
+  color: var(--muted);
+  font-size: .875rem;
+  line-height: 1.5;
+}
+
+.exercise-library-video-field input {
+  max-width: 100%;
+  min-width: 0;
+}
+
+.exercise-library-video-field video {
+  width: 100%;
+  max-height: 320px;
+  background: #111;
+}
+
+.exercise-library-video-field .button {
+  justify-self: start;
+}
+
+.exercise-library-video-field [hidden] {
+  display: none;
 }
 
 .exercise-library-toggles {

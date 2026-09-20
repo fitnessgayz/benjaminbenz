@@ -98,6 +98,12 @@ function youtubeExerciseDemoUrl(exercise: Record<string, unknown>) {
     const host = url.hostname.replace(/^www\./i, "").toLowerCase();
     const allowedHosts = new Set(["youtube.com", "youtube-nocookie.com", "m.youtube.com", "youtu.be"]);
 
+    if (url.protocol === "https:" && !url.username && !url.password
+        && url.origin === new URL(Deno.env.get("SUPABASE_URL") || "https://invalid.local").origin
+        && /^\/storage\/v1\/object\/public\/exercise-videos\/[a-z0-9/-]+\.(mp4|mov|m4v|webm)$/i.test(url.pathname)) {
+      return url.href;
+    }
+
     if (["http:", "https:"].includes(url.protocol) && allowedHosts.has(host)) {
       return url.href;
     }
