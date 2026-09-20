@@ -31,7 +31,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css?v=client-account-setup-1" />
-  <link rel="stylesheet" href="css/login-layout-fix.css?v=mobile-fit-audit-2" />
+  <link rel="stylesheet" href="css/login-layout-fix.css?v=remember-login-1" />
   <link rel="stylesheet" href="/css/fwb-design-system.css?v=reference-overhaul-1" />
 </head>
 <body class="login-page">
@@ -79,6 +79,13 @@
             <button class="password-reset-button" type="button" data-password-reset="client">Forgot password?</button>
             <a class="password-reset-button" href="client-signup.html">Create new account</a>
           </div>
+          <div class="login-session-option">
+            <label class="login-remember-label">
+              <input type="checkbox" name="remember_me" value="true" checked aria-describedby="client-remember-help" />
+              <span>Keep me logged in</span>
+            </label>
+            <p id="client-remember-help">Use this on your personal device.</p>
+          </div>
           <button class="button button-dark" type="submit">Sign in</button>
           <p class="login-status" id="login-status" role="status">Use the email and password from your coach.</p>
         </form>
@@ -103,6 +110,13 @@
             <input type="password" name="password" placeholder="Password" autocomplete="current-password" required aria-label="Coach password" />
           </label>
           <button class="password-reset-button" type="button" data-password-reset="coach">Forgot password?</button>
+          <div class="login-session-option">
+            <label class="login-remember-label">
+              <input type="checkbox" name="remember_me" value="true" checked aria-describedby="coach-remember-help" />
+              <span>Keep me logged in</span>
+            </label>
+            <p id="coach-remember-help">Use this on your personal device.</p>
+          </div>
           <button class="button button-dark" type="submit">Sign in</button>
           <p class="login-status" id="coach-login-status" role="status">Use your coach admin login.</p>
         </form>
@@ -116,6 +130,7 @@
   </main>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js?v=manual-sessions-1"></script>
-  <script src="js/client-portal.js?v=mobile-fit-audit-2"></script>
+  <script src="js/auth-session.js?v=remember-login-1"></script>
+  <script src="js/client-portal.js?v=mobile-fit-audit-2&amp;remember-login=1"></script>
 </body>
 </html>

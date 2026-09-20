@@ -6,7 +6,9 @@ const accountSetupConfigured = Boolean(
   !accountSetupConfig.anonKey.includes("PASTE_")
 );
 const accountSetupSupabase = accountSetupConfigured && window.supabase
-  ? window.supabase.createClient(accountSetupConfig.url, accountSetupConfig.anonKey)
+  ? window.supabase.createClient(accountSetupConfig.url, accountSetupConfig.anonKey, {
+      auth: { storage: window.FWB_AUTH_SESSION.storage, persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+    })
   : null;
 
 function accountSetupRedirectUrl() {

@@ -6,7 +6,9 @@ const inviteConfigured = Boolean(
   !inviteConfig.anonKey.includes("PASTE_")
 );
 const inviteSupabase = inviteConfigured && window.supabase
-  ? window.supabase.createClient(inviteConfig.url, inviteConfig.anonKey)
+  ? window.supabase.createClient(inviteConfig.url, inviteConfig.anonKey, {
+      auth: { storage: window.FWB_AUTH_SESSION.storage, persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+    })
   : null;
 const inviteSteps = ["account", "fitness", "macros"];
 const inviteStepLabels = ["Account", "Fitness", "Macros"];

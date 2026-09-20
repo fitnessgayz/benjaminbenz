@@ -8,6 +8,7 @@ const isConfigured = Boolean(
 const supabaseClient = isConfigured && window.supabase
   ? window.supabase.createClient(config.url, config.anonKey, {
       auth: {
+        storage: window.FWB_AUTH_SESSION.storage,
         persistSession: true,
         autoRefreshToken: true,
         detectSessionInUrl: true
@@ -15998,6 +15999,50 @@ function renderProgram(program) {
   showDashboardContent();
 }
 
+let portalLoginSubmitting = false;
+
+function portalLoginDestination(user) {
+  const returnTo = new URLSearchParams(window.location.search).get("return_to");
+  if (returnTo?.startsWith("/") && !returnTo.startsWith("//")) {
+    const destination = new URL(returnTo, window.location.origin);
+    if (destination.origin === window.location.origin && !destination.pathname.endsWith("/client-login.html")) {
+      return destination.href;
+    }
+  }
+  return isCoachPortalEmail(user?.email)
+    ? "coach-admin.html?v=invite-list-layout-fix-1"
+    : clientDashboardUrl;
+}
+
+async function restorePortalLogin() {
+  if (!document.getElementById("client-login-form") || !supabaseClient) {
+    return;
+  }
+  try {
+    const { data, error } = await supabaseClient.auth.getSession();
+    if (!error && data?.session?.user && !portalLoginSubmitting) {
+      window.location.replace(portalLoginDestination(data.session.user));
+    }
+  } catch (_error) {
+    // Leave the forms available if the saved session cannot be restored yet.
+  }
+}
+
+function initializeRememberMe(form) {
+  const input = form.elements.remember_me;
+  if (input) {
+    input.checked = window.FWB_AUTH_SESSION.getRememberMe();
+  }
+}
+
+async function signInToPortal(form) {
+  // Finish restoring the previous session before changing its storage policy.
+  await supabaseClient.auth.initialize();
+  window.FWB_AUTH_SESSION.setRememberMe(Boolean(form.elements.remember_me?.checked));
+  const data = new FormData(form);
+  return supabaseClient.auth.signInWithPassword({ email: data.get("email"), password: data.get("password") });
+}
+
 async function handleLogin() {
   const form = document.getElementById("client-login-form");
   const status = document.getElementById("login-status");
@@ -16006,9 +16051,11 @@ async function handleLogin() {
     return;
   }
 
+  initializeRememberMe(form);
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
 
+    if (portalLoginSubmitting) return;
     if (!supabaseClient) {
       if (status) {
         status.textContent = "Client login is being connected. Please try again soon.";
@@ -16016,26 +16063,25 @@ async function handleLogin() {
       return;
     }
 
-    const data = new FormData(form);
-    const email = data.get("email");
-    const password = data.get("password");
-
     if (status) {
       status.textContent = "Signing in...";
     }
 
-    const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
-
-    if (error) {
-      if (status) {
-        status.textContent = "That email or password did not work. Please try again.";
+    portalLoginSubmitting = true;
+    try {
+      const { data, error } = await signInToPortal(form);
+      if (error) {
+        if (status) status.textContent = "That email or password did not work. Please try again.";
+        return;
       }
-      return;
+      window.location.href = portalLoginDestination(data.user);
+    } catch (error) {
+      if (status) {
+        status.textContent = error.message || "Could not sign in. Please try again.";
+      }
+    } finally {
+      portalLoginSubmitting = false;
     }
-
-    const returnTo = new URLSearchParams(window.location.search).get("return_to");
-    const isSafeLocalReturn = returnTo && returnTo.startsWith("/") && !returnTo.startsWith("//");
-    window.location.href = isSafeLocalReturn ? returnTo : clientDashboardUrl;
   });
 
   if (status && supabaseClient) {
@@ -16051,9 +16097,11 @@ async function handleCoachPortalLogin() {
     return;
   }
 
+  initializeRememberMe(form);
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
 
+    if (portalLoginSubmitting) return;
     if (!supabaseClient) {
       if (status) {
         status.textContent = "Coach login is being connected. Please try again soon.";
@@ -16061,36 +16109,30 @@ async function handleCoachPortalLogin() {
       return;
     }
 
-    const data = new FormData(form);
-    const email = data.get("email");
-    const password = data.get("password");
-
     if (status) {
       status.textContent = "Signing in...";
     }
 
-    const { data: loginData, error } = await supabaseClient.auth.signInWithPassword({ email, password });
-
-    if (error) {
-      if (status) {
-        status.textContent = "That email or password did not work. Please try again.";
+    portalLoginSubmitting = true;
+    try {
+      const { data: loginData, error } = await signInToPortal(form);
+      if (error) {
+        if (status) status.textContent = "That email or password did not work. Please try again.";
+        return;
       }
-      return;
-    }
 
-    if (!isCoachPortalEmail(loginData.user?.email)) {
-      await supabaseClient.auth.signOut();
-
-      if (status) {
-        status.textContent = "This login is not set up as a coach admin.";
+      if (!isCoachPortalEmail(loginData.user?.email)) {
+        await supabaseClient.auth.signOut();
+        if (status) status.textContent = "This login is not set up as a coach admin.";
+        return;
       }
-      return;
+
+      window.location.href = portalLoginDestination(loginData.user);
+    } catch (error) {
+      if (status) status.textContent = error.message || "Could not sign in. Please try again.";
+    } finally {
+      portalLoginSubmitting = false;
     }
-
-    const returnTo = new URLSearchParams(window.location.search).get("return_to");
-    const isSafeLocalReturn = returnTo && returnTo.startsWith("/") && !returnTo.startsWith("//");
-
-    window.location.href = isSafeLocalReturn ? returnTo : "coach-admin.html?v=invite-list-layout-fix-1";
   });
 }
 
@@ -16169,6 +16211,11 @@ async function loadDashboard() {
       "Client access check timed out."
     );
     const user = sessionData?.session?.user;
+
+    if (sessionError && !window.FWB_AUTH_SESSION.requiresLogin(sessionError)) {
+      setDashboardMessage("Could not reconnect", "Check your connection and refresh to reopen your saved session.");
+      return;
+    }
 
     if (sessionError || !user) {
       const returnTo = `${window.location.pathname}${window.location.search}${window.location.hash}`;
@@ -16898,6 +16945,7 @@ handleClientDashboardSidebar();
 handleClientDashboardMobileNavigation();
 handleLogin();
 handleCoachPortalLogin();
+void restorePortalLogin();
 handlePasswordResetRequests();
 loadDashboard();
 handleSignOut();

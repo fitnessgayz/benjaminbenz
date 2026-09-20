@@ -6,7 +6,9 @@ const scopesElement = document.querySelector("#requested-scopes");
 const authorizationId = new URLSearchParams(window.location.search).get("authorization_id");
 const config = window.FWB_SUPABASE_CONFIG || {};
 const supabaseClient = config.url && config.anonKey && window.supabase
-  ? window.supabase.createClient(config.url, config.anonKey)
+  ? window.supabase.createClient(config.url, config.anonKey, {
+      auth: { storage: window.FWB_AUTH_SESSION.storage, persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+    })
   : null;
 
 function showStatus(message) {

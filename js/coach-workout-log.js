@@ -16,7 +16,9 @@ const hasCoachWorkoutConfig = Boolean(
   !coachWorkoutConfig.anonKey.includes("PASTE_")
 );
 const coachWorkoutSupabase = hasCoachWorkoutConfig && window.supabase
-  ? window.supabase.createClient(coachWorkoutConfig.url, coachWorkoutConfig.anonKey)
+  ? window.supabase.createClient(coachWorkoutConfig.url, coachWorkoutConfig.anonKey, {
+      auth: { storage: window.FWB_AUTH_SESSION.storage, persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+    })
   : null;
 
 let coachWorkoutPrograms = [];
@@ -86,6 +88,27 @@ function setCoachWorkoutStatus(message, isError = false) {
 
 function redirectToCoachWorkoutLogin() {
   window.location.replace(coachWorkoutLoginUrl);
+}
+
+async function restoreCoachWorkoutUser() {
+  try {
+    const { data, error } = await coachWorkoutSupabase.auth.getUser();
+    if (error) throw error;
+
+    const user = data?.user;
+    if (!user) redirectToCoachWorkoutLogin();
+    return user || null;
+  } catch (error) {
+    if (window.FWB_AUTH_SESSION.requiresLogin(error)) {
+      redirectToCoachWorkoutLogin();
+    } else {
+      setCoachWorkoutAccessStatus(
+        "We couldn't confirm your sign-in. Check your connection and refresh this page to try again.",
+        true
+      );
+    }
+    return null;
+  }
 }
 
 function activeCoachWorkoutClients() {
@@ -2367,11 +2390,9 @@ async function bootCoachWorkoutPage() {
     return;
   }
 
-  const { data, error } = await coachWorkoutSupabase.auth.getUser();
-  const user = data?.user;
+  const user = await restoreCoachWorkoutUser();
 
-  if (error || !user) {
-    redirectToCoachWorkoutLogin();
+  if (!user) {
     return;
   }
 

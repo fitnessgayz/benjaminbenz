@@ -9,6 +9,7 @@ const hasCoachConfig = Boolean(
 const coachSupabase = hasCoachConfig && window.supabase
   ? window.supabase.createClient(coachConfig.url, coachConfig.anonKey, {
       auth: {
+        storage: window.FWB_AUTH_SESSION.storage,
         persistSession: true,
         autoRefreshToken: true,
         detectSessionInUrl: true
@@ -199,6 +200,44 @@ async function insertCopiedProgram(payload) {
 
 function sendToCoachLogin() {
   window.location.href = coachLoginUrl;
+}
+
+function showCoachAccessError() {
+  let status = document.getElementById("coach-access-status");
+
+  if (!status) {
+    const workspace = document.getElementById("coach-admin-workspace");
+    if (!workspace) return;
+    status = document.createElement("section");
+    status.id = "coach-access-status";
+    status.className = "admin-card";
+    status.setAttribute("role", "status");
+    workspace.before(status);
+  }
+
+  status.textContent = "We couldn't confirm your sign-in. Check your connection and refresh this page to try again.";
+  status.hidden = false;
+}
+
+async function restoreCoachAdminUser() {
+  try {
+    const { data, error } = await withRequestTimeout(
+      coachSupabase.auth.getSession(),
+      "Coach access check timed out."
+    );
+    if (error) throw error;
+
+    const user = data?.session?.user;
+    if (!user) sendToCoachLogin();
+    return user || null;
+  } catch (error) {
+    if (window.FWB_AUTH_SESSION.requiresLogin(error)) {
+      sendToCoachLogin();
+    } else {
+      showCoachAccessError();
+    }
+    return null;
+  }
 }
 
 function inviteRedirectUrl() {
@@ -6908,13 +6947,10 @@ async function bootCoachAdmin() {
     return;
   }
 
-  const { data } = await coachSupabase.auth.getSession();
-  const user = data.session?.user;
+  const user = await restoreCoachAdminUser();
 
   if (user) {
     await showAdminWorkspace(user);
-  } else {
-    sendToCoachLogin();
   }
 }
 

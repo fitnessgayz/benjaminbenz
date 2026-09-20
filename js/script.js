@@ -729,7 +729,9 @@ if (questionnaire) {
   const questionnaireSupabaseClient = questionnaireConfig.url &&
     questionnaireConfig.anonKey &&
     window.supabase
-    ? window.supabase.createClient(questionnaireConfig.url, questionnaireConfig.anonKey)
+    ? window.supabase.createClient(questionnaireConfig.url, questionnaireConfig.anonKey, {
+      auth: { storage: window.FWB_AUTH_SESSION.storage, persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+    })
     : null;
   const questionnaireAnswerKeys = [
     "date_of_birth",
