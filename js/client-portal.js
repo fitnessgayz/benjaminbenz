@@ -2911,9 +2911,9 @@ function handleClientProgressHistoryDeck() {
 }
 
 function exerciseProgressNumber(value) {
-  const number = Number(value) || 0;
+  const number = Number(value);
 
-  return Number.isInteger(number) ? String(number) : number.toFixed(1);
+  return Number.isFinite(number) ? String(number) : "0";
 }
 
 function exerciseProgressRecords(logs = []) {
@@ -2922,7 +2922,7 @@ function exerciseProgressRecords(logs = []) {
   logs.forEach((log) => {
     const code = String(log.exercise_code || "").trim().toUpperCase();
     const name = String(log.exercise_name || "").trim();
-    const normalizedName = name.toLowerCase();
+    const normalizedName = normalizeExerciseHistoryName(name);
     const date = String(log.entry_date || "");
 
     if (
@@ -2933,17 +2933,19 @@ function exerciseProgressRecords(logs = []) {
       return;
     }
 
-    const weight = Number(log.weight_used) || 0;
-    const reps = Number(log.reps) || 0;
+    const weight = Number.isFinite(Number(log.weight_used)) ? Math.max(0, Number(log.weight_used)) : 0;
+    const reps = Number.isFinite(Number(log.reps)) ? Math.max(0, Number(log.reps)) : 0;
 
     if (weight <= 0 && reps <= 0) {
       return;
     }
 
-    const key = normalizedName || code.toLowerCase();
-    if (!key) {
+    if (!normalizedName && !code) {
       return;
     }
+    const key = normalizedName
+      ? `name:${normalizedName}`
+      : `code:${normalizeExerciseHistoryName(log.workout_title)}:${code.toLowerCase()}`;
 
     if (!grouped.has(key)) {
       grouped.set(key, {
@@ -2969,21 +2971,25 @@ function exerciseProgressRecords(logs = []) {
     const tracksWeight = points.some((point) => point.maxWeight > 0);
     const comparablePoints = points.filter((point) => tracksWeight ? point.maxWeight > 0 : point.maxReps > 0);
     const started = comparablePoints[0];
-    const current = comparablePoints[comparablePoints.length - 1];
     const valueKey = tracksWeight ? "maxWeight" : "maxReps";
+    // Keep the first date this record was achieved when later sessions tie it.
+    const best = comparablePoints.reduce((record, point) => (
+      !record || point[valueKey] > record[valueKey] ? point : record
+    ), null);
 
     return {
       ...exercise,
       started,
-      current,
+      best,
+      latestDate: points[points.length - 1]?.date || "",
       unit: tracksWeight ? "lb" : "reps",
-      change: started && current ? current[valueKey] - started[valueKey] : 0,
+      change: started && best ? Number((best[valueKey] - started[valueKey]).toPrecision(12)) : 0,
       startingValue: started?.[valueKey] || 0,
-      currentValue: current?.[valueKey] || 0
+      bestValue: best?.[valueKey] || 0
     };
   })
-    .filter((exercise) => exercise.started && exercise.current)
-    .sort((left, right) => right.current.date.localeCompare(left.current.date));
+    .filter((exercise) => exercise.started && exercise.best)
+    .sort((left, right) => right.latestDate.localeCompare(left.latestDate));
 }
 
 function paginateClientExerciseProgress(records = [], pageSize = clientExerciseProgressPageSize) {
@@ -3017,9 +3023,9 @@ function clientExerciseProgressCardMarkup(record) {
         </span>
         <i aria-hidden="true">→</i>
         <span>
-          <small>Now</small>
-          <strong>${escapeHtml(exerciseProgressNumber(record.currentValue))} ${escapeHtml(record.unit)}</strong>
-          <em>${escapeHtml(formatLogDate(record.current.date))}</em>
+          <small>Personal best</small>
+          <strong>${escapeHtml(exerciseProgressNumber(record.bestValue))} ${escapeHtml(record.unit)}</strong>
+          <em>${escapeHtml(formatLogDate(record.best.date))}</em>
         </span>
       </div>
     </article>
@@ -3046,7 +3052,7 @@ function renderClientExerciseProgress(logs = trainingLogs) {
   if (records.length === 0) {
     const emptyMessage = search
       ? `No exercises match “${escapeHtml(clientExerciseProgressSearch)}.”`
-      : "Log the same exercise in another workout to see how far you’ve come.";
+      : "Log a working set to see your exercise personal bests.";
 
     container.innerHTML = `<p class="empty-state">${emptyMessage}</p>`;
     if (count) {
@@ -8542,7 +8548,7 @@ function setCustomWorkoutGroupedRowComplete(row, complete) {
   if (isComplete && row) delete row.dataset.customGroupedReopened;
 }
 
-function customWorkoutGroupedFieldMarkup(field, value, context, placeholder = "") {
+function customWorkoutGroupedFieldMarkup(field, value, context, placeholder = "", historyHint = "") {
   const fieldLabel = field === "weight" ? "Weight" : field === "reps" ? "Reps" : "RIR";
   const max = field === "rir" ? ' max="5"' : "";
   const step = field === "weight" ? "0.5" : "1";
@@ -8559,6 +8565,7 @@ function customWorkoutGroupedFieldMarkup(field, value, context, placeholder = ""
         placeholder="${escapeHtml(placeholder)}"
         data-custom-grouped-field="${field}"
         aria-label="${escapeHtml(`${fieldLabel}, ${context}`)}"
+        ${historyHint ? `title="${escapeHtml(historyHint)}" aria-description="${escapeHtml(historyHint)}"` : ""}
       />
     </label>
   `;
@@ -8589,7 +8596,7 @@ function customWorkoutGroupedSetRowMarkup(row, code, exerciseIndex, setType, rou
         aria-pressed="${complete}"
         ${workingPending ? "disabled" : ""}
       >${escapeHtml(code)}</button>
-      ${customWorkoutGroupedFieldMarkup("weight", values.weightRaw, context, row?.querySelector("[data-set-weight]")?.placeholder || "")}
+      ${customWorkoutGroupedFieldMarkup("weight", values.weightRaw, context, row?.querySelector("[data-set-weight]")?.placeholder || "", row?.querySelector("[data-set-weight]")?.dataset.historyHint || "")}
       ${customWorkoutGroupedFieldMarkup("reps", values.repsRaw, context, row?.querySelector("[data-set-reps]")?.placeholder || "")}
       ${customWorkoutGroupedFieldMarkup("rir", rir, context)}
     </div>
@@ -8718,6 +8725,12 @@ function syncCustomWorkoutGroupedHistoryPlaceholders(logElement) {
       const input = visibleRow.querySelector(`[data-custom-grouped-field="${field}"]`);
       if (input) {
         input.placeholder = canonicalRow?.querySelector(`[data-set-${field}]`)?.placeholder || "";
+        if (field === "weight") {
+          const hint = canonicalRow?.querySelector("[data-set-weight]")?.dataset.historyHint || "";
+          input.title = hint;
+          if (hint) input.setAttribute("aria-description", hint);
+          else input.removeAttribute("aria-description");
+        }
       }
     });
   });
@@ -11475,15 +11488,14 @@ function normalizeExerciseHistoryName(value) {
 }
 
 function currentExerciseHistoryName(logElement) {
+  const input = exerciseNameInputForLog(logElement);
   return normalizeExerciseHistoryName(
-    exerciseNameInputForLog(logElement)?.value ||
-    logElement?.dataset.exerciseName ||
-    ""
+    input ? input.value : logElement?.dataset.exerciseName || ""
   );
 }
 
 function logsForExerciseDisplay(logElement) {
-  if (!logElement.closest("[data-custom-exercise-card]")) {
+  if (logElement.dataset.warmupLog !== undefined || logElement.dataset.cardioLog !== undefined) {
     return logsForExercise(logElement.dataset.workoutTitle, logElement.dataset.exerciseCode);
   }
 
@@ -11611,31 +11623,15 @@ function renderPreviousExerciseWeights(logElement, logs = logsForExerciseDisplay
     return;
   }
 
-  if (logs.length === 0) {
-    previous.textContent = "Previous: none";
+  const best = personalBestWeightLog(logs);
+  if (!best) {
+    previous.textContent = "Personal best: none yet";
     return;
   }
 
-  const logsByDate = logs.reduce((groups, log) => {
-    if (!groups.has(log.entry_date)) {
-      groups.set(log.entry_date, []);
-    }
-
-    groups.get(log.entry_date).push(log);
-    return groups;
-  }, new Map());
-
   previous.innerHTML = `
-    <strong>Previous</strong>
-    ${Array.from(logsByDate.entries()).slice(0, 4).map(([date, dateLogs]) => `
-      <span>${escapeHtml(formatLogDate(date))} - ${dateLogs.map((log) => {
-        const reps = log.reps ? ` x ${log.reps}` : "";
-        const setLabel = setNumberLabel(log.set_number, log.set_type);
-        const typeLabel = normalizedSetType(log.set_type, log.set_number) === warmUpSetType ? "Warm-up" : "Set";
-
-        return `${typeLabel} ${setLabel}: ${escapeHtml(log.weight_used)} lb${escapeHtml(reps)}`;
-      }).join(", ")}</span>
-    `).join("")}
+    <strong>Personal best</strong>
+    <span>${escapeHtml(best.weight_used)} lb${best.reps ? ` × ${escapeHtml(best.reps)}` : ""} · ${escapeHtml(formatLogDate(best.entry_date))}</span>
   `;
 }
 
@@ -11701,24 +11697,28 @@ function latestPreviousSetLogs(logs, selectedDate) {
     .sort((left, right) => Number(left.set_number || 1) - Number(right.set_number || 1));
 }
 
-function heaviestPreviousSetLog(logs, selectedDate) {
+function personalBestWeightLog(logs) {
   return logs.reduce((heaviestLog, log) => {
     const rawWeight = log.weight_used;
     const weight = Number(rawWeight);
-    const isPreviousWorkingSet = String(log.entry_date || "") < selectedDate &&
+    const code = String(log.exercise_code || "").trim().toUpperCase();
+    const isWorkingSet = Boolean(log.entry_date) &&
+      ![warmupExerciseCode, cardioExerciseCode].includes(code) &&
       normalizedSetType(log.set_type, log.set_number) !== warmUpSetType;
 
     if (
-      !isPreviousWorkingSet ||
+      !isWorkingSet ||
       rawWeight === null ||
       rawWeight === undefined ||
-      rawWeight === "" ||
-      !Number.isFinite(weight)
+      String(rawWeight).trim() === "" ||
+      !Number.isFinite(weight) ||
+      weight < 0
     ) {
       return heaviestLog;
     }
 
-    return !heaviestLog || weight > Number(heaviestLog.weight_used)
+    return !heaviestLog || weight > Number(heaviestLog.weight_used) ||
+      (weight === Number(heaviestLog.weight_used) && String(log.entry_date) < String(heaviestLog.entry_date))
       ? log
       : heaviestLog;
   }, null);
@@ -11758,14 +11758,20 @@ function syncExerciseFinishedState(logElement) {
 
 function updateSetHistoryPlaceholders(logElement, logs = logsForExerciseDisplay(logElement)) {
   const selectedDate = logElement?.querySelector("[data-log-date]")?.value || todayDate();
-  const previousLogs = latestPreviousSetLogs(logs, selectedDate);
-  const customHeaviestLog = logElement?.closest("[data-custom-exercise-card]")
-    ? heaviestPreviousSetLog(logs, selectedDate)
-    : null;
+  const best = personalBestWeightLog(logs);
+  const previousByType = new Map([warmUpSetType, workingSetType].map((setType) => [
+    setType,
+    latestPreviousSetLogs(
+      logs.filter((log) => normalizedSetType(log.set_type, log.set_number) === setType),
+      selectedDate
+    )
+  ]));
 
   logElement?.querySelectorAll("[data-set-row]").forEach((row, index) => {
     const setNumber = Number(row.dataset.setNumber || index + 1);
-    const previousLog = customHeaviestLog ||
+    const setType = setTypeForRow(row);
+    const previousLogs = previousByType.get(setType) || [];
+    const previousLog =
       previousLogs.find((log) => Number(log.set_number || 1) === setNumber) ||
       previousLogs[Math.min(index, Math.max(previousLogs.length - 1, 0))];
     const weightInput = row.querySelector("[data-set-weight]");
@@ -11773,9 +11779,16 @@ function updateSetHistoryPlaceholders(logElement, logs = logsForExerciseDisplay(
 
     if (weightInput) {
       weightInput.placeholder = historyPlaceholder(
-        previousLog?.weight_used,
+        (setType === warmUpSetType ? previousLog : best)?.weight_used,
         weightInput.dataset.defaultPlaceholder || "0"
       );
+      const hint = setType !== warmUpSetType && best
+        ? `Personal best: ${best.weight_used} lb · ${formatLogDate(best.entry_date)}`
+        : "";
+      weightInput.dataset.historyHint = hint;
+      weightInput.title = hint;
+      if (hint) weightInput.setAttribute("aria-description", hint);
+      else weightInput.removeAttribute("aria-description");
     }
 
     if (repsInput) {
@@ -11929,7 +11942,7 @@ function updateExerciseLogField(logElement) {
 
   updateVisibleSetProgress(logElement);
   syncExerciseFinishedState(logElement);
-  renderPreviousExerciseWeights(logElement, logs);
+  renderPreviousExerciseWeights(logElement);
 }
 
 function populateTrainingLogs(logs) {
@@ -16201,6 +16214,36 @@ function handlePasswordResetRequests() {
   });
 }
 
+async function loadClientWorkoutLogHistory(clientEmail = activeClientEmail) {
+  const pageSize = 500;
+  const logs = [];
+
+  try {
+    for (let offset = 0; ; offset += pageSize) {
+      const { data, error } = await withTimeout(
+        supabaseClient
+          .from("client_workout_logs")
+          .select("*")
+          .ilike("client_email", clientEmail)
+          .order("entry_date", { ascending: true })
+          .order("id", { ascending: true })
+          .range(offset, offset + pageSize - 1),
+        "Training log request timed out."
+      );
+
+      // A partial history could present a lower weight as an all-time record.
+      if (error) return { data: null, error };
+
+      logs.push(...(data || []));
+      if (!data || data.length < pageSize) {
+        return { data: logs, error: null };
+      }
+    }
+  } catch (error) {
+    return { data: null, error };
+  }
+}
+
 async function loadDashboard() {
   if (!document.querySelector(".dashboard-page")) {
     return;
@@ -16328,15 +16371,7 @@ async function loadDashboard() {
           .order("created_at", { ascending: false }),
         "DEXA report request timed out."
       ),
-      withTimeout(
-        supabaseClient
-          .from("client_workout_logs")
-          .select("*")
-          .ilike("client_email", activeClientEmail)
-          .order("entry_date", { ascending: true })
-          .limit(500),
-        "Training log request timed out."
-      ),
+      loadClientWorkoutLogHistory(activeClientEmail),
       withTimeout(
         supabaseClient
           .from("workout_session_feedback")
