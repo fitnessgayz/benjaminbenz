@@ -2394,7 +2394,7 @@ function exerciseVideoUrl(exercise) {
   }
 }
 
-function exerciseVideoMarkup(exercise) {
+function exerciseVideoMarkup(exercise, options = {}) {
   const videoUrl = exerciseVideoUrl(exercise);
 
   if (!videoUrl) {
@@ -2402,8 +2402,8 @@ function exerciseVideoMarkup(exercise) {
   }
 
   return `
-    <a class="exercise-video-link" href="${escapeHtml(videoUrl)}" target="_blank" rel="noopener noreferrer" aria-label="View demo for ${escapeHtml(exercise.name)} (opens in a new tab)">
-      View demo
+    <a class="exercise-video-link" href="${escapeHtml(videoUrl)}" target="_blank" rel="noopener noreferrer" aria-label="View demo for ${escapeHtml(exercise.name)} (opens in a new tab)" title="View demo for ${escapeHtml(exercise.name)}">
+      ${options.iconOnly ? '<span aria-hidden="true">🎥</span>' : "View demo"}
     </a>
   `;
 }
@@ -8660,7 +8660,7 @@ function customWorkoutGroupedExerciseKeyMarkup(carousel) {
     const originalVideo = exerciseName.toLowerCase() === originalName.toLowerCase()
       ? logElement.querySelector(".exercise-video-link")?.getAttribute("href") || ""
       : "";
-    const demo = exerciseName ? exerciseVideoMarkup({ name: exerciseName, video: originalVideo }) : "";
+    const demo = exerciseName ? exerciseVideoMarkup({ name: exerciseName, video: originalVideo }, { iconOnly: true }) : "";
 
     return `
       <div class="custom-workout-grouped-exercise-key-item" role="listitem">
