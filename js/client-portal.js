@@ -2402,8 +2402,8 @@ function exerciseVideoMarkup(exercise) {
   }
 
   return `
-    <a class="exercise-video-link" href="${escapeHtml(videoUrl)}" target="_blank" rel="noopener noreferrer">
-      Watch demo
+    <a class="exercise-video-link" href="${escapeHtml(videoUrl)}" target="_blank" rel="noopener noreferrer" aria-label="View demo for ${escapeHtml(exercise.name)} (opens in a new tab)">
+      View demo
     </a>
   `;
 }
@@ -8644,12 +8644,21 @@ function customWorkoutGroupedRoundIsLogged(carousel, roundNumber) {
 
 function customWorkoutGroupedExerciseKeyMarkup(carousel) {
   return customWorkoutGroupedLogElements(carousel).map((logElement, index) => {
-    const name = currentExerciseLabel(logElement) || `Exercise ${index + 1}`;
+    const nameInput = exerciseNameInputForLog(logElement);
+    const exerciseName = String(nameInput ? nameInput.value : logElement.dataset.exerciseName || "").trim();
+    const name = exerciseName || `Exercise ${index + 1}`;
+    const originalName = String(logElement.dataset.exerciseName || "").trim();
+    // Keep assigned videos until the exercise changes; custom names use the library.
+    const originalVideo = exerciseName.toLowerCase() === originalName.toLowerCase()
+      ? logElement.querySelector(".exercise-video-link")?.getAttribute("href") || ""
+      : "";
+    const demo = exerciseName ? exerciseVideoMarkup({ name: exerciseName, video: originalVideo }) : "";
 
     return `
       <div class="custom-workout-grouped-exercise-key-item" role="listitem">
         <span class="custom-workout-grouped-exercise-number">${index + 1}</span>
         <strong data-custom-grouped-exercise-name="${index}">${escapeHtml(name)}</strong>
+        ${demo}
       </div>
     `;
   }).join("");
