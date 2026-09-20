@@ -76,7 +76,7 @@ test("Sessions Left uses only the Alex Fitness Master summary", () => {
   assert.match(renderer, /Alex Fitness Master/);
   assert.doesNotMatch(renderer, /const activePackages = activeClients/);
   assert.match(adminHtml, /id="coach-home-session-total">Alex Fitness Master only/);
-  assert.match(adminHtml, /coach-admin\.js\?v=workout-preview-1/);
+  assert.match(adminHtml, /coach-admin\.js\?[^"\s]*home-shortcuts=1/);
 });
 
 test("home flags empty or low packages and clients inactive for 14 days", () => {
@@ -104,4 +104,47 @@ test("home dashboard adapts its cards and lists for phone screens", () => {
   assert.match(styleSource, /\.coach-home-dashboard-grid\s*\{[^}]*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/s);
   assert.match(styleSource, /@media \(max-width: 720px\)[\s\S]*?\.coach-home-dashboard-grid\s*\{[^}]*grid-template-columns:\s*1fr/s);
   assert.match(styleSource, /@media \(max-width: 480px\)[\s\S]*?\.coach-home-sheet-card\s*\{[^}]*grid-template-columns:\s*1fr/s);
+});
+
+test("summary cards are four keyboard-accessible buttons rather than static articles", () => {
+  const metrics = adminHtml.slice(adminHtml.indexOf('class="coach-home-metrics"'), adminHtml.indexOf('class="coach-home-dashboard-grid"'));
+  for (const destination of ["clients", "workouts", "sessions", "attention"]) {
+    assert.match(metrics, new RegExp(`<button[^>]+type="button"[^>]+data-coach-home-shortcut="${destination}"`));
+  }
+  assert.doesNotMatch(metrics, /<article/);
+});
+
+test("summary shortcuts select active clients or focus and scroll to the matching section", () => {
+  const calls = [];
+  const nodes = {};
+  for (const id of ["client-search-input", "coach-home-recent-title", "coach-home-sheets-title", "coach-home-session-alert-title"]) {
+    nodes[id] = {value: "Old search", focus: () => calls.push(["focus", id]), scrollIntoView: options => calls.push(["scroll", id, options.behavior])};
+  }
+  let reducedMotion = false;
+  const api = Function("document", "window", "closeClientSuggestions", "renderClientList", "setAdminTab", `
+    let showingArchivedClients = true;
+    let clientSearchTerm = "Old search";
+    ${javascriptFunction("openCoachHomeShortcut")}
+    return {openCoachHomeShortcut, state: () => ({showingArchivedClients, clientSearchTerm})};
+  `)(
+    {getElementById: id => nodes[id]},
+    {matchMedia: () => ({matches: reducedMotion})},
+    () => calls.push(["close"]), () => calls.push(["render"]), tab => calls.push(["tab", tab])
+  );
+  api.openCoachHomeShortcut("clients");
+  assert.deepEqual(api.state(), {showingArchivedClients:false, clientSearchTerm:""});
+  assert.equal(nodes["client-search-input"].value, "");
+  assert.ok(calls.some(call => call[0] === "tab" && call[1] === "clients"));
+  for (const [destination,id] of [["workouts","coach-home-recent-title"],["sessions","coach-home-sheets-title"],["attention","coach-home-session-alert-title"]]) {
+    calls.length = 0;
+    api.openCoachHomeShortcut(destination);
+    assert.deepEqual(calls, [["focus",id],["scroll",id,"smooth"]]);
+  }
+  reducedMotion = true;
+  calls.length = 0;
+  api.openCoachHomeShortcut("workouts");
+  assert.equal(calls.at(-1)[2], "auto");
+  calls.length = 0;
+  api.openCoachHomeShortcut("unknown");
+  assert.equal(calls.length, 0);
 });

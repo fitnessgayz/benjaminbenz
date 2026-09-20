@@ -30,7 +30,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=exercise-video-upload-1" />
+  <link rel="stylesheet" href="css/style.css?v=exercise-video-upload-1&amp;home-shortcuts=1" />
   <link rel="stylesheet" href="css/workout-layout.css?v=workout-preview-1" />
   <link rel="stylesheet" href="/css/fwb-design-system.css?v=reference-overhaul-1" />
 </head>
@@ -163,26 +163,30 @@
           </div>
 
           <div class="coach-home-metrics" aria-label="Coach summary">
-            <article>
+            <button class="coach-home-shortcut" type="button" data-coach-home-shortcut="clients">
               <span>Active clients</span>
               <strong id="coach-home-active-clients">0</strong>
               <small>currently on your roster</small>
-            </article>
-            <article>
+            <em>View clients <span aria-hidden="true">→</span></em>
+            </button>
+            <button class="coach-home-shortcut" type="button" data-coach-home-shortcut="workouts">
               <span>Workouts</span>
               <strong id="coach-home-recent-workouts">0</strong>
               <small>completed in the last 7 days</small>
-            </article>
-            <article>
+            <em>View activity <span aria-hidden="true">→</span></em>
+            </button>
+            <button class="coach-home-shortcut" type="button" data-coach-home-shortcut="sessions">
               <span>Sessions left</span>
               <strong id="coach-home-sessions-left">0</strong>
               <small id="coach-home-session-total">Alex Fitness Master only</small>
-            </article>
-            <article class="coach-home-attention-metric">
+            <em>View session sheets <span aria-hidden="true">→</span></em>
+            </button>
+            <button class="coach-home-shortcut coach-home-attention-metric" type="button" data-coach-home-shortcut="attention">
               <span>Needs attention</span>
               <strong id="coach-home-needs-attention">0</strong>
               <small>low sessions or training inactivity</small>
-            </article>
+            <em>View follow-ups <span aria-hidden="true">→</span></em>
+            </button>
           </div>
 
           <div class="coach-home-dashboard-grid">
@@ -190,7 +194,7 @@
               <div class="coach-home-module-heading">
                 <div>
                   <p class="kicker">Training activity</p>
-                  <h3 id="coach-home-recent-title">Last workout by client</h3>
+                  <h3 id="coach-home-recent-title" tabindex="-1">Last workout by client</h3>
                 </div>
                 <button class="coach-home-text-link" type="button" data-coach-home-tab="clients">All clients</button>
               </div>
@@ -221,7 +225,7 @@
               <div class="coach-home-module-heading">
                 <div>
                   <p class="kicker">Master sessions</p>
-                  <h3 id="coach-home-sheets-title">Session sheets</h3>
+                  <h3 id="coach-home-sheets-title" tabindex="-1">Session sheets</h3>
                 </div>
               </div>
               <p class="coach-home-module-copy">Alex Fitness, B2 Master Session, and other saved client sheets stay one tap away.</p>
@@ -234,7 +238,7 @@
               <div class="coach-home-module-heading">
                 <div>
                   <p class="kicker">Session count</p>
-                  <h3 id="coach-home-session-alert-title">Low or out of sessions</h3>
+                  <h3 id="coach-home-session-alert-title" tabindex="-1">Low or out of sessions</h3>
                 </div>
               </div>
               <div class="coach-home-list" id="coach-home-session-alert-list">
@@ -1068,6 +1072,6 @@
   <script src="js/auth-session.js?v=remember-login-1"></script>
   <script src="js/web-notifications.js?v=notification-default-on-1"></script>
   <script src="js/workout-layout.js?v=workout-preview-1"></script>
-  <script src="js/coach-admin.js?v=exercise-video-upload-1&amp;remember-login=1"></script>
+  <script src="js/coach-admin.js?v=exercise-video-upload-1&amp;remember-login=1&amp;home-shortcuts=1"></script>
 </body>
 </html>

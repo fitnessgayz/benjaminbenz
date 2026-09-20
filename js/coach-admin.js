@@ -5272,6 +5272,33 @@ function openCoachHomeClientSection(email, tabName) {
   });
 }
 
+function openCoachHomeShortcut(destination) {
+  if (destination === "clients") {
+    showingArchivedClients = false;
+    clientSearchTerm = "";
+    const input = document.getElementById("client-search-input");
+    if (input) input.value = "";
+    closeClientSuggestions();
+    renderClientList();
+    setAdminTab("clients");
+    input?.focus();
+    return;
+  }
+
+  const targetIds = {
+    workouts: "coach-home-recent-title",
+    sessions: "coach-home-sheets-title",
+    attention: "coach-home-session-alert-title"
+  };
+  const target = document.getElementById(targetIds[destination]);
+  if (!target) return;
+  target.focus({ preventScroll: true });
+  target.scrollIntoView({
+    behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+    block: "start"
+  });
+}
+
 function handleCoachHomeActions() {
   const panel = document.querySelector('[data-admin-panel="home"]');
 
@@ -5280,6 +5307,11 @@ function handleCoachHomeActions() {
   }
 
   panel.addEventListener("click", (event) => {
+    const shortcut = event.target.closest("[data-coach-home-shortcut]");
+    if (shortcut) {
+      openCoachHomeShortcut(shortcut.dataset.coachHomeShortcut);
+      return;
+    }
     const logsButton = event.target.closest("[data-coach-home-open-logs]");
     const sessionsButton = event.target.closest("[data-coach-home-open-sessions]");
     const tabButton = event.target.closest("[data-coach-home-tab]");
