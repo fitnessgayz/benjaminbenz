@@ -8543,6 +8543,7 @@ function customWorkoutGroupedCanonicalRow(carousel, exerciseIndex, setType, setN
 function setCustomWorkoutGroupedRowComplete(row, complete) {
   const isComplete = Boolean(complete);
 
+  if (isComplete) clearCustomWorkoutGroupedWeightCopy(row?.querySelector("[data-set-weight]"));
   row?.classList.toggle("is-complete", isComplete);
   row?.querySelector("[data-complete-set]")?.setAttribute("aria-pressed", String(isComplete));
   if (isComplete && row) delete row.dataset.customGroupedReopened;
@@ -8740,6 +8741,145 @@ function workoutSetUnit(carousel) {
   return carousel?.dataset.customWorkoutFormat === "single" ? "Set" : "Round";
 }
 
+function previousWorkoutWeightLog(logs, selectedDate, setNumber) {
+  const candidates = logs.filter((log) => (
+    String(log.entry_date || "") !== "" && String(log.entry_date) < selectedDate &&
+    ![warmupExerciseCode, cardioExerciseCode].includes(String(log.exercise_code || "").trim().toUpperCase()) &&
+    normalizedSetType(log.set_type, log.set_number) !== warmUpSetType &&
+    log.weight_used !== null && log.weight_used !== undefined && String(log.weight_used).trim() !== "" &&
+    Number.isFinite(Number(log.weight_used)) && Number(log.weight_used) >= 0
+  )).sort((left, right) => (
+    String(right.entry_date).localeCompare(String(left.entry_date)) ||
+    String(right.created_at || "").localeCompare(String(left.created_at || "")) ||
+    clientWorkoutHistorySessionKey(right).localeCompare(clientWorkoutHistorySessionKey(left))
+  ));
+  if (candidates.length === 0) return null;
+
+  const sessionKey = clientWorkoutHistorySessionKey(candidates[0]);
+  const session = candidates.filter((log) => clientWorkoutHistorySessionKey(log) === sessionKey)
+    .sort((left, right) => Number(left.set_number || 1) - Number(right.set_number || 1));
+  return session.find((log) => Number(log.set_number || 1) === Number(setNumber)) || session.at(-1);
+}
+
+function clearCustomWorkoutGroupedWeightCopy(input) {
+  if (!input) return;
+  delete input.dataset.lastWeightCopyValue;
+  delete input.dataset.lastWeightCopyContext;
+  delete input.dataset.lastWeightCopyDate;
+}
+
+function customWorkoutGroupedCopyContext(logElement) {
+  return JSON.stringify([
+    currentExerciseHistoryName(logElement),
+    logElement.querySelector("[data-log-date]")?.value || todayDate(),
+    logElement.dataset.workoutTitle || ""
+  ]);
+}
+
+function customWorkoutGroupedCopyRows(carousel, roundNumber) {
+  return customWorkoutGroupedLogElements(carousel).map((logElement, exerciseIndex) => {
+    const row = customWorkoutGroupedRows(logElement, workingSetType)[roundNumber - 1];
+    const input = row?.querySelector("[data-set-weight]");
+    return { logElement, row, input, exerciseIndex, context: customWorkoutGroupedCopyContext(logElement) };
+  }).filter((entry) => entry.input);
+}
+
+function customWorkoutGroupedCopyVisibleInput(section, exerciseIndex) {
+  return section?.querySelector(
+    `.custom-workout-grouped-row[data-custom-grouped-exercise-index="${exerciseIndex}"] [data-custom-grouped-field="weight"]`
+  );
+}
+
+function refreshCustomWorkoutGroupedCopyWeights(carousel) {
+  carousel?.querySelectorAll("[data-custom-grouped-round]").forEach((section) => {
+    const roundNumber = Number(section.dataset.customGroupedRound);
+    const entries = customWorkoutGroupedCopyRows(carousel, roundNumber);
+    const copied = entries.filter(({ row, input, context }) => {
+      if (row.classList.contains("is-complete") || input.dataset.lastWeightCopyContext !== context ||
+        input.dataset.lastWeightCopyValue !== String(input.value)) {
+        clearCustomWorkoutGroupedWeightCopy(input);
+        return false;
+      }
+      return input.dataset.lastWeightCopyValue !== undefined;
+    });
+    const button = section.querySelector("[data-custom-grouped-copy-weights]");
+    if (button) {
+      button.disabled = !entries.some(({ row, input, exerciseIndex }) => (
+        !row.classList.contains("is-complete") && String(input.value).trim() === "" &&
+        String(customWorkoutGroupedCopyVisibleInput(section, exerciseIndex)?.value || "").trim() === ""
+      ));
+    }
+    const status = section.querySelector("[data-custom-grouped-copy-status]");
+    const message = section.querySelector("[data-custom-grouped-copy-message]");
+    const undo = section.querySelector("[data-custom-grouped-undo-weights]");
+    if (status) status.hidden = copied.length === 0;
+    if (undo) undo.hidden = copied.length === 0;
+    if (message && copied.length) {
+      const dates = [...new Set(copied.map(({ input }) => input.dataset.lastWeightCopyDate))];
+      message.textContent = `${copied.length === 1 ? "Weight copied" : "Weights copied"} · ${dates.map(formatLogDate).join(" / ")}`;
+    }
+  });
+}
+
+function copyCustomWorkoutGroupedWeights(button) {
+  const carousel = button?.closest("[data-custom-workout-grouped='true']");
+  const section = button?.closest("[data-custom-grouped-round]");
+  const roundNumber = Number(button?.dataset.customGroupedCopyWeights);
+  if (!carousel || !section || button.disabled) return;
+
+  let count = 0;
+  customWorkoutGroupedCopyRows(carousel, roundNumber).forEach(({ logElement, row, input, exerciseIndex, context }) => {
+    const visible = customWorkoutGroupedCopyVisibleInput(section, exerciseIndex);
+    if (!visible || row.classList.contains("is-complete") || String(input.value).trim() || String(visible.value).trim()) return;
+    const date = logElement.querySelector("[data-log-date]")?.value || todayDate();
+    const source = previousWorkoutWeightLog(logsForExerciseDisplay(logElement), date, row.dataset.setNumber);
+    if (!source) return;
+
+    const value = String(Number(source.weight_used));
+    input.value = value;
+    visible.value = value;
+    input.dataset.lastWeightCopyValue = value;
+    input.dataset.lastWeightCopyContext = context;
+    input.dataset.lastWeightCopyDate = source.entry_date;
+    input.removeAttribute("aria-invalid");
+    visible.removeAttribute("aria-invalid");
+    count += 1;
+  });
+  if (count) persistCustomWorkoutDraftForElement(carousel);
+  refreshCustomWorkoutGroupedCopyWeights(carousel);
+  if (count) {
+    section.querySelector("[data-custom-grouped-undo-weights]")?.focus();
+  } else {
+    const status = section.querySelector("[data-custom-grouped-copy-status]");
+    const message = section.querySelector("[data-custom-grouped-copy-message]");
+    if (status) status.hidden = false;
+    if (message) message.textContent = "No previous weights for the empty fields.";
+  }
+}
+
+function undoCustomWorkoutGroupedWeights(button) {
+  const carousel = button?.closest("[data-custom-workout-grouped='true']");
+  const section = button?.closest("[data-custom-grouped-round]");
+  const roundNumber = Number(button?.dataset.customGroupedUndoWeights);
+  if (!carousel || !section) return;
+
+  let count = 0;
+  customWorkoutGroupedCopyRows(carousel, roundNumber).forEach(({ row, input, exerciseIndex, context }) => {
+    const visible = customWorkoutGroupedCopyVisibleInput(section, exerciseIndex);
+    if (input.dataset.lastWeightCopyValue !== undefined && input.dataset.lastWeightCopyContext === context &&
+      !row.classList.contains("is-complete") && input.value === input.dataset.lastWeightCopyValue &&
+      visible?.value === input.value) {
+      input.value = "";
+      visible.value = "";
+      count += 1;
+    }
+    clearCustomWorkoutGroupedWeightCopy(input);
+  });
+  if (count) persistCustomWorkoutDraftForElement(carousel);
+  refreshCustomWorkoutGroupedCopyWeights(carousel);
+  section.querySelector("[data-custom-grouped-copy-weights]")?.focus();
+}
+
 function customWorkoutGroupedSectionsMarkup(carousel) {
   const logElements = customWorkoutGroupedLogElements(carousel);
   const warmUps = [];
@@ -8781,15 +8921,22 @@ function customWorkoutGroupedSectionsMarkup(carousel) {
       exerciseIndex,
       exerciseName: currentExerciseLabel(logElement) || `Exercise ${exerciseIndex + 1}`
     })).filter((item) => item.row);
-    const codes = rows.map((item) => customWorkoutGroupedRoundCode(roundNumber, item.exerciseIndex));
     const logged = customWorkoutGroupedRoundIsLogged(carousel, roundNumber);
 
     return `
       <section class="custom-workout-grouped-section" data-kind="round" data-custom-grouped-round="${roundNumber}" data-custom-grouped-round-logged="${logged}">
         <header class="custom-workout-grouped-section-heading">
           <h4>${workoutSetUnit(carousel)} ${roundNumber}</h4>
-          <p>${escapeHtml(codes.join(" + "))}</p>
+          <button class="custom-workout-grouped-copy-weights" type="button" data-custom-grouped-copy-weights="${roundNumber}" ${logged ? "disabled" : ""}
+            aria-label="Copy last workout weights into empty fields in ${workoutSetUnit(carousel).toLowerCase()} ${roundNumber}">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h4"/></svg>
+            Copy last weights
+          </button>
         </header>
+        <div class="custom-workout-grouped-copy-status" data-custom-grouped-copy-status role="status" aria-live="polite" hidden>
+          <span data-custom-grouped-copy-message></span>
+          <button class="custom-workout-grouped-undo-weights" type="button" data-custom-grouped-undo-weights="${roundNumber}" aria-label="Undo copied weights in ${workoutSetUnit(carousel).toLowerCase()} ${roundNumber}" hidden>Undo</button>
+        </div>
         ${columnLabelsMarkup}
         ${rows.map((item) => customWorkoutGroupedSetRowMarkup(
           item.row,
@@ -8895,6 +9042,7 @@ function refreshCustomWorkoutGroupedCompletion(carousel) {
 
   const progress = carousel?.querySelector("[data-custom-grouped-progress]");
   if (progress) progress.textContent = `${completeCount} / ${visibleRows.length} complete`;
+  refreshCustomWorkoutGroupedCopyWeights(carousel);
 }
 
 function renderCustomWorkoutGroupedCard(carousel) {
@@ -9019,6 +9167,7 @@ function syncCustomWorkoutGroupedField(input) {
 
   if (!canonicalRow || !field) return;
 
+  if (field === "weight") clearCustomWorkoutGroupedWeightCopy(canonicalRow.querySelector("[data-set-weight]"));
   if (field === "rir") {
     const value = String(input.value || "").trim();
     if (value === "") {
@@ -14994,6 +15143,8 @@ function handleWorkoutInteractions() {
     const customWorkoutGroupNameToggle = event.target.closest("[data-custom-workout-group-name-toggle]");
     const customWorkoutGroupDelete = event.target.closest("[data-custom-workout-group-delete]");
     const customGroupedLogRoundButton = event.target.closest("[data-custom-grouped-log-round]");
+    const customGroupedCopyWeightsButton = event.target.closest("[data-custom-grouped-copy-weights]");
+    const customGroupedUndoWeightsButton = event.target.closest("[data-custom-grouped-undo-weights]");
     const customGroupedAddRoundButton = event.target.closest("[data-custom-grouped-add-round]");
     const customGroupedRemoveRoundButton = event.target.closest("[data-custom-grouped-remove-round]");
     const customGroupedRestAdjustButton = event.target.closest("[data-custom-grouped-rest-adjust]");
@@ -15062,6 +15213,12 @@ function handleWorkoutInteractions() {
         finishWorkoutButton.dataset.allowIncompleteWorkoutFinish = "true";
         finishWorkoutButton.click();
       }
+      return;
+    }
+
+    if (customGroupedCopyWeightsButton || customGroupedUndoWeightsButton) {
+      if (customGroupedCopyWeightsButton) copyCustomWorkoutGroupedWeights(customGroupedCopyWeightsButton);
+      else undoCustomWorkoutGroupedWeights(customGroupedUndoWeightsButton);
       return;
     }
 
@@ -15741,6 +15898,7 @@ function handleWorkoutInteractions() {
         ? groupedIndex
         : customWorkoutGroupedLogElements(groupedCarousel).indexOf(logElement);
       renderCustomWorkoutGroupedExerciseKey(groupedCarousel);
+      refreshCustomWorkoutGroupedCopyWeights(groupedCarousel);
       if (accessibleIndex >= 0) {
         syncCustomWorkoutGroupedAccessibleNames(groupedCarousel, accessibleIndex, exerciseNameInput.value);
       }
