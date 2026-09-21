@@ -13350,6 +13350,80 @@ textarea,
   text-transform: uppercase;
 }
 
+.coach-workout-log-page .coach-workout-card-format {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  min-width: 0;
+  padding: 8px 10px;
+  gap: 6px;
+  border-bottom: 1px solid var(--coach-grouped-line);
+  background: var(--coach-grouped-paper);
+}
+
+.coach-workout-log-page .coach-workout-card-format > button,
+.coach-workout-log-page .coach-workout-group-add-exercise {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  margin: 0;
+  padding: 7px 6px;
+  place-items: center;
+  border: 1px solid var(--coach-grouped-line);
+  border-radius: 10px !important;
+  background: var(--coach-grouped-cream);
+  color: var(--coach-grouped-ink);
+  font: inherit;
+  font-size: .75rem !important;
+  font-weight: 800;
+  letter-spacing: 0;
+  line-height: 1.2;
+  text-align: center;
+  text-transform: none;
+  white-space: normal;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.coach-workout-log-page .coach-workout-card-format > button[aria-pressed="true"] {
+  border-color: var(--coach-grouped-ink);
+  background: var(--coach-grouped-lime);
+}
+
+.coach-workout-log-page .coach-workout-group-add-exercise {
+  width: calc(100% - 20px) !important;
+  inline-size: calc(100% - 20px) !important;
+  margin: 0 10px 10px;
+  background: var(--coach-grouped-paper);
+}
+
+.coach-workout-log-page .coach-workout-group-name-fields .coach-workout-group-add-exercise {
+  width: 100% !important;
+  inline-size: 100% !important;
+  margin: 0;
+}
+
+.coach-workout-log-page .coach-workout-card-format > button:focus-visible,
+.coach-workout-log-page .coach-workout-group-add-exercise:focus-visible {
+  outline: 3px solid var(--coach-grouped-blue);
+  outline-offset: 2px;
+}
+
+.coach-workout-log-page .coach-workout-card-format > button:disabled,
+.coach-workout-log-page .coach-workout-group-add-exercise:disabled {
+  cursor: default;
+  opacity: .5;
+}
+
+@media (hover: hover) {
+  .coach-workout-log-page .coach-workout-card-format > button:hover:not(:disabled),
+  .coach-workout-log-page .coach-workout-group-add-exercise:hover:not(:disabled) {
+    border-color: var(--coach-grouped-ink);
+  }
+}
+
 .coach-workout-grouped-exercise-key {
   display: grid;
   min-width: 0;

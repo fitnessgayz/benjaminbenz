@@ -24,6 +24,7 @@ const coachWorkoutSupabase = hasCoachWorkoutConfig && window.supabase
 let coachWorkoutPrograms = [];
 let coachWorkoutExerciseLibrary = [];
 let coachWorkoutExerciseId = 0;
+let coachWorkoutGroupId = 0;
 let coachWorkoutAutosaveTimer = null;
 let coachWorkoutAutosaveInFlight = false;
 let coachWorkoutAutosaveQueued = false;
@@ -309,7 +310,7 @@ function coachWorkoutExerciseMarkup(values = {}) {
   const sets = Array.isArray(values.sets) && values.sets.length > 0 ? values.sets : [{}];
 
   return `
-    <article class="coach-workout-exercise is-open" data-coach-workout-exercise data-coach-workout-code="${escapeCoachWorkoutHtml(values.code || "")}" data-coach-workout-code-context="${escapeCoachWorkoutHtml(values.codeContext || "")}">
+    <article class="coach-workout-exercise is-open" data-coach-workout-exercise data-coach-workout-code="${escapeCoachWorkoutHtml(values.code || "")}" data-coach-workout-code-context="${escapeCoachWorkoutHtml(values.codeContext || "")}" data-coach-workout-group-id="${escapeCoachWorkoutHtml(values.groupId || "")}" data-coach-workout-group-format="${escapeCoachWorkoutHtml(values.groupFormat || "")}">
       <div class="coach-workout-exercise-heading">
         <label class="coach-workout-exercise-name">
           <span class="coach-workout-name-field-label">Exercise name</span>
@@ -752,14 +753,14 @@ function coachWorkoutGroupedHistoryMarkup(group, groupIndex) {
   `;
 }
 
-function coachWorkoutRestOwner(rows) {
+function coachWorkoutRestOwner(rows, format = coachWorkoutFormatValue()) {
   // Keep the timer attached to the actual sets across card re-renders and reordering.
   const ids = rows.map(({ row }) => {
     if (!row) return "missing";
     if (!coachWorkoutRestRowIds.has(row)) coachWorkoutRestRowIds.set(row, ++coachWorkoutRestRowId);
     return coachWorkoutRestRowIds.get(row);
   });
-  return `${coachWorkoutFormatValue()}:${ids.sort((a, b) => a - b).join(",")}`;
+  return `${format}:${ids.sort((a, b) => a - b).join(",")}`;
 }
 
 function renderCoachWorkoutInlineRest(state = window.CoachRestTimer?.getState()) {
@@ -789,7 +790,7 @@ function renderCoachWorkoutInlineRest(state = window.CoachRestTimer?.getState())
   });
 }
 
-function coachWorkoutGroupedSectionsMarkup(group) {
+function coachWorkoutGroupedSectionsMarkup(group, format = coachWorkoutGroupFormat(group)) {
   const warmUps = group.flatMap(({ exercise, exerciseIndex }, position) => (
     coachWorkoutSetRowsByType(exercise, coachWorkoutWarmUpSetType).map((row, warmUpIndex) => ({
       row,
@@ -827,8 +828,8 @@ function coachWorkoutGroupedSectionsMarkup(group) {
     }));
 
     return `
-      <section class="coach-workout-grouped-section" data-coach-grouped-section="round" data-coach-grouped-round="${roundNumber}" data-coach-rest-owner="${coachWorkoutRestOwner(rows)}">
-        <header><h4>${coachWorkoutFormatValue() === "single" ? "Set" : "Round"} ${roundNumber}</h4><p>${rows.map((item) => coachWorkoutGroupedRoundCode(roundNumber, item.position)).join(" + ")}</p></header>
+      <section class="coach-workout-grouped-section" data-coach-grouped-section="round" data-coach-grouped-round="${roundNumber}" data-coach-rest-owner="${coachWorkoutRestOwner(rows, format)}">
+        <header><h4>${format === "single" ? "Set" : "Round"} ${roundNumber}</h4><p>${rows.map((item) => coachWorkoutGroupedRoundCode(roundNumber, item.position)).join(" + ")}</p></header>
         ${coachWorkoutGroupedColumnLabelsMarkup()}
         ${rows.map((item) => coachWorkoutGroupedSetRowMarkup(
           item.row,
@@ -839,7 +840,7 @@ function coachWorkoutGroupedSectionsMarkup(group) {
           `round ${roundNumber}, ${item.name}`
         )).join("")}
         <div class="coach-workout-round-action">
-          <button class="coach-workout-log-round" type="button" data-coach-grouped-log-round>${coachWorkoutFormatValue() === "single" ? "Log Set" : "Log Round"}</button>
+          <button class="coach-workout-log-round" type="button" data-coach-grouped-log-round>${format === "single" ? "Log Set" : "Log Round"}</button>
           <div class="coach-workout-inline-rest" data-coach-inline-rest role="group" aria-label="Rest timer" hidden>
             <button type="button" data-coach-rest-adjust="-15" aria-label="Subtract 15 seconds from rest">−15</button>
             <button class="coach-workout-inline-rest-toggle" type="button" data-coach-rest-toggle>Rest 01:00 · Pause</button>
@@ -866,13 +867,17 @@ function coachWorkoutGroupedCardMarkup(format, group, groupIndex) {
   const indexes = group.map(({ exerciseIndex }) => exerciseIndex).join(",");
 
   return `
-    <section class="coach-workout-group-shell" data-coach-workout-group-card data-coach-workout-grouped="true" data-coach-workout-format="${format}" data-coach-workout-group-indexes="${indexes}">
+    <section class="coach-workout-group-shell" data-coach-workout-group-card data-coach-workout-grouped="true" data-coach-workout-format="${format}" data-coach-workout-group-index="${groupIndex}" data-coach-workout-group-indexes="${indexes}">
       ${coachWorkoutGroupedNameEditorMarkup(group, groupIndex)}
+      ${format === "circuit" || (format === "superset" && group.length < 2) ? `<button class="coach-workout-group-add-exercise" type="button" data-coach-grouped-add-exercise>${format === "circuit" ? "Add exercise to circuit" : "Add paired exercise"}</button>` : ""}
       <article class="coach-workout-grouped-card">
         <header class="coach-workout-grouped-card-heading">
           <h3>${escapeCoachWorkoutHtml(title)}</h3>
           <p data-coach-grouped-progress>0 / 0 complete</p>
         </header>
+        <div class="coach-workout-card-format" role="group" aria-label="Workout card format">
+          ${[["single", "Straight sets"], ["superset", "Superset"], ["circuit", "Circuit"]].map(([value, label]) => `<button type="button" data-coach-grouped-format="${value}" aria-pressed="${format === value}">${label}</button>`).join("")}
+        </div>
         <div class="coach-workout-grouped-exercise-key" role="list" aria-label="Exercises in ${escapeCoachWorkoutHtml(title)}">
           ${group.map(({ exercise }, position) => `
             <div role="listitem"><span>${position + 1}</span><strong data-coach-grouped-exercise-name="${position}">${escapeCoachWorkoutHtml(exercise.querySelector("[data-coach-workout-name]")?.value.trim() || `Exercise ${position + 1}`)}</strong></div>
@@ -883,7 +888,7 @@ function coachWorkoutGroupedCardMarkup(format, group, groupIndex) {
           <output><span>${format === "single" ? "Sets" : "Rounds"}</span> <strong>${roundCount}</strong></output>
           <button type="button" data-coach-grouped-add-round aria-label="Add ${format === "single" ? "set" : "round"}">+</button>
         </div>
-        <div data-coach-grouped-sections>${coachWorkoutGroupedSectionsMarkup(group)}</div>
+        <div data-coach-grouped-sections>${coachWorkoutGroupedSectionsMarkup(group, format)}</div>
         <details class="coach-workout-grouped-notes">
           <summary>Exercise notes <span>Optional</span></summary>
           <div>
@@ -899,6 +904,31 @@ function coachWorkoutGroupedCardMarkup(format, group, groupIndex) {
 }
 
 function coachWorkoutGroups(format, exercises = coachWorkoutExerciseElements()) {
+  if (exercises.some((exercise) => exercise.dataset?.coachWorkoutGroupId)) {
+    const groups = [];
+    let pending = [];
+    const flush = () => {
+      if (!pending.length) return;
+      const offset = pending[0].exerciseIndex;
+      groups.push(...coachWorkoutGroups(format, pending.map((item) => item.exercise))
+        .map((group) => group.map((item) => ({ ...item, exerciseIndex: item.exerciseIndex + offset }))));
+      pending = [];
+    };
+    exercises.forEach((exercise, exerciseIndex) => {
+      const id = exercise.dataset?.coachWorkoutGroupId;
+      if (!id) {
+        pending.push({ exercise, exerciseIndex });
+        return;
+      }
+      flush();
+      const previous = groups[groups.length - 1];
+      if (previous?.[0].exercise.dataset?.coachWorkoutGroupId === id) previous.push({ exercise, exerciseIndex });
+      else groups.push([{ exercise, exerciseIndex }]);
+    });
+    flush();
+    return groups;
+  }
+
   if (format === "circuit") {
     return [exercises.map((exercise, exerciseIndex) => ({ exercise, exerciseIndex }))];
   }
@@ -913,6 +943,75 @@ function coachWorkoutGroups(format, exercises = coachWorkoutExerciseElements()) 
       exerciseIndex: (groupIndex * 2) + position
     }))
   ));
+}
+
+function coachWorkoutGroupFormat(group, fallback = coachWorkoutFormatValue()) {
+  const format = group[0]?.exercise.dataset?.coachWorkoutGroupFormat;
+  return ["single", "superset", "circuit"].includes(format) ? format : fallback;
+}
+
+function nextCoachWorkoutGroupId() {
+  const used = new Set(coachWorkoutExerciseElements().map((exercise) => exercise.dataset.coachWorkoutGroupId));
+  let id;
+  do { id = `coach-group-${++coachWorkoutGroupId}`; } while (used.has(id));
+  return id;
+}
+
+function setCoachWorkoutGroup(exercises, format, id = nextCoachWorkoutGroupId()) {
+  exercises.forEach((exercise) => {
+    exercise.dataset.coachWorkoutGroupId = id;
+    exercise.dataset.coachWorkoutGroupFormat = format;
+  });
+}
+
+function materializeCoachWorkoutGroups() {
+  coachWorkoutGroups(coachWorkoutFormatValue()).forEach((group) => {
+    if (!group[0].exercise.dataset.coachWorkoutGroupId) {
+      setCoachWorkoutGroup(group.map((item) => item.exercise), coachWorkoutGroupFormat(group));
+    }
+  });
+}
+
+function changeCoachWorkoutGroupFormat(card, format) {
+  if (!["single", "superset", "circuit"].includes(format) || card.dataset.coachWorkoutFormat === format) return;
+  const exercises = coachWorkoutGroupedExerciseIndexes(card).map((index) => coachWorkoutExerciseElements()[index]).filter(Boolean);
+  if (!exercises.length) return;
+  materializeCoachWorkoutGroups();
+  let added = null;
+  if (format === "single") {
+    exercises.forEach((exercise) => setCoachWorkoutGroup([exercise], "single"));
+  } else {
+    const members = format === "superset" ? exercises.slice(0, 2) : exercises;
+    const id = nextCoachWorkoutGroupId();
+    setCoachWorkoutGroup(members, format, id);
+    if (format === "superset") exercises.slice(2).forEach((exercise) => setCoachWorkoutGroup([exercise], "single"));
+    while (members.length < coachWorkoutDefaultExerciseCount(format)) {
+      const last = members[members.length - 1];
+      last.insertAdjacentHTML("afterend", coachWorkoutExerciseMarkup({ groupId: id, groupFormat: format }));
+      const partner = last.nextElementSibling;
+      added ||= partner;
+      members.push(partner);
+    }
+  }
+  renumberCoachWorkoutExercises();
+  scheduleCoachWorkoutAutosave();
+  if (added) focusCoachWorkoutVisibleField(coachWorkoutExerciseElements().indexOf(added), "name", "", 0);
+  else {
+    const index = coachWorkoutExerciseElements().indexOf(exercises[0]);
+    document.querySelector(`[data-coach-grouped-name-input][data-coach-grouped-exercise-index="${index}"]`)
+      ?.closest("[data-coach-workout-group-card]")?.querySelector(`[data-coach-grouped-format="${format}"]`)?.focus({ preventScroll: true });
+  }
+}
+
+function addCoachWorkoutGroupExercise(card) {
+  const format = card.dataset.coachWorkoutFormat;
+  const exercises = coachWorkoutGroupedExerciseIndexes(card).map((index) => coachWorkoutExerciseElements()[index]).filter(Boolean);
+  if (!exercises.length || (format !== "circuit" && !(format === "superset" && exercises.length < 2))) return;
+  materializeCoachWorkoutGroups();
+  const last = exercises[exercises.length - 1];
+  const added = addCoachWorkoutExercise({ groupId: last.dataset.coachWorkoutGroupId, groupFormat: format }, last);
+  scheduleCoachWorkoutAutosave();
+  focusCoachWorkoutVisibleField(coachWorkoutExerciseElements().indexOf(added), "name", "", 0);
 }
 
 function refreshCoachWorkoutGroupedProgress(card) {
@@ -930,14 +1029,11 @@ function refreshCoachWorkoutPreviousHistoryCards() {
   coachWorkoutExerciseElements().forEach(updateCoachWorkoutHistoryPlaceholders);
   document.querySelectorAll("[data-coach-workout-group-card]").forEach((card) => {
     const indexes = coachWorkoutGroupedExerciseIndexes(card);
-    const format = card.dataset.coachWorkoutFormat || coachWorkoutFormatValue();
     const group = indexes.map((exerciseIndex) => ({
       exercise: coachWorkoutExerciseElements()[exerciseIndex],
       exerciseIndex
     })).filter(({ exercise }) => exercise);
-    const visibleGroupIndex = format === "single" ? indexes[0] : (
-      format === "superset" ? Math.floor((indexes[0] || 0) / 2) : 0
-    );
+    const visibleGroupIndex = Number(card.dataset.coachWorkoutGroupIndex || 0);
     const history = card.querySelector("[data-coach-grouped-history]");
 
     card.querySelectorAll('[data-coach-grouped-field="weight"], [data-coach-grouped-field="reps"]').forEach((input) => {
@@ -1018,7 +1114,7 @@ function renderCoachWorkoutCardLayout() {
   if (stack && usesWorkoutCards) {
     stack.innerHTML = coachWorkoutGroups(format, exercises)
       .filter((group) => group.length > 0)
-      .map((group, groupIndex) => coachWorkoutGroupedCardMarkup(format, group, groupIndex))
+      .map((group, groupIndex) => coachWorkoutGroupedCardMarkup(coachWorkoutGroupFormat(group, format), group, groupIndex))
       .join("");
     stack.querySelectorAll("[data-coach-workout-group-card]").forEach(refreshCoachWorkoutGroupedProgress);
   } else if (stack) {
@@ -1123,6 +1219,10 @@ function addCoachWorkoutExercise(values = {}, afterExercise = null) {
     return;
   }
 
+  if (!values.groupId && coachWorkoutExerciseElements().some((exercise) => exercise.dataset.coachWorkoutGroupId)) {
+    values = { ...values, groupId: nextCoachWorkoutGroupId(), groupFormat: "single" };
+  }
+
   if (afterExercise) {
     afterExercise.insertAdjacentHTML("afterend", coachWorkoutExerciseMarkup(values));
   } else {
@@ -1136,6 +1236,8 @@ function coachWorkoutExerciseDrafts() {
   return Array.from(document.querySelectorAll("[data-coach-workout-exercise]")).map((row) => ({
     code: String(row.dataset.coachWorkoutCode || "").trim().toUpperCase(),
     codeContext: String(row.dataset.coachWorkoutCodeContext || ""),
+    groupId: row.dataset.coachWorkoutGroupId || "",
+    groupFormat: row.dataset.coachWorkoutGroupFormat || "",
     name: row.querySelector("[data-coach-workout-name]")?.value || "",
     sets: Array.from(row.querySelectorAll("[data-coach-workout-set-row]")).map((setRow) => ({
       label: setRow.querySelector("[data-coach-workout-set-label]")?.value ?? "",
@@ -1502,6 +1604,15 @@ function coachWorkoutExerciseValues(options = {}) {
   const clientEmail = normalizeCoachWorkoutEmail(document.getElementById("coach-workout-client")?.value);
   const entryDate = document.getElementById("coach-workout-date")?.value || "";
   const codeContext = `${clientEmail}|${entryDate}`;
+  const groupDetails = new Map();
+  coachWorkoutGroups(coachWorkoutFormatValue(), exerciseRows).forEach((group, groupIndex) => {
+    group.forEach(({ exercise }, groupPosition) => groupDetails.set(exercise, {
+      groupId: exercise.dataset.coachWorkoutGroupId || "",
+      groupFormat: coachWorkoutGroupFormat(group),
+      groupIndex,
+      groupPosition
+    }));
+  });
 
   if (exerciseRows.length === 0) {
     throw new Error("Add at least one exercise.");
@@ -1557,6 +1668,7 @@ function coachWorkoutExerciseValues(options = {}) {
     });
 
     return {
+      ...groupDetails.get(row),
       code: row.dataset.coachWorkoutCodeContext === codeContext
         ? String(row.dataset.coachWorkoutCode || "").trim().toUpperCase()
         : "",
@@ -1575,6 +1687,15 @@ function coachWorkoutExerciseValues(options = {}) {
 }
 
 function coachWorkoutExerciseNote(format, index, exercise) {
+  format = exercise.groupFormat || format;
+  if (Number.isInteger(exercise.groupIndex)) {
+    const marker = format === "superset"
+      ? `Superset ${exercise.groupIndex + 1}${String.fromCharCode(65 + exercise.groupPosition)}`
+      : format === "circuit"
+        ? `Circuit ${exercise.groupIndex + 1} · Station ${exercise.groupPosition + 1}`
+        : "Straight sets";
+    return [marker, exercise.notes].filter(Boolean).join("\n");
+  }
   const formatNote = format === "superset"
     ? coachWorkoutFormatMarker(format, index)
     : format === "circuit"
@@ -1606,6 +1727,10 @@ function coachWorkoutSaveSignature(data) {
     format: data.format,
     exercises: data.exercises.map((exercise) => ({
       code: exercise.code || "",
+      groupId: exercise.groupId || "",
+      groupFormat: exercise.groupFormat || data.format,
+      groupIndex: exercise.groupIndex,
+      groupPosition: exercise.groupPosition,
       name: exercise.name,
       sets: exercise.sets.map((set) => ({
         setType: set.setType,
@@ -2147,12 +2272,20 @@ function handleCoachWorkoutForm() {
       return;
     }
 
-    if (event.target.matches('input[name="coach_workout_format"]')) {
-      const format = event.target.value;
-      resizeUntouchedCoachWorkoutExercises(format, coachWorkoutDefaultExerciseCount(format));
-      renumberCoachWorkoutExercises();
-    }
+    if (event.target.matches('input[name="coach_workout_format"]')) return;
 
+    scheduleCoachWorkoutAutosave();
+  });
+  form.addEventListener("click", (event) => {
+    if (!event.target.matches('input[name="coach_workout_format"]')) return;
+    // Clicking the already-selected starting format also resets individual card overrides.
+    const format = event.target.value;
+    coachWorkoutExerciseElements().forEach((exercise) => {
+      delete exercise.dataset.coachWorkoutGroupId;
+      delete exercise.dataset.coachWorkoutGroupFormat;
+    });
+    resizeUntouchedCoachWorkoutExercises(format, coachWorkoutDefaultExerciseCount(format));
+    renumberCoachWorkoutExercises();
     scheduleCoachWorkoutAutosave();
   });
   exerciseList.addEventListener("input", (event) => {
@@ -2316,6 +2449,17 @@ function handleCoachWorkoutForm() {
     const addRound = event.target.closest("[data-coach-grouped-add-round]");
     const deleteRound = event.target.closest("[data-coach-grouped-delete-round]");
     const logRound = event.target.closest("[data-coach-grouped-log-round]");
+    const groupFormat = event.target.closest("[data-coach-grouped-format]");
+    const addGroupExercise = event.target.closest("[data-coach-grouped-add-exercise]");
+
+    if (groupFormat && card) {
+      changeCoachWorkoutGroupFormat(card, groupFormat.dataset.coachGroupedFormat);
+      return;
+    }
+    if (addGroupExercise && card) {
+      addCoachWorkoutGroupExercise(card);
+      return;
+    }
     const restToggle = event.target.closest("[data-coach-rest-toggle]");
     const restAdjust = event.target.closest("[data-coach-rest-adjust]");
 
