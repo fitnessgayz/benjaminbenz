@@ -237,6 +237,22 @@ function dashboardClientEmailParam() {
   }
 }
 
+function renderCoachPreviewReturn(program = null) {
+  const toolbar = document.getElementById("coach-preview-toolbar");
+  const link = document.getElementById("coach-preview-return");
+  if (!toolbar || !link) return;
+  const isCoach = isCoachPortalEmail(normalizeClientEmail(activeDashboardUser?.email));
+  toolbar.hidden = !isCoach;
+  if (!isCoach) {
+    link.removeAttribute("href");
+    return;
+  }
+  // Coach Admin selects by program ID; the client preview URL selects by email.
+  link.href = program?.id
+    ? `coach-admin.html?client=${encodeURIComponent(program.id)}&tab=profile`
+    : "coach-admin.html?tab=clients";
+}
+
 function escapeHtml(value) {
   return String(value ?? "")
     .replaceAll("&", "&amp;")
@@ -16198,6 +16214,7 @@ function handleSkipToggle() {
 }
 
 function renderProgram(program) {
+  renderCoachPreviewReturn(program);
   const assignedWorkouts = program.assignedWorkouts || (Array.isArray(program.workouts) ? program.workouts : []);
   currentProgram = { ...program, assignedWorkouts, workouts: WorkoutLayout.apply(assignedWorkouts, program.client_workout_layout) };
   activeCustomWorkoutFormat = storedCustomWorkoutFormat();
@@ -16474,6 +16491,7 @@ async function loadDashboard() {
     }
 
     activeDashboardUser = user;
+    renderCoachPreviewReturn();
     const requestedTab = new URLSearchParams(window.location.search).get("tab");
     const availableTabs = new Set(Array.from(document.querySelectorAll("[data-client-dashboard-tab]"))
       .map((button) => button.dataset.clientDashboardTab));

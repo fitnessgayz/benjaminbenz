@@ -36,8 +36,12 @@
   <link rel="stylesheet" href="css/client-weekly-activity.css?v=1" />
   <link rel="stylesheet" href="/css/fwb-design-system.css?v=reference-overhaul-1" />
   <link rel="stylesheet" href="css/mood-checkin.css?v=1" />
+  <link rel="stylesheet" href="css/coach-preview.css?v=return-coach-1" />
 </head>
 <body class="dashboard-page client-dashboard-page is-loading">
+  <nav class="coach-preview-toolbar" id="coach-preview-toolbar" aria-label="Coach navigation" hidden>
+    <a class="coach-preview-return" id="coach-preview-return" href="coach-admin.html?tab=clients"><span aria-hidden="true">←</span> Return to coach page</a>
+  </nav>
   <main class="dashboard-shell">
     <section class="dashboard-loading" id="dashboard-loading" role="status">
       <p class="kicker">Client dashboard</p>
@@ -1023,6 +1027,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@zxing/browser@0.2.1/umd/zxing-browser.min.js" integrity="sha384-HRtzk9lZgkbSgvUyQrnfC/GxiXZgwaNyD7hC9wcXlsBpDhkS80ISl73juef2FRuf" crossorigin="anonymous"></script>
   <script src="js/workout-layout.js?v=exercise-preview-2"></script>
   <script src="js/client-weekly-activity.js?v=1"></script>
-  <script src="js/client-portal.js?v=custom-workout-history-1&amp;cancel-workout=1&amp;energy-feedback=1&amp;mood-redesign=1&amp;visible-group-controls=1&amp;exercise-videos=1&amp;remember-login=1&amp;visible-demos=1&amp;personal-bests=1&amp;copy-last-weights=1&amp;demo-icons=1&amp;keyboard-entry=1&amp;copy-set-pr=1"></script>
+  <script src="js/client-portal.js?v=custom-workout-history-1&amp;cancel-workout=1&amp;energy-feedback=1&amp;mood-redesign=1&amp;visible-group-controls=1&amp;exercise-videos=1&amp;remember-login=1&amp;visible-demos=1&amp;personal-bests=1&amp;copy-last-weights=1&amp;demo-icons=1&amp;keyboard-entry=1&amp;copy-set-pr=1&amp;return-coach=1"></script>
 </body>
 </html>
