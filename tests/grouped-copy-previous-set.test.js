@@ -140,13 +140,15 @@ function workoutFixture(specs = [{ name: "Cable fly" }, { name: "Squat" }], opti
       const value = spec.previousWeights ? spec.previousWeights[priorIndex]
         : Object.hasOwn(spec, "previousWeight") ? spec.previousWeight : spec.name === "Squat" ? "100" : "17.15";
       previous.appendChild(input({ "data-set-weight": "" }, value ?? ""));
-      previous.appendChild(input({ "data-set-reps": "" }, "12"));
+      const reps = spec.previousRepsValues ? spec.previousRepsValues[priorIndex]
+        : Object.hasOwn(spec, "previousReps") ? spec.previousReps : "12";
+      previous.appendChild(input({ "data-set-reps": "" }, reps ?? ""));
       if (spec.previousComplete) previous.classList.add("is-complete");
       return previous;
     });
     const row = log.appendChild(element("div", { "data-set-row": "", "data-set-number": String(roundNumber), "data-set-type": "working" }));
-    const canonicalWeight = row.appendChild(input({ "data-set-weight": "" }, spec.weight || ""));
-    const canonicalReps = row.appendChild(input({ "data-set-reps": "" }, spec.reps || "15"));
+    const canonicalWeight = row.appendChild(input({ "data-set-weight": "" }, spec.weight ?? ""));
+    const canonicalReps = row.appendChild(input({ "data-set-reps": "" }, spec.reps ?? "15"));
     row.dataset.repsInReserve = spec.rir || "2";
     row.appendChild(element("button", { "data-complete-set": "" }));
     if (spec.complete) row.classList.add("is-complete");
@@ -155,7 +157,7 @@ function workoutFixture(specs = [{ name: "Cable fly" }, { name: "Squat" }], opti
       "data-custom-grouped-set-type": "working", "data-custom-grouped-set-number": String(roundNumber)
     }));
     const visibleWeight = visibleRow.appendChild(input({ "data-custom-grouped-field": "weight" }, spec.visibleWeight ?? canonicalWeight.value));
-    const visibleReps = visibleRow.appendChild(input({ "data-custom-grouped-field": "reps" }, canonicalReps.value));
+    const visibleReps = visibleRow.appendChild(input({ "data-custom-grouped-field": "reps" }, spec.visibleReps ?? canonicalReps.value));
     const visibleRir = visibleRow.appendChild(input({ "data-custom-grouped-field": "rir" }, row.dataset.repsInReserve));
     return { log, row, previousRows, visibleRow, canonicalWeight, canonicalReps, visibleWeight, visibleReps, visibleRir };
   });
@@ -171,7 +173,7 @@ function workoutFixture(specs = [{ name: "Cable fly" }, { name: "Squat" }], opti
     "customWorkoutGroupedCanonicalRow", "customWorkoutGroupedRoundIsLogged", "customWorkoutGroupedStatus",
     "customWorkoutGroupedCopyContext", "customWorkoutGroupedCopyRows", "refreshCustomWorkoutGroupedCopyWeights",
     "clearCustomWorkoutGroupedWeightCopy", "customWorkoutGroupedCopyVisibleInput", "workoutSetUnit",
-    "previousCustomWorkoutGroupedWeight",
+    "customWorkoutGroupedCopyValue", "previousCustomWorkoutGroupedValue", "previousCustomWorkoutGroupedWeight",
     "copyCustomWorkoutGroupedWeights", "undoCustomWorkoutGroupedWeights", "setCustomWorkoutGroupedRowComplete",
     "refreshCustomWorkoutGroupedCompletion", "syncCustomWorkoutGroupedField",
     ...(options.prLogs ? ["logsForExerciseDisplay", "personalBestWeightLog", "customWorkoutGroupedPersonalBestLabel", "currentExerciseLabel", "exerciseProgressNumber"] : [])
@@ -179,7 +181,7 @@ function workoutFixture(specs = [{ name: "Cable fly" }, { name: "Squat" }], opti
   return { context, root, panel, carousel, section, copy, prCopy, prPreview, undo, copyStatus, copyMessage, status, rows, get persists() { return persists; } };
 }
 
-test("copy fills empty working weights and keeps reps and RIR untouched", () => {
+test("copy fills empty working weights while preserving entered reps and RIR", () => {
   const fixture = workoutFixture();
   fixture.context.copyCustomWorkoutGroupedWeights(fixture.copy);
   assert.deepEqual(fixture.rows.map((row) => row.canonicalWeight.value), ["17.15", "100"]);
@@ -376,7 +378,7 @@ test("PR action uses the exercise's highest logged working weight and displays i
   fixture.context.copyCustomWorkoutGroupedWeights(fixture.prCopy);
   assert.equal(fixture.rows[0].canonicalWeight.value, "60");
   assert.equal(fixture.rows[0].visibleWeight.value, "60");
-  assert.equal(fixture.rows[0].canonicalReps.value, "15", "PR reps are reference text, not a replacement for current reps");
+  assert.equal(fixture.rows[0].canonicalReps.value, "15", "PR copying must preserve reps already entered by the user");
   assert.equal(fixture.rows[0].visibleReps.value, "15");
   assert.equal(fixture.rows[0].row.dataset.repsInReserve, "2");
   assert.match(fixture.copyMessage.textContent, /Cable fly/);
@@ -479,4 +481,196 @@ test("PR preview omits missing or invalid reps while retaining exercise, weight 
     fixture.context.refreshCustomWorkoutGroupedCopyWeights(fixture.carousel);
     assert.equal(fixture.prPreview.textContent, "Personal records: Cable fly: 20 lb · 2026-08-01");
   }
+});
+
+test("previous set and round copying fills each exercise's weight and reps together", () => {
+  for (const format of ["single", "superset", "circuit"]) {
+    const specs = [
+      { name: "Cable fly", previousWeight: "27.5", previousReps: "8", reps: "" },
+      { name: "Squat", previousWeight: "100", previousReps: "5", reps: "" },
+      { name: "Push up", previousWeight: "0", previousReps: "12", reps: "" }
+    ];
+    const fixture = workoutFixture(format === "single" ? specs.slice(0, 1) : specs, { format });
+    fixture.context.copyCustomWorkoutGroupedWeights(fixture.copy);
+    assert.deepEqual(fixture.rows.map((row) => [row.canonicalWeight.value, row.canonicalReps.value]),
+      specs.slice(0, fixture.rows.length).map((spec) => [spec.previousWeight, spec.previousReps]));
+    for (const row of fixture.rows) {
+      assert.equal(row.visibleWeight.value, row.canonicalWeight.value);
+      assert.equal(row.visibleReps.value, row.canonicalReps.value);
+      assert.equal(row.row.dataset.repsInReserve, "2");
+      assert.equal(row.visibleRir.value, "2");
+      assert.equal(row.row.classList.contains("is-complete"), false);
+    }
+    assert.equal(fixture.persists, 1, "All fields should persist in one draft save");
+    assert.equal(fixture.copy.disabled, true);
+    assert.match(fixture.copyMessage.textContent, /Weight[s]? and reps copied/);
+    fixture.context.undoCustomWorkoutGroupedWeights(fixture.undo);
+    for (const row of fixture.rows) {
+      assert.equal(row.canonicalWeight.value, "");
+      assert.equal(row.canonicalReps.value, "");
+      assert.equal(row.visibleWeight.value, "");
+      assert.equal(row.visibleReps.value, "");
+    }
+    assert.equal(fixture.copy.disabled, false);
+  }
+});
+
+test("copy fills empty weight and rep fields independently without replacing entered or unsynchronized values", () => {
+  const fixture = workoutFixture([
+    { name: "Cable fly", weight: "20", reps: "", previousReps: "6" },
+    { name: "Cable fly", reps: "7", previousWeight: "30" },
+    { name: "Cable fly", weight: "0", reps: "0" },
+    { name: "Cable fly", reps: "", visibleReps: "10", previousWeight: "40" },
+    { name: "Cable fly", reps: "", visibleWeight: "25", previousReps: "9" },
+    { name: "Cable fly", reps: "", complete: true }
+  ]);
+  fixture.context.copyCustomWorkoutGroupedWeights(fixture.copy);
+  assert.deepEqual(fixture.rows.map((row) => [row.canonicalWeight.value, row.canonicalReps.value]), [
+    ["20", "6"], ["30", "7"], ["0", "0"], ["40", ""], ["", "9"], ["", ""]
+  ]);
+  assert.equal(fixture.rows[3].visibleReps.value, "10");
+  assert.equal(fixture.rows[4].visibleWeight.value, "25");
+  fixture.context.undoCustomWorkoutGroupedWeights(fixture.undo);
+  assert.deepEqual(fixture.rows.map((row) => [row.canonicalWeight.value, row.canonicalReps.value]), [
+    ["20", ""], ["", "7"], ["0", "0"], ["", ""], ["", ""], ["", ""]
+  ]);
+  assert.equal(fixture.rows[3].visibleReps.value, "10");
+  assert.equal(fixture.rows[4].visibleWeight.value, "25");
+});
+
+test("previous copies use the immediate prior row's pair and do not borrow missing values from older rows", () => {
+  const fixture = workoutFixture([
+    { name: "Cable fly", previousWeights: ["40", "30"], previousRepsValues: ["10", "6"], reps: "", previousComplete: true },
+    { name: "Squat", previousWeights: ["120", ""], previousRepsValues: ["8", "5"], reps: "" },
+    { name: "Push up", previousWeights: ["10", "0"], previousRepsValues: ["15", ""], reps: "" }
+  ], { roundNumber: 3 });
+  fixture.context.copyCustomWorkoutGroupedWeights(fixture.copy);
+  assert.deepEqual(fixture.rows.map((row) => [row.canonicalWeight.value, row.canonicalReps.value]), [
+    ["30", "6"], ["", "5"], ["0", ""]
+  ]);
+  assert.equal(fixture.rows[0].previousRows[1].classList.contains("is-complete"), true);
+  assert.match(fixture.copyMessage.textContent, /Round 2/);
+});
+
+test("invalid prior reps do not become zero or borrowed reps while valid zero weights still copy", () => {
+  for (const previousReps of ["", " ", "invalid", "Infinity", "-1", "0", "2.5"]) {
+    const fixture = workoutFixture([{ name: "Cable fly", previousWeight: "0", previousReps, reps: "" }]);
+    fixture.context.copyCustomWorkoutGroupedWeights(fixture.copy);
+    assert.equal(fixture.rows[0].canonicalWeight.value, "0");
+    assert.equal(fixture.rows[0].canonicalReps.value, "");
+    assert.equal(fixture.rows[0].visibleReps.value, "");
+  }
+});
+
+test("PR copying uses weight and reps from the same heaviest record for every destination exercise", () => {
+  const fixture = workoutFixture([
+    { name: "Cable fly", reps: "" }, { name: "Squat", reps: "" }, { name: "New exercise", reps: "" }
+  ], { roundNumber: 1, format: "circuit", prLogs: [
+    personalBestLog(45, { reps: 15, entry_date: "2026-09-19" }),
+    personalBestLog(60, { reps: 6, entry_date: "2026-08-01" }),
+    personalBestLog(60, { reps: 10, entry_date: "2026-08-02" }),
+    personalBestLog(100, { exercise_name: "Squat", reps: 4 }),
+    personalBestLog(80, { exercise_name: "Squat", reps: 12, entry_date: "2026-09-19" })
+  ] });
+  fixture.context.copyCustomWorkoutGroupedWeights(fixture.prCopy);
+  assert.deepEqual(fixture.rows.map((row) => [row.canonicalWeight.value, row.canonicalReps.value]), [
+    ["60", "6"], ["100", "4"], ["", ""]
+  ]);
+  for (const row of fixture.rows) {
+    assert.equal(row.visibleReps.value, row.canonicalReps.value);
+    assert.equal(row.visibleWeight.value, row.canonicalWeight.value);
+    assert.equal(row.row.classList.contains("is-complete"), false);
+  }
+  assert.equal(fixture.rows[0].canonicalReps.dataset.lastWeightCopySource, "pr");
+  fixture.context.undoCustomWorkoutGroupedWeights(fixture.undo);
+  assert.deepEqual(fixture.rows.map((row) => [row.canonicalWeight.value, row.canonicalReps.value]), [["", ""], ["", ""], ["", ""]]);
+});
+
+test("PR copies no reps from another record when the heaviest record has missing or invalid reps", () => {
+  for (const reps of [null, undefined, "", "bad", 0, -1, 2.5]) {
+    const fixture = workoutFixture([{ name: "Cable fly", reps: "" }], { prLogs: [
+      personalBestLog(60, { reps }),
+      personalBestLog(40, { reps: 12, entry_date: "2026-09-19" })
+    ] });
+    fixture.context.copyCustomWorkoutGroupedWeights(fixture.prCopy);
+    assert.equal(fixture.rows[0].canonicalWeight.value, "60");
+    assert.equal(fixture.rows[0].canonicalReps.value, "");
+    assert.equal(fixture.rows[0].visibleReps.value, "");
+  }
+});
+
+test("PR copies valid reps with a recorded zero weight but never falls back to previous values without a PR", () => {
+  const fixture = workoutFixture([{ name: "Cable fly", reps: "" }], { prLogs: [personalBestLog(0, { reps: 12 })] });
+  fixture.context.copyCustomWorkoutGroupedWeights(fixture.prCopy);
+  assert.equal(fixture.rows[0].canonicalWeight.value, "0");
+  assert.equal(fixture.rows[0].canonicalReps.value, "12");
+  const missing = workoutFixture([{ name: "Cable fly", reps: "", previousWeight: "40", previousReps: "10" }], { prLogs: [] });
+  missing.context.refreshCustomWorkoutGroupedCopyWeights(missing.carousel);
+  assert.equal(missing.prCopy.disabled, true);
+  missing.context.copyCustomWorkoutGroupedWeights(missing.prCopy);
+  assert.equal(missing.rows[0].canonicalWeight.value, "");
+  assert.equal(missing.rows[0].canonicalReps.value, "");
+  assert.equal(missing.persists, 0);
+});
+
+test("PR copying fills missing reps alongside entered weights but never changes completed rows", () => {
+  const fixture = workoutFixture([
+    { name: "Cable fly", weight: "25", reps: "" },
+    { name: "Cable fly", reps: "5" },
+    { name: "Cable fly", weight: "0", reps: "0" },
+    { name: "Cable fly", reps: "", complete: true },
+    { name: "Cable fly", reps: "", visibleReps: "7" }
+  ], { prLogs: [personalBestLog(60, { reps: 6 })] });
+  fixture.context.copyCustomWorkoutGroupedWeights(fixture.prCopy);
+  assert.deepEqual(fixture.rows.map((row) => [row.canonicalWeight.value, row.canonicalReps.value]), [
+    ["25", "6"], ["60", "5"], ["0", "0"], ["", ""], ["60", ""]
+  ]);
+  assert.equal(fixture.rows[4].visibleReps.value, "7");
+});
+
+test("manually edited copied reps survive Undo even after returning to the copied number", () => {
+  for (const usePr of [false, true]) {
+    const fixture = workoutFixture([{ name: "Cable fly", reps: "", previousReps: "6" }],
+      usePr ? { prLogs: [personalBestLog(60, { reps: 6 })] } : {});
+    fixture.context.copyCustomWorkoutGroupedWeights(usePr ? fixture.prCopy : fixture.copy);
+    fixture.rows[0].visibleReps.value = "8";
+    fixture.context.syncCustomWorkoutGroupedField(fixture.rows[0].visibleReps);
+    fixture.rows[0].visibleReps.value = "6";
+    fixture.context.syncCustomWorkoutGroupedField(fixture.rows[0].visibleReps);
+    fixture.context.undoCustomWorkoutGroupedWeights(fixture.undo);
+    assert.equal(fixture.rows[0].canonicalWeight.value, "", "An untouched copied weight can still be undone");
+    assert.equal(fixture.rows[0].canonicalReps.value, "6");
+    assert.equal(fixture.rows[0].visibleReps.value, "6");
+  }
+});
+
+test("logging and reopening copied rows retires Undo for both weight and reps", () => {
+  for (const usePr of [false, true]) {
+    const fixture = workoutFixture([{ name: "Cable fly", reps: "", previousReps: "6" }],
+      usePr ? { prLogs: [personalBestLog(60, { reps: 6 })] } : {});
+    fixture.context.copyCustomWorkoutGroupedWeights(usePr ? fixture.prCopy : fixture.copy);
+    fixture.context.setCustomWorkoutGroupedRowComplete(fixture.rows[0].row, true);
+    fixture.context.setCustomWorkoutGroupedRowComplete(fixture.rows[0].row, false);
+    fixture.context.undoCustomWorkoutGroupedWeights(fixture.undo);
+    assert.equal(fixture.rows[0].canonicalWeight.value, usePr ? "60" : "17.15");
+    assert.equal(fixture.rows[0].canonicalReps.value, "6");
+  }
+});
+
+test("Undo survives replaced rep fields but preserves unsynchronized rep edits", () => {
+  const fixture = workoutFixture([{ name: "Cable fly", reps: "" }]);
+  fixture.context.copyCustomWorkoutGroupedWeights(fixture.copy);
+  fixture.rows[0].visibleReps.remove();
+  const replacement = fixture.rows[0].visibleRow.appendChild(input({ "data-custom-grouped-field": "reps" }, "12"));
+  fixture.context.refreshCustomWorkoutGroupedCopyWeights(fixture.carousel);
+  fixture.context.undoCustomWorkoutGroupedWeights(fixture.undo);
+  assert.equal(replacement.value, "");
+  assert.equal(fixture.rows[0].canonicalReps.value, "");
+
+  fixture.context.copyCustomWorkoutGroupedWeights(fixture.copy);
+  replacement.value = "9";
+  fixture.context.undoCustomWorkoutGroupedWeights(fixture.undo);
+  assert.equal(fixture.rows[0].canonicalWeight.value, "");
+  assert.equal(fixture.rows[0].canonicalReps.value, "12");
+  assert.equal(replacement.value, "9");
 });

@@ -2416,3 +2416,15 @@ body.dashboard-page.custom-workout-grouped-finish-open {
     background: var(--grouped-cream);
   }
 }
+
+/* Keep suggested PR weights/reps visually distinct from entered or copied values. */
+.dashboard-page.client-dashboard-page :is(.client-workout-panel-custom, .client-workout-panel-assigned) :is(
+  input[data-set-weight],
+  input[data-set-reps],
+  input[data-custom-grouped-field="weight"],
+  input[data-custom-grouped-field="reps"]
+)::placeholder {
+  color: #b9bdb5 !important;
+  -webkit-text-fill-color: #b9bdb5;
+  opacity: 1;
+}
