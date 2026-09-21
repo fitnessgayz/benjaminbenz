@@ -856,14 +856,22 @@ function clientViewUrl(program = selectedProgram()) {
 }
 
 function updateClientViewLink(program = selectedProgram()) {
-  const link = document.getElementById("client-view-link");
-
-  if (!link) {
-    return;
-  }
-
-  link.href = clientViewUrl(program);
-  link.setAttribute("aria-disabled", normalizeEmail(program?.client_email) ? "false" : "true");
+  const email = normalizeEmail(program?.client_email);
+  ["client-view-link", "selected-client-view-link"].forEach((id) => {
+    const link = document.getElementById(id);
+    if (!link) return;
+    if (id === "selected-client-view-link") link.hidden = !email;
+    link.setAttribute("aria-disabled", email ? "false" : "true");
+    if (email) {
+      link.href = clientViewUrl(program);
+      link.removeAttribute("tabindex");
+      link.setAttribute("aria-label", `View ${program.client_name || email}'s client page${link.target === "_blank" ? " (opens in a new tab)" : ""}`);
+    } else {
+      link.removeAttribute("href");
+      link.removeAttribute("aria-label");
+      link.setAttribute("tabindex", "-1");
+    }
+  });
 }
 
 function setAdminTab(tabName) {

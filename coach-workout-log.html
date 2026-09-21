@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=card-formats-1" />
+  <link rel="stylesheet" href="css/style.css?v=client-view-shortcut-1" />
   <link rel="stylesheet" href="/css/fwb-design-system.css?v=reference-overhaul-1" />
 </head>
 <body class="dashboard-page coach-workout-log-page">
@@ -53,14 +53,17 @@
           <span class="status-pill coach-workout-autosave-pill">Autosave on</span>
         </div>
         <div class="coach-workout-session-grid">
-          <label>
-            Client
-            <input type="text" id="coach-workout-client-name" list="coach-workout-client-suggestions" placeholder="Type client name" required autocomplete="off" />
-            <datalist id="coach-workout-client-suggestions"></datalist>
-            <select id="coach-workout-client" hidden aria-hidden="true" tabindex="-1">
-              <option value="">Choose a client</option>
-            </select>
-          </label>
+          <div class="coach-workout-client-control">
+            <label>
+              Client
+              <input type="text" id="coach-workout-client-name" list="coach-workout-client-suggestions" placeholder="Type client name" required autocomplete="off" />
+              <datalist id="coach-workout-client-suggestions"></datalist>
+              <select id="coach-workout-client" hidden aria-hidden="true" tabindex="-1">
+                <option value="">Choose a client</option>
+              </select>
+            </label>
+            <a class="button coach-client-view-link" id="coach-workout-client-view" target="_blank" rel="noopener" hidden>View client page <span aria-hidden="true">↗</span></a>
+          </div>
           <label>
             Workout date
             <input type="date" id="coach-workout-date" required />
@@ -135,6 +138,6 @@
     </div>
   </aside>
   <script src="js/coach-rest-timer.js?v=inline-rest-1"></script>
-  <script src="js/coach-workout-log.js?v=card-formats-1&amp;remember-login=1"></script>
+  <script src="js/coach-workout-log.js?v=client-view-shortcut-1&amp;remember-login=1"></script>
 </body>
 </html>

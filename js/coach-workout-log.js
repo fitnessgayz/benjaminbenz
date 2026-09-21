@@ -149,7 +149,23 @@ function coachWorkoutClientNameOptions() {
   });
 }
 
+function updateCoachWorkoutClientViewLink() {
+  const link = document.getElementById("coach-workout-client-view");
+  if (!link) return;
+  const email = normalizeCoachWorkoutEmail(document.getElementById("coach-workout-client")?.value);
+  const client = activeCoachWorkoutClients().find((program) => normalizeCoachWorkoutEmail(program.client_email) === email);
+  link.hidden = !client;
+  if (client) {
+    link.href = `client-dashboard.html?v=manual-sessions-1&client=${encodeURIComponent(email)}`;
+    link.setAttribute("aria-label", `View ${client.client_name || email}'s client page (opens in a new tab)`);
+  } else {
+    link.removeAttribute("href");
+    link.removeAttribute("aria-label");
+  }
+}
+
 function syncCoachWorkoutClientName() {
+  updateCoachWorkoutClientViewLink();
   const input = document.getElementById("coach-workout-client-name");
   if (!input) return;
   const email = normalizeCoachWorkoutEmail(document.getElementById("coach-workout-client")?.value);
@@ -1505,6 +1521,7 @@ function restoreCoachWorkoutDraft(options = {}) {
 }
 
 function switchCoachWorkoutContext() {
+  updateCoachWorkoutClientViewLink();
   const nextContext = currentCoachWorkoutContext();
   const previousContext = normalizeCoachWorkoutContext(coachWorkoutActiveContext);
   const isAssigningFirstClient = Boolean(

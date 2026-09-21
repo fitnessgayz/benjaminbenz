@@ -7626,6 +7626,16 @@ body.is-client-checkin-prompt-open {
   width: auto;
 }
 
+.coach-client-view-link[hidden] {
+  display: none !important;
+}
+
+.coach-client-view-link {
+  min-height: 44px;
+  gap: 8px;
+  text-align: center;
+}
+
 .selected-client-invite-button {
   white-space: nowrap;
 }
@@ -12639,7 +12649,15 @@ textarea,
   gap: 14px;
 }
 
-.coach-workout-session-grid > label {
+.coach-workout-client-control {
+  display: grid;
+  min-width: 0;
+  align-content: start;
+  gap: 10px;
+}
+
+.coach-workout-session-grid > label,
+.coach-workout-client-control > label {
   min-width: 0;
 }
 
