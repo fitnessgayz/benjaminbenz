@@ -39,6 +39,8 @@ const coachWorkoutDraftMemory = new Map();
 let coachWorkoutPreviousHistory = new Map();
 let coachWorkoutPreviousHistoryStatus = "idle";
 let coachWorkoutPreviousHistoryRequest = 0;
+const coachWorkoutRestRowIds = new WeakMap();
+let coachWorkoutRestRowId = 0;
 
 function normalizeCoachWorkoutEmail(value) {
   return String(value || "").trim().toLowerCase();
@@ -750,6 +752,43 @@ function coachWorkoutGroupedHistoryMarkup(group, groupIndex) {
   `;
 }
 
+function coachWorkoutRestOwner(rows) {
+  // Keep the timer attached to the actual sets across card re-renders and reordering.
+  const ids = rows.map(({ row }) => {
+    if (!row) return "missing";
+    if (!coachWorkoutRestRowIds.has(row)) coachWorkoutRestRowIds.set(row, ++coachWorkoutRestRowId);
+    return coachWorkoutRestRowIds.get(row);
+  });
+  return `${coachWorkoutFormatValue()}:${ids.sort((a, b) => a - b).join(",")}`;
+}
+
+function renderCoachWorkoutInlineRest(state = window.CoachRestTimer?.getState()) {
+  document.querySelectorAll("[data-coach-rest-owner]").forEach((section) => {
+    const logButton = section.querySelector("[data-coach-grouped-log-round]");
+    const controls = section.querySelector("[data-coach-inline-rest]");
+    const toggle = section.querySelector("[data-coach-rest-toggle]");
+    const status = section.querySelector("[data-coach-rest-status]");
+    const isActive = Boolean(state?.active && state.inline && state.owner === section.dataset.coachRestOwner);
+    const moveFocus = isActive && document.activeElement === logButton;
+    const restoreFocus = !isActive && controls.contains(document.activeElement);
+    logButton.hidden = isActive;
+    controls.hidden = !isActive;
+    if (!isActive) {
+      if (status.textContent) status.textContent = "";
+      if (restoreFocus) logButton.focus({ preventScroll: true });
+      return;
+    }
+
+    const time = `${String(Math.floor(state.remaining / 60)).padStart(2, "0")}:${String(state.remaining % 60).padStart(2, "0")}`;
+    const label = state.complete ? "Rest complete · Restart" : `Rest ${time} · ${state.running ? "Pause" : "Resume"}`;
+    const message = state.complete ? "Rest complete. Ready for the next set." : state.running ? "Rest timer running." : "Rest timer paused.";
+    if (toggle.textContent !== label) toggle.textContent = label;
+    toggle.setAttribute("aria-label", state.complete ? "Restart rest timer" : `${state.running ? "Pause" : "Resume"} rest timer, ${time} remaining`);
+    if (status.textContent !== message) status.textContent = message;
+    if (moveFocus) toggle.focus({ preventScroll: true });
+  });
+}
+
 function coachWorkoutGroupedSectionsMarkup(group) {
   const warmUps = group.flatMap(({ exercise, exerciseIndex }, position) => (
     coachWorkoutSetRowsByType(exercise, coachWorkoutWarmUpSetType).map((row, warmUpIndex) => ({
@@ -788,7 +827,7 @@ function coachWorkoutGroupedSectionsMarkup(group) {
     }));
 
     return `
-      <section class="coach-workout-grouped-section" data-coach-grouped-section="round" data-coach-grouped-round="${roundNumber}">
+      <section class="coach-workout-grouped-section" data-coach-grouped-section="round" data-coach-grouped-round="${roundNumber}" data-coach-rest-owner="${coachWorkoutRestOwner(rows)}">
         <header><h4>${coachWorkoutFormatValue() === "single" ? "Set" : "Round"} ${roundNumber}</h4><p>${rows.map((item) => coachWorkoutGroupedRoundCode(roundNumber, item.position)).join(" + ")}</p></header>
         ${coachWorkoutGroupedColumnLabelsMarkup()}
         ${rows.map((item) => coachWorkoutGroupedSetRowMarkup(
@@ -799,7 +838,15 @@ function coachWorkoutGroupedSectionsMarkup(group) {
           roundIndex,
           `round ${roundNumber}, ${item.name}`
         )).join("")}
-        <button class="coach-workout-log-round" type="button" data-coach-grouped-log-round>${coachWorkoutFormatValue() === "single" ? "Log Set" : "Log Round"}</button>
+        <div class="coach-workout-round-action">
+          <button class="coach-workout-log-round" type="button" data-coach-grouped-log-round>${coachWorkoutFormatValue() === "single" ? "Log Set" : "Log Round"}</button>
+          <div class="coach-workout-inline-rest" data-coach-inline-rest role="group" aria-label="Rest timer" hidden>
+            <button type="button" data-coach-rest-adjust="-15" aria-label="Subtract 15 seconds from rest">−15</button>
+            <button class="coach-workout-inline-rest-toggle" type="button" data-coach-rest-toggle>Rest 01:00 · Pause</button>
+            <button type="button" data-coach-rest-adjust="15" aria-label="Add 15 seconds to rest">+15</button>
+          </div>
+          <span data-coach-rest-status role="status" aria-live="polite"></span>
+        </div>
       </section>
     `;
   }).join("");
@@ -976,6 +1023,13 @@ function renderCoachWorkoutCardLayout() {
     stack.querySelectorAll("[data-coach-workout-group-card]").forEach(refreshCoachWorkoutGroupedProgress);
   } else if (stack) {
     stack.innerHTML = "";
+  }
+
+  const restState = window.CoachRestTimer?.getState();
+  if (restState?.active && restState.inline && !Array.from(stack?.querySelectorAll("[data-coach-rest-owner]") || []).some((section) => section.dataset.coachRestOwner === restState.owner)) {
+    window.CoachRestTimer.stop();
+  } else {
+    renderCoachWorkoutInlineRest(restState);
   }
 
   exercises.forEach((exercise, index) => {
@@ -2062,6 +2116,8 @@ function handleCoachWorkoutForm() {
     return;
   }
 
+  window.CoachRestTimer?.subscribe(renderCoachWorkoutInlineRest);
+
   document.getElementById("coach-workout-add-exercise")?.addEventListener("click", () => {
     const exercise = addCoachWorkoutExercise();
     const index = coachWorkoutExerciseElements().indexOf(exercise);
@@ -2260,6 +2316,18 @@ function handleCoachWorkoutForm() {
     const addRound = event.target.closest("[data-coach-grouped-add-round]");
     const deleteRound = event.target.closest("[data-coach-grouped-delete-round]");
     const logRound = event.target.closest("[data-coach-grouped-log-round]");
+    const restToggle = event.target.closest("[data-coach-rest-toggle]");
+    const restAdjust = event.target.closest("[data-coach-rest-adjust]");
+
+    if (restToggle || restAdjust) {
+      const section = event.target.closest("[data-coach-rest-owner]");
+      const state = window.CoachRestTimer?.getState();
+      if (state?.active && state.inline && state.owner === section?.dataset.coachRestOwner) {
+        if (restToggle) window.CoachRestTimer.toggle();
+        else window.CoachRestTimer.adjust(Number(restAdjust.dataset.coachRestAdjust));
+      }
+      return;
+    }
 
     if (logRound && card) {
       const section = logRound.closest("[data-coach-grouped-section]");
@@ -2271,7 +2339,7 @@ function handleCoachWorkoutForm() {
         return;
       }
       scheduleCoachWorkoutAutosave({ delayMs: 0 });
-      window.CoachRestTimer?.start();
+      window.CoachRestTimer?.start({ inline: true, owner: section.dataset.coachRestOwner });
       return;
     }
 
