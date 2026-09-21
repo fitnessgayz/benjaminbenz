@@ -4,6 +4,8 @@ Clients can attach a JPG, PNG, or WebP screenshot under 8 MB to an existing work
 
 Apple workout time and energy remain separate from the app's elapsed timer. Missing metrics stay null, zero calories stays zero, and the screenshot preserves the heart-rate graph without inventing a time series. No new exercise log or second workout is created by attaching a screenshot.
 
+Clients can use **Share workout** on each saved session in Logs or after completing a workout. The preview and exported card include saved Apple workout time, active and total calories, and average heart rate when available. Adding or editing Apple details from the preview returns to an updated card after saving. Sharing uses only the reviewed metrics; it does not include the private screenshot or storage link. Historical cards show the workout date and the count for that week.
+
 ## Deployment
 
 The `add_apple_workout_attachments` migration creates the private `apple-workouts` bucket, `client_apple_workouts`, and a service-only daily extraction quota. Clients write their own attachments; coaches have read access. Replacements use new storage paths, and referenced screenshots cannot be deleted during cleanup. Session keys match `clientWorkoutHistorySessionKey`; legacy date/title keys are supported only for logs without a session UUID.

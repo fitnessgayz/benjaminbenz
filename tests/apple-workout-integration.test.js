@@ -115,6 +115,7 @@ test("coach detailed logs request each workout's own Apple attachment markup", (
 
 test("completion share summary takes attachment identity from saved rows, including the legacy fallback", () => {
   const context = evaluate(portal, ["workoutFeedbackSessionId", "clientWorkoutHistorySessionKey", "workoutCompletionShareSummary"], {
+    window: {},
     warmupExerciseCode: "WARMUP",
     todayDate: () => "2026-09-21",
     workoutElapsedTimeLabel: () => "00:42",
@@ -139,11 +140,17 @@ test("completion share summary takes attachment identity from saved rows, includ
 test("completion attachment action keeps the selected session when dismissing the share sheet", async () => {
   const events = {};
   const calls = [];
+  let savedCallback;
   const context = evaluate(portal, ["handleWorkoutCompletionSharePrompt"], {
     document: { addEventListener: (name, handler) => { events[name] = handler; } },
     pendingWorkoutCompletionShare: { historyKey: `session:${secondSession.toLowerCase()}` },
     isCoachDashboardPreview: false,
-    window: { FWBAppleWorkout: { open: (key) => calls.push(["open", key]) } },
+    window: { FWBAppleWorkout: { open: (key, options) => {
+      calls.push(["open", key]);
+      savedCallback = options.onSaved;
+      return true;
+    } } },
+    openWorkoutHistoryShare: (key) => calls.push(["reopen", key]),
     closeWorkoutCompletionSharePrompt: (options) => {
       calls.push(["close", plain(options)]);
       context.pendingWorkoutCompletionShare = null;
@@ -153,7 +160,9 @@ test("completion attachment action keeps the selected session when dismissing th
   context.handleWorkoutCompletionSharePrompt();
   const event = { target: { closest: (selector) => selector === "[data-workout-share-apple]" ? {} : null, matches: () => false } };
   await events.click(event);
-  assert.deepEqual(calls, [["close", { restoreFocus: false }], ["tab", "logs"], ["open", `session:${secondSession.toLowerCase()}`]]);
+  assert.deepEqual(calls, [["open", `session:${secondSession.toLowerCase()}`], ["close", { restoreFocus: false }], ["tab", "logs"]]);
+  savedCallback({ history_key: `session:${firstSession.toLowerCase()}` });
+  assert.deepEqual(calls.at(-1), ["reopen", `session:${firstSession.toLowerCase()}`], "Return to the workout the user actually linked");
 
   calls.length = 0;
   context.pendingWorkoutCompletionShare = { historyKey: `session:${firstSession.toLowerCase()}` };
@@ -177,6 +186,7 @@ test("completion sheet hides Apple entry for coach preview, missing identity, or
     document: { body: { classList: { add() {} } } },
     window: { FWBAppleWorkout: {} },
     isCoachDashboardPreview: false,
+    formatLogDate: (date) => date || "",
     escapeHtml: String,
     randomWorkoutCompletionMessage: () => "Well done",
     workoutCompletionShareImage: async () => null

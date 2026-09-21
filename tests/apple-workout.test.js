@@ -248,3 +248,48 @@ test("bounded requests reject and abort instead of leaving the interface busy fo
   await assert.rejects(bounded(new Promise(() => {}), 5, controller), /took too long/);
   assert.equal(controller.signal.aborted, true);
 });
+
+test("share stats copy only the selected session's public metrics without private screenshot metadata", async () => {
+  const record = baseRecord({
+    duration_seconds: 2700,
+    active_calories: 0,
+    total_calories: "180.5",
+    average_heart_rate: "121.5",
+    signed_url: "https://private.example/screenshot?token=secret",
+    notes: "Private health note",
+    activity_type: "Strength training"
+  });
+  const h = database({ loadPages: [Promise.resolve({ data: [record, baseRecord({ history_key: "session:two", active_calories: 900 })] })] });
+  api.configure({ supabaseClient: h.client, clientEmail: "client@example.com", readOnly: false });
+  assert.equal(api.getShareStats("session:one"), null, "Unloaded data must not be presented as current");
+  await api.load();
+  const shared = api.getShareStats("session:one");
+  assert.deepEqual(shared, { duration_seconds: 2700, active_calories: 0, total_calories: 180.5, average_heart_rate: 121.5 });
+  assert.equal(api.getShareStats("session:two").active_calories, 900);
+  assert.equal(api.getShareStats("session:missing"), null);
+  shared.active_calories = 100;
+  assert.equal(api.getShareStats("session:one").active_calories, 0, "Changing a share summary must not mutate the saved metrics");
+  assert.equal(JSON.stringify(shared).includes("secret"), false);
+  assert.equal(JSON.stringify(shared).includes("client@example.com"), false);
+});
+
+test("share stats preserve missing values and exclude invalid or unloaded metrics", async () => {
+  const h = database({ loadPages: [Promise.resolve({ data: [
+    baseRecord(),
+    baseRecord({ history_key: "session:zero", active_calories: 0 }),
+    baseRecord({ history_key: "session:invalid", duration_seconds: -1, active_calories: Infinity, total_calories: 100001, average_heart_rate: 301 })
+  ] })] });
+  api.configure({ supabaseClient: h.client, clientEmail: "client@example.com", readOnly: false });
+  await api.load();
+  assert.equal(api.getShareStats("session:one"), null);
+  assert.equal(api.getShareStats("session:invalid"), null);
+  assert.deepEqual(api.getShareStats("session:zero"), { duration_seconds: null, active_calories: 0, total_calories: null, average_heart_rate: null });
+  let resolveRefresh;
+  const refreshing = database({ loadPages: [new Promise((resolve) => { resolveRefresh = resolve; })] });
+  api.configure({ supabaseClient: refreshing.client, clientEmail: "client@example.com", readOnly: false });
+  const loading = api.load();
+  assert.equal(api.getShareStats("session:zero"), null);
+  resolveRefresh({ data: [baseRecord({ history_key: "session:zero", active_calories: 25 })] });
+  await loading;
+  assert.equal(api.getShareStats("session:zero").active_calories, 25);
+});

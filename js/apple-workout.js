@@ -281,6 +281,18 @@
     return `<div class="${className}"><dt>${escapeHtml(label)}</dt><dd>${value === null || value === undefined || value === "" ? "—" : escapeHtml(value)}${value !== null && value !== undefined && value !== "" && unit ? ` <small>${escapeHtml(unit)}</small>` : ""}</dd></div>`;
   }
 
+  function getShareStats(historyKey) {
+    const record = records.get(historyKey);
+    if (!record || loadState !== "ready") return null;
+    const stats = {};
+    for (const [key, maximum] of [["duration_seconds", 604800], ["active_calories", 100000], ["total_calories", 100000], ["average_heart_rate", 300]]) {
+      const value = record[key];
+      const number = value === null || value === undefined || typeof value === "boolean" || String(value).trim() === "" ? NaN : Number(value);
+      stats[key] = Number.isFinite(number) && number >= (key === "average_heart_rate" ? 20 : 0) && number <= maximum ? number : null;
+    }
+    return Object.values(stats).some((value) => value !== null) ? stats : null;
+  }
+
   function markup(historyKey) {
     const record = records.get(historyKey);
     const key = escapeHtml(historyKey);
@@ -392,6 +404,7 @@
         const fallback = Array.from(document.querySelectorAll('[data-apple-workout-action="open"]')).find((button) => button.dataset.appleWorkoutKey === previous.historyKey && visible(button));
         const target = visible(previous.returnFocus) ? previous.returnFocus : fallback;
         target?.focus({ preventScroll: true });
+        if (previous.savedRecord && previous.generation === generation) previous.afterSave?.(previous.savedRecord);
       }
     });
     return dialog;
@@ -436,7 +449,7 @@
     dialog.querySelector("[data-apple-read-status]").setAttribute("aria-busy", item.extracting ? "true" : "false");
   }
 
-  function open(historyKey) {
+  function open(historyKey, options = {}) {
     if (!editable() || loadState !== "ready") return false;
     const selected = workouts().find((workout) => workout.history_key === historyKey);
     if (!selected) return false;
@@ -447,7 +460,7 @@
       element.close();
     }
     const existing = records.get(historyKey) || null;
-    draft = { id: ++nextDraft, generation, historyKey, existing, file: null, pendingUpload: null, explicitSelection: true, dirtyFields: new Set(), ocrToken: 0, extracting: false, saving: false, returnFocus: document.activeElement };
+    draft = { id: ++nextDraft, generation, historyKey, existing, file: null, pendingUpload: null, explicitSelection: true, dirtyFields: new Set(), ocrToken: 0, extracting: false, saving: false, returnFocus: document.activeElement, afterSave: typeof options.onSaved === "function" ? options.onSaved : null };
     const form = formElement();
     form.reset();
     form.elements.history_key.innerHTML = workouts().map((workout) => `<option value="${escapeHtml(workout.history_key)}" ${workout.history_key === historyKey ? "selected" : ""} ${records.has(workout.history_key) && workout.history_key !== historyKey ? "disabled" : ""}>${escapeHtml(workoutLabel(workout))}${records.has(workout.history_key) && workout.history_key !== historyKey ? " · Apple Workout added" : ""}</option>`).join("");
@@ -559,6 +572,7 @@
       loadState = "ready";
       records.set(record.history_key, record);
       item.saving = false;
+      item.savedRecord = record;
       dialog.close();
       try { await context.onSaved?.(record); } catch (_error) { /* The saved record remains authoritative if its parent view cannot refresh. */ }
     } catch (error) {
@@ -612,7 +626,7 @@
     });
   }
 
-  const api = { configure, load, markup, open, attach };
+  const api = { configure, load, markup, open, attach, getShareStats };
   if (typeof window !== "undefined") window.FWBAppleWorkout = api;
   if (typeof module !== "undefined" && module.exports) module.exports = { api, optionalNumber, parseDuration, formatDuration, validDate, localTime, validateMetrics, validateFile, extractedFields, extractionUpdates, persistRecord, workoutLabel, bounded };
 })();

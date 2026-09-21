@@ -15,7 +15,7 @@ test("shows the approved workout completion share prompt after a successful fini
   assert.match(portal, /data-workout-share-dismiss>Not now</);
 });
 
-test("shares today's workout without volume or set totals", () => {
+test("shares a dated workout without volume or set totals", () => {
   const markupStart = portal.indexOf("function workoutCompletionSharePromptMarkup");
   const markupEnd = portal.indexOf("function ensureWorkoutCompletionSharePrompt", markupStart);
   const markup = portal.slice(markupStart, markupEnd);
@@ -23,6 +23,7 @@ test("shares today's workout without volume or set totals", () => {
   assert.match(markup, /data-workout-share-duration/);
   assert.match(markup, /data-workout-share-exercises/);
   assert.match(markup, /data-workout-share-week/);
+  assert.match(markup, /data-workout-share-date/);
   assert.match(markup, /Exercises completed/);
   assert.doesNotMatch(markup, /Working sets|Total volume/i);
 });
@@ -32,13 +33,14 @@ test("counts completed workouts for the current Monday-to-Sunday week", () => {
   assert.match(portal, /const range = clientHomeWeekRange\(entryDate\)/);
   assert.match(portal, /filter\(\(record\) => String\(record\?\.completed_at \|\| ""\)\.trim\(\)\)/);
   assert.match(portal, /weeklyWorkoutCount: completedWorkoutCountForWeek\(entryDate\)/);
-  assert.match(portal, /workout\$\{summary\.weeklyWorkoutCount === 1 \? "" : "s"\} this week/);
+  assert.match(portal, /data-workout-share-week-label/);
+  assert.match(portal, /FWBWorkoutShareCard\?\.metrics\(summary\)/);
 });
 
 test("generates an image and opens the native share menu with a clipboard fallback", () => {
-  assert.match(portal, /canvas\.width = 1080/);
-  assert.match(portal, /canvas\.height = 1350/);
-  assert.match(portal, /EXERCISES COMPLETED/);
+  assert.match(portal, /FWBWorkoutShareCard\?\.image\(summary\)/);
+  assert.match(portal, /FWBWorkoutShareCard\?\.text\(summary\)/);
+  assert.ok(dashboard.indexOf('src="js/workout-share-card.js') < dashboard.indexOf('src="js/client-portal.js'));
   assert.match(portal, /navigator\.share\(shareData\)/);
   assert.match(portal, /navigator\.clipboard\?\.writeText/);
 });

@@ -7061,11 +7061,14 @@ function workoutCompletionShareSummary(rows = [], workoutCompletion = {}, diffic
     Number(workoutCompletion?.workout_duration_seconds || savedRows[0]?.workout_duration_seconds) || 0
   );
   const exerciseNames = Array.from(exerciseNamesByKey.values());
+  const historyKey = savedRows.length ? clientWorkoutHistorySessionKey(savedRows.find((row) => workoutFeedbackSessionId(row)) || savedRows[0]) : "";
 
   return {
     title,
     entryDate,
-    historyKey: savedRows.length ? clientWorkoutHistorySessionKey(savedRows.find((row) => workoutFeedbackSessionId(row)) || savedRows[0]) : "",
+    historyKey,
+    isComplete: Boolean(workoutCompletion?.completed_at || savedRows.some((row) => row.completed_at)),
+    appleWorkout: window.FWBAppleWorkout?.getShareStats?.(historyKey) || null,
     durationSeconds,
     durationLabel: durationSeconds ? workoutElapsedTimeLabel(durationSeconds * 1000) : "—",
     exerciseCount: exerciseNames.length,
@@ -7076,15 +7079,7 @@ function workoutCompletionShareSummary(rows = [], workoutCompletion = {}, diffic
 }
 
 function workoutCompletionShareText(summary = {}) {
-  const details = [
-    summary.durationSeconds ? `${summary.durationLabel} workout` : "Workout complete",
-    summary.exerciseCount ? `${summary.exerciseCount} exercise${summary.exerciseCount === 1 ? "" : "s"} today` : "",
-    summary.weeklyWorkoutCount
-      ? `${summary.weeklyWorkoutCount} workout${summary.weeklyWorkoutCount === 1 ? "" : "s"} this week`
-      : ""
-  ].filter(Boolean).join(" · ");
-
-  return `Workout complete 💪\n${summary.title || "Workout"}\n${details}\n#FitnessWithBenjamin`;
+  return window.FWBWorkoutShareCard?.text(summary) || `${summary.title || "Workout"} · ${summary.durationLabel || ""}`;
 }
 
 function workoutCompletionSharePromptMarkup() {
@@ -7100,16 +7095,22 @@ function workoutCompletionSharePromptMarkup() {
         </header>
         <article class="workout-completion-share-card" aria-label="Workout completion share preview">
           <span class="workout-completion-share-brand">FWB</span>
-          <p>Workout complete</p>
+          <p data-workout-share-state>Workout complete</p>
           <h2 data-workout-share-workout-title>Workout</h2>
+          <small class="workout-completion-share-date" data-workout-share-date></small>
           <div class="workout-completion-share-metrics">
-            <span><strong data-workout-share-duration>—</strong><small>Time</small></span>
-            <span><strong data-workout-share-exercises>0 exercises</strong><small>Today</small></span>
-            <span><strong data-workout-share-week>0 workouts</strong><small>This week</small></span>
+            <span><strong data-workout-share-duration>—</strong><small data-workout-share-time-label>Workout time</small></span>
+            <span><strong data-workout-share-exercises>0</strong><small data-workout-share-count-label>Exercises</small></span>
+            <span><strong data-workout-share-week>0 workouts</strong><small data-workout-share-week-label>This week</small></span>
+          </div>
+          <div class="workout-completion-share-apple" data-workout-share-apple-stats hidden>
+            <small>Apple Workout</small>
+            <div class="workout-completion-share-apple-metrics" data-workout-share-apple-metrics></div>
           </div>
           <div class="workout-completion-share-exercises">
-            <small>Exercises completed</small>
+            <small data-workout-share-exercises-label>Exercises completed</small>
             <ul data-workout-share-exercise-list></ul>
+            <small data-workout-share-more hidden></small>
           </div>
           <strong class="workout-completion-share-praise" data-workout-share-praise>Strong work. You showed up.</strong>
         </article>
@@ -7137,123 +7138,55 @@ function ensureWorkoutCompletionSharePrompt() {
 }
 
 function workoutCompletionShareImage(summary = {}) {
-  if (typeof File === "undefined") {
-    return Promise.resolve(null);
-  }
-
-  const canvas = document.createElement("canvas");
-  canvas.width = 1080;
-  canvas.height = 1350;
-  const context = canvas.getContext("2d");
-
-  if (!context) {
-    return Promise.resolve(null);
-  }
-
-  context.fillStyle = "#171a17";
-  context.fillRect(0, 0, canvas.width, canvas.height);
-  context.fillStyle = "#d7ff3f";
-  context.fillRect(72, 72, 190, 190);
-  context.fillStyle = "#050505";
-  context.font = "900 72px Inter, Arial, sans-serif";
-  context.textAlign = "center";
-  context.textBaseline = "middle";
-  context.fillText("FWB", 167, 167);
-
-  context.textAlign = "left";
-  context.textBaseline = "alphabetic";
-  context.fillStyle = "#d7ff3f";
-  context.font = "900 42px Inter, Arial, sans-serif";
-  context.fillText("WORKOUT COMPLETE", 72, 360);
-  context.fillStyle = "#f7f7f2";
-  context.font = "900 88px Inter, Arial, sans-serif";
-  const title = String(summary.title || "Workout");
-  const titleWords = title.split(/\s+/).filter(Boolean);
-  const titleLines = [];
-  let currentLine = "";
-
-  titleWords.forEach((word) => {
-    const candidate = currentLine ? `${currentLine} ${word}` : word;
-    if (context.measureText(candidate).width > 930 && currentLine) {
-      titleLines.push(currentLine);
-      currentLine = word;
-    } else {
-      currentLine = candidate;
-    }
-  });
-  if (currentLine) titleLines.push(currentLine);
-  titleLines.slice(0, 3).forEach((line, index) => {
-    context.fillText(line, 72, 475 + (index * 96), 930);
-  });
-
-  const metricTop = 730;
-  const metrics = [
-    [summary.durationLabel || "—", "TIME"],
-    [`${summary.exerciseCount || 0} EXERCISES`, "TODAY"],
-    [`${summary.weeklyWorkoutCount || 0} WORKOUTS`, "THIS WEEK"]
-  ];
-  metrics.forEach(([value, label], index) => {
-    const x = 72 + (index * 312);
-    context.strokeStyle = "#555a53";
-    context.lineWidth = 3;
-    context.strokeRect(x, metricTop, 280, 180);
-    context.fillStyle = "#f7f7f2";
-    context.font = "900 42px Inter, Arial, sans-serif";
-    context.fillText(value, x + 24, metricTop + 76, 232);
-    context.fillStyle = "#d7ff3f";
-    context.font = "900 25px Inter, Arial, sans-serif";
-    context.fillText(label, x + 24, metricTop + 135, 232);
-  });
-
-  context.fillStyle = "#d7ff3f";
-  context.font = "900 27px Inter, Arial, sans-serif";
-  context.fillText("EXERCISES COMPLETED", 72, 978);
-  context.fillStyle = "#f7f7f2";
-  context.font = "700 28px Inter, Arial, sans-serif";
-  (summary.exerciseNames || []).slice(0, 6).forEach((exerciseName, index) => {
-    const column = index % 2;
-    const row = Math.floor(index / 2);
-    context.fillText(String(exerciseName), 72 + (column * 480), 1032 + (row * 56), 420);
-  });
-
-  context.fillStyle = "#f7f7f2";
-  context.font = "800 38px Inter, Arial, sans-serif";
-  context.fillText("Strong work. You showed up.", 72, 1235);
-  context.fillStyle = "#9ba096";
-  context.font = "700 28px Inter, Arial, sans-serif";
-  context.fillText("Fitness with Benjamin · benjaminbenz.com", 72, 1305);
-
-  return new Promise((resolve) => {
-    canvas.toBlob((blob) => {
-      resolve(blob ? new File([blob], "fwb-workout-complete.png", { type: "image/png" }) : null);
-    }, "image/png");
-  });
+  return window.FWBWorkoutShareCard?.image(summary) || Promise.resolve(null);
 }
 
 function openWorkoutCompletionSharePrompt(summary, returnFocus = null) {
   const overlay = ensureWorkoutCompletionSharePrompt();
+  const shareMetrics = window.FWBWorkoutShareCard?.metrics(summary) || {
+    durationLabel: summary.durationLabel, timeLabel: "Workout time", weekLabel: "This week", appleMetrics: []
+  };
 
   pendingWorkoutCompletionShare = summary;
   pendingWorkoutCompletionShareFile = null;
   workoutCompletionShareReturnFocus = returnFocus;
+  overlay.querySelector("[data-workout-share-state]").textContent = summary.isComplete === false ? "Workout saved" : "Workout complete";
   overlay.querySelector("[data-workout-share-workout-title]").textContent = summary.title;
-  overlay.querySelector("[data-workout-share-duration]").textContent = summary.durationLabel;
-  overlay.querySelector("[data-workout-share-exercises]").textContent = `${summary.exerciseCount} exercise${summary.exerciseCount === 1 ? "" : "s"}`;
+  overlay.querySelector("[data-workout-share-date]").textContent = formatLogDate(summary.entryDate);
+  overlay.querySelector("[data-workout-share-duration]").textContent = shareMetrics.durationLabel;
+  overlay.querySelector("[data-workout-share-time-label]").textContent = shareMetrics.timeLabel;
+  overlay.querySelector("[data-workout-share-exercises]").textContent = String(summary.exerciseCount || 0);
+  overlay.querySelector("[data-workout-share-count-label]").textContent = summary.exerciseCount === 1 ? "Exercise" : "Exercises";
   overlay.querySelector("[data-workout-share-week]").textContent = `${summary.weeklyWorkoutCount} workout${summary.weeklyWorkoutCount === 1 ? "" : "s"}`;
+  overlay.querySelector("[data-workout-share-week-label]").textContent = shareMetrics.weekLabel;
+  overlay.querySelector("[data-workout-share-apple-stats]").hidden = shareMetrics.appleMetrics.length === 0;
+  overlay.querySelector("[data-workout-share-apple-metrics]").innerHTML = shareMetrics.appleMetrics
+    .map((metric) => `<span><strong>${escapeHtml(metric.value)}</strong><small>${escapeHtml(metric.label)}</small></span>`).join("");
   overlay.querySelector("[data-workout-share-exercise-list]").innerHTML = (summary.exerciseNames || [])
     .slice(0, 6)
     .map((exerciseName) => `<li>${escapeHtml(exerciseName)}</li>`)
     .join("");
-  overlay.querySelector("[data-workout-share-praise]").textContent = randomWorkoutCompletionMessage();
-  overlay.querySelector("[data-workout-share-status]").textContent = "";
+  overlay.querySelector("[data-workout-share-exercises-label]").textContent = summary.isComplete === false ? "Exercises logged" : "Exercises completed";
+  const extraExercises = Math.max(0, (summary.exerciseCount || 0) - Math.min((summary.exerciseNames || []).length, 6));
+  overlay.querySelector("[data-workout-share-more]").hidden = !extraExercises;
+  overlay.querySelector("[data-workout-share-more]").textContent = `+ ${extraExercises} more exercise${extraExercises === 1 ? "" : "s"}`;
+  overlay.querySelector("[data-workout-share-praise]").textContent = summary.isComplete === false ? "Your session is saved." : "Strong work. You showed up.";
+  const shareButton = overlay.querySelector("[data-workout-share]");
+  shareButton.disabled = true;
+  shareButton.textContent = "Preparing image…";
+  overlay.querySelector("[data-workout-share-status]").textContent = "Preparing your workout card…";
   overlay.querySelector("[data-workout-share-apple]").hidden = !summary.historyKey || isCoachDashboardPreview || !window.FWBAppleWorkout;
+  overlay.querySelector("[data-workout-share-apple]").textContent = summary.appleWorkout ? "Edit Apple Workout" : "Add Apple Workout";
   overlay.hidden = false;
   document.body.classList.add("workout-completion-share-open");
-  overlay.querySelector("[data-workout-share]")?.focus();
+  overlay.querySelector("[data-workout-share-dismiss]")?.focus();
 
-  workoutCompletionShareImage(summary).then((file) => {
+  Promise.resolve(workoutCompletionShareImage(summary)).catch(() => null).then((file) => {
     if (pendingWorkoutCompletionShare === summary) {
       pendingWorkoutCompletionShareFile = file;
+      shareButton.disabled = false;
+      shareButton.textContent = "Share workout";
+      overlay.querySelector("[data-workout-share-status]").textContent = file ? "" : "The image couldn’t be prepared. You can still share the workout details as text.";
     }
   });
 }
@@ -7270,18 +7203,39 @@ function closeWorkoutCompletionSharePrompt(options = {}) {
   if (options.restoreFocus !== false) returnFocus?.focus();
 }
 
+function workoutHistoryShareSummary(historyKey) {
+  const rows = trainingLogs.filter((row) => clientWorkoutHistorySessionKey(row) === historyKey);
+  if (!rows.length) return null;
+  const durationSeconds = rows.reduce((maximum, row) => {
+    const duration = Number(row.workout_duration_seconds);
+    return Number.isFinite(duration) && duration >= 0 ? Math.max(maximum, duration) : maximum;
+  }, 0);
+  return workoutCompletionShareSummary(rows, {
+    workout_duration_seconds: durationSeconds,
+    completed_at: rows.find((row) => row.completed_at)?.completed_at || ""
+  }, rows.map(workoutDifficultyForLog).find(Boolean) || null);
+}
+
+function openWorkoutHistoryShare(historyKey, returnFocus = null) {
+  if (isCoachDashboardPreview) return false;
+  const summary = workoutHistoryShareSummary(historyKey);
+  if (!summary) return false;
+  openWorkoutCompletionSharePrompt(summary, returnFocus);
+  return true;
+}
+
 async function shareCompletedWorkout(button) {
   const overlay = button?.closest("[data-workout-share-overlay]");
   const status = overlay?.querySelector("[data-workout-share-status]");
   const summary = pendingWorkoutCompletionShare;
 
-  if (!button || !summary) {
+  if (!button || button.disabled || !summary) {
     return;
   }
 
   const text = workoutCompletionShareText(summary);
   const url = `${window.location.origin}/`;
-  const shareData = { title: "Workout complete", text, url };
+  const shareData = { title: summary.isComplete === false ? "Workout saved" : "Workout complete", text, url };
   const file = pendingWorkoutCompletionShareFile;
 
   if (file && typeof navigator.canShare === "function" && navigator.canShare({ files: [file] })) {
@@ -7295,25 +7249,26 @@ async function shareCompletedWorkout(button) {
   try {
     if (typeof navigator.share === "function") {
       await navigator.share(shareData);
-      closeWorkoutCompletionSharePrompt({ restoreFocus: false });
+      if (pendingWorkoutCompletionShare === summary) closeWorkoutCompletionSharePrompt({ restoreFocus: false });
       return;
     }
 
     if (navigator.clipboard?.writeText) {
       await navigator.clipboard.writeText(`${text}\n${url}`);
-      if (status) status.textContent = "Workout message copied. Paste it into any social app.";
+      if (pendingWorkoutCompletionShare === summary && status) status.textContent = "Workout message copied. Paste it into any social app.";
       return;
     }
 
     if (status) status.textContent = "Sharing is not available in this browser.";
   } catch (error) {
+    if (pendingWorkoutCompletionShare !== summary) return;
     if (error?.name === "AbortError") {
       if (status) status.textContent = "Sharing canceled. You can try again.";
     } else if (status) {
       status.textContent = "Could not open sharing. Please try again.";
     }
   } finally {
-    button.disabled = false;
+    if (pendingWorkoutCompletionShare === summary) button.disabled = false;
   }
 }
 
@@ -7322,12 +7277,24 @@ function handleWorkoutCompletionSharePrompt() {
     const shareButton = event.target.closest("[data-workout-share]");
     const dismissButton = event.target.closest("[data-workout-share-dismiss]");
     const appleWorkoutButton = event.target.closest("[data-workout-share-apple]");
+    const historyShareButton = event.target.closest("[data-share-workout-history]");
+
+    if (historyShareButton) {
+      openWorkoutHistoryShare(historyShareButton.dataset.shareWorkoutHistory, historyShareButton);
+      return;
+    }
 
     if (appleWorkoutButton && pendingWorkoutCompletionShare?.historyKey && !isCoachDashboardPreview) {
       const historyKey = pendingWorkoutCompletionShare.historyKey;
-      closeWorkoutCompletionSharePrompt({ restoreFocus: false });
-      setClientDashboardTab("logs");
-      window.FWBAppleWorkout?.open(historyKey);
+      const opened = window.FWBAppleWorkout?.open(historyKey, {
+        onSaved: (record) => openWorkoutHistoryShare(record.history_key)
+      });
+      if (opened) {
+        closeWorkoutCompletionSharePrompt({ restoreFocus: false });
+        setClientDashboardTab("logs");
+      } else {
+        document.querySelector("[data-workout-share-status]").textContent = "Apple Workout details aren’t ready. Close this preview and try Add Apple Workout in Logs.";
+      }
       return;
     }
 
@@ -12858,6 +12825,7 @@ function renderClientTrainingLogs() {
     const workoutStatus = workout.completed_at ? "Completed" : "Saved";
     const metrics = workoutHistorySummaryMetrics(workout);
     const canCopyToCustom = workoutHistoryLogsForCopy(workout.history_key).length > 0;
+    const shareButtonMarkup = !isCoachDashboardPreview ? `<button class="training-log-share-button" type="button" data-share-workout-history="${escapeHtml(workout.history_key)}" aria-label="${escapeHtml(`Share ${workout.workout_title} from ${formatLogDate(workout.entry_date)}`)}">Share workout</button>` : "";
     const copyButtonLabel = `Copy ${workout.workout_title} from ${formatLogDate(workout.entry_date)} to Custom workout`;
     const detailsId = `client-workout-history-details-${workoutIndex}`;
     const detailsHtml = `
@@ -12948,11 +12916,12 @@ function renderClientTrainingLogs() {
       sort_key: `${workout.entry_date || ""}::workout::${workout.workout_title || ""}`,
       desktop_html: `
         <section class="training-log-workout-group">
-          <div class="training-log-workout-heading${canCopyToCustom ? " has-copy-action" : ""}">
+          <div class="training-log-workout-heading has-copy-action">
             <div class="training-log-workout-title">
               <strong>${escapeHtml(formatLogDate(workout.entry_date))}</strong>
               <span>${escapeHtml(workoutHeading)}</span>
             </div>
+            <div class="training-log-workout-actions">
             ${canCopyToCustom ? `
               <button
                 class="training-log-copy-button"
@@ -12961,6 +12930,8 @@ function renderClientTrainingLogs() {
                 aria-label="${escapeHtml(copyButtonLabel)}"
               >Copy Workout</button>
             ` : ""}
+            ${shareButtonMarkup}
+            </div>
           </div>
           ${appleWorkoutMarkup}
           ${detailsHtml}
@@ -13005,6 +12976,7 @@ function renderClientTrainingLogs() {
                   aria-label="${escapeHtml(copyButtonLabel)}"
                 >Copy Workout</button>
               ` : ""}
+              ${shareButtonMarkup}
             </div>
           </div>
           <div
