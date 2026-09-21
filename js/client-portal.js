@@ -7065,6 +7065,7 @@ function workoutCompletionShareSummary(rows = [], workoutCompletion = {}, diffic
   return {
     title,
     entryDate,
+    historyKey: savedRows.length ? clientWorkoutHistorySessionKey(savedRows.find((row) => workoutFeedbackSessionId(row)) || savedRows[0]) : "",
     durationSeconds,
     durationLabel: durationSeconds ? workoutElapsedTimeLabel(durationSeconds * 1000) : "—",
     exerciseCount: exerciseNames.length,
@@ -7116,6 +7117,7 @@ function workoutCompletionSharePromptMarkup() {
         <p class="workout-completion-share-status" data-workout-share-status aria-live="polite"></p>
         <div class="workout-completion-share-actions">
           <button class="workout-completion-share-button" type="button" data-workout-share>Share workout</button>
+          <button class="workout-completion-share-not-now" type="button" data-workout-share-apple hidden>Add Apple Workout</button>
           <button class="workout-completion-share-not-now" type="button" data-workout-share-dismiss>Not now</button>
         </div>
       </section>
@@ -7244,6 +7246,7 @@ function openWorkoutCompletionSharePrompt(summary, returnFocus = null) {
     .join("");
   overlay.querySelector("[data-workout-share-praise]").textContent = randomWorkoutCompletionMessage();
   overlay.querySelector("[data-workout-share-status]").textContent = "";
+  overlay.querySelector("[data-workout-share-apple]").hidden = !summary.historyKey || isCoachDashboardPreview || !window.FWBAppleWorkout;
   overlay.hidden = false;
   document.body.classList.add("workout-completion-share-open");
   overlay.querySelector("[data-workout-share]")?.focus();
@@ -7318,6 +7321,15 @@ function handleWorkoutCompletionSharePrompt() {
   document.addEventListener("click", async (event) => {
     const shareButton = event.target.closest("[data-workout-share]");
     const dismissButton = event.target.closest("[data-workout-share-dismiss]");
+    const appleWorkoutButton = event.target.closest("[data-workout-share-apple]");
+
+    if (appleWorkoutButton && pendingWorkoutCompletionShare?.historyKey && !isCoachDashboardPreview) {
+      const historyKey = pendingWorkoutCompletionShare.historyKey;
+      closeWorkoutCompletionSharePrompt({ restoreFocus: false });
+      setClientDashboardTab("logs");
+      window.FWBAppleWorkout?.open(historyKey);
+      return;
+    }
 
     if (shareButton) {
       await shareCompletedWorkout(shareButton);
@@ -12412,6 +12424,35 @@ function clientWorkoutHistorySessionKey(record = {}) {
   return `legacy:${entryDate}::${workoutTitle}`;
 }
 
+function clientAppleWorkoutSessions() {
+  const sessions = new Map();
+  trainingLogs.forEach((log) => {
+    const historyKey = clientWorkoutHistorySessionKey(log);
+    if (!sessions.has(historyKey)) {
+      sessions.set(historyKey, {
+        history_key: historyKey,
+        entry_date: log.entry_date || "",
+        workout_title: log.workout_title || "Workout",
+        completed_at: log.completed_at || log.created_at || ""
+      });
+    }
+  });
+  return Array.from(sessions.values()).sort((a, b) => b.entry_date.localeCompare(a.entry_date));
+}
+
+function configureClientAppleWorkouts() {
+  window.FWBAppleWorkout?.configure({
+    supabaseClient,
+    user: activeDashboardUser,
+    clientEmail: normalizeClientEmail(activeClientEmail),
+    readOnly: isCoachDashboardPreview,
+    automaticReading: false,
+    getWorkouts: clientAppleWorkoutSessions,
+    onSaved: renderClientTrainingLogs
+  });
+  window.FWBAppleWorkout?.attach();
+}
+
 function isCopyableWorkoutHistoryLog(log = {}) {
   const exerciseCode = String(log.exercise_code || "").trim().toUpperCase();
   const exerciseName = String(log.exercise_name || "").trim();
@@ -12808,6 +12849,7 @@ function renderClientTrainingLogs() {
   }
 
   const workoutHistorySections = workoutSections.map((workout, workoutIndex) => {
+    const appleWorkoutMarkup = window.FWBAppleWorkout?.markup(workout.history_key) || "";
     const supersets = Array.from(workout.supersets.values()).sort((a, b) => a.key.localeCompare(b.key));
     const workoutDuration = workoutHistoryDurationLabel(workout.workout_duration_seconds);
     const workoutDifficulty = workoutHistoryDifficultyLabel(workout.workout_difficulty);
@@ -12920,6 +12962,7 @@ function renderClientTrainingLogs() {
               >Copy Workout</button>
             ` : ""}
           </div>
+          ${appleWorkoutMarkup}
           ${detailsHtml}
         </section>
       `,
@@ -12945,6 +12988,7 @@ function renderClientTrainingLogs() {
               <div><dt>Working sets</dt><dd>${escapeHtml(String(metrics.workingSetCount))}</dd></div>
               <div><dt>Average RIR</dt><dd>${escapeHtml(metrics.averageRirLabel)}</dd></div>
             </dl>
+            ${appleWorkoutMarkup}
             <div class="training-log-history-card-actions">
               <button
                 class="training-log-history-open"
@@ -16545,6 +16589,7 @@ async function loadDashboard() {
     };
 
     activeClientEmail = data.client_email || targetClientEmail;
+    configureClientAppleWorkouts();
     clientAvailablePrograms = Array.isArray(programRows) ? programRows : [];
     renderProgram(data);
     void initializeClientWebNotifications(user);
@@ -16628,7 +16673,8 @@ async function loadDashboard() {
       withTimeout(
         questionnaireQuery,
         "Questionnaire request timed out."
-      )
+      ),
+      withTimeout(Promise.resolve(window.FWBAppleWorkout?.load()), "Apple Workout request timed out.")
     ]);
 
     const progressData = progressResult.status === "fulfilled" && !progressResult.value.error

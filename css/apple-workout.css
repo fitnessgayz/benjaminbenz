@@ -1,0 +1,99 @@
+/* Scoped Apple Workout attachment and review surfaces. */
+.apple-workout-summary,
+.apple-workout-empty,
+.apple-workout-dialog {
+  --apple-ink: #171a17;
+  --apple-muted: #666b62;
+  --apple-line: #dcded7;
+  --apple-paper: #fff;
+  --apple-soft: #f7f8f4;
+  --apple-lime: #d6ff35;
+  color: var(--apple-ink);
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color-scheme: light;
+  box-sizing: border-box;
+  min-width: 0;
+}
+.apple-workout-summary *, .apple-workout-empty *, .apple-workout-dialog * { box-sizing: border-box; }
+.apple-workout-empty { padding: 8px 0; }
+.apple-workout-empty p { margin: 0; color: var(--apple-muted); font-size: .85rem; }
+.apple-workout-summary { margin-top: 14px; padding: 16px; border: 1px solid var(--apple-line); border-radius: 16px; background: var(--apple-paper); }
+.apple-workout-summary > header,
+.apple-workout-form > header { display: flex; justify-content: space-between; align-items: start; gap: 12px; }
+.apple-workout-summary > header > div { min-width: 0; overflow-wrap: anywhere; }
+.apple-workout-summary > header > button { flex: 0 0 auto; min-width: 48px !important; white-space: nowrap !important; }
+.apple-workout-eyebrow { color: var(--apple-muted); font-size: .7rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.apple-workout-summary header p { margin: 3px 0 0; font-size: .9rem; font-weight: 700; }
+.apple-workout-summary .apple-workout-metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 10px; margin: 12px 0; }
+.apple-workout-metrics .apple-workout-duration { grid-column: 1 / -1; }
+.apple-workout-summary dt { margin: 0 0 3px; font-size: .7rem; font-weight: 700; color: var(--apple-muted); }
+.apple-workout-summary dd { margin: 0; font-size: 1.3rem; line-height: 1.2; font-weight: 800; font-variant-numeric: tabular-nums; }
+.apple-workout-summary dd small { font-size: .7rem; color: var(--apple-muted); font-weight: 600; }
+.apple-workout-summary summary { min-height: 44px; padding: 12px 0; border-top: 1px solid var(--apple-line); font-size: .8rem; font-weight: 800; cursor: pointer; }
+.apple-workout-summary .apple-workout-details { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 4px 0 12px; }
+.apple-workout-details dd { font-size: .85rem; overflow-wrap: anywhere; }
+.apple-workout-summary button,
+.apple-workout-empty button,
+.apple-workout-dialog button {
+  width: auto !important;
+  inline-size: auto !important;
+  min-width: 0;
+  min-height: 44px;
+  margin: 0;
+  padding: 9px 12px;
+  border: 1px solid var(--apple-line);
+  border-radius: 10px !important;
+  background: var(--apple-soft);
+  color: var(--apple-ink);
+  font-family: inherit;
+  font-size: .8rem !important;
+  font-weight: 800;
+  line-height: 1.25;
+  letter-spacing: 0;
+  text-transform: none;
+  white-space: normal;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.apple-workout-empty button { width: 100% !important; inline-size: 100% !important; background: var(--apple-paper); }
+.apple-workout-summary button:disabled, .apple-workout-empty button:disabled, .apple-workout-dialog button:disabled { opacity: .55; cursor: default; }
+.apple-workout-link-status { display: block; margin-top: 6px; font-size: .8rem; color: var(--apple-muted); }
+.apple-workout-link-status a { display: inline-flex; align-items: center; min-height: 44px; color: var(--apple-ink); }
+.apple-workout-dialog { width: min(580px, calc(100vw - 24px)); max-width: calc(100vw - 24px); max-height: calc(100dvh - 24px); margin: auto; padding: 0; border: 1px solid var(--apple-line); border-radius: 22px; background: var(--apple-paper); overflow-y: auto; overscroll-behavior: contain; }
+.apple-workout-dialog::backdrop { background: rgb(17 20 17 / 65%); }
+.apple-workout-form { display: grid; gap: 16px; min-width: 0; padding: 22px; }
+.apple-workout-form > header { position: sticky; top: 0; z-index: 2; padding-block: 8px; background: var(--apple-paper); border-bottom: 1px solid var(--apple-line); }
+.apple-workout-dialog .apple-workout-form h2 { margin: 5px 0 0; font-size: 1.65rem; line-height: 1.1; font-weight: 800; }
+.apple-workout-dialog .apple-workout-close { flex: 0 0 44px; width: 44px !important; min-width: 44px; height: 44px; padding: 0; font-size: 1.6rem !important; }
+.apple-workout-disclosure, .apple-workout-help, .apple-workout-read-status, .apple-workout-selection, .apple-workout-suggestions p { margin: 0; color: var(--apple-muted); font-size: .8rem; line-height: 1.45; }
+.apple-workout-selection { padding: 10px 12px; border-left: 3px solid var(--apple-lime); background: var(--apple-soft); color: var(--apple-ink); font-weight: 700; }
+.apple-workout-field, .apple-workout-file { display: grid; min-width: 0; gap: 7px; }
+.apple-workout-field > span, .apple-workout-file > span { color: var(--apple-ink); font-size: .75rem; font-weight: 800; line-height: 1.35; }
+.apple-workout-file { padding: 14px; border: 1px dashed #adb29f; border-radius: 12px; background: var(--apple-soft); }
+.apple-workout-file small { color: var(--apple-muted); font-size: .75rem; }
+.apple-workout-dialog .apple-workout-form :is(input:not([type="checkbox"]), select) { width: 100% !important; max-width: 100%; min-width: 0; min-height: 44px; padding: 10px; border: 1px solid var(--apple-line); border-radius: 10px !important; background: var(--apple-soft); color: var(--apple-ink); font-family: inherit; font-size: 16px !important; font-weight: 600; line-height: 1.3; text-overflow: clip !important; }
+.apple-workout-dialog .apple-workout-form input[type="file"] { padding: 8px 0; border: 0; border-radius: 0 !important; font-size: .8rem !important; font-weight: 500; }
+.apple-workout-dialog input[type="file"]::file-selector-button { min-height: 44px; margin-right: 8px; padding: 8px 10px; border: 1px solid var(--apple-line); border-radius: 8px; background: var(--apple-paper); color: var(--apple-ink); font: inherit; font-weight: 700; cursor: pointer; }
+.apple-workout-review-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 12px; }
+.apple-workout-confirm { display: flex; min-height: 44px; align-items: start; gap: 10px; padding: 12px; border: 1px solid var(--apple-line); border-radius: 12px; background: var(--apple-soft); color: var(--apple-ink); font-size: .8rem; font-weight: 650; line-height: 1.45; }
+.apple-workout-dialog .apple-workout-confirm input { flex: 0 0 20px; width: 20px !important; inline-size: 20px !important; height: 20px; min-height: 20px; margin: 0; accent-color: #678000; }
+.apple-workout-warning { padding: 12px; margin: 0; border-left: 3px solid #c7932b; background: #fffcf1; color: #695012; font-size: .8rem; line-height: 1.45; }
+.apple-workout-warning[hidden] { display: none !important; }
+.apple-workout-dialog [hidden] { display: none !important; }
+.apple-workout-preview summary { display: flex; align-items: center; min-height: 44px; font-size: .8rem; font-weight: 800; cursor: pointer; }
+.apple-workout-preview img { display: block; width: auto; max-width: 100%; max-height: 65dvh; margin: 8px auto 0; border: 1px solid var(--apple-line); border-radius: 12px; object-fit: contain; }
+.apple-workout-save-status { margin: 0; color: #895c00; font-size: .85rem; line-height: 1.4; }
+.apple-workout-save-status:empty, .apple-workout-suggestions:empty { display: none; }
+.apple-workout-suggestions { display: grid; gap: 6px; }
+.apple-workout-form > footer { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; }
+.apple-workout-dialog .apple-workout-save { border-color: var(--apple-ink); background: var(--apple-lime); font-size: .9rem !important; }
+.apple-workout-summary :is(button, summary, a):focus-visible,
+.apple-workout-empty button:focus-visible,
+.apple-workout-dialog :is(button, input, select):focus-visible { outline: 3px solid #718a18; outline-offset: 2px; }
+@media (max-width: 390px) {
+  .apple-workout-form { padding: 16px; gap: 14px; }
+  .apple-workout-review-grid { grid-template-columns: minmax(0, 1fr); }
+  .apple-workout-dialog .apple-workout-form h2 { font-size: 1.4rem; }
+}

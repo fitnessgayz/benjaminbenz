@@ -63,6 +63,7 @@ let progressEntries = [];
 let progressPhotos = [];
 let dexaReports = [];
 let trainingLogs = [];
+let coachTrainingLogLoadVersion = 0;
 let foodLogs = [];
 let recentTrainingLogs = [];
 let clientFitnessQuestionnaires = [];
@@ -2599,6 +2600,8 @@ function fillForm(program = {}) {
     loadFoodLogsForEmail(program.client_email);
   } else {
     renderProgramHistory("");
+    coachTrainingLogLoadVersion += 1;
+    configureCoachAppleWorkouts("");
     progressEntries = [];
     progressPhotos = [];
     dexaReports = [];
@@ -3098,6 +3101,26 @@ async function runWorkoutAnalysis() {
   }
 }
 
+function coachWorkoutHistorySessionKey(record = {}) {
+  const sessionId = String(record.session_id || record.workout_session_id || "").trim().toLowerCase();
+  if (sessionId) return `session:${sessionId}`;
+  return `legacy:${String(record.entry_date || "").trim()}::${String(record.workout_title || "Workout").trim().toLowerCase()}`;
+}
+
+function configureCoachAppleWorkouts(email) {
+  window.FWBAppleWorkout?.configure({
+    supabaseClient: coachSupabase,
+    clientEmail: normalizeEmail(email),
+    readOnly: true,
+    getWorkouts: () => [],
+    onSaved: () => {
+      renderTrainingLogs();
+      renderSelectedClientTrainingLogs();
+    }
+  });
+  window.FWBAppleWorkout?.attach();
+}
+
 function renderTrainingLogs() {
   const history = document.getElementById("training-log-history");
 
@@ -3121,10 +3144,7 @@ function renderTrainingLogs() {
   const workoutGroups = new Map();
 
   filteredLogs.forEach((log) => {
-    const workoutKey = [
-      log.entry_date || "",
-      log.workout_title || "Workout"
-    ].join("::");
+    const workoutKey = coachWorkoutHistorySessionKey(log);
     const exerciseCode = String(log.exercise_code || "");
     const supersetMatch = exerciseCode.match(/^([A-Za-z]+)/);
     const supersetKey = exerciseCode === warmupExerciseCode
@@ -3135,6 +3155,7 @@ function renderTrainingLogs() {
 
     if (!workoutGroups.has(workoutKey)) {
       workoutGroups.set(workoutKey, {
+        history_key: workoutKey,
         entry_date: log.entry_date || "",
         workout_title: log.workout_title || "Workout",
         supersets: new Map()
@@ -3188,6 +3209,7 @@ function renderTrainingLogs() {
           <strong>${escapeHtml(formatAdminDate(workout.entry_date))}</strong>
           <span>${escapeHtml(workout.workout_title)}</span>
         </div>
+        ${window.FWBAppleWorkout?.markup(workout.history_key) || ""}
         <div class="training-log-superset-list">
           ${supersets.map((superset) => {
             const exercises = Array.from(superset.exercises.values()).sort((a, b) => {
@@ -3309,6 +3331,8 @@ function handleWorkoutAnalysis() {
 }
 
 async function loadTrainingLogsForEmail(email) {
+  const loadVersion = ++coachTrainingLogLoadVersion;
+  configureCoachAppleWorkouts(email);
   if (!coachSupabase || !email) {
     trainingLogs = [];
     workoutAnalysis = null;
@@ -3320,14 +3344,17 @@ async function loadTrainingLogsForEmail(email) {
   }
 
   const normalizedEmail = normalizeEmail(email);
+  trainingLogs = [];
+  renderTrainingLogs();
+  renderSelectedClientTrainingLogs();
   trainingLogStatus("Loading weights...");
   workoutAnalysis = null;
   workoutAnalysisStatus("Loading workout logs...");
   renderWorkoutAnalysisPanel();
 
   try {
-    const { data, error } = await withRequestTimeout(
-      coachSupabase
+    const [{ data, error }] = await withRequestTimeout(
+      Promise.all([coachSupabase
         .from("client_workout_logs")
         .select("*")
         .ilike("client_email", normalizedEmail)
@@ -3336,11 +3363,16 @@ async function loadTrainingLogsForEmail(email) {
         .order("exercise_code", { ascending: true })
         .order("set_number", { ascending: true })
         .limit(250),
+        Promise.resolve(window.FWBAppleWorkout?.load()).catch(() => null)
+      ]),
       "Could not load weights right now. Please refresh and try again."
     );
 
+    if (loadVersion !== coachTrainingLogLoadVersion) return;
+
     if (error) {
       trainingLogs = [];
+      renderTrainingLogs();
       trainingLogStatus("Could not load weights. Please refresh and try again.");
       workoutAnalysisStatus("Load workout logs first, then run an analysis.");
       renderWorkoutAnalysisPanel();
@@ -3358,7 +3390,9 @@ async function loadTrainingLogsForEmail(email) {
     }
     renderSelectedClientTrainingLogs();
   } catch (error) {
+    if (loadVersion !== coachTrainingLogLoadVersion) return;
     trainingLogs = [];
+    renderTrainingLogs();
     trainingLogStatus(error?.message || "Could not load weights. Please refresh and try again.");
     workoutAnalysisStatus("Could not load workout logs for AI analysis.");
     renderWorkoutAnalysisPanel();
@@ -3431,11 +3465,13 @@ function summarizeTrainingLogs(logs = []) {
 
   logs.forEach((log) => {
     const clientEmail = normalizeEmail(log.client_email);
-    const key = [clientEmail, log.entry_date || "", log.workout_title || ""].join("::");
+    const historyKey = coachWorkoutHistorySessionKey(log);
+    const key = `${clientEmail}::${historyKey}`;
     const lastUpdated = String(log.updated_at || log.created_at || "");
 
     if (!grouped.has(key)) {
       grouped.set(key, {
+        history_key: historyKey,
         client_email: clientEmail,
         entry_date: log.entry_date || "",
         workout_title: log.workout_title || "Workout",
@@ -3951,6 +3987,7 @@ function renderTrainingLogSummaryList(targetId, logs = [], options = {}) {
       <div class="training-log-summary-body">
         <span>${escapeHtml(entry.workout_title || "Workout")}</span>
         <small>${entry.exercise_count} exercise${entry.exercise_count === 1 ? "" : "s"} · ${entry.set_count} sets logged</small>
+        ${!showClient ? window.FWBAppleWorkout?.markup(entry.history_key) || "" : ""}
       </div>
       <em>${escapeHtml(formatAdminTime(entry.last_updated) || "Saved")}</em>
     </article>
