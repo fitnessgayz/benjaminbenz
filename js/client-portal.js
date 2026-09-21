@@ -5009,7 +5009,7 @@ function exerciseLogFields(exercise, workoutTitle, options = {}) {
         <span>Set</span>
         <span>Weight</span>
         <span>Reps</span>
-        <span>RIR</span>
+        <button class="rir-help-trigger" type="button" data-rir-help aria-label="What does RIR mean?" aria-haspopup="dialog"><span>RIR</span><svg viewBox="0 0 20 20" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="8"/><path d="M10 9v5M10 5.5v1"/></svg></button>
       </div>
         <div data-set-rows>
           ${setRows(exercise, setCount, { showComplete: options.showSetComplete !== false })}
@@ -8931,8 +8931,9 @@ function customWorkoutGroupedSectionsMarkup(carousel) {
   const logElements = customWorkoutGroupedLogElements(carousel);
   const warmUps = [];
   const columnLabelsMarkup = `
-    <div class="custom-workout-grouped-columns" aria-hidden="true">
-      <span>Set</span><span>Weight</span><span>Reps</span><span>RIR</span>
+    <div class="custom-workout-grouped-columns">
+      <span>Set</span><span>Weight</span><span>Reps</span>
+      <button class="rir-help-trigger" type="button" data-rir-help aria-label="What does RIR mean?" aria-haspopup="dialog"><span>RIR</span><svg viewBox="0 0 20 20" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="8"/><path d="M10 9v5M10 5.5v1"/></svg></button>
     </div>
   `;
 

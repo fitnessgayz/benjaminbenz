@@ -1,0 +1,289 @@
+/* RIR help stays scoped to its trigger and native dialog. */
+.dashboard-page.rir-help-open {
+  overflow: hidden;
+}
+
+.dashboard-page .rir-help-trigger {
+  display: inline-flex;
+  width: 100% !important;
+  inline-size: 100% !important;
+  min-width: 0 !important;
+  min-height: 44px;
+  margin: 0;
+  padding: 6px 2px;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border: 0;
+  border-radius: 8px !important;
+  background: transparent;
+  color: #666b62;
+  font: inherit;
+  font-size: .64rem !important;
+  font-weight: 900;
+  letter-spacing: .035em;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.dashboard-page .rir-help-trigger svg {
+  display: block;
+  flex: 0 0 14px;
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+}
+
+.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-columns:has(.rir-help-trigger) {
+  align-items: center;
+}
+
+.rir-help-dialog {
+  --rir-help-ink: #171a17;
+  --rir-help-muted: #666b62;
+  --rir-help-line: #dcded7;
+  --rir-help-paper: #fff;
+  --rir-help-soft: #f7f8f4;
+  --rir-help-lime: #d6ff35;
+  box-sizing: border-box;
+  width: min(400px, calc(100vw - 24px));
+  max-width: calc(100vw - 24px);
+  max-height: calc(100vh - 32px);
+  max-height: calc(100dvh - 32px);
+  margin: auto;
+  padding: 20px;
+  border: 1px solid var(--rir-help-line);
+  border-radius: 24px;
+  background: var(--rir-help-paper);
+  color: var(--rir-help-ink);
+  box-shadow: 0 20px 72px rgb(17 20 17 / 22%);
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  text-align: left;
+  color-scheme: light;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.rir-help-dialog *,
+.rir-help-dialog *::before,
+.rir-help-dialog *::after {
+  box-sizing: border-box;
+}
+
+.rir-help-dialog:not([open]) {
+  display: none !important;
+}
+
+.rir-help-dialog::backdrop {
+  background: rgb(17 20 17 / 62%);
+}
+
+.rir-help-dialog .rir-help-heading {
+  position: sticky;
+  top: -20px;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 44px;
+  align-items: center;
+  column-gap: 10px;
+  margin: -20px -20px 12px;
+  padding: 20px 20px 12px;
+  border-bottom: 1px solid var(--rir-help-line);
+  background: var(--rir-help-paper);
+}
+
+.rir-help-dialog .rir-help-heading > :not(.rir-help-close) {
+  grid-column: 1;
+  min-width: 0;
+}
+
+.rir-help-dialog .rir-help-heading .kicker {
+  margin: 0 0 4px;
+  color: var(--rir-help-muted);
+  font-size: .65rem;
+  font-weight: 800;
+  letter-spacing: .08em;
+  line-height: 1.3;
+  text-transform: uppercase;
+}
+
+.rir-help-dialog .rir-help-heading h2 {
+  margin: 0;
+  color: var(--rir-help-ink);
+  font-size: 1.6rem;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.rir-help-dialog :is(.rir-help-close, .rir-help-done) {
+  min-height: 44px;
+  margin: 0;
+  border: 1px solid var(--rir-help-line);
+  border-radius: 12px !important;
+  background: var(--rir-help-soft);
+  color: var(--rir-help-ink);
+  font-family: inherit;
+  font-size: .9rem !important;
+  font-weight: 800;
+  letter-spacing: 0;
+  line-height: 1.2;
+  text-transform: none;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.rir-help-dialog .rir-help-close {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: start;
+  display: grid;
+  width: 44px !important;
+  inline-size: 44px !important;
+  min-width: 44px !important;
+  height: 44px;
+  padding: 0;
+  place-items: center;
+  font-size: 1.5rem !important;
+}
+
+.rir-help-dialog .rir-help-close svg {
+  width: 20px;
+  height: 20px;
+}
+
+.rir-help-dialog .rir-help-definition {
+  margin: 0 0 14px;
+  color: var(--rir-help-ink);
+  font-size: .88rem;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+.rir-help-dialog .rir-help-scale {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+  margin: 0 0 14px;
+}
+
+.rir-help-dialog .rir-help-scale > div {
+  display: grid;
+  min-width: 0;
+  padding: 10px 5px;
+  align-content: start;
+  justify-items: center;
+  gap: 5px;
+  border: 1px solid var(--rir-help-line);
+  border-radius: 12px;
+  background: var(--rir-help-soft);
+  text-align: center;
+}
+
+.rir-help-dialog .rir-help-scale strong {
+  display: grid;
+  min-width: 32px;
+  min-height: 32px;
+  padding: 2px 6px;
+  place-items: center;
+  border-radius: 8px;
+  background: var(--rir-help-lime);
+  color: var(--rir-help-ink);
+  font-size: 1rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.rir-help-dialog .rir-help-scale span {
+  min-width: 0;
+  color: var(--rir-help-muted);
+  font-size: .7rem;
+  font-weight: 600;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.rir-help-dialog .rir-help-example {
+  margin: 0 0 14px;
+  padding: 11px 12px;
+  border-left: 3px solid var(--rir-help-lime);
+  border-radius: 0 10px 10px 0;
+  background: var(--rir-help-soft);
+  color: var(--rir-help-ink);
+  font-size: .8rem;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+.rir-help-dialog .rir-help-next h3 {
+  margin: 0 0 8px;
+  color: var(--rir-help-ink);
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.rir-help-dialog .rir-help-next ol {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0 0 0 20px;
+}
+
+.rir-help-dialog .rir-help-next li {
+  margin: 0;
+  padding-left: 2px;
+  color: var(--rir-help-ink);
+  font-size: .8rem;
+  line-height: 1.45;
+}
+
+.rir-help-dialog .rir-help-next li::marker {
+  color: var(--rir-help-muted);
+  font-weight: 800;
+}
+
+.rir-help-dialog .rir-help-optional {
+  margin: 13px 0;
+  color: var(--rir-help-muted);
+  font-size: .75rem;
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+.rir-help-dialog .rir-help-done {
+  width: 100% !important;
+  inline-size: 100% !important;
+  min-width: 0 !important;
+  min-height: 46px;
+  padding: 12px;
+  border-color: var(--rir-help-ink);
+  background: var(--rir-help-lime);
+}
+
+.dashboard-page .rir-help-trigger:focus-visible,
+.rir-help-dialog :is(.rir-help-close, .rir-help-done):focus-visible {
+  outline: 3px solid #718a18;
+  outline-offset: 2px;
+}
+
+@media (hover: hover) {
+  .dashboard-page .rir-help-trigger:hover,
+  .rir-help-dialog .rir-help-close:hover {
+    background: #eef0e8;
+    color: #171a17;
+  }
+
+  .rir-help-dialog .rir-help-done:hover {
+    background: #caef31;
+  }
+}
