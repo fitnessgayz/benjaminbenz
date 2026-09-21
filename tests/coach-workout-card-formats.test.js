@@ -259,3 +259,62 @@ test("group-only changes invalidate the save signature even when all sets stay t
   }
   assert.equal(h.context.coachWorkoutSaveSignature(plain(data)), original);
 });
+
+for (const format of ["single", "superset", "circuit"]) {
+  test(`${format}: blank warm-up and working weight/reps save as zero while blank RIR stays unset`, () => {
+    const h = fixture(format, [{ name: "Bodyweight squat", sets: [
+      { label: "W1", setType: "warm_up", setNumber: 1001, weight: "", reps: "", rir: "" },
+      { label: "1", setType: "working", setNumber: 1, weight: "", reps: "", rir: "0" },
+      { label: "2", setType: "working", setNumber: 2, weight: " ", reps: " ", rir: "" }
+    ] }]);
+    const values = plain(h.context.coachWorkoutExerciseValues())[0];
+    assert.equal(values.groupFormat, format);
+    assert.deepEqual(values.sets, [
+      { setType: "warm_up", setNumber: 1001, weight: 0, reps: 0, rir: null },
+      { setType: "working", setNumber: 1, weight: 0, reps: 0, rir: 0 },
+      { setType: "working", setNumber: 2, weight: 0, reps: 0, rir: null }
+    ]);
+  });
+}
+
+test("blank numeric fields default independently without replacing entered weight, reps or RIR", () => {
+  const h = fixture("single", [{ name: "Press", sets: [
+    { setNumber: 1, weight: "", reps: "8", rir: "2" },
+    { setNumber: 2, weight: "42.5", reps: "", rir: "0" },
+    { setNumber: 3, weight: "0", reps: "0", rir: "" },
+    { setNumber: 4, weight: "60", reps: "12", rir: "4" }
+  ] }]);
+  assert.deepEqual(plain(h.context.coachWorkoutExerciseValues())[0].sets.map(({ weight, reps, rir }) => ({ weight, reps, rir })), [
+    { weight: 0, reps: 8, rir: 2 },
+    { weight: 42.5, reps: 0, rir: 0 },
+    { weight: 0, reps: 0, rir: null },
+    { weight: 60, reps: 12, rir: 4 }
+  ]);
+});
+
+test("blank-as-zero still rejects negative weights, invalid numbers and fractional or negative reps", () => {
+  for (const [field, value] of [
+    ["weight", "-1"], ["weight", "invalid"], ["weight", "Infinity"], ["weight", "1e"],
+    ["reps", "-1"], ["reps", "1.5"], ["reps", "invalid"], ["reps", "Infinity"], ["reps", "1e"]
+  ]) {
+    const h = fixture("single", [{ name: "Press", sets: [{ weight: "", reps: "", rir: "", [field]: value }] }]);
+    assert.throws(() => h.context.coachWorkoutExerciseValues({ focusInvalid: true }), field === "weight" ? /valid non-negative weight/ : /non-negative whole-number rep count/);
+    assert.deepEqual(h.calls, [{ action: "focus", index: 0, field }]);
+  }
+});
+
+test("incomplete number input cannot masquerade as a blank zero", () => {
+  for (const field of ["weight", "reps"]) {
+    const h = fixture("single", [{ name: "Press", sets: [{ weight: "", reps: "", rir: "" }] }]);
+    // Browsers expose incomplete numbers such as '1e' as an empty value with badInput.
+    h.exercises[0].rows[0].fields[field].validity = { badInput: true };
+    assert.throws(() => h.context.coachWorkoutExerciseValues({ focusInvalid: true }), field === "weight" ? /valid non-negative weight/ : /non-negative whole-number rep count/);
+    assert.deepEqual(h.calls, [{ action: "focus", index: 0, field }]);
+  }
+});
+
+test("allowing blank numeric fields keeps the exercise name required", () => {
+  const h = fixture("single", [{ name: " ", sets: [{ weight: "", reps: "", rir: "" }] }]);
+  assert.throws(() => h.context.coachWorkoutExerciseValues({ focusInvalid: true }), /Exercise 1 needs a name/);
+  assert.deepEqual(h.calls, [{ action: "focus", index: 0, field: "name" }]);
+});

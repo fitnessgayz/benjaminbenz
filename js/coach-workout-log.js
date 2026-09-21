@@ -1863,18 +1863,19 @@ function coachWorkoutExerciseValues(options = {}) {
       const typeIndex = coachWorkoutSetRowsByType(row, setType).indexOf(setRow);
       const weightText = weightInput?.value.trim() || "";
       const repsText = repsInput?.value.trim() || "";
+      // Empty weight and reps save as zero; RIR remains optional.
       const weight = Number(weightText);
       const reps = Number(repsText);
       const rir = rirInput?.value === "" ? null : Number(rirInput?.value);
 
-      if (weightText === "" || !Number.isFinite(weight) || weight < 0) {
+      if (weightInput?.validity?.badInput || !Number.isFinite(weight) || weight < 0) {
         if (options.focusInvalid) {
           focusCoachWorkoutVisibleField(index, "weight", setType, typeIndex, weightInput);
         }
         throw new Error(`${name} set ${setIndex + 1} needs a valid non-negative weight.`);
       }
 
-      if (repsText === "" || !Number.isInteger(reps) || reps < 0) {
+      if (repsInput?.validity?.badInput || !Number.isInteger(reps) || reps < 0) {
         if (options.focusInvalid) {
           focusCoachWorkoutVisibleField(index, "reps", setType, typeIndex, repsInput);
         }
@@ -2719,12 +2720,17 @@ function handleCoachWorkoutForm() {
     if (logRound && card) {
       const section = logRound.closest("[data-coach-grouped-section]");
       const fields = Array.from(section.querySelectorAll('input[data-coach-grouped-field]'));
-      const invalid = fields.find((field) => field.value === "" || !field.checkValidity());
+      const invalid = fields.find((field) => !field.checkValidity());
       if (invalid) {
         invalid.focus();
         setCoachWorkoutStatus("Enter valid weight and reps for each exercise before logging this set or round.", true);
         return;
       }
+      fields.forEach((field) => {
+        if (field.value !== "") return;
+        field.value = "0";
+        field.dispatchEvent(new Event("input", { bubbles: true }));
+      });
       coachWorkoutCopyEntries(section).forEach(({ row }) => clearCoachWorkoutWeightCopy(row));
       refreshCoachWorkoutCopyControls(card);
       scheduleCoachWorkoutAutosave({ delayMs: 0 });

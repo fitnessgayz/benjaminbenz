@@ -23,7 +23,7 @@ function element(tag, attributes = {}, children = []) {
     connectedRoot: false, listeners: {},
     addEventListener(type, listener) { (this.listeners[type] ||= []).push(listener); },
     emit(type, target) { for (const listener of this.listeners[type] || []) listener({ target }); },
-    checkValidity() { return this.value !== "" && Number.isFinite(Number(this.value)) && Number(this.value) >= 0; },
+    checkValidity() { return Number.isFinite(Number(this.value)) && Number(this.value) >= 0; },
     get isConnected() { return this.connectedRoot || Boolean(this.parentElement?.isConnected); },
     getAttribute(name) { return this.attributes[name] ?? null; },
     setAttribute(name, value) { this.attributes[name] = String(value); },
@@ -367,7 +367,7 @@ test("explicit Log Set clears Undo only after validation succeeds", () => {
     h.context.handleCoachWorkoutForm();
     h.context.copyCoachWorkoutWeights(h.previous);
     const log = h.section.appendChild(element("button", { "data-coach-grouped-log-round": "" }));
-    const extra = h.section.appendChild(input({ "data-coach-grouped-field": "reps" }, valid ? "8" : ""));
+    const extra = h.section.appendChild(input({ "data-coach-grouped-field": "reps" }, valid ? "8" : "-1"));
     h.card.emit("click", log);
     assert.equal(h.context.coachWorkoutWeightCopies.has(h.rows[0].row), !valid);
     assert.equal(h.saves, valid ? 2 : 1);

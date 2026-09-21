@@ -185,6 +185,7 @@ function clickFixture() {
   const calls = [];
   let state = { active: false, inline: false, owner: null };
   Object.assign(h.context, {
+    Event: class { constructor(type, options) { this.type = type; Object.assign(this, options); } },
     finishCoachWorkout() {}, saveCoachWorkout() {},
     coachWorkoutCopyEntries() { return []; },
     clearCoachWorkoutWeightCopy() {}, refreshCoachWorkoutCopyControls() {},
@@ -208,7 +209,8 @@ function clickFixture() {
   h.context.handleCoachWorkoutForm();
   function click(kind, { owner = "set-a", values = ["50", "8"], validity = [true, true], amount = "15" } = {}) {
     const fields = values.map((value, index) => ({
-      value, checkValidity: () => validity[index], focus() { this.focused = true; }
+      value, events: [], checkValidity: () => validity[index], focus() { this.focused = true; },
+      dispatchEvent(event) { this.events.push({ type: event.type, bubbles: event.bubbles, value: this.value }); }
     }));
     const section = { dataset: { coachRestOwner: owner }, querySelectorAll: () => fields };
     const card = {};
@@ -229,9 +231,9 @@ function clickFixture() {
 
 test("Log Set validates weight and reps before scheduling save and starting inline rest", () => {
   for (const options of [
-    { values: ["", "8"] },
-    { values: ["50", ""] },
-    { values: ["-1", "8"], validity: [false, true] }
+    { values: ["-1", "8"], validity: [false, true] },
+    { values: ["50", "1.5"], validity: [true, false] },
+    { values: ["", "8"], validity: [false, true] }
   ]) {
     const h = clickFixture();
     const fields = h.click("data-coach-grouped-log-round", options);
@@ -245,6 +247,18 @@ test("Log Set validates weight and reps before scheduling save and starting inli
     { action: "save", options: { delayMs: 0 } },
     { action: "start", options: { inline: true, owner: "set-a" } }
   ]);
+});
+
+test("Log Set fills valid blank weight and reps with zero and synchronizes before save", () => {
+  for (const values of [["", "8"], ["50", ""], ["", ""]]) {
+    const h = clickFixture();
+    const fields = h.click("data-coach-grouped-log-round", { values });
+    assert.deepEqual(fields.map((field) => field.value), values.map((value) => value || "0"));
+    fields.forEach((field, index) => {
+      assert.deepEqual(field.events, values[index] === "" ? [{ type: "input", bubbles: true, value: "0" }] : []);
+    });
+    assert.deepEqual(h.calls.map((call) => call.action), ["save", "start"]);
+  }
 });
 
 test("rest buttons only control the active inline owner", () => {
