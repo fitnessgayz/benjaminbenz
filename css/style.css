@@ -13518,6 +13518,126 @@ textarea,
   text-align: right;
 }
 
+.coach-workout-log-page .coach-workout-grouped-section > header:has(.coach-workout-copy-actions) {
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 6px 10px;
+}
+
+.coach-workout-log-page .coach-workout-copy-actions {
+  display: flex;
+  flex: 1 1 220px;
+  flex-wrap: wrap;
+  min-width: 0;
+  max-width: 100%;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.coach-workout-log-page :is(.coach-workout-copy-button, .coach-workout-copy-undo) {
+  display: inline-flex;
+  flex: 0 1 auto;
+  width: auto !important;
+  inline-size: auto !important;
+  max-width: 100%;
+  min-width: 44px;
+  min-height: 44px;
+  margin: 0;
+  padding: 8px 10px;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border: 1px solid var(--coach-grouped-line);
+  border-radius: 10px !important;
+  background: var(--coach-grouped-lime);
+  color: var(--coach-grouped-ink);
+  box-shadow: none;
+  font: inherit;
+  font-size: .75rem !important;
+  font-style: normal;
+  font-weight: 800;
+  letter-spacing: 0;
+  line-height: 1.25;
+  text-align: center;
+  text-transform: none;
+  white-space: normal;
+  overflow: visible !important;
+  overflow-wrap: anywhere;
+  text-overflow: clip !important;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.coach-workout-log-page .coach-workout-copy-button:where([data-coach-copy-weights="pr"]) {
+  background: transparent;
+  color: var(--coach-grouped-muted);
+  font-weight: 600;
+}
+
+.coach-workout-log-page .coach-workout-pr-preview,
+.coach-workout-log-page .coach-workout-copy-status {
+  min-width: 0;
+  max-width: 100%;
+  margin: 0;
+  color: var(--coach-grouped-muted);
+  font-size: .78rem;
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  text-transform: none;
+}
+
+.coach-workout-log-page .coach-workout-pr-preview {
+  padding: 8px 10px;
+}
+
+.coach-workout-log-page .coach-workout-copy-status {
+  display: flex;
+  flex-wrap: wrap;
+  padding: 0 10px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0 8px;
+}
+
+.coach-workout-log-page .coach-workout-copy-status > span {
+  flex: 1 1 160px;
+  min-width: 0;
+}
+
+.coach-workout-log-page .coach-workout-copy-undo {
+  border-color: transparent;
+  background: transparent;
+  color: var(--coach-grouped-muted);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.coach-workout-log-page :is(.coach-workout-pr-preview, .coach-workout-copy-status, .coach-workout-copy-undo)[hidden] {
+  display: none !important;
+}
+
+.coach-workout-log-page :is(.coach-workout-copy-button, .coach-workout-copy-undo):disabled {
+  color: var(--coach-grouped-muted);
+  background: var(--coach-grouped-cream);
+  opacity: .65;
+  cursor: default;
+}
+
+.coach-workout-log-page :is(.coach-workout-copy-button, .coach-workout-copy-undo):focus-visible {
+  outline: 3px solid var(--coach-grouped-blue);
+  outline-offset: 2px;
+}
+
+@media (hover: hover) {
+  .coach-workout-log-page :is(.coach-workout-copy-button, .coach-workout-copy-undo):hover:not(:disabled) {
+    border-color: var(--coach-grouped-muted);
+    background: var(--coach-grouped-cream);
+  }
+}
+
 .coach-workout-grouped-columns,
 .coach-workout-grouped-row {
   display: grid;

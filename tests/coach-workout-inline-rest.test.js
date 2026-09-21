@@ -186,6 +186,8 @@ function clickFixture() {
   let state = { active: false, inline: false, owner: null };
   Object.assign(h.context, {
     finishCoachWorkout() {}, saveCoachWorkout() {},
+    coachWorkoutCopyEntries() { return []; },
+    clearCoachWorkoutWeightCopy() {}, refreshCoachWorkoutCopyControls() {},
     scheduleCoachWorkoutAutosave(options) { calls.push({ action: "save", options: { ...options } }); },
     setCoachWorkoutStatus(message, error) { calls.push({ action: "status", message, error }); }
   });

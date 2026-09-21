@@ -38,9 +38,11 @@ let coachWorkoutDraftOwner = "";
 let coachWorkoutActiveContext = { clientEmail: "", entryDate: "" };
 const coachWorkoutDraftMemory = new Map();
 let coachWorkoutPreviousHistory = new Map();
+let coachWorkoutPersonalBests = new Map();
 let coachWorkoutPreviousHistoryStatus = "idle";
 let coachWorkoutPreviousHistoryRequest = 0;
 const coachWorkoutRestRowIds = new WeakMap();
+const coachWorkoutWeightCopies = new WeakMap();
 let coachWorkoutRestRowId = 0;
 
 function normalizeCoachWorkoutEmail(value) {
@@ -679,6 +681,33 @@ function buildCoachWorkoutPreviousHistory(rows = []) {
   return history;
 }
 
+function buildCoachWorkoutPersonalBests(rows = []) {
+  const personalBests = new Map();
+
+  (Array.isArray(rows) ? rows : []).forEach((row) => {
+    const exerciseKey = normalizeCoachWorkoutHistoryName(row?.exercise_name);
+    const exerciseCode = String(row?.exercise_code || "").trim().toUpperCase();
+    const entryDate = String(row?.entry_date || "").trim();
+    const rawWeight = row?.weight_used;
+    const weight = Number(rawWeight);
+
+    if (
+      !exerciseKey || !entryDate || ["WARMUP", "CARDIO"].includes(exerciseCode) ||
+      coachWorkoutSetType(row?.set_type, row?.set_number) === coachWorkoutWarmUpSetType ||
+      rawWeight === null || rawWeight === undefined || String(rawWeight).trim() === "" ||
+      !Number.isFinite(weight) || weight < 0
+    ) return;
+
+    const best = personalBests.get(exerciseKey);
+    if (!best || weight > Number(best.weight_used) ||
+      (weight === Number(best.weight_used) && entryDate < String(best.entry_date))) {
+      personalBests.set(exerciseKey, row);
+    }
+  });
+
+  return personalBests;
+}
+
 function coachWorkoutHistoryDateLabel(value) {
   const date = new Date(`${String(value || "")}T12:00:00`);
 
@@ -806,6 +835,145 @@ function renderCoachWorkoutInlineRest(state = window.CoachRestTimer?.getState())
   });
 }
 
+function coachWorkoutCopyEntries(section) {
+  return Array.from(section?.querySelectorAll('[data-coach-grouped-field="weight"]') || []).map((visible) => {
+    const exerciseIndex = Number(visible.dataset.coachGroupedExerciseIndex);
+    const exercise = coachWorkoutExerciseElements()[exerciseIndex];
+    const row = coachWorkoutCanonicalGroupedRow(exerciseIndex, visible.dataset.coachGroupedSetType, visible.dataset.coachGroupedSetIndex);
+    const input = row?.querySelector("[data-coach-workout-weight]");
+    return { exercise, row, input, visible };
+  }).filter(({ exercise, row, input, visible }) => exercise && row && input && visible.dataset.coachGroupedSetType === coachWorkoutWorkingSetType);
+}
+
+function coachWorkoutCopyContext(exercise, row) {
+  const context = currentCoachWorkoutContext();
+  return JSON.stringify([
+    coachWorkoutDraftOwner, context.clientEmail, context.entryDate,
+    normalizeCoachWorkoutHistoryName(exercise.querySelector("[data-coach-workout-name]")?.value),
+    row.dataset.coachWorkoutSetType, row.dataset.coachWorkoutSetNumber
+  ]);
+}
+
+function previousCoachWorkoutSetWeight(exercise, row) {
+  const workingRows = coachWorkoutSetRowsByType(exercise, coachWorkoutWorkingSetType);
+  const index = workingRows.indexOf(row);
+  if (index <= 0) return null;
+  const value = String(workingRows[index - 1]?.querySelector("[data-coach-workout-weight]")?.value ?? "").trim();
+  return value !== "" && Number.isFinite(Number(value)) && Number(value) >= 0 ? String(Number(value)) : null;
+}
+
+function coachWorkoutPersonalBestForExercise(exercise) {
+  if (coachWorkoutPreviousHistoryStatus !== "ready") return null;
+  const name = normalizeCoachWorkoutHistoryName(exercise?.querySelector("[data-coach-workout-name]")?.value);
+  return coachWorkoutPersonalBests.get(name) || null;
+}
+
+function coachWorkoutPersonalBestLabel(exercise, best) {
+  if (!best) return "";
+  const name = exercise.querySelector("[data-coach-workout-name]")?.value.trim() || "Exercise";
+  const reps = Number(best.reps);
+  return `${name}: ${Number(best.weight_used)} lb${Number.isFinite(reps) && reps > 0 ? ` × ${reps} reps` : ""} · ${coachWorkoutHistoryDateLabel(best.entry_date)}`;
+}
+
+function clearCoachWorkoutWeightCopy(row) {
+  if (row) coachWorkoutWeightCopies.delete(row);
+}
+
+function refreshCoachWorkoutCopyControls(card) {
+  card?.querySelectorAll("[data-coach-grouped-round]").forEach((section) => {
+    const entries = coachWorkoutCopyEntries(section);
+    const copies = entries.filter(({ exercise, row, input, visible }) => {
+      const copy = coachWorkoutWeightCopies.get(row);
+      if (!copy) return false;
+      if (copy.context !== coachWorkoutCopyContext(exercise, row) || copy.value !== input.value || copy.value !== visible.value) {
+        clearCoachWorkoutWeightCopy(row);
+        return false;
+      }
+      return true;
+    });
+    section.querySelectorAll("[data-coach-copy-weights]").forEach((button) => {
+      const usePR = button.dataset.coachCopyWeights === "pr";
+      button.disabled = !entries.some(({ exercise, row, input, visible }) => (
+        String(input.value).trim() === "" && String(visible.value).trim() === "" &&
+        (usePR ? Boolean(coachWorkoutPersonalBestForExercise(exercise)) : previousCoachWorkoutSetWeight(exercise, row) !== null)
+      ));
+    });
+    const preview = section.querySelector("[data-coach-pr-preview]");
+    if (preview) {
+      const labels = entries.map(({ exercise }) => coachWorkoutPersonalBestLabel(exercise, coachWorkoutPersonalBestForExercise(exercise))).filter(Boolean);
+      preview.textContent = labels.length ? `Personal records: ${labels.join("; ")}` : "";
+      preview.hidden = labels.length === 0;
+    }
+    const status = section.querySelector("[data-coach-copy-status]");
+    const message = section.querySelector("[data-coach-copy-message]");
+    const undo = section.querySelector("[data-coach-undo-weights]");
+    if (status) status.hidden = copies.length === 0;
+    if (undo) undo.hidden = copies.length === 0;
+    if (message && copies.length) {
+      const labels = [...new Set(copies.map(({ row }) => coachWorkoutWeightCopies.get(row).label))];
+      message.textContent = `${copies.length === 1 ? "Weight copied" : "Weights copied"} · ${labels.join("; ")}`;
+    }
+  });
+}
+
+function copyCoachWorkoutWeights(button) {
+  const card = button?.closest("[data-coach-workout-group-card]");
+  const section = button?.closest("[data-coach-grouped-round]");
+  if (!card || !section || button.disabled) return;
+  const source = button.dataset.coachCopyWeights;
+  if (!["previous", "pr"].includes(source)) return;
+  const unit = card.dataset.coachWorkoutFormat === "single" ? "Set" : "Round";
+  let count = 0;
+  coachWorkoutCopyEntries(section).forEach(({ exercise, row, input, visible }) => {
+    if (String(input.value).trim() || String(visible.value).trim()) return;
+    const best = source === "pr" ? coachWorkoutPersonalBestForExercise(exercise) : null;
+    const value = source === "pr" ? (best ? String(Number(best.weight_used)) : null) : previousCoachWorkoutSetWeight(exercise, row);
+    if (value === null) return;
+    input.value = value;
+    visible.value = value;
+    input.removeAttribute("aria-invalid");
+    visible.removeAttribute("aria-invalid");
+    coachWorkoutWeightCopies.set(row, {
+      value, source, context: coachWorkoutCopyContext(exercise, row), revision: coachWorkoutChangeRevision + 1,
+      label: source === "pr" ? `PR · ${coachWorkoutPersonalBestLabel(exercise, best)}` : `${unit} ${Number(section.dataset.coachGroupedRound) - 1}`
+    });
+    updateCoachWorkoutSetRows(exercise);
+    count += 1;
+  });
+  if (count) scheduleCoachWorkoutAutosave();
+  refreshCoachWorkoutGroupedProgress(card);
+  refreshCoachWorkoutCopyControls(card);
+  const undo = section.querySelector("[data-coach-undo-weights]");
+  if (count && undo) {
+    undo.dataset.coachCopySource = source;
+    undo.focus();
+  }
+}
+
+function undoCoachWorkoutWeights(button) {
+  const card = button?.closest("[data-coach-workout-group-card]");
+  const section = button?.closest("[data-coach-grouped-round]");
+  if (!card || !section) return;
+  let count = 0;
+  coachWorkoutCopyEntries(section).forEach(({ exercise, row, input, visible }) => {
+    const copy = coachWorkoutWeightCopies.get(row);
+    if (copy && copy.context === coachWorkoutCopyContext(exercise, row) && copy.value === input.value && copy.value === visible.value) {
+      input.value = "";
+      visible.value = "";
+      updateCoachWorkoutSetRows(exercise);
+      count += 1;
+    }
+    clearCoachWorkoutWeightCopy(row);
+  });
+  if (count) scheduleCoachWorkoutAutosave();
+  refreshCoachWorkoutGroupedProgress(card);
+  refreshCoachWorkoutCopyControls(card);
+  const buttons = Array.from(section.querySelectorAll("[data-coach-copy-weights]"));
+  const target = buttons.find((copy) => !copy.disabled && copy.dataset.coachCopyWeights === button.dataset.coachCopySource)
+    || buttons.find((copy) => !copy.disabled);
+  target?.focus();
+}
+
 function coachWorkoutGroupedSectionsMarkup(group, format = coachWorkoutGroupFormat(group)) {
   const warmUps = group.flatMap(({ exercise, exerciseIndex }, position) => (
     coachWorkoutSetRowsByType(exercise, coachWorkoutWarmUpSetType).map((row, warmUpIndex) => ({
@@ -845,7 +1013,19 @@ function coachWorkoutGroupedSectionsMarkup(group, format = coachWorkoutGroupForm
 
     return `
       <section class="coach-workout-grouped-section" data-coach-grouped-section="round" data-coach-grouped-round="${roundNumber}" data-coach-rest-owner="${coachWorkoutRestOwner(rows, format)}">
-        <header><h4>${format === "single" ? "Set" : "Round"} ${roundNumber}</h4><p>${rows.map((item) => coachWorkoutGroupedRoundCode(roundNumber, item.position)).join(" + ")}</p></header>
+        <header>
+          <h4>${format === "single" ? "Set" : "Round"} ${roundNumber}</h4>
+          <p>${rows.map((item) => coachWorkoutGroupedRoundCode(roundNumber, item.position)).join(" + ")}</p>
+          <div class="coach-workout-copy-actions">
+            <button type="button" class="coach-workout-copy-button" data-coach-copy-weights="previous"${roundNumber === 1 ? " disabled" : ""}>Copy previous ${format === "single" ? "set" : "round"}</button>
+            <button type="button" class="coach-workout-copy-button" data-coach-copy-weights="pr" disabled>Use PR weight</button>
+          </div>
+        </header>
+        <p class="coach-workout-pr-preview" data-coach-pr-preview hidden></p>
+        <div class="coach-workout-copy-status" data-coach-copy-status role="status" aria-live="polite" hidden>
+          <span data-coach-copy-message></span>
+          <button type="button" class="coach-workout-copy-undo" data-coach-undo-weights hidden>Undo</button>
+        </div>
         ${coachWorkoutGroupedColumnLabelsMarkup()}
         ${rows.map((item) => coachWorkoutGroupedSetRowMarkup(
           item.row,
@@ -1039,6 +1219,7 @@ function refreshCoachWorkoutGroupedProgress(card) {
   const progress = card?.querySelector("[data-coach-grouped-progress]");
 
   if (progress) progress.textContent = `${completed} / ${rows.length} complete`;
+  refreshCoachWorkoutCopyControls(card);
 }
 
 function refreshCoachWorkoutPreviousHistoryCards() {
@@ -1067,6 +1248,7 @@ function refreshCoachWorkoutPreviousHistoryCards() {
         Number.isFinite(visibleGroupIndex) ? visibleGroupIndex : 0
       );
     }
+    refreshCoachWorkoutCopyControls(card);
   });
 }
 
@@ -1075,6 +1257,7 @@ async function loadCoachWorkoutPreviousHistory(context = currentCoachWorkoutCont
   const requestId = ++coachWorkoutPreviousHistoryRequest;
 
   coachWorkoutPreviousHistory = new Map();
+  coachWorkoutPersonalBests = new Map();
 
   if (!coachWorkoutSupabase || !normalizedContext.clientEmail || !normalizedContext.entryDate) {
     coachWorkoutPreviousHistoryStatus = "idle";
@@ -1085,32 +1268,56 @@ async function loadCoachWorkoutPreviousHistory(context = currentCoachWorkoutCont
   coachWorkoutPreviousHistoryStatus = "loading";
   refreshCoachWorkoutPreviousHistoryCards();
 
-  const { data, error } = await coachWorkoutSupabase
-    .from("client_workout_logs")
-    .select("entry_date,workout_title,workout_session_id,exercise_name,set_number,weight_used,reps,effort_scale,effort_value,set_type,completed_at,created_at")
-    .eq("client_email", normalizedContext.clientEmail)
-    .lt("entry_date", normalizedContext.entryDate)
-    .order("entry_date", { ascending: false })
-    .limit(1000);
-
-  if (
-    requestId !== coachWorkoutPreviousHistoryRequest ||
-    !coachWorkoutContextsMatch(normalizedContext, currentCoachWorkoutContext())
-  ) {
+  const isCurrentRequest = () => (
+    requestId === coachWorkoutPreviousHistoryRequest &&
+    coachWorkoutContextsMatch(normalizedContext, currentCoachWorkoutContext())
+  );
+  const staleResult = () => {
+    if (requestId === coachWorkoutPreviousHistoryRequest) {
+      coachWorkoutPreviousHistory = new Map();
+      coachWorkoutPersonalBests = new Map();
+      coachWorkoutPreviousHistoryStatus = "idle";
+      refreshCoachWorkoutPreviousHistoryCards();
+    }
     return { rows: 0, stale: true };
-  }
+  };
+  const rows = [];
+  const pageSize = 1000;
 
-  if (error) {
+  try {
+    for (let offset = 0; ; offset += pageSize) {
+      if (!isCurrentRequest()) return staleResult();
+      const { data, error } = await coachWorkoutSupabase
+        .from("client_workout_logs")
+        .select("id,entry_date,workout_title,workout_session_id,exercise_code,exercise_name,set_number,weight_used,reps,effort_scale,effort_value,set_type,completed_at,created_at")
+        .eq("client_email", normalizedContext.clientEmail)
+        .lte("entry_date", normalizedContext.entryDate)
+        .order("entry_date", { ascending: false })
+        .order("id", { ascending: false })
+        .range(offset, offset + pageSize - 1);
+
+      if (!isCurrentRequest()) return staleResult();
+      if (error) throw error;
+      const page = Array.isArray(data) ? data : [];
+      rows.push(...page);
+      if (page.length < pageSize) break;
+    }
+  } catch (error) {
+    if (!isCurrentRequest()) return staleResult();
     coachWorkoutPreviousHistoryStatus = "error";
     coachWorkoutPreviousHistory = new Map();
+    coachWorkoutPersonalBests = new Map();
     refreshCoachWorkoutPreviousHistoryCards();
     return { rows: 0, error };
   }
 
-  coachWorkoutPreviousHistory = buildCoachWorkoutPreviousHistory(data || []);
+  coachWorkoutPreviousHistory = buildCoachWorkoutPreviousHistory(
+    rows.filter((row) => String(row.entry_date || "") < normalizedContext.entryDate)
+  );
+  coachWorkoutPersonalBests = buildCoachWorkoutPersonalBests(rows);
   coachWorkoutPreviousHistoryStatus = "ready";
   refreshCoachWorkoutPreviousHistoryCards();
-  return { rows: (data || []).length };
+  return { rows: rows.length };
 }
 
 function renderCoachWorkoutCardLayout() {
@@ -2109,7 +2316,15 @@ async function saveCoachWorkout(event, options = {}) {
       } else if (!document.body.contains(exercise) && planned[index]?.code) {
         queueCoachWorkoutPendingDelete(planned[index].code, clientEmail, entryDate);
       }
+      exercise.querySelectorAll("[data-coach-workout-set-row]").forEach((row) => {
+        const copy = coachWorkoutWeightCopies.get(row);
+        const savedSet = planned[index]?.sets.find((set) => set.setNumber === Number(row.dataset.coachWorkoutSetNumber));
+        if (copy && copy.revision <= saveRevision && savedSet && String(savedSet.weight) === copy.value) {
+          clearCoachWorkoutWeightCopy(row);
+        }
+      });
     });
+    void loadCoachWorkoutPreviousHistory(requestedContext);
 
     coachWorkoutLastSavedSignature = coachWorkoutSaveSignature({
       clientEmail,
@@ -2315,6 +2530,9 @@ function handleCoachWorkoutForm() {
     }
 
     if (exercise && event.target.matches("[data-coach-workout-set-label], [data-coach-workout-weight], [data-coach-workout-reps], [data-coach-workout-notes]")) {
+      if (event.target.matches("[data-coach-workout-weight]")) {
+        clearCoachWorkoutWeightCopy(event.target.closest("[data-coach-workout-set-row]"));
+      }
       updateCoachWorkoutSetRows(exercise);
       const notesState = exercise.querySelector("[data-coach-workout-notes-state]");
       if (notesState) notesState.textContent = exercise.querySelector("[data-coach-workout-notes]")?.value.trim() ? "Added" : "";
@@ -2448,6 +2666,7 @@ function handleCoachWorkoutForm() {
           ? row?.querySelector("[data-coach-workout-reps]")
           : row?.querySelector("[data-coach-workout-rir]");
 
+      if (field === "weight") clearCoachWorkoutWeightCopy(row);
       if (canonicalField) canonicalField.value = event.target.value;
       updateCoachWorkoutSetRows(exercise);
       refreshCoachWorkoutGroupedProgress(card);
@@ -2460,6 +2679,13 @@ function handleCoachWorkoutForm() {
   });
   groupStack?.addEventListener("click", (event) => {
     const card = event.target.closest("[data-coach-workout-group-card]");
+    const copy = event.target.closest("[data-coach-copy-weights]");
+    const undoCopy = event.target.closest("[data-coach-undo-weights]");
+    if (copy || undoCopy) {
+      if (copy) copyCoachWorkoutWeights(copy);
+      else undoCoachWorkoutWeights(undoCopy);
+      return;
+    }
     const suggestion = event.target.closest("[data-coach-workout-suggestion]");
     const toggle = event.target.closest("[data-coach-grouped-name-toggle]");
     const remove = event.target.closest("[data-coach-grouped-delete-exercise]");
@@ -2499,6 +2725,8 @@ function handleCoachWorkoutForm() {
         setCoachWorkoutStatus("Enter valid weight and reps for each exercise before logging this set or round.", true);
         return;
       }
+      coachWorkoutCopyEntries(section).forEach(({ row }) => clearCoachWorkoutWeightCopy(row));
+      refreshCoachWorkoutCopyControls(card);
       scheduleCoachWorkoutAutosave({ delayMs: 0 });
       window.CoachRestTimer?.start({ inline: true, owner: section.dataset.coachRestOwner });
       return;

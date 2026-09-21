@@ -196,7 +196,7 @@ test("selects the latest previous session for each normalized exercise name", ()
   assert.deepEqual(cableFly.rows.map((row) => row.weight_used), [12.5, 20]);
 });
 
-test("loads client-scoped history only from dates before the active session", () => {
+test("loads client-scoped records through the active date and previous history strictly before it", () => {
   const loader = sourceForFunction("loadCoachWorkoutPreviousHistory");
   const contextSwitch = sourceForFunction("switchCoachWorkoutContext");
   const reset = sourceForFunction("resetCoachWorkoutForm");
@@ -204,11 +204,14 @@ test("loads client-scoped history only from dates before the active session", ()
 
   assert.match(loader, /\.from\("client_workout_logs"\)/);
   assert.match(loader, /\.eq\("client_email", normalizedContext\.clientEmail\)/);
-  assert.match(loader, /\.lt\("entry_date", normalizedContext\.entryDate\)/);
+  assert.match(loader, /\.lte\("entry_date", normalizedContext\.entryDate\)/);
+  assert.match(loader, /rows\.filter\(\(row\) => String\(row\.entry_date \|\| ""\) < normalizedContext\.entryDate\)/);
   assert.match(loader, /\.order\("entry_date", \{ ascending: false \}\)/);
-  assert.match(loader, /\.limit\(1000\)/);
-  assert.match(loader, /requestId !== coachWorkoutPreviousHistoryRequest/);
+  assert.match(loader, /\.order\("id", \{ ascending: false \}\)/);
+  assert.match(loader, /\.range\(offset, offset \+ pageSize - 1\)/);
+  assert.match(loader, /requestId === coachWorkoutPreviousHistoryRequest/);
   assert.match(loader, /buildCoachWorkoutPreviousHistory/);
+  assert.match(loader, /buildCoachWorkoutPersonalBests/);
   assert.match(contextSwitch, /loadCoachWorkoutPreviousHistory\(nextContext\)/);
   assert.match(reset, /loadCoachWorkoutPreviousHistory\(coachWorkoutActiveContext\)/);
   assert.match(boot, /loadCoachWorkoutPreviousHistory\(coachWorkoutActiveContext\)/);
