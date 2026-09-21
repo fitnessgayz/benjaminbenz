@@ -10555,11 +10555,19 @@ function syncCustomWorkoutCarousels() {
   document.querySelectorAll(".client-workout-panel-custom").forEach((panel) => syncCustomWorkoutCarousel(panel));
   if (!syncCustomWorkoutCarousels.resizeBound) {
     syncCustomWorkoutCarousels.resizeBound = true;
+    let viewportWidth = window.innerWidth;
     window.addEventListener("resize", () => {
-      document.querySelectorAll(".client-workout-panel-custom").forEach((panel) => {
-        syncCustomWorkoutCarousel(panel, { scrollToActive: true, instant: true });
+      // Mobile keyboards and browser toolbars change height. Rebuilding here
+      // removes the focused input and interrupts typing.
+      if (window.innerWidth === viewportWidth) return;
+      viewportWidth = window.innerWidth;
+
+      // Grouped cards resize through CSS and must retain their live inputs.
+      // Only the older swipe decks need to recalculate viewport navigation.
+      document.querySelectorAll('[data-custom-workout-carousel]:not([data-custom-workout-grouped="true"])').forEach((carousel) => {
+        renderCustomWorkoutCarousel(carousel);
+        moveCustomWorkoutCarousel(carousel, Number(carousel.dataset.activeIndex) || 0, { instant: true });
       });
-      syncAssignedWorkoutCarousels();
     });
   }
 }
