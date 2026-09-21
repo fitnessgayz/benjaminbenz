@@ -412,7 +412,8 @@ test("blocks round logging until every grouped exercise has a name", () => {
   assert.match(validateNames, /input\.setAttribute\("aria-invalid", "true"\)/);
   assert.match(validateNames, /carousel\.dataset\.groupNamesExpanded = "true"/);
   assert.match(validateNames, /toggle\?\.setAttribute\("aria-expanded", "true"\)/);
-  assert.match(validateNames, /Name every exercise before logging the round/);
+  assert.match(validateNames, /sectionLabel = "round"/);
+  assert.match(validateNames, /Name every exercise before logging the \$\{sectionLabel\}/);
   assert.match(validateNames, /firstBlank\.focus\(\)/);
   assert.ok(
     logRound.indexOf("validateCustomWorkoutGroupedExerciseNames") <
@@ -435,14 +436,14 @@ test("rolls warm-up completion back to its prior state when a grouped save fails
   );
 });
 
-test("makes pending round chips accessible and non-interactive until the round is logged", () => {
+test("makes pending warm-up and round chips accessible and non-interactive until logged", () => {
   const rowMarkup = sourceForFunction("customWorkoutGroupedSetRowMarkup");
   const refresh = sourceForFunction("refreshCustomWorkoutGroupedCompletion");
 
-  assert.match(rowMarkup, /const workingPending = !isWarmUp && !complete/);
-  assert.match(rowMarkup, /aria-label="\$\{escapeHtml\(complete \? `Reopen \$\{context\}` : \(isWarmUp \? `Mark \$\{context\}` : `\$\{context\} not logged`\)\)\}"/);
-  assert.match(rowMarkup, /\$\{workingPending \? "disabled" : ""\}/);
-  assert.match(refresh, /code\.disabled = !complete && !isWarmUp/);
+  assert.match(rowMarkup, /const pendingRow = !complete/);
+  assert.match(rowMarkup, /aria-label="\$\{escapeHtml\(complete \? `Reopen \$\{context\}` : `\$\{context\} not logged`\)\}"/);
+  assert.match(rowMarkup, /\$\{pendingRow \? "disabled" : ""\}/);
+  assert.match(refresh, /code\.disabled = !complete \|\| carousel\.dataset\.customGroupedWarmupSaving === "true"/);
   assert.match(refresh, /`\$\{context\} not logged`/);
 });
 

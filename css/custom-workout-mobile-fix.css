@@ -1799,7 +1799,8 @@
   font-variant-numeric: tabular-nums;
 }
 
-.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-log-round:is(.is-logged, [aria-pressed="true"]) {
+.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-log-round:is(.is-logged, [aria-pressed="true"]),
+.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-log-round[data-custom-grouped-log-warmup][aria-pressed="true"]:disabled {
   border-color: #16852a;
   background: #e6f8e4;
   color: #126f24;

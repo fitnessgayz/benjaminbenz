@@ -8577,7 +8577,7 @@ function customWorkoutGroupedSetRowMarkup(row, code, exerciseIndex, setType, rou
     ? `${code} warm-up, ${exerciseName}`
     : `round ${roundNumber}, ${code}, ${exerciseName}`;
   const complete = row?.classList.contains("is-complete") || false;
-  const workingPending = !isWarmUp && !complete;
+  const pendingRow = !complete;
 
   return `
     <div
@@ -8590,9 +8590,9 @@ function customWorkoutGroupedSetRowMarkup(row, code, exerciseIndex, setType, rou
         class="custom-workout-grouped-code"
         type="button"
         data-custom-grouped-set-toggle
-        aria-label="${escapeHtml(complete ? `Reopen ${context}` : (isWarmUp ? `Mark ${context}` : `${context} not logged`))}"
+        aria-label="${escapeHtml(complete ? `Reopen ${context}` : `${context} not logged`)}"
         aria-pressed="${complete}"
-        ${workingPending ? "disabled" : ""}
+        ${pendingRow ? "disabled" : ""}
       >${escapeHtml(code)}</button>
       ${customWorkoutGroupedFieldMarkup("weight", values.weightRaw, context, row?.querySelector("[data-set-weight]")?.placeholder || "", row?.querySelector("[data-set-weight]")?.dataset.historyHint || "")}
       ${customWorkoutGroupedFieldMarkup("reps", values.repsRaw, context, row?.querySelector("[data-set-reps]")?.placeholder || "")}
@@ -8692,7 +8692,7 @@ function syncCustomWorkoutGroupedAccessibleNames(carousel, exerciseIndex, exerci
       : `round ${roundNumber}, ${code}, ${safeName}`;
     const toggle = row.querySelector("[data-custom-grouped-set-toggle]");
     const complete = toggle?.getAttribute("aria-pressed") === "true";
-    const action = complete ? "Reopen" : (setType === warmUpSetType ? "Mark" : "");
+    const action = complete ? "Reopen" : "";
 
     toggle?.setAttribute("aria-label", action ? `${action} ${context}` : `${context} not logged`);
     row.querySelectorAll("[data-custom-grouped-field]").forEach((input) => {
@@ -8958,6 +8958,9 @@ function customWorkoutGroupedSectionsMarkup(carousel) {
         0,
         item.exerciseName
       )).join("")}
+      <div class="custom-workout-grouped-round-action">
+        <button class="custom-workout-grouped-log-round" type="button" data-custom-grouped-log-warmup aria-pressed="false">Log warm-up</button>
+      </div>
     </section>
   ` : "";
   const roundCount = customWorkoutGroupedRoundCount(carousel);
@@ -8975,11 +8978,11 @@ function customWorkoutGroupedSectionsMarkup(carousel) {
         <header class="custom-workout-grouped-section-heading">
           <h4>${workoutSetUnit(carousel)} ${roundNumber}</h4>
           <div class="custom-workout-grouped-copy-actions">
-          <button class="custom-workout-grouped-copy-weights" type="button" data-custom-grouped-copy-weights="${roundNumber}" ${logged || roundNumber === 1 ? "disabled" : ""}
-            aria-label="${roundNumber === 1 ? `No previous ${workoutSetUnit(carousel).toLowerCase()} to copy` : `Copy weights and reps from ${workoutSetUnit(carousel).toLowerCase()} ${roundNumber - 1} into empty fields in ${workoutSetUnit(carousel).toLowerCase()} ${roundNumber}`}">
+          ${roundNumber > 1 ? `<button class="custom-workout-grouped-copy-weights" type="button" data-custom-grouped-copy-weights="${roundNumber}" ${logged ? "disabled" : ""}
+            aria-label="Copy weights and reps from ${workoutSetUnit(carousel).toLowerCase()} ${roundNumber - 1} into empty fields in ${workoutSetUnit(carousel).toLowerCase()} ${roundNumber}">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h4"/></svg>
             Copy previous ${workoutSetUnit(carousel).toLowerCase()}
-          </button>
+          </button>` : ""}
           <button class="custom-workout-grouped-copy-weights" type="button" data-custom-grouped-copy-weights="${roundNumber}" data-custom-grouped-copy-source="pr" ${logged ? "disabled" : ""}
             aria-label="Copy personal record weights and reps into empty fields in ${workoutSetUnit(carousel).toLowerCase()} ${roundNumber}">Use PR weight &amp; reps</button>
           </div>
@@ -9051,6 +9054,23 @@ function renderCustomWorkoutGroupedTimerPanels() {
   });
 }
 
+function refreshCustomWorkoutGroupedWarmUp(carousel) {
+  const button = carousel?.querySelector("[data-custom-grouped-log-warmup]");
+  if (!button) return;
+  const enteredRows = customWorkoutGroupedLogElements(carousel)
+    .flatMap((logElement) => customWorkoutGroupedRows(logElement, warmUpSetType))
+    .filter((row) => {
+      const values = setRowInputValues(row);
+      return values.weightRaw !== "" || values.repsRaw !== "" || String(row.dataset.repsInReserve || "").trim() !== "";
+    });
+  const saving = carousel.dataset.customGroupedWarmupSaving === "true";
+  const logged = enteredRows.length > 0 && enteredRows.every((row) => row.classList.contains("is-complete"));
+  button.textContent = saving ? "Saving warm-up…" : logged ? "✓ Warm-up logged" : "Log warm-up";
+  button.disabled = saving || logged;
+  button.setAttribute("aria-pressed", String(logged && !saving));
+  button.setAttribute("aria-busy", String(saving));
+}
+
 function refreshCustomWorkoutGroupedCompletion(carousel) {
   const visibleRows = Array.from(carousel?.querySelectorAll(".custom-workout-grouped-row") || []);
   let completeCount = 0;
@@ -9068,14 +9088,13 @@ function refreshCustomWorkoutGroupedCompletion(carousel) {
     visibleRow.classList.toggle("is-complete", complete);
     if (code) {
       code.setAttribute("aria-pressed", String(complete));
-      const isWarmUp = visibleRow.dataset.customGroupedSetType === warmUpSetType;
       const context = (code.getAttribute("aria-label") || "")
         .replace(/^(Reopen|Mark)\s+/, "")
         .replace(/\s+not logged$/, "");
-      code.disabled = !complete && !isWarmUp;
+      code.disabled = !complete || carousel.dataset.customGroupedWarmupSaving === "true";
       code.setAttribute("aria-label", complete
         ? `Reopen ${context}`
-        : (isWarmUp ? `Mark ${context}` : `${context} not logged`));
+        : `${context} not logged`);
     }
     if (complete) completeCount += 1;
   });
@@ -9094,10 +9113,12 @@ function refreshCustomWorkoutGroupedCompletion(carousel) {
 
   const progress = carousel?.querySelector("[data-custom-grouped-progress]");
   if (progress) progress.textContent = `${completeCount} / ${visibleRows.length} complete`;
+  refreshCustomWorkoutGroupedWarmUp(carousel);
   refreshCustomWorkoutGroupedCopyWeights(carousel);
 }
 
 function renderCustomWorkoutGroupedCard(carousel) {
+  if (carousel?.dataset.customGroupedWarmupSaving === "true") return;
   const sections = carousel?.querySelector("[data-custom-grouped-sections]");
   const logElements = customWorkoutGroupedLogElements(carousel);
 
@@ -9176,7 +9197,7 @@ function customWorkoutGroupedPendingRows(scope) {
     });
 }
 
-function validateCustomWorkoutGroupedExerciseNames(carousel) {
+function validateCustomWorkoutGroupedExerciseNames(carousel, sectionLabel = "round") {
   const status = customWorkoutGroupedStatus(carousel);
   const inputs = Array.from(carousel?.querySelectorAll("[data-custom-workout-group-name-input]") || []);
   const firstBlank = inputs.find((input) => String(input.value || "").trim() === "");
@@ -9198,7 +9219,7 @@ function validateCustomWorkoutGroupedExerciseNames(carousel) {
   if (fields) fields.hidden = false;
   toggle?.setAttribute("aria-expanded", "true");
   if (icon) icon.textContent = "−";
-  if (status) status.textContent = "Name every exercise before logging the round.";
+  if (status) status.textContent = `Name every exercise before logging the ${sectionLabel}.`;
   firstBlank.focus();
   return false;
 }
@@ -9243,6 +9264,8 @@ function syncCustomWorkoutGroupedField(input) {
     const status = customWorkoutGroupedStatus(carousel);
     if (status && roundNumber > 0) {
       status.textContent = `${workoutSetUnit(carousel)} ${roundNumber} reopened. Tap Log ${workoutSetUnit(carousel).toLowerCase()} when the edits are ready.`;
+    } else if (status && visibleRow.dataset.customGroupedSetType === warmUpSetType) {
+      status.textContent = "Warm-up reopened. Tap Log warm-up when the edits are ready.";
     }
   }
 
@@ -9324,6 +9347,56 @@ function completeEnteredCustomWorkoutWarmUps(carousel) {
   return { valid: true, rows: canonicalRows, previousStates };
 }
 
+async function logCustomWorkoutGroupedWarmUp(button) {
+  const carousel = button?.closest("[data-custom-workout-grouped='true']");
+  const section = button?.closest('[data-kind="warmup"]');
+  const status = customWorkoutGroupedStatus(carousel);
+  const logElements = customWorkoutGroupedLogElements(carousel);
+  if (!carousel || !section || button.disabled || !logElements.length || carousel.dataset.customGroupedWarmupSaving === "true") return { saved: false };
+  const workoutPanel = carousel.closest(".client-workout-panel") || carousel;
+  if (Array.from(workoutPanel.querySelectorAll("[data-custom-grouped-log-round]")).some((control) => control.disabled)) return { saved: false };
+  if (customWorkoutGroupedTimerConflict(carousel)) {
+    if (status) status.textContent = "Finish the workout already in progress before logging this warm-up.";
+    return { saved: false, timerConflict: true };
+  }
+  if (!validateCustomWorkoutGroupedExerciseNames(carousel, "warm-up")) return { saved: false, validation: true };
+  const warmUps = completeEnteredCustomWorkoutWarmUps(carousel);
+  if (!warmUps.valid) return { saved: false, validation: true };
+  if (!warmUps.rows.length) {
+    if (status) status.textContent = "Enter weight and reps for at least one warm-up set, then tap Log warm-up.";
+    section.querySelector('[data-custom-grouped-field="weight"]')?.focus();
+    return { saved: false, validation: true };
+  }
+
+  const controls = Array.from(workoutPanel.querySelectorAll("input, textarea, select, button"))
+    .map((control) => ({ control, disabled: control.disabled }));
+  controls.forEach(({ control }) => { control.disabled = true; });
+  carousel.dataset.customGroupedWarmupSaving = "true";
+  refreshCustomWorkoutGroupedWarmUp(carousel);
+  let result = { saved: false };
+  try {
+    result = await saveTrainingLogRows(button, logElements, status, {
+      savingMessage: "Logging warm-up...",
+      successMessage: "Warm-up logged and autosaved.",
+      setType: warmUpSetType,
+      skipRemovedSetDelete: true,
+      skipLogRefresh: true
+    });
+    return result;
+  } catch (error) {
+    if (status) status.textContent = "Could not save the warm-up. Your entries are still here. Please try again.";
+    return { saved: false, error };
+  } finally {
+    if (!result.saved) {
+      warmUps.rows.forEach((row, index) => setCustomWorkoutGroupedRowComplete(row, warmUps.previousStates[index]));
+    }
+    controls.forEach(({ control, disabled }) => { control.disabled = disabled; });
+    delete carousel.dataset.customGroupedWarmupSaving;
+    persistCustomWorkoutDraftForElement(carousel);
+    refreshCustomWorkoutGroupedCompletion(carousel);
+  }
+}
+
 async function logCustomWorkoutGroupedRound(button) {
   const carousel = button?.closest("[data-custom-workout-grouped='true']");
   const section = button?.closest("[data-custom-grouped-round]");
@@ -9331,7 +9404,7 @@ async function logCustomWorkoutGroupedRound(button) {
   const status = customWorkoutGroupedStatus(carousel);
   const logElements = customWorkoutGroupedLogElements(carousel);
 
-  if (!carousel || !section || logElements.length === 0) return { saved: false };
+  if (!carousel || !section || button.disabled || logElements.length === 0 || carousel.dataset.customGroupedWarmupSaving === "true") return { saved: false };
 
   if (customWorkoutGroupedTimerConflict(carousel)) {
     if (status) status.textContent = `Finish the workout already in progress before logging this ${workoutSetUnit(carousel).toLowerCase()}.`;
@@ -9479,16 +9552,8 @@ function toggleCustomWorkoutGroupedSet(button) {
       ? "Warm-up set reopened."
       : `Round ${Number(visibleRow.closest("[data-custom-grouped-round]")?.dataset.customGroupedRound) || 1} reopened.`;
   } else if (visibleRow.dataset.customGroupedSetType === warmUpSetType) {
-    const validation = validateCustomWorkoutGroupedSection(visibleRow.closest("[data-kind='warmup']"), {
-      rows: [visibleRow],
-      focus: true,
-      status
-    });
-    if (!validation.valid) {
-      return;
-    }
-    setCustomWorkoutGroupedRowComplete(canonicalRow, true);
-    if (status) status.textContent = "Warm-up set marked complete. It will save with the next logged round.";
+    if (status) status.textContent = "Enter weight and reps, then tap Log warm-up.";
+    return;
   } else if (status) {
     status.textContent = `Complete every exercise, then tap Log ${workoutSetUnit(carousel).toLowerCase()}.`;
     return;
@@ -15240,6 +15305,7 @@ function handleWorkoutInteractions() {
     const customWorkoutGroupNameToggle = event.target.closest("[data-custom-workout-group-name-toggle]");
     const customWorkoutGroupDelete = event.target.closest("[data-custom-workout-group-delete]");
     const customGroupedLogRoundButton = event.target.closest("[data-custom-grouped-log-round]");
+    const customGroupedLogWarmUpButton = event.target.closest("[data-custom-grouped-log-warmup]");
     const customGroupedCopyWeightsButton = event.target.closest("[data-custom-grouped-copy-weights]");
     const customGroupedUndoWeightsButton = event.target.closest("[data-custom-grouped-undo-weights]");
     const customGroupedAddRoundButton = event.target.closest("[data-custom-grouped-add-round]");
@@ -15316,6 +15382,11 @@ function handleWorkoutInteractions() {
     if (customGroupedCopyWeightsButton || customGroupedUndoWeightsButton) {
       if (customGroupedCopyWeightsButton) copyCustomWorkoutGroupedWeights(customGroupedCopyWeightsButton);
       else undoCustomWorkoutGroupedWeights(customGroupedUndoWeightsButton);
+      return;
+    }
+
+    if (customGroupedLogWarmUpButton) {
+      await logCustomWorkoutGroupedWarmUp(customGroupedLogWarmUpButton);
       return;
     }
 
@@ -17014,6 +17085,7 @@ async function saveTrainingLogRows(button, logElements, status, options = {}) {
 
   const rows = logElements
     .flatMap(rowsForTrainingLog)
+    .filter((row) => !options.setType || row.set_type === options.setType)
     .map((row) => options.workoutCompletion
       ? { ...row, ...options.workoutCompletion }
       : row);

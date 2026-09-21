@@ -175,7 +175,7 @@ function workoutFixture(specs = [{ name: "Cable fly" }, { name: "Squat" }], opti
     "clearCustomWorkoutGroupedWeightCopy", "customWorkoutGroupedCopyVisibleInput", "workoutSetUnit",
     "customWorkoutGroupedCopyValue", "previousCustomWorkoutGroupedValue", "previousCustomWorkoutGroupedWeight",
     "copyCustomWorkoutGroupedWeights", "undoCustomWorkoutGroupedWeights", "setCustomWorkoutGroupedRowComplete",
-    "refreshCustomWorkoutGroupedCompletion", "syncCustomWorkoutGroupedField",
+    "refreshCustomWorkoutGroupedWarmUp", "refreshCustomWorkoutGroupedCompletion", "syncCustomWorkoutGroupedField",
     ...(options.prLogs ? ["logsForExerciseDisplay", "personalBestWeightLog", "customWorkoutGroupedPersonalBestLabel", "currentExerciseLabel", "exerciseProgressNumber"] : [])
   ].map(functionSource).join("\n"), context);
   return { context, root, panel, carousel, section, copy, prCopy, prPreview, undo, copyStatus, copyMessage, status, rows, get persists() { return persists; } };
