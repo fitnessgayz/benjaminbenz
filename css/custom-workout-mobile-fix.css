@@ -2265,12 +2265,22 @@ body.dashboard-page.custom-workout-grouped-finish-open {
   outline-offset: 2px;
 }
 
-/* Keep the copy shortcut in the existing round header; allow a second line
-   only when a narrow viewport or enlarged text needs it. */
+/* Keep both copy actions in the round header and wrap at narrow widths. */
 .dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-section-heading:has(.custom-workout-grouped-copy-weights) {
   flex-wrap: wrap;
   gap: 6px;
   padding: 6px 10px;
+}
+
+.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-copy-actions {
+  display: flex;
+  flex: 1 1 220px;
+  flex-wrap: wrap;
+  min-width: 0;
+  max-width: 100%;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
 }
 
 .dashboard-page [data-custom-workout-grouped="true"] :is(.custom-workout-grouped-copy-weights, .custom-workout-grouped-undo-weights) {
@@ -2306,10 +2316,22 @@ body.dashboard-page.custom-workout-grouped-finish-open {
   touch-action: manipulation;
 }
 
+.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-copy-weights:where(:not([data-custom-grouped-copy-source="pr"])) {
+  background: var(--grouped-lime);
+}
+
+.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-copy-weights:where([data-custom-grouped-copy-source="pr"]) {
+  background: transparent;
+  color: var(--grouped-muted);
+  font-weight: 600;
+}
+
 .dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-section-heading .custom-workout-grouped-copy-weights span {
+  min-width: 0;
   color: inherit;
   font: inherit;
   letter-spacing: inherit;
+  overflow-wrap: anywhere;
   text-align: inherit;
 }
 
@@ -2322,6 +2344,24 @@ body.dashboard-page.custom-workout-grouped-finish-open {
   stroke-linecap: round;
   stroke-linejoin: round;
   stroke-width: 1.8;
+}
+
+.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-pr-preview {
+  min-width: 0;
+  max-width: 100%;
+  margin: 0;
+  padding: 8px 10px;
+  color: var(--grouped-muted);
+  font-size: .78rem;
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  text-transform: none;
+}
+
+.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-pr-preview[hidden] {
+  display: none !important;
 }
 
 .dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-copy-status {

@@ -8741,31 +8741,29 @@ function workoutSetUnit(carousel) {
   return carousel?.dataset.customWorkoutFormat === "single" ? "Set" : "Round";
 }
 
-function previousWorkoutWeightLog(logs, selectedDate, setNumber) {
-  const candidates = logs.filter((log) => (
-    String(log.entry_date || "") !== "" && String(log.entry_date) < selectedDate &&
-    ![warmupExerciseCode, cardioExerciseCode].includes(String(log.exercise_code || "").trim().toUpperCase()) &&
-    normalizedSetType(log.set_type, log.set_number) !== warmUpSetType &&
-    log.weight_used !== null && log.weight_used !== undefined && String(log.weight_used).trim() !== "" &&
-    Number.isFinite(Number(log.weight_used)) && Number(log.weight_used) >= 0
-  )).sort((left, right) => (
-    String(right.entry_date).localeCompare(String(left.entry_date)) ||
-    String(right.created_at || "").localeCompare(String(left.created_at || "")) ||
-    clientWorkoutHistorySessionKey(right).localeCompare(clientWorkoutHistorySessionKey(left))
-  ));
-  if (candidates.length === 0) return null;
+function previousCustomWorkoutGroupedWeight(logElement, roundNumber) {
+  if (!Number.isInteger(roundNumber) || roundNumber <= 1) return null;
+  const previousRow = customWorkoutGroupedRows(logElement, workingSetType)[roundNumber - 2];
+  const weight = String(previousRow?.querySelector("[data-set-weight]")?.value ?? "").trim();
+  return weight !== "" && Number.isFinite(Number(weight)) && Number(weight) >= 0
+    ? String(Number(weight))
+    : null;
+}
 
-  const sessionKey = clientWorkoutHistorySessionKey(candidates[0]);
-  const session = candidates.filter((log) => clientWorkoutHistorySessionKey(log) === sessionKey)
-    .sort((left, right) => Number(left.set_number || 1) - Number(right.set_number || 1));
-  return session.find((log) => Number(log.set_number || 1) === Number(setNumber)) || session.at(-1);
+function customWorkoutGroupedPersonalBestLabel(logElement, best) {
+  if (!best) return "";
+  const reps = Number(best.reps);
+  const repsLabel = Number.isFinite(reps) && reps > 0 ? ` × ${reps} reps` : "";
+  return `${currentExerciseLabel(logElement)}: ${Number(best.weight_used)} lb${repsLabel} · ${formatLogDate(best.entry_date)}`;
 }
 
 function clearCustomWorkoutGroupedWeightCopy(input) {
   if (!input) return;
   delete input.dataset.lastWeightCopyValue;
   delete input.dataset.lastWeightCopyContext;
-  delete input.dataset.lastWeightCopyDate;
+  delete input.dataset.lastWeightCopyRound;
+  delete input.dataset.lastWeightCopySource;
+  delete input.dataset.lastWeightCopyLabel;
 }
 
 function customWorkoutGroupedCopyContext(logElement) {
@@ -8791,6 +8789,12 @@ function customWorkoutGroupedCopyVisibleInput(section, exerciseIndex) {
 }
 
 function refreshCustomWorkoutGroupedCopyWeights(carousel) {
+  const personalBests = new Map();
+  if (carousel?.querySelector('[data-custom-grouped-copy-source="pr"]')) {
+    customWorkoutGroupedLogElements(carousel).forEach((logElement) => {
+      personalBests.set(logElement, personalBestWeightLog(logsForExerciseDisplay(logElement)));
+    });
+  }
   carousel?.querySelectorAll("[data-custom-grouped-round]").forEach((section) => {
     const roundNumber = Number(section.dataset.customGroupedRound);
     const entries = customWorkoutGroupedCopyRows(carousel, roundNumber);
@@ -8802,12 +8806,19 @@ function refreshCustomWorkoutGroupedCopyWeights(carousel) {
       }
       return input.dataset.lastWeightCopyValue !== undefined;
     });
-    const button = section.querySelector("[data-custom-grouped-copy-weights]");
-    if (button) {
-      button.disabled = !entries.some(({ row, input, exerciseIndex }) => (
+    section.querySelectorAll("[data-custom-grouped-copy-weights]").forEach((button) => {
+      const usePersonalBest = button.dataset.customGroupedCopySource === "pr";
+      button.disabled = !entries.some(({ logElement, row, input, exerciseIndex }) => (
+        (usePersonalBest ? Boolean(personalBests.get(logElement)) : previousCustomWorkoutGroupedWeight(logElement, roundNumber) !== null) &&
         !row.classList.contains("is-complete") && String(input.value).trim() === "" &&
         String(customWorkoutGroupedCopyVisibleInput(section, exerciseIndex)?.value || "").trim() === ""
       ));
+    });
+    const preview = section.querySelector("[data-custom-grouped-pr-preview]");
+    if (preview) {
+      const records = entries.map(({ logElement }) => customWorkoutGroupedPersonalBestLabel(logElement, personalBests.get(logElement))).filter(Boolean);
+      preview.textContent = records.length ? `Personal records: ${records.join("; ")}` : "";
+      preview.hidden = records.length === 0;
     }
     const status = section.querySelector("[data-custom-grouped-copy-status]");
     const message = section.querySelector("[data-custom-grouped-copy-message]");
@@ -8815,8 +8826,8 @@ function refreshCustomWorkoutGroupedCopyWeights(carousel) {
     if (status) status.hidden = copied.length === 0;
     if (undo) undo.hidden = copied.length === 0;
     if (message && copied.length) {
-      const dates = [...new Set(copied.map(({ input }) => input.dataset.lastWeightCopyDate))];
-      message.textContent = `${copied.length === 1 ? "Weight copied" : "Weights copied"} · ${dates.map(formatLogDate).join(" / ")}`;
+      const sources = [...new Set(copied.map(({ input }) => input.dataset.lastWeightCopyLabel || `${workoutSetUnit(carousel)} ${roundNumber - 1}`))];
+      message.textContent = `${copied.length === 1 ? "Weight copied" : "Weights copied"} · ${sources.join("; ")}`;
     }
   });
 }
@@ -8825,22 +8836,27 @@ function copyCustomWorkoutGroupedWeights(button) {
   const carousel = button?.closest("[data-custom-workout-grouped='true']");
   const section = button?.closest("[data-custom-grouped-round]");
   const roundNumber = Number(button?.dataset.customGroupedCopyWeights);
-  if (!carousel || !section || button.disabled) return;
+  const usePersonalBest = button?.dataset.customGroupedCopySource === "pr";
+  if (!carousel || !section || button.disabled || !Number.isInteger(roundNumber) || roundNumber < 1 || (!usePersonalBest && roundNumber === 1)) return;
 
   let count = 0;
   customWorkoutGroupedCopyRows(carousel, roundNumber).forEach(({ logElement, row, input, exerciseIndex, context }) => {
     const visible = customWorkoutGroupedCopyVisibleInput(section, exerciseIndex);
     if (!visible || row.classList.contains("is-complete") || String(input.value).trim() || String(visible.value).trim()) return;
-    const date = logElement.querySelector("[data-log-date]")?.value || todayDate();
-    const source = previousWorkoutWeightLog(logsForExerciseDisplay(logElement), date, row.dataset.setNumber);
-    if (!source) return;
-
-    const value = String(Number(source.weight_used));
+    const best = usePersonalBest ? personalBestWeightLog(logsForExerciseDisplay(logElement)) : null;
+    const value = usePersonalBest
+      ? (best ? String(Number(best.weight_used)) : null)
+      : previousCustomWorkoutGroupedWeight(logElement, roundNumber);
+    if (value === null) return;
     input.value = value;
     visible.value = value;
     input.dataset.lastWeightCopyValue = value;
     input.dataset.lastWeightCopyContext = context;
-    input.dataset.lastWeightCopyDate = source.entry_date;
+    input.dataset.lastWeightCopyRound = usePersonalBest ? "" : String(roundNumber - 1);
+    input.dataset.lastWeightCopySource = usePersonalBest ? "pr" : "previous";
+    input.dataset.lastWeightCopyLabel = usePersonalBest
+      ? `PR · ${customWorkoutGroupedPersonalBestLabel(logElement, best)}`
+      : `${workoutSetUnit(carousel)} ${roundNumber - 1}`;
     input.removeAttribute("aria-invalid");
     visible.removeAttribute("aria-invalid");
     count += 1;
@@ -8848,12 +8864,18 @@ function copyCustomWorkoutGroupedWeights(button) {
   if (count) persistCustomWorkoutDraftForElement(carousel);
   refreshCustomWorkoutGroupedCopyWeights(carousel);
   if (count) {
-    section.querySelector("[data-custom-grouped-undo-weights]")?.focus();
+    const undo = section.querySelector("[data-custom-grouped-undo-weights]");
+    if (undo) {
+      undo.dataset.customGroupedCopySource = usePersonalBest ? "pr" : "previous";
+      undo.focus();
+    }
   } else {
     const status = section.querySelector("[data-custom-grouped-copy-status]");
     const message = section.querySelector("[data-custom-grouped-copy-message]");
     if (status) status.hidden = false;
-    if (message) message.textContent = "No previous weights for the empty fields.";
+    if (message) message.textContent = usePersonalBest
+      ? "No personal record weights for the empty fields."
+      : `No weights to copy from the previous ${workoutSetUnit(carousel).toLowerCase()}.`;
   }
 }
 
@@ -8877,7 +8899,12 @@ function undoCustomWorkoutGroupedWeights(button) {
   });
   if (count) persistCustomWorkoutDraftForElement(carousel);
   refreshCustomWorkoutGroupedCopyWeights(carousel);
-  section.querySelector("[data-custom-grouped-copy-weights]")?.focus();
+  const copyButtons = Array.from(section.querySelectorAll("[data-custom-grouped-copy-weights]"));
+  const source = button.dataset.customGroupedCopySource || "previous";
+  const returnFocus = copyButtons.find((copyButton) => !copyButton.disabled &&
+    (copyButton.dataset.customGroupedCopySource || "previous") === source) ||
+    copyButtons.find((copyButton) => !copyButton.disabled);
+  returnFocus?.focus();
 }
 
 function customWorkoutGroupedSectionsMarkup(carousel) {
@@ -8927,12 +8954,17 @@ function customWorkoutGroupedSectionsMarkup(carousel) {
       <section class="custom-workout-grouped-section" data-kind="round" data-custom-grouped-round="${roundNumber}" data-custom-grouped-round-logged="${logged}">
         <header class="custom-workout-grouped-section-heading">
           <h4>${workoutSetUnit(carousel)} ${roundNumber}</h4>
-          <button class="custom-workout-grouped-copy-weights" type="button" data-custom-grouped-copy-weights="${roundNumber}" ${logged ? "disabled" : ""}
-            aria-label="Copy last workout weights into empty fields in ${workoutSetUnit(carousel).toLowerCase()} ${roundNumber}">
+          <div class="custom-workout-grouped-copy-actions">
+          <button class="custom-workout-grouped-copy-weights" type="button" data-custom-grouped-copy-weights="${roundNumber}" ${logged || roundNumber === 1 ? "disabled" : ""}
+            aria-label="${roundNumber === 1 ? `No previous ${workoutSetUnit(carousel).toLowerCase()} to copy` : `Copy weights from ${workoutSetUnit(carousel).toLowerCase()} ${roundNumber - 1} into empty fields in ${workoutSetUnit(carousel).toLowerCase()} ${roundNumber}`}">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h4"/></svg>
-            Copy last weights
+            Copy previous ${workoutSetUnit(carousel).toLowerCase()}
           </button>
+          <button class="custom-workout-grouped-copy-weights" type="button" data-custom-grouped-copy-weights="${roundNumber}" data-custom-grouped-copy-source="pr" ${logged ? "disabled" : ""}
+            aria-label="Copy personal record weights into empty fields in ${workoutSetUnit(carousel).toLowerCase()} ${roundNumber}">Use PR weight</button>
+          </div>
         </header>
+        <p class="custom-workout-grouped-pr-preview" data-custom-grouped-pr-preview hidden></p>
         <div class="custom-workout-grouped-copy-status" data-custom-grouped-copy-status role="status" aria-live="polite" hidden>
           <span data-custom-grouped-copy-message></span>
           <button class="custom-workout-grouped-undo-weights" type="button" data-custom-grouped-undo-weights="${roundNumber}" aria-label="Undo copied weights in ${workoutSetUnit(carousel).toLowerCase()} ${roundNumber}" hidden>Undo</button>
