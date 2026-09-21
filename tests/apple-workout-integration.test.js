@@ -224,6 +224,7 @@ test("client and coach integrations configure the correct account and read-only 
   client.configureClientAppleWorkouts();
   assert.equal(configurations[0].clientEmail, "client@example.test");
   assert.equal(configurations[0].readOnly, false);
+  assert.equal(configurations[0].automaticReading, true, "Selecting a screenshot must automatically populate the review form");
   assert.deepEqual(configurations[0].getWorkouts(), ["client-sessions"]);
   assert.equal(configurations[0].onSaved(), "refreshed");
   client.isCoachDashboardPreview = true;

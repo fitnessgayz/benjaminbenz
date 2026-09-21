@@ -113,6 +113,50 @@
     ]).finally(() => clearTimeout(timer));
   }
 
+  function signInError(message = "Your sign-in has expired. Sign in again, then retry Apple Workout.") {
+    const error = new Error(message);
+    error.code = "APPLE_WORKOUT_SIGN_IN_REQUIRED";
+    return error;
+  }
+
+  async function requireSession(client, userId, clientEmail) {
+    try {
+      if (!client?.auth?.getSession) throw signInError();
+      // The page's user can outlive the shared session, especially after another
+      // tab signs out. Check the session used by database/storage requests first.
+      let result = await bounded(client.auth.getSession(), 12000);
+      if (result.error) throw result.error;
+      let session = result.data?.session;
+      const checkIdentity = () => {
+        if (!session?.access_token || !session.user?.id) throw signInError();
+        if ((userId && session.user.id !== userId) || (clientEmail && String(session.user.email || "").trim().toLowerCase() !== String(clientEmail).trim().toLowerCase())) {
+          throw signInError("Your signed-in account changed. Sign in again with this workout’s account, then retry Apple Workout.");
+        }
+      };
+      checkIdentity();
+      // getSession refreshes expired tokens; also cover tokens close to expiry
+      // before a screenshot read/upload that may take longer than a minute.
+      if (Number(session.expires_at) <= Date.now() / 1000 + 90) {
+        result = await bounded(client.auth.refreshSession(), 12000);
+        if (result.error) throw result.error;
+        session = result.data?.session;
+        checkIdentity();
+        if (Number(session.expires_at) <= Date.now() / 1000) throw signInError();
+      }
+      return session;
+    } catch (error) {
+      if (error?.code === "APPLE_WORKOUT_SIGN_IN_REQUIRED") throw error;
+      if (globalThis.window?.FWB_AUTH_SESSION?.requiresLogin?.(error) || error?.name === "AuthSessionMissingError" || [401, 403].includes(error?.status) || ["session_not_found", "session_expired", "refresh_token_not_found", "refresh_token_already_used", "bad_jwt"].includes(error?.code)) throw signInError();
+      const unavailable = new Error("We couldn’t confirm your sign-in. Check your connection and try again.");
+      unavailable.code = "APPLE_WORKOUT_AUTH_UNAVAILABLE";
+      throw unavailable;
+    }
+  }
+
+  function authenticationError(error) {
+    return ["APPLE_WORKOUT_SIGN_IN_REQUIRED", "APPLE_WORKOUT_AUTH_UNAVAILABLE"].includes(error?.code);
+  }
+
   async function findRecord(client, clientEmail, historyKey) {
     const result = await client.from(table).select("*").eq("client_email", clientEmail).eq("history_key", historyKey).maybeSingle();
     if (result.error) throw result.error;
@@ -139,6 +183,8 @@
   async function persistRecord({ client, userId, clientEmail, historyKey, metrics, file, existing, pendingUpload }) {
     if (!userId || !clientEmail || !historyKey) throw new Error("Sign in and select a saved workout before saving.");
     if (!existing && !file) throw new Error("Choose an Apple Workout screenshot first.");
+    try { await requireSession(client, userId, clientEmail); }
+    catch (error) { error.pendingUpload = pendingUpload || null; throw error; }
     const current = await findRecord(client, clientEmail, historyKey);
     if (pendingUpload && current?.storage_path === pendingUpload.path && sameMetrics(current, metrics)) {
       if (existing?.storage_path && existing.storage_path !== current.storage_path) await removeFile(client, existing.storage_path);
@@ -201,6 +247,7 @@
   let generation = 0;
   let loadRequest = 0;
   let loadState = "idle";
+  let loadError = null;
   let records = new Map();
   let dialog;
   let draft;
@@ -241,6 +288,7 @@
       generation += 1;
       loadRequest += 1;
       loadState = "idle";
+      loadError = null;
       records = new Map();
       releasePreview(draft);
       draft = null;
@@ -254,7 +302,10 @@
     const context = configuration;
     if (!context.supabaseClient || !context.clientEmail) return { count: 0 };
     loadState = "loading";
+    loadError = null;
     try {
+      await requireSession(context.supabaseClient, context.user?.id, context.readOnly ? null : context.clientEmail);
+      if (epoch !== generation || token !== loadRequest) return { stale: true };
       const loaded = [];
       const deadline = Date.now() + 12000;
       for (let offset = 0; ; offset += 500) {
@@ -273,6 +324,7 @@
     } catch (error) {
       if (epoch !== generation || token !== loadRequest) return { stale: true };
       loadState = "error";
+      loadError = error;
       return { error };
     }
   }
@@ -297,7 +349,7 @@
     const record = records.get(historyKey);
     const key = escapeHtml(historyKey);
     if (!record && loadState !== "ready") {
-      return `<div class="apple-workout-empty"><p>${loadState === "error" ? "Apple Workout details are unavailable." : "Loading Apple Workout details…"}</p>${loadState === "error" ? '<button type="button" data-apple-workout-action="retry">Retry</button>' : ""}</div>`;
+      return `<div class="apple-workout-empty"><p>${loadState === "error" ? escapeHtml(authenticationError(loadError) ? loadError.message : "Apple Workout details are unavailable.") : "Loading Apple Workout details…"}</p>${loadState === "error" ? '<button type="button" data-apple-workout-action="retry">Retry</button>' : ""}</div>`;
     }
     if (!record) return editable() ? `<div class="apple-workout-empty"><button type="button" data-apple-workout-action="open" data-apple-workout-key="${key}">+ Add Apple Workout</button></div>` : "";
     return `<section class="apple-workout-summary" aria-label="Apple Workout details">
@@ -507,6 +559,8 @@
     body.append("photo", file);
     body.append("workout_date", workouts().find((workout) => workout.history_key === item.historyKey)?.entry_date || "");
     try {
+      await requireSession(context.supabaseClient, context.user?.id, context.clientEmail);
+      if (!currentDraft(item) || token !== item.ocrToken || file !== item.file) return;
       const controller = new AbortController();
       const result = await bounded(context.supabaseClient.functions.invoke("extract-apple-workout", { body, signal: controller.signal }), 70000, controller);
       if (!currentDraft(item) || token !== item.ocrToken || file !== item.file) return;
@@ -520,8 +574,8 @@
       warning.hidden = !warningMessages.length;
       setStatus("[data-apple-read-status]", "Screenshot read. Review the details, then confirm which workout to link.");
       updateDateSuggestions();
-    } catch (_error) {
-      if (currentDraft(item) && token === item.ocrToken) setStatus("[data-apple-read-status]", "We couldn’t read this screenshot. Enter the details manually below; you can still save the original image.");
+    } catch (error) {
+      if (currentDraft(item) && token === item.ocrToken) setStatus("[data-apple-read-status]", authenticationError(error) ? error.message : "We couldn’t read this screenshot. Enter the details manually below; you can still save the original image.");
     } finally {
       if (currentDraft(item) && token === item.ocrToken) { item.extracting = false; setBusy(item); }
     }
@@ -535,6 +589,8 @@
     const file = item.file;
     button.disabled = true;
     try {
+      await requireSession(context.supabaseClient, context.user?.id, context.readOnly ? null : context.clientEmail);
+      if (!currentDraft(item) || item.file !== file) return;
       const result = await bounded(context.supabaseClient.storage.from(bucket).createSignedUrl(item.existing.storage_path, 300), 12000);
       if (!currentDraft(item) || item.file !== file) return;
       const url = new URL(result.data?.signedUrl || "");
@@ -543,8 +599,8 @@
       const preview = dialog.querySelector("[data-apple-preview]");
       preview.hidden = false;
       preview.open = true;
-    } catch (_error) {
-      if (currentDraft(item)) setStatus("[data-apple-read-status]", "The saved screenshot could not be opened. Try again.");
+    } catch (error) {
+      if (currentDraft(item)) setStatus("[data-apple-read-status]", authenticationError(error) ? error.message : "The saved screenshot could not be opened. Try again.");
     } finally { if (currentDraft(item)) button.disabled = false; }
   }
 
@@ -595,15 +651,17 @@
     button.disabled = true;
     if (status) status.textContent = "Opening screenshot…";
     try {
+      await requireSession(context.supabaseClient, context.user?.id, context.readOnly ? null : context.clientEmail);
+      if (epoch !== generation) { popup?.close(); return; }
       const result = await context.supabaseClient.storage.from(bucket).createSignedUrl(record.storage_path, 300);
       if (epoch !== generation) { popup?.close(); return; }
       const url = new URL(result.data?.signedUrl || "");
       if (result.error || !["https:", "http:"].includes(url.protocol)) throw result.error || new Error("Invalid screenshot link.");
       if (popup) { popup.location.replace(url.href); if (status) status.textContent = ""; }
       else if (status) status.innerHTML = `<a href="${escapeHtml(url.href)}" target="_blank" rel="noopener noreferrer">Open screenshot</a>`;
-    } catch (_error) {
+    } catch (error) {
       popup?.close();
-      if (epoch === generation && status) status.textContent = "The screenshot could not be opened. Try again.";
+      if (epoch === generation && status) status.textContent = authenticationError(error) ? error.message : "The screenshot could not be opened. Try again.";
     } finally { button.disabled = false; }
   }
 

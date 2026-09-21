@@ -13,11 +13,17 @@ const baseRecord = (values = {}) => ({
   storage_path: "user-1/old.png", original_filename: "original.png", mime_type: "image/png", file_size_bytes: 500,
   updated_at: "2026-09-21T12:00:00Z", ...metrics(), ...values
 });
+const signedInSession = (values = {}) => ({ access_token: "client-token", expires_at: Math.floor(Date.now() / 1000) + 3600, user: { id: "user-1", email: "client@example.com" }, ...values });
 
-function database({ reads = [null], writeError, writeEmpty = false, uploadError, loadPages = [] } = {}) {
-  const calls = { uploads: [], removes: [], writes: [], filters: [] };
+function database({ reads = [null], writeError, writeEmpty = false, uploadError, loadPages = [], session = signedInSession(), sessionError, refreshedSession = signedInSession(), refreshError } = {}) {
+  const calls = { uploads: [], removes: [], writes: [], filters: [], queries: 0, auth: [] };
   const client = {
+    auth: {
+      async getSession() { calls.auth.push("getSession"); return { data: { session }, error: sessionError || null }; },
+      async refreshSession() { calls.auth.push("refreshSession"); session = refreshedSession; return { data: { session }, error: refreshError || null }; }
+    },
     from() {
+      calls.queries += 1;
       let method = "read";
       let payload;
       let options;
@@ -131,6 +137,61 @@ test("new saves use unique private paths and ignoreDuplicates to prevent replaci
   assert.equal(h.calls.writes[0].payload.owner_user_id, "user-1");
   assert.equal(h.calls.writes[0].payload.duration_seconds, null);
   assert.equal(h.calls.removes.length, 0);
+  assert.deepEqual(h.calls.auth, ["getSession"]);
+});
+
+test("stale page users cannot send an anonymous save after the shared session disappears", async () => {
+  const h = database({ session: null });
+  const pendingUpload = { file: photo, path: "user-1/pending.png" };
+  await assert.rejects(persistRecord(saveOptions(h, { pendingUpload })), (error) => {
+    assert.match(error.message, /Sign in again/);
+    assert.equal(error.pendingUpload, pendingUpload, "Authentication failures must retain an uncertain prior upload for retry");
+    return true;
+  });
+  assert.equal(h.calls.queries, 0);
+  assert.equal(h.calls.uploads.length, 0);
+  assert.equal(h.calls.writes.length, 0);
+  assert.equal(h.calls.removes.length, 0);
+});
+
+test("near-expiry shared sessions refresh before any workout request", async () => {
+  const h = database({ session: signedInSession({ expires_at: Math.floor(Date.now() / 1000) + 30 }) });
+  await persistRecord(saveOptions(h));
+  assert.deepEqual(h.calls.auth, ["getSession", "refreshSession"]);
+  assert.equal(h.calls.writes.length, 1);
+});
+
+test("session refresh failures stop before preflight reads and show sign-in guidance", async () => {
+  const h = database({ session: signedInSession({ expires_at: 1 }), refreshError: { code: "refresh_token_not_found" } });
+  await assert.rejects(persistRecord(saveOptions(h)), /Sign in again/);
+  assert.equal(h.calls.queries, 0);
+  assert.equal(h.calls.uploads.length, 0);
+});
+
+test("save rejects a different authenticated user or client email before accessing private data", async () => {
+  for (const user of [{ id: "user-2", email: "client@example.com" }, { id: "user-1", email: "other@example.com" }]) {
+    const h = database({ session: signedInSession({ user }) });
+    await assert.rejects(persistRecord(saveOptions(h)), /signed-in account changed/);
+    assert.equal(h.calls.queries, 0);
+    assert.equal(h.calls.uploads.length, 0);
+    assert.equal(h.calls.writes.length, 0);
+  }
+});
+
+test("refresh identity changes are rejected before the private save", async () => {
+  const h = database({ session: signedInSession({ expires_at: 1 }), refreshedSession: signedInSession({ user: { id: "user-2", email: "other@example.com" } }) });
+  await assert.rejects(persistRecord(saveOptions(h)), /signed-in account changed/);
+  assert.equal(h.calls.queries, 0);
+});
+
+test("temporary auth connectivity failure retains the draft without claiming the session expired", async () => {
+  const h = database({ sessionError: new Error("network offline") });
+  await assert.rejects(persistRecord(saveOptions(h)), (error) => {
+    assert.match(error.message, /Check your connection/);
+    assert.doesNotMatch(error.message, /expired|Sign in again/);
+    return true;
+  });
+  assert.equal(h.calls.queries, 0);
 });
 
 test("first save requires a screenshot and preflight conflicts do not upload or overwrite", async () => {
@@ -215,6 +276,15 @@ test("load failure shows retry rather than a misleading Add button", async () =>
   assert.match(html, /details are unavailable/);
   assert.match(html, /Retry/);
   assert.doesNotMatch(html, /Add Apple Workout/);
+});
+
+test("load with an expired page session asks for sign-in and avoids anonymous table access", async () => {
+  const h = database({ session: null });
+  api.configure({ supabaseClient: h.client, user: { id: "user-1" }, clientEmail: "client@example.com", readOnly: false });
+  const result = await api.load();
+  assert.match(result.error.message, /Sign in again/);
+  assert.match(api.markup("session:one"), /Sign in again/);
+  assert.equal(h.calls.queries, 0);
 });
 
 test("stale loads cannot repopulate a newly selected client", async () => {

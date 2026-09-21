@@ -12413,7 +12413,7 @@ function configureClientAppleWorkouts() {
     user: activeDashboardUser,
     clientEmail: normalizeClientEmail(activeClientEmail),
     readOnly: isCoachDashboardPreview,
-    automaticReading: false,
+    automaticReading: true,
     getWorkouts: clientAppleWorkoutSessions,
     onSaved: renderClientTrainingLogs
   });
