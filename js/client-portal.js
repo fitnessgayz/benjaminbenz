@@ -837,6 +837,7 @@ function setDashboardMessage(title, message) {
   }
 
   page.classList.add("is-loading");
+  syncClientDashboardMobileNavigationMount();
 }
 
 function showDashboardContent() {
@@ -855,6 +856,7 @@ function showDashboardContent() {
   if (page) {
     page.classList.remove("is-loading");
   }
+  syncClientDashboardMobileNavigationMount();
 }
 
 function nutritionPlanFromProgram(program = {}) {
@@ -14098,6 +14100,52 @@ function setClientDashboardMobileNavigationExpanded(expanded, options = {}) {
   });
 }
 
+function syncClientDashboardMobileNavigationMount() {
+  const page = document.querySelector(".client-dashboard-page");
+  const content = document.getElementById("dashboard-content");
+
+  if (!page || !content) {
+    return;
+  }
+
+  if (!syncClientDashboardMobileNavigationMount.anchors) {
+    const nodes = document.querySelectorAll(
+      ".client-dashboard-tabs, [data-client-mobile-nav-toggle], [data-client-nav-scroll-fade], [data-client-nav-scroll-cue]"
+    );
+    syncClientDashboardMobileNavigationMount.anchors = Array.from(nodes, (node) => {
+      const placeholder = document.createComment("client-mobile-dock");
+      node.before(placeholder);
+      return { node, placeholder };
+    });
+  }
+
+  const useViewportDock = Boolean(
+    window.matchMedia?.("(max-width: 900px)")?.matches &&
+    !content.hidden && !page.classList.contains("is-loading")
+  );
+  const focusedControl = document.activeElement;
+  const dockHadFocus = syncClientDashboardMobileNavigationMount.anchors.some(
+    ({ node }) => node.contains(focusedControl)
+  );
+
+  // Keep the mobile dock out of nested overflow containers. Safari can otherwise
+  // move its fixed composited layer with the page while scrolling. Move the same
+  // nodes so focus, listeners, unread badges, and horizontal scroll are retained.
+  syncClientDashboardMobileNavigationMount.anchors.forEach(({ node, placeholder }) => {
+    if (useViewportDock) {
+      if (node.parentNode !== document.body) {
+        document.body.append(node);
+      }
+    } else if (node.parentNode !== placeholder.parentNode) {
+      placeholder.after(node);
+    }
+  });
+  if (dockHadFocus && !content.hidden && !page.classList.contains("is-loading") &&
+      document.activeElement !== focusedControl) {
+    focusedControl.focus({ preventScroll: true });
+  }
+}
+
 function handleClientDashboardMobileNavigation() {
   const toggle = document.querySelector("[data-client-mobile-nav-toggle]");
   const navigation = document.querySelector(".client-dashboard-tabs");
@@ -14107,6 +14155,7 @@ function handleClientDashboardMobileNavigation() {
     return;
   }
 
+  syncClientDashboardMobileNavigationMount();
   syncClientDashboardMobileNavigationIcon();
   setClientDashboardMobileNavigationExpanded(true);
 
@@ -14128,6 +14177,7 @@ function handleClientDashboardMobileNavigation() {
 
   const handleMobileChange = () => {
     lastClientDashboardMobileTabPress = "";
+    syncClientDashboardMobileNavigationMount();
     setClientDashboardMobileNavigationExpanded(mobileQuery.matches);
     syncClientDashboardMobileNavigationScrollCue(navigation);
   };

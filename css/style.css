@@ -15313,6 +15313,13 @@ body.client-dashboard-page {
   display: none;
 }
 
+/* The mobile dock is mounted directly on body, outside the scrolling content. */
+body.client-dashboard-page.is-loading > :is(.client-dashboard-tabs,
+  .client-dashboard-mobile-nav-toggle, .client-dashboard-scroll-fade,
+  .client-dashboard-scroll-cue) {
+  display: none !important;
+}
+
 @media (min-width: 901px) {
   .client-dashboard-page .dashboard-grid {
     grid-template-columns: 240px minmax(0, 1fr);
