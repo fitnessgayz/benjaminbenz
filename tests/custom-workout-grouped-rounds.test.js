@@ -107,7 +107,7 @@ test("renders the exercise key, compact round stepper, round rows, and grouped a
   assert.match(exerciseKey, /custom-workout-grouped-exercise-number/);
   assert.match(exerciseKey, /data-custom-grouped-exercise-name/);
   assert.match(sections, /<h4>Warm-up<\/h4>/);
-  assert.match(sections, /Excluded from working volume/);
+  assert.match(sections, /Optional · excluded from working volume/);
   assert.match(sections, /<h4>\$\{workoutSetUnit\(carousel\)\} \$\{roundNumber\}<\/h4>/);
   assert.match(sections, /const columnLabelsMarkup = `[\s\S]*?<span>Weight<\/span><span>Reps<\/span>[\s\S]*?<button[^>]*data-rir-help[^>]*><span>RIR<\/span>/);
   assert.equal(
@@ -350,22 +350,30 @@ test("shows the grouped session timer and finish action on the last group only",
   );
 });
 
-test("checks pending rows across the full workout, including warm-ups and reopened rows", () => {
+test("pending working rows include entries and reopened sets while optional warm-ups never block finishing", () => {
   const pendingRows = sourceForFunction("customWorkoutGroupedPendingRows");
-  const finishPrompt = sourceForFunction("openCustomWorkoutGroupedFinishPanel");
-
-  assert.match(pendingRows, /scope\?\.querySelectorAll\('\.custom-workout-grouped-row'\)/);
-  assert.match(pendingRows, /const hasEntry = Array\.from\(visibleRow\.querySelectorAll\("\[data-custom-grouped-field\]"\)\)/);
-  assert.match(
-    pendingRows,
-    /hasEntry \|\| canonicalRow\?\.dataset\.customGroupedReopened === "true"/,
+  const canonicalRows = [];
+  const row = (type, values, { complete = false, reopened = false } = {}) => {
+    const index = canonicalRows.length;
+    canonicalRows.push({ classList: { contains: () => complete }, dataset: { customGroupedReopened: String(reopened) } });
+    return {
+      dataset: { customGroupedSetType: type, customGroupedExerciseIndex: String(index), customGroupedSetNumber: "1" },
+      querySelectorAll: () => values.map((value) => ({ value })), closest: () => null
+    };
+  };
+  const warmup = row("warm_up", ["0", "0", ""], { reopened: true });
+  const partialWarmup = row("warm_up", ["20", "", ""]);
+  const entered = row("working", ["0", "8", ""]);
+  const reopened = row("working", ["", "", ""], { reopened: true });
+  const untouched = row("working", ["", "", ""]);
+  const complete = row("working", ["20", "8", ""], { complete: true });
+  const pending = Function("warmUpSetType", "customWorkoutGroupedCanonicalRow", `${pendingRows}; return customWorkoutGroupedPendingRows;`)(
+    "warm_up", (_carousel, index) => canonicalRows[Number(index)]
   );
-  assert.doesNotMatch(pendingRows, /data-custom-grouped-set-type|workingSetType|data-kind="round"/);
-  assert.match(finishPrompt, /customWorkoutGroupedPendingRows\(panel\)\.length > 0/);
-  assert.match(finishPrompt, /Log your edited or partially entered round before finishing the workout/);
+  assert.deepEqual(pending({ querySelectorAll: () => [warmup, partialWarmup, entered, reopened, untouched, complete] }), [entered, reopened]);
 });
 
-test("protects grouped progress and final saves from deleting or rerendering future rows", () => {
+test("validates before saving and protects the grouped final save from deleting or rerendering future rows", () => {
   const finishSave = sourceForFunction("handleTrainingLogSave");
 
   assert.match(finishSave, /const groupedCustomWorkout = Boolean\(section\?\.querySelector\("\[data-custom-workout-grouped='true'\]"\)\)/);
@@ -373,11 +381,12 @@ test("protects grouped progress and final saves from deleting or rerendering fut
     finishSave,
     /const groupedSaveOptions = groupedCustomWorkout[\s\S]*?skipRemovedSetDelete: true, skipLogRefresh: true/,
   );
-  assert.equal(
-    (finishSave.match(/\.\.\.groupedSaveOptions/g) || []).length,
-    2,
-    "Grouped safeguards must cover both the progress save and final completion save",
+  assert.match(
+    finishSave,
+    /saveTrainingLogRows\(workoutButton, logElements, status, \{[\s\S]*?workoutCompletion,[\s\S]*?\.\.\.groupedSaveOptions/,
   );
+  assert.ok(finishSave.indexOf("showWorkoutFinishIssues(difficultyTrigger, issues)") < finishSave.indexOf("await saveTrainingLogRows"),
+    "Invalid fields must be explained before a persistence attempt");
 });
 
 test("keeps the standalone start control hidden for grouped custom workouts", () => {
@@ -472,22 +481,28 @@ test("rebuilds a grouped custom panel from its draft when switching back to Stra
   );
 });
 
-test("validates exercise names in every grouped carousel before opening Finish", () => {
+test("validates the entire assigned or custom panel and stops before opening Finish when another card has an issue", () => {
   const finishPrompt = sourceForFunction("openCustomWorkoutGroupedFinishPanel");
-
-  assert.match(
-    finishPrompt,
-    /Array\.from\(panel\.querySelectorAll\("\[data-custom-workout-grouped='true'\]"\)\)/,
-  );
-  assert.match(
-    finishPrompt,
-    /\.find\(\(groupedCarousel\) => !validateCustomWorkoutGroupedExerciseNames\(groupedCarousel\)\)/,
-  );
-  assert.match(finishPrompt, /if \(invalidNameCarousel\) return/);
-  assert.ok(
-    finishPrompt.indexOf("invalidNameCarousel") < finishPrompt.indexOf("ensureCustomWorkoutGroupedFinishPanel"),
-    "All grouped exercise names must validate before the completion dialog opens",
-  );
+  for (const assigned of [false, true]) {
+    const panel = {
+      querySelectorAll: () => [{}],
+      classList: { contains: (name) => name === (assigned ? "client-workout-panel-assigned" : "client-workout-panel-custom") },
+      querySelector: () => { throw new Error("Invalid assigned workout must not invoke the final save"); }
+    };
+    const carousel = { closest: () => panel };
+    const button = { closest: () => carousel };
+    const issues = [{ message: "Exercise 3 · Set 1: enter the exercise name.", target: {} }];
+    let validated = 0, shown = 0;
+    const open = Function("customWorkoutGroupedStatus", "customWorkoutGroupedTimerConflict", "workoutFinishIssues", "showWorkoutFinishIssues", "ensureCustomWorkoutGroupedFinishPanel",
+      `${finishPrompt}; return openCustomWorkoutGroupedFinishPanel;`)(
+      () => ({}), () => false,
+      (actualPanel, options) => { assert.equal(actualPanel, panel); assert.equal(options.allowUnstarted, !assigned); validated += 1; return issues; },
+      (actualButton, actualIssues) => { assert.equal(actualButton, button); assert.equal(actualIssues, issues); shown += 1; return false; },
+      () => { throw new Error("The completion dialog must stay closed while fields are invalid"); }
+    );
+    open(button);
+    assert.equal(validated, 1); assert.equal(shown, 1);
+  }
 });
 
 test("keys grouped timer rendering, conflicts, and start-resume behavior by title and date", () => {

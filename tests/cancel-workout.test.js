@@ -24,6 +24,8 @@ function session({ running = true, dismissed = false, confirm = true, storageThr
     workoutElapsedTimerState: state,
     workoutElapsedTimerStorageKey: "timer",
     workoutElapsedTimerIntervalId: running ? 42 : null,
+    restTimerRunSequence: 1,
+    restTimerReturnFocus: null,
     customWorkoutGroupedRestAction: {},
     clientPreviewProgramSelected: true,
     currentProgram: { workouts: [] },

@@ -208,12 +208,14 @@ test("the exercise-finished prompt offers two direct workout choices", () => {
   );
   assert.match(
     saveSource,
-    /if \(incompleteExercises\.length > 0 && !allowIncompleteWorkoutFinish\)/,
-    "Choosing Workout Finished should use the canonical completion flow even when later cards are incomplete"
+    /workoutFinishIssues\(section, \{ allowUnstarted: allowIncompleteWorkoutFinish \}\)/,
+    "Choosing Workout Finished may omit untouched later rows, while partially entered fields still validate"
   );
-  assert.ok(
-    (saveSource.match(/workoutButton\.dataset\.allowIncompleteWorkoutFinish = "true";/g) || []).length >= 2,
-    "A failed completion save or difficulty save should preserve the early-finish intent for retry"
+  assert.match(saveSource, /if \(!showWorkoutFinishIssues\(difficultyTrigger, issues\)\) return/);
+  assert.match(
+    saveSource,
+    /finally \{[\s\S]*?if \(allowIncompleteWorkoutFinish && !completionSucceeded\) workoutButton\.dataset\.allowIncompleteWorkoutFinish = "true";/,
+    "Cancelled or unsuccessful completion should preserve early-finish intent for retry"
   );
   assert.match(
     interactionSource,

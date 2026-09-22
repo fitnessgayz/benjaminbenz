@@ -8062,7 +8062,69 @@ function showWorkoutElapsedTimer() {
   renderWorkoutElapsedTimer();
 }
 
+function pauseWorkoutTimersForCompletion() {
+  const now = Date.now();
+  const snapshot = {
+    elapsedState: workoutElapsedTimerState,
+    elapsedWasRunning: Boolean(workoutElapsedTimerState?.running),
+    restWasRunning: restTimerEndsAt > 0,
+    restRemainingSeconds: restTimerEndsAt > 0
+      ? Math.max(0, Math.ceil((restTimerEndsAt - now) / 1000))
+      : restTimerRemainingSeconds,
+    restRunSequence: restTimerRunSequence,
+    restAction: customWorkoutGroupedRestAction,
+    resumed: false
+  };
+
+  if (workoutElapsedTimerState?.running) {
+    workoutElapsedTimerState.accumulatedMilliseconds = workoutElapsedMilliseconds(now);
+    workoutElapsedTimerState.startedAt = 0;
+    workoutElapsedTimerState.running = false;
+    persistWorkoutElapsedTimerState();
+  }
+  clearWorkoutElapsedTimerInterval();
+  restTimerRemainingSeconds = snapshot.restRemainingSeconds;
+  restTimerEndsAt = 0;
+  restTimerActiveRunId = 0;
+  clearRestTimerInterval();
+  renderWorkoutElapsedTimer();
+  renderRestTimer();
+  return snapshot;
+}
+
+function resumeWorkoutTimersAfterCancelledCompletion(snapshot) {
+  if (!snapshot || snapshot.resumed) return;
+  snapshot.resumed = true;
+
+  if (workoutElapsedTimerState && workoutElapsedTimerState === snapshot.elapsedState) {
+    if (snapshot.elapsedWasRunning && !workoutElapsedTimerState.running) {
+      workoutElapsedTimerState.startedAt = Date.now();
+      workoutElapsedTimerState.running = true;
+      persistWorkoutElapsedTimerState();
+    }
+    runWorkoutElapsedTimer();
+  }
+
+  if (workoutElapsedTimerState === snapshot.elapsedState &&
+      restTimerRunSequence === snapshot.restRunSequence && !restTimerEndsAt && !restTimerActiveRunId) {
+    restTimerRemainingSeconds = snapshot.restRemainingSeconds;
+    customWorkoutGroupedRestAction = snapshot.restAction;
+    if (snapshot.restWasRunning && restTimerRemainingSeconds > 0) {
+      restTimerEndsAt = Date.now() + restTimerRemainingSeconds * 1000;
+      restTimerActiveRunId = ++restTimerRunSequence;
+      clearRestTimerInterval();
+      restTimerIntervalId = window.setInterval(tickRestTimer, 250);
+    }
+    renderRestTimer();
+  }
+}
+
 function finishWorkoutElapsedTimer() {
+  restTimerRunSequence += 1;
+  customWorkoutGroupedRestAction = null;
+  restTimerReturnFocus = null;
+  resetRestTimer();
+  closeRestTimer();
   workoutElapsedTimerState = null;
   clearWorkoutElapsedTimerInterval();
   try {
@@ -8956,7 +9018,7 @@ function customWorkoutGroupedSectionsMarkup(carousel) {
     <section class="custom-workout-grouped-section" data-kind="warmup">
       <header class="custom-workout-grouped-section-heading">
         <h4>Warm-up</h4>
-        <p>Excluded from working volume</p>
+        <p>Optional · excluded from working volume</p>
       </header>
       ${columnLabelsMarkup}
       ${warmUps.map((item, index) => customWorkoutGroupedSetRowMarkup(
@@ -9109,7 +9171,7 @@ function refreshCustomWorkoutGroupedCompletion(carousel) {
         ? `Reopen ${context}`
         : `${context} not logged`);
     }
-    if (complete) completeCount += 1;
+    if (complete && visibleRow.dataset.customGroupedSetType !== warmUpSetType) completeCount += 1;
   });
 
   carousel?.querySelectorAll("[data-custom-grouped-round]").forEach((section) => {
@@ -9125,7 +9187,8 @@ function refreshCustomWorkoutGroupedCompletion(carousel) {
   });
 
   const progress = carousel?.querySelector("[data-custom-grouped-progress]");
-  if (progress) progress.textContent = `${completeCount} / ${visibleRows.length} complete`;
+  const workingCount = visibleRows.filter((row) => row.dataset.customGroupedSetType !== warmUpSetType).length;
+  if (progress) progress.textContent = `${completeCount} / ${workingCount} complete`;
   refreshCustomWorkoutGroupedWarmUp(carousel);
   refreshCustomWorkoutGroupedCopyWeights(carousel);
 }
@@ -9266,6 +9329,7 @@ function customWorkoutGroupedTimerConflict(carousel) {
 
 function customWorkoutGroupedPendingRows(scope) {
   return Array.from(scope?.querySelectorAll('.custom-workout-grouped-row') || [])
+    .filter((visibleRow) => visibleRow.dataset.customGroupedSetType !== warmUpSetType)
     .filter((visibleRow) => {
       const carousel = visibleRow.closest("[data-custom-workout-grouped='true']");
       const canonicalRow = customWorkoutGroupedCanonicalRow(
@@ -9404,13 +9468,23 @@ function validateCustomWorkoutGroupedSection(section, options = {}) {
   return { valid: !firstInvalid, firstInvalid };
 }
 
-function completeEnteredCustomWorkoutWarmUps(carousel) {
+function completeEnteredCustomWorkoutWarmUps(carousel, options = {}) {
   const warmUpSection = carousel?.querySelector('.custom-workout-grouped-section[data-kind="warmup"]');
   if (!warmUpSection) return { valid: true, rows: [], previousStates: [] };
 
-  const enteredRows = Array.from(warmUpSection.querySelectorAll(".custom-workout-grouped-row")).filter((row) => (
+  let enteredRows = Array.from(warmUpSection.querySelectorAll(".custom-workout-grouped-row")).filter((row) => (
     Array.from(row.querySelectorAll("[data-custom-grouped-field]")).some((input) => String(input.value || "").trim() !== "")
   ));
+  // A working set must never be blocked by an optional, unfinished warm-up.
+  if (options.optional) {
+    enteredRows = enteredRows.filter((row) => {
+      const value = (field) => String(row.querySelector(`[data-custom-grouped-field="${field}"]`)?.value || "").trim();
+      const weight = value("weight"), reps = value("reps"), rir = value("rir");
+      return weight !== "" && reps !== "" && Number.isFinite(Number(weight)) && Number(weight) >= 0 &&
+        Number.isFinite(Number(reps)) && Number(reps) >= 0 &&
+        (rir === "" || (Number.isFinite(Number(rir)) && Number(rir) >= 0 && Number(rir) <= 5));
+    });
+  }
   if (enteredRows.length === 0) return { valid: true, rows: [], previousStates: [] };
 
   const validation = validateCustomWorkoutGroupedSection(warmUpSection, {
@@ -9504,7 +9578,7 @@ async function logCustomWorkoutGroupedRound(button) {
   const validation = validateCustomWorkoutGroupedSection(section, { status });
   if (!validation.valid) return { saved: false, validation: true };
 
-  const warmUps = completeEnteredCustomWorkoutWarmUps(carousel);
+  const warmUps = completeEnteredCustomWorkoutWarmUps(carousel, { optional: true });
   if (!warmUps.valid) return { saved: false, validation: true };
 
   const roundRows = logElements
@@ -9686,23 +9760,19 @@ function closeCustomWorkoutGroupedFinishPanel(options = {}) {
 
 function openCustomWorkoutGroupedFinishPanel(button) {
   const carousel = button?.closest("[data-custom-workout-grouped='true']");
-  const panel = carousel?.closest(".client-workout-panel-custom");
+  const panel = carousel?.closest(".client-workout-panel-custom, .client-workout-panel-assigned");
   const loggedRounds = Array.from(panel?.querySelectorAll('[data-custom-grouped-round-logged="true"]') || []).length;
   const status = customWorkoutGroupedStatus(carousel);
 
-  if (!carousel || loggedRounds === 0) {
-    if (status) status.textContent = "Log at least one round before finishing the workout.";
-    return;
-  }
+  if (!carousel || !panel) return;
   if (customWorkoutGroupedTimerConflict(carousel)) {
     if (status) status.textContent = "Finish the workout already in progress before finishing this workout.";
     return;
   }
-  const invalidNameCarousel = Array.from(panel.querySelectorAll("[data-custom-workout-grouped='true']"))
-    .find((groupedCarousel) => !validateCustomWorkoutGroupedExerciseNames(groupedCarousel));
-  if (invalidNameCarousel) return;
-  if (customWorkoutGroupedPendingRows(panel).length > 0) {
-    if (status) status.textContent = "Log your edited or partially entered round before finishing the workout.";
+  const issues = workoutFinishIssues(panel, { allowUnstarted: loggedRounds > 0 && panel.classList.contains("client-workout-panel-custom") });
+  if (!showWorkoutFinishIssues(button, issues)) return;
+  if (panel.classList.contains("client-workout-panel-assigned")) {
+    panel.querySelector("[data-workout-finish]")?.click();
     return;
   }
 
@@ -15498,8 +15568,8 @@ function handleWorkoutInteractions() {
     }
 
     if (customGroupedStartNew || customGroupedWorkoutDone) {
-      const panel = customGroupedFinishReturnFocus?.closest(".client-workout-panel-custom");
-      const finishWorkoutButton = panel?.querySelector("[data-custom-workout-default-finish] [data-workout-finish]");
+      const panel = customGroupedFinishReturnFocus?.closest(".client-workout-panel-custom, .client-workout-panel-assigned");
+      const finishWorkoutButton = panel?.querySelector("[data-workout-finish]");
 
       if (customGroupedStartNew && panel) {
         pendingGroupedCustomWorkoutRestart = groupedCustomWorkoutRestartConfig(panel);
@@ -17097,6 +17167,102 @@ function incompleteWorkoutExercises(logElements) {
   });
 }
 
+function workoutFinishIssues(section, options = {}) {
+  const issues = [];
+  const logs = Array.from(section?.querySelectorAll("[data-exercise-log]") || []);
+  logs.forEach((log, exerciseIndex) => {
+    if (log.dataset.warmupLog !== undefined || log.dataset.cardioLog !== undefined ||
+        log.dataset.exerciseSkipped === "true" || log.closest(".workout-exercise-card")?.classList.contains("is-skipped")) return;
+    const carousel = log.closest("[data-custom-workout-grouped='true']");
+    const groupIndex = carousel ? customWorkoutGroupedLogElements(carousel).indexOf(log) : -1;
+    const nameField = carousel?.querySelector(`[data-custom-workout-group-name-input="${groupIndex}"]`) || exerciseNameInputForLog(log);
+    const enteredName = String(nameField?.value ?? currentExerciseLabel(log)).trim();
+    const name = enteredName || `Exercise ${exerciseIndex + 1}`;
+    let nameReported = false;
+    const rows = Array.from(log.querySelectorAll("[data-set-row]"));
+    rows.filter((row) => setTypeForRow(row) !== warmUpSetType).forEach((row) => {
+      const values = setRowInputValues(row);
+      const rir = String(row.dataset.repsInReserve ?? "").trim();
+      const complete = row.classList.contains("is-complete");
+      if (options.allowUnstarted && !complete && row.dataset.customGroupedReopened !== "true" &&
+          values.weightRaw === "" && values.repsRaw === "" && rir === "") return;
+      const number = Number(row.dataset.setNumber) || 1;
+      const visibleRow = carousel?.querySelector(`.custom-workout-grouped-row[data-custom-grouped-exercise-index="${groupIndex}"][data-custom-grouped-set-type="${workingSetType}"][data-custom-grouped-set-number="${number}"]`);
+      const unit = carousel ? workoutSetUnit(carousel) : "Set";
+      const label = `${name} · ${unit} ${number}`;
+      const target = (field) => visibleRow?.querySelector(`[data-custom-grouped-field="${field}"]`) ||
+        row.querySelector(field === "rir" ? "[data-set-rir]" : `[data-set-${field}]`);
+      const missing = [];
+      if (!enteredName && !nameReported) {
+        issues.push({ message: `${name}: enter the exercise name.`, target: nameField });
+        nameReported = true;
+      }
+      if (values.weightRaw === "" || !Number.isFinite(values.weightValue) || values.weightValue < 0) {
+        missing.push(["weight", "enter weight (0 is allowed)"]);
+      }
+      if (values.repsRaw === "" || !Number.isFinite(values.repsValue) || values.repsValue <= 0) {
+        missing.push(["reps", "enter reps above 0"]);
+      }
+      if (rir !== "" && (!Number.isFinite(Number(rir)) || Number(rir) < 0 || Number(rir) > 5)) {
+        missing.push(["rir", "enter RIR from 0 to 5, or leave it blank"]);
+      }
+      missing.forEach(([field, message]) => issues.push({ message: `${label}: ${message}.`, target: target(field) }));
+      if (!missing.length && (carousel || row.dataset.groupedRoundRequired === "true") && !complete) {
+        issues.push({
+          message: `${label}: tap Log ${unit.toLowerCase()} to save these entries.`,
+          target: visibleRow?.closest("[data-custom-grouped-round]")?.querySelector("[data-custom-grouped-log-round]") || row.querySelector("[data-complete-set]")
+        });
+      }
+    });
+  });
+  return issues;
+}
+
+function showWorkoutFinishIssues(button, issues) {
+  const section = workoutSectionForButton(button);
+  section?.querySelectorAll("[data-workout-finish-issues]").forEach((element) => element.remove());
+  if (!issues.length) return true;
+  const summary = document.createElement("div");
+  summary.className = "workout-finish-issues";
+  summary.dataset.workoutFinishIssues = "";
+  summary.setAttribute("role", "alert");
+  summary.tabIndex = -1;
+  const heading = document.createElement("strong");
+  heading.textContent = "Before you finish:";
+  summary.appendChild(heading);
+  const list = document.createElement("ul");
+  issues.forEach(({ message, target }) => {
+    const item = document.createElement("li");
+    const action = document.createElement("button");
+    action.type = "button";
+    action.textContent = message;
+    action.addEventListener("click", () => {
+      const names = target?.closest?.("[data-custom-workout-group-name-section]");
+      if (names) {
+        const fields = names.querySelector("[data-custom-workout-group-name-fields]");
+        if (fields) fields.hidden = false;
+        names.querySelector("[data-custom-workout-group-name-toggle]")?.setAttribute("aria-expanded", "true");
+        const icon = names.querySelector("[data-custom-workout-group-name-icon]");
+        if (icon) icon.textContent = "−";
+        const carousel = names.closest("[data-custom-workout-grouped='true']");
+        if (carousel) carousel.dataset.groupNamesExpanded = "true";
+      }
+      target?.scrollIntoView?.({ block: "center", behavior: "smooth" });
+      target?.focus?.({ preventScroll: true });
+    });
+    item.appendChild(action);
+    list.appendChild(item);
+  });
+  summary.appendChild(list);
+  const help = document.createElement("p");
+  help.textContent = "Warm-ups and RIR are optional. You can leave warm-up fields blank or at 0; Log warm-up is not required.";
+  summary.appendChild(help);
+  (button.closest("footer") || button).insertAdjacentElement("afterend", summary);
+  summary.scrollIntoView?.({ block: "center", behavior: "smooth" });
+  summary.focus({ preventScroll: true });
+  return false;
+}
+
 function workoutSectionForButton(button) {
   return button.closest(".client-workout-panel, .today-panel, .lower-panel, .extra-workout-panel");
 }
@@ -17319,92 +17485,85 @@ async function handleTrainingLogSave() {
       const status = section?.querySelector("[data-custom-grouped-status]") ||
         section?.querySelector("[data-workout-status]");
 
-      const incompleteExercises = incompleteWorkoutExercises(logElements);
+      const difficultyTrigger = section?.querySelector("[data-custom-grouped-finish-workout]") || finishWorkoutButton;
+      if (!section || section.dataset.workoutFinishing === "true") return;
+      const issues = workoutFinishIssues(section, { allowUnstarted: allowIncompleteWorkoutFinish });
+      if (!showWorkoutFinishIssues(difficultyTrigger, issues)) return;
+      if (logElements.some((log) => log.dataset.autosaveInFlight === "true") ||
+          section.querySelector('[data-custom-grouped-warmup-saving="true"]') ||
+          Array.from(section.querySelectorAll("[data-custom-grouped-log-round]")).some((control) => control.disabled)) {
+        showWorkoutFinishIssues(difficultyTrigger, [{ message: "Your latest set is still saving. Wait a moment, then tap Finish workout again.", target: difficultyTrigger }]);
+        return;
+      }
 
-      if (incompleteExercises.length > 0 && !allowIncompleteWorkoutFinish) {
-        const saveResult = await saveTrainingLogRows(finishWorkoutButton, logElements, status, {
-          savingMessage: "Saving progress...",
-          successMessage: "Workout progress saved.",
+      cancelTrainingLogAutosaves(section);
+      section.dataset.workoutFinishing = "true";
+      const controls = Array.from(section.querySelectorAll("input, textarea, select, button"))
+        .map((control) => ({ control, disabled: control.disabled }));
+      controls.forEach(({ control }) => { control.disabled = true; });
+      const previousCompletion = section.workoutCompletionPendingFeedback;
+      if (!workoutElapsedTimerState && !previousCompletion) {
+        startWorkoutElapsedTimer(logElements[0]?.dataset.workoutTitle || activeWorkoutElapsedTitle());
+      }
+      const timerSnapshot = pauseWorkoutTimersForCompletion();
+      const workoutCompletion = previousCompletion || workoutCompletionFields();
+      let workoutSaved = Boolean(previousCompletion);
+      let completionSucceeded = false;
+      try {
+        const workoutFeedback = await requestWorkoutDifficulty(difficultyTrigger);
+        if (workoutFeedback === null) {
+          if (pendingGroupedCustomWorkoutRestart?.panel === section) pendingGroupedCustomWorkoutRestart = null;
+          return;
+        }
+        const workoutDifficulty = workoutFeedback.difficulty;
+        const difficultySummary = workoutHistoryDifficultyLabel(workoutDifficulty);
+        const saveResult = await saveTrainingLogRows(workoutButton, logElements, status, {
+          savingMessage: "Finishing workout...",
+          successMessage: "Workout saved. Saving feedback...",
+          workoutCompletion,
           ...groupedSaveOptions
         });
-
         if (!saveResult.saved) {
+          showWorkoutFinishIssues(difficultyTrigger, [{ message: "Your workout could not be saved. Your entries are still here. Check your connection, then tap Finish workout again.", target: difficultyTrigger }]);
           return;
         }
 
-        const names = incompleteExercises
-          .slice(0, 3)
-          .map((logElement) => currentExerciseLabel(logElement))
-          .filter(Boolean)
-          .join(", ");
-        const extra = incompleteExercises.length > 3 ? ` and ${incompleteExercises.length - 3} more` : "";
-
-        if (status) {
-          status.textContent = `Workout progress saved. Finish still needs all sets logged${names ? `: ${names}${extra}.` : "."}`;
+        // Completion is already persisted: stop both timers even if ratings need a retry.
+        workoutSaved = true;
+        section.workoutCompletionPendingFeedback = workoutCompletion;
+        finishWorkoutElapsedTimer();
+        const feedbackResult = await saveWorkoutDifficultyFeedback(saveResult.rows, workoutDifficulty, workoutFeedback);
+        if (!feedbackResult.saved) {
+          if (status) status.textContent = "Workout finished and timer stopped. Ratings could not be saved; tap Finish workout to retry the ratings.";
+          showWorkoutFinishIssues(difficultyTrigger, [{ message: "Your workout is saved and the timer has stopped. Tap Finish workout again to retry saving your ratings.", target: difficultyTrigger }]);
+          return;
         }
-        return;
-      }
 
-      if (!workoutElapsedTimerState) {
-        startWorkoutElapsedTimer(logElements[0]?.dataset.workoutTitle || activeWorkoutElapsedTitle());
-      }
-      const difficultyTrigger = section?.querySelector("[data-custom-grouped-finish-workout]") || finishWorkoutButton;
-      const workoutFeedback = await requestWorkoutDifficulty(difficultyTrigger);
-
-      if (workoutFeedback === null) {
-        if (pendingGroupedCustomWorkoutRestart?.panel === section) {
-          pendingGroupedCustomWorkoutRestart = null;
+        renderClientTrainingLogs();
+        completionSucceeded = true;
+        if (status) status.textContent = `Workout finished · ${difficultySummary}.`;
+        delete section.workoutCompletionPendingFeedback;
+        const groupedRestart = pendingGroupedCustomWorkoutRestart?.panel === section
+          ? pendingGroupedCustomWorkoutRestart : null;
+        pendingGroupedCustomWorkoutRestart = null;
+        if (section.classList.contains("client-workout-panel-custom")) clearCustomWorkoutDraft();
+        if (groupedRestart) {
+          startFreshGroupedCustomWorkout(groupedRestart);
+        } else {
+          openWorkoutCompletionSharePrompt(workoutCompletionShareSummary(saveResult.rows, workoutCompletion, workoutDifficulty));
         }
-        return;
-      }
-
-      const workoutCompletion = workoutCompletionFields();
-      const workoutDifficulty = workoutFeedback.difficulty;
-      const difficultySummary = workoutHistoryDifficultyLabel(workoutDifficulty);
-      const saveResult = await saveTrainingLogRows(workoutButton, logElements, status, {
-        savingMessage: "Finishing workout...",
-        successMessage: "Workout saved. Saving feedback...",
-        workoutCompletion,
-        ...groupedSaveOptions
-      });
-
-      if (!saveResult.saved) {
-        if (allowIncompleteWorkoutFinish) {
-          workoutButton.dataset.allowIncompleteWorkoutFinish = "true";
-        }
-        return;
-      }
-
-      const feedbackResult = await saveWorkoutDifficultyFeedback(saveResult.rows, workoutDifficulty, workoutFeedback);
-
-      if (!feedbackResult.saved) {
-        if (allowIncompleteWorkoutFinish) {
-          workoutButton.dataset.allowIncompleteWorkoutFinish = "true";
-        }
-        if (status) {
-          status.textContent = "Workout saved, but the workout ratings could not be saved. Tap Finish workout to try again.";
-        }
-        return;
-      }
-
-      renderClientTrainingLogs();
-      if (status) {
-        status.textContent = `Workout finished · ${difficultySummary}.`;
-      }
-      const groupedRestart = pendingGroupedCustomWorkoutRestart?.panel === section
-        ? pendingGroupedCustomWorkoutRestart
-        : null;
-      pendingGroupedCustomWorkoutRestart = null;
-      finishWorkoutElapsedTimer();
-      if (section?.classList.contains("client-workout-panel-custom")) {
-        clearCustomWorkoutDraft();
-      }
-      if (groupedRestart) {
-        startFreshGroupedCustomWorkout(groupedRestart);
-      } else {
-        openWorkoutCompletionSharePrompt(
-          workoutCompletionShareSummary(saveResult.rows, workoutCompletion, workoutDifficulty)
-        );
+      } catch (_error) {
+        showWorkoutFinishIssues(difficultyTrigger, [{
+          message: workoutSaved
+            ? "Your workout is saved and the timer has stopped. Tap Finish workout again to retry saving your ratings."
+            : "Your workout could not be saved. Your entries are still here. Check your connection, then tap Finish workout again.",
+          target: difficultyTrigger
+        }]);
+      } finally {
+        if (!workoutSaved) resumeWorkoutTimersAfterCancelledCompletion(timerSnapshot);
+        if (allowIncompleteWorkoutFinish && !completionSucceeded) workoutButton.dataset.allowIncompleteWorkoutFinish = "true";
+        controls.forEach(({ control, disabled }) => { control.disabled = disabled; });
+        delete section.dataset.workoutFinishing;
       }
       return;
     }
