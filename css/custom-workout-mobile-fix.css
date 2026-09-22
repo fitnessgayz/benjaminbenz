@@ -1484,6 +1484,7 @@
   padding: 7px 0;
   align-items: baseline;
   gap: 8px;
+  row-gap: 3px;
   border-bottom: 1px solid var(--grouped-line);
   color: var(--grouped-ink);
   font-size: clamp(.9rem, 4.6vw, 1.1rem);
@@ -1890,6 +1891,130 @@
 
 .dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-source {
   display: none !important;
+}
+
+/* Notes stay available below the final set while backing log fields stay hidden. */
+.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-notes {
+  min-width: 0;
+  padding: 4px 12px;
+  border-top: 1px solid var(--grouped-line);
+  background: var(--grouped-paper);
+  color: var(--grouped-ink);
+}
+
+.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-notes[hidden],
+.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-notes [hidden] {
+  display: none !important;
+}
+
+.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-notes details {
+  min-width: 0;
+}
+
+.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-notes summary {
+  display: flex;
+  min-width: 0;
+  min-height: 44px;
+  padding: 8px 0;
+  align-items: center;
+  gap: 8px;
+  color: var(--grouped-ink);
+  font-size: .82rem;
+  font-style: normal;
+  font-weight: 800;
+  letter-spacing: 0;
+  line-height: 1.35;
+  list-style: none;
+  text-transform: none;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-notes summary::-webkit-details-marker {
+  display: none;
+}
+
+.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-notes summary::after {
+  content: "+";
+  flex: 0 0 20px;
+  margin-left: auto;
+  color: var(--grouped-muted);
+  font-size: 1.2rem;
+  font-weight: 600;
+  line-height: 1;
+  text-align: center;
+}
+
+.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-notes details[open] > summary::after {
+  content: "−";
+}
+
+.dashboard-page [data-custom-workout-grouped="true"] [data-custom-grouped-notes-state] {
+  margin-left: auto;
+  color: #126f24;
+  font-size: .7rem;
+  font-weight: 600;
+}
+
+.dashboard-page [data-custom-workout-grouped="true"] [data-custom-grouped-notes-state]:empty {
+  display: none;
+}
+
+.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-notes summary:has([data-custom-grouped-notes-state]:not(:empty))::after {
+  margin-left: 0;
+}
+
+.dashboard-page [data-custom-workout-grouped="true"] [data-custom-grouped-notes-fields] {
+  display: grid;
+  min-width: 0;
+  gap: 12px;
+  padding: 4px 0 12px;
+}
+
+.dashboard-page [data-custom-workout-grouped="true"] [data-custom-grouped-notes-fields] > label {
+  display: grid;
+  min-width: 0;
+  gap: 6px;
+}
+
+.dashboard-page [data-custom-workout-grouped="true"] [data-custom-grouped-notes-label] {
+  min-width: 0;
+  color: var(--grouped-muted);
+  font-size: .75rem;
+  font-style: normal;
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+  text-transform: none;
+}
+
+.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-notes textarea {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 84px;
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--grouped-line);
+  border-radius: 10px !important;
+  background: var(--grouped-cream);
+  color: var(--grouped-ink);
+  font-family: inherit;
+  font-size: 16px !important;
+  font-style: normal;
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: 1.45;
+  text-transform: none;
+  overflow: auto !important;
+  resize: vertical;
+}
+
+.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-notes :is(summary, textarea):focus-visible {
+  outline: 3px solid var(--grouped-blue);
+  outline-offset: 2px;
 }
 
 .dashboard-page .custom-workout-grouped-finish-overlay {
@@ -2356,16 +2481,18 @@ body.dashboard-page.custom-workout-grouped-finish-open {
   stroke-width: 1.8;
 }
 
-.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-pr-preview {
+.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-exercise-key-item > .custom-workout-grouped-pr-preview {
+  grid-column: 2 / -1;
+  grid-row: 2;
   min-width: 0;
   max-width: 100%;
   margin: 0;
-  padding: 8px 10px;
   color: var(--grouped-muted);
-  font-size: .78rem;
-  font-weight: 400;
+  font-size: .72rem;
+  font-style: normal;
+  font-weight: 500;
   letter-spacing: 0;
-  line-height: 1.5;
+  line-height: 1.4;
   overflow-wrap: anywhere;
   text-transform: none;
 }

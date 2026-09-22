@@ -4965,6 +4965,8 @@ function renderExerciseNotesState(logElement) {
   if (notesState) {
     notesState.textContent = hasNotes ? "Added" : "";
   }
+  const carousel = logElement?.closest("[data-custom-workout-grouped='true']");
+  if (carousel) renderCustomWorkoutGroupedNotes(carousel);
 }
 
 function exerciseLogFields(exercise, workoutTitle, options = {}) {
@@ -8415,6 +8417,7 @@ function customWorkoutGroupedRoundCardMarkup(format, exercises, groupIndex = 0, 
           <button type="button" data-custom-grouped-add-round aria-label="Add ${format === "single" ? "set" : "round"}">+</button>
         </div>
         <div data-custom-grouped-sections></div>
+        <div class="custom-workout-grouped-notes" data-custom-grouped-notes></div>
         ${showSessionControls ? `
           <div class="custom-workout-grouped-timer" data-custom-grouped-timer role="timer" aria-label="Workout timer" hidden>
             <span class="custom-workout-grouped-timer-copy">
@@ -8666,6 +8669,7 @@ function customWorkoutGroupedExerciseKeyMarkup(carousel) {
         <span class="custom-workout-grouped-exercise-number">${index + 1}</span>
         <strong data-custom-grouped-exercise-name="${index}">${escapeHtml(name)}</strong>
         ${demo}
+        <p class="custom-workout-grouped-pr-preview" data-custom-grouped-pr-preview="${index}" hidden></p>
       </div>
     `;
   }).join("");
@@ -8703,6 +8707,7 @@ function syncCustomWorkoutGroupedAccessibleNames(carousel, exerciseIndex, exerci
       input.setAttribute("aria-label", `${fieldLabel}, ${context}`);
     });
   });
+  renderCustomWorkoutGroupedNotes(carousel);
 }
 
 function syncCustomWorkoutGroupedHistoryPlaceholders(logElement) {
@@ -8758,11 +8763,12 @@ function previousCustomWorkoutGroupedWeight(logElement, roundNumber) {
   return previousCustomWorkoutGroupedValue(logElement, roundNumber, "weight");
 }
 
-function customWorkoutGroupedPersonalBestLabel(logElement, best) {
+function customWorkoutGroupedPersonalBestLabel(logElement, best, includeExerciseName = true) {
   if (!best) return "";
   const reps = Number(best.reps);
   const repsLabel = Number.isFinite(reps) && reps > 0 ? ` × ${reps} reps` : "";
-  return `${currentExerciseLabel(logElement)}: ${Number(best.weight_used)} lb${repsLabel} · ${formatLogDate(best.entry_date)}`;
+  const name = includeExerciseName ? `${currentExerciseLabel(logElement)}: ` : "";
+  return `${name}${Number(best.weight_used)} lb${repsLabel} · ${formatLogDate(best.entry_date)}`;
 }
 
 function clearCustomWorkoutGroupedWeightCopy(input) {
@@ -8800,11 +8806,18 @@ function customWorkoutGroupedCopyVisibleInput(section, exerciseIndex, field = "w
 
 function refreshCustomWorkoutGroupedCopyWeights(carousel) {
   const personalBests = new Map();
+  const logElements = customWorkoutGroupedLogElements(carousel);
   if (carousel?.querySelector('[data-custom-grouped-copy-source="pr"]')) {
-    customWorkoutGroupedLogElements(carousel).forEach((logElement) => {
+    logElements.forEach((logElement) => {
       personalBests.set(logElement, personalBestWeightLog(logsForExerciseDisplay(logElement)));
     });
   }
+  carousel?.querySelectorAll("[data-custom-grouped-pr-preview]").forEach((preview) => {
+    const logElement = logElements[Number(preview.dataset.customGroupedPrPreview)];
+    const record = customWorkoutGroupedPersonalBestLabel(logElement, personalBests.get(logElement), false);
+    preview.textContent = record ? `PR: ${record}` : "";
+    preview.hidden = record === "";
+  });
   carousel?.querySelectorAll("[data-custom-grouped-round]").forEach((section) => {
     const roundNumber = Number(section.dataset.customGroupedRound);
     const entries = customWorkoutGroupedCopyRows(carousel, roundNumber);
@@ -8828,13 +8841,6 @@ function refreshCustomWorkoutGroupedCopyWeights(carousel) {
           String(input.value).trim() === "" && String(visible.value).trim() === "";
       });
     });
-    const preview = section.querySelector("[data-custom-grouped-pr-preview]");
-    if (preview) {
-      const records = [...new Set(entries.map(({ logElement }) => logElement))]
-        .map((logElement) => customWorkoutGroupedPersonalBestLabel(logElement, personalBests.get(logElement))).filter(Boolean);
-      preview.textContent = records.length ? `Personal records: ${records.join("; ")}` : "";
-      preview.hidden = records.length === 0;
-    }
     const status = section.querySelector("[data-custom-grouped-copy-status]");
     const message = section.querySelector("[data-custom-grouped-copy-message]");
     const undo = section.querySelector("[data-custom-grouped-undo-weights]");
@@ -8990,7 +8996,6 @@ function customWorkoutGroupedSectionsMarkup(carousel) {
             aria-label="Copy personal record weights and reps into empty fields in ${workoutSetUnit(carousel).toLowerCase()} ${roundNumber}">Use PR</button>
           </div>
         </header>
-        <p class="custom-workout-grouped-pr-preview" data-custom-grouped-pr-preview hidden></p>
         <div class="custom-workout-grouped-copy-status" data-custom-grouped-copy-status role="status" aria-live="polite" hidden>
           <span data-custom-grouped-copy-message></span>
           <button class="custom-workout-grouped-undo-weights" type="button" data-custom-grouped-undo-weights="${roundNumber}" aria-label="Undo copied weights and reps in ${workoutSetUnit(carousel).toLowerCase()} ${roundNumber}" hidden>Undo</button>
@@ -9120,6 +9125,78 @@ function refreshCustomWorkoutGroupedCompletion(carousel) {
   refreshCustomWorkoutGroupedCopyWeights(carousel);
 }
 
+function renderCustomWorkoutGroupedNotes(carousel) {
+  const host = carousel?.querySelector("[data-custom-grouped-notes]");
+  if (!host) return;
+  const logElements = customWorkoutGroupedLogElements(carousel);
+  host.hidden = logElements.length === 0;
+  let details = host.querySelector("[data-custom-grouped-notes-details]");
+  if (!details) {
+    details = document.createElement("details");
+    details.dataset.customGroupedNotesDetails = "";
+    const summary = document.createElement("summary");
+    summary.textContent = "Exercise notes";
+    const state = document.createElement("span");
+    state.dataset.customGroupedNotesState = "";
+    summary.append(state);
+    const fields = document.createElement("div");
+    fields.dataset.customGroupedNotesFields = "";
+    details.append(summary, fields);
+    host.append(details);
+  }
+  const fields = details.querySelector("[data-custom-grouped-notes-fields]");
+  const existing = new Map(Array.from(fields.children).map((field) => [field.customWorkoutNotesLog, field]));
+  const activeInput = document.activeElement;
+  const hadFocus = host.contains(activeInput);
+  let hasNotes = false;
+
+  logElements.forEach((logElement, index) => {
+    let field = existing.get(logElement);
+    if (!field) {
+      field = document.createElement("label");
+      field.customWorkoutNotesLog = logElement;
+      const label = document.createElement("span");
+      label.dataset.customGroupedNotesLabel = "";
+      const input = document.createElement("textarea");
+      input.rows = 3;
+      input.placeholder = "Any exercise modifications?";
+      field.append(label, input);
+    }
+    const name = currentExerciseLabel(logElement) || `Exercise ${index + 1}`;
+    const canonical = logElement.querySelector("[data-log-notes]");
+    const input = field.querySelector("textarea");
+    const value = canonical?.value || "";
+    hasNotes ||= Boolean(value.trim());
+    field.querySelector("[data-custom-grouped-notes-label]").textContent = name;
+    input.dataset.customGroupedNotesInput = String(index);
+    input.setAttribute("aria-label", `Notes for ${name}`);
+    input.disabled = Boolean(canonical?.disabled);
+    if (input.value !== value) input.value = value;
+    // Reuse the same textarea while typing, renaming, logging, or changing rounds.
+    if (fields.children[index] !== field) fields.insertBefore(field, fields.children[index] || null);
+    existing.delete(logElement);
+  });
+  existing.forEach((field) => field.remove());
+  const state = details.querySelector("[data-custom-grouped-notes-state]");
+  state.textContent = hasNotes ? "Added" : "";
+  state.hidden = !hasNotes;
+  if (hadFocus && host.contains(activeInput) && document.activeElement !== activeInput) {
+    activeInput.focus({ preventScroll: true });
+  }
+}
+
+function syncCustomWorkoutGroupedNotesInput(input) {
+  const carousel = input?.closest("[data-custom-workout-grouped='true']");
+  const logElement = input?.closest("label")?.customWorkoutNotesLog;
+  if (!carousel || !logElement || input.disabled || !customWorkoutGroupedLogElements(carousel).includes(logElement)) return;
+  const canonical = logElement.querySelector("[data-log-notes]");
+  if (!canonical || canonical.disabled) return;
+  canonical.value = input.value;
+  renderExerciseNotesState(logElement);
+  persistCustomWorkoutDraftForElement(logElement);
+  scheduleTrainingLogAutosave(logElement);
+}
+
 function renderCustomWorkoutGroupedCard(carousel) {
   if (carousel?.dataset.customGroupedWarmupSaving === "true") return;
   const sections = carousel?.querySelector("[data-custom-grouped-sections]");
@@ -9148,6 +9225,7 @@ function renderCustomWorkoutGroupedCard(carousel) {
   carousel.dataset.groupWorkoutDeck = "false";
   renderCustomWorkoutGroupedExerciseKey(carousel);
   sections.innerHTML = customWorkoutGroupedSectionsMarkup(carousel);
+  renderCustomWorkoutGroupedNotes(carousel);
   syncCustomWorkoutGroupedRoundStepper(carousel);
   refreshCustomWorkoutGroupedCompletion(carousel);
   renderCustomWorkoutGroupedTimerPanels();
@@ -9801,6 +9879,7 @@ function setWorkoutCarouselAutosaveState(logElement, state) {
   const carousel = logElement?.closest("[data-custom-workout-carousel]");
   if (!carousel) return;
   carousel.dataset.autosaveState = state;
+  if (carousel.dataset.customWorkoutGrouped === "true") return;
   renderCustomWorkoutCarousel(carousel);
 }
 
@@ -16035,6 +16114,7 @@ function handleWorkoutInteractions() {
   });
 
   document.addEventListener("input", (event) => {
+    const groupedNotesInput = event.target.closest("[data-custom-grouped-notes-input]");
     const groupedField = event.target.closest("[data-custom-grouped-field]");
     const exerciseNameInput = event.target.closest("[data-exercise-name-input]");
     const setInput = event.target.closest("[data-set-label], [data-set-weight], [data-set-reps]");
@@ -16044,6 +16124,10 @@ function handleWorkoutInteractions() {
     if (event.target.matches("[data-workout-energy]")) {
       pendingWorkoutEnergy[event.target.dataset.workoutEnergy] = Number(event.target.value);
       renderWorkoutDifficultyPrompt();
+      return;
+    }
+    if (groupedNotesInput) {
+      syncCustomWorkoutGroupedNotesInput(groupedNotesInput);
       return;
     }
     if (groupedField) {
@@ -17084,7 +17168,11 @@ function scheduleTrainingLogAutosave(logElement) {
     try {
       const result = await saveTrainingLogRows(null, [logElement], status, {
         savingMessage: "Autosaving...",
-        successMessage: "Autosaved."
+        successMessage: "Autosaved.",
+        ...(logElement.closest("[data-custom-workout-grouped='true']") ? {
+          skipLogRefresh: true,
+          skipRemovedSetDelete: true
+        } : {})
       });
       setWorkoutCarouselAutosaveState(logElement, result.saved ? "saved" : "issue");
     } finally {

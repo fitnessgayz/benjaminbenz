@@ -83,6 +83,7 @@ function fixture(format = "single", assigned = false) {
     refreshCustomWorkoutGroupedCompletion: () => {}, renderCustomWorkoutGroupedTimerPanels: () => {},
     renderCustomWorkoutGroupedRestControls: () => {},
     restoreStrengthSetRows: () => {}, renderSetRirValue: () => {}, renderExerciseNotesState: () => {},
+    renderCustomWorkoutGroupedNotes: () => {},
     syncExerciseNamePreview: () => {}, updateVisibleSetProgress: () => {}, syncExerciseFinishedState: () => {}
   };
   const api = Function(...Object.keys(dependencies), `

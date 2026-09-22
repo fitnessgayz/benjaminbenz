@@ -113,6 +113,8 @@ function workoutFixture(specs = [{ name: "Cable fly" }, { name: "Squat" }], opti
   root.connectedRoot = true;
   const panel = root.appendChild(element("section", { class: "client-workout-panel-custom" }));
   const carousel = panel.appendChild(element("div", { "data-custom-workout-grouped": "true", "data-custom-workout-format": options.format || "superset" }));
+  const exerciseKey = carousel.appendChild(element("div", { "data-custom-grouped-exercise-key": "" }));
+  const prPreviews = [];
   const sourceNode = carousel.appendChild(element("div", { "data-custom-workout-grouped-source": "" }));
   const list = sourceNode.appendChild(element("div", { "data-custom-workout-list": "" }));
   const section = carousel.appendChild(element("section", { "data-custom-grouped-round": String(roundNumber) }));
@@ -120,12 +122,19 @@ function workoutFixture(specs = [{ name: "Cable fly" }, { name: "Squat" }], opti
   const prCopy = options.prLogs ? section.appendChild(element("button", {
     "data-custom-grouped-copy-weights": String(roundNumber), "data-custom-grouped-copy-source": "pr"
   })) : null;
-  const prPreview = options.prLogs ? section.appendChild(element("p", { "data-custom-grouped-pr-preview": "" })) : null;
   const copyStatus = section.appendChild(element("div", { "data-custom-grouped-copy-status": "" }));
   const copyMessage = copyStatus.appendChild(element("span", { "data-custom-grouped-copy-message": "" }));
   const undo = copyStatus.appendChild(element("button", { "data-custom-grouped-undo-weights": String(roundNumber) }));
   const status = carousel.appendChild(element("p", { "data-custom-grouped-status": "" }));
   const rows = specs.map((spec, index) => {
+    if (options.prLogs) {
+      const keyItem = exerciseKey.appendChild(element("div", { class: "custom-workout-grouped-exercise-key-item" }));
+      const title = keyItem.appendChild(element("strong", { "data-custom-grouped-exercise-name": String(index) }));
+      title.textContent = spec.name;
+      const preview = keyItem.appendChild(element("p", { "data-custom-grouped-pr-preview": String(index) }));
+      preview.hidden = true;
+      prPreviews.push(preview);
+    }
     const card = list.appendChild(element("article", { "data-custom-exercise-card": "" }));
     const log = card.appendChild(element("div", {
       "data-exercise-log": "", "data-exercise-name": spec.name,
@@ -178,7 +187,7 @@ function workoutFixture(specs = [{ name: "Cable fly" }, { name: "Squat" }], opti
     "refreshCustomWorkoutGroupedWarmUp", "refreshCustomWorkoutGroupedCompletion", "syncCustomWorkoutGroupedField",
     ...(options.prLogs ? ["logsForExerciseDisplay", "personalBestWeightLog", "customWorkoutGroupedPersonalBestLabel", "currentExerciseLabel", "exerciseProgressNumber"] : [])
   ].map(functionSource).join("\n"), context);
-  return { context, root, panel, carousel, section, copy, prCopy, prPreview, undo, copyStatus, copyMessage, status, rows, get persists() { return persists; } };
+  return { context, root, panel, carousel, exerciseKey, section, copy, prCopy, prPreviews, undo, copyStatus, copyMessage, status, rows, get persists() { return persists; } };
 }
 
 test("copy fills empty working weights while preserving entered reps and RIR", () => {
@@ -373,8 +382,8 @@ test("PR action uses the exercise's highest logged working weight and displays i
     personalBestLog(40, { entry_date: "2026-07-01", reps: 12 })
   ] });
   fixture.context.refreshCustomWorkoutGroupedCopyWeights(fixture.carousel);
-  assert.equal(fixture.prPreview.hidden, false);
-  assert.match(fixture.prPreview.textContent, /Personal records: Cable fly: 60 lb × 6 reps · 2026-08-01/);
+  assert.equal(fixture.prPreviews[0].hidden, false);
+  assert.equal(fixture.prPreviews[0].textContent, "PR: 60 lb × 6 reps · 2026-08-01");
   fixture.context.copyCustomWorkoutGroupedWeights(fixture.prCopy);
   assert.equal(fixture.rows[0].canonicalWeight.value, "60");
   assert.equal(fixture.rows[0].visibleWeight.value, "60");
@@ -427,8 +436,8 @@ test("PR ignores warm-ups, cardio, missing dates and invalid weights while prese
   const unavailable = workoutFixture([{ name: "Cable fly" }], { prLogs: invalidLogs });
   unavailable.context.refreshCustomWorkoutGroupedCopyWeights(unavailable.carousel);
   assert.equal(unavailable.prCopy.disabled, true);
-  assert.equal(unavailable.prPreview.hidden, true);
-  assert.equal(unavailable.prPreview.textContent, "");
+  assert.equal(unavailable.prPreviews[0].hidden, true);
+  assert.equal(unavailable.prPreviews[0].textContent, "");
   unavailable.context.copyCustomWorkoutGroupedWeights(unavailable.prCopy);
   assert.equal(unavailable.rows[0].canonicalWeight.value, "");
   assert.equal(unavailable.persists, 0);
@@ -445,6 +454,70 @@ test("PR lookup follows the edited exercise name across programs and does not mi
   fixture.rows[0].log.nameInput.value = "Cable reverse fly";
   fixture.context.copyCustomWorkoutGroupedWeights(fixture.prCopy);
   assert.equal(fixture.rows[0].canonicalWeight.value, "80");
+});
+
+test("each exercise title shows only its own PR once, regardless of the number or completion of rounds", () => {
+  const fixture = workoutFixture([{ name: "Cable fly" }, { name: "Squat" }, { name: "New exercise" }], { prLogs: [
+    personalBestLog(60, { reps: 6 }),
+    personalBestLog(40, { reps: 12, entry_date: "2026-09-19" }),
+    personalBestLog(100, { exercise_name: "Squat", reps: 4, entry_date: "2026-08-03" })
+  ] });
+  const extraRound = fixture.carousel.appendChild(element("section", { "data-custom-grouped-round": "3" }));
+  extraRound.appendChild(element("button", { "data-custom-grouped-copy-weights": "3", "data-custom-grouped-copy-source": "pr" }));
+  let lookups = 0;
+  const lookup = fixture.context.personalBestWeightLog;
+  fixture.context.personalBestWeightLog = (logs) => { lookups++; return lookup(logs); };
+  fixture.context.refreshCustomWorkoutGroupedCopyWeights(fixture.carousel);
+  assert.equal(lookups, 3, "Resolve history once per exercise, independently of round count");
+  assert.deepEqual(fixture.prPreviews.map((preview) => [preview.hidden, preview.textContent]), [
+    [false, "PR: 60 lb × 6 reps · 2026-08-01"],
+    [false, "PR: 100 lb × 4 reps · 2026-08-03"],
+    [true, ""]
+  ]);
+  assert.equal(fixture.section.querySelectorAll("[data-custom-grouped-pr-preview]").length, 0);
+  assert.equal(extraRound.querySelectorAll("[data-custom-grouped-pr-preview]").length, 0);
+  fixture.context.customWorkoutGroupedSetRowMarkup = () => "";
+  vm.runInContext(["customWorkoutGroupedRoundCount", "customWorkoutGroupedRoundCode", "customWorkoutGroupedSectionsMarkup"].map(functionSource).join("\n"), fixture.context);
+  const sections = fixture.context.customWorkoutGroupedSectionsMarkup(fixture.carousel);
+  assert.equal((sections.match(/data-custom-grouped-copy-source="pr"/g) || []).length, 2);
+  assert.doesNotMatch(sections, /data-custom-grouped-pr-preview/, "Generated working sections retain PR actions but do not repeat title records");
+  fixture.rows.forEach((row) => row.row.classList.add("is-complete"));
+  fixture.context.refreshCustomWorkoutGroupedCopyWeights(fixture.carousel);
+  assert.equal(fixture.prCopy.disabled, true);
+  assert.equal(fixture.prPreviews[0].hidden, false, "Completed rounds must not hide the exercise's record");
+  assert.equal(fixture.prPreviews[0].textContent, "PR: 60 lb × 6 reps · 2026-08-01");
+});
+
+test("renaming or clearing an exercise updates its title PR and removes stale records", () => {
+  const fixture = workoutFixture([{ name: "Cable fly" }, { name: "Squat" }], { prLogs: [
+    personalBestLog(50, { reps: 8 }),
+    personalBestLog(80, { exercise_name: "Cable reverse fly", reps: 5, entry_date: "2026-08-20" }),
+    personalBestLog(120, { exercise_name: "Squat", reps: 3 })
+  ] });
+  fixture.context.refreshCustomWorkoutGroupedCopyWeights(fixture.carousel);
+  const secondRecord = fixture.prPreviews[1].textContent;
+  fixture.rows[0].log.nameInput.value = "Cable reverse fly";
+  fixture.context.refreshCustomWorkoutGroupedCopyWeights(fixture.carousel);
+  assert.equal(fixture.prPreviews[0].textContent, "PR: 80 lb × 5 reps · 2026-08-20");
+  assert.equal(fixture.prPreviews[0].hidden, false);
+  assert.equal(fixture.prPreviews[1].textContent, secondRecord);
+  for (const name of ["Unknown exercise", ""]) {
+    fixture.rows[0].log.nameInput.value = name;
+    fixture.context.refreshCustomWorkoutGroupedCopyWeights(fixture.carousel);
+    assert.equal(fixture.prPreviews[0].hidden, true);
+    assert.equal(fixture.prPreviews[0].textContent, "");
+    assert.equal(fixture.prPreviews[1].textContent, secondRecord);
+  }
+});
+
+test("compact title PR labels omit redundant exercise names while copy feedback keeps them", () => {
+  const fixture = workoutFixture([{ name: "Cable fly", reps: "" }], { prLogs: [personalBestLog(60, { reps: 6 })] });
+  const best = fixture.context.personalBestWeightLog(fixture.context.trainingLogs);
+  assert.equal(fixture.context.customWorkoutGroupedPersonalBestLabel(fixture.rows[0].log, best, false), "60 lb × 6 reps · 2026-08-01");
+  assert.equal(fixture.context.customWorkoutGroupedPersonalBestLabel(fixture.rows[0].log, best), "Cable fly: 60 lb × 6 reps · 2026-08-01");
+  fixture.context.copyCustomWorkoutGroupedWeights(fixture.prCopy);
+  assert.match(fixture.copyMessage.textContent, /Cable fly: 60 lb × 6 reps · 2026-08-01/);
+  assert.deepEqual([fixture.rows[0].canonicalWeight.value, fixture.rows[0].canonicalReps.value], ["60", "6"]);
 });
 
 test("PR preserves entered weights, unsynchronized edits and completed rows", () => {
@@ -475,11 +548,11 @@ test("manual edits and logging also invalidate Undo for PR weights", () => {
   assert.deepEqual(fixture.rows.map((row) => row.canonicalWeight.value), ["60", "60"]);
 });
 
-test("PR preview omits missing or invalid reps while retaining exercise, weight and date", () => {
+test("PR preview omits missing or invalid reps while retaining weight and date under the exercise title", () => {
   for (const reps of [null, undefined, "", "invalid", 0, -1]) {
     const fixture = workoutFixture([{ name: "Cable fly" }], { prLogs: [personalBestLog(20, { reps })] });
     fixture.context.refreshCustomWorkoutGroupedCopyWeights(fixture.carousel);
-    assert.equal(fixture.prPreview.textContent, "Personal records: Cable fly: 20 lb · 2026-08-01");
+    assert.equal(fixture.prPreviews[0].textContent, "PR: 20 lb · 2026-08-01");
   }
 });
 

@@ -37,6 +37,14 @@ for (const format of ['single','superset','circuit']) {
     assert.match(key.innerHTML,/View demo for Shoulder press \(opens in a new tab\)/);
     assert.match(key.innerHTML,/target="_blank" rel="noopener noreferrer"/);
     assert.equal(key.dataset.count,'2');
+    const exerciseItems=[...key.innerHTML.matchAll(/<div class="custom-workout-grouped-exercise-key-item"[^>]*>([\s\S]*?)<\/div>/g)];
+    assert.equal(exerciseItems.length,2);
+    exerciseItems.forEach((item,index)=>{
+      assert.match(item[1],new RegExp(`data-custom-grouped-exercise-name="${index}"`));
+      assert.match(item[1],new RegExp(`<p[^>]*data-custom-grouped-pr-preview="${index}"[^>]*hidden`));
+      assert.equal((item[1].match(/data-custom-grouped-pr-preview=/g)||[]).length,1);
+      assert.match(item[1],/exercise-video-link/);
+    });
   });
 }
 test('uploaded library video takes precedence over the old assigned demo',()=>{
