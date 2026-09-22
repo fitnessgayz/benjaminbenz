@@ -23,7 +23,8 @@
           <div><p class="kicker">Set effort</p><h2 id="rir-help-title">What is RIR?</h2></div>
           <button class="rir-help-close" type="button" data-rir-help-close aria-label="Close RIR explanation">×</button>
         </header>
-        <p class="rir-help-definition" id="rir-help-definition"><strong>RIR means reps in reserve.</strong> It’s how many more reps you think you could have done with good form at the end of a set.</p>
+        <p class="rir-help-definition" id="rir-help-definition"><strong>RIR means reps in reserve.</strong> It’s how many more reps you could have done with good form when you finished your set.</p>
+        <p class="rir-help-definition"><strong>Why record it?</strong> It tells your coach how hard the set felt so they can adjust your weight and reps. A lower RIR means a harder set.</p>
         <div class="rir-help-scale" data-rir-help-scale aria-label="Reps in reserve guide"></div>
         <p class="rir-help-example">Finished <strong>8 reps</strong> and could do <strong>2 more</strong>? That’s <strong>2 RIR</strong>.</p>
         <div class="rir-help-next"><h3>What to do next</h3><ol data-rir-help-next></ol></div>
