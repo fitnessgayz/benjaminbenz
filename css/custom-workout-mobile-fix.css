@@ -2586,6 +2586,25 @@ body.dashboard-page.custom-workout-grouped-finish-open {
   display: none !important;
 }
 
+.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-exercise-key-item > .custom-workout-grouped-target {
+  grid-column: 2 / -1;
+  grid-row: 2;
+  min-width: 0;
+  margin: 0;
+  color: var(--grouped-ink);
+  font-size: .75rem;
+  font-weight: 700;
+  font-style: normal;
+  line-height: 1.4;
+  letter-spacing: 0;
+  text-transform: none;
+  overflow-wrap: anywhere;
+}
+
+.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-target + .custom-workout-grouped-pr-preview {
+  grid-row: 3;
+}
+
 .dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-copy-status {
   display: flex;
   min-width: 0;

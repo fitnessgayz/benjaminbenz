@@ -4796,23 +4796,16 @@ function handleClientProgressPhotoDelete() {
 }
 
 function setCountFromPrescription(prescription) {
-  const match = String(prescription || "").match(/(\d+)\s*(?:sets?|x)/i);
-  const count = match ? Number(match[1]) : 3;
+  const count = Number(WorkoutLayout.prescription(prescription).sets) || 3;
 
-  return Number.isFinite(count) && count > 0 ? Math.min(count, 8) : 3;
+  return Number.isFinite(count) && count > 0 ? Math.min(count, 99) : 3;
 }
 
 function repTargetsFromPrescription(prescription) {
-  const text = String(prescription || "");
-  const ladderMatch = text.match(/((?:\d+\s*,\s*)+\d+)\s*reps?/i);
-
-  if (ladderMatch) {
-    return ladderMatch[1].split(",").map((rep) => rep.trim()).filter(Boolean);
-  }
-
-  const match = text.match(/(\d+\s*-\s*\d+|\d+)\s*reps?/i);
-
-  return match ? [match[1].replace(/\s/g, "")] : [];
+  const target = WorkoutLayout.prescription(prescription).reps;
+  const targets = target.split(",").map((rep) => rep.trim().replace(/\s/g, "")).filter(Boolean);
+  // Timed holds and free-form instructions are displayed as targets, not reps.
+  return targets.length && targets.every((rep) => /^\d+(?:[-–—−]\d+)?(?:\/side)?$/.test(rep)) ? targets : [];
 }
 
 function repsFromPrescription(prescription) {
@@ -4988,6 +4981,7 @@ function exerciseLogFields(exercise, workoutTitle, options = {}) {
       data-exercise-code="${escapeHtml(exercise.code)}"
       data-exercise-name="${escapeHtml(exercise.name)}"
       data-exercise-rest="${escapeHtml(exercise.rest || "")}"
+      data-exercise-prescription="${escapeHtml(exercise.prescription || "")}"
       data-prescribed-sets="${setCount}"
       data-set-target-mode="${options.userManagedSets ? "visible" : "prescribed"}"
     >
@@ -8677,6 +8671,9 @@ function customWorkoutGroupedRoundCount(carousel) {
 }
 
 function normalizeCustomWorkoutGroupedRoundRows(logElements) {
+  // Assigned exercises can intentionally have different set counts in one group.
+  // Their existing rows (including saved or manually added sets) are authoritative.
+  if (logElements.some((logElement) => logElement.closest?.(".client-workout-panel-assigned"))) return false;
   const target = Math.max(
     1,
     ...logElements.map((logElement) => customWorkoutGroupedRows(logElement, workingSetType).length)
@@ -8710,8 +8707,21 @@ function customWorkoutGroupedRoundIsLogged(carousel, roundNumber) {
     .map((logElement) => customWorkoutGroupedRows(logElement, workingSetType)[roundNumber - 1])
     .filter(Boolean);
 
-  return rows.length > 0 && rows.length === customWorkoutGroupedLogElements(carousel).length &&
+  const assigned = Boolean(carousel?.closest?.(".client-workout-panel-assigned"));
+  return rows.length > 0 && (assigned || rows.length === customWorkoutGroupedLogElements(carousel).length) &&
     rows.every((row) => row.classList.contains("is-complete"));
+}
+
+function assignedWorkoutPrescriptionLabel(logElement) {
+  if (!logElement?.closest?.(".client-workout-panel-assigned")) return "";
+  const prescription = String(logElement.dataset.exercisePrescription || "").trim();
+  if (!prescription || prescription.toLowerCase() === "custom sets") return "";
+  const parsed = WorkoutLayout.prescription(prescription);
+  const sets = Number(parsed.sets) || 0;
+  const target = parsed.reps;
+  const numericReps = repTargetsFromPrescription(prescription).length > 0;
+  const targetLabel = target ? `${target}${numericReps ? " reps" : ""}` : "";
+  return `Target: ${sets ? `${sets} ${sets === 1 ? "set" : "sets"}${targetLabel ? " × " : ""}` : ""}${targetLabel || (sets ? "" : prescription)}`;
 }
 
 function customWorkoutGroupedExerciseKeyMarkup(carousel) {
@@ -8725,12 +8735,14 @@ function customWorkoutGroupedExerciseKeyMarkup(carousel) {
       ? logElement.querySelector(".exercise-video-link")?.getAttribute("href") || ""
       : "";
     const demo = exerciseName ? exerciseVideoMarkup({ name: exerciseName, video: originalVideo }, { iconOnly: true }) : "";
+    const target = assignedWorkoutPrescriptionLabel(logElement);
 
     return `
       <div class="custom-workout-grouped-exercise-key-item" role="listitem">
         <span class="custom-workout-grouped-exercise-number">${index + 1}</span>
         <strong data-custom-grouped-exercise-name="${index}">${escapeHtml(name)}</strong>
         ${demo}
+        ${target ? `<p class="custom-workout-grouped-target" data-custom-grouped-target="${index}">${escapeHtml(target)}</p>` : ""}
         <p class="custom-workout-grouped-pr-preview" data-custom-grouped-pr-preview="${index}" hidden></p>
       </div>
     `;
@@ -12106,9 +12118,12 @@ function restoreStrengthSetRows(logElement, selectedLogs) {
     0
   );
   const specs = savedStrengthSetSpecs(selectedLogs, workingMinimum);
+  const repTargets = repTargetsFromPrescription(logElement.dataset.exercisePrescription);
 
   rows.innerHTML = specs
-    .map(({ setNumber, setType }) => setRowMarkup(setNumber, defaultReps, setType))
+    .map(({ setNumber, setType }) => setRowMarkup(setNumber,
+      setType === workingSetType ? repTargets[setNumber - 1] || repTargets[0] || defaultReps : defaultReps,
+      setType))
     .join("");
 }
 

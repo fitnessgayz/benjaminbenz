@@ -14,6 +14,38 @@ test('prescriptions retain ranges, ladders, unilateral targets and timed holds',
   assert.equal(layout.label(layout.compose('3', '45 sec')), '3 × 45 sec');
 });
 
+test('assigned prescriptions preserve explicit set and round counts across multiplication formats', () => {
+  for (const [source, sets, reps] of [
+    ['5×6–8', '5', '6–8'], ['4 × 6–8', '4', '6–8'],
+    ['5x6-8', '5', '6-8'], ['5 X 6—8', '5', '6—8'],
+    ['6–8 reps x 5 sets', '5', '6–8'], ['4 sets x 6–8', '4', '6–8'],
+    ['3 rounds x 12 reps', '3', '12'], ['12 reps × 4 rounds', '4', '12'],
+    ['6–8 x 5 sets', '5', '6–8'], ['12 x 3 sets', '3', '12'],
+    ['2 sets of 8−12 reps', '2', '8−12'], ['12, 10, 8 reps x 3 rounds', '3', '12, 10, 8']
+  ]) {
+    assert.deepEqual(layout.prescription(source), { sets, reps, original: source }, source);
+  }
+});
+
+test('timed, unilateral, and AMRAP prescriptions retain their target meaning', () => {
+  for (const [source, sets, reps] of [
+    ['4 × 6–8/side', '4', '6–8/side'], ['3 sets x 10 per side', '3', '10/side'],
+    ['10 reps per side × 3 sets', '3', '10/side'], ['10 / side reps x 3 sets', '3', '10/side'],
+    ['3 × 30—45 seconds', '3', '30—45 seconds'], ['30−45 sec x 4 rounds', '4', '30−45 sec'],
+    ['3 sets x 45 sec per side', '3', '45 sec/side'], ['2 min x 3 sets', '3', '2 min'],
+    ['3 × AMRAP', '3', 'AMRAP'], ['AMRAP x 3 sets', '3', 'AMRAP'], ['3 sets x AMRAP', '3', 'AMRAP'],
+    ['3 sets x max reps', '3', 'max reps']
+  ]) {
+    assert.deepEqual(layout.prescription(source), { sets, reps, original: source }, source);
+  }
+  assert.deepEqual(layout.prescription('AMRAP'), { sets: '', reps: '', original: 'AMRAP' });
+  assert.deepEqual(layout.prescription('As comfortable'), { sets: '', reps: '', original: 'As comfortable' });
+  assert.deepEqual(layout.prescription(null), { sets: '', reps: '', original: '' });
+  assert.deepEqual(layout.prescription('5 sets'), { sets: '5', reps: '', original: '5 sets' });
+  assert.equal(layout.compose('5', '6–8'), '6–8 reps x 5 sets');
+  assert.equal(layout.compose('3', '45 sec'), '45 sec x 3 sets');
+});
+
 test('personal plans support reorder, deletion, substitution and invalidate on coach changes', () => {
   const workouts = [{ title: 'A' }, { title: 'B' }, { title: 'C' }];
   const source = JSON.stringify(workouts);

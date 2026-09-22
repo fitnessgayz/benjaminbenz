@@ -2,13 +2,21 @@
 (function (root) {
   function prescription(value) {
     const text = String(value || "").trim();
-    const sets = text.match(/(\d+)\s*sets?\b/i);
+    const sets = text.match(/\b(\d+)\s*(?:sets?|rounds?)\b/i);
     const product = text.match(/^(\d+)\s*[x×]\s*(.+)$/i);
-    const reps = text.match(/([\d,\s–-]+(?:\s*\/\s*side)?)\s*reps?(?:\s*(\/side|per side))?/i);
-    const timed = text.match(/(\d+(?:\s*[-–]\s*\d+)?\s*(?:sec(?:onds?)?|min(?:utes?)?)(?:\s*\/side)?)/i);
+    let target = product?.[2] || "";
+    if (sets) {
+      const before = text.slice(0, sets.index).trim().replace(/\s*[x×]\s*$/i, "").trim();
+      const after = text.slice(sets.index + sets[0].length).trim().replace(/^(?:[x×]\s*|of\s+)/i, "").trim();
+      target = [before, after].filter(Boolean).join(" ");
+    }
+    const normalized = text.replace(/\s*(?:\/\s*side|per\s+side)\b/gi, "/side");
+    const reps = normalized.match(/(\d[\d,\s–—−-]*(?:\/side)?)\s*reps?(\/side)?/i);
+    const timed = normalized.match(/(\d+(?:\s*[-–—−]\s*\d+)?\s*(?:sec(?:onds?)?|min(?:utes?)?)(?:\/side)?)/i);
     return {
       sets: sets?.[1] || product?.[1] || "",
-      reps: reps ? `${reps[1].trim()}${reps[2] ? "/side" : ""}` : timed?.[1] || product?.[2] || "",
+      reps: reps ? `${reps[1].trim()}${reps[2] && !reps[1].includes("/side") ? "/side" : ""}`
+        : timed?.[1] || target.replace(/\s*(?:\/\s*side|per\s+side)\b/gi, "/side"),
       original: text
     };
   }

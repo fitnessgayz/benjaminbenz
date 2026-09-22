@@ -22,7 +22,7 @@ function fixture(entries=[]) {
     exerciseLibraryEntries:entries,customWorkoutGroupedLogElements:carousel=>carousel.logs,
     exerciseNameInputForLog:log=>log.input,
     escapeHtml:value=>String(value??'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;')});
-  vm.runInContext(['youtubeExerciseSearchUrl','approvedExerciseForName','uploadedExerciseDemoUrl','exerciseVideoUrl','exerciseVideoMarkup','customWorkoutGroupedExerciseKeyMarkup','renderCustomWorkoutGroupedExerciseKey'].map(fn).join('\n'),ctx);
+  vm.runInContext(['youtubeExerciseSearchUrl','approvedExerciseForName','uploadedExerciseDemoUrl','exerciseVideoUrl','exerciseVideoMarkup','assignedWorkoutPrescriptionLabel','customWorkoutGroupedExerciseKeyMarkup','renderCustomWorkoutGroupedExerciseKey'].map(fn).join('\n'),ctx);
   return ctx;
 }
 for (const format of ['single','superset','circuit']) {
