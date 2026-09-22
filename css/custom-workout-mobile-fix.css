@@ -2460,6 +2460,91 @@ body.dashboard-page.custom-workout-grouped-finish-open {
   font-weight: 600;
 }
 
+.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-pr-action {
+  display: inline-flex;
+  flex: 0 0 auto;
+  min-width: 0;
+  max-width: 100%;
+  align-items: center;
+  gap: 0;
+}
+
+.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-pr-action [data-pr-help] {
+  display: inline-flex;
+  flex: 0 0 32px;
+  width: 32px !important;
+  inline-size: 32px !important;
+  min-width: 32px !important;
+  min-inline-size: 32px !important;
+  max-width: 32px !important;
+  max-inline-size: 32px !important;
+  min-height: 44px;
+  margin: 0;
+  padding: 8px;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 8px !important;
+  background: transparent;
+  color: var(--grouped-muted);
+  box-shadow: none;
+  font: inherit;
+  font-size: .75rem !important;
+  line-height: 1;
+  overflow: visible !important;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-pr-action [data-pr-help] svg {
+  display: block;
+  flex: 0 0 16px;
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+}
+
+.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-pr-action [data-pr-help]:focus-visible {
+  outline: 3px solid var(--grouped-blue);
+  outline-offset: 1px;
+}
+
+.dashboard-page .pr-help-tooltip {
+  position: fixed;
+  z-index: 150;
+  width: max-content;
+  max-width: calc(100vw - 16px);
+  margin: 0;
+  padding: 8px 11px;
+  border: 1px solid #353a31;
+  border-radius: 9px;
+  background: #171a17;
+  color: #fff;
+  box-shadow: 0 4px 16px rgb(17 20 17 / 16%);
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: .75rem;
+  font-style: normal;
+  font-weight: 500;
+  letter-spacing: 0;
+  line-height: 1.35;
+  text-align: center;
+  text-transform: none;
+  overflow-wrap: anywhere;
+  pointer-events: auto;
+}
+
+.dashboard-page .pr-help-tooltip[hidden] {
+  display: none !important;
+}
+
+@media (max-width: 360px) {
+  .dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-copy-actions .custom-workout-grouped-copy-weights {
+    padding-inline: 6px;
+  }
+}
+
 .dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-section-heading .custom-workout-grouped-copy-weights span {
   min-width: 0;
   color: inherit;

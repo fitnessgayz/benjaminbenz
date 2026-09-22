@@ -8992,8 +8992,13 @@ function customWorkoutGroupedSectionsMarkup(carousel) {
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h4"/></svg>
             Copy last ${workoutSetUnit(carousel).toLowerCase()}
           </button>` : ""}
-          <button class="custom-workout-grouped-copy-weights" type="button" data-custom-grouped-copy-weights="${roundNumber}" data-custom-grouped-copy-source="pr" ${logged ? "disabled" : ""}
-            aria-label="Copy personal record weights and reps into empty fields in ${workoutSetUnit(carousel).toLowerCase()} ${roundNumber}">Use PR</button>
+          <div class="custom-workout-grouped-pr-action">
+            <button class="custom-workout-grouped-copy-weights" type="button" data-custom-grouped-copy-weights="${roundNumber}" data-custom-grouped-copy-source="pr" ${logged ? "disabled" : ""}
+              aria-label="Copy personal record weights and reps into empty fields in ${workoutSetUnit(carousel).toLowerCase()} ${roundNumber}">Copy PR</button>
+            <button class="custom-workout-grouped-pr-info" type="button" data-pr-help aria-label="What does PR mean?" aria-expanded="false">
+              <svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="8"/><path d="M10 9v5M10 5.5v1"/></svg>
+            </button>
+          </div>
           </div>
         </header>
         <div class="custom-workout-grouped-copy-status" data-custom-grouped-copy-status role="status" aria-live="polite" hidden>
