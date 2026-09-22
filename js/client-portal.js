@@ -8984,10 +8984,10 @@ function customWorkoutGroupedSectionsMarkup(carousel) {
           ${roundNumber > 1 ? `<button class="custom-workout-grouped-copy-weights" type="button" data-custom-grouped-copy-weights="${roundNumber}" ${logged ? "disabled" : ""}
             aria-label="Copy weights and reps from ${workoutSetUnit(carousel).toLowerCase()} ${roundNumber - 1} into empty fields in ${workoutSetUnit(carousel).toLowerCase()} ${roundNumber}">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h4"/></svg>
-            Copy previous ${workoutSetUnit(carousel).toLowerCase()}
+            Copy last ${workoutSetUnit(carousel).toLowerCase()}
           </button>` : ""}
           <button class="custom-workout-grouped-copy-weights" type="button" data-custom-grouped-copy-weights="${roundNumber}" data-custom-grouped-copy-source="pr" ${logged ? "disabled" : ""}
-            aria-label="Copy personal record weights and reps into empty fields in ${workoutSetUnit(carousel).toLowerCase()} ${roundNumber}">Use PR weight &amp; reps</button>
+            aria-label="Copy personal record weights and reps into empty fields in ${workoutSetUnit(carousel).toLowerCase()} ${roundNumber}">Use PR</button>
           </div>
         </header>
         <p class="custom-workout-grouped-pr-preview" data-custom-grouped-pr-preview hidden></p>

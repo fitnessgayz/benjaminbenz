@@ -47,7 +47,7 @@ function field(value = "", name = "") {
   };
 }
 
-test("first working set or round omits Copy previous, retains PR, and later rounds retain copying", () => {
+test("first working set or round omits Copy last, retains PR, and later rounds retain copying", () => {
   for (const format of ["single", "superset", "circuit"]) {
     const logs = [{ name: "Squat", warmups: [{}], working: [{}, {}] }];
     const context = evaluate(["workoutSetUnit", "customWorkoutGroupedSectionsMarkup"], {
@@ -65,9 +65,9 @@ test("first working set or round omits Copy previous, retains PR, and later roun
     const second = html.match(/<section[^>]*data-custom-grouped-round="2"[\s\S]*?<\/section>/)?.[0];
     assert.ok(first);
     assert.ok(second);
-    assert.doesNotMatch(first, /Copy previous|No previous/);
+    assert.doesNotMatch(first, /Copy last|Copy previous|No previous/);
     assert.match(first, /data-custom-grouped-copy-source="pr"/);
-    assert.match(second, new RegExp(`Copy previous ${format === "single" ? "set" : "round"}`));
+    assert.match(second, new RegExp(`Copy last ${format === "single" ? "set" : "round"}`));
     assert.match(second, /data-custom-grouped-copy-weights="2"/);
     const warmup = html.match(/<section[^>]*data-kind="warmup"[\s\S]*?<\/section>/)?.[0];
     assert.ok(warmup);

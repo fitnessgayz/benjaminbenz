@@ -2266,7 +2266,7 @@ body.dashboard-page.custom-workout-grouped-finish-open {
   outline-offset: 2px;
 }
 
-/* Keep both copy actions in the round header and wrap at narrow widths. */
+/* Keep copy actions together; only the heading may wrap at narrow widths. */
 .dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-section-heading:has(.custom-workout-grouped-copy-weights) {
   flex-wrap: wrap;
   gap: 6px;
@@ -2275,13 +2275,14 @@ body.dashboard-page.custom-workout-grouped-finish-open {
 
 .dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-copy-actions {
   display: flex;
-  flex: 1 1 220px;
-  flex-wrap: wrap;
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
   min-width: 0;
   max-width: 100%;
+  margin-left: auto;
   align-items: center;
   justify-content: flex-end;
-  gap: 6px;
+  gap: 5px;
 }
 
 .dashboard-page [data-custom-workout-grouped="true"] :is(.custom-workout-grouped-copy-weights, .custom-workout-grouped-undo-weights) {
@@ -2317,6 +2318,13 @@ body.dashboard-page.custom-workout-grouped-finish-open {
   touch-action: manipulation;
 }
 
+.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-copy-actions .custom-workout-grouped-copy-weights {
+  flex: 0 0 auto;
+  padding-inline: 8px;
+  gap: 4px;
+  white-space: nowrap;
+}
+
 .dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-copy-weights:where(:not([data-custom-grouped-copy-source="pr"])) {
   background: var(--grouped-lime);
 }
@@ -2332,14 +2340,15 @@ body.dashboard-page.custom-workout-grouped-finish-open {
   color: inherit;
   font: inherit;
   letter-spacing: inherit;
-  overflow-wrap: anywhere;
+  overflow-wrap: normal;
+  white-space: nowrap;
   text-align: inherit;
 }
 
 .dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-copy-weights svg {
-  flex: 0 0 16px;
-  width: 16px;
-  height: 16px;
+  flex: 0 0 14px;
+  width: 14px;
+  height: 14px;
   fill: none;
   stroke: currentColor;
   stroke-linecap: round;
