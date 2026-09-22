@@ -200,6 +200,9 @@ async function insertCopiedProgram(payload) {
 }
 
 function sendToCoachLogin() {
+  const workspace = document.getElementById("coach-admin-workspace");
+  if (workspace) workspace.hidden = true;
+  syncCoachAdminMobileNavigationMount();
   window.location.href = coachLoginUrl;
 }
 
@@ -957,6 +960,42 @@ function isCoachAdminSidebarMobile() {
   return window.matchMedia("(max-width: 900px)").matches;
 }
 
+function syncCoachAdminMobileNavigationMount() {
+  const workspace = document.getElementById("coach-admin-workspace");
+  const sidebar = document.querySelector(".coach-admin-sidebar");
+  if (!workspace || !sidebar) return;
+
+  if (!syncCoachAdminMobileNavigationMount.anchor) {
+    const anchor = document.createComment("coach-mobile-dock");
+    sidebar.before(anchor);
+    syncCoachAdminMobileNavigationMount.anchor = anchor;
+  }
+
+  const anchor = syncCoachAdminMobileNavigationMount.anchor;
+  const useViewportDock = isCoachAdminSidebarMobile() && !workspace.hidden;
+  const parent = useViewportDock ? document.body : anchor.parentNode;
+  if (sidebar.parentNode === parent) return;
+
+  const focusedControl = document.activeElement;
+  const hadFocus = sidebar.contains(focusedControl);
+  const navigation = sidebar.querySelector(".admin-tabs");
+  const scrollLeft = navigation?.scrollLeft || 0;
+  const scrollTop = navigation?.scrollTop || 0;
+
+  // Keep Safari's fixed dock layer outside the page's nested overflow container.
+  // Reuse the node so tab listeners and the notification badge stay attached.
+  if (useViewportDock) document.body.append(sidebar);
+  else anchor.after(sidebar);
+
+  if (navigation) {
+    navigation.scrollLeft = scrollLeft;
+    navigation.scrollTop = scrollTop;
+  }
+  if (hadFocus && !workspace.hidden && document.activeElement !== focusedControl) {
+    focusedControl.focus({ preventScroll: true });
+  }
+}
+
 function setCoachAdminSidebarCollapsed(collapsed, options = {}) {
   const workspace = document.getElementById("coach-admin-workspace");
   const sidebar = document.querySelector(".coach-admin-sidebar");
@@ -1034,6 +1073,7 @@ function handleCoachAdminSidebar() {
     : storedPreference === "true";
 
   setCoachAdminSidebarCollapsed(collapsed);
+  syncCoachAdminMobileNavigationMount();
 
   toggle.addEventListener("click", () => {
     const nextCollapsed = !workspace.classList.contains("is-sidebar-collapsed");
@@ -1088,6 +1128,7 @@ function handleCoachAdminSidebar() {
   });
 
   const handleMobileChange = (event) => {
+    syncCoachAdminMobileNavigationMount();
     if (event.matches) {
       setCoachAdminSidebarCollapsed(true);
       return;
@@ -5235,6 +5276,7 @@ async function showAdminWorkspace(user) {
 
   if (workspace) {
     workspace.hidden = false;
+    syncCoachAdminMobileNavigationMount();
   }
 
   if (signOutButton) {
@@ -5269,7 +5311,8 @@ async function initializeCoachNotifications(user) {
     supabaseClient: coachSupabase,
     user,
     role: "coach",
-    root
+    root,
+    unreadBadges: document.querySelectorAll("[data-web-notification-unread]")
   });
 
   try {
