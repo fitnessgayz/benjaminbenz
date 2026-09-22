@@ -5,9 +5,11 @@ create trigger test_mood_notification after insert or update of mood_checkin_sub
 on mood_notification_test for each row execute function fwb_private.mood_checkin_notification();
 
 do $$
+<<mood_test>>
 declare
   client_id uuid;
   client_email text;
+  client_label text;
   progress_id uuid := gen_random_uuid();
   dedupe text;
   actual_count integer;
@@ -19,6 +21,12 @@ begin
    where lower(u.email) <> 'benjaminbenz.fit@gmail.com' and u.deleted_at is null
    limit 1;
   assert client_id is not null, 'Need one existing client identity for rollback test';
+  select left(coalesce(nullif(btrim(regexp_replace(p.client_name, '\s+', ' ', 'g')), ''),
+                       nullif(split_part(lower(btrim(mood_test.client_email)), '@', 1), ''), 'Client'), 100)
+    into client_label from public.client_programs p
+   where lower(btrim(p.client_email)) = lower(btrim(mood_test.client_email))
+   order by (p.client_archived is not true) desc, (p.active is not false) desc,
+            p.updated_at desc nulls last, p.created_at desc nulls last, p.id limit 1;
   perform set_config('request.jwt.claims', jsonb_build_object('sub', client_id, 'email', client_email, 'role', 'authenticated')::text, true);
   dedupe := 'coach-mood:' || md5(lower(btrim(client_email))) || ':2099-12-29';
   assert not exists(select 1 from public.client_notifications where web_dedupe_key = dedupe), 'Test date must be unused';
@@ -29,7 +37,7 @@ begin
 
   update mood_notification_test set goal_note='Mood: 4/5 · Energy: 3/5', mood_checkin_submitted_at=clock_timestamp() where id=progress_id;
   select count(*) into actual_count from public.client_notifications n where n.web_dedupe_key=dedupe
-    and n.title='Mood check-in completed' and n.web_category='check_in_submitted'
+    and n.title=client_label || ' completed a mood check-in' and n.web_category='check_in_submitted'
     and n.web_url like '/coach-admin.html?tab=progress&client=%'
     and n.body not like '%4/5%';
   assert actual_count=1, 'Completion must create one private coach alert with a client link';

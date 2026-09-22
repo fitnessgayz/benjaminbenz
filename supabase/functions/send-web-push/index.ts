@@ -216,6 +216,17 @@ function preferenceColumn(notification: NotificationRow) {
 }
 
 function pushCopy(notification: NotificationRow) {
+  if (notification.recipient_role === "coach" && notification.kind === "check_in_submitted") {
+    const safeTitle = String(notification.title || "")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 160);
+
+    return {
+      title: safeTitle || "Client check-in submitted",
+      body: "Open Coach Admin to review the private check-in."
+    };
+  }
   if (notification.recipient_role === "coach" && notification.kind === "workout_completed") {
     const safeTitle = String(notification.title || "")
       .replace(/\s+/g, " ")

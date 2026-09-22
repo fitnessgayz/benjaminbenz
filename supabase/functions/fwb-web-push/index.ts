@@ -81,6 +81,9 @@ function safeNotificationText(value: unknown, maxLength: number) {
 }
 
 function safePushTitle(category: string, notification: Record<string, unknown> = {}) {
+  if (category === "check_in_submitted") {
+    return safeNotificationText(notification.title, 160) || "Client check-in submitted";
+  }
   if (category === "workout_completed") {
     return safeNotificationText(notification.title, 160) || "Client workout completed";
   }
@@ -102,6 +105,9 @@ function safePushTitle(category: string, notification: Record<string, unknown> =
 }
 
 function safePushBody(category: string, notification: Record<string, unknown> = {}) {
+  if (category === "check_in_submitted") {
+    return "Open Coach Admin to review the private check-in.";
+  }
   if (category === "workout_completed") {
     return safeNotificationText(notification.body, 240) ||
       "Open Coach Admin to review the completed workout log.";
