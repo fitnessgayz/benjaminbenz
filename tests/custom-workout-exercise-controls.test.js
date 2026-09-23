@@ -71,22 +71,98 @@ test("draft serialization records intentional zero without dropping title, date 
 test("both exercise counters and remove controls follow canonical cards, including zero", () => {
   const counters = [{ textContent: "9" }, { textContent: "9" }];
   const removers = [{ disabled: false }, { disabled: false }];
+  const adders = [0, 1].map(() => ({ setAttribute(_name, value) { this.label = value; } }));
   let cards = [{}, {}, {}];
   const panel = {
+    dataset: { customWorkoutFormat: "superset" },
     classList: { contains: (value) => value === "client-workout-panel-custom" },
-    querySelectorAll: (selector) => selector === "[data-custom-exercise-card]" ? cards : selector === "[data-custom-exercise-count]" ? counters : removers
+    querySelectorAll: (selector) => selector === "[data-custom-exercise-card]" ? cards : selector === "[data-custom-exercise-count]" ? counters : selector === "[data-pick-custom-exercise]" ? adders : removers
   };
-  const context = evaluate(["syncCustomWorkoutExerciseControls"]);
+  const context = evaluate(["normalizeCustomWorkoutFormat", "customWorkoutExerciseAddConfig", "syncCustomWorkoutExerciseControls"], {
+    customWorkoutFormats: { single: {}, superset: {}, circuit: {} }
+  });
   context.syncCustomWorkoutExerciseControls(panel);
   assert.deepEqual(counters.map((counter) => counter.textContent), ["3", "3"]);
+  assert.deepEqual(adders.map((button) => button.label), ["Add superset (2 exercises)", "Add superset (2 exercises)"]);
   cards = [];
   context.syncCustomWorkoutExerciseControls(panel);
   assert.deepEqual(counters.map((counter) => counter.textContent), ["0", "0"]);
   assert.deepEqual(removers.map((button) => button.disabled), [true, true]);
   cards = [{}];
+  panel.dataset.customWorkoutFormat = "circuit";
   context.syncCustomWorkoutExerciseControls(panel);
   assert.deepEqual(removers.map((button) => button.disabled), [false, false]);
+  assert.deepEqual(adders.map((button) => button.label), ["Add circuit (3 exercises)", "Add circuit (3 exercises)"]);
 });
+
+for (const [format, sizes, addedCount] of [
+  ["single", [1, 1, 1, 1], 1], ["superset", [2, 2], 2], ["circuit", [3], 3],
+  ["superset", [2, 1], 2], ["circuit", [2], 3], ["superset", [], 2], ["circuit", [], 3]
+]) {
+  test(`${format} picker adds ${addedCount} fresh exercises after groups [${sizes}], preserving existing entries`, () => {
+    let sequence = 0;
+    const calls = [];
+    function card(exercise, options = {}) {
+      const date = { value: "" };
+      const log = { dataset: { exerciseCode: exercise.code }, date, querySelector: () => date };
+      return { exercise, options, log, dataset: { customWorkoutGroup: String(exercise.group) }, querySelector: () => log };
+    }
+    function carousel(group) {
+      const list = {
+        children: [],
+        insertAdjacentHTML(_position, markup) {
+          const spec = JSON.parse(markup);
+          this.children.push(card(spec.exercise, spec.options));
+        },
+        get lastElementChild() { return this.children.at(-1); }
+      };
+      return { dataset: { customWorkoutGroup: String(group) }, list, querySelector: () => list };
+    }
+    const carousels = sizes.map((size, group) => {
+      const item = carousel(group);
+      // Older superset drafts can display separate pairs while every card still has group 0.
+      item.list.children = Array.from({ length: size }, () => card({ code: `CW0${++sequence}`, name: "Existing", group: 0, weight: "35.5", reps: "8", notes: "Keep this", complete: true }));
+      return item;
+    });
+    const allCards = () => carousels.flatMap((item) => item.list.children);
+    const before = allCards().map((item) => item.exercise);
+    const stack = {
+      insertAdjacentHTML(_position, group) { carousels.push(carousel(Number(group))); },
+      get lastElementChild() { return carousels.at(-1); }
+    };
+    const panel = {
+      dataset: { customWorkoutFormat: format, customWorkoutTitle: "Current workout" },
+      querySelector: (selector) => selector === "[data-workout-date]" ? { value: "2026-09-23" } : stack,
+      querySelectorAll: (selector) => selector === "[data-exercise-log]" ? allCards().map((item) => item.log) : allCards()
+    };
+    const context = evaluate(["normalizeCustomWorkoutFormat", "customWorkoutExerciseAddConfig", "customExerciseCode", "nextCustomExerciseCode", "addCustomWorkoutPickedExercise"], {
+      customWorkoutFormats: { single: {}, superset: {}, circuit: {} },
+      customWorkoutTitle: "Custom workout", todayDate: () => "2026-09-24",
+      trainingLogs: [{ workout_title: "Current workout", entry_date: "2026-09-23", exercise_code: "CW20" }],
+      customWorkoutCarousels: () => carousels,
+      customWorkoutCarouselCards: (item) => item?.list.children || [],
+      customWorkoutCarouselGroupMarkup: (_format, _exercises, group) => String(group),
+      customWorkoutCardMarkup: (exercise, _title, index, options) => JSON.stringify({ exercise, options: { ...options, index } }),
+      updateExerciseLogField: (log) => calls.push(log.dataset.exerciseCode),
+      syncCustomWorkoutCarousel: (_panel, options) => calls.push(options.focusCard),
+      persistCustomWorkoutDraftFromPanel: () => calls.push("persist")
+    });
+    const selected = context.addCustomWorkoutPickedExercise(panel, "  Cable Row  ");
+    const added = allCards().slice(before.length);
+    assert.equal(added.length, addedCount);
+    assert.equal(selected, added[0]);
+    assert.deepEqual(added.map((item) => item.exercise.name), ["Cable Row", ...Array(addedCount - 1).fill("")]);
+    assert.deepEqual(added.map((item) => item.exercise.code), Array.from({ length: addedCount }, (_, i) => `CW${21 + i}`));
+    assert.deepEqual(added.map((item) => item.log.date.value), Array(addedCount).fill("2026-09-23"));
+    assert.deepEqual(allCards().slice(0, before.length).map((item) => item.exercise), before);
+    assert.deepEqual(calls.slice(-2), [selected, "persist"], "Render once after inserting the entire group, then persist");
+    if (format !== "single") {
+      assert.deepEqual(carousels.map((item) => item.list.children.length), [...sizes, addedCount]);
+      carousels.forEach((item, group) => assert(item.list.children.every((entry) => entry.dataset.customWorkoutGroup === String(group))));
+      assert.deepEqual(added.map((item) => item.options.groupPosition), Array.from({ length: addedCount }, (_, i) => i));
+    }
+  });
+}
 
 test("new exercise identities skip removed saved rows and retained draft numbers", () => {
   const panel = {
@@ -153,19 +229,20 @@ test("exercise editor targets the chosen card's first editable working weight wi
   assert.deepEqual(unchanged, { weight: "35.5", reps: "8", notes: "Keep this", complete: true });
 });
 
-function dialogFixture() {
+function dialogFixture(format = "single") {
   const handlers = {};
   const calls = { add: [], remove: [], focus: 0 };
   const input = { value: "" };
   const cards = [0, 1, 2].map((index) => ({ querySelector: () => ({ index }) }));
-  const panel = { isConnected: true, querySelectorAll: () => cards, contains: (card) => cards.includes(card) };
+  const panel = { dataset: { customWorkoutFormat: format }, isConnected: true, querySelectorAll: () => cards, contains: (card) => cards.includes(card) };
   const trigger = { isConnected: true, disabled: false, closest: () => panel, focus: () => calls.focus++ };
   const dialog = {
     setAttribute() {}, addEventListener: (name, handler) => { handlers[name] = handler; },
     querySelector: () => input, showModal() {}, remove() {},
     close: () => handlers.close()
   };
-  const context = evaluate(["openCustomWorkoutExerciseDialog"], {
+  const context = evaluate(["normalizeCustomWorkoutFormat", "customWorkoutExerciseAddConfig", "openCustomWorkoutExerciseDialog"], {
+    customWorkoutFormats: { single: {}, superset: {}, circuit: {} },
     document: { querySelector: () => null, createElement: () => dialog, body: { append() {} } },
     escapeHtml: String, currentExerciseLabel: (log) => `Exercise ${log.index + 1}`,
     renderCustomExerciseSuggestions() {},
@@ -173,8 +250,18 @@ function dialogFixture() {
     addCustomWorkoutPickedExercise: (_panel, name) => { calls.add.push(name); return null; }
   });
   const click = (selector, target = {}) => handlers.click({ stopPropagation() {}, target: { closest: (candidate) => candidate === selector ? target : null } });
-  return { context, handlers, calls, trigger, input, click };
+  return { context, handlers, calls, trigger, input, click, dialog };
 }
+
+test("grouped pickers explain their blank companions and full group count before adding", () => {
+  for (const [format, label, count] of [["superset", "Add superset", 2], ["circuit", "Add circuit", 3]]) {
+    const fixture = dialogFixture(format);
+    fixture.context.openCustomWorkoutExerciseDialog(fixture.trigger);
+    assert(fixture.dialog.innerHTML.includes(`${label} · ${count} exercises`));
+    assert(fixture.dialog.innerHTML.includes("Choose the first exercise."));
+    assert.deepEqual(fixture.calls.add, []);
+  }
+});
 
 test("closing exercise pickers changes nothing and restores the triggering control", () => {
   for (const mode of ["add", "remove"]) {

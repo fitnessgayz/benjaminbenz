@@ -579,6 +579,9 @@
 .dashboard-page .custom-workout-exercise-dialog {
   width: min(440px, calc(100vw - 32px));
   max-width: calc(100vw - 32px);
+  height: fit-content;
+  block-size: fit-content;
+  min-height: 0;
   max-height: calc(100vh - 32px);
   max-height: calc(100dvh - 32px);
   min-width: 0;
@@ -595,8 +598,7 @@
 }
 
 .dashboard-page .custom-workout-exercise-dialog[open] {
-  display: grid;
-  gap: 16px;
+  display: block;
 }
 
 .dashboard-page .custom-workout-exercise-dialog::backdrop {
@@ -605,7 +607,11 @@
 
 .dashboard-page .custom-workout-exercise-dialog > header {
   display: flex;
+  height: auto;
+  min-height: 44px;
   min-width: 0;
+  margin: 0 0 16px;
+  padding: 0;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
@@ -621,12 +627,26 @@
   font-size: clamp(1.3rem, 5vw, 1.65rem);
 }
 
+.dashboard-page .custom-workout-exercise-dialog > header :is(h2, h3) {
+  flex: 1 1 auto;
+}
+
+.dashboard-page .custom-workout-exercise-dialog > p {
+  margin-bottom: 14px;
+  font-size: .9rem;
+  line-height: 1.5;
+}
+
 .dashboard-page .custom-workout-exercise-dialog > header button {
   display: grid;
-  flex: 0 0 44px;
-  width: 44px;
-  min-width: 44px;
+  flex: 0 0 44px !important;
+  width: 44px !important;
+  inline-size: 44px !important;
+  min-width: 44px !important;
+  max-width: 44px !important;
+  height: 44px;
   min-height: 44px;
+  max-height: 44px;
   padding: 0;
   place-items: center;
   border: 1px solid #d7d9d2;
@@ -634,21 +654,51 @@
   background: #fff;
   color: #111411;
   font: inherit;
-  font-size: 1.4rem;
+  font-size: 1.4rem !important;
+  line-height: 1;
   cursor: pointer;
 }
 
-.dashboard-page .custom-workout-exercise-dialog form,
-.dashboard-page .custom-workout-exercise-dialog label,
+.dashboard-page .custom-workout-exercise-dialog form {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+  width: 100%;
+  height: auto;
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+}
+
 .dashboard-page .custom-workout-exercise-dialog .custom-workout-name-editor {
   display: grid;
+  grid-auto-rows: max-content;
+  align-content: start;
+  align-items: start;
+  flex: 0 0 auto;
+  height: auto;
   min-width: 0;
-  gap: 10px;
+  min-height: 0;
+  gap: 6px !important;
+}
+
+.dashboard-page .custom-workout-exercise-dialog label {
+  display: block;
+  height: auto;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  font-size: .9rem;
+  font-weight: 600;
+  line-height: 1.4;
 }
 
 .dashboard-page .custom-workout-exercise-dialog input[type="text"] {
   width: 100%;
   min-width: 0;
+  height: 48px;
   min-height: 48px;
   margin: 0;
   padding: 12px;
@@ -657,7 +707,24 @@
   background: #f8f8f3;
   color: #111411;
   font: inherit;
-  font-size: 16px;
+  font-size: 16px !important;
+  line-height: 1.4;
+}
+
+.dashboard-page .custom-workout-exercise-dialog form > button[type="submit"] {
+  display: flex;
+  flex: 0 0 auto;
+  width: 100% !important;
+  height: auto;
+  min-height: 48px;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 12px 16px;
+  font-size: 1rem !important;
+  line-height: 1.35;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .dashboard-page .custom-workout-exercise-dialog [data-custom-exercise-suggestions] {
@@ -665,8 +732,11 @@
   inset: auto;
   width: 100%;
   max-width: 100%;
-  max-height: min(240px, 40vh);
-  max-height: min(240px, 40dvh);
+  height: auto;
+  min-height: 0;
+  max-height: min(220px, 32vh) !important;
+  max-height: min(220px, 32dvh) !important;
+  margin: 0 !important;
   padding: 4px;
   overflow-y: auto;
   box-shadow: none;
@@ -674,11 +744,38 @@
 
 .dashboard-page .custom-workout-exercise-dialog [data-custom-exercise-suggestions]:not([hidden]) {
   display: grid;
+  grid-auto-rows: max-content;
+  align-content: start;
+  align-items: start;
   gap: 6px;
+}
+
+.dashboard-page .custom-workout-exercise-dialog .custom-workout-exercise-options button {
+  height: auto;
+  min-height: 48px;
+  align-content: start;
+  padding: 10px 12px;
+  font-size: .9rem !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
 }
 
 .dashboard-page .custom-workout-exercise-dialog [hidden] {
   display: none !important;
+}
+
+@media (max-width: 420px), (max-height: 520px) {
+  .dashboard-page .custom-workout-exercise-dialog {
+    width: min(440px, calc(100vw - 24px));
+    max-width: calc(100vw - 24px);
+    max-height: calc(100vh - 16px);
+    max-height: calc(100dvh - 16px);
+    padding: 16px;
+  }
+
+  .dashboard-page .custom-workout-exercise-dialog > header {
+    margin-bottom: 12px;
+  }
 }
 
 .dashboard-page .custom-workout-exercise-options {

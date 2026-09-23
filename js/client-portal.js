@@ -11027,12 +11027,21 @@ function jumpToWorkoutExercise(button) {
   target.scrollIntoView({ block: "start", behavior: "auto" });
 }
 
-function customWorkoutExerciseControlMarkup(count) {
+function customWorkoutExerciseAddConfig(format) {
+  switch (normalizeCustomWorkoutFormat(format)) {
+    case "superset": return { count: 2, label: "Add superset", hint: "Choose the first exercise. A blank partner exercise will be added too." };
+    case "circuit": return { count: 3, label: "Add circuit", hint: "Choose the first exercise. Two blank exercises will be added too." };
+    default: return { count: 1, label: "Add exercise", hint: "" };
+  }
+}
+
+function customWorkoutExerciseControlMarkup(count, format = "single") {
+  const add = customWorkoutExerciseAddConfig(format);
   return `
     <div class="custom-workout-exercise-control" role="group" aria-label="Number of exercises">
       <button type="button" data-remove-custom-exercise aria-label="Choose an exercise to remove" aria-haspopup="dialog" ${count === 0 ? "disabled" : ""}>−</button>
       <output aria-live="polite" aria-atomic="true"><span>Exercises</span> <strong data-custom-exercise-count>${count}</strong></output>
-      <button type="button" data-pick-custom-exercise data-add-custom-exercise aria-label="Add exercise" aria-haspopup="dialog">+</button>
+      <button type="button" data-pick-custom-exercise data-add-custom-exercise aria-label="${add.label}${add.count > 1 ? ` (${add.count} exercises)` : ""}" aria-haspopup="dialog">+</button>
     </div>
   `;
 }
@@ -11042,6 +11051,10 @@ function syncCustomWorkoutExerciseControls(panel) {
   const count = panel.querySelectorAll("[data-custom-exercise-card]").length;
   panel.querySelectorAll("[data-custom-exercise-count]").forEach((output) => { output.textContent = String(count); });
   panel.querySelectorAll("[data-remove-custom-exercise]").forEach((button) => { button.disabled = count === 0; });
+  const add = customWorkoutExerciseAddConfig(panel.dataset.customWorkoutFormat);
+  panel.querySelectorAll("[data-pick-custom-exercise]").forEach((button) => {
+    button.setAttribute("aria-label", `${add.label}${add.count > 1 ? ` (${add.count} exercises)` : ""}`);
+  });
 }
 
 function openCustomWorkoutExerciseEditor(card) {
@@ -11064,28 +11077,41 @@ function addCustomWorkoutPickedExercise(panel, name) {
   const stack = panel?.querySelector("[data-custom-workout-carousel-stack]");
   if (!stack || !String(name).trim()) return null;
   const format = normalizeCustomWorkoutFormat(panel.dataset.customWorkoutFormat);
+  const add = customWorkoutExerciseAddConfig(format);
   const carousels = customWorkoutCarousels(panel);
   const last = carousels.at(-1);
-  const lastGroup = Number(last?.dataset.customWorkoutGroup) || 0;
-  const group = format === "superset" && customWorkoutCarouselCards(last).length >= 2 ? lastGroup + 1 : lastGroup;
   const index = panel.querySelectorAll("[data-custom-exercise-card]").length;
-  const exercise = { code: nextCustomExerciseCode(panel), name: String(name).trim(), group, groupType: format, prescription: "Custom sets", rest: "" };
-  let list = last?.querySelector("[data-custom-workout-list]");
+  const grouped = format !== "single";
+  // Preserve the displayed pairs, including older drafts whose cards all used group 0.
+  if (grouped) carousels.forEach((carousel) => {
+    customWorkoutCarouselCards(carousel).forEach((card) => {
+      card.dataset.customWorkoutGroup = carousel.dataset.customWorkoutGroup;
+    });
+  });
+  const group = grouped && index > 0
+    ? Math.max(...carousels.map((carousel) => Number(carousel.dataset.customWorkoutGroup) || 0)) + 1 : 0;
+  const workoutTitle = panel.dataset.customWorkoutTitle || customWorkoutTitle;
+  let list = grouped ? null : last?.querySelector("[data-custom-workout-list]");
   if (!list) {
-    stack.insertAdjacentHTML("beforeend", customWorkoutCarouselGroupMarkup(format, [], group, index,
-      panel.dataset.customWorkoutTitle || customWorkoutTitle, { panelFormat: format, isLastGroup: true }));
+    stack.insertAdjacentHTML("beforeend", customWorkoutCarouselGroupMarkup(format, [], group, index, workoutTitle,
+      { panelFormat: format, isLastGroup: true }));
     list = stack.lastElementChild.querySelector("[data-custom-workout-list]");
   }
-  list.insertAdjacentHTML("beforeend", customWorkoutCardMarkup(exercise, panel.dataset.customWorkoutTitle || customWorkoutTitle, index,
-    { format, panelFormat: format, groupPosition: format === "superset" && group !== lastGroup ? 0 : customWorkoutCarouselCards(last).length }));
-  const card = list.lastElementChild;
-  const log = card.querySelector("[data-exercise-log]");
-  const date = log?.querySelector("[data-log-date]");
-  if (date) date.value = panel.querySelector("[data-workout-date]")?.value || todayDate();
-  if (log) updateExerciseLogField(log);
-  syncCustomWorkoutCarousel(panel, { focusCard: card });
+  let firstCard = null;
+  for (let position = 0; position < add.count; position++) {
+    const exercise = { code: nextCustomExerciseCode(panel), name: position === 0 ? String(name).trim() : "", group, groupType: format, prescription: "Custom sets", rest: "" };
+    list.insertAdjacentHTML("beforeend", customWorkoutCardMarkup(exercise, workoutTitle, index + position,
+      { format, panelFormat: format, groupPosition: position }));
+    const card = list.lastElementChild;
+    if (!firstCard) firstCard = card;
+    const log = card.querySelector("[data-exercise-log]");
+    const date = log?.querySelector("[data-log-date]");
+    if (date) date.value = panel.querySelector("[data-workout-date]")?.value || todayDate();
+    if (log) updateExerciseLogField(log);
+  }
+  syncCustomWorkoutCarousel(panel, { focusCard: firstCard });
   persistCustomWorkoutDraftFromPanel(panel);
-  return card;
+  return firstCard;
 }
 
 function openCustomWorkoutExerciseDialog(trigger, mode = "add") {
@@ -11094,11 +11120,12 @@ function openCustomWorkoutExerciseDialog(trigger, mode = "add") {
   const cards = Array.from(panel.querySelectorAll("[data-custom-exercise-card]"));
   const removing = mode === "remove";
   if (removing && !cards.length) return;
+  const addConfig = customWorkoutExerciseAddConfig(panel.dataset.customWorkoutFormat);
   const dialog = document.createElement("dialog");
   dialog.className = "custom-workout-exercise-dialog";
   dialog.setAttribute("aria-labelledby", "custom-workout-exercise-dialog-title");
   dialog.innerHTML = `
-    <header><h2 id="custom-workout-exercise-dialog-title">${removing ? "Remove exercise" : "Add exercise"}</h2>
+    <header><h2 id="custom-workout-exercise-dialog-title">${removing ? "Remove exercise" : addConfig.label}</h2>
       <button type="button" data-close-exercise-dialog aria-label="Close exercise ${removing ? "removal" : "picker"}">×</button></header>
     ${removing ? `<p>Choose the exercise to remove from this workout. Saved logs stay in your history.</p>
       <div class="custom-workout-exercise-options">${cards.map((card, index) => {
@@ -11106,13 +11133,14 @@ function openCustomWorkoutExerciseDialog(trigger, mode = "add") {
         return `<button type="button" data-remove-exercise-choice="${index}" aria-label="Remove ${escapeHtml(name)}, exercise ${index + 1}">${escapeHtml(name)}<small>Exercise ${index + 1} · Remove</small></button>`;
       }).join("")}</div>` : `
       <form>
+        ${addConfig.hint ? `<p>${addConfig.hint}</p>` : ""}
         <div class="custom-workout-name-editor">
           <label for="custom-workout-picker-search">Search exercises</label>
           <input id="custom-workout-picker-search" type="text" maxlength="160" autocomplete="off" autofocus required
             data-exercise-title-name aria-autocomplete="list" aria-expanded="false" aria-controls="custom-workout-picker-options" />
           <div class="custom-workout-exercise-options custom-workout-suggestion-menu" id="custom-workout-picker-options" role="listbox" aria-label="Exercise suggestions" data-custom-exercise-suggestions hidden></div>
         </div>
-        <button class="button button-dark" type="submit">Add exercise</button>
+        <button class="button button-dark" type="submit">${addConfig.label}${addConfig.count > 1 ? ` · ${addConfig.count} exercises` : ""}</button>
       </form>`}
   `;
   let addedCard = null;
@@ -11212,12 +11240,12 @@ function customWorkoutPanelMarkup(index) {
           <button class="button button-ghost custom-workout-reset-button" type="button" data-reset-custom-workout>Reset workout</button>
         </div>
         <p class="custom-workout-reset-status" data-custom-workout-reset-status role="status" aria-live="polite" hidden></p>
-        ${customWorkoutExerciseControlMarkup(exercises.length)}
+        ${customWorkoutExerciseControlMarkup(exercises.length, format)}
         ${customWorkoutCarouselMarkup(format, workoutStorageTitle)}
         ${workoutExerciseListMarkup()}
         ${cardioLogFields(workoutStorageTitle, { showDate: false })}
         <div class="custom-workout-add-actions" data-custom-workout-add-actions>
-          ${customWorkoutExerciseControlMarkup(exercises.length)}
+          ${customWorkoutExerciseControlMarkup(exercises.length, format)}
         </div>
         <div data-custom-workout-default-finish ${format === "single" ? "" : "hidden"}>
           ${workoutActionsMarkup({ exercises }, { includeCardio: true })}
