@@ -88,22 +88,24 @@ test("fresh grouped workouts start with their exact default exercise counts", ()
     "normalizeCustomWorkoutInlineGroupType",
     "normalizeCustomWorkoutFormat",
     "activeCustomWorkoutFormat",
+    "activeCustomWorkoutDraft",
     `${defaultCountSource}; ${exercisesSource}; return { customWorkoutDefaultExerciseCount, customWorkoutExercises };`
   )(
     () => draftExercises,
     (index) => `CW${String(index + 1).padStart(2, "0")}`,
     (value) => ["superset", "circuit"].includes(value) ? value : "single",
     (value) => ["superset", "circuit"].includes(value) ? value : "single",
-    "single"
+    "single",
+    () => null
   );
 
-  assert.equal(defaults.customWorkoutDefaultExerciseCount("single"), 1);
+  assert.equal(defaults.customWorkoutDefaultExerciseCount("single"), 4);
   assert.equal(defaults.customWorkoutDefaultExerciseCount("superset"), 2);
   assert.equal(defaults.customWorkoutDefaultExerciseCount("circuit"), 3);
-  assert.equal(defaults.customWorkoutDefaultExerciseCount("unknown"), 1);
+  assert.equal(defaults.customWorkoutDefaultExerciseCount("unknown"), 4);
   assert.deepEqual(defaults.customWorkoutExercises("superset").map((exercise) => exercise.code), ["CW01", "CW02"]);
   assert.deepEqual(defaults.customWorkoutExercises("circuit").map((exercise) => exercise.code), ["CW01", "CW02", "CW03"]);
-  assert.equal(defaults.customWorkoutExercises("single").length, 1);
+  assert.equal(defaults.customWorkoutExercises("single").length, 4);
 
   draftExercises = [{ code: "CW01", name: "Existing exercise", group: 0, groupType: "single" }];
   assert.deepEqual(defaults.customWorkoutExercises("superset").map((exercise) => exercise.name), ["Existing exercise"]);
@@ -129,8 +131,8 @@ test("fresh grouped workouts start with their exact default exercise counts", ()
   assert.equal(supersetCards.length, 2);
   assert.equal(removableCards[2].removed, true);
   const straightCards = resizeDefaults({}, "single", removableCards.slice(0, 2));
-  assert.equal(straightCards.length, 1);
-  assert.equal(removableCards[1].removed, true);
+  assert.equal(straightCards.length, 4);
+  assert.equal(removableCards[1].removed, false);
 
   const hasEnteredContent = Function(
     "exerciseNameInputForLog",

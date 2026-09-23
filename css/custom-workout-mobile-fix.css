@@ -504,6 +504,232 @@
   display: none !important;
 }
 
+/* Match the Sets stepper for both custom-workout exercise controls. */
+.dashboard-page .client-workout-panel-custom .custom-workout-exercise-control {
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr) 46px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  padding: 8px 12px;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #d7d9d2;
+  border-radius: 14px;
+  background: #f8f8f3;
+  color: #111411;
+}
+
+.dashboard-page .client-workout-panel-custom .custom-workout-exercise-control :is(button, output) {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  margin: 0;
+  padding: 6px;
+  place-items: center;
+  border: 1px solid #d7d9d2;
+  border-radius: 11px;
+  background: #fff;
+  color: #111411;
+  font: inherit;
+  font-weight: 950;
+  line-height: 1;
+}
+
+.dashboard-page .client-workout-panel-custom .custom-workout-exercise-control button {
+  min-width: 44px;
+  border: 2px solid #111411;
+  font-size: 1.45rem;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.dashboard-page .client-workout-panel-custom .custom-workout-exercise-control [data-pick-custom-exercise] {
+  background: var(--lime, #d7ff3f);
+}
+
+.dashboard-page .client-workout-panel-custom .custom-workout-exercise-control button:disabled {
+  border-color: #d7d9d2;
+  color: #a5a7a1;
+  background: #eceee9;
+  cursor: default;
+}
+
+.dashboard-page .client-workout-panel-custom .custom-workout-exercise-control output {
+  display: flex;
+  justify-content: center;
+  gap: 9px;
+  text-transform: uppercase;
+}
+
+.dashboard-page .client-workout-panel-custom .custom-workout-exercise-control output span {
+  color: #676b65;
+  font-size: .66rem;
+  letter-spacing: .08em;
+}
+
+.dashboard-page .client-workout-panel-custom .custom-workout-exercise-control output strong {
+  font-size: 1.05rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.dashboard-page .client-workout-panel-custom .custom-workout-exercise-control button:focus-visible,
+.dashboard-page .client-workout-panel-custom .custom-workout-card:focus-visible,
+.dashboard-page .custom-workout-exercise-dialog :is(button, input):focus-visible {
+  outline: 3px solid var(--blue, #2878ff);
+  outline-offset: 3px;
+}
+
+.dashboard-page .custom-workout-exercise-dialog {
+  width: min(440px, calc(100vw - 32px));
+  max-width: calc(100vw - 32px);
+  max-height: calc(100vh - 32px);
+  max-height: calc(100dvh - 32px);
+  min-width: 0;
+  margin: auto;
+  padding: 20px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 1px solid #d7d9d2;
+  border-radius: 20px;
+  background: #fff;
+  color: #111411;
+  color-scheme: light;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, .3);
+}
+
+.dashboard-page .custom-workout-exercise-dialog[open] {
+  display: grid;
+  gap: 16px;
+}
+
+.dashboard-page .custom-workout-exercise-dialog::backdrop {
+  background: rgba(17, 20, 17, .55);
+}
+
+.dashboard-page .custom-workout-exercise-dialog > header {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.dashboard-page .custom-workout-exercise-dialog :is(h2, h3, p) {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.dashboard-page .custom-workout-exercise-dialog :is(h2, h3) {
+  font-size: clamp(1.3rem, 5vw, 1.65rem);
+}
+
+.dashboard-page .custom-workout-exercise-dialog > header button {
+  display: grid;
+  flex: 0 0 44px;
+  width: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  place-items: center;
+  border: 1px solid #d7d9d2;
+  border-radius: 11px;
+  background: #fff;
+  color: #111411;
+  font: inherit;
+  font-size: 1.4rem;
+  cursor: pointer;
+}
+
+.dashboard-page .custom-workout-exercise-dialog form,
+.dashboard-page .custom-workout-exercise-dialog label,
+.dashboard-page .custom-workout-exercise-dialog .custom-workout-name-editor {
+  display: grid;
+  min-width: 0;
+  gap: 10px;
+}
+
+.dashboard-page .custom-workout-exercise-dialog input[type="text"] {
+  width: 100%;
+  min-width: 0;
+  min-height: 48px;
+  margin: 0;
+  padding: 12px;
+  border: 1px solid #d7d9d2;
+  border-radius: 11px;
+  background: #f8f8f3;
+  color: #111411;
+  font: inherit;
+  font-size: 16px;
+}
+
+.dashboard-page .custom-workout-exercise-dialog [data-custom-exercise-suggestions] {
+  position: static;
+  inset: auto;
+  width: 100%;
+  max-width: 100%;
+  max-height: min(240px, 40vh);
+  max-height: min(240px, 40dvh);
+  padding: 4px;
+  overflow-y: auto;
+  box-shadow: none;
+}
+
+.dashboard-page .custom-workout-exercise-dialog [data-custom-exercise-suggestions]:not([hidden]) {
+  display: grid;
+  gap: 6px;
+}
+
+.dashboard-page .custom-workout-exercise-dialog [hidden] {
+  display: none !important;
+}
+
+.dashboard-page .custom-workout-exercise-options {
+  display: grid;
+  min-width: 0;
+  gap: 10px;
+}
+
+.dashboard-page .custom-workout-exercise-options button {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  min-height: 52px;
+  padding: 14px;
+  gap: 5px;
+  border: 2px solid #111411;
+  border-radius: 12px;
+  background: #fff;
+  color: #111411;
+  font: inherit;
+  font-weight: 800;
+  line-height: 1.35;
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.dashboard-page .custom-workout-exercise-options button :is(span, small) {
+  color: #676b65;
+  font-size: .85rem;
+  font-weight: 500;
+}
+
+.dashboard-page .custom-workout-exercise-dialog .custom-workout-exercise-options button.is-recommended {
+  background: var(--lime, #d7ff3f);
+}
+
+@media (hover: hover) {
+  .dashboard-page .client-workout-panel-custom .custom-workout-exercise-control button:not(:disabled):hover,
+  .dashboard-page .custom-workout-exercise-options button:not(:disabled):hover {
+    background: var(--lime, #d7ff3f);
+  }
+}
+
 @media (max-width: 760px) {
   .dashboard-page .custom-workout-carousel[data-carousel-enabled="true"] {
     min-width: 0;
@@ -1271,7 +1497,7 @@
   }
 
   .dashboard-page .client-workout-panel-custom[data-custom-workout-deck-enabled="true"] .custom-workout-add-actions {
-    display: none;
+    display: grid;
   }
 
   .dashboard-page .client-workout-panel-custom .custom-workout-card.is-entering-deck {
@@ -1494,6 +1720,37 @@
   line-height: 1.15;
   overflow-wrap: anywhere;
   text-transform: uppercase;
+}
+
+.dashboard-page .client-workout-panel-custom .custom-workout-grouped-exercise-key-item [data-open-custom-exercise] {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  line-height: inherit;
+  text-align: left;
+  text-transform: inherit;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.dashboard-page .client-workout-panel-custom .custom-workout-grouped-exercise-key-item:focus-within {
+  background: var(--grouped-cream, #f8f8f3);
+}
+
+.dashboard-page .client-workout-panel-custom .custom-workout-grouped-exercise-key-item [data-open-custom-exercise]:focus-visible {
+  outline: 3px solid var(--blue, #2878ff);
+  outline-offset: 2px;
 }
 
 .dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-round-stepper {
