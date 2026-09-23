@@ -1,0 +1,148 @@
+.client-dashboard-page .client-workout-panel .workout-exercise-list {
+  width: 100%;
+  max-width: 760px;
+  min-width: 0;
+  margin: 24px auto;
+}
+
+.client-dashboard-page .client-workout-panel .workout-exercise-list > h3 {
+  margin: 0;
+  color: var(--ink, #171a17);
+  font-size: 1.15rem;
+  line-height: 1.3;
+}
+
+.client-dashboard-page .client-workout-panel .workout-exercise-list > p {
+  margin: 6px 0 14px;
+  color: var(--muted, #666b62);
+  font-size: .85rem;
+  font-weight: 400;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.client-dashboard-page .client-workout-panel .workout-exercise-list > ol {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.client-dashboard-page .client-workout-panel .workout-exercise-list li {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.client-dashboard-page .client-workout-panel .workout-exercise-list [data-workout-exercise-jump] {
+  display: grid !important;
+  grid-template-columns: 36px minmax(0, 1fr) 20px;
+  width: 100% !important;
+  inline-size: 100% !important;
+  min-width: 0;
+  max-width: 100%;
+  min-height: 76px;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+  padding: 14px 16px;
+  border: 1px solid var(--line, #dcded7);
+  border-radius: 16px !important;
+  background: #fff;
+  color: var(--ink, #171a17);
+  box-shadow: none;
+  font: inherit;
+  line-height: 1.35;
+  text-align: left;
+  text-transform: none;
+  white-space: normal;
+  overflow: visible !important;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.client-dashboard-page .client-workout-panel .workout-exercise-list-number {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border-radius: 50%;
+  background: #f2f3ee;
+  color: #343a30;
+  font-size: .85rem;
+  font-weight: 750;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.client-dashboard-page .client-workout-panel .workout-exercise-list-copy {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.client-dashboard-page .client-workout-panel .workout-exercise-list-copy strong {
+  color: inherit;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.client-dashboard-page .client-workout-panel .workout-exercise-list-copy small {
+  color: var(--muted, #666b62);
+  font-size: .8rem;
+  font-weight: 400;
+  line-height: 1.4;
+}
+
+.client-dashboard-page .client-workout-panel .workout-exercise-list-arrow {
+  color: #777f70;
+  font-size: 1.75rem;
+  font-weight: 400;
+  line-height: 1;
+  text-align: center;
+}
+
+.client-dashboard-page .client-workout-panel .workout-exercise-list [data-workout-exercise-jump]:focus-visible {
+  outline: 3px solid #718a18;
+  outline-offset: 3px;
+}
+
+.client-dashboard-page .client-workout-panel .workout-exercise-jump-target {
+  scroll-margin-top: 104px;
+  scroll-margin-bottom: 120px;
+}
+
+.client-dashboard-page .client-workout-panel .workout-exercise-jump-target:focus {
+  outline: 3px solid #718a18 !important;
+  outline-offset: 4px;
+}
+
+.client-dashboard-page .client-workout-panel .workout-exercise-list [hidden] {
+  display: none !important;
+}
+
+@media (hover: hover) {
+  .client-dashboard-page .client-workout-panel .workout-exercise-list [data-workout-exercise-jump]:hover {
+    border-color: #b8c49d;
+    background: #f7f8f4;
+  }
+}
+
+@media (max-width: 420px) {
+  .client-dashboard-page .client-workout-panel .workout-exercise-list [data-workout-exercise-jump] {
+    grid-template-columns: 32px minmax(0, 1fr) 18px;
+    min-height: 72px;
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .client-dashboard-page .client-workout-panel .workout-exercise-list-number {
+    width: 32px;
+    height: 32px;
+  }
+}

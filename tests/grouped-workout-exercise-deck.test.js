@@ -153,7 +153,7 @@ test("keeps grouped deck visuals separate from straight-set add permission", () 
   assert.match(move, /isVisualDeck && index !== currentIndex/);
 });
 
-test("places collapsible A1 A2 exercise-name editors above the grouped swipe deck", () => {
+test("places clearly numbered exercise-name editors above the grouped swipe deck", () => {
   const groupMarkup = sourceForFunction("customWorkoutGroupedRoundCardMarkup");
   const editorMarkup = sourceForFunction("customWorkoutGroupNameEditorMarkup");
   const rowMarkup = sourceForFunction("customWorkoutGroupNameRowMarkup");
@@ -166,7 +166,20 @@ test("places collapsible A1 A2 exercise-name editors above the grouped swipe dec
   assert.doesNotMatch(editorMarkup, /format === "single"[\s\S]*?return ""/);
   assert.match(editorMarkup, /data-custom-workout-group-name-toggle/);
   assert.match(editorMarkup, /data-custom-workout-group-name-fields/);
-  assert.match(rowMarkup, /workoutCarouselExerciseCode\(format, groupIndex, index\)/);
+  const renderEditor = Function("escapeHtml", `${rowMarkup}\n${editorMarkup}; return customWorkoutGroupNameEditorMarkup;`)(
+    value => String(value).replaceAll("&", "&amp;").replaceAll('"', "&quot;").replaceAll("<", "&lt;")
+  );
+  for (const format of ["single", "superset", "circuit"]) {
+    const html = renderEditor(format, [{ name: "Press" }, { name: "Row" }], 1, "assigned-", 2);
+    assert.match(html, /data-custom-workout-group-name-summary>2 exercises<\/small>/);
+    assert.match(html, /<label[^>]+>Exercise 3<\/label>/);
+    assert.match(html, /<label[^>]+>Exercise 4<\/label>/);
+    assert.match(html, /aria-label="Exercise 3 name"/);
+    assert.match(html, /aria-label="Delete Exercise 4"/);
+    assert.doesNotMatch(html, />[A-Z]\d+<|aria-label="[A-Z]\d+ exercise name"/);
+    assert.match(html, /data-custom-workout-group-name-input="0"/);
+    assert.match(html, /data-custom-workout-group-name-input="1"/);
+  }
   assert.match(rowMarkup, /data-custom-workout-group-name-input="\$\{index\}"/);
   assert.match(syncEditor, /cardCode\.textContent = position/);
   assert.match(cardMarkup, /data-custom-workout-group-card-code hidden/);
@@ -175,8 +188,8 @@ test("places collapsible A1 A2 exercise-name editors above the grouped swipe dec
   assert.match(interactions, /groupedCardInput\.value = exerciseNameInput\.value/);
   assert.match(mobileStyles, /data-custom-workout-format="superset"[\s\S]*?\.custom-workout-editable-title[\s\S]*?display: none !important/);
   assert.match(mobileStyles, /\.custom-workout-group-card-code \{[\s\S]*?display: inline-flex !important/);
-  assert.match(mobileStyles, /\.custom-workout-group-name-row \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\);/);
-  assert.match(mobileStyles, /\.custom-workout-group-name-row > strong \{[\s\S]*?width: fit-content;[\s\S]*?min-height: 32px;/);
+  assert.match(mobileStyles, /\.custom-workout-group-name-row \{[^}]*grid-template-columns: minmax\(0, 1fr\) 44px;/);
+  assert.match(mobileStyles, /\.custom-workout-group-name-label\s*\{/);
 });
 
 test("uses A1 A2 labels for both superset and circuit groups", () => {

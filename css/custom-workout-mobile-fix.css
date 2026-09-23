@@ -347,24 +347,19 @@
 
 .dashboard-page :is(.client-workout-panel-custom, .client-workout-panel-assigned) .custom-workout-group-name-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) 44px;
   gap: 6px;
-  align-items: stretch;
+  align-items: end;
 }
 
-.dashboard-page :is(.client-workout-panel-custom, .client-workout-panel-assigned) .custom-workout-group-name-row > strong {
-  display: inline-flex;
-  width: fit-content;
-  min-width: 42px;
-  min-height: 32px;
-  padding: 5px 10px;
-  align-items: center;
-  justify-content: center;
-  border-radius: 10px;
-  background: var(--lime, #caff2c);
-  color: #111411;
-  font-size: 14px;
-  font-weight: 900;
+.dashboard-page :is(.client-workout-panel-custom, .client-workout-panel-assigned) .custom-workout-group-name-label {
+  display: block;
+  margin: 0 0 5px;
+  color: #676b65;
+  font-size: .8rem;
+  font-weight: 700;
+  line-height: 1.3;
+  text-transform: none;
 }
 
 .dashboard-page .custom-workout-carousel:is(
@@ -2464,19 +2459,10 @@ body.dashboard-page.custom-workout-grouped-finish-open {
 }
 
 .dashboard-page [data-custom-workout-grouped="true"] .custom-workout-group-name-row {
-  grid-template-columns: 44px minmax(0, 1fr) 44px;
+  grid-template-columns: minmax(0, 1fr) 44px;
   min-width: 0;
   gap: 7px;
-  align-items: center;
-}
-
-.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-group-name-row > strong {
-  width: 44px;
-  min-width: 44px;
-  min-height: 44px;
-  padding: 4px;
-  border-radius: 10px;
-  font-size: .85rem;
+  align-items: end;
 }
 
 .dashboard-page [data-custom-workout-grouped="true"] .custom-workout-group-name-row input {
@@ -2496,6 +2482,7 @@ body.dashboard-page.custom-workout-grouped-finish-open {
   min-width: 44px;
   height: 44px;
   min-height: 44px;
+  margin-bottom: 2px;
   padding: 10px;
   place-items: center;
   border: 1px solid #ffc5c1;
@@ -2551,11 +2538,10 @@ body.dashboard-page.custom-workout-grouped-finish-open {
   }
 
   .dashboard-page [data-custom-workout-grouped="true"] .custom-workout-group-name-row {
-    grid-template-columns: 44px minmax(0, 1fr) 44px;
+    grid-template-columns: minmax(0, 1fr) 44px;
     gap: 5px;
   }
 
-  .dashboard-page [data-custom-workout-grouped="true"] .custom-workout-group-name-row > strong,
   .dashboard-page [data-custom-workout-grouped="true"] .custom-workout-group-name-delete,
   .dashboard-page [data-custom-workout-grouped="true"] [data-custom-workout-group-name-delete] {
     width: 44px;

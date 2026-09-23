@@ -23,6 +23,7 @@ function copyFixtureContext() {
     cardioExerciseCode: "CARDIO",
     todayDate: () => "2026-09-20",
     exerciseNameInputForLog: (element) => element.nameInput,
+    syncWorkoutExerciseList() {},
     logsForExerciseDisplay: () => { throw new Error("Copy must never read workout history"); },
     trainingLogs: new Proxy([], { get() { throw new Error("Copy must never read workout history"); } })
   });

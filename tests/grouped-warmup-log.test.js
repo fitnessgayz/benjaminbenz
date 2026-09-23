@@ -166,6 +166,7 @@ function warmupFixture(specs = [{ weight: "20", reps: "8" }], options = {}) {
     customWorkoutGroupedRoundIsLogged: () => rows.every((row) => row.working.classList.contains("is-complete")),
     clearCustomWorkoutGroupedWeightCopy() {},
     refreshCustomWorkoutGroupedCopyWeights() {},
+    syncWorkoutExerciseList() {},
     persistCustomWorkoutDraftForElement: () => persists++,
     customWorkoutGroupedTimerConflict: () => Boolean(options.timerConflict),
     saveTrainingLogRows: async (saveButton, logs, statusNode, saveOptions) => {

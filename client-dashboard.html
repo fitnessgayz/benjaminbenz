@@ -31,7 +31,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css?v=workout-preview-1&amp;cancel-workout=1&amp;energy-feedback=1&amp;viewport-dock=1" />
-  <link rel="stylesheet" href="css/custom-workout-mobile-fix.css?v=assigned-layout-3&amp;visible-demos=1&amp;copy-last-weights=1&amp;demo-icons=2&amp;copy-set-pr=3&amp;compact-copy=1&amp;exercise-pr-notes=1&amp;pr-info=1&amp;finish-workout=2&amp;prescribed-targets=1&amp;exercise-controls=1" />
+  <link rel="stylesheet" href="css/custom-workout-mobile-fix.css?v=assigned-layout-3&amp;visible-demos=1&amp;copy-last-weights=1&amp;demo-icons=2&amp;copy-set-pr=3&amp;compact-copy=1&amp;exercise-pr-notes=1&amp;pr-info=1&amp;finish-workout=2&amp;prescribed-targets=1&amp;exercise-controls=1&amp;exercise-labels=1" />
   <link rel="stylesheet" href="css/workout-layout.css?v=exercise-preview-2" />
   <link rel="stylesheet" href="css/client-weekly-activity.css?v=1" />
   <link rel="stylesheet" href="/css/fwb-design-system.css?v=reference-overhaul-1" />
@@ -40,6 +40,8 @@
   <link rel="stylesheet" href="css/apple-workout.css?v=1" />
   <link rel="stylesheet" href="css/workout-share-card.css?v=1" />
   <link rel="stylesheet" href="css/rir-help.css?v=1" />
+  <link rel="stylesheet" href="css/client-session-alerts.css?v=1" />
+  <link rel="stylesheet" href="css/workout-exercise-list.css?v=1" />
 </head>
 <body class="dashboard-page client-dashboard-page is-loading">
   <nav class="coach-preview-toolbar" id="coach-preview-toolbar" aria-label="Coach navigation" hidden>
@@ -132,6 +134,13 @@
             <span class="status-pill" id="client-home-status">Ready</span>
           </div>
           <div class="client-home-checkin-backdrop" data-client-home-checkin-backdrop hidden></div>
+          <div class="client-session-alert" data-client-session-alert role="status" aria-atomic="true" hidden>
+            <div class="client-session-alert-copy">
+              <strong data-session-alert-title></strong>
+              <p data-session-alert-message></p>
+            </div>
+            <button class="client-session-alert-action" type="button" data-client-summary-go-tab="sessions">View sessions</button>
+          </div>
           <div class="client-home-grid" id="client-home-grid">
             <section class="client-weekly-activity" id="client-weekly-activity" aria-labelledby="client-weekly-heading">
               <button class="button client-gym-checkin" id="client-gym-checkin" type="button" disabled>Gym check-in</button>
@@ -889,6 +898,12 @@
             </div>
             <span class="status-pill" id="client-session-count-pill">No sessions yet</span>
           </div>
+          <div class="client-session-alert" data-client-session-alert role="status" aria-atomic="true" hidden>
+            <div class="client-session-alert-copy">
+              <strong data-session-alert-title></strong>
+              <p data-session-alert-message></p>
+            </div>
+          </div>
           <div class="session-sheet-summary">
             <div class="session-sheet-count-card">
               <span>Sessions used</span>
@@ -987,7 +1002,7 @@
                 <label><input type="checkbox" data-web-notification-preference="weekly_check_ins" checked /> Weekly check-ins</label>
                 <label><input type="checkbox" data-web-notification-preference="monthly_reports" checked /> Monthly reports</label>
                 <label><input type="checkbox" data-web-notification-preference="session_reminders" checked /> Session reminders</label>
-                <label><input type="checkbox" data-web-notification-preference="session_balance" checked /> Session balance</label>
+                <label><input type="checkbox" data-web-notification-preference="session_balance" checked /> Low or no sessions remaining</label>
                 <label><input type="checkbox" data-web-notification-preference="nutrition_reminders" checked /> Nutrition reminders</label>
                 <label><input type="checkbox" data-web-notification-preference="progress_reminders" checked /> Progress reminders</label>
                 <label><input type="checkbox" data-web-notification-preference="achievements" checked /> Achievements</label>
@@ -1034,6 +1049,7 @@
   <script src="js/workout-share-card.js?v=1"></script>
   <script src="js/rir-help.js?v=2"></script>
   <script src="js/pr-help.js?v=1"></script>
-  <script src="js/client-portal.js?v=custom-workout-history-1&amp;cancel-workout=1&amp;energy-feedback=1&amp;mood-redesign=1&amp;visible-group-controls=1&amp;exercise-videos=1&amp;remember-login=1&amp;visible-demos=1&amp;personal-bests=1&amp;copy-last-weights=1&amp;demo-icons=1&amp;keyboard-entry=1&amp;copy-set-pr=3&amp;return-coach=1&amp;apple-workout=2&amp;apple-share=1&amp;rir-help=1&amp;viewport-dock=1&amp;compact-copy=1&amp;exercise-pr-notes=1&amp;pr-info=1&amp;finish-workout=2&amp;prescribed-targets=1&amp;exercise-controls=1"></script>
+  <script src="js/client-session-alerts.js?v=2"></script>
+  <script src="js/client-portal.js?v=custom-workout-history-1&amp;cancel-workout=1&amp;energy-feedback=1&amp;mood-redesign=1&amp;visible-group-controls=1&amp;exercise-videos=1&amp;remember-login=1&amp;visible-demos=1&amp;personal-bests=1&amp;copy-last-weights=1&amp;demo-icons=1&amp;keyboard-entry=1&amp;copy-set-pr=3&amp;return-coach=1&amp;apple-workout=2&amp;apple-share=1&amp;rir-help=1&amp;viewport-dock=1&amp;compact-copy=1&amp;exercise-pr-notes=1&amp;pr-info=1&amp;finish-workout=2&amp;prescribed-targets=1&amp;exercise-controls=1&amp;session-alerts=1&amp;exercise-labels=1&amp;exercise-list=1"></script>
 </body>
 </html>
