@@ -11,7 +11,8 @@ const supabaseClient = isConfigured && window.supabase
         storage: window.FWB_AUTH_SESSION.storage,
         persistSession: true,
         autoRefreshToken: true,
-        detectSessionInUrl: true
+        // Google returns its own OAuth code to this page; Supabase must not consume it.
+        detectSessionInUrl: !window.FWB_GOOGLE_HEALTH?.isCallbackUrl(window.location.href)
       }
     })
   : null;
@@ -57,6 +58,7 @@ let clientPreviewProgramSelected = false;
 let clientWorkoutLayoutSaving = false;
 let clientWebNotificationController = null;
 let clientSessionBalanceController = null;
+let clientGoogleHealthController = null;
 const dashboardRequestTimeout = 15000;
 const customWorkoutTitle = "Custom workout";
 const customWorkoutFormats = {
@@ -13006,6 +13008,19 @@ function configureClientAppleWorkouts() {
   window.FWBAppleWorkout?.attach();
 }
 
+function configureClientGoogleHealth() {
+  clientGoogleHealthController?.destroy();
+  clientGoogleHealthController = window.FWB_GOOGLE_HEALTH?.createController({
+    supabaseClient,
+    clientEmail: normalizeClientEmail(activeClientEmail),
+    isPreview: isCoachDashboardPreview,
+    onConnected: () => setClientDashboardTab("notifications")
+  }) || null;
+  void clientGoogleHealthController?.initialize().catch(() => {
+    // The connection card renders an actionable retry message.
+  });
+}
+
 function isCopyableWorkoutHistoryLog(log = {}) {
   const exerciseCode = String(log.exercise_code || "").trim().toUpperCase();
   const exerciseName = String(log.exercise_name || "").trim();
@@ -14725,6 +14740,11 @@ function setClientDashboardTab(tabName) {
       // The notification center renders a user-facing retry message.
     });
   }
+  if ((nextTab === "notifications" || nextTab === "logs") && clientGoogleHealthController) {
+    void clientGoogleHealthController.refresh().catch(() => {
+      // Settings and Saved Logs display their own connection errors.
+    });
+  }
 }
 
 function setClientNotificationSettingsAvailable(available) {
@@ -15524,6 +15544,11 @@ function handleClientDashboardTabs() {
     const tabName = tab.dataset.clientDashboardTab;
     const navigation = tab.closest(".client-dashboard-tabs");
     const mobileNavigation = window.matchMedia?.("(max-width: 900px)")?.matches ?? false;
+    if (mobileNavigation && tabName === "workouts" && activeClientDashboardTab === "workouts" &&
+        window.WorkoutExerciseDock?.toggle()) {
+      lastClientDashboardMobileTabPress = "";
+      return;
+    }
     const action = clientDashboardMobileTabPressAction(
       tabName,
       activeClientDashboardTab,
@@ -17151,6 +17176,9 @@ async function loadDashboard() {
     return;
   }
 
+  clientGoogleHealthController?.destroy();
+  clientGoogleHealthController = null;
+
   try {
     if (!supabaseClient) {
       setDashboardMessage(
@@ -17236,6 +17264,7 @@ async function loadDashboard() {
     clientAvailablePrograms = Array.isArray(programRows) ? programRows : [];
     renderProgram(data);
     configureClientSessionBalance();
+    configureClientGoogleHealth();
     void initializeClientWebNotifications(user);
     const questionnaireQuery = supabaseClient
       .from("client_fitness_questionnaires")
@@ -17954,6 +17983,8 @@ async function handleSignOut() {
       clearClientQuestionnaire();
       clientSessionBalanceController?.destroy();
       clientSessionBalanceController = null;
+      clientGoogleHealthController?.destroy();
+      clientGoogleHealthController = null;
       dexaReports = [];
       archivedDexaReportsExpanded = false;
       sharedFoodLibrary = [];
