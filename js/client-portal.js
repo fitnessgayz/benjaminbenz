@@ -4937,6 +4937,14 @@ function syncExerciseNamePreview(logElement, nextName) {
     (logElement.closest("[data-custom-exercise-card]") ? "Custom exercise" : "");
   const displayName = exerciseDisplayName(logElement.dataset.exerciseCode || "", safeName);
   const card = logElement.closest(".workout-exercise-card");
+  if (logElement.dataset.generatedExercise === "true" && editedName !== logElement.dataset.exerciseName) {
+    // A different exercise needs its own prescription; never retain the old target.
+    delete logElement.dataset.generatedExercise;
+    logElement.dataset.exercisePrescription = "Custom sets";
+    logElement.dataset.exerciseRest = "";
+    const generatedTarget = card?.querySelector("[data-generated-workout-target]");
+    if (generatedTarget) generatedTarget.hidden = true;
+  }
   const summaryTitle = card?.querySelector("[data-exercise-title]");
   const summaryTitleName = summaryTitle?.querySelector("[data-exercise-title-name]");
   const collapsedTitle = card?.querySelector("[data-exercise-collapsed-name]");
@@ -5013,6 +5021,7 @@ function exerciseLogFields(exercise, workoutTitle, options = {}) {
       data-exercise-name="${escapeHtml(exercise.name)}"
       data-exercise-rest="${escapeHtml(exercise.rest || "")}"
       data-exercise-prescription="${escapeHtml(exercise.prescription || "")}"
+      ${exercise.generated ? 'data-generated-exercise="true"' : ""}
       data-prescribed-sets="${setCount}"
       data-set-target-mode="${options.userManagedSets ? "visible" : "prescribed"}"
     >
@@ -5757,6 +5766,9 @@ function activeCustomWorkoutDraft() {
 }
 
 function customWorkoutCopyStatusMessage(draft = activeCustomWorkoutDraft()) {
+  if (draft?.generatedFrom) {
+    return `${draft.generatedFrom.title} · About ${draft.generatedFrom.estimatedMinutes} minutes. Your workout is ready. Review the targets, then start when you’re ready.`;
+  }
   const source = draft?.copiedFrom;
   const workoutTitle = String(source?.workoutTitle || "").trim();
   const entryDate = String(source?.entryDate || "").trim();
@@ -5792,6 +5804,116 @@ function freshCustomWorkoutDraft(createdAt = new Date()) {
   };
 }
 
+function generatedCustomWorkoutDraft(workout, createdAt = new Date()) {
+  if (!workout?.exercises?.length) throw new Error("Generate a workout before continuing.");
+  const date = todayDate();
+  const title = String(workout.title || "Today’s workout").slice(0, 80);
+  const id = `${createdAt.getTime()}-${Math.random().toString(36).slice(2, 10)}`;
+  return {
+    version: customWorkoutDraftVersion,
+    format: "single",
+    date,
+    workoutTitle: `${customWorkoutTitle} · ${title} · ${id}`,
+    nextExerciseNumber: workout.exercises.length + 1,
+    generatedFrom: {
+      id, title, focus: workout.focus, minutes: workout.minutes,
+      intensity: workout.intensity, estimatedMinutes: workout.estimatedMinutes
+    },
+    exercises: workout.exercises.map((exercise, index) => ({
+      code: customExerciseCode(index),
+      name: exercise.name,
+      group: index,
+      groupType: "single",
+      date,
+      generated: true,
+      prescription: exercise.prescription,
+      rest: exercise.rest,
+      notes: "",
+      skipped: false,
+      sets: [
+        { label: "W", weight: "", reps: "", setType: warmUpSetType, rir: "", complete: false },
+        ...Array.from({ length: Math.max(1, Math.min(6, Number(exercise.sets) || 3)) }, (_, setIndex) => ({
+          label: String(setIndex + 1), weight: "", reps: "", setType: workingSetType, rir: "", complete: false
+        }))
+      ]
+    }))
+  };
+}
+
+function useGeneratedClientWorkout(workout) {
+  if (workoutElapsedTimerState) {
+    throw new Error("Finish or cancel your current workout before using a generated workout.");
+  }
+  const panel = document.querySelector(".client-workout-panel-custom");
+  if (!panel) throw new Error("Your workout builder is not ready. Refresh the page and try again.");
+  const previousDraft = activeCustomWorkoutDraft();
+  const hasEnteredWorkout = customWorkoutPanelHasEnteredExerciseContent(panel)
+    || customWorkoutPanelHasAuxiliaryContent(panel)
+    || Boolean(previousDraft?.generatedFrom || previousDraft?.copiedFrom);
+  if (hasEnteredWorkout && !window.confirm("Replace your current Custom Workout draft with this generated workout? Unsaved entries will be cleared. Your saved workout history will not change.")) {
+    return false;
+  }
+
+  const draft = generatedCustomWorkoutDraft(workout);
+  const panelIndex = clientCustomWorkoutPanelIndex();
+  // Stop queued writes from the old panel before replacing its local draft.
+  cancelTrainingLogAutosaves(panel);
+  storeCustomWorkoutDraft(draft);
+  if (activeCustomWorkoutDraft()?.generatedFrom?.id !== draft.generatedFrom.id) {
+    throw new Error("This device could not save the workout draft. Free some browser storage and try again.");
+  }
+  const previousFormat = activeCustomWorkoutFormat;
+  activeCustomWorkoutFormat = "single";
+  let replacement;
+  try {
+    replacement = replaceCustomWorkoutPanelFromDraft(panelIndex);
+    if (!replacement) throw new Error("The workout could not be opened. Refresh the page and try again.");
+  } catch (error) {
+    // Rendering can fail after replaceWith; put the untouched old form back too.
+    const failedPanel = document.querySelector(".client-workout-panel-custom");
+    if (failedPanel && failedPanel !== panel) failedPanel.replaceWith(panel);
+    activeCustomWorkoutFormat = previousFormat;
+    storeCustomWorkoutFormat(previousFormat);
+    if (previousDraft) storeCustomWorkoutDraft(previousDraft);
+    else clearCustomWorkoutDraft();
+    throw error;
+  }
+  storeCustomWorkoutFormat("single");
+  closeCustomExerciseSuggestions();
+  closeRirDialog();
+  closeRestTimer();
+  resetRestTimer();
+  setClientDashboardTab("workouts");
+  activateClientWorkoutPanel(panelIndex, { scroll: false, focus: false });
+  window.requestAnimationFrame(() => {
+    replacement.scrollIntoView({ block: "start", behavior: "auto" });
+    replacement.querySelector("#custom-workout-panel-title")?.focus({ preventScroll: true });
+  });
+  return true;
+}
+
+function openClientWorkoutGenerator(button) {
+  const dialog = window.FWB_WORKOUT_GENERATOR_DIALOG;
+  if (!dialog || !window.FWB_WORKOUT_GENERATOR) {
+    window.alert("The workout generator could not load. Refresh the page and try again.");
+    return;
+  }
+  const clientEmail = activeClientEmail;
+  const programId = currentProgram?.id;
+  const opened = dialog.open({
+    library: exerciseLibraryEntries,
+    history: trainingLogs.filter(log => normalizeClientEmail(log.client_email) === normalizeClientEmail(clientEmail)),
+    returnFocus: button,
+    onUse(workout) {
+      if (activeClientEmail !== clientEmail || currentProgram?.id !== programId) {
+        throw new Error("Your selected program changed. Close this preview and generate a new workout.");
+      }
+      return useGeneratedClientWorkout(workout);
+    }
+  });
+  if (opened === false) window.alert("The workout generator could not open. Update your browser and try again.");
+}
+
 function customWorkoutDraftExercises() {
   const exercises = activeCustomWorkoutDraft()?.exercises;
   return Array.isArray(exercises) ? exercises : [];
@@ -5810,8 +5932,9 @@ function customWorkoutExercises(format = activeCustomWorkoutFormat) {
         name: exerciseName,
         group: Math.max(Number(draftExercise?.group) || 0, 0),
         groupType: normalizeCustomWorkoutInlineGroupType(draftExercise?.groupType),
-        prescription: "Custom sets",
-        rest: ""
+        prescription: draftExercise.generated ? String(draftExercise.prescription || "Custom sets") : "Custom sets",
+        rest: draftExercise.generated ? String(draftExercise.rest || "") : "",
+        ...(draftExercise.generated ? { generated: true } : {})
       });
       return;
     }
@@ -5876,6 +5999,11 @@ function serializeCustomExerciseDraft(logElement, index) {
     date: logElement.querySelector("[data-log-date]")?.value || "",
     notes: logElement.querySelector("[data-log-notes]")?.value || "",
     skipped: logElement.dataset.exerciseSkipped === "true",
+    ...(logElement.dataset.generatedExercise === "true" ? {
+      generated: true,
+      prescription: logElement.dataset.exercisePrescription || "",
+      rest: logElement.dataset.exerciseRest || ""
+    } : {}),
     sets: Array.from(logElement.querySelectorAll("[data-set-row]")).map(serializeSetRowDraft)
   };
 }
@@ -5891,6 +6019,7 @@ function customWorkoutPanelDraft(panel) {
     emptyExercises: !panel?.querySelector("[data-custom-exercise-card]"),
     nextExerciseNumber: Number(panel?.dataset.customWorkoutNextExerciseNumber) || 1,
     ...(currentDraft?.copiedFrom ? { copiedFrom: currentDraft.copiedFrom } : {}),
+    ...(currentDraft?.generatedFrom ? { generatedFrom: currentDraft.generatedFrom } : {}),
     exercises: logElements
       .map((logElement, index) => serializeCustomExerciseDraft(logElement, index))
       .filter(Boolean)
@@ -6704,6 +6833,10 @@ function adjustRestTimer(seconds) {
 
 function openRestTimer(button) {
   const overlay = ensureRestTimer();
+  const logElement = button?.closest?.("[data-exercise-log]");
+  if (logElement?.dataset.generatedExercise === "true" && logElement.dataset.exerciseRest) {
+    setRestTimerDuration(workoutCarouselRestSeconds(logElement.dataset.exerciseRest));
+  }
 
   customWorkoutGroupedRestAction = null;
   restTimerReturnFocus = button || null;
@@ -8460,11 +8593,13 @@ function customWorkoutCardMarkup(exercise, workoutTitle, index = 0, options = {}
       </div>
       ${customWorkoutInlineGroupOptionsMarkup(cardFormat, panelFormat === "single")}
       <div class="exercise-detail custom-workout-detail">
+        ${exercise.generated ? `<p class="generated-workout-target" data-generated-workout-target>Target: ${escapeHtml(exercise.prescription)} · ${escapeHtml(exercise.rest)}</p>` : ""}
         ${exerciseLogFields({
           code: exercise.code,
           name: exerciseName,
           prescription: exercise.prescription || "Custom sets",
-          rest: exercise.rest || ""
+          rest: exercise.rest || "",
+          generated: Boolean(exercise.generated)
         }, workoutTitle, {
           panelClass: "custom-exercise-log",
           showSubmit: false,
@@ -8770,7 +8905,7 @@ function customWorkoutGroupedRoundIsLogged(carousel, roundNumber) {
 }
 
 function assignedWorkoutPrescriptionLabel(logElement) {
-  if (!logElement?.closest?.(".client-workout-panel-assigned")) return "";
+  if (!logElement?.closest?.(".client-workout-panel-assigned") && logElement?.dataset?.generatedExercise !== "true") return "";
   const prescription = String(logElement.dataset.exercisePrescription || "").trim();
   if (!prescription || prescription.toLowerCase() === "custom sets") return "";
   const parsed = WorkoutLayout.prescription(prescription);
@@ -9695,6 +9830,10 @@ async function logCustomWorkoutGroupedRound(button) {
   customWorkoutGroupedRestAction = carousel.querySelector(
     `[data-custom-grouped-round="${roundNumber}"] [data-custom-grouped-round-action]`
   );
+  const generatedRestDurations = logElements
+    .filter(logElement => logElement.dataset?.generatedExercise === "true" && logElement.dataset.exerciseRest)
+    .map(logElement => workoutCarouselRestSeconds(logElement.dataset.exerciseRest));
+  if (generatedRestDurations.length) setRestTimerDuration(Math.max(...generatedRestDurations));
   resetRestTimer();
   startOrPauseRestTimer();
   const nextButton = carousel.querySelector(`[data-custom-grouped-log-round="${roundNumber + 1}"]`);
@@ -11250,6 +11389,7 @@ function customWorkoutPanelMarkup(index) {
           ${workoutStartControlMarkup(workoutStorageTitle)}
         </div>
         <div class="custom-workout-reset-control">
+          <button class="button button-ghost" type="button" data-generate-workout>Generate today’s workout</button>
           <button class="button button-ghost custom-workout-reset-button" type="button" data-reset-custom-workout>Reset workout</button>
         </div>
         <p class="custom-workout-reset-status" data-custom-workout-reset-status role="status" aria-live="polite" hidden></p>
@@ -11799,6 +11939,7 @@ function clientWorkoutListMarkup(workouts) {
         data-client-workout-selection-target="Custom workout">
         <span aria-hidden="true">+&nbsp;</span><span id="client-workout-card-title-0">Build custom workout</span>
       </button>
+      <button type="button" class="button button-dark workout-preview-start workout-generator-launch" data-generate-workout>Generate today’s workout</button>
     </div>`;
   }
   const assigned = workouts.filter(workout => !workout.isCustom);
@@ -11839,6 +11980,7 @@ function clientWorkoutListMarkup(workouts) {
   }).join("")}</div>
   ${assigned.length ? "" : '<p>No workouts in this plan. Restore the assigned plan or return to Programs to build a custom workout.</p>'}
   <div class="workout-preview-footer">
+    <button type="button" class="workout-text-button" data-generate-workout>Generate today’s workout</button>
     <button type="button" class="workout-text-button" data-client-workout-copy-history>Copy previous</button>
     <button type="button" class="workout-text-button" data-preview-restore ${locked ? "disabled" : ""}>Restore assigned exercises</button>
   </div>`;
@@ -14360,6 +14502,14 @@ function syncVisibleSetTarget(logElement) {
 
   if (logElement?.dataset.setTargetMode === "visible" && rowCount > 0) {
     logElement.dataset.prescribedSets = String(rowCount);
+    if (logElement.dataset.generatedExercise === "true") {
+      const reps = WorkoutLayout.prescription(logElement.dataset.exercisePrescription).reps;
+      if (reps) {
+        logElement.dataset.exercisePrescription = WorkoutLayout.compose(rowCount, reps);
+        const target = logElement.closest("[data-custom-exercise-card]")?.querySelector("[data-generated-workout-target]");
+        if (target) target.textContent = `Target: ${logElement.dataset.exercisePrescription} · ${logElement.dataset.exerciseRest || ""}`;
+      }
+    }
   }
 }
 
@@ -15892,6 +16042,12 @@ function removeExerciseLog(logElement) {
 
 function handleWorkoutInteractions() {
   document.addEventListener("click", async (event) => {
+    const generateWorkoutButton = event.target.closest("[data-generate-workout]");
+    if (generateWorkoutButton) {
+      event.preventDefault();
+      openClientWorkoutGenerator(generateWorkoutButton);
+      return;
+    }
     const exerciseJump = event.target.closest("[data-workout-exercise-jump]");
     if (exerciseJump) {
       jumpToWorkoutExercise(exerciseJump);
@@ -17351,7 +17507,7 @@ async function loadDashboard() {
       withTimeout(
         supabaseClient
           .from("exercise_library")
-          .select("id,name,aliases,primary_muscle,secondary_muscles,equipment,difficulty,movement_pattern,default_sets,default_reps,default_rest_seconds,substitution_group,demo_url,instructions")
+          .select("id,name,aliases,primary_muscle,secondary_muscles,equipment,difficulty,movement_pattern,default_sets,default_reps,default_rest_seconds,substitution_group,demo_url,instructions,is_active,is_approved")
           .eq("is_active", true)
           .eq("is_approved", true)
           .order("sort_order", { ascending: true })
