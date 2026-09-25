@@ -17,8 +17,8 @@ function sourceForFunction(name, nextName) {
 }
 
 test("keeps the client selector separate from the new-client invite form", () => {
-  const clientPanelStart = adminHtml.indexOf('data-admin-panel="clients"');
-  const clientPanelEnd = adminHtml.indexOf('data-admin-panel="profile"', clientPanelStart);
+  const clientPanelStart = adminHtml.indexOf('id="clients"');
+  const clientPanelEnd = adminHtml.indexOf('</section>', clientPanelStart);
   const clientPanel = adminHtml.slice(clientPanelStart, clientPanelEnd);
 
   assert.match(clientPanel, /Client selector/);

@@ -153,6 +153,26 @@
         <input type="hidden" name="sheet_url" />
         <input type="hidden" name="session_package_history" />
 
+        <section class="admin-client-list" id="clients" aria-label="Client selector">
+          <div class="admin-section-heading">
+            <div>
+              <p class="kicker">Clients</p>
+              <h2>Client selector</h2>
+            </div>
+            <div class="client-list-actions">
+              <button class="button button-ghost" type="button" id="archived-clients-button">Archived clients</button>
+            </div>
+          </div>
+          <div class="client-autocomplete" id="client-autocomplete">
+            <label class="client-search-control" for="client-search-input">
+              <span id="client-search-label">Client name</span>
+              <input type="text" id="client-search-input" placeholder="Type a client name..." autocomplete="off" spellcheck="false" role="combobox" aria-autocomplete="list" aria-controls="client-suggestions" aria-expanded="false" aria-describedby="client-selector-status" />
+            </label>
+            <ul class="client-suggestions" id="client-suggestions" role="listbox" aria-label="Matching clients" hidden></ul>
+          </div>
+          <p class="client-selector-status" id="client-selector-status" role="status" aria-live="polite"></p>
+        </section>
+
         <section class="admin-card coach-home-panel" data-admin-panel="home" aria-labelledby="coach-home-title">
           <div class="coach-home-heading">
             <div>
@@ -384,35 +404,16 @@
           <p>Build the client profile, progress check-ins, notes, and workouts here.</p>
         </section>
 
-        <section class="admin-client-list" id="clients" data-admin-panel="clients" aria-label="Client list">
-          <div class="admin-section-heading">
+        <section class="admin-card recent-client-logs-panel" data-admin-panel="clients" aria-label="Recent workout logs" hidden>
+          <div class="admin-section-heading compact-heading">
             <div>
-              <p class="kicker">Clients</p>
-              <h2>Client selector</h2>
-            </div>
-            <div class="client-list-actions">
-              <button class="button button-ghost" type="button" id="archived-clients-button">Archived clients</button>
+              <p class="kicker">Recent workout logs</p>
+              <h2>Latest client workouts</h2>
             </div>
           </div>
-          <div class="client-autocomplete" id="client-autocomplete">
-            <label class="client-search-control" for="client-search-input">
-              <span id="client-search-label">Client name</span>
-              <input type="text" id="client-search-input" placeholder="Type a client name..." autocomplete="off" spellcheck="false" role="combobox" aria-autocomplete="list" aria-controls="client-suggestions" aria-expanded="false" aria-describedby="client-selector-status" />
-            </label>
-            <ul class="client-suggestions" id="client-suggestions" role="listbox" aria-label="Matching clients" hidden></ul>
+          <div class="training-log-summary-list" id="recent-client-log-history">
+            <p class="empty-state">No workout logs yet.</p>
           </div>
-          <p class="client-selector-status" id="client-selector-status" role="status" aria-live="polite"></p>
-          <section class="admin-card recent-client-logs-panel" aria-label="Recent workout logs">
-            <div class="admin-section-heading compact-heading">
-              <div>
-                <p class="kicker">Recent workout logs</p>
-                <h2>Latest client workouts</h2>
-              </div>
-            </div>
-            <div class="training-log-summary-list" id="recent-client-log-history">
-              <p class="empty-state">No workout logs yet.</p>
-            </div>
-          </section>
         </section>
 
         <section class="admin-card" data-admin-panel="profile" hidden>
