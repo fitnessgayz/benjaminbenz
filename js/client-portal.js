@@ -5444,10 +5444,16 @@ function normalizeCustomWorkoutFormat(value) {
 
 function customWorkoutDefaultExerciseCount(format) {
   switch (normalizeCustomWorkoutFormat(format)) {
-    case "superset": return 2;
-    case "circuit": return 3;
-    default: return 4;
+    case "superset": return 10;
+    case "circuit": return 15;
+    default: return 6;
   }
+}
+
+function customWorkoutDefaultExerciseGroup(format, index) {
+  return normalizeCustomWorkoutFormat(format) === "single"
+    ? 0
+    : Math.floor(index / customWorkoutExerciseAddConfig(format).count);
 }
 
 function customWorkoutPanelHasEnteredExerciseContent(panel) {
@@ -5482,6 +5488,11 @@ function setUntouchedCustomWorkoutDefaultExercises(panel, format, cards = []) {
   while (adjustedCards.length > defaultExerciseCount) {
     adjustedCards.pop()?.remove();
   }
+
+  adjustedCards.forEach((card, index) => {
+    card.dataset.customWorkoutGroup = String(customWorkoutDefaultExerciseGroup(format, index));
+    card.dataset.customWorkoutGroupType = normalizeCustomWorkoutFormat(format);
+  });
 
   return adjustedCards;
 }
@@ -5823,8 +5834,8 @@ function customWorkoutExercises(format = activeCustomWorkoutFormat) {
   return Array.from({ length: defaultExerciseCount }, (_, index) => ({
     code: customExerciseCode(index),
     name: "",
-    group: 0,
-    groupType: "single",
+    group: customWorkoutDefaultExerciseGroup(format, index),
+    groupType: normalizeCustomWorkoutFormat(format),
     prescription: "Custom sets",
     rest: ""
   }));
@@ -9882,7 +9893,7 @@ function startFreshGroupedCustomWorkout(config = {}) {
     exercises: Array.from({ length: exerciseCount }, (_, index) => ({
       code: customExerciseCode(index),
       name: "",
-      group: format === "superset" ? Math.floor(index / 2) : 0,
+      group: customWorkoutDefaultExerciseGroup(format, index),
       groupType: format,
       date,
       notes: "",
@@ -16435,7 +16446,7 @@ function handleWorkoutInteractions() {
         const groupIndex = groupNumbers.length ? Math.max(...groupNumbers) + 1 : 0;
         const startIndex = panel.querySelectorAll("[data-custom-exercise-card]").length;
         const firstCodeNumber = Number(nextCustomExerciseCode(panel).match(/\d+/)?.[0]) || 1;
-        const exercises = Array.from({ length: customWorkoutDefaultExerciseCount(format) }, (_, index) => ({
+        const exercises = Array.from({ length: customWorkoutExerciseAddConfig(format).count }, (_, index) => ({
           code: customExerciseCode(firstCodeNumber - 1 + index),
           name: "",
           group: groupIndex,

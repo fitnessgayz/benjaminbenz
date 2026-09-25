@@ -251,6 +251,8 @@ test("saves only explicitly completed grouped rows without deleting future round
 
 test("starts a fresh custom session with a unique storage title after completion", () => {
   const defaultCount = sourceForFunction("customWorkoutDefaultExerciseCount");
+  const defaultGroup = sourceForFunction("customWorkoutDefaultExerciseGroup");
+  const addConfig = sourceForFunction("customWorkoutExerciseAddConfig");
   const restartConfig = sourceForFunction("groupedCustomWorkoutRestartConfig");
   const freshTitle = sourceForFunction("freshCustomWorkoutStorageTitle");
   const restart = sourceForFunction("startFreshGroupedCustomWorkout");
@@ -276,7 +278,7 @@ test("starts a fresh custom session with a unique storage title after completion
     "customExerciseCode",
     "replaceCustomWorkoutPanelFromDraft",
     "activateClientWorkoutPanel",
-    `${defaultCount}; ${restartConfig}; ${restart}; return { groupedCustomWorkoutRestartConfig, startFreshGroupedCustomWorkout };`
+    `${addConfig}; ${defaultCount}; ${defaultGroup}; ${restartConfig}; ${restart}; return { groupedCustomWorkoutRestartConfig, startFreshGroupedCustomWorkout };`
   )(
     (value) => ["superset", "circuit"].includes(value) ? value : "single",
     "single",
@@ -305,16 +307,16 @@ test("starts a fresh custom session with a unique storage title after completion
   restartApi.startFreshGroupedCustomWorkout({ ...supersetConfig, exerciseCount: 8 });
   assert.equal(storedDrafts[0].format, "superset");
   assert.equal(storedDrafts[0].date, "2026-09-17");
-  assert.deepEqual(storedDrafts[0].exercises.map((exercise) => exercise.code), ["CW01", "CW02"]);
-  assert.deepEqual(storedDrafts[0].exercises.map((exercise) => exercise.group), [0, 0]);
+  assert.deepEqual(storedDrafts[0].exercises.map((exercise) => exercise.code), Array.from({ length: 10 }, (_, index) => `CW${String(index + 1).padStart(2, "0")}`));
+  assert.deepEqual(storedDrafts[0].exercises.map((exercise) => exercise.group), [0, 0, 1, 1, 2, 2, 3, 3, 4, 4]);
   assert.ok(storedDrafts[0].exercises.every((exercise) => exercise.name === "" && exercise.groupType === "superset"));
 
   panel.dataset.customWorkoutFormat = "circuit";
   const circuitConfig = restartApi.groupedCustomWorkoutRestartConfig(panel);
   restartApi.startFreshGroupedCustomWorkout({ ...circuitConfig, exerciseCount: 8 });
   assert.equal(storedDrafts[1].format, "circuit");
-  assert.deepEqual(storedDrafts[1].exercises.map((exercise) => exercise.code), ["CW01", "CW02", "CW03"]);
-  assert.deepEqual(storedDrafts[1].exercises.map((exercise) => exercise.group), [0, 0, 0]);
+  assert.deepEqual(storedDrafts[1].exercises.map((exercise) => exercise.code), Array.from({ length: 15 }, (_, index) => `CW${String(index + 1).padStart(2, "0")}`));
+  assert.deepEqual(storedDrafts[1].exercises.map((exercise) => exercise.group), [0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4]);
   assert.ok(storedDrafts[1].exercises.every((exercise) => exercise.name === "" && exercise.groupType === "circuit"));
 });
 

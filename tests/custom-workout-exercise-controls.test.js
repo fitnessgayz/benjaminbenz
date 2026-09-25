@@ -22,7 +22,7 @@ function evaluate(names, values = {}) {
 }
 
 function exerciseContext(draft = null) {
-  return evaluate(["normalizeCustomWorkoutFormat", "customWorkoutDefaultExerciseCount", "customExerciseCode", "customWorkoutDraftExercises", "customWorkoutExercises"], {
+  return evaluate(["normalizeCustomWorkoutFormat", "customWorkoutExerciseAddConfig", "customWorkoutDefaultExerciseCount", "customWorkoutDefaultExerciseGroup", "customExerciseCode", "customWorkoutDraftExercises", "customWorkoutExercises"], {
     activeCustomWorkoutFormat: "single",
     customWorkoutFormats: { single: {}, superset: {}, circuit: {} },
     activeCustomWorkoutDraft: () => draft,
@@ -30,20 +30,21 @@ function exerciseContext(draft = null) {
   });
 }
 
-test("fresh straight sets start with four blank exercises while grouped defaults remain two and three", () => {
+test("fresh straight sets start with six blank exercises and grouped workouts start with five groups", () => {
   const context = exerciseContext();
   const exercises = plain(context.customWorkoutExercises());
   assert.deepEqual(exercises.map(({ code, name }) => ({ code, name })), [
     { code: "CW01", name: "" }, { code: "CW02", name: "" },
-    { code: "CW03", name: "" }, { code: "CW04", name: "" }
+    { code: "CW03", name: "" }, { code: "CW04", name: "" },
+    { code: "CW05", name: "" }, { code: "CW06", name: "" }
   ]);
-  assert.equal(context.customWorkoutExercises("superset").length, 2);
-  assert.equal(context.customWorkoutExercises("circuit").length, 3);
+  assert.equal(context.customWorkoutExercises("superset").length, 10);
+  assert.equal(context.customWorkoutExercises("circuit").length, 15);
 });
 
 test("explicitly removing every exercise stays empty on restore, while older empty drafts keep defaults", () => {
   assert.deepEqual(plain(exerciseContext({ emptyExercises: true, exercises: [] }).customWorkoutExercises()), []);
-  assert.equal(exerciseContext({ exercises: [] }).customWorkoutExercises().length, 4);
+  assert.equal(exerciseContext({ exercises: [] }).customWorkoutExercises().length, 6);
   const saved = [{ code: "CW03", name: "Cable Row", group: 1, groupType: "superset" }];
   assert.equal(exerciseContext({ exercises: saved }).customWorkoutExercises().length, 1);
   assert.equal(exerciseContext({ exercises: saved }).customWorkoutExercises()[0].name, "Cable Row");

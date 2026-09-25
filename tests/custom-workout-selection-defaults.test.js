@@ -73,8 +73,10 @@ test("selecting an exercise suggestion closes the list and releases mobile focus
   assert.doesNotMatch(rowMarkup, /<label class="custom-workout-group-name-row"/);
 });
 
-test("fresh grouped workouts start with their exact default exercise counts", () => {
+test("fresh workouts start with six straight exercises, five supersets, or five circuits", () => {
   const defaultCountSource = sourceForFunction("customWorkoutDefaultExerciseCount");
+  const defaultGroupSource = sourceForFunction("customWorkoutDefaultExerciseGroup");
+  const addConfigSource = sourceForFunction("customWorkoutExerciseAddConfig");
   const exercisesSource = sourceForFunction("customWorkoutExercises");
   const enteredContentSource = sourceForFunction("customWorkoutPanelHasEnteredExerciseContent");
   const resizeDefaultsSource = sourceForFunction("setUntouchedCustomWorkoutDefaultExercises");
@@ -89,7 +91,7 @@ test("fresh grouped workouts start with their exact default exercise counts", ()
     "normalizeCustomWorkoutFormat",
     "activeCustomWorkoutFormat",
     "activeCustomWorkoutDraft",
-    `${defaultCountSource}; ${exercisesSource}; return { customWorkoutDefaultExerciseCount, customWorkoutExercises };`
+    `${addConfigSource}; ${defaultCountSource}; ${defaultGroupSource}; ${exercisesSource}; return { customWorkoutDefaultExerciseCount, customWorkoutExercises };`
   )(
     () => draftExercises,
     (index) => `CW${String(index + 1).padStart(2, "0")}`,
@@ -99,13 +101,31 @@ test("fresh grouped workouts start with their exact default exercise counts", ()
     () => null
   );
 
-  assert.equal(defaults.customWorkoutDefaultExerciseCount("single"), 4);
-  assert.equal(defaults.customWorkoutDefaultExerciseCount("superset"), 2);
-  assert.equal(defaults.customWorkoutDefaultExerciseCount("circuit"), 3);
-  assert.equal(defaults.customWorkoutDefaultExerciseCount("unknown"), 4);
-  assert.deepEqual(defaults.customWorkoutExercises("superset").map((exercise) => exercise.code), ["CW01", "CW02"]);
-  assert.deepEqual(defaults.customWorkoutExercises("circuit").map((exercise) => exercise.code), ["CW01", "CW02", "CW03"]);
-  assert.equal(defaults.customWorkoutExercises("single").length, 4);
+  assert.equal(defaults.customWorkoutDefaultExerciseCount("single"), 6);
+  assert.equal(defaults.customWorkoutDefaultExerciseCount("superset"), 10);
+  assert.equal(defaults.customWorkoutDefaultExerciseCount("circuit"), 15);
+  assert.equal(defaults.customWorkoutDefaultExerciseCount("unknown"), 6);
+  assert.deepEqual(defaults.customWorkoutExercises("superset").map((exercise) => exercise.group), [0, 0, 1, 1, 2, 2, 3, 3, 4, 4]);
+  assert.deepEqual(defaults.customWorkoutExercises("circuit").map((exercise) => exercise.group), [0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4]);
+  assert.equal(defaults.customWorkoutExercises("single").length, 6);
+
+  const renderedGroups = [];
+  const renderCarousel = Function(
+    "customWorkoutExercises",
+    "customWorkoutCarouselGroupMarkup",
+    `${carouselMarkup}; return customWorkoutCarouselMarkup;`
+  )(defaults.customWorkoutExercises, (format, exercises, group, startIndex) => {
+    renderedGroups.push({ format, count: exercises.length, group, startIndex });
+    return "";
+  });
+  for (const [format, size] of [["superset", 2], ["circuit", 3]]) {
+    renderedGroups.length = 0;
+    renderCarousel(format, "Custom workout");
+    assert.equal(renderedGroups.length, 5);
+    assert.deepEqual(renderedGroups.map((group) => group.count), [size, size, size, size, size]);
+    assert.deepEqual(renderedGroups.map((group) => group.group), [0, 1, 2, 3, 4]);
+    assert.deepEqual(renderedGroups.map((group) => group.startIndex), [0, size, size * 2, size * 3, size * 4]);
+  }
 
   draftExercises = [{ code: "CW01", name: "Existing exercise", group: 0, groupType: "single" }];
   assert.deepEqual(defaults.customWorkoutExercises("superset").map((exercise) => exercise.name), ["Existing exercise"]);
@@ -115,23 +135,28 @@ test("fresh grouped workouts start with their exact default exercise counts", ()
   const resizeDefaults = Function(
     "normalizeCustomWorkoutFormat",
     "appendInlineGroupingPartner",
-    `${defaultCountSource}; ${resizeDefaultsSource}; return setUntouchedCustomWorkoutDefaultExercises;`
+    `${addConfigSource}; ${defaultCountSource}; ${defaultGroupSource}; ${resizeDefaultsSource}; return setUntouchedCustomWorkoutDefaultExercises;`
   )(
     (value) => ["superset", "circuit"].includes(value) ? value : "single",
-    () => ({ id: `generated-${generatedCard += 1}`, remove() {} })
+    () => ({ id: `generated-${generatedCard += 1}`, dataset: {}, remove() {} })
   );
-  const circuitCards = resizeDefaults({}, "circuit", [{ id: "existing", remove() {} }]);
-  assert.equal(circuitCards.length, 3);
-  const removableCards = Array.from({ length: 3 }, (_, index) => ({
+  const circuitCards = resizeDefaults({}, "circuit", [{ id: "existing", dataset: {}, remove() {} }]);
+  assert.equal(circuitCards.length, 15);
+  assert.deepEqual(circuitCards.map((card) => card.dataset.customWorkoutGroup), ["0", "0", "0", "1", "1", "1", "2", "2", "2", "3", "3", "3", "4", "4", "4"]);
+  assert.ok(circuitCards.every((card) => card.dataset.customWorkoutGroupType === "circuit"));
+  const removableCards = Array.from({ length: 15 }, (_, index) => ({
     id: `card-${index + 1}`,
+    dataset: {},
     removed: false,
     remove() { this.removed = true; }
   }));
   const supersetCards = resizeDefaults({}, "superset", removableCards);
-  assert.equal(supersetCards.length, 2);
-  assert.equal(removableCards[2].removed, true);
+  assert.equal(supersetCards.length, 10);
+  assert.deepEqual(supersetCards.map((card) => card.dataset.customWorkoutGroup), ["0", "0", "1", "1", "2", "2", "3", "3", "4", "4"]);
+  assert.equal(removableCards[10].removed, true);
   const straightCards = resizeDefaults({}, "single", removableCards.slice(0, 2));
-  assert.equal(straightCards.length, 4);
+  assert.equal(straightCards.length, 6);
+  assert.ok(straightCards.every((card) => card.dataset.customWorkoutGroup === "0" && card.dataset.customWorkoutGroupType === "single"));
   assert.equal(removableCards[1].removed, false);
 
   const hasEnteredContent = Function(
