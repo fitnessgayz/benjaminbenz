@@ -15447,6 +15447,19 @@ body.client-dashboard-page.is-loading > :is(.client-dashboard-tabs,
 }
 
 @media (max-width: 900px) {
+  /* Keep the document as the vertical scroller. overflow-x: hidden makes these
+     wrappers scroll containers and can move Safari's fixed dock during a swipe. */
+  html:has(> body.client-dashboard-page) {
+    overflow-x: clip;
+    overscroll-behavior-y: none;
+  }
+
+  body.client-dashboard-page,
+  .client-dashboard-page .dashboard-shell,
+  .client-dashboard-page #dashboard-content {
+    overflow-x: clip !important;
+  }
+
   body.client-dashboard-page {
     padding-bottom: calc(116px + env(safe-area-inset-bottom));
   }
