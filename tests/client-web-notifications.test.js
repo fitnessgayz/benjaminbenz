@@ -145,7 +145,7 @@ function createClientNotificationHarness({ deferredPreferences = false } = {}) {
 test("client Supabase auth explicitly persists and refreshes the session", () => {
   assert.match(portal, /createClient\(config\.url, config\.anonKey,\s*\{[\s\S]*?persistSession:\s*true/);
   assert.match(portal, /autoRefreshToken:\s*true/);
-  assert.match(portal, /detectSessionInUrl:\s*true/);
+  assert.match(portal, /detectSessionInUrl:\s*!window\.FWB_GOOGLE_HEALTH\?\.isCallbackUrl\(window\.location\.href\)/);
 });
 
 test("client Settings keeps every notification feature together", () => {
@@ -157,7 +157,7 @@ test("client Settings keeps every notification feature together", () => {
   assert.doesNotMatch(homePanel, /data-web-notifications/);
   assert.ok(settingsStart >= 0);
   assert.match(settingsPanel, /<p class="kicker">Settings<\/p>/);
-  assert.match(settingsPanel, /<h2 id="client-notification-settings-title">Notification settings<\/h2>/);
+  assert.match(settingsPanel, /<h2 id="client-notification-settings-title">Settings<\/h2>/);
   assert.match(settingsPanel, /data-web-notifications hidden/);
   assert.match(settingsPanel, /data-web-notification-enable/);
   assert.match(settingsPanel, /data-web-notification-test/);

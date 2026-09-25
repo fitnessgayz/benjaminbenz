@@ -13010,6 +13010,10 @@ function configureClientAppleWorkouts() {
 
 function configureClientGoogleHealth() {
   clientGoogleHealthController?.destroy();
+  clientGoogleHealthController = null;
+  if (window.FWB_GOOGLE_HEALTH?.isCallbackUrl(window.location.href)) {
+    setClientDashboardTab("notifications");
+  }
   clientGoogleHealthController = window.FWB_GOOGLE_HEALTH?.createController({
     supabaseClient,
     clientEmail: normalizeClientEmail(activeClientEmail),

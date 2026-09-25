@@ -76,7 +76,7 @@ test("keeps the Supabase copy authenticated, UID-linked, allowlisted, and profil
 });
 
 test("discloses questionnaire processing by Google Sheets and Supabase", () => {
-  assert.match(privacyPolicy, /Effective September 15, 2026/);
+  assert.match(privacyPolicy, /Effective September 24, 2026/);
   assert.match(privacyPolicy, /Fitness questionnaire information:/);
   assert.match(privacyPolicy, /Google Apps Script to a restricted Google Sheet/);
   assert.match(privacyPolicy, /authenticated client copies of fitness questionnaires[\s\S]*?Supabase project/);

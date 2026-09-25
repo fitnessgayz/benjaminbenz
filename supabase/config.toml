@@ -38,7 +38,8 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.fitbit-auth]
-verify_jwt = true
+# User actions verify the bearer with auth.getUser; scheduled sync verifies its private secret.
+verify_jwt = false
 
 [functions.submit-fitness-questionnaire]
 verify_jwt = true

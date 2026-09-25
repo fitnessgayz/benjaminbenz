@@ -5,12 +5,22 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Client Dashboard | Fitness with Benjamin</title>
   <meta name="description" content="Fitness with Benjamin private client dashboard." />
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-P3FPJMJ4PK"></script>
+  <meta name="referrer" content="no-referrer" />
   <script>
     window.dataLayer = window.dataLayer || [];
     function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    gtag('config', 'G-P3FPJMJ4PK');
+    // OAuth callback codes must never be included in an analytics page view.
+    const analyticsParams = new URLSearchParams(window.location.search);
+    const healthCallback = (analyticsParams.get('state') || '').startsWith('fwbgh_') &&
+      (analyticsParams.has('code') || analyticsParams.has('error'));
+    if (!healthCallback) {
+      const analyticsScript = document.createElement('script');
+      analyticsScript.async = true;
+      analyticsScript.src = 'https://www.googletagmanager.com/gtag/js?id=G-P3FPJMJ4PK';
+      document.head.appendChild(analyticsScript);
+      gtag('js', new Date());
+      gtag('config', 'G-P3FPJMJ4PK');
+    }
   </script>
   <link rel="shortcut icon" href="/favicon.ico" />
   <link rel="icon" href="/favicon.ico" sizes="any" />
@@ -38,6 +48,7 @@
   <link rel="stylesheet" href="css/mood-checkin.css?v=1" />
   <link rel="stylesheet" href="css/coach-preview.css?v=return-coach-1" />
   <link rel="stylesheet" href="css/apple-workout.css?v=1" />
+  <link rel="stylesheet" href="css/google-health.css?v=1" />
   <link rel="stylesheet" href="css/workout-share-card.css?v=1" />
   <link rel="stylesheet" href="css/rir-help.css?v=1" />
   <link rel="stylesheet" href="css/client-session-alerts.css?v=1" />
@@ -967,13 +978,22 @@
           <div class="training-log-history" id="client-training-log-history">
             <p class="empty-state">No workout or nutrition logs yet.</p>
           </div>
+          <section class="google-health-history" aria-labelledby="client-google-health-history-title">
+            <p class="kicker">Connected health</p>
+            <h3 id="client-google-health-history-title">Fitbit &amp; Pixel Watch workouts</h3>
+            <p class="google-health-help">Your latest 50 imported workouts. Manage your Google connection in Settings.</p>
+            <p class="google-health-message" data-google-health-activities-status role="status"></p>
+            <div class="google-health-activities" data-google-health-activities aria-live="polite">
+              <p class="google-health-help">Loading imported workouts…</p>
+            </div>
+          </section>
         </section>
 
         <section class="progress-panel client-settings-panel" data-client-dashboard-panel="notifications" aria-labelledby="client-notification-settings-title" hidden>
           <div class="panel-heading">
             <div>
               <p class="kicker">Settings</p>
-              <h2 id="client-notification-settings-title">Notification settings</h2>
+              <h2 id="client-notification-settings-title">Settings</h2>
             </div>
           </div>
           <article class="client-home-card client-home-card-notifications web-notification-center" data-web-notifications hidden>
@@ -1018,6 +1038,31 @@
               <ul class="web-notification-list" data-web-notification-list aria-live="polite"></ul>
             </section>
           </article>
+          <article class="google-health-settings" data-google-health-settings aria-labelledby="client-google-health-title" aria-busy="true">
+            <div class="google-health-heading">
+              <div>
+                <p class="kicker">Connected health</p>
+                <h3 id="client-google-health-title">Google Health</h3>
+              </div>
+              <span class="google-health-status" data-google-health-status>Checking connection…</span>
+            </div>
+            <p class="google-health-help">Connect your Fitbit or Pixel Watch through Google to bring your workouts into FWB automatically.</p>
+            <p class="google-health-help">With your permission, FWB reads workout dates, activity types, duration, distance, total calories, and average heart rate when available. Imported workouts appear in Saved logs for you and your coach.</p>
+            <label class="google-health-auto">
+              <input type="checkbox" data-google-health-auto disabled />
+              <span><strong>Automatically sync workouts</strong><small>Checks the last 30 days about every 15 minutes, even when FWB is closed. You can pause at any time.</small></span>
+            </label>
+            <div class="google-health-actions">
+              <button type="button" data-google-health-connect disabled>Connect Google</button>
+              <button type="button" data-google-health-sync hidden>Sync now</button>
+              <button type="button" data-google-health-disconnect hidden>Disconnect Google</button>
+            </div>
+            <p class="google-health-help google-health-last-sync" data-google-health-last-sync></p>
+            <p class="google-health-message" data-google-health-message role="status" aria-live="polite" aria-atomic="true"></p>
+            <a class="google-health-revoke" data-google-health-revoke href="https://myaccount.google.com/connections" target="_blank" rel="noopener noreferrer" hidden>Open Google Account connections</a>
+            <button type="button" data-google-health-refresh>Refresh status</button>
+            <p class="google-health-privacy">Disconnecting stops future imports. Previously imported workouts stay in Saved logs. <a href="fwb-training-privacy.html">Read the privacy policy</a>.</p>
+          </article>
         </section>
 
         <dialog class="client-monthly-report-dialog" id="client-monthly-report-dialog" aria-labelledby="client-monthly-report-dialog-title">
@@ -1047,11 +1092,12 @@
   <script src="js/workout-layout.js?v=exercise-preview-3"></script>
   <script src="js/client-weekly-activity.js?v=1"></script>
   <script src="js/apple-workout.js?v=3"></script>
+  <script src="js/google-health.js?v=1"></script>
   <script src="js/workout-share-card.js?v=1"></script>
   <script src="js/rir-help.js?v=2"></script>
   <script src="js/pr-help.js?v=1"></script>
   <script src="js/client-session-alerts.js?v=2"></script>
-  <script src="js/client-portal.js?v=custom-workout-history-1&amp;cancel-workout=1&amp;energy-feedback=1&amp;mood-redesign=1&amp;visible-group-controls=1&amp;exercise-videos=1&amp;remember-login=1&amp;visible-demos=1&amp;personal-bests=1&amp;copy-last-weights=1&amp;demo-icons=1&amp;keyboard-entry=1&amp;copy-set-pr=3&amp;return-coach=1&amp;apple-workout=2&amp;apple-share=1&amp;rir-help=1&amp;viewport-dock=1&amp;compact-copy=1&amp;exercise-pr-notes=1&amp;pr-info=1&amp;finish-workout=2&amp;prescribed-targets=1&amp;exercise-controls=1&amp;session-alerts=1&amp;exercise-labels=1&amp;exercise-list=2&amp;grouped-add=1"></script>
+  <script src="js/client-portal.js?v=custom-workout-history-1&amp;cancel-workout=1&amp;energy-feedback=1&amp;mood-redesign=1&amp;visible-group-controls=1&amp;exercise-videos=1&amp;remember-login=1&amp;visible-demos=1&amp;personal-bests=1&amp;copy-last-weights=1&amp;demo-icons=1&amp;keyboard-entry=1&amp;copy-set-pr=3&amp;return-coach=1&amp;apple-workout=2&amp;apple-share=1&amp;rir-help=1&amp;viewport-dock=1&amp;compact-copy=1&amp;exercise-pr-notes=1&amp;pr-info=1&amp;finish-workout=2&amp;prescribed-targets=1&amp;exercise-controls=1&amp;session-alerts=1&amp;exercise-labels=1&amp;exercise-list=2&amp;grouped-add=1&amp;google-health=1"></script>
   <script src="js/workout-exercise-dock.js?v=1"></script>
 </body>
 </html>
