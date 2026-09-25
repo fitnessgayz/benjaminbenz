@@ -11934,12 +11934,20 @@ function clientWorkoutListMarkup(workouts) {
         <strong>${escapeHtml(program.program_title || "Your program")}</strong>
         <span>${(program.workouts || []).length} workouts <span aria-hidden="true">→</span></span>
       </button>`).join("")}
-      <button type="button" class="button button-dark workout-preview-start"
-        data-client-workout-picker-choose="0" data-client-workout-picker-card="0"
-        data-client-workout-selection-target="Custom workout">
-        <span aria-hidden="true">+&nbsp;</span><span id="client-workout-card-title-0">Build custom workout</span>
-      </button>
-      <button type="button" class="button button-dark workout-preview-start workout-generator-launch" data-generate-workout>Generate today’s workout</button>
+      <div class="workout-start-choices">
+        <div class="workout-choice-summary">
+          <button type="button" class="button button-dark workout-preview-start"
+            data-client-workout-picker-choose="0" data-client-workout-picker-card="0"
+            data-client-workout-selection-target="Custom workout" aria-describedby="workout-custom-description">
+            <span aria-hidden="true">+&nbsp;</span><span id="client-workout-card-title-0">Build custom workout</span>
+          </button>
+          <p class="workout-choice-description" id="workout-custom-description">Choose your exercises, sets, and reps to build your own session.</p>
+        </div>
+        <div class="workout-choice-summary">
+          <button type="button" class="button button-dark workout-preview-start workout-generator-launch" data-generate-workout aria-describedby="workout-generate-description">Generate today’s workout</button>
+          <p class="workout-choice-description" id="workout-generate-description">Get a workout based on your focus, equipment, time, and intensity.</p>
+        </div>
+      </div>
     </div>`;
   }
   const assigned = workouts.filter(workout => !workout.isCustom);
@@ -11980,7 +11988,10 @@ function clientWorkoutListMarkup(workouts) {
   }).join("")}</div>
   ${assigned.length ? "" : '<p>No workouts in this plan. Restore the assigned plan or return to Programs to build a custom workout.</p>'}
   <div class="workout-preview-footer">
-    <button type="button" class="workout-text-button" data-generate-workout>Generate today’s workout</button>
+    <div class="workout-choice-summary">
+      <button type="button" class="workout-text-button" data-generate-workout aria-describedby="workout-generate-description">Generate today’s workout</button>
+      <p class="workout-choice-description" id="workout-generate-description">Get a workout based on your focus, equipment, time, and intensity.</p>
+    </div>
     <button type="button" class="workout-text-button" data-client-workout-copy-history>Copy previous</button>
     <button type="button" class="workout-text-button" data-preview-restore ${locked ? "disabled" : ""}>Restore assigned exercises</button>
   </div>`;
