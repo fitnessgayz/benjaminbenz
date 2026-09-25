@@ -11926,27 +11926,51 @@ function clientWorkoutPickerMarkup(workouts) {
   `;
 }
 
+function clientWorkoutChoiceContent({ icon, title, description, titleId, descriptionId }) {
+  const icons = {
+    calendar: '<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M16 3v4M8 3v4M3 11h18"/><path d="M8 15h.01M12 15h.01M16 15h.01M8 18h.01M12 18h.01M16 18h.01"/>',
+    plus: '<path d="M12 5v14M5 12h14"/>',
+    sparkles: '<path d="m9 3 2.2 5.8L17 11l-5.8 2.2L9 19l-2.2-5.8L1 11l5.8-2.2L9 3Z"/><path d="m19 14 1.1 2.9L23 18l-2.9 1.1L19 22l-1.1-2.9L15 18l2.9-1.1L19 14Z"/>'
+  };
+  return `<span class="workout-choice-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false">${icons[icon] || icons.calendar}</svg></span>
+    <span class="workout-choice-copy">
+      <strong class="workout-choice-title" id="${titleId}">${escapeHtml(title)}</strong>
+      <span class="workout-choice-description" id="${descriptionId}">${escapeHtml(description)}</span>
+    </span>
+    <svg class="workout-choice-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 12h16m-7-7 7 7-7 7"/></svg>`;
+}
+
 function clientWorkoutListMarkup(workouts) {
   if (!clientPreviewProgramSelected) {
     const programs = clientAvailablePrograms.length ? clientAvailablePrograms : [currentProgram];
-    return `<div class="workout-program-picker"><h3>Select a program</h3>${programs.map((program, index) => `
-      <button type="button" class="workout-program-choice" data-preview-program="${index}">
-        <strong>${escapeHtml(program.program_title || "Your program")}</strong>
-        <span>${(program.workouts || []).length} workouts <span aria-hidden="true">→</span></span>
-      </button>`).join("")}
-      <div class="workout-start-choices">
-        <div class="workout-choice-summary">
-          <button type="button" class="button button-dark workout-preview-start"
-            data-client-workout-picker-choose="0" data-client-workout-picker-card="0"
-            data-client-workout-selection-target="Custom workout" aria-describedby="workout-custom-description">
-            <span aria-hidden="true">+&nbsp;</span><span id="client-workout-card-title-0">Build custom workout</span>
-          </button>
-          <p class="workout-choice-description" id="workout-custom-description">Choose your exercises, sets, and reps to build your own session.</p>
-        </div>
-        <div class="workout-choice-summary">
-          <button type="button" class="button button-dark workout-preview-start workout-generator-launch" data-generate-workout aria-describedby="workout-generate-description">Generate today’s workout</button>
-          <p class="workout-choice-description" id="workout-generate-description">Get a workout based on your focus, equipment, time, and intensity.</p>
-        </div>
+    return `<div class="workout-program-picker"><h3>Choose how to train</h3>
+      <div class="workout-choice-list">${programs.map((program, index) => `
+        <button type="button" class="workout-choice-card" data-preview-program="${index}"
+          aria-labelledby="workout-program-title-${index}" aria-describedby="workout-program-description-${index}">
+          ${clientWorkoutChoiceContent({
+            icon: "calendar", title: program.program_title || "Your program",
+            description: `Follow your assigned program · ${(program.workouts || []).length} ${(program.workouts || []).length === 1 ? "workout" : "workouts"}`,
+            titleId: `workout-program-title-${index}`, descriptionId: `workout-program-description-${index}`
+          })}
+        </button>`).join("")}
+        <button type="button" class="workout-choice-card"
+          data-client-workout-picker-choose="0" data-client-workout-picker-card="0"
+          data-client-workout-selection-target="Custom workout"
+          aria-labelledby="client-workout-card-title-0" aria-describedby="workout-custom-description">
+          ${clientWorkoutChoiceContent({
+            icon: "plus", title: "Build custom workout",
+            description: "Choose your exercises, sets, and reps to build your own session.",
+            titleId: "client-workout-card-title-0", descriptionId: "workout-custom-description"
+          })}
+        </button>
+        <button type="button" class="workout-choice-card" data-generate-workout
+          aria-labelledby="workout-generate-title" aria-describedby="workout-generate-description">
+          ${clientWorkoutChoiceContent({
+            icon: "sparkles", title: "Generate today’s workout",
+            description: "Get a workout based on your focus, equipment, time, and intensity.",
+            titleId: "workout-generate-title", descriptionId: "workout-generate-description"
+          })}
+        </button>
       </div>
     </div>`;
   }
@@ -11988,10 +12012,14 @@ function clientWorkoutListMarkup(workouts) {
   }).join("")}</div>
   ${assigned.length ? "" : '<p>No workouts in this plan. Restore the assigned plan or return to Programs to build a custom workout.</p>'}
   <div class="workout-preview-footer">
-    <div class="workout-choice-summary">
-      <button type="button" class="workout-text-button" data-generate-workout aria-describedby="workout-generate-description">Generate today’s workout</button>
-      <p class="workout-choice-description" id="workout-generate-description">Get a workout based on your focus, equipment, time, and intensity.</p>
-    </div>
+    <button type="button" class="workout-choice-card" data-generate-workout
+      aria-labelledby="workout-generate-title" aria-describedby="workout-generate-description">
+      ${clientWorkoutChoiceContent({
+        icon: "sparkles", title: "Generate today’s workout",
+        description: "Get a workout based on your focus, equipment, time, and intensity.",
+        titleId: "workout-generate-title", descriptionId: "workout-generate-description"
+      })}
+    </button>
     <button type="button" class="workout-text-button" data-client-workout-copy-history>Copy previous</button>
     <button type="button" class="workout-text-button" data-preview-restore ${locked ? "disabled" : ""}>Restore assigned exercises</button>
   </div>`;
