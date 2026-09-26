@@ -66,6 +66,11 @@ verify_jwt = false
 [functions.fwb-web-push]
 verify_jwt = false
 
+# Private cron worker: verifies the existing Vault-backed push bearer before
+# sending through Apple's APNs provider API.
+[functions.fwb-native-push]
+verify_jwt = false
+
 # Private cron worker: verifies its dedicated Vault bearer before any queue claim.
 [functions.send-message-email]
 verify_jwt = false

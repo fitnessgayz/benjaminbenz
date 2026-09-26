@@ -31,6 +31,12 @@ before Safari can grant web-push permission. The native iOS app also displays th
 same notification in its in-app notification inbox; native APNs banners require
 the signed app's Push Notifications entitlement and an active APNs delivery key.
 
+Native app delivery connects directly to Apple's APNs provider API, so there is
+no third-party notification fee. Before release, enable Push Notifications for
+`com.benjaminbenz.fwbcoach`, regenerate the App Store provisioning profile, and
+configure the APNs team ID, key ID, and downloaded `.p8` private key as protected
+Edge Function secrets. The private key must never be committed.
+
 ## Email notifications
 
 Email delivery is deployed but currently disabled while the sending account and verified sender are configured. Messages and unread badges already work in FWB Training.
