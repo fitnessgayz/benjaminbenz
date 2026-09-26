@@ -1711,6 +1711,7 @@
 
 .dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-card-heading {
   display: flex;
+  flex-wrap: wrap;
   min-width: 0;
   padding: 16px;
   align-items: flex-start;
@@ -1735,6 +1736,8 @@
 
 .dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-progress {
   flex: 0 0 auto;
+  min-width: 0;
+  max-width: 100%;
   color: #497000;
   font-size: .75rem;
   font-weight: 900;
@@ -1742,6 +1745,7 @@
   line-height: 1.25;
   text-align: right;
   text-transform: uppercase;
+  overflow-wrap: anywhere;
 }
 
 .dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-timer {
@@ -2908,7 +2912,7 @@ body.dashboard-page.custom-workout-grouped-finish-open {
 
 .dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-exercise-key-item > .custom-workout-grouped-pr-preview {
   grid-column: 2 / -1;
-  grid-row: 2;
+  grid-row: auto;
   min-width: 0;
   max-width: 100%;
   margin: 0;
@@ -2926,9 +2930,11 @@ body.dashboard-page.custom-workout-grouped-finish-open {
   display: none !important;
 }
 
+/* Targets, generated instructions and PR notes each need their own content-sized
+   row. Pinning them to row 2 makes longer instructions overlap the target. */
 .dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-exercise-key-item > .custom-workout-grouped-target {
   grid-column: 2 / -1;
-  grid-row: 2;
+  grid-row: auto;
   min-width: 0;
   margin: 0;
   color: var(--grouped-ink);
@@ -2939,10 +2945,6 @@ body.dashboard-page.custom-workout-grouped-finish-open {
   letter-spacing: 0;
   text-transform: none;
   overflow-wrap: anywhere;
-}
-
-.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-target + .custom-workout-grouped-pr-preview {
-  grid-row: 3;
 }
 
 .dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-copy-status {
