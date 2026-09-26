@@ -106,6 +106,7 @@ function fixture({ mobile = true, hidden = false, loading = false } = {}) {
   const dock = [navigation, toggle, fade, cue];
   document = {
     body,
+    documentElement: { style: { setProperty() {} } },
     activeElement: body,
     querySelector: (selector) => body.matches(selector) ? body : body.querySelector(selector),
     querySelectorAll: (selector) => body.querySelectorAll(selector),
@@ -114,10 +115,11 @@ function fixture({ mobile = true, hidden = false, loading = false } = {}) {
     addEventListener() {}
   };
   const context = vm.createContext({
-    document, window: { matchMedia: () => mobileQuery }, setText() {}
+    document, window: { innerHeight: 844, matchMedia: () => mobileQuery }, setText() {}
   });
   vm.runInContext([
-    "syncClientDashboardMobileNavigationMount", "setDashboardMessage", "showDashboardContent"
+    "syncClientDashboardMobileNavigationMount", "syncClientDashboardVisualViewportBottom",
+    "setDashboardMessage", "showDashboardContent"
   ].map(functionSource).join("\n"), context);
   moveCount = 0;
   return {
