@@ -185,6 +185,8 @@ function finishFixture({ outcome = 'success', hasStrengthTimer = true, isCardio 
     renderClientTrainingLogs: () => events.push(['render-logs']),
     activeCustomWorkoutDraft: () => customDraft,
     clearCustomWorkoutDraft: () => events.push(['clear-custom-draft']),
+    clientAchievementSnapshot: () => null,
+    clientWorkoutAchievementCelebration: () => null,
     workoutCompletionShareSummary: (rows) => rows,
     openWorkoutCompletionSharePrompt: (rows) => events.push(['share', plain(rows)]),
     startFreshGroupedCustomWorkout: () => events.push(['restart-grouped'])

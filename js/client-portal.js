@@ -22,6 +22,9 @@ let activeClientEmail = "";
 let signedInDashboardEmail = "";
 let isCoachDashboardPreview = false;
 let trainingLogs = [];
+let clientAchievementHistoryStatus = "loading";
+let clientAchievementController = null;
+let clientAchievementRetryInFlight = false;
 let workoutSessionFeedback = [];
 let clientWorkoutHistoryDeleteInFlight = false;
 const clientWorkoutSessionIdentities = new Map();
@@ -7353,6 +7356,7 @@ function workoutCompletionSharePromptMarkup() {
           </div>
           <button type="button" data-workout-share-dismiss aria-label="Close workout sharing prompt">×</button>
         </header>
+        <section class="achievement-celebration" data-workout-achievements aria-label="New workout achievements" hidden></section>
         <article class="workout-completion-share-card" aria-label="Workout completion share preview">
           <span class="workout-completion-share-brand">FWB</span>
           <p data-workout-share-state>Workout complete</p>
@@ -7401,13 +7405,18 @@ function workoutCompletionShareImage(summary = {}) {
   return window.FWBWorkoutShareCard?.image(summary) || Promise.resolve(null);
 }
 
-function openWorkoutCompletionSharePrompt(summary, returnFocus = null) {
+function openWorkoutCompletionSharePrompt(summary, returnFocus = null, achievements = null) {
   const overlay = ensureWorkoutCompletionSharePrompt();
   const shareMetrics = window.FWBWorkoutShareCard?.metrics(summary) || {
     durationLabel: summary.durationLabel, timeLabel: "Workout time", weekLabel: "This week", appleMetrics: []
   };
 
   pendingWorkoutCompletionShare = summary;
+  const celebration = overlay.querySelector("[data-workout-achievements]");
+  if (celebration) {
+    celebration.innerHTML = window.FWB_ACHIEVEMENTS_UI?.celebrationMarkup(achievements) || "";
+    celebration.hidden = !celebration.innerHTML;
+  }
   pendingWorkoutCompletionShareFile = null;
   workoutCompletionShareReturnFocus = returnFocus;
   overlay.querySelector("[data-workout-share-state]").textContent = summary.isComplete === false ? "Workout saved" : "Workout complete";
@@ -13630,7 +13639,62 @@ function filteredClientWorkoutHistoryLogs(logs = [], dateFilter = "", searchFilt
   ));
 }
 
+function clientAchievementSnapshot() {
+  if (clientAchievementHistoryStatus !== "ready" || !window.FWB_ACHIEVEMENTS) return null;
+  return window.FWB_ACHIEVEMENTS.evaluate(trainingLogs, { today: todayDate(), clientEmail: activeClientEmail });
+}
+
+function renderClientAchievements() {
+  if (!window.FWB_ACHIEVEMENTS_UI) return;
+  clientAchievementController ||= window.FWB_ACHIEVEMENTS_UI.createController(document, retryClientAchievements);
+  clientAchievementController.render(clientAchievementSnapshot(), clientAchievementHistoryStatus);
+}
+
+async function retryClientAchievements() {
+  if (clientAchievementRetryInFlight || !activeClientEmail || !supabaseClient) return;
+  const clientEmail = activeClientEmail;
+  const historyAtRequest = JSON.stringify(trainingLogs);
+  clientAchievementRetryInFlight = true;
+  clientAchievementHistoryStatus = "loading";
+  renderClientAchievements();
+  try {
+    const result = await loadClientWorkoutLogHistory(clientEmail);
+    if (clientEmail !== activeClientEmail) return;
+    // A save or delete during this request makes its response stale. Preserve
+    // those edits and let the client retry after the operation completes.
+    if (result.error || JSON.stringify(trainingLogs) !== historyAtRequest) {
+      clientAchievementHistoryStatus = "error";
+      renderClientAchievements();
+      return;
+    }
+    trainingLogs = Array.isArray(result.data) ? result.data : [];
+    clientAchievementHistoryStatus = "ready";
+    // populateTrainingLogs rebuilds workout editors and would discard unsaved
+    // input. A badge retry only refreshes the saved-history projections.
+    renderClientTrainingLogs();
+  } catch (_) {
+    if (clientEmail !== activeClientEmail) return;
+    clientAchievementHistoryStatus = "error";
+    renderClientAchievements();
+  } finally {
+    clientAchievementRetryInFlight = false;
+  }
+}
+
+function clientWorkoutAchievementCelebration(before, rows) {
+  const engine = window.FWB_ACHIEVEMENTS;
+  const ui = window.FWB_ACHIEVEMENTS_UI;
+  if (!engine || !ui || isCoachDashboardPreview) return null;
+  const sessionIds = [...new Set((rows || []).map(engine.sessionKey))];
+  const completedSession = engine.evaluate(rows, { today: todayDate(), clientEmail: activeClientEmail }).workouts > 0;
+  const celebration = ui.celebrationForSession(before, clientAchievementSnapshot(), sessionIds, { completedSession });
+  let storage = null;
+  try { storage = window.localStorage; } catch (_) { /* The page still works when storage is unavailable. */ }
+  return ui.takeCelebration(celebration, activeClientEmail, storage);
+}
+
 function renderClientTrainingLogs() {
+  renderClientAchievements();
   renderClientExerciseProgress(trainingLogs);
   const history = document.getElementById("client-training-log-history");
   const count = document.getElementById("client-logs-count");
@@ -17799,6 +17863,9 @@ async function loadDashboard() {
 
   clientMessagesController?.destroy();
   clientMessagesController = null;
+  clientAchievementHistoryStatus = "loading";
+  if (window.FWB_ACHIEVEMENTS_UI) renderClientAchievements();
+
   clientGoogleHealthController?.destroy();
   clientGoogleHealthController = null;
   clientAppleHealthController?.destroy();
@@ -18035,6 +18102,8 @@ async function loadDashboard() {
       setFoodLabelImportStatus("The shared food-label library could not be loaded. You can still enter food manually.");
     }
     populateFoodLogs(foodLogData || []);
+    clientAchievementHistoryStatus = trainingLogResult.status === "fulfilled" && !trainingLogResult.value.error
+      ? "ready" : "error";
     populateTrainingLogs(
       trainingLogData?.length || !shouldUseDemoTrainingLogs()
         ? trainingLogData || []
@@ -18592,6 +18661,8 @@ async function handleTrainingLogSave() {
         .map((control) => ({ control, disabled: control.disabled }));
       controls.forEach(({ control }) => { control.disabled = true; });
       const previousCompletion = section.workoutCompletionPendingFeedback;
+      const achievementsBefore = previousCompletion
+        ? section.workoutAchievementBeforeFeedback : clientAchievementSnapshot();
       if (!isCardioOnly && !workoutElapsedTimerState && !previousCompletion) {
         startWorkoutElapsedTimer(logElements[0]?.dataset.workoutTitle || activeWorkoutElapsedTitle());
       }
@@ -18621,6 +18692,7 @@ async function handleTrainingLogSave() {
         // Manual cardio uses its entered duration and leaves any strength timer running.
         workoutSaved = true;
         section.workoutCompletionPendingFeedback = workoutCompletion;
+        section.workoutAchievementBeforeFeedback = achievementsBefore;
         if (!isCardioOnly) finishWorkoutElapsedTimer();
         const feedbackResult = await saveWorkoutDifficultyFeedback(saveResult.rows, workoutDifficulty, workoutFeedback);
         if (!feedbackResult.saved) {
@@ -18636,6 +18708,7 @@ async function handleTrainingLogSave() {
         completionSucceeded = true;
         if (status) status.textContent = `Workout finished · ${difficultySummary}.`;
         delete section.workoutCompletionPendingFeedback;
+        delete section.workoutAchievementBeforeFeedback;
         const groupedRestart = pendingGroupedCustomWorkoutRestart?.panel === section
           ? pendingGroupedCustomWorkoutRestart : null;
         if (!isCardioOnly) pendingGroupedCustomWorkoutRestart = null;
@@ -18643,7 +18716,10 @@ async function handleTrainingLogSave() {
         if (groupedRestart) {
           startFreshGroupedCustomWorkout(groupedRestart);
         } else {
-          openWorkoutCompletionSharePrompt(workoutCompletionShareSummary(saveResult.rows, workoutCompletion, workoutDifficulty));
+          openWorkoutCompletionSharePrompt(
+            workoutCompletionShareSummary(saveResult.rows, workoutCompletion, workoutDifficulty),
+            null, clientWorkoutAchievementCelebration(achievementsBefore, saveResult.rows)
+          );
         }
       } catch (_error) {
         showWorkoutFinishIssues(difficultyTrigger, [{

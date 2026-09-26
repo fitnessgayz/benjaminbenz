@@ -76,6 +76,8 @@ function persistCustomWorkoutDraftFromPanel(panel) {
 }
 function restartDeletedClientWorkoutContext(context) { fixtureEvents.push(['restart-context', context]); }
 function requestWorkoutDifficulty() { fixtureEvents.push(['feedback']); return Promise.resolve(null); }
+function clientAchievementSnapshot() { return null; }
+function clientWorkoutAchievementCelebration() { return null; }
 function saveTrainingLogRows() { throw new Error('Network persistence is forbidden in browser proof'); }
 ${names.map(production).join('\n')}
 renderClientWorkoutTabs(currentProgram.workouts);

@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" fill="none" role="img" aria-labelledby="title desc">
+  <title id="title">Century Club</title><desc id="desc">Gold fitness medal, 100 workouts.</desc>
+  <defs>
+    <linearGradient id="metal" x1="20" y1="8" x2="110" y2="118" gradientUnits="userSpaceOnUse"><stop stop-color="#FFF4BD"/><stop offset=".33" stop-color="#DEB83F"/><stop offset=".54" stop-color="#FFF4BD"/><stop offset="1" stop-color="#91681F"/></linearGradient>
+    <linearGradient id="enamel" x1="38" y1="16" x2="87" y2="104" gradientUnits="userSpaceOnUse"><stop stop-color="#294638"/><stop offset=".55" stop-color="#183326"/><stop offset="1" stop-color="#0D231B"/></linearGradient>
+    <linearGradient id="lime" x1="43" y1="28" x2="80" y2="82" gradientUnits="userSpaceOnUse"><stop stop-color="#EDFFB2"/><stop offset=".45" stop-color="#D8FF55"/><stop offset="1" stop-color="#A8D62D"/></linearGradient>
+    <linearGradient id="ribbon" x1="30" y1="87" x2="99" y2="112" gradientUnits="userSpaceOnUse"><stop stop-color="#FFF4BD"/><stop offset=".45" stop-color="#DEB83F"/><stop offset="1" stop-color="#FFF0A0"/></linearGradient>
+  </defs>
+  <g fill="#0B1D17" opacity=".15" transform="translate(0 2)"><path d="M64 5 111 23 109 70Q105 101 64 123 23 101 19 70L17 23Z"/></g>
+  <g fill="url(#metal)" stroke="#91681F" stroke-width="1.2"><path d="M64 5 111 23 109 70Q105 101 64 123 23 101 19 70L17 23Z"/></g>
+  <g fill="url(#enamel)" stroke="#FFF0A0" stroke-opacity=".6" stroke-width="1.2" transform="translate(64 61) scale(.86) translate(-64 -61)"><path d="M64 5 111 23 109 70Q105 101 64 123 23 101 19 70L17 23Z"/></g>
+  <path d="M35 27Q64 13 93 27" stroke="#FFF4BD" stroke-opacity=".35" stroke-width="1.4" stroke-linecap="round"/>
+  <path d="m27 78 2 3m72-3-2 3" stroke="#FFF0A0" stroke-width="2" stroke-linecap="round"/>
+
+  <path d="m50 21 14-6 14 6-4 9H54Z" fill="url(#metal)"/><path d="M23 56h82" stroke="url(#metal)" stroke-width="5" stroke-linecap="round"/><rect x="29" y="43" width="8" height="26" rx="2.5" fill="url(#lime)"/><rect x="37" y="37" width="10" height="38" rx="3" fill="url(#lime)"/><rect x="81" y="37" width="10" height="38" rx="3" fill="url(#lime)"/><rect x="91" y="43" width="8" height="26" rx="2.5" fill="url(#lime)"/><path d="M41 42v27m44-27v27" stroke="#F2FFCE" stroke-width="1.4" opacity=".65"/><path d="M55 70h18m-14 7h10" stroke="url(#metal)" stroke-width="3" stroke-linecap="round"/>
+  <path d="m25 89-12 3 6 8-5 9 19-4m70-16 12 3-6 8 5 9-19-4" fill="#91681F" stroke="#DEB83F" stroke-width="1"/>
+  <path d="M27 87Q64 82 101 87v24q-37-5-74 0Z" fill="url(#ribbon)" stroke="#91681F" stroke-width="1.2"/>
+  <path d="M30 89q34-4 68 0" stroke="#FFF4BD" stroke-opacity=".8" stroke-width="1"/>
+  <text x="64" y="104" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-weight="900" font-size="22" letter-spacing="-.8" fill="#24372A">100</text>
+  <text x="64" y="118" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-weight="800" font-size="5.1" letter-spacing=".75" fill="#91681F">WORKOUTS</text>
+</svg>

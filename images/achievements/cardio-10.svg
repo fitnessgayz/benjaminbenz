@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" fill="none" role="img" aria-labelledby="title desc">
+  <title id="title">Cardio Groove</title><desc id="desc">Silver fitness medal, 10 cardio workouts.</desc>
+  <defs>
+    <linearGradient id="metal" x1="20" y1="8" x2="110" y2="118" gradientUnits="userSpaceOnUse"><stop stop-color="#F3FAFF"/><stop offset=".33" stop-color="#B5C5D2"/><stop offset=".54" stop-color="#F3FAFF"/><stop offset="1" stop-color="#637B8B"/></linearGradient>
+    <linearGradient id="enamel" x1="38" y1="16" x2="87" y2="104" gradientUnits="userSpaceOnUse"><stop stop-color="#294638"/><stop offset=".55" stop-color="#183326"/><stop offset="1" stop-color="#0D231B"/></linearGradient>
+    <linearGradient id="lime" x1="43" y1="28" x2="80" y2="82" gradientUnits="userSpaceOnUse"><stop stop-color="#EDFFB2"/><stop offset=".45" stop-color="#D8FF55"/><stop offset="1" stop-color="#A8D62D"/></linearGradient>
+    <linearGradient id="ribbon" x1="30" y1="87" x2="99" y2="112" gradientUnits="userSpaceOnUse"><stop stop-color="#F3FAFF"/><stop offset=".45" stop-color="#B5C5D2"/><stop offset="1" stop-color="#E0EDF7"/></linearGradient>
+  </defs>
+  <g fill="#0B1D17" opacity=".15" transform="translate(0 2)"><path d="m64 5 18 7 24 4 7 28-6 33-18 26-25 20-25-20-18-26-6-33 7-28 24-4Z"/></g>
+  <g fill="url(#metal)" stroke="#637B8B" stroke-width="1.2"><path d="m64 5 18 7 24 4 7 28-6 33-18 26-25 20-25-20-18-26-6-33 7-28 24-4Z"/></g>
+  <g fill="url(#enamel)" stroke="#E0EDF7" stroke-opacity=".6" stroke-width="1.2" transform="translate(64 61) scale(.86) translate(-64 -61)"><path d="m64 5 18 7 24 4 7 28-6 33-18 26-25 20-25-20-18-26-6-33 7-28 24-4Z"/></g>
+  <path d="M35 27Q64 13 93 27" stroke="#F3FAFF" stroke-opacity=".35" stroke-width="1.4" stroke-linecap="round"/>
+  <path d="m27 78 2 3m72-3-2 3" stroke="#E0EDF7" stroke-width="2" stroke-linecap="round"/>
+
+  <path d="M24 36h17l5-11 7 18 7-12 6 5h25" fill="none" stroke="url(#metal)" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><path d="m34 43 17 6 6 10 12 3 10-7 8 12 11 5q6 4 4 11H28v-9l8-9Z" fill="url(#lime)" stroke="#ECFFBF" stroke-width="1.4"/><path d="m35 47 12 5-6 15m12-7 8 5m-4-10 8 5m-4-11 8 5M30 77h71" fill="none" stroke="#203E2D" stroke-width="3.2" stroke-linecap="round"/><path d="M39 82h6m6 0h6m6 0h6m6 0h6m6 0h6" stroke="#203E2D" stroke-width="2"/>
+  <path d="m25 89-12 3 6 8-5 9 19-4m70-16 12 3-6 8 5 9-19-4" fill="#637B8B" stroke="#B5C5D2" stroke-width="1"/>
+  <path d="M27 87Q64 82 101 87v24q-37-5-74 0Z" fill="url(#ribbon)" stroke="#637B8B" stroke-width="1.2"/>
+  <path d="M30 89q34-4 68 0" stroke="#F3FAFF" stroke-opacity=".8" stroke-width="1"/>
+  <text x="64" y="104" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-weight="900" font-size="22" letter-spacing="-.8" fill="#24372A">10</text>
+  <text x="64" y="118" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-weight="800" font-size="5.1" letter-spacing=".75" fill="#637B8B">CARDIO WORKOUTS</text>
+</svg>
