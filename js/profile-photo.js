@@ -11,6 +11,8 @@
       "preview-placeholder", "file", "choose", "editor-status", "confirm", "keep", "confirm-remove",
       "editor-actions", "cancel", "save", "remove"
     ].map((name) => [name, root.querySelector(`[data-profile-${name}]`)]));
+    const badgeImages = Array.from(document.querySelectorAll?.("[data-profile-badge-image]") || []);
+    const badgePlaceholders = Array.from(document.querySelectorAll?.("[data-profile-badge-placeholder]") || []);
     let destroyed = false;
     let loading = false;
     let writing = false;
@@ -35,6 +37,14 @@
       else node.removeAttribute("src");
       placeholder.hidden = Boolean(url);
     }
+    function badgePictures(url) {
+      badgeImages.forEach((image) => {
+        image.hidden = !url;
+        if (url) image.src = url;
+        else image.removeAttribute("src");
+      });
+      badgePlaceholders.forEach((placeholder) => { placeholder.hidden = Boolean(url); });
+    }
     function render() {
       if (destroyed) return;
       root.setAttribute("aria-busy", String(loading || writing));
@@ -43,6 +53,7 @@
       nodes.label.textContent = current.path ? "Change profile photo" : "Add profile photo";
       picture(nodes.image, nodes.placeholder, current.url);
       picture(nodes.preview, nodes["preview-placeholder"], draftURL || current.url);
+      badgePictures(current.url);
       nodes.choose.disabled = writing || processing || confirming;
       nodes.save.disabled = writing || processing || !draft;
       nodes.save.textContent = writing ? "Saving…" : "Save photo";
@@ -154,6 +165,7 @@
       current = { path: null, url: "" };
       picture(nodes.image, nodes.placeholder, "");
       picture(nodes.preview, nodes["preview-placeholder"], "");
+      badgePictures("");
       nodes.email.textContent = "";
       root.hidden = true;
       nodes.dialog.close();

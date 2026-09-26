@@ -4,6 +4,59 @@
   color: #171a17;
   text-align: left;
 }
+:root body .client-achievements-nav-launcher { display: none; }
+@media (max-width: 900px) {
+  :root body .client-dashboard-tabs.is-mobile-expanded .client-achievements-nav-launcher {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    z-index: 4;
+    display: grid;
+    width: 44px !important;
+    min-width: 44px !important;
+    height: 44px;
+    padding: 5px !important;
+    place-items: center;
+    overflow: visible;
+    color: #171a17;
+    background: transparent;
+    border: 0;
+    border-radius: 50% !important;
+    cursor: pointer;
+  }
+  :root body .client-achievements-nav-avatar {
+    display: grid;
+    width: 34px;
+    height: 34px;
+    place-items: center;
+    overflow: hidden;
+    color: #d6ff35;
+    background: #171a17;
+    border: 2px solid #d6ff35;
+    border-radius: 50%;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, .3);
+  }
+  :root body .client-achievements-nav-avatar :is(span, svg, img) { display: block; width: 100%; height: 100%; }
+  :root body .client-achievements-nav-avatar span { padding: 6px; }
+  :root body .client-achievements-nav-avatar img { object-fit: cover; }
+  :root body .client-achievements-nav-avatar [hidden] { display: none !important; }
+  :root body .client-achievements-nav-mark {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    display: grid;
+    width: 17px;
+    height: 17px;
+    padding: 3px;
+    place-items: center;
+    color: #171a17;
+    background: #d6ff35;
+    border: 2px solid #171a17;
+    border-radius: 50%;
+  }
+  :root body .client-achievements-nav-mark svg { width: 100%; height: 100%; }
+  :root body .client-achievements-nav-launcher:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+}
 :root body .client-achievements-home {
   grid-column: 1 / -1;
   padding: clamp(18px, 3vw, 28px);
