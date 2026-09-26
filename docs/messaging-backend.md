@@ -1,6 +1,6 @@
 # Client and coach messaging
 
-One private conversation per authenticated client, shared by that client and the existing verified coach administrators. Message ownership is bound to the client's stable Auth UUID. All four endpoints use the caller's ordinary Supabase authenticated session; never a service key. Incoming messages queue email notifications for verified recipients; production email dispatch is deployed but disabled pending provider credentials and a verified sender. Private message bodies remain inside the authenticated app and website. Push notifications are not implemented.
+One private conversation per authenticated client, shared by that client and the existing verified coach administrators. Message ownership is bound to the client's stable Auth UUID. All four endpoints use the caller's ordinary Supabase authenticated session; never a service key. Incoming messages queue generic push and in-app notifications for verified recipients. Email notifications are also queued, but production email dispatch remains disabled pending provider credentials and a verified sender. Private message bodies remain inside the authenticated app and website.
 
 ## RPC contract
 
@@ -46,7 +46,7 @@ Emails contain a generic new-message notice and a link. They do not contain the 
 
 Email delivery runs separately from the interactive send. A private outbox uses a unique `(message_id, recipient_user_id)` entry, and only new messages create entries; existing conversations are not backfilled. The actual message text never enters the outbox or email. The first service-only claim freezes the generic Resend payload and an outbox UUID idempotency key. Retries reuse both within a 23-hour deadline, with two-minute leases, up to ten claims, and an exponential delay from one minute to one hour. Before sending, the worker revalidates the recipient and cancels delivery if the email changed or the account was deleted, banned, or is no longer verified.
 
-The conversation remains available in FWB Training even if email delivery is delayed or fails. Push notifications and email replies into the conversation are not implemented.
+The conversation remains available in FWB Training even if email delivery is delayed or fails. Email replies into the conversation are not implemented.
 
 ## Email setup and activation
 

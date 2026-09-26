@@ -18,6 +18,19 @@ Messages refresh while the app or website is open. Reopening it refreshes the co
 
 If a send cannot be confirmed, retry the same message. Retrying preserves its request ID so a connection failure does not create a duplicate. An unsent draft remains in memory while that account stays signed in; it is cleared when you sign out or close the app or page.
 
+## Push notifications
+
+Each new message creates a generic notification for the recipient. Client replies
+use **New message from your coach** and open the shared conversation. Client
+messages use **New client message** and open the coach Inbox. The private message
+body is never copied into the notification or shown on the Lock Screen.
+
+Web push delivery uses the existing FWB browser subscription and notification
+preferences. On iPhone and iPad, the website must be added to the Home Screen
+before Safari can grant web-push permission. The native iOS app also displays the
+same notification in its in-app notification inbox; native APNs banners require
+the signed app's Push Notifications entitlement and an active APNs delivery key.
+
 ## Email notifications
 
 Email delivery is deployed but currently disabled while the sending account and verified sender are configured. Messages and unread badges already work in FWB Training.
@@ -26,6 +39,6 @@ After email delivery is enabled, each new incoming message sends an email notifi
 
 The email contains a notice and a link, with the private message body kept inside FWB Training. **Open messages** takes clients straight to their conversation on the website and coaches to **Inbox**. If you need to sign in first, the link returns you to messages afterward. The links contain no client email address or other client identity.
 
-Messages support plain text up to 4,000 characters. Push notifications and attachments are not included.
+Messages support plain text up to 4,000 characters. Attachments are not included.
 
 Implementation and database verification are described in [messaging-backend.md](messaging-backend.md).
