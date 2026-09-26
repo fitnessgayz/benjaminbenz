@@ -11,7 +11,7 @@ import { pathToFileURL } from 'node:url';
 const packagePath = process.env.PGLITE_MODULE;
 const { PGlite } = await import(packagePath ? pathToFileURL(packagePath).href : '@electric-sql/pglite');
 const db = new PGlite();
-const migration = new URL('../migrations/20260926063935_add_client_coach_messaging.sql', import.meta.url);
+const migration = new URL('../migrations/20260926064420_add_client_coach_messaging.sql', import.meta.url);
 let checks = 0;
 const ids = { a:'aaaaaaaa-0000-4000-8000-000000000001', b:'bbbbbbbb-0000-4000-8000-000000000002',
   coach:'cccccccc-0000-4000-8000-000000000003', stranger:'dddddddd-0000-4000-8000-000000000004',
