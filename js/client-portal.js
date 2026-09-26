@@ -23,6 +23,10 @@ let signedInDashboardEmail = "";
 let isCoachDashboardPreview = false;
 let trainingLogs = [];
 let workoutSessionFeedback = [];
+let clientWorkoutHistoryDeleteInFlight = false;
+const clientWorkoutSessionIdentities = new Map();
+const deletedClientWorkoutSessionIds = new Set();
+const deletedClientWorkoutContexts = new Set();
 let foodLogs = [];
 let foodSearchResults = [];
 let sharedFoodLibrary = [];
@@ -292,10 +296,24 @@ function logFieldsMatchSearch(fields, query) {
   return tokens.every((token) => haystack.includes(token));
 }
 
+function workoutDisplayTitle(value) {
+  const parts = String(value || "").trim().split("·").map((part) => part.trim());
+  const isCustom = parts.length > 1 && parts[0].toLowerCase() === "custom workout";
+  if (isCustom) parts.shift();
+  const uuid = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i;
+  if ((parts.length > 1 || isCustom) && uuid.test(parts.at(-1))) parts.pop();
+  const title = parts.filter(Boolean).join(" · ") || (isCustom ? "Custom Workout" : "Workout");
+  return title.split(/(\s+)/).map((word) => {
+    if (!word || /[A-Z]/.test(word.slice(1))) return word;
+    return word.charAt(0).toUpperCase() + word.slice(1);
+  }).join("");
+}
+
 function clientTrainingLogMatchesSearch(log, query) {
   return logFieldsMatchSearch([
     log.entry_date,
     log.workout_title,
+    workoutDisplayTitle(log.workout_title),
     log.exercise_code,
     log.exercise_name,
     log.notes
@@ -595,7 +613,7 @@ function latestWorkoutLogSummary() {
 
   return {
     date: latest.entry_date || "",
-    title: latest.workout_title || "Workout",
+    title: workoutDisplayTitle(latest.workout_title),
     exerciseCount: exerciseNames.size
   };
 }
@@ -5770,7 +5788,7 @@ function customWorkoutCopyStatusMessage(draft = activeCustomWorkoutDraft()) {
     return `${draft.generatedFrom.title} · About ${draft.generatedFrom.estimatedMinutes} minutes. Your workout is ready. Review the targets, then start when you’re ready.`;
   }
   const source = draft?.copiedFrom;
-  const workoutTitle = String(source?.workoutTitle || "").trim();
+  const workoutTitle = source?.workoutTitle ? workoutDisplayTitle(source.workoutTitle) : "";
   const entryDate = String(source?.entryDate || "").trim();
 
   if (!workoutTitle) {
@@ -7034,7 +7052,8 @@ function workoutDifficultyForLog(log) {
 function upsertLocalWorkoutSessionFeedback(feedback) {
   const sessionId = workoutFeedbackSessionId(feedback);
 
-  if (!sessionId) {
+  if (normalizeClientEmail(feedback.client_email) !== normalizeClientEmail(activeClientEmail) ||
+      !sessionId || deletedClientWorkoutSessionIds.has(`${normalizeClientEmail(feedback.client_email)}|${sessionId}`)) {
     return;
   }
 
@@ -7053,6 +7072,9 @@ async function saveWorkoutDifficultyFeedback(rows, difficultyRating, energy = {}
   const rating = Number(difficultyRating);
 
   if (!supabaseClient || !workoutRow || !sessionId || !workoutDifficultyLabel(rating)) {
+    return { saved: false };
+  }
+  if (workoutRow.client_email && normalizeClientEmail(workoutRow.client_email) !== normalizeClientEmail(activeClientEmail)) {
     return { saved: false };
   }
 
@@ -7078,6 +7100,8 @@ async function saveWorkoutDifficultyFeedback(rows, difficultyRating, energy = {}
     .upsert(payload, { onConflict: "session_id" })
     .select()
     .single();
+
+  if (normalizeClientEmail(activeClientEmail) !== normalizeClientEmail(payload.client_email)) return { saved: false };
 
   if (error) {
     return { saved: false, error };
@@ -7241,7 +7265,7 @@ function workoutCompletionShareSummary(rows = [], workoutCompletion = {}, diffic
     }
   });
 
-  const title = String(savedRows[0]?.workout_title || "Workout").trim() || "Workout";
+  const title = workoutDisplayTitle(savedRows[0]?.workout_title);
   const entryDate = String(savedRows[0]?.entry_date || todayDate());
   const durationSeconds = Math.max(
     0,
@@ -12977,6 +13001,9 @@ function displayProgramForCurrentView(program) {
 }
 
 function upsertLocalTrainingLog(savedLog) {
+  if (normalizeClientEmail(savedLog.client_email) !== normalizeClientEmail(activeClientEmail)) return;
+  if (deletedClientWorkoutSessionIds.has(`${normalizeClientEmail(savedLog.client_email)}|${workoutFeedbackSessionId(savedLog)}`)) return;
+  if (savedLog.session_id) rememberClientWorkoutSessionIdentity(savedLog, savedLog.session_id);
   const index = trainingLogs.findIndex((log) => (
     String(log.client_email).toLowerCase() === String(savedLog.client_email).toLowerCase() &&
     log.entry_date === savedLog.entry_date &&
@@ -13617,13 +13644,15 @@ function renderClientTrainingLogs() {
     const supersets = Array.from(workout.supersets.values()).sort((a, b) => a.key.localeCompare(b.key));
     const workoutDuration = workoutHistoryDurationLabel(workout.workout_duration_seconds);
     const workoutDifficulty = workoutHistoryDifficultyLabel(workout.workout_difficulty);
-    const workoutHeading = [workout.workout_title, workoutDuration, workoutDifficulty].filter(Boolean).join(" · ");
+    const displayTitle = workoutDisplayTitle(workout.workout_title);
+    const workoutHeading = [displayTitle, workoutDuration, workoutDifficulty].filter(Boolean).join(" · ");
     const mobileWorkoutMeta = [workoutDuration, workoutDifficulty].filter(Boolean).join(" · ") || "Workout saved";
     const workoutStatus = workout.completed_at ? "Completed" : "Saved";
     const metrics = workoutHistorySummaryMetrics(workout);
     const canCopyToCustom = workoutHistoryLogsForCopy(workout.history_key).length > 0;
-    const shareButtonMarkup = !isCoachDashboardPreview ? `<button class="training-log-share-button" type="button" data-share-workout-history="${escapeHtml(workout.history_key)}" aria-label="${escapeHtml(`Share ${workout.workout_title} from ${formatLogDate(workout.entry_date)}`)}">Share workout</button>` : "";
-    const copyButtonLabel = `Copy ${workout.workout_title} from ${formatLogDate(workout.entry_date)} to Custom workout`;
+    const shareButtonMarkup = !isCoachDashboardPreview ? `<button class="training-log-share-button" type="button" data-share-workout-history="${escapeHtml(workout.history_key)}" aria-label="${escapeHtml(`Share ${displayTitle} from ${formatLogDate(workout.entry_date)}`)}">Share workout</button>` : "";
+    const deleteButtonMarkup = !isCoachDashboardPreview ? `<button class="training-log-delete-button" type="button" data-delete-workout-history="${escapeHtml(workout.history_key)}" aria-label="${escapeHtml(`Delete ${displayTitle} from ${formatLogDate(workout.entry_date)}`)}" ${clientWorkoutHistoryDeleteInFlight ? "disabled" : ""}>Delete workout</button>` : "";
+    const copyButtonLabel = `Copy ${displayTitle} from ${formatLogDate(workout.entry_date)} to Custom workout`;
     const detailsId = `client-workout-history-details-${workoutIndex}`;
     const detailsHtml = `
       <div class="training-log-superset-list">
@@ -13728,6 +13757,7 @@ function renderClientTrainingLogs() {
               >Copy Workout</button>
             ` : ""}
             ${shareButtonMarkup}
+            ${deleteButtonMarkup}
             </div>
           </div>
           ${appleWorkoutMarkup}
@@ -13741,14 +13771,14 @@ function renderClientTrainingLogs() {
           data-client-workout-history-key="${escapeHtml(workout.history_key)}"
           role="group"
           aria-roledescription="slide"
-          aria-label="${escapeHtml(`${workout.workout_title}, ${formatLogDate(workout.entry_date)}. Workout ${workoutIndex + 1} of ${workoutSections.length}.`)}"
+          aria-label="${escapeHtml(`${displayTitle}, ${formatLogDate(workout.entry_date)}. Workout ${workoutIndex + 1} of ${workoutSections.length}.`)}"
         >
           <div class="training-log-history-card-summary" data-client-workout-history-summary>
             <div class="training-log-history-card-topline">
               <span class="training-log-history-state${workout.completed_at ? " is-complete" : ""}">${escapeHtml(workoutStatus)}</span>
               <strong>${escapeHtml(formatLogDate(workout.entry_date))}</strong>
             </div>
-            <h3>${escapeHtml(workout.workout_title)}</h3>
+            <h3>${escapeHtml(displayTitle)}</h3>
             <p>${escapeHtml(mobileWorkoutMeta)}</p>
             <dl class="training-log-history-metrics">
               <div><dt>Exercises</dt><dd>${escapeHtml(String(metrics.exerciseCount))}</dd></div>
@@ -13774,6 +13804,7 @@ function renderClientTrainingLogs() {
                 >Copy Workout</button>
               ` : ""}
               ${shareButtonMarkup}
+              ${deleteButtonMarkup}
             </div>
           </div>
           <div
@@ -14129,6 +14160,187 @@ function setClientWorkoutCopyStatus(message = "") {
   }
 }
 
+function clientWorkoutLogContextKey(record = {}) {
+  return [normalizeClientEmail(record.client_email), String(record.entry_date || "").trim(),
+    String(record.workout_title || "").trim().toLowerCase()].join("|");
+}
+
+function clientWorkoutHistoryDeleteTarget(historyKey, logs = trainingLogs, clientEmail = activeClientEmail) {
+  const email = normalizeClientEmail(clientEmail);
+  const rows = (Array.isArray(logs) ? logs : []).filter((row) => (
+    clientWorkoutHistorySessionKey(row) === historyKey && normalizeClientEmail(row.client_email) === email
+  ));
+  if (!email || rows.length === 0) return null;
+  const validUUID = (value) => /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(String(value || ""));
+  const sessions = new Set(rows.map((row) => String(row.session_id || "").trim().toLowerCase()));
+  const sessionId = sessions.size === 1 ? [...sessions][0] : "";
+  const logIds = [...new Set(rows.map((row) => String(row.id || "").trim().toLowerCase()))];
+  if (!validUUID(sessionId) && !logIds.every(validUUID)) return null;
+  return {
+    rows, sessionId: validUUID(sessionId) ? sessionId : null,
+    params: validUUID(sessionId) ? { p_session_id: sessionId } : { p_log_ids: logIds }
+  };
+}
+
+function storedClientWorkoutSessionIdentity(record) {
+  const contextKey = clientWorkoutLogContextKey(record);
+  if (clientWorkoutSessionIdentities.has(contextKey)) return clientWorkoutSessionIdentities.get(contextKey);
+  try {
+    const saved = JSON.parse(window.localStorage.getItem(`fwb_workout_session_identity:${contextKey}`) || "null");
+    if (/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(saved?.sessionId || "") ||
+        (saved?.sessionId === null && saved?.deleted === true)) {
+      const sessionId = saved.sessionId?.toLowerCase() || null;
+      clientWorkoutSessionIdentities.set(contextKey, sessionId);
+      if (saved.deleted) {
+        deletedClientWorkoutContexts.add(contextKey);
+        if (sessionId) deletedClientWorkoutSessionIds.add(`${normalizeClientEmail(record.client_email)}|${sessionId}`);
+      }
+      return sessionId;
+    }
+  } catch (_error) {
+    // Without durable storage an unknown restored draft retains the server's
+    // deterministic legacy ID; it must not silently become a new session.
+  }
+  return null;
+}
+
+function rememberClientWorkoutSessionIdentity(record, sessionId, deleted = false) {
+  const contextKey = clientWorkoutLogContextKey(record);
+  const id = sessionId ? String(sessionId).toLowerCase() : null;
+  clientWorkoutSessionIdentities.set(contextKey, id);
+  if (deleted) {
+    deletedClientWorkoutContexts.add(contextKey);
+    if (id) deletedClientWorkoutSessionIds.add(`${normalizeClientEmail(record.client_email)}|${id}`);
+  } else {
+    deletedClientWorkoutContexts.delete(contextKey);
+  }
+  try {
+    window.localStorage.setItem(`fwb_workout_session_identity:${contextKey}`, JSON.stringify({ sessionId: id, deleted }));
+  } catch (_error) {
+    // Current-page saves remain bound to their original session identity.
+  }
+  return id;
+}
+
+function restartDeletedClientWorkoutContext(record) {
+  const sessionId = storedClientWorkoutSessionIdentity(record);
+  if (deletedClientWorkoutContexts.has(clientWorkoutLogContextKey(record)) ||
+      (sessionId && deletedClientWorkoutSessionIds.has(`${normalizeClientEmail(record.client_email)}|${sessionId}`))) {
+    return rememberClientWorkoutSessionIdentity(record, window.crypto.randomUUID());
+  }
+  return sessionId;
+}
+
+function workoutLogRowsWithSessionIdentity(rows, logs = trainingLogs) {
+  return rows.map((row) => {
+    const key = clientWorkoutLogContextKey(row);
+    const existing = logs.find((log) => clientWorkoutLogContextKey(log) === key && log.session_id);
+    const sessionId = row.session_id || existing?.session_id || storedClientWorkoutSessionIdentity(row);
+    if (!sessionId) return { ...row };
+    const deleted = deletedClientWorkoutSessionIds.has(`${normalizeClientEmail(row.client_email)}|${String(sessionId).toLowerCase()}`);
+    rememberClientWorkoutSessionIdentity(row, sessionId, deleted);
+    return { ...row, session_id: String(sessionId).toLowerCase() };
+  });
+}
+
+function clientWorkoutHistoryDeleteLogElements(rows) {
+  const contexts = new Set(rows.map(clientWorkoutLogContextKey));
+  return Array.from(document.querySelectorAll("[data-exercise-log]")).filter((element) => contexts.has(
+    clientWorkoutLogContextKey({ client_email: activeClientEmail,
+      entry_date: element.querySelector("[data-log-date]")?.value || todayDate(),
+      workout_title: element.dataset.workoutTitle })
+  ));
+}
+
+function clearDeletedClientWorkoutState(target, sessionId) {
+  if (sessionId) deletedClientWorkoutSessionIds.add(`${normalizeClientEmail(activeClientEmail)}|${sessionId}`);
+  const ids = new Set(target.rows.map((row) => String(row.id || "").toLowerCase()).filter(Boolean));
+  trainingLogs = trainingLogs.filter((row) => (
+    (!sessionId || workoutFeedbackSessionId(row) !== sessionId) && !ids.has(String(row.id || "").toLowerCase())
+  ));
+  workoutSessionFeedback = workoutSessionFeedback.filter((row) => !sessionId || workoutFeedbackSessionId(row) !== sessionId);
+  const contexts = new Set(target.rows.map(clientWorkoutLogContextKey));
+  const clearedContexts = new Set();
+  for (const contextKey of contexts) {
+    const surviving = trainingLogs.find((row) => clientWorkoutLogContextKey(row) === contextKey && row.session_id);
+    const original = target.rows.find((row) => clientWorkoutLogContextKey(row) === contextKey);
+    rememberClientWorkoutSessionIdentity(original, surviving?.session_id || sessionId, !surviving);
+    if (!surviving) clearedContexts.add(contextKey);
+  }
+  const draft = activeCustomWorkoutDraft();
+  if (draft && clearedContexts.has(clientWorkoutLogContextKey({ client_email: activeClientEmail,
+    entry_date: draft.date, workout_title: customWorkoutStorageTitle(draft) }))) clearCustomWorkoutDraft();
+  if (workoutElapsedTimerState && clearedContexts.has(clientWorkoutLogContextKey({ client_email: activeClientEmail,
+    entry_date: workoutElapsedTimerState.workoutDate, workout_title: workoutElapsedTimerState.workoutTitle }))) finishWorkoutElapsedTimer();
+  clientWorkoutHistoryDeleteLogElements(target.rows.filter((row) => clearedContexts.has(clientWorkoutLogContextKey(row)))).forEach((element) => {
+    const timer = trainingLogAutosaveTimers.get(element);
+    if (timer) window.clearTimeout(timer);
+    trainingLogAutosaveTimers.delete(element);
+    updateExerciseLogField(element);
+  });
+  syncCustomWorkoutCarousels();
+  syncAssignedWorkoutCarousels();
+  renderClientTrainingLogs();
+  renderMonthlyProgressReport(trainingLogs);
+  renderClientHomeSummary();
+}
+
+async function deleteClientWorkoutHistory(historyKey) {
+  if (clientWorkoutHistoryDeleteInFlight || isCoachDashboardPreview) return false;
+  const email = normalizeClientEmail(activeClientEmail);
+  if (!supabaseClient || !email || email !== normalizeClientEmail(activeDashboardUser?.email)) {
+    setClientWorkoutCopyStatus("Sign in to delete your workout.");
+    return false;
+  }
+  const target = clientWorkoutHistoryDeleteTarget(historyKey);
+  if (!target) {
+    setClientWorkoutCopyStatus("Refresh your workout history and try again.");
+    return false;
+  }
+  const first = target.rows[0];
+  if (!window.confirm(`Delete ${workoutDisplayTitle(first.workout_title)} from ${formatLogDate(first.entry_date)}? This removes its saved sets and ratings from your logs on all devices. This cannot be undone. Your workout plans are kept.`)) return false;
+
+  clientWorkoutHistoryDeleteInFlight = true;
+  document.querySelectorAll("[data-delete-workout-history]").forEach((button) => { button.disabled = true; });
+  clientWorkoutHistoryDeleteLogElements(target.rows).forEach((element) => {
+    const timer = trainingLogAutosaveTimers.get(element);
+    if (timer) window.clearTimeout(timer);
+    trainingLogAutosaveTimers.delete(element);
+  });
+  setClientWorkoutCopyStatus("Deleting workout…");
+  try {
+    const { data, error } = await withTimeout(
+      supabaseClient.rpc("delete_client_workout_session", target.params),
+      "Workout deletion timed out. Try again."
+    );
+    if (error) throw error;
+    if (!data || !Number.isInteger(data.deleted_count) || data.deleted_count < 0 ||
+        !data.session_id || (target.sessionId && data.session_id !== target.sessionId)) {
+      throw new Error("Could not confirm workout deletion.");
+    }
+    if (normalizeClientEmail(activeClientEmail) !== email) return false;
+    clearDeletedClientWorkoutState(target, String(data.session_id).toLowerCase());
+    setClientWorkoutCopyStatus("Workout deleted.");
+    document.getElementById("client-logs-title")?.focus({ preventScroll: true });
+    return true;
+  } catch (_error) {
+    if (normalizeClientEmail(activeClientEmail) === email) {
+      setClientWorkoutCopyStatus("Could not confirm deletion. Your workout is still shown here. Try again.");
+    }
+    return false;
+  } finally {
+    clientWorkoutHistoryDeleteInFlight = false;
+    document.querySelectorAll("[data-delete-workout-history]").forEach((button) => { button.disabled = false; });
+  }
+}
+
+function handleClientWorkoutHistoryDelete() {
+  document.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-delete-workout-history]");
+    if (button) void deleteClientWorkoutHistory(String(button.dataset.deleteWorkoutHistory || ""));
+  });
+}
+
 function clientCustomWorkoutPanelIndex() {
   return Math.max(
     0,
@@ -14317,7 +14529,7 @@ function workoutHistoryCsv(logs = []) {
 
     return [
       log.entry_date || "",
-      log.workout_title || "",
+      workoutDisplayTitle(log.workout_title),
       csvSectionForLog(log),
       log.exercise_code || "",
       log.exercise_name || "",
@@ -16322,6 +16534,8 @@ function handleWorkoutInteractions() {
       } else if (isActiveWorkout) {
         toggleWorkoutElapsedTimer();
       } else if (!workoutElapsedTimerState) {
+        restartDeletedClientWorkoutContext({ client_email: activeClientEmail,
+          entry_date: workoutDate, workout_title: workoutTitle });
         startWorkoutElapsedTimer(workoutTitle, { workoutDate, panelIndex });
       }
       return;
@@ -17962,6 +18176,7 @@ function scheduleTrainingLogAutosave(logElement) {
 async function saveTrainingLogRows(button, logElements, status, options = {}) {
   const savingMessage = options.savingMessage || "Saving...";
   const successMessage = options.successMessage || "Saved.";
+  const requestClientEmail = normalizeClientEmail(activeClientEmail);
 
   if (!supabaseClient || !activeClientEmail) {
     if (status) {
@@ -17988,6 +18203,11 @@ async function saveTrainingLogRows(button, logElements, status, options = {}) {
     ? { deletedCount: 0, error: null }
     : await deleteRemovedTrainingLogRows(logElements);
 
+  if (normalizeClientEmail(activeClientEmail) !== requestClientEmail) {
+    if (button) button.disabled = false;
+    return { saved: false };
+  }
+
   if (deleteError) {
     if (status) {
       status.textContent = "Could not save yet.";
@@ -17998,12 +18218,12 @@ async function saveTrainingLogRows(button, logElements, status, options = {}) {
     return { saved: false, error: deleteError };
   }
 
-  const rows = logElements
+  const rows = workoutLogRowsWithSessionIdentity(logElements
     .flatMap(rowsForTrainingLog)
     .filter((row) => !options.setType || row.set_type === options.setType)
     .map((row) => options.workoutCompletion
       ? { ...row, ...options.workoutCompletion }
-      : row);
+      : row));
 
   if (rows.length === 0) {
     if (deletedCount > 0) {
@@ -18036,6 +18256,25 @@ async function saveTrainingLogRows(button, logElements, status, options = {}) {
     .from("client_workout_logs")
     .upsert(rows, { onConflict: "client_email,entry_date,workout_title,exercise_code,set_number" })
     .select();
+
+  if (normalizeClientEmail(activeClientEmail) !== requestClientEmail) {
+    if (button) button.disabled = false;
+    return { saved: false };
+  }
+
+  const sessionWasDeleted = error?.message === "workout_session_deleted" || rows.some((row) => (
+    deletedClientWorkoutSessionIds.has(`${normalizeClientEmail(row.client_email)}|${workoutFeedbackSessionId(row)}`)
+  ));
+  if (sessionWasDeleted) {
+    for (const sessionId of new Set(rows.map(workoutFeedbackSessionId).filter(Boolean))) {
+      clearDeletedClientWorkoutState({ rows: rows.filter((row) => workoutFeedbackSessionId(row) === sessionId) }, sessionId);
+    }
+    const legacyRows = rows.filter((row) => !workoutFeedbackSessionId(row));
+    if (legacyRows.length) clearDeletedClientWorkoutState({ rows: legacyRows }, null);
+    if (status) status.textContent = "This workout was deleted. Start a new workout to log again.";
+    if (button) button.disabled = false;
+    return { saved: false, error };
+  }
 
   if (error) {
     if (status) {
@@ -18240,6 +18479,7 @@ handleTrainingDateChange();
 handleClientTrainingLogDateFilter();
 handleClientWorkoutHistoryDownload();
 handleCopyWorkoutToCustom();
+handleClientWorkoutHistoryDelete();
 handleClientWorkoutHistoryDeck();
 handleClientDashboardTabs();
 handleMonthlyProgressReport();

@@ -16903,6 +16903,34 @@ body.client-dashboard-page.is-loading > :is(.client-dashboard-tabs,
   background: #c9f12e;
 }
 
+.dashboard-page .training-log-delete-button {
+  width: auto !important;
+  min-height: 44px !important;
+  padding: 9px 12px !important;
+  color: #9f2525;
+  background: transparent;
+  border: 1px solid #d8b4b4;
+  border-radius: 10px !important;
+  font: inherit;
+  font-size: .8rem !important;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.dashboard-page .training-log-delete-button:hover {
+  background: #fff0f0;
+}
+
+.dashboard-page .training-log-delete-button:disabled {
+  opacity: .55;
+  cursor: wait;
+}
+
+.dashboard-page .training-log-delete-button:focus-visible {
+  outline: 3px solid #9f2525;
+  outline-offset: 3px;
+}
+
 .dashboard-page .training-log-copy-button:focus-visible,
 #custom-workout-panel-title:focus-visible,
 #client-logs-title:focus-visible {

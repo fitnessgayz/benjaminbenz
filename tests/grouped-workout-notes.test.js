@@ -156,8 +156,9 @@ test("grouped notes autosave persists notes while preserving pending sets and li
   const body = new h.Element("body"); body.append(h.carousel); h.document.body = body;
   Object.assign(h.context, {
     activeClientEmail: "client@example.com", warmUpSetType: "warm_up", trainingLogs: [],
+    clientWorkoutSessionIdentities: new Map(), deletedClientWorkoutSessionIds: new Set(), deletedClientWorkoutContexts: new Set(),
     trainingLogAutosaveTimers: new WeakMap(), trainingLogAutosaveDelayMs: 10000,
-    window: { setTimeout: (fn) => { h.calls.timerCallbacks.push(fn); return 1; }, clearTimeout() {} },
+    window: { setTimeout: (fn) => { h.calls.timerCallbacks.push(fn); return 1; }, clearTimeout() {}, crypto: { randomUUID: () => "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa" } },
     supabaseClient: { from: () => ({ upsert: (rows) => {
       h.calls.payloads.push(rows);
       return { select: async () => ({ data: rows, error: null }) };
@@ -169,7 +170,8 @@ test("grouped notes autosave persists notes while preserving pending sets and li
     renderCustomWorkoutCarousel: () => { h.calls.renders++; liveNote.remove(); }
   });
   vm.runInContext(["setWorkoutCarouselAutosaveState", "setRowInputValues", "isSetRowLogged", "rowsForTrainingLog",
-    "trainingLogHasAutosavePayload", "scheduleTrainingLogAutosave", "saveTrainingLogRows"].map(functionSource).join("\n"), h.context);
+    "trainingLogHasAutosavePayload", "scheduleTrainingLogAutosave", "saveTrainingLogRows", "workoutLogRowsWithSessionIdentity",
+    "clientWorkoutLogContextKey", "normalizeClientEmail", "workoutFeedbackSessionId", "storedClientWorkoutSessionIdentity", "rememberClientWorkoutSessionIdentity"].map(functionSource).join("\n"), h.context);
   h.context.scheduleTrainingLogAutosave(log);
   await h.calls.timerCallbacks[0]();
   assert.equal(h.calls.payloads.length, 1);

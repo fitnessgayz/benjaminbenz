@@ -209,7 +209,7 @@ test("renders an accessible per-workout copy action and never adds it to nutriti
   const nutritionSource = sourceForFunction("nutritionLogHistorySections");
 
   assert.match(historySource, /data-copy-workout-to-custom/);
-  assert.match(historySource, /Copy \$\{workout\.workout_title\} from \$\{formatLogDate\(workout\.entry_date\)\} to Custom workout/);
+  assert.match(historySource, /Copy \$\{displayTitle\} from \$\{formatLogDate\(workout\.entry_date\)\} to Custom workout/);
   assert.match(historySource, /workoutHistoryLogsForCopy\(workout\.history_key\)/);
   assert.doesNotMatch(nutritionSource, /data-copy-workout-to-custom/);
   assert.match(dashboard, /id="client-workout-copy-status" role="status" aria-live="polite"/);

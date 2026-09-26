@@ -39,7 +39,7 @@ function summaryFixture() {
   const apple = new Map();
   const weekDates = [];
   const context = evaluate([
-    "clientWorkoutHistorySessionKey", "workoutFeedbackSessionId", "workoutCompletionShareSummary",
+    "workoutDisplayTitle", "clientWorkoutHistorySessionKey", "workoutFeedbackSessionId", "workoutCompletionShareSummary",
     "workoutHistoryShareSummary", "openWorkoutHistoryShare"
   ], {
     trainingLogs: [],

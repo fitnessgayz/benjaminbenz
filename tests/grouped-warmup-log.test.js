@@ -310,8 +310,10 @@ test("warm-up-only persistence filters out already completed working rows", asyn
   const local = [];
   const warmup = { entry_date: "2026-09-21", set_type: "warm_up", set_number: 1001, weight_used: 20, reps: 8 };
   const working = { entry_date: "2026-09-21", set_type: "working", set_number: 1, weight_used: 100, reps: 5 };
-  const context = evaluate(["saveTrainingLogRows"], {
+  const context = evaluate(["saveTrainingLogRows", "workoutLogRowsWithSessionIdentity", "clientWorkoutLogContextKey", "normalizeClientEmail", "workoutFeedbackSessionId", "storedClientWorkoutSessionIdentity", "rememberClientWorkoutSessionIdentity"], {
     activeClientEmail: "client@example.test",
+    trainingLogs: [], clientWorkoutSessionIdentities: new Map(), deletedClientWorkoutSessionIds: new Set(), deletedClientWorkoutContexts: new Set(),
+    window: { localStorage: { getItem: () => null } },
     supabaseClient: { from: () => ({ upsert: (rows) => {
       sent.push(plain(rows));
       return { select: async () => ({ data: rows, error: null }) };

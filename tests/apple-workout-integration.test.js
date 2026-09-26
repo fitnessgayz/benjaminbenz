@@ -114,7 +114,7 @@ test("coach detailed logs request each workout's own Apple attachment markup", (
 });
 
 test("completion share summary takes attachment identity from saved rows, including the legacy fallback", () => {
-  const context = evaluate(portal, ["workoutFeedbackSessionId", "clientWorkoutHistorySessionKey", "workoutCompletionShareSummary"], {
+  const context = evaluate(portal, ["workoutDisplayTitle", "workoutFeedbackSessionId", "clientWorkoutHistorySessionKey", "workoutCompletionShareSummary"], {
     window: {},
     warmupExerciseCode: "WARMUP",
     todayDate: () => "2026-09-21",
