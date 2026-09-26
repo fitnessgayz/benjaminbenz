@@ -9,7 +9,6 @@ const ui = require("../js/client-achievements-ui.js");
 const portal = fs.readFileSync(path.join(__dirname, "../js/client-portal.js"), "utf8");
 const dashboard = fs.readFileSync(path.join(__dirname, "../client-dashboard.html"), "utf8");
 const achievementStyles = fs.readFileSync(path.join(__dirname, "../css/client-achievements.css"), "utf8");
-const profilePhoto = fs.readFileSync(path.join(__dirname, "../js/profile-photo.js"), "utf8");
 const today = "2026-09-25";
 const row = (values = {}) => ({
   client_email: "client@example.com", entry_date: today, workout_title: "Strength",
@@ -82,14 +81,12 @@ test("home links to Progress and displays the next reachable badge and XP", () =
   assert.match(html, /1 \/ 3/);
 });
 
-test("mobile Home has an accessible profile-photo shortcut to the client's badges", () => {
-  assert.match(dashboard, /class="client-achievements-nav-launcher"[\s\S]*data-client-summary-go-tab="progress"[\s\S]*aria-label="Open your badges"/);
-  assert.match(dashboard, /data-profile-badge-image/);
-  assert.match(dashboard, /data-profile-badge-placeholder/);
-  assert.match(achievementStyles, /\.client-dashboard-tabs\.is-mobile-expanded \.client-achievements-nav-launcher/);
-  assert.match(achievementStyles, /width: 44px !important/);
-  assert.match(profilePhoto, /querySelectorAll\?\.\("\[data-profile-badge-image\]"\)/);
-  assert.match(profilePhoto, /badgePictures\(current\.url\)/);
+test("Progress has an upper-right badge button that opens the full collection dialog", () => {
+  assert.doesNotMatch(dashboard, /client-achievements-nav-launcher|data-profile-badge-image|data-profile-badge-placeholder/);
+  assert.match(dashboard, /class="client-achievements-progress-button"[\s\S]*data-achievements-dialog-open[\s\S]*aria-label="Open your badges"/);
+  assert.match(dashboard, /<dialog class="client-achievements-dialog"[\s\S]*data-client-achievements-room/);
+  assert.match(achievementStyles, /\.progress-panel-actions/);
+  assert.match(achievementStyles, /\.client-achievements-progress-button/);
 });
 
 test("unknown history shows loading or a retry state instead of fabricated zero wins", () => {
@@ -178,6 +175,27 @@ test("controller filters in place, restores filter focus, and routes a retry", (
   click({ target: { closest: selector => selector === "[data-achievement-retry]" ? {} : null } });
   assert.equal(retries, 1);
   assert.match(home.innerHTML, /Couldn’t load your wins/);
+});
+
+test("controller opens and closes the badge dialog from the Progress button", () => {
+  let click;
+  const dialog = {
+    open: false,
+    showModal() { this.open = true; },
+    close() { this.open = false; }
+  };
+  const document = {
+    querySelector(selector) {
+      if (selector === "[data-achievements-dialog]") return dialog;
+      return null;
+    },
+    addEventListener(_type, handler) { click = handler; }
+  };
+  ui.createController(document);
+  click({ target: { closest: selector => selector === "[data-achievements-dialog-open]" ? {} : null } });
+  assert.equal(dialog.open, true);
+  click({ target: { closest: selector => selector === "[data-achievements-dialog-close]" ? {} : null } });
+  assert.equal(dialog.open, false);
 });
 
 test("portal never evaluates failed or incomplete history as a fresh account", () => {

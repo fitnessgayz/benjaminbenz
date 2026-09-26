@@ -155,6 +155,11 @@
       if (room) room.innerHTML = latest && status === "ready" ? roomMarkup(latest, filter) : stateMarkup(status, false);
     }
     document.addEventListener("click", (event) => {
+      const dialog = document.querySelector("[data-achievements-dialog]");
+      if (event.target.closest("[data-achievements-dialog-open]")) {
+        if (dialog && !dialog.open) dialog.showModal();
+      }
+      if (event.target.closest("[data-achievements-dialog-close]")) dialog?.close();
       const choice = event.target.closest("[data-achievement-filter]");
       if (choice) {
         filter = filters.includes(choice.dataset.achievementFilter) ? choice.dataset.achievementFilter : "all";

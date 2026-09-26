@@ -58,7 +58,7 @@
   <link rel="stylesheet" href="css/workout-exercise-list.css?v=2" />
   <link rel="stylesheet" href="css/workout-generator.css?v=5" />
   <link rel="stylesheet" href="css/apple-health-sync.css?v=1" />
-  <link rel="stylesheet" href="css/client-achievements.css?v=2" />
+  <link rel="stylesheet" href="css/client-achievements.css?v=3" />
 </head>
 <body class="dashboard-page client-dashboard-page is-loading">
   <nav class="coach-preview-toolbar" id="coach-preview-toolbar" aria-label="Coach navigation" hidden>
@@ -89,22 +89,6 @@
         </button>
         <nav class="client-dashboard-tabs" id="client-dashboard-navigation" aria-label="Client dashboard sections">
           <p class="client-dashboard-nav-title">Your app</p>
-          <button
-            class="client-achievements-nav-launcher"
-            type="button"
-            data-client-summary-go-tab="progress"
-            aria-label="Open your badges"
-          >
-            <span class="client-achievements-nav-avatar" aria-hidden="true">
-              <span data-profile-badge-placeholder>
-                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 8a7 7 0 0 1 14 0H5Z"/></svg>
-              </span>
-              <img data-profile-badge-image alt="" hidden />
-            </span>
-            <span class="client-achievements-nav-mark" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3h8v5a4 4 0 0 1-8 0V3Z"/><path d="M8 5H4v2a4 4 0 0 0 4 4m8-6h4v2a4 4 0 0 1-4 4M12 12v6m-4 3h8m-6-3h4v3"/></svg>
-            </span>
-          </button>
           <button class="client-dashboard-tab is-active" type="button" data-client-dashboard-tab="home" aria-current="page" aria-label="Home">
             <svg class="client-dashboard-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10.5V20h14v-9.5"/><path d="M9 20v-6h6v6"/></svg>
             <span class="client-dashboard-tab-label">Home</span>
@@ -671,16 +655,24 @@
         </section>
 
         <section class="progress-panel" data-client-dashboard-panel="progress" aria-labelledby="progress-title" hidden>
-          <div class="panel-heading">
+          <div class="panel-heading progress-panel-heading">
             <div>
               <p class="kicker">Client dashboard</p>
               <h2 id="progress-title">Progress</h2>
             </div>
-            <span class="status-pill" id="client-progress-report-month">Monthly</span>
+            <div class="progress-panel-actions">
+              <button class="client-achievements-progress-button" type="button" data-achievements-dialog-open aria-haspopup="dialog" aria-controls="client-achievements-dialog" aria-label="Open your badges">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3h8v5a4 4 0 0 1-8 0V3Z"/><path d="M8 5H4v2a4 4 0 0 0 4 4m8-6h4v2a4 4 0 0 1-4 4M12 12v6m-4 3h8m-6-3h4v3"/></svg>
+              </button>
+              <span class="status-pill" id="client-progress-report-month">Monthly</span>
+            </div>
           </div>
-          <section class="client-achievements client-achievements-room" data-client-achievements-room aria-labelledby="client-trophy-room-title">
-            <h3 id="client-trophy-room-title">Your trophy room</h3><p role="status">Loading your wins…</p>
-          </section>
+          <dialog class="client-achievements-dialog" id="client-achievements-dialog" data-achievements-dialog aria-labelledby="client-trophy-room-title">
+            <button class="client-achievements-dialog-close" type="button" data-achievements-dialog-close aria-label="Close badges">×</button>
+            <section class="client-achievements client-achievements-room" data-client-achievements-room aria-labelledby="client-trophy-room-title">
+              <h3 id="client-trophy-room-title">Your trophy room</h3><p role="status">Loading your wins…</p>
+            </section>
+          </dialog>
           <article class="client-monthly-report-card" id="client-monthly-report-card" hidden>
             <a class="client-monthly-report-link" id="client-monthly-report-link" href="#" data-monthly-report-link>
               <span class="client-monthly-report-icon" aria-hidden="true">↗</span>
@@ -1182,7 +1174,7 @@
   <script src="js/google-health.js?v=1"></script>
   <script src="js/profile-photo-store.js?v=1"></script>
   <script src="js/profile-photo-processor.js?v=1"></script>
-  <script src="js/profile-photo.js?v=2"></script>
+  <script src="js/profile-photo.js?v=3"></script>
   <script src="js/workout-share-card.js?v=1"></script>
   <script src="js/rir-help.js?v=2"></script>
   <script src="js/pr-help.js?v=1"></script>
@@ -1193,7 +1185,7 @@
   <script src="js/workout-generator-dialog.js?v=3"></script>
   <script src="js/apple-health-sync.js?v=1"></script>
   <script src="js/client-achievements.js?v=1"></script>
-  <script src="js/client-achievements-ui.js?v=1"></script>
+  <script src="js/client-achievements-ui.js?v=2"></script>
   <script src="js/client-portal.js?v=custom-workout-history-1&amp;cancel-workout=1&amp;energy-feedback=1&amp;mood-redesign=1&amp;visible-group-controls=1&amp;exercise-videos=1&amp;remember-login=1&amp;visible-demos=1&amp;personal-bests=1&amp;copy-last-weights=1&amp;demo-icons=1&amp;keyboard-entry=1&amp;copy-set-pr=3&amp;return-coach=1&amp;apple-workout=2&amp;apple-share=1&amp;rir-help=1&amp;viewport-dock=1&amp;compact-copy=1&amp;exercise-pr-notes=1&amp;pr-info=1&amp;finish-workout=2&amp;prescribed-targets=1&amp;exercise-controls=1&amp;session-alerts=1&amp;exercise-labels=1&amp;exercise-list=2&amp;grouped-add=1&amp;google-health=1&amp;exercise-defaults=2&amp;workout-generator=4&amp;profile-photo=1&amp;workout-delete=1&amp;apple-health=1&amp;daily-checkin=1&amp;recovery-catalog=1&amp;messages=2&amp;cardio-shortcut=1&amp;achievements=1"></script>
   <script src="js/workout-exercise-dock.js?v=1"></script>
 </body>

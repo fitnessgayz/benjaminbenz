@@ -4,58 +4,52 @@
   color: #171a17;
   text-align: left;
 }
-:root body .client-achievements-nav-launcher { display: none; }
-@media (max-width: 900px) {
-  :root body .client-dashboard-tabs.is-mobile-expanded .client-achievements-nav-launcher {
-    position: absolute;
-    top: 2px;
-    left: 2px;
-    z-index: 4;
-    display: grid;
-    width: 44px !important;
-    min-width: 44px !important;
-    height: 44px;
-    padding: 5px !important;
-    place-items: center;
-    overflow: visible;
-    color: #171a17;
-    background: transparent;
-    border: 0;
-    border-radius: 50% !important;
-    cursor: pointer;
-  }
-  :root body .client-achievements-nav-avatar {
-    display: grid;
-    width: 34px;
-    height: 34px;
-    place-items: center;
-    overflow: hidden;
-    color: #d6ff35;
-    background: #171a17;
-    border: 2px solid #d6ff35;
-    border-radius: 50%;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, .3);
-  }
-  :root body .client-achievements-nav-avatar :is(span, svg, img) { display: block; width: 100%; height: 100%; }
-  :root body .client-achievements-nav-avatar span { padding: 6px; }
-  :root body .client-achievements-nav-avatar img { object-fit: cover; }
-  :root body .client-achievements-nav-avatar [hidden] { display: none !important; }
-  :root body .client-achievements-nav-mark {
-    position: absolute;
-    right: 0;
-    bottom: 0;
-    display: grid;
-    width: 17px;
-    height: 17px;
-    padding: 3px;
-    place-items: center;
-    color: #171a17;
-    background: #d6ff35;
-    border: 2px solid #171a17;
-    border-radius: 50%;
-  }
-  :root body .client-achievements-nav-mark svg { width: 100%; height: 100%; }
-  :root body .client-achievements-nav-launcher:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+:root body .progress-panel-actions { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
+:root body .client-achievements-progress-button {
+  display: grid;
+  width: 48px !important;
+  min-width: 48px !important;
+  height: 48px;
+  padding: 11px !important;
+  place-items: center;
+  color: #171a17;
+  background: #d6ff35;
+  border: 1px solid #b8dd22;
+  border-radius: 50% !important;
+  box-shadow: 0 5px 14px rgba(37, 48, 23, .16);
+  cursor: pointer;
+}
+:root body .client-achievements-progress-button svg { width: 100%; height: 100%; }
+:root body .client-achievements-progress-button:focus-visible { outline: 3px solid #263418; outline-offset: 3px; }
+:root body .client-achievements-dialog {
+  width: min(920px, calc(100vw - 24px));
+  max-height: calc(100dvh - 24px);
+  margin: auto;
+  padding: 54px clamp(16px, 3vw, 32px) 28px;
+  overflow: auto;
+  color: #171a17;
+  background: #f7f8f3;
+  border: 1px solid #d9ddd4;
+  border-radius: 24px;
+  box-shadow: 0 24px 70px rgba(20, 26, 15, .28);
+}
+:root body .client-achievements-dialog::backdrop { background: rgba(15, 19, 13, .58); backdrop-filter: blur(3px); }
+:root body .client-achievements-dialog-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: grid;
+  width: 44px !important;
+  min-width: 44px !important;
+  height: 44px;
+  padding: 0 !important;
+  place-items: center;
+  color: #263418;
+  background: #edf1e5;
+  border: 1px solid #d6dccd;
+  border-radius: 50% !important;
+  font: 700 1.45rem/1 inherit;
+  cursor: pointer;
 }
 :root body .client-achievements-home {
   grid-column: 1 / -1;
@@ -64,7 +58,12 @@
   border-radius: 22px;
   background: #fff;
 }
-:root body .client-achievements-room { margin: 0 0 28px; }
+:root body .client-achievements-room { margin: 0; }
+@media (max-width: 700px) {
+  :root body .dashboard-page .progress-panel-heading { display: flex !important; align-items: flex-start !important; }
+  :root body .dashboard-page .progress-panel-heading > div:first-child { flex: 1; }
+  :root body .progress-panel-actions .status-pill { display: none; }
+}
 :root body .achievement-section-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
 :root body .achievement-section-heading .kicker { margin: 0 0 5px; font-size: .65rem; letter-spacing: .11em; color: #5b6551; }
 :root body .achievement-section-heading h3 { margin: 0; font-size: clamp(1.25rem, 3.6vw, 1.7rem); font-weight: 850; letter-spacing: -.035em; line-height: 1.15; text-transform: none; }
