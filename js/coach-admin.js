@@ -202,11 +202,16 @@ async function insertCopiedProgram(payload) {
   return result;
 }
 
-function sendToCoachLogin() {
+function sendToCoachLogin({ preserveInbox = false } = {}) {
   const workspace = document.getElementById("coach-admin-workspace");
   if (workspace) workspace.hidden = true;
   syncCoachAdminMobileNavigationMount();
-  window.location.href = coachLoginUrl;
+  const returnTo = preserveInbox && requestedCoachAdminTab() === "inbox"
+    ? "/coach-admin.html?tab=inbox"
+    : "";
+  window.location.href = returnTo
+    ? `${coachLoginUrl}${coachLoginUrl.includes("?") ? "&" : "?"}return_to=${encodeURIComponent(returnTo)}`
+    : coachLoginUrl;
 }
 
 function showCoachAccessError() {
@@ -235,11 +240,11 @@ async function restoreCoachAdminUser() {
     if (error) throw error;
 
     const user = data?.session?.user;
-    if (!user) sendToCoachLogin();
+    if (!user) sendToCoachLogin({ preserveInbox: true });
     return user || null;
   } catch (error) {
     if (window.FWB_AUTH_SESSION.requiresLogin(error)) {
-      sendToCoachLogin();
+      sendToCoachLogin({ preserveInbox: true });
     } else {
       showCoachAccessError();
     }

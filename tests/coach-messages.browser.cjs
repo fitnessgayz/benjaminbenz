@@ -8,18 +8,28 @@ const root = path.resolve(__dirname, "..");
 const artifactDir = process.env.MESSAGING_SCREENSHOT_DIR || "/private/tmp/fwb-messaging-browser";
 fs.mkdirSync(artifactDir, { recursive: true });
 
-async function setup(browser, role, viewport) {
+function applicationFunction(file, name) {
+  const source = fs.readFileSync(path.join(root, file), "utf8");
+  const start = source.search(new RegExp(`^(?:async )?function ${name}\\(`, "m"));
+  assert.ok(start >= 0, name);
+  const rest = source.slice(start);
+  const next = rest.slice(1).search(/\n(?:async )?function /);
+  return next < 0 ? rest : rest.slice(0, next + 1);
+}
+
+async function setup(browser, role, viewport, { search = "", autoOpen = false } = {}) {
   const page = await browser.newPage({ viewport });
   const originalHTML = fs.readFileSync(path.join(root, role === "client" ? "client-dashboard.html" : "coach-admin.html"), "utf8");
   const localStyles = [...originalHTML.matchAll(/<link[^>]+href="([^"?]+\.css)(?:\?[^"]*)?"/g)].map(match => path.join(root, match[1].replace(/^\//, ""))).filter(file => fs.existsSync(file));
   const html = originalHTML
     .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, "")
     .replace(/<link\b[^>]*>/gi, "");
-  await page.route("**/*", (route) => route.request().url() === "http://127.0.0.1:8769/messaging-test" ? route.fulfill({ status: 200, contentType: "text/html", body: html }) : route.abort());
-  await page.goto("http://127.0.0.1:8769/messaging-test");
+  const pageURL = `http://127.0.0.1:8769/messaging-test${search}`;
+  await page.route("**/*", (route) => route.request().url() === pageURL ? route.fulfill({ status: 200, contentType: "text/html", body: html }) : route.abort());
+  await page.goto(pageURL);
   for (const file of localStyles) await page.addStyleTag({ path: file });
   await page.addScriptTag({ path: path.join(root, "js/coach-messages.js") });
-  await page.evaluate((role) => {
+  await page.evaluate(({ role, autoOpen }) => {
     window.calls = [];
     window.authChange = null;
     window.failSend = false;
@@ -53,14 +63,33 @@ async function setup(browser, role, viewport) {
       document.querySelector('[data-admin-tab="home"]')?.classList.remove("is-active");
       document.querySelector('[data-admin-tab="inbox"]')?.classList.add("is-active");
     }
-    window.controller = window.FWBCoachMessages.createController({ supabaseClient: window.backend, rpcTransport: window.backend, user: { id: role, email: role === "client" ? "client@example.com" : "coach@example.com" }, role, root: host, unreadBadges: document.querySelectorAll(role === "client" ? "[data-client-message-unread]" : "[data-coach-message-unread]"), openButtons: document.querySelectorAll("[data-message-coach]") });
-  }, role);
+    if (!autoOpen) window.controller = window.FWBCoachMessages.createController({ supabaseClient: window.backend, rpcTransport: window.backend, user: { id: role, email: role === "client" ? "client@example.com" : "coach@example.com" }, role, root: host, unreadBadges: document.querySelectorAll(role === "client" ? "[data-client-message-unread]" : "[data-coach-message-unread]"), openButtons: document.querySelectorAll("[data-message-coach]") });
+  }, { role, autoOpen });
+  if (autoOpen) {
+    await page.addScriptTag({ content: `
+      let clientMessagesController = null;
+      const supabaseClient = window.backend;
+      const isCoachDashboardPreview = false;
+      const originalMessageFactory = window.FWBCoachMessages.createController;
+      window.FWBCoachMessages.createController = options => {
+        window.controller = originalMessageFactory({ ...options, rpcTransport: window.backend });
+        return window.controller;
+      };
+      ${applicationFunction("js/client-portal.js", "initializeClientMessages")}
+      initializeClientMessages({ id: "client", email: "client@example.com" });
+    ` });
+  }
   return page;
 }
 
 (async () => {
   const browser = await chromium.launch({ headless: true, channel: process.env.PLAYWRIGHT_CHANNEL || "chrome" });
   try {
+    const emailClient = await setup(browser, "client", { width: 390, height: 844 }, { search: "?messages=1", autoOpen: true });
+    await emailClient.locator("[data-client-messages][open]").waitFor();
+    await emailClient.waitForFunction(() => document.querySelectorAll(".fwb-message-bubble").length === 50);
+    assert.equal(new URL(emailClient.url()).search, "?messages=1");
+    await emailClient.close();
     const client = await setup(browser, "client", { width: 390, height: 844 });
     await client.getByRole("button", { name: /Message coach/ }).click();
     await client.waitForFunction(() => document.querySelectorAll(".fwb-message-bubble").length === 50);
@@ -124,7 +153,7 @@ async function setup(browser, role, viewport) {
     await coach.getByText("No messages yet. Your client can start a conversation with Message coach.").waitFor();
     assert.equal(await coach.locator(".fwb-message-composer").isVisible(), false);
     await coach.close();
-    console.log("Messaging browser flow passed: mobile/desktop, literal text safety, read visibility, history scroll, uncertain retry, drafts, sign-out, empty coach state.");
+    console.log("Messaging browser flow passed: authenticated email deep link, mobile/desktop, literal text safety, read visibility, history scroll, uncertain retry, drafts, sign-out, empty coach state.");
     console.log(`Screenshots: ${artifactDir}`);
   } finally { await browser.close(); }
 })().catch((error) => { console.error(error); process.exitCode = 1; });

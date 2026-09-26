@@ -6689,6 +6689,9 @@ function initializeClientMessages(user) {
     supabaseClient, user, role: "client", root, openButtons,
     unreadBadges: document.querySelectorAll("[data-client-message-unread]")
   });
+  if (new URLSearchParams(window.location.search).get("messages") === "1") {
+    clientMessagesController.open(user.email, "", openButtons[0]);
+  }
 }
 
 async function initializeClientWebNotifications(user) {

@@ -65,3 +65,7 @@ verify_jwt = false
 # notification dispatcher and authenticated browser test alerts.
 [functions.fwb-web-push]
 verify_jwt = false
+
+# Private cron worker: verifies its dedicated Vault bearer before any queue claim.
+[functions.send-message-email]
+verify_jwt = false

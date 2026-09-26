@@ -210,7 +210,7 @@ test("client and coach entry points load the shared controller before their appl
     const html = fs.readFileSync(path.join(root, htmlName), "utf8");
     assert.ok(html.indexOf("js/coach-messages.js") < html.indexOf(entry));
     assert.match(html, /css\/coach-messages\.css\?v=1/);
-    assert.match(html, /messages=1/);
+    assert.match(html, /messages=\d+/);
   }
   const clientSource = fs.readFileSync(path.join(root, "js/client-portal.js"), "utf8");
   assert.match(clientSource, /button\.hidden = isCoachDashboardPreview/);

@@ -1,6 +1,6 @@
 # Client and coach messaging
 
-One private conversation per authenticated client, shared by that client and the existing verified coach administrators. Message ownership is bound to the client's stable Auth UUID. All four endpoints use the caller's ordinary Supabase authenticated session; never a service key. No push, email, or external notification delivery is performed.
+One private conversation per authenticated client, shared by that client and the existing verified coach administrators. Message ownership is bound to the client's stable Auth UUID. All four endpoints use the caller's ordinary Supabase authenticated session; never a service key. Incoming messages queue email notifications for verified recipients; production email dispatch is deployed but disabled pending provider credentials and a verified sender. Private message bodies remain inside the authenticated app and website. Push notifications are not implemented.
 
 ## RPC contract
 
@@ -38,6 +38,27 @@ Returns exactly one message in an array, using the history message shape. Genera
 
 Returns void (clients should accept an empty/null RPC result). Advances only the current viewer's cursor, monotonically, through that exact existing message in that conversation. Pass the highest message ID actually displayed after a successful history load. Never call from an inbox preview or pass a guessed/global latest ID. Loading older history cannot move the cursor backward. Messages committed later remain unread.
 
+## Incoming-message email notifications
+
+Email delivery is currently disabled. Each newly inserted message still queues one notification per verified recipient: client messages notify verified coach administrators, and coach replies notify the verified owner of that conversation. Both iOS and web use the same message RPC, so notifications cover both platforms. An idempotent resend returns the existing message and must not enqueue another notification. Recipient addresses are resolved from verified Auth identities, never from request-supplied addresses or editable profile metadata.
+
+Emails contain a generic new-message notice and a link. They do not contain the message body. Client links use `/client-dashboard.html?messages=1`; coach links use `/coach-admin.html?tab=inbox`. Links contain no recipient email, client identifier, or message body. The client destination opens the conversation only after its authenticated controller is ready. The coach destination opens Inbox after authentication. Missing or expired sessions preserve that destination through the validated same-origin login return route. Coach previews do not auto-open client messaging.
+
+Email delivery runs separately from the interactive send. A private outbox uses a unique `(message_id, recipient_user_id)` entry, and only new messages create entries; existing conversations are not backfilled. The actual message text never enters the outbox or email. The first service-only claim freezes the generic Resend payload and an outbox UUID idempotency key. Retries reuse both within a 23-hour deadline, with two-minute leases, up to ten claims, and an exponential delay from one minute to one hour. Before sending, the worker revalidates the recipient and cancels delivery if the email changed or the account was deleted, banned, or is no longer verified.
+
+The conversation remains available in FWB Training even if email delivery is delayed or fails. Push notifications and email replies into the conversation are not implemented.
+
+## Email setup and activation
+
+Production currently has both delivery guards off: `messaging_private.email_dispatch_config.enabled = false` and cron job `fwb-messaging-email-dispatch` has `active = false`. The `send-message-email` worker also fails closed while the config flag is off. `RESEND_API_KEY` and a configured sender are missing; email notifications are not being delivered.
+
+1. Verify the sending domain/address in Resend, then securely configure the Edge Function secrets `RESEND_API_KEY` and `MESSAGE_NOTIFICATION_FROM`. The sender must be authorized by that Resend account. The worker supports existing `PASSWORD_NOTIFICATION_FROM` or `CONTACT_MESSAGE_FROM` as fallbacks, but a dedicated messaging sender is clearer. Never put secret values in source control, documentation, or terminal output.
+2. Confirm the deployed `send-message-email` function has its standard `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` environment. Its private dispatcher credential is the Vault secret `fwb_messaging_email_worker_token`, created by the scheduler migration. The service-only `messaging_email_worker_config` RPC reads this credential and the enabled flag; do not expose either service credentials or the Vault token in client code.
+3. Verify configuration and run the isolated SQL and mocked email-worker tests. Do not send real test emails. Check the private outbox's status counts before activation: enabling delivery processes eligible queued notifications as well as future ones.
+4. With the verified sender configured, enable `messaging_private.email_dispatch_config` row `id = 1` and activate the existing `fwb-messaging-email-dispatch` cron job using `cron.alter_job`. Its schedule runs every minute and dispatches only when eligible work exists. Keep both guards disabled until setup is complete; turn both off again to pause delivery.
+
+No plaintext credentials are required in these instructions, and no real email was sent during verification.
+
 ## Session and errors
 
 For client calls, omit `p_client_email`/send null, or pass the client's current email. For coach history/send/mark-read calls, pass the selected client's email. Email comparison is case-insensitive. A verified current Auth identity is required, including matching signed JWT email and current verified Auth email. An account that changes its email keeps its original conversation through its stable Auth UUID; the stored conversation email remains its routing alias. A newly registered account that later reuses that old email cannot read or take over the existing conversation, and cannot open a replacement under that occupied alias. Changing this safe restriction would require an explicit migration/reassignment workflow. Editing `user_metadata` never grants coach access. The existing `is_coach_admin()` rule is reused only after verifying this identity. Anonymous, deleted, banned, unverified, or stale-email sessions are rejected. Other clients' conversation identifiers are not accepted.
@@ -57,3 +78,5 @@ Run the standalone local SQL harness in `supabase/tests/messaging-backend.mjs` a
 ## Verified release state (2026-09-26)
 
 The migration was deployed to the shared FWB Supabase project. The isolated harness passes 63 checks. The full rollback smoke passed against the deployed functions; follow-up queries confirmed zero synthetic users, conversations, messages, or read cursors remained. The security advisor added no findings relative to the existing project baseline. Performance review found only expected unused-index informational notices for the empty read-cursor table's foreign-key support indexes; those indexes are retained for ownership cleanup and referential integrity performance. No message-body notifications or existing client record changes were introduced.
+
+Email infrastructure is deployed in a disabled state. Provider setup remains incomplete: no production `RESEND_API_KEY` or configured sender was available at verification time. The outbox and worker checks use isolated or mocked delivery; no real test emails were sent. The scheduler and worker configuration must be explicitly enabled only after setup above is complete.

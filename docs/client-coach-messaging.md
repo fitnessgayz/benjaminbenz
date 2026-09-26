@@ -18,6 +18,14 @@ Messages refresh while the app or website is open. Reopening it refreshes the co
 
 If a send cannot be confirmed, retry the same message. Retrying preserves its request ID so a connection failure does not create a duplicate. An unsent draft remains in memory while that account stays signed in; it is cleared when you sign out or close the app or page.
 
-This first version supports plain text up to 4,000 characters. It does not send push notifications, emails, or attachments.
+## Email notifications
+
+Email delivery is deployed but currently disabled while the sending account and verified sender are configured. Messages and unread badges already work in FWB Training.
+
+After email delivery is enabled, each new incoming message sends an email notification: client messages notify verified coaches, and coach replies notify the client's verified email address. Messages sent from either iOS or the website use the same notification system. Retrying a send does not create another notification for the same message.
+
+The email contains a notice and a link, with the private message body kept inside FWB Training. **Open messages** takes clients straight to their conversation on the website and coaches to **Inbox**. If you need to sign in first, the link returns you to messages afterward. The links contain no client email address or other client identity.
+
+Messages support plain text up to 4,000 characters. Push notifications and attachments are not included.
 
 Implementation and database verification are described in [messaging-backend.md](messaging-backend.md).
