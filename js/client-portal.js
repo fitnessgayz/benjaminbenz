@@ -15171,19 +15171,6 @@ function syncClientDashboardMobileNavigationScrollCue(navigation = document.quer
   }
 }
 
-function syncClientDashboardVisualViewportBottom() {
-  const mobileNavigation = window.matchMedia?.("(max-width: 900px)")?.matches ?? false;
-  const viewport = window.visualViewport;
-  const bottomInset = mobileNavigation && viewport
-    ? Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop)
-    : 0;
-
-  document.documentElement.style.setProperty(
-    "--client-visual-viewport-bottom",
-    `${Math.round(bottomInset * 100) / 100}px`
-  );
-}
-
 function setClientDashboardMobileNavigationExpanded(expanded, options = {}) {
   const navigation = document.querySelector(".client-dashboard-tabs");
   const toggle = document.querySelector("[data-client-mobile-nav-toggle]");
@@ -15279,7 +15266,6 @@ function handleClientDashboardMobileNavigation() {
   }
 
   syncClientDashboardMobileNavigationMount();
-  syncClientDashboardVisualViewportBottom();
   syncClientDashboardMobileNavigationIcon();
   setClientDashboardMobileNavigationExpanded(true);
 
@@ -15301,7 +15287,6 @@ function handleClientDashboardMobileNavigation() {
 
   const handleMobileChange = () => {
     lastClientDashboardMobileTabPress = "";
-    syncClientDashboardVisualViewportBottom();
     syncClientDashboardMobileNavigationMount();
     setClientDashboardMobileNavigationExpanded(mobileQuery.matches);
     syncClientDashboardMobileNavigationScrollCue(navigation);
@@ -15313,8 +15298,6 @@ function handleClientDashboardMobileNavigation() {
     mobileQuery.addListener(handleMobileChange);
   }
 
-  window.visualViewport?.addEventListener("resize", syncClientDashboardVisualViewportBottom, { passive: true });
-  window.visualViewport?.addEventListener("scroll", syncClientDashboardVisualViewportBottom, { passive: true });
 }
 
 function clientDashboardMobileTabPressAction(tabName, activeTab, previousTabPress, expanded) {

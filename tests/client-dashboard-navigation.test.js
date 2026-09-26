@@ -104,23 +104,21 @@ test("keeps a labeled horizontally scrollable safe-area bottom dock on mobile", 
   assert.match(mobileStyles, /body\.client-dashboard-page\s*\{[^}]*padding-bottom:\s*calc\(116px \+ env\(safe-area-inset-bottom\)\)/s);
   assert.match(mobileStyles, /\.client-dashboard-page \.dashboard-shell\s*\{[^}]*padding-top:\s*10px/s);
   assert.match(mobileStyles, /\.client-dashboard-page \.dashboard-grid\s*\{[^}]*padding-top:\s*0/s);
-  assert.match(mobileStyles, /\.dashboard-page \.client-dashboard-tabs\s*\{[^}]*position:\s*fixed[^}]*bottom:\s*calc\(10px \+ env\(safe-area-inset-bottom\) \+ var\(--client-visual-viewport-bottom, 0px\)\)[^}]*display:\s*flex[^}]*width:\s*min\(720px, calc\(100% - 24px\)\)[^}]*overflow-x:\s*auto[^}]*scroll-snap-type:\s*x proximity[^}]*background:\s*rgba\(23, 26, 23, \.98\)/s);
+  assert.match(mobileStyles, /\.dashboard-page \.client-dashboard-tabs\s*\{[^}]*position:\s*fixed[^}]*top:\s*calc\(100svh - var\(--client-mobile-dock-height\) - var\(--client-mobile-dock-bottom-gap\)\)[^}]*bottom:\s*auto[^}]*display:\s*flex[^}]*width:\s*min\(720px, calc\(100% - 24px\)\)[^}]*overflow-x:\s*auto[^}]*scroll-snap-type:\s*x proximity[^}]*background:\s*rgba\(23, 26, 23, \.98\)/s);
   assert.match(mobileStyles, /\.client-dashboard-tab\.is-active \.client-dashboard-tab-icon\s*\{[^}]*color:\s*var\(--black\)[^}]*background:\s*var\(--lime\)[^}]*border-radius:\s*50%/s);
   assert.match(mobileStyles, /\.client-dashboard-tab-label\s*\{[^}]*display:\s*block !important[^}]*font-size:\s*\.63rem/s);
   assert.match(mobileStyles, /\.client-dashboard-nav-title,[\s\S]*?\.client-dashboard-sidebar-toggle\s*\{[^}]*display:\s*none !important/s);
 });
 
-test("keeps every mobile navigation surface anchored to the visible iPhone viewport", () => {
+test("keeps every mobile navigation surface on a stable Chrome mobile viewport", () => {
   const mobileStyles = sourceBetween("@media (max-width: 900px)", "@media (max-width: 420px)");
-  const viewportSource = sourceForFunction("syncClientDashboardVisualViewportBottom");
   const handlerSource = sourceForFunction("handleClientDashboardMobileNavigation");
 
-  assert.equal((mobileStyles.match(/var\(--client-visual-viewport-bottom, 0px\)/g) || []).length, 4);
-  assert.match(viewportSource, /window\.innerHeight - viewport\.height - viewport\.offsetTop/);
-  assert.match(viewportSource, /Math\.max\(0,/);
-  assert.match(viewportSource, /--client-visual-viewport-bottom/);
-  assert.match(handlerSource, /visualViewport\?\.addEventListener\("resize", syncClientDashboardVisualViewportBottom/);
-  assert.match(handlerSource, /visualViewport\?\.addEventListener\("scroll", syncClientDashboardVisualViewportBottom/);
+  assert.equal((mobileStyles.match(/100svh/g) || []).length, 4);
+  assert.match(mobileStyles, /--client-mobile-dock-height:\s*94px/);
+  assert.match(mobileStyles, /--client-mobile-dock-bottom-gap:\s*calc\(10px \+ env\(safe-area-inset-bottom\)\)/);
+  assert.doesNotMatch(handlerSource, /visualViewport/);
+  assert.doesNotMatch(styleSource, /--client-visual-viewport-bottom/);
 });
 
 test("makes horizontal scrolling obvious with a fading edge and arrow cue", () => {

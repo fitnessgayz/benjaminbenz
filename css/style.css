@@ -15461,6 +15461,10 @@ body.client-dashboard-page.is-loading > :is(.client-dashboard-tabs,
   }
 
   body.client-dashboard-page {
+    --client-mobile-dock-bottom-gap: calc(10px + env(safe-area-inset-bottom));
+    --client-mobile-dock-height: 94px;
+    --client-mobile-dock-fade-height: 92px;
+    --client-mobile-dock-cue-bottom: calc(33px + env(safe-area-inset-bottom));
     padding-bottom: calc(116px + env(safe-area-inset-bottom));
   }
 
@@ -15474,8 +15478,9 @@ body.client-dashboard-page.is-loading > :is(.client-dashboard-tabs,
 
   .dashboard-page .client-dashboard-tabs {
     position: fixed;
+    top: calc(100svh - var(--client-mobile-dock-height) - var(--client-mobile-dock-bottom-gap));
     right: auto;
-    bottom: calc(10px + env(safe-area-inset-bottom) + var(--client-visual-viewport-bottom, 0px));
+    bottom: auto;
     left: 50%;
     z-index: 85;
     display: flex;
@@ -15516,8 +15521,9 @@ body.client-dashboard-page.is-loading > :is(.client-dashboard-tabs,
 
   .client-dashboard-scroll-fade {
     position: fixed;
+    top: calc(100svh - var(--client-mobile-dock-fade-height) - var(--client-mobile-dock-bottom-gap));
     right: max(12px, calc((100vw - 720px) / 2));
-    bottom: calc(10px + env(safe-area-inset-bottom) + var(--client-visual-viewport-bottom, 0px));
+    bottom: auto;
     z-index: 86;
     display: block;
     width: 72px;
@@ -15529,8 +15535,9 @@ body.client-dashboard-page.is-loading > :is(.client-dashboard-tabs,
 
   .client-dashboard-scroll-cue {
     position: fixed;
+    top: calc(100svh - 46px - var(--client-mobile-dock-cue-bottom));
     right: max(19px, calc((100vw - 706px) / 2));
-    bottom: calc(33px + env(safe-area-inset-bottom) + var(--client-visual-viewport-bottom, 0px));
+    bottom: auto;
     z-index: 87;
     display: grid;
     width: 28px;
@@ -15554,7 +15561,8 @@ body.client-dashboard-page.is-loading > :is(.client-dashboard-tabs,
 
   .dashboard-page .client-dashboard-mobile-nav-toggle {
     position: fixed;
-    bottom: calc(10px + env(safe-area-inset-bottom) + var(--client-visual-viewport-bottom, 0px));
+    top: calc(100svh - 62px - var(--client-mobile-dock-bottom-gap));
+    bottom: auto;
     left: 12px;
     z-index: 86;
     display: grid;
@@ -15698,11 +15706,14 @@ body.client-dashboard-page.is-loading > :is(.client-dashboard-tabs,
 
 @media (max-width: 420px) {
   body.client-dashboard-page {
+    --client-mobile-dock-bottom-gap: calc(6px + env(safe-area-inset-bottom));
+    --client-mobile-dock-height: 90px;
+    --client-mobile-dock-fade-height: 88px;
+    --client-mobile-dock-cue-bottom: calc(27px + env(safe-area-inset-bottom));
     padding-bottom: calc(110px + env(safe-area-inset-bottom));
   }
 
   .dashboard-page .client-dashboard-tabs {
-    bottom: calc(6px + env(safe-area-inset-bottom) + var(--client-visual-viewport-bottom, 0px));
     width: calc(100% - 12px);
     gap: 4px;
     padding: 7px 8px 5px;
@@ -15710,17 +15721,14 @@ body.client-dashboard-page.is-loading > :is(.client-dashboard-tabs,
 
   .client-dashboard-scroll-fade {
     right: 6px;
-    bottom: calc(6px + env(safe-area-inset-bottom) + var(--client-visual-viewport-bottom, 0px));
     height: 88px;
   }
 
   .client-dashboard-scroll-cue {
     right: 13px;
-    bottom: calc(27px + env(safe-area-inset-bottom) + var(--client-visual-viewport-bottom, 0px));
   }
 
   .dashboard-page .client-dashboard-mobile-nav-toggle {
-    bottom: calc(6px + env(safe-area-inset-bottom) + var(--client-visual-viewport-bottom, 0px));
     left: 6px;
   }
 
