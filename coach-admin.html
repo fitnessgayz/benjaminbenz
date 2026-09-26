@@ -31,6 +31,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css?v=client-view-shortcut-1&amp;home-shortcuts=1" />
+  <link rel="stylesheet" href="css/coach-messages.css?v=1" />
   <link rel="stylesheet" href="css/workout-layout.css?v=workout-preview-1" />
   <link rel="stylesheet" href="/css/fwb-design-system.css?v=reference-overhaul-1" />
   <link rel="stylesheet" href="css/apple-workout.css?v=1" />
@@ -96,6 +97,12 @@
           <button class="admin-tab is-active" type="button" data-admin-tab="home" aria-label="Home" aria-current="page">
             <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 11 9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg>
             <span class="admin-nav-label">Home</span>
+          </button>
+
+          <button class="admin-tab" type="button" data-admin-tab="inbox" aria-label="Inbox" title="Inbox">
+            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5H4l-2 2V11.5a9.5 9.5 0 1 1 19 0Z"/><path d="M7 9h9M7 13h6"/></svg>
+            <span class="admin-nav-label">Inbox</span>
+            <span class="fwb-message-badge" data-coach-message-unread hidden aria-label="0 unread messages">0</span>
           </button>
 
           <p class="admin-nav-group-title">Manage</p>
@@ -283,6 +290,8 @@
           </div>
         </section>
 
+        <section class="admin-card" data-admin-panel="inbox" data-coach-messages aria-label="Coach inbox" hidden></section>
+
         <section class="admin-card selected-client-panel" aria-label="Selected client" data-admin-client-context hidden>
           <div class="selected-client-copy">
             <p class="kicker">Selected client</p>
@@ -293,6 +302,7 @@
             <span>No client selected</span>
           </div>
           <div class="selected-client-actions">
+            <button class="button button-ghost" type="button" id="selected-client-message-button" hidden>View messages</button>
             <a class="button coach-client-view-link" id="selected-client-view-link" target="_blank" rel="noopener" hidden>View client page <span aria-hidden="true">↗</span></a>
             <div class="selected-session-count" id="selected-session-count" hidden>
               <span>Session count</span>
@@ -1080,10 +1090,11 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js?v=client-session-link-1"></script>
   <script src="js/auth-session.js?v=remember-login-1"></script>
+  <script src="js/coach-messages.js?v=1"></script>
   <script src="js/web-notifications.js?v=notification-default-on-1"></script>
   <script src="js/workout-layout.js?v=workout-preview-2"></script>
   <script src="js/apple-workout.js?v=3"></script>
   <script src="js/apple-health-sync.js?v=1"></script>
-  <script src="js/coach-admin.js?v=client-view-shortcut-1&amp;remember-login=1&amp;home-shortcuts=1&amp;apple-workout=1&amp;viewport-dock=1&amp;apple-health=1&amp;recovery-catalog=1"></script>
+  <script src="js/coach-admin.js?v=client-view-shortcut-1&amp;remember-login=1&amp;home-shortcuts=1&amp;apple-workout=1&amp;viewport-dock=1&amp;apple-health=1&amp;recovery-catalog=1&amp;messages=1"></script>
 </body>
 </html>

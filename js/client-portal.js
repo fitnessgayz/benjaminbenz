@@ -61,6 +61,7 @@ let clientAvailablePrograms = [];
 let clientPreviewProgramSelected = false;
 let clientWorkoutLayoutSaving = false;
 let clientWebNotificationController = null;
+let clientMessagesController = null;
 let clientSessionBalanceController = null;
 let clientGoogleHealthController = null;
 let clientProfilePhotoController = null;
@@ -6676,6 +6677,18 @@ function initializeRestTimerNotifications() {
     void restTimerNotificationRegistration();
   }
   renderRestTimerNotificationSetting();
+}
+
+function initializeClientMessages(user) {
+  const root = document.querySelector("[data-client-messages]");
+  const openButtons = document.querySelectorAll("[data-message-coach]");
+  openButtons.forEach((button) => { button.hidden = isCoachDashboardPreview; });
+  if (isCoachDashboardPreview || !root || !user?.id || !supabaseClient || !window.FWBCoachMessages) return;
+  clientMessagesController?.destroy();
+  clientMessagesController = window.FWBCoachMessages.createController({
+    supabaseClient, user, role: "client", root, openButtons,
+    unreadBadges: document.querySelectorAll("[data-client-message-unread]")
+  });
 }
 
 async function initializeClientWebNotifications(user) {
@@ -17732,6 +17745,8 @@ async function loadDashboard() {
     return;
   }
 
+  clientMessagesController?.destroy();
+  clientMessagesController = null;
   clientGoogleHealthController?.destroy();
   clientGoogleHealthController = null;
   clientAppleHealthController?.destroy();
@@ -17827,6 +17842,7 @@ async function loadDashboard() {
     configureClientSessionBalance();
     configureClientGoogleHealth();
     configureClientAppleHealth();
+    initializeClientMessages(user);
     void initializeClientWebNotifications(user);
     const questionnaireQuery = supabaseClient
       .from("client_fitness_questionnaires")
@@ -18571,6 +18587,8 @@ async function handleSignOut() {
   buttons.forEach((button) => {
     button.addEventListener("click", async () => {
       clearClientQuestionnaire();
+      clientMessagesController?.destroy();
+      clientMessagesController = null;
       clientSessionBalanceController?.destroy();
       clientSessionBalanceController = null;
       clientGoogleHealthController?.destroy();

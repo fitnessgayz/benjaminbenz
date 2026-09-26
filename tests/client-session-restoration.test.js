@@ -22,7 +22,7 @@ function harness(result) {
     replace: url => redirects.push(url)
   } };
   const context = vm.createContext({
-    window, URL, URLSearchParams, portalLoginSubmitting: false, clientGoogleHealthController: null, clientProfilePhotoController: null, clientAppleHealthController: null,
+    window, URL, URLSearchParams, portalLoginSubmitting: false, clientMessagesController: null, clientGoogleHealthController: null, clientProfilePhotoController: null, clientAppleHealthController: null,
     supabaseClient: { auth: { getSession: async () => {
       if (result instanceof Error) throw result;
       return result;

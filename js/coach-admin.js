@@ -28,6 +28,7 @@ const alexFitnessMasterSessions = Object.freeze({
 });
 const coachAdminTabNames = new Set([
   "home",
+  "inbox",
   "clients",
   "profile",
   "program",
@@ -93,6 +94,7 @@ let isClientExerciseNameLoading = false;
 let clientExerciseNameLoadError = "";
 let isClientExerciseNameMutating = false;
 let coachNotificationsController = null;
+let coachMessagesController = null;
 let inviteClientReturnFocus = null;
 let coachCalendarEvents = [];
 let coachCalendarLoaded = false;
@@ -862,6 +864,8 @@ function clientViewUrl(program = selectedProgram()) {
 
 function updateClientViewLink(program = selectedProgram()) {
   const email = normalizeEmail(program?.client_email);
+  const messageButton = document.getElementById("selected-client-message-button");
+  if (messageButton) messageButton.hidden = !email;
   ["client-view-link", "selected-client-view-link"].forEach((id) => {
     const link = document.getElementById(id);
     if (!link) return;
@@ -899,8 +903,10 @@ function setAdminTab(tabName) {
   });
 
   document.querySelectorAll("[data-admin-client-context]").forEach((panel) => {
-    panel.hidden = nextTab === "notifications" || nextTab === "home";
+    panel.hidden = nextTab === "notifications" || nextTab === "home" || nextTab === "inbox";
   });
+
+  coachMessagesController?.setActive(nextTab === "inbox");
 
   if (nextTab === "home") {
     renderCoachHome();
@@ -5291,12 +5297,25 @@ async function showAdminWorkspace(user) {
     signOutButton.hidden = false;
   }
 
+  initializeCoachMessages(user);
+
   await Promise.all([
     loadPrograms(),
     loadExerciseLibrary(),
     loadCoachCalendarEvents(),
     initializeCoachNotifications(user)
   ]);
+}
+
+function initializeCoachMessages(user) {
+  const root = document.querySelector("[data-coach-messages]");
+  if (!root || !user?.id || !coachSupabase || !window.FWBCoachMessages) return;
+  coachMessagesController?.destroy();
+  coachMessagesController = window.FWBCoachMessages.createController({
+    supabaseClient: coachSupabase, user, role: "coach", root,
+    unreadBadges: document.querySelectorAll("[data-coach-message-unread]")
+  });
+  coachMessagesController.setActive(activeAdminTab === "inbox");
 }
 
 async function initializeCoachNotifications(user) {
@@ -5438,6 +5457,12 @@ function handleCoachHomeActions() {
 }
 
 function handleSelectedClientActions() {
+  document.getElementById("selected-client-message-button")?.addEventListener("click", () => {
+    const program = selectedProgram();
+    if (!program?.client_email) return;
+    setAdminTab("inbox");
+    coachMessagesController?.open(program.client_email, program.client_name);
+  });
   const saveProfileButton = document.getElementById("selected-save-profile-button");
 
   saveProfileButton?.addEventListener("click", () => {
@@ -6878,6 +6903,8 @@ async function handleCoachSignOut() {
   }
 
   button.addEventListener("click", async () => {
+    coachMessagesController?.destroy();
+    coachMessagesController = null;
     if (coachNotificationsController) {
       try {
         await coachNotificationsController.prepareForSignOut();
