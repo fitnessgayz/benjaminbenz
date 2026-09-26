@@ -80,6 +80,18 @@
 .workout-preview-exercises li { grid-template-columns:24px 24px minmax(0,1fr) auto 32px; gap:5px; }
 .dashboard-page .workout-preview-exercises .workout-drag { width:24px !important; min-width:24px !important; padding:0 !important; }
 .workout-preview-menu [data-exercise-delete] { color:#aa2525; }
+/* Let the visible date determine its height when larger text wraps. */
+.dashboard-page .client-workout-panel-cardio .workout-session-date-value {
+  position: relative;
+  min-height: 52px;
+  padding-block: 12px;
+  box-sizing: border-box;
+}
+.dashboard-page .client-workout-panel-cardio .workout-session-date-control input[type="date"] {
+  position: absolute !important;
+  inset: 0;
+  height: 100% !important;
+}
 .workout-exercise-editor label { display:grid; gap:6px; margin:14px 0; font-weight:650; }
 .workout-exercise-editor input { box-sizing:border-box; width:100%; min-width:0; padding:12px; border:1px solid #ccd0c4; border-radius:10px; font:inherit; }
 @media (max-width:480px) {

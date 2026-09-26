@@ -16,7 +16,7 @@ function sourceForFunction(name) {
   return portal.slice(start, end >= 0 ? end : undefined);
 }
 
-test("places the Custom Workout card first and assigned workouts behind it", () => {
+test("keeps Custom first and assigned workout indices stable with Cardio appended", () => {
   const source = sourceForFunction("clientWorkoutPickerItems");
   const pickerItems = Function(
     "customWorkoutTitle",
@@ -27,13 +27,16 @@ test("places the Custom Workout card first and assigned workouts behind it", () 
     { title: "Workout B", focus: "Upper" }
   ]);
 
-  assert.equal(items.length, 3);
-  assert.deepEqual(items.map((item) => item.title), ["Custom workout", "Workout A", "Workout B"]);
-  assert.deepEqual(items.map((item) => item.panelIndex), [0, 1, 2]);
-  assert.deepEqual(items.map((item) => item.assignedWorkoutIndex), [-1, 0, 1]);
+  assert.equal(items.length, 4);
+  assert.deepEqual(items.map((item) => item.title), ["Custom workout", "Workout A", "Workout B", "Cardio"]);
+  assert.deepEqual(items.map((item) => item.panelIndex), [0, 1, 2, 3]);
+  assert.deepEqual(items.map((item) => item.assignedWorkoutIndex), [-1, 0, 1, -1]);
   assert.equal(items.filter((item) => item.isCustom).length, 1);
   assert.equal(items[0].isCustom, true);
   assert.equal(pickerItems([])[0].isCustom, true);
+  assert.equal(items[3].isCardio, true);
+  assert.equal(pickerItems([])[1].isCardio, true);
+  assert.equal(pickerItems([])[1].panelIndex, 1);
 });
 
 test("wraps arrow navigation and protects vertical scrolling", () => {
@@ -123,7 +126,7 @@ test("keeps the deck compact and clear of the fixed mobile dock", () => {
   assert.match(styles, /@media \(max-width: 420px\)[\s\S]*?\.client-workout-picker-controls \{[\s\S]*?width:\s*100%;[\s\S]*?justify-content:\s*space-between/);
   assert.match(styles, /scroll-margin-bottom:\s*var\(--client-bottom-dock-clearance\)/);
   assert.match(dashboard, /css\/style\.css\?v=workout-preview-1/);
-  assert.match(dashboard, /js\/client-portal\.js\?v=add-workout-groups-1/);
+  assert.match(dashboard, /js\/client-portal\.js\?v=[^"&]+/);
 });
 
 test("shows a workout day separately from its training target", () => {

@@ -5120,8 +5120,8 @@ function cardioLogFields(workoutTitle, options = {}) {
     : '<label class="exercise-date"><span>Date</span><input type="date" data-log-date /></label>';
 
   return `
-    <article class="workout-exercise-card workout-cardio-card workout-activity-card">
-      <button class="exercise-card-summary" type="button" data-exercise-toggle>
+    <article class="workout-exercise-card workout-cardio-card workout-activity-card${options.expanded ? " is-open" : ""}">
+      <button class="exercise-card-summary" type="button" data-exercise-toggle aria-expanded="${Boolean(options.expanded)}">
         <span>
           <strong>Cardio log</strong>
           <em>Duration, distance, calories, and notes</em>
@@ -8510,7 +8510,7 @@ function workoutActionsMarkup(workout, options = {}) {
   return `
     <div class="workout-actions">
       <div>
-        <button class="workout-finish-button" type="button" data-workout-finish>Finish workout</button>
+        <button class="workout-finish-button" type="button" data-workout-finish>${escapeHtml(options.finishLabel || "Finish workout")}</button>
       </div>
       <small data-workout-status></small>
     </div>
@@ -11484,6 +11484,25 @@ function customWorkoutPanelMarkup(index) {
   `;
 }
 
+function cardioWorkoutPanelMarkup(index) {
+  return `
+    <section class="client-workout-panel client-workout-panel-cardio"
+      id="client-workout-panel-${index}" data-custom-workout-title="Cardio"
+      role="region" aria-labelledby="cardio-workout-panel-title" hidden>
+      <div class="panel-heading"><h2 id="cardio-workout-panel-title" tabindex="-1">Log cardio</h2></div>
+      <p>Record a walk, run, ride, swim, or machine session. Enter your minutes; distance, calories, and notes are optional.</p>
+      <label class="workout-session-date">
+        <span>Cardio date</span>
+        <span class="workout-session-date-control">
+          <span class="workout-session-date-value" data-workout-date-value aria-hidden="true">${escapeHtml(formatLogDate(todayDate()))}</span>
+          <input type="date" value="${todayDate()}" max="${todayDate()}" data-workout-date />
+        </span>
+      </label>
+      ${cardioLogFields("Cardio", { showDate: false, expanded: true })}
+      ${workoutActionsMarkup({ exercises: [] }, { includeCardio: true, finishLabel: "Save & finish cardio" })}
+    </section>`;
+}
+
 function replaceCustomWorkoutPanelFromDraft(index) {
   const currentPanel = document.querySelector(".client-workout-panel-custom");
 
@@ -11778,7 +11797,11 @@ function clientWorkoutPickerItems(workouts = []) {
       panelIndex: 0,
       pickerLabel: "Custom"
     },
-    ...assignedItems
+    ...assignedItems,
+    {
+      title: "Cardio", isCardio: true, isCustom: false, exercises: [],
+      assignedWorkoutIndex: -1, panelIndex: assignedItems.length + 1, pickerLabel: "Cardio"
+    }
   ];
 }
 
@@ -12004,6 +12027,7 @@ function clientWorkoutPickerMarkup(workouts) {
 
 function clientWorkoutChoiceContent({ icon, title, description, titleId, descriptionId }) {
   const icons = {
+    cardio: '<path d="M2 12h4l3-8 6 16 3-8h4"/>',
     calendar: '<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M16 3v4M8 3v4M3 11h18"/><path d="M8 15h.01M12 15h.01M16 15h.01M8 18h.01M12 18h.01M16 18h.01"/>',
     plus: '<path d="M12 5v14M5 12h14"/>',
     sparkles: '<path d="m9 3 2.2 5.8L17 11l-5.8 2.2L9 19l-2.2-5.8L1 11l5.8-2.2L9 3Z"/><path d="m19 14 1.1 2.9L23 18l-2.9 1.1L19 22l-1.1-2.9L15 18l2.9-1.1L19 14Z"/>'
@@ -12047,10 +12071,11 @@ function clientWorkoutListMarkup(workouts) {
             titleId: "workout-generate-title", descriptionId: "workout-generate-description"
           })}
         </button>
+        ${clientCardioWorkoutChoiceMarkup(workouts)}
       </div>
     </div>`;
   }
-  const assigned = workouts.filter(workout => !workout.isCustom);
+  const assigned = workouts.filter(workout => !workout.isCustom && !workout.isCardio);
   const locked = clientWorkoutLayoutSaving || Boolean(workoutElapsedTimerState);
   return `<div class="workout-preview-heading">
     <button type="button" class="workout-text-button" data-preview-programs>← Programs</button>
@@ -12096,9 +12121,25 @@ function clientWorkoutListMarkup(workouts) {
         titleId: "workout-generate-title", descriptionId: "workout-generate-description"
       })}
     </button>
+    ${clientCardioWorkoutChoiceMarkup(workouts)}
     <button type="button" class="workout-text-button" data-client-workout-copy-history>Copy previous</button>
     <button type="button" class="workout-text-button" data-preview-restore ${locked ? "disabled" : ""}>Restore assigned exercises</button>
   </div>`;
+}
+
+function clientCardioWorkoutChoiceMarkup(workouts) {
+  const cardio = workouts.find(workout => workout.isCardio);
+  if (!cardio) return "";
+  return `<button type="button" class="workout-choice-card" data-log-cardio
+    data-client-workout-picker-choose="${cardio.panelIndex}" data-client-workout-picker-card="${cardio.panelIndex}"
+    data-client-workout-selection-target="Cardio"
+    aria-labelledby="workout-cardio-title" aria-describedby="workout-cardio-description">
+    ${clientWorkoutChoiceContent({
+      icon: "cardio", title: "Log cardio",
+      description: "Record a walk, run, ride, swim, or machine session.",
+      titleId: "workout-cardio-title", descriptionId: "workout-cardio-description"
+    })}
+  </button>`;
 }
 
 async function saveClientWorkoutLayout(exercises) {
@@ -12446,6 +12487,9 @@ function renderClientWorkoutTabs(workouts = []) {
   tabs.innerHTML = clientWorkoutListMarkup(availableWorkouts);
 
   panels.innerHTML = availableWorkouts.map((workout, index) => {
+    if (workout.isCardio) {
+      return cardioWorkoutPanelMarkup(index);
+    }
     if (workout.isCustom) {
       return customWorkoutPanelMarkup(index);
     }
@@ -17367,6 +17411,11 @@ function handleClientWorkoutTabs() {
     const chooseButton = event.target.closest("[data-client-workout-picker-choose]");
 
     if (chooseButton) {
+      if (chooseButton.hasAttribute("data-log-cardio")) {
+        const panel = document.getElementById(`client-workout-panel-${chooseButton.dataset.clientWorkoutPickerChoose}`);
+        restartDeletedClientWorkoutContext({ client_email: activeClientEmail,
+          entry_date: panel?.querySelector("[data-workout-date]")?.value || todayDate(), workout_title: "Cardio" });
+      }
       activateClientWorkoutPanel(Number(chooseButton.dataset.clientWorkoutPickerChoose || 0));
       return;
     }
@@ -18146,9 +18195,35 @@ function incompleteWorkoutExercises(logElements) {
   });
 }
 
+function cardioLogIssues(log) {
+  const issues = [];
+  for (const [selector, label, required] of [
+    ["[data-cardio-duration]", "Duration", true],
+    ["[data-cardio-distance]", "Distance", false],
+    ["[data-cardio-calories]", "Calories", false]
+  ]) {
+    const target = log?.querySelector(selector);
+    const raw = String(target?.value || "").trim();
+    if (target?.validity?.badInput || (!raw && required) || (raw && (!Number.isFinite(Number(raw)) || Number(raw) < 0 || (required && Number(raw) === 0)))) {
+      issues.push({ message: required ? "Enter a duration in minutes above 0." : `${label} must be 0 or more, or left blank.`, target });
+    }
+  }
+  return issues;
+}
+
+function cardioWorkoutCompletionFields(section, now = Date.now()) {
+  return {
+    workout_duration_seconds: Math.max(1, Math.round(Number(section.querySelector("[data-cardio-duration]").value) * 60)),
+    completed_at: new Date(now).toISOString()
+  };
+}
+
 function workoutFinishIssues(section, options = {}) {
   const issues = [];
   const logs = Array.from(section?.querySelectorAll("[data-exercise-log]") || []);
+  if (section?.classList.contains("client-workout-panel-cardio")) {
+    return logs.flatMap(cardioLogIssues);
+  }
   logs.forEach((log, exerciseIndex) => {
     if (log.dataset.warmupLog !== undefined || log.dataset.cardioLog !== undefined ||
         log.dataset.exerciseSkipped === "true" || log.closest(".workout-exercise-card")?.classList.contains("is-skipped")) return;
@@ -18234,7 +18309,9 @@ function showWorkoutFinishIssues(button, issues) {
   });
   summary.appendChild(list);
   const help = document.createElement("p");
-  help.textContent = "Warm-ups and RIR are optional. You can leave warm-up fields blank or at 0; Log warm-up is not required.";
+  help.textContent = section?.classList.contains("client-workout-panel-cardio")
+    ? "Duration is required. Distance, calories, and notes are optional."
+    : "Warm-ups and RIR are optional. You can leave warm-up fields blank or at 0; Log warm-up is not required.";
   summary.appendChild(help);
   (button.closest("footer") || button).insertAdjacentElement("afterend", summary);
   summary.scrollIntoView?.({ block: "center", behavior: "smooth" });
@@ -18264,6 +18341,7 @@ function trainingLogHasAutosavePayload(logElement) {
   if (!logElement) {
     return false;
   }
+  if (logElement.closest?.(".client-workout-panel-cardio") && cardioLogIssues(logElement).length) return false;
 
   if (rowsForTrainingLog(logElement).length > 0) {
     return true;
@@ -18337,6 +18415,12 @@ async function saveTrainingLogRows(button, logElements, status, options = {}) {
   const savingMessage = options.savingMessage || "Saving...";
   const successMessage = options.successMessage || "Saved.";
   const requestClientEmail = normalizeClientEmail(activeClientEmail);
+  const cardioIssue = logElements.filter(log => log.closest?.(".client-workout-panel-cardio"))
+    .flatMap(log => cardioLogIssues(log))[0];
+  if (cardioIssue) {
+    if (status) status.textContent = cardioIssue.message;
+    return { saved: false };
+  }
 
   if (!supabaseClient || !activeClientEmail) {
     if (status) {
@@ -18481,6 +18565,8 @@ async function handleTrainingLogSave() {
 
     if (workoutButton) {
       const section = workoutSectionForButton(workoutButton);
+      const isCardioOnly = Boolean(section?.classList.contains("client-workout-panel-cardio"));
+      const finishLabel = isCardioOnly ? "Save & finish cardio" : "Finish workout";
       const logElements = Array.from(section?.querySelectorAll("[data-exercise-log]") || []);
       const groupedCustomWorkout = Boolean(section?.querySelector("[data-custom-workout-grouped='true']"));
       const groupedSaveOptions = groupedCustomWorkout
@@ -18496,7 +18582,7 @@ async function handleTrainingLogSave() {
       if (logElements.some((log) => log.dataset.autosaveInFlight === "true") ||
           section.querySelector('[data-custom-grouped-warmup-saving="true"]') ||
           Array.from(section.querySelectorAll("[data-custom-grouped-log-round]")).some((control) => control.disabled)) {
-        showWorkoutFinishIssues(difficultyTrigger, [{ message: "Your latest set is still saving. Wait a moment, then tap Finish workout again.", target: difficultyTrigger }]);
+        showWorkoutFinishIssues(difficultyTrigger, [{ message: `Your latest entries are still saving. Wait a moment, then tap ${finishLabel} again.`, target: difficultyTrigger }]);
         return;
       }
 
@@ -18506,11 +18592,11 @@ async function handleTrainingLogSave() {
         .map((control) => ({ control, disabled: control.disabled }));
       controls.forEach(({ control }) => { control.disabled = true; });
       const previousCompletion = section.workoutCompletionPendingFeedback;
-      if (!workoutElapsedTimerState && !previousCompletion) {
+      if (!isCardioOnly && !workoutElapsedTimerState && !previousCompletion) {
         startWorkoutElapsedTimer(logElements[0]?.dataset.workoutTitle || activeWorkoutElapsedTitle());
       }
-      const timerSnapshot = pauseWorkoutTimersForCompletion();
-      const workoutCompletion = previousCompletion || workoutCompletionFields();
+      const timerSnapshot = isCardioOnly ? null : pauseWorkoutTimersForCompletion();
+      const workoutCompletion = previousCompletion || (isCardioOnly ? cardioWorkoutCompletionFields(section) : workoutCompletionFields());
       let workoutSaved = Boolean(previousCompletion);
       let completionSucceeded = false;
       try {
@@ -18528,18 +18614,21 @@ async function handleTrainingLogSave() {
           ...groupedSaveOptions
         });
         if (!saveResult.saved) {
-          showWorkoutFinishIssues(difficultyTrigger, [{ message: "Your workout could not be saved. Your entries are still here. Check your connection, then tap Finish workout again.", target: difficultyTrigger }]);
+          showWorkoutFinishIssues(difficultyTrigger, [{ message: `Your workout could not be saved. Your entries are still here. Check your connection, then tap ${finishLabel} again.`, target: difficultyTrigger }]);
           return;
         }
 
-        // Completion is already persisted: stop both timers even if ratings need a retry.
+        // Manual cardio uses its entered duration and leaves any strength timer running.
         workoutSaved = true;
         section.workoutCompletionPendingFeedback = workoutCompletion;
-        finishWorkoutElapsedTimer();
+        if (!isCardioOnly) finishWorkoutElapsedTimer();
         const feedbackResult = await saveWorkoutDifficultyFeedback(saveResult.rows, workoutDifficulty, workoutFeedback);
         if (!feedbackResult.saved) {
-          if (status) status.textContent = "Workout finished and timer stopped. Ratings could not be saved; tap Finish workout to retry the ratings.";
-          showWorkoutFinishIssues(difficultyTrigger, [{ message: "Your workout is saved and the timer has stopped. Tap Finish workout again to retry saving your ratings.", target: difficultyTrigger }]);
+          const retryMessage = isCardioOnly
+            ? "Cardio saved. Tap Save & finish cardio again to retry saving your ratings."
+            : "Your workout is saved and the timer has stopped. Tap Finish workout again to retry saving your ratings.";
+          if (status) status.textContent = retryMessage;
+          showWorkoutFinishIssues(difficultyTrigger, [{ message: retryMessage, target: difficultyTrigger }]);
           return;
         }
 
@@ -18549,7 +18638,7 @@ async function handleTrainingLogSave() {
         delete section.workoutCompletionPendingFeedback;
         const groupedRestart = pendingGroupedCustomWorkoutRestart?.panel === section
           ? pendingGroupedCustomWorkoutRestart : null;
-        pendingGroupedCustomWorkoutRestart = null;
+        if (!isCardioOnly) pendingGroupedCustomWorkoutRestart = null;
         if (section.classList.contains("client-workout-panel-custom")) clearCustomWorkoutDraft();
         if (groupedRestart) {
           startFreshGroupedCustomWorkout(groupedRestart);
@@ -18559,12 +18648,12 @@ async function handleTrainingLogSave() {
       } catch (_error) {
         showWorkoutFinishIssues(difficultyTrigger, [{
           message: workoutSaved
-            ? "Your workout is saved and the timer has stopped. Tap Finish workout again to retry saving your ratings."
-            : "Your workout could not be saved. Your entries are still here. Check your connection, then tap Finish workout again.",
+            ? `Your workout is saved. Tap ${finishLabel} again to retry saving your ratings.`
+            : `Your workout could not be saved. Your entries are still here. Check your connection, then tap ${finishLabel} again.`,
           target: difficultyTrigger
         }]);
       } finally {
-        if (!workoutSaved) resumeWorkoutTimersAfterCancelledCompletion(timerSnapshot);
+        if (!workoutSaved && !isCardioOnly) resumeWorkoutTimersAfterCancelledCompletion(timerSnapshot);
         if (allowIncompleteWorkoutFinish && !completionSucceeded) workoutButton.dataset.allowIncompleteWorkoutFinish = "true";
         controls.forEach(({ control, disabled }) => { control.disabled = disabled; });
         delete section.dataset.workoutFinishing;
