@@ -10,7 +10,7 @@ const portal = fs.readFileSync(path.join(root, "js/client-portal.js"), "utf8");
 
 test("Home leads with today’s workout, weekly rhythm, and the coach note", () => {
   const home = dashboard.match(/data-client-dashboard-panel="home"[\s\S]*?data-client-dashboard-panel="workouts"/)?.[0] || "";
-  const workoutIndex = home.indexOf('id="client-home-workout-title"');
+  const workoutIndex = home.indexOf('class="button client-home-workout-button"');
   const weeklyIndex = home.indexOf('id="client-weekly-activity"');
   const noteIndex = home.indexOf('id="client-home-note-title"');
   const moreIndex = home.indexOf('class="client-home-more"');
@@ -20,8 +20,20 @@ test("Home leads with today’s workout, weekly rhythm, and the coach note", () 
   assert.ok(noteIndex > weeklyIndex);
   assert.ok(moreIndex > noteIndex);
   assert.match(home, /data-client-summary-go-tab="workouts">Start workout/);
-  assert.match(portal, /setText\("#client-home-workout-title", nextWorkout\.title/);
+  assert.doesNotMatch(home, />Up next</);
+  assert.doesNotMatch(home, /id="client-home-workout-(?:title|meta)"/);
   assert.match(portal, /activeWorkoutTabIndex - 1/);
+});
+
+test("Home exposes messaging as a global upper-right action", () => {
+  const home = dashboard.match(/data-client-dashboard-panel="home"[\s\S]*?data-client-dashboard-panel="workouts"/)?.[0] || "";
+  const heading = home.match(/<div class="panel-heading">[\s\S]*?<\/div>\s*<div class="client-home-checkin-backdrop"/)?.[0] || "";
+
+  assert.match(heading, /class="client-home-message-button"/);
+  assert.match(heading, /data-message-coach/);
+  assert.match(heading, /aria-label="Message coach"/);
+  assert.match(heading, /data-client-message-unread/);
+  assert.match(styles, /\.dashboard-page \.client-home-message-button\s*\{[\s\S]*?width:\s*48px[\s\S]*?border-radius:\s*50%/);
 });
 
 test("secondary dashboard content is collapsed behind one native disclosure", () => {
@@ -40,7 +52,8 @@ test("secondary dashboard content is collapsed behind one native disclosure", ()
 
 test("Today-first layout stays single-column and expands secondary cards responsively", () => {
   assert.match(styles, /\.dashboard-page \.client-home-grid\s*\{[\s\S]*?flex-direction:\s*column/);
-  assert.match(styles, /\.dashboard-page \.client-home-today-workout\s*\{[\s\S]*?background:\s*var\(--black\)/);
+  assert.match(styles, /\.dashboard-page \.client-home-today-workout\s*\{[\s\S]*?min-height:\s*0[\s\S]*?background:\s*transparent/);
+  assert.match(styles, /\.dashboard-page \.client-home-workout-button\s*\{[\s\S]*?width:\s*100%[\s\S]*?min-height:\s*64px/);
   assert.match(styles, /\.dashboard-page \.client-home-more > summary\s*\{[\s\S]*?min-height:\s*64px/);
   assert.match(styles, /@media \(max-width: 720px\)[\s\S]*?\.dashboard-page \.client-home-more-grid\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0, 1fr\)/);
 });
