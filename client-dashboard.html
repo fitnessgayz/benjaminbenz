@@ -49,11 +49,13 @@
   <link rel="stylesheet" href="css/coach-preview.css?v=return-coach-1" />
   <link rel="stylesheet" href="css/apple-workout.css?v=1" />
   <link rel="stylesheet" href="css/google-health.css?v=1" />
+  <link rel="stylesheet" href="css/profile-photo.css?v=1" />
   <link rel="stylesheet" href="css/workout-share-card.css?v=1" />
   <link rel="stylesheet" href="css/rir-help.css?v=1" />
   <link rel="stylesheet" href="css/client-session-alerts.css?v=1" />
   <link rel="stylesheet" href="css/workout-exercise-list.css?v=2" />
   <link rel="stylesheet" href="css/workout-generator.css?v=3" />
+  <link rel="stylesheet" href="css/apple-health-sync.css?v=1" />
 </head>
 <body class="dashboard-page client-dashboard-page is-loading">
   <nav class="coach-preview-toolbar" id="coach-preview-toolbar" aria-label="Coach navigation" hidden>
@@ -793,6 +795,12 @@
             <p id="client-current-rmr-meta">Upload and save a DEXA report to add resting metabolic rate.</p>
           </article>
 
+          <section class="apple-health-card" data-apple-health-view aria-label="Shared Apple Health information">
+            <div class="apple-health-heading"><h3>Apple Health</h3><button type="button" data-apple-health-refresh>Refresh</button></div>
+            <p class="apple-health-help">Information shared from the FWB iPhone app. Manage categories and delete imports in Settings → Apple Health on your iPhone. Imported readings are separate from manual FWB logs and measurements.</p>
+            <p class="apple-health-status" data-apple-health-status role="status"></p>
+            <div data-apple-health-content></div>
+          </section>
           <div class="progress-metric-tabs" id="progress-metric-tabs" aria-label="Choose progress chart">
             <button class="progress-metric-tab is-active" type="button" data-progress-metric="bodyweight" aria-pressed="true">Bodyweight</button>
             <button class="progress-metric-tab" type="button" data-progress-metric="bodyfat" aria-pressed="false">Body fat</button>
@@ -997,6 +1005,46 @@
               <h2 id="client-notification-settings-title">Settings</h2>
             </div>
           </div>
+          <article class="profile-photo-card" data-profile-photo hidden aria-label="Your account">
+            <button class="profile-photo-open" type="button" data-profile-open aria-haspopup="dialog" disabled>
+              <span class="profile-photo-avatar" aria-hidden="true">
+                <span data-profile-placeholder>●</span>
+                <img data-profile-image alt="" hidden />
+                <span class="profile-photo-camera">+</span>
+              </span>
+              <span class="profile-photo-account">
+                <strong data-profile-email></strong>
+                <span>Client account</span>
+                <span class="profile-photo-link" data-profile-label>Add profile photo</span>
+              </span>
+            </button>
+            <p class="profile-photo-status" data-profile-status role="status" aria-live="polite"></p>
+            <button class="profile-photo-retry" data-profile-retry type="button" hidden>Retry loading photo</button>
+            <dialog class="profile-photo-dialog" data-profile-dialog aria-labelledby="profile-photo-title" aria-describedby="profile-photo-help">
+              <h3 id="profile-photo-title">Profile photo</h3>
+              <p id="profile-photo-help">Choose a photo for your account. It’s shared between the web and iOS apps.</p>
+              <div class="profile-photo-preview" aria-label="Profile photo preview">
+                <span data-profile-preview-placeholder aria-hidden="true">●</span>
+                <img data-profile-preview alt="Profile photo preview" hidden />
+              </div>
+              <input type="file" data-profile-file accept="image/jpeg,image/png,image/webp,image/heic,image/heif" aria-label="Choose profile photo" hidden />
+              <button class="profile-photo-choose" data-profile-choose type="button">Choose photo</button>
+              <p class="profile-photo-hint">Your photo will be cropped to a square.</p>
+              <p class="profile-photo-status" data-profile-editor-status role="status" aria-live="polite"></p>
+              <div class="profile-photo-confirm" data-profile-confirm hidden>
+                <p>Remove your profile photo from your account on web and iOS?</p>
+                <div class="profile-photo-actions">
+                  <button type="button" data-profile-keep>Keep photo</button>
+                  <button class="profile-photo-danger" type="button" data-profile-confirm-remove>Remove photo</button>
+                </div>
+              </div>
+              <div class="profile-photo-actions" data-profile-editor-actions>
+                <button type="button" data-profile-cancel>Cancel</button>
+                <button class="profile-photo-save" type="button" data-profile-save disabled>Save photo</button>
+              </div>
+              <button class="profile-photo-remove" data-profile-remove type="button" hidden>Remove photo</button>
+            </dialog>
+          </article>
           <article class="client-home-card client-home-card-notifications web-notification-center" data-web-notifications hidden>
             <div class="web-notification-heading">
               <div>
@@ -1038,6 +1086,11 @@
               <p class="web-notification-empty" data-web-notification-empty>No updates yet.</p>
               <ul class="web-notification-list" data-web-notification-list aria-live="polite"></ul>
             </section>
+          </article>
+          <article class="apple-health-card" data-apple-health-summary aria-label="Apple Health sharing">
+            <h3>Apple Health</h3><p class="apple-health-help">Choose what to read and share in Settings → Apple Health in the FWB iPhone app. Shared workouts, activity, recovery and body weight appear in Stats for you and your coach.</p>
+            <p class="apple-health-status" data-apple-health-status role="status"></p><div data-apple-health-content></div>
+            <button type="button" data-apple-health-open-stats>View shared information</button>
           </article>
           <article class="google-health-settings" data-google-health-settings aria-labelledby="client-google-health-title" aria-busy="true">
             <div class="google-health-heading">
@@ -1094,13 +1147,17 @@
   <script src="js/client-weekly-activity.js?v=1"></script>
   <script src="js/apple-workout.js?v=3"></script>
   <script src="js/google-health.js?v=1"></script>
+  <script src="js/profile-photo-store.js?v=1"></script>
+  <script src="js/profile-photo-processor.js?v=1"></script>
+  <script src="js/profile-photo.js?v=1"></script>
   <script src="js/workout-share-card.js?v=1"></script>
   <script src="js/rir-help.js?v=2"></script>
   <script src="js/pr-help.js?v=1"></script>
   <script src="js/client-session-alerts.js?v=2"></script>
   <script src="js/workout-generator.js?v=1"></script>
   <script src="js/workout-generator-dialog.js?v=1"></script>
-  <script src="js/client-portal.js?v=custom-workout-history-1&amp;cancel-workout=1&amp;energy-feedback=1&amp;mood-redesign=1&amp;visible-group-controls=1&amp;exercise-videos=1&amp;remember-login=1&amp;visible-demos=1&amp;personal-bests=1&amp;copy-last-weights=1&amp;demo-icons=1&amp;keyboard-entry=1&amp;copy-set-pr=3&amp;return-coach=1&amp;apple-workout=2&amp;apple-share=1&amp;rir-help=1&amp;viewport-dock=1&amp;compact-copy=1&amp;exercise-pr-notes=1&amp;pr-info=1&amp;finish-workout=2&amp;prescribed-targets=1&amp;exercise-controls=1&amp;session-alerts=1&amp;exercise-labels=1&amp;exercise-list=2&amp;grouped-add=1&amp;google-health=1&amp;exercise-defaults=2&amp;workout-generator=3&amp;workout-delete=1"></script>
+  <script src="js/apple-health-sync.js?v=1"></script>
+  <script src="js/client-portal.js?v=custom-workout-history-1&amp;cancel-workout=1&amp;energy-feedback=1&amp;mood-redesign=1&amp;visible-group-controls=1&amp;exercise-videos=1&amp;remember-login=1&amp;visible-demos=1&amp;personal-bests=1&amp;copy-last-weights=1&amp;demo-icons=1&amp;keyboard-entry=1&amp;copy-set-pr=3&amp;return-coach=1&amp;apple-workout=2&amp;apple-share=1&amp;rir-help=1&amp;viewport-dock=1&amp;compact-copy=1&amp;exercise-pr-notes=1&amp;pr-info=1&amp;finish-workout=2&amp;prescribed-targets=1&amp;exercise-controls=1&amp;session-alerts=1&amp;exercise-labels=1&amp;exercise-list=2&amp;grouped-add=1&amp;google-health=1&amp;exercise-defaults=2&amp;workout-generator=3&amp;profile-photo=1&amp;workout-delete=1&amp;apple-health=1"></script>
   <script src="js/workout-exercise-dock.js?v=1"></script>
 </body>
 </html>

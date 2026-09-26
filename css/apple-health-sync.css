@@ -1,0 +1,48 @@
+/* Read-only information shared explicitly from the iPhone app. */
+.apple-health-card {
+  --apple-health-ink: #171a17;
+  --apple-health-muted: #646960;
+  --apple-health-line: #dcded7;
+  min-width: 0;
+  margin: 22px 0;
+  padding: 22px;
+  border: 1px solid var(--apple-health-line);
+  border-radius: 20px;
+  background: #fff;
+  color: var(--apple-health-ink);
+  overflow-wrap: anywhere;
+}
+.apple-health-card *, .apple-health-card *::before, .apple-health-card *::after { box-sizing: border-box; min-width: 0; }
+.apple-health-card [hidden] { display: none !important; }
+.apple-health-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.apple-health-card h3, .apple-health-card h4, .apple-health-card h5 { margin: 0; line-height: 1.3; }
+.apple-health-card h3 { font-size: 1.3rem; }
+.apple-health-card h4 { font-size: 1rem; }
+.apple-health-card h5 { font-size: .95rem; text-transform: capitalize; }
+.apple-health-help, .apple-health-status, .apple-health-shared { color: var(--apple-health-muted); font-size: .84rem; line-height: 1.6; }
+.apple-health-status:empty { display: none; }
+.apple-health-card button { min-height: 44px; padding: 10px 14px; border: 1px solid var(--apple-health-line); border-radius: 10px; background: #f7f8f4; color: var(--apple-health-ink); font: inherit; font-size: .8rem; font-weight: 700; cursor: pointer; }
+.apple-health-card button:disabled { opacity: .55; cursor: default; }
+.apple-health-card :is(button, summary):focus-visible { outline: 3px solid #6d811f; outline-offset: 3px; }
+.apple-health-metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(135px, 1fr)); gap: 12px; margin: 18px 0; }
+.apple-health-metrics > div { padding: 14px; border-radius: 12px; background: #f7f8f4; }
+.apple-health-metrics dt { color: var(--apple-health-muted); font-size: .72rem; line-height: 1.4; }
+.apple-health-metrics dd { margin: 8px 0 4px; font-size: 1.3rem; font-weight: 750; font-variant-numeric: tabular-nums; }
+.apple-health-metrics small { color: var(--apple-health-muted); font-size: .68rem; }
+.apple-health-weight, .apple-health-workouts, .apple-health-history { margin-top: 22px; padding-top: 20px; border-top: 1px solid var(--apple-health-line); }
+.apple-health-weight-chart { display: block; width: 100%; height: 150px; margin-top: 12px; overflow: visible; }
+.apple-health-weight-chart polyline { fill: none; stroke: #546b0c; stroke-width: 2.5; vector-effect: non-scaling-stroke; }
+.apple-health-weight-chart circle { fill: #546b0c; }
+.apple-health-history summary { min-height: 44px; padding: 10px 0; font-size: .85rem; font-weight: 650; cursor: pointer; }
+.apple-health-table-scroll { overflow-x: auto; }
+.apple-health-card table { width: 100%; border-collapse: collapse; font-size: .75rem; font-variant-numeric: tabular-nums; }
+.apple-health-card th, .apple-health-card td { padding: 12px 10px; text-align: left; border-bottom: 1px solid var(--apple-health-line); white-space: nowrap; }
+.apple-health-workout-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 14px 0; }
+.apple-health-workout-list article { padding: 16px; border: 1px solid var(--apple-health-line); border-radius: 12px; }
+.apple-health-workout-list time, .apple-health-workout-list small { display: block; margin-top: 5px; color: var(--apple-health-muted); font-size: .73rem; }
+.apple-health-workout-list p { font-size: .85rem; line-height: 1.5; }
+@media (max-width: 600px) {
+  .apple-health-card { padding: 16px; }
+  .apple-health-workout-list { grid-template-columns: minmax(0, 1fr); }
+  .apple-health-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

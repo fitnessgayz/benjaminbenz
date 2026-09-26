@@ -34,6 +34,7 @@
   <link rel="stylesheet" href="css/workout-layout.css?v=workout-preview-1" />
   <link rel="stylesheet" href="/css/fwb-design-system.css?v=reference-overhaul-1" />
   <link rel="stylesheet" href="css/apple-workout.css?v=1" />
+  <link rel="stylesheet" href="css/apple-health-sync.css?v=1" />
 </head>
 <body class="dashboard-page coach-admin-page">
   <header class="site-header dashboard-header">
@@ -617,6 +618,12 @@
               <p class="empty-state">Choose a client to view progress photos.</p>
             </div>
           </div>
+          <section class="apple-health-card" data-apple-health-view aria-label="Shared Apple Health information">
+            <div class="apple-health-heading"><h3>Apple Health</h3><button type="button" data-apple-health-refresh>Refresh</button></div>
+            <p class="apple-health-help">Information shared from the FWB iPhone app. Manage categories and delete imports in Settings → Apple Health on your iPhone. Imported readings are separate from manual FWB logs and measurements.</p>
+            <p class="apple-health-status" data-apple-health-status role="status"></p>
+            <div data-apple-health-content></div>
+          </section>
           <div class="progress-training-log-panel">
             <div class="admin-section-heading compact-heading">
               <div>
@@ -1076,6 +1083,7 @@
   <script src="js/web-notifications.js?v=notification-default-on-1"></script>
   <script src="js/workout-layout.js?v=workout-preview-2"></script>
   <script src="js/apple-workout.js?v=3"></script>
-  <script src="js/coach-admin.js?v=client-view-shortcut-1&amp;remember-login=1&amp;home-shortcuts=1&amp;apple-workout=1&amp;viewport-dock=1"></script>
+  <script src="js/apple-health-sync.js?v=1"></script>
+  <script src="js/coach-admin.js?v=client-view-shortcut-1&amp;remember-login=1&amp;home-shortcuts=1&amp;apple-workout=1&amp;viewport-dock=1&amp;apple-health=1"></script>
 </body>
 </html>

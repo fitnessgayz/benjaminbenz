@@ -79,6 +79,7 @@ test("Settings and Saved Logs refresh the same health controller without running
   const refreshed = [], synced = [];
   const context = vm.createContext({
     activeClientDashboardTab: "home",
+    clientProfilePhotoController: null, clientAppleHealthController: null,
     document: { querySelectorAll: () => [] },
     syncClientDashboardMobileNavigationIcon() {},
     clientWebNotificationController: { refresh: async () => refreshed.push("notifications") },

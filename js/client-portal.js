@@ -63,6 +63,8 @@ let clientWorkoutLayoutSaving = false;
 let clientWebNotificationController = null;
 let clientSessionBalanceController = null;
 let clientGoogleHealthController = null;
+let clientProfilePhotoController = null;
+let clientAppleHealthController = null;
 const dashboardRequestTimeout = 15000;
 const customWorkoutTitle = "Custom workout";
 const customWorkoutFormats = {
@@ -13227,6 +13229,16 @@ function configureClientAppleWorkouts() {
   window.FWBAppleWorkout?.attach();
 }
 
+function configureClientAppleHealth() {
+  clientAppleHealthController?.destroy();
+  clientAppleHealthController = window.FWB_APPLE_HEALTH?.createController({
+    supabaseClient, clientEmail: normalizeClientEmail(activeClientEmail),
+    isCoach: isCoachDashboardPreview, expectedUserId: activeDashboardUser?.id,
+    onOpenStats: () => setClientDashboardTab("stats")
+  }) || null;
+  void clientAppleHealthController?.initialize();
+}
+
 function configureClientGoogleHealth() {
   clientGoogleHealthController?.destroy();
   clientGoogleHealthController = null;
@@ -13242,6 +13254,16 @@ function configureClientGoogleHealth() {
   void clientGoogleHealthController?.initialize().catch(() => {
     // The connection card renders an actionable retry message.
   });
+}
+
+function configureClientProfilePhoto() {
+  clientProfilePhotoController?.destroy();
+  clientProfilePhotoController = window.FWB_PROFILE_PHOTO?.createController({
+    supabaseClient,
+    user: activeDashboardUser,
+    isPreview: isCoachDashboardPreview
+  }) || null;
+  void clientProfilePhotoController?.initialize();
 }
 
 function isCopyableWorkoutHistoryLog(log = {}) {
@@ -15156,6 +15178,10 @@ function setClientDashboardTab(tabName) {
       // The notification center renders a user-facing retry message.
     });
   }
+  if (nextTab === "notifications") {
+    void clientProfilePhotoController?.refresh();
+  }
+  if (nextTab === "stats" || nextTab === "notifications") { void clientAppleHealthController?.refresh(); }
   if ((nextTab === "notifications" || nextTab === "logs") && clientGoogleHealthController) {
     void clientGoogleHealthController.refresh().catch(() => {
       // Settings and Saved Logs display their own connection errors.
@@ -17602,6 +17628,10 @@ async function loadDashboard() {
 
   clientGoogleHealthController?.destroy();
   clientGoogleHealthController = null;
+  clientAppleHealthController?.destroy();
+  clientAppleHealthController = null;
+  clientProfilePhotoController?.destroy();
+  clientProfilePhotoController = null;
 
   try {
     if (!supabaseClient) {
@@ -17645,6 +17675,7 @@ async function loadDashboard() {
     signedInDashboardEmail = signedInEmail;
     isCoachDashboardPreview = isCoachPortalEmail(signedInEmail) && Boolean(previewEmail);
     setClientNotificationSettingsAvailable(!isCoachDashboardPreview);
+    configureClientProfilePhoto();
 
     if (!targetClientEmail) {
       setDashboardMessage(
@@ -17689,6 +17720,7 @@ async function loadDashboard() {
     renderProgram(data);
     configureClientSessionBalance();
     configureClientGoogleHealth();
+    configureClientAppleHealth();
     void initializeClientWebNotifications(user);
     const questionnaireQuery = supabaseClient
       .from("client_fitness_questionnaires")
@@ -18434,6 +18466,10 @@ async function handleSignOut() {
       clientSessionBalanceController = null;
       clientGoogleHealthController?.destroy();
       clientGoogleHealthController = null;
+      clientAppleHealthController?.destroy();
+      clientAppleHealthController = null;
+      clientProfilePhotoController?.destroy();
+      clientProfilePhotoController = null;
       dexaReports = [];
       archivedDexaReportsExpanded = false;
       sharedFoodLibrary = [];

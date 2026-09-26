@@ -151,7 +151,7 @@ test("client Supabase auth explicitly persists and refreshes the session", () =>
 test("client Settings keeps every notification feature together", () => {
   const homePanel = dashboard.match(/data-client-dashboard-panel="home"[\s\S]*?data-client-dashboard-panel="workouts"/)?.[0] || "";
   const settingsStart = dashboard.indexOf('data-client-dashboard-panel="notifications"');
-  const settingsEnd = dashboard.indexOf("<dialog", settingsStart);
+  const settingsEnd = dashboard.indexOf('<dialog class="client-monthly-report-dialog"', settingsStart);
   const settingsPanel = dashboard.slice(settingsStart, settingsEnd);
 
   assert.doesNotMatch(homePanel, /data-web-notifications/);

@@ -59,6 +59,7 @@ function workoutSetLabel(set) {
 
 let programs = [];
 let selectedProgramId = "";
+let coachAppleHealthController = null;
 let progressEntries = [];
 let progressPhotos = [];
 let dexaReports = [];
@@ -1258,6 +1259,12 @@ function handleWorkoutExerciseRows() {
 }
 
 function updateSelectedClientSummary(program = selectedProgram()) {
+  coachAppleHealthController?.destroy();
+  coachAppleHealthController = window.FWB_APPLE_HEALTH?.createController({
+    supabaseClient: coachSupabase, clientEmail: normalizeEmail(program?.client_email), isCoach: true
+  }) || null;
+  void coachAppleHealthController?.initialize();
+
   const form = document.getElementById("program-editor");
   const name = document.getElementById("selected-client-name");
   const email = document.getElementById("selected-client-email");
