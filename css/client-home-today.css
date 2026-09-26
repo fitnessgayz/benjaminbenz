@@ -15,6 +15,17 @@
   box-sizing: border-box;
 }
 
+.dashboard-page .client-home-panel > .panel-heading {
+  display: flex !important;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.dashboard-page .client-home-panel > .panel-heading > div:first-child {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
 .dashboard-page .client-home-today-workout {
   order: 1;
   min-height: 0;
@@ -37,17 +48,26 @@
 
 .dashboard-page .client-home-message-button {
   position: relative;
-  display: grid;
-  width: 48px;
-  min-width: 48px;
-  height: 48px;
-  padding: 0;
+  display: grid !important;
+  flex: 0 0 48px;
+  width: 48px !important;
+  inline-size: 48px !important;
+  min-width: 48px !important;
+  min-inline-size: 48px !important;
+  max-width: 48px !important;
+  max-inline-size: 48px !important;
+  height: 48px !important;
+  min-height: 48px !important;
+  padding: 0 !important;
+  margin: 0 !important;
   place-items: center;
   border: 1px solid var(--black);
   border-radius: 50%;
   color: var(--lime);
   background: var(--black);
   cursor: pointer;
+  overflow: visible !important;
+  text-overflow: clip !important;
 }
 
 .dashboard-page .client-home-message-button svg {

@@ -33,7 +33,9 @@ test("Home exposes messaging as a global upper-right action", () => {
   assert.match(heading, /data-message-coach/);
   assert.match(heading, /aria-label="Message coach"/);
   assert.match(heading, /data-client-message-unread/);
-  assert.match(styles, /\.dashboard-page \.client-home-message-button\s*\{[\s\S]*?width:\s*48px[\s\S]*?border-radius:\s*50%/);
+  assert.match(styles, /\.dashboard-page \.client-home-panel > \.panel-heading\s*\{[\s\S]*?display:\s*flex !important[\s\S]*?justify-content:\s*space-between/);
+  assert.match(styles, /\.dashboard-page \.client-home-message-button\s*\{[\s\S]*?width:\s*48px !important[\s\S]*?max-width:\s*48px !important[\s\S]*?border-radius:\s*50%/);
+  assert.match(dashboard, /client-home-today\.css\?v=3/);
 });
 
 test("secondary dashboard content is collapsed behind one native disclosure", () => {
