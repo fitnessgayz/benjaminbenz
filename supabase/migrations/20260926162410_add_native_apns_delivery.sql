@@ -118,23 +118,32 @@ begin
 end;
 $$;
 
-select cron.schedule(
-  'fwb-native-push-delivery',
-  '* * * * *',
-  $cron$
-    select net.http_post(
-      url := 'https://qukdfjeupjhpthfbaonv.supabase.co/functions/v1/fwb-native-push',
-      headers := jsonb_build_object(
-        'Content-Type', 'application/json',
-        'Authorization', 'Bearer ' || (
-          select decrypted_secret
-            from vault.decrypted_secrets
-           where name = 'fwb_push_worker_token'
-           limit 1
-        )
-      ),
-      body := '{}'::jsonb,
-      timeout_milliseconds := 15000
-    );
-  $cron$
-);
+do $schedule$
+declare
+  native_push_job_id bigint;
+begin
+  select cron.schedule(
+    'fwb-native-push-delivery',
+    '* * * * *',
+    $cron$
+      select net.http_post(
+        url := 'https://qukdfjeupjhpthfbaonv.supabase.co/functions/v1/fwb-native-push',
+        headers := jsonb_build_object(
+          'Content-Type', 'application/json',
+          'Authorization', 'Bearer ' || (
+            select decrypted_secret
+              from vault.decrypted_secrets
+             where name = 'fwb_push_worker_token'
+             limit 1
+          )
+        ),
+        body := '{}'::jsonb,
+        timeout_milliseconds := 15000
+      );
+    $cron$
+  ) into native_push_job_id;
+
+  -- Activate only after Apple credentials and a production device test exist.
+  perform cron.alter_job(job_id := native_push_job_id, active := false);
+end;
+$schedule$;
