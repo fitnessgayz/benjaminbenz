@@ -5853,6 +5853,7 @@ function generatedCustomWorkoutDraft(workout, createdAt = new Date()) {
     nextExerciseNumber: workout.exercises.length + 1,
     generatedFrom: {
       id, title, focus: workout.focus, minutes: workout.minutes,
+      ...(Array.isArray(workout.selectedMuscles) ? { selectedMuscles: [...workout.selectedMuscles] } : {}),
       intensity: workout.intensity, estimatedMinutes: workout.estimatedMinutes
     },
     exercises: workout.exercises.map((exercise, index) => ({

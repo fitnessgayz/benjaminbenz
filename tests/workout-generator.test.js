@@ -329,3 +329,95 @@ test('recovery seed migration preserves existing coach rows and explicitly appro
   assert.equal(recovery.length, 12);
   assert.ok(recovery.every((entry) => entry.is_approved === true && entry.default_sets <= 2 && entry.instructions && !entry.demo_url));
 });
+
+test('multiple muscles are canonical, cover every requested group, and keep only the selected union', () => {
+  const requested = ['triceps', 'chest', 'shoulders', 'chest'];
+  for (const minutes of [20, 30, 45, 60]) {
+    for (const intensity of ['easy', 'moderate', 'challenging']) {
+      for (let seed = 0; seed < 8; seed++) {
+        const result = build({ selectedMuscles: requested, minutes, intensity, seed });
+        assert.deepEqual(result.selectedMuscles, ['chest', 'shoulders', 'triceps']);
+        assert.equal(result.title, 'Chest, Shoulders & Triceps workout');
+        for (const muscle of result.selectedMuscles) assert.ok(result.exercises.some((entry) => entry.primary_muscle === muscle));
+        assert.ok(result.exercises.every((entry) => result.selectedMuscles.includes(entry.primary_muscle)));
+        assertValidWorkout(result);
+      }
+    }
+  }
+  assert.deepEqual(requested, ['triceps', 'chest', 'shoulders', 'chest'], 'Caller preferences remain unchanged');
+  assert.deepEqual(build({ selectedMuscles: [] }), build(), 'Empty new preferences preserve legacy focus');
+  assert.equal(build({ selectedMuscles: ['adductors'] }).title, 'Inner thighs workout');
+});
+
+test('back and explicit lats share coverage without double-counting time or exercise slots', () => {
+  const muscles = ['chest', 'shoulders', 'core', 'lats'];
+  const entries = muscles.map((primary_muscle) => baseExercise({ id: primary_muscle, name: `${primary_muscle} exercise`, primary_muscle, default_reps: '30 sec', default_sets: 1 }));
+  const result = build({ selectedMuscles: ['back', 'lats', 'chest', 'shoulders', 'core'], library: entries, minutes: 20 });
+  assert.equal(result.exercises.length, 4);
+  assert.ok(result.exercises.some((entry) => entry.primary_muscle === 'lats'));
+  assert.deepEqual(result.selectedMuscles, ['chest', 'back', 'shoulders', 'core', 'lats']);
+  const backOnly = entries.map((entry) => entry.primary_muscle === 'lats' ? { ...entry, primary_muscle: 'back' } : entry);
+  assert.throws(() => build({ selectedMuscles: ['back', 'lats'], library: backOnly }), /enough approved/);
+  assert.ok(build({ selectedMuscles: ['back'], library: entries }).exercises.every((entry) => entry.primary_muscle === 'lats'));
+});
+
+test('too many or too costly muscles fail with a time action instead of silently dropping a group', () => {
+  const selectedMuscles = ['chest', 'back', 'shoulders', 'glutes', 'core'];
+  const entries = selectedMuscles.map((primary_muscle) => baseExercise({ id: primary_muscle, name: `${primary_muscle} exercise`, primary_muscle, default_reps: '10', default_sets: 1 }));
+  assert.throws(() => build({ selectedMuscles, library: entries, minutes: 20 }), /Choose more time or fewer muscles/);
+  const longer = build({ selectedMuscles, library: entries, minutes: 30 });
+  assert.equal(longer.exercises.length, 5);
+  const costly = entries.slice(0, 4).map((entry) => ({ ...entry, default_reps: '120 sec each' }));
+  assert.throws(() => build({ selectedMuscles: selectedMuscles.slice(0, 4), library: costly, minutes: 20 }), /20-minute workout.*more time or fewer muscles/);
+  assert.throws(() => build({ selectedMuscles: generator.MUSCLE_OPTIONS.map((option) => option.value), minutes: 60 }), (error) => {
+    assert.match(error.message, /60-minute workout.*Choose fewer muscles/);
+    assert.doesNotMatch(error.message, /more time/);
+    return true;
+  });
+});
+
+test('multiple muscle preferences keep equipment, intensity, approval and exclusion constraints', () => {
+  for (const overrides of [
+    { equipment: [] },
+    { intensity: 'easy', library: library.map((entry) => entry.primary_muscle === 'lats' ? { ...entry, difficulty: 'intermediate' } : entry) },
+    { library: library.map((entry) => entry.primary_muscle === 'lats' ? { ...entry, is_approved: false } : entry) },
+    { excludedNames: library.filter((entry) => entry.primary_muscle === 'lats').map((entry) => entry.name) }
+  ]) assert.throws(() => build({ selectedMuscles: ['chest', 'lats'], ...overrides }), /enough approved.*equipment and intensity/);
+  for (const selectedMuscles of [['arms'], ['full_body'], ['chest', 'unknown'], 'chest', null]) {
+    assert.throws(() => build({ selectedMuscles }), /Choose available muscle groups/);
+  }
+  const recovery = build({ focus: 'recovery_lower', selectedMuscles: ['chest', 'lats'] });
+  assert.deepEqual(recovery.selectedMuscles, []);
+  assert.equal(recovery.intensity, 'easy');
+  assert.ok(recovery.exercises.every((entry) => ['mobility', 'stretching'].includes(entry.movement_pattern)));
+});
+
+test('multi-muscle swaps cannot replace the only explicit lats exercise with a general back movement', () => {
+  const entries = ['chest', 'lats', 'back'].flatMap((primary_muscle) => [1, 2].map((number) => baseExercise({
+    id: `${primary_muscle}-${number}`, name: `${primary_muscle} exercise ${number}`, primary_muscle,
+    default_reps: '120 sec each', default_sets: 1
+  })));
+  const result = build({ selectedMuscles: ['chest', 'back', 'lats'], library: entries, minutes: 20 });
+  const index = result.exercises.findIndex((entry) => entry.primary_muscle === 'lats');
+  assert.equal(result.exercises.filter((entry) => entry.primary_muscle === 'lats').length, 1);
+  const alternatives = generator.alternatives({ ...settings, library: entries, workout: result, exercise: result.exercises[index] });
+  assert.ok(alternatives.length > 0);
+  assert.ok(alternatives.every((entry) => entry.primary_muscle === 'lats'));
+  for (const replacement of alternatives) {
+    const replaced = generator.swap(result, index, replacement);
+    assert.deepEqual(replaced.selectedMuscles, result.selectedMuscles);
+    assert.ok(replaced.exercises.some((entry) => entry.primary_muscle === 'lats'));
+  }
+  assert.throws(() => generator.swap(result, index, { ...result.exercises[index], id: 'another-back', name: 'Another back exercise', primary_muscle: 'back' }), /does not fit/);
+});
+
+test('recent history still varies multi-muscle exercises while retaining each requested muscle', () => {
+  const entries = ['chest', 'triceps'].flatMap((primary_muscle) => Array.from({ length: 6 }, (_, index) => baseExercise({
+    id: `${primary_muscle}-${index}`, name: `${primary_muscle} variation ${index}`, primary_muscle
+  })));
+  const options = { selectedMuscles: ['chest', 'triceps'], library: entries, minutes: 20 };
+  const first = build(options);
+  const varied = build({ ...options, history: first.exercises.map((entry) => ({ exercise_name: entry.name, entry_date: '2026-09-24' })) });
+  assert.notDeepEqual(varied.exercises.map((entry) => entry.id), first.exercises.map((entry) => entry.id));
+  for (const muscle of options.selectedMuscles) assert.ok(varied.exercises.some((entry) => entry.primary_muscle === muscle));
+});

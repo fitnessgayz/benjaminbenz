@@ -30,6 +30,7 @@
     { value: "recovery_lower", label: "Lower body recovery", muscles: LOWER, recovery: true },
     { value: "recovery_full", label: "Full body recovery", muscles: MUSCLES, recovery: true }
   ];
+  const MUSCLE_OPTIONS = FOCUS_OPTIONS.filter((option) => MUSCLES.includes(option.value) && option.value !== "full_body");
   const EQUIPMENT_OPTIONS = [
     { value: "full_gym", label: "Full gym" },
     { value: "bodyweight", label: "Bodyweight" },
@@ -72,13 +73,24 @@
   }
 
   function options(input) {
-    const focus = FOCUS_OPTIONS.find((item) => item.value === input.focus);
-    if (!focus) throw new Error("Choose a training focus to generate a workout.");
+    const preset = FOCUS_OPTIONS.find((item) => item.value === input.focus);
+    if (!preset) throw new Error("Choose a training focus to generate a workout.");
+    if (input.selectedMuscles !== undefined && (!Array.isArray(input.selectedMuscles)
+      || input.selectedMuscles.some((value) => !MUSCLE_OPTIONS.some((option) => option.value === value)))) {
+      throw new Error("Choose available muscle groups to generate a workout.");
+    }
+    const selectedMuscles = preset.recovery ? [] : MUSCLE_OPTIONS
+      .filter((option) => input.selectedMuscles?.includes(option.value)).map((option) => option.value);
+    const labels = MUSCLE_OPTIONS.filter((option) => selectedMuscles.includes(option.value)).map((option) => option.label);
+    const label = labels.length > 1 ? `${labels.slice(0, -1).join(", ")} & ${labels.at(-1)}` : labels[0];
+    const focus = selectedMuscles.length
+      ? { ...preset, label, muscles: [...new Set(MUSCLE_OPTIONS.filter((option) => selectedMuscles.includes(option.value)).flatMap((option) => option.muscles))], recovery: false }
+      : preset;
     if (!INTENSITIES.has(input.intensity)) throw new Error("Choose easy, moderate, or challenging intensity.");
     if (!Array.isArray(input.equipment) || input.equipment.some((value) => !EQUIPMENT.has(value))) {
       throw new Error("Choose the equipment you have available.");
     }
-    return { focus, equipment: new Set(["bodyweight", ...input.equipment]), intensity: focus.recovery ? "easy" : input.intensity };
+    return { focus, selectedMuscles, equipment: new Set(["bodyweight", ...input.equipment]), intensity: focus.recovery ? "easy" : input.intensity };
   }
 
   function isRecoveryMovement(entry) {
@@ -181,7 +193,13 @@
     return WARMUP_SECONDS + exercises.reduce((sum, exercise) => sum + exerciseSeconds(exercise), 0);
   }
 
-  function requiredGroups(focus) {
+  function requiredGroups(focus, selectedMuscles = []) {
+    if (selectedMuscles.length) {
+      const groups = MUSCLE_OPTIONS.filter((option) => selectedMuscles.includes(option.value)).map((option) => option.muscles);
+      // Explicit lats already satisfies back; reserve one slot and one time cost.
+      return groups.filter((group, index) => !groups.some((other, otherIndex) => otherIndex !== index
+        && other.length < group.length && other.every((muscle) => group.includes(muscle))));
+    }
     switch (focus) {
       case "full_body": return [["chest", "shoulders"], ["back", "lats"], ["quads", "hamstrings", "glutes"]];
       case "upper_body": return [["chest", "shoulders"], ["back", "lats"]];
@@ -195,8 +213,8 @@
     }
   }
 
-  function missingGroups(focus, exercises) {
-    return requiredGroups(focus).filter((group) => !exercises.some((exercise) => group.includes(exercise.primary_muscle)));
+  function missingGroups(focus, exercises, selectedMuscles = []) {
+    return requiredGroups(focus, selectedMuscles).filter((group) => !exercises.some((exercise) => group.includes(exercise.primary_muscle)));
   }
 
   function dateDay(value) {
@@ -266,23 +284,26 @@
     const selection = options(input);
     if (!DURATIONS.has(input.minutes)) throw new Error("Choose a 20, 30, 45, or 60 minute workout.");
     const pool = candidates(input.library, selection, input.excludedNames);
-    if (!pool.length || missingGroups(input.focus, pool).length) throw unavailable(selection.focus);
+    if (!pool.length || missingGroups(input.focus, pool, selection.selectedMuscles).length) throw unavailable(selection.focus);
     const recent = recentHistory(input.history, input.now);
     const seed = input.seed === undefined ? Math.random() : input.seed;
     const chosen = [];
     const maxExercises = Math.min({ 20: 4, 30: 5, 45: 6, 60: 8 }[input.minutes],
       selection.focus.muscles.length <= 2 ? 4 : 8);
+    const timeError = () => new Error(`These muscles cannot all fit a ${input.minutes}-minute workout. ${input.minutes < 60 ? "Choose more time or fewer muscles." : "Choose fewer muscles."}`);
+    if (requiredGroups(input.focus, selection.selectedMuscles).length > maxExercises) throw timeError();
     const remaining = [...pool];
 
     while (remaining.length && chosen.length < maxExercises) {
-      const missing = missingGroups(input.focus, chosen);
+      const missing = missingGroups(input.focus, chosen, selection.selectedMuscles);
       const ranked = [...remaining].sort((a, b) => score(b, chosen, missing, recent, seed) - score(a, chosen, missing, recent, seed));
       let next = null;
       for (const entry of ranked) {
         let exercise = makeExercise(entry, selection.intensity, selection.focus.recovery);
         // Reserve enough time for the smallest remaining required muscle group,
         // so a long unilateral movement cannot crowd all leg or pulling work out.
-        const stillMissing = missingGroups(input.focus, [...chosen, exercise]);
+        const stillMissing = missingGroups(input.focus, [...chosen, exercise], selection.selectedMuscles);
+        if (chosen.length + 1 + stillMissing.length > maxExercises) continue;
         const reserve = stillMissing.reduce((sum, group) => {
           const costs = remaining.filter((item) => item.id !== entry.id && group.includes(item.primary_muscle))
             .map((item) => exerciseSeconds(withSets(makeExercise(item, selection.intensity, selection.focus.recovery), 1)));
@@ -295,19 +316,22 @@
       chosen.push(next);
       remaining.splice(remaining.findIndex((entry) => entry.id === next.id), 1);
     }
-    if (!chosen.length || missingGroups(input.focus, chosen).length) throw unavailable(selection.focus);
+    if (!chosen.length || missingGroups(input.focus, chosen, selection.selectedMuscles).length) {
+      throw selection.selectedMuscles.length ? timeError() : unavailable(selection.focus);
+    }
     return finalize({
       title: selection.focus.recovery ? selection.focus.label : `${selection.focus.label} workout`, focus: input.focus,
+      selectedMuscles: selection.selectedMuscles,
       minutes: input.minutes, intensity: selection.intensity, equipment: [...selection.equipment],
       exercises: chosen, recentHistoryUsed: pool.some((entry) => historyPenalty(entry, recent) > 0)
     });
   }
 
   function alternatives(input = {}) {
-    const selection = options(input);
     const workout = input.workout;
     const exercise = input.exercise;
     if (!workout || !Array.isArray(workout.exercises) || !exercise || !DURATIONS.has(workout.minutes)) return [];
+    const selection = options({ ...input, focus: workout.focus, selectedMuscles: workout.selectedMuscles ?? input.selectedMuscles });
     const index = workout.exercises.findIndex((item) => item.id === exercise.id && nameKey(item.name) === nameKey(exercise.name));
     if (index < 0) return [];
     const others = workout.exercises.filter((_, position) => position !== index);
@@ -326,7 +350,8 @@
         while (replacement.sets > 1 && totalSeconds([...others, replacement]) > workout.minutes * 60) replacement = withSets(replacement, replacement.sets - 1);
         return replacement;
       })
-      .filter((replacement) => totalSeconds([...others, replacement]) <= workout.minutes * 60);
+      .filter((replacement) => totalSeconds([...others, replacement]) <= workout.minutes * 60
+        && !missingGroups(workout.focus, [...others, replacement], selection.selectedMuscles).length);
   }
 
   function swap(workout, index, replacement) {
@@ -350,11 +375,11 @@
     if (new Set(exercises.map((item) => nameKey(item.name))).size !== exercises.length || new Set(exercises.map((item) => item.id)).size !== exercises.length) {
       throw new Error("That exercise is already in this workout. Choose a different replacement.");
     }
-    if (missingGroups(workout.focus, exercises).length || totalSeconds(exercises) > workout.minutes * 60) {
+    if (missingGroups(workout.focus, exercises, selection.selectedMuscles).length || totalSeconds(exercises) > workout.minutes * 60) {
       throw new Error("That replacement does not fit this workout. Choose another exercise.");
     }
     return finalize({ ...workout, intensity: selection.intensity, exercises });
   }
 
-  return { FOCUS_OPTIONS, EQUIPMENT_OPTIONS, generate, alternatives, swap };
+  return { FOCUS_OPTIONS, MUSCLE_OPTIONS, EQUIPMENT_OPTIONS, generate, alternatives, swap };
 }));

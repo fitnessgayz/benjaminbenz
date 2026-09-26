@@ -563,3 +563,13 @@ test("dashboard loads versioned generator dependencies before the client portal"
   assert.ok(new URL(scripts[portal], "https://example.test").searchParams.has("workout-generator"));
   assert.match(html, /<link[^>]+href="css\/workout-generator\.css\?v=[^"]+"/);
 });
+
+test('generated multi-muscle selection survives local draft provenance without changing legacy drafts', () => {
+  const context = evaluate(['customExerciseCode', 'generatedCustomWorkoutDraft']);
+  const selectedMuscles = ['chest', 'shoulders', 'triceps'];
+  const draft = plain(context.generatedCustomWorkoutDraft({ ...workout(), focus: 'full_body', selectedMuscles }));
+  assert.deepEqual(draft.generatedFrom.selectedMuscles, selectedMuscles);
+  draft.generatedFrom.selectedMuscles.pop();
+  assert.equal(selectedMuscles.length, 3);
+  assert.equal(Object.hasOwn(plain(context.generatedCustomWorkoutDraft(workout())).generatedFrom, 'selectedMuscles'), false);
+});

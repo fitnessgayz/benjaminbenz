@@ -63,10 +63,8 @@ function fixture() {
   };
   const calls = [];
   const engine = {
-    FOCUS_OPTIONS: [{ value: "full_body", label: "Full body" }, { value: "arms", label: "Arms" },
-      { value: "recovery_upper", label: "Upper body recovery", recovery: true },
-      { value: "recovery_lower", label: "Lower body recovery", recovery: true },
-      { value: "recovery_full", label: "Full body recovery", recovery: true }],
+    FOCUS_OPTIONS: require("../js/workout-generator.js").FOCUS_OPTIONS,
+    MUSCLE_OPTIONS: require("../js/workout-generator.js").MUSCLE_OPTIONS,
     EQUIPMENT_OPTIONS: [{ value: "full_gym", label: "Full gym" }, { value: "bodyweight", label: "Bodyweight" }, { value: "dumbbell", label: "Dumbbells" }],
     generate(options) { calls.push(options); return JSON.parse(JSON.stringify(workout)); },
     alternatives() { return [{ ...workout.exercises[0], id: "two", name: "Split squat" }]; },
@@ -263,4 +261,65 @@ test("initial preferences validate each field and never accept unsupported equip
   assert.equal(h.calls[1].minutes, 45);
   assert.equal(h.calls[1].intensity, "easy");
   assert.deepEqual(Array.from(h.calls[1].equipment), ["bodyweight", "dumbbell"]);
+});
+
+test('muscle chips support multiple selections and invalidate the prior preview', async () => {
+  const h = fixture();
+  h.open();
+  await h.form.emit('submit');
+  const inputs = h.dialog.querySelector('.workout-generator-muscle-choices').querySelectorAll('input');
+  assert.equal(inputs.length, 12);
+  for (const value of ['triceps', 'chest', 'shoulders']) {
+    const input = inputs.find((node) => node.value === value);
+    input.checked = true;
+    await input.emit('change');
+  }
+  assert.equal(h.use.hidden, true);
+  await h.form.emit('submit');
+  assert.deepEqual(Array.from(h.calls.at(-1).selectedMuscles), ['chest', 'shoulders', 'triceps']);
+  assert.equal(h.calls.at(-1).focus, 'full_body');
+  for (const input of inputs) { input.checked = false; await input.emit('change'); }
+  await h.form.emit('submit');
+  assert.equal(h.calls.at(-1).focus, 'full_body');
+  assert.deepEqual(Array.from(h.calls.at(-1).selectedMuscles), []);
+});
+
+test('quick presets clear selected muscles and a muscle selection restores strength intensity after recovery', async () => {
+  const h = fixture();
+  h.open({ initialPreferences: { focus: 'full_body', intensity: 'challenging', selectedMuscles: ['chest', 'triceps'] } });
+  const focus = h.dialog.querySelectorAll('select').find((node) => node.name === 'focus');
+  const intensity = h.dialog.querySelectorAll('select').find((node) => node.name === 'intensity');
+  const inputs = h.dialog.querySelector('.workout-generator-muscle-choices').querySelectorAll('input');
+  for (const value of ['arms', 'recovery_upper']) {
+    focus.value = value;
+    await focus.emit('change');
+    await h.form.emit('submit');
+    assert.deepEqual(Array.from(h.calls.at(-1).selectedMuscles), []);
+    assert.equal(h.calls.at(-1).focus, value);
+  }
+  assert.equal(intensity.value, 'easy');
+  const chest = inputs.find((node) => node.value === 'chest');
+  chest.checked = true;
+  await chest.emit('change');
+  assert.equal(intensity.disabled, false);
+  assert.equal(intensity.value, 'challenging');
+  await h.form.emit('submit');
+  assert.equal(h.calls.at(-1).focus, 'chest');
+  assert.deepEqual(Array.from(h.calls.at(-1).selectedMuscles), ['chest']);
+});
+
+test('legacy single-muscle preferences and canonical multi-muscle preferences reopen as checked chips', async () => {
+  const h = fixture();
+  for (const [initialPreferences, expected] of [
+    [{ focus: 'lats' }, ['lats']],
+    [{ focus: 'full_body', selectedMuscles: ['triceps', 'chest', 'chest'] }, ['chest', 'triceps']],
+    [{ focus: 'back', selectedMuscles: [] }, ['back']],
+    [{ focus: 'recovery_full', selectedMuscles: ['chest'] }, []],
+    [{ focus: 'full_body', selectedMuscles: ['chest', 'invalid'] }, []]
+  ]) {
+    h.open({ initialPreferences });
+    await h.form.emit('submit');
+    assert.deepEqual(Array.from(h.calls.at(-1).selectedMuscles), expected);
+    await h.dialog.emit('cancel');
+  }
 });

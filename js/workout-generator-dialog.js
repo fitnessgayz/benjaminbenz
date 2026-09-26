@@ -84,8 +84,10 @@
   }
 
   function preferences() {
+    const selectedMuscles = Array.from(ui.muscleChoices.querySelectorAll("input:checked"), (input) => input.value);
     return {
-      focus: ui.focus.value,
+      focus: ui.focus.value === "custom_muscles" ? (selectedMuscles.length === 1 ? selectedMuscles[0] : "full_body") : ui.focus.value,
+      selectedMuscles,
       minutes: Number(ui.minutes.value),
       intensity: ui.intensity.value,
       equipment: Array.from(ui.equipment.querySelectorAll("input:checked"), (input) => input.value)
@@ -277,12 +279,23 @@
     description.id = "workout-generator-description";
     const form = element("form", "workout-generator-form");
     const fields = element("fieldset", "workout-generator-fields");
-    const focus = field("What do you want to train?", "focus", []);
+    const focus = field("Quick focus", "focus", []);
     const recoveryHint = element("p", "workout-generator-muted", "Gentle mobility and stretching for your selected area. Recovery sessions use easy intensity.");
     recoveryHint.id = "workout-generator-recovery-hint";
     recoveryHint.hidden = true;
     focus.select.setAttribute("aria-describedby", recoveryHint.id);
-    focus.select.addEventListener("change", syncRecoveryPreferences);
+    focus.select.addEventListener("change", () => {
+      for (const checkbox of ui.muscleChoices.querySelectorAll("input")) checkbox.checked = false;
+      syncRecoveryPreferences();
+      invalidatePreview();
+    });
+    const muscles = element("fieldset", "workout-generator-muscles");
+    muscles.append(element("legend", "workout-generator-label", "Or choose muscles"));
+    const muscleHint = element("p", "workout-generator-muted", "Select one or more. Every selected muscle will be included.");
+    muscleHint.id = "workout-generator-muscle-hint";
+    muscles.setAttribute("aria-describedby", muscleHint.id);
+    const muscleChoices = element("div", "workout-generator-muscle-choices");
+    muscles.append(muscleHint, muscleChoices);
     const split = element("div", "workout-generator-preferences-row");
     const minutes = field("How much time?", "minutes", [20, 30, 45, 60].map((value) => ({ value, label: `${value} minutes` })));
     const intensity = field("How hard today?", "intensity", [
@@ -295,7 +308,7 @@
     equipment.append(element("legend", "workout-generator-label", "Available equipment"));
     const equipmentChoices = element("div", "workout-generator-equipment-choices");
     equipment.append(equipmentChoices, element("p", "workout-generator-muted", "Bodyweight exercises are always included."));
-    fields.append(focus.label, recoveryHint, split, equipment);
+    fields.append(focus.label, recoveryHint, muscles, split, equipment);
     const generateButton = element("button", "workout-generator-button workout-generator-generate", "Generate workout");
     generateButton.type = "submit";
     form.append(fields, generateButton);
@@ -334,6 +347,7 @@
     });
     ui = {
       close: closeButton, form, formFields: fields, focus: focus.select,
+      muscleChoices,
       minutes: minutes.select, intensity: intensity.select, equipment,
       equipmentChoices, generate: generateButton, status, review, use: useButton,
       recoveryHint, recoveryMode: false, strengthIntensity: "moderate"
@@ -362,12 +376,17 @@
     const recoveryChoices = element("optgroup");
     recoveryChoices.label = "Mobility / flexibility / recovery";
     for (const option of engine?.FOCUS_OPTIONS || []) {
+      if (engine?.MUSCLE_OPTIONS?.some((muscle) => muscle.value === option.value)) continue;
       const item = element("option", "", option.label);
       item.value = option.value;
       (option.recovery ? recoveryChoices : strengthChoices).append(item);
     }
     if (strengthChoices.children.length) ui.focus.append(strengthChoices);
     if (recoveryChoices.children.length) ui.focus.append(recoveryChoices);
+    const customChoice = element("option", "", "Selected muscles");
+    customChoice.value = "custom_muscles";
+    customChoice.disabled = true;
+    ui.focus.append(customChoice);
     if (Array.from(ui.focus.options).some((item) => item.value === "full_body")) ui.focus.value = "full_body";
     ui.minutes.value = "30";
     ui.intensity.value = "moderate";
@@ -377,6 +396,29 @@
     if (Array.from(ui.focus.options).some((item) => item.value === initial.focus)) ui.focus.value = initial.focus;
     if ([20, 30, 45, 60].includes(initial.minutes)) ui.minutes.value = String(initial.minutes);
     if (["easy", "moderate", "challenging"].includes(initial.intensity)) ui.intensity.value = initial.intensity;
+    const muscleOptions = engine?.MUSCLE_OPTIONS || [];
+    const recovery = Boolean(engine?.FOCUS_OPTIONS?.find((option) => option.value === initial.focus)?.recovery);
+    const initialMuscles = recovery ? [] : Array.isArray(initial.selectedMuscles)
+      && initial.selectedMuscles.every((value) => muscleOptions.some((option) => option.value === value))
+      && initial.selectedMuscles.length ? initial.selectedMuscles
+      : muscleOptions.some((option) => option.value === initial.focus) ? [initial.focus] : [];
+    ui.muscleChoices.replaceChildren();
+    for (const option of muscleOptions) {
+      const label = element("label", "workout-generator-muscle-choice");
+      const checkbox = element("input");
+      checkbox.type = "checkbox";
+      checkbox.name = "selectedMuscles";
+      checkbox.value = option.value;
+      checkbox.checked = initialMuscles.includes(option.value);
+      checkbox.addEventListener("change", () => {
+        ui.focus.value = ui.muscleChoices.querySelectorAll("input:checked").length ? "custom_muscles" : "full_body";
+        syncRecoveryPreferences();
+        invalidatePreview();
+      });
+      label.append(checkbox, element("span", "", option.label));
+      ui.muscleChoices.append(label);
+    }
+    if (initialMuscles.length) ui.focus.value = "custom_muscles";
     const validEquipment = new Set((engine?.EQUIPMENT_OPTIONS || []).map((option) => option.value));
     const initialEquipment = Array.isArray(initial.equipment) && initial.equipment.every((value) => validEquipment.has(value))
       ? new Set(initial.equipment) : new Set(["full_gym"]);
