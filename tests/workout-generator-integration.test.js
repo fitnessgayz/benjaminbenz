@@ -3,6 +3,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const test = require("node:test");
 const vm = require("node:vm");
+const workoutLayout = require("../js/workout-layout.js");
 
 const root = path.resolve(__dirname, "..");
 const source = fs.readFileSync(path.join(root, "js/client-portal.js"), "utf8");
@@ -82,6 +83,98 @@ test("generated sessions receive distinct identities, prescribed set counts, and
   });
   assert.deepEqual(input, before, "Preparing a local draft must not change the generated preview");
   assert.throws(() => context.generatedCustomWorkoutDraft({ exercises: [] }), /Generate a workout/);
+});
+
+test("recovery draft handoff keeps timed targets and creates only the prescribed blank working sets", () => {
+  const context = evaluate(["customExerciseCode", "generatedCustomWorkoutDraft"]);
+  for (const focus of ["recovery_upper", "recovery_lower", "recovery_full"]) {
+    const preview = { ...workout(), focus, intensity: "easy", exercises: [{ name: "Cross-Body Shoulder Stretch", sets: 2, prescription: "20-30 sec/side x 2 sets", rest: "20 sec" }] };
+    const draft = plain(context.generatedCustomWorkoutDraft(preview));
+    assert.equal(draft.generatedFrom.focus, focus);
+    assert.equal(draft.exercises[0].omitWarmup, true);
+    assert.equal(draft.exercises[0].prescription, preview.exercises[0].prescription);
+    assert.equal(draft.exercises[0].rest, "20 sec");
+    assert.equal(draft.exercises[0].sets.length, 2);
+    assert.deepEqual(draft.exercises[0].sets.map((set) => [set.label, set.setType, set.weight, set.reps, set.rir, set.complete]), [
+      ["1", "working", "", "", "", false], ["2", "working", "", "", "", false]
+    ]);
+  }
+  const strength = plain(context.generatedCustomWorkoutDraft(workout()));
+  assert.equal(strength.exercises[0].sets[0].setType, "warm_up");
+  assert.equal(Object.hasOwn(strength.exercises[0], "omitWarmup"), false);
+});
+
+test("restoring, grouping, and serializing recovery exercises never inserts an extra warm-up or recorded reps", () => {
+  const target = { textContent: "" };
+  const card = { dataset: { customWorkoutGroup: "0", customWorkoutGroupType: "single" }, querySelector: () => target };
+  const name = { value: "Cross-Body Shoulder Stretch" };
+  const fields = { "[data-log-date]": { value: "" }, "[data-log-notes]": { value: "" } };
+  let rows = [];
+  const container = {
+    querySelectorAll: () => [...rows],
+    appendChild(row) { rows = rows.filter((item) => item !== row); rows.push(row); }
+  };
+  function addRow(index, warmup = false) {
+    const attributes = new Map();
+    const classes = new Set();
+    const input = (value = "") => ({ value, setAttribute() {} });
+    const inputs = {
+      "[data-set-label]": input(warmup ? "W" : String(index)),
+      "[data-set-weight]": input(), "[data-set-reps]": input(),
+      "[data-complete-set]": { getAttribute: (key) => attributes.get(key), setAttribute: (key, value) => attributes.set(key, value) }
+    };
+    const row = {
+      dataset: { setNumber: String(index), setType: warmup ? "warm_up" : "working" },
+      classList: { contains: (key) => classes.has(key), toggle(key, value) { if (value) classes.add(key); else classes.delete(key); } },
+      querySelector: (selector) => inputs[selector] || null,
+      remove() { rows = rows.filter((item) => item !== row); }
+    };
+    rows.push(row);
+    return row;
+  }
+  addRow(1001, true);
+  for (let index = 1; index <= 3; index++) addRow(index);
+  const log = {
+    dataset: { exerciseCode: "CW01", exerciseName: name.value, generatedExercise: "true", exercisePrescription: "20-30 sec/side x 2 sets", exerciseRest: "20 sec", setTargetMode: "visible" },
+    querySelector: (selector) => selector === "[data-set-rows]" ? container : fields[selector] || null,
+    querySelectorAll: () => [...rows], closest: () => card
+  };
+  const context = evaluate([
+    "customExerciseCode", "generatedCustomWorkoutDraft", "applyCustomExerciseDraft", "applyCustomSetDraft", "serializeSetRowDraft", "serializeCustomExerciseDraft",
+    "normalizedSetType", "warmUpOrdinal", "setNumberLabel", "setTypeForRow", "updateSetTypeFromLabel", "renumberSetRows", "syncVisibleSetTarget"
+  ], {
+    warmUpSetNumberBase: 1000, WorkoutLayout: workoutLayout,
+    exerciseNameInputForLog: () => name, normalizeCustomWorkoutInlineGroupType: (value) => value || "single",
+    ensureSetRows(_log, count) { while (rows.length < count) addRow(rows.length + 1); },
+    renderSetRirValue() {}, renderExerciseNotesState() {}, syncExerciseNamePreview() {}, setExerciseSkipped() {}, updateVisibleSetProgress() {}, renderPreviousExerciseWeights() {}
+  });
+  const preview = { ...workout(), focus: "recovery_upper", exercises: [{ name: name.value, sets: 2, prescription: log.dataset.exercisePrescription, rest: "20 sec" }] };
+  const original = plain(context.generatedCustomWorkoutDraft(preview)).exercises[0];
+  context.applyCustomExerciseDraft(log, original);
+  assert.equal(rows.length, 2);
+  assert.equal(log.dataset.omitWarmup, "true");
+  assert.equal(log.dataset.prescribedSets, "2");
+  assert.equal(workoutLayout.prescription(log.dataset.exercisePrescription).reps, "20-30 sec/side");
+  card.dataset.customWorkoutGroupType = "superset";
+  card.dataset.customWorkoutGroup = "2";
+  const saved = plain(context.serializeCustomExerciseDraft(log, 0));
+  assert.equal(saved.omitWarmup, true);
+  assert.equal(saved.groupType, "superset");
+  assert.equal(saved.group, 2);
+  context.applyCustomExerciseDraft(log, JSON.parse(JSON.stringify(saved)));
+  assert.equal(rows.length, 2);
+  assert.ok(rows.every((row) => row.dataset.setType === "working" && !row.querySelector("[data-set-reps]").value && !row.querySelector("[data-set-weight]").value));
+  assert.equal(plain(context.serializeCustomExerciseDraft(log, 0)).omitWarmup, true);
+  // Clients can still add their own warm-up. Restore must preserve it rather than delete it.
+  const manual = { ...saved, sets: [{ label: "W", setType: "warm_up", weight: "", reps: "" }, ...saved.sets] };
+  context.applyCustomExerciseDraft(log, manual);
+  assert.equal(rows.length, 3);
+  assert.equal(rows[0].dataset.setType, "warm_up");
+  // An ordinary custom draft continues to receive its usual warm-up row.
+  context.applyCustomExerciseDraft(log, { ...saved, omitWarmup: undefined });
+  assert.equal(rows.length, 3);
+  assert.equal(rows[0].dataset.setType, "warm_up");
+  assert.equal(Object.hasOwn(log.dataset, "omitWarmup"), false);
 });
 
 function useFixture(options = {}) {
@@ -225,6 +318,7 @@ function exerciseLogFixture({ generated = true, name = "Goblet squat", code = "C
 test("generated targets and provenance survive serialization and restoration while ordinary custom entries remain generic", () => {
   const current = { workoutTitle: "Custom workout · Leg day · unique", generatedFrom: { id: "unique", title: "Leg day" } };
   const logs = [exerciseLogFixture(), exerciseLogFixture({ generated: false, name: "Cable curl", code: "CW02" })];
+  logs[0].dataset.omitWarmup = "true";
   const panel = {
     dataset: { customWorkoutFormat: "single", customWorkoutTitle: current.workoutTitle, customWorkoutNextExerciseNumber: "3" },
     querySelectorAll: () => logs,
@@ -248,9 +342,13 @@ test("generated targets and provenance survive serialization and restoration whi
   assert.equal(stored.exercises[0].prescription, "3 × 8–12");
   assert.equal(stored.exercises[0].rest, "75 seconds");
   assert.equal(stored.exercises[0].sets[0].complete, false);
+  assert.equal(stored.exercises[0].omitWarmup, true);
+  assert.equal(Object.hasOwn(stored.exercises[1], "omitWarmup"), false);
   assert.equal(Object.hasOwn(stored.exercises[1], "generated"), false);
   assert.equal(Object.hasOwn(stored.exercises[1], "prescription"), false);
   const restored = plain(context.customWorkoutExercises());
+  assert.equal(restored[0].omitWarmup, true);
+  assert.equal(Object.hasOwn(restored[1], "omitWarmup"), false);
   assert.deepEqual(restored.map(({ generated, prescription, rest }) => ({ generated: Boolean(generated), prescription, rest })), [
     { generated: true, prescription: "3 × 8–12", rest: "75 seconds" },
     { generated: false, prescription: "Custom sets", rest: "" }

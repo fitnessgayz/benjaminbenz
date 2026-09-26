@@ -105,21 +105,26 @@
     find('client-week-prev').onclick = () => { offset--; void refresh(); };
     find('client-week-next').onclick = () => { offset = Math.min(0, offset + 1); void refresh(); };
     find('client-weekly-retry').onclick = () => { void refresh(); };
-    find('client-gym-checkin').onclick = async () => {
-      if (!client || !email || preview || busy || checkedDate === dateKey(new Date())) return;
+    async function checkIn() {
+      if (!client || !email || preview) throw new Error('Sign in as a client to check in at the gym.');
+      if (checkedDate === dateKey(new Date())) return 'You’re already checked in at the gym today.';
+      if (busy) throw new Error('Your gym check-in is already saving.');
       const targetEmail = email, today = dateKey(new Date());
       busy = true; buttonState(); text('client-gym-checkin-status', 'Saving gym check-in…');
       try {
         await saveVisit(client, targetEmail, today);
-        if (email !== targetEmail) return;
+        if (email !== targetEmail) throw new Error('Your account changed. Reopen your check-in.');
         checkedDate = today; offset = 0;
         text('client-gym-checkin-status', 'Gym check-in saved for today.');
         await refresh();
-      } catch (_) {
+        return today === dateKey(new Date()) ? 'Gym check-in saved for today.' : 'Gym check-in saved for yesterday. Check in again for today.';
+      } catch (error) {
         if (email === targetEmail) text('client-gym-checkin-status', 'Could not save your check-in. Please try again.');
+        throw error;
       } finally { busy = false; buttonState(); }
     };
-    return { configure(nextClient, nextEmail, isPreview) {
+    find('client-gym-checkin').onclick = () => checkIn().catch(() => {});
+    return { checkIn, isCheckedIn: () => checkedDate === dateKey(new Date()), configure(nextClient, nextEmail, isPreview) {
       if (!nextClient || !nextEmail) return;
       const normalized = nextEmail.trim().toLowerCase();
       if (email !== normalized) { offset = 0; checkedDate = ''; generation++; }

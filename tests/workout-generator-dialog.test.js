@@ -22,7 +22,7 @@ function fixture() {
         add: (name) => classes.add(name), remove: (name) => classes.delete(name), contains: (name) => classes.has(name),
         toggle(name, force) { if (force ?? !classes.has(name)) classes.add(name); else classes.delete(name); }
       },
-      get options() { return node.children.filter((child) => child.tag === "option"); },
+      get options() { return node.children.flatMap((child) => child.tag === "optgroup" ? child.children : [child]).filter((child) => child.tag === "option"); },
       append(...children) {
         for (const child of children) { child.parent = node; node.children.push(child); }
         if (tag === "select" && !node.value) node.value = node.options[0]?.value || "";
@@ -63,7 +63,10 @@ function fixture() {
   };
   const calls = [];
   const engine = {
-    FOCUS_OPTIONS: [{ value: "full_body", label: "Full body" }, { value: "arms", label: "Arms" }],
+    FOCUS_OPTIONS: [{ value: "full_body", label: "Full body" }, { value: "arms", label: "Arms" },
+      { value: "recovery_upper", label: "Upper body recovery", recovery: true },
+      { value: "recovery_lower", label: "Lower body recovery", recovery: true },
+      { value: "recovery_full", label: "Full body recovery", recovery: true }],
     EQUIPMENT_OPTIONS: [{ value: "full_gym", label: "Full gym" }, { value: "bodyweight", label: "Bodyweight" }, { value: "dumbbell", label: "Dumbbells" }],
     generate(options) { calls.push(options); return JSON.parse(JSON.stringify(workout)); },
     alternatives() { return [{ ...workout.exercises[0], id: "two", name: "Split squat" }]; },
@@ -202,4 +205,62 @@ test("untrusted exercise text stays text and unsafe demo links are not rendered"
   assert.equal(h.dialog.querySelector("h4").textContent, h.workout.exercises[0].name);
   assert.equal(h.dialog.querySelector("a"), null);
   assert.equal(h.dialog.querySelector("img"), null);
+});
+
+test("recovery category contains three regions and locks gentle intensity while retaining strength preferences", async () => {
+  const h = fixture();
+  h.open();
+  const group = h.dialog.querySelectorAll("optgroup").find((node) => node.label === "Mobility / flexibility / recovery");
+  assert.deepEqual(group.children.map((option) => option.value), ["recovery_upper", "recovery_lower", "recovery_full"]);
+  const focus = h.dialog.querySelectorAll("select").find((node) => node.name === "focus");
+  const intensity = h.dialog.querySelectorAll("select").find((node) => node.name === "intensity");
+  intensity.value = "challenging";
+  for (const option of group.children) {
+    focus.value = option.value;
+    await focus.emit("change");
+    assert.equal(intensity.value, "easy");
+    assert.equal(intensity.disabled, true);
+    await h.form.emit("submit");
+    assert.equal(h.calls.at(-1).focus, option.value);
+    assert.equal(h.calls.at(-1).intensity, "easy");
+  }
+  focus.value = "full_body";
+  await focus.emit("change");
+  assert.equal(intensity.disabled, false);
+  assert.equal(intensity.value, "challenging");
+});
+
+test("initial preferences prefill daily recommendations and reopening restores ordinary defaults", async () => {
+  const h = fixture();
+  h.open({ initialPreferences: { focus: "recovery_lower", minutes: 20, intensity: "moderate", equipment: [] } });
+  await h.form.emit("submit");
+  assert.equal(h.calls[0].focus, "recovery_lower");
+  assert.equal(h.calls[0].minutes, 20);
+  assert.equal(h.calls[0].intensity, "easy");
+  assert.deepEqual(Array.from(h.calls[0].equipment), ["bodyweight"]);
+  await h.dialog.emit("cancel");
+  h.open();
+  await h.form.emit("submit");
+  assert.equal(h.calls[1].focus, "full_body");
+  assert.equal(h.calls[1].minutes, 30);
+  assert.equal(h.calls[1].intensity, "moderate");
+  assert.deepEqual(Array.from(h.calls[1].equipment), ["full_gym", "bodyweight"]);
+  assert.equal(h.dialog.querySelectorAll("select").find((node) => node.name === "intensity").disabled, false);
+});
+
+test("initial preferences validate each field and never accept unsupported equipment", async () => {
+  const h = fixture();
+  h.open({ initialPreferences: { focus: "invalid", minutes: 5, intensity: "extreme", equipment: ["machine-that-does-not-exist"] } });
+  await h.form.emit("submit");
+  assert.equal(h.calls[0].focus, "full_body");
+  assert.equal(h.calls[0].minutes, 30);
+  assert.equal(h.calls[0].intensity, "moderate");
+  assert.deepEqual(Array.from(h.calls[0].equipment), ["full_gym", "bodyweight"]);
+  await h.dialog.emit("cancel");
+  h.open({ initialPreferences: { focus: "arms", minutes: 45, intensity: "easy", equipment: ["dumbbell"] } });
+  await h.form.emit("submit");
+  assert.equal(h.calls[1].focus, "arms");
+  assert.equal(h.calls[1].minutes, 45);
+  assert.equal(h.calls[1].intensity, "easy");
+  assert.deepEqual(Array.from(h.calls[1].equipment), ["bodyweight", "dumbbell"]);
 });

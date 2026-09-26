@@ -65,11 +65,22 @@
     busy = value;
     dialog.setAttribute("aria-busy", String(value));
     ui.formFields.disabled = value;
+    ui.intensity.disabled = value || ui.recoveryMode;
     ui.close.disabled = value;
     ui.generate.disabled = value || !context?.library?.length;
     ui.use.disabled = value || !preview;
     ui.use.textContent = value ? "Adding workout…" : "Use this workout";
     for (const control of ui.review.querySelectorAll("button, select")) control.disabled = value;
+  }
+
+  function syncRecoveryPreferences() {
+    const recovery = Boolean(window.FWB_WORKOUT_GENERATOR?.FOCUS_OPTIONS?.find((option) => option.value === ui.focus.value)?.recovery);
+    if (recovery && !ui.recoveryMode) ui.strengthIntensity = ui.intensity.value;
+    if (!recovery && ui.recoveryMode) ui.intensity.value = ui.strengthIntensity || "moderate";
+    ui.recoveryMode = recovery;
+    if (recovery) ui.intensity.value = "easy";
+    ui.intensity.disabled = busy || recovery;
+    ui.recoveryHint.hidden = !recovery;
   }
 
   function preferences() {
@@ -267,6 +278,11 @@
     const form = element("form", "workout-generator-form");
     const fields = element("fieldset", "workout-generator-fields");
     const focus = field("What do you want to train?", "focus", []);
+    const recoveryHint = element("p", "workout-generator-muted", "Gentle mobility and stretching for your selected area. Recovery sessions use easy intensity.");
+    recoveryHint.id = "workout-generator-recovery-hint";
+    recoveryHint.hidden = true;
+    focus.select.setAttribute("aria-describedby", recoveryHint.id);
+    focus.select.addEventListener("change", syncRecoveryPreferences);
     const split = element("div", "workout-generator-preferences-row");
     const minutes = field("How much time?", "minutes", [20, 30, 45, 60].map((value) => ({ value, label: `${value} minutes` })));
     const intensity = field("How hard today?", "intensity", [
@@ -279,7 +295,7 @@
     equipment.append(element("legend", "workout-generator-label", "Available equipment"));
     const equipmentChoices = element("div", "workout-generator-equipment-choices");
     equipment.append(equipmentChoices, element("p", "workout-generator-muted", "Bodyweight exercises are always included."));
-    fields.append(focus.label, split, equipment);
+    fields.append(focus.label, recoveryHint, split, equipment);
     const generateButton = element("button", "workout-generator-button workout-generator-generate", "Generate workout");
     generateButton.type = "submit";
     form.append(fields, generateButton);
@@ -319,7 +335,8 @@
     ui = {
       close: closeButton, form, formFields: fields, focus: focus.select,
       minutes: minutes.select, intensity: intensity.select, equipment,
-      equipmentChoices, generate: generateButton, status, review, use: useButton
+      equipmentChoices, generate: generateButton, status, review, use: useButton,
+      recoveryHint, recoveryMode: false, strengthIntensity: "moderate"
     };
     document.body.append(dialog);
     return dialog;
@@ -340,14 +357,30 @@
     restoreFocus = true;
     preview = null;
     ui.focus.replaceChildren();
+    const strengthChoices = element("optgroup");
+    strengthChoices.label = "Strength";
+    const recoveryChoices = element("optgroup");
+    recoveryChoices.label = "Mobility / flexibility / recovery";
     for (const option of engine?.FOCUS_OPTIONS || []) {
       const item = element("option", "", option.label);
       item.value = option.value;
-      ui.focus.append(item);
+      (option.recovery ? recoveryChoices : strengthChoices).append(item);
     }
+    if (strengthChoices.children.length) ui.focus.append(strengthChoices);
+    if (recoveryChoices.children.length) ui.focus.append(recoveryChoices);
     if (Array.from(ui.focus.options).some((item) => item.value === "full_body")) ui.focus.value = "full_body";
     ui.minutes.value = "30";
     ui.intensity.value = "moderate";
+    ui.recoveryMode = false;
+    ui.strengthIntensity = "moderate";
+    const initial = options.initialPreferences && typeof options.initialPreferences === "object" ? options.initialPreferences : {};
+    if (Array.from(ui.focus.options).some((item) => item.value === initial.focus)) ui.focus.value = initial.focus;
+    if ([20, 30, 45, 60].includes(initial.minutes)) ui.minutes.value = String(initial.minutes);
+    if (["easy", "moderate", "challenging"].includes(initial.intensity)) ui.intensity.value = initial.intensity;
+    const validEquipment = new Set((engine?.EQUIPMENT_OPTIONS || []).map((option) => option.value));
+    const initialEquipment = Array.isArray(initial.equipment) && initial.equipment.every((value) => validEquipment.has(value))
+      ? new Set(initial.equipment) : new Set(["full_gym"]);
+    syncRecoveryPreferences();
     ui.equipmentChoices.replaceChildren();
     for (const option of engine?.EQUIPMENT_OPTIONS || []) {
       const label = element("label", "workout-generator-equipment-choice");
@@ -355,7 +388,7 @@
       checkbox.type = "checkbox";
       checkbox.name = "equipment";
       checkbox.value = option.value;
-      checkbox.checked = option.value === "full_gym" || option.value === "bodyweight";
+      checkbox.checked = option.value === "bodyweight" || (initialEquipment.has("full_gym") ? option.value === "full_gym" : initialEquipment.has(option.value));
       checkbox.disabled = option.value === "bodyweight";
       checkbox.addEventListener("change", () => {
         if (!checkbox.checked) return;

@@ -25,7 +25,10 @@
     { value: "biceps", label: "Biceps", muscles: ["biceps"] },
     { value: "triceps", label: "Triceps", muscles: ["triceps"] },
     { value: "lats", label: "Lats", muscles: ["lats"] },
-    { value: "adductors", label: "Inner thighs", muscles: ["adductors"] }
+    { value: "adductors", label: "Inner thighs", muscles: ["adductors"] },
+    { value: "recovery_upper", label: "Upper body recovery", muscles: UPPER, recovery: true },
+    { value: "recovery_lower", label: "Lower body recovery", muscles: LOWER, recovery: true },
+    { value: "recovery_full", label: "Full body recovery", muscles: MUSCLES, recovery: true }
   ];
   const EQUIPMENT_OPTIONS = [
     { value: "full_gym", label: "Full gym" },
@@ -65,7 +68,7 @@
     const timed = /^(s|min)/.test(unit);
     const seconds = high * (/^min/.test(unit) ? 60 : timed ? 1 : 3);
     if (low < 1 || high < low || (!timed && high > 30) || (timed && seconds > 120)) return null;
-    return { reps, seconds: seconds * (match[4] ? 2 : 1), timed };
+    return { reps, seconds: seconds * (match[4] ? 2 : 1), timed, high, perSideSeconds: seconds };
   }
 
   function options(input) {
@@ -75,7 +78,17 @@
     if (!Array.isArray(input.equipment) || input.equipment.some((value) => !EQUIPMENT.has(value))) {
       throw new Error("Choose the equipment you have available.");
     }
-    return { focus, equipment: new Set(["bodyweight", ...input.equipment]), intensity: input.intensity };
+    return { focus, equipment: new Set(["bodyweight", ...input.equipment]), intensity: focus.recovery ? "easy" : input.intensity };
+  }
+
+  function isRecoveryMovement(entry) {
+    return ["mobility", "stretch", "stretching", "flexibility", "recovery"].includes(nameKey(entry.movement_pattern));
+  }
+
+  function gentleRecoveryEntry(entry, reps = entry.default_reps) {
+    const target = repInfo(reps);
+    return isRecoveryMovement(entry) && entry.difficulty === "beginner" && entry.equipment === "bodyweight"
+      && target && (target.timed ? target.perSideSeconds <= 60 : target.high <= 12);
   }
 
   function hasEquipment(entry, available) {
@@ -114,6 +127,7 @@
     const ids = new Set();
     return (Array.isArray(library) ? library : []).filter((entry) => {
       if (!validEntry(entry) || !selection.focus.muscles.includes(entry.primary_muscle)
+        || (selection.focus.recovery ? !gentleRecoveryEntry(entry) : isRecoveryMovement(entry))
         || (selection.intensity === "easy" && entry.difficulty !== "beginner")
         || !hasEquipment(entry, selection.equipment) || names.has(nameKey(entry.name)) || ids.has(entry.id)) return false;
       names.add(nameKey(entry.name));
@@ -135,15 +149,15 @@
     return "";
   }
 
-  function makeExercise(entry, intensity) {
-    const sets = Math.min(intensity === "easy" ? 2 : intensity === "challenging" ? 4 : 3,
+  function makeExercise(entry, intensity, recovery = false) {
+    const sets = recovery ? Math.min(2, entry.default_sets) : Math.min(intensity === "easy" ? 2 : intensity === "challenging" ? 4 : 3,
       Math.max(1, entry.default_sets + (intensity === "easy" ? -1 : intensity === "challenging" ? 1 : 0)));
     const exercise = {
       id: entry.id, name: entry.name.trim(), primary_muscle: entry.primary_muscle,
       equipment: entry.equipment, difficulty: entry.difficulty,
       movement_pattern: entry.movement_pattern, substitution_group: entry.substitution_group || "",
       sets, reps: entry.default_reps.trim(),
-      restSeconds: Math.max(45, Math.min(180, entry.default_rest_seconds)),
+      restSeconds: recovery ? Math.min(60, entry.default_rest_seconds) : Math.max(45, Math.min(180, entry.default_rest_seconds)),
       demo_url: demoUrl(entry.demo_url),
       instructions: typeof entry.instructions === "string" ? entry.instructions : ""
     };
@@ -174,6 +188,9 @@
       case "lower_body": return [["quads"], ["hamstrings", "glutes"]];
       case "chest_back": return [["chest"], ["back", "lats"]];
       case "arms": return [["biceps"], ["triceps"]];
+      case "recovery_upper": return [UPPER];
+      case "recovery_lower": return [LOWER];
+      case "recovery_full": return [UPPER, LOWER];
       default: return [];
     }
   }
@@ -221,9 +238,14 @@
   }
 
   function notesFor(workout) {
-    const notes = ["Time estimate includes a 3-minute warm-up, rests between sets, and equipment transitions.", INTENSITY_NOTES[workout.intensity]];
+    const recovery = FOCUS_OPTIONS.some((focus) => focus.value === workout.focus && focus.recovery);
+    const notes = recovery
+      ? ["Gentle mobility, flexibility, and recovery. Move slowly within a comfortable range and breathe naturally.", "Time estimate includes 3 minutes to ease into movement, rests, and transitions."]
+      : ["Time estimate includes a 3-minute warm-up, rests between sets, and equipment transitions.", INTENSITY_NOTES[workout.intensity]];
     if (workout.estimatedMinutes < workout.minutes * 0.8) {
-      notes.push(`This library and equipment combination provides about ${workout.estimatedMinutes} minutes of training. Choose more equipment or another focus for a longer session.`);
+      notes.push(recovery
+        ? `This selection provides about ${workout.estimatedMinutes} minutes of gentle recovery. There is no need to add extra work to fill the time.`
+        : `This library and equipment combination provides about ${workout.estimatedMinutes} minutes of training. Choose more equipment or another focus for a longer session.`);
     }
     if (workout.recentHistoryUsed) notes.push("Recent exercise history helped vary the selection; it does not determine recovery readiness.");
     return notes;
@@ -236,6 +258,7 @@
   }
 
   function unavailable(focus) {
+    if (focus.recovery) return new Error(`There aren't enough approved mobility or stretching exercises for ${focus.label.toLowerCase()}. Ask your coach to add recovery movements for this area to the exercise library.`);
     return new Error(`There aren't enough approved exercises for ${focus.label.toLowerCase()} with this equipment and intensity. Try another focus, add available equipment, or ask your coach to expand the library.`);
   }
 
@@ -256,13 +279,13 @@
       const ranked = [...remaining].sort((a, b) => score(b, chosen, missing, recent, seed) - score(a, chosen, missing, recent, seed));
       let next = null;
       for (const entry of ranked) {
-        let exercise = makeExercise(entry, input.intensity);
+        let exercise = makeExercise(entry, selection.intensity, selection.focus.recovery);
         // Reserve enough time for the smallest remaining required muscle group,
         // so a long unilateral movement cannot crowd all leg or pulling work out.
         const stillMissing = missingGroups(input.focus, [...chosen, exercise]);
         const reserve = stillMissing.reduce((sum, group) => {
           const costs = remaining.filter((item) => item.id !== entry.id && group.includes(item.primary_muscle))
-            .map((item) => exerciseSeconds(withSets(makeExercise(item, input.intensity), 1)));
+            .map((item) => exerciseSeconds(withSets(makeExercise(item, selection.intensity, selection.focus.recovery), 1)));
           return sum + (costs.length ? Math.min(...costs) : Infinity);
         }, 0);
         while (exercise.sets > 1 && totalSeconds([...chosen, exercise]) + reserve > input.minutes * 60) exercise = withSets(exercise, exercise.sets - 1);
@@ -274,8 +297,8 @@
     }
     if (!chosen.length || missingGroups(input.focus, chosen).length) throw unavailable(selection.focus);
     return finalize({
-      title: `${selection.focus.label} workout`, focus: input.focus,
-      minutes: input.minutes, intensity: input.intensity, equipment: [...selection.equipment],
+      title: selection.focus.recovery ? selection.focus.label : `${selection.focus.label} workout`, focus: input.focus,
+      minutes: input.minutes, intensity: selection.intensity, equipment: [...selection.equipment],
       exercises: chosen, recentHistoryUsed: pool.some((entry) => historyPenalty(entry, recent) > 0)
     });
   }
@@ -299,7 +322,7 @@
         return rank(b) - rank(a) || a.name.localeCompare(b.name);
       })
       .map((entry) => {
-        let replacement = makeExercise(entry, input.intensity);
+        let replacement = makeExercise(entry, selection.intensity, selection.focus.recovery);
         while (replacement.sets > 1 && totalSeconds([...others, replacement]) > workout.minutes * 60) replacement = withSets(replacement, replacement.sets - 1);
         return replacement;
       })
@@ -310,11 +333,14 @@
     if (!workout || !Array.isArray(workout.exercises) || !Number.isInteger(index) || index < 0 || index >= workout.exercises.length
       || !replacement || !replacement.id || !nameKey(replacement.name) || !repInfo(replacement.reps)
       || !Number.isInteger(replacement.sets) || replacement.sets < 1 || replacement.sets > 4
-      || !Number.isInteger(replacement.restSeconds) || replacement.restSeconds < 45 || replacement.restSeconds > 180) {
+      || !Number.isInteger(replacement.restSeconds) || replacement.restSeconds < 0 || replacement.restSeconds > 180) {
       throw new Error("Choose an available replacement exercise.");
     }
     const selection = options(workout);
     if (!DURATIONS.has(workout.minutes) || !selection.focus.muscles.includes(replacement.primary_muscle)
+      || (selection.focus.recovery
+        ? !gentleRecoveryEntry(replacement, replacement.reps) || replacement.sets > 2 || replacement.restSeconds > 60
+        : isRecoveryMovement(replacement) || replacement.restSeconds < 45)
       || !["beginner", "intermediate"].includes(replacement.difficulty)
       || (workout.intensity === "easy" && replacement.difficulty !== "beginner")
       || !EQUIPMENT.has(replacement.equipment) || !hasEquipment(replacement, selection.equipment)) {
@@ -327,7 +353,7 @@
     if (missingGroups(workout.focus, exercises).length || totalSeconds(exercises) > workout.minutes * 60) {
       throw new Error("That replacement does not fit this workout. Choose another exercise.");
     }
-    return finalize({ ...workout, exercises });
+    return finalize({ ...workout, intensity: selection.intensity, exercises });
   }
 
   return { FOCUS_OPTIONS, EQUIPMENT_OPTIONS, generate, alternatives, swap };

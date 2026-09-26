@@ -46,6 +46,7 @@
   <link rel="stylesheet" href="css/client-weekly-activity.css?v=1" />
   <link rel="stylesheet" href="/css/fwb-design-system.css?v=reference-overhaul-1" />
   <link rel="stylesheet" href="css/mood-checkin.css?v=1" />
+  <link rel="stylesheet" href="css/daily-checkin.css?v=1" />
   <link rel="stylesheet" href="css/coach-preview.css?v=return-coach-1" />
   <link rel="stylesheet" href="css/apple-workout.css?v=1" />
   <link rel="stylesheet" href="css/google-health.css?v=1" />
@@ -54,7 +55,7 @@
   <link rel="stylesheet" href="css/rir-help.css?v=1" />
   <link rel="stylesheet" href="css/client-session-alerts.css?v=1" />
   <link rel="stylesheet" href="css/workout-exercise-list.css?v=2" />
-  <link rel="stylesheet" href="css/workout-generator.css?v=3" />
+  <link rel="stylesheet" href="css/workout-generator.css?v=4" />
   <link rel="stylesheet" href="css/apple-health-sync.css?v=1" />
 </head>
 <body class="dashboard-page client-dashboard-page is-loading">
@@ -271,6 +272,7 @@
                   <span class="client-home-checkin-toggle-icon" data-client-home-checkin-toggle-icon aria-hidden="true">+</span>
                 </button>
               </div>
+              <button class="button button-dark" type="button" data-client-daily-checkin>Daily check-in</button>
               <div class="client-home-checkin-content" id="client-home-checkin-content" data-client-home-checkin-content hidden>
                 <form class="client-home-mood-form" id="client-home-mood-form">
                   <p class="mood-rating-intro">Your day, from 1 to 5. Tap a rating for each check-in.</p>
@@ -1144,7 +1146,7 @@
   <script src="js/web-notifications.js?v=notification-default-on-1"></script>
   <script src="https://cdn.jsdelivr.net/npm/@zxing/browser@0.2.1/umd/zxing-browser.min.js" integrity="sha384-HRtzk9lZgkbSgvUyQrnfC/GxiXZgwaNyD7hC9wcXlsBpDhkS80ISl73juef2FRuf" crossorigin="anonymous"></script>
   <script src="js/workout-layout.js?v=exercise-preview-3"></script>
-  <script src="js/client-weekly-activity.js?v=1"></script>
+  <script src="js/client-weekly-activity.js?v=2"></script>
   <script src="js/apple-workout.js?v=3"></script>
   <script src="js/google-health.js?v=1"></script>
   <script src="js/profile-photo-store.js?v=1"></script>
@@ -1154,10 +1156,12 @@
   <script src="js/rir-help.js?v=2"></script>
   <script src="js/pr-help.js?v=1"></script>
   <script src="js/client-session-alerts.js?v=2"></script>
-  <script src="js/workout-generator.js?v=1"></script>
-  <script src="js/workout-generator-dialog.js?v=1"></script>
+  <script src="js/daily-workout-recommendation.js?v=1"></script>
+  <script src="js/daily-checkin-dialog.js?v=1"></script>
+  <script src="js/workout-generator.js?v=2"></script>
+  <script src="js/workout-generator-dialog.js?v=2"></script>
   <script src="js/apple-health-sync.js?v=1"></script>
-  <script src="js/client-portal.js?v=custom-workout-history-1&amp;cancel-workout=1&amp;energy-feedback=1&amp;mood-redesign=1&amp;visible-group-controls=1&amp;exercise-videos=1&amp;remember-login=1&amp;visible-demos=1&amp;personal-bests=1&amp;copy-last-weights=1&amp;demo-icons=1&amp;keyboard-entry=1&amp;copy-set-pr=3&amp;return-coach=1&amp;apple-workout=2&amp;apple-share=1&amp;rir-help=1&amp;viewport-dock=1&amp;compact-copy=1&amp;exercise-pr-notes=1&amp;pr-info=1&amp;finish-workout=2&amp;prescribed-targets=1&amp;exercise-controls=1&amp;session-alerts=1&amp;exercise-labels=1&amp;exercise-list=2&amp;grouped-add=1&amp;google-health=1&amp;exercise-defaults=2&amp;workout-generator=3&amp;profile-photo=1&amp;workout-delete=1&amp;apple-health=1"></script>
+  <script src="js/client-portal.js?v=custom-workout-history-1&amp;cancel-workout=1&amp;energy-feedback=1&amp;mood-redesign=1&amp;visible-group-controls=1&amp;exercise-videos=1&amp;remember-login=1&amp;visible-demos=1&amp;personal-bests=1&amp;copy-last-weights=1&amp;demo-icons=1&amp;keyboard-entry=1&amp;copy-set-pr=3&amp;return-coach=1&amp;apple-workout=2&amp;apple-share=1&amp;rir-help=1&amp;viewport-dock=1&amp;compact-copy=1&amp;exercise-pr-notes=1&amp;pr-info=1&amp;finish-workout=2&amp;prescribed-targets=1&amp;exercise-controls=1&amp;session-alerts=1&amp;exercise-labels=1&amp;exercise-list=2&amp;grouped-add=1&amp;google-health=1&amp;exercise-defaults=2&amp;workout-generator=3&amp;profile-photo=1&amp;workout-delete=1&amp;apple-health=1&amp;daily-checkin=1"></script>
   <script src="js/workout-exercise-dock.js?v=1"></script>
 </body>
 </html>

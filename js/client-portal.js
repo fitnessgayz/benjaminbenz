@@ -184,8 +184,10 @@ const customWorkoutDefaultWorkingSetCount = 3;
 const customWorkoutDraftVersion = 2;
 const clientDashboardUrl = "client-dashboard.html?v=manual-sessions-1";
 const clientDashboardSidebarStorageKey = "fwb_client_dashboard_sidebar_collapsed_v1";
-const clientHomeCheckinPromptMetadataKey = "home_checkin_prompt_seen_v1";
-const clientHomeCheckinPromptStoragePrefix = "fwb_home_checkin_prompt_seen_v1";
+const clientHomeCheckinPromptStoragePrefix = "fwb_daily_checkin_prompt_v2";
+const clientDailyPromptMemory = new Set();
+let clientDailyCheckinReady = false;
+let clientDailyCheckinSaving = false;
 const clientExerciseProgressPageSize = 10;
 const workoutElapsedTimerStorageKey = "fwb_workout_elapsed_timer_v1";
 const workoutElapsedTimerCompactStorageKey = "fwb_workout_elapsed_timer_compact_v1";
@@ -812,7 +814,13 @@ function renderClientHomeSummary() {
     `${foodLogNumberLabel(todayFoodTotals.protein, "g")} protein`,
     nutrition.calories ? `Target ${nutrition.calories}` : ""
   ].filter(Boolean).join(" · ") || "Log food to track calories and macros.");
-  setText("#client-home-mood", latestMood ? "Latest mood" : "How are you feeling?");
+  setText("#client-home-mood", "How are you feeling today?");
+  const dailyButton = document.querySelector("[data-client-daily-checkin]");
+  if (dailyButton) {
+    dailyButton.hidden = isCoachDashboardPreview;
+    dailyButton.textContent = window.FWB_DAILY_WORKOUT?.parseCheckIn(todayClientMoodEntry()?.goal_note || "")
+      ? "View today’s workout" : "Daily check-in";
+  }
   setText("#client-home-mood-meta", latestMood
     ? `${formatLogDate(latestMood.entry_date)} · ${truncateText(String(latestMood.goal_note || "").trim(), 90)}`
     : "Log mood, energy, body readiness, or anything Benjamin should know today.");
@@ -4960,6 +4968,8 @@ function syncExerciseNamePreview(logElement, nextName) {
   if (logElement.dataset.generatedExercise === "true" && editedName !== logElement.dataset.exerciseName) {
     // A different exercise needs its own prescription; never retain the old target.
     delete logElement.dataset.generatedExercise;
+    delete logElement.dataset.generatedInstructions;
+    delete logElement.dataset.generatedVideo;
     logElement.dataset.exercisePrescription = "Custom sets";
     logElement.dataset.exerciseRest = "";
     const generatedTarget = card?.querySelector("[data-generated-workout-target]");
@@ -5041,6 +5051,8 @@ function exerciseLogFields(exercise, workoutTitle, options = {}) {
       data-exercise-name="${escapeHtml(exercise.name)}"
       data-exercise-rest="${escapeHtml(exercise.rest || "")}"
       data-exercise-prescription="${escapeHtml(exercise.prescription || "")}"
+      ${exercise.generated && exercise.instructions ? `data-generated-instructions="${escapeHtml(exercise.instructions)}"` : ""}
+      ${exercise.generated && (exercise.video || exercise.demo_url) ? `data-generated-video="${escapeHtml(exercise.video || exercise.demo_url)}"` : ""}
       ${exercise.generated ? 'data-generated-exercise="true"' : ""}
       data-prescribed-sets="${setCount}"
       data-set-target-mode="${options.userManagedSets ? "visible" : "prescribed"}"
@@ -5786,6 +5798,9 @@ function activeCustomWorkoutDraft() {
 }
 
 function customWorkoutCopyStatusMessage(draft = activeCustomWorkoutDraft()) {
+  if (draft?.generatedFrom?.daily) {
+    return `${draft.generatedFrom.title} · A shorter session for today. Your assigned program stays the same.`;
+  }
   if (draft?.generatedFrom) {
     return `${draft.generatedFrom.title} · About ${draft.generatedFrom.estimatedMinutes} minutes. Your workout is ready. Review the targets, then start when you’re ready.`;
   }
@@ -5826,6 +5841,7 @@ function freshCustomWorkoutDraft(createdAt = new Date()) {
 
 function generatedCustomWorkoutDraft(workout, createdAt = new Date()) {
   if (!workout?.exercises?.length) throw new Error("Generate a workout before continuing.");
+  const omitWarmup = ["recovery_upper", "recovery_lower", "recovery_full"].includes(workout.focus);
   const date = todayDate();
   const title = String(workout.title || "Today’s workout").slice(0, 80);
   const id = `${createdAt.getTime()}-${Math.random().toString(36).slice(2, 10)}`;
@@ -5846,12 +5862,15 @@ function generatedCustomWorkoutDraft(workout, createdAt = new Date()) {
       groupType: "single",
       date,
       generated: true,
+      ...(omitWarmup ? { omitWarmup: true } : {}),
       prescription: exercise.prescription,
       rest: exercise.rest,
+      ...(exercise.instructions ? { instructions: exercise.instructions } : {}),
+      ...(exercise.demo_url || exercise.video ? { video: exercise.demo_url || exercise.video } : {}),
       notes: "",
       skipped: false,
       sets: [
-        { label: "W", weight: "", reps: "", setType: warmUpSetType, rir: "", complete: false },
+        ...(omitWarmup ? [] : [{ label: "W", weight: "", reps: "", setType: warmUpSetType, rir: "", complete: false }]),
         ...Array.from({ length: Math.max(1, Math.min(6, Number(exercise.sets) || 3)) }, (_, setIndex) => ({
           label: String(setIndex + 1), weight: "", reps: "", setType: workingSetType, rir: "", complete: false
         }))
@@ -5860,7 +5879,7 @@ function generatedCustomWorkoutDraft(workout, createdAt = new Date()) {
   };
 }
 
-function useGeneratedClientWorkout(workout) {
+function useGeneratedClientWorkout(workout, preparedDraft = null) {
   if (workoutElapsedTimerState) {
     throw new Error("Finish or cancel your current workout before using a generated workout.");
   }
@@ -5874,7 +5893,7 @@ function useGeneratedClientWorkout(workout) {
     return false;
   }
 
-  const draft = generatedCustomWorkoutDraft(workout);
+  const draft = preparedDraft || generatedCustomWorkoutDraft(workout);
   const panelIndex = clientCustomWorkoutPanelIndex();
   // Stop queued writes from the old panel before replacing its local draft.
   cancelTrainingLogAutosaves(panel);
@@ -5912,7 +5931,7 @@ function useGeneratedClientWorkout(workout) {
   return true;
 }
 
-function openClientWorkoutGenerator(button) {
+function openClientWorkoutGenerator(button, initialPreferences) {
   const dialog = window.FWB_WORKOUT_GENERATOR_DIALOG;
   if (!dialog || !window.FWB_WORKOUT_GENERATOR) {
     window.alert("The workout generator could not load. Refresh the page and try again.");
@@ -5922,6 +5941,7 @@ function openClientWorkoutGenerator(button) {
   const programId = currentProgram?.id;
   const opened = dialog.open({
     library: exerciseLibraryEntries,
+    initialPreferences,
     history: trainingLogs.filter(log => normalizeClientEmail(log.client_email) === normalizeClientEmail(clientEmail)),
     returnFocus: button,
     onUse(workout) {
@@ -5954,7 +5974,12 @@ function customWorkoutExercises(format = activeCustomWorkoutFormat) {
         groupType: normalizeCustomWorkoutInlineGroupType(draftExercise?.groupType),
         prescription: draftExercise.generated ? String(draftExercise.prescription || "Custom sets") : "Custom sets",
         rest: draftExercise.generated ? String(draftExercise.rest || "") : "",
-        ...(draftExercise.generated ? { generated: true } : {})
+        ...(draftExercise.omitWarmup === true ? { omitWarmup: true } : {}),
+        ...(draftExercise.generated ? {
+          generated: true,
+          ...(draftExercise.instructions ? { instructions: draftExercise.instructions } : {}),
+          ...(draftExercise.video || draftExercise.demo_url ? { video: draftExercise.video || draftExercise.demo_url } : {})
+        } : {})
       });
       return;
     }
@@ -6019,10 +6044,13 @@ function serializeCustomExerciseDraft(logElement, index) {
     date: logElement.querySelector("[data-log-date]")?.value || "",
     notes: logElement.querySelector("[data-log-notes]")?.value || "",
     skipped: logElement.dataset.exerciseSkipped === "true",
+    ...(logElement.dataset.omitWarmup === "true" ? { omitWarmup: true } : {}),
     ...(logElement.dataset.generatedExercise === "true" ? {
       generated: true,
       prescription: logElement.dataset.exercisePrescription || "",
-      rest: logElement.dataset.exerciseRest || ""
+      rest: logElement.dataset.exerciseRest || "",
+      ...(logElement.dataset.generatedInstructions ? { instructions: logElement.dataset.generatedInstructions } : {}),
+      ...(logElement.dataset.generatedVideo ? { video: logElement.dataset.generatedVideo } : {})
     } : {}),
     sets: Array.from(logElement.querySelectorAll("[data-set-row]")).map(serializeSetRowDraft)
   };
@@ -6105,11 +6133,13 @@ function applyCustomExerciseDraft(logElement, exerciseDraft) {
 
   const rows = logElement.querySelector("[data-set-rows]");
   const savedDraftSets = Array.isArray(exerciseDraft.sets) ? exerciseDraft.sets : [];
+  if (exerciseDraft.omitWarmup === true) logElement.dataset.omitWarmup = "true";
+  else delete logElement.dataset.omitWarmup;
   const hasWarmUpDraft = savedDraftSets.some((set, index) => (
     normalizedSetType(set?.setType, index + 1) === warmUpSetType ||
     String(set?.label || "").trim().toUpperCase().startsWith("W")
   ));
-  const draftSets = hasWarmUpDraft
+  const draftSets = hasWarmUpDraft || exerciseDraft.omitWarmup === true
     ? savedDraftSets
     : [{ label: "W", weight: "", reps: "", setType: warmUpSetType, rir: "" }, ...savedDraftSets];
   const targetRows = Math.max(draftSets.length, 1);
@@ -8619,13 +8649,15 @@ function customWorkoutCardMarkup(exercise, workoutTitle, index = 0, options = {}
       </div>
       ${customWorkoutInlineGroupOptionsMarkup(cardFormat, panelFormat === "single")}
       <div class="exercise-detail custom-workout-detail">
-        ${exercise.generated ? `<p class="generated-workout-target" data-generated-workout-target>Target: ${escapeHtml(exercise.prescription)} · ${escapeHtml(exercise.rest)}</p>` : ""}
+        ${exercise.generated ? `<div class="generated-workout-target" data-generated-workout-target><p>Target: ${escapeHtml(exercise.prescription)} · ${escapeHtml(exercise.rest)}</p>${exercise.instructions ? `<p>${escapeHtml(exercise.instructions)}</p>` : ""}${exerciseVideoMarkup(exercise)}</div>` : ""}
         ${exerciseLogFields({
           code: exercise.code,
           name: exerciseName,
           prescription: exercise.prescription || "Custom sets",
           rest: exercise.rest || "",
-          generated: Boolean(exercise.generated)
+          generated: Boolean(exercise.generated),
+          instructions: exercise.instructions,
+          video: exercise.video || exercise.demo_url
         }, workoutTitle, {
           panelClass: "custom-exercise-log",
           showSubmit: false,
@@ -8952,7 +8984,7 @@ function customWorkoutGroupedExerciseKeyMarkup(carousel) {
     const originalName = String(logElement.dataset.exerciseName || "").trim();
     // Keep assigned videos until the exercise changes; custom names use the library.
     const originalVideo = exerciseName.toLowerCase() === originalName.toLowerCase()
-      ? logElement.querySelector(".exercise-video-link")?.getAttribute("href") || ""
+      ? logElement.querySelector(".exercise-video-link")?.getAttribute("href") || logElement.dataset.generatedVideo || ""
       : "";
     const demo = exerciseName ? exerciseVideoMarkup({ name: exerciseName, video: originalVideo }, { iconOnly: true }) : "";
     const target = assignedWorkoutPrescriptionLabel(logElement);
@@ -8963,6 +8995,7 @@ function customWorkoutGroupedExerciseKeyMarkup(carousel) {
         ${isCustom ? `<button type="button" data-open-custom-exercise="${index}" aria-label="Edit ${escapeHtml(name)}: sets, reps and weight"><strong data-custom-grouped-exercise-name="${index}">${escapeHtml(name)}</strong></button>` : `<strong data-custom-grouped-exercise-name="${index}">${escapeHtml(name)}</strong>`}
         ${demo}
         ${target ? `<p class="custom-workout-grouped-target" data-custom-grouped-target="${index}">${escapeHtml(target)}</p>` : ""}
+        ${logElement.dataset.generatedExercise === "true" && logElement.dataset.generatedInstructions ? `<p class="custom-workout-grouped-target">${escapeHtml(logElement.dataset.generatedInstructions)}</p>` : ""}
         <p class="custom-workout-grouped-pr-preview" data-custom-grouped-pr-preview="${index}" hidden></p>
       </div>
     `;
@@ -13240,6 +13273,8 @@ function configureClientAppleHealth() {
 }
 
 function configureClientGoogleHealth() {
+  clientDailyCheckinReady = false;
+  window.FWB_DAILY_CHECKIN_DIALOG?.close({ restoreFocus: false, dismiss: false });
   clientGoogleHealthController?.destroy();
   clientGoogleHealthController = null;
   if (window.FWB_GOOGLE_HEALTH?.isCallbackUrl(window.location.href)) {
@@ -15206,53 +15241,179 @@ function setClientNotificationSettingsAvailable(available) {
 }
 
 function clientHomeCheckinPromptStorageKey(user = activeDashboardUser) {
-  const identity = String(user?.id || user?.email || "client").trim().toLowerCase();
-
+  const identity = String(user?.id || user?.email || "").trim().toLowerCase();
   return `${clientHomeCheckinPromptStoragePrefix}:${identity}`;
 }
 
-function clientHomeCheckinPromptSeen(user = activeDashboardUser) {
-  if (user?.user_metadata?.[clientHomeCheckinPromptMetadataKey] === true) {
-    return true;
-  }
-
-  try {
-    return window.localStorage.getItem(clientHomeCheckinPromptStorageKey(user)) === "true";
-  } catch (_error) {
-    return false;
-  }
+function todayClientMoodEntry() {
+  return progressEntries.find(entry => entry.entry_date === todayDate()
+    && (!entry.client_email || normalizeClientEmail(entry.client_email) === normalizeClientEmail(activeClientEmail))
+    && window.FWB_DAILY_WORKOUT?.hasCheckIn(entry, todayDate()));
 }
 
-async function rememberClientHomeCheckinPromptSeen() {
-  if (!activeDashboardUser) {
-    return;
-  }
+function clientHomeCheckinPromptSeen(user = activeDashboardUser) {
+  const key = clientHomeCheckinPromptStorageKey(user);
+  const day = todayDate();
+  if (clientDailyPromptMemory.has(`${key}:${day}`) || todayClientMoodEntry()) return true;
+  try { return window.localStorage.getItem(key) === day; } catch (_) { return false; }
+}
 
-  try {
-    window.localStorage.setItem(clientHomeCheckinPromptStorageKey(), "true");
-  } catch (_error) {
-    // Supabase metadata remains the cross-device source of truth when local storage is unavailable.
-  }
+function rememberClientHomeCheckinPromptSeen() {
+  if (!activeDashboardUser) return;
+  const key = clientHomeCheckinPromptStorageKey();
+  const day = todayDate();
+  clientDailyPromptMemory.add(`${key}:${day}`);
+  try { window.localStorage.setItem(key, day); } catch (_) { /* Keep this visit dismissed in memory. */ }
+}
 
-  activeDashboardUser = {
-    ...activeDashboardUser,
-    user_metadata: {
-      ...(activeDashboardUser.user_metadata || {}),
-      [clientHomeCheckinPromptMetadataKey]: true
-    }
-  };
-
-  if (!supabaseClient || isCoachPortalEmail(activeDashboardUser.email)) {
-    return;
-  }
-
-  const { data, error } = await supabaseClient.auth.updateUser({
-    data: { [clientHomeCheckinPromptMetadataKey]: true }
+function clientDailyWorkoutRecommendation(checkIn) {
+  if (!clientDailyCheckinReady) throw new Error("Your check-in and workout history are still loading. Refresh and try again.");
+  return window.FWB_DAILY_WORKOUT.recommend({
+    program: currentProgram, history: trainingLogs, checkIn,
+    date: todayDate(), clientEmail: activeClientEmail
   });
+}
 
-  if (!error && data?.user) {
-    activeDashboardUser = data.user;
+async function saveClientMoodNote(note) {
+  if (!supabaseClient || !activeClientEmail || !activeDashboardUser || isCoachDashboardPreview
+      || isCoachPortalEmail(activeDashboardUser.email)) throw new Error("Sign in as a client to check in.");
+  if (clientDailyCheckinSaving) throw new Error("Your check-in is already saving.");
+  const email = normalizeClientEmail(activeClientEmail);
+  const userId = activeDashboardUser.id;
+  const date = todayDate();
+  const payload = { client_email: email, entry_date: date, goal_note: note,
+    mood_checkin_submitted_at: new Date().toISOString() };
+  clientDailyCheckinSaving = true;
+  try {
+    // Update only check-in fields; measurements may have changed on another device.
+    const { error } = await withTimeout(supabaseClient.from("client_progress")
+      .upsert(payload, { onConflict: "client_email,entry_date" }), "Mood check-in save timed out.");
+    if (error) throw error;
+    if (normalizeClientEmail(activeClientEmail) !== email || activeDashboardUser?.id !== userId) {
+      throw new Error("Your account changed. Reopen your check-in.");
+    }
+    const existing = progressEntries.find(entry => entry.entry_date === date) || {};
+    renderProgress([...progressEntries.filter(entry => entry.entry_date !== date), { ...existing, ...payload }]
+      .sort((left, right) => left.entry_date.localeCompare(right.entry_date)));
+    if (date !== todayDate()) throw new Error("Your check-in was saved for yesterday. Check in again for today’s workout.");
+    rememberClientHomeCheckinPromptSeen();
+    return payload;
+  } finally { clientDailyCheckinSaving = false; }
+}
+
+function dailyCustomWorkoutDraft(recommendation) {
+  const workout = recommendation.workout;
+  const date = recommendation.date;
+  const format = normalizeCustomWorkoutFormat(inferWorkoutFormat(workout));
+  const groups = new Map();
+  return {
+    version: customWorkoutDraftVersion, format: "single", date, workoutTitle: workout.title,
+    nextExerciseNumber: workout.exercises.length + 1,
+    generatedFrom: { id: workout.title, title: `Today: ${recommendation.originalWorkout.title}`, daily: true },
+    exercises: workout.exercises.map((exercise, index) => {
+      const groupKey = format === "circuit" ? "circuit" : groupKeyForExercise(exercise, index);
+      if (!groups.has(groupKey)) groups.set(groupKey, groups.size);
+      return {
+        ...exercise, code: customExerciseCode(index), date, generated: true,
+        group: groups.get(groupKey), groupType: format,
+        notes: "", skipped: false,
+        sets: [
+          { label: "W", weight: "", reps: "", setType: warmUpSetType, rir: "", complete: false },
+          ...Array.from({ length: setCountFromPrescription(exercise.prescription) }, (_, setIndex) => ({
+            label: String(setIndex + 1), weight: "", reps: "", setType: workingSetType, rir: "", complete: false
+          }))
+        ]
+      };
+    })
+  };
+}
+
+function openClientDailyCheckin(stage = "checkin", returnFocus = document.querySelector("[data-client-daily-checkin]")) {
+  if (isCoachDashboardPreview || !activeDashboardUser || isCoachPortalEmail(activeDashboardUser.email)) return false;
+  if (!clientDailyCheckinReady) {
+    setText("#client-home-mood-status", "Your check-in and workout history could not be loaded. Refresh and try again.");
+    setClientHomeCheckinExpanded(true);
+    return false;
   }
+  if (workoutElapsedTimerState) {
+    setText("#client-home-mood-status", "Finish or cancel your current workout before choosing today’s workout.");
+    setClientHomeCheckinExpanded(true);
+    return false;
+  }
+  const email = activeClientEmail, userId = activeDashboardUser.id, program = currentProgram, day = todayDate();
+  const workouts = program?.workouts;
+  const assertCurrent = () => {
+    if (currentProgram?.workouts !== workouts || clientWorkoutLayoutSaving || activeClientEmail !== email || activeDashboardUser?.id !== userId || currentProgram !== program || todayDate() !== day) {
+      throw new Error("Your day, account, or program changed. Close this and check in again.");
+    }
+    if (workoutElapsedTimerState) throw new Error("Finish or cancel your current workout first.");
+  };
+  const openAssigned = index => {
+    assertCurrent();
+    const panelIndex = index + 1;
+    if (!Number.isInteger(index) || !program.workouts[index]?.exercises?.length) throw new Error("This workout is no longer available. Reopen your check-in.");
+    setClientDashboardTab("workouts");
+    activateClientWorkoutPanel(panelIndex, { scroll: false, focus: false });
+    window.requestAnimationFrame(() => {
+      const panel = document.getElementById(`client-workout-panel-${panelIndex}`);
+      panel?.scrollIntoView({ block: "start", behavior: "auto" });
+      panel?.querySelector("[data-workout-start]")?.focus({ preventScroll: true });
+    });
+    return true;
+  };
+  const initialCheckIn = window.FWB_DAILY_WORKOUT.parseCheckIn(todayClientMoodEntry()?.goal_note || "");
+  const recommendation = initialCheckIn ? clientDailyWorkoutRecommendation(initialCheckIn) : null;
+  const opened = window.FWB_DAILY_CHECKIN_DIALOG?.open({
+    stage: stage === "recommendation" && !recommendation ? "checkin" : stage,
+    initialCheckIn, recommendation, returnFocus,
+    onDismiss() { /* Presentation already marked the original account and day. */ },
+    async onSave(checkIn) {
+      assertCurrent();
+      const eating = String(todayClientMoodEntry()?.goal_note || "").split(" · Note:")[0]
+        .match(/(?:^| · )Eating: ([1-5])\/5(?: · |$)/)?.[1];
+      const note = `Mood: ${checkIn.mood}/5 · Energy: ${checkIn.energy}/5 · Sleep: ${checkIn.sleep}/5`
+        + (eating ? ` · Eating: ${eating}/5` : "") + ` · Body: ${6 - checkIn.soreness}/5`
+        + (checkIn.note?.trim() ? ` · Note: ${checkIn.note.trim()}` : "");
+      await saveClientMoodNote(note);
+      assertCurrent();
+      return clientDailyWorkoutRecommendation(checkIn);
+    },
+    onUse(result) {
+      assertCurrent();
+      if (Number.isInteger(result.workoutIndex)) return openAssigned(result.workoutIndex);
+      if (!result.workout) throw new Error("Choose a recovery option or create a workout first.");
+      const draft = dailyCustomWorkoutDraft(result);
+      if (activeCustomWorkoutDraft()?.workoutTitle === draft.workoutTitle) {
+        setClientDashboardTab("workouts");
+        activateClientWorkoutPanel(clientCustomWorkoutPanelIndex());
+        return true;
+      }
+      return useGeneratedClientWorkout(result.workout, draft);
+    },
+    onKeepOriginal() {
+      assertCurrent();
+      clientPreviewProgramSelected = true;
+      renderClientWorkoutTabs(program.workouts);
+      setClientDashboardTab("workouts");
+      showClientWorkoutPicker({ scroll: true });
+      return true;
+    },
+    onGenerate(result) {
+      assertCurrent();
+      window.FWB_DAILY_CHECKIN_DIALOG.close({ restoreFocus: false, dismiss: false });
+      openClientWorkoutGenerator(returnFocus, result.generatorPreferences);
+      return true;
+    },
+    gymCheckedIn: window.FWB_WEEKLY_ACTIVITY?.isCheckedIn?.() || false,
+    async onGym() {
+      assertCurrent();
+      const message = await window.FWB_WEEKLY_ACTIVITY.checkIn();
+      assertCurrent();
+      return message;
+    }
+  });
+  if (opened) rememberClientHomeCheckinPromptSeen();
+  return Boolean(opened);
 }
 
 function setClientHomeCheckinExpanded(expanded) {
@@ -15304,32 +15465,20 @@ function dismissClientHomeCheckinPrompt(restoreFocus = true) {
 }
 
 function maybeShowClientHomeCheckinPrompt() {
-  const card = document.querySelector("[data-client-home-checkin]");
-  const backdrop = document.querySelector("[data-client-home-checkin-backdrop]");
-
-  if (
-    !card ||
-    !backdrop ||
-    !activeDashboardUser ||
-    activeClientDashboardTab !== "home" ||
-    isCoachPortalEmail(activeDashboardUser.email) ||
-    clientHomeCheckinPromptSeen()
-  ) {
-    return;
-  }
-
-  card.classList.add("is-first-login-prompt");
-  card.setAttribute("role", "dialog");
-  card.setAttribute("aria-modal", "true");
-  card.setAttribute("aria-labelledby", "client-home-mood");
-  backdrop.hidden = false;
-  document.body.classList.add("is-client-checkin-prompt-open");
-  setClientHomeCheckinExpanded(true);
-  void rememberClientHomeCheckinPromptSeen();
-  window.setTimeout?.(() => card.querySelector("input[type=radio], select, textarea")?.focus(), 0);
+  if (!clientDailyCheckinReady || !activeDashboardUser || activeClientDashboardTab !== "home"
+      || isCoachDashboardPreview || isCoachPortalEmail(activeDashboardUser.email)
+      || workoutElapsedTimerState || document.querySelector("dialog[open]") || clientHomeCheckinPromptSeen()) return;
+  openClientDailyCheckin("welcome");
 }
 
 function handleClientHomeCheckin() {
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") maybeShowClientHomeCheckinPrompt();
+  });
+  document.addEventListener("click", event => {
+    const button = event.target.closest("[data-client-daily-checkin]");
+    if (button) openClientDailyCheckin("recommendation", button);
+  });
   document.addEventListener("click", (event) => {
     const toggle = event.target.closest("[data-client-home-checkin-toggle]");
     const backdrop = event.target.closest("[data-client-home-checkin-backdrop]");
@@ -15691,58 +15840,14 @@ function handleClientProgressSave() {
 
     setText("#client-home-mood-status", "Saving mood check-in...");
 
-    let checkinSaved = false;
     try {
-      const entryDate = todayDate();
-      const existing = progressEntries.find((entry) => entry.entry_date === entryDate) || {};
-      const payload = {
-        client_email: email,
-        entry_date: entryDate,
-        bodyweight: existing.bodyweight ?? null,
-        bodyfat: existing.bodyfat ?? null,
-        lean_mass: existing.lean_mass ?? null,
-        muscle_mass: existing.muscle_mass ?? null,
-        measurements: progressMeasurements(existing),
-        goal_note: note,
-        mood_checkin_submitted_at: new Date().toISOString()
-      };
-      const { error } = await withTimeout(
-        supabaseClient
-          .from("client_progress")
-          .upsert(payload, { onConflict: "client_email,entry_date" }),
-        "Mood check-in save timed out."
-      );
-
-      if (error) {
-        setText("#client-home-mood-status", error.message || "Could not save mood check-in.");
-
-        return;
-      }
-
-      checkinSaved = true;
-      const { data, error: loadError } = await withTimeout(
-        supabaseClient
-          .from("client_progress")
-          .select("*")
-          .ilike("client_email", email)
-          .order("entry_date", { ascending: true }),
-        "Mood check-in reload timed out."
-      );
-
-      if (loadError) {
-        setText("#client-home-mood-status", "Mood saved. Refresh to reload it.");
-
-        return;
-      }
-
-      renderProgress(data || []);
+      await saveClientMoodNote(note);
       form.reset();
       setText("#client-home-mood-status", "Mood check-in saved for today.");
       dismissClientHomeCheckinPrompt();
-    } catch (_error) {
-      setText("#client-home-mood-status", checkinSaved
-        ? "Mood saved. Refresh to reload it."
-        : "Could not confirm your check-in. Please try again.");
+      if (window.FWB_DAILY_WORKOUT?.parseCheckIn(note)) openClientDailyCheckin("recommendation", button);
+    } catch (error) {
+      setText("#client-home-mood-status", error?.message || "Could not confirm your check-in. Please try again.");
     } finally {
       if (button) button.disabled = false;
     }
@@ -17834,6 +17939,8 @@ async function loadDashboard() {
       ? questionnaireResult.value.data
       : null;
 
+    clientDailyCheckinReady = progressResult.status === "fulfilled" && !progressResult.value.error
+      && trainingLogResult.status === "fulfilled" && !trainingLogResult.value.error;
     exerciseLibraryEntries = exerciseLibraryData || [];
     workoutSessionFeedback = workoutFeedbackData || [];
 

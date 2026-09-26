@@ -31,14 +31,13 @@ test("Home mood check-in starts collapsed and keeps its existing save form", () 
   assert.match(styles, /\.dashboard-page \.client-home-checkin-toggle\s*\{[\s\S]*?min-height:\s*44px;/);
 });
 
-test("first-login check-in prompt is remembered per client across devices", () => {
-  assert.match(portal, /const clientHomeCheckinPromptMetadataKey = "home_checkin_prompt_seen_v1"/);
-  assert.match(portal, /user\?\.user_metadata\?\.\[clientHomeCheckinPromptMetadataKey\] === true/);
-  assert.match(portal, /window\.localStorage\.setItem\(clientHomeCheckinPromptStorageKey\(\), "true"\)/);
-  assert.match(portal, /supabaseClient\.auth\.updateUser\(\{[\s\S]*?clientHomeCheckinPromptMetadataKey/);
-  assert.match(portal, /isCoachPortalEmail\(activeDashboardUser\.email\)/);
-  assert.match(portal, /card\.setAttribute\("aria-modal", "true"\)/);
-  assert.match(portal, /maybeShowClientHomeCheckinPrompt\(\)/);
+test("daily prompt uses the client’s local date and a native accessible dialog", () => {
+  assert.match(portal, /const clientHomeCheckinPromptStoragePrefix = "fwb_daily_checkin_prompt_v2"/);
+  assert.match(portal, /window\.localStorage\.setItem\(key, day\)/);
+  assert.match(portal, /todayClientMoodEntry\(\)/);
+  assert.match(portal, /openClientDailyCheckin\("welcome"\)/);
+  assert.doesNotMatch(portal, /home_checkin_prompt_seen_v1/);
+  assert.match(dashboard, /js\/daily-checkin-dialog\.js/);
 });
 
 test("monthly report returns focus to the Home or Progress link that opened it", () => {

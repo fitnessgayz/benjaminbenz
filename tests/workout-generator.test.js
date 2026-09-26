@@ -8,7 +8,7 @@ const workoutLayout = require('../js/workout-layout.js');
 // Read both checked-in exercise seed batches, including the newer equipment-
 // specific variations, so assertions exercise the actual coach library shapes.
 function seededLibrary() {
-  const files = ['20260822053131_create_shared_exercise_library.sql', '20260904042044_refine_ambiguous_exercise_names.sql'];
+  const files = ['20260822053131_create_shared_exercise_library.sql', '20260904042044_refine_ambiguous_exercise_names.sql', '20260926044818_add_recovery_exercise_library.sql'];
   return files.flatMap((file) => {
     const source = fs.readFileSync(path.join(__dirname, '../supabase/migrations', file), 'utf8');
     const insert = source.match(/insert into public\.exercise_library\s*\(([^)]+)\)\s*values\s*([\s\S]*?)(?:;|on conflict)/i);
@@ -37,7 +37,8 @@ function assertValidWorkout(workout) {
   for (const exercise of workout.exercises) {
     assert.ok(library.some((entry) => entry.id === exercise.id), exercise.name);
     assert.ok(exercise.sets >= 1 && exercise.sets <= 4);
-    assert.ok(exercise.restSeconds >= 45 && exercise.restSeconds <= 180);
+    const recovery = workout.focus.startsWith('recovery_');
+    assert.ok(exercise.restSeconds >= (recovery ? 0 : 45) && exercise.restSeconds <= (recovery ? 60 : 180));
     assert.ok(['beginner', 'intermediate'].includes(exercise.difficulty));
     assert.equal(typeof exercise.prescription, 'string');
     assert.equal(typeof exercise.instructions, 'string');
@@ -45,7 +46,8 @@ function assertValidWorkout(workout) {
 }
 
 test('uses actual seed batches and exports the browser/CommonJS interface', () => {
-  assert.equal(library.length, 58);
+  assert.ok(library.length > 58);
+  assert.ok(library.some((entry) => entry.name === 'Cat-Cow'));
   assert.ok(library.some((entry) => entry.name === 'Dumbbell Chest Fly'));
   assert.equal(globalThis.FWB_WORKOUT_GENERATOR, generator);
   assert.ok(generator.FOCUS_OPTIONS.some((option) => option.value === 'full_body'));
@@ -237,4 +239,93 @@ test('invalid selections produce useful errors', () => {
   for (const overrides of [{ focus: 'unknown' }, { intensity: 'extreme' }, { minutes: 5 }, { equipment: ['mystery'] }, { equipment: 'dumbbell' }]) {
     assert.throws(() => build(overrides), /Choose/);
   }
+});
+
+test('recovery regions contain only approved gentle mobility and stretching at easy intensity', () => {
+  const regions = {
+    recovery_upper: ['chest', 'back', 'lats', 'shoulders', 'biceps', 'triceps'],
+    recovery_lower: ['quads', 'hamstrings', 'glutes', 'calves', 'adductors']
+  };
+  for (const focus of [...Object.keys(regions), 'recovery_full']) {
+    for (const intensity of ['easy', 'moderate', 'challenging']) {
+      for (const minutes of [20, 30, 45, 60]) {
+        const result = build({ focus, intensity, minutes, equipment: [] });
+        assertValidWorkout(result);
+        assert.equal(result.intensity, 'easy');
+        assert.match(result.title, /recovery$/);
+        for (const exercise of result.exercises) {
+          const coach = library.find((entry) => entry.id === exercise.id);
+          assert.ok(['mobility', 'stretching'].includes(exercise.movement_pattern));
+          assert.equal(exercise.equipment, 'bodyweight');
+          assert.equal(exercise.difficulty, 'beginner');
+          assert.equal(exercise.reps, coach.default_reps);
+          assert.ok(exercise.sets <= 2 && exercise.sets <= coach.default_sets);
+          assert.equal(exercise.instructions, coach.instructions);
+          if (regions[focus]) assert.ok(regions[focus].includes(exercise.primary_muscle));
+        }
+        if (focus === 'recovery_full') {
+          for (const muscles of Object.values(regions)) assert.ok(result.exercises.some((entry) => muscles.includes(entry.primary_muscle)));
+        }
+        assert.ok(result.notes.some((note) => note.includes('comfortable range')));
+        assert.ok(!result.notes.some((note) => /challenging|controlled weight/.test(note)));
+      }
+    }
+  }
+});
+
+test('ordinary strength workouts do not fill their exercise slots with new recovery movements', () => {
+  for (const { value: focus, recovery } of generator.FOCUS_OPTIONS) {
+    if (recovery) continue;
+    for (const intensity of ['easy', 'moderate', 'challenging']) {
+      assert.ok(build({ focus, intensity, minutes: 60 }).exercises.every((entry) => !['mobility', 'stretching'].includes(entry.movement_pattern)));
+    }
+  }
+});
+
+test('recovery does not silently substitute strength or incomplete full-body coverage', () => {
+  const recovery = library.find((entry) => entry.name === 'Cat-Cow');
+  const strength = library.filter((entry) => !['mobility', 'stretching'].includes(entry.movement_pattern));
+  assert.throws(() => build({ focus: 'recovery_full', library: strength }), /approved mobility or stretching/);
+  assert.throws(() => build({ focus: 'recovery_full', library: [recovery] }), /add recovery movements/);
+  for (const overrides of [
+    { difficulty: 'intermediate' }, { equipment: 'dumbbell' }, { is_approved: false },
+    { is_active: false }, { default_reps: '90 sec' }, { default_reps: '20' },
+    { movement_pattern: 'horizontal_pull', name: 'Easy recovery row' }
+  ]) {
+    assert.throws(() => build({ focus: 'recovery_upper', library: [{ ...recovery, ...overrides }] }), /approved mobility or stretching/);
+  }
+  const brief = build({ focus: 'recovery_upper', library: [{ ...recovery, default_sets: 1 }], minutes: 60 });
+  assert.equal(brief.exercises[0].sets, 1);
+  assert.ok(brief.estimatedMinutes < 10);
+  assert.ok(brief.notes.some((note) => note.includes('no need to add extra work')));
+});
+
+test('recovery swaps preserve gentle targets, region coverage, and the requested time limit', () => {
+  const workout = build({ focus: 'recovery_full', equipment: [], minutes: 20 });
+  let count = 0;
+  for (const [index, exercise] of workout.exercises.entries()) {
+    for (const alternative of generator.alternatives({ ...settings, focus: workout.focus, equipment: [], intensity: 'challenging', workout, exercise })) {
+      const result = generator.swap(workout, index, alternative);
+      assertValidWorkout(result);
+      assert.equal(result.intensity, 'easy');
+      assert.ok(alternative.sets <= 2);
+      assert.ok(['mobility', 'stretching'].includes(alternative.movement_pattern));
+      count++;
+    }
+  }
+  assert.ok(count > 0);
+  const original = workout.exercises[0];
+  for (const changes of [
+    { movement_pattern: 'horizontal_press' }, { sets: 3 }, { restSeconds: 90 },
+    { reps: '90 sec', default_reps: '20 sec' }, { difficulty: 'intermediate' }, { equipment: 'dumbbell' }
+  ]) assert.throws(() => generator.swap(workout, 0, { ...original, ...changes }), /matches your focus/);
+});
+
+test('recovery seed migration preserves existing coach rows and needs no schema changes', () => {
+  const migration = fs.readFileSync(path.join(__dirname, '../supabase/migrations/20260926044818_add_recovery_exercise_library.sql'), 'utf8');
+  assert.match(migration, /on conflict \(lower\(name\)\) do nothing/);
+  assert.doesNotMatch(migration, /\b(?:delete|update|alter|drop)\b/i);
+  const recovery = library.filter((entry) => ['mobility', 'stretching'].includes(entry.movement_pattern));
+  assert.equal(recovery.length, 12);
+  assert.ok(recovery.every((entry) => entry.default_sets <= 2 && entry.instructions && !entry.demo_url));
 });
