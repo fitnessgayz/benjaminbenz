@@ -793,6 +793,10 @@ function renderClientHomeSummary() {
 
   const workouts = Array.isArray(currentProgram.workouts) ? currentProgram.workouts : [];
   const hasAssignedWorkout = workouts.length > 0;
+  const selectedWorkoutIndex = activeWorkoutTabIndex > 0 && activeWorkoutTabIndex <= workouts.length
+    ? activeWorkoutTabIndex - 1
+    : 0;
+  const nextWorkout = workouts[selectedWorkoutIndex] || workouts[0] || {};
   const used = normalizeClientSessionCount(currentProgram.session_count_used);
   const total = normalizeClientSessionCount(currentProgram.session_count_total);
   const todayFoodTotals = foodLogTotals(foodLogs.filter((log) => String(log.entry_date || "") === todayDate()));
@@ -804,7 +808,15 @@ function renderClientHomeSummary() {
   const noteBody = String(currentProgram.coach_note_body || "").trim();
   const checklist = document.getElementById("client-home-checklist");
 
-  setText("#client-home-status", "Ready");
+  setText("#client-home-status", hasAssignedWorkout ? "Ready" : "Setup");
+  setText("#client-home-workout-title", nextWorkout.title || "Choose your workout");
+  setText("#client-home-workout-meta", [
+    nextWorkout.focus || "",
+    Array.isArray(nextWorkout.exercises) && nextWorkout.exercises.length
+      ? `${nextWorkout.exercises.length} ${nextWorkout.exercises.length === 1 ? "exercise" : "exercises"}`
+      : "",
+    nextWorkout.format ? formatLabel(inferWorkoutFormat(nextWorkout)) : ""
+  ].filter(Boolean).join(" · ") || "Open Workouts to choose or build today’s session.");
   setText("#client-home-session-count", total > 0 ? `${used}/${total}` : (used > 0 ? `${used} used` : "--"));
   setText("#client-home-session-meta", total > 0
     ? `${Math.max(total - used, 0)} sessions remaining in this package.`
@@ -15805,9 +15817,15 @@ function setClientHomeSnapshotCard(deck, nextIndex, behavior = "smooth") {
 function handleClientHomeSnapshotDeck() {
   document.querySelectorAll("[data-client-home-snapshot-deck]").forEach((deck) => {
     let scrollFrame = null;
+    const disclosure = deck.closest(".client-home-more");
 
     syncClientHomeSnapshotControls(deck, 0);
     updateClientHomeSnapshotMotion(deck);
+    disclosure?.addEventListener("toggle", () => {
+      if (disclosure.open) {
+        window.requestAnimationFrame(() => updateClientHomeSnapshotMotion(deck));
+      }
+    });
     deck.addEventListener("scroll", () => {
       if (scrollFrame !== null) {
         return;

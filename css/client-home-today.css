@@ -1,0 +1,181 @@
+.dashboard-page .client-home-panel {
+  --home-today-width: 680px;
+}
+
+.dashboard-page .client-home-grid {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.dashboard-page .client-home-grid > * {
+  width: min(100%, var(--home-today-width));
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.dashboard-page .client-home-today-workout {
+  order: 1;
+  min-height: 260px;
+  padding: clamp(22px, 5vw, 36px);
+  border: 0;
+  border-radius: 24px;
+  color: var(--paper);
+  background: var(--black);
+}
+
+.dashboard-page .client-home-today-workout .kicker,
+.dashboard-page .client-home-today-workout h3,
+.dashboard-page .client-home-today-workout p:not(.kicker) {
+  color: inherit;
+}
+
+.dashboard-page .client-home-today-workout .kicker {
+  color: var(--lime);
+}
+
+.dashboard-page .client-home-today-workout h3 {
+  margin-top: 12px;
+  font-size: clamp(2.1rem, 7vw, 4.4rem);
+  line-height: .92;
+}
+
+.dashboard-page .client-home-today-workout p:not(.kicker) {
+  margin-top: 16px;
+  color: rgba(255, 255, 255, .72);
+}
+
+.dashboard-page .client-home-workout-button {
+  min-height: 54px;
+  border: 2px solid var(--lime);
+  border-radius: 14px;
+  color: var(--black);
+  background: var(--lime);
+}
+
+.dashboard-page .client-home-resume-card {
+  order: 0;
+}
+
+.dashboard-page .client-weekly-activity {
+  order: 2;
+}
+
+.dashboard-page .client-home-coach-note {
+  order: 3;
+  gap: 22px;
+  padding: clamp(20px, 4vw, 28px);
+  border-radius: 20px;
+  background: #e8e8e3;
+}
+
+.dashboard-page .client-home-coach-note h3 {
+  font-size: clamp(1.55rem, 5vw, 2.65rem);
+}
+
+.dashboard-page .client-home-coach-note .fwb-message-launch {
+  margin: 0;
+  background: rgba(255, 255, 255, .56);
+}
+
+.dashboard-page .client-home-more {
+  order: 4;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--paper);
+}
+
+.dashboard-page .client-home-more > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 64px;
+  gap: 16px;
+  padding: 0 22px;
+  font-size: .9rem;
+  font-weight: 900;
+  letter-spacing: .04em;
+  list-style: none;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.dashboard-page .client-home-more > summary::-webkit-details-marker {
+  display: none;
+}
+
+.dashboard-page .client-home-more > summary:focus-visible {
+  outline: 3px solid var(--blue);
+  outline-offset: -3px;
+}
+
+.dashboard-page .client-home-more-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 34px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  color: var(--paper);
+  background: var(--black);
+  font-size: 1.35rem;
+  line-height: 1;
+  transition: transform .2s ease;
+}
+
+.dashboard-page .client-home-more[open] .client-home-more-icon {
+  transform: rotate(45deg);
+}
+
+.dashboard-page .client-home-more-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  padding: 0 12px 12px;
+  border-top: 1px solid var(--line);
+}
+
+.dashboard-page .client-home-more-grid > * {
+  min-width: 0;
+  margin-top: 12px;
+}
+
+.dashboard-page .client-home-more-grid > .client-home-snapshot-section,
+.dashboard-page .client-home-more-grid > .client-home-monthly-report-card,
+.dashboard-page .client-home-more-grid > .client-home-card-mood,
+.dashboard-page .client-home-more-grid > .client-home-program-card,
+.dashboard-page .client-home-more-grid > .client-home-card-checklist,
+.dashboard-page .client-home-more-grid > .client-achievements-home {
+  grid-column: 1 / -1;
+}
+
+.dashboard-page .client-home-more-grid .client-home-card {
+  min-height: 170px;
+}
+
+@media (max-width: 720px) {
+  .dashboard-page .client-home-grid {
+    gap: 12px;
+  }
+
+  .dashboard-page .client-home-today-workout {
+    min-height: 238px;
+    border-radius: 20px;
+  }
+
+  .dashboard-page .client-home-more-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .dashboard-page .client-home-more-grid > * {
+    grid-column: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-page .client-home-more-icon {
+    transition: none;
+  }
+}
