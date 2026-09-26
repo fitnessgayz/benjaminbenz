@@ -96,6 +96,7 @@ let isClientExerciseNameMutating = false;
 let coachNotificationsController = null;
 let coachMessagesController = null;
 let inviteClientReturnFocus = null;
+let inviteClientSavedProgram = null;
 let coachCalendarEvents = [];
 let coachCalendarLoaded = false;
 let coachCalendarLoading = false;
@@ -157,6 +158,7 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = 20000) {
 function setClientInviteBusy(isBusy) {
   const saveButton = document.getElementById("save-client-button");
   const inviteButton = document.getElementById("send-invite-button");
+  const textButton = document.getElementById("text-invite-button");
   const closeButtons = document.querySelectorAll("[data-close-invite-client]");
 
   if (saveButton) {
@@ -166,6 +168,17 @@ function setClientInviteBusy(isBusy) {
   if (inviteButton) {
     inviteButton.disabled = isBusy;
   }
+
+  if (textButton) {
+    textButton.disabled = isBusy;
+  }
+
+  const form = document.getElementById("program-editor");
+  ["invite_client_email", "invite_client_name", "invite_client_phone"].forEach((name) => {
+    if (form?.elements[name]) {
+      form.elements[name].disabled = isBusy;
+    }
+  });
 
   closeButtons.forEach((button) => {
     button.disabled = isBusy;
@@ -745,7 +758,31 @@ function readableClientRequestError(error, fallbackMessage) {
   return message;
 }
 
-function inviteStatus(message, manualInviteUrl = "") {
+function invitePhoneNumber(value) {
+  const phone = String(value || "").trim();
+
+  if (!/^[+\d\s().-]+$/.test(phone)) {
+    return "";
+  }
+
+  const normalized = phone.replace(/[\s().-]/g, "");
+  return /^\+?\d{7,15}$/.test(normalized) ? normalized : "";
+}
+
+function textInviteHref(phone, clientName, inviteUrl) {
+  const recipient = invitePhoneNumber(phone);
+
+  if (!recipient || !inviteUrl) {
+    return "";
+  }
+
+  const greeting = String(clientName || "").trim();
+  const body = `${greeting ? `Hi ${greeting}!` : "Hi!"} You're invited to Fitness with Benjamin. Set up your account here: ${inviteUrl}`;
+  const appleMessages = /iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent || "");
+  return `sms:${recipient}${appleMessages ? "&" : "?"}body=${encodeURIComponent(body)}`;
+}
+
+function inviteStatus(message, manualInviteUrl = "", contact = {}) {
   const status = document.getElementById("invite-status");
 
   if (status) {
@@ -777,6 +814,15 @@ function inviteStatus(message, manualInviteUrl = "") {
 
       const actions = document.createElement("span");
       actions.className = "invite-link-actions";
+      const smsHref = textInviteHref(contact.phone, contact.clientName, manualInviteUrl);
+
+      if (smsHref) {
+        const textLink = document.createElement("a");
+        textLink.href = smsHref;
+        textLink.textContent = "Open text message";
+        actions.append(textLink);
+      }
+
       actions.append(copyButton, link);
       status.append(actions);
     }
@@ -2457,13 +2503,23 @@ async function saveProgramFromForm(form) {
 }
 
 async function saveNewClientFromInvite(form) {
-  const payload = newClientProgramFromInvite(form);
-  const { data, error } = await saveClientProgramWithCoachAccess(payload);
+  const starter = newClientProgramFromInvite(form);
+  const existing = inviteClientSavedProgram?.id && normalizeEmail(inviteClientSavedProgram.client_email) === starter.client_email
+    ? inviteClientSavedProgram
+    : programs.find((program) => program.active && !program.client_archived && normalizeEmail(program.client_email) === starter.client_email);
+  const payload = existing ? {
+    ...existing,
+    client_name: starter.client_name,
+    client_phone: starter.client_phone || existing.client_phone || "",
+    initials: starter.initials
+  } : starter;
+  const { data, error } = await saveClientProgramWithCoachAccess(payload, existing?.id || "");
 
   if (error) {
     return { error };
   }
 
+  inviteClientSavedProgram = data;
   const existingIndex = programs.findIndex((program) => program.id === data.id);
 
   if (existingIndex >= 0) {
@@ -6712,19 +6768,26 @@ function handleProgramHistoryActions() {
 }
 
 async function handleSendInvite() {
-  const button = document.getElementById("send-invite-button");
+  const emailButton = document.getElementById("send-invite-button");
+  const textButton = document.getElementById("text-invite-button");
   const form = document.getElementById("program-editor");
 
-  if (!button || !form) {
+  if (!emailButton || !form) {
     return;
   }
 
-  button.addEventListener("click", async () => {
+  async function sendInvite(delivery) {
+    if (emailButton.disabled) {
+      return;
+    }
+
     if (!validateClientDetails(form)) {
       return;
     }
 
+    const isText = delivery === "link";
     const requestedEmail = normalizeEmail(formValue(form, "invite_client_email"));
+    const requestedPhone = invitePhoneNumber(formValue(form, "invite_client_phone"));
 
     if (!requestedEmail) {
       inviteStatus("Add the client email first.");
@@ -6737,23 +6800,29 @@ async function handleSendInvite() {
       return;
     }
 
+    if (isText && !requestedPhone) {
+      inviteStatus("Add a valid client phone number to prepare a text invite.");
+      form.elements.invite_client_phone?.focus();
+      return;
+    }
+
     if (!coachSupabase) {
       inviteStatus("Coach admin is not connected yet.");
       return;
     }
 
-    const { data } = await coachSupabase.auth.getSession();
-    const token = data.session?.access_token;
-
-    if (!token) {
-      inviteStatus("Sign in as coach first.");
-      return;
-    }
-
     setClientInviteBusy(true);
-    inviteStatus("Saving client, then sending invite...");
+    inviteStatus(isText ? "Saving client, then preparing text invite..." : "Saving client, then sending email invite...");
 
     try {
+      const { data } = await coachSupabase.auth.getSession();
+      const token = data.session?.access_token;
+
+      if (!token) {
+        inviteStatus("Sign in as coach first.");
+        return;
+      }
+
       const saveResult = await withSlowStatus(
         withRequestTimeout(
           saveNewClientFromInvite(form),
@@ -6773,13 +6842,19 @@ async function handleSendInvite() {
       const savedProgram = saveResult.data || {};
       const inviteEmail = normalizeEmail(savedProgram.client_email || requestedEmail);
       const clientName = String(savedProgram.client_name || formValue(form, "invite_client_name")).trim();
+      const clientPhone = invitePhoneNumber(savedProgram.client_phone || requestedPhone);
 
       if (!isValidEmail(inviteEmail)) {
         inviteStatus("Saved client email is not valid. Fix it, save, then send the invite again.");
         return;
       }
 
-      inviteStatus("Client saved. Sending invite email...");
+      if (isText && !clientPhone) {
+        inviteStatus("Client saved. Add a valid phone number and try the text invite again.");
+        return;
+      }
+
+      inviteStatus(isText ? "Client saved. Preparing text invite..." : "Client saved. Sending invite email...");
 
       const response = await fetchWithTimeout(
         `${coachConfig.url}/functions/v1/invite-client`,
@@ -6793,6 +6868,7 @@ async function handleSendInvite() {
           body: JSON.stringify({
             email: inviteEmail,
             clientName,
+            delivery,
             redirectTo: inviteRedirectUrl()
           })
         },
@@ -6804,9 +6880,25 @@ async function handleSendInvite() {
 
       if (!response.ok) {
         inviteStatus(
-          safeResult.error || safeResult.message,
-          manualInviteUrl
+          safeResult.error || safeResult.message || (isText ? "Could not prepare the text invitation. Try again." : "Could not send the email invitation. Try again."),
+          manualInviteUrl,
+          { phone: clientPhone, clientName }
         );
+        return;
+      }
+
+      if (isText) {
+        if (!manualInviteUrl) {
+          inviteStatus("Client saved, but the text invitation link was not returned. Try again or use the email invite.");
+          return;
+        }
+
+        inviteStatus(
+          `Text invite ready for ${clientPhone}. Open your messaging app to review and send it, or copy the link.`,
+          manualInviteUrl,
+          { phone: clientPhone, clientName }
+        );
+        adminStatus("Client saved. Text invite ready to send.");
         return;
       }
 
@@ -6817,19 +6909,26 @@ async function handleSendInvite() {
       closeInviteClientModal({ completed: true });
     } catch (error) {
       const message = error.name === "AbortError"
-        ? "Invite email is taking too long to send. The client was saved. Try sending the invite again."
+        ? isText
+          ? "Preparing the text invite is taking too long. The client was saved. Try again."
+          : "Invite email is taking too long to send. The client was saved. Try sending the invite again."
         : error.message && error.message.includes("Saving the client")
           ? error.message
           : readableClientRequestError(
             error,
-            "Client saved, but the invite email could not be sent from this connection. Try Send invite link again."
+            isText
+              ? "Could not prepare the text invite from this connection. Check your connection and try again."
+              : "Could not send the invite email from this connection. Check your connection and try again."
           );
 
       inviteStatus(message);
     } finally {
       setClientInviteBusy(false);
     }
-  });
+  }
+
+  emailButton.addEventListener("click", () => sendInvite("email"));
+  textButton?.addEventListener("click", () => sendInvite("link"));
 }
 
 async function handleSaveProgress() {
@@ -6933,11 +7032,15 @@ function closeInviteClientModal(options = {}) {
     return;
   }
 
+  if (!options.completed && document.getElementById("save-client-button")?.disabled) {
+    return;
+  }
+
   modal.hidden = true;
   document.body.classList.remove("is-invite-client-modal-open");
 
   if (!options.completed) {
-    adminStatus("Invite canceled.");
+    adminStatus(inviteClientSavedProgram ? "Client saved." : "Invite canceled.");
   }
 
   const returnFocus = inviteClientReturnFocus;
@@ -6956,6 +7059,7 @@ function openInviteClientModal(button) {
   }
 
   inviteClientReturnFocus = button || document.activeElement;
+  inviteClientSavedProgram = null;
   form.elements.invite_client_email.value = "";
   form.elements.invite_client_name.value = "";
   form.elements.invite_client_phone.value = "";
@@ -6999,7 +7103,7 @@ function handleNewClient() {
       return;
     }
 
-    const focusable = Array.from(modal.querySelectorAll("button:not([disabled]), input:not([disabled])"))
+    const focusable = Array.from(modal.querySelectorAll("button:not([disabled]), input:not([disabled]), a[href]"))
       .filter((element) => !element.hidden && element.getClientRects().length > 0);
 
     if (focusable.length === 0) {

@@ -126,6 +126,11 @@ serve(async (request) => {
   const email = normalizeEmail(safeBody.email || safeBody.client_email);
   const clientName = stringValue(safeBody.clientName || safeBody.client_name);
   const redirectTo = safeRedirectTo(safeBody.redirectTo);
+  const delivery = safeBody.delivery === undefined ? "email" : safeBody.delivery;
+
+  if (delivery !== "email" && delivery !== "link") {
+    return jsonResponse(request, { error: "Choose email or link invitation delivery." }, 400);
+  }
 
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return jsonResponse(request, { error: "Add a valid client email." }, 400);
@@ -142,6 +147,32 @@ serve(async (request) => {
       client_name: clientName
     }
   };
+
+  if (delivery === "link") {
+    const { data: linkData, error: linkError } = await adminClient.auth.admin.generateLink({
+      type: "invite",
+      email,
+      options: inviteOptions
+    });
+
+    if (linkError) {
+      return jsonResponse(request, { error: linkError.message || "Could not create an invitation link." }, 400);
+    }
+
+    const linkedEmail = normalizeEmail(linkData?.user?.email);
+    const actionLink = stringValue(manualInviteUrl(linkData));
+
+    if (linkedEmail !== email || !actionLink) {
+      return jsonResponse(request, { error: "Could not verify the invitation link for this client. Try again." }, 502);
+    }
+
+    return jsonResponse(request, {
+      message: `Invite link ready for ${email}.`,
+      email,
+      manualInviteUrl: actionLink
+    });
+  }
+
   const { data: inviteData, error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(email, inviteOptions);
 
   if (inviteError) {

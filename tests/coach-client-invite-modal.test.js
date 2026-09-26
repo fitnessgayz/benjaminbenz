@@ -43,7 +43,8 @@ test("opens a top-level accessible invite modal with save and send choices", () 
 
   assert.match(modalMarkup, /name="invite_client_email"[\s\S]*?name="invite_client_name"[\s\S]*?name="invite_client_phone"/);
   assert.match(adminHtml, /id="save-client-button">Save without invite</);
-  assert.match(adminHtml, /id="send-invite-button">Save &amp; send invite</);
+  assert.match(adminHtml, /id="send-invite-button">Save &amp; email invite</);
+  assert.match(adminHtml, /id="text-invite-button">Save &amp; text invite</);
   assert.ok((adminHtml.match(/data-close-invite-client/g) || []).length >= 2);
 });
 
@@ -78,7 +79,7 @@ test("creates a clean starter program from only the invite fields", () => {
   assert.match(payloadSource, /formValue\(form, "invite_client_phone"\)/);
   assert.match(payloadSource, /program_title:\s*"Client Program"/);
   assert.match(payloadSource, /workouts:\s*\[\{/);
-  assert.match(saveSource, /saveClientProgramWithCoachAccess\(payload\)/);
+  assert.match(saveSource, /saveClientProgramWithCoachAccess\(payload, existing\?\.id \|\| ""\)/);
   assert.match(saveSource, /selectedProgramId = data\.id/);
   assert.match(saveSource, /fillForm\(data\)/);
   assert.match(saveSource, /form\.elements\.invite_client_email\.value = data\.client_email \|\| payload\.client_email/);
