@@ -28,6 +28,7 @@ function makeSave({ uploadError = null, saveError = null } = {}) {
     update(payload) { calls.push(["update", payload]); return this; },
     insert(payload) { calls.push(["insert", payload]); return this; },
     eq(...args) { calls.push(["eq", ...args]); return this; },
+    setHeader(...args) { calls.push(["header", ...args]); return this; },
     select() { return this; },
     async single() { return { data: { id: "saved-id" }, error: saveError }; }
   };

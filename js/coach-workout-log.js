@@ -2809,6 +2809,7 @@ async function loadCoachWorkoutData() {
     coachWorkoutSupabase
       .from("exercise_library")
       .select("name,is_active,sort_order")
+      .setHeader("x-fwb-recovery-catalog", "1")
       .order("sort_order", { ascending: true })
       .order("name", { ascending: true })
   ]);

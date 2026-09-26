@@ -17898,6 +17898,7 @@ async function loadDashboard() {
         supabaseClient
           .from("exercise_library")
           .select("id,name,aliases,primary_muscle,secondary_muscles,equipment,difficulty,movement_pattern,default_sets,default_reps,default_rest_seconds,substitution_group,demo_url,instructions,is_active,is_approved")
+          .setHeader("x-fwb-recovery-catalog", "1")
           .eq("is_active", true)
           .eq("is_approved", true)
           .order("sort_order", { ascending: true })

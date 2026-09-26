@@ -18,10 +18,12 @@ The focus picker includes Mobility / flexibility / recovery with Upper body reco
 
 ## Release
 
-Deploy `supabase/migrations/20260926044818_add_recovery_exercise_library.sql` with the versioned dashboard scripts. It adds 12 recovery movements and preserves existing records by case-insensitive name. The current live catalog has no recovery entries. Until seeded, the generator explains that approved recovery movements are unavailable; it does not substitute strength exercises. The migration was syntax/planning checked with read-only EXPLAIN, not applied to production.
+Apply `supabase/migrations/20260926050807_add_recovery_exercise_library.sql` with the versioned dashboard scripts. It adds 12 explicitly approved recovery movements and preserves existing records by case-insensitive name. Until seeded, the generator explains that approved recovery movements are unavailable; it does not substitute strength exercises.
 
-Because the catalog is shared with iOS, ship the matching native strength-generator filter before activating these recovery entries. Older native generators otherwise accept any movement pattern in a selected muscle group.
+The catalog is shared with iOS. A restrictive SELECT policy hides recovery movements from requests without `x-fwb-recovery-catalog: 1`, protecting older native and cached web generators that otherwise treat them as strength exercises. Updated web client and coach library queries opt in per request; other requests and Edge Functions do not receive this header. Existing approval, active-status, and coach authorization policies remain in force. The native strength-generator filter provides additional protection, and native clients must not opt into this catalog until their generator handles recovery separately.
 
 ## Verification
 
 Run `node --test tests/daily-*.test.js tests/mood-checkin.test.js tests/home-progress-checkin.test.js tests/client-weekly-activity.test.js tests/workout-generator*.test.js` for focused coverage. Browser review uses a local fake client/backend: no live mood, workout, gym, or notification records are written. Desktop and 390px mobile checks cover the welcome, saved answers, reduced sets/supersets, assigned-plan navigation, explicit gym attendance, and recovery generation/logger handoff.
+
+Production deployment on 2026-09-25 (migration version `20260926050807` in UTC) verified 12 approved recovery entries. Authenticated queries without the capability still return 57 strength entries and zero recovery entries; updated queries return 57 strength and 12 recovery entries. Anonymous access remains disabled, and the header does not reveal inactive or unapproved entries.

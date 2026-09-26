@@ -8,15 +8,15 @@ const workoutLayout = require('../js/workout-layout.js');
 // Read both checked-in exercise seed batches, including the newer equipment-
 // specific variations, so assertions exercise the actual coach library shapes.
 function seededLibrary() {
-  const files = ['20260822053131_create_shared_exercise_library.sql', '20260904042044_refine_ambiguous_exercise_names.sql', '20260926044818_add_recovery_exercise_library.sql'];
+  const files = ['20260822053131_create_shared_exercise_library.sql', '20260904042044_refine_ambiguous_exercise_names.sql', '20260926050807_add_recovery_exercise_library.sql'];
   return files.flatMap((file) => {
     const source = fs.readFileSync(path.join(__dirname, '../supabase/migrations', file), 'utf8');
     const insert = source.match(/insert into public\.exercise_library\s*\(([^)]+)\)\s*values\s*([\s\S]*?)(?:;|on conflict)/i);
     const columns = insert[1].split(',').map((value) => value.trim());
     return [...insert[2].matchAll(/\(([^()]+)\)/g)].map((match) => {
-      const tokens = match[1].match(/array\[[^\]]*\]|'(?:[^']|'')*'|\d+/g);
+      const tokens = match[1].match(/array\[[^\]]*\]|'(?:[^']|'')*'|\b(?:true|false)\b|\d+/g);
       const values = tokens.map((token) => token.startsWith('array') ? [...token.matchAll(/'([^']+)'/g)].map((item) => item[1])
-        : token.startsWith("'") ? token.slice(1, -1).replace(/''/g, "'") : Number(token));
+        : token.startsWith("'") ? token.slice(1, -1).replace(/''/g, "'") : token === 'true' ? true : token === 'false' ? false : Number(token));
       assert.equal(columns.length, values.length, file);
       const entry = { default_sets: 3, aliases: [], is_active: true, is_approved: true, instructions: '', demo_url: null, ...Object.fromEntries(columns.map((column, index) => [column, values[index]])) };
       entry.id = entry.name.toLowerCase().replace(/\W+/g, '-');
@@ -321,11 +321,11 @@ test('recovery swaps preserve gentle targets, region coverage, and the requested
   ]) assert.throws(() => generator.swap(workout, 0, { ...original, ...changes }), /matches your focus/);
 });
 
-test('recovery seed migration preserves existing coach rows and needs no schema changes', () => {
-  const migration = fs.readFileSync(path.join(__dirname, '../supabase/migrations/20260926044818_add_recovery_exercise_library.sql'), 'utf8');
+test('recovery seed migration preserves existing coach rows and explicitly approves new entries', () => {
+  const migration = fs.readFileSync(path.join(__dirname, '../supabase/migrations/20260926050807_add_recovery_exercise_library.sql'), 'utf8');
   assert.match(migration, /on conflict \(lower\(name\)\) do nothing/);
   assert.doesNotMatch(migration, /\b(?:delete|update|alter|drop)\b/i);
   const recovery = library.filter((entry) => ['mobility', 'stretching'].includes(entry.movement_pattern));
   assert.equal(recovery.length, 12);
-  assert.ok(recovery.every((entry) => entry.default_sets <= 2 && entry.instructions && !entry.demo_url));
+  assert.ok(recovery.every((entry) => entry.is_approved === true && entry.default_sets <= 2 && entry.instructions && !entry.demo_url));
 });

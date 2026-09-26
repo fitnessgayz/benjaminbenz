@@ -5040,7 +5040,7 @@ async function saveExerciseLibraryRecord(payload, id, file) {
   const request = id
     ? coachSupabase.from("exercise_library").update(payload).eq("id", id)
     : coachSupabase.from("exercise_library").insert(payload);
-  const { data, error } = await request.select("*").single();
+  const { data, error } = await request.setHeader("x-fwb-recovery-catalog", "1").select("*").single();
   if (error) {
     // Only remove a new upload after a definite database rejection. A lost
     // response can still mean the save committed; keep that video's URL alive.
@@ -5183,6 +5183,7 @@ async function loadExerciseLibrary() {
   const { data, error } = await coachSupabase
     .from("exercise_library")
     .select("*")
+    .setHeader("x-fwb-recovery-catalog", "1")
     .order("sort_order", { ascending: true })
     .order("name", { ascending: true });
 
