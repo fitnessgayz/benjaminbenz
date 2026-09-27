@@ -29,9 +29,11 @@ test("coach admin sidebar can collapse and remembers the preference", () => {
 
 test("coach admin navigation becomes a scrollable client-style bottom dock on smaller screens", () => {
   assert.match(adminSource, /matchMedia\("\(max-width: 900px\)"\)/);
-  assert.match(styleSource, /@media \(max-width: 900px\)[\s\S]*?\.coach-admin-sidebar\s*\{[\s\S]*?position:\s*fixed[\s\S]*?bottom:\s*calc\(10px \+ env\(safe-area-inset-bottom\)\)[\s\S]*?border-radius:\s*34px/);
+  assert.match(styleSource, /@media \(max-width: 900px\)[\s\S]*?body\.coach-admin-page\s*\{[^}]*--coach-mobile-dock-bottom-gap:\s*calc\(10px \+ env\(safe-area-inset-bottom\)\)[^}]*--coach-mobile-dock-height:\s*94px/s);
+  assert.match(styleSource, /@media \(max-width: 900px\)[\s\S]*?\.coach-admin-sidebar\s*\{[\s\S]*?position:\s*fixed[\s\S]*?top:\s*calc\(100svh - var\(--coach-mobile-dock-height\) - var\(--coach-mobile-dock-bottom-gap\)\)[\s\S]*?bottom:\s*auto[\s\S]*?border-radius:\s*34px/);
   assert.match(styleSource, /@media \(max-width: 900px\)[\s\S]*?\.coach-admin-page \.admin-tabs\s*\{[\s\S]*?display:\s*flex[\s\S]*?overflow-x:\s*auto[\s\S]*?scroll-snap-type:\s*x proximity/);
   assert.match(styleSource, /body\.coach-admin-page\s*\{[^}]*padding-bottom:\s*calc\(116px \+ env\(safe-area-inset-bottom\)\)/s);
+  assert.match(styleSource, /html:has\(> body\.coach-admin-page\)\s*\{[^}]*overflow-x:\s*clip[^}]*overscroll-behavior-y:\s*none/s);
 });
 
 test("collapsed sidebar controls retain accessible names and navigation state semantics", () => {

@@ -15995,8 +15995,24 @@ body.client-dashboard-page.is-loading > :is(.client-dashboard-tabs,
 }
 
 @media (max-width: 900px) {
+  /* Match the client dock's stable viewport anchor. Safari can move a fixed
+     bottom edge when its toolbar or keyboard changes the visual viewport. */
+  html:has(> body.coach-admin-page) {
+    overflow-x: clip;
+    overscroll-behavior-y: none;
+  }
+
   body.coach-admin-page {
+    --coach-mobile-dock-bottom-gap: calc(10px + env(safe-area-inset-bottom));
+    --coach-mobile-dock-height: 94px;
     padding-bottom: calc(116px + env(safe-area-inset-bottom));
+    overflow-x: clip !important;
+  }
+
+  .coach-admin-page .admin-shell,
+  .coach-admin-page .admin-workspace,
+  .coach-admin-page .admin-editor {
+    overflow-x: clip;
   }
 
   .coach-admin-page .admin-shell {
@@ -16010,9 +16026,9 @@ body.client-dashboard-page.is-loading > :is(.client-dashboard-tabs,
 
   .coach-admin-sidebar {
     position: fixed;
-    top: auto;
+    top: calc(100svh - var(--coach-mobile-dock-height) - var(--coach-mobile-dock-bottom-gap));
     right: auto;
-    bottom: calc(10px + env(safe-area-inset-bottom));
+    bottom: auto;
     left: 50%;
     z-index: 85;
     display: block;
@@ -16168,6 +16184,8 @@ body.client-dashboard-page.is-loading > :is(.client-dashboard-tabs,
 
 @media (max-width: 520px) {
   body.coach-admin-page {
+    --coach-mobile-dock-bottom-gap: calc(6px + env(safe-area-inset-bottom));
+    --coach-mobile-dock-height: 90px;
     padding-bottom: calc(110px + env(safe-area-inset-bottom));
   }
 
@@ -16176,7 +16194,6 @@ body.client-dashboard-page.is-loading > :is(.client-dashboard-tabs,
   }
 
   .coach-admin-sidebar {
-    bottom: calc(6px + env(safe-area-inset-bottom));
     width: calc(100% - 12px);
     gap: 4px;
     padding: 7px 8px 5px;
