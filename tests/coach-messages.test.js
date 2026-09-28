@@ -206,12 +206,16 @@ test("invalid history IDs and missing send receipts remain errors with the draft
 
 test("client and coach entry points load the shared controller before their application code", () => {
   const root = path.resolve(__dirname, "..");
-  for (const [htmlName, entry] of [["client-dashboard.html", "js/client-portal.js"], ["coach-admin.html", "js/coach-admin.js"]]) {
+  for (const [htmlName, entry, styleVersion] of [["client-dashboard.html", "js/client-portal.js", 2], ["coach-admin.html", "js/coach-admin.js", 1]]) {
     const html = fs.readFileSync(path.join(root, htmlName), "utf8");
     assert.ok(html.indexOf("js/coach-messages.js") < html.indexOf(entry));
-    assert.match(html, /css\/coach-messages\.css\?v=1/);
+    assert.match(html, new RegExp(`css/coach-messages\\.css\\?v=${styleVersion}`));
     assert.match(html, /messages=\d+/);
   }
+  const messageCss = fs.readFileSync(path.join(root, "css/coach-messages.css"), "utf8");
+  assert.match(messageCss, /\.fwb-message-dialog\s*\{[^}]*background: #f8f9f5;[^}]*color: #171b16;/s);
+  assert.match(messageCss, /\.fwb-message-dialog \.fwb-message-bubble\.is-own\s*\{[^}]*background: #eaf3d5;/s);
+  assert.match(messageCss, /\.fwb-message-dialog \.fwb-message-composer textarea\s*\{[^}]*background: #fff;[^}]*color: #171b16;/s);
   const clientSource = fs.readFileSync(path.join(root, "js/client-portal.js"), "utf8");
   assert.match(clientSource, /button\.hidden = isCoachDashboardPreview/);
   const dashboardStart = clientSource.indexOf("async function loadDashboard()");

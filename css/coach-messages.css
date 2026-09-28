@@ -65,3 +65,47 @@
 .fwb-messages .fwb-message-secondary, .fwb-messages .fwb-message-send { width: auto !important; inline-size: auto !important; }
 .fwb-messages .fwb-message-count { flex: 0 0 auto; width: auto; white-space: nowrap !important; }
 .fwb-messages .fwb-message-composer textarea { font-size: 16px !important; overflow-y: auto !important; }
+
+/* The client conversation opens as a light-mode sheet; the coach inbox keeps its dark workspace theme. */
+.fwb-message-dialog {
+  border-color: #d8dcd3;
+  background: #f8f9f5;
+  color: #171b16;
+  box-shadow: 0 24px 70px rgba(21, 25, 18, .22);
+}
+.fwb-message-dialog::backdrop { background: rgba(21, 25, 18, .48); }
+:root body .fwb-message-dialog .kicker { color: #5d7907; }
+.fwb-message-dialog .fwb-message-heading h2,
+.fwb-message-dialog .fwb-message-recipient { color: #171b16; }
+.fwb-message-dialog .fwb-message-subtitle,
+.fwb-message-dialog .fwb-message-empty,
+.fwb-message-dialog .fwb-message-count { color: #687064; }
+.fwb-message-dialog .fwb-message-secondary {
+  border-color: #c8cec2;
+  background: #fff;
+  color: #283025;
+}
+.fwb-message-dialog .fwb-message-bubble {
+  border-color: #d4d9cf;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(21, 25, 18, .05);
+}
+.fwb-message-dialog .fwb-message-bubble.is-own {
+  border-color: #b5c886;
+  background: #eaf3d5;
+}
+.fwb-message-dialog .fwb-message-bubble p { color: #20251f; }
+.fwb-message-dialog .fwb-message-meta { color: #697064; }
+.fwb-message-dialog .fwb-message-meta strong { color: #30382d; }
+.fwb-message-dialog .fwb-message-status { color: #8a5200; }
+.fwb-message-dialog .fwb-message-composer { border-top-color: #d8dcd3; }
+.fwb-message-dialog .fwb-message-composer label { color: #30382d; }
+.fwb-message-dialog .fwb-message-composer textarea {
+  border-color: #c8cec2;
+  background: #fff;
+  color: #171b16;
+}
+.fwb-message-dialog .fwb-message-composer textarea::placeholder { color: #858c81; }
+.fwb-message-dialog button:focus-visible,
+.fwb-message-dialog textarea:focus-visible,
+.fwb-message-dialog .fwb-message-history:focus-visible { outline-color: #5d7907; }
