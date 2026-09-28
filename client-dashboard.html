@@ -52,6 +52,7 @@
   <link rel="stylesheet" href="css/apple-workout.css?v=1" />
   <link rel="stylesheet" href="css/google-health.css?v=1" />
   <link rel="stylesheet" href="css/profile-photo.css?v=1" />
+  <link rel="stylesheet" href="css/client-account-settings.css?v=1" />
   <link rel="stylesheet" href="css/workout-share-card.css?v=1" />
   <link rel="stylesheet" href="css/rir-help.css?v=1" />
   <link rel="stylesheet" href="css/client-session-alerts.css?v=1" />
@@ -400,15 +401,10 @@
               <ul class="client-home-checklist" id="client-home-checklist" aria-label="Client dashboard next steps"></ul>
               <div class="client-home-support-actions">
                 <a class="client-home-support" href="mailto:fwb@benjaminbenz.com?subject=Client%20dashboard%20help">Report an issue</a>
-                <button class="password-reset-button client-home-reset" type="button" id="client-dashboard-reset-password-button">Reset password</button>
-                <small id="client-dashboard-reset-status" role="status"></small>
               </div>
             </article>
               </div>
             </details>
-          </div>
-          <div class="client-home-signout">
-            <button class="button button-ghost client-home-signout-button" type="button" data-sign-out>Sign Out</button>
           </div>
         </section>
 
@@ -1091,6 +1087,41 @@
               <button class="profile-photo-remove" data-profile-remove type="button" hidden>Remove photo</button>
             </dialog>
           </article>
+          <article class="client-account-settings" data-client-account-settings hidden aria-labelledby="client-account-settings-title">
+            <div class="client-account-settings-heading">
+              <div>
+                <p class="kicker">Account</p>
+                <h3 id="client-account-settings-title">Login &amp; security</h3>
+              </div>
+              <span class="client-account-current-email" data-client-account-email></span>
+            </div>
+            <form class="client-account-form" data-client-email-form novalidate>
+              <label for="client-account-email">Change email</label>
+              <p>We’ll send confirmation instructions before your login email changes.</p>
+              <div class="client-account-field-row">
+                <input id="client-account-email" data-client-email-input type="email" autocomplete="email" inputmode="email" maxlength="320" placeholder="New email address" required />
+                <button type="submit">Update email</button>
+              </div>
+              <small data-client-email-status role="status" aria-live="polite"></small>
+            </form>
+            <form class="client-account-form" data-client-password-form novalidate>
+              <strong class="client-account-form-title">Change password</strong>
+              <p>Enter your current password, then choose a new password with at least 8 characters.</p>
+              <label class="client-account-input-label" for="client-account-current-password">Current password</label>
+              <input id="client-account-current-password" data-client-current-password type="password" autocomplete="current-password" placeholder="Current password" required />
+              <label class="client-account-input-label" for="client-account-new-password">New password</label>
+              <input id="client-account-new-password" data-client-new-password type="password" autocomplete="new-password" minlength="8" placeholder="New password" required />
+              <label class="client-account-input-label" for="client-account-confirm-password">Confirm new password</label>
+              <input id="client-account-confirm-password" data-client-confirm-password type="password" autocomplete="new-password" minlength="8" placeholder="Confirm new password" required />
+              <button type="submit">Change password</button>
+              <small data-client-password-status role="status" aria-live="polite"></small>
+            </form>
+            <div class="client-account-secondary-actions">
+              <button class="password-reset-button" type="button" id="client-dashboard-reset-password-button">Email me a reset link</button>
+              <small id="client-dashboard-reset-status" role="status" aria-live="polite"></small>
+              <button class="client-account-signout" type="button" data-sign-out>Sign out</button>
+            </div>
+          </article>
           <article class="client-home-card client-home-card-notifications web-notification-center" data-web-notifications hidden>
             <div class="web-notification-heading">
               <div>
@@ -1199,6 +1230,7 @@
   <script src="js/profile-photo-store.js?v=1"></script>
   <script src="js/profile-photo-processor.js?v=1"></script>
   <script src="js/profile-photo.js?v=4"></script>
+  <script src="js/client-account-settings.js?v=1"></script>
   <script src="js/workout-share-card.js?v=1"></script>
   <script src="js/rir-help.js?v=2"></script>
   <script src="js/pr-help.js?v=1"></script>
@@ -1212,7 +1244,7 @@
   <script src="js/client-achievements-ui.js?v=2"></script>
   <script src="js/workout-progression.js?v=1"></script>
   <script src="js/workout-progression-ui.js?v=1"></script>
-  <script src="js/client-portal.js?v=custom-workout-history-1&amp;cancel-workout=1&amp;energy-feedback=1&amp;mood-redesign=1&amp;visible-group-controls=1&amp;exercise-videos=1&amp;remember-login=1&amp;visible-demos=1&amp;personal-bests=1&amp;copy-last-weights=1&amp;demo-icons=1&amp;keyboard-entry=1&amp;copy-set-pr=3&amp;return-coach=1&amp;apple-workout=2&amp;apple-share=1&amp;rir-help=1&amp;viewport-dock=6&amp;home-actions=1&amp;compact-copy=1&amp;exercise-pr-notes=1&amp;pr-info=1&amp;finish-workout=2&amp;prescribed-targets=1&amp;exercise-controls=1&amp;session-alerts=1&amp;exercise-labels=1&amp;exercise-list=2&amp;grouped-add=1&amp;google-health=1&amp;exercise-defaults=2&amp;workout-generator=4&amp;profile-photo=1&amp;workout-delete=1&amp;apple-health=1&amp;daily-checkin=1&amp;recovery-catalog=1&amp;messages=2&amp;cardio-shortcut=1&amp;achievements=1&amp;progression=1&amp;exercise-images=1"></script>
+  <script src="js/client-portal.js?v=custom-workout-history-1&amp;cancel-workout=1&amp;energy-feedback=1&amp;mood-redesign=1&amp;visible-group-controls=1&amp;exercise-videos=1&amp;remember-login=1&amp;visible-demos=1&amp;personal-bests=1&amp;copy-last-weights=1&amp;demo-icons=1&amp;keyboard-entry=1&amp;copy-set-pr=3&amp;return-coach=1&amp;apple-workout=2&amp;apple-share=1&amp;rir-help=1&amp;viewport-dock=6&amp;home-actions=1&amp;compact-copy=1&amp;exercise-pr-notes=1&amp;pr-info=1&amp;finish-workout=2&amp;prescribed-targets=1&amp;exercise-controls=1&amp;session-alerts=1&amp;exercise-labels=1&amp;exercise-list=2&amp;grouped-add=1&amp;google-health=1&amp;exercise-defaults=2&amp;workout-generator=4&amp;profile-photo=1&amp;account-settings=1&amp;workout-delete=1&amp;apple-health=1&amp;daily-checkin=1&amp;recovery-catalog=1&amp;messages=2&amp;cardio-shortcut=1&amp;achievements=1&amp;progression=1&amp;exercise-images=1"></script>
   <script src="js/workout-exercise-dock.js?v=2"></script>
 </body>
 </html>

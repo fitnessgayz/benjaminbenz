@@ -13484,6 +13484,17 @@ function configureClientProfilePhoto() {
   void clientProfilePhotoController?.initialize();
 }
 
+function configureClientAccountSettings() {
+  window.FWB_CLIENT_ACCOUNT_SETTINGS_CONTROLLER?.destroy();
+  window.FWB_CLIENT_ACCOUNT_SETTINGS_CONTROLLER = window.FWB_CLIENT_ACCOUNT_SETTINGS?.createController({
+    root: document.querySelector("[data-client-account-settings]"),
+    supabaseClient,
+    user: activeDashboardUser,
+    isPreview: isCoachDashboardPreview
+  }) || null;
+  window.FWB_CLIENT_ACCOUNT_SETTINGS_CONTROLLER?.initialize();
+}
+
 function isCopyableWorkoutHistoryLog(log = {}) {
   const exerciseCode = String(log.exercise_code || "").trim().toUpperCase();
   const exerciseName = String(log.exercise_name || "").trim();
@@ -17946,6 +17957,8 @@ async function loadDashboard() {
   clientAppleHealthController = null;
   clientProfilePhotoController?.destroy();
   clientProfilePhotoController = null;
+  window.FWB_CLIENT_ACCOUNT_SETTINGS_CONTROLLER?.destroy();
+  window.FWB_CLIENT_ACCOUNT_SETTINGS_CONTROLLER = null;
 
   try {
     if (!supabaseClient) {
@@ -17990,6 +18003,7 @@ async function loadDashboard() {
     isCoachDashboardPreview = isCoachPortalEmail(signedInEmail) && Boolean(previewEmail);
     setClientNotificationSettingsAvailable(!isCoachDashboardPreview);
     configureClientProfilePhoto();
+    configureClientAccountSettings();
 
     if (!targetClientEmail) {
       setDashboardMessage(
@@ -18852,6 +18866,8 @@ async function handleSignOut() {
       clientAppleHealthController = null;
       clientProfilePhotoController?.destroy();
       clientProfilePhotoController = null;
+      window.FWB_CLIENT_ACCOUNT_SETTINGS_CONTROLLER?.destroy();
+      window.FWB_CLIENT_ACCOUNT_SETTINGS_CONTROLLER = null;
       dexaReports = [];
       archivedDexaReportsExpanded = false;
       sharedFoodLibrary = [];

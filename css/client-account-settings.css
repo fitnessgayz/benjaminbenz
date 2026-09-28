@@ -1,0 +1,163 @@
+.client-account-settings {
+  display: grid;
+  gap: 18px;
+  margin-top: 18px;
+  padding: 22px;
+  border: 1px solid rgba(28, 34, 31, 0.12);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: 0 16px 34px rgba(27, 34, 30, 0.08);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  backdrop-filter: blur(18px) saturate(160%);
+}
+
+.client-account-settings[hidden] {
+  display: none;
+}
+
+.client-account-settings-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.client-account-settings-heading h3,
+.client-account-settings-heading p {
+  margin: 0;
+}
+
+.client-account-current-email {
+  max-width: 52%;
+  color: #4c5651;
+  font-size: 0.82rem;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+  text-align: right;
+}
+
+.client-account-form {
+  display: grid;
+  gap: 10px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(28, 34, 31, 0.1);
+}
+
+.client-account-form > label:first-child,
+.client-account-form-title {
+  color: #1d2421;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.client-account-input-label {
+  margin-bottom: -6px;
+  color: #4d5752;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.client-account-form p {
+  margin: -3px 0 2px;
+  color: #59635e;
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.client-account-form input {
+  width: 100%;
+  min-height: 48px;
+  box-sizing: border-box;
+  border: 1px solid rgba(28, 34, 31, 0.2);
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.88);
+  color: #1d2421;
+  font: inherit;
+  padding: 0 14px;
+}
+
+.client-account-field-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+}
+
+.client-account-form button,
+.client-account-secondary-actions button {
+  min-height: 48px;
+  border: 1px solid #262d29;
+  border-radius: 13px;
+  background: #262d29;
+  color: #fff;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 800;
+  padding: 0 18px;
+}
+
+.client-account-form button:disabled,
+.client-account-secondary-actions button:disabled {
+  cursor: wait;
+  opacity: 0.58;
+}
+
+.client-account-form input:focus-visible,
+.client-account-form button:focus-visible,
+.client-account-secondary-actions button:focus-visible {
+  outline: 3px solid rgba(184, 255, 0, 0.58);
+  outline-offset: 2px;
+}
+
+.client-account-form small,
+.client-account-secondary-actions small {
+  min-height: 1.25em;
+  color: #56605b;
+  line-height: 1.4;
+}
+
+.client-account-settings .is-success {
+  color: #216f3b;
+}
+
+.client-account-settings .is-error {
+  color: #a32626;
+}
+
+.client-account-secondary-actions {
+  display: grid;
+  gap: 10px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(28, 34, 31, 0.1);
+}
+
+.client-account-secondary-actions .password-reset-button,
+.client-account-secondary-actions .client-account-signout {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.7);
+  color: #343d38;
+}
+
+.client-account-secondary-actions .client-account-signout {
+  border-color: rgba(163, 38, 38, 0.34);
+  color: #8e2323;
+}
+
+@media (max-width: 560px) {
+  .client-account-settings {
+    padding: 18px;
+  }
+
+  .client-account-settings-heading,
+  .client-account-field-row {
+    grid-template-columns: 1fr;
+  }
+
+  .client-account-settings-heading {
+    display: grid;
+  }
+
+  .client-account-current-email {
+    max-width: none;
+    text-align: left;
+  }
+}
