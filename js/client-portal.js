@@ -15222,64 +15222,24 @@ function syncClientDashboardMobileNavigationIcon(tabName = activeClientDashboard
   toggle.setAttribute("aria-label", `Open navigation, ${selectedLabel} selected`);
 }
 
-function centerActiveClientDashboardMobileTab(navigation = document.querySelector(".client-dashboard-tabs")) {
-  const activeTab = navigation?.querySelector(".client-dashboard-tab.is-active");
-  const mobileNavigation = window.matchMedia?.("(max-width: 900px)")?.matches ?? false;
-
-  if (!navigation || !activeTab || !mobileNavigation) {
-    return;
-  }
-
-  const maximumScroll = Math.max(0, navigation.scrollWidth - navigation.clientWidth);
-  const centeredScroll = activeTab.offsetLeft - ((navigation.clientWidth - activeTab.offsetWidth) / 2);
-  const left = Math.max(0, Math.min(maximumScroll, centeredScroll));
-
-  if (typeof navigation.scrollTo === "function") {
-    navigation.scrollTo({ left, behavior: "smooth" });
-  } else {
-    navigation.scrollLeft = left;
-  }
-}
-
-function syncClientDashboardMobileNavigationScrollCue(navigation = document.querySelector(".client-dashboard-tabs")) {
-  const fade = document.querySelector("[data-client-nav-scroll-fade]");
-  const cue = document.querySelector("[data-client-nav-scroll-cue]");
-  const mobileNavigation = window.matchMedia?.("(max-width: 900px)")?.matches ?? false;
-  const maximumScroll = navigation ? Math.max(0, navigation.scrollWidth - navigation.clientWidth) : 0;
-  const isExpanded = Boolean(navigation?.classList.contains("is-mobile-expanded"));
-  const isAtEnd = !navigation || navigation.scrollLeft >= maximumScroll - 4;
-  const shouldShow = Boolean(mobileNavigation && isExpanded && maximumScroll > 4 && !isAtEnd);
-
-  if (fade) {
-    fade.hidden = !shouldShow;
-  }
-
-  if (cue) {
-    cue.hidden = !shouldShow;
-  }
-}
-
 function setClientDashboardMobileNavigationExpanded(expanded, options = {}) {
   const navigation = document.querySelector(".client-dashboard-tabs");
   const toggle = document.querySelector("[data-client-mobile-nav-toggle]");
   const mobileNavigation = window.matchMedia?.("(max-width: 900px)")?.matches ?? false;
-  const isExpanded = mobileNavigation && Boolean(expanded);
+  const isExpanded = mobileNavigation;
 
   if (!navigation || !toggle) {
     return;
   }
 
-  toggle.hidden = !mobileNavigation || isExpanded;
+  toggle.hidden = true;
   toggle.setAttribute("aria-expanded", String(isExpanded));
   navigation.classList.toggle("is-mobile-expanded", isExpanded);
   document.body.classList.toggle("client-dashboard-mobile-nav-expanded", isExpanded);
 
   if (mobileNavigation) {
-    if (!isExpanded && options.focusToggle) {
-      toggle.focus({ preventScroll: true });
-    }
-    navigation.inert = !isExpanded;
-    navigation.setAttribute("aria-hidden", String(!isExpanded));
+    navigation.inert = false;
+    navigation.removeAttribute("aria-hidden");
   } else {
     navigation.inert = false;
     navigation.removeAttribute("aria-hidden");
@@ -15290,10 +15250,6 @@ function setClientDashboardMobileNavigationExpanded(expanded, options = {}) {
   }
 
   window.requestAnimationFrame?.(() => {
-    if (isExpanded) {
-      centerActiveClientDashboardMobileTab(navigation);
-    }
-    syncClientDashboardMobileNavigationScrollCue(navigation);
     applyWorkoutElapsedTimerPosition();
   });
 }
@@ -15308,7 +15264,7 @@ function syncClientDashboardMobileNavigationMount() {
 
   if (!syncClientDashboardMobileNavigationMount.anchors) {
     const nodes = document.querySelectorAll(
-      ".client-dashboard-tabs, [data-client-mobile-nav-toggle], [data-client-nav-scroll-fade], [data-client-nav-scroll-cue]"
+      ".client-dashboard-tabs, [data-client-mobile-nav-toggle]"
     );
     syncClientDashboardMobileNavigationMount.anchors = Array.from(nodes, (node) => {
       const placeholder = document.createComment("client-mobile-dock");
@@ -15328,7 +15284,7 @@ function syncClientDashboardMobileNavigationMount() {
 
   // Keep the mobile dock out of nested overflow containers. Safari can otherwise
   // move its fixed composited layer with the page while scrolling. Move the same
-  // nodes so focus, listeners, unread badges, and horizontal scroll are retained.
+  // nodes so focus, listeners, and tab state are retained.
   syncClientDashboardMobileNavigationMount.anchors.forEach(({ node, placeholder }) => {
     if (useViewportDock) {
       if (node.parentNode !== document.body) {
@@ -15362,22 +15318,10 @@ function handleClientDashboardMobileNavigation() {
     setClientDashboardMobileNavigationExpanded(true, { focusNavigation: true });
   });
 
-  navigation.addEventListener("scroll", () => {
-    syncClientDashboardMobileNavigationScrollCue(navigation);
-  }, { passive: true });
-
-  document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape" && mobileQuery.matches) {
-      lastClientDashboardMobileTabPress = "";
-      setClientDashboardMobileNavigationExpanded(false, { focusToggle: true });
-    }
-  });
-
   const handleMobileChange = () => {
     lastClientDashboardMobileTabPress = "";
     syncClientDashboardMobileNavigationMount();
     setClientDashboardMobileNavigationExpanded(mobileQuery.matches);
-    syncClientDashboardMobileNavigationScrollCue(navigation);
   };
 
   if (typeof mobileQuery.addEventListener === "function") {
@@ -16329,9 +16273,6 @@ function handleClientDashboardTabs() {
     setClientDashboardTab(tabName);
     if (mobileNavigation) {
       lastClientDashboardMobileTabPress = action.nextTabPress;
-      if (action.shouldCollapse) {
-        setClientDashboardMobileNavigationExpanded(false, { focusToggle: true });
-      }
     }
     if (tabName === "home") {
       window.requestAnimationFrame?.(() => maybeShowClientHomeCheckinPrompt());

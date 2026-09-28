@@ -118,7 +118,7 @@ test("opens the existing workout logger and provides a back-to-choices control",
 });
 
 test("keeps the deck compact and clear of the fixed mobile dock", () => {
-  assert.match(styles, /--client-bottom-dock-clearance:\s*calc\(94px \+ env\(safe-area-inset-bottom\)\)/);
+  assert.match(styles, /--client-bottom-dock-clearance:\s*calc\(var\(--client-mobile-dock-height\) \+ env\(safe-area-inset-bottom\)\)/);
   assert.match(styles, /\.client-workout-picker-deck \{[\s\S]*?touch-action:\s*pan-y;/);
   assert.match(styles, /\.client-workout-picker-card \{[\s\S]*?height:\s*366px;/);
   assert.match(styles, /@media \(max-width: 420px\)[\s\S]*?\.client-workout-picker-card \{[\s\S]*?height:\s*350px;/);

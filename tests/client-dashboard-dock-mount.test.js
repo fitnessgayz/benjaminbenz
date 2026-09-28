@@ -93,17 +93,15 @@ function fixture({ mobile = true, hidden = false, loading = false } = {}) {
   const before = element("before");
   const toggle = element("button", { "data-client-mobile-nav-toggle": "" });
   const navigation = element("nav", { class: "client-dashboard-tabs" });
-  const fade = element("span", { "data-client-nav-scroll-fade": "" });
-  const cue = element("span", { "data-client-nav-scroll-cue": "" });
   const unread = element("span", { id: "client-notification-unread-status" });
   const panel = element("section", { "data-client-dashboard-panel": "home" });
   const footer = element("footer");
-  grid.append(before, toggle, navigation, fade, cue, unread, panel);
+  grid.append(before, toggle, navigation, unread, panel);
   content.append(grid);
   main.append(loadingPanel, content);
   body.append(main, footer);
   const originalOrder = [...grid.children];
-  const dock = [navigation, toggle, fade, cue];
+  const dock = [navigation, toggle];
   document = {
     body,
     activeElement: body,
@@ -121,7 +119,7 @@ function fixture({ mobile = true, hidden = false, loading = false } = {}) {
   ].map(functionSource).join("\n"), context);
   moveCount = 0;
   return {
-    context, document, element, body, main, content, grid, loadingPanel, dock, navigation, toggle, fade, cue, unread, panel,
+    context, document, element, body, main, content, grid, loadingPanel, dock, navigation, toggle, unread, panel,
     originalOrder,
     mount: () => context.syncClientDashboardMobileNavigationMount(),
     setMobile(value) { mobileMatches = value; },
@@ -131,7 +129,7 @@ function fixture({ mobile = true, hidden = false, loading = false } = {}) {
   };
 }
 
-test("mobile mounting moves the four existing dock nodes outside scrolling containers", () => {
+test("mobile mounting moves the two existing dock nodes outside scrolling containers", () => {
   const h = fixture();
   let clicks = 0;
   h.navigation.addEventListener("click", () => clicks++);
@@ -140,7 +138,7 @@ test("mobile mounting moves the four existing dock nodes outside scrolling conta
   assert.equal(h.grid.children.includes(h.navigation), false);
   assert.equal(h.unread.parentNode, h.grid);
   assert.equal(h.panel.parentNode, h.grid);
-  assert.equal(h.commentCount, 4);
+  assert.equal(h.commentCount, 2);
   h.navigation.fire("click");
   assert.equal(clicks, 1, "Existing listeners remain attached to the same node");
 });
@@ -156,7 +154,7 @@ test("returning to desktop restores exact sidebar DOM order, then mobile reuses 
   h.setMobile(true);
   h.mount();
   assert.ok(h.dock.every((node) => node.parentNode === h.body));
-  assert.equal(h.commentCount, 4, "Breakpoint changes reuse the original anchors");
+  assert.equal(h.commentCount, 2, "Breakpoint changes reuse the original anchors");
 });
 
 test("initial auth loading and hidden content keep navigation within the hidden dashboard", () => {
@@ -196,9 +194,9 @@ test("repeated resize or tab refresh mounting creates no duplicate anchors or ne
   h.mount();
   const movesAfterMount = h.moveCount;
   for (let index = 0; index < 5; index++) h.mount();
-  assert.equal(h.commentCount, 4);
+  assert.equal(h.commentCount, 2);
   assert.equal(h.moveCount, movesAfterMount);
-  assert.equal(h.body.children.filter((node) => h.dock.includes(node)).length, 4);
+  assert.equal(h.body.children.filter((node) => h.dock.includes(node)).length, 2);
   h.setMobile(false);
   h.mount();
   const movesAfterRestore = h.moveCount;
@@ -207,15 +205,13 @@ test("repeated resize or tab refresh mounting creates no duplicate anchors or ne
   assert.deepEqual(h.grid.children, h.originalOrder);
 });
 
-test("mounting preserves collapsed state, scroll position, accessibility attributes, and fade visibility", () => {
+test("mounting preserves navigation state and accessibility attributes", () => {
   const h = fixture();
   h.navigation.inert = true;
   h.navigation.setAttribute("aria-hidden", "true");
   h.navigation.scrollLeft = 220;
   h.toggle.hidden = false;
   h.toggle.setAttribute("aria-expanded", "false");
-  h.fade.hidden = true;
-  h.cue.hidden = true;
   for (const mobile of [true, false, true]) {
     h.setMobile(mobile);
     h.mount();
@@ -224,8 +220,6 @@ test("mounting preserves collapsed state, scroll position, accessibility attribu
     assert.equal(h.navigation.scrollLeft, 220);
     assert.equal(h.toggle.hidden, false);
     assert.equal(h.toggle.getAttribute("aria-expanded"), "false");
-    assert.equal(h.fade.hidden, true);
-    assert.equal(h.cue.hidden, true);
   }
 });
 
@@ -234,7 +228,6 @@ test("initialization and media-query changes actually mount and restore the dock
   const expanded = [];
   h.context.syncClientDashboardMobileNavigationIcon = () => {};
   h.context.setClientDashboardMobileNavigationExpanded = (value) => expanded.push(value);
-  h.context.syncClientDashboardMobileNavigationScrollCue = () => {};
   vm.runInContext(functionSource("handleClientDashboardMobileNavigation"), h.context);
   h.context.handleClientDashboardMobileNavigation();
   assert.deepEqual(h.grid.children, h.originalOrder);
@@ -245,7 +238,7 @@ test("initialization and media-query changes actually mount and restore the dock
   h.breakpoint(true);
   assert.ok(h.dock.every((node) => node.parentNode === h.body));
   assert.deepEqual(expanded, [true, false, true]);
-  assert.equal(h.commentCount, 4);
+  assert.equal(h.commentCount, 2);
 });
 
 test("moving a focused dock control preserves focus without scrolling and never refocuses hidden content", () => {

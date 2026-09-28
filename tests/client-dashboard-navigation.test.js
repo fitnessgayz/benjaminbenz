@@ -98,101 +98,71 @@ test("uses a sticky 240px desktop sidebar with a persistent 78px icon rail", () 
   assert.match(dashboardHtml, /client-dashboard-sidebar-toggle-label">Minimize</);
 });
 
-test("keeps a labeled horizontally scrollable safe-area bottom dock on mobile", () => {
+test("uses a permanent five-destination frosted safe-area dock on mobile", () => {
   const mobileStyles = sourceBetween("@media (max-width: 900px)", "@media (max-width: 420px)");
 
-  assert.match(mobileStyles, /body\.client-dashboard-page\s*\{[^}]*padding-bottom:\s*calc\(116px \+ env\(safe-area-inset-bottom\)\)/s);
+  assert.match(mobileStyles, /body\.client-dashboard-page\s*\{[^}]*--client-mobile-dock-height:\s*78px[^}]*min-height:\s*100dvh[^}]*padding-bottom:\s*calc\(var\(--client-bottom-dock-clearance\) \+ 24px\)/s);
   assert.match(mobileStyles, /\.client-dashboard-page \.dashboard-shell\s*\{[^}]*padding-top:\s*10px/s);
   assert.match(mobileStyles, /\.client-dashboard-page \.dashboard-grid\s*\{[^}]*padding-top:\s*0/s);
-  assert.match(mobileStyles, /\.dashboard-page \.client-dashboard-tabs\s*\{[^}]*position:\s*fixed[^}]*top:\s*calc\(100svh - var\(--client-mobile-dock-height\) - var\(--client-mobile-dock-bottom-gap\)\)[^}]*bottom:\s*auto[^}]*display:\s*flex[^}]*width:\s*min\(720px, calc\(100% - 24px\)\)[^}]*overflow-x:\s*auto[^}]*scroll-snap-type:\s*x proximity[^}]*background:\s*rgba\(23, 26, 23, \.98\)/s);
+  assert.match(mobileStyles, /\.dashboard-page \.client-dashboard-tabs\s*\{[^}]*position:\s*fixed[^}]*inset:\s*auto 0 0[^}]*z-index:\s*1000[^}]*grid-template-columns:\s*repeat\(5, minmax\(0, 1fr\)\)[^}]*width:\s*100%[^}]*overflow:\s*visible/s);
+  assert.match(mobileStyles, /background:\s*rgba\(247, 248, 245, \.82\)[^}]*border-top:\s*1px solid rgba\(59, 64, 58, \.14\)[^}]*box-shadow:\s*0 -10px 30px rgba\(20, 24, 20, \.1\)/s);
+  assert.match(mobileStyles, /backdrop-filter:\s*blur\(18px\) saturate\(180%\)/);
+  assert.match(mobileStyles, /-webkit-backdrop-filter:\s*blur\(18px\) saturate\(180%\)/);
+  assert.match(mobileStyles, /padding:[^;]*env\(safe-area-inset-right\)[^;]*env\(safe-area-inset-bottom\)[^;]*env\(safe-area-inset-left\)/);
+  assert.match(mobileStyles, /data-client-dashboard-tab="nutrition"[\s\S]*?data-client-dashboard-tab="notifications"[\s\S]*?display:\s*none !important/);
   assert.match(mobileStyles, /\.client-dashboard-tab\.is-active \.client-dashboard-tab-icon\s*\{[^}]*color:\s*var\(--black\)[^}]*background:\s*var\(--lime\)[^}]*border-radius:\s*50%/s);
-  assert.match(mobileStyles, /\.client-dashboard-tab-label\s*\{[^}]*display:\s*block !important[^}]*font-size:\s*\.63rem/s);
+  assert.match(mobileStyles, /\.client-dashboard-tab-label\s*\{[^}]*display:\s*block !important[^}]*font-size:\s*\.61rem/s);
   assert.match(mobileStyles, /\.client-dashboard-nav-title,[\s\S]*?\.client-dashboard-sidebar-toggle\s*\{[^}]*display:\s*none !important/s);
 });
 
-test("keeps every mobile navigation surface on a stable Chrome mobile viewport", () => {
+test("uses dynamic viewport sizing and a single bottom-clearance contract", () => {
   const mobileStyles = sourceBetween("@media (max-width: 900px)", "@media (max-width: 420px)");
   const handlerSource = sourceForFunction("handleClientDashboardMobileNavigation");
 
-  assert.equal((mobileStyles.match(/100svh/g) || []).length, 4);
-  assert.match(mobileStyles, /--client-mobile-dock-height:\s*94px/);
-  assert.match(mobileStyles, /--client-mobile-dock-bottom-gap:\s*calc\(10px \+ env\(safe-area-inset-bottom\)\)/);
+  assert.ok((mobileStyles.match(/100dvh/g) || []).length >= 2);
+  assert.match(mobileStyles, /--client-bottom-dock-clearance:\s*calc\(var\(--client-mobile-dock-height\) \+ env\(safe-area-inset-bottom\)\)/);
+  assert.doesNotMatch(mobileStyles, /100vh|100svh/);
   assert.doesNotMatch(handlerSource, /visualViewport/);
   assert.doesNotMatch(styleSource, /--client-visual-viewport-bottom/);
 });
 
-test("makes horizontal scrolling obvious with a fading edge and arrow cue", () => {
+test("removes mobile scrolling, the arrow cue, and the dark capsule", () => {
   const mobileStyles = sourceBetween("@media (max-width: 900px)", "@media (max-width: 420px)");
-  const cueSource = sourceForFunction("syncClientDashboardMobileNavigationScrollCue");
   const mobileHandler = sourceForFunction("handleClientDashboardMobileNavigation");
 
-  assert.match(dashboardHtml, /data-client-nav-scroll-fade[^>]*aria-hidden="true"[^>]*hidden/);
-  assert.match(dashboardHtml, /data-client-nav-scroll-cue[^>]*aria-hidden="true"[^>]*hidden>›<\/span>/);
-  assert.match(mobileStyles, /\.client-dashboard-scroll-fade\s*\{[^}]*position:\s*fixed[^}]*pointer-events:\s*none[^}]*linear-gradient\(90deg/s);
-  assert.match(mobileStyles, /\.client-dashboard-scroll-cue\s*\{[^}]*position:\s*fixed[^}]*color:\s*var\(--lime\)[^}]*border-radius:\s*18px/s);
-  assert.match(mobileStyles, /\.client-dashboard-tabs::-webkit-scrollbar\s*\{[^}]*display:\s*none/s);
-  assert.match(cueSource, /navigation\.scrollWidth - navigation\.clientWidth/);
-  assert.match(cueSource, /navigation\.scrollLeft >= maximumScroll - 4/);
-  assert.match(cueSource, /fade\.hidden = !shouldShow/);
-  assert.match(cueSource, /cue\.hidden = !shouldShow/);
-  assert.match(mobileHandler, /navigation\.addEventListener\("scroll"/);
+  assert.doesNotMatch(dashboardHtml, /data-client-nav-scroll-(?:fade|cue)/);
+  assert.doesNotMatch(mobileStyles, /overflow-x:\s*auto|scroll-snap-type|rgba\(23, 26, 23, \.98\)|border-radius:\s*34px/);
+  assert.doesNotMatch(mobileHandler, /addEventListener\("scroll"/);
 });
 
-test("starts expanded and collapses mobile navigation after the selected icon is pressed twice", () => {
+test("keeps mobile navigation permanently expanded while preserving selected-tab routing", () => {
   const mobileStyles = sourceBetween("@media (max-width: 900px)", "@media (max-width: 420px)");
-  const syncSource = sourceForFunction("syncClientDashboardMobileNavigationIcon");
   const setMobileSource = sourceForFunction("setClientDashboardMobileNavigationExpanded");
   const handlerSource = sourceForFunction("handleClientDashboardMobileNavigation");
   const tabHandlerSource = sourceForFunction("handleClientDashboardTabs");
-  const pressDecisionSource = sourceForFunction("clientDashboardMobileTabPressAction");
-  const pressDecision = Function(`${pressDecisionSource}; return clientDashboardMobileTabPressAction;`)();
 
   assert.match(dashboardHtml, /class="client-dashboard-mobile-nav-toggle"[\s\S]*?aria-label="Open navigation, Home selected"[\s\S]*?aria-controls="client-dashboard-navigation"[\s\S]*?data-client-mobile-nav-toggle/);
   assert.match(dashboardHtml, /<nav class="client-dashboard-tabs" id="client-dashboard-navigation"/);
-  assert.match(mobileStyles, /\.dashboard-page \.client-dashboard-mobile-nav-toggle\s*\{[^}]*position:\s*fixed[^}]*left:\s*12px[^}]*width:\s*62px !important[^}]*min-width:\s*62px !important[^}]*max-width:\s*62px !important[^}]*inline-size:\s*62px !important[^}]*max-inline-size:\s*62px !important[^}]*height:\s*62px !important/s);
-  assert.match(mobileStyles, /\.dashboard-page \.client-dashboard-mobile-nav-toggle\s*\{[^}]*border-radius:\s*50% !important[^}]*aspect-ratio:\s*1 \/ 1/s);
-  assert.match(mobileStyles, /\.client-dashboard-tabs\s*\{[^}]*visibility:\s*hidden[^}]*opacity:\s*0[^}]*pointer-events:\s*none[^}]*scale\(\.72\)/s);
-  assert.match(mobileStyles, /\.client-dashboard-tabs\.is-mobile-expanded\s*\{[^}]*visibility:\s*visible[^}]*opacity:\s*1[^}]*pointer-events:\s*auto/s);
-  assert.match(syncSource, /selectedIcon\.cloneNode\(true\)/);
-  assert.match(syncSource, /iconHost\.replaceChildren\(icon\)/);
-  assert.match(syncSource, /`Open navigation, \$\{selectedLabel\} selected`/);
-  assert.match(setMobileSource, /navigation\.inert = !isExpanded/);
-  assert.match(setMobileSource, /navigation\.setAttribute\("aria-hidden", String\(!isExpanded\)\)/);
+  assert.match(mobileStyles, /\.dashboard-page \.client-dashboard-mobile-nav-toggle\s*\{[^}]*display:\s*none !important/s);
+  assert.match(setMobileSource, /const isExpanded = mobileNavigation/);
+  assert.match(setMobileSource, /toggle\.hidden = true/);
+  assert.match(setMobileSource, /navigation\.inert = false/);
+  assert.match(setMobileSource, /navigation\.removeAttribute\("aria-hidden"\)/);
   assert.match(handlerSource, /setClientDashboardMobileNavigationExpanded\(true\);/);
-  assert.match(handlerSource, /setClientDashboardMobileNavigationExpanded\(true, \{ focusNavigation: true \}\)/);
-  assert.match(setMobileSource, /centerActiveClientDashboardMobileTab\(navigation\)/);
   assert.match(tabHandlerSource, /clientDashboardMobileTabPressAction\(/);
-  assert.match(tabHandlerSource, /if \(action\.shouldCollapse\)/);
-  assert.match(tabHandlerSource, /setClientDashboardMobileNavigationExpanded\(false, \{ focusToggle: true \}\)/);
-  assert.deepEqual(pressDecision("home", "home", "", true), {
-    shouldCollapse: false,
-    nextTabPress: "home"
-  });
-  assert.deepEqual(pressDecision("home", "home", "home", true), {
-    shouldCollapse: true,
-    nextTabPress: ""
-  });
-  assert.deepEqual(pressDecision("workouts", "home", "home", true), {
-    shouldCollapse: false,
-    nextTabPress: "workouts"
-  });
-  assert.deepEqual(pressDecision("workouts", "workouts", "workouts", false), {
-    shouldCollapse: false,
-    nextTabPress: "workouts"
-  });
+  assert.doesNotMatch(tabHandlerSource, /setClientDashboardMobileNavigationExpanded\(false/);
   assert.match(portalSource, /handleClientDashboardMobileNavigation\(\);/);
 });
 
-test("uses balanced icon and label sizing in the expanded mobile dock", () => {
+test("uses compact, evenly sized icons and labels in the mobile dock", () => {
   const mobileStyles = sourceBetween("@media (max-width: 900px)", "@media (max-width: 420px)");
   const narrowStyles = sourceBetween("@media (max-width: 420px)", "@media (prefers-reduced-motion: reduce)");
 
-  assert.match(mobileStyles, /\.client-dashboard-tab-icon\s*\{[^}]*width:\s*28px[^}]*height:\s*28px[^}]*padding:\s*1px/s);
-  assert.match(mobileStyles, /\.client-dashboard-tab\[data-client-dashboard-tab\]\s*\{[^}]*width:\s*82px !important[^}]*min-width:\s*82px !important[^}]*max-width:\s*82px !important/s);
-  assert.match(mobileStyles, /\.client-dashboard-tab\.is-active \.client-dashboard-tab-icon\s*\{[^}]*width:\s*42px[^}]*height:\s*42px[^}]*padding:\s*7px/s);
-  assert.match(narrowStyles, /\.client-dashboard-tab-icon\s*\{[^}]*width:\s*27px[^}]*height:\s*27px/s);
-  assert.match(narrowStyles, /\.client-dashboard-tab\[data-client-dashboard-tab\]\s*\{[^}]*width:\s*78px !important[^}]*min-width:\s*78px !important[^}]*max-width:\s*78px !important/s);
-  assert.match(narrowStyles, /\.client-dashboard-tab\.is-active \.client-dashboard-tab-icon\s*\{[^}]*width:\s*40px[^}]*height:\s*40px/s);
+  assert.match(mobileStyles, /\.client-dashboard-tab-icon\s*\{[^}]*width:\s*25px[^}]*height:\s*25px[^}]*padding:\s*2px/s);
+  assert.match(mobileStyles, /\.client-dashboard-tab\[data-client-dashboard-tab\]\s*\{[^}]*width:\s*100% !important[^}]*min-width:\s*0 !important[^}]*max-width:\s*none !important/s);
+  assert.match(mobileStyles, /\.client-dashboard-tab\.is-active \.client-dashboard-tab-icon\s*\{[^}]*width:\s*34px[^}]*height:\s*34px[^}]*padding:\s*6px/s);
+  assert.match(narrowStyles, /\.client-dashboard-tab-icon\s*\{[^}]*width:\s*24px[^}]*height:\s*24px/s);
+  assert.match(narrowStyles, /\.client-dashboard-tab\.is-active \.client-dashboard-tab-icon\s*\{[^}]*width:\s*33px[^}]*height:\s*33px/s);
 });
 
 test("restores, persists, and exposes the desktop sidebar state accessibly", () => {
