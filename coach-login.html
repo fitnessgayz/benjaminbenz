@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FWB Coach Login | Fitness with Benjamin</title>
+  <meta name="description" content="Sign in to FWB Coach to manage clients, training, and messages." />
+  <meta name="robots" content="noindex, nofollow, noarchive" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-P3FPJMJ4PK"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-P3FPJMJ4PK');
+  </script>
+  <link rel="shortcut icon" href="/favicon.ico" />
+  <link rel="icon" href="/favicon.ico" sizes="any" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+  <link rel="apple-touch-icon" href="/fwb-home-icon-180.png" />
+  <link rel="apple-touch-icon-precomposed" href="/fwb-home-icon-180.png" />
+  <link rel="apple-touch-icon" sizes="120x120" href="/apple-touch-icon-120x120.png" />
+  <link rel="apple-touch-icon" sizes="152x152" href="/apple-touch-icon-152x152.png" />
+  <link rel="apple-touch-icon" sizes="167x167" href="/apple-touch-icon-167x167.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/fwb-home-icon-180.png" />
+  <link rel="manifest" href="/coach.webmanifest" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="FWB Coach" />
+  <meta name="application-name" content="FWB Coach" />
+  <meta name="theme-color" content="#080A08" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css?v=coach-app-1" />
+  <link rel="stylesheet" href="css/login-layout-fix.css?v=coach-app-1" />
+  <link rel="stylesheet" href="/css/fwb-design-system.css?v=reference-overhaul-1" />
+</head>
+<body class="login-page coach-login-page">
+  <header class="site-header">
+    <a class="brand" href="coach-login.html" aria-label="FWB Coach login">
+      <span>FWB</span>
+      <strong>Coach</strong>
+    </a>
+    <div class="header-actions">
+      <a class="login-link" href="client-login.html">Client app</a>
+    </div>
+  </header>
+
+  <main class="client-access">
+    <section class="access-intro" aria-labelledby="coach-access-title">
+      <p class="kicker">FWB Coach</p>
+      <h1 id="coach-access-title">Welcome back</h1>
+      <p>Your coaching workspace, connected to every client’s training and progress.</p>
+    </section>
+
+    <section class="access-options access-options-single" aria-label="Coach sign in">
+      <div class="access-panel coach-access-panel" aria-label="Coach sign in">
+        <div class="access-panel-heading">
+          <p class="kicker">Your workspace</p>
+          <h2>Sign in</h2>
+        </div>
+        <form class="login-form" id="coach-login-form">
+          <label>
+            Email
+            <input type="email" name="email" placeholder="coach@example.com" autocomplete="email" required aria-label="Coach email" />
+          </label>
+          <label>
+            Password
+            <input type="password" name="password" placeholder="Password" autocomplete="current-password" required aria-label="Coach password" />
+          </label>
+          <button class="password-reset-button" type="button" data-password-reset="coach">Forgot password?</button>
+          <div class="login-session-option">
+            <label class="login-remember-label">
+              <input type="checkbox" name="remember_me" value="true" checked aria-describedby="coach-remember-help" />
+              <span>Keep me logged in</span>
+            </label>
+            <p id="coach-remember-help">Use this on your personal device.</p>
+          </div>
+          <button class="button button-dark" type="submit">Sign in to coach app</button>
+          <p class="login-status" id="coach-login-status" role="status">Use your coach account.</p>
+        </form>
+        <div class="access-demo">
+          <strong>Connected to FWB Training</strong>
+          <span>Client workouts, progress, messages, and programs stay in sync through the shared secure backend.</span>
+        </div>
+      </div>
+    </section>
+  </main>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase-config.js?v=manual-sessions-1"></script>
+  <script src="js/auth-session.js?v=remember-login-1"></script>
+  <script src="js/client-portal.js?v=coach-app-1"></script>
+</body>
+</html>

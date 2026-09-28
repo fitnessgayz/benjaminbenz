@@ -308,11 +308,9 @@ test("keeps the coach autosave save and finish controls with the new card layout
   assert.match(save, /coachWorkoutLastSavedSignature/);
 });
 
-test("locks zoom only on the coach session logger", () => {
-  assert.match(
-    loggerHtml,
-    /name="viewport" content="width=device-width, initial-scale=1\.0, maximum-scale=1\.0, user-scalable=no"/,
-  );
+test("allows accessible browser zoom on the coach session logger", () => {
+  assert.match(loggerHtml, /name="viewport" content="width=device-width, initial-scale=1\.0"/);
+  assert.doesNotMatch(loggerHtml, /maximum-scale=1|user-scalable=no/);
 });
 
 test("saves each set's weight reps and optional RIR", () => {

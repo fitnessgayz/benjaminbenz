@@ -17859,7 +17859,7 @@ async function handleLogin() {
   });
 
   if (status && supabaseClient) {
-    status.textContent = "Use the email and password from your coach.";
+    status.textContent = "Use the email Benjamin has on file and your password.";
   }
 }
 

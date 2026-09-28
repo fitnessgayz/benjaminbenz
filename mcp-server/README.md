@@ -1,4 +1,4 @@
-# FWB Coach
+# FWB Training Assistant
 
 Production-oriented MVP for an authenticated ChatGPT plugin that lets Fitness with Benjamin clients discuss their program and progress, log complete workouts, save explicit check-ins, and queue human follow-up.
 

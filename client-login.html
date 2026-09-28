@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Client Login | Fitness with Benjamin</title>
-  <meta name="description" content="Fitness with Benjamin client login page." />
+  <title>FWB Training Login | Fitness with Benjamin</title>
+  <meta name="description" content="Sign in to FWB Training to view your plan, continue workouts, and follow your progress." />
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-P3FPJMJ4PK"></script>
   <script>
     window.dataLayer = window.dataLayer || [];
@@ -22,11 +22,11 @@
   <link rel="apple-touch-icon" sizes="152x152" href="/apple-touch-icon-152x152.png" />
   <link rel="apple-touch-icon" sizes="167x167" href="/apple-touch-icon-167x167.png" />
   <link rel="apple-touch-icon" sizes="180x180" href="/fwb-home-icon-180.png" />
-  <link rel="manifest" href="/site.webmanifest" />
+  <link rel="manifest" href="/client.webmanifest" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-title" content="FWB" />
-  <meta name="application-name" content="FWB" />
-  <meta name="theme-color" content="#050505" />
+  <meta name="apple-mobile-web-app-title" content="FWB Training" />
+  <meta name="application-name" content="FWB Training" />
+  <meta name="theme-color" content="#080A08" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -36,9 +36,9 @@
 </head>
 <body class="login-page">
   <header class="site-header">
-    <a class="brand" href="index.html#top" aria-label="Fitness with Benjamin home">
+    <a class="brand" href="index.html#top" aria-label="FWB Training">
       <span>FWB</span>
-      <strong>Fitness with Benjamin</strong>
+      <strong>Training</strong>
     </a>
     <nav class="nav-links" aria-label="Primary navigation">
       <a href="index.html#training">Training</a>
@@ -55,16 +55,16 @@
 
   <main class="client-access">
     <section class="access-intro" aria-labelledby="access-title">
-      <p class="kicker">Client access</p>
-      <h1 id="access-title">Training portal</h1>
-      <p>Sign in to view your current program, log your workouts, and track progress.</p>
+      <p class="kicker">FWB Training</p>
+      <h1 id="access-title">Welcome back</h1>
+      <p>Train with intention. Feel your progress.</p>
     </section>
 
-    <section class="access-options" aria-label="Portal sign in options">
+    <section class="access-options access-options-single" aria-label="Client sign in">
       <div class="access-panel" aria-label="Client sign in">
         <div class="access-panel-heading">
-          <p class="kicker">Private login</p>
-          <h2>Client access</h2>
+          <p class="kicker">Your training</p>
+          <h2>Sign in</h2>
         </div>
         <form class="login-form" id="client-login-form">
           <label>
@@ -77,7 +77,7 @@
           </label>
           <div class="login-help-links" aria-label="Client account help">
             <button class="password-reset-button" type="button" data-password-reset="client">Forgot password?</button>
-            <a class="password-reset-button" href="client-signup.html">Create new account</a>
+            <a class="password-reset-button" href="client-signup.html">Need a fresh setup link?</a>
           </div>
           <div class="login-session-option">
             <label class="login-remember-label">
@@ -86,47 +86,19 @@
             </label>
             <p id="client-remember-help">Use this on your personal device.</p>
           </div>
-          <button class="button button-dark" type="submit">Sign in</button>
-          <p class="login-status" id="login-status" role="status">Use the email and password from your coach.</p>
+          <button class="button button-dark" type="submit">Sign in to FWB Training</button>
+          <p class="login-status" id="login-status" role="status">Use the email Benjamin has on file and your password.</p>
         </form>
         <div class="access-demo">
-          <strong>Secure client portal</strong>
-          <span>Your program is only visible after sign in.</span>
+          <strong>Your coaching stays connected</strong>
+          <span>Only you and your coach can see your training information.</span>
         </div>
       </div>
 
-      <div class="access-panel coach-access-panel" aria-label="Coach sign in">
-        <div class="access-panel-heading">
-          <p class="kicker">Coach login</p>
-          <h2>Coach access</h2>
-        </div>
-        <form class="login-form" id="coach-login-form">
-          <label>
-            Email
-            <input type="email" name="email" placeholder="coach@example.com" autocomplete="email" required aria-label="Coach email" />
-          </label>
-          <label>
-            Password
-            <input type="password" name="password" placeholder="Password" autocomplete="current-password" required aria-label="Coach password" />
-          </label>
-          <button class="password-reset-button" type="button" data-password-reset="coach">Forgot password?</button>
-          <div class="login-session-option">
-            <label class="login-remember-label">
-              <input type="checkbox" name="remember_me" value="true" checked aria-describedby="coach-remember-help" />
-              <span>Keep me logged in</span>
-            </label>
-            <p id="coach-remember-help">Use this on your personal device.</p>
-          </div>
-          <button class="button button-dark" type="submit">Sign in</button>
-          <p class="login-status" id="coach-login-status" role="status">Use your coach admin login.</p>
-        </form>
-        <div class="access-demo">
-          <strong>Client programs</strong>
-          <span>Coach sign-in opens the program editor.</span>
-        </div>
-      </div>
     </section>
-
+    <div class="access-footer-cta">
+      <a class="button button-ghost" href="coach-login.html">Open the FWB Coach app</a>
+    </div>
   </main>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js?v=manual-sessions-1"></script>

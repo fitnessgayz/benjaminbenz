@@ -3,7 +3,7 @@
   "version": "0.3.0",
   "private": true,
   "type": "module",
-  "description": "Authenticated MCP server for the FWB Coach ChatGPT app.",
+  "description": "Authenticated MCP server for the FWB Training Assistant ChatGPT app.",
   "engines": {
     "node": ">=22"
   },

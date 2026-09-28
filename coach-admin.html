@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Coach Admin | Fitness with Benjamin</title>
-  <meta name="description" content="Fitness with Benjamin private coach admin." />
+  <title>FWB Coach | Fitness with Benjamin</title>
+  <meta name="description" content="FWB Coach workspace for managing clients, training, and messages." />
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-P3FPJMJ4PK"></script>
   <script>
     window.dataLayer = window.dataLayer || [];
@@ -22,11 +22,11 @@
   <link rel="apple-touch-icon" sizes="152x152" href="/apple-touch-icon-152x152.png" />
   <link rel="apple-touch-icon" sizes="167x167" href="/apple-touch-icon-167x167.png" />
   <link rel="apple-touch-icon" sizes="180x180" href="/fwb-home-icon-180.png" />
-  <link rel="manifest" href="/site.webmanifest" />
+  <link rel="manifest" href="/coach.webmanifest" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-title" content="FWB" />
-  <meta name="application-name" content="FWB" />
-  <meta name="theme-color" content="#050505" />
+  <meta name="apple-mobile-web-app-title" content="FWB Coach" />
+  <meta name="application-name" content="FWB Coach" />
+  <meta name="theme-color" content="#080A08" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -40,9 +40,9 @@
 </head>
 <body class="dashboard-page coach-admin-page">
   <header class="site-header dashboard-header">
-    <a class="brand" href="index.html#top" aria-label="Fitness with Benjamin home">
+    <a class="brand" href="index.html#top" aria-label="FWB Coach home">
       <span>FWB</span>
-      <strong>Fitness with Benjamin</strong>
+      <strong>Coach</strong>
     </a>
     <nav class="nav-links" aria-label="Primary navigation">
       <a href="#clients">Clients</a>
@@ -55,11 +55,11 @@
   </header>
 
   <main class="admin-shell">
-    <section class="dashboard-hero" aria-label="Coach admin summary">
+    <section class="dashboard-hero" aria-label="FWB Coach summary">
       <div>
-        <p class="kicker">Coach admin</p>
-        <h1>Coach access</h1>
-        <p>Update client profiles, coach notes, and workouts from one private page.</p>
+        <p class="kicker">FWB Coach</p>
+        <h1>Your coaching workspace</h1>
+        <p>Manage clients, training, progress, and messages in one connected workspace.</p>
       </div>
     </section>
 
@@ -71,11 +71,11 @@
         data-admin-sidebar-backdrop
         hidden
       ></button>
-      <aside class="coach-admin-sidebar" aria-label="Coach admin navigation">
+      <aside class="coach-admin-sidebar" aria-label="FWB Coach navigation">
         <div class="coach-admin-sidebar-header">
-          <a class="coach-admin-sidebar-brand" href="coach-admin.html" aria-label="Coach Admin home">
+          <a class="coach-admin-sidebar-brand" href="coach-admin.html" aria-label="FWB Coach home">
             <span class="coach-admin-sidebar-mark" aria-hidden="true">FWB</span>
-            <span class="coach-admin-sidebar-title">Coach Admin</span>
+            <span class="coach-admin-sidebar-title">FWB Coach</span>
           </a>
           <button
             class="coach-admin-sidebar-toggle"
@@ -162,11 +162,11 @@
         <input type="hidden" name="sheet_url" />
         <input type="hidden" name="session_package_history" />
 
-        <section class="admin-client-list" id="clients" aria-label="Client selector">
+        <section class="admin-client-list" id="clients" aria-label="Client list">
           <div class="admin-section-heading">
             <div>
               <p class="kicker">Clients</p>
-              <h2>Client selector</h2>
+              <h2>Choose a client</h2>
             </div>
             <div class="client-list-actions">
               <button class="button button-ghost" type="button" id="archived-clients-button">Archived clients</button>

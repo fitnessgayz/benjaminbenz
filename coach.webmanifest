@@ -1,10 +1,12 @@
 {
-  "name": "Fitness with Benjamin",
-  "short_name": "FWB",
-  "description": "Fitness with Benjamin personal training and online coaching.",
-  "start_url": "/",
+  "id": "/coach-app",
+  "name": "FWB Coach",
+  "short_name": "FWB Coach",
+  "description": "Coach workspace for Fitness with Benjamin.",
+  "start_url": "/coach-admin.html",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#F2F3EE",
+  "background_color": "#080A08",
   "theme_color": "#080A08",
   "icons": [
     {

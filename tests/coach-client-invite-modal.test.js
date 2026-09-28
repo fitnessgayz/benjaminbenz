@@ -21,7 +21,7 @@ test("keeps the client selector separate from the new-client invite form", () =>
   const clientPanelEnd = adminHtml.indexOf('</section>', clientPanelStart);
   const clientPanel = adminHtml.slice(clientPanelStart, clientPanelEnd);
 
-  assert.match(clientPanel, /Client selector/);
+  assert.match(clientPanel, /Choose a client/);
   assert.match(clientPanel, /client-search-input/);
   assert.match(clientPanel, /role="combobox"/);
   assert.match(clientPanel, /id="client-suggestions"[^>]*role="listbox"/);

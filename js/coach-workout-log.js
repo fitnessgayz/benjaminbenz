@@ -1,6 +1,6 @@
 const coachWorkoutConfig = window.FWB_SUPABASE_CONFIG || {};
 const coachWorkoutEmails = ["benjaminbenz.fit@gmail.com"];
-const coachWorkoutLoginUrl = "client-login.html?return_to=%2Fcoach-workout-log.html";
+const coachWorkoutLoginUrl = "coach-login.html?return_to=%2Fcoach-workout-log.html";
 const coachWorkoutAutosaveDelayMs = 10000;
 const coachWorkoutWarmUpSetNumberBase = 1000;
 const coachWorkoutWarmUpSetType = "warm_up";

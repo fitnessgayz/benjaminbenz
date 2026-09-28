@@ -17,7 +17,7 @@ const coachSupabase = hasCoachConfig && window.supabase
     })
   : null;
 const workoutSlots = [1, 2, 3, 4, 5, 6, 7];
-const coachLoginUrl = "client-login.html?v=manual-invite-copy-1";
+const coachLoginUrl = "coach-login.html";
 const warmupExerciseCode = "WARMUP";
 const cardioExerciseCode = "CARDIO";
 const warmUpSetNumberBase = 1000;
