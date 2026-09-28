@@ -25,17 +25,20 @@ test("Home leads with today’s workout, weekly rhythm, and the coach note", () 
   assert.match(portal, /activeWorkoutTabIndex - 1/);
 });
 
-test("Home exposes messaging as a global upper-right action", () => {
+test("Home exposes the profile avatar as its upper-right Settings action", () => {
   const home = dashboard.match(/data-client-dashboard-panel="home"[\s\S]*?data-client-dashboard-panel="workouts"/)?.[0] || "";
   const heading = home.match(/<div class="panel-heading">[\s\S]*?<\/div>\s*<div class="client-home-checkin-backdrop"/)?.[0] || "";
 
-  assert.match(heading, /class="client-home-message-button"/);
-  assert.match(heading, /data-message-coach/);
-  assert.match(heading, /aria-label="Message coach"/);
-  assert.match(heading, /data-client-message-unread/);
+  assert.match(heading, /class="client-home-settings-button"/);
+  assert.ok(heading.indexOf("client-home-settings-button") > heading.indexOf("client-home-title"));
+  assert.match(heading, /data-client-settings-destination="notifications"/);
+  assert.match(heading, /data-client-settings-avatar/);
+  assert.match(heading, /data-client-settings-avatar-image/);
+  assert.match(heading, /aria-label="Open settings"/);
+  assert.match(heading, /data-client-notification-unread/);
   assert.match(styles, /\.dashboard-page \.client-home-panel > \.panel-heading\s*\{[\s\S]*?display:\s*flex !important[\s\S]*?justify-content:\s*space-between/);
-  assert.match(styles, /\.dashboard-page \.client-home-message-button\s*\{[\s\S]*?width:\s*48px !important[\s\S]*?max-width:\s*48px !important[\s\S]*?border-radius:\s*50%/);
-  assert.match(dashboard, /client-home-today\.css\?v=3/);
+  assert.match(styles, /\.dashboard-page :is\(\.client-home-message-button, \.client-home-settings-button\)\s*\{[\s\S]*?width:\s*48px !important[\s\S]*?max-width:\s*48px !important[\s\S]*?border-radius:\s*50%/);
+  assert.match(dashboard, /client-home-today\.css\?v=4/);
 });
 
 test("secondary dashboard content is collapsed behind one native disclosure", () => {

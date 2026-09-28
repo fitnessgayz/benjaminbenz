@@ -15387,12 +15387,14 @@ function setClientDashboardTab(tabName) {
 
 function setClientNotificationSettingsAvailable(available) {
   const settingsTab = document.querySelector('[data-client-dashboard-tab="notifications"]');
+  const settingsEntries = document.querySelectorAll("[data-client-settings-entry]");
   const settingsPanel = document.querySelector('[data-client-dashboard-panel="notifications"]');
   const isAvailable = Boolean(available);
 
   if (settingsTab) {
     settingsTab.hidden = !isAvailable;
   }
+  settingsEntries.forEach((entry) => { entry.hidden = !isAvailable; });
   if (!isAvailable && settingsPanel) {
     settingsPanel.hidden = true;
   }

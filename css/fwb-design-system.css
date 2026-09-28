@@ -283,7 +283,7 @@
     box-shadow: 0 -10px 30px rgba(20, 24, 20, .1);
   }
   :root body.client-dashboard-page .client-dashboard-tab-label {
-    font-size: .48rem;
+    font-size: .58rem;
     letter-spacing: 0;
     overflow-wrap: normal !important;
     white-space: nowrap !important;

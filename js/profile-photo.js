@@ -11,6 +11,7 @@
       "preview-placeholder", "file", "choose", "editor-status", "confirm", "keep", "confirm-remove",
       "editor-actions", "cancel", "save", "remove"
     ].map((name) => [name, root.querySelector(`[data-profile-${name}]`)]));
+    const settingsAvatars = Array.from(document.querySelectorAll?.("[data-client-settings-avatar]") || []);
     let destroyed = false;
     let loading = false;
     let writing = false;
@@ -42,6 +43,11 @@
       nodes.open.disabled = loading || writing;
       nodes.label.textContent = current.path ? "Change profile photo" : "Add profile photo";
       picture(nodes.image, nodes.placeholder, current.url);
+      settingsAvatars.forEach((avatar) => picture(
+        avatar.querySelector("[data-client-settings-avatar-image]"),
+        avatar.querySelector("[data-client-settings-avatar-placeholder]"),
+        current.url
+      ));
       picture(nodes.preview, nodes["preview-placeholder"], draftURL || current.url);
       nodes.choose.disabled = writing || processing || confirming;
       nodes.save.disabled = writing || processing || !draft;
@@ -153,6 +159,11 @@
       if (current.url) global.URL.revokeObjectURL(current.url);
       current = { path: null, url: "" };
       picture(nodes.image, nodes.placeholder, "");
+      settingsAvatars.forEach((avatar) => picture(
+        avatar.querySelector("[data-client-settings-avatar-image]"),
+        avatar.querySelector("[data-client-settings-avatar-placeholder]"),
+        ""
+      ));
       picture(nodes.preview, nodes["preview-placeholder"], "");
       nodes.email.textContent = "";
       root.hidden = true;

@@ -91,7 +91,7 @@ const scenarios = [
 
         assert.equal(result.position, "fixed");
         if (!baseline) {
-          assert.deepEqual(result.visibleTabs, ["home", "workouts", "logs", "progress", "stats", "nutrition", "notifications"]);
+          assert.deepEqual(result.visibleTabs, ["home", "workouts", "logs", "progress", "stats", "nutrition"]);
           assert.equal(result.nav.left, 0);
           assert.equal(result.nav.right, viewport.width);
           assert.equal(result.nav.bottom, viewport.height);

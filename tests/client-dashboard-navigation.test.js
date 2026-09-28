@@ -80,7 +80,7 @@ test("renders nine labeled client destinations in order with current-page semant
   assert.equal(buttons.find((match) => /aria-current="page"/.test(match[1]))?.[2], "home");
   assert.doesNotMatch(navMarkup, /aria-selected=/);
   assert.match(navMarkup, /data-client-dashboard-tab="notifications"[\s\S]*?client-dashboard-settings-icon/);
-  assert.equal((dashboardHtml.match(/data-client-notification-unread hidden/g) || []).length, 2);
+  assert.equal((dashboardHtml.match(/data-client-notification-unread hidden/g) || []).length, 3);
   assert.equal((dashboardHtml.match(/aria-describedby="client-notification-unread-status"/g) || []).length, 2);
   assert.match(dashboardHtml, /data-client-notification-unread-status aria-live="polite">0 unread notifications/);
 });
@@ -99,21 +99,21 @@ test("uses a sticky 240px desktop sidebar with a persistent 78px icon rail", () 
   assert.match(dashboardHtml, /client-dashboard-sidebar-toggle-label">Minimize</);
 });
 
-test("uses a permanent seven-destination frosted safe-area dock on mobile", () => {
+test("uses a permanent six-destination frosted safe-area dock on mobile", () => {
   const mobileStyles = sourceBetween("@media (max-width: 900px)", "@media (max-width: 420px)");
 
-  assert.match(mobileStyles, /body\.client-dashboard-page\s*\{[^}]*--client-mobile-dock-height:\s*78px[^}]*min-height:\s*100dvh[^}]*padding-bottom:\s*calc\(var\(--client-bottom-dock-clearance\) \+ 24px\)/s);
+  assert.match(mobileStyles, /body\.client-dashboard-page\s*\{[^}]*--client-mobile-dock-height:\s*90px[^}]*min-height:\s*100dvh[^}]*padding-bottom:\s*calc\(var\(--client-bottom-dock-clearance\) \+ 24px\)/s);
   assert.match(mobileStyles, /\.client-dashboard-page \.dashboard-shell\s*\{[^}]*padding-top:\s*10px/s);
   assert.match(mobileStyles, /\.client-dashboard-page \.dashboard-grid\s*\{[^}]*padding-top:\s*0/s);
-  assert.match(mobileStyles, /\.dashboard-page \.client-dashboard-tabs\s*\{[^}]*position:\s*fixed[^}]*inset:\s*auto 0 0[^}]*z-index:\s*1000[^}]*grid-template-columns:\s*repeat\(7, minmax\(0, 1fr\)\)[^}]*width:\s*100%[^}]*overflow:\s*visible/s);
+  assert.match(mobileStyles, /\.dashboard-page \.client-dashboard-tabs\s*\{[^}]*position:\s*fixed[^}]*inset:\s*auto 0 0[^}]*z-index:\s*1000[^}]*grid-template-columns:\s*repeat\(6, minmax\(0, 1fr\)\)[^}]*width:\s*100%[^}]*overflow:\s*visible/s);
   assert.match(mobileStyles, /background:\s*rgba\(247, 248, 245, \.82\)[^}]*border-top:\s*1px solid rgba\(59, 64, 58, \.14\)[^}]*box-shadow:\s*0 -10px 30px rgba\(20, 24, 20, \.1\)/s);
   assert.match(mobileStyles, /backdrop-filter:\s*blur\(18px\) saturate\(180%\)/);
   assert.match(mobileStyles, /-webkit-backdrop-filter:\s*blur\(18px\) saturate\(180%\)/);
   assert.match(mobileStyles, /padding:[^;]*env\(safe-area-inset-right\)[^;]*env\(safe-area-inset-bottom\)[^;]*env\(safe-area-inset-left\)/);
-  assert.match(mobileStyles, /data-client-dashboard-tab="questionnaire"[\s\S]*?data-client-dashboard-tab="sessions"[\s\S]*?display:\s*none !important/);
+  assert.match(mobileStyles, /data-client-dashboard-tab="questionnaire"[\s\S]*?data-client-dashboard-tab="sessions"[\s\S]*?data-client-dashboard-tab="notifications"[\s\S]*?display:\s*none !important/);
   assert.doesNotMatch(mobileStyles, /data-client-dashboard-tab="nutrition"[^}]*display:\s*none/);
-  assert.doesNotMatch(mobileStyles, /data-client-dashboard-tab="notifications"[^}]*display:\s*none/);
-  assert.match(mobileStyles, /\.client-dashboard-tab\.is-active \.client-dashboard-tab-icon\s*\{[^}]*color:\s*var\(--black\)[^}]*background:\s*var\(--lime\)[^}]*border-radius:\s*50%/s);
+  assert.match(mobileStyles, /\.client-dashboard-tab\.is-active \.client-dashboard-tab-icon\s*\{[^}]*color:\s*var\(--black\)[^}]*background:\s*linear-gradient\([^}]*var\(--lime\)[^}]*border-radius:\s*15px/s);
+  assert.match(mobileStyles, /\.client-dashboard-tab\.is-active \.client-dashboard-tab-label\s*\{[^}]*color:\s*#344000[^}]*font-weight:\s*900[^}]*text-shadow:/s);
   assert.match(mobileStyles, /\.client-dashboard-tab-label\s*\{[^}]*display:\s*block !important[^}]*font-size:\s*\.52rem/s);
   assert.match(mobileStyles, /\.client-dashboard-nav-title,[\s\S]*?\.client-dashboard-sidebar-toggle\s*\{[^}]*display:\s*none !important/s);
 });
@@ -136,7 +136,7 @@ test("removes mobile scrolling, the arrow cue, and the dark capsule", () => {
   assert.doesNotMatch(dashboardHtml, /data-client-nav-scroll-(?:fade|cue)/);
   assert.doesNotMatch(mobileStyles, /overflow-x:\s*auto|scroll-snap-type|rgba\(23, 26, 23, \.98\)|border-radius:\s*34px/);
   assert.doesNotMatch(mobileHandler, /addEventListener\("scroll"/);
-  assert.match(dashboardHtml, /fwb-design-system\.css\?v=reference-overhaul-2/);
+  assert.match(dashboardHtml, /fwb-design-system\.css\?v=reference-overhaul-3/);
   assert.match(designSystemSource, /@media \(max-width: 900px\)[\s\S]*?:root body\.client-dashboard-page \.client-dashboard-tabs \{[\s\S]*?background:\s*rgba\(247, 248, 245, \.82\)[\s\S]*?border-radius:\s*0 !important/);
   assert.doesNotMatch(designSystemSource, /@media \(max-width: 900px\)[\s\S]*?client-dashboard-tabs \{\s*border-radius:\s*34px !important/);
 });
@@ -160,15 +160,15 @@ test("keeps mobile navigation permanently expanded while preserving selected-tab
   assert.match(portalSource, /handleClientDashboardMobileNavigation\(\);/);
 });
 
-test("uses compact, evenly sized icons and labels in the mobile dock", () => {
+test("uses large, dimensional, evenly sized icons and legible labels in the mobile dock", () => {
   const mobileStyles = sourceBetween("@media (max-width: 900px)", "@media (max-width: 420px)");
   const narrowStyles = sourceBetween("@media (max-width: 420px)", "@media (prefers-reduced-motion: reduce)");
 
-  assert.match(mobileStyles, /\.client-dashboard-tab-icon\s*\{[^}]*width:\s*23px[^}]*height:\s*23px[^}]*padding:\s*2px/s);
+  assert.match(mobileStyles, /\.client-dashboard-tab-icon\s*\{[^}]*width:\s*34px[^}]*height:\s*34px[^}]*padding:\s*7px[^}]*linear-gradient[^}]*box-shadow:/s);
   assert.match(mobileStyles, /\.client-dashboard-tab\[data-client-dashboard-tab\]\s*\{[^}]*width:\s*100% !important[^}]*min-width:\s*0 !important[^}]*max-width:\s*none !important/s);
-  assert.match(mobileStyles, /\.client-dashboard-tab\.is-active \.client-dashboard-tab-icon\s*\{[^}]*width:\s*31px[^}]*height:\s*31px[^}]*padding:\s*5px/s);
-  assert.match(narrowStyles, /\.client-dashboard-tab-icon\s*\{[^}]*width:\s*22px[^}]*height:\s*22px/s);
-  assert.match(narrowStyles, /\.client-dashboard-tab\.is-active \.client-dashboard-tab-icon\s*\{[^}]*width:\s*30px[^}]*height:\s*30px/s);
+  assert.match(mobileStyles, /\.client-dashboard-tab\.is-active \.client-dashboard-tab-icon\s*\{[^}]*width:\s*46px[^}]*height:\s*46px[^}]*padding:\s*10px/s);
+  assert.match(narrowStyles, /\.client-dashboard-tab-icon\s*\{[^}]*width:\s*32px[^}]*height:\s*32px/s);
+  assert.match(narrowStyles, /\.client-dashboard-tab\.is-active \.client-dashboard-tab-icon\s*\{[^}]*width:\s*44px[^}]*height:\s*44px/s);
 });
 
 test("keeps PAR-Q and Sessions available from Settings", () => {
@@ -176,6 +176,7 @@ test("keeps PAR-Q and Sessions available from Settings", () => {
 
   assert.match(dashboardHtml, /class="client-settings-shortcuts"[\s\S]*?data-client-settings-destination="questionnaire"[\s\S]*?<strong>PAR-Q<\/strong>/);
   assert.match(dashboardHtml, /data-client-settings-destination="sessions"[\s\S]*?<strong>Sessions<\/strong>/);
+  assert.match(dashboardHtml, /class="client-settings-shortcut"[^>]*data-message-coach disabled[\s\S]*?<strong>Direct messages<\/strong>/);
   assert.match(tabHandlerSource, /settingsDestination\.dataset\.clientSettingsDestination/);
   assert.match(tabHandlerSource, /setClientDashboardTab\(settingsDestination\.dataset\.clientSettingsDestination\)/);
 });
