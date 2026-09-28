@@ -15495,13 +15495,13 @@ body.client-dashboard-page.is-loading > :is(.client-dashboard-tabs,
     pointer-events: auto;
     transform: none;
     touch-action: manipulation;
-    background: rgba(247, 248, 245, .82);
+    background: rgba(247, 248, 245, .64);
     border: 0;
-    border-top: 1px solid rgba(59, 64, 58, .14);
+    border-top: 1px solid rgba(255, 255, 255, .72);
     border-radius: 0 !important;
-    box-shadow: 0 -10px 30px rgba(20, 24, 20, .1);
-    backdrop-filter: blur(18px) saturate(180%);
-    -webkit-backdrop-filter: blur(18px) saturate(180%);
+    box-shadow: 0 -10px 30px rgba(20, 24, 20, .08);
+    backdrop-filter: blur(20px) saturate(175%);
+    -webkit-backdrop-filter: blur(20px) saturate(175%);
   }
 
   .dashboard-page .client-dashboard-mobile-nav-toggle {

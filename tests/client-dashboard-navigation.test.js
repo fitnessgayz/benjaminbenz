@@ -106,9 +106,9 @@ test("uses a permanent six-destination frosted safe-area dock on mobile", () => 
   assert.match(mobileStyles, /\.client-dashboard-page \.dashboard-shell\s*\{[^}]*padding-top:\s*10px/s);
   assert.match(mobileStyles, /\.client-dashboard-page \.dashboard-grid\s*\{[^}]*padding-top:\s*0/s);
   assert.match(mobileStyles, /\.dashboard-page \.client-dashboard-tabs\s*\{[^}]*position:\s*fixed[^}]*inset:\s*auto 0 0[^}]*z-index:\s*1000[^}]*grid-template-columns:\s*repeat\(6, minmax\(0, 1fr\)\)[^}]*width:\s*100%[^}]*overflow:\s*visible/s);
-  assert.match(mobileStyles, /background:\s*rgba\(247, 248, 245, \.82\)[^}]*border-top:\s*1px solid rgba\(59, 64, 58, \.14\)[^}]*box-shadow:\s*0 -10px 30px rgba\(20, 24, 20, \.1\)/s);
-  assert.match(mobileStyles, /backdrop-filter:\s*blur\(18px\) saturate\(180%\)/);
-  assert.match(mobileStyles, /-webkit-backdrop-filter:\s*blur\(18px\) saturate\(180%\)/);
+  assert.match(mobileStyles, /background:\s*rgba\(247, 248, 245, \.64\)[^}]*border-top:\s*1px solid rgba\(255, 255, 255, \.72\)[^}]*box-shadow:\s*0 -10px 30px rgba\(20, 24, 20, \.08\)/s);
+  assert.match(mobileStyles, /backdrop-filter:\s*blur\(20px\) saturate\(175%\)/);
+  assert.match(mobileStyles, /-webkit-backdrop-filter:\s*blur\(20px\) saturate\(175%\)/);
   assert.match(mobileStyles, /padding:[^;]*env\(safe-area-inset-right\)[^;]*env\(safe-area-inset-bottom\)[^;]*env\(safe-area-inset-left\)/);
   assert.match(mobileStyles, /data-client-dashboard-tab="questionnaire"[\s\S]*?data-client-dashboard-tab="sessions"[\s\S]*?data-client-dashboard-tab="notifications"[\s\S]*?display:\s*none !important/);
   assert.doesNotMatch(mobileStyles, /data-client-dashboard-tab="nutrition"[^}]*display:\s*none/);
@@ -136,8 +136,8 @@ test("removes mobile scrolling, the arrow cue, and the dark capsule", () => {
   assert.doesNotMatch(dashboardHtml, /data-client-nav-scroll-(?:fade|cue)/);
   assert.doesNotMatch(mobileStyles, /overflow-x:\s*auto|scroll-snap-type|rgba\(23, 26, 23, \.98\)|border-radius:\s*34px/);
   assert.doesNotMatch(mobileHandler, /addEventListener\("scroll"/);
-  assert.match(dashboardHtml, /fwb-design-system\.css\?v=reference-overhaul-3/);
-  assert.match(designSystemSource, /@media \(max-width: 900px\)[\s\S]*?:root body\.client-dashboard-page \.client-dashboard-tabs \{[\s\S]*?background:\s*rgba\(247, 248, 245, \.82\)[\s\S]*?border-radius:\s*0 !important/);
+  assert.match(dashboardHtml, /fwb-design-system\.css\?v=reference-overhaul-4/);
+  assert.match(designSystemSource, /@media \(max-width: 900px\)[\s\S]*?:root body\.client-dashboard-page \.client-dashboard-tabs \{[\s\S]*?background:\s*rgba\(247, 248, 245, \.64\)[\s\S]*?border-radius:\s*0 !important/);
   assert.doesNotMatch(designSystemSource, /@media \(max-width: 900px\)[\s\S]*?client-dashboard-tabs \{\s*border-radius:\s*34px !important/);
 });
 

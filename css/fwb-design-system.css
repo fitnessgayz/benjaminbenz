@@ -276,11 +276,11 @@
 
 @media (max-width: 900px) {
   :root body.client-dashboard-page .client-dashboard-tabs {
-    background: rgba(247, 248, 245, .82);
+    background: rgba(247, 248, 245, .64);
     border: 0;
-    border-top: 1px solid rgba(59, 64, 58, .14);
+    border-top: 1px solid rgba(255, 255, 255, .72);
     border-radius: 0 !important;
-    box-shadow: 0 -10px 30px rgba(20, 24, 20, .1);
+    box-shadow: 0 -10px 30px rgba(20, 24, 20, .08);
   }
   :root body.client-dashboard-page .client-dashboard-tab-label {
     font-size: .58rem;
