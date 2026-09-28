@@ -1240,12 +1240,69 @@ function updateWorkoutSummaries() {
   });
 }
 
+function coachExercisesWithProgression(source) {
+  const parsed = parseExercises(source?.value || "");
+  let metadata = [];
+  try { metadata = JSON.parse(source?.dataset.exerciseMetadata || "[]"); } catch (_) { /* Old drafts have six text fields only. */ }
+  if (!Array.isArray(metadata)) metadata = [];
+  return parsed.map((exercise) => {
+    const exact = metadata.find((entry) => entry.code === exercise.code && entry.name === exercise.name);
+    const sameCode = metadata.filter((entry) => entry.code === exercise.code);
+    const sameName = metadata.filter((entry) => entry.name.trim().toLowerCase() === exercise.name.trim().toLowerCase());
+    const original = exact || (sameCode.length === 1 ? sameCode[0] : null) || (sameName.length === 1 ? sameName[0] : null);
+    const sameIdentity = original && window.FWB_WORKOUT_PROGRESSION.exerciseKey(original.name) === window.FWB_WORKOUT_PROGRESSION.exerciseKey(exercise.name);
+    const preserved = sameIdentity ? { ...original, ...exercise } : exercise;
+    if (!original?.progression) return preserved;
+    const editedPrescription = original.prescription && original.prescription !== exercise.prescription;
+    const derived = editedPrescription ? window.FWB_WORKOUT_PROGRESSION.deriveConfig({ name: exercise.name,
+      prescription: exercise.prescription }, Number(WorkoutLayout.prescription(exercise.prescription).sets)) : null;
+    const config = { ...original.progression,
+      ...(!sameIdentity ? { enabled: false } : {}),
+      ...(editedPrescription ? (derived ? { rep_min: derived.rep_min, rep_max: derived.rep_max } : { enabled: false }) : {}),
+      exercise_key: window.FWB_WORKOUT_PROGRESSION.exerciseKey(exercise.name),
+      planned_sets: Number(WorkoutLayout.prescription(exercise.prescription).sets) || original.progression.planned_sets };
+    return { ...preserved, progression: config };
+  });
+}
+
+function coachProgressionEditor(exercise) {
+  const engine = window.FWB_WORKOUT_PROGRESSION;
+  if (!engine) return "";
+  const config = engine.normalizeConfig(exercise.progression) || engine.deriveConfig(exercise,
+    Number(WorkoutLayout.prescription(exercise.prescription).sets)) || {
+      enabled: false, rep_min: 8, rep_max: 12, target_rir: 2, increment: 2.5
+    };
+  return `<div class="builder-progression">
+    <label><input type="checkbox" data-builder-progression="enabled" ${config.enabled ? "checked" : ""}>Enable suggested targets</label>
+    <div class="builder-progression-grid">
+      <label>Minimum reps<input type="number" min="1" max="50" data-builder-progression="rep_min" value="${escapeHtml(config.rep_min)}"></label>
+      <label>Maximum reps<input type="number" min="1" max="50" data-builder-progression="rep_max" value="${escapeHtml(config.rep_max)}"></label>
+      <label>Target RIR<input type="number" min="0" max="5" step="0.5" data-builder-progression="target_rir" value="${escapeHtml(config.target_rir)}"></label>
+      <label>Weight increment (${escapeHtml(config.unit || "lb")})<input type="number" min="0.25" max="100" step="0.25" data-builder-progression="increment" value="${escapeHtml(config.increment)}"></label>
+    </div>
+    <small>Build reps first. Increase weight after ${config.required_sessions || 2} complete sessions reach the upper target at the planned effort. Set the increment to match available equipment.</small>
+    <small data-builder-progression-status role="status"></small>
+  </div>`;
+}
+
+function coachProgressionFromRow(row, exercise) {
+  const field = (name) => row.querySelector(`[data-builder-progression="${name}"]`);
+  return window.FWB_WORKOUT_PROGRESSION.normalizeConfig({
+    enabled: field("enabled").checked,
+    exercise_key: window.FWB_WORKOUT_PROGRESSION.exerciseKey(exercise.name),
+    rep_min: Number(field("rep_min").value), rep_max: Number(field("rep_max").value),
+    target_rir: Number(field("target_rir").value), increment: Number(field("increment").value),
+    planned_sets: Number(WorkoutLayout.prescription(exercise.prescription).sets) || 3,
+    unit: exercise.progression?.unit || "lb", required_sessions: exercise.progression?.required_sessions || 2
+  });
+}
+
 function renderWorkoutExerciseRows(number) {
   const card = document.querySelector(`[data-workout-card="${number}"]`);
   const list = card?.querySelector("[data-builder-rows]");
   const source = card?.querySelector("textarea");
   if (!list || !source || list.contains(document.activeElement)) return;
-  list.innerHTML = parseExercises(source.value).map((exercise, index) => {
+  list.innerHTML = coachExercisesWithProgression(source).map((exercise, index) => {
     const target = WorkoutLayout.prescription(exercise.prescription);
     return `<div class="builder-exercise-row" data-builder-row="${index}">
       <div class="builder-exercise-line">
@@ -1257,6 +1314,7 @@ function renderWorkoutExerciseRows(number) {
       </div>
       <details class="builder-exercise-details"><summary>Details</summary>
         ${["code", "prescription", "rest", "muscles", "video"].map(field => `<label>${field === "video" ? "Demo URL" : field}<input data-builder-field="${field}" value="${escapeHtml(exercise[field] || "")}" /></label>`).join("")}
+        ${coachProgressionEditor(exercise)}
         <button type="button" data-builder-delete="${index}">Delete exercise</button>
       </details>
     </div>`;
@@ -1268,18 +1326,30 @@ function handleWorkoutExerciseRows() {
   if (!container) return;
   const save = (card, exercises) => {
     const source = card.querySelector("textarea");
+    source.dataset.exerciseMetadata = JSON.stringify(exercises);
     source.value = exercisesToText(exercises);
     source.dispatchEvent(new Event("input", { bubbles: true }));
   };
   container.addEventListener("input", event => {
-    const input = event.target.closest("[data-builder-field]");
+    const input = event.target.closest("[data-builder-field], [data-builder-progression]");
     if (!input) return;
     const card = input.closest("[data-workout-card]");
     const row = input.closest("[data-builder-row]");
-    const exercises = parseExercises(card.querySelector("textarea").value);
+    const exercises = coachExercisesWithProgression(card.querySelector("textarea"));
     const exercise = exercises[Number(row.dataset.builderRow)];
     const field = input.dataset.builderField;
-    if (["sets", "reps"].includes(field)) {
+    if (input.dataset.builderProgression) {
+      const config = coachProgressionFromRow(row, exercise);
+      const status = row.querySelector("[data-builder-progression-status]");
+      if (!config) {
+        if (status) status.textContent = "Enter minimum and maximum reps (1–50), RIR (0–5), and a positive weight increment.";
+        input.setCustomValidity("Check the progression targets.");
+        return;
+      }
+      row.querySelectorAll("[data-builder-progression]").forEach((field) => field.setCustomValidity(""));
+      if (status) status.textContent = "";
+      exercise.progression = config;
+    } else if (["sets", "reps"].includes(field)) {
       exercise.prescription = WorkoutLayout.compose(row.querySelector('[data-builder-field="sets"]').value, row.querySelector('[data-builder-field="reps"]').value);
       row.querySelector('[data-builder-field="prescription"]').value = exercise.prescription;
     } else {
@@ -1290,13 +1360,23 @@ function handleWorkoutExerciseRows() {
         row.querySelector('[data-builder-field="reps"]').value = parsed.reps;
       }
     }
+    if (exercise.progression) {
+      const engine = window.FWB_WORKOUT_PROGRESSION;
+      const derived = ["sets", "reps", "prescription"].includes(field) ? engine.deriveConfig({ name: exercise.name,
+        prescription: exercise.prescription }, Number(WorkoutLayout.prescription(exercise.prescription).sets)) : null;
+      exercise.progression = { ...exercise.progression,
+        ...(field === "name" ? { enabled: false } : {}),
+        ...(["sets", "reps", "prescription"].includes(field) ? (derived ? { rep_min: derived.rep_min, rep_max: derived.rep_max } : { enabled: false }) : {}),
+        exercise_key: engine.exerciseKey(exercise.name),
+        planned_sets: Number(WorkoutLayout.prescription(exercise.prescription).sets) || exercise.progression.planned_sets };
+    }
     save(card, exercises);
   });
   container.addEventListener("click", event => {
     const button = event.target.closest("[data-builder-add], [data-builder-delete]");
     if (!button) return;
     const card = button.closest("[data-workout-card]");
-    const exercises = parseExercises(card.querySelector("textarea").value);
+    const exercises = coachExercisesWithProgression(card.querySelector("textarea"));
     if (button.hasAttribute("data-builder-add")) {
       let code = 1;
       while (exercises.some(exercise => exercise.code === `A${code}`)) code++;
@@ -1307,7 +1387,7 @@ function handleWorkoutExerciseRows() {
   });
   WorkoutLayout.bindReorder(container, ".builder-exercise-row", "[data-builder-drag]", (from, to, row) => {
     const card = row.closest("[data-workout-card]");
-    const exercises = parseExercises(card.querySelector("textarea").value);
+    const exercises = coachExercisesWithProgression(card.querySelector("textarea"));
     exercises.splice(to, 0, exercises.splice(from, 1)[0]);
     document.activeElement?.blur();
     save(card, exercises);
@@ -2121,7 +2201,7 @@ function buildWorkoutFromForm(form, number) {
     title: formValue(form, `workout_${number}_title`) || `Workout ${number}`,
     focus: formValue(form, `workout_${number}_focus`),
     format: formValue(form, `workout_${number}_format`) || "single",
-    exercises: parseExercises(formValue(form, `workout_${number}_exercises`))
+    exercises: coachExercisesWithProgression(form.elements[`workout_${number}_exercises`])
   };
 }
 
@@ -2571,6 +2651,7 @@ function clearProgramFields(form) {
     form.elements[`workout_${number}_focus`].value = "";
     form.elements[`workout_${number}_format`].value = "single";
     form.elements[`workout_${number}_exercises`].value = "";
+    form.elements[`workout_${number}_exercises`].dataset.exerciseMetadata = "[]";
   });
 
   selectedProgramId = "";
@@ -2701,6 +2782,7 @@ function fillForm(program = {}) {
     form.elements[`workout_${number}_focus`].value = workout.focus || "";
     form.elements[`workout_${number}_format`].value = workout.format || "single";
     form.elements[`workout_${number}_exercises`].value = exercisesToText(workout.exercises);
+    form.elements[`workout_${number}_exercises`].dataset.exerciseMetadata = JSON.stringify(workout.exercises || []);
   });
   form.elements.active.checked = program.active !== false;
   selectedProgramId = program.id || "";

@@ -5034,6 +5034,67 @@ function renderExerciseNotesState(logElement) {
   if (carousel) renderCustomWorkoutGroupedNotes(carousel);
 }
 
+function workoutProgressionContext(logElement) {
+  const date = logElement?.querySelector("[data-log-date]")?.value || todayDate();
+  const title = logElement?.dataset.workoutTitle || "";
+  const context = { client_email: activeClientEmail, entry_date: date, workout_title: title };
+  const sessionId = trainingLogs.find((row) => clientWorkoutLogContextKey(row) === clientWorkoutLogContextKey(context))?.session_id
+    || storedClientWorkoutSessionIdentity(context);
+  return {
+    clientEmail: activeClientEmail, date, title, sessionId,
+    ensureSessionId: () => sessionId || (
+      trainingLogs.some((row) => clientWorkoutLogContextKey(row) === clientWorkoutLogContextKey(context)) ? null
+        : rememberClientWorkoutSessionIdentity(context, window.crypto.randomUUID())
+    ),
+    name: exerciseNameInputForLog(logElement)?.value ?? logElement?.dataset.exerciseName ?? "",
+    history: trainingLogs, historyComplete: clientAchievementHistoryStatus === "ready",
+    custom: Boolean(logElement?.closest(".client-workout-panel-custom")),
+    storage: window.localStorage,
+    afterApply: () => {
+      persistCustomWorkoutDraftForElement(logElement);
+      const carousel = logElement.closest("[data-custom-workout-grouped='true']");
+      if (carousel) renderCustomWorkoutGroupedCard(carousel);
+    }
+  };
+}
+
+function renderWorkoutProgression(logElement) {
+  window.FWB_WORKOUT_PROGRESSION_UI?.render(logElement, workoutProgressionContext(logElement));
+}
+
+function workoutProgressionDraft(logElement) {
+  return window.FWB_WORKOUT_PROGRESSION_UI?.serialize(logElement) || {};
+}
+
+function restoreWorkoutProgressionDraft(logElement, draft) {
+  window.FWB_WORKOUT_PROGRESSION_UI?.restore(logElement, draft);
+}
+
+function restoreWorkoutProgressionHistory(logElement, logs) {
+  const target = logs.find((row) => row.progression_target)?.progression_target;
+  if (target) window.FWB_WORKOUT_PROGRESSION_UI?.restore(logElement, { progression_target: target, progression_context: undefined }, workoutProgressionContext(logElement));
+}
+
+function persistWorkoutProgressionPending(element) {
+  const direct = element?.matches?.("[data-exercise-log]") ? element : element?.closest?.("[data-exercise-log]");
+  const logs = direct ? [direct] : Array.from(element?.querySelectorAll?.("[data-exercise-log]") || []);
+  logs.forEach((log) => window.FWB_WORKOUT_PROGRESSION_UI?.persistPending(log, workoutProgressionContext(log)));
+}
+
+function pendingWorkoutProgressionDraft(logElement, row) {
+  return window.FWB_WORKOUT_PROGRESSION_UI?.isPending(logElement, row, workoutProgressionContext(logElement)) || false;
+}
+
+function workoutProgressionLogTarget(logElement) {
+  const progression_target = window.FWB_WORKOUT_PROGRESSION_UI?.freeze(logElement, workoutProgressionContext(logElement));
+  return progression_target ? { progression_target } : {};
+}
+
+function freezeWorkoutProgressionPanel(panel) {
+  panel?.querySelectorAll("[data-exercise-log]").forEach((logElement) => workoutProgressionLogTarget(logElement));
+  persistCustomWorkoutDraftFromPanel(panel);
+}
+
 function exerciseLogFields(exercise, workoutTitle, options = {}) {
   const setCount = Number(options.setCount) || setCountFromPrescription(exercise.prescription);
   const panelClass = options.panelClass || "exercise-detail";
@@ -5054,6 +5115,7 @@ function exerciseLogFields(exercise, workoutTitle, options = {}) {
       data-exercise-name="${escapeHtml(exercise.name)}"
       data-exercise-rest="${escapeHtml(exercise.rest || "")}"
       data-exercise-prescription="${escapeHtml(exercise.prescription || "")}"
+      data-progression-config="${escapeHtml(JSON.stringify(exercise.progression || null))}"
       ${exercise.generated && exercise.instructions ? `data-generated-instructions="${escapeHtml(exercise.instructions)}"` : ""}
       ${exercise.generated && (exercise.video || exercise.demo_url) ? `data-generated-video="${escapeHtml(exercise.video || exercise.demo_url)}"` : ""}
       ${exercise.generated ? 'data-generated-exercise="true"' : ""}
@@ -5077,6 +5139,7 @@ function exerciseLogFields(exercise, workoutTitle, options = {}) {
       ${options.showActions === false ? "" : exerciseLogActions({ showSkip: options.showSkipAction !== false })}
       ${options.showDemo === false ? "" : exerciseVideoMarkup(exercise)}
       ${dateMarkup}
+      <div data-workout-progression></div>
       <div class="set-table" aria-label="${escapeHtml(exercise.name)} set tracker">
       <div class="set-header">
         <span>Set</span>
@@ -5862,6 +5925,7 @@ function generatedCustomWorkoutDraft(workout, createdAt = new Date()) {
     exercises: workout.exercises.map((exercise, index) => ({
       code: customExerciseCode(index),
       name: exercise.name,
+      ...(exercise.progression ? { progression: exercise.progression } : {}),
       group: index,
       groupType: "single",
       date,
@@ -5974,6 +6038,7 @@ function customWorkoutExercises(format = activeCustomWorkoutFormat) {
       grouped.set(code, {
         code,
         name: exerciseName,
+        ...(draftExercise.progression ? { progression: draftExercise.progression } : {}),
         group: Math.max(Number(draftExercise?.group) || 0, 0),
         groupType: normalizeCustomWorkoutInlineGroupType(draftExercise?.groupType),
         prescription: draftExercise.generated ? String(draftExercise.prescription || "Custom sets") : "Custom sets",
@@ -6023,7 +6088,8 @@ function serializeSetRowDraft(row) {
     setType: setTypeForRow(row),
     rir: row.dataset.repsInReserve || "",
     complete: row.classList.contains("is-complete") || completeButton?.getAttribute("aria-pressed") === "true",
-    groupedRoundRequired: row.dataset.groupedRoundRequired === "true"
+    groupedRoundRequired: row.dataset.groupedRoundRequired === "true",
+    ...(row.dataset.progressionSuggested === "true" ? { progressionSuggested: true, progressionSuggestedContext: row.dataset.progressionSuggestedContext } : {})
   };
 }
 
@@ -6048,6 +6114,7 @@ function serializeCustomExerciseDraft(logElement, index) {
     date: logElement.querySelector("[data-log-date]")?.value || "",
     notes: logElement.querySelector("[data-log-notes]")?.value || "",
     skipped: logElement.dataset.exerciseSkipped === "true",
+    ...(typeof workoutProgressionDraft === "function" ? workoutProgressionDraft(logElement) : {}),
     ...(logElement.dataset.omitWarmup === "true" ? { omitWarmup: true } : {}),
     ...(logElement.dataset.generatedExercise === "true" ? {
       generated: true,
@@ -6088,11 +6155,19 @@ function persistCustomWorkoutDraftFromPanel(panel) {
 }
 
 function persistCustomWorkoutDraftForElement(element) {
+  if (typeof persistWorkoutProgressionPending === "function") persistWorkoutProgressionPending(element);
   const panel = element?.closest?.(".client-workout-panel-custom");
   persistCustomWorkoutDraftFromPanel(panel);
 }
 
 function applyCustomSetDraft(row, draftSet) {
+  if (draftSet?.progressionSuggested) {
+    row.dataset.progressionSuggested = "true";
+    row.dataset.progressionSuggestedContext = draftSet.progressionSuggestedContext || "";
+  } else {
+    delete row.dataset.progressionSuggested;
+    delete row.dataset.progressionSuggestedContext;
+  }
   const labelInput = row.querySelector("[data-set-label]");
   const weightInput = row.querySelector("[data-set-weight]");
   const repsInput = row.querySelector("[data-set-reps]");
@@ -6135,6 +6210,7 @@ function applyCustomExerciseDraft(logElement, exerciseDraft) {
     return;
   }
 
+  if (typeof restoreWorkoutProgressionDraft === "function") restoreWorkoutProgressionDraft(logElement, exerciseDraft);
   const rows = logElement.querySelector("[data-set-rows]");
   const savedDraftSets = Array.isArray(exerciseDraft.sets) ? exerciseDraft.sets : [];
   if (exerciseDraft.omitWarmup === true) logElement.dataset.omitWarmup = "true";
@@ -9025,6 +9101,7 @@ function customWorkoutGroupedExerciseKeyMarkup(carousel) {
         ${demo}
         ${target ? `<p class="custom-workout-grouped-target" data-custom-grouped-target="${index}">${escapeHtml(target)}</p>` : ""}
         ${logElement.dataset.generatedExercise === "true" && logElement.dataset.generatedInstructions ? `<p class="custom-workout-grouped-target">${escapeHtml(logElement.dataset.generatedInstructions)}</p>` : ""}
+        <div class="workout-progression-group-slot" data-workout-progression-index="${index}"></div>
         <p class="custom-workout-grouped-pr-preview" data-custom-grouped-pr-preview="${index}" hidden></p>
       </div>
     `;
@@ -9037,6 +9114,7 @@ function renderCustomWorkoutGroupedExerciseKey(carousel) {
   if (key) {
     key.innerHTML = customWorkoutGroupedExerciseKeyMarkup(carousel);
     key.dataset.count = String(customWorkoutGroupedLogElements(carousel).length);
+    if (typeof renderWorkoutProgression === "function") customWorkoutGroupedLogElements(carousel).forEach(renderWorkoutProgression);
   }
 }
 
@@ -12710,6 +12788,7 @@ function formatLogDate(value) {
 
 function renderPreviousExerciseWeights(logElement, logs = logsForExerciseDisplay(logElement)) {
   updateSetHistoryPlaceholders(logElement, logs);
+  if (typeof renderWorkoutProgression === "function") renderWorkoutProgression(logElement);
   const previous = logElement.querySelector("[data-previous-weights]");
 
   if (!previous) {
@@ -12770,6 +12849,9 @@ function restoreStrengthSetRows(logElement, selectedLogs) {
   const specs = savedStrengthSetSpecs(selectedLogs, workingMinimum);
   const repTargets = repTargetsFromPrescription(logElement.dataset.exercisePrescription);
 
+  // Rebuilding canonical rows removes pending suggestion markers and values.
+  // Let the final render restore those drafts after saved rows have been applied.
+  delete logElement.dataset.progressionDraftRestored;
   rows.innerHTML = specs
     .map(({ setNumber, setType }) => setRowMarkup(setNumber,
       setType === workingSetType ? repTargets[setNumber - 1] || repTargets[0] || defaultReps : defaultReps,
@@ -13003,6 +13085,9 @@ function updateExerciseLogField(logElement) {
     const repsInput = row.querySelector("[data-set-reps]");
     const completeButton = row.querySelector("[data-complete-set]");
     const savedRir = Number(selectedLog?.effort_value);
+    if (!selectedLog && typeof pendingWorkoutProgressionDraft === "function" && pendingWorkoutProgressionDraft(logElement, row)) return;
+    delete row.dataset.progressionSuggested;
+    delete row.dataset.progressionSuggestedContext;
 
     if (weightInput) {
       weightInput.value = selectedLog?.weight_used ?? "";
@@ -13036,6 +13121,7 @@ function updateExerciseLogField(logElement) {
     syncExerciseNamePreview(logElement, nextName);
   }
 
+  if (typeof restoreWorkoutProgressionHistory === "function") restoreWorkoutProgressionHistory(logElement, selectedLogs);
   updateVisibleSetProgress(logElement);
   syncExerciseFinishedState(logElement);
   renderPreviousExerciseWeights(logElement);
@@ -13558,6 +13644,8 @@ function customWorkoutDraftFromLogs(logs = [], options = {}) {
       return {
         code: customExerciseCode(exerciseIndex),
         name: exercise.name,
+        ...(exercise.sets.find((set) => set.progression_target)?.progression_target
+          ? { progression: exercise.sets.find((set) => set.progression_target).progression_target } : {}),
         group: format === "superset" ? sourceGroupIndexes.get(sourceGroupKey) : 0,
         date,
         notes: "",
@@ -16802,6 +16890,7 @@ function handleWorkoutInteractions() {
       } else if (!workoutElapsedTimerState) {
         restartDeletedClientWorkoutContext({ client_email: activeClientEmail,
           entry_date: workoutDate, workout_title: workoutTitle });
+        if (typeof freezeWorkoutProgressionPanel === "function") freezeWorkoutProgressionPanel(workoutPanel);
         startWorkoutElapsedTimer(workoutTitle, { workoutDate, panelIndex });
       }
       return;
@@ -18200,6 +18289,7 @@ function rowsForTrainingLog(logElement) {
           exercise_name: exerciseName,
           set_number: Number(setRow.dataset.setNumber || 1),
           set_type: setType,
+          ...(isSetRowLogged(setRow) && typeof workoutProgressionLogTarget === "function" ? workoutProgressionLogTarget(logElement) : {}),
           weight_used: values.weightRaw === "" ? 0 : values.weightValue,
           reps: values.repsRaw === "" ? null : values.repsValue,
           ...(setRow.dataset.repsInReserve === undefined ? {} : {
@@ -18224,6 +18314,7 @@ function setRowInputValues(setRow) {
 }
 
 function isSetRowLogged(setRow) {
+  if (setRow?.dataset.progressionSuggested === "true" && !setRow.classList.contains("is-complete")) return false;
   if (
     (
       setRow?.dataset.groupedRoundRequired === "true" ||
@@ -18340,7 +18431,7 @@ function workoutFinishIssues(section, options = {}) {
         missing.push(["rir", "enter RIR from 0 to 5, or leave it blank"]);
       }
       missing.forEach(([field, message]) => issues.push({ message: `${label}: ${message}.`, target: target(field) }));
-      if (!missing.length && (carousel || row.dataset.groupedRoundRequired === "true") && !complete) {
+      if (!missing.length && (carousel || row.dataset.groupedRoundRequired === "true" || row.dataset.progressionSuggested === "true") && !complete) {
         issues.push({
           message: `${label}: tap Log ${unit.toLowerCase()} to save these entries.`,
           target: visibleRow?.closest("[data-custom-grouped-round]")?.querySelector("[data-custom-grouped-log-round]") || row.querySelector("[data-complete-set]")
@@ -18575,10 +18666,21 @@ async function saveTrainingLogRows(button, logElements, status, options = {}) {
     return { saved: false };
   }
 
-  const { data, error } = await supabaseClient
+  let persistedRows = rows;
+  let { data, error } = await supabaseClient
     .from("client_workout_logs")
     .upsert(rows, { onConflict: "client_email,entry_date,workout_title,exercise_code,set_number" })
     .select();
+
+  if (window.FWB_WORKOUT_PROGRESSION_UI?.isMissingTargetColumn(error) &&
+      normalizeClientEmail(activeClientEmail) === requestClientEmail) {
+    // Keep the frozen local plan, but older servers must remain usable until the migration ships.
+    // Do not add metadata to the returned history: legacy saves cannot justify an increase.
+    const legacyRows = rows.map(({ progression_target, ...row }) => row);
+    persistedRows = legacyRows;
+    ({ data, error } = await supabaseClient.from("client_workout_logs")
+      .upsert(legacyRows, { onConflict: "client_email,entry_date,workout_title,exercise_code,set_number" }).select());
+  }
 
   if (normalizeClientEmail(activeClientEmail) !== requestClientEmail) {
     if (button) button.disabled = false;
@@ -18609,7 +18711,7 @@ async function saveTrainingLogRows(button, logElements, status, options = {}) {
     return { saved: false, error };
   }
 
-  (data || rows).forEach((row) => upsertLocalTrainingLog(row));
+  (data || persistedRows).forEach((row) => upsertLocalTrainingLog(row));
   if (!options.skipLogRefresh) {
     logElements.forEach(updateExerciseLogField);
   } else {
@@ -18623,7 +18725,7 @@ async function saveTrainingLogRows(button, logElements, status, options = {}) {
   if (button) {
     button.disabled = false;
   }
-  return { saved: true, rows: data || rows };
+  return { saved: true, rows: data || persistedRows };
 }
 
 async function handleTrainingLogSave() {
@@ -18856,3 +18958,18 @@ handleClientProgressPhotoDelete();
 handleClientDexaUpload();
 handleClientDexaReports();
 handleClientDexaReview();
+
+// Suggestions only populate editable draft fields. Completion still uses the normal Log set action.
+document.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-progression-apply], [data-progression-save]");
+  if (!button) return;
+  const slot = button.closest("[data-workout-progression-index]");
+  const carousel = button.closest("[data-custom-workout-grouped='true']");
+  const log = slot && carousel
+    ? customWorkoutGroupedLogElements(carousel)[Number(slot.dataset.workoutProgressionIndex)]
+    : button.closest("[data-exercise-log]");
+  if (!log) return;
+  const ui = window.FWB_WORKOUT_PROGRESSION_UI;
+  if (button.matches("[data-progression-save]")) ui?.configure(log, workoutProgressionContext(log), button.closest("[data-progression-settings]"));
+  else ui?.apply(log, workoutProgressionContext(log));
+});
