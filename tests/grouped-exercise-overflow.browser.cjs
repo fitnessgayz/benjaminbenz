@@ -36,7 +36,7 @@ const context = vm.createContext({
   escapeHtml: (value) => String(value ?? "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;"),
 });
 vm.runInContext([
-  "youtubeExerciseSearchUrl", "approvedExerciseForName", "uploadedExerciseDemoUrl",
+  "youtubeExerciseSearchUrl", "approvedExerciseForName", "uploadedExerciseDemoUrl", "exerciseImageDemoUrl",
   "exerciseVideoUrl", "exerciseVideoMarkup", "repTargetsFromPrescription",
   "assignedWorkoutPrescriptionLabel", "customWorkoutGroupedExerciseKeyMarkup",
 ].map(functionSource).join("\n"), context);

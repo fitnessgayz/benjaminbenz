@@ -10813,9 +10813,11 @@ textarea:focus {
   min-width: 0;
 }
 
-.exercise-library-video-field video {
+.exercise-library-video-field video,
+.exercise-library-video-field img {
   width: 100%;
   max-height: 320px;
+  object-fit: contain;
   background: #111;
 }
 

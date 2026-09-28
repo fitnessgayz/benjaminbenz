@@ -104,6 +104,12 @@ function youtubeExerciseDemoUrl(exercise: Record<string, unknown>) {
       return url.href;
     }
 
+    if (url.protocol === "https:" && !url.username && !url.password
+        && url.origin === "https://benjaminbenz.com"
+        && /^\/images\/exercises\/[a-z0-9/-]+\.(png|jpe?g|webp)$/i.test(url.pathname)) {
+      return url.href;
+    }
+
     if (["http:", "https:"].includes(url.protocol) && allowedHosts.has(host)) {
       return url.href;
     }

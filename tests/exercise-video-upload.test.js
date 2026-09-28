@@ -7,6 +7,7 @@ const admin = fs.readFileSync(path.join(root, "js/coach-admin.js"), "utf8");
 const portal = fs.readFileSync(path.join(root, "js/client-portal.js"), "utf8");
 const projectUrl = "https://qukdfjeupjhpthfbaonv.supabase.co";
 const demoUrl = `${projectUrl}/storage/v1/object/public/exercise-videos/exercise-id/video-id.mp4`;
+const imageUrl = "https://benjaminbenz.com/images/exercises/hip-abduction-machine-start-end.png";
 const file = { name: "demo.mp4", type: "video/mp4", size: 1000 };
 
 function sourceFunction(source, name) {
@@ -100,6 +101,7 @@ test("client uses the uploaded library demo for existing workouts and rejects un
   `)({ FWB_SUPABASE_CONFIG: { url: projectUrl } }, (name) => name === "Squat" ? { demo_url: demoUrl } : null, () => "https://youtube.com/results?search_query=demo");
   assert.equal(resolve({ name: "Squat", video: "https://youtube.com/results?search_query=old" }), demoUrl);
   assert.equal(resolve({ name: "Other", video: demoUrl }), demoUrl);
+  assert.equal(resolve({ name: "Other", video: imageUrl }), imageUrl);
   assert.equal(resolve({ name: "Other", video: "https://youtu.be/demo" }), "https://youtu.be/demo");
   for (const url of [demoUrl.replace(projectUrl, "https://evil.example"), demoUrl.replace("exercise-videos", "progress-photos"), "javascript:alert(1)"]) {
     assert.equal(resolve({ name: "Other", video: url }), "");
@@ -114,6 +116,7 @@ test("coach workout editor retains an uploaded video URL", () => {
     return youtubeExerciseDemoUrl;
   `)({ FWB_SUPABASE_CONFIG: { url: projectUrl } });
   assert.equal(resolve(demoUrl, "Squat"), demoUrl);
+  assert.equal(resolve(imageUrl, "Hip Abduction Machine"), imageUrl);
 });
 
 test("program save API preserves uploaded demos and YouTube links", () => {
@@ -126,6 +129,7 @@ test("program save API preserves uploaded demos and YouTube links", () => {
     return youtubeExerciseDemoUrl;
   `)({ env: { get: () => projectUrl } });
   assert.equal(resolve({ name: "Squat", video: demoUrl }), demoUrl);
+  assert.equal(resolve({ name: "Hip Abduction Machine", video: imageUrl }), imageUrl);
   assert.equal(resolve({ name: "Squat", video: "https://youtu.be/demo" }), "https://youtu.be/demo");
   assert.match(resolve({ name: "Squat", video: demoUrl.replace(projectUrl, "https://evil.example") }), /youtube.com\/results/);
 });

@@ -2424,13 +2424,21 @@ function uploadedExerciseDemoUrl(value) {
   try {
     const url = new URL(value);
     const storageOrigin = new URL(window.FWB_SUPABASE_CONFIG.url).origin;
-    return url.protocol === "https:" && url.origin === storageOrigin
+    const uploadedVideo = url.origin === storageOrigin
       && !url.username && !url.password
-      && /^\/storage\/v1\/object\/public\/exercise-videos\/[a-z0-9/-]+\.(mp4|mov|m4v|webm)$/i.test(url.pathname)
-      ? url.href : "";
+      && /^\/storage\/v1\/object\/public\/exercise-videos\/[a-z0-9/-]+\.(mp4|mov|m4v|webm)$/i.test(url.pathname);
+    const exerciseImage = url.origin === "https://benjaminbenz.com"
+      && !url.username && !url.password
+      && /^\/images\/exercises\/[a-z0-9/-]+\.(png|jpe?g|webp)$/i.test(url.pathname);
+    return url.protocol === "https:" && (uploadedVideo || exerciseImage) ? url.href : "";
   } catch {
     return "";
   }
+}
+
+function exerciseImageDemoUrl(value) {
+  const url = uploadedExerciseDemoUrl(value);
+  return url && /\.(png|jpe?g|webp)$/i.test(new URL(url).pathname) ? url : "";
 }
 
 function exerciseVideoUrl(exercise) {
@@ -2480,9 +2488,10 @@ function exerciseVideoMarkup(exercise, options = {}) {
     return "";
   }
 
+  const isImage = Boolean(exerciseImageDemoUrl(videoUrl));
   return `
-    <a class="exercise-video-link" href="${escapeHtml(videoUrl)}" target="_blank" rel="noopener noreferrer" aria-label="View demo for ${escapeHtml(exercise.name)} (opens in a new tab)" title="View demo for ${escapeHtml(exercise.name)}">
-      ${options.iconOnly ? '<span aria-hidden="true">🎥</span>' : "View demo"}
+    <a class="exercise-video-link" href="${escapeHtml(videoUrl)}" target="_blank" rel="noopener noreferrer" aria-label="View ${isImage ? "image" : "demo"} for ${escapeHtml(exercise.name)} (opens in a new tab)" title="View ${isImage ? "image" : "demo"} for ${escapeHtml(exercise.name)}">
+      ${options.iconOnly ? `<span aria-hidden="true">${isImage ? "📷" : "🎥"}</span>` : isImage ? "View exercise image" : "View demo"}
     </a>
   `;
 }

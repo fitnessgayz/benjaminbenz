@@ -5119,13 +5119,21 @@ function uploadedExerciseDemoUrl(value) {
   try {
     const url = new URL(value);
     const storageOrigin = new URL(window.FWB_SUPABASE_CONFIG.url).origin;
-    return url.protocol === "https:" && url.origin === storageOrigin
+    const uploadedVideo = url.origin === storageOrigin
       && !url.username && !url.password
-      && /^\/storage\/v1\/object\/public\/exercise-videos\/[a-z0-9/-]+\.(mp4|mov|m4v|webm)$/i.test(url.pathname)
-      ? url.href : "";
+      && /^\/storage\/v1\/object\/public\/exercise-videos\/[a-z0-9/-]+\.(mp4|mov|m4v|webm)$/i.test(url.pathname);
+    const exerciseImage = url.origin === "https://benjaminbenz.com"
+      && !url.username && !url.password
+      && /^\/images\/exercises\/[a-z0-9/-]+\.(png|jpe?g|webp)$/i.test(url.pathname);
+    return url.protocol === "https:" && (uploadedVideo || exerciseImage) ? url.href : "";
   } catch {
     return "";
   }
+}
+
+function exerciseImageDemoUrl(value) {
+  const url = uploadedExerciseDemoUrl(value);
+  return url && /\.(png|jpe?g|webp)$/i.test(new URL(url).pathname) ? url : "";
 }
 
 function exerciseVideoFileDetails(file) {
@@ -5144,18 +5152,22 @@ function exerciseVideoFileDetails(file) {
 function renderExerciseVideoPreview() {
   const input = document.getElementById("exercise-library-video");
   const preview = document.getElementById("exercise-library-video-preview");
+  const imagePreview = document.getElementById("exercise-library-image-preview");
   const status = document.getElementById("exercise-library-video-status");
   const cancel = document.getElementById("clear-exercise-library-video");
-  if (!input || !preview || !status || !cancel) return;
+  if (!input || !preview || !imagePreview || !status || !cancel) return;
 
   preview.pause();
   preview.removeAttribute("src");
+  imagePreview.removeAttribute("src");
+  imagePreview.hidden = true;
   if (exerciseVideoPreviewUrl) URL.revokeObjectURL(exerciseVideoPreviewUrl);
   exerciseVideoPreviewUrl = "";
   const file = input.files?.[0];
   const savedUrl = uploadedExerciseDemoUrl(document.getElementById("exercise-library-demo").value.trim());
+  const savedImageUrl = exerciseImageDemoUrl(savedUrl);
   let src = savedUrl;
-  status.textContent = savedUrl ? "Uploaded demo attached." : "";
+  status.textContent = savedImageUrl ? "Demo image attached." : savedUrl ? "Uploaded demo attached." : "";
   if (file) {
     try {
       exerciseVideoFileDetails(file);
@@ -5168,9 +5180,14 @@ function renderExerciseVideoPreview() {
     }
   }
   cancel.hidden = !input.files?.length;
-  preview.hidden = !src;
-  if (src) preview.src = src;
-  preview.load();
+  preview.hidden = !src || Boolean(savedImageUrl);
+  imagePreview.hidden = !savedImageUrl;
+  if (savedImageUrl) {
+    imagePreview.src = savedImageUrl;
+  } else {
+    if (src) preview.src = src;
+    preview.load();
+  }
 }
 
 async function saveExerciseLibraryRecord(payload, id, file) {
@@ -5236,6 +5253,7 @@ function fillExerciseLibraryEditor(record = null) {
     ? Number(values.default_rest_seconds)
     : 90;
   document.getElementById("exercise-library-demo").value = values.demo_url || "";
+  document.getElementById("exercise-library-image-preview").alt = `${values.name || "Exercise"} demo preview`;
   document.getElementById("exercise-library-video").value = "";
   renderExerciseVideoPreview();
   document.getElementById("exercise-library-instructions").value = values.instructions || "";
