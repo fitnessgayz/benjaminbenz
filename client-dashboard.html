@@ -34,13 +34,13 @@
   <link rel="apple-touch-icon" sizes="180x180" href="/fwb-home-icon-180.png" />
   <link rel="manifest" href="/client.webmanifest" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-title" content="FWB" />
-  <meta name="application-name" content="FWB" />
-  <meta name="theme-color" content="#050505" />
+  <meta name="apple-mobile-web-app-title" content="FWB Training" />
+  <meta name="application-name" content="FWB Training" />
+  <meta name="theme-color" content="#080A08" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=workout-preview-1&amp;cancel-workout=1&amp;energy-feedback=1&amp;viewport-dock=7&amp;workout-delete=1" />
+  <link rel="stylesheet" href="css/style.css?v=workout-preview-1&amp;cancel-workout=1&amp;energy-feedback=1&amp;viewport-dock=7&amp;workout-delete=1&amp;settings-tabs=3" />
   <link rel="stylesheet" href="css/coach-messages.css?v=1" />
   <link rel="stylesheet" href="css/custom-workout-mobile-fix.css?v=assigned-layout-3&amp;visible-demos=1&amp;copy-last-weights=1&amp;demo-icons=2&amp;copy-set-pr=3&amp;compact-copy=1&amp;exercise-pr-notes=1&amp;pr-info=1&amp;finish-workout=2&amp;prescribed-targets=1&amp;exercise-controls=1&amp;exercise-labels=1&amp;exercise-dialog=2&amp;exercise-text-flow=1" />
   <link rel="stylesheet" href="css/workout-layout.css?v=exercise-preview-3" />
@@ -400,8 +400,6 @@
               <ul class="client-home-checklist" id="client-home-checklist" aria-label="Client dashboard next steps"></ul>
               <div class="client-home-support-actions">
                 <a class="client-home-support" href="mailto:fwb@benjaminbenz.com?subject=Client%20dashboard%20help">Report an issue</a>
-                <button class="password-reset-button client-home-reset" type="button" id="client-dashboard-reset-password-button">Reset password</button>
-                <small id="client-dashboard-reset-status" role="status"></small>
               </div>
             </article>
               </div>
@@ -1027,17 +1025,33 @@
         </section>
 
         <section class="progress-panel client-settings-panel" data-client-dashboard-panel="notifications" aria-labelledby="client-notification-settings-title" hidden>
+          <div class="client-settings-view client-settings-menu" data-client-settings-view="menu">
           <div class="panel-heading">
             <div>
               <p class="kicker">Settings</p>
               <h2 id="client-notification-settings-title">Settings</h2>
             </div>
           </div>
-          <nav class="client-settings-shortcuts" aria-label="Client profile and sessions">
+          <nav class="client-settings-shortcuts" aria-label="Settings categories">
             <button class="client-settings-shortcut" type="button" data-message-coach disabled>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/><path d="M8 10h.01M12 10h.01M16 10h.01"/></svg>
-              <span class="client-settings-shortcut-copy"><strong>Direct messages</strong><small>Message your coach privately</small></span>
+              <span class="client-settings-shortcut-copy"><strong>Messages</strong><small>Message your coach privately</small></span>
               <span class="client-dashboard-nav-unread" data-client-message-unread hidden aria-label="0 unread messages">0</span>
+              <span class="client-settings-shortcut-arrow" aria-hidden="true">›</span>
+            </button>
+            <button class="client-settings-shortcut" type="button" data-client-settings-destination="nutrition">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3v8M4 3v5a3 3 0 0 0 6 0V3M7 11v10M16 3v18M16 3c3 2 4 5 4 8h-4"/></svg>
+              <span class="client-settings-shortcut-copy"><strong>Food · calories &amp; macros</strong><small>Targets, meals, and nutrition history</small></span>
+              <span class="client-settings-shortcut-arrow" aria-hidden="true">›</span>
+            </button>
+            <button class="client-settings-shortcut" type="button" data-client-settings-destination="stats">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/></svg>
+              <span class="client-settings-shortcut-copy"><strong>Stats &amp; measurements</strong><small>Progress photos, body data, and trends</small></span>
+              <span class="client-settings-shortcut-arrow" aria-hidden="true">›</span>
+            </button>
+            <button class="client-settings-shortcut" type="button" data-client-settings-destination="workouts">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 7v10M3.5 9v6M18 7v10M20.5 9v6M6 12h12"/></svg>
+              <span class="client-settings-shortcut-copy"><strong>Workouts</strong><small>Training sessions and workout tools</small></span>
               <span class="client-settings-shortcut-arrow" aria-hidden="true">›</span>
             </button>
             <button class="client-settings-shortcut" type="button" data-client-settings-destination="questionnaire">
@@ -1050,6 +1064,37 @@
               <span class="client-settings-shortcut-copy"><strong>Sessions</strong><small>View session dates and package history</small></span>
               <span class="client-settings-shortcut-arrow" aria-hidden="true">›</span>
             </button>
+            <button class="client-settings-shortcut" type="button" data-client-settings-open="security" aria-controls="client-settings-security">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3"/></svg>
+              <span class="client-settings-shortcut-copy"><strong>Login &amp; security</strong><small>Password and account access</small></span>
+              <span class="client-settings-shortcut-arrow" aria-hidden="true">›</span>
+            </button>
+            <button class="client-settings-shortcut" type="button" data-client-settings-open="notifications" aria-controls="client-settings-notifications">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg>
+              <span class="client-settings-shortcut-copy"><strong>Notifications</strong><small>Alerts, reminders, and notification types</small></span>
+              <span class="client-settings-shortcut-arrow" aria-hidden="true">›</span>
+            </button>
+            <button class="client-settings-shortcut" type="button" data-client-settings-open="health-apps" aria-controls="client-settings-health-apps">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-8-4.8-8-11.2C4 6.6 6.1 5 8.5 5c1.5 0 2.8.8 3.5 2 0 0 1.3-2 3.5-2C17.9 5 20 6.6 20 9.8 20 16.2 12 21 12 21Z"/><path d="M9 12h2l1-3 2 6 1-3h2"/></svg>
+              <span class="client-settings-shortcut-copy"><strong>Health apps</strong><small>Apple Health, Fitbit, and Pixel Watch</small></span>
+              <span class="client-settings-shortcut-arrow" aria-hidden="true">›</span>
+            </button>
+            <button class="client-settings-shortcut" type="button" data-client-settings-open="recent-updates" aria-controls="client-settings-recent-updates">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13"/><circle cx="3" cy="6" r="1" fill="currentColor"/><circle cx="3" cy="12" r="1" fill="currentColor"/><circle cx="3" cy="18" r="1" fill="currentColor"/></svg>
+              <span class="client-settings-shortcut-copy"><strong>Recent updates</strong><small>Your notification inbox and history</small></span>
+              <span class="client-dashboard-nav-unread" data-client-notification-unread hidden aria-label="0 unread notifications">0</span>
+              <span class="client-settings-shortcut-arrow" aria-hidden="true">›</span>
+            </button>
+            <a class="client-settings-shortcut" href="fwb-training-privacy.html">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></svg>
+              <span class="client-settings-shortcut-copy"><strong>Privacy policy</strong><small>How FWB protects and uses your data</small></span>
+              <span class="client-settings-shortcut-arrow" aria-hidden="true">↗</span>
+            </a>
+            <a class="client-settings-shortcut" href="mailto:fwb@benjaminbenz.com?subject=Client%20dashboard%20help">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 1 1 5.8 1c0 2-3 2-3 4M12 18h.01"/></svg>
+              <span class="client-settings-shortcut-copy"><strong>Help &amp; support</strong><small>Contact Fitness with Benjamin</small></span>
+              <span class="client-settings-shortcut-arrow" aria-hidden="true">↗</span>
+            </a>
           </nav>
           <article class="profile-photo-card" data-profile-photo hidden aria-label="Your account">
             <button class="profile-photo-open" type="button" data-profile-open aria-haspopup="dialog" disabled>
@@ -1091,7 +1136,27 @@
               <button class="profile-photo-remove" data-profile-remove type="button" hidden>Remove photo</button>
             </dialog>
           </article>
-          <article class="client-home-card client-home-card-notifications web-notification-center" data-web-notifications hidden>
+          <button class="button button-ghost client-settings-signout" type="button" data-sign-out>Sign out</button>
+          </div>
+          <section class="client-settings-view client-settings-detail" id="client-settings-security" data-client-settings-view="security" hidden aria-labelledby="client-settings-security-title">
+            <header class="client-settings-detail-header">
+              <button type="button" data-client-settings-back aria-label="Back to Settings">‹</button>
+              <div><p class="kicker">Account</p><h3 id="client-settings-security-title">Login &amp; security</h3></div>
+            </header>
+            <article class="client-settings-detail-card">
+              <h4>Reset password</h4>
+              <p>We’ll email a secure link to the address used for your FWB account.</p>
+              <button class="button button-dark" type="button" id="client-dashboard-reset-password-button">Email me a reset link</button>
+              <p class="client-settings-action-status" id="client-dashboard-reset-status" role="status" aria-live="polite"></p>
+            </article>
+          </section>
+          <div class="client-settings-notification-root" data-web-notifications hidden>
+          <section class="client-settings-view client-settings-detail" id="client-settings-notifications" data-client-settings-view="notifications" hidden aria-labelledby="client-settings-notifications-title">
+            <header class="client-settings-detail-header">
+              <button type="button" data-client-settings-back aria-label="Back to Settings">‹</button>
+              <div><p class="kicker">Settings</p><h3 id="client-settings-notifications-title">Notifications</h3></div>
+            </header>
+          <article class="client-home-card client-home-card-notifications web-notification-center">
             <div class="web-notification-heading">
               <div>
                 <p class="kicker">Client alerts</p>
@@ -1124,6 +1189,14 @@
                 <label><input type="checkbox" data-web-notification-preference="achievements" checked /> Achievements</label>
               </div>
             </details>
+          </article>
+          </section>
+          <section class="client-settings-view client-settings-detail" id="client-settings-recent-updates" data-client-settings-view="recent-updates" hidden aria-labelledby="client-settings-recent-updates-title">
+            <header class="client-settings-detail-header">
+              <button type="button" data-client-settings-back aria-label="Back to Settings">‹</button>
+              <div><p class="kicker">Inbox</p><h3 id="client-settings-recent-updates-title">Recent updates</h3></div>
+            </header>
+            <article class="client-home-card client-home-card-notifications web-notification-center client-settings-recent-updates-card">
             <section class="web-notification-inbox" aria-labelledby="client-notification-inbox-title">
               <div class="web-notification-inbox-heading">
                 <h4 id="client-notification-inbox-title">Recent updates</h4>
@@ -1133,6 +1206,13 @@
               <ul class="web-notification-list" data-web-notification-list aria-live="polite"></ul>
             </section>
           </article>
+          </section>
+          </div>
+          <section class="client-settings-view client-settings-detail" id="client-settings-health-apps" data-client-settings-view="health-apps" hidden aria-labelledby="client-settings-health-apps-title">
+            <header class="client-settings-detail-header">
+              <button type="button" data-client-settings-back aria-label="Back to Settings">‹</button>
+              <div><p class="kicker">Connected health</p><h3 id="client-settings-health-apps-title">Health apps</h3></div>
+            </header>
           <article class="apple-health-card" data-apple-health-summary aria-label="Apple Health sharing">
             <h3>Apple Health</h3><p class="apple-health-help">Choose what to read and share in Settings → Apple Health in the FWB iPhone app. Shared workouts, activity, recovery and body weight appear in Stats for you and your coach.</p>
             <p class="apple-health-status" data-apple-health-status role="status"></p><div data-apple-health-content></div>
@@ -1163,6 +1243,7 @@
             <button type="button" data-google-health-refresh>Refresh status</button>
             <p class="google-health-privacy">Disconnecting stops future imports. Previously imported workouts stay in Saved logs. <a href="fwb-training-privacy.html">Read the privacy policy</a>.</p>
           </article>
+          </section>
         </section>
 
         <dialog class="fwb-message-dialog" data-client-messages aria-label="Message coach"></dialog>
@@ -1212,7 +1293,7 @@
   <script src="js/client-achievements-ui.js?v=2"></script>
   <script src="js/workout-progression.js?v=1"></script>
   <script src="js/workout-progression-ui.js?v=1"></script>
-  <script src="js/client-portal.js?v=custom-workout-history-1&amp;cancel-workout=1&amp;energy-feedback=1&amp;mood-redesign=1&amp;visible-group-controls=1&amp;exercise-videos=1&amp;remember-login=1&amp;visible-demos=1&amp;personal-bests=1&amp;copy-last-weights=1&amp;demo-icons=1&amp;keyboard-entry=1&amp;copy-set-pr=3&amp;return-coach=1&amp;apple-workout=2&amp;apple-share=1&amp;rir-help=1&amp;viewport-dock=6&amp;home-actions=1&amp;compact-copy=1&amp;exercise-pr-notes=1&amp;pr-info=1&amp;finish-workout=2&amp;prescribed-targets=1&amp;exercise-controls=1&amp;session-alerts=1&amp;exercise-labels=1&amp;exercise-list=2&amp;grouped-add=1&amp;google-health=1&amp;exercise-defaults=2&amp;workout-generator=4&amp;profile-photo=1&amp;workout-delete=1&amp;apple-health=1&amp;daily-checkin=1&amp;recovery-catalog=1&amp;messages=2&amp;cardio-shortcut=1&amp;achievements=1&amp;progression=1"></script>
+  <script src="js/client-portal.js?v=custom-workout-history-1&amp;cancel-workout=1&amp;energy-feedback=1&amp;mood-redesign=1&amp;visible-group-controls=1&amp;exercise-videos=1&amp;remember-login=1&amp;visible-demos=1&amp;personal-bests=1&amp;copy-last-weights=1&amp;demo-icons=1&amp;keyboard-entry=1&amp;copy-set-pr=3&amp;return-coach=1&amp;apple-workout=2&amp;apple-share=1&amp;rir-help=1&amp;viewport-dock=6&amp;home-actions=1&amp;compact-copy=1&amp;exercise-pr-notes=1&amp;pr-info=1&amp;finish-workout=2&amp;prescribed-targets=1&amp;exercise-controls=1&amp;session-alerts=1&amp;exercise-labels=1&amp;exercise-list=2&amp;grouped-add=1&amp;google-health=1&amp;exercise-defaults=2&amp;workout-generator=4&amp;profile-photo=1&amp;workout-delete=1&amp;apple-health=1&amp;daily-checkin=1&amp;recovery-catalog=1&amp;messages=2&amp;cardio-shortcut=1&amp;achievements=1&amp;progression=1&amp;settings-tabs=2"></script>
   <script src="js/workout-exercise-dock.js?v=2"></script>
 </body>
 </html>

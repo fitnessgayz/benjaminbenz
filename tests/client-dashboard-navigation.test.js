@@ -80,7 +80,7 @@ test("renders nine labeled client destinations in order with current-page semant
   assert.equal(buttons.find((match) => /aria-current="page"/.test(match[1]))?.[2], "home");
   assert.doesNotMatch(navMarkup, /aria-selected=/);
   assert.match(navMarkup, /data-client-dashboard-tab="notifications"[\s\S]*?client-dashboard-settings-icon/);
-  assert.equal((dashboardHtml.match(/data-client-notification-unread hidden/g) || []).length, 3);
+  assert.equal((dashboardHtml.match(/data-client-notification-unread hidden/g) || []).length, 4);
   assert.equal((dashboardHtml.match(/aria-describedby="client-notification-unread-status"/g) || []).length, 2);
   assert.match(dashboardHtml, /data-client-notification-unread-status aria-live="polite">0 unread notifications/);
 });
@@ -176,7 +176,7 @@ test("keeps PAR-Q and Sessions available from Settings", () => {
 
   assert.match(dashboardHtml, /class="client-settings-shortcuts"[\s\S]*?data-client-settings-destination="questionnaire"[\s\S]*?<strong>PAR-Q<\/strong>/);
   assert.match(dashboardHtml, /data-client-settings-destination="sessions"[\s\S]*?<strong>Sessions<\/strong>/);
-  assert.match(dashboardHtml, /class="client-settings-shortcut"[^>]*data-message-coach disabled[\s\S]*?<strong>Direct messages<\/strong>/);
+  assert.match(dashboardHtml, /class="client-settings-shortcut"[^>]*data-message-coach disabled[\s\S]*?<strong>Messages<\/strong>/);
   assert.match(tabHandlerSource, /settingsDestination\.dataset\.clientSettingsDestination/);
   assert.match(tabHandlerSource, /setClientDashboardTab\(settingsDestination\.dataset\.clientSettingsDestination\)/);
 });

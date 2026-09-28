@@ -13438,12 +13438,16 @@ function configureClientGoogleHealth() {
   clientGoogleHealthController = null;
   if (window.FWB_GOOGLE_HEALTH?.isCallbackUrl(window.location.href)) {
     setClientDashboardTab("notifications");
+    setClientSettingsView("health-apps", { scroll: false });
   }
   clientGoogleHealthController = window.FWB_GOOGLE_HEALTH?.createController({
     supabaseClient,
     clientEmail: normalizeClientEmail(activeClientEmail),
     isPreview: isCoachDashboardPreview,
-    onConnected: () => setClientDashboardTab("notifications")
+    onConnected: () => {
+      setClientDashboardTab("notifications");
+      setClientSettingsView("health-apps", { scroll: false });
+    }
   }) || null;
   void clientGoogleHealthController?.initialize().catch(() => {
     // The connection card renders an actionable retry message.
@@ -15369,6 +15373,10 @@ function setClientDashboardTab(tabName) {
     panel.hidden = !isActive;
   });
 
+  if (nextTab === "notifications" && typeof setClientSettingsView === "function") {
+    setClientSettingsView("menu", { scroll: false });
+  }
+
   if (nextTab === "notifications" && clientWebNotificationController) {
     clientWebNotificationController.refresh().catch(() => {
       // The notification center renders a user-facing retry message.
@@ -16249,8 +16257,55 @@ function handleClientNutritionSave() {
   });
 }
 
+function setClientSettingsView(viewName = "menu", options = {}) {
+  const panel = document.querySelector('[data-client-dashboard-panel="notifications"]');
+  const views = Array.from(panel?.querySelectorAll("[data-client-settings-view]") || []);
+  const requestedView = String(viewName || "menu");
+  const nextView = views.find((view) => view.dataset.clientSettingsView === requestedView)
+    || views.find((view) => view.dataset.clientSettingsView === "menu");
+
+  if (!panel || !nextView) {
+    return;
+  }
+
+  views.forEach((view) => {
+    view.hidden = view !== nextView;
+  });
+  panel.dataset.clientSettingsScreen = nextView.dataset.clientSettingsView;
+  panel.classList.toggle("is-settings-detail", nextView.dataset.clientSettingsView !== "menu");
+
+  if (options.focus) {
+    const focusTarget = nextView.querySelector("[data-client-settings-back], [data-profile-open], .client-settings-shortcut");
+    window.requestAnimationFrame?.(() => focusTarget?.focus({ preventScroll: true }));
+  }
+  if (options.scroll !== false) {
+    panel.scrollIntoView?.({ behavior: "smooth", block: "start" });
+  }
+
+  if (["notifications", "recent-updates"].includes(nextView.dataset.clientSettingsView)) {
+    void clientWebNotificationController?.refresh().catch(() => {
+      // The notification center renders a user-facing retry message.
+    });
+  }
+  if (nextView.dataset.clientSettingsView === "health-apps") {
+    void clientAppleHealthController?.refresh();
+    void clientGoogleHealthController?.refresh().catch(() => {
+      // The Google Health panel renders a user-facing retry message.
+    });
+  }
+}
+
 function handleClientDashboardTabs() {
   document.addEventListener("click", (event) => {
+    const settingsViewButton = event.target.closest("[data-client-settings-open]");
+    if (settingsViewButton) {
+      setClientSettingsView(settingsViewButton.dataset.clientSettingsOpen, { focus: true });
+      return;
+    }
+    if (event.target.closest("[data-client-settings-back]")) {
+      setClientSettingsView("menu", { focus: true });
+      return;
+    }
     const settingsDestination = event.target.closest("[data-client-settings-destination]");
     if (settingsDestination) {
       setClientDashboardTab(settingsDestination.dataset.clientSettingsDestination);

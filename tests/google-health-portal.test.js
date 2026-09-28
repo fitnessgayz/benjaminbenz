@@ -60,6 +60,7 @@ test("configuring for another client destroys the old controller and opens Setti
     supabaseClient: {}, activeClientEmail: " Client@Example.com ", isCoachDashboardPreview: true,
     normalizeClientEmail: value => value.trim().toLowerCase(),
     setClientDashboardTab: tab => calls.push(tab),
+    setClientSettingsView: view => calls.push(view),
     window: { location: { href: "https://example.com/client-dashboard.html" }, FWB_GOOGLE_HEALTH: { isCallbackUrl: () => false, createController(value) {
       options = value;
       return { initialize: async () => { calls.push("initialize"); }, destroy() {} };
@@ -72,7 +73,7 @@ test("configuring for another client destroys the old controller and opens Setti
   assert.equal(options.clientEmail, "client@example.com");
   assert.equal(options.isPreview, true);
   options.onConnected();
-  assert.equal(calls.at(-1), "notifications");
+  assert.deepEqual(calls.slice(-2), ["notifications", "health-apps"]);
 });
 
 test("Settings and Saved Logs refresh the same health controller without running an import", async () => {

@@ -18400,3 +18400,239 @@ body.client-dashboard-page.is-loading > :is(.client-dashboard-tabs,
 @media (hover: hover) {
   .coach-home-metrics .coach-home-shortcut:hover { box-shadow: inset 0 0 0 2px currentColor; }
 }
+
+/* Client Settings uses the same one-row-at-a-time navigation pattern as iOS. */
+.client-settings-panel {
+  --client-settings-accent: #638000;
+  --client-settings-surface: #fff;
+  --client-settings-line: #dde0d7;
+}
+
+.client-settings-menu > .panel-heading {
+  justify-content: center;
+  text-align: center;
+}
+
+.client-settings-menu > .panel-heading .kicker {
+  display: none;
+}
+
+.client-settings-menu > .panel-heading h2 {
+  text-transform: none;
+}
+
+.client-settings-view[hidden] {
+  display: none !important;
+}
+
+.client-settings-menu {
+  display: flex;
+  width: min(100%, 760px);
+  margin-inline: auto;
+  flex-direction: column;
+}
+
+.client-settings-menu .profile-photo-card {
+  order: -1;
+  margin-bottom: 24px;
+  border-radius: 22px;
+  box-shadow: 0 8px 24px rgba(35, 42, 31, .06);
+}
+
+.client-settings-menu .profile-photo-open::after {
+  content: "›";
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 1.65rem;
+  font-weight: 700;
+}
+
+.client-settings-shortcuts {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid var(--client-settings-line);
+  border-radius: 22px;
+  background: var(--client-settings-surface);
+  box-shadow: 0 8px 24px rgba(35, 42, 31, .05);
+}
+
+.client-settings-shortcut,
+a.client-settings-shortcut {
+  grid-template-columns: 32px minmax(0, 1fr) auto;
+  min-height: 72px;
+  gap: 13px;
+  padding: 13px 18px;
+  border: 0;
+  border-bottom: 1px solid var(--client-settings-line);
+  border-radius: 0;
+  background: var(--client-settings-surface);
+  color: var(--black);
+  text-decoration: none;
+}
+
+.client-settings-shortcut:last-child {
+  border-bottom: 0;
+}
+
+.client-settings-shortcut svg {
+  width: 25px;
+  height: 25px;
+  color: var(--client-settings-accent);
+}
+
+.client-settings-shortcut-copy strong {
+  font-size: .98rem;
+}
+
+.client-settings-shortcut-copy small {
+  font-size: .76rem;
+}
+
+.client-settings-shortcut-arrow {
+  font-size: 1.5rem;
+}
+
+.client-settings-shortcut:hover {
+  background: #f8faf4;
+}
+
+.client-settings-shortcut:active {
+  background: #eff4e6;
+}
+
+.client-settings-signout {
+  width: 100%;
+  min-height: 52px;
+  margin-top: 18px;
+}
+
+.client-settings-detail {
+  width: min(100%, 760px);
+  margin-inline: auto;
+}
+
+.client-settings-detail-header {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.client-settings-detail-header > button {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  place-items: center;
+  padding: 0 2px 3px 0;
+  border: 1px solid var(--client-settings-line);
+  border-radius: 50%;
+  background: var(--client-settings-surface);
+  color: var(--black);
+  font: inherit;
+  font-size: 2rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.client-settings-detail-header .kicker,
+.client-settings-detail-header h3,
+.client-settings-detail-card h4,
+.client-settings-detail-card p {
+  margin: 0;
+}
+
+.client-settings-detail-header h3 {
+  margin-top: 2px;
+  font-size: clamp(1.35rem, 4vw, 1.85rem);
+  line-height: 1.1;
+  text-transform: none;
+}
+
+.client-settings-detail-card {
+  display: grid;
+  gap: 14px;
+  padding: 22px;
+  border: 1px solid var(--client-settings-line);
+  border-radius: 20px;
+  background: var(--client-settings-surface);
+}
+
+.client-settings-detail-card p {
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.client-settings-detail-card .button {
+  width: 100%;
+  min-height: 52px;
+}
+
+.client-settings-action-status {
+  min-height: 1.4em;
+  font-size: .82rem;
+  font-weight: 750;
+}
+
+.client-settings-detail > :is(.web-notification-center, .apple-health-card, .google-health-settings) {
+  margin-top: 0;
+}
+
+@media (max-width: 600px) {
+  .client-settings-panel {
+    padding-inline: 0;
+    background: #f4f6f0;
+  }
+
+  .client-settings-panel > .panel-heading,
+  .client-settings-view {
+    padding-inline: 14px;
+  }
+
+  .client-settings-menu .profile-photo-card {
+    margin-bottom: 18px;
+    padding: 14px;
+  }
+
+  .client-settings-shortcut,
+  a.client-settings-shortcut {
+    min-height: 68px;
+    padding: 12px 14px;
+  }
+
+  .client-settings-shortcut-copy small {
+    display: none;
+  }
+
+  .client-settings-detail-header {
+    position: sticky;
+    z-index: 4;
+    top: 0;
+    margin-inline: -14px;
+    padding: 10px 14px;
+    background: rgba(244, 246, 240, .92);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+
+  .client-settings-detail > .web-notification-center {
+    padding: 16px;
+  }
+
+  .client-settings-detail .web-notification-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .client-settings-detail .web-notification-enable,
+  .client-settings-detail .web-notification-actions .button {
+    width: 100%;
+  }
+
+  .client-settings-detail .web-notification-preference-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

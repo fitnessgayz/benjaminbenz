@@ -241,7 +241,8 @@ test("a failed imported-workout refresh retains records and shows the failure", 
 });
 
 test("Settings and Saved Logs markup keep Google controls separate and mobile controls accessible", () => {
-  assert.match(html, /<\/article>\s*<article class="google-health-settings" data-google-health-settings/);
+  assert.match(html, /data-client-settings-open="health-apps"[^>]*aria-controls="client-settings-health-apps"/);
+  assert.match(html, /id="client-settings-health-apps"[^>]*data-client-settings-view="health-apps"[^>]*hidden[\s\S]*?<article class="google-health-settings" data-google-health-settings/);
   assert.match(html, /data-google-health-message role="status" aria-live="polite"/);
   assert.match(html, /<label class="google-health-auto">\s*<input type="checkbox" data-google-health-auto/);
   assert.match(html, /id="client-training-log-history"[\s\S]*?data-google-health-activities[\s\S]*?data-client-dashboard-panel="notifications"/);
