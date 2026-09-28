@@ -16017,16 +16017,16 @@ body.client-dashboard-page.is-loading > :is(.client-dashboard-tabs,
     overflow: visible;
     transform: translateX(-50%);
     background:
-      linear-gradient(145deg, rgba(255, 255, 255, .94), rgba(231, 236, 226, .86)) !important;
-    border: 1px solid rgba(255, 255, 255, .96) !important;
+      linear-gradient(145deg, rgba(255, 255, 255, .72), rgba(231, 238, 226, .48)) !important;
+    border: 1px solid rgba(255, 255, 255, .82) !important;
     border-radius: 34px !important;
     box-shadow:
-      0 22px 46px rgba(40, 47, 37, .18),
-      0 7px 16px rgba(40, 47, 37, .12),
-      inset 0 1px 0 rgba(255, 255, 255, .98),
-      inset 0 -1px 0 rgba(66, 76, 61, .12) !important;
-    backdrop-filter: blur(24px) saturate(160%);
-    -webkit-backdrop-filter: blur(24px) saturate(160%);
+      0 24px 50px rgba(40, 47, 37, .16),
+      0 8px 18px rgba(40, 47, 37, .1),
+      inset 0 2px 1px rgba(255, 255, 255, .88),
+      inset 0 -1px 0 rgba(66, 76, 61, .1) !important;
+    backdrop-filter: blur(30px) saturate(175%) brightness(1.08);
+    -webkit-backdrop-filter: blur(30px) saturate(175%) brightness(1.08);
   }
 
   .coach-admin-sidebar-header,
