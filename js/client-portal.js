@@ -16249,6 +16249,11 @@ function handleClientNutritionSave() {
 
 function handleClientDashboardTabs() {
   document.addEventListener("click", (event) => {
+    const settingsDestination = event.target.closest("[data-client-settings-destination]");
+    if (settingsDestination) {
+      setClientDashboardTab(settingsDestination.dataset.clientSettingsDestination);
+      return;
+    }
     const tab = event.target.closest("[data-client-dashboard-tab]");
 
     if (!tab) {
@@ -16271,6 +16276,9 @@ function handleClientDashboardTabs() {
     );
 
     setClientDashboardTab(tabName);
+    if (mobileNavigation && tabName === "workouts") {
+      window.requestAnimationFrame?.(() => window.WorkoutExerciseDock?.open?.());
+    }
     if (mobileNavigation) {
       lastClientDashboardMobileTabPress = action.nextTabPress;
     }

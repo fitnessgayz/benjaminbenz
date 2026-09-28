@@ -24,7 +24,7 @@ function navigationMarkup(html) {
   return html.slice(start, end).replace('class="client-dashboard-tabs"', 'class="client-dashboard-tabs is-mobile-expanded"');
 }
 
-const styles = `${source("css/style.css")}\n${source("css/workout-exercise-list.css")}`;
+const styles = `${source("css/style.css")}\n${source("css/fwb-design-system.css")}\n${source("css/workout-exercise-list.css")}`;
 const navigation = navigationMarkup(source("client-dashboard.html"));
 const fixtureStyles = `
   html { background: #eef0ea; }
@@ -91,7 +91,7 @@ const scenarios = [
 
         assert.equal(result.position, "fixed");
         if (!baseline) {
-          assert.deepEqual(result.visibleTabs, ["home", "workouts", "logs", "progress", "stats"]);
+          assert.deepEqual(result.visibleTabs, ["home", "workouts", "logs", "progress", "stats", "nutrition", "notifications"]);
           assert.equal(result.nav.left, 0);
           assert.equal(result.nav.right, viewport.width);
           assert.equal(result.nav.bottom, viewport.height);

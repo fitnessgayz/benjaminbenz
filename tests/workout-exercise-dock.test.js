@@ -139,6 +139,16 @@ test("opening and toggling the list preserves live input identity and returns fo
   assert.equal(h.body.classList.contains("workout-exercise-dock-open"), false);
 });
 
+test("open shows the exercise list without closing an already open list", () => {
+  const h = fixture();
+  assert.equal(h.controller.open(), true);
+  const overlay = h.overlay();
+  assert.ok(overlay);
+  assert.equal(h.controller.open(), true);
+  assert.equal(h.overlay(), overlay);
+  assert.equal(h.controller.isOpen(), true);
+});
+
 test("selection closes the sheet and jumps through the original list without touching values", () => {
   const h = fixture(); h.controller.toggle();
   const overlay = h.overlay();

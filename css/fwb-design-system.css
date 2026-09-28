@@ -275,10 +275,19 @@
 }
 
 @media (max-width: 900px) {
-  :root body.client-dashboard-page .client-dashboard-tabs { border-radius: 34px !important; }
-  :root body.client-dashboard-page .client-dashboard-tab-label { font-size: .6875rem; letter-spacing: 0; }
-  :root body.client-dashboard-page .client-dashboard-scroll-fade {
-    background: linear-gradient(90deg, rgb(28 31 27 / 0%), var(--nav-surface) 78%);
+  :root body.client-dashboard-page .client-dashboard-tabs {
+    background: rgba(247, 248, 245, .82);
+    border: 0;
+    border-top: 1px solid rgba(59, 64, 58, .14);
+    border-radius: 0 !important;
+    box-shadow: 0 -10px 30px rgba(20, 24, 20, .1);
+  }
+  :root body.client-dashboard-page .client-dashboard-tab-label {
+    font-size: .48rem;
+    letter-spacing: 0;
+    overflow-wrap: normal !important;
+    white-space: nowrap !important;
+    word-break: normal !important;
   }
 }
 

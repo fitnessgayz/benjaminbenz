@@ -117,6 +117,11 @@
       return true;
     }
 
+    function open() {
+      if (overlay) return true;
+      return toggle();
+    }
+
     function onKeydown(event) {
       if (event.key !== "Escape" || !overlay) return;
       // Dismiss the list without also collapsing the mobile navigation.
@@ -145,7 +150,7 @@
     window.addEventListener("resize", refresh);
     refresh();
     return {
-      toggle, close, refresh,
+      toggle, open, close, refresh,
       isOpen: () => Boolean(overlay),
       destroy() {
         close({ restoreFocus: false });
