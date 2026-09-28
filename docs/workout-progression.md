@@ -16,7 +16,7 @@ The current loggers record pounds. The engine understands pounds and kilograms f
 
 Program exercises carry optional `progression` settings. Logged sets carry the original `progression_target` snapshot. A session freezes its plan when started or first used/logged, retains it through drafts and resume, and preserves it when the user changes the remaining set count.
 
-The migration `20260926152453_add_workout_progression_targets.sql` adds one nullable JSONB column to `client_workout_logs`, validates its shape and bounds, and preserves an existing non-null snapshot on row updates. Actual performance remains editable. Existing access policies continue to apply, and historical rows are not backfilled with invented targets.
+The migration `20260928165842_add_workout_progression_targets.sql` adds one nullable JSONB column to `client_workout_logs`, validates its shape and bounds, and preserves an existing non-null snapshot on row updates. Actual performance remains editable. Existing access policies continue to apply, and historical rows are not backfilled with invented targets.
 
 Before the migration is installed, existing workout logging remains available. Clients use narrowly scoped compatibility handling for the missing column; data returned without a persisted snapshot remains legacy history and cannot qualify for an increase.
 

@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 let PGlite;
 try { ({ PGlite } = require(process.env.PROGRESSION_PGLITE_PATH || '@electric-sql/pglite')); } catch {}
-const migration = fs.readFileSync(path.join(__dirname, '../supabase/migrations/20260926152453_add_workout_progression_targets.sql'), 'utf8');
+const migration = fs.readFileSync(path.join(__dirname, '../supabase/migrations/20260928165842_add_workout_progression_targets.sql'), 'utf8');
 const target = { enabled: true, exercise_key: 'name:dumbbell press', rep_min: 8, rep_max: 12,
   planned_sets: 3, target_rir: 2, increment: 2.5, unit: 'lb', required_sessions: 2 };
 
