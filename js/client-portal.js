@@ -2424,21 +2424,36 @@ function uploadedExerciseDemoUrl(value) {
   try {
     const url = new URL(value);
     const storageOrigin = new URL(window.FWB_SUPABASE_CONFIG.url).origin;
-    const uploadedVideo = url.origin === storageOrigin
+    return url.protocol === "https:" && url.origin === storageOrigin
       && !url.username && !url.password
-      && /^\/storage\/v1\/object\/public\/exercise-videos\/[a-z0-9/-]+\.(mp4|mov|m4v|webm)$/i.test(url.pathname);
-    const exerciseImage = url.origin === "https://benjaminbenz.com"
-      && !url.username && !url.password
-      && /^\/images\/exercises\/[a-z0-9/-]+\.(png|jpe?g|webp)$/i.test(url.pathname);
-    return url.protocol === "https:" && (uploadedVideo || exerciseImage) ? url.href : "";
+      && /^\/storage\/v1\/object\/public\/exercise-videos\/[a-z0-9/-]+\.(mp4|mov|m4v|webm)$/i.test(url.pathname)
+      ? url.href : "";
   } catch {
     return "";
   }
 }
 
-function exerciseImageDemoUrl(value) {
-  const url = uploadedExerciseDemoUrl(value);
-  return url && /\.(png|jpe?g|webp)$/i.test(new URL(url).pathname) ? url : "";
+function trustedExerciseImageUrl(value) {
+  try {
+    const url = new URL(value);
+    const storageOrigin = new URL(window.FWB_SUPABASE_CONFIG.url).origin;
+    const storageImage = url.origin === storageOrigin
+      && /^\/storage\/v1\/object\/public\/exercise-images\/approved\/[a-z0-9/-]+\.(png|jpe?g|webp)$/i.test(url.pathname);
+    const siteImage = url.origin === "https://benjaminbenz.com"
+      && /^\/images\/exercises\/[a-z0-9/-]+\.(png|jpe?g|webp)$/i.test(url.pathname);
+    return url.protocol === "https:" && !url.username && !url.password && (storageImage || siteImage) ? url.href : "";
+  } catch {
+    return "";
+  }
+}
+
+function exerciseImageMarkup(exercise) {
+  const imageUrl = trustedExerciseImageUrl(approvedExerciseForName(exercise.name)?.image_url);
+  return imageUrl ? `
+    <figure class="exercise-demo-image">
+      <img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(exercise.name)} start and end positions" loading="lazy" />
+    </figure>
+  ` : "";
 }
 
 function exerciseVideoUrl(exercise) {
@@ -2483,15 +2498,15 @@ function exerciseVideoUrl(exercise) {
 
 function exerciseVideoMarkup(exercise, options = {}) {
   const videoUrl = exerciseVideoUrl(exercise);
+  const imageMarkup = options.iconOnly ? "" : exerciseImageMarkup(exercise);
 
   if (!videoUrl) {
-    return "";
+    return imageMarkup;
   }
 
-  const isImage = Boolean(exerciseImageDemoUrl(videoUrl));
-  return `
-    <a class="exercise-video-link" href="${escapeHtml(videoUrl)}" target="_blank" rel="noopener noreferrer" aria-label="View ${isImage ? "image" : "demo"} for ${escapeHtml(exercise.name)} (opens in a new tab)" title="View ${isImage ? "image" : "demo"} for ${escapeHtml(exercise.name)}">
-      ${options.iconOnly ? `<span aria-hidden="true">${isImage ? "📷" : "🎥"}</span>` : isImage ? "View exercise image" : "View demo"}
+  return `${imageMarkup}
+    <a class="exercise-video-link" href="${escapeHtml(videoUrl)}" target="_blank" rel="noopener noreferrer" aria-label="View demo for ${escapeHtml(exercise.name)} (opens in a new tab)" title="View demo for ${escapeHtml(exercise.name)}">
+      ${options.iconOnly ? '<span aria-hidden="true">🎥</span>' : "View demo"}
     </a>
   `;
 }
@@ -18092,7 +18107,7 @@ async function loadDashboard() {
       withTimeout(
         supabaseClient
           .from("exercise_library")
-          .select("id,name,aliases,primary_muscle,secondary_muscles,equipment,difficulty,movement_pattern,default_sets,default_reps,default_rest_seconds,substitution_group,demo_url,instructions,is_active,is_approved")
+          .select("id,name,aliases,primary_muscle,secondary_muscles,equipment,difficulty,movement_pattern,default_sets,default_reps,default_rest_seconds,substitution_group,demo_url,image_url,instructions,is_active,is_approved")
           .setHeader("x-fwb-recovery-catalog", "1")
           .eq("is_active", true)
           .eq("is_approved", true)

@@ -4652,6 +4652,19 @@ body.is-client-checkin-prompt-open {
   border-top: 1px solid var(--line);
 }
 
+.exercise-demo-image {
+  margin: 12px 0 0;
+}
+
+.exercise-demo-image img {
+  display: block;
+  width: 100%;
+  max-height: 420px;
+  object-fit: contain;
+  border-radius: 16px;
+  background: #111;
+}
+
 .exercise-video-link {
   display: inline-flex;
   width: fit-content;
@@ -10901,13 +10914,23 @@ textarea:focus {
   cursor: pointer;
 }
 
+.exercise-library-thumbnail {
+  width: 72px;
+  height: 48px;
+  flex: 0 0 auto;
+  object-fit: cover;
+  border-radius: 8px;
+  background: #111;
+}
+
 .exercise-library-row:hover,
 .exercise-library-row.is-selected {
   background: color-mix(in srgb, var(--lime) 13%, transparent);
 }
 
-.exercise-library-row > span:first-child {
+.exercise-library-copy {
   display: grid;
+  flex: 1;
   gap: 4px;
 }
 

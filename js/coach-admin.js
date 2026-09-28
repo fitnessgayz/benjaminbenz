@@ -5119,21 +5119,27 @@ function uploadedExerciseDemoUrl(value) {
   try {
     const url = new URL(value);
     const storageOrigin = new URL(window.FWB_SUPABASE_CONFIG.url).origin;
-    const uploadedVideo = url.origin === storageOrigin
+    return url.protocol === "https:" && url.origin === storageOrigin
       && !url.username && !url.password
-      && /^\/storage\/v1\/object\/public\/exercise-videos\/[a-z0-9/-]+\.(mp4|mov|m4v|webm)$/i.test(url.pathname);
-    const exerciseImage = url.origin === "https://benjaminbenz.com"
-      && !url.username && !url.password
-      && /^\/images\/exercises\/[a-z0-9/-]+\.(png|jpe?g|webp)$/i.test(url.pathname);
-    return url.protocol === "https:" && (uploadedVideo || exerciseImage) ? url.href : "";
+      && /^\/storage\/v1\/object\/public\/exercise-videos\/[a-z0-9/-]+\.(mp4|mov|m4v|webm)$/i.test(url.pathname)
+      ? url.href : "";
   } catch {
     return "";
   }
 }
 
-function exerciseImageDemoUrl(value) {
-  const url = uploadedExerciseDemoUrl(value);
-  return url && /\.(png|jpe?g|webp)$/i.test(new URL(url).pathname) ? url : "";
+function trustedExerciseImageUrl(value) {
+  try {
+    const url = new URL(value);
+    const storageOrigin = new URL(window.FWB_SUPABASE_CONFIG.url).origin;
+    const storageImage = url.origin === storageOrigin
+      && /^\/storage\/v1\/object\/public\/exercise-images\/approved\/[a-z0-9/-]+\.(png|jpe?g|webp)$/i.test(url.pathname);
+    const siteImage = url.origin === "https://benjaminbenz.com"
+      && /^\/images\/exercises\/[a-z0-9/-]+\.(png|jpe?g|webp)$/i.test(url.pathname);
+    return url.protocol === "https:" && !url.username && !url.password && (storageImage || siteImage) ? url.href : "";
+  } catch {
+    return "";
+  }
 }
 
 function exerciseVideoFileDetails(file) {
@@ -5165,14 +5171,16 @@ function renderExerciseVideoPreview() {
   exerciseVideoPreviewUrl = "";
   const file = input.files?.[0];
   const savedUrl = uploadedExerciseDemoUrl(document.getElementById("exercise-library-demo").value.trim());
-  const savedImageUrl = exerciseImageDemoUrl(savedUrl);
+  const savedImageUrl = trustedExerciseImageUrl(document.getElementById("exercise-library-image").value.trim());
   let src = savedUrl;
-  status.textContent = savedImageUrl ? "Demo image attached." : savedUrl ? "Uploaded demo attached." : "";
+  let imageSrc = savedImageUrl;
+  status.textContent = savedImageUrl ? "Exercise image attached." : savedUrl ? "Uploaded demo attached." : "";
   if (file) {
     try {
       exerciseVideoFileDetails(file);
       exerciseVideoPreviewUrl = URL.createObjectURL(file);
       src = exerciseVideoPreviewUrl;
+      imageSrc = "";
       status.textContent = `${file.name} · ${(file.size / 1024 / 1024).toFixed(1)} MB · Ready to save`;
     } catch (error) {
       input.value = "";
@@ -5180,10 +5188,10 @@ function renderExerciseVideoPreview() {
     }
   }
   cancel.hidden = !input.files?.length;
-  preview.hidden = !src || Boolean(savedImageUrl);
-  imagePreview.hidden = !savedImageUrl;
-  if (savedImageUrl) {
-    imagePreview.src = savedImageUrl;
+  preview.hidden = !src || Boolean(imageSrc);
+  imagePreview.hidden = !imageSrc;
+  if (imageSrc) {
+    imagePreview.src = imageSrc;
   } else {
     if (src) preview.src = src;
     preview.load();
@@ -5233,6 +5241,7 @@ function fillExerciseLibraryEditor(record = null) {
     default_reps: "8–12",
     default_rest_seconds: 90,
     demo_url: "",
+    image_url: "",
     instructions: "",
     is_approved: true,
     is_active: true
@@ -5253,6 +5262,7 @@ function fillExerciseLibraryEditor(record = null) {
     ? Number(values.default_rest_seconds)
     : 90;
   document.getElementById("exercise-library-demo").value = values.demo_url || "";
+  document.getElementById("exercise-library-image").value = values.image_url || "";
   document.getElementById("exercise-library-image-preview").alt = `${values.name || "Exercise"} demo preview`;
   document.getElementById("exercise-library-video").value = "";
   renderExerciseVideoPreview();
@@ -5324,9 +5334,12 @@ function renderExerciseLibrary() {
 
   count.textContent = `${visible.length} of ${exerciseLibraryRecords.length} exercises`;
   list.innerHTML = visible.length > 0
-    ? visible.map((record) => `
+    ? visible.map((record) => {
+      const imageUrl = trustedExerciseImageUrl(record.image_url);
+      return `
       <button class="exercise-library-row${record.id === selectedExerciseLibraryId ? " is-selected" : ""}" type="button" data-exercise-library-id="${escapeHtml(record.id)}">
-        <span>
+        ${imageUrl ? `<img class="exercise-library-thumbnail" src="${escapeHtml(imageUrl)}" alt="" loading="lazy" />` : ""}
+        <span class="exercise-library-copy">
           <strong>${escapeHtml(record.name)}</strong>
           <small>${escapeHtml(exerciseLibraryLabel(record.primary_muscle))} · ${escapeHtml(exerciseLibraryLabel(record.equipment))}</small>
         </span>
@@ -5335,7 +5348,8 @@ function renderExerciseLibrary() {
           ${record.is_active ? "" : '<small>Archived</small>'}
         </span>
       </button>
-    `).join("")
+    `;
+    }).join("")
     : '<p class="exercise-library-empty">No exercises match that search.</p>';
 }
 
