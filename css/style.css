@@ -16017,14 +16017,14 @@ body.client-dashboard-page.is-loading > :is(.client-dashboard-tabs,
     overflow: visible;
     transform: translateX(-50%);
     background:
-      linear-gradient(145deg, rgba(255, 255, 255, .88), rgba(229, 234, 224, .74));
-    border: 1px solid rgba(255, 255, 255, .94);
-    border-radius: 34px;
+      linear-gradient(145deg, rgba(255, 255, 255, .94), rgba(231, 236, 226, .86)) !important;
+    border: 1px solid rgba(255, 255, 255, .96) !important;
+    border-radius: 34px !important;
     box-shadow:
       0 22px 46px rgba(40, 47, 37, .18),
       0 7px 16px rgba(40, 47, 37, .12),
       inset 0 1px 0 rgba(255, 255, 255, .98),
-      inset 0 -1px 0 rgba(66, 76, 61, .12);
+      inset 0 -1px 0 rgba(66, 76, 61, .12) !important;
     backdrop-filter: blur(24px) saturate(160%);
     -webkit-backdrop-filter: blur(24px) saturate(160%);
   }
