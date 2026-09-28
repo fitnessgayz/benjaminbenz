@@ -34,11 +34,13 @@ test("Home exposes the profile avatar as its upper-right Settings action", () =>
   assert.match(heading, /data-client-settings-destination="notifications"/);
   assert.match(heading, /data-client-settings-avatar/);
   assert.match(heading, /data-client-settings-avatar-image/);
+  assert.match(heading, /class="client-home-settings-badge"[\s\S]*?<svg/);
   assert.match(heading, /aria-label="Open settings"/);
   assert.match(heading, /data-client-notification-unread/);
   assert.match(styles, /\.dashboard-page \.client-home-panel > \.panel-heading\s*\{[\s\S]*?display:\s*flex !important[\s\S]*?justify-content:\s*space-between/);
   assert.match(styles, /\.dashboard-page :is\(\.client-home-message-button, \.client-home-settings-button\)\s*\{[\s\S]*?width:\s*48px !important[\s\S]*?max-width:\s*48px !important[\s\S]*?border-radius:\s*50%/);
-  assert.match(dashboard, /client-home-today\.css\?v=4/);
+  assert.match(styles, /\.dashboard-page \.client-home-settings-badge\s*\{[\s\S]*?position:\s*absolute[\s\S]*?background:\s*var\(--lime\)/);
+  assert.match(dashboard, /client-home-today\.css\?v=5/);
 });
 
 test("secondary dashboard content is collapsed behind one native disclosure", () => {

@@ -15582,30 +15582,29 @@ body.client-dashboard-page.is-loading > :is(.client-dashboard-tabs,
 
   .dashboard-page .client-dashboard-tab-icon {
     display: block;
-    width: 34px;
-    height: 34px;
-    flex: 0 0 34px;
-    padding: 7px;
+    width: 32px;
+    height: 32px;
+    flex: 0 0 32px;
+    padding: 3px;
     color: #424842;
-    background: linear-gradient(145deg, rgba(255, 255, 255, .98), rgba(222, 226, 219, .92));
-    border: 1px solid rgba(65, 72, 64, .2);
-    border-radius: 12px;
-    box-shadow: inset 1px 1px 1px rgba(255, 255, 255, .95), inset -1px -1px 2px rgba(65, 72, 64, .1), 0 4px 8px rgba(28, 34, 27, .16);
-    transform: translateY(-1px);
-    transition: color .16s ease, background-color .16s ease, box-shadow .16s ease, transform .16s ease;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    transform: none;
+    transition: color .16s ease, background-color .16s ease;
   }
 
   .dashboard-page .client-dashboard-tab.is-active .client-dashboard-tab-icon {
-    width: 46px;
-    height: 46px;
-    flex-basis: 46px;
-    padding: 10px;
+    width: 42px;
+    height: 42px;
+    flex-basis: 42px;
+    padding: 8px;
     color: var(--black);
-    background: linear-gradient(145deg, #e7ff72 0%, var(--lime) 46%, #afd900 100%);
-    border-color: rgba(87, 108, 0, .45);
-    border-radius: 15px;
-    box-shadow: inset 2px 2px 2px rgba(255, 255, 255, .7), inset -2px -3px 4px rgba(78, 99, 0, .2), 0 8px 15px rgba(91, 116, 0, .3);
-    transform: translateY(-4px);
+    background: var(--lime);
+    border-radius: 13px;
+    box-shadow: none;
+    transform: none;
   }
 
   .dashboard-page .client-dashboard-tab-label {
@@ -15624,7 +15623,7 @@ body.client-dashboard-page.is-loading > :is(.client-dashboard-tabs,
   .dashboard-page .client-dashboard-tab.is-active .client-dashboard-tab-label {
     color: #344000;
     font-weight: 900;
-    text-shadow: 0 1px 0 rgba(255, 255, 255, .9);
+    text-shadow: none;
   }
 
   .dashboard-page .client-dashboard-nav-title,
@@ -15655,17 +15654,17 @@ body.client-dashboard-page.is-loading > :is(.client-dashboard-tabs,
   }
 
   .dashboard-page .client-dashboard-tab-icon {
-    width: 32px;
-    height: 32px;
-    flex-basis: 32px;
-    padding: 6px;
+    width: 30px;
+    height: 30px;
+    flex-basis: 30px;
+    padding: 2px;
   }
 
   .dashboard-page .client-dashboard-tab.is-active .client-dashboard-tab-icon {
-    width: 44px;
-    height: 44px;
-    flex-basis: 44px;
-    padding: 9px;
+    width: 40px;
+    height: 40px;
+    flex-basis: 40px;
+    padding: 7px;
   }
 
   .dashboard-page .client-dashboard-tab::after {
