@@ -12,6 +12,10 @@ const mediaAliasesMigration = fs.readFileSync(
   path.join(root, "supabase/migrations/20260929173000_add_workout_exercise_media_aliases.sql"),
   "utf8",
 );
+const commonAliasesMigration = fs.readFileSync(
+  path.join(root, "supabase/migrations/20260929161404_add_common_exercise_media_aliases.sql"),
+  "utf8",
+);
 
 test("bulk exercise images link only approved, active records without replacing existing images", () => {
   const objectNames = [...migration.matchAll(/\('([^']+[.]png)'\)/g)].map((match) => match[1]);
@@ -35,4 +39,39 @@ test("common workout labels resolve to existing approved exercise artwork", () =
   assert.match(mediaAliasesMigration, /where lower\(name\) = 'dumbbell curl'/i);
   assert.match(mediaAliasesMigration, /where lower\(name\) = 'dumbbell reverse fly'/i);
   assert.doesNotMatch(mediaAliasesMigration, /set image_url/i);
+});
+
+test("branded exercise cards gain only equipment- and posture-safe aliases", () => {
+  const expectedMappings = [
+    ["Dumbbell Bench Press", "Flat Dumbbell Bench Press"],
+    ["Dumbbell Bench Press", "DB Bench Press"],
+    ["Hack Squat", "Hack Squat Machine"],
+    ["Dumbbell Reverse Fly", "Reverse Dumbbell Flys"],
+    ["Pec Deck Chest Fly", "Pec Deck Fly"],
+    ["Lying Leg Raise", "Lying Leg Lifts"],
+    ["Plank", "Forearm Plank"],
+  ];
+
+  expectedMappings.forEach(([canonical, alias]) => {
+    assert.match(commonAliasesMigration, new RegExp(
+      `\\('${canonical.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&")}', '${alias.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&")}'\\)`
+    ));
+  });
+
+  [
+    "Shoulder Press",
+    "Row Machine",
+    "Incline Chest Press",
+    "Single Arm Row",
+    "Kickback Machine",
+  ].forEach((ambiguousAlias) => {
+    assert.doesNotMatch(
+      commonAliasesMigration,
+      new RegExp(`\\('[^']+', '${ambiguousAlias.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&")}'\\)`)
+    );
+  });
+
+  assert.match(commonAliasesMigration, /exercise[.]is_active/i);
+  assert.match(commonAliasesMigration, /exercise[.]is_approved/i);
+  assert.doesNotMatch(commonAliasesMigration, /set\s+image_url/i);
 });

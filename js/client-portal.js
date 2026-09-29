@@ -2462,6 +2462,27 @@ function trustedExerciseMotionUrl(value) {
   }
 }
 
+function responsiveExerciseImageUrls(value) {
+  const fullUrl = trustedExerciseImageUrl(value);
+  if (!fullUrl) return { fullUrl: "", thumbnailUrl: "" };
+
+  try {
+    const url = new URL(fullUrl);
+    const thumbnailPath = url.pathname.replace(
+      /(\/exercise-images\/approved\/\d{4}-\d{2}-\d{2}\/)(webp-768)(\/[a-z0-9-]+\.webp)$/i,
+      "$1webp-480$3"
+    );
+    if (thumbnailPath === url.pathname) return { fullUrl, thumbnailUrl: fullUrl };
+    url.pathname = thumbnailPath;
+    return {
+      fullUrl,
+      thumbnailUrl: trustedExerciseImageUrl(url.href) || fullUrl
+    };
+  } catch {
+    return { fullUrl, thumbnailUrl: fullUrl };
+  }
+}
+
 function exerciseMedia(exercise = {}) {
   const approvedExercise = approvedExerciseForName(exercise.name);
   const imageUrl = trustedExerciseImageUrl(exercise.image_url || approvedExercise?.image_url);
@@ -2474,6 +2495,7 @@ function exerciseMedia(exercise = {}) {
 function exerciseMediaButtonMarkup(exercise, options = {}) {
   const { imageUrl, animatedUrl } = exerciseMedia(exercise);
   if (!imageUrl) return "";
+  const { fullUrl, thumbnailUrl } = responsiveExerciseImageUrls(imageUrl);
   const name = String(exercise.name || "Exercise").trim() || "Exercise";
   const compact = options.compact ? " exercise-media-button-compact" : "";
   return `
@@ -2481,12 +2503,18 @@ function exerciseMediaButtonMarkup(exercise, options = {}) {
       class="exercise-media-button${compact}"
       type="button"
       data-exercise-media-open
-      data-exercise-media-static="${escapeHtml(imageUrl)}"
+      data-exercise-media-static="${escapeHtml(fullUrl)}"
       ${animatedUrl ? `data-exercise-media-animated="${escapeHtml(animatedUrl)}"` : ""}
       data-exercise-media-name="${escapeHtml(name)}"
       aria-label="Open full ${escapeHtml(name)} start and end demonstration"
     >
-      <img src="${escapeHtml(imageUrl)}" alt="" loading="lazy" decoding="async" />
+      <img
+        src="${escapeHtml(thumbnailUrl)}"
+        ${thumbnailUrl !== fullUrl ? `srcset="${escapeHtml(thumbnailUrl)} 480w, ${escapeHtml(fullUrl)} 768w" sizes="(max-width: 700px) 42vw, 320px"` : ""}
+        alt=""
+        loading="lazy"
+        decoding="async"
+      />
       <span class="exercise-media-play" aria-hidden="true"><span></span></span>
     </button>
   `;
@@ -12330,15 +12358,27 @@ function clientWorkoutListMarkup(workouts) {
       </div>
       <div id="workout-preview-body-${index}" class="workout-preview-body" ${position === 0 ? "" : "hidden"}>
         <div class="workout-preview-columns"><span>Exercises</span><span>Sets × reps</span></div>
-        <ol class="workout-preview-exercises" data-preview-workout="${position}">${exercises.map((exercise, exerciseIndex) => `<li data-preview-exercise="${exerciseIndex}">
-          <button type="button" class="workout-drag" data-exercise-drag ${locked ? "disabled" : ""} aria-label="Reorder ${escapeHtml(exercise.name || "exercise")}. Use up and down arrow keys.">⠿</button>
-          <span class="workout-row-number">${exerciseIndex + 1}</span><strong>${escapeHtml(exercise.name || "Exercise")}</strong><span class="workout-prescription">${escapeHtml(WorkoutLayout.label(exercise.prescription))}</span>
-          <details class="workout-preview-menu"><summary aria-label="${escapeHtml(exercise.name || "Exercise")} options">•••</summary><div>
-            <button type="button" data-exercise-edit ${locked ? "disabled" : ""}>Edit exercise</button>
-            <button type="button" data-exercise-substitute ${locked ? "disabled" : ""}>Substitute exercise</button>
-            <button type="button" data-exercise-delete ${locked ? "disabled" : ""}>Delete exercise</button>
-          </div></details>
-        </li>`).join("")}</ol>
+        <ol class="workout-preview-exercises" data-preview-workout="${position}">${exercises.map((exercise, exerciseIndex) => {
+          const approvedExercise = approvedExerciseForName(exercise.name);
+          const exerciseMeta = [approvedExercise?.primary_muscle, approvedExercise?.equipment]
+            .map((value) => String(value || "").trim())
+            .filter(Boolean)
+            .join(" · ");
+          return `<li class="workout-preview-exercise-card" data-preview-exercise="${exerciseIndex}">
+            <button type="button" class="workout-drag" data-exercise-drag ${locked ? "disabled" : ""} aria-label="Reorder ${escapeHtml(exercise.name || "exercise")}. Use up and down arrow keys.">⠿</button>
+            <div class="workout-preview-exercise-media">${exerciseMediaButtonMarkup(exercise, { compact: true })}</div>
+            <span class="workout-preview-exercise-copy">
+              <span class="workout-row-number">${exerciseIndex + 1}</span>
+              <span><strong>${escapeHtml(exercise.name || "Exercise")}</strong>${exerciseMeta ? `<small>${escapeHtml(exerciseMeta)}</small>` : ""}</span>
+            </span>
+            <span class="workout-prescription">${escapeHtml(WorkoutLayout.label(exercise.prescription))}</span>
+            <details class="workout-preview-menu"><summary aria-label="${escapeHtml(exercise.name || "Exercise")} options">•••</summary><div>
+              <button type="button" data-exercise-edit ${locked ? "disabled" : ""}>Edit exercise</button>
+              <button type="button" data-exercise-substitute ${locked ? "disabled" : ""}>Substitute exercise</button>
+              <button type="button" data-exercise-delete ${locked ? "disabled" : ""}>Delete exercise</button>
+            </div></details>
+          </li>`;
+        }).join("")}</ol>
         <button type="button" class="button button-dark workout-preview-start" data-preview-start="${index}" ${exercises.length ? "" : "disabled"}>▶ Start workout</button>
       </div>
     </article>`;
