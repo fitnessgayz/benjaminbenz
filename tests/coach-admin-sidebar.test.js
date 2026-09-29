@@ -29,10 +29,11 @@ test("coach admin sidebar can collapse and remembers the preference", () => {
 
 test("coach admin navigation becomes a scrollable client-style bottom dock on smaller screens", () => {
   assert.match(adminSource, /matchMedia\("\(max-width: 900px\)"\)/);
-  assert.match(styleSource, /@media \(max-width: 900px\)[\s\S]*?body\.coach-admin-page\s*\{[^}]*--coach-mobile-dock-bottom-gap:\s*calc\(10px \+ env\(safe-area-inset-bottom\)\)[^}]*--coach-mobile-dock-height:\s*94px/s);
-  assert.match(styleSource, /@media \(max-width: 900px\)[\s\S]*?\.coach-admin-sidebar\s*\{[\s\S]*?position:\s*fixed[\s\S]*?top:\s*calc\(100svh - var\(--coach-mobile-dock-height\) - var\(--coach-mobile-dock-bottom-gap\)\)[\s\S]*?bottom:\s*auto[\s\S]*?border-radius:\s*34px/);
+  assert.match(styleSource, /@media \(max-width: 900px\)[\s\S]*?body\.coach-admin-page\s*\{[^}]*--coach-mobile-dock-height:\s*90px[^}]*padding-bottom:\s*calc\(var\(--coach-mobile-dock-height\) \+ env\(safe-area-inset-bottom\) \+ 24px\)/s);
+  assert.match(styleSource, /@media \(max-width: 900px\)[\s\S]*?\.coach-admin-sidebar\s*\{[\s\S]*?position:\s*fixed[\s\S]*?inset:\s*auto 0 0[\s\S]*?width:\s*100%[\s\S]*?border-radius:\s*0/);
+  assert.match(styleSource, /@media \(max-width: 900px\)[\s\S]*?\.coach-admin-sidebar\s*\{[\s\S]*?background:\s*rgba\(247, 248, 245, \.64\)[\s\S]*?backdrop-filter:\s*blur\(20px\) saturate\(175%\)/);
   assert.match(styleSource, /@media \(max-width: 900px\)[\s\S]*?\.coach-admin-page \.admin-tabs\s*\{[\s\S]*?display:\s*flex[\s\S]*?overflow-x:\s*auto[\s\S]*?scroll-snap-type:\s*x proximity/);
-  assert.match(styleSource, /body\.coach-admin-page\s*\{[^}]*padding-bottom:\s*calc\(116px \+ env\(safe-area-inset-bottom\)\)/s);
+  assert.match(styleSource, /\.coach-admin-page \.admin-tabs::-webkit-scrollbar\s*\{[^}]*display:\s*none/s);
   assert.match(styleSource, /html:has\(> body\.coach-admin-page\)\s*\{[^}]*overflow-x:\s*clip[^}]*overscroll-behavior-y:\s*none/s);
 });
 
@@ -57,8 +58,14 @@ test("mobile coach tabs use client-style icons, labels, and selected state", () 
   assert.equal((navMarkup.match(/<svg class="admin-nav-icon/g) || []).length, 14);
   assert.match(navMarkup, /data-admin-tab="inbox"[^>]*aria-label="Inbox"/);
   assert.doesNotMatch(navMarkup, /<span class="admin-nav-icon"[^>]*>(?:SL|CL|PR|PG|WO|EX|AL|FD|PS|NT|LG|SE)<\/span>/);
-  assert.match(styleSource, /\.coach-admin-page \.admin-tab\.is-active \.admin-nav-icon\s*\{[\s\S]*?background:\s*var\(--lime\)[\s\S]*?border-radius:\s*50%/);
+  assert.match(styleSource, /\.coach-admin-page \.admin-tab\.is-active \.admin-nav-icon\s*\{[\s\S]*?background:\s*var\(--lime\)[\s\S]*?border-radius:\s*13px[\s\S]*?box-shadow:\s*none[\s\S]*?transform:\s*none/);
+  assert.match(styleSource, /\.coach-admin-page \.admin-tab\.is-active::after\s*\{[^}]*background:\s*var\(--lime\)[^}]*box-shadow:\s*none/s);
   assert.match(styleSource, /\.coach-admin-page \.admin-workspace\.is-sidebar-collapsed \.admin-nav-label,[\s\S]*?display:\s*block/);
+});
+
+test("coach desktop sidebar uses the client rail measurements", () => {
+  assert.match(styleSource, /\.coach-admin-sidebar\s*\{[^}]*top:\s*88px[^}]*max-height:\s*calc\(100dvh - 104px\)/s);
+  assert.match(styleSource, /\.coach-admin-page \.admin-tabs\s*\{[^}]*gap:\s*5px/s);
 });
 
 test("Session Logger is distinct without looking like the selected admin section", () => {
