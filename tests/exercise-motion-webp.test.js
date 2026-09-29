@@ -12,7 +12,7 @@ const migration = fs.readFileSync(
 );
 
 test("exercise motion is a separate optional WebP field", () => {
-  assert.match(migration, /add column motion_url text/i);
+  assert.match(migration, /add column if not exists motion_url text/i);
   assert.match(migration, /motion_url is null/i);
   assert.match(migration, /exercise-images\/approved\/[a-z0-9/\-\[\].+*?$^(){}|\\]+webp/i);
   assert.doesNotMatch(migration, /\.(mp4|mov|m4v)/i);
