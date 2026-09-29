@@ -2804,6 +2804,20 @@ body.dashboard-page.custom-workout-grouped-finish-open {
   object-fit: cover;
 }
 
+/* Branded masters include a text panel on the right. Exercise rows already
+   render that information, so frame only the two Start/End photo panels here. */
+.exercise-media-button-branded-crop {
+  aspect-ratio: 1.16 / 1;
+}
+
+.exercise-media-button-branded-crop > img {
+  width: auto;
+  max-width: none;
+  height: 100%;
+  object-fit: contain;
+  object-position: left center;
+}
+
 .exercise-media-play {
   position: absolute;
   right: 8px;

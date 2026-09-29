@@ -2502,9 +2502,11 @@ function exerciseMediaButtonMarkup(exercise, options = {}) {
   const { fullUrl, thumbnailUrl } = responsiveExerciseImageUrls(imageUrl);
   const name = String(exercise.name || "Exercise").trim() || "Exercise";
   const compact = options.compact ? " exercise-media-button-compact" : "";
+  const brandedCrop = /\/exercise-images\/approved\/\d{4}-\d{2}-\d{2}\/(?:webp-(?:480|768)|png)\//i.test(thumbnailUrl)
+    ? " exercise-media-button-branded-crop" : "";
   return `
     <button
-      class="exercise-media-button${compact}"
+      class="exercise-media-button${compact}${brandedCrop}"
       type="button"
       data-exercise-media-open
       data-exercise-media-static="${escapeHtml(fullUrl)}"

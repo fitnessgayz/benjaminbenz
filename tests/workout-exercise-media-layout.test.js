@@ -25,6 +25,13 @@ test("uses the 480w branded card in lists and keeps the 768w card for the full d
   assert.match(portal, /data-exercise-media-static="\$\{escapeHtml\(fullUrl\)\}"/);
 });
 
+test("crops branded list thumbnails to the Start and End photo panels", () => {
+  assert.match(portal, /exercise-media-button-branded-crop/);
+  assert.match(css, /\.exercise-media-button-branded-crop\s*\{[\s\S]*aspect-ratio: 1\.16 \/ 1/);
+  assert.match(css, /\.exercise-media-button-branded-crop > img\s*\{[\s\S]*object-position: left center/);
+  assert.match(workoutCss, /\.workout-preview-exercise-media \.exercise-media-button-branded-crop/);
+});
+
 test("accepts motion only from approved first-party WebP locations", () => {
   assert.match(portal, /exercise-images\\\/approved[\s\S]*\\\.webp/);
   assert.match(portal, /images\\\/exercises[\s\S]*\\\.webp/);
