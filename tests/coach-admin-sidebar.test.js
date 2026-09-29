@@ -60,12 +60,20 @@ test("mobile coach tabs use client-style icons, labels, and selected state", () 
   assert.doesNotMatch(navMarkup, /<span class="admin-nav-icon"[^>]*>(?:SL|CL|PR|PG|WO|EX|AL|FD|PS|NT|LG|SE)<\/span>/);
   assert.match(styleSource, /\.coach-admin-page \.admin-tab\.is-active \.admin-nav-icon\s*\{[\s\S]*?background:\s*var\(--lime\)[\s\S]*?border-radius:\s*13px[\s\S]*?box-shadow:\s*none[\s\S]*?transform:\s*none/);
   assert.match(styleSource, /\.coach-admin-page \.admin-tab\.is-active::after\s*\{[^}]*background:\s*var\(--lime\)[^}]*box-shadow:\s*none/s);
+  assert.match(styleSource, /\.coach-admin-page \.admin-tab\.is-active \.admin-nav-label\s*\{[^}]*color:\s*#344000[^}]*font-weight:\s*900[^}]*text-shadow:\s*none/s);
   assert.match(styleSource, /\.coach-admin-page \.admin-workspace\.is-sidebar-collapsed \.admin-nav-label,[\s\S]*?display:\s*block/);
 });
 
 test("coach desktop sidebar uses the client rail measurements", () => {
+  assert.match(styleSource, /\.coach-admin-page \.admin-workspace\s*\{[^}]*grid-template-columns:\s*240px minmax\(0, 1fr\)[^}]*gap:\s*24px/s);
   assert.match(styleSource, /\.coach-admin-sidebar\s*\{[^}]*top:\s*88px[^}]*max-height:\s*calc\(100dvh - 104px\)/s);
   assert.match(styleSource, /\.coach-admin-page \.admin-tabs\s*\{[^}]*gap:\s*5px/s);
+});
+
+test("coach mobile dock uses the same final surface and compact breakpoint as the client dock", () => {
+  assert.match(styleSource, /\.coach-admin-sidebar\s*\{[\s\S]*?z-index:\s*1000[\s\S]*?box-shadow:\s*0 -10px 30px rgba\(20, 24, 20, \.08\)/);
+  assert.match(styleSource, /@media \(max-width: 420px\)\s*\{[\s\S]*?body\.coach-admin-page\s*\{[^}]*--coach-mobile-dock-height:\s*88px/);
+  assert.match(styleSource, /@media \(max-width: 420px\)[\s\S]*?\.coach-admin-page \.admin-nav-icon,[\s\S]*?width:\s*30px[^}]*height:\s*30px[^}]*padding:\s*2px/s);
 });
 
 test("Session Logger is distinct without looking like the selected admin section", () => {
