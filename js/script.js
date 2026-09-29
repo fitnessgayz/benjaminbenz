@@ -436,6 +436,14 @@ function setCoachingOptionDeckCard(deck, nextIndex) {
   }
 }
 
+function resetCoachingOptionDeck(deck) {
+  if (!deck) {
+    return;
+  }
+
+  setCoachingOptionDeckCard(deck, Number(deck.dataset.coachingOptionStart) || 0);
+}
+
 function initializeCoachingOptionDeck(deck) {
   const cards = Array.from(deck?.querySelectorAll("[data-coaching-option-card]") || []);
   const dotsContainer = deck?.querySelector("[data-coaching-option-dots]");
@@ -461,7 +469,7 @@ function initializeCoachingOptionDeck(deck) {
   }).join("");
 
   deck.classList.add("is-enhanced");
-  setCoachingOptionDeckCard(deck, Number(deck.dataset.coachingOptionStart) || 0);
+  resetCoachingOptionDeck(deck);
 
   const move = (direction) => {
     const activeIndex = Number(deck.dataset.activeIndex) || 0;
@@ -643,6 +651,10 @@ function activateHomeTab(tabId, options = {}) {
 
   if (!targetPanel) {
     return;
+  }
+
+  if (tabId === "start") {
+    targetPanel.querySelectorAll("[data-coaching-option-deck]").forEach(resetCoachingOptionDeck);
   }
 
   homeTabPanels.forEach((panel) => {

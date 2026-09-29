@@ -90,6 +90,39 @@
   text-transform: none;
 }
 
+:root body.homepage.public-page .home-tabs-shell {
+  background: linear-gradient(
+    180deg,
+    rgb(242 243 238 / 0%) 0%,
+    rgb(242 243 238 / 58%) 36%,
+    rgb(242 243 238 / 88%) 100%
+  );
+}
+
+:root body.homepage.public-page .home-tabs {
+  padding: 7px;
+  border: 1px solid rgb(23 26 23 / 14%);
+  background: rgb(255 255 255 / 78%);
+  -webkit-backdrop-filter: blur(28px) saturate(135%);
+  backdrop-filter: blur(28px) saturate(135%);
+  box-shadow: 0 14px 34px rgb(8 10 8 / 14%);
+}
+
+:root body.homepage.public-page .home-tab {
+  color: var(--ink);
+  background: transparent;
+  border-color: transparent;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+:root body.homepage.public-page .home-tab.is-active {
+  color: var(--brand-primary-ink);
+  background: var(--brand-primary);
+  border-color: transparent;
+  box-shadow: 0 7px 18px rgb(8 10 8 / 12%);
+}
+
 .public-pathway,
 .connected-coaching {
   width: min(var(--public-content), calc(100% - 40px));

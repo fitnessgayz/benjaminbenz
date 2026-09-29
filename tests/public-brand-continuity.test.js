@@ -80,7 +80,7 @@ test("makes support and privacy visible on public conversion pages", () => {
 
 test("keeps public styling isolated and based on canonical tokens", () => {
   for (const page of [homepage, questionnaire, interest]) {
-    assert.match(page, /css\/public-brand\.css\?v=public-contrast-2/);
+    assert.match(page, /css\/public-brand\.css\?v=public-nav-3/);
     assert.match(page, /public-page/);
   }
 
@@ -96,6 +96,13 @@ test("uses calm light surfaces for proof and coaching offers without the legacy 
   assert.match(publicStyles, /\.homepage\.public-page \.review-card span\s*\{[^}]*background:\s*var\(--brand-primary\)/s);
   assert.match(publicStyles, /\.homepage\.public-page \.coaching-option-card-featured\s*\{[^}]*background:\s*var\(--surface-soft\)/s);
   assert.match(publicStyles, /box-shadow:\s*inset 0 5px 0 var\(--brand-primary\)/);
+});
+
+test("uses a light translucent primary dock with a lime selected state", () => {
+  assert.match(publicStyles, /:root body\.homepage\.public-page \.home-tabs\s*\{[^}]*background:\s*rgb\(255 255 255 \/ 78%\)/s);
+  assert.match(publicStyles, /backdrop-filter:\s*blur\(28px\) saturate\(135%\)/);
+  assert.match(publicStyles, /:root body\.homepage\.public-page \.home-tab\s*\{[^}]*color:\s*var\(--ink\)[^}]*background:\s*transparent/s);
+  assert.match(publicStyles, /:root body\.homepage\.public-page \.home-tab\.is-active\s*\{[^}]*background:\s*var\(--brand-primary\)/s);
 });
 
 test("keeps the master identity and legal navigation on public support and policy pages", () => {
