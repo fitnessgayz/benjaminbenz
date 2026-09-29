@@ -136,7 +136,7 @@ test("removes mobile scrolling, the arrow cue, and the dark capsule", () => {
   assert.doesNotMatch(dashboardHtml, /data-client-nav-scroll-(?:fade|cue)/);
   assert.doesNotMatch(mobileStyles, /overflow-x:\s*auto|scroll-snap-type|rgba\(23, 26, 23, \.98\)|border-radius:\s*34px/);
   assert.doesNotMatch(mobileHandler, /addEventListener\("scroll"/);
-  assert.match(dashboardHtml, /fwb-design-system\.css\?v=reference-overhaul-4/);
+  assert.match(dashboardHtml, /fwb-design-system\.css\?v=web-app-brand-1/);
   assert.match(designSystemSource, /@media \(max-width: 900px\)[\s\S]*?:root body\.client-dashboard-page \.client-dashboard-tabs \{[\s\S]*?background:\s*rgba\(247, 248, 245, \.64\)[\s\S]*?border-radius:\s*0 !important/);
   assert.doesNotMatch(designSystemSource, /@media \(max-width: 900px\)[\s\S]*?client-dashboard-tabs \{\s*border-radius:\s*34px !important/);
 });

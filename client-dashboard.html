@@ -45,7 +45,6 @@
   <link rel="stylesheet" href="css/custom-workout-mobile-fix.css?v=assigned-layout-3&amp;visible-demos=1&amp;copy-last-weights=1&amp;demo-icons=2&amp;copy-set-pr=3&amp;compact-copy=1&amp;exercise-pr-notes=1&amp;pr-info=1&amp;finish-workout=2&amp;prescribed-targets=1&amp;exercise-controls=1&amp;exercise-labels=1&amp;exercise-dialog=2&amp;exercise-text-flow=1" />
   <link rel="stylesheet" href="css/workout-layout.css?v=exercise-preview-3" />
   <link rel="stylesheet" href="css/client-weekly-activity.css?v=1" />
-  <link rel="stylesheet" href="/css/fwb-design-system.css?v=reference-overhaul-4" />
   <link rel="stylesheet" href="css/mood-checkin.css?v=1" />
   <link rel="stylesheet" href="css/daily-checkin.css?v=1" />
   <link rel="stylesheet" href="css/coach-preview.css?v=return-coach-1" />
@@ -62,6 +61,7 @@
   <link rel="stylesheet" href="css/client-achievements.css?v=3" />
   <link rel="stylesheet" href="css/client-home-today.css?v=5" />
   <link rel="stylesheet" href="css/workout-progression.css?v=1" />
+  <link rel="stylesheet" href="/css/fwb-design-system.css?v=web-app-brand-1" />
 </head>
 <body class="dashboard-page client-dashboard-page is-loading">
   <nav class="coach-preview-toolbar" id="coach-preview-toolbar" aria-label="Coach navigation" hidden>
@@ -75,7 +75,7 @@
     </section>
 
     <div id="dashboard-content" hidden>
-      <section class="dashboard-grid" id="client-dashboard-grid" aria-label="Client program dashboard">
+      <section class="dashboard-grid" id="client-dashboard-grid" aria-label="FWB Training workspace">
         <button
           class="client-dashboard-mobile-nav-toggle"
           type="button"
@@ -90,7 +90,7 @@
           </span>
           <span class="client-dashboard-nav-unread" data-client-notification-unread hidden aria-label="0 unread notifications">0</span>
         </button>
-        <nav class="client-dashboard-tabs" id="client-dashboard-navigation" aria-label="Client dashboard sections">
+        <nav class="client-dashboard-tabs" id="client-dashboard-navigation" aria-label="FWB Training sections">
           <p class="client-dashboard-nav-title">FWB Training</p>
           <button class="client-dashboard-tab is-active" type="button" data-client-dashboard-tab="home" aria-current="page" aria-label="Home">
             <svg class="client-dashboard-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10.5V20h14v-9.5"/><path d="M9 20v-6h6v6"/></svg>
@@ -398,9 +398,9 @@
             <article class="client-home-card client-home-card-checklist">
               <p class="kicker">Next steps</p>
               <h3>Stay on track</h3>
-              <ul class="client-home-checklist" id="client-home-checklist" aria-label="Client dashboard next steps"></ul>
+              <ul class="client-home-checklist" id="client-home-checklist" aria-label="Your training next steps"></ul>
               <div class="client-home-support-actions">
-                <a class="client-home-support" href="mailto:fwb@benjaminbenz.com?subject=Client%20dashboard%20help">Report an issue</a>
+                <a class="client-home-support" href="fwb-training-support.html">Get FWB Training support</a>
               </div>
             </article>
               </div>
@@ -659,7 +659,7 @@
         <section class="progress-panel" data-client-dashboard-panel="progress" aria-labelledby="progress-title" hidden>
           <div class="panel-heading progress-panel-heading">
             <div>
-              <p class="kicker">Client dashboard</p>
+              <p class="kicker">FWB Training</p>
               <h2 id="progress-title">Progress</h2>
             </div>
             <div class="progress-panel-actions">
@@ -1073,7 +1073,7 @@
               <span class="client-settings-shortcut-copy"><strong>Privacy policy</strong><small>How FWB protects and uses your data</small></span>
               <span class="client-settings-shortcut-arrow" aria-hidden="true">↗</span>
             </a>
-            <a class="client-settings-shortcut" href="mailto:fwb@benjaminbenz.com?subject=Client%20dashboard%20help">
+            <a class="client-settings-shortcut" href="fwb-training-support.html">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 1 1 5.8 1c0 2-3 2-3 4M12 18h.01"/></svg>
               <span class="client-settings-shortcut-copy"><strong>Help &amp; support</strong><small>Contact Fitness with Benjamin</small></span>
               <span class="client-settings-shortcut-arrow" aria-hidden="true">↗</span>

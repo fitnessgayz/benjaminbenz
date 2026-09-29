@@ -33,10 +33,10 @@
   <link rel="stylesheet" href="css/style.css?v=client-view-shortcut-1&amp;home-shortcuts=1&amp;coach-dock=5&amp;exercise-images=1" />
   <link rel="stylesheet" href="css/coach-messages.css?v=1" />
   <link rel="stylesheet" href="css/workout-layout.css?v=workout-preview-1" />
-  <link rel="stylesheet" href="/css/fwb-design-system.css?v=reference-overhaul-1" />
   <link rel="stylesheet" href="css/apple-workout.css?v=1" />
   <link rel="stylesheet" href="css/apple-health-sync.css?v=1" />
   <link rel="stylesheet" href="css/workout-progression.css?v=1" />
+  <link rel="stylesheet" href="/css/fwb-design-system.css?v=web-app-brand-1" />
 </head>
 <body class="dashboard-page coach-admin-page">
   <header class="site-header dashboard-header">
@@ -89,7 +89,7 @@
           </button>
         </div>
 
-        <nav class="admin-tabs" id="coach-admin-sidebar-nav" aria-label="Admin editor sections">
+        <nav class="admin-tabs" id="coach-admin-sidebar-nav" aria-label="FWB Coach sections">
           <a class="admin-tab admin-tab-link admin-tab-session-logger" href="coach-workout-log.html" aria-label="Workout logger">
             <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-3"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="m9 14 2 2 4-5"/></svg>
             <span class="admin-nav-label">Workout logger</span>
@@ -404,6 +404,10 @@
             <ul class="web-notification-list" data-web-notification-list aria-live="polite"></ul>
             <p class="web-notification-empty" data-web-notification-empty>Your recent coach alerts will appear here.</p>
           </div>
+          <nav class="coach-support-links" aria-label="FWB Coach help and policies">
+            <a href="fwb-coach-support.html"><strong>Help &amp; support</strong><span>Get sign-in, client-data, or workspace help</span></a>
+            <a href="fwb-coach-privacy.html"><strong>Privacy</strong><span>How FWB Coach handles coaching information</span></a>
+          </nav>
         </section>
 
         <section class="admin-card programming-heading-card" data-admin-panel="profile" hidden>
@@ -532,7 +536,7 @@
           </div>
           <label>
             Program summary
-            <textarea name="program_summary" placeholder="Short summary for the top of the client dashboard."></textarea>
+            <textarea name="program_summary" placeholder="Short summary for the top of FWB Training."></textarea>
           </label>
           <div class="training-block-actions">
             <p id="training-block-status" role="status">Training block saves with this program.</p>

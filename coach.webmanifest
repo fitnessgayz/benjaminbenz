@@ -6,8 +6,32 @@
   "start_url": "/coach-admin.html",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#080A08",
+  "display_override": ["standalone", "minimal-ui"],
+  "background_color": "#F2F3EE",
   "theme_color": "#080A08",
+  "categories": ["business", "fitness", "productivity"],
+  "shortcuts": [
+    {
+      "name": "Coach home",
+      "short_name": "Home",
+      "url": "/coach-admin.html?tab=home"
+    },
+    {
+      "name": "Coach inbox",
+      "short_name": "Inbox",
+      "url": "/coach-admin.html?tab=inbox"
+    },
+    {
+      "name": "Manage clients",
+      "short_name": "Clients",
+      "url": "/coach-admin.html?tab=clients"
+    },
+    {
+      "name": "Log a workout",
+      "short_name": "Workout log",
+      "url": "/coach-workout-log.html"
+    }
+  ],
   "icons": [
     {
       "src": "/fwb-home-icon-180.png",

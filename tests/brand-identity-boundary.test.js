@@ -40,9 +40,11 @@ test("client and coach manifests use approved installed identities", () => {
   assert.equal(client.background_color, "#F2F3EE");
   assert.equal(client.theme_color, "#080A08");
   assert.equal(coach.name, "FWB Coach");
-  assert.equal(coach.background_color, "#080A08");
+  assert.equal(coach.background_color, "#F2F3EE");
   assert.equal(coach.theme_color, "#080A08");
   assert.deepEqual(client.icons.map((icon) => icon.src), coach.icons.map((icon) => icon.src));
+  assert.deepEqual(client.shortcuts.map(({ name }) => name), ["Start training", "View progress", "Message your coach"]);
+  assert.deepEqual(coach.shortcuts.map(({ name }) => name), ["Coach home", "Coach inbox", "Manage clients", "Log a workout"]);
 });
 
 test("client auth and onboarding stay inside the FWB Training identity", () => {

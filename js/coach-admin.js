@@ -248,7 +248,7 @@ async function restoreCoachAdminUser() {
   try {
     const { data, error } = await withRequestTimeout(
       coachSupabase.auth.getSession(),
-      "Coach access check timed out."
+      "FWB Coach access check timed out."
     );
     if (error) throw error;
 
@@ -4528,7 +4528,7 @@ async function loadPrograms() {
   const { data, error } = programResult;
 
   if (error) {
-    adminStatus("Could not load clients. Check the coach admin Supabase policy.");
+    adminStatus("Could not load clients. Check the FWB Coach Supabase policy.");
     return;
   }
 
@@ -6229,7 +6229,7 @@ async function deleteClientProgram(program, button) {
   }
 
   const label = program.client_name || program.client_email || "this client";
-  const confirmed = window.confirm(`Delete ${label} from the coach admin? This removes their saved programs from this page.`);
+  const confirmed = window.confirm(`Delete ${label} from FWB Coach? This removes their saved programs from this workspace.`);
 
   if (!confirmed) {
     return;
@@ -6260,8 +6260,8 @@ async function deleteClientProgram(program, button) {
   selectedProgramId = nextProgram.id || "";
   fillForm(nextProgram);
   renderClientList();
-  adminStatus("Client deleted from coach admin.");
-  profileManagementStatus("Client deleted from coach admin.");
+  adminStatus("Client deleted from FWB Coach.");
+  profileManagementStatus("Client deleted from FWB Coach.");
   if (button) {
     button.disabled = false;
   }
@@ -6541,8 +6541,8 @@ async function copyProgramToClient(program, button, targetEmail, options = {}) {
   }
 
   if (!coachSupabase) {
-    copyClientStatus("Coach admin is not connected yet.");
-    status("Coach admin is not connected yet.");
+    copyClientStatus("FWB Coach is not connected yet.");
+    status("FWB Coach is not connected yet.");
     return;
   }
 
@@ -6921,7 +6921,7 @@ async function handleSendInvite() {
     }
 
     if (!coachSupabase) {
-      inviteStatus("Coach admin is not connected yet.");
+      inviteStatus("FWB Coach is not connected yet.");
       return;
     }
 

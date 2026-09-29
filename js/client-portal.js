@@ -4004,7 +4004,7 @@ function configureClientProgressAccess() {
   });
 
   if (coachPreview) {
-    setClientProgressStatus("Client measurements are read-only here. Use Coach Admin to make changes.");
+    setClientProgressStatus("Client measurements are read-only here. Use FWB Coach to make changes.");
     setClientProgressPhotoStatus("Client progress photos are read-only in Coach View.");
     setClientDexaStatus("DEXA reports are read-only in Coach View.");
   }
@@ -4831,7 +4831,7 @@ function handleClientProgressPhotoUpload() {
       fileInput.value = "";
       noteInput.value = "";
       await loadClientProgressPhotos();
-      setClientProgressPhotoStatus("Private photo uploaded. It is now available in the iOS app and Coach Admin.");
+      setClientProgressPhotoStatus("Private photo uploaded. It is now available in the iOS app and FWB Coach.");
     } catch (error) {
       setClientProgressPhotoStatus(error?.message || "Photo upload failed.");
     } finally {
@@ -16128,7 +16128,7 @@ function handleClientProgressSave() {
     }
 
     renderProgress(data || []);
-    setText("#client-progress-save-status", "Measurements saved. They are now available in the iOS app and Coach Admin.");
+    setText("#client-progress-save-status", "Measurements saved. They are now available in the iOS app and FWB Coach.");
 
     if (button) {
       button.disabled = false;
@@ -17897,7 +17897,7 @@ async function handleCoachPortalLogin() {
 
       if (!isCoachPortalEmail(loginData.user?.email)) {
         await supabaseClient.auth.signOut();
-        if (status) status.textContent = "This login is not set up as a coach admin.";
+        if (status) status.textContent = "This login is not authorized for FWB Coach.";
         return;
       }
 
@@ -18063,7 +18063,7 @@ async function loadDashboard() {
     if (!targetClientEmail) {
       setDashboardMessage(
         "Choose a client",
-        "Open Client View from the coach admin after selecting a client."
+        "Select a client in FWB Coach, then open Client View."
       );
       return;
     }
