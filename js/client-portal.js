@@ -5308,6 +5308,13 @@ function workoutStartControlMarkup(workoutTitle) {
         data-workout-start
         data-workout-title="${escapeHtml(workoutTitle)}"
       >Start workout</button>
+      <button
+        class="button button-ghost workout-finish-later-button"
+        type="button"
+        data-workout-finish-later
+        hidden
+      >Finish later</button>
+      <small class="workout-finish-later-status" data-workout-finish-later-status role="status" aria-live="polite"></small>
     </div>
   `;
 }
@@ -8223,9 +8230,13 @@ function syncWorkoutStartButtons() {
       workoutTitle === String(workoutElapsedTimerState.workoutTitle || "").trim() &&
       workoutDate === String(workoutElapsedTimerState.workoutDate || "")
     );
+    const control = button.closest(".workout-start-control");
+    const finishLaterButton = control?.querySelector("[data-workout-finish-later]");
 
     button.disabled = Boolean(workoutElapsedTimerState && !isActiveWorkout);
     button.classList.toggle("is-active", isActiveWorkout);
+    control?.classList.toggle("has-active-workout", isActiveWorkout);
+    if (finishLaterButton) finishLaterButton.hidden = !isActiveWorkout;
 
     if (!workoutElapsedTimerState) {
       button.textContent = "Start workout";
@@ -8397,6 +8408,63 @@ function toggleWorkoutElapsedTimer() {
 
   persistWorkoutElapsedTimerState();
   runWorkoutElapsedTimer();
+}
+
+async function finishWorkoutLater(button) {
+  const panel = button?.closest(".client-workout-panel");
+  const status = panel?.querySelector("[data-workout-finish-later-status]");
+
+  if (!panel || !workoutElapsedTimerState) {
+    return false;
+  }
+
+  button.disabled = true;
+  if (status) status.textContent = "Saving your workout…";
+
+  const now = Date.now();
+  if (workoutElapsedTimerState.running) {
+    workoutElapsedTimerState.accumulatedMilliseconds = workoutElapsedMilliseconds(now);
+  }
+  workoutElapsedTimerState.startedAt = 0;
+  workoutElapsedTimerState.running = false;
+  workoutElapsedTimerState.dismissed = true;
+  persistWorkoutElapsedTimerState();
+  clearWorkoutElapsedTimerInterval();
+
+  if (restTimerEndsAt > 0) {
+    restTimerRemainingSeconds = Math.max(0, Math.ceil((restTimerEndsAt - now) / 1000));
+  }
+  restTimerEndsAt = 0;
+  restTimerActiveRunId = 0;
+  clearRestTimerInterval();
+  renderRestTimer();
+  closeRestTimer();
+
+  const logElements = Array.from(panel.querySelectorAll("[data-exercise-log]"));
+  logElements.forEach((logElement) => persistCustomWorkoutDraftForElement(logElement));
+  cancelTrainingLogAutosaves(panel);
+  const savableLogs = logElements.filter(trainingLogHasAutosavePayload);
+  const groupedWorkout = Boolean(panel.querySelector("[data-custom-workout-grouped='true']"));
+  const result = savableLogs.length
+    ? await saveTrainingLogRows(null, savableLogs, status, {
+        savingMessage: "Saving your workout…",
+        successMessage: "Workout saved for later.",
+        ...(groupedWorkout ? { skipRemovedSetDelete: true, skipLogRefresh: true } : {})
+      })
+    : { saved: true };
+
+  runWorkoutElapsedTimer();
+
+  if (!result.saved) {
+    if (status) status.textContent = "Workout paused, but the latest entries could not be saved. Check your connection and try Finish later again.";
+    button.disabled = false;
+    return false;
+  }
+
+  if (status) status.textContent = "Workout saved for later.";
+  setClientDashboardTab("home");
+  document.querySelector(".client-home-resume-card")?.scrollIntoView?.({ block: "center", behavior: "smooth" });
+  return true;
 }
 
 function resetWorkoutElapsedTimer() {
@@ -16761,6 +16829,7 @@ function handleWorkoutInteractions() {
     const nextExerciseYesButton = event.target.closest("[data-next-exercise-yes]");
     const nextExerciseFinishButton = event.target.closest("[data-next-exercise-finish]");
     const workoutStartButton = event.target.closest("[data-workout-start]");
+    const workoutFinishLaterButton = event.target.closest("[data-workout-finish-later]");
     const resumeActiveWorkoutButton = event.target.closest("[data-resume-active-workout]");
     const cancelActiveWorkoutButton = event.target.closest("[data-cancel-active-workout]");
     const workoutElapsedToggleButton = event.target.closest("[data-workout-elapsed-toggle]");
@@ -16899,6 +16968,11 @@ function handleWorkoutInteractions() {
 
     if (resumeActiveWorkoutButton) {
       resumeActiveWorkout();
+      return;
+    }
+
+    if (workoutFinishLaterButton) {
+      await finishWorkoutLater(workoutFinishLaterButton);
       return;
     }
 

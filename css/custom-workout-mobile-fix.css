@@ -114,6 +114,122 @@
   color: var(--black);
 }
 
+.dashboard-page .workout-start-control.has-active-workout {
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+.dashboard-page .workout-finish-later-button {
+  min-width: 124px;
+  border: 1px solid var(--line) !important;
+  color: var(--black) !important;
+  background: var(--paper) !important;
+  font-weight: 850;
+}
+
+.dashboard-page .workout-finish-later-button[hidden] {
+  display: none !important;
+}
+
+.dashboard-page .workout-finish-later-status {
+  grid-column: 1 / -1;
+  min-height: 0;
+  color: var(--muted);
+  font-size: .78rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.dashboard-page .workout-finish-later-status:empty {
+  display: none;
+}
+
+/* Active mobile workouts use the full viewport width. The bottom dock remains
+   visible, while the workout itself no longer sits inside stacked side gutters. */
+@media (max-width: 760px) {
+  .dashboard-page.client-dashboard-page .client-workouts-panel {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    margin-inline: calc(50% - 50vw) !important;
+    padding-inline: 0 !important;
+    border-right: 0 !important;
+    border-left: 0 !important;
+    border-radius: 0 !important;
+  }
+
+  .dashboard-page.client-dashboard-page .client-workout-panels,
+  .dashboard-page.client-dashboard-page .client-workout-panel {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-inline: 0 !important;
+  }
+
+  .dashboard-page.client-dashboard-page .client-workout-panel {
+    min-height: calc(100dvh - var(--client-mobile-dock-height, 90px));
+    padding-inline: 0 !important;
+  }
+
+  .dashboard-page.client-dashboard-page .client-workouts-panel > :is(
+    .panel-heading,
+    .client-workout-resume-card,
+    .client-workout-picker,
+    .client-workout-selection-summary
+  ),
+  .dashboard-page.client-dashboard-page .client-workout-panel > :is(
+    .panel-heading,
+    .custom-workout-copy-status,
+    .workout-session-date,
+    .workout-format-pill,
+    p
+  ) {
+    margin-right: 12px !important;
+    margin-left: 12px !important;
+  }
+
+  .dashboard-page.client-dashboard-page .client-workout-panel .custom-workout-builder {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .dashboard-page.client-dashboard-page .client-workout-panel :is(
+    .workout-start-control,
+    .custom-workout-header,
+    .custom-workout-format-picker,
+    .workout-warmup-card,
+    .custom-workout-reset-control,
+    .custom-workout-exercise-control,
+    .custom-workout-add-actions,
+    .workout-actions
+  ) {
+    width: auto !important;
+    margin-right: 12px !important;
+    margin-left: 12px !important;
+  }
+
+  .dashboard-page.client-dashboard-page .client-workout-panel [data-custom-workout-grouped="true"] {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-inline: 0 !important;
+  }
+
+  .dashboard-page.client-dashboard-page [data-custom-workout-grouped="true"] :is(
+    .custom-workout-group-name-section,
+    .custom-workout-grouped-card
+  ) {
+    border-right: 0;
+    border-left: 0;
+    border-radius: 0;
+  }
+
+  .dashboard-page .workout-start-control.has-active-workout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .dashboard-page .workout-finish-later-button {
+    width: 100%;
+  }
+}
+
 @media (max-width: 760px) {
   .dashboard-page .custom-workout-card > .custom-workout-card-summary,
   .coach-admin-page .custom-workout-card > .custom-workout-card-summary {

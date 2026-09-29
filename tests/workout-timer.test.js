@@ -7,6 +7,7 @@ const projectRoot = path.resolve(__dirname, "..");
 const dashboardSource = fs.readFileSync(path.join(projectRoot, "client-dashboard.html"), "utf8");
 const portalSource = fs.readFileSync(path.join(projectRoot, "js/client-portal.js"), "utf8");
 const styleSource = fs.readFileSync(path.join(projectRoot, "css/style.css"), "utf8");
+const customWorkoutStyleSource = fs.readFileSync(path.join(projectRoot, "css/custom-workout-mobile-fix.css"), "utf8");
 
 function sourceForFunction(name) {
   const start = portalSource.indexOf(`function ${name}(`);
@@ -147,4 +148,27 @@ test("resume cards mirror running, paused, title, and elapsed timer state", () =
   assert.match(renderSource, /workoutElapsedTimerState\.workoutTitle/);
   assert.match(renderSource, /workoutElapsedTimeLabel\(workoutElapsedMilliseconds\(\)\)/);
   assert.match(portalSource, /resumeActiveWorkoutButton[\s\S]*resumeActiveWorkout\(\)/);
+});
+
+test("Finish later pauses both timers, saves entered work, and returns home", () => {
+  const markupSource = sourceForFunction("workoutStartControlMarkup");
+  const finishLaterSource = sourceForFunction("finishWorkoutLater");
+
+  assert.match(markupSource, /data-workout-finish-later/);
+  assert.match(finishLaterSource, /workoutElapsedTimerState\.running = false/);
+  assert.match(finishLaterSource, /workoutElapsedTimerState\.dismissed = true/);
+  assert.match(finishLaterSource, /restTimerEndsAt = 0/);
+  assert.match(finishLaterSource, /closeRestTimer\(\)/);
+  assert.match(finishLaterSource, /cancelTrainingLogAutosaves\(panel\)/);
+  assert.match(finishLaterSource, /saveTrainingLogRows\(null, savableLogs/);
+  assert.match(finishLaterSource, /setClientDashboardTab\("home"\)/);
+  assert.match(portalSource, /workoutFinishLaterButton[\s\S]*await finishWorkoutLater\(workoutFinishLaterButton\)/);
+  assert.match(dashboardSource, /finish-later=1/);
+});
+
+test("mobile workout panel expands to the full viewport width", () => {
+  assert.match(customWorkoutStyleSource, /@media \(max-width: 760px\)[\s\S]*?\.dashboard-page\.client-dashboard-page \.client-workouts-panel\s*\{[^}]*width:\s*100vw !important[^}]*margin-inline:\s*calc\(50% - 50vw\) !important/s);
+  assert.match(customWorkoutStyleSource, /\.dashboard-page\.client-dashboard-page \.client-workout-panel\s*\{[^}]*min-height:\s*calc\(100dvh - var\(--client-mobile-dock-height, 90px\)\)[^}]*padding-inline:\s*0 !important/s);
+  assert.match(customWorkoutStyleSource, /\[data-custom-workout-grouped="true"\] :is\([^)]*\.custom-workout-grouped-card[^)]*\)\s*\{[^}]*border-radius:\s*0/s);
+  assert.match(dashboardSource, /full-screen-workout=1/);
 });
