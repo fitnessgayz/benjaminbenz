@@ -222,6 +222,8 @@ test("client and coach entry points load the shared controller before their appl
   assert.match(messageCss, /\.coach-admin-page \.fwb-messages \.fwb-message-bubble\.is-own\s*\{[^}]*background: #eaf3d5;/s);
   const clientSource = fs.readFileSync(path.join(root, "js/client-portal.js"), "utf8");
   assert.match(clientSource, /button\.hidden = isCoachDashboardPreview/);
+  assert.match(clientSource, /initializeClientMessages\(user\)[\s\S]*?if \(!targetClientEmail\)/);
+  assert.match(clientSource, /messageButton && !clientMessagesController[\s\S]*?clientMessagesController\?\.open/);
   const dashboardStart = clientSource.indexOf("async function loadDashboard()");
   const dashboardSource = clientSource.slice(dashboardStart, clientSource.indexOf("\nfunction ", dashboardStart));
   assert.ok(dashboardSource.indexOf("clientMessagesController?.destroy()") < dashboardSource.indexOf("supabaseClient.auth.getSession()"));

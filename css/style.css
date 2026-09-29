@@ -18478,6 +18478,39 @@ body.client-dashboard-page.is-loading > :is(.client-dashboard-tabs,
   font-weight: 700;
 }
 
+.client-settings-return-button {
+  display: inline-flex;
+  width: fit-content;
+  min-height: 44px;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 18px;
+  padding: 8px 14px;
+  border: 1px solid var(--client-settings-line, #dde0d7);
+  border-radius: 14px;
+  color: #30362d;
+  background: rgba(255, 255, 255, .82);
+  box-shadow: 0 8px 22px rgba(35, 42, 31, .06);
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.client-settings-return-button[hidden] {
+  display: none !important;
+}
+
+.client-settings-return-button span {
+  color: #638000;
+  font-size: 1.45rem;
+  line-height: .8;
+}
+
+.client-settings-return-button:focus-visible {
+  outline: 3px solid #8aa817;
+  outline-offset: 3px;
+}
+
 .client-settings-shortcuts {
   display: grid;
   grid-template-columns: minmax(0, 1fr);

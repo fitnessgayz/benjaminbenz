@@ -202,12 +202,49 @@
         body: { action }
       });
       if (error) {
+        if (backend === "modern" && (action === "public-key" || action === "test")) {
+          const modernError = error;
+          const { data: deployedData, error: deployedError } = await supabaseClient.functions.invoke(deployedFunctionName, {
+            body: { action }
+          });
+          if (!deployedError && !deployedData?.error) {
+            backend = "deployed";
+            await ensureDeployedPreferences();
+            return deployedData || {};
+          }
+          throw deployedError || modernError;
+        }
         throw error;
       }
       if (data?.error) {
         throw new Error(data.error);
       }
       return data || {};
+    }
+
+    async function ensureDeployedPreferences() {
+      const { data, error } = await supabaseClient
+        .from("fwb_notification_settings")
+        .select("*")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (error) {
+        throw error;
+      }
+      if (data) {
+        preferences = normalizeDeployedPreferences(data);
+        return preferences;
+      }
+      const { data: created, error: createError } = await supabaseClient
+        .from("fwb_notification_settings")
+        .insert({ user_id: user.id })
+        .select("*")
+        .single();
+      if (createError) {
+        throw createError;
+      }
+      preferences = normalizeDeployedPreferences(created);
+      return preferences;
     }
 
     function normalizeDeployedPreferences(row) {
@@ -245,30 +282,7 @@
           throw probe.error;
         }
         backend = "deployed";
-        const { data, error } = await supabaseClient
-          .from("fwb_notification_settings")
-          .select("*")
-          .eq("user_id", user.id)
-          .maybeSingle();
-
-        if (error) {
-          throw error;
-        }
-        if (data) {
-          preferences = normalizeDeployedPreferences(data);
-          return preferences;
-        }
-
-        const { data: created, error: createError } = await supabaseClient
-          .from("fwb_notification_settings")
-          .insert({ user_id: user.id })
-          .select("*")
-          .single();
-        if (createError) {
-          throw createError;
-        }
-        preferences = normalizeDeployedPreferences(created);
-        return preferences;
+        return ensureDeployedPreferences();
       }
 
       backend = "modern";
@@ -639,7 +653,7 @@
         setStatus(result ? "Alerts are on for this device." : "Background alerts are off.", result ? "success" : "");
         return result;
       } catch (error) {
-        setStatus(error?.message || "Could not update notification settings.", "error");
+        setStatus("Alerts could not be enabled yet. Check your connection and try again; your in-app updates will still appear here.", "error");
         renderEnableState();
         return false;
       } finally {

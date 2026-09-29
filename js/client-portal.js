@@ -46,6 +46,7 @@ let activeProgressMetric = "bodyweight";
 let clientTrainingLogDateFilter = "";
 let clientTrainingLogSearchFilter = "";
 let activeClientDashboardTab = "home";
+let clientSettingsReturnTab = "";
 let latestMonthlyProgressReport = null;
 let monthlyReportReturnTab = "progress";
 let monthlyReportReturnFocus = null;
@@ -15557,6 +15558,9 @@ function setClientDashboardTab(tabName) {
 
     panel.hidden = !isActive;
   });
+  document.querySelectorAll("[data-client-return-settings]").forEach((button) => {
+    button.hidden = clientSettingsReturnTab !== nextTab;
+  });
 
   if (nextTab === "notifications" && typeof setClientSettingsView === "function") {
     setClientSettingsView("menu", { scroll: false });
@@ -16482,6 +16486,19 @@ function setClientSettingsView(viewName = "menu", options = {}) {
 
 function handleClientDashboardTabs() {
   document.addEventListener("click", (event) => {
+    const messageButton = event.target.closest("[data-message-coach]");
+    if (messageButton && !clientMessagesController) {
+      initializeClientMessages(activeDashboardUser);
+      clientMessagesController?.open(activeDashboardUser?.email, "", messageButton);
+      return;
+    }
+    const returnToSettings = event.target.closest("[data-client-return-settings]");
+    if (returnToSettings) {
+      clientSettingsReturnTab = "";
+      setClientDashboardTab("notifications");
+      setClientSettingsView("menu", { focus: true });
+      return;
+    }
     const settingsViewButton = event.target.closest("[data-client-settings-open]");
     if (settingsViewButton) {
       setClientSettingsView(settingsViewButton.dataset.clientSettingsOpen, { focus: true });
@@ -16493,7 +16510,8 @@ function handleClientDashboardTabs() {
     }
     const settingsDestination = event.target.closest("[data-client-settings-destination]");
     if (settingsDestination) {
-      setClientDashboardTab(settingsDestination.dataset.clientSettingsDestination);
+      clientSettingsReturnTab = settingsDestination.dataset.clientSettingsDestination;
+      setClientDashboardTab(clientSettingsReturnTab);
       return;
     }
     const tab = event.target.closest("[data-client-dashboard-tab]");
@@ -18212,9 +18230,12 @@ async function loadDashboard() {
     const targetClientEmail = isCoachPortalEmail(signedInEmail) ? previewEmail : signedInEmail;
     signedInDashboardEmail = signedInEmail;
     isCoachDashboardPreview = isCoachPortalEmail(signedInEmail) && Boolean(previewEmail);
+    const profilePhotoRoot = document.querySelector("[data-profile-photo]");
+    if (profilePhotoRoot) profilePhotoRoot.hidden = isCoachDashboardPreview;
     setClientNotificationSettingsAvailable(!isCoachDashboardPreview);
     configureClientProfilePhoto();
     configureClientAccountSettings();
+    initializeClientMessages(user);
 
     if (!targetClientEmail) {
       setDashboardMessage(
@@ -18260,7 +18281,6 @@ async function loadDashboard() {
     configureClientSessionBalance();
     configureClientGoogleHealth();
     configureClientAppleHealth();
-    initializeClientMessages(user);
     void initializeClientWebNotifications(user);
     const questionnaireQuery = supabaseClient
       .from("client_fitness_questionnaires")

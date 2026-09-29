@@ -176,9 +176,15 @@ test("keeps PAR-Q and Sessions available from Settings", () => {
 
   assert.match(dashboardHtml, /class="client-settings-shortcuts"[\s\S]*?data-client-settings-destination="questionnaire"[\s\S]*?<strong>PAR-Q<\/strong>/);
   assert.match(dashboardHtml, /data-client-settings-destination="sessions"[\s\S]*?<strong>Sessions<\/strong>/);
-  assert.match(dashboardHtml, /class="client-settings-shortcut"[^>]*data-message-coach disabled[\s\S]*?<strong>Messages<\/strong>/);
+  assert.match(dashboardHtml, /class="client-settings-shortcut"[^>]*data-message-coach[\s\S]*?<strong>Messages<\/strong>/);
+  assert.doesNotMatch(dashboardHtml, /data-message-coach disabled/);
+  assert.equal((dashboardHtml.match(/data-client-return-settings/g) || []).length, 2);
+  assert.match(dashboardHtml, /data-client-dashboard-panel="questionnaire"[\s\S]*?data-client-return-settings/);
+  assert.match(dashboardHtml, /data-client-dashboard-panel="sessions"[\s\S]*?data-client-return-settings/);
   assert.match(tabHandlerSource, /settingsDestination\.dataset\.clientSettingsDestination/);
-  assert.match(tabHandlerSource, /setClientDashboardTab\(settingsDestination\.dataset\.clientSettingsDestination\)/);
+  assert.match(tabHandlerSource, /clientSettingsReturnTab = settingsDestination\.dataset\.clientSettingsDestination/);
+  assert.match(tabHandlerSource, /returnToSettings[\s\S]*?setClientDashboardTab\("notifications"\)/);
+  assert.match(styleSource, /\.client-settings-return-button\s*\{[^}]*min-height:\s*44px/s);
 });
 
 test("lets the Workouts tab open the active exercise list", () => {

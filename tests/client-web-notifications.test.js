@@ -217,6 +217,9 @@ test("push permission remains user initiated and subscriptions are stored per si
   assert.match(notifications, /from\("fwb_notification_settings"\)/);
   assert.match(notifications, /web_url/);
   assert.match(notifications, /functions\.invoke\(functionName/);
+  assert.match(notifications, /functions\.invoke\(deployedFunctionName/);
+  assert.match(notifications, /backend = "deployed";[\s\S]*?await ensureDeployedPreferences\(\)/);
+  assert.match(notifications, /Alerts could not be enabled yet\. Check your connection and try again/);
   assert.match(notifications, /const externalUnreadBadges = Array\.from\(options\.unreadBadges/);
   assert.match(notifications, /unreadBadges\.forEach\(\(unreadBadge\) =>/);
   assert.match(notifications, /if \(!refreshPromise\)[\s\S]*?const pendingRefresh = refreshPromise/);
@@ -228,7 +231,7 @@ test("notification categories and database preferences default on without forcin
   assert.match(notifications, /input\.checked = preferences\?\.\[key\] !== false/);
   assert.match(notifications, /preferences\?\.push_enabled !== false/);
   assert.doesNotMatch(notifications, /init\(\)[\s\S]*?Notification\.requestPermission\(\)/);
-  assert.match(dashboard, /src="js\/web-notifications\.js\?v=notification-default-on-1"/);
+  assert.match(dashboard, /src="js\/web-notifications\.js\?v=notification-fallback-2"/);
   [
     "push_enabled",
     "coach_replies",

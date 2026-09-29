@@ -5,6 +5,7 @@
     const document = global.document;
     const root = options.root || document.querySelector("[data-profile-photo]");
     if (!root || options.isPreview || !options.user?.id) return null;
+    root.hidden = false;
     const store = global.FWB_PROFILE_PHOTO_STORE.createStore({ supabaseClient: options.supabaseClient, userId: options.user.id });
     const nodes = Object.fromEntries([
       "open", "email", "label", "image", "placeholder", "status", "retry", "dialog", "preview",

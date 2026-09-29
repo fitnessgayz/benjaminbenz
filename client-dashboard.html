@@ -50,7 +50,7 @@
   <link rel="stylesheet" href="css/coach-preview.css?v=return-coach-1" />
   <link rel="stylesheet" href="css/apple-workout.css?v=1" />
   <link rel="stylesheet" href="css/google-health.css?v=1" />
-  <link rel="stylesheet" href="css/profile-photo.css?v=1" />
+  <link rel="stylesheet" href="css/profile-photo.css?v=2" />
   <link rel="stylesheet" href="css/client-account-settings.css?v=1" />
   <link rel="stylesheet" href="css/workout-share-card.css?v=1" />
   <link rel="stylesheet" href="css/rir-help.css?v=1" />
@@ -208,7 +208,7 @@
                 <h3 id="client-home-note-title">No note yet</h3>
                 <p id="client-home-note-body">Coach notes will appear here when Benjamin adds one.</p>
               </div>
-              <button class="fwb-message-launch" type="button" data-message-coach disabled>
+              <button class="fwb-message-launch" type="button" data-message-coach>
                 <span><strong>Reply to Benjamin</strong><small>Questions, updates, and replies in one place.</small></span>
                 <span class="fwb-message-badge" data-client-message-unread hidden aria-label="0 unread messages">0</span>
               </button>
@@ -920,6 +920,7 @@
         </section>
 
         <section class="progress-panel client-questionnaire-panel" data-client-dashboard-panel="questionnaire" aria-labelledby="client-questionnaire-title" hidden>
+          <button class="client-settings-return-button" type="button" data-client-return-settings hidden><span aria-hidden="true">‹</span> Back to Settings</button>
           <div class="panel-heading">
             <div>
               <p class="kicker">Client profile</p>
@@ -936,6 +937,7 @@
         </section>
 
         <section class="progress-panel" data-client-dashboard-panel="sessions" aria-labelledby="client-sessions-title" hidden>
+          <button class="client-settings-return-button" type="button" data-client-return-settings hidden><span aria-hidden="true">‹</span> Back to Settings</button>
           <div class="panel-heading">
             <div>
               <p class="kicker">Sessions</p>
@@ -1031,7 +1033,7 @@
             </div>
           </div>
           <nav class="client-settings-shortcuts" aria-label="Settings categories">
-            <button class="client-settings-shortcut" type="button" data-message-coach disabled>
+            <button class="client-settings-shortcut" type="button" data-message-coach>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/><path d="M8 10h.01M12 10h.01M16 10h.01"/></svg>
               <span class="client-settings-shortcut-copy"><strong>Messages</strong><small>Message your coach privately</small></span>
               <span class="client-dashboard-nav-unread" data-client-message-unread hidden aria-label="0 unread messages">0</span>
@@ -1079,7 +1081,7 @@
               <span class="client-settings-shortcut-arrow" aria-hidden="true">↗</span>
             </a>
           </nav>
-          <article class="profile-photo-card" data-profile-photo hidden aria-label="Your account">
+          <article class="profile-photo-card" data-profile-photo aria-label="Your account">
             <button class="profile-photo-open" type="button" data-profile-open aria-haspopup="dialog" disabled>
               <span class="profile-photo-avatar" aria-hidden="true">
                 <span data-profile-placeholder>●</span>
@@ -1087,7 +1089,7 @@
                 <span class="profile-photo-camera">+</span>
               </span>
               <span class="profile-photo-account">
-                <strong data-profile-email></strong>
+                <strong data-profile-email>Your profile</strong>
                 <span>Client account</span>
                 <span class="profile-photo-link" data-profile-label>Add profile photo</span>
               </span>
@@ -1281,8 +1283,8 @@
   <script src="js/supabase-config.js?v=manual-sessions-1"></script>
   <script src="js/auth-session.js?v=remember-login-1"></script>
   <script src="js/exercise-name-matcher.js?v=exercise-consolidation-1"></script>
-  <script src="js/coach-messages.js?v=1"></script>
-  <script src="js/web-notifications.js?v=notification-default-on-1"></script>
+  <script src="js/coach-messages.js?v=2"></script>
+  <script src="js/web-notifications.js?v=notification-fallback-2"></script>
   <script src="https://cdn.jsdelivr.net/npm/@zxing/browser@0.2.1/umd/zxing-browser.min.js" integrity="sha384-HRtzk9lZgkbSgvUyQrnfC/GxiXZgwaNyD7hC9wcXlsBpDhkS80ISl73juef2FRuf" crossorigin="anonymous"></script>
   <script src="js/workout-layout.js?v=exercise-preview-3"></script>
   <script src="js/client-weekly-activity.js?v=2"></script>
@@ -1290,7 +1292,7 @@
   <script src="js/google-health.js?v=1"></script>
   <script src="js/profile-photo-store.js?v=1"></script>
   <script src="js/profile-photo-processor.js?v=1"></script>
-  <script src="js/profile-photo.js?v=4"></script>
+  <script src="js/profile-photo.js?v=5"></script>
   <script src="js/client-account-settings.js?v=1"></script>
   <script src="js/workout-share-card.js?v=1"></script>
   <script src="js/rir-help.js?v=2"></script>
@@ -1305,7 +1307,7 @@
   <script src="js/client-achievements-ui.js?v=2"></script>
   <script src="js/workout-progression.js?v=1"></script>
   <script src="js/workout-progression-ui.js?v=1"></script>
-  <script src="js/client-portal.js?v=custom-workout-history-1&amp;cancel-workout=1&amp;energy-feedback=1&amp;mood-redesign=1&amp;visible-group-controls=1&amp;exercise-videos=1&amp;remember-login=1&amp;visible-demos=1&amp;personal-bests=1&amp;copy-last-weights=1&amp;demo-icons=1&amp;keyboard-entry=1&amp;copy-set-pr=3&amp;return-coach=1&amp;apple-workout=2&amp;apple-share=1&amp;rir-help=1&amp;viewport-dock=6&amp;home-actions=1&amp;compact-copy=1&amp;exercise-pr-notes=1&amp;pr-info=1&amp;finish-workout=2&amp;prescribed-targets=1&amp;exercise-controls=1&amp;session-alerts=1&amp;exercise-labels=1&amp;exercise-list=2&amp;grouped-add=1&amp;google-health=1&amp;exercise-defaults=2&amp;workout-generator=4&amp;profile-photo=1&amp;account-settings=1&amp;workout-delete=1&amp;apple-health=1&amp;daily-checkin=1&amp;recovery-catalog=1&amp;messages=2&amp;cardio-shortcut=1&amp;achievements=1&amp;progression=1&amp;exercise-images=1&amp;settings-tabs=2&amp;finish-later=1"></script>
+  <script src="js/client-portal.js?v=custom-workout-history-1&amp;cancel-workout=1&amp;energy-feedback=1&amp;mood-redesign=1&amp;visible-group-controls=1&amp;exercise-videos=1&amp;remember-login=1&amp;visible-demos=1&amp;personal-bests=1&amp;copy-last-weights=1&amp;demo-icons=1&amp;keyboard-entry=1&amp;copy-set-pr=3&amp;return-coach=1&amp;apple-workout=2&amp;apple-share=1&amp;rir-help=1&amp;viewport-dock=6&amp;home-actions=1&amp;compact-copy=1&amp;exercise-pr-notes=1&amp;pr-info=1&amp;finish-workout=2&amp;prescribed-targets=1&amp;exercise-controls=1&amp;session-alerts=1&amp;exercise-labels=1&amp;exercise-list=2&amp;grouped-add=1&amp;google-health=1&amp;exercise-defaults=2&amp;workout-generator=4&amp;profile-photo=2&amp;account-settings=1&amp;workout-delete=1&amp;apple-health=1&amp;daily-checkin=1&amp;recovery-catalog=1&amp;messages=3&amp;cardio-shortcut=1&amp;achievements=1&amp;progression=1&amp;exercise-images=1&amp;settings-tabs=3&amp;finish-later=1"></script>
   <script src="js/workout-exercise-dock.js?v=2"></script>
 </body>
 </html>

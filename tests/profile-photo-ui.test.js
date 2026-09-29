@@ -345,6 +345,9 @@ test("dashboard includes accessible profile controls and loads dependencies befo
   const photoStart = html.indexOf('data-profile-photo');
   assert.ok(settingsStart >= 0 && photoStart > settingsStart);
   assert.match(html, /href="css\/profile-photo\.css\?v=/);
+  assert.match(html, /<article class="profile-photo-card" data-profile-photo aria-label="Your account">/);
+  assert.match(html, /<strong data-profile-email>Your profile<\/strong>/);
+  assert.match(html, /src="js\/profile-photo\.js\?v=5"/);
   const dependencies = ["profile-photo-store.js", "profile-photo-processor.js", "profile-photo.js", "client-portal.js"];
   const positions = dependencies.map((name) => html.indexOf(`src="js/${name}`));
   assert.ok(positions.every((position, index) => position >= 0 && (!index || position > positions[index - 1])));
