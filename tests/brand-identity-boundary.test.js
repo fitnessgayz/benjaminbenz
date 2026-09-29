@@ -111,12 +111,19 @@ test("AI-facing pages use FWB Training Assistant without claiming the coach prod
   }
 });
 
-test("PWA icon exports are square at every declared size", () => {
+test("PWA manifests use the versioned lime icon set at every declared size", () => {
+  const manifests = ["site.webmanifest", "client.webmanifest", "coach.webmanifest"]
+    .map((file) => JSON.parse(read(file)));
   const sizes = [180, 192, 512, 1024];
   for (const size of sizes) {
-    const png = fs.readFileSync(path.join(root, `fwb-home-icon-${size}.png`));
+    const filename = `fwb-brand-icon-lime-${size}-v1.png`;
+    const png = fs.readFileSync(path.join(root, filename));
     assert.equal(png.toString("ascii", 1, 4), "PNG");
     assert.equal(png.readUInt32BE(16), size);
     assert.equal(png.readUInt32BE(20), size);
+
+    for (const manifest of manifests) {
+      assert.ok(manifest.icons.some((icon) => icon.src === `/${filename}` && icon.sizes === `${size}x${size}`));
+    }
   }
 });
