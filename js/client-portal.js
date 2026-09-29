@@ -8258,6 +8258,70 @@ function runWorkoutElapsedTimer() {
   renderWorkoutElapsedTimer();
 }
 
+async function scheduleWorkoutReminder(
+  state = workoutElapsedTimerState,
+  reminderKind = "unfinished",
+  delayMilliseconds = 3 * 60 * 60 * 1000
+) {
+  if (
+    !supabaseClient ||
+    !activeDashboardUser?.id ||
+    !state ||
+    isCoachDashboardPreview ||
+    isCoachPortalEmail(activeDashboardUser.email)
+  ) {
+    return false;
+  }
+
+  const startedAt = new Date();
+  const remindAt = new Date(startedAt.getTime() + delayMilliseconds);
+  const { error } = await supabaseClient
+    .from("client_active_workouts")
+    .upsert({
+      user_id: activeDashboardUser.id,
+      workout_title: String(state.workoutTitle || "Workout").trim().slice(0, 160) || "Workout",
+      workout_date: state.workoutDate || todayDate(),
+      reminder_kind: reminderKind,
+      reminder_started_at: startedAt.toISOString(),
+      remind_at: remindAt.toISOString(),
+      reminded_at: null,
+      updated_at: startedAt.toISOString()
+    }, { onConflict: "user_id" });
+
+  if (error) {
+    console.warn("Could not schedule the active-workout reminder.", error);
+    return false;
+  }
+
+  return true;
+}
+
+function scheduleUnfinishedWorkoutReminder(state = workoutElapsedTimerState) {
+  return scheduleWorkoutReminder(state, "unfinished", 3 * 60 * 60 * 1000);
+}
+
+function schedulePausedWorkoutReminder(state = workoutElapsedTimerState) {
+  return scheduleWorkoutReminder(state, "paused", 60 * 60 * 1000);
+}
+
+async function clearActiveWorkoutReminder() {
+  if (!supabaseClient || !activeDashboardUser?.id || isCoachDashboardPreview) {
+    return false;
+  }
+
+  const { error } = await supabaseClient
+    .from("client_active_workouts")
+    .delete()
+    .eq("user_id", activeDashboardUser.id);
+
+  if (error) {
+    console.warn("Could not clear the active-workout reminder.", error);
+    return false;
+  }
+
+  return true;
+}
+
 function startWorkoutElapsedTimer(workoutTitle = "", context = {}) {
   const clientEmail = workoutElapsedTimerClientEmail();
   const storedState = readWorkoutElapsedTimerState();
@@ -8309,6 +8373,9 @@ function startWorkoutElapsedTimer(workoutTitle = "", context = {}) {
 
   persistWorkoutElapsedTimerState();
   runWorkoutElapsedTimer();
+  if (typeof scheduleUnfinishedWorkoutReminder === "function") {
+    void scheduleUnfinishedWorkoutReminder();
+  }
 }
 
 function resumeActiveWorkout() {
@@ -8318,6 +8385,10 @@ function resumeActiveWorkout() {
 
   if (!workoutElapsedTimerState) {
     return;
+  }
+
+  if (typeof scheduleUnfinishedWorkoutReminder === "function") {
+    void scheduleUnfinishedWorkoutReminder();
   }
 
   if (!workoutElapsedTimerState.running) {
@@ -8404,6 +8475,9 @@ function toggleWorkoutElapsedTimer() {
   } else {
     workoutElapsedTimerState.startedAt = Date.now();
     workoutElapsedTimerState.running = true;
+    if (typeof scheduleUnfinishedWorkoutReminder === "function") {
+      void scheduleUnfinishedWorkoutReminder();
+    }
   }
 
   persistWorkoutElapsedTimerState();
@@ -8461,7 +8535,12 @@ async function finishWorkoutLater(button) {
     return false;
   }
 
-  if (status) status.textContent = "Workout saved for later.";
+  const reminderScheduled = await schedulePausedWorkoutReminder(workoutElapsedTimerState);
+  if (status) {
+    status.textContent = reminderScheduled
+      ? "Workout saved for later. We’ll remind you in one hour."
+      : "Workout saved for later. The reminder could not be scheduled.";
+  }
   setClientDashboardTab("home");
   document.querySelector(".client-home-resume-card")?.scrollIntoView?.({ block: "center", behavior: "smooth" });
   return true;
@@ -8562,6 +8641,9 @@ function finishWorkoutElapsedTimer() {
   resetRestTimer();
   closeRestTimer();
   workoutElapsedTimerState = null;
+  if (typeof clearActiveWorkoutReminder === "function") {
+    void clearActiveWorkoutReminder();
+  }
   clearWorkoutElapsedTimerInterval();
   try {
     window.localStorage.removeItem(workoutElapsedTimerStorageKey);

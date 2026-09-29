@@ -80,7 +80,7 @@ test("all other private notification categories keep their generic delivery copy
   const notification = { title: "PRIVATE named title", body: privateBody };
   for (const [recipient_role, kinds] of [
     ["coach", ["progress_submitted", "dexa_uploaded", "questionnaire_submitted", "coach_request", "workout_comment", "form_check_submitted", "nutrition_activity", "session_balance", "client_inactive"]],
-    ["client", ["coach_reply", "program_update", "nutrition_plan_update", "session_reminder", "workout_reminder", "weekly_check_in", "monthly_report", "session_balance", "nutrition_reminder", "progress_reminder", "achievement", "workout_comment", "form_check_feedback"]]
+    ["client", ["coach_reply", "program_update", "nutrition_plan_update", "session_reminder", "workout_reminder", "workout_paused", "workout_unfinished", "weekly_check_in", "monthly_report", "session_balance", "nutrition_reminder", "progress_reminder", "achievement", "workout_comment", "form_check_feedback"]]
   ]) {
     for (const kind of kinds) {
       const copy = modern.pushCopy({ ...notification, recipient_role, kind });
@@ -91,6 +91,21 @@ test("all other private notification categories keep their generic delivery copy
     assert.doesNotMatch(compatibility.safePushTitle(category, notification), /PRIVATE/);
     assert.equal(compatibility.safePushBody(category, notification), "Open FWB to view your update.");
   }
+});
+
+test("paused and unfinished workout reminders use distinct private-safe copy", () => {
+  const privateNotification = { title: "PRIVATE workout name", body: privateBody };
+
+  const pausedCopy = modern.pushCopy({ ...privateNotification, recipient_role: "client", kind: "workout_paused" });
+  const unfinishedCopy = modern.pushCopy({ ...privateNotification, recipient_role: "client", kind: "workout_unfinished" });
+  assert.equal(pausedCopy.title, "Workout paused");
+  assert.equal(pausedCopy.body, "Your saved workout is ready to resume.");
+  assert.equal(unfinishedCopy.title, "Workout still in progress");
+  assert.equal(unfinishedCopy.body, "Open FWB to finish or save your active workout.");
+  assert.equal(compatibility.safePushTitle("workout_paused", privateNotification), "Workout paused");
+  assert.equal(compatibility.safePushBody("workout_paused", privateNotification), "Your saved workout is ready to resume.");
+  assert.equal(compatibility.safePushTitle("workout_unfinished", privateNotification), "Workout still in progress");
+  assert.equal(compatibility.safePushBody("workout_unfinished", privateNotification), "Open FWB to finish or save your active workout.");
 });
 
 test("previous workout personalization and its title/body bounds remain unchanged", () => {

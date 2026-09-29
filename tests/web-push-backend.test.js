@@ -25,6 +25,10 @@ const personalizedWorkoutMigration = fs.readFileSync(
   "utf8"
 );
 const config = fs.readFileSync(path.join(root, "supabase/config.toml"), "utf8");
+const activeWorkoutMigration = fs.readFileSync(
+  path.join(root, "supabase/migrations/20260929014956_add_paused_workout_reminders.sql"),
+  "utf8"
+);
 
 test("web-push tables use explicit RLS, grants, and account-safe endpoint ownership", () => {
   for (const table of [
@@ -101,4 +105,21 @@ test("coach workout alerts name the client and identify the completed workout", 
   assert.match(deployedEdgeFunction, /safeNotificationText\(notification\.title, 160\)/);
   assert.match(deployedEdgeFunction, /safeNotificationText\(notification\.body, 240\)/);
   assert.doesNotMatch(deployedEdgeFunction, /title:\s*notification\.title/);
+});
+
+test("active workout reminders are owner-scoped, preference-aware, and one-time", () => {
+  assert.match(activeWorkoutMigration, /alter table public\.client_active_workouts enable row level security/i);
+  assert.match(activeWorkoutMigration, /revoke all on table public\.client_active_workouts from public, anon, authenticated/i);
+  assert.match(activeWorkoutMigration, /grant select, insert, update, delete on table public\.client_active_workouts to authenticated/i);
+  assert.match(activeWorkoutMigration, /using \(\(select auth\.uid\(\)\) = user_id\)/i);
+  assert.match(activeWorkoutMigration, /with check \(\(select auth\.uid\(\)\) = user_id\)/i);
+  assert.match(activeWorkoutMigration, /check \(reminder_kind in \('paused', 'unfinished'\)\)/i);
+
+  assert.match(edgeFunction, /from\("client_active_workouts"\)/);
+  assert.match(edgeFunction, /preferences\?\.workout_reminders !== false/);
+  assert.match(edgeFunction, /kind: activeWorkout\.reminder_kind === "paused" \? "workout_paused" : "workout_unfinished"/);
+  assert.match(edgeFunction, /action_url: "\/client-dashboard\.html\?tab=workouts"/);
+  assert.match(edgeFunction, /update\(\{ reminded_at: nowIso, updated_at: nowIso \}\)/);
+  assert.match(edgeFunction, /workout_paused: "workout_reminders"/);
+  assert.match(edgeFunction, /workout_unfinished: "workout_reminders"/);
 });

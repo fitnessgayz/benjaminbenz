@@ -97,6 +97,8 @@ function safePushTitle(category: string, notification: Record<string, unknown> =
     coach_reply: "New coaching update",
     program_update: "Training plan update",
     workout_reminder: "Workout reminder",
+    workout_paused: "Workout paused",
+    workout_unfinished: "Workout still in progress",
     weekly_check_in: "Weekly check-in reminder",
     general: "FWB notification"
   };
@@ -111,6 +113,12 @@ function safePushBody(category: string, notification: Record<string, unknown> = 
   if (category === "workout_completed") {
     return safeNotificationText(notification.body, 240) ||
       "Open Coach Admin to review the completed workout log.";
+  }
+  if (category === "workout_paused") {
+    return "Your saved workout is ready to resume.";
+  }
+  if (category === "workout_unfinished") {
+    return "Open FWB to finish or save your active workout.";
   }
 
   return "Open FWB to view your update.";

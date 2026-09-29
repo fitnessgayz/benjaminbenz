@@ -98,6 +98,10 @@ test("active workouts expose resume actions on Home and Workouts", () => {
   assert.match(styleSource, /\.client-home-resume-card\s*\{[^}]*grid-column:\s*1 \/ -1/s);
   assert.match(styleSource, /\.client-workout-resume-card\[hidden\]\s*\{[^}]*display:\s*none !important/s);
   assert.match(styleSource, /@media \(max-width: 620px\)[\s\S]*\.client-workout-resume-card\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\)/);
+  assert.match(styleSource, /\.client-workout-resume-card\s*\{[^}]*background:\s*rgba\(255, 255, 255, \.84\)[^}]*backdrop-filter:\s*blur\(18px\) saturate\(135%\)/s);
+  assert.match(styleSource, /\.client-workout-resume-card h3\s*\{[^}]*color:\s*var\(--ink\)/s);
+  assert.match(styleSource, /\.dashboard-page \.client-workout-selection-summary\s*\{[^}]*background:\s*rgba\(255, 255, 255, \.84\)[^}]*backdrop-filter:\s*blur\(18px\) saturate\(135%\)/s);
+  assert.match(dashboardSource, /light-workout-surfaces=1/);
 });
 
 test("resume state preserves the workout date and exact workout panel", () => {
@@ -161,9 +165,29 @@ test("Finish later pauses both timers, saves entered work, and returns home", ()
   assert.match(finishLaterSource, /closeRestTimer\(\)/);
   assert.match(finishLaterSource, /cancelTrainingLogAutosaves\(panel\)/);
   assert.match(finishLaterSource, /saveTrainingLogRows\(null, savableLogs/);
+  assert.match(finishLaterSource, /await schedulePausedWorkoutReminder\(workoutElapsedTimerState\)/);
+  assert.match(finishLaterSource, /remind you in one hour/);
   assert.match(finishLaterSource, /setClientDashboardTab\("home"\)/);
   assert.match(portalSource, /workoutFinishLaterButton[\s\S]*await finishWorkoutLater\(workoutFinishLaterButton\)/);
   assert.match(dashboardSource, /finish-later=1/);
+});
+
+test("active workout reminders distinguish unfinished workouts from saved-for-later workouts", () => {
+  const scheduleSource = sourceForFunction("scheduleWorkoutReminder");
+  const unfinishedSource = sourceForFunction("scheduleUnfinishedWorkoutReminder");
+  const pausedSource = sourceForFunction("schedulePausedWorkoutReminder");
+  const startSource = sourceForFunction("startWorkoutElapsedTimer");
+  const resumeSource = sourceForFunction("resumeActiveWorkout");
+  const finishSource = sourceForFunction("finishWorkoutElapsedTimer");
+
+  assert.match(scheduleSource, /from\("client_active_workouts"\)/);
+  assert.match(scheduleSource, /reminder_kind: reminderKind/);
+  assert.match(scheduleSource, /reminded_at: null/);
+  assert.match(unfinishedSource, /"unfinished", 3 \* 60 \* 60 \* 1000/);
+  assert.match(pausedSource, /"paused", 60 \* 60 \* 1000/);
+  assert.match(startSource, /scheduleUnfinishedWorkoutReminder\(\)/);
+  assert.match(resumeSource, /scheduleUnfinishedWorkoutReminder\(\)/);
+  assert.match(finishSource, /clearActiveWorkoutReminder\(\)/);
 });
 
 test("mobile workout panel expands to the full viewport width", () => {

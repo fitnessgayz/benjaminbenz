@@ -187,6 +187,8 @@ function preferenceColumn(notification: NotificationRow) {
     nutrition_plan_update: "program_updates",
     session_reminder: "session_reminders",
     workout_reminder: "workout_reminders",
+    workout_paused: "workout_reminders",
+    workout_unfinished: "workout_reminders",
     weekly_check_in: "weekly_check_ins",
     monthly_report: "monthly_reports",
     session_balance: "session_balance",
@@ -263,6 +265,14 @@ function pushCopy(notification: NotificationRow) {
     "client:workout_reminder": {
       title: "Workout reminder",
       body: "Open FWB when you are ready to train."
+    },
+    "client:workout_paused": {
+      title: "Workout paused",
+      body: "Your saved workout is ready to resume."
+    },
+    "client:workout_unfinished": {
+      title: "Workout still in progress",
+      body: "Open FWB to finish or save your active workout."
     },
     "client:weekly_check_in": {
       title: "Weekly check-in reminder",
@@ -526,10 +536,20 @@ async function dispatchNotifications(
 
 async function generateScheduledNotifications(adminClient: AdminClient) {
   const now = new Date();
-  const [{ data: preferenceRows, error: preferencesError }, users, { data: programs, error: programsError }] = await Promise.all([
+  const nowIso = now.toISOString();
+  const [
+    { data: preferenceRows, error: preferencesError },
+    users,
+    { data: programs, error: programsError },
+    { data: activeWorkouts, error: activeWorkoutsError }
+  ] = await Promise.all([
     adminClient.from("client_notification_preferences").select("*"),
     listAuthUsers(adminClient),
-    adminClient.from("client_programs").select("id,client_email,active,client_archived").eq("active", true).eq("client_archived", false)
+    adminClient.from("client_programs").select("id,client_email,active,client_archived").eq("active", true).eq("client_archived", false),
+    adminClient.from("client_active_workouts")
+      .select("user_id,workout_title,workout_date,reminder_kind,reminder_started_at,remind_at")
+      .is("reminded_at", null)
+      .lte("remind_at", nowIso)
   ]);
 
   if (preferencesError) {
@@ -538,10 +558,50 @@ async function generateScheduledNotifications(adminClient: AdminClient) {
   if (programsError) {
     throw programsError;
   }
+  if (activeWorkoutsError) {
+    throw activeWorkoutsError;
+  }
 
   const usersById = new Map(users.map((user) => [user.id, user]));
   const programsByEmail = new Map((programs || []).map((program) => [normalizeEmail(program.client_email), program]));
+  const preferencesByUserId = new Map((preferenceRows || []).map((preferences) => [preferences.user_id, preferences]));
   let created = 0;
+
+  for (const activeWorkout of activeWorkouts || []) {
+    const user = usersById.get(activeWorkout.user_id);
+    const preferences = preferencesByUserId.get(activeWorkout.user_id);
+    const shouldNotify = Boolean(
+      user &&
+      normalizeEmail(user.email) !== coachEmail &&
+      preferences?.push_enabled !== false &&
+      preferences?.workout_reminders !== false
+    );
+
+    if (shouldNotify) {
+      created += Boolean(await insertNotification(adminClient, {
+        user_id: activeWorkout.user_id,
+        recipient_role: "client",
+        kind: activeWorkout.reminder_kind === "paused" ? "workout_paused" : "workout_unfinished",
+        title: activeWorkout.reminder_kind === "paused" ? "Your workout is paused" : "Your workout is still in progress",
+        body: activeWorkout.reminder_kind === "paused"
+          ? "Your saved workout is ready whenever you are."
+          : "Open FWB to finish or save your active workout.",
+        action_url: "/client-dashboard.html?tab=workouts",
+        dedupe_key: `active-workout:${activeWorkout.reminder_kind}:${activeWorkout.user_id}:${activeWorkout.reminder_started_at}`,
+        metadata: {}
+      })) ? 1 : 0;
+    }
+
+    const { error: reminderUpdateError } = await adminClient
+      .from("client_active_workouts")
+      .update({ reminded_at: nowIso, updated_at: nowIso })
+      .eq("user_id", activeWorkout.user_id)
+      .eq("reminder_started_at", activeWorkout.reminder_started_at)
+      .is("reminded_at", null);
+    if (reminderUpdateError) {
+      throw reminderUpdateError;
+    }
+  }
 
   for (const preferences of preferenceRows || []) {
     const user = usersById.get(preferences.user_id);

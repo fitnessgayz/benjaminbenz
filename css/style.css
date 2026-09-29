@@ -3988,8 +3988,8 @@ body.is-client-checkin-prompt-open {
   gap: 10px;
   align-items: center;
   padding: 10px 12px;
-  color: var(--white);
-  background: #171a16;
+  color: var(--ink);
+  background: rgba(255, 255, 255, .84);
 }
 
 .client-workout-selection-summary[hidden] {
@@ -4008,7 +4008,7 @@ body.is-client-checkin-prompt-open {
   gap: 5px;
   align-items: center;
   margin: 0;
-  color: #c5cac1;
+  color: #62665e;
   font-size: .7rem;
   font-weight: 900;
   letter-spacing: .04em;
@@ -4016,7 +4016,7 @@ body.is-client-checkin-prompt-open {
 }
 
 .client-workout-selection-label {
-  color: var(--lime);
+  color: #506400;
 }
 
 .client-workout-selection-title {
@@ -16733,10 +16733,13 @@ body.client-dashboard-page.is-loading > :is(.client-dashboard-tabs,
   align-items: center;
   padding: 9px 12px !important;
   overflow: hidden !important;
-  color: #ffffff;
-  background: #171a16;
-  border: 1px solid #2e322c;
+  color: var(--ink);
+  background: rgba(255, 255, 255, .84);
+  border: 1px solid rgba(17, 20, 17, .14);
   border-radius: 13px !important;
+  box-shadow: 0 12px 30px rgba(29, 34, 27, .08);
+  backdrop-filter: blur(18px) saturate(135%);
+  -webkit-backdrop-filter: blur(18px) saturate(135%);
   font: inherit;
   text-align: left;
   cursor: pointer;
@@ -16757,11 +16760,11 @@ body.client-dashboard-page.is-loading > :is(.client-dashboard-tabs,
 }
 
 .client-workout-selection-summary .client-workout-selection-meta {
-  color: #c5cac1;
+  color: #62665e;
 }
 
 .client-workout-selection-summary .client-workout-selection-title {
-  color: #ffffff;
+  color: var(--ink);
 }
 
 @media (max-width: 900px) {
@@ -17721,11 +17724,13 @@ body.client-dashboard-page.is-loading > :is(.client-dashboard-tabs,
   min-width: 0;
   padding: 20px;
   overflow: hidden;
-  border: 1px solid var(--lime);
-  border-radius: 4px;
-  color: #fff;
-  background: #111310;
-  box-shadow: 8px 8px 0 rgba(190, 255, 0, .2);
+  border: 1px solid rgba(17, 20, 17, .14);
+  border-radius: 18px;
+  color: var(--ink);
+  background: rgba(255, 255, 255, .84);
+  box-shadow: 0 18px 42px rgba(29, 34, 27, .1);
+  backdrop-filter: blur(18px) saturate(135%);
+  -webkit-backdrop-filter: blur(18px) saturate(135%);
 }
 
 .client-workout-resume-card[hidden] {
@@ -17757,11 +17762,11 @@ body.client-dashboard-page.is-loading > :is(.client-dashboard-tabs,
 }
 
 .client-workout-resume-card .kicker {
-  color: var(--lime);
+  color: #506400;
 }
 
 .client-workout-resume-card h3 {
-  color: #fff;
+  color: var(--ink);
   font-size: clamp(1.45rem, 4vw, 2rem);
   font-weight: 900;
   line-height: 1.05;
@@ -17769,7 +17774,7 @@ body.client-dashboard-page.is-loading > :is(.client-dashboard-tabs,
 }
 
 .client-workout-resume-card p:not(.kicker) {
-  color: #d4d6d1;
+  color: #575b54;
   font-size: 1rem;
   line-height: 1.4;
 }
@@ -17787,20 +17792,21 @@ body.client-dashboard-page.is-loading > :is(.client-dashboard-tabs,
 
 .dashboard-page .client-workout-resume-card .button:hover,
 .dashboard-page .client-workout-resume-card .button:focus-visible {
-  color: #fff;
-  background: transparent;
+  color: #050505;
+  background: #c9f12e;
 }
 
 .dashboard-page .client-workout-resume-card .client-workout-cancel-button {
-  border-color: #777b72;
-  color: #fff;
-  background: transparent;
+  border-color: #858a80;
+  color: #242822;
+  background: rgba(255, 255, 255, .58);
 }
 
 .dashboard-page .client-workout-resume-card .client-workout-cancel-button:hover,
 .dashboard-page .client-workout-resume-card .client-workout-cancel-button:focus-visible {
-  border-color: #fff;
-  background: rgba(255, 255, 255, .1);
+  border-color: #647900;
+  color: #1d2513;
+  background: rgba(215, 255, 63, .2);
 }
 
 @media (max-width: 620px) {
@@ -17808,7 +17814,7 @@ body.client-dashboard-page.is-loading > :is(.client-dashboard-tabs,
     grid-template-columns: minmax(0, 1fr);
     gap: 14px;
     padding: 18px 16px 18px 20px;
-    box-shadow: 5px 5px 0 rgba(190, 255, 0, .2);
+    box-shadow: 0 12px 30px rgba(29, 34, 27, .1);
   }
 
   .dashboard-page .client-workout-resume-card .button {
