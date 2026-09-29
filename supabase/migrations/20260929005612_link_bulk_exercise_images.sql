@@ -15,7 +15,6 @@ values
   ('close-grip-lat-pulldown.png'),
   ('cross-body-shoulder-stretch.png'),
   ('dead-bug.png'),
-  ('decline-cable-fly.png'),
   ('dumbbell-bench-press.png'),
   ('dumbbell-chest-fly.png'),
   ('dumbbell-curl.png'),
