@@ -2485,10 +2485,14 @@ function responsiveExerciseImageUrls(value) {
 
 function exerciseMedia(exercise = {}) {
   const approvedExercise = approvedExerciseForName(exercise.name);
-  const imageUrl = trustedExerciseImageUrl(exercise.image_url || approvedExercise?.image_url);
-  const animatedUrl = trustedExerciseMotionUrl(
-    exercise.motion_url || exercise.motionUrl || approvedExercise?.motion_url
-  );
+  // The approved library is the source of truth for branded artwork. Older
+  // workout payloads can contain a stale image URL, so prefer the canonical
+  // name/alias match whenever it has approved media.
+  const imageUrl = trustedExerciseImageUrl(approvedExercise?.image_url)
+    || trustedExerciseImageUrl(exercise.image_url);
+  const workoutMotionUrl = exercise.motion_url || exercise.motionUrl || approvedExercise?.motion_url;
+  const animatedUrl = trustedExerciseMotionUrl(approvedExercise?.motion_url)
+    || trustedExerciseMotionUrl(workoutMotionUrl);
   return { imageUrl, animatedUrl };
 }
 
@@ -2521,9 +2525,42 @@ function exerciseMediaButtonMarkup(exercise, options = {}) {
 }
 
 function exerciseImageMarkup(exercise) {
-  const imageUrl = trustedExerciseImageUrl(exercise.image_url || approvedExerciseForName(exercise.name)?.image_url);
+  const approvedImageUrl = approvedExerciseForName(exercise.name)?.image_url;
+  const imageUrl = trustedExerciseImageUrl(approvedImageUrl) || trustedExerciseImageUrl(exercise.image_url);
   const media = exerciseMediaButtonMarkup({ ...exercise, image_url: imageUrl });
   return media ? `<figure class="exercise-demo-image">${media}</figure>` : "";
+}
+
+function refreshExerciseMediaViews(root = document) {
+  root.querySelectorAll("[data-workout-preview-exercise-media]").forEach((slot) => {
+    const name = String(slot.dataset.workoutPreviewExerciseMedia || "").trim();
+    slot.innerHTML = name ? exerciseMediaButtonMarkup({ name }, { compact: true }) : "";
+  });
+
+  root.querySelectorAll("[data-exercise-log]").forEach((logElement) => {
+    const name = String(
+      exerciseNameInputForLog(logElement)?.value || logElement.dataset.exerciseName || ""
+    ).trim();
+    const current = Array.from(logElement.children).find((child) => child.matches?.(".exercise-demo-image"));
+    const markup = name ? exerciseImageMarkup({ name }) : "";
+
+    if (current) {
+      if (markup) current.outerHTML = markup;
+      else current.remove();
+      return;
+    }
+
+    if (!markup) return;
+    const anchor = Array.from(logElement.children).find((child) => (
+      child.matches?.(".exercise-video-link, .exercise-date, [data-workout-progression]")
+    ));
+    if (anchor) anchor.insertAdjacentHTML("beforebegin", markup);
+    else logElement.insertAdjacentHTML("afterbegin", markup);
+  });
+
+  root.querySelectorAll("[data-custom-workout-carousel]").forEach((carousel) => {
+    renderCustomWorkoutGroupedExerciseKey(carousel);
+  });
 }
 
 function ensureExerciseMediaDialog() {
@@ -5281,7 +5318,7 @@ function exerciseLogFields(exercise, workoutTitle, options = {}) {
       <div class="set-table" aria-label="${escapeHtml(exercise.name)} set tracker">
       <div class="set-header">
         <span>Set</span>
-        <span>Weight</span>
+        <button class="one-rm-trigger" type="button" data-one-rm-open aria-label="Open estimated 1RM calculator from this set">Weight <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="5" y="2.5" width="14" height="19" rx="2"/><path d="M8 6.5h8M8.5 11h1M12 11h1M15.5 11h1M8.5 14.5h1M12 14.5h1M15.5 14.5h1M8.5 18h1M12 18h1M15.5 18h1"/></svg></button>
         <span>Reps</span>
         <button class="rir-help-trigger" type="button" data-rir-help aria-label="What does RIR mean?" aria-haspopup="dialog"><span>RIR</span><svg viewBox="0 0 20 20" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="8"/><path d="M10 9v5M10 5.5v1"/></svg></button>
       </div>
@@ -9417,6 +9454,18 @@ function refreshCustomWorkoutGroupedCopyWeights(carousel) {
       personalBests.set(logElement, personalBestWeightLog(logsForExerciseDisplay(logElement)));
     });
   }
+  const oneRepMaxSources = logElements.map((logElement) => {
+    const best = personalBests.get(logElement);
+    return {
+      label: logElement.querySelector("[data-exercise-name-input]")?.value.trim() || logElement.dataset.exerciseName || "Exercise",
+      weight: best?.weight_used,
+      reps: best?.reps
+    };
+  }).filter((source) => Number(source.weight) > 0 && Number.isInteger(Number(source.reps)) && Number(source.reps) >= 1 && Number(source.reps) <= 30);
+  carousel?.querySelectorAll('[data-one-rm-source="pr"]').forEach((button) => {
+    button.dataset.oneRmSources = JSON.stringify(oneRepMaxSources);
+    button.disabled = oneRepMaxSources.length === 0;
+  });
   carousel?.querySelectorAll("[data-custom-grouped-pr-preview]").forEach((preview) => {
     const logElement = logElements[Number(preview.dataset.customGroupedPrPreview)];
     const record = customWorkoutGroupedPersonalBestLabel(logElement, personalBests.get(logElement), false);
@@ -9545,7 +9594,7 @@ function customWorkoutGroupedSectionsMarkup(carousel) {
   const warmUps = [];
   const columnLabelsMarkup = `
     <div class="custom-workout-grouped-columns">
-      <span>Set</span><span>Weight</span><span>Reps</span>
+      <span>Set</span><button class="one-rm-trigger" type="button" data-one-rm-open aria-label="Open estimated 1RM calculator from this set">Weight <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="5" y="2.5" width="14" height="19" rx="2"/><path d="M8 6.5h8M8.5 11h1M12 11h1M15.5 11h1M8.5 14.5h1M12 14.5h1M15.5 14.5h1M8.5 18h1M12 18h1M15.5 18h1"/></svg></button><span>Reps</span>
       <button class="rir-help-trigger" type="button" data-rir-help aria-label="What does RIR mean?" aria-haspopup="dialog"><span>RIR</span><svg viewBox="0 0 20 20" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="8"/><path d="M10 9v5M10 5.5v1"/></svg></button>
     </div>
   `;
@@ -9602,6 +9651,10 @@ function customWorkoutGroupedSectionsMarkup(carousel) {
               aria-label="Copy personal record weights and reps into empty fields in ${workoutSetUnit(carousel).toLowerCase()} ${roundNumber}">Copy PR</button>
             <button class="custom-workout-grouped-pr-info" type="button" data-pr-help aria-label="What does PR mean?" aria-expanded="false">
               <svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="8"/><path d="M10 9v5M10 5.5v1"/></svg>
+            </button>
+            <button class="one-rm-pr-trigger" type="button" data-one-rm-open data-one-rm-source="pr" aria-label="Estimate 1RM from personal record" disabled>
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="5" y="2.5" width="14" height="19" rx="2"/><path d="M8 6.5h8M8.5 11h1M12 11h1M15.5 11h1M8.5 14.5h1M12 14.5h1M15.5 14.5h1M8.5 18h1M12 18h1M15.5 18h1"/></svg>
+              <span>Estimate 1RM</span>
             </button>
           </div>
           </div>
@@ -12366,7 +12419,7 @@ function clientWorkoutListMarkup(workouts) {
             .join(" · ");
           return `<li class="workout-preview-exercise-card" data-preview-exercise="${exerciseIndex}">
             <button type="button" class="workout-drag" data-exercise-drag ${locked ? "disabled" : ""} aria-label="Reorder ${escapeHtml(exercise.name || "exercise")}. Use up and down arrow keys.">⠿</button>
-            <div class="workout-preview-exercise-media">${exerciseMediaButtonMarkup(exercise, { compact: true })}</div>
+            <div class="workout-preview-exercise-media" data-workout-preview-exercise-media="${escapeHtml(exercise.name || "")}">${exerciseMediaButtonMarkup(exercise, { compact: true })}</div>
             <span class="workout-preview-exercise-copy">
               <span class="workout-row-number">${exerciseIndex + 1}</span>
               <span><strong>${escapeHtml(exercise.name || "Exercise")}</strong>${exerciseMeta ? `<small>${escapeHtml(exerciseMeta)}</small>` : ""}</span>
@@ -18393,6 +18446,7 @@ async function loadDashboard() {
     clientDailyCheckinReady = progressResult.status === "fulfilled" && !progressResult.value.error
       && trainingLogResult.status === "fulfilled" && !trainingLogResult.value.error;
     exerciseLibraryEntries = exerciseLibraryData || [];
+    refreshExerciseMediaViews();
     workoutSessionFeedback = workoutFeedbackData || [];
 
     renderProgress(progressData || []);
