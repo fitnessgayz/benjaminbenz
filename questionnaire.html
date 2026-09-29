@@ -32,8 +32,9 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css?v=mobile-fit-audit-2" />
   <link rel="stylesheet" href="/css/fwb-design-system.css?v=reference-overhaul-1" />
+  <link rel="stylesheet" href="/css/public-brand.css?v=public-brand-alignment-1" />
 </head>
-<body class="questionnaire-page">
+<body class="questionnaire-page public-page public-conversion-page">
   <header class="site-header">
     <a class="brand" href="index.html#top" aria-label="Fitness with Benjamin home">
       <span>FWB</span>
@@ -54,12 +55,21 @@
 
   <main class="questionnaire-shell">
     <section class="questionnaire-hero">
-      <p class="kicker">Start training</p>
-      <h1>Fitness questionnaire</h1>
-      <p>Share your goals, movement history, schedule, and training needs so Benjamin can build the right path for private or online coaching.</p>
+      <p class="kicker">Find your coaching fit</p>
+      <h1>Start with where you are.</h1>
+      <p>Share your goals, movement history, schedule, and training needs so Benjamin can understand the right path for in-person, online, or hybrid coaching.</p>
+      <p class="public-promise">Train with intention. Feel your progress.</p>
     </section>
 
-    <form class="questionnaire-form" id="training-questionnaire" action="https://script.google.com/macros/s/AKfycbzEPNFHhQ8gTdg3QbnEOLD2exNajO31dwDy0FXzNvQ-fjWmjwANdzwEc4q6zeXUnqgGiA/exec" method="POST">
+    <aside class="public-form-intro" aria-label="What to expect">
+      <div><span>01</span><strong>Tell Benjamin about you</strong><p>Your answers shape the first coaching conversation.</p></div>
+      <div><span>02</span><strong>Benjamin reviews it</strong><p>Your information is reviewed privately—not scored by an automated system.</p></div>
+      <div><span>03</span><strong>Discuss the right fit</strong><p>You’ll connect about goals, availability, and the best coaching format.</p></div>
+    </aside>
+
+    <p class="public-privacy-note" id="questionnaire-privacy-note">This form includes health and readiness questions so Benjamin can understand your training context. Your answers are private. Read the <a href="fwb-training-privacy.html">privacy policy</a> or <a href="fwb-training-support.html">contact support</a> before you begin.</p>
+
+    <form class="questionnaire-form" id="training-questionnaire" aria-describedby="questionnaire-privacy-note" action="https://script.google.com/macros/s/AKfycbzEPNFHhQ8gTdg3QbnEOLD2exNajO31dwDy0FXzNvQ-fjWmjwANdzwEc4q6zeXUnqgGiA/exec" method="POST">
       <section class="form-section">
         <h2>Contact</h2>
         <label>Email <input type="email" name="email" required autocomplete="email"></label>
@@ -169,10 +179,15 @@
       <div class="form-submit-panel">
         <p>Your answers are used to help Benjamin understand your coaching needs. Read the <a href="fwb-training-privacy.html"><u>FWB Training Privacy Policy</u></a> or <a href="fwb-training-support.html"><u>contact support</u></a>.</p>
         <p id="questionnaire-status" role="status"></p>
-        <button class="button button-dark" type="submit">Submit questionnaire</button>
+        <button class="button button-dark" type="submit">Send questionnaire to Benjamin</button>
       </div>
     </form>
   </main>
+
+  <footer class="public-footer">
+    <span><strong>Fitness with Benjamin</strong> · Train with intention. Feel your progress.</span>
+    <nav aria-label="Footer"><a href="index.html">Home</a> · <a href="fwb-training-support.html">Support</a> · <a href="fwb-training-privacy.html">Privacy</a></nav>
+  </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js?v=questionnaire-client-sync-1"></script>

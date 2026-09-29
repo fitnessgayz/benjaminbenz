@@ -10,12 +10,34 @@ const homepage = read("index.html");
 const questionnaire = read("questionnaire.html");
 const interest = read("app-interest.html");
 const privateInterest = read("fwb-ios-invite-d00108bdaab031f8.html");
+const publicStyles = read("css/public-brand.css");
+const support = read("fwb-training-support.html");
+const privacy = read("fwb-training-privacy.html");
+const assistantTerms = read("ai-coach-terms.html");
 const publicConversionPages = [homepage, questionnaire, interest, privateInterest];
 
 test("leads the homepage with the canonical promise and a direct coaching-fit action", () => {
   assert.match(homepage, /Train<\/span> with intention\. <span class="hero-accent">Feel<\/span> your progress\./);
   assert.match(homepage, /href="questionnaire\.html">Find your coaching fit<\/a>/);
   assert.doesNotMatch(homepage, /href="#start"[^>]*>Take the questionnaire<\/a>/);
+});
+
+test("presents one clear public journey from coaching promise to connected support", () => {
+  assert.match(homepage, /A clear coaching path/);
+  assert.match(homepage, /Share your starting point/);
+  assert.match(homepage, /Build the right plan/);
+  assert.match(homepage, /Feel the progress/);
+  assert.match(homepage, /Your plan stays connected to Benjamin/);
+  assert.match(homepage, /href="app-interest\.html">Explore FWB Training<\/a>/);
+  assert.match(homepage, /16 years certified/);
+  assert.match(homepage, /San Francisco \+ online/);
+});
+
+test("uses a face-visible hero asset and complete sharing metadata", () => {
+  assert.match(homepage, /images\/home\/benjamin-strength-rack\.jpg/);
+  assert.match(homepage, /rel="canonical" href="https:\/\/benjaminbenz\.com\/"/);
+  assert.match(homepage, /property="og:title" content="Fitness with Benjamin \| Train with intention"/);
+  assert.match(homepage, /name="twitter:card" content="summary_large_image"/);
 });
 
 test("removes DTF language from public conversion pages", () => {
@@ -27,6 +49,18 @@ test("removes DTF language from public conversion pages", () => {
 test("keeps the questionnaire field contract while using clear commitment language", () => {
   assert.match(questionnaire, /how ready are you to make consistent changes to your training\?/i);
   assert.match(questionnaire, /name="commitment_level" min="1" max="5"/);
+});
+
+test("sets expectations and privacy context before the public questionnaire", () => {
+  const formIndex = questionnaire.indexOf('<form class="questionnaire-form"');
+  const expectationsIndex = questionnaire.indexOf('class="public-form-intro"');
+  const privacyIndex = questionnaire.indexOf('id="questionnaire-privacy-note"');
+
+  assert.ok(expectationsIndex >= 0 && expectationsIndex < formIndex);
+  assert.ok(privacyIndex >= 0 && privacyIndex < formIndex);
+  assert.match(questionnaire, /Your information is reviewed privately—not scored by an automated system/);
+  assert.match(questionnaire, /aria-describedby="questionnaire-privacy-note"/);
+  assert.match(questionnaire, /Send questionnaire to Benjamin/);
 });
 
 test("uses the approved client product name on public app-interest pages", () => {
@@ -42,4 +76,28 @@ test("makes support and privacy visible on public conversion pages", () => {
     assert.match(page, /fwb-training-support\.html/);
     assert.match(page, /fwb-training-privacy\.html/);
   }
+});
+
+test("keeps public styling isolated and based on canonical tokens", () => {
+  for (const page of [homepage, questionnaire, interest]) {
+    assert.match(page, /css\/public-brand\.css\?v=public-brand-alignment-1/);
+    assert.match(page, /public-page/);
+  }
+
+  assert.match(publicStyles, /\.public-page \{/);
+  assert.doesNotMatch(publicStyles, /(?:^|\n)\s*(?:body|:root|\.dashboard-page|\.coach-admin-page)\s*\{/);
+  for (const token of ["--brand-primary", "--brand-primary-hover", "--brand-primary-ink", "--ink-deep", "--canvas", "--surface", "--text-muted", "--border", "--focus"]) {
+    assert.match(publicStyles, new RegExp(`var\\(${token}\\)`));
+  }
+});
+
+test("keeps the master identity and legal navigation on public support and policy pages", () => {
+  for (const page of [support, privacy, assistantTerms]) {
+    assert.match(page, /Fitness with Benjamin/);
+    assert.match(page, /<footer>/);
+  }
+  assert.match(support, /fwb-training-privacy\.html/);
+  assert.match(privacy, /fwb-training-support\.html/);
+  assert.match(assistantTerms, /ai-coach-support\.html/);
+  assert.match(assistantTerms, /ai-coach-privacy\.html/);
 });

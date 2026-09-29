@@ -5,13 +5,12 @@
   <title>FWB Training App Interest | Fitness with Benjamin</title>
   <meta name="description" content="Join the interest list for FWB Training app access.">
   <link rel="icon" href="/favicon.ico">
-  <link rel="stylesheet" href="css/style.css"><link rel="stylesheet" href="css/fwb-design-system.css">
-  <style>.app-interest label{font-size:1rem}.app-interest input,.app-interest select{font-size:1rem;min-height:48px;width:100%}.app-interest input[type=checkbox]{width:20px;min-height:20px;flex-shrink:0}.platform-note{display:block;margin-top:8px;color:#686d61;font-size:.875rem;line-height:1.45}.consent{display:flex!important;gap:12px;align-items:flex-start}.trap{position:absolute;left:-10000px}.app-interest button:disabled{opacity:.55;cursor:not-allowed}.app-interest .kicker{font-size:.875rem}#setup-note{padding:12px;background:#f2f3ee;border-radius:12px}</style>
+  <link rel="stylesheet" href="css/style.css"><link rel="stylesheet" href="css/fwb-design-system.css"><link rel="stylesheet" href="css/public-brand.css?v=public-brand-alignment-1">
 </head>
-<body class="questionnaire-page app-interest">
-  <header class="site-header"><a class="brand" href="index.html"><span>FWB</span><strong>Fitness with Benjamin</strong></a><a href="index.html#start">Back to FWB</a></header>
+<body class="questionnaire-page app-interest public-page public-conversion-page">
+  <header class="site-header"><a class="brand" href="index.html"><span>FWB</span><strong>Fitness with Benjamin</strong></a><nav class="public-header-links" aria-label="Page links"><a href="index.html#training">Coaching</a><a href="fwb-training-support.html">Support</a></nav></header>
   <main class="questionnaire-shell">
-    <section class="questionnaire-hero"><p class="kicker">FWB Training app interest list</p><h1>Keep your coaching connected.</h1><p>FWB Training brings your workouts, progress, and connection with Benjamin together between sessions. Join the interest list to hear about access for your device.</p></section>
+    <section class="questionnaire-hero"><p class="kicker">FWB Training app interest list</p><h1>Keep your coaching connected.</h1><p>FWB Training brings your workouts, progress, and connection with Benjamin together between sessions. Join the interest list to hear about access for your device.</p><p class="public-promise">Train with intention. Feel your progress.</p></section>
     <form class="questionnaire-form" id="app-interest-form" method="post">
       <section class="form-section"><h2>A little about you</h2>
         <label>Name <input name="name" autocomplete="name" maxlength="120" required></label>
@@ -26,6 +25,7 @@
       <div class="form-submit-panel"><p>Your details are private and used to follow up on your app interest. Signing up does not create a paid subscription. Read the <a href="fwb-training-privacy.html"><u>FWB Training Privacy Policy</u></a> or <a href="fwb-training-support.html"><u>contact support</u></a>.</p><p id="setup-note" role="status">Online signup is being set up. Please check back soon.</p><button class="button button-dark" id="join-button" type="submit" disabled>I'm interested</button></div>
     </form>
   </main>
+  <footer class="public-footer"><span><strong>Fitness with Benjamin</strong> · Human coaching, supported by connected tools.</span><nav aria-label="Footer"><a href="index.html">Home</a> · <a href="fwb-training-support.html">Support</a> · <a href="fwb-training-privacy.html">Privacy</a></nav></footer>
   <script>
     // Set this to the NEW app-interest Apps Script deployment URL, not the questionnaire URL.
     const APP_INTEREST_ENDPOINT = 'https://script.google.com/macros/s/AKfycbwvaSYvFV-Ls22i_K1httUktwmOgmeIIqPdurdyGvH99R_tM7IgJUfu0kqU7j1EoLjZ/exec';
