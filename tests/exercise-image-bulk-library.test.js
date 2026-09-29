@@ -8,6 +8,10 @@ const migration = fs.readFileSync(
   path.join(root, "supabase/migrations/20260929005612_link_bulk_exercise_images.sql"),
   "utf8",
 );
+const mediaAliasesMigration = fs.readFileSync(
+  path.join(root, "supabase/migrations/20260929173000_add_workout_exercise_media_aliases.sql"),
+  "utf8",
+);
 
 test("bulk exercise images link only approved, active records without replacing existing images", () => {
   const objectNames = [...migration.matchAll(/\('([^']+[.]png)'\)/g)].map((match) => match[1]);
@@ -23,4 +27,12 @@ test("bulk exercise images link only approved, active records without replacing 
   assert.doesNotMatch(migration, /45-degree-glute-drive-machine[.]png/);
   assert.doesNotMatch(migration, /pec-deck-chest-fly[.]png/);
   assert.doesNotMatch(migration, /decline-cable-fly[.]png/);
+});
+
+test("common workout labels resolve to existing approved exercise artwork", () => {
+  assert.match(mediaAliasesMigration, /Alternating Dumbbell Curl/);
+  assert.match(mediaAliasesMigration, /Rear-delt fly/);
+  assert.match(mediaAliasesMigration, /where lower\(name\) = 'dumbbell curl'/i);
+  assert.match(mediaAliasesMigration, /where lower\(name\) = 'dumbbell reverse fly'/i);
+  assert.doesNotMatch(mediaAliasesMigration, /set image_url/i);
 });
