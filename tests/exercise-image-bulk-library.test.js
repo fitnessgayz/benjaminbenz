@@ -12,8 +12,8 @@ const migration = fs.readFileSync(
 test("bulk exercise images link only approved, active records without replacing existing images", () => {
   const objectNames = [...migration.matchAll(/\('([^']+[.]png)'\)/g)].map((match) => match[1]);
 
-  assert.equal(objectNames.length, 65);
-  assert.equal(new Set(objectNames).size, 65);
+  assert.equal(objectNames.length, 64);
+  assert.equal(new Set(objectNames).size, 64);
   assert.match(migration, /exercise[.]is_approved/);
   assert.match(migration, /exercise[.]is_active/);
   assert.match(migration, /exercise[.]image_url is null/);
@@ -22,4 +22,5 @@ test("bulk exercise images link only approved, active records without replacing 
   assert.doesNotMatch(migration, /hip-abduction-machine[.]png/);
   assert.doesNotMatch(migration, /45-degree-glute-drive-machine[.]png/);
   assert.doesNotMatch(migration, /pec-deck-chest-fly[.]png/);
+  assert.doesNotMatch(migration, /decline-cable-fly[.]png/);
 });
