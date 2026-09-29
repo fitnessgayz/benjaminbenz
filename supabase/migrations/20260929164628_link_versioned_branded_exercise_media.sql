@@ -67,7 +67,7 @@ with media as (
   {"exercise_name":"Leg Press","slug":"leg-press"},
   {"exercise_name":"Lying Leg Raise","slug":"lying-leg-lifts"},
   {"exercise_name":"Machine Chest Press","slug":"machine-chest-press"},
-  {"exercise_name":"Machine Glute Kickback","slug":"machine-glute-kickback"},
+  {"exercise_name":"Glute Kickback Machine","slug":"machine-glute-kickback"},
   {"exercise_name":"Machine Shoulder Press","slug":"machine-shoulder-press"},
   {"exercise_name":"Mountain Climber","slug":"mountain-climber"},
   {"exercise_name":"One Arm Dumbbell Row","slug":"one-arm-dumbbell-row"},
