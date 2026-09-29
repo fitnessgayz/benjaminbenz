@@ -2447,13 +2447,99 @@ function trustedExerciseImageUrl(value) {
   }
 }
 
+function trustedExerciseMotionUrl(value) {
+  try {
+    const url = new URL(value);
+    const storageOrigin = new URL(window.FWB_SUPABASE_CONFIG.url).origin;
+    const storageMotion = url.origin === storageOrigin
+      && /^\/storage\/v1\/object\/public\/exercise-images\/approved\/[a-z0-9/-]+\.webp$/i.test(url.pathname);
+    const siteMotion = url.origin === "https://benjaminbenz.com"
+      && /^\/images\/exercises\/[a-z0-9/-]+\.webp$/i.test(url.pathname);
+    return url.protocol === "https:" && !url.username && !url.password && (storageMotion || siteMotion)
+      ? url.href : "";
+  } catch {
+    return "";
+  }
+}
+
+function exerciseMedia(exercise = {}) {
+  const approvedExercise = approvedExerciseForName(exercise.name);
+  const imageUrl = trustedExerciseImageUrl(exercise.image_url || approvedExercise?.image_url);
+  const animatedUrl = trustedExerciseMotionUrl(
+    exercise.motion_url || exercise.motionUrl || approvedExercise?.motion_url
+  );
+  return { imageUrl, animatedUrl };
+}
+
+function exerciseMediaButtonMarkup(exercise, options = {}) {
+  const { imageUrl, animatedUrl } = exerciseMedia(exercise);
+  if (!imageUrl) return "";
+  const name = String(exercise.name || "Exercise").trim() || "Exercise";
+  const compact = options.compact ? " exercise-media-button-compact" : "";
+  return `
+    <button
+      class="exercise-media-button${compact}"
+      type="button"
+      data-exercise-media-open
+      data-exercise-media-static="${escapeHtml(imageUrl)}"
+      ${animatedUrl ? `data-exercise-media-animated="${escapeHtml(animatedUrl)}"` : ""}
+      data-exercise-media-name="${escapeHtml(name)}"
+      aria-label="Open full ${escapeHtml(name)} start and end demonstration"
+    >
+      <img src="${escapeHtml(imageUrl)}" alt="" loading="lazy" decoding="async" />
+      <span class="exercise-media-play" aria-hidden="true"><span></span></span>
+    </button>
+  `;
+}
+
 function exerciseImageMarkup(exercise) {
-  const imageUrl = trustedExerciseImageUrl(approvedExerciseForName(exercise.name)?.image_url);
-  return imageUrl ? `
-    <figure class="exercise-demo-image">
-      <img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(exercise.name)} start and end positions" loading="lazy" />
-    </figure>
-  ` : "";
+  const imageUrl = trustedExerciseImageUrl(exercise.image_url || approvedExerciseForName(exercise.name)?.image_url);
+  const media = exerciseMediaButtonMarkup({ ...exercise, image_url: imageUrl });
+  return media ? `<figure class="exercise-demo-image">${media}</figure>` : "";
+}
+
+function ensureExerciseMediaDialog() {
+  let dialog = document.querySelector("[data-exercise-media-dialog]");
+  if (dialog) return dialog;
+  dialog = document.createElement("dialog");
+  dialog.className = "exercise-media-dialog";
+  dialog.dataset.exerciseMediaDialog = "";
+  dialog.setAttribute("aria-labelledby", "exercise-media-dialog-title");
+  dialog.innerHTML = `
+    <div class="exercise-media-dialog-card">
+      <header>
+        <div><small>Exercise demo</small><h2 id="exercise-media-dialog-title"></h2></div>
+        <button type="button" data-exercise-media-close aria-label="Close exercise demo">×</button>
+      </header>
+      <div class="exercise-media-dialog-stage" data-exercise-media-stage></div>
+      <p data-exercise-media-caption></p>
+    </div>
+  `;
+  dialog.addEventListener("close", () => {
+    const stage = dialog.querySelector("[data-exercise-media-stage]");
+    if (stage) stage.replaceChildren();
+  });
+  document.body.append(dialog);
+  return dialog;
+}
+
+function openExerciseMedia(button) {
+  const dialog = ensureExerciseMediaDialog();
+  const stage = dialog.querySelector("[data-exercise-media-stage]");
+  const name = String(button?.dataset.exerciseMediaName || "Exercise").trim();
+  const staticUrl = trustedExerciseImageUrl(button?.dataset.exerciseMediaStatic);
+  const animatedUrl = trustedExerciseMotionUrl(button?.dataset.exerciseMediaAnimated);
+  if (!stage || !staticUrl) return;
+  dialog.querySelector("h2").textContent = name;
+  dialog.querySelector("[data-exercise-media-caption]").textContent = animatedUrl
+    ? "Start and end demonstration · motion preview"
+    : "Start and end positions";
+  const image = document.createElement("img");
+  image.src = animatedUrl || staticUrl;
+  image.alt = `${name} ${animatedUrl ? "moving demonstration" : "start and end positions"}`;
+  image.decoding = "async";
+  stage.replaceChildren(image);
+  dialog.showModal();
 }
 
 function exerciseVideoUrl(exercise) {
@@ -8823,6 +8909,15 @@ function customWorkoutGroupedRoundCardMarkup(format, exercises, groupIndex = 0, 
   const groupTitle = format === "circuit"
     ? `Circuit ${groupIndex + 1}`
     : format === "single" ? `Straight sets ${groupIndex + 1}` : `Superset ${groupIndex + 1}`;
+  const exerciseMarkers = (exercises || []).map((exercise, index) => (
+    workoutCarouselExerciseCode(format, groupIndex, index)
+  ));
+  const groupRepeatCount = Math.max(1, ...(exercises || []).map((exercise) => (
+    setCountFromPrescription(exercise?.prescription)
+  )));
+  const groupCue = format === "single"
+    ? "Complete each working set"
+    : `Complete ${exerciseMarkers.join(" → ")}, rest 60–90s, repeat ${groupRepeatCount}×`;
 
   return `
     <section
@@ -8839,7 +8934,10 @@ function customWorkoutGroupedRoundCardMarkup(format, exercises, groupIndex = 0, 
       ${customWorkoutGroupNameEditorMarkup(format, exercises, groupIndex, options.assigned ? `${encodeURIComponent(workoutTitle)}-` : "", startIndex)}
       <article class="custom-workout-grouped-card">
         <header class="custom-workout-grouped-card-heading">
-          <h3>${escapeHtml(groupTitle)}</h3>
+          <div>
+            <h3>${escapeHtml(groupTitle)}</h3>
+            <p class="custom-workout-grouped-cue">${escapeHtml(groupCue)}</p>
+          </div>
           <p class="custom-workout-grouped-progress" data-custom-grouped-progress aria-live="polite">0 / 0 complete</p>
         </header>
         ${!options.assigned && panelFormat === "single"
@@ -9103,8 +9201,19 @@ function assignedWorkoutPrescriptionLabel(logElement) {
   return `Target: ${sets ? `${sets} ${sets === 1 ? "set" : "sets"}${targetLabel ? " × " : ""}` : ""}${targetLabel || (sets ? "" : prescription)}`;
 }
 
+function exerciseLibraryMetaLabel(exerciseName) {
+  const entry = approvedExerciseForName(exerciseName);
+  const primary = String(entry?.primary_muscle || "").trim();
+  const equipment = String(entry?.equipment || "").trim();
+  return [primary, equipment].filter(Boolean).map((value) => (
+    value.replace(/[_-]+/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase())
+  )).join("  |  ");
+}
+
 function customWorkoutGroupedExerciseKeyMarkup(carousel) {
   const isCustom = Boolean(carousel?.closest?.(".client-workout-panel-custom"));
+  const format = String(carousel?.dataset?.customWorkoutFormat || "single").toLowerCase();
+  const groupIndex = Math.max(Number(carousel?.dataset?.customWorkoutGroup) || 0, 0);
   return customWorkoutGroupedLogElements(carousel).map((logElement, index) => {
     const exerciseNumber = (Number(carousel?.dataset?.exerciseStartIndex) || 0) + index + 1;
     const nameInput = exerciseNameInputForLog(logElement);
@@ -9116,17 +9225,26 @@ function customWorkoutGroupedExerciseKeyMarkup(carousel) {
       ? logElement.querySelector(".exercise-video-link")?.getAttribute("href") || logElement.dataset.generatedVideo || ""
       : "";
     const demo = exerciseName ? exerciseVideoMarkup({ name: exerciseName, video: originalVideo }, { iconOnly: true }) : "";
+    const media = exerciseName && typeof exerciseMediaButtonMarkup === "function"
+      ? exerciseMediaButtonMarkup({ name: exerciseName }, { compact: true }) : "";
+    const marker = `${String.fromCharCode(65 + Math.min(groupIndex, 25))}${index + 1}`;
+    const meta = typeof exerciseLibraryMetaLabel === "function" ? exerciseLibraryMetaLabel(exerciseName) : "";
     const target = assignedWorkoutPrescriptionLabel(logElement);
 
     return `
       <div class="custom-workout-grouped-exercise-key-item" role="listitem">
-        <span class="custom-workout-grouped-exercise-number">${exerciseNumber}</span>
-        ${isCustom ? `<button type="button" data-open-custom-exercise="${index}" aria-label="Edit ${escapeHtml(name)}: sets, reps and weight"><strong data-custom-grouped-exercise-name="${index}">${escapeHtml(name)}</strong></button>` : `<strong data-custom-grouped-exercise-name="${index}">${escapeHtml(name)}</strong>`}
-        ${demo}
-        ${target ? `<p class="custom-workout-grouped-target" data-custom-grouped-target="${index}">${escapeHtml(target)}</p>` : ""}
+        ${media || `<span class="custom-workout-grouped-media-placeholder" aria-hidden="true"></span>`}
+        <span class="custom-workout-grouped-exercise-copy">
+          <span class="custom-workout-grouped-exercise-number">${escapeHtml(marker)}</span>
+          ${isCustom ? `<button type="button" data-open-custom-exercise="${index}" aria-label="Edit ${escapeHtml(name)}: sets, reps and weight"><strong data-custom-grouped-exercise-name="${index}">${escapeHtml(name)}</strong></button>` : `<strong data-custom-grouped-exercise-name="${index}">${escapeHtml(name)}</strong>`}
+          ${target ? `<p class="custom-workout-grouped-target" data-custom-grouped-target="${index}">${escapeHtml(target)}</p>` : ""}
+          ${meta ? `<p class="custom-workout-grouped-meta">${escapeHtml(meta)}</p>` : ""}
+        </span>
+        ${media ? "" : demo}
+        <span class="custom-workout-grouped-chevron" aria-hidden="true">›</span>
         ${logElement.dataset.generatedExercise === "true" && logElement.dataset.generatedInstructions ? `<p class="custom-workout-grouped-target">${escapeHtml(logElement.dataset.generatedInstructions)}</p>` : ""}
-        <div class="workout-progression-group-slot" data-workout-progression-index="${index}"></div>
         <p class="custom-workout-grouped-pr-preview" data-custom-grouped-pr-preview="${index}" hidden></p>
+        <div class="workout-progression-group-slot" data-workout-progression-index="${index}"></div>
       </div>
     `;
   }).join("");
@@ -16688,6 +16806,19 @@ function removeExerciseLog(logElement) {
 
 function handleWorkoutInteractions() {
   document.addEventListener("click", async (event) => {
+    const exerciseMediaOpen = event.target.closest("[data-exercise-media-open]");
+    const exerciseMediaClose = event.target.closest("[data-exercise-media-close]");
+    const exerciseMediaDialog = event.target.closest("[data-exercise-media-dialog]");
+    if (exerciseMediaClose || (exerciseMediaDialog && event.target === exerciseMediaDialog)) {
+      exerciseMediaDialog?.close();
+      return;
+    }
+    if (exerciseMediaOpen) {
+      event.preventDefault();
+      event.stopPropagation();
+      openExerciseMedia(exerciseMediaOpen);
+      return;
+    }
     const generateWorkoutButton = event.target.closest("[data-generate-workout]");
     if (generateWorkoutButton) {
       event.preventDefault();
@@ -18176,7 +18307,7 @@ async function loadDashboard() {
       withTimeout(
         supabaseClient
           .from("exercise_library")
-          .select("id,name,aliases,primary_muscle,secondary_muscles,equipment,difficulty,movement_pattern,default_sets,default_reps,default_rest_seconds,substitution_group,demo_url,image_url,instructions,is_active,is_approved")
+          .select("id,name,aliases,primary_muscle,secondary_muscles,equipment,difficulty,movement_pattern,default_sets,default_reps,default_rest_seconds,substitution_group,demo_url,image_url,motion_url,instructions,is_active,is_approved")
           .setHeader("x-fwb-recovery-catalog", "1")
           .eq("is_active", true)
           .eq("is_approved", true)
