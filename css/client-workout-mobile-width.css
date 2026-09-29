@@ -1,0 +1,61 @@
+/* Mobile workout screens should use the phone canvas, while retaining a small
+   safe gutter around the outer panel and compact spacing between nested cards. */
+@media (max-width: 900px) {
+  body.client-dashboard-page .dashboard-shell {
+    width: 100% !important;
+    max-width: none !important;
+    margin-inline: 0 !important;
+    padding-right: max(6px, env(safe-area-inset-right)) !important;
+    padding-left: max(6px, env(safe-area-inset-left)) !important;
+  }
+
+  body.client-dashboard-page #dashboard-content,
+  body.client-dashboard-page #client-dashboard-grid,
+  body.client-dashboard-page #client-workouts-panel,
+  body.client-dashboard-page #client-workout-panels,
+  body.client-dashboard-page #client-workout-panels > .client-workout-panel,
+  body.client-dashboard-page #client-workout-panels .custom-workout-builder,
+  body.client-dashboard-page #client-workout-panels .custom-workout-carousel,
+  body.client-dashboard-page #client-workout-panels .workout-app-list,
+  body.client-dashboard-page #client-workout-panels .workout-format-group,
+  body.client-dashboard-page #client-workout-panels [data-custom-workout-grouped="true"] {
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    margin-right: 0 !important;
+    margin-left: 0 !important;
+  }
+
+  body.client-dashboard-page #client-workouts-panel {
+    padding-inline: 8px !important;
+  }
+
+  body.client-dashboard-page #client-workout-panels :is(.workout-format-group, .custom-workout-list[data-custom-workout-format]) {
+    padding-inline: 8px !important;
+  }
+}
+
+@media (max-width: 430px) {
+  body.client-dashboard-page .dashboard-shell {
+    padding-right: max(4px, env(safe-area-inset-right)) !important;
+    padding-left: max(4px, env(safe-area-inset-left)) !important;
+  }
+
+  body.client-dashboard-page #client-workouts-panel {
+    padding-inline: 6px !important;
+  }
+
+  body.client-dashboard-page #client-workout-panels :is(.workout-format-group, .custom-workout-list[data-custom-workout-format]) {
+    padding-inline: 6px !important;
+  }
+
+  /* The workout panel keeps a 10px inset for headings and controls. Let the
+     exercise group reclaim that space so the primary card reads nearly
+     edge-to-edge without removing the outer safe gutter. */
+  body.client-dashboard-page #client-workout-panels .workout-format-group {
+    width: calc(100% + 20px) !important;
+    max-width: none !important;
+    margin-right: -10px !important;
+    margin-left: -10px !important;
+  }
+}
