@@ -179,6 +179,56 @@
   border-color: rgb(255 255 255 / 56%);
 }
 
+/* Keep long-form proof and offer details on calm light surfaces. Deep ink is
+ * reserved for brand anchors such as the hero, dock, and connected-coaching callout. */
+.homepage.public-page .review-card {
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-soft);
+}
+
+.homepage.public-page .review-card span {
+  display: inline-flex;
+  width: fit-content;
+  padding: 7px 10px;
+  color: var(--brand-primary-ink);
+  background: var(--brand-primary);
+  border-radius: 999px;
+  letter-spacing: .04em;
+}
+
+.homepage.public-page .review-card p,
+.homepage.public-page .review-card p strong {
+  color: var(--ink);
+}
+
+.homepage.public-page .review-card > strong {
+  color: var(--text-muted);
+}
+
+.homepage.public-page .coaching-option-card {
+  color: var(--ink);
+  background: var(--surface);
+  border-color: var(--border);
+}
+
+.homepage.public-page .coaching-option-card-featured {
+  color: var(--ink);
+  background: var(--surface-soft);
+  border-color: var(--border);
+  box-shadow: inset 0 5px 0 var(--brand-primary), var(--shadow-soft);
+}
+
+.homepage.public-page .coaching-option-card-featured .coaching-option-number,
+.homepage.public-page .coaching-option-card p {
+  color: var(--text-muted);
+}
+
+.homepage.public-page .coaching-option-card li {
+  border-color: var(--border);
+}
+
 .public-conversion-page .questionnaire-shell {
   width: min(920px, calc(100% - 40px));
   padding-block: clamp(48px, 7vw, 88px);

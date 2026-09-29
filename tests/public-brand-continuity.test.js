@@ -80,7 +80,7 @@ test("makes support and privacy visible on public conversion pages", () => {
 
 test("keeps public styling isolated and based on canonical tokens", () => {
   for (const page of [homepage, questionnaire, interest]) {
-    assert.match(page, /css\/public-brand\.css\?v=public-brand-alignment-1/);
+    assert.match(page, /css\/public-brand\.css\?v=public-contrast-2/);
     assert.match(page, /public-page/);
   }
 
@@ -89,6 +89,13 @@ test("keeps public styling isolated and based on canonical tokens", () => {
   for (const token of ["--brand-primary", "--brand-primary-hover", "--brand-primary-ink", "--ink-deep", "--canvas", "--surface", "--text-muted", "--border", "--focus"]) {
     assert.match(publicStyles, new RegExp(`var\\(${token}\\)`));
   }
+});
+
+test("uses calm light surfaces for proof and coaching offers without the legacy gold treatment", () => {
+  assert.match(publicStyles, /\.homepage\.public-page \.review-card\s*\{[^}]*background:\s*var\(--surface\)/s);
+  assert.match(publicStyles, /\.homepage\.public-page \.review-card span\s*\{[^}]*background:\s*var\(--brand-primary\)/s);
+  assert.match(publicStyles, /\.homepage\.public-page \.coaching-option-card-featured\s*\{[^}]*background:\s*var\(--surface-soft\)/s);
+  assert.match(publicStyles, /box-shadow:\s*inset 0 5px 0 var\(--brand-primary\)/);
 });
 
 test("keeps the master identity and legal navigation on public support and policy pages", () => {
