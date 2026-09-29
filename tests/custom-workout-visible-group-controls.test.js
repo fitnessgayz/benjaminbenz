@@ -13,6 +13,8 @@ function fn(name) {
 function context(extra={}) {
   const ctx=vm.createContext({activeCustomWorkoutFormat:'single',customWorkoutTitle:'Custom workout',
     normalizeCustomWorkoutFormat:value=>['superset','circuit'].includes(value)?value:'single',
+    workoutCarouselExerciseCode:(format,groupIndex,exerciseIndex)=>`${String.fromCharCode(65+groupIndex)}${exerciseIndex+1}`,
+    setCountFromPrescription:()=>3,
     escapeHtml:value=>String(value), ...extra});
   vm.runInContext(['normalizeCustomWorkoutInlineGroupType','customWorkoutInlineGroupOptionsMarkup','customWorkoutGroupedRoundCardMarkup','clearCustomWorkoutInlineGroup','updateCustomWorkoutInlineGrouping'].map(fn).join('\n'),ctx);
   return ctx;
