@@ -206,7 +206,7 @@ test("invalid history IDs and missing send receipts remain errors with the draft
 
 test("client and coach entry points load the shared controller before their application code", () => {
   const root = path.resolve(__dirname, "..");
-  for (const [htmlName, entry, styleVersion] of [["client-dashboard.html", "js/client-portal.js", 2], ["coach-admin.html", "js/coach-admin.js", 1]]) {
+  for (const [htmlName, entry, styleVersion] of [["client-dashboard.html", "js/client-portal.js", 2], ["coach-admin.html", "js/coach-admin.js", 2]]) {
     const html = fs.readFileSync(path.join(root, htmlName), "utf8");
     assert.ok(html.indexOf("js/coach-messages.js") < html.indexOf(entry));
     assert.match(html, new RegExp(`css/coach-messages\\.css\\?v=${styleVersion}`));
@@ -216,6 +216,10 @@ test("client and coach entry points load the shared controller before their appl
   assert.match(messageCss, /\.fwb-message-dialog\s*\{[^}]*background: #f8f9f5;[^}]*color: #171b16;/s);
   assert.match(messageCss, /\.fwb-message-dialog \.fwb-message-bubble\.is-own\s*\{[^}]*background: #eaf3d5;/s);
   assert.match(messageCss, /\.fwb-message-dialog \.fwb-message-composer textarea\s*\{[^}]*background: #fff;[^}]*color: #171b16;/s);
+  assert.match(messageCss, /body\.coach-admin-page \.admin-card\.fwb-messages\s*\{[^}]*color: #171b16;[^}]*background: #f8f9f5;[^}]*border-color: #d8dcd3;/s);
+  assert.match(messageCss, /\.coach-admin-page \.fwb-messages \.fwb-message-inbox-item\s*\{[^}]*color: #20251f;[^}]*background: #fff;/s);
+  assert.match(messageCss, /\.coach-admin-page \.fwb-messages \.fwb-message-inbox-item\.is-active\s*\{[^}]*background: #eef6dc;[^}]*var\(--lime\)/s);
+  assert.match(messageCss, /\.coach-admin-page \.fwb-messages \.fwb-message-bubble\.is-own\s*\{[^}]*background: #eaf3d5;/s);
   const clientSource = fs.readFileSync(path.join(root, "js/client-portal.js"), "utf8");
   assert.match(clientSource, /button\.hidden = isCoachDashboardPreview/);
   const dashboardStart = clientSource.indexOf("async function loadDashboard()");

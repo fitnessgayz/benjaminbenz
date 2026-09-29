@@ -57,8 +57,8 @@
 .fwb-message-pending-actions { display: grid; gap: 8px; justify-items: start; }
 .fwb-message-composer textarea:disabled { opacity: .7; }
 
-:root body .admin-card.fwb-messages { background: #171b16; border-color: #414a38; }
-:root body .fwb-messages .kicker { color: #d1ff2c; }
+:root body .admin-card.fwb-messages { background: #f8f9f5; border-color: #d8dcd3; }
+:root body .fwb-messages .kicker { color: #5d7907; }
 .fwb-messages .fwb-message-secondary, .fwb-messages .fwb-message-send { width: auto; }
 .fwb-message-composer-actions .fwb-message-count { white-space: nowrap; }
 /* Override the legacy mobile form rule that stretches every page button. */
@@ -66,7 +66,7 @@
 .fwb-messages .fwb-message-count { flex: 0 0 auto; width: auto; white-space: nowrap !important; }
 .fwb-messages .fwb-message-composer textarea { font-size: 16px !important; overflow-y: auto !important; }
 
-/* The client conversation opens as a light-mode sheet; the coach inbox keeps its dark workspace theme. */
+/* Messaging uses the same warm, light product surface for clients and coaches. */
 .fwb-message-dialog {
   border-color: #d8dcd3;
   background: #f8f9f5;
@@ -109,3 +109,64 @@
 .fwb-message-dialog button:focus-visible,
 .fwb-message-dialog textarea:focus-visible,
 .fwb-message-dialog .fwb-message-history:focus-visible { outline-color: #5d7907; }
+
+/* Coach inbox: mirror the client conversation's light hierarchy while keeping
+ * lime for selection, unread state, and sent-message recognition. */
+:root body.coach-admin-page .admin-card.fwb-messages {
+  color: #171b16;
+  background: #f8f9f5;
+  border-color: #d8dcd3;
+  box-shadow: 0 14px 36px rgba(21, 25, 18, .08);
+}
+.coach-admin-page .fwb-messages .fwb-message-heading h2,
+.coach-admin-page .fwb-messages .fwb-message-recipient { color: #171b16; }
+.coach-admin-page .fwb-messages .fwb-message-subtitle,
+.coach-admin-page .fwb-messages .fwb-message-empty,
+.coach-admin-page .fwb-messages .fwb-message-count { color: #687064; }
+.coach-admin-page .fwb-messages .fwb-message-secondary {
+  border-color: #c8cec2;
+  color: #283025;
+  background: #fff;
+}
+.coach-admin-page .fwb-messages .fwb-message-inbox-item {
+  border-color: #d4d9cf;
+  color: #20251f;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(21, 25, 18, .04);
+}
+.coach-admin-page .fwb-messages .fwb-message-inbox-item.is-active {
+  border-color: #a9bd71;
+  background: #eef6dc;
+  box-shadow: inset 4px 0 0 var(--lime);
+}
+.coach-admin-page .fwb-messages .fwb-message-preview { color: #596257; }
+.coach-admin-page .fwb-messages .fwb-message-inbox-item time { color: #747d70; }
+.coach-admin-page .fwb-messages .fwb-message-history {
+  background: #f3f5f0;
+  border: 1px solid #e0e4dc;
+  border-radius: 16px;
+}
+.coach-admin-page .fwb-messages .fwb-message-bubble {
+  border-color: #d4d9cf;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(21, 25, 18, .05);
+}
+.coach-admin-page .fwb-messages .fwb-message-bubble.is-own {
+  border-color: #b5c886;
+  background: #eaf3d5;
+}
+.coach-admin-page .fwb-messages .fwb-message-bubble p { color: #20251f; }
+.coach-admin-page .fwb-messages .fwb-message-meta { color: #697064; }
+.coach-admin-page .fwb-messages .fwb-message-meta strong { color: #30382d; }
+.coach-admin-page .fwb-messages .fwb-message-status { color: #8a5200; }
+.coach-admin-page .fwb-messages .fwb-message-composer { border-top-color: #d8dcd3; }
+.coach-admin-page .fwb-messages .fwb-message-composer label { color: #30382d; }
+.coach-admin-page .fwb-messages .fwb-message-composer textarea {
+  border-color: #c8cec2;
+  color: #171b16;
+  background: #fff;
+}
+.coach-admin-page .fwb-messages .fwb-message-composer textarea::placeholder { color: #858c81; }
+.coach-admin-page .fwb-messages button:focus-visible,
+.coach-admin-page .fwb-messages textarea:focus-visible,
+.coach-admin-page .fwb-messages .fwb-message-history:focus-visible { outline-color: #5d7907; }
