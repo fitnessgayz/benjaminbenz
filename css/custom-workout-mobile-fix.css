@@ -2935,11 +2935,15 @@ body.dashboard-page.custom-workout-grouped-finish-open {
   background: #111;
 }
 
-.exercise-media-dialog-stage img {
+.exercise-media-dialog-stage :is(img, video) {
   display: block;
   width: 100%;
   max-height: min(58dvh, 600px);
   object-fit: contain;
+}
+
+.exercise-media-dialog-stage video {
+  background: #000;
 }
 
 .exercise-media-dialog [data-exercise-media-caption] {
@@ -2948,6 +2952,30 @@ body.dashboard-page.custom-workout-grouped-finish-open {
   color: #676b65;
   font-size: .82rem;
   font-weight: 700;
+}
+
+.exercise-media-dialog-actions {
+  padding: 0 16px 14px;
+}
+
+.exercise-media-dialog [data-exercise-media-video-toggle] {
+  display: flex;
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 16px;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: 2px solid #315f2b;
+  border-radius: 14px;
+  background: #315f2b;
+  color: #fff;
+  font: inherit;
+  font-weight: 900;
+}
+
+.exercise-media-dialog [data-exercise-media-video-toggle][hidden] {
+  display: none;
 }
 
 .exercise-media-dialog-instructions {

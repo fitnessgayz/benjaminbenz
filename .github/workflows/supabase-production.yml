@@ -1,0 +1,79 @@
+name: Supabase production deploy
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/supabase/**'
+      - 'supabase/migrations/**'
+      - 'supabase/storage-assets/**'
+      - '.github/workflows/supabase-production.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/supabase/**'
+      - 'supabase/migrations/**'
+      - 'supabase/storage-assets/**'
+      - '.github/workflows/supabase-production.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: supabase-production
+  cancel-in-progress: false
+
+env:
+  SUPABASE_PROJECT_ID: qukdfjeupjhpthfbaonv
+  SUPABASE_URL: https://qukdfjeupjhpthfbaonv.supabase.co
+
+jobs:
+  validate:
+    name: Validate media manifest
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - name: Check uploader syntax
+        run: node --check scripts/supabase/deploy-media.mjs
+      - name: Validate assets and manifest
+        run: node scripts/supabase/deploy-media.mjs validate
+
+  deploy:
+    name: Upload media and apply migrations
+    needs: validate
+    # Keep production deployment manual until the first credentialed run has
+    # completed successfully. Main-branch pushes still validate the bundle.
+    if: github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY || secrets.SUPABASE_SERVICE_ROLE_KEY }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - name: Require deployment credentials
+        shell: bash
+        run: |
+          test -n "$SUPABASE_ACCESS_TOKEN" || { echo 'Missing SUPABASE_ACCESS_TOKEN'; exit 1; }
+          test -n "$SUPABASE_DB_PASSWORD" || { echo 'Missing SUPABASE_DB_PASSWORD'; exit 1; }
+          test -n "$SUPABASE_SECRET_KEY" || { echo 'Missing SUPABASE_SECRET_KEY or SUPABASE_SERVICE_ROLE_KEY'; exit 1; }
+      - name: Upload versioned media
+        run: node scripts/supabase/deploy-media.mjs upload
+      - uses: supabase/setup-cli@3c2f5e2ae34c34e428e8e206e2c4d21fa2d20fbf # v2.1.1
+        with:
+          version: 2.118.0
+      - name: Link production project
+        run: supabase link --project-ref "$SUPABASE_PROJECT_ID" --password "$SUPABASE_DB_PASSWORD"
+      - name: Preview pending migrations
+        run: supabase db push --linked --password "$SUPABASE_DB_PASSWORD" --dry-run
+      - name: Apply pending migrations
+        run: supabase db push --linked --password "$SUPABASE_DB_PASSWORD" --yes
+      - name: Verify uploaded bytes and exercise mappings
+        run: node scripts/supabase/deploy-media.mjs verify

@@ -1,0 +1,59 @@
+{
+  "version": 1,
+  "assets": [
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-29/png/barbell-upright-row.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-29/png/barbell-upright-row.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-29/webp-480/barbell-upright-row.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-29/webp-480/barbell-upright-row.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-29/webp-768/barbell-upright-row.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-29/webp-768/barbell-upright-row.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-videos/generated/barbell-upright-row.mp4",
+      "bucket": "exercise-videos",
+      "objectPath": "generated/barbell-upright-row.mp4",
+      "contentType": "video/mp4",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-videos/generated/bulgarian-split-squat.mp4",
+      "bucket": "exercise-videos",
+      "objectPath": "generated/bulgarian-split-squat.mp4",
+      "contentType": "video/mp4",
+      "cacheControl": 31536000
+    }
+  ],
+  "exerciseMedia": [
+    {
+      "name": "Barbell Upright Row",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-29/webp-768/barbell-upright-row.webp",
+      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-videos/generated/barbell-upright-row.mp4"
+    },
+    {
+      "name": "Bulgarian Split Squat",
+      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-videos/generated/bulgarian-split-squat.mp4"
+    },
+    {
+      "name": "One Dumbbell Bulgarian Split Squat",
+      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-videos/generated/bulgarian-split-squat.mp4"
+    },
+    {
+      "name": "Two Dumbbell Bulgarian Split Squat",
+      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-videos/generated/bulgarian-split-squat.mp4"
+    }
+  ]
+}

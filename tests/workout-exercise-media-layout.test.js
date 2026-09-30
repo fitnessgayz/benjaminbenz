@@ -8,13 +8,18 @@ const portal = fs.readFileSync(path.join(root, "js/client-portal.js"), "utf8");
 const css = fs.readFileSync(path.join(root, "css/custom-workout-mobile-fix.css"), "utf8");
 const workoutCss = fs.readFileSync(path.join(root, "css/workout-layout.css"), "utf8");
 
-test("uses static branded cards with written instructions and no motion playback", () => {
+test("opens the static branded card first and offers video as a secondary action", () => {
   assert.match(portal, /data-exercise-media-static/);
+  assert.match(portal, /data-exercise-media-video/);
   assert.match(portal, /data-exercise-media-instructions/);
   assert.match(portal, /loading="lazy"[\s\S]{0,80}decoding="async"/);
   assert.match(portal, /approvedExercise\?\.instructions \|\| exercise\.instructions/);
   assert.match(portal, /image\.src = staticUrl/);
-  assert.doesNotMatch(portal, /video\.src = animatedUrl/);
+  assert.match(portal, /renderExerciseMediaDialog\(dialog, false\)/);
+  assert.match(portal, /Watch exercise video/);
+  assert.match(portal, /video\.src = videoUrl/);
+  assert.match(portal, /video\.controls = true/);
+  assert.match(portal, /Show static card/);
   assert.doesNotMatch(portal, /data-exercise-media-animated/);
   assert.doesNotMatch(portal, /class="exercise-media-button[\s\S]{0,500}<video/);
 });

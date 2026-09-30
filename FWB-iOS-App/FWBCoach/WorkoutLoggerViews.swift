@@ -1,6 +1,7 @@
 import SwiftUI
 import UIKit
 import ImageIO
+import AVKit
 
 enum ExerciseMediaURL {
     static func thumbnail(for imageURL: URL?) -> URL? {
@@ -3942,12 +3943,23 @@ private struct ExerciseUIImageView: UIViewRepresentable {
 private struct ExerciseMediaViewer: View {
     @Environment(\.dismiss) private var dismiss
     let request: ExerciseMediaViewerRequest
+    @State private var isShowingVideo = false
+    @State private var player: AVPlayer?
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
-                    ExerciseRemoteImage(urls: preferredURLs, animated: false)
+                    Group {
+                        if isShowingVideo, let player {
+                            VideoPlayer(player: player)
+                                .onAppear { player.play() }
+                                .accessibilityLabel("Video demonstration for \(request.exerciseName)")
+                        } else {
+                            ExerciseRemoteImage(urls: preferredURLs, animated: false)
+                                .accessibilityLabel("Static start and end reference for \(request.exerciseName)")
+                        }
+                    }
                     .aspectRatio(1904 / 826, contentMode: .fit)
                     .frame(maxWidth: .infinity)
                     .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
@@ -3955,16 +3967,35 @@ private struct ExerciseMediaViewer: View {
                         RoundedRectangle(cornerRadius: 16, style: .continuous)
                             .stroke(Color.fwbLine, lineWidth: 1)
                     }
-                    .accessibilityLabel("Static start and end reference for \(request.exerciseName)")
 
                     Text(request.exerciseName.fwbTitleCased)
                         .font(FWBFont.title3.weight(.bold))
                         .foregroundStyle(Color.fwbWarmWhite)
 
-                    Text("STATIC START / END FORM REFERENCE")
+                    Text(isShowingVideo ? "EXERCISE VIDEO DEMONSTRATION" : "STATIC START / END FORM REFERENCE")
                         .font(FWBFont.caption.weight(.semibold))
                         .tracking(0.5)
                         .foregroundStyle(Color.fwbMuted)
+
+                    if let videoURL {
+                        Button {
+                            if isShowingVideo {
+                                player?.pause()
+                                player = nil
+                                isShowingVideo = false
+                            } else {
+                                player = AVPlayer(url: videoURL)
+                                isShowingVideo = true
+                            }
+                        } label: {
+                            Label(
+                                isShowingVideo ? "Show static card" : "Watch exercise video",
+                                systemImage: isShowingVideo ? "photo" : "play.fill"
+                            )
+                            .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(FWBPrimaryButtonStyle())
+                    }
 
                     if !request.media.instructions.isEmpty {
                         VStack(alignment: .leading, spacing: 8) {
@@ -4001,7 +4032,13 @@ private struct ExerciseMediaViewer: View {
                     Button("Done") { dismiss() }
                 }
             }
+            .onDisappear { player?.pause() }
         }
+    }
+
+    private var videoURL: URL? {
+        guard ExerciseMediaURL.isVideo(request.media.motionURL) else { return nil }
+        return request.media.motionURL
     }
 
     private var preferredURLs: [URL] {

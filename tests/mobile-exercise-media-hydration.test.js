@@ -75,6 +75,6 @@ test("late exercise-library results hydrate programmed, custom, and active demo 
 
 test("the mobile dashboard cache key advances for the hydrated branded-card bundle", () => {
   assert.match(dashboard, /client-portal[.]js[^\"]*exercise-images=5/);
-  assert.match(dashboard, /client-portal[.]js[^\"]*exercise-guide=1/);
-  assert.match(dashboard, /custom-workout-mobile-fix[.]css[^\"]*exercise-guide=1/);
+  assert.match(dashboard, /client-portal[.]js[^\"]*exercise-guide=2/);
+  assert.match(dashboard, /custom-workout-mobile-fix[.]css[^\"]*exercise-guide=2/);
 });
