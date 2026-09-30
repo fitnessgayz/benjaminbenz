@@ -2818,7 +2818,7 @@ body.dashboard-page.custom-workout-grouped-finish-open {
   object-position: left center;
 }
 
-.exercise-media-play {
+.exercise-media-info {
   position: absolute;
   right: 8px;
   bottom: 8px;
@@ -2830,15 +2830,11 @@ body.dashboard-page.custom-workout-grouped-finish-open {
   border-radius: 8px;
   background: rgba(255, 255, 255, .96);
   box-shadow: 0 2px 8px rgba(0, 0, 0, .12);
-}
-
-.exercise-media-play > span {
-  width: 0;
-  height: 0;
-  margin-left: 3px;
-  border-top: 7px solid transparent;
-  border-bottom: 7px solid transparent;
-  border-left: 11px solid #111;
+  color: #111;
+  font-family: Georgia, serif;
+  font-size: 1.05rem;
+  font-weight: 800;
+  line-height: 1;
 }
 
 .exercise-media-button:focus-visible {
@@ -2883,6 +2879,8 @@ body.dashboard-page.custom-workout-grouped-finish-open {
 
 .exercise-media-dialog-card {
   display: grid;
+  max-height: calc(100dvh - 24px);
+  overflow-y: auto;
 }
 
 .exercise-media-dialog header {
@@ -2931,10 +2929,10 @@ body.dashboard-page.custom-workout-grouped-finish-open {
   background: #111;
 }
 
-.exercise-media-dialog-stage :is(img, video) {
+.exercise-media-dialog-stage img {
   display: block;
   width: 100%;
-  max-height: calc(100dvh - 180px);
+  max-height: min(58dvh, 600px);
   object-fit: contain;
 }
 
@@ -2944,6 +2942,26 @@ body.dashboard-page.custom-workout-grouped-finish-open {
   color: #676b65;
   font-size: .82rem;
   font-weight: 700;
+}
+
+.exercise-media-dialog-instructions {
+  padding: 0 16px 18px;
+  color: #242824;
+}
+
+.exercise-media-dialog-instructions h3 {
+  margin: 2px 0 6px;
+  font-size: .82rem;
+  font-weight: 900;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
+
+.exercise-media-dialog-instructions p {
+  margin: 0;
+  font-size: .95rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
 }
 
 @media (max-width: 760px) {
@@ -2984,7 +3002,7 @@ body.dashboard-page.custom-workout-grouped-finish-open {
     font-size: clamp(.82rem, 3.6vw, 1rem);
   }
 
-  .exercise-media-play {
+  .exercise-media-info {
     right: 6px;
     bottom: 6px;
     width: 34px;

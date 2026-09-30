@@ -2492,14 +2492,12 @@ function exerciseMedia(exercise = {}) {
   // name/alias match whenever it has approved media.
   const imageUrl = trustedExerciseImageUrl(approvedExercise?.image_url)
     || trustedExerciseImageUrl(exercise.image_url);
-  const workoutMotionUrl = exercise.motion_url || exercise.motionUrl || approvedExercise?.motion_url;
-  const animatedUrl = trustedExerciseMotionUrl(approvedExercise?.motion_url)
-    || trustedExerciseMotionUrl(workoutMotionUrl);
-  return { imageUrl, animatedUrl };
+  const instructions = String(approvedExercise?.instructions || exercise.instructions || "").trim();
+  return { imageUrl, instructions };
 }
 
 function exerciseMediaButtonMarkup(exercise, options = {}) {
-  const { imageUrl, animatedUrl } = exerciseMedia(exercise);
+  const { imageUrl, instructions } = exerciseMedia(exercise);
   if (!imageUrl) return "";
   const { fullUrl, thumbnailUrl } = responsiveExerciseImageUrls(imageUrl);
   const name = String(exercise.name || "Exercise").trim() || "Exercise";
@@ -2512,18 +2510,19 @@ function exerciseMediaButtonMarkup(exercise, options = {}) {
       type="button"
       data-exercise-media-open
       data-exercise-media-static="${escapeHtml(fullUrl)}"
-      ${animatedUrl ? `data-exercise-media-animated="${escapeHtml(animatedUrl)}"` : ""}
+      data-exercise-media-instructions="${escapeHtml(instructions)}"
       data-exercise-media-name="${escapeHtml(name)}"
-      aria-label="Open full ${escapeHtml(name)} start and end demonstration"
+      aria-label="Open ${escapeHtml(name)} exercise card and instructions"
     >
       <img
         src="${escapeHtml(thumbnailUrl)}"
         ${thumbnailUrl !== fullUrl ? `srcset="${escapeHtml(thumbnailUrl)} 480w, ${escapeHtml(fullUrl)} 768w" sizes="(max-width: 700px) 42vw, 320px"` : ""}
+        ${thumbnailUrl !== fullUrl ? `data-exercise-media-fallback="${escapeHtml(fullUrl)}"` : ""}
         alt=""
         loading="lazy"
         decoding="async"
       />
-      <span class="exercise-media-play" aria-hidden="true"><span></span></span>
+      <span class="exercise-media-info" aria-hidden="true">i</span>
     </button>
   `;
 }
@@ -2577,11 +2576,15 @@ function ensureExerciseMediaDialog() {
   dialog.innerHTML = `
     <div class="exercise-media-dialog-card">
       <header>
-        <div><small>Exercise demo</small><h2 id="exercise-media-dialog-title"></h2></div>
-        <button type="button" data-exercise-media-close aria-label="Close exercise demo">×</button>
+        <div><small>Exercise guide</small><h2 id="exercise-media-dialog-title"></h2></div>
+        <button type="button" data-exercise-media-close aria-label="Close exercise guide">×</button>
       </header>
       <div class="exercise-media-dialog-stage" data-exercise-media-stage></div>
-      <p data-exercise-media-caption></p>
+      <p data-exercise-media-caption>Static start and end reference</p>
+      <section class="exercise-media-dialog-instructions" data-exercise-media-instructions-block>
+        <h3>How to perform</h3>
+        <p data-exercise-media-instructions></p>
+      </section>
     </div>
   `;
   dialog.addEventListener("close", () => {
@@ -2597,30 +2600,18 @@ function openExerciseMedia(button) {
   const stage = dialog.querySelector("[data-exercise-media-stage]");
   const name = String(button?.dataset.exerciseMediaName || "Exercise").trim();
   const staticUrl = trustedExerciseImageUrl(button?.dataset.exerciseMediaStatic);
-  const animatedUrl = trustedExerciseMotionUrl(button?.dataset.exerciseMediaAnimated);
+  const instructions = String(button?.dataset.exerciseMediaInstructions || "").trim();
   if (!stage || !staticUrl) return;
   dialog.querySelector("h2").textContent = name;
-  dialog.querySelector("[data-exercise-media-caption]").textContent = animatedUrl
-    ? "Start and end demonstration · motion preview"
-    : "Start and end positions";
-  if (animatedUrl && /\.mp4(?:$|[?#])/i.test(animatedUrl)) {
-    const video = document.createElement("video");
-    video.src = animatedUrl;
-    video.setAttribute("aria-label", `${name} moving demonstration`);
-    video.autoplay = true;
-    video.muted = true;
-    video.loop = true;
-    video.playsInline = true;
-    video.controls = true;
-    video.preload = "metadata";
-    stage.replaceChildren(video);
-  } else {
-    const image = document.createElement("img");
-    image.src = animatedUrl || staticUrl;
-    image.alt = `${name} ${animatedUrl ? "moving demonstration" : "start and end positions"}`;
-    image.decoding = "async";
-    stage.replaceChildren(image);
-  }
+  const instructionsBlock = dialog.querySelector("[data-exercise-media-instructions-block]");
+  const instructionsCopy = dialog.querySelector("[data-exercise-media-instructions]");
+  if (instructionsCopy) instructionsCopy.textContent = instructions;
+  if (instructionsBlock) instructionsBlock.hidden = !instructions;
+  const image = document.createElement("img");
+  image.src = staticUrl;
+  image.alt = `${name} start and end positions`;
+  image.decoding = "async";
+  stage.replaceChildren(image);
   dialog.showModal();
 }
 
@@ -2665,15 +2656,19 @@ function exerciseVideoUrl(exercise) {
 }
 
 function exerciseVideoMarkup(exercise, options = {}) {
+  const staticMedia = exerciseMedia(exercise);
+  if (staticMedia.imageUrl) {
+    return options.iconOnly
+      ? exerciseMediaButtonMarkup(exercise, { compact: true })
+      : exerciseImageMarkup(exercise);
+  }
   const videoUrl = exerciseVideoUrl(exercise);
-  const imageMarkup = options.iconOnly ? "" : exerciseImageMarkup(exercise);
 
   if (!videoUrl) {
-    return imageMarkup;
+    return "";
   }
 
-  return `${imageMarkup}
-    <a class="exercise-video-link" href="${escapeHtml(videoUrl)}" target="_blank" rel="noopener noreferrer" aria-label="View demo for ${escapeHtml(exercise.name)} (opens in a new tab)" title="View demo for ${escapeHtml(exercise.name)}">
+  return `<a class="exercise-video-link" href="${escapeHtml(videoUrl)}" target="_blank" rel="noopener noreferrer" aria-label="View demo for ${escapeHtml(exercise.name)} (opens in a new tab)" title="View demo for ${escapeHtml(exercise.name)}">
       ${options.iconOnly ? '<span aria-hidden="true">🎥</span>' : "View demo"}
     </a>
   `;
@@ -9471,12 +9466,18 @@ function refreshCustomWorkoutGroupedCopyWeights(carousel) {
       personalBests.set(logElement, personalBestWeightLog(logsForExerciseDisplay(logElement)));
     });
   }
-  const oneRepMaxSources = logElements.map((logElement) => {
+  const oneRepMaxSources = logElements.map((logElement, exerciseIndex) => {
     const best = personalBests.get(logElement);
+    const program = window.FWBOneRepMax?.programForLog?.(logElement);
     return {
       label: logElement.querySelector("[data-exercise-name-input]")?.value.trim() || logElement.dataset.exerciseName || "Exercise",
       weight: best?.weight_used,
-      reps: best?.reps
+      reps: best?.reps,
+      exerciseIndex,
+      exerciseCode: logElement.dataset.exerciseCode || "",
+      exerciseName: logElement.querySelector("[data-exercise-name-input]")?.value.trim() || logElement.dataset.exerciseName || "Exercise",
+      repMin: program?.rep_min,
+      repMax: program?.rep_max
     };
   }).filter((source) => Number(source.weight) > 0 && Number.isInteger(Number(source.reps)) && Number(source.reps) >= 1 && Number(source.reps) <= 30);
   carousel?.querySelectorAll('[data-one-rm-source="pr"]').forEach((button) => {
@@ -13222,10 +13223,12 @@ function updateSetHistoryPlaceholders(logElement, logs = logsForExerciseDisplay(
     }
 
     if (repsInput) {
-      repsInput.placeholder = historyPlaceholder(
-        previousLog?.reps,
-        repsInput.dataset.defaultPlaceholder || ""
-      );
+      const prescribedReps = setType === workingSetType
+        ? String(repsInput.dataset.defaultPlaceholder || "").trim()
+        : "";
+      repsInput.placeholder = prescribedReps && prescribedReps !== "0"
+        ? prescribedReps
+        : historyPlaceholder(previousLog?.reps, repsInput.dataset.defaultPlaceholder || "");
     }
   });
   syncCustomWorkoutGroupedHistoryPlaceholders(logElement);
@@ -16915,6 +16918,17 @@ function removeExerciseLog(logElement) {
 }
 
 function handleWorkoutInteractions() {
+  document.addEventListener("error", (event) => {
+    const image = event.target?.closest?.("img[data-exercise-media-fallback]");
+    if (!image || image.dataset.exerciseMediaFallbackUsed === "true") return;
+    const fallback = trustedExerciseImageUrl(image.dataset.exerciseMediaFallback);
+    if (!fallback) return;
+    image.dataset.exerciseMediaFallbackUsed = "true";
+    image.removeAttribute("srcset");
+    image.removeAttribute("sizes");
+    image.src = fallback;
+  }, true);
+
   document.addEventListener("click", async (event) => {
     const exerciseMediaOpen = event.target.closest("[data-exercise-media-open]");
     const exerciseMediaClose = event.target.closest("[data-exercise-media-close]");

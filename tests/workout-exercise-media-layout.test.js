@@ -8,15 +8,14 @@ const portal = fs.readFileSync(path.join(root, "js/client-portal.js"), "utf8");
 const css = fs.readFileSync(path.join(root, "css/custom-workout-mobile-fix.css"), "utf8");
 const workoutCss = fs.readFileSync(path.join(root, "css/workout-layout.css"), "utf8");
 
-test("uses a static lazy thumbnail and defers optional motion until activation", () => {
+test("uses static branded cards with written instructions and no motion playback", () => {
   assert.match(portal, /data-exercise-media-static/);
-  assert.match(portal, /data-exercise-media-animated/);
+  assert.match(portal, /data-exercise-media-instructions/);
   assert.match(portal, /loading="lazy"[\s\S]{0,80}decoding="async"/);
-  assert.match(portal, /exercise\.motion_url \|\| exercise\.motionUrl \|\| approvedExercise\?\.motion_url/);
-  assert.match(portal, /video\.src = animatedUrl/);
-  assert.match(portal, /image\.src = animatedUrl \|\| staticUrl/);
-  assert.match(portal, /video\.muted = true/);
-  assert.match(portal, /video\.playsInline = true/);
+  assert.match(portal, /approvedExercise\?\.instructions \|\| exercise\.instructions/);
+  assert.match(portal, /image\.src = staticUrl/);
+  assert.doesNotMatch(portal, /video\.src = animatedUrl/);
+  assert.doesNotMatch(portal, /data-exercise-media-animated/);
   assert.doesNotMatch(portal, /class="exercise-media-button[\s\S]{0,500}<video/);
 });
 
@@ -24,6 +23,8 @@ test("uses the 480w branded card in lists and keeps the 768w card for the full d
   assert.match(portal, /function responsiveExerciseImageUrls/);
   assert.match(portal, /webp-768/);
   assert.match(portal, /webp-480/);
+  assert.match(portal, /data-exercise-media-fallback/);
+  assert.match(portal, /image\.removeAttribute\("srcset"\)/);
   assert.match(portal, /srcset=/);
   assert.match(portal, /data-exercise-media-static="\$\{escapeHtml\(fullUrl\)\}"/);
 });
@@ -35,11 +36,10 @@ test("crops branded list thumbnails to the Start and End photo panels", () => {
   assert.match(workoutCss, /\.workout-preview-exercise-media \.exercise-media-button-branded-crop/);
 });
 
-test("accepts motion only from approved first-party WebP and MP4 locations", () => {
-  assert.match(portal, /exercise-images\\\/approved[\s\S]*\\\.webp/);
-  assert.match(portal, /exercise-videos\\\/generated[\s\S]*\\\.mp4/);
-  assert.match(portal, /images\\\/exercises[\s\S]*\\\.webp/);
+test("loads both static artwork and instructions from the approved exercise library", () => {
   assert.match(portal, /select\("[^"]*image_url,motion_url/);
+  assert.match(portal, /image_url,motion_url,instructions/);
+  assert.match(portal, /data-exercise-media-instructions/);
 });
 
 test("reuses the photo-rich exercise key in grouped custom and assigned workouts", () => {

@@ -53,7 +53,7 @@
 .workout-preview-exercise-media .exercise-media-button { aspect-ratio:16 / 10; border-radius:11px; }
 .workout-preview-exercise-media .exercise-media-button > img { object-position:left center; }
 .workout-preview-exercise-media .exercise-media-button-branded-crop { aspect-ratio:1.16 / 1; }
-.workout-preview-exercise-media .exercise-media-play { right:6px; bottom:6px; width:31px; height:28px; }
+.workout-preview-exercise-media .exercise-media-info { right:6px; bottom:6px; width:31px; height:28px; }
 .workout-preview-exercise-copy { display:flex; min-width:0; align-items:center; gap:8px; }
 .workout-preview-exercise-copy > span:last-child { min-width:0; }
 .workout-preview-exercise-copy small { display:block; margin-top:4px; color:#70736b; font-size:11px; line-height:1.25; }

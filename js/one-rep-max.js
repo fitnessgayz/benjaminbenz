@@ -3,6 +3,10 @@
   "use strict";
 
   const percentages = [70, 75, 80, 85, 90];
+  const repetitionPercentages = {
+    1: 1, 2: .95, 3: .93, 4: .90, 5: .87, 6: .85,
+    7: .83, 8: .80, 9: .77, 10: .75, 11: .725, 12: .70
+  };
   const rowSelector = [
     ".set-row",
     ".coach-workout-set-row",
@@ -25,6 +29,7 @@
   let returnFocus;
   let lastEditedInput;
   let activeSources = [];
+  let activeTrigger;
 
   function estimate(weight, reps) {
     const safeWeight = Number(weight);
@@ -47,6 +52,34 @@
       percentage,
       weight: roundToIncrement(oneRepMax * (percentage / 100))
     }));
+  }
+
+  function percentageForTargetReps(reps) {
+    const safeReps = Number(reps);
+    if (!Number.isInteger(safeReps) || safeReps < 1 || safeReps > 30) return null;
+    return repetitionPercentages[safeReps] || (1 / (1 + (safeReps / 30)));
+  }
+
+  function trainingRecommendation(oneRepMax, repMin, repMax) {
+    const safeOneRepMax = Number(oneRepMax);
+    const safeMin = Number(repMin);
+    const safeMax = Number(repMax);
+    const highRepPercentage = percentageForTargetReps(safeMax);
+    const lowRepPercentage = percentageForTargetReps(safeMin);
+    if (!Number.isFinite(safeOneRepMax) || safeOneRepMax <= 0 || !highRepPercentage || !lowRepPercentage || safeMin > safeMax) return null;
+    const minimumPercentage = Math.min(highRepPercentage, lowRepPercentage);
+    const maximumPercentage = Math.max(highRepPercentage, lowRepPercentage);
+    const minimumWeight = roundToIncrement(safeOneRepMax * minimumPercentage);
+    const maximumWeight = roundToIncrement(safeOneRepMax * maximumPercentage);
+    return {
+      repMin: safeMin,
+      repMax: safeMax,
+      startingWeight: minimumWeight,
+      minimumWeight: Math.min(minimumWeight, maximumWeight),
+      maximumWeight: Math.max(minimumWeight, maximumWeight),
+      minimumPercentage,
+      maximumPercentage
+    };
   }
 
   function calculatorIcon() {
@@ -84,6 +117,14 @@
           <div data-one-rm-percentage-rows></div>
           <small>Rounded to the nearest 5 lb.</small>
         </section>
+        <section class="one-rm-recommendation" data-one-rm-recommendation hidden aria-labelledby="one-rm-recommendation-title">
+          <span>Program starting weight</span>
+          <strong><output data-one-rm-starting-weight>—</output> lb</strong>
+          <h3 id="one-rm-recommendation-title" data-one-rm-rep-range></h3>
+          <p data-one-rm-recommendation-detail></p>
+          <button type="button" data-one-rm-use-weight>Use for empty sets</button>
+          <small>Estimate only. Equipment, fatigue, technique, and training experience can change the appropriate load. Stop if form breaks down or you feel pain.</small>
+        </section>
         <button class="one-rm-done" type="button" data-one-rm-close>Done</button>
       </form>
     `;
@@ -94,6 +135,7 @@
     dialog.querySelector("[data-one-rm-source-select]").addEventListener("change", (event) => {
       populate(activeSources[Number(event.target.value)] || {});
     });
+    dialog.querySelector("[data-one-rm-use-weight]").addEventListener("click", useRecommendedWeight);
     dialog.addEventListener("click", (event) => {
       if (event.target === dialog) close();
     });
@@ -115,7 +157,43 @@
     if (!row) return null;
     const weight = row.querySelector(weightSelector)?.value ?? "";
     const reps = row.querySelector(repsSelector)?.value ?? "";
-    return { label: sourceLabel(row, index), weight, reps };
+    const log = row.closest?.("[data-exercise-log]");
+    return withProgram({ label: sourceLabel(row, index), weight, reps }, log);
+  }
+
+  function workingRows(log) {
+    return Array.from(log?.querySelectorAll?.(rowSelector) || []).filter((row) => {
+      const setType = row.dataset.setType || row.dataset.customGroupedSetType || row.dataset.coachGroupedSetType || "working";
+      const setNumber = Number(row.dataset.setNumber || row.dataset.customGroupedSetNumber || row.dataset.coachGroupedSetNumber || 1);
+      return setType === "working" && setNumber < 1000;
+    });
+  }
+
+  function programForLog(log) {
+    if (!log) return null;
+    const engine = global.FWB_WORKOUT_PROGRESSION;
+    if (!engine?.deriveConfig) return null;
+    let progression = null;
+    try { progression = JSON.parse(log.dataset.progressionConfig || "null"); } catch (_error) { /* Ignore malformed metadata. */ }
+    const name = log.querySelector?.("[data-exercise-name-input]")?.value || log.dataset.exerciseName || "";
+    const config = engine.deriveConfig({
+      name,
+      prescription: log.dataset.exercisePrescription || "",
+      progression
+    }, Math.max(workingRows(log).length, 1));
+    return config?.enabled && config.unit === "lb" ? config : null;
+  }
+
+  function withProgram(source, log, exerciseIndex) {
+    const config = programForLog(log);
+    return {
+      ...source,
+      exerciseIndex: source.exerciseIndex ?? exerciseIndex,
+      exerciseCode: source.exerciseCode || log?.dataset?.exerciseCode || "",
+      exerciseName: source.exerciseName || log?.querySelector?.("[data-exercise-name-input]")?.value || log?.dataset?.exerciseName || source.label || "Exercise",
+      repMin: Number(source.repMin || config?.rep_min) || null,
+      repMax: Number(source.repMax || config?.rep_max) || null
+    };
   }
 
   function parsedSources(trigger) {
@@ -158,9 +236,11 @@
     const result = estimate(weight, reps);
     const resultPanel = calculator.querySelector("[data-one-rm-result]");
     const percentagesPanel = calculator.querySelector("[data-one-rm-percentages]");
+    const recommendationPanel = calculator.querySelector("[data-one-rm-recommendation]");
     const prompt = calculator.querySelector("[data-one-rm-prompt]");
     resultPanel.hidden = result === null;
     percentagesPanel.hidden = result === null;
+    recommendationPanel.hidden = true;
     prompt.hidden = result !== null;
     if (result === null) return;
     calculator.querySelector("[data-one-rm-output]").value = String(roundToIncrement(result));
@@ -170,12 +250,26 @@
     calculator.querySelector("[data-one-rm-percentage-rows]").innerHTML = trainingWeights(result)
       .map(({ percentage, weight: trainingWeight }) => `<div><span>${percentage}%</span><strong>${trainingWeight} lb</strong></div>`)
       .join("");
+    const source = activeSources[Number(calculator.querySelector("[data-one-rm-source-select]").value) || 0] || {};
+    const recommendation = trainingRecommendation(result, source.repMin, source.repMax);
+    if (recommendation) {
+      recommendationPanel.hidden = false;
+      calculator.querySelector("[data-one-rm-starting-weight]").value = String(recommendation.startingWeight);
+      calculator.querySelector("[data-one-rm-rep-range]").textContent = `For ${recommendation.repMin}–${recommendation.repMax} reps`;
+      calculator.querySelector("[data-one-rm-recommendation-detail]").textContent =
+        `About ${Math.round(recommendation.minimumPercentage * 100)}–${Math.round(recommendation.maximumPercentage * 100)}% of estimated 1RM ` +
+        `(${recommendation.minimumWeight}–${recommendation.maximumWeight} lb). Start at the lighter end, follow the program’s effort target, and adjust gradually while keeping good form.`;
+      calculator.querySelector("[data-one-rm-use-weight]").disabled = !targetLogForSource(source);
+    }
   }
 
   function open(trigger, suppliedSources) {
     const calculator = ensureDialog();
     returnFocus = trigger || document.activeElement;
-    activeSources = (suppliedSources?.length ? suppliedSources : sourcesNear(trigger)).filter(Boolean);
+    activeTrigger = trigger;
+    const directLog = trigger?.closest?.("[data-exercise-log]");
+    activeSources = (suppliedSources?.length ? suppliedSources : sourcesNear(trigger)).filter(Boolean)
+      .map((source, index) => withProgram(source, directLog, source.exerciseIndex ?? index));
     if (!activeSources.length) activeSources = [{}];
     const sourceField = calculator.querySelector("[data-one-rm-source-field]");
     const sourceSelect = calculator.querySelector("[data-one-rm-source-select]");
@@ -207,6 +301,42 @@
     }
   }
 
+  function targetLogForSource(source) {
+    const direct = activeTrigger?.closest?.("[data-exercise-log]");
+    if (direct && (!source.exerciseCode || direct.dataset.exerciseCode === source.exerciseCode)) return direct;
+    const scope = activeTrigger?.closest?.("[data-custom-workout-grouped], [data-coach-workout-group-card], [data-custom-workout-carousel]")
+      || activeTrigger?.closest?.(".client-workout-panel, .coach-workout-panel") || document;
+    const logs = Array.from(scope?.querySelectorAll?.("[data-exercise-log]") || []);
+    if (Number.isInteger(Number(source.exerciseIndex)) && logs[Number(source.exerciseIndex)]) return logs[Number(source.exerciseIndex)];
+    return logs.find((log) => source.exerciseCode && log.dataset.exerciseCode === source.exerciseCode)
+      || logs.find((log) => (log.dataset.exerciseName || "").trim().toLowerCase() === String(source.exerciseName || source.label || "").trim().toLowerCase())
+      || null;
+  }
+
+  function useRecommendedWeight() {
+    const calculator = ensureDialog();
+    const source = activeSources[Number(calculator.querySelector("[data-one-rm-source-select]").value) || 0] || {};
+    const result = estimate(
+      calculator.querySelector("[data-one-rm-weight]").value,
+      calculator.querySelector("[data-one-rm-reps]").value
+    );
+    const recommendation = trainingRecommendation(result, source.repMin, source.repMax);
+    const log = targetLogForSource(source);
+    if (!recommendation || !log) return 0;
+    let changed = 0;
+    workingRows(log).forEach((row) => {
+      const complete = row.classList?.contains?.("is-complete") || row.querySelector?.("[data-complete-set]")?.getAttribute?.("aria-pressed") === "true";
+      const input = row.querySelector?.(weightSelector);
+      if (complete || !input || String(input.value || "").trim()) return;
+      input.value = String(recommendation.startingWeight);
+      input.dispatchEvent?.(new Event("input", { bubbles: true }));
+      input.dispatchEvent?.(new Event("change", { bubbles: true }));
+      changed += 1;
+    });
+    if (changed) close();
+    return changed;
+  }
+
   document.addEventListener("input", (event) => {
     if (event.target?.matches?.(`${weightSelector},${repsSelector}`)) lastEditedInput = event.target;
   });
@@ -217,5 +347,8 @@
     open(trigger);
   });
 
-  global.FWBOneRepMax = { estimate, roundToIncrement, trainingWeights, calculatorIcon, open };
+  global.FWBOneRepMax = {
+    estimate, roundToIncrement, trainingWeights, percentageForTargetReps,
+    trainingRecommendation, programForLog, calculatorIcon, open
+  };
 })(window, document);

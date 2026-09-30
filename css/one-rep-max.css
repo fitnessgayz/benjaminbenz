@@ -88,7 +88,7 @@
 .one-rm-dialog :is(input, select) { box-sizing: border-box; width: 100%; min-height: 50px; padding: 9px 11px; border: 1px solid #c9cdc5; border-radius: 11px; background: #fff; color: #111411; font: 800 1rem/1 Inter, sans-serif; text-transform: none; }
 .one-rm-dialog :is(input, select):focus { border-color: #111411; outline: 3px solid #d7ff3f; outline-offset: 1px; }
 .one-rm-result { display: grid; padding: 18px; gap: 5px; border-radius: 16px; background: #111411; color: #fff; text-align: center; }
-.one-rm-result[hidden], .one-rm-percentages[hidden], .one-rm-prompt[hidden] { display: none; }
+.one-rm-result[hidden], .one-rm-percentages[hidden], .one-rm-recommendation[hidden], .one-rm-prompt[hidden] { display: none; }
 .one-rm-result > span { color: #cdd2ca; font-size: .72rem; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; }
 .one-rm-result strong { color: #d7ff3f; font-size: 2.25rem; font-variant-numeric: tabular-nums; font-weight: 900; line-height: 1; }
 .one-rm-result small { margin-top: 4px; color: #cdd2ca; font-size: .72rem; line-height: 1.35; }
@@ -99,6 +99,14 @@
 .one-rm-percentages span { color: #687064; font-size: .65rem; font-weight: 800; }
 .one-rm-percentages strong { font-size: .78rem; font-variant-numeric: tabular-nums; }
 .one-rm-percentages small { color: #687064; font-size: .68rem; }
+.one-rm-recommendation { display: grid; gap: 10px; padding: 18px; border: 1px solid #d7d9d2; border-radius: 16px; background: #fff; }
+.one-rm-recommendation > span { color: #687064; font-size: .7rem; font-weight: 900; letter-spacing: .06em; text-transform: uppercase; }
+.one-rm-recommendation > strong { color: #355f24; font-size: 2rem; font-variant-numeric: tabular-nums; font-weight: 900; line-height: 1; }
+.one-rm-recommendation h3, .one-rm-recommendation p { margin: 0; }
+.one-rm-recommendation h3 { font-size: 1rem; font-weight: 900; }
+.one-rm-recommendation p, .one-rm-recommendation small { color: #687064; font-size: .78rem; line-height: 1.45; }
+.one-rm-recommendation button { min-height: 48px; padding: 10px 14px; border: 1px solid #111411; border-radius: 11px; background: #d7ff3f; color: #111411; font: 900 .9rem/1.2 Inter, sans-serif; cursor: pointer; }
+.one-rm-recommendation button:disabled { cursor: default; opacity: .48; }
 .one-rm-done { min-height: 50px; border: 1px solid #111411; border-radius: 12px; background: #d7ff3f; color: #111411; font: 900 1rem/1 Inter, sans-serif; cursor: pointer; }
 
 @media (max-width: 600px) {
