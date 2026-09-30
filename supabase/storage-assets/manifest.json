@@ -1,5 +1,9 @@
 {
   "version": 1,
+  "migrations": [
+    "20260930110000_add_barbell_upright_row_media.sql",
+    "20260930180001_assign_bulgarian_split_squat_video.sql"
+  ],
   "assets": [
     {
       "source": "supabase/storage-assets/exercise-images/approved/2026-09-29/png/barbell-upright-row.png",

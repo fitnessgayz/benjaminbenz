@@ -47,6 +47,10 @@ function apiHeaders(secretKey, extra = {}) {
 
 function validateManifest() {
   assert(manifest.version === 1, "Manifest version must be 1.");
+  assert(Array.isArray(manifest.migrations), "Manifest migrations must be an array.");
+  for (const migration of manifest.migrations) {
+    assert(/^\d{14}_[a-z0-9_]+[.]sql$/.test(migration), `Invalid migration filename: ${migration}`);
+  }
   assert(Array.isArray(manifest.assets) && manifest.assets.length > 0, "Manifest must contain assets.");
   assert(Array.isArray(manifest.exerciseMedia), "Manifest exerciseMedia must be an array.");
 

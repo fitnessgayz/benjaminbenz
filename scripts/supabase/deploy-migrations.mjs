@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { readdir, readFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
 
@@ -15,6 +15,9 @@ if (accessToken.length < 20) throw new Error("Set SUPABASE_ACCESS_TOKEN.");
 if (!/^[a-z0-9]{20}$/.test(projectId)) throw new Error("Set a valid SUPABASE_PROJECT_ID.");
 
 const migrationDirectory = path.resolve(process.cwd(), "supabase/migrations");
+const deploymentManifest = JSON.parse(
+  await readFile(path.resolve(process.cwd(), "supabase/storage-assets/manifest.json"), "utf8"),
+);
 const migrationPattern = /^(\d{14})_(.+)[.]sql$/;
 const requestHeaders = {
   Authorization: `Bearer ${accessToken}`,
@@ -35,9 +38,14 @@ async function managementRequest(endpoint, options = {}) {
   return text ? JSON.parse(text) : {};
 }
 
-const localFiles = (await readdir(migrationDirectory))
-  .filter((file) => migrationPattern.test(file))
-  .sort();
+if (!Array.isArray(deploymentManifest.migrations)) {
+  throw new Error("The deployment manifest must list the migrations to apply.");
+}
+const localFiles = [...deploymentManifest.migrations].sort();
+for (const file of localFiles) {
+  if (!migrationPattern.test(file)) throw new Error(`Invalid migration filename: ${file}`);
+  await readFile(path.join(migrationDirectory, file), "utf8");
+}
 const remoteMigrations = await managementRequest(
   `/v1/projects/${encodeURIComponent(projectId)}/database/migrations`,
 );
