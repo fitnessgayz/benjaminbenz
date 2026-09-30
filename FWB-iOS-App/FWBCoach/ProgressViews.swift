@@ -31,6 +31,7 @@ struct ProgressDashboardView: View {
             }
         }
         .navigationTitle("Progress")
+        .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(Color.fwbBackground, for: .navigationBar)
         .refreshable {
             await store.reload(email: clientEmail)
@@ -75,16 +76,16 @@ private struct ProgressDashboardContent: View {
 
     var body: some View {
         ScrollView {
-            LazyVStack(alignment: .leading, spacing: 18) {
+            LazyVStack(alignment: .leading, spacing: 16) {
                 ProgressHero()
-                ProgressSharePanel(summary: shareSummary)
                 ProgressOverviewGrid(snapshot: snapshot)
-                TrainingVolumeCard(points: snapshot.volumePoints)
-                ExerciseProgressSection(records: snapshot.exerciseRecords)
                 PersonalRecordsSection(records: snapshot.exerciseRecords)
+                ExerciseProgressSection(records: snapshot.exerciseRecords)
+                TrainingVolumeCard(points: snapshot.volumePoints)
+                ProgressSharePanel(summary: shareSummary)
                 AchievementSection(achievements: snapshot.achievements)
             }
-            .padding(20)
+            .padding(16)
         }
     }
 }
@@ -92,19 +93,18 @@ private struct ProgressDashboardContent: View {
 private struct ProgressHero: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("PERFORMANCE")
-                .font(.footnote.bold())
-                .tracking(1.3)
-                .foregroundStyle(Color.fwbLime)
+            Text("Client dashboard")
+                .font(FWBFont.caption.weight(.semibold))
+                .foregroundStyle(Color.fwbMuted)
 
-            Text("BREAK RECORDS.\nHIT YOUR GOALS.")
-                .font(.system(size: 38, weight: .black))
-                .fontWidth(.condensed)
+            Text("Progress")
+                .font(FWBFont.title.weight(.bold))
+                .tracking(-0.6)
                 .foregroundStyle(Color.fwbWarmWhite)
-                .minimumScaleFactor(0.75)
+                .fixedSize(horizontal: false, vertical: true)
 
-            Text("Every finished workout builds your personal performance dashboard.")
-                .font(.subheadline)
+            Text("Your training, personal bests, and progress over time.")
+                .font(FWBFont.subheadline)
                 .foregroundStyle(Color.fwbMuted)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -114,31 +114,32 @@ private struct ProgressHero: View {
 private struct ProgressOverviewGrid: View {
     let snapshot: ProgressSnapshot
 
-    private let columns = [
-        GridItem(.flexible(), spacing: 10),
-        GridItem(.flexible(), spacing: 10)
-    ]
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    private var columns: [GridItem] {
+        Array(repeating: GridItem(.flexible(), spacing: 12), count: dynamicTypeSize.isAccessibilitySize ? 1 : 2)
+    }
 
     var body: some View {
-        LazyVGrid(columns: columns, spacing: 10) {
+        LazyVGrid(columns: columns, spacing: 12) {
             ProgressMetricCard(
                 icon: "checkmark.circle.fill",
-                label: "WORKOUTS",
+                label: "Workouts",
                 value: "\(snapshot.workoutCount)"
             )
             ProgressMetricCard(
                 icon: "square.stack.3d.up.fill",
-                label: "SETS LOGGED",
+                label: "Sets logged",
                 value: "\(snapshot.totalSets)"
             )
             ProgressMetricCard(
                 icon: "scalemass.fill",
-                label: "TOTAL VOLUME",
+                label: "Total volume",
                 value: ProgressFormat.compactWeight(snapshot.totalVolume)
             )
             ProgressMetricCard(
                 icon: "trophy.fill",
-                label: "PERSONAL BESTS",
+                label: "Personal bests",
                 value: "\(snapshot.personalBestCount)"
             )
         }
@@ -151,37 +152,37 @@ private struct ProgressMetricCard: View {
     let value: String
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: 10) {
             Image(systemName: icon)
-                .font(.headline.weight(.black))
+                .font(FWBFont.headline.weight(.bold))
                 .foregroundStyle(Color.fwbLime)
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(label)
-                    .font(.footnote.bold())
-                    .tracking(0.8)
+                    .font(FWBFont.footnote.bold())
                     .foregroundStyle(Color.fwbMuted)
                     .lineLimit(2)
                     .minimumScaleFactor(0.8)
                     .fixedSize(horizontal: false, vertical: true)
                 Text(value)
-                    .font(.title2.weight(.black))
-                    .fontWidth(.condensed)
+                    .font(FWBFont.title2.weight(.bold))
                     .foregroundStyle(Color.fwbWarmWhite)
                     .lineLimit(1)
                     .minimumScaleFactor(0.65)
             }
         }
-        .frame(maxWidth: .infinity, minHeight: 104, alignment: .leading)
+        .frame(maxWidth: .infinity, minHeight: 80, alignment: .leading)
         .fwbCard()
         .accessibilityElement(children: .combine)
     }
 }
 
 private struct TrainingVolumeCard: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     enum Range: String, CaseIterable, Identifiable {
-        case recent = "RECENT"
-        case all = "ALL TIME"
+        case recent = "Recent"
+        case all = "All time"
 
         var id: String { rawValue }
     }
@@ -189,6 +190,10 @@ private struct TrainingVolumeCard: View {
     let points: [ProgressVolumePoint]
 
     @State private var range: Range = .recent
+
+    private var adaptiveControlLayout: AnyLayout {
+        dynamicTypeSize.isAccessibilitySize ? AnyLayout(VStackLayout(spacing: 8)) : AnyLayout(HStackLayout(spacing: 8))
+    }
 
     private var displayedPoints: [ProgressVolumePoint] {
         switch range {
@@ -201,38 +206,35 @@ private struct TrainingVolumeCard: View {
         VStack(alignment: .leading, spacing: 16) {
             HStack(alignment: .top, spacing: 12) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("TRAINING VOLUME")
-                        .font(.footnote.bold())
-                        .tracking(1.1)
+                    Text("Training volume")
+                        .font(FWBFont.footnote.bold())
                         .foregroundStyle(Color.fwbLime)
                     Text("Workload trend")
-                        .font(.title3.weight(.black))
-                        .fontWidth(.condensed)
+                        .font(FWBFont.title3.weight(.bold))
                         .foregroundStyle(Color.fwbWarmWhite)
                 }
 
                 Spacer()
 
                 Text(ProgressFormat.compactWeight(displayedPoints.reduce(0) { $0 + $1.volume }))
-                    .font(.headline.weight(.black))
+                    .font(FWBFont.headline.weight(.bold))
                     .foregroundStyle(Color.fwbWarmWhite)
                     .accessibilityLabel("Total displayed volume")
             }
 
-            HStack(spacing: 7) {
+            adaptiveControlLayout {
                 ForEach(Range.allCases) { option in
                     Button {
                         range = option
                     } label: {
                         Text(option.rawValue)
-                            .font(.footnote.bold())
-                            .tracking(0.5)
+                            .font(FWBFont.footnote.bold())
                             .foregroundStyle(range == option ? Color.black : Color.fwbWarmWhite)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 8)
-                            .frame(minHeight: 36)
-                            .background(range == option ? Color.fwbAccentFill : Color.fwbSurface)
-                            .overlay { Rectangle().stroke(Color.fwbLine, lineWidth: 1) }
+                            .frame(minHeight: 44)
+                            .background(range == option ? Color.fwbAccentFill : Color.fwbSurface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                            .overlay { RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(Color.fwbLine, lineWidth: 1) }
                     }
                     .buttonStyle(.plain)
                     .accessibilityAddTraits(range == option ? .isSelected : [])
@@ -241,7 +243,7 @@ private struct TrainingVolumeCard: View {
 
             if displayedPoints.allSatisfy({ $0.volume <= 0 }) {
                 Text("Log weight and reps to start your volume chart.")
-                    .font(.subheadline)
+                    .font(FWBFont.subheadline)
                     .foregroundStyle(Color.fwbMuted)
                     .frame(maxWidth: .infinity, minHeight: 150, alignment: .center)
             } else {
@@ -296,7 +298,7 @@ private struct TrainingVolumeCard: View {
             }
 
             Text(displayedPoints.count == 1 ? "Finish another workout to create a trend line." : "Based on \(displayedPoints.count) logged training days.")
-                .font(.footnote)
+                .font(FWBFont.footnote)
                 .foregroundStyle(Color.fwbMuted)
         }
         .fwbCard()
@@ -316,14 +318,14 @@ private struct ExerciseProgressSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             ProgressSectionHeading(
-                kicker: "EXERCISE PROGRESS",
+                kicker: "Exercise progress",
                 title: "Where you started vs. now",
                 detail: "Compare your first logged result with your most recent performance."
             )
 
             if progressRecords.isEmpty {
                 Text("Log the same exercise in another workout to see how far you’ve come.")
-                    .font(.subheadline)
+                    .font(FWBFont.subheadline)
                     .foregroundStyle(Color.fwbMuted)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .fwbCard()
@@ -342,48 +344,53 @@ private struct ExerciseProgressSection: View {
 }
 
 private struct ExerciseProgressComparisonCard: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     let record: ProgressExerciseRecord
+
+    private var comparisonLayout: AnyLayout {
+        dynamicTypeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 12)) : AnyLayout(HStackLayout(spacing: 12))
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .firstTextBaseline, spacing: 10) {
                 Text(record.name.fwbTitleCased)
-                    .font(.headline.weight(.black))
-                    .fontWidth(.condensed)
+                    .font(FWBFont.headline.weight(.bold))
                     .foregroundStyle(Color.fwbWarmWhite)
                     .lineLimit(2)
 
                 Spacer(minLength: 4)
 
                 Text(record.progressChangeDescription)
-                    .font(.footnote.weight(.black))
+                    .font(FWBFont.footnote.weight(.bold))
                     .foregroundStyle(record.progressChange > 0 ? Color.black : Color.fwbWarmWhite)
                     .padding(.horizontal, 9)
                     .padding(.vertical, 6)
-                    .background(record.progressChange > 0 ? Color.fwbAccentFill : Color.fwbSurface)
-                    .overlay { Rectangle().stroke(Color.fwbLine, lineWidth: 1) }
+                    .background(record.progressChange > 0 ? Color.fwbAccentFill : Color.fwbSurface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .overlay { RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(Color.fwbLine, lineWidth: 1) }
             }
 
-            HStack(alignment: .center, spacing: 12) {
+            comparisonLayout {
                 ExerciseProgressValue(
-                    label: "STARTED",
+                    label: "Started",
                     value: record.startingProgressDescription,
                     date: record.startingProgressPoint.map(\.date)
                 )
 
-                Image(systemName: "arrow.right")
-                    .font(.footnote.weight(.black))
+                Image(systemName: dynamicTypeSize.isAccessibilitySize ? "arrow.down" : "arrow.right")
+                    .font(FWBFont.footnote.weight(.bold))
                     .foregroundStyle(Color.fwbLime)
                     .accessibilityHidden(true)
 
                 ExerciseProgressValue(
-                    label: "NOW",
+                    label: "Now",
                     value: record.latestProgressDescription,
                     date: record.latestProgressPoint.map(\.date)
                 )
 
                 Image(systemName: "chevron.right")
-                    .font(.footnote.bold())
+                    .font(FWBFont.footnote.bold())
                     .foregroundStyle(Color.fwbMuted)
                     .accessibilityHidden(true)
             }
@@ -403,18 +410,16 @@ private struct ExerciseProgressValue: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(label)
-                .font(.caption2.bold())
-                .tracking(0.8)
+                .font(FWBFont.caption2.bold())
                 .foregroundStyle(Color.fwbMuted)
             Text(value)
-                .font(.title3.weight(.black))
-                .fontWidth(.condensed)
+                .font(FWBFont.title3.weight(.bold))
                 .foregroundStyle(Color.fwbWarmWhite)
                 .lineLimit(1)
                 .minimumScaleFactor(0.72)
             if let date {
                 Text(ProgressFormat.displayDate(date))
-                    .font(.caption)
+                    .font(FWBFont.caption)
                     .foregroundStyle(Color.fwbMuted)
                     .lineLimit(1)
                     .minimumScaleFactor(0.75)
@@ -430,14 +435,14 @@ private struct PersonalRecordsSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             ProgressSectionHeading(
-                kicker: "PERSONAL RECORDS",
-                title: "Your strongest lifts",
+                kicker: "Exercise progress",
+                title: "Personal bests",
                 detail: "Open an exercise to see its performance history."
             )
 
             if records.isEmpty {
                 Text("Log weight or reps to establish your first personal best.")
-                    .font(.subheadline)
+                    .font(FWBFont.subheadline)
                     .foregroundStyle(Color.fwbMuted)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .fwbCard()
@@ -461,29 +466,28 @@ private struct PersonalRecordCard: View {
     var body: some View {
         HStack(spacing: 14) {
             Image(systemName: "trophy.fill")
-                .font(.headline.weight(.black))
+                .font(FWBFont.headline.weight(.bold))
                 .foregroundStyle(Color.black)
                 .frame(width: 44, height: 44)
-                .background(Color.fwbAccentFill, in: Rectangle())
+                .background(Color.fwbAccentFill, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(record.name.fwbTitleCased)
-                    .font(.headline.weight(.black))
-                    .fontWidth(.condensed)
+                    .font(FWBFont.headline.weight(.bold))
                     .foregroundStyle(Color.fwbWarmWhite)
                     .lineLimit(2)
                 Text(record.bestSetDescription)
-                    .font(.subheadline.weight(.bold))
+                    .font(FWBFont.subheadline.weight(.bold))
                     .foregroundStyle(Color.fwbLime)
                 Text("\(record.workoutCount) workouts · Last done \(ProgressFormat.displayDate(record.latestDate))")
-                    .font(.footnote)
+                    .font(FWBFont.footnote)
                     .foregroundStyle(Color.fwbMuted)
             }
 
             Spacer(minLength: 4)
 
             Image(systemName: "chevron.right")
-                .font(.footnote.bold())
+                .font(FWBFont.footnote.bold())
                 .foregroundStyle(Color.fwbMuted)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -503,7 +507,7 @@ private struct AchievementSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             ProgressSectionHeading(
-                kicker: "ACHIEVEMENTS",
+                kicker: "Achievements",
                 title: "Keep building momentum",
                 detail: "\(unlockedCount) of \(achievements.count) milestones unlocked"
             )
@@ -521,27 +525,25 @@ private struct AchievementCard: View {
     var body: some View {
         HStack(spacing: 14) {
             Image(systemName: achievement.icon)
-                .font(.headline.weight(.black))
+                .font(FWBFont.headline.weight(.bold))
                 .foregroundStyle(achievement.isUnlocked ? Color.black : Color.fwbMuted)
                 .frame(width: 44, height: 44)
-                .background(achievement.isUnlocked ? Color.fwbAccentFill : Color.fwbSurface, in: Rectangle())
-                .overlay { Rectangle().stroke(Color.fwbLine, lineWidth: 1) }
+                .background(achievement.isUnlocked ? Color.fwbAccentFill : Color.fwbSurface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .overlay { RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(Color.fwbLine, lineWidth: 1) }
 
             VStack(alignment: .leading, spacing: 7) {
                 HStack {
                     Text(achievement.title)
-                        .font(.headline.weight(.black))
-                        .fontWidth(.condensed)
+                        .font(FWBFont.headline.weight(.bold))
                         .foregroundStyle(achievement.isUnlocked ? Color.fwbWarmWhite : Color.fwbMuted)
                     Spacer()
-                    Text(achievement.isUnlocked ? "UNLOCKED" : achievement.progressLabel)
-                        .font(.footnote.bold())
-                        .tracking(0.6)
+                    Text(achievement.isUnlocked ? "Unlocked" : achievement.progressLabel)
+                        .font(FWBFont.footnote.bold())
                         .foregroundStyle(achievement.isUnlocked ? Color.fwbLime : Color.fwbMuted)
                 }
 
                 Text(achievement.detail)
-                    .font(.footnote)
+                    .font(FWBFont.footnote)
                     .foregroundStyle(Color.fwbMuted)
 
                 GeometryReader { geometry in
@@ -569,25 +571,25 @@ private struct ProgressSectionHeading: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 5) {
             Text(kicker)
-                .font(.footnote.bold())
-                .tracking(1.1)
-                .foregroundStyle(Color.fwbLime)
+                .font(FWBFont.caption.weight(.semibold))
+                .foregroundStyle(Color.fwbMuted)
             Text(title)
-                .font(.title2.weight(.black))
-                .fontWidth(.condensed)
+                .font(FWBFont.title3.weight(.bold))
                 .foregroundStyle(Color.fwbWarmWhite)
             Text(detail)
-                .font(.footnote)
+                .font(FWBFont.footnote)
                 .foregroundStyle(Color.fwbMuted)
         }
     }
 }
 
 private struct ProgressExerciseDetailView: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     enum Metric: String, CaseIterable, Identifiable {
-        case maxWeight = "MAX WEIGHT"
-        case estimatedOneRepMax = "EST. 1RM"
-        case volume = "VOLUME"
+        case maxWeight = "Max weight"
+        case estimatedOneRepMax = "Est. 1RM"
+        case volume = "Volume"
 
         var id: String { rawValue }
     }
@@ -595,6 +597,14 @@ private struct ProgressExerciseDetailView: View {
     let record: ProgressExerciseRecord
 
     @State private var metric: Metric = .maxWeight
+
+    private var adaptiveControlLayout: AnyLayout {
+        dynamicTypeSize.isAccessibilitySize ? AnyLayout(VStackLayout(spacing: 8)) : AnyLayout(HStackLayout(spacing: 8))
+    }
+
+    private var detailColumns: [GridItem] {
+        Array(repeating: GridItem(.flexible(), spacing: 12), count: dynamicTypeSize.isAccessibilitySize ? 1 : 2)
+    }
 
     private var displayPoints: [ProgressExercisePoint] {
         record.points.filter { value(for: $0) > 0 }
@@ -607,52 +617,47 @@ private struct ProgressExerciseDetailView: View {
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 16) {
                     VStack(alignment: .leading, spacing: 7) {
-                        Text("PERSONAL PERFORMANCE")
-                            .font(.footnote.bold())
-                            .tracking(1.2)
+                        Text("Personal performance")
+                            .font(FWBFont.footnote.bold())
                             .foregroundStyle(Color.fwbLime)
                         Text(record.name.fwbTitleCased)
-                            .font(.largeTitle.weight(.black))
-                            .fontWidth(.condensed)
+                            .font(FWBFont.title.weight(.bold))
                             .foregroundStyle(Color.fwbWarmWhite)
                     }
 
                     LazyVGrid(
-                        columns: [
-                            GridItem(.flexible(), spacing: 10),
-                            GridItem(.flexible(), spacing: 10)
-                        ],
-                        spacing: 10
+                        columns: detailColumns,
+                        spacing: 12
                     ) {
-                        ProgressDetailMetric(label: "BEST SET", value: record.bestSetDescription)
-                        ProgressDetailMetric(label: "WORKOUTS", value: "\(record.workoutCount)")
-                        ProgressDetailMetric(label: "VOLUME", value: ProgressFormat.compactWeight(record.totalVolume))
+                        ProgressDetailMetric(label: "Best set", value: record.bestSetDescription)
+                        ProgressDetailMetric(label: "Workouts", value: "\(record.workoutCount)")
+                        ProgressDetailMetric(label: "Volume", value: ProgressFormat.compactWeight(record.totalVolume))
                     }
                     .fwbCard()
 
                     VStack(alignment: .leading, spacing: 16) {
-                        HStack(spacing: 7) {
+                        adaptiveControlLayout {
                             ForEach(Metric.allCases) { option in
                                 Button {
                                     metric = option
                                 } label: {
                                     Text(option.rawValue)
-                                        .font(.footnote.bold())
-                                        .tracking(0.35)
+                                        .font(FWBFont.footnote.bold())
                                         .foregroundStyle(metric == option ? Color.black : Color.fwbWarmWhite)
                                         .frame(maxWidth: .infinity)
                                         .padding(.vertical, 8)
-                                        .frame(minHeight: 38)
-                                        .background(metric == option ? Color.fwbAccentFill : Color.fwbSurface)
-                                        .overlay { Rectangle().stroke(Color.fwbLine, lineWidth: 1) }
+                                        .frame(minHeight: 44)
+                                        .background(metric == option ? Color.fwbAccentFill : Color.fwbSurface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                                        .overlay { RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(Color.fwbLine, lineWidth: 1) }
                                 }
                                 .buttonStyle(.plain)
+                                .accessibilityAddTraits(metric == option ? .isSelected : [])
                             }
                         }
 
                         if displayPoints.isEmpty {
                             Text("No values have been logged for this metric yet.")
-                                .font(.subheadline)
+                                .font(FWBFont.subheadline)
                                 .foregroundStyle(Color.fwbMuted)
                                 .frame(maxWidth: .infinity, minHeight: 170, alignment: .center)
                         } else {
@@ -691,7 +696,7 @@ private struct ProgressExerciseDetailView: View {
                     .fwbCard()
 
                     ProgressSectionHeading(
-                        kicker: "WORKOUT HISTORY",
+                        kicker: "Workout history",
                         title: "Recent performances",
                         detail: "\(record.workoutCount) logged workouts"
                     )
@@ -700,7 +705,7 @@ private struct ProgressExerciseDetailView: View {
                         ProgressPerformanceRow(point: point)
                     }
                 }
-                .padding(20)
+                .padding(16)
             }
         }
         .navigationTitle("Exercise Progress")
@@ -725,13 +730,12 @@ private struct ProgressDetailMetric: View {
     var body: some View {
         VStack(spacing: 5) {
             Text(label)
-                .font(.footnote.bold())
-                .tracking(0.6)
+                .font(FWBFont.footnote.bold())
                 .foregroundStyle(Color.fwbMuted)
                 .lineLimit(1)
                 .minimumScaleFactor(0.72)
             Text(value)
-                .font(.footnote.weight(.black))
+                .font(FWBFont.footnote.weight(.bold))
                 .foregroundStyle(Color.fwbWarmWhite)
                 .lineLimit(1)
                 .minimumScaleFactor(0.72)
@@ -747,31 +751,28 @@ private struct ProgressPerformanceRow: View {
         HStack(spacing: 14) {
             VStack(spacing: 2) {
                 Text(ProgressFormat.day(point.date))
-                    .font(.title3.weight(.black))
-                    .fontWidth(.condensed)
+                    .font(FWBFont.title3.weight(.bold))
                     .foregroundStyle(Color.fwbWarmWhite)
                 Text(ProgressFormat.month(point.date).uppercased())
-                    .font(.footnote.bold())
-                    .tracking(0.7)
+                    .font(FWBFont.footnote.bold())
                     .foregroundStyle(Color.fwbLime)
             }
             .frame(width: 44, height: 48)
-            .background(Color.fwbSurface, in: Rectangle())
+            .background(Color.fwbSurface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(point.workoutTitle.fwbTitleCased)
-                    .font(.headline.weight(.black))
-                    .fontWidth(.condensed)
+                    .font(FWBFont.headline.weight(.bold))
                     .foregroundStyle(Color.fwbWarmWhite)
                 Text(point.bestSetDescription)
-                    .font(.footnote.weight(.bold))
+                    .font(FWBFont.footnote.weight(.bold))
                     .foregroundStyle(Color.fwbLime)
             }
 
             Spacer()
 
             Text(ProgressFormat.compactWeight(point.volume))
-                .font(.footnote.weight(.bold))
+                .font(FWBFont.footnote.weight(.bold))
                 .foregroundStyle(Color.fwbMuted)
         }
         .frame(maxWidth: .infinity, alignment: .leading)

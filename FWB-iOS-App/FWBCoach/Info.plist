@@ -30,6 +30,10 @@
 	<string>FWB Training saves completed strength and cardio workouts to Apple Health so your activity history stays together.</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<key>SentryDSN</key>
+	<string>$(SENTRY_DSN)</string>
+	<key>SentryEnvironment</key>
+	<string>$(SENTRY_ENVIRONMENT)</string>
 	<key>UILaunchScreen</key>
 	<dict/>
 	<key>UIRequiresFullScreen</key>
@@ -37,6 +41,10 @@
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
+	</array>
+	<key>UIAppFonts</key>
+	<array>
+		<string>Inter.ttf</string>
 	</array>
 </dict>
 </plist>

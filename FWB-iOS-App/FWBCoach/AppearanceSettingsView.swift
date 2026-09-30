@@ -65,20 +65,20 @@ struct AppAppearancePreference {
 }
 
 struct AppearanceSettingsView: View {
-    @AppStorage(AppAppearancePreference.modeKey) private var storedMode = AppAppearanceMode.dark.rawValue
+    @AppStorage(AppAppearancePreference.modeKey) private var storedMode = AppAppearanceMode.light.rawValue
     @AppStorage(AppAppearancePreference.lightStartKey) private var lightStartMinute = AppAppearancePreference.defaultLightStart
     @AppStorage(AppAppearancePreference.darkStartKey) private var darkStartMinute = AppAppearancePreference.defaultDarkStart
 
     private var selectedMode: Binding<AppAppearanceMode> {
         Binding(
-            get: { AppAppearanceMode(rawValue: storedMode) ?? .dark },
+            get: { AppAppearanceMode(rawValue: storedMode) ?? .light },
             set: { storedMode = $0.rawValue }
         )
     }
 
     private var preference: AppAppearancePreference {
         AppAppearancePreference(
-            mode: AppAppearanceMode(rawValue: storedMode) ?? .dark,
+            mode: AppAppearanceMode(rawValue: storedMode) ?? .light,
             lightStartMinute: lightStartMinute,
             darkStartMinute: darkStartMinute
         )
@@ -97,7 +97,7 @@ struct AppearanceSettingsView: View {
                         scheduleCard
                     }
                 }
-                .padding(20)
+                .padding(FWBLayout.pagePadding)
             }
         }
         .navigationTitle("Appearance")
@@ -108,13 +108,13 @@ struct AppearanceSettingsView: View {
     private var modeCard: some View {
         VStack(alignment: .leading, spacing: 16) {
             Label("COLOR MODE", systemImage: "circle.lefthalf.filled")
-                .font(.footnote.bold())
+                .font(FWBFont.footnote.bold())
                 .tracking(1)
                 .foregroundStyle(Color.fwbLime)
 
             Text("Choose how FWB looks")
-                .font(.title3.weight(.black))
-                .fontWidth(.condensed)
+                .font(FWBFont.title3.weight(.black))
+
 
             Picker("Color mode", selection: selectedMode) {
                 ForEach(AppAppearanceMode.allCases) { mode in
@@ -129,7 +129,7 @@ struct AppearanceSettingsView: View {
 
             TimelineView(.periodic(from: .now, by: 60)) { context in
                 Label(statusText(at: context.date), systemImage: activeIcon(at: context.date))
-                    .font(.footnote)
+                    .font(FWBFont.footnote)
                     .foregroundStyle(Color.fwbMuted)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -140,16 +140,16 @@ struct AppearanceSettingsView: View {
     private var scheduleCard: some View {
         VStack(alignment: .leading, spacing: 16) {
             Label("DAILY SCHEDULE", systemImage: "clock.fill")
-                .font(.footnote.bold())
+                .font(FWBFont.footnote.bold())
                 .tracking(1)
                 .foregroundStyle(Color.fwbLime)
 
             Text("Switch automatically")
-                .font(.title3.weight(.black))
-                .fontWidth(.condensed)
+                .font(FWBFont.title3.weight(.black))
+
 
             Text("FWB follows the time on this iPhone and switches while the app is open or when you return to it.")
-                .font(.subheadline)
+                .font(FWBFont.subheadline)
                 .foregroundStyle(Color.fwbMuted)
                 .fixedSize(horizontal: false, vertical: true)
 
@@ -160,7 +160,7 @@ struct AppearanceSettingsView: View {
                 selection: minuteBinding($lightStartMinute),
                 displayedComponents: .hourAndMinute
             )
-            .font(.subheadline.weight(.bold))
+            .font(FWBFont.subheadline.weight(.bold))
             .tint(Color.fwbLime)
             .accessibilityIdentifier("appearance.lightStart")
 
@@ -171,7 +171,7 @@ struct AppearanceSettingsView: View {
                 selection: minuteBinding($darkStartMinute),
                 displayedComponents: .hourAndMinute
             )
-            .font(.subheadline.weight(.bold))
+            .font(FWBFont.subheadline.weight(.bold))
             .tint(Color.fwbLime)
             .accessibilityIdentifier("appearance.darkStart")
         }

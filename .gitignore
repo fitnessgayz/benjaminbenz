@@ -8,3 +8,21 @@ Artifacts/
 *.ipa
 *.xcuserstate
 xcuserdata/
+
+# Local release credentials and generated signing material
+*.p8
+*.p12
+*.pfx
+*.mobileprovision
+*.provisionprofile
+*.cer
+*.key
+.env
+.env.*
+!.env.example
+!.env.*.example
+.bundle/
+vendor/bundle/
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/test_output/

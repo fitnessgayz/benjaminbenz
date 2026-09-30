@@ -19,6 +19,7 @@ struct NutritionTargetsView: View {
             }
         }
         .navigationTitle("Nutrition")
+        .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(Color.fwbBackground, for: .navigationBar)
         .refreshable {
             await store.reload()
@@ -59,30 +60,27 @@ private struct NutritionTargetsContent: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
-                VStack(alignment: .leading, spacing: 5) {
-                    Text("NUTRITION")
-                        .font(.footnote.bold())
-                        .tracking(1.3)
-                        .foregroundStyle(Color.fwbLime)
+            VStack(alignment: .leading, spacing: 16) {
+                VStack(alignment: .leading, spacing: 12) {
+                    VStack(alignment: .leading, spacing: 5) {
+                        Text("Nutrition")
+                            .font(FWBFont.caption.weight(.semibold))
+                            .foregroundStyle(Color.fwbMuted)
 
-                    Text("CALORIES &\nMACROS")
-                        .font(.system(size: 42, weight: .black))
-                        .fontWidth(.condensed)
-                        .tracking(-1.2)
+                        Text("Calories and macros")
+                            .font(FWBFont.title.weight(.bold))
+                            .tracking(-0.6)
+                            .foregroundStyle(Color.fwbWarmWhite)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+
+                    Text(plan.statusLabel)
+                        .font(FWBFont.caption.weight(.bold))
                         .foregroundStyle(Color.fwbWarmWhite)
-                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(Color.fwbSurface, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
                 }
-
-                Text(plan.statusLabel)
-                    .font(.footnote.weight(.black))
-                    .tracking(1)
-                    .foregroundStyle(.black)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 10)
-                    .frame(minHeight: 42)
-                    .background(Color.fwbAccentFill, in: Rectangle())
 
                 LazyVGrid(columns: columns, spacing: 12) {
                     NutritionTargetCard(title: "Calories", value: plan.calories)
@@ -97,7 +95,7 @@ private struct NutritionTargetsContent: View {
                     plan: plan
                 )
             }
-            .padding(20)
+            .padding(16)
         }
         .scrollDismissesKeyboard(.interactively)
     }
@@ -108,30 +106,19 @@ private struct NutritionTargetCard: View {
     let value: String
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(alignment: .leading, spacing: 10) {
             Text(title)
-                .font(.subheadline.weight(.bold))
+                .font(FWBFont.caption.weight(.semibold))
                 .foregroundStyle(Color.fwbMuted)
 
-            Spacer(minLength: 22)
-
             Text(displayValue)
-                .font(.title2.weight(.black))
-                .fontWidth(.condensed)
+                .font(FWBFont.title2.weight(.bold))
+                .monospacedDigit()
                 .foregroundStyle(Color.fwbWarmWhite)
-                .lineLimit(2)
-                .minimumScaleFactor(0.72)
-
-            FWBRule()
-                .padding(.top, 14)
+                .fixedSize(horizontal: false, vertical: true)
         }
-        .padding(18)
-        .frame(maxWidth: .infinity, minHeight: 148, alignment: .leading)
-        .background(Color.fwbCard, in: Rectangle())
-        .overlay {
-            Rectangle()
-                .stroke(Color.fwbLine, lineWidth: 1)
-        }
+        .frame(maxWidth: .infinity, minHeight: 62, alignment: .leading)
+        .fwbCard()
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(title), \(displayValue)")
     }
@@ -188,17 +175,15 @@ private struct NutritionCalculatorCard: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
+        VStack(alignment: .leading, spacing: 16) {
             VStack(alignment: .leading, spacing: 5) {
-                Text("SETUP")
-                    .font(.footnote.bold())
-                    .tracking(1.3)
-                    .foregroundStyle(Color.fwbRed)
+                Text("Setup")
+                    .font(FWBFont.caption.weight(.semibold))
+                    .foregroundStyle(Color.fwbMuted)
 
-                Text("FIND YOUR\nSTARTING\nTARGET")
-                    .font(.system(size: 38, weight: .black))
-                    .fontWidth(.condensed)
-                    .tracking(-1)
+                Text("Find your starting target")
+                    .font(FWBFont.title3.weight(.bold))
+                    .tracking(-0.3)
                     .foregroundStyle(Color.fwbWarmWhite)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -318,13 +303,10 @@ private struct NutritionCalculatorCard: View {
             .accessibilityIdentifier("nutrition.save")
 
             saveStatus
+                .font(FWBFont.footnote)
+                .fixedSize(horizontal: false, vertical: true)
         }
-        .padding(18)
-        .background(Color.fwbCard, in: Rectangle())
-        .overlay {
-            Rectangle()
-                .stroke(Color.fwbLine, lineWidth: 1)
-        }
+        .fwbCard()
     }
 
     private var columns: [GridItem] {
@@ -414,7 +396,7 @@ private struct NutritionGoalMenu: View {
         } label: {
             HStack(spacing: 8) {
                 Text(selection.title)
-                    .font(.subheadline.weight(.bold))
+                    .font(FWBFont.subheadline.weight(.bold))
                     .foregroundStyle(Color.fwbWarmWhite)
                     .lineLimit(2)
                     .minimumScaleFactor(0.9)
@@ -423,7 +405,7 @@ private struct NutritionGoalMenu: View {
                 Spacer(minLength: 2)
 
                 Image(systemName: "chevron.up.chevron.down")
-                    .font(.footnote.weight(.bold))
+                    .font(FWBFont.footnote.weight(.bold))
                     .foregroundStyle(Color.fwbWarmWhite)
                     .accessibilityHidden(true)
             }
@@ -448,7 +430,7 @@ private struct NutritionFormField<Content: View>: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 7) {
             Text(title)
-                .font(.footnote.weight(.bold))
+                .font(FWBFont.footnote.weight(.bold))
                 .foregroundStyle(Color.fwbWarmWhite)
                 .lineLimit(2)
                 .minimumScaleFactor(0.8)
@@ -462,15 +444,15 @@ private struct NutritionFormField<Content: View>: View {
 private struct NutritionInputSurfaceModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
-            .font(.subheadline.weight(.bold))
+            .font(FWBFont.subheadline.weight(.bold))
             .foregroundStyle(Color.fwbWarmWhite)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 13)
             .padding(.vertical, 10)
-            .frame(minHeight: 54)
-            .background(Color.fwbSurface, in: Rectangle())
+            .frame(minHeight: 48)
+            .background(Color.fwbSurface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
             .overlay {
-                Rectangle()
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
                     .stroke(Color.fwbLine, lineWidth: 1)
             }
     }
@@ -490,24 +472,24 @@ private struct NutritionTargetsPlaceholder: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
+            VStack(alignment: .leading, spacing: 16) {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("NUTRITION")
-                    Text("CALORIES & MACROS")
-                        .font(.title.weight(.black))
+                    Text("Nutrition")
+                    Text("Calories and macros")
+                        .font(FWBFont.title.weight(.bold))
                 }
 
-                Rectangle()
-                    .frame(height: 42)
+                RoundedRectangle(cornerRadius: 9, style: .continuous)
+                    .frame(width: 110, height: 32)
 
                 LazyVGrid(columns: columns, spacing: 12) {
                     ForEach(0..<4, id: \.self) { _ in
-                        Rectangle()
-                            .frame(minHeight: 148)
+                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                            .frame(minHeight: 94)
                     }
                 }
             }
-            .padding(20)
+            .padding(16)
             .foregroundStyle(Color.fwbCard)
             .redacted(reason: .placeholder)
         }
@@ -523,5 +505,5 @@ private struct NutritionTargetsPlaceholder: View {
         )
             .navigationTitle("Nutrition")
     }
-    .preferredColorScheme(.dark)
+    .preferredColorScheme(.light)
 }

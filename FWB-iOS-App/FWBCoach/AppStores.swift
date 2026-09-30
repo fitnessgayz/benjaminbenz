@@ -151,12 +151,24 @@ final class ClientProgramStore: ObservableObject {
         case failed(String)
     }
 
+    enum WorkoutLayoutSaveState: Equatable {
+        case idle
+        case saving
+        case saved
+        case conflict(String)
+        case failed(String)
+    }
+
     @Published private(set) var state: LoadState = .idle
     @Published private(set) var program: ClientProgram?
+    @Published private(set) var availablePrograms: [ClientProgram] = []
     @Published private(set) var nutritionSaveState: NutritionSaveState = .idle
+    @Published private(set) var workoutLayoutSaveState: WorkoutLayoutSaveState = .idle
 
     private let client: SupabaseClient
     private let isPreview: Bool
+    private var activeWorkoutLayoutSave: UUID?
+    private var programReadGeneration = 0
 
     init(client: SupabaseClient = AppConfiguration.supabase) {
         self.client = client
@@ -164,10 +176,11 @@ final class ClientProgramStore: ObservableObject {
     }
 
 #if DEBUG
-    init(previewProgram: ClientProgram, client: SupabaseClient = AppConfiguration.supabase) {
+    init(previewProgram: ClientProgram, availablePrograms: [ClientProgram]? = nil, client: SupabaseClient = AppConfiguration.supabase) {
         self.client = client
         isPreview = true
         program = previewProgram
+        self.availablePrograms = availablePrograms ?? [previewProgram]
         state = .loaded
     }
 #endif
@@ -177,8 +190,24 @@ final class ClientProgramStore: ObservableObject {
         await reload()
     }
 
-    func reload() async {
+    func selectProgram(_ programID: UUID) {
+        guard let selected = availablePrograms.first(where: { $0.id == programID }),
+              program?.id != selected.id else { return }
+        program = selected
+        nutritionSaveState = .idle
+        workoutLayoutSaveState = .idle
         guard !isPreview else { return }
+        Task {
+            if let pending = await ContinuityOutbox.shared.nutritionMutation(programID: selected.id) {
+                _ = await synchronizeNutrition(pending)
+            }
+        }
+    }
+
+    func reload() async {
+        guard !isPreview, activeWorkoutLayoutSave == nil else { return }
+        programReadGeneration += 1
+        let generation = programReadGeneration
         state = .loading
 
         do {
@@ -188,18 +217,25 @@ final class ClientProgramStore: ObservableObject {
                 state = .failed("Your account email is missing. Sign in again and retry.")
                 return
             }
+            let escapedEmail = accountEmail.replacingOccurrences(of: "\\", with: "\\\\")
+                .replacingOccurrences(of: "%", with: "\\%").replacingOccurrences(of: "_", with: "\\_")
             let programs: [ClientProgram] = try await client
                 .from("client_programs")
                 .select()
-                .eq("client_email", value: accountEmail)
+                .ilike("client_email", pattern: escapedEmail)
                 .eq("active", value: true)
-                .eq("client_archived", value: false)
-                .order("updated_at", ascending: false)
-                .limit(1)
+                .or("client_archived.is.null,client_archived.eq.false")
+                .order("updated_at", ascending: false, nullsFirst: false)
+                .order("created_at", ascending: false, nullsFirst: false)
+                .order("id", ascending: false)
                 .execute()
                 .value
 
-            program = programs.first
+            try Task.checkCancellation()
+            guard generation == programReadGeneration else { return }
+            let selectedID = program?.id
+            availablePrograms = programs
+            program = programs.first(where: { $0.id == selectedID }) ?? programs.first
             if let programID = program?.id,
                let pending = await ContinuityOutbox.shared.nutritionMutation(programID: programID) {
                 _ = await synchronizeNutrition(pending)
@@ -208,40 +244,139 @@ final class ClientProgramStore: ObservableObject {
         } catch is CancellationError {
             return
         } catch {
+            guard generation == programReadGeneration else { return }
+            ErrorReporting.capture(error, operation: .loadPrograms)
             state = .failed("Your training plan could not be loaded. Check your connection and try again.")
         }
     }
 
-    func saveNutritionPlan(programID: UUID, plan: NutritionPlan) async -> Bool {
-        nutritionSaveState = .saving
-        let mutation = PendingNutritionMutation(
-            programID: programID,
-            plan: plan,
-            expectedRemoteUpdatedAt: program?.nutritionPlan?.updatedAt ?? ""
-        )
+    @discardableResult
+    func saveWorkoutExercises(workoutID: UUID, exercises: [Exercise]) async -> Bool {
+        await saveWorkoutLayout(workoutID: workoutID, exercises: exercises, restoring: false)
+    }
 
-        if await synchronizeNutrition(mutation) {
-            return true
-        }
+    @discardableResult
+    func restoreAssignedWorkoutExercises() async -> Bool {
+        await saveWorkoutLayout(workoutID: nil, exercises: nil, restoring: true)
+    }
 
-        if case .conflict = nutritionSaveState {
+    private func saveWorkoutLayout(workoutID: UUID?, exercises: [Exercise]?, restoring: Bool) async -> Bool {
+        guard activeWorkoutLayoutSave == nil else { return false }
+        guard let baseline = program else {
+            workoutLayoutSaveState = .failed("Select a program before changing exercises.")
             return false
         }
-
-        do {
-            try await ContinuityOutbox.shared.enqueue(mutation)
-            if let program {
-                self.program = program.replacingNutritionPlan(plan)
+        if isPreview {
+            do {
+                let update = try ClientWorkoutLayoutUpdate.make(
+                    from: baseline, responseData: baseline.workoutLayoutPreviewResponseData(),
+                    workoutID: workoutID, exercises: exercises, restoring: restoring
+                )
+                replaceAvailableProgram(baseline.replacingWorkoutLayout(update.clientWorkoutLayout))
+                workoutLayoutSaveState = .saved
+                return true
+            } catch {
+                workoutLayoutSaveState = .failed("These exercise changes could not be applied to the preview.")
+                return false
             }
-            nutritionSaveState = .queued
+        }
+        activeWorkoutLayoutSave = baseline.id
+        programReadGeneration += 1
+        workoutLayoutSaveState = .saving
+        defer {
+            activeWorkoutLayoutSave = nil
+            if program != nil, state == .loading { state = .loaded }
+        }
+        do {
+            let session = try await client.auth.session
+            guard session.user.email.map({ ContinuitySync.normalize(email: $0) }) == ContinuitySync.normalize(email: baseline.clientEmail) else {
+                throw ClientWorkoutLayoutError.invalidSource
+            }
+            let response = try await client.from("client_programs").select()
+                .eq("id", value: baseline.id.uuidString).eq("active", value: true)
+                .or("client_archived.is.null,client_archived.eq.false").single().execute()
+            let current = try JSONDecoder().decode(ClientProgram.self, from: response.data)
+            guard baseline.hasSameWorkoutRevision(as: current) else {
+                replaceAvailableProgram(current)
+                if program?.id == baseline.id {
+                    workoutLayoutSaveState = .conflict("Your exercises changed on another device or with your coach. The latest version is loaded; review it before editing again.")
+                }
+                state = .loaded
+                return false
+            }
+            let update = try ClientWorkoutLayoutUpdate.make(
+                from: current, responseData: response.data, workoutID: workoutID, exercises: exercises, restoring: restoring
+            )
+            guard let revision = current.updatedAt, !revision.isEmpty else { throw ClientWorkoutLayoutError.invalidSource }
+            try Task.checkCancellation()
+            // set_client_programs_updated_at runs before every update (the existing
+            // live schema). This guards coach changes and competing client edits
+            // without putting the entire workout JSON in a potentially huge URL.
+            let records: [ClientProgram] = try await client.from("client_programs").update(update)
+                .eq("id", value: current.id.uuidString)
+                .eq("active", value: true)
+                .or("client_archived.is.null,client_archived.eq.false")
+                .eq("updated_at", value: revision)
+                .select().execute().value
+            guard let saved = records.first else {
+                if program?.id == baseline.id {
+                    workoutLayoutSaveState = .conflict("Your program changed while saving. Refresh your programs, then review the latest exercises before trying again.")
+                }
+                return false
+            }
+            replaceAvailableProgram(saved)
+            state = .loaded
+            if program?.id == baseline.id { workoutLayoutSaveState = .saved }
             return true
+        } catch is CancellationError {
+            if program?.id == baseline.id { workoutLayoutSaveState = .idle }
+            return false
         } catch {
-            nutritionSaveState = .failed("Your targets could not be secured on this iPhone. Try saving again.")
+            ErrorReporting.capture(error, operation: .saveWorkoutLayout)
+            if program?.id == baseline.id {
+                workoutLayoutSaveState = .failed("Your exercise changes could not be saved. Check your connection and try again.")
+            }
             return false
         }
     }
 
-    private func synchronizeNutrition(_ mutation: PendingNutritionMutation) async -> Bool {
+    func saveNutritionPlan(programID: UUID, plan: NutritionPlan) async -> Bool {
+        guard let targetProgram = availablePrograms.first(where: { $0.id == programID }) else {
+            nutritionSaveState = .failed("This program is no longer available. Refresh your programs and try again.")
+            return false
+        }
+        if program?.id == programID { nutritionSaveState = .saving }
+        let mutation = PendingNutritionMutation(
+            programID: programID,
+            plan: plan,
+            expectedRemoteUpdatedAt: targetProgram.nutritionPlan?.updatedAt ?? ""
+        )
+
+        switch await synchronizeNutrition(mutation) {
+        case .saved: return true
+        case .conflict: return false
+        case .retry: break
+        }
+
+        do {
+            try await ContinuityOutbox.shared.enqueue(mutation)
+            if let savedProgram = availablePrograms.first(where: { $0.id == programID }) {
+                replaceAvailableProgram(savedProgram.replacingNutritionPlan(plan))
+            }
+            if program?.id == programID { nutritionSaveState = .queued }
+            return true
+        } catch {
+            ErrorReporting.capture(error, operation: .saveNutritionLocally)
+            if program?.id == programID {
+                nutritionSaveState = .failed("Your targets could not be secured on this iPhone. Try saving again.")
+            }
+            return false
+        }
+    }
+
+    private enum NutritionSyncResult { case saved, conflict, retry }
+
+    private func synchronizeNutrition(_ mutation: PendingNutritionMutation) async -> NutritionSyncResult {
         do {
             let current: ClientProgram = try await client
                 .from("client_programs")
@@ -255,10 +390,12 @@ final class ClientProgramStore: ObservableObject {
             let localDate = ContinuityDateCoding.date(from: mutation.plan.updatedAt) ?? .distantPast
             let expectedDate = ContinuityDateCoding.date(from: mutation.expectedRemoteUpdatedAt)
             if let remoteDate, remoteDate > localDate, remoteDate != expectedDate {
-                program = current
+                replaceAvailableProgram(current)
                 try? await ContinuityOutbox.shared.removeNutrition(programID: mutation.programID)
-                nutritionSaveState = .conflict("Targets changed on the website after this edit. The newer website targets were kept.")
-                return false
+                if program?.id == mutation.programID {
+                    nutritionSaveState = .conflict("Targets changed on the website after this edit. The newer website targets were kept.")
+                }
+                return .conflict
             }
 
             let updatedProgram: ClientProgram
@@ -282,16 +419,25 @@ final class ClientProgramStore: ObservableObject {
                     .value
             }
 
-            program = updatedProgram
+            replaceAvailableProgram(updatedProgram)
             try? await ContinuityOutbox.shared.removeNutrition(programID: mutation.programID)
-            nutritionSaveState = .saved
-            return true
+            if program?.id == mutation.programID { nutritionSaveState = .saved }
+            return .saved
         } catch is CancellationError {
-            nutritionSaveState = .idle
-            return false
+            if program?.id == mutation.programID { nutritionSaveState = .idle }
+            return .retry
         } catch {
-            return false
+            ErrorReporting.capture(error, operation: .syncNutrition)
+            return .retry
         }
+    }
+
+    private func replaceAvailableProgram(_ updated: ClientProgram) {
+        if let index = availablePrograms.firstIndex(where: { $0.id == updated.id }) {
+            availablePrograms[index] = updated
+        }
+        // A save that finishes after a program switch must not switch the UI back.
+        if program?.id == updated.id { program = updated }
     }
 }
 
@@ -493,6 +639,7 @@ final class WorkoutHistoryStore: ObservableObject {
         } catch is CancellationError {
             return
         } catch {
+            ErrorReporting.capture(error, operation: .loadWorkoutHistory)
             state = sessions.isEmpty
                 ? .failed("Your workout history could not be loaded. Check your connection and try again.")
                 : .loaded
@@ -672,6 +819,7 @@ final class WorkoutLogStore: ObservableObject {
         } catch is CancellationError {
             return []
         } catch {
+            ErrorReporting.capture(error, operation: .loadWorkoutSets)
             state = .failed("Existing sets could not be loaded. You can try again before saving.")
             return []
         }
@@ -800,6 +948,7 @@ final class WorkoutLogStore: ObservableObject {
         } catch is CancellationError {
             return false
         } catch {
+            ErrorReporting.capture(error, operation: .saveWorkoutSets)
             state = .failed("Your sets could not be saved. Check your connection and try again.")
             return false
         }

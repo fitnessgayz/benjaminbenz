@@ -778,7 +778,7 @@ struct ClientStatsView: View {
                 }
             }
         }
-        .navigationTitle("Stats & Measurements")
+        .navigationTitle("Stats & measurements")
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(Color.fwbBackground, for: .navigationBar)
         .toolbar {
@@ -797,7 +797,7 @@ struct ClientStatsView: View {
                     }
                 } label: {
                     Image(systemName: "plus")
-                        .font(.headline.bold())
+                        .font(FWBFont.headline.bold())
                         .foregroundStyle(Color.fwbLime)
                 }
                 .accessibilityLabel("Add client stat")
@@ -821,37 +821,37 @@ struct ClientStatsView: View {
 
     private var statsContent: some View {
         ScrollView {
-            LazyVStack(alignment: .leading, spacing: 20) {
+            LazyVStack(alignment: .leading, spacing: 16) {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("CLIENT PROFILE")
-                        .font(.footnote.bold())
-                        .tracking(1.4)
-                        .foregroundStyle(Color.fwbLime)
-                    Text("TRACK\nYOUR PROGRESS")
-                        .font(.system(size: 42, weight: .black))
-                        .fontWidth(.condensed)
+                        .font(FWBFont.footnote.bold())
+                        .tracking(1)
+                        .foregroundStyle(Color.fwbMuted)
+                    Text("Stats & measurements")
+                        .font(FWBFont.title.weight(.bold))
                         .foregroundStyle(Color.fwbWarmWhite)
                         .fixedSize(horizontal: false, vertical: true)
-                    Text("Save measurements and private progress photos in one place.")
-                        .font(.subheadline)
+                    Text("Track body measurements and private progress photos over time.")
+                        .font(FWBFont.subheadline)
                         .foregroundStyle(Color.fwbMuted)
                 }
 
                 if let message = store.message {
                     Text(message)
-                        .font(.footnote.weight(.semibold))
+                        .font(FWBFont.footnote.weight(.semibold))
                         .foregroundStyle(statusColor(for: message))
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(12)
-                        .background(Color.fwbCard, in: Rectangle())
-                        .overlay { Rectangle().stroke(Color.fwbLine, lineWidth: 1) }
+                        .background(Color.fwbCard, in: RoundedRectangle(cornerRadius: 18))
+                        .clipShape(RoundedRectangle(cornerRadius: 18))
+                        .overlay { RoundedRectangle(cornerRadius: 18).stroke(Color.fwbLine, lineWidth: 1) }
                 }
 
                 progressPhotosSection
                 measurementChartSection
                 measurementHistorySection
             }
-            .padding(20)
+            .padding(16)
         }
         .refreshable {
             await store.reload(email: account.email)
@@ -861,12 +861,12 @@ struct ClientStatsView: View {
     private var progressPhotosSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .firstTextBaseline) {
-                SectionHeading(kicker: "PRIVATE", title: "PROGRESS PHOTOS")
+                SectionHeading(kicker: "PRIVATE", title: "Progress photos")
                 Spacer()
-                Button("Add Photo") {
+                Button("Add photo") {
                     presentedSheet = .photo
                 }
-                .font(.footnote.weight(.black))
+                .font(FWBFont.footnote.weight(.semibold))
                 .foregroundStyle(Color.fwbLime)
             }
 
@@ -875,18 +875,18 @@ struct ClientStatsView: View {
                     Image(systemName: "exclamationmark.triangle.fill")
                         .foregroundStyle(Color.fwbRed)
                     Text(photoLoadError)
-                        .font(.footnote.weight(.semibold))
+                        .font(FWBFont.footnote.weight(.semibold))
                         .foregroundStyle(Color.fwbMuted)
                     Spacer(minLength: 8)
                     Button("Retry") {
                         Task { await store.reload(email: account.email) }
                     }
-                    .font(.footnote.weight(.black))
+                    .font(FWBFont.footnote.weight(.semibold))
                     .foregroundStyle(Color.fwbLime)
                 }
                 .padding(12)
-                .background(Color.fwbCard, in: Rectangle())
-                .overlay { Rectangle().stroke(Color.fwbLine, lineWidth: 1) }
+                .background(Color.fwbCard, in: RoundedRectangle(cornerRadius: 18))
+                .overlay { RoundedRectangle(cornerRadius: 18).stroke(Color.fwbLine, lineWidth: 1) }
             }
 
             if store.photos.isEmpty {
@@ -897,19 +897,19 @@ struct ClientStatsView: View {
                         VStack(spacing: 12) {
                             Image(systemName: "photo.badge.plus")
                                 .font(.system(size: 30, weight: .semibold))
-                            Text("ADD YOUR FIRST PROGRESS PHOTO")
-                                .font(.subheadline.weight(.black))
-                                .fontWidth(.condensed)
+                            Text("Add your first progress photo")
+                                .font(FWBFont.subheadline.weight(.semibold))
                             Text("Photos are private and visible only to your authenticated account and coach.")
-                                .font(.footnote)
+                                .font(FWBFont.footnote)
                                 .foregroundStyle(Color.fwbMuted)
                                 .multilineTextAlignment(.center)
                         }
                         .foregroundStyle(Color.fwbLime)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 26)
-                        .background(Color.fwbCard, in: Rectangle())
-                        .overlay { Rectangle().stroke(Color.fwbLine, lineWidth: 1) }
+                        .background(Color.fwbCard, in: RoundedRectangle(cornerRadius: 18))
+                        .clipShape(RoundedRectangle(cornerRadius: 18))
+                        .overlay { RoundedRectangle(cornerRadius: 18).stroke(Color.fwbLine, lineWidth: 1) }
                     }
                     .buttonStyle(.plain)
                 }
@@ -937,12 +937,12 @@ struct ClientStatsView: View {
     private var measurementChartSection: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .firstTextBaseline) {
-                SectionHeading(kicker: "TRENDS", title: selectedMetric.title.uppercased())
+                SectionHeading(kicker: "TRENDS", title: selectedMetric.title)
                 Spacer()
-                Button("Log Stats") {
+                Button("Add measurements") {
                     presentedSheet = .measurement
                 }
-                .font(.footnote.weight(.black))
+                .font(FWBFont.footnote.weight(.semibold))
                 .foregroundStyle(Color.fwbLime)
             }
 
@@ -952,13 +952,13 @@ struct ClientStatsView: View {
                         Button(metric.shortTitle) {
                             selectedMetric = metric
                         }
-                        .font(.footnote.weight(.bold))
+                        .font(FWBFont.footnote.weight(.bold))
                         .foregroundStyle(selectedMetric == metric ? Color.black : Color.fwbWarmWhite)
                         .padding(.horizontal, 13)
                         .padding(.vertical, 8)
-                        .frame(minHeight: 36)
-                        .background(selectedMetric == metric ? Color.fwbAccentFill : Color.fwbCard, in: Rectangle())
-                        .overlay { Rectangle().stroke(selectedMetric == metric ? Color.fwbAccentFill : Color.fwbLine, lineWidth: 1) }
+                        .frame(minHeight: 44)
+                        .background(selectedMetric == metric ? Color.fwbAccentFill : Color.fwbCard, in: RoundedRectangle(cornerRadius: 12))
+                        .overlay { RoundedRectangle(cornerRadius: 12).stroke(selectedMetric == metric ? Color.fwbAccentFill : Color.fwbLine, lineWidth: 1) }
                     }
                 }
             }
@@ -966,27 +966,26 @@ struct ClientStatsView: View {
             if chartPoints.isEmpty {
                 VStack(spacing: 10) {
                     Image(systemName: "chart.xyaxis.line")
-                        .font(.title)
+                        .font(FWBFont.title)
                         .foregroundStyle(Color.fwbLime)
                     Text("No \(selectedMetric.title.lowercased()) entries yet")
-                        .font(.subheadline.weight(.bold))
+                        .font(FWBFont.subheadline.weight(.bold))
                     Text("Log a measurement to start your trend line.")
-                        .font(.footnote)
+                        .font(FWBFont.footnote)
                         .foregroundStyle(Color.fwbMuted)
                 }
                 .frame(maxWidth: .infinity)
                 .frame(height: 190)
-                .background(Color.fwbCard, in: Rectangle())
-                .overlay { Rectangle().stroke(Color.fwbLine, lineWidth: 1) }
+                .background(Color.fwbCard, in: RoundedRectangle(cornerRadius: 18))
+                .overlay { RoundedRectangle(cornerRadius: 18).stroke(Color.fwbLine, lineWidth: 1) }
             } else {
                 VStack(alignment: .leading, spacing: 12) {
                     if let latest = chartPoints.last {
                         HStack(alignment: .firstTextBaseline, spacing: 5) {
                             Text(latest.value.formatted(.number.precision(.fractionLength(0...1))))
-                                .font(.system(size: 36, weight: .black))
-                                .fontWidth(.condensed)
+                                .font(.system(size: 32, weight: .bold))
                             Text(selectedMetric.unit)
-                                .font(.subheadline.weight(.bold))
+                                .font(FWBFont.subheadline.weight(.bold))
                                 .foregroundStyle(Color.fwbMuted)
                         }
                     }
@@ -1023,19 +1022,19 @@ struct ClientStatsView: View {
                     .frame(height: 210)
                 }
                 .padding(18)
-                .background(Color.fwbCard, in: Rectangle())
-                .overlay { Rectangle().stroke(Color.fwbLine, lineWidth: 1) }
+                .background(Color.fwbCard, in: RoundedRectangle(cornerRadius: 18))
+                .overlay { RoundedRectangle(cornerRadius: 18).stroke(Color.fwbLine, lineWidth: 1) }
             }
         }
     }
 
     private var measurementHistorySection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            SectionHeading(kicker: "LATEST", title: "MEASUREMENT HISTORY")
+            SectionHeading(kicker: "LATEST", title: "Measurement history")
 
             if store.measurements.isEmpty {
                 Text("Your saved measurements will appear here.")
-                    .font(.subheadline)
+                    .font(FWBFont.subheadline)
                     .foregroundStyle(Color.fwbMuted)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .fwbCard()
@@ -1048,8 +1047,8 @@ struct ClientStatsView: View {
                         }
                     }
                 }
-                .background(Color.fwbCard, in: Rectangle())
-                .overlay { Rectangle().stroke(Color.fwbLine, lineWidth: 1) }
+                .background(Color.fwbCard, in: RoundedRectangle(cornerRadius: 18))
+                .overlay { RoundedRectangle(cornerRadius: 18).stroke(Color.fwbLine, lineWidth: 1) }
             }
         }
     }
@@ -1086,11 +1085,11 @@ private struct ProgressPhotoCard: View {
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(ClientStatsStore.apiDateFormatter.date(from: photo.record.capturedOn)?.formatted(date: .abbreviated, time: .omitted) ?? photo.record.capturedOn)
-                    .font(.footnote.weight(.black))
+                    .font(FWBFont.footnote.weight(.semibold))
                     .foregroundStyle(.white)
                 if !photo.record.note.isEmpty {
                     Text(photo.record.note)
-                        .font(.footnote)
+                        .font(FWBFont.footnote)
                         .foregroundStyle(Color.white.opacity(0.78))
                         .lineLimit(2)
                 }
@@ -1098,7 +1097,8 @@ private struct ProgressPhotoCard: View {
             .padding(12)
         }
         .frame(width: 164, height: 220)
-        .overlay { Rectangle().stroke(Color.fwbLine, lineWidth: 1) }
+        .clipShape(RoundedRectangle(cornerRadius: 18))
+        .overlay { RoundedRectangle(cornerRadius: 18).stroke(Color.fwbLine, lineWidth: 1) }
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Progress photo from \(photo.record.capturedOn)")
     }
@@ -1107,7 +1107,7 @@ private struct ProgressPhotoCard: View {
         ZStack {
             Color.fwbSurface
             Image(systemName: systemName)
-                .font(.title)
+                .font(FWBFont.title)
                 .foregroundStyle(Color.fwbMuted)
         }
     }
@@ -1127,16 +1127,16 @@ private struct MeasurementHistoryRow: View {
     var body: some View {
         HStack(spacing: 14) {
             Image(systemName: "ruler")
-                .font(.headline)
+                .font(FWBFont.headline)
                 .foregroundStyle(Color.fwbLime)
                 .frame(width: 30)
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(ClientStatsStore.apiDateFormatter.date(from: entry.entryDate)?.formatted(date: .abbreviated, time: .omitted) ?? entry.entryDate)
-                    .font(.subheadline.weight(.bold))
+                    .font(FWBFont.subheadline.weight(.bold))
                     .foregroundStyle(Color.fwbWarmWhite)
                 Text(summary)
-                    .font(.footnote)
+                    .font(FWBFont.footnote)
                     .foregroundStyle(Color.fwbMuted)
                     .lineLimit(2)
             }
@@ -1168,12 +1168,11 @@ private struct MeasurementEntrySheet: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
                     Text("MEASUREMENT ENTRY")
-                        .font(.footnote.bold())
+                        .font(FWBFont.footnote.bold())
                         .tracking(1.3)
                         .foregroundStyle(Color.fwbLime)
-                    Text("LOG TODAY'S\nCLIENT STATS")
-                        .font(.system(size: 34, weight: .black))
-                        .fontWidth(.condensed)
+                    Text("Add measurements")
+                        .font(FWBFont.title.weight(.bold))
                         .foregroundStyle(Color.fwbWarmWhite)
 
                     entrySection(title: "ENTRY") {
@@ -1213,20 +1212,20 @@ private struct MeasurementEntrySheet: View {
 
                     VStack(alignment: .leading, spacing: 8) {
                         Text("NOTE")
-                            .font(.footnote.weight(.black))
+                            .font(FWBFont.footnote.weight(.semibold))
                             .foregroundStyle(Color.fwbMuted)
                         TextField("Optional progress note", text: $note, axis: .vertical)
                             .lineLimit(2...5)
                             .padding(14)
-                            .background(Color.fwbSurface, in: Rectangle())
-                            .overlay { Rectangle().stroke(Color.fwbLine, lineWidth: 1) }
+                            .background(Color.fwbSurface, in: RoundedRectangle(cornerRadius: 12))
+                            .overlay { RoundedRectangle(cornerRadius: 12).stroke(Color.fwbLine, lineWidth: 1) }
                             .accessibilityLabel("Progress note")
                             .accessibilityIdentifier("stats.measurement.note")
                     }
 
                 if let message = store.message, message.contains("Enter at least") || message.contains("could not") {
                     Text(message)
-                        .font(.footnote.weight(.semibold))
+                        .font(FWBFont.footnote.weight(.semibold))
                         .foregroundStyle(Color.fwbRed)
                 }
 
@@ -1236,16 +1235,16 @@ private struct MeasurementEntrySheet: View {
                         if store.isSavingMeasurement {
                             ProgressView().tint(.black)
                         } else {
-                            Label("Save Measurements", systemImage: "checkmark")
+                            Label("Save measurements", systemImage: "checkmark")
                         }
                     }
                     .buttonStyle(FWBPrimaryButtonStyle())
                     .disabled(store.isSavingMeasurement)
                 }
-                .padding(20)
+                .padding(16)
             }
             .background(Color.fwbBackground)
-            .navigationTitle("Log Measurements")
+            .navigationTitle("Add measurements")
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(Color.fwbBackground, for: .navigationBar)
             .toolbar {
@@ -1272,7 +1271,7 @@ private struct MeasurementEntrySheet: View {
                     "stats.measurement.\(title.lowercased().replacingOccurrences(of: " ", with: "-"))"
                 )
             Text(unit)
-                .font(.footnote.weight(.bold))
+                .font(FWBFont.footnote.weight(.bold))
                 .foregroundStyle(Color.fwbMuted)
                 .lineLimit(1)
                 .frame(minWidth: 20, alignment: .leading)
@@ -1292,11 +1291,11 @@ private struct MeasurementEntrySheet: View {
     ) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(title)
-                .font(.footnote.weight(.black))
+                .font(FWBFont.footnote.weight(.semibold))
                 .foregroundStyle(Color.fwbMuted)
             content()
-                .background(Color.fwbCard, in: Rectangle())
-                .overlay { Rectangle().stroke(Color.fwbLine, lineWidth: 1) }
+                .background(Color.fwbCard, in: RoundedRectangle(cornerRadius: 18))
+                .overlay { RoundedRectangle(cornerRadius: 18).stroke(Color.fwbLine, lineWidth: 1) }
         }
     }
 
@@ -1342,12 +1341,11 @@ private struct ProgressPhotoEntrySheet: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
                     Text("PROGRESS PHOTO")
-                        .font(.footnote.bold())
+                        .font(FWBFont.footnote.bold())
                         .tracking(1.3)
                         .foregroundStyle(Color.fwbLime)
-                    Text("ADD A PRIVATE\nCHECK-IN PHOTO")
-                        .font(.system(size: 34, weight: .black))
-                        .fontWidth(.condensed)
+                    Text("Add a private progress photo")
+                        .font(FWBFont.title.weight(.bold))
                         .foregroundStyle(Color.fwbWarmWhite)
 
                     PhotosPicker(selection: $selectedItem, matching: .images) {
@@ -1363,10 +1361,10 @@ private struct ProgressPhotoEntrySheet: View {
                                 VStack(spacing: 12) {
                                     Image(systemName: "photo.badge.plus")
                                         .font(.system(size: 36, weight: .semibold))
-                                    Text("CHOOSE PHOTO")
-                                        .font(.headline.weight(.black))
+                                    Text("Choose photo")
+                                        .font(FWBFont.headline.weight(.semibold))
                                     Text("Select a front, side, or back progress photo from your library.")
-                                        .font(.footnote)
+                                        .font(FWBFont.footnote)
                                         .foregroundStyle(Color.fwbMuted)
                                         .multilineTextAlignment(.center)
                                 }
@@ -1375,14 +1373,15 @@ private struct ProgressPhotoEntrySheet: View {
                                 .frame(height: 230)
                             }
                         }
-                        .background(Color.fwbCard, in: Rectangle())
-                        .overlay { Rectangle().stroke(Color.fwbLine, lineWidth: 1) }
+                        .background(Color.fwbCard, in: RoundedRectangle(cornerRadius: 18))
+                        .clipShape(RoundedRectangle(cornerRadius: 18))
+                        .overlay { RoundedRectangle(cornerRadius: 18).stroke(Color.fwbLine, lineWidth: 1) }
                     }
                     .buttonStyle(.plain)
 
                     VStack(alignment: .leading, spacing: 8) {
                         Text("PHOTO DATE")
-                            .font(.footnote.weight(.black))
+                            .font(FWBFont.footnote.weight(.semibold))
                             .foregroundStyle(Color.fwbMuted)
                         DatePicker("Photo date", selection: $capturedOn, in: ...Date(), displayedComponents: .date)
                             .labelsHidden()
@@ -1391,18 +1390,18 @@ private struct ProgressPhotoEntrySheet: View {
 
                     VStack(alignment: .leading, spacing: 8) {
                         Text("NOTE")
-                            .font(.footnote.weight(.black))
+                            .font(FWBFont.footnote.weight(.semibold))
                             .foregroundStyle(Color.fwbMuted)
                         TextField("Optional: front, side, week 4…", text: $note, axis: .vertical)
                             .lineLimit(2...4)
                             .padding(14)
-                            .background(Color.fwbSurface, in: Rectangle())
-                            .overlay { Rectangle().stroke(Color.fwbLine, lineWidth: 1) }
+                            .background(Color.fwbSurface, in: RoundedRectangle(cornerRadius: 12))
+                            .overlay { RoundedRectangle(cornerRadius: 12).stroke(Color.fwbLine, lineWidth: 1) }
                     }
 
                     if let message = localMessage ?? (store.message?.contains("could not") == true ? store.message : nil) {
                         Text(message)
-                            .font(.footnote.weight(.semibold))
+                            .font(FWBFont.footnote.weight(.semibold))
                             .foregroundStyle(Color.fwbRed)
                     }
 
@@ -1424,20 +1423,20 @@ private struct ProgressPhotoEntrySheet: View {
                         if store.isUploadingPhoto {
                             ProgressView().tint(.black)
                         } else {
-                            Label("Add Progress Photo", systemImage: "lock.fill")
+                            Label("Add progress photo", systemImage: "lock.fill")
                         }
                     }
                     .buttonStyle(FWBPrimaryButtonStyle())
                     .disabled(store.isUploadingPhoto)
 
                     Label("Stored privately. Photos use short-lived secure links inside the app.", systemImage: "lock.shield.fill")
-                        .font(.footnote)
+                        .font(FWBFont.footnote)
                         .foregroundStyle(Color.fwbMuted)
                 }
-                .padding(20)
+                .padding(16)
             }
             .background(Color.fwbBackground)
-            .navigationTitle("Add Photo")
+            .navigationTitle("Add photo")
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(Color.fwbBackground, for: .navigationBar)
             .toolbar {
@@ -1473,10 +1472,10 @@ private struct StatsLoadErrorView: View {
     var body: some View {
         VStack(spacing: 16) {
             Image(systemName: systemImage)
-                .font(.largeTitle)
+                .font(FWBFont.largeTitle)
                 .foregroundStyle(accentColor)
             Text(message)
-                .font(.subheadline)
+                .font(FWBFont.subheadline)
                 .foregroundStyle(Color.fwbMuted)
                 .multilineTextAlignment(.center)
             Button("Try Again", action: retry)

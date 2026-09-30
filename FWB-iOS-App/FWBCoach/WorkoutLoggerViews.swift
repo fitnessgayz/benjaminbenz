@@ -1,5 +1,47 @@
 import SwiftUI
 import UIKit
+import ImageIO
+import AVKit
+
+enum ExerciseMediaURL {
+    static func thumbnail(for imageURL: URL?) -> URL? {
+        guard let imageURL,
+              var components = URLComponents(url: imageURL, resolvingAgainstBaseURL: false),
+              components.path.contains("/exercise-images/approved/"),
+              components.path.contains("/webp-768/"),
+              components.path.hasSuffix(".webp") else { return imageURL }
+        components.path = components.path.replacingOccurrences(of: "/webp-768/", with: "/webp-480/")
+        return components.url ?? imageURL
+    }
+
+    static func isVideo(_ url: URL?) -> Bool {
+        guard let url else { return false }
+        return ["mp4", "mov", "m4v", "webm"].contains(url.pathExtension.lowercased())
+    }
+}
+
+private struct ExerciseMedia: Equatable {
+    let imageURL: URL?
+    let thumbnailURL: URL?
+    let motionURL: URL?
+    let primaryMuscle: String
+    let equipment: String
+    let fallbackDemoURL: URL?
+
+    var hasVisual: Bool { imageURL != nil || motionURL != nil }
+
+    var thumbnailURLs: [URL] {
+        [thumbnailURL, imageURL].compactMap { $0 }.reduce(into: []) { urls, url in
+            if !urls.contains(url) { urls.append(url) }
+        }
+    }
+}
+
+private struct ExerciseMediaViewerRequest: Identifiable {
+    let id = UUID()
+    let exerciseName: String
+    let media: ExerciseMedia
+}
 
 private enum WorkoutLogFocus: Hashable {
     case set(UUID)
@@ -95,6 +137,25 @@ private struct SequenceEditorRequest: Identifiable {
     let id = UUID()
 }
 
+private struct ExerciseNavigationRequest: Identifiable {
+    let id = UUID()
+}
+
+private struct WorkoutScrollRequest: Equatable {
+    let id = UUID()
+    let target: String
+}
+
+private struct WorkoutExerciseNavigationRow: Identifiable {
+    let id: String
+    let number: Int
+    let title: String
+    let group: String?
+    let completed: Int
+    let total: Int
+    let target: String
+}
+
 private struct WorkoutHistoryCopyPromptRequest: Identifiable {
     let exercise: Exercise
     let source: WorkoutExerciseCopySource
@@ -107,9 +168,12 @@ private struct WorkoutHistoryCopyPromptRequest: Identifiable {
 struct WorkoutLoggingView<WorkoutSelector: View>: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.clientNavigationTabID) private var clientNavigationTabID
+    @Environment(\.clientNavigationTabIsSelected) private var clientNavigationTabIsSelected
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     let workout: Workout
+    let seedSession: WorkoutHistorySession?
     let clientEmail: String
     let embedded: Bool
     let suggestedExercises: [Exercise]
@@ -142,6 +206,15 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
     @State private var lastAutosavedPersistenceToken: String?
     @State private var exerciseEditorRequest: ExerciseEditorRequest?
     @State private var sequenceEditorRequest: SequenceEditorRequest?
+    @State private var exerciseNavigationRequest: ExerciseNavigationRequest?
+    @State private var pendingNavigationTarget: String?
+    @State private var scrollRequest: WorkoutScrollRequest?
+    @State private var seedLoadedDate: String?
+    @State private var seedBaselineToken: String?
+    @State private var seededCopyWasEdited = false
+    @State private var pendingSlotAssignment: WorkoutGroupAssignment?
+    @State private var commentsExpanded = false
+    @State private var pendingGroupedCopyID: UUID?
     @State private var formCheckContext: FormCheckContext?
     @State private var pendingExerciseRemoval: Exercise?
     @State private var substitutionOriginals: [String: Exercise] = [:]
@@ -160,9 +233,11 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
         clientEmail: String,
         embedded: Bool = false,
         suggestedExercises: [Exercise] = [],
+        seedSession: WorkoutHistorySession? = nil,
         @ViewBuilder workoutSelector: () -> WorkoutSelector
     ) {
         self.workout = workout
+        self.seedSession = seedSession
         self.clientEmail = clientEmail
         self.embedded = embedded
         self.suggestedExercises = suggestedExercises
@@ -171,7 +246,7 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
         _drafts = State(initialValue: Self.makeDrafts(for: workout.exercises))
         _groupAssignments = State(initialValue: WorkoutSequencePlanner.inferredAssignments(for: workout))
         _customWorkoutFormat = State(
-            initialValue: Self.savedCustomWorkoutFormat(for: clientEmail)
+            initialValue: seedSession == nil ? Self.savedCustomWorkoutFormat(for: clientEmail) : .single
         )
     }
 
@@ -179,6 +254,7 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
         ZStack {
             Color.fwbBackground.ignoresSafeArea()
 
+            ScrollViewReader { scrollProxy in
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 16) {
                     workoutSelector
@@ -187,47 +263,68 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
                     if embedded {
                         EmbeddedWorkoutHeader(workout: workout)
                     } else {
-                        WorkoutSessionHeader(title: workout.title, startedAt: startedAt)
+                        WorkoutSessionHeader(title: workout.title.fwbWorkoutDisplayTitle, startedAt: startedAt)
                     }
                     workoutDateCard
+
+                    if let seedSession {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Label("Copied workout · all sets are ready to edit", systemImage: "doc.on.doc")
+                                .font(FWBFont.sized(12).weight(.semibold))
+                            Text("Your original log stays unchanged. Edit a value or save when you’re ready.")
+                                .font(FWBFont.sized(11))
+                            if seedSession.records.contains(where: { $0.isCardio || $0.exerciseCode.caseInsensitiveCompare("WARMUP") == .orderedSame }) {
+                                Text("Cardio and session warm-up entries remain in the original log; exercise sets and their warm-up sets are copied here.")
+                                    .font(FWBFont.sized(11))
+                            }
+                        }
+                        .foregroundStyle(Color.fwbMuted)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .accessibilityIdentifier("workout.copiedSessionNotice")
+                    }
 
                     if isCustomWorkout {
                         CustomWorkoutFormatPicker(selection: customWorkoutFormatBinding)
                     }
 
-                    WorkoutCommentSummaryCard(store: commentStore, context: commentContext)
-
-                    if !isCustomWorkout {
-                        Button {
-                            sequenceEditorRequest = SequenceEditorRequest()
-                        } label: {
-                            Label("EDIT SEQUENCE & GROUPS", systemImage: "arrow.up.arrow.down.square")
+                    HStack(spacing: 6) {
+                        Button { commentsExpanded.toggle() } label: {
+                            Label("Comments", systemImage: "bubble.left")
                         }
-                        .buttonStyle(FWBSecondaryButtonStyle())
+                        .buttonStyle(LoggerCompactButtonStyle())
+                        .accessibilityIdentifier("workout.commentsToggle")
+                        Spacer(minLength: 0)
+                        Button { sequenceEditorRequest = SequenceEditorRequest() } label: {
+                            Label("Exercises & groups", systemImage: "list.bullet")
+                        }
+                        .buttonStyle(LoggerCompactButtonStyle())
                         .disabled(exercises.isEmpty)
                         .accessibilityIdentifier("workout.editSequence")
                     }
+                    if commentsExpanded {
+                        WorkoutCommentSummaryCard(store: commentStore, context: commentContext)
+                    }
 
-                    ForEach(sequenceSections) { section in
-                        if section.isGroup, let assignment = section.assignment {
-                            WorkoutGroupCarousel(
-                                assignment: assignment,
-                                exercises: section.exercises,
-                                roundCount: roundCount(for: section),
-                                restText: roundRestText(for: section),
-                                guidedStep: guidedStep?.sectionID == section.id ? guidedStep : nil,
-                                completedRounds: completedRounds(for: section),
-                                roundTargets: roundTargets(for: section),
-                                saveStatus: groupSaveStatus,
-                                roundRestStatus: roundRestStatus(for: section),
-                                canLogCurrentSet: canLogGuidedSet(in: section),
-                                onLogCurrentSet: logGuidedSet
-                            ) { exercise in
-                                exerciseCard(for: exercise, initiallyExpanded: true)
+                    if isCustomWorkout && customWorkoutFormat != .single {
+                        ForEach(WorkoutRoundLayout.groupSlots(sections: sequenceSections, format: customWorkoutFormat)) { slot in
+                            if let section = slot.section {
+                                if let assignment = section.assignment {
+                                    groupedSection(section, assignment: assignment)
+                                } else {
+                                    ForEach(section.exercises) { exercise in exerciseCard(for: exercise) }
+                                }
+                            } else {
+                                blankCustomGroup(number: slot.number)
                             }
-                        } else {
-                            ForEach(section.exercises) { exercise in
-                                exerciseCard(for: exercise)
+                        }
+                    } else {
+                        ForEach(sequenceSections) { section in
+                            if let assignment = section.assignment {
+                                groupedSection(section, assignment: assignment)
+                            } else {
+                                ForEach(section.exercises) { exercise in
+                                    exerciseCard(for: exercise)
+                                }
                             }
                         }
                     }
@@ -235,6 +332,8 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
                     if exercises.isEmpty && !isCustomWorkout {
                         LoggerEmptyState()
                     }
+
+                    customBlankSlots
 
                     customExerciseActions
 
@@ -266,17 +365,26 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
                             } else {
                                 Image(systemName: "checkmark")
                             }
-                            Text(isSyncing && activeSaveIntent == .finish ? "FINISHING…" : "SAVE & FINISH WORKOUT")
+                            Text(isSyncing && activeSaveIntent == .finish ? "Finishing…" : "Save & finish workout")
                         }
                     }
                     .buttonStyle(FWBPrimaryButtonStyle())
                     .disabled(isSyncing || logStore.state == .loading)
                     .accessibilityIdentifier("workout.finish")
                 }
-                .padding(20)
+                .padding(.horizontal, 12)
+                .padding(.vertical, FWBLayout.pagePadding)
                 .padding(.bottom, 22)
             }
             .scrollDismissesKeyboard(.interactively)
+            .onChange(of: scrollRequest) { request in
+                guard let request else { return }
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    scrollProxy.scrollTo(request.target, anchor: .top)
+                }
+                scrollRequest = nil
+            }
+            }
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
             if restTimerStore.isVisible {
@@ -348,6 +456,11 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
                 )
             }
         }
+        .onChange(of: draftPersistenceToken) { token in
+            guard seedSession != nil, didLoadSession,
+                  let seedBaselineToken, token != seedBaselineToken else { return }
+            seededCopyWasEdited = true
+        }
         .task(id: autosaveTaskID) {
             guard didLoadSession,
                   shouldAutosaveProgress,
@@ -367,7 +480,15 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
             await achievementHistoryStore.loadIfNeeded(email: clientEmail)
         }
         .onAppear {
-            startedAt = Date()
+            NotificationCenter.default.post(name: Notification.Name("fwbWorkoutExerciseListAvailabilityChanged"), object: nil, userInfo: ["available": true, "tab": clientNavigationTabID])
+        }
+        .onDisappear {
+            NotificationCenter.default.post(name: Notification.Name("fwbWorkoutExerciseListAvailabilityChanged"), object: nil, userInfo: ["available": false, "tab": clientNavigationTabID])
+        }
+        .onChange(of: clientNavigationTabIsSelected) { selected in
+            if selected {
+                NotificationCenter.default.post(name: Notification.Name("fwbWorkoutExerciseListAvailabilityChanged"), object: nil, userInfo: ["available": true, "tab": clientNavigationTabID])
+            }
         }
         .onChange(of: scenePhase) { phase in
             guard phase == .active else { return }
@@ -391,13 +512,30 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
                 break
             }
         }
-        .sheet(item: $exerciseEditorRequest) { request in
+        .sheet(item: $exerciseEditorRequest, onDismiss: { pendingSlotAssignment = nil }) { request in
             ExercisePickerSheet(
                 request: request,
                 suggestions: suggestionNames
             ) { exerciseName in
                 applyExerciseEdit(request, exerciseName: exerciseName)
             }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("fwbWorkoutExerciseListRequested"))) { _ in
+            guard clientNavigationTabIsSelected, !exercises.isEmpty else { return }
+            focusedField = nil
+            exerciseNavigationRequest = ExerciseNavigationRequest()
+        }
+        .sheet(item: $exerciseNavigationRequest, onDismiss: {
+            if let target = pendingNavigationTarget {
+                scrollRequest = WorkoutScrollRequest(target: target)
+                pendingNavigationTarget = nil
+            }
+        }) { _ in
+            WorkoutExerciseNavigationSheet(rows: exerciseNavigationRows) { target in
+                pendingNavigationTarget = target
+            }
+            .presentationDetents([.medium, .large])
+            .presentationDragIndicator(.visible)
         }
         .sheet(item: $sequenceEditorRequest) { _ in
             WorkoutSequenceEditorView(
@@ -432,6 +570,23 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
             }
             .presentationDetents([.large])
             .presentationDragIndicator(.hidden)
+        }
+        .confirmationDialog(
+            "Replace entered set values?",
+            isPresented: Binding(get: { pendingGroupedCopyID != nil }, set: { if !$0 { pendingGroupedCopyID = nil } }),
+            titleVisibility: .visible
+        ) {
+            Button("Copy Previous Set") {
+                if let id = pendingGroupedCopyID,
+                   let draft = drafts.first(where: { $0.id == id }),
+                   let exercise = exercises.first(where: { matches(draft, $0) }) {
+                    copyPreviousSet(id, for: exercise)
+                }
+                pendingGroupedCopyID = nil
+            }
+            Button("Cancel", role: .cancel) { pendingGroupedCopyID = nil }
+        } message: {
+            Text("This set will use the previous set’s values and remain editable and incomplete.")
         }
         .confirmationDialog(
             "Remove exercise?",
@@ -481,14 +636,14 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
     private var workoutDatePicker: some View {
         HStack(spacing: 14) {
             Image(systemName: "calendar")
-                .font(.headline)
+                .font(FWBFont.headline)
                 .foregroundStyle(Color.fwbLime)
                 .frame(width: 42, height: 42)
-                .background(Color.fwbSurface, in: Rectangle())
+                .background(Color.fwbSurface, in: RoundedRectangle(cornerRadius: FWBLayout.controlRadius, style: .continuous))
 
             VStack(alignment: .leading, spacing: 3) {
-                Text("WORKOUT DATE")
-                    .font(.footnote.bold())
+                Text("Workout date")
+                    .font(FWBFont.footnote.bold())
                     .tracking(0.8)
                     .foregroundStyle(Color.fwbMuted)
                 DatePicker("Workout date", selection: $entryDate, in: ...Date(), displayedComponents: .date)
@@ -501,14 +656,14 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
     private var webSyncLabel: some View {
         VStack(alignment: .trailing, spacing: 3) {
             Label(
-                isAutosaving ? "AUTOSAVING…" : "AUTOSAVE ON",
+                seedSession != nil && !seededCopyWasEdited ? "DRAFT READY" : (isAutosaving ? "AUTOSAVING…" : "AUTOSAVE ON"),
                 systemImage: isAutosaving ? "arrow.triangle.2.circlepath" : "checkmark.circle.fill"
             )
-            .font(.footnote.bold())
+            .font(FWBFont.footnote.bold())
             .foregroundStyle(Color.fwbLime)
 
-            Text("WEB + IPHONE")
-                .font(.caption2.weight(.semibold))
+            Text(seedSession != nil && !seededCopyWasEdited ? "EDIT TO AUTOSAVE" : "WEB + IPHONE")
+                .font(FWBFont.caption2.weight(.semibold))
                 .foregroundStyle(Color.fwbMuted)
         }
         .accessibilityElement(children: .combine)
@@ -574,22 +729,66 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
     }
 
     private var sequenceSections: [WorkoutSequenceSection] {
-        WorkoutSequencePlanner.sections(
-            exercises: exercises,
-            assignments: groupAssignments
-        )
+        WorkoutRoundLayout.sections(exercises: exercises, assignments: groupAssignments, preserveSingleGroups: isCustomWorkout)
+    }
+
+    private var exerciseNavigationRows: [WorkoutExerciseNavigationRow] {
+        let orderedSections = isCustomWorkout && customWorkoutFormat != .single
+            ? WorkoutRoundLayout.groupSlots(sections: sequenceSections, format: customWorkoutFormat).compactMap(\.section)
+            : sequenceSections
+        return orderedSections.flatMap { section in
+            section.exercises.map { exercise in
+                let sets = drafts.filter { matches($0, exercise) && !$0.isWarmUp }
+                return WorkoutExerciseNavigationRow(
+                    id: exercise.id,
+                    number: displayExerciseNumber(exercise),
+                    title: exercise.name.isEmpty ? "Exercise" : exercise.name,
+                    group: section.assignment?.label,
+                    completed: sets.filter(\.isCompleted).count,
+                    total: sets.count,
+                    target: section.assignment == nil ? "workout.exercise.\(exercise.id)" : "workout.group.\(section.id)"
+                )
+            }
+        }
     }
 
     private var guidedStep: GuidedWorkoutStep? {
-        WorkoutSequencePlanner.guidedStep(sections: sequenceSections, drafts: drafts)
+        WorkoutSequencePlanner.guidedStep(sections: sequenceSections, drafts: drafts.filter { !$0.isWarmUp })
+    }
+
+    private func media(for exercise: Exercise) -> ExerciseMedia {
+        let exerciseKey = ExerciseNameIdentity.key(for: exercise.name)
+        let approved = exerciseLibraryStore.exercises.first { candidate in
+            ExerciseNameIdentity.key(for: candidate.name) == exerciseKey
+                || candidate.aliases.contains { ExerciseNameIdentity.key(for: $0) == exerciseKey }
+        }
+
+        func url(_ value: String?) -> URL? {
+            guard let value = value?.trimmingCharacters(in: .whitespacesAndNewlines),
+                  !value.isEmpty else { return nil }
+            return URL(string: value)
+        }
+
+        let imageURL = url(approved?.imageURL)
+        return ExerciseMedia(
+            imageURL: imageURL,
+            thumbnailURL: ExerciseMediaURL.thumbnail(for: imageURL),
+            motionURL: url(approved?.motionURL),
+            primaryMuscle: approved?.primaryMuscle.trimmingCharacters(in: .whitespacesAndNewlines) ?? "",
+            equipment: approved?.equipment.trimmingCharacters(in: .whitespacesAndNewlines) ?? "",
+            fallbackDemoURL: exercise.demoURL
+        )
     }
 
     @ViewBuilder
-    private func exerciseCard(for exercise: Exercise, initiallyExpanded: Bool? = nil) -> some View {
+    private func exerciseCard(for exercise: Exercise, initiallyExpanded: Bool? = nil, groupedSummary: Bool = false) -> some View {
         let index = exercises.firstIndex(where: { $0.id == exercise.id }) ?? 0
         let step = guidedStep
         WorkoutExerciseLogCard(
             exercise: exercise,
+            media: media(for: exercise),
+            groupedSummary: groupedSummary,
+            exerciseNumber: displayExerciseNumber(exercise),
             drafts: $drafts,
             focusedField: $focusedField,
             entryStyle: entryStyle,
@@ -617,6 +816,9 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
             isSavingProgress: isSyncing && activeExerciseSaveID == exercise.id,
             didSaveProgress: lastSavedExerciseID == exercise.id,
             saveProgressDisabled: isSyncing || logStore.state == .loading,
+            onReorderExercise: isCustomWorkout ? {
+                sequenceEditorRequest = SequenceEditorRequest()
+            } : nil,
             onAddSet: { addSet(to: exercise) },
             onDeleteSet: { deleteSet($0, from: exercise) },
             onCopyLastWorkout: { source in
@@ -667,12 +869,286 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
                 )
             }
         )
+        .id("workout.exercise.\(exercise.id)")
+    }
+
+    @ViewBuilder
+    private func groupedSection(_ section: WorkoutSequenceSection, assignment: WorkoutGroupAssignment) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(assignment.label)
+                        .font(FWBFont.sized(24).weight(.bold))
+                        .foregroundStyle(Color.fwbWarmWhite)
+                    Text(groupInstruction(for: section))
+                        .font(FWBFont.footnote)
+                        .foregroundStyle(Color.fwbMuted)
+                }
+                Spacer(minLength: 8)
+                Text("\(section.exercises.reduce(0) { $0 + completedRounds(for: section)[$1.id, default: 0] }) / \(section.exercises.reduce(0) { $0 + roundTargets(for: section)[$1.id, default: 0] }) complete")
+                    .font(FWBFont.sized(11).weight(.semibold))
+                    .foregroundStyle(Color.fwbLime)
+            }
+            .padding(.vertical, 4)
+
+            ForEach(section.exercises) { exercise in
+                exerciseCard(for: exercise, initiallyExpanded: false, groupedSummary: true)
+            }
+
+            if isCustomWorkout {
+                let target = assignment.kind == .superset ? 2 : 3
+                if section.exercises.count < target {
+                    Button {
+                        pendingSlotAssignment = assignment
+                        exerciseEditorRequest = ExerciseEditorRequest(mode: .add(.currentGroup))
+                    } label: {
+                        Label("Input exercise name here", systemImage: "plus")
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .buttonStyle(LoggerCompactButtonStyle())
+                }
+            }
+
+            HStack(spacing: 12) {
+                Button {
+                    let lastRoundIDs = WorkoutRoundLayout.lastRoundSetIDs(exercises: section.exercises, drafts: drafts)
+                    for exercise in section.exercises {
+                        for draft in drafts.filter({ matches($0, exercise) && lastRoundIDs.contains($0.id) }) {
+                            deleteSet(draft.id, from: exercise)
+                        }
+                    }
+                } label: { Image(systemName: "minus").frame(width: 54, height: 50) }
+                .buttonStyle(WorkoutRoundStepperButtonStyle(accented: false))
+                .accessibilityLabel("Remove last round")
+                .disabled(roundCount(for: section) <= 1)
+                HStack(spacing: 12) {
+                    Text("ROUNDS")
+                        .font(FWBFont.caption.weight(.bold))
+                        .tracking(1.1)
+                        .foregroundStyle(Color.fwbMuted)
+                    Text("\(roundCount(for: section))")
+                        .font(FWBFont.sized(22).weight(.bold))
+                        .foregroundStyle(Color.fwbWarmWhite)
+                }
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 50)
+                    .background(Color.fwbCard, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .overlay { RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(Color.fwbLine, lineWidth: 1) }
+                Button {
+                    for exercise in section.exercises { addSet(to: exercise) }
+                } label: { Image(systemName: "plus").frame(width: 54, height: 50) }
+                .buttonStyle(WorkoutRoundStepperButtonStyle(accented: true))
+                .accessibilityLabel("Add round")
+            }
+
+            let warmUps = drafts.filter { draft in draft.isWarmUp && section.exercises.contains { matches(draft, $0) } }
+            if !warmUps.isEmpty {
+                VStack(alignment: .leading, spacing: 9) {
+                    HStack(alignment: .firstTextBaseline) {
+                        Text("Warm-up")
+                            .font(FWBFont.sized(18).weight(.bold))
+                        Spacer(minLength: 8)
+                        Text("OPTIONAL · EXCLUDED FROM WORKING VOLUME")
+                            .font(FWBFont.caption2.weight(.bold))
+                            .foregroundStyle(Color.fwbMuted)
+                            .multilineTextAlignment(.trailing)
+                    }
+                    LoggerTableHeadings(entryStyle: entryStyle, firstTitle: "Exercise")
+                    ForEach(warmUps) { draft in
+                        if let exercise = section.exercises.first(where: { matches(draft, $0) }) {
+                            groupedSetRow(draft, exercise: exercise, section: section)
+                        }
+                    }
+                }
+                .padding(12)
+                .background(Color.fwbGold.opacity(0.08), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .overlay(alignment: .leading) {
+                    RoundedRectangle(cornerRadius: 3, style: .continuous)
+                        .fill(Color.fwbGold)
+                        .frame(width: 5)
+                }
+                .overlay { RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(Color.fwbLine, lineWidth: 1) }
+            }
+
+            ForEach(1...max(roundCount(for: section), 1), id: \.self) { round in
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack {
+                        Text("Round \(round)")
+                            .font(FWBFont.sized(13).weight(.semibold))
+                        Spacer(minLength: 6)
+                        if round > 1 {
+                            Button {
+                                for exercise in section.exercises {
+                                    if let draft = drafts.first(where: { matches($0, exercise) && !$0.isWarmUp && $0.setNumber == round }), !draft.containsEntry {
+                                        copyPreviousSet(draft.id, for: exercise)
+                                    }
+                                }
+                            } label: {
+                                Label("Copy previous", systemImage: "doc.on.doc")
+                            }
+                            .buttonStyle(LoggerCompactButtonStyle())
+                            .accessibilityHint("Copies the previous round into empty sets only")
+                        }
+                    }
+                    LoggerTableHeadings(entryStyle: entryStyle, firstTitle: "Exercise")
+                    ForEach(section.exercises) { exercise in
+                        if let draft = drafts.first(where: { matches($0, exercise) && !$0.isWarmUp && $0.setNumber == round }) {
+                            groupedSetRow(draft, exercise: exercise, section: section)
+                        }
+                    }
+                    let roundDrafts = drafts.filter { draft in !draft.isWarmUp && draft.setNumber == round && section.exercises.contains { matches(draft, $0) } }
+                    let completed = !roundDrafts.isEmpty && roundDrafts.allSatisfy(\.isCompleted)
+                    Button {
+                        for exercise in section.exercises {
+                            if let draft = drafts.first(where: { matches($0, exercise) && !$0.isWarmUp && $0.setNumber == round }) {
+                                handleSetCompletion(for: exercise, draft: draft, isCompleted: !completed)
+                            }
+                        }
+                    } label: {
+                        Label(completed ? "Round complete" : "Log round", systemImage: completed ? "checkmark.circle.fill" : "checkmark")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(LoggerCompactButtonStyle(accented: true))
+                    .disabled(!completed && (roundDrafts.isEmpty || !roundDrafts.allSatisfy(WorkoutRoundLayout.canComplete)))
+                    .accessibilityIdentifier("workout.group.logRound.\(section.id).\(round)")
+                }
+                .padding(12)
+                .background(Color.fwbCard, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .overlay(alignment: .leading) {
+                    RoundedRectangle(cornerRadius: 3, style: .continuous)
+                        .fill(Color.fwbLime)
+                        .frame(width: 5)
+                }
+                .overlay { RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(Color.fwbLine, lineWidth: 1) }
+            }
+
+            if let status = roundRestStatus(for: section) {
+                WorkoutRoundRestCallout(status: status, restText: roundRestText(for: section), firstExerciseCode: section.exercises.first?.code ?? "1")
+            }
+            HStack {
+                Label(groupSaveStatus.title.capitalized, systemImage: groupSaveStatus.systemImage)
+                Spacer(minLength: 4)
+                if !roundRestText(for: section).isEmpty {
+                    Label(roundRestText(for: section), systemImage: "timer")
+                }
+            }
+            .font(FWBFont.sized(11).weight(.medium))
+            .foregroundStyle(Color.fwbMuted)
+        }
+        .padding(10)
+        .background(Color.fwbSurface, in: RoundedRectangle(cornerRadius: 18))
+        .overlay { RoundedRectangle(cornerRadius: 18).stroke(Color.fwbLine, lineWidth: 1) }
+        .id("workout.group.\(section.id)")
+        .accessibilityIdentifier("workout.group.\(section.id)")
+    }
+
+    private func displayExerciseNumber(_ exercise: Exercise) -> Int {
+        if isCustomWorkout, let assignment = groupAssignments[exercise.id],
+           assignment.id.hasPrefix("CUSTOM_"),
+           let number = Int(assignment.label.split(separator: " ").last ?? "") {
+            let members = exercises.filter { groupAssignments[$0.id]?.id == assignment.id }
+            let position = members.firstIndex(where: { $0.id == exercise.id }) ?? 0
+            let count = assignment.kind == .superset ? 2 : 3
+            return (number - 1) * count + position + 1
+        }
+        return (exercises.firstIndex(where: { $0.id == exercise.id }) ?? 0) + 1
+    }
+
+    private func groupedSetRow(_ draft: WorkoutSetDraft, exercise: Exercise, section: WorkoutSequenceSection) -> some View {
+        let exerciseNumber = displayExerciseNumber(exercise)
+        return WorkoutSetLogRow(
+            draft: Binding(
+                get: { drafts.first(where: { $0.id == draft.id }) ?? draft },
+                set: { updated in
+                    guard let index = drafts.firstIndex(where: { $0.id == draft.id }) else { return }
+                    copiedDraftIDs.remove(draft.id)
+                    drafts[index] = updated
+                }
+            ),
+            focusedField: $focusedField,
+            entryStyle: entryStyle,
+            preferredEffortScale: preferredEffortScale,
+            previousResult: PreviousWorkoutResults.sets(for: exercise, before: dateString, in: achievementHistoryStore.sessions)[draft.setNumber],
+            isPreviousHistoryLoading: false,
+            canCopyPreviousSet: draft.setNumber > 1,
+            wasCopied: copiedDraftIDs.contains(draft.id),
+            groupCode: String(exerciseNumber),
+            onCompletionChanged: { handleSetCompletion(for: exercise, draft: draft, isCompleted: $0) },
+            onSetTypeChanged: { updateSetType($0, for: draft.id, in: exercise) },
+            onSetLabelChanged: { updateSetLabel($0, for: draft.id, in: exercise) },
+            onCopyPreviousSet: {
+                if draft.containsEntry { pendingGroupedCopyID = draft.id }
+                else { copyPreviousSet(draft.id, for: exercise) }
+            },
+            onDelete: { deleteSet(draft.id, from: exercise) }
+        )
+    }
+
+    @ViewBuilder
+    private var customBlankSlots: some View {
+        if isCustomWorkout && customWorkoutFormat == .single {
+            ForEach(exercises.count..<max(exercises.count, 6), id: \.self) { index in
+                CustomBlankExerciseSlot(number: index + 1, suggestions: suggestionNames) { name in
+                    let exercise = insertCustomExercise(code: nextAddedExerciseCode(), name: name, placement: .currentGroup)
+                    offerHistoryCopy(for: exercise)
+                }
+            }
+        }
+    }
+
+    private func blankCustomGroup(number: Int) -> some View {
+        let kind: WorkoutGroupKind = customWorkoutFormat == .superset ? .superset : .circuit
+        let count = kind == .superset ? 2 : 3
+        let assignment = WorkoutGroupAssignment(id: "CUSTOM_\(kind.rawValue.uppercased())_\(number)", kind: kind, label: "\(kind.title) \(number)")
+        return VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text(assignment.label).font(FWBFont.sized(19).weight(.bold))
+                Spacer()
+                Text("0 / 0 complete").font(FWBFont.sized(11).weight(.semibold)).foregroundStyle(Color.fwbMuted)
+            }
+            ForEach(0..<count, id: \.self) { slot in
+                CustomBlankExerciseSlot(number: (number - 1) * count + slot + 1, suggestions: suggestionNames, showsSetGrid: false) { name in
+                    let existingAssignments = groupAssignments
+                    let exercise = insertCustomExercise(code: nextAddedExerciseCode(), name: name, placement: .currentGroup)
+                    groupAssignments = existingAssignments
+                    groupAssignments[exercise.id] = assignment
+                    offerHistoryCopy(for: exercise)
+                }
+            }
+            Text("3 rounds")
+                .font(FWBFont.sized(12).weight(.semibold))
+                .foregroundStyle(Color.fwbMuted)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 5)
+            ForEach(1...3, id: \.self) { round in
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Round \(round)").font(FWBFont.sized(12).weight(.semibold))
+                    EmptyWorkoutSetGrid(labels: (0..<count).map { String((number - 1) * count + $0 + 1) }, firstTitle: "Exercise")
+                }
+            }
+            Text("Choose exercise names above to enter your rounds.")
+                .font(FWBFont.sized(11))
+                .foregroundStyle(Color.fwbMuted)
+        }
+        .padding(12)
+        .background(Color.fwbCard, in: RoundedRectangle(cornerRadius: 20))
+        .overlay { RoundedRectangle(cornerRadius: 20).stroke(Color.fwbLine, lineWidth: 1) }
+        .accessibilityIdentifier("customWorkout.blankGroup.\(number)")
     }
 
     private func roundCount(for section: WorkoutSequenceSection) -> Int {
-        section.exercises.reduce(0) { result, exercise in
-            max(result, drafts.filter { matches($0, exercise) }.map(\.setNumber).max() ?? 0)
+        WorkoutRoundLayout.roundCount(exercises: section.exercises, drafts: drafts)
+    }
+
+    private func groupInstruction(for section: WorkoutSequenceSection) -> String {
+        let codes = section.exercises.map { exercise in
+            let code = exercise.code.trimmingCharacters(in: .whitespacesAndNewlines)
+            return code.isEmpty ? String(displayExerciseNumber(exercise)) : code.uppercased()
         }
+        let sequence = codes.joined(separator: " → ")
+        let rest = roundRestText(for: section).trimmingCharacters(in: .whitespacesAndNewlines)
+        let restText = rest.isEmpty ? "rest as prescribed" : "rest \(rest)"
+        return "Complete \(sequence), \(restText), repeat \(max(roundCount(for: section), 1))×"
     }
 
     private func completedRounds(for section: WorkoutSequenceSection) -> [String: Int] {
@@ -840,7 +1316,7 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
     }
 
     private var autosaveTaskID: String {
-        "autosave|\(didLoadSession)|\(dateString)|\(draftPersistenceToken)"
+        "autosave|\(didLoadSession)|\(seededCopyWasEdited)|\(dateString)|\(draftPersistenceToken)"
     }
 
     private var isAutosaving: Bool {
@@ -891,7 +1367,8 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
     }
 
     private var shouldAutosaveProgress: Bool {
-        guard activeSaveIntent == nil,
+        guard (seedSession == nil || seededCopyWasEdited),
+              activeSaveIntent == nil,
               activeExerciseSaveID == nil,
               drafts.contains(where: \.containsEntry),
               !drafts.contains(where: { $0.effortValidationMessage != nil }) else { return false }
@@ -1021,6 +1498,9 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
         draft: WorkoutSetDraft,
         isCompleted: Bool
     ) {
+        guard let draftIndex = drafts.firstIndex(where: { $0.id == draft.id }),
+              !isCompleted || WorkoutRoundLayout.canComplete(drafts[draftIndex]) else { return }
+        drafts[draftIndex].isCompleted = isCompleted
         guard isCompleted else { return }
         let exerciseDrafts = drafts.filter { matches($0, exercise) && !$0.isWarmUp }
         let exerciseIsComplete = !exerciseDrafts.isEmpty && exerciseDrafts.allSatisfy(\.isCompleted)
@@ -1211,12 +1691,7 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
             copiedDraftIDs.subtract(drafts.filter { matches($0, exercise) }.map(\.id))
             drafts.removeAll { matches($0, exercise) }
             groupAssignments.removeValue(forKey: exercise.id)
-            if isCustomWorkout && customWorkoutFormat == .superset {
-                groupAssignments = WorkoutSequencePlanner.customAssignments(
-                    for: .superset,
-                    exercises: exercises
-                )
-            } else if !isCustomWorkout || customWorkoutFormat == .single {
+            if !isCustomWorkout || customWorkoutFormat == .single {
                 groupAssignments = WorkoutSequencePlanner.normalizedAssignments(
                     exercises: exercises,
                     assignments: groupAssignments
@@ -1229,11 +1704,17 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
     private func applyExerciseEdit(_ request: ExerciseEditorRequest, exerciseName: String) {
         switch request.mode {
         case .add(let placement):
+            let priorAssignments = groupAssignments
             let exercise = insertCustomExercise(
                 code: nextAddedExerciseCode(),
                 name: exerciseName,
                 placement: placement
             )
+            if let assignment = pendingSlotAssignment {
+                groupAssignments = priorAssignments
+                groupAssignments[exercise.id] = assignment
+                pendingSlotAssignment = nil
+            }
             offerHistoryCopy(for: exercise)
         case .substitute(let exercise):
             substituteExercise(exercise, with: exerciseName)
@@ -1272,17 +1753,22 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
             video: template?.video ?? ""
         )
         exercises.append(exercise)
-        drafts.append(WorkoutSetDraft(exercise: exercise, setNumber: 1))
+        drafts.append(contentsOf: (1...3).map { WorkoutSetDraft(exercise: exercise, setNumber: $0) })
 
         guard isCustomWorkout else { return exercise }
         switch customWorkoutFormat {
         case .single:
             groupAssignments.removeValue(forKey: exercise.id)
         case .superset:
-            groupAssignments = WorkoutSequencePlanner.customAssignments(
-                for: .superset,
-                exercises: exercises
-            )
+            let existing = exercises.dropLast().compactMap { groupAssignments[$0.id] }.filter { $0.kind == .superset }
+            if let openGroup = existing.last(where: { assignment in
+                exercises.dropLast().filter { groupAssignments[$0.id]?.id == assignment.id }.count < 2
+            }) {
+                groupAssignments[exercise.id] = openGroup
+            } else {
+                let nextNumber = (existing.compactMap { Int($0.label.split(separator: " ").last ?? "") }.max() ?? 0) + 1
+                groupAssignments[exercise.id] = WorkoutGroupAssignment(id: "CUSTOM_SUPERSET_\(nextNumber)", kind: .superset, label: "Superset \(nextNumber)")
+            }
         case .circuit:
             let assignment: WorkoutGroupAssignment
             if placement == .newCircuit {
@@ -1340,10 +1826,9 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
         customWorkoutFormat = format
         Self.saveCustomWorkoutFormat(format, for: clientEmail)
         withAnimation(.easeInOut(duration: 0.22)) {
-            groupAssignments = WorkoutSequencePlanner.customAssignments(
-                for: format,
-                exercises: exercises
-            )
+            groupAssignments = format == .circuit
+                ? WorkoutRoundLayout.circuitAssignments(exercises: exercises)
+                : WorkoutSequencePlanner.customAssignments(for: format, exercises: exercises)
         }
     }
 
@@ -1502,6 +1987,29 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
     }
 
     private func loadSavedSets() async {
+        if let seedSession {
+            if seedLoadedDate == nil {
+                exercises = workout.exercises
+                drafts = WorkoutHistoryCopyPlan.seedDrafts(session: seedSession, exercises: exercises)
+                groupAssignments = [:]
+                customWorkoutFormat = .single
+                copiedDraftIDs = Set(drafts.map(\.id))
+                seedBaselineToken = draftPersistenceToken
+            }
+            if seedLoadedDate != dateString {
+                if seedLoadedDate != nil {
+                    drafts = WorkoutHistoryCopyPlan.freshDrafts(drafts, exercises: exercises)
+                    copiedDraftIDs = Set(drafts.map(\.id))
+                    seededCopyWasEdited = false
+                    seedBaselineToken = draftPersistenceToken
+                }
+                sessionID = UUID()
+                baseRemoteUpdatedAt = nil
+                seedLoadedDate = dateString
+            }
+            return
+        }
+
         substitutionOriginals = [:]
         copiedDraftIDs = []
         groupAssignments = WorkoutSequencePlanner.inferredAssignments(for: workout)
@@ -1694,13 +2202,15 @@ extension WorkoutLoggingView where WorkoutSelector == EmptyView {
         workout: Workout,
         clientEmail: String,
         embedded: Bool = false,
-        suggestedExercises: [Exercise] = []
+        suggestedExercises: [Exercise] = [],
+        seedSession: WorkoutHistorySession? = nil
     ) {
         self.init(
             workout: workout,
             clientEmail: clientEmail,
             embedded: embedded,
-            suggestedExercises: suggestedExercises
+            suggestedExercises: suggestedExercises,
+            seedSession: seedSession
         ) {
             EmptyView()
         }
@@ -1713,13 +2223,13 @@ private struct EmbeddedWorkoutHeader: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 9) {
             Text(workout.formatLabel.uppercased())
-                .font(.footnote.bold())
+                .font(FWBFont.footnote.bold())
                 .tracking(1.1)
                 .foregroundStyle(Color.fwbLime)
 
             Text(workout.title.fwbTitleCased)
-                .font(.title.weight(.black))
-                .fontWidth(.condensed)
+                .font(FWBFont.sized(23).weight(.bold))
+
                 .foregroundStyle(Color.fwbWarmWhite)
                 .lineLimit(2)
                 .minimumScaleFactor(0.72)
@@ -1728,24 +2238,24 @@ private struct EmbeddedWorkoutHeader: View {
             if !workout.focus.isEmpty {
                 HStack(alignment: .top, spacing: 9) {
                     Text("FOCUS")
-                        .font(.footnote.bold())
+                        .font(FWBFont.footnote.bold())
                         .tracking(0.7)
                         .foregroundStyle(Color.black)
                         .padding(.horizontal, 7)
                         .padding(.vertical, 4)
                         .frame(minHeight: 22)
-                        .background(Color.fwbAccentFill, in: Rectangle())
+                        .background(Color.fwbAccentFill, in: RoundedRectangle(cornerRadius: FWBLayout.controlRadius, style: .continuous))
 
                     Text(workout.focus)
-                        .font(.footnote.weight(.semibold))
+                        .font(FWBFont.footnote.weight(.semibold))
                         .foregroundStyle(Color.fwbWarmWhite)
                         .fixedSize(horizontal: false, vertical: true)
 
                     Spacer(minLength: 0)
                 }
                 .padding(10)
-                .background(Color.fwbSurface, in: Rectangle())
-                .overlay { Rectangle().stroke(Color.fwbLine, lineWidth: 1) }
+                .background(Color.fwbSurface, in: RoundedRectangle(cornerRadius: FWBLayout.controlRadius, style: .continuous))
+                .overlay { RoundedRectangle(cornerRadius: FWBLayout.controlRadius, style: .continuous).stroke(Color.fwbLine, lineWidth: 1) }
             }
 
             Text(workout.format.lowercased() == "custom"
@@ -1753,7 +2263,7 @@ private struct EmbeddedWorkoutHeader: View {
                  : workout.format.lowercased() == "mobility"
                     ? "Add stretches and foam-rolling movements from the mobility library, then save your session."
                     : "Open each exercise, log your sets, then save or finish the workout below.")
-                .font(.footnote)
+                .font(FWBFont.footnote)
                 .foregroundStyle(Color.fwbMuted)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -1786,13 +2296,13 @@ private struct WorkoutSessionHeader: View {
 
     private var titleContent: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("ACTIVE WORKOUT")
-                .font(.footnote.bold())
+            Text("Active workout")
+                .font(FWBFont.footnote.bold())
                 .tracking(1.2)
                 .foregroundStyle(Color.fwbLime)
             Text(title)
-                .font(.largeTitle.weight(.black))
-                .fontWidth(.condensed)
+                .font(FWBFont.sized(24).weight(.bold))
+
                 .foregroundStyle(Color.fwbWarmWhite)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -1848,11 +2358,11 @@ private struct CustomExerciseNameComposer: View {
         VStack(alignment: .leading, spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
                 Text("EXERCISE NAME")
-                    .font(.headline.weight(.black))
-                    .fontWidth(.condensed)
+                    .font(FWBFont.headline.weight(.semibold))
+
                     .foregroundStyle(Color.fwbWarmWhite)
                 Text("Start typing to see suggestions, or enter your own exercise name.")
-                    .font(.footnote)
+                    .font(FWBFont.footnote)
                     .foregroundStyle(Color.fwbMuted)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -1898,8 +2408,8 @@ private struct CustomExerciseNameComposer: View {
             }
             .padding(.horizontal, 14)
             .frame(minHeight: 50)
-            .background(Color.fwbSurface, in: Rectangle())
-            .overlay { Rectangle().stroke(Color.fwbLine, lineWidth: 1) }
+            .background(Color.fwbSurface, in: RoundedRectangle(cornerRadius: FWBLayout.controlRadius, style: .continuous))
+            .overlay { RoundedRectangle(cornerRadius: FWBLayout.controlRadius, style: .continuous).stroke(Color.fwbLine, lineWidth: 1) }
 
             if isFocused && !trimmedExerciseName.isEmpty {
                 VStack(spacing: 0) {
@@ -1919,16 +2429,16 @@ private struct CustomExerciseNameComposer: View {
                                     .foregroundStyle(Color.fwbLime)
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text("ADD MANUAL EXERCISE")
-                                        .font(.caption.weight(.black))
+                                        .font(FWBFont.caption.weight(.semibold))
                                         .tracking(0.45)
                                         .foregroundStyle(Color.fwbMuted)
                                     Text(trimmedExerciseName.fwbTitleCased)
-                                        .font(.subheadline.weight(.bold))
+                                        .font(FWBFont.subheadline.weight(.bold))
                                         .foregroundStyle(Color.fwbWarmWhite)
                                 }
                                 Spacer(minLength: 8)
                                 Image(systemName: "plus")
-                                    .font(.footnote.weight(.black))
+                                    .font(FWBFont.footnote.weight(.semibold))
                                     .foregroundStyle(Color.fwbLime)
                             }
                             .padding(.horizontal, 12)
@@ -1940,8 +2450,8 @@ private struct CustomExerciseNameComposer: View {
                         .accessibilityIdentifier("customWorkout.addManualExercise")
                     }
                 }
-                .background(Color.fwbSurface, in: Rectangle())
-                .overlay { Rectangle().stroke(Color.fwbLine, lineWidth: 1) }
+                .background(Color.fwbSurface, in: RoundedRectangle(cornerRadius: FWBLayout.controlRadius, style: .continuous))
+                .overlay { RoundedRectangle(cornerRadius: FWBLayout.controlRadius, style: .continuous).stroke(Color.fwbLine, lineWidth: 1) }
                 .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
@@ -1967,13 +2477,13 @@ private struct CustomExerciseNameComposer: View {
             isFocused = true
         } label: {
             Label(title, systemImage: systemImage)
-                .font(.caption.weight(.black))
-                .fontWidth(.condensed)
+                .font(FWBFont.caption.weight(.semibold))
+
                 .foregroundStyle(placement == value ? Color.black : Color.fwbWarmWhite)
                 .frame(maxWidth: .infinity, minHeight: 42)
-                .background(placement == value ? Color.fwbAccentFill : Color.fwbSurface)
+                .background(placement == value ? Color.fwbAccentFill : Color.fwbSurface, in: RoundedRectangle(cornerRadius: FWBLayout.controlRadius, style: .continuous))
                 .overlay {
-                    Rectangle().stroke(placement == value ? Color.fwbLime : Color.fwbLine, lineWidth: 1)
+                    RoundedRectangle(cornerRadius: FWBLayout.controlRadius, style: .continuous).stroke(placement == value ? Color.fwbLime : Color.fwbLine, lineWidth: 1)
                 }
         }
         .buttonStyle(.plain)
@@ -1988,12 +2498,12 @@ private struct CustomExerciseNameComposer: View {
                 Image(systemName: "figure.strengthtraining.traditional")
                     .foregroundStyle(Color.fwbLime)
                 Text(suggestion.fwbTitleCased)
-                    .font(.subheadline.weight(.semibold))
+                    .font(FWBFont.subheadline.weight(.semibold))
                     .foregroundStyle(Color.fwbWarmWhite)
                     .multilineTextAlignment(.leading)
                 Spacer(minLength: 8)
                 Image(systemName: "plus")
-                    .font(.footnote.weight(.black))
+                    .font(FWBFont.footnote.weight(.semibold))
                     .foregroundStyle(Color.fwbLime)
             }
             .padding(.horizontal, 12)
@@ -2023,80 +2533,32 @@ private struct CustomExerciseNameComposer: View {
 }
 
 private struct CustomWorkoutFormatPicker: View {
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
-
     @Binding var selection: CustomWorkoutFormat
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("CHOOSE A FORMAT")
-                    .font(.headline.weight(.black))
-                    .fontWidth(.condensed)
-                    .foregroundStyle(Color.fwbWarmWhite)
-                Text("Applies to this custom workout")
-                    .font(.subheadline)
-                    .foregroundStyle(Color.fwbMuted)
-            }
-
-            Group {
-                if dynamicTypeSize.isAccessibilitySize {
-                    VStack(spacing: 8) {
-                        formatButtons
+        VStack(alignment: .leading, spacing: 9) {
+            Text("Choose a format")
+                .font(FWBFont.sized(14).weight(.semibold))
+            HStack(spacing: 6) {
+                ForEach(CustomWorkoutFormat.allCases) { format in
+                    Button { selection = format } label: {
+                        Text(format.title == "Straight Sets" ? "Straight sets" : format.title)
+                            .frame(maxWidth: .infinity)
                     }
-                } else {
-                    HStack(spacing: 8) {
-                        formatButtons
-                    }
+                    .buttonStyle(LoggerCompactButtonStyle(accented: selection == format))
+                    .accessibilityValue(selection == format ? "Selected" : "Not selected")
+                    .accessibilityAddTraits(selection == format ? .isSelected : [])
+                    .accessibilityIdentifier("customWorkout.format.\(format.rawValue)")
                 }
             }
-
-            Label(selection.guide, systemImage: selection.systemImage)
-                .font(.footnote.weight(.semibold))
+            Text(selection.guide)
+                .font(FWBFont.sized(12))
                 .foregroundStyle(Color.fwbMuted)
-                .fixedSize(horizontal: false, vertical: true)
-                .contentTransition(.opacity)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .fwbCard()
-        .animation(.easeInOut(duration: 0.2), value: selection)
-        .accessibilityElement(children: .contain)
+        .padding(12)
+        .background(Color.fwbCard, in: RoundedRectangle(cornerRadius: 16))
+        .overlay { RoundedRectangle(cornerRadius: 16).stroke(Color.fwbLine, lineWidth: 1) }
         .accessibilityIdentifier("customWorkout.formatPicker")
-    }
-
-    @ViewBuilder
-    private var formatButtons: some View {
-        ForEach(CustomWorkoutFormat.allCases) { format in
-            Button {
-                selection = format
-            } label: {
-                VStack(spacing: 7) {
-                    Image(systemName: format.systemImage)
-                        .font(.headline.weight(.bold))
-                    Text(format.title.uppercased())
-                        .font(.caption.weight(.black))
-                        .fontWidth(.condensed)
-                        .lineLimit(2)
-                        .minimumScaleFactor(0.8)
-                        .multilineTextAlignment(.center)
-                }
-                .foregroundStyle(selection == format ? Color.black : Color.fwbWarmWhite)
-                .frame(maxWidth: .infinity)
-                .frame(minHeight: dynamicTypeSize.isAccessibilitySize ? 64 : 70)
-                .padding(.horizontal, 6)
-                .background(selection == format ? Color.fwbAccentFill : Color.fwbSurface)
-                .overlay {
-                    Rectangle()
-                        .stroke(selection == format ? Color.fwbLime : Color.fwbLine, lineWidth: 1)
-                }
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel(format.title)
-            .accessibilityValue(selection == format ? "Selected" : "Not selected")
-            .accessibilityHint(format.guide)
-            .accessibilityAddTraits(selection == format ? .isSelected : [])
-            .accessibilityIdentifier("customWorkout.format.\(format.rawValue)")
-        }
     }
 }
 
@@ -2115,19 +2577,19 @@ private struct WorkoutGroupHeader: View {
             HStack(alignment: .center, spacing: 12) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(assignment.label.uppercased())
-                        .font(.footnote.weight(.black))
+                        .font(FWBFont.footnote.weight(.semibold))
                         .tracking(1.2)
                         .foregroundStyle(Color.fwbLime)
                     Text(roundTitle)
-                        .font(.title2.weight(.black))
-                        .fontWidth(.condensed)
+                        .font(FWBFont.sized(20).weight(.bold))
+
                         .foregroundStyle(Color.fwbWarmWhite)
                 }
 
                 Spacer(minLength: 8)
 
                 Label(saveStatus.title, systemImage: saveStatus.systemImage)
-                    .font(.footnote.weight(.bold))
+                    .font(FWBFont.footnote.weight(.bold))
                     .foregroundStyle(Color.fwbMuted)
                     .lineLimit(1)
             }
@@ -2177,13 +2639,13 @@ private struct WorkoutGroupHeader: View {
                 .frame(height: 3)
 
             Text("\(displayCode(for: exercise, index: index)) · \(status)")
-                .font(.footnote.weight(.black))
+                .font(FWBFont.footnote.weight(.semibold))
                 .tracking(0.45)
                 .foregroundStyle(color)
                 .lineLimit(1)
 
             Text(exercise.name.isEmpty ? "Exercise" : exercise.name.fwbTitleCased)
-                .font(.footnote.weight(.semibold))
+                .font(FWBFont.footnote.weight(.semibold))
                 .foregroundStyle(groupIsComplete || isDone || isNext ? Color.fwbWarmWhite : Color.fwbMuted)
                 .lineLimit(1)
         }
@@ -2212,24 +2674,24 @@ private struct WorkoutRoundRestCallout: View {
     var body: some View {
         HStack(spacing: 12) {
             Image(systemName: "timer")
-                .font(.headline.weight(.black))
+                .font(FWBFont.headline.weight(.semibold))
                 .foregroundStyle(Color.fwbLime)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(status)
-                    .font(.footnote.weight(.black))
+                    .font(FWBFont.footnote.weight(.semibold))
                     .tracking(0.7)
                     .foregroundStyle(Color.fwbLime)
                 Text("Rest \(restText), then return to \(firstExerciseCode).")
-                    .font(.footnote.weight(.semibold))
+                    .font(FWBFont.footnote.weight(.semibold))
                     .foregroundStyle(Color.fwbWarmWhite)
             }
 
             Spacer(minLength: 0)
         }
         .padding(12)
-        .background(Color.fwbCard, in: Rectangle())
-        .overlay { Rectangle().stroke(Color.fwbLime, lineWidth: 1) }
+        .background(Color.fwbCard, in: RoundedRectangle(cornerRadius: FWBLayout.controlRadius, style: .continuous))
+        .overlay { RoundedRectangle(cornerRadius: FWBLayout.controlRadius, style: .continuous).stroke(Color.fwbLime, lineWidth: 1) }
         .accessibilityElement(children: .combine)
     }
 }
@@ -2256,12 +2718,12 @@ private struct WorkoutGroupFooter: View {
                 .accessibilityIdentifier("workout.group.logSet")
 
                 Text("No rest until the full \(assignment.kind.title.lowercased()) round is complete.")
-                    .font(.caption.weight(.semibold))
+                    .font(FWBFont.caption.weight(.semibold))
                     .foregroundStyle(Color.fwbMuted)
                     .multilineTextAlignment(.center)
             } else {
                 Text(assignment.label.uppercased())
-                    .font(.footnote.weight(.black))
+                    .font(FWBFont.footnote.weight(.semibold))
                     .tracking(0.7)
                     .foregroundStyle(Color.fwbLime)
             }
@@ -2293,330 +2755,67 @@ private struct WorkoutGroupFooter: View {
     }
 }
 
-private struct WorkoutGroupCarousel<Content: View>: View {
-    let assignment: WorkoutGroupAssignment
-    let exercises: [Exercise]
-    let roundCount: Int
-    let restText: String
-    let guidedStep: GuidedWorkoutStep?
-    let completedRounds: [String: Int]
-    let roundTargets: [String: Int]
-    let saveStatus: WorkoutGroupSaveStatus
-    let roundRestStatus: String?
-    let canLogCurrentSet: Bool
-    let onLogCurrentSet: (GuidedWorkoutStep) -> Void
-
-    private let content: (Exercise) -> Content
-
-    @State private var selectedExerciseID: String
-    @State private var navigationDirection = 1
-    @State private var dragTranslation: CGFloat = 0
-
-    init(
-        assignment: WorkoutGroupAssignment,
-        exercises: [Exercise],
-        roundCount: Int,
-        restText: String,
-        guidedStep: GuidedWorkoutStep?,
-        completedRounds: [String: Int],
-        roundTargets: [String: Int],
-        saveStatus: WorkoutGroupSaveStatus,
-        roundRestStatus: String?,
-        canLogCurrentSet: Bool,
-        onLogCurrentSet: @escaping (GuidedWorkoutStep) -> Void,
-        @ViewBuilder content: @escaping (Exercise) -> Content
-    ) {
-        self.assignment = assignment
-        self.exercises = exercises
-        self.roundCount = roundCount
-        self.restText = restText
-        self.guidedStep = guidedStep
-        self.completedRounds = completedRounds
-        self.roundTargets = roundTargets
-        self.saveStatus = saveStatus
-        self.roundRestStatus = roundRestStatus
-        self.canLogCurrentSet = canLogCurrentSet
-        self.onLogCurrentSet = onLogCurrentSet
-        self.content = content
-
-        let initialExerciseID = exercises.contains { $0.id == guidedStep?.exerciseID }
-            ? guidedStep?.exerciseID
-            : exercises.first?.id
-        _selectedExerciseID = State(initialValue: initialExerciseID ?? "")
-    }
+private struct WorkoutExerciseNavigationSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    let rows: [WorkoutExerciseNavigationRow]
+    let onSelect: (String) -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            WorkoutGroupHeader(
-                assignment: assignment,
-                exercises: exercises,
-                roundCount: roundCount,
-                guidedStep: guidedStep,
-                completedRounds: completedRounds,
-                roundTargets: roundTargets,
-                saveStatus: saveStatus,
-                roundRestStatus: roundRestStatus
-            )
-
-            if let selectedExercise {
-                carouselNavigation(for: selectedExercise)
-
-                HStack(alignment: .top, spacing: 10) {
-                    if adjacentPreviewAppearsBefore, let adjacentPreview {
-                        carouselPeek(for: adjacentPreview)
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: 7) {
+                    ForEach(rows) { row in
+                        Button {
+                            onSelect(row.target)
+                            dismiss()
+                        } label: {
+                            HStack(spacing: 10) {
+                                Text("\(row.number)")
+                                    .font(FWBFont.sized(12).weight(.semibold))
+                                    .foregroundStyle(Color.fwbWarmWhite)
+                                    .frame(width: 32, height: 32)
+                                    .background(Color.fwbSurface, in: RoundedRectangle(cornerRadius: 9))
+                                VStack(alignment: .leading, spacing: 3) {
+                                    Text(row.title)
+                                        .font(FWBFont.sized(14).weight(.semibold))
+                                        .foregroundStyle(Color.fwbWarmWhite)
+                                    if let group = row.group {
+                                        Text(group).font(FWBFont.sized(11)).foregroundStyle(Color.fwbMuted)
+                                    }
+                                }
+                                Spacer(minLength: 5)
+                                Text("\(row.completed)/\(row.total)")
+                                    .font(FWBFont.sized(11).weight(.medium))
+                                    .foregroundStyle(Color.fwbMuted)
+                                Image(systemName: row.total > 0 && row.completed == row.total ? "checkmark.circle.fill" : "chevron.right")
+                                    .font(FWBFont.sized(12).weight(.semibold))
+                                    .foregroundStyle(Color.fwbLime)
+                            }
+                            .padding(.horizontal, 10)
+                            .frame(minHeight: 58)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(Color.fwbCard, in: RoundedRectangle(cornerRadius: 12))
+                            .overlay { RoundedRectangle(cornerRadius: 12).stroke(Color.fwbLine, lineWidth: 1) }
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("\(row.title), \(row.completed) of \(row.total) sets complete")
+                        .accessibilityHint("Jump to this \(row.group == nil ? "exercise" : "group") in your workout")
+                        .accessibilityIdentifier("workout.exerciseJump.\(row.id)")
                     }
-
-                    ZStack(alignment: .top) {
-                        content(selectedExercise)
-                            .id(selectedExercise.id)
-                            .offset(x: dragTranslation)
-                            .transition(pageTransition)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .top)
-
-                    if !adjacentPreviewAppearsBefore, let adjacentPreview {
-                        carouselPeek(for: adjacentPreview)
-                    }
                 }
-                .frame(maxWidth: .infinity, alignment: .top)
-                .contentShape(Rectangle())
-                .simultaneousGesture(swipeGesture)
-
-                pageIndicators
-
-                if let roundRestStatus {
-                    WorkoutRoundRestCallout(
-                        status: roundRestStatus,
-                        restText: restText,
-                        firstExerciseCode: firstExerciseCode
-                    )
-                } else {
-                    WorkoutGroupFooter(
-                        assignment: assignment,
-                        exercises: exercises,
-                        guidedStep: guidedStep,
-                        canLogCurrentSet: canLogCurrentSet,
-                        onLogCurrentSet: onLogCurrentSet
-                    )
+                .padding(16)
+            }
+            .background(Color.fwbBackground.ignoresSafeArea())
+            .navigationTitle("Workout exercises")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { dismiss() }
                 }
             }
         }
-        .padding(12)
-        .background(Color.fwbSurface.opacity(0.55), in: Rectangle())
-        .overlay { Rectangle().stroke(Color.fwbLime.opacity(0.72), lineWidth: 1) }
-        .accessibilityElement(children: .contain)
-        .onChange(of: guidedStep?.exerciseID) { exerciseID in
-            guard let exerciseID,
-                  let index = exercises.firstIndex(where: { $0.id == exerciseID }) else { return }
-            move(to: index)
-        }
-        .onChange(of: exerciseIDs) { _ in
-            guard !exercises.contains(where: { $0.id == selectedExerciseID }) else { return }
-            selectedExerciseID = exercises.first?.id ?? ""
-        }
-    }
-
-    private var selectedIndex: Int {
-        exercises.firstIndex(where: { $0.id == selectedExerciseID }) ?? 0
-    }
-
-    private var selectedExercise: Exercise? {
-        guard exercises.indices.contains(selectedIndex) else { return nil }
-        return exercises[selectedIndex]
-    }
-
-    private var exerciseIDs: [String] {
-        exercises.map(\.id)
-    }
-
-    private var adjacentPreview: Exercise? {
-        if exercises.indices.contains(selectedIndex + 1) {
-            return exercises[selectedIndex + 1]
-        }
-        guard selectedIndex > 0 else { return nil }
-        return exercises[selectedIndex - 1]
-    }
-
-    private var adjacentPreviewAppearsBefore: Bool {
-        selectedIndex == exercises.index(before: exercises.endIndex) && selectedIndex > 0
-    }
-
-    private var lastExerciseCode: String {
-        guard let exercise = exercises.last else { return "THE LAST EXERCISE" }
-        let code = exercise.code.trimmingCharacters(in: .whitespacesAndNewlines)
-        return code.isEmpty ? exercise.name.uppercased() : code.uppercased()
-    }
-
-    private var firstExerciseCode: String {
-        guard let exercise = exercises.first else { return "THE FIRST EXERCISE" }
-        let code = exercise.code.trimmingCharacters(in: .whitespacesAndNewlines)
-        return code.isEmpty ? exercise.name.uppercased() : code.uppercased()
-    }
-
-    private var pageTransition: AnyTransition {
-        let insertionEdge: Edge = navigationDirection > 0 ? .trailing : .leading
-        let removalEdge: Edge = navigationDirection > 0 ? .leading : .trailing
-        return .asymmetric(
-            insertion: .move(edge: insertionEdge).combined(with: .opacity),
-            removal: .move(edge: removalEdge).combined(with: .opacity)
-        )
-    }
-
-    @ViewBuilder
-    private func carouselNavigation(for exercise: Exercise) -> some View {
-        HStack(spacing: 10) {
-            carouselArrow(
-                systemName: "chevron.left",
-                label: "Previous exercise",
-                isDisabled: selectedIndex == exercises.startIndex
-            ) {
-                move(to: selectedIndex - 1)
-            }
-
-            VStack(spacing: 3) {
-                Text(positionLabel(for: exercise))
-                    .font(.headline.weight(.black))
-                    .fontWidth(.condensed)
-                    .foregroundStyle(Color.fwbLime)
-                Label("SWIPE BETWEEN EXERCISES", systemImage: "hand.draw")
-                    .font(.caption2.weight(.bold))
-                    .tracking(0.4)
-                    .foregroundStyle(Color.fwbMuted)
-            }
-            .frame(maxWidth: .infinity)
-            .accessibilityElement(children: .combine)
-
-            carouselArrow(
-                systemName: "chevron.right",
-                label: "Next exercise",
-                isDisabled: selectedIndex == exercises.index(before: exercises.endIndex)
-            ) {
-                move(to: selectedIndex + 1)
-            }
-        }
-    }
-
-    private func carouselArrow(
-        systemName: String,
-        label: String,
-        isDisabled: Bool,
-        action: @escaping () -> Void
-    ) -> some View {
-        Button(action: action) {
-            Image(systemName: systemName)
-                .font(.headline.weight(.black))
-                .foregroundStyle(isDisabled ? Color.fwbMuted.opacity(0.45) : Color.fwbWarmWhite)
-                .frame(width: 42, height: 42)
-                .background(Color.fwbSurface, in: Rectangle())
-                .overlay { Rectangle().stroke(Color.fwbLine, lineWidth: 1) }
-        }
-        .buttonStyle(.plain)
-        .disabled(isDisabled)
-        .accessibilityLabel(label)
-    }
-
-    private var pageIndicators: some View {
-        HStack(spacing: 10) {
-            ForEach(Array(exercises.enumerated()), id: \.element.id) { index, exercise in
-                Button {
-                    move(to: index)
-                } label: {
-                    Rectangle()
-                        .fill(index == selectedIndex ? Color.fwbAccentFill : Color.clear)
-                        .frame(width: 13, height: 13)
-                        .overlay { Rectangle().stroke(Color.fwbLine, lineWidth: 1) }
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Show \(exercise.name), exercise \(index + 1) of \(exercises.count)")
-                .accessibilityAddTraits(index == selectedIndex ? .isSelected : [])
-            }
-        }
-        .frame(maxWidth: .infinity)
-    }
-
-    private func carouselPeek(for exercise: Exercise) -> some View {
-        let index = exercises.firstIndex(where: { $0.id == exercise.id }) ?? 0
-        return Button {
-            move(to: index)
-        } label: {
-            VStack(spacing: 12) {
-                Image(systemName: adjacentPreviewAppearsBefore ? "chevron.left" : "chevron.right")
-                    .font(.headline.weight(.black))
-                    .foregroundStyle(Color.fwbLime)
-
-                Text(exercise.code.isEmpty ? "EXERCISE" : exercise.code.uppercased())
-                    .font(.caption.weight(.black))
-                    .tracking(0.45)
-                    .foregroundStyle(Color.fwbLime)
-                    .lineLimit(2)
-                    .multilineTextAlignment(.center)
-
-                Text(exercise.name.fwbTitleCased)
-                    .font(.caption2.weight(.bold))
-                    .foregroundStyle(Color.fwbWarmWhite)
-                    .lineLimit(4)
-                    .multilineTextAlignment(.center)
-
-                Spacer(minLength: 0)
-
-                Text("\(index + 1)/\(exercises.count)")
-                    .font(.caption2.weight(.black))
-                    .foregroundStyle(Color.fwbMuted)
-            }
-            .padding(.vertical, 14)
-            .padding(.horizontal, 6)
-            .frame(width: 72)
-            .frame(minHeight: 260)
-            .background(Color.fwbCard, in: Rectangle())
-            .overlay { Rectangle().stroke(Color.fwbLime.opacity(0.7), lineWidth: 1) }
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel("Show \(exercise.name), exercise \(index + 1) of \(exercises.count)")
-        .accessibilityHint("Previews the adjacent \(assignment.kind.title.lowercased()) exercise")
-    }
-
-    private var swipeGesture: some Gesture {
-        DragGesture(minimumDistance: 24)
-            .onChanged { value in
-                let horizontal = value.translation.width
-                let vertical = value.translation.height
-                guard abs(horizontal) > abs(vertical) * 1.2 else { return }
-                dragTranslation = horizontal * 0.18
-            }
-            .onEnded { value in
-                let horizontal = value.predictedEndTranslation.width
-                let vertical = value.predictedEndTranslation.height
-                let targetIndex: Int?
-
-                if abs(horizontal) > abs(vertical) * 1.2, abs(horizontal) > 72 {
-                    targetIndex = selectedIndex + (horizontal < 0 ? 1 : -1)
-                } else {
-                    targetIndex = nil
-                }
-
-                withAnimation(.easeOut(duration: 0.16)) {
-                    dragTranslation = 0
-                }
-
-                if let targetIndex {
-                    move(to: targetIndex)
-                }
-            }
-    }
-
-    private func positionLabel(for exercise: Exercise) -> String {
-        let code = exercise.code.trimmingCharacters(in: .whitespacesAndNewlines)
-        let name = code.isEmpty ? "EXERCISE" : code.uppercased()
-        return "\(name) · \(selectedIndex + 1) OF \(exercises.count)"
-    }
-
-    private func move(to index: Int) {
-        guard exercises.indices.contains(index), index != selectedIndex else { return }
-        navigationDirection = index > selectedIndex ? 1 : -1
-        withAnimation(.easeInOut(duration: 0.22)) {
-            selectedExerciseID = exercises[index].id
-            dragTranslation = 0
-        }
+        .accessibilityIdentifier("workout.exerciseNavigation")
     }
 }
 
@@ -2631,7 +2830,7 @@ private struct WorkoutSequenceEditorView: View {
             List {
                 Section {
                     Text("Drag exercises into the order you want. Put two or more exercises in the same superset or circuit to turn on guided rounds.")
-                        .font(.subheadline)
+                        .font(FWBFont.subheadline)
                         .foregroundStyle(Color.fwbMuted)
                         .listRowBackground(Color.fwbCard)
                 }
@@ -2641,10 +2840,10 @@ private struct WorkoutSequenceEditorView: View {
                         HStack(spacing: 12) {
                             VStack(alignment: .leading, spacing: 3) {
                                 Text(exercise.name.fwbTitleCased)
-                                    .font(.headline.weight(.bold))
+                                    .font(FWBFont.headline.weight(.bold))
                                     .foregroundStyle(Color.fwbWarmWhite)
                                 Text(exercise.code.uppercased())
-                                    .font(.footnote.weight(.semibold))
+                                    .font(FWBFont.footnote.weight(.semibold))
                                     .foregroundStyle(Color.fwbMuted)
                             }
 
@@ -2667,7 +2866,7 @@ private struct WorkoutSequenceEditorView: View {
                 } header: {
                     Text("REST BEHAVIOR")
                 }
-                .font(.footnote.weight(.semibold))
+                .font(FWBFont.footnote.weight(.semibold))
                 .foregroundStyle(Color.fwbMuted)
                 .listRowBackground(Color.fwbCard)
             }
@@ -2686,7 +2885,7 @@ private struct WorkoutSequenceEditorView: View {
                         )
                         dismiss()
                     }
-                    .font(.headline.weight(.bold))
+                    .font(FWBFont.headline.weight(.bold))
                     .foregroundStyle(Color.fwbLime)
                 }
             }
@@ -2741,16 +2940,16 @@ private struct WorkoutSequenceEditorView: View {
         } label: {
             HStack(spacing: 6) {
                 Text(assignments[exercise.id]?.label.uppercased() ?? "NO GROUP")
-                    .font(.footnote.weight(.black))
+                    .font(FWBFont.footnote.weight(.semibold))
                     .lineLimit(1)
                 Image(systemName: "chevron.up.chevron.down")
-                    .font(.caption.bold())
+                    .font(FWBFont.caption.bold())
             }
             .foregroundStyle(assignments[exercise.id] == nil ? Color.fwbMuted : Color.fwbLime)
             .padding(.horizontal, 10)
             .frame(minHeight: 38)
-            .background(Color.fwbSurface, in: Rectangle())
-            .overlay { Rectangle().stroke(Color.fwbLine, lineWidth: 1) }
+            .background(Color.fwbSurface, in: RoundedRectangle(cornerRadius: FWBLayout.controlRadius, style: .continuous))
+            .overlay { RoundedRectangle(cornerRadius: FWBLayout.controlRadius, style: .continuous).stroke(Color.fwbLine, lineWidth: 1) }
         }
         .accessibilityLabel("Group for \(exercise.name)")
         .accessibilityValue(assignments[exercise.id]?.label ?? "No group")
@@ -2781,12 +2980,12 @@ private struct WorkoutHistoryCopyPromptView: View {
                 HStack(alignment: .top, spacing: 12) {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("EXERCISE HISTORY")
-                            .font(.footnote.weight(.black))
+                            .font(FWBFont.footnote.weight(.semibold))
                             .tracking(1.3)
                             .foregroundStyle(Color.fwbLime)
                         Text("COPY LAST WORKOUT?")
-                            .font(.largeTitle.weight(.black))
-                            .fontWidth(.condensed)
+                            .font(FWBFont.sized(24).weight(.bold))
+
                             .foregroundStyle(Color.fwbWarmWhite)
                     }
 
@@ -2796,29 +2995,29 @@ private struct WorkoutHistoryCopyPromptView: View {
                         dismiss()
                     } label: {
                         Image(systemName: "xmark")
-                            .font(.headline.weight(.black))
+                            .font(FWBFont.headline.weight(.semibold))
                             .foregroundStyle(Color.fwbWarmWhite)
                             .frame(width: 42, height: 42)
-                            .background(Color.fwbSurface, in: Rectangle())
-                            .overlay { Rectangle().stroke(Color.fwbLine, lineWidth: 1) }
+                            .background(Color.fwbSurface, in: RoundedRectangle(cornerRadius: FWBLayout.controlRadius, style: .continuous))
+                            .overlay { RoundedRectangle(cornerRadius: FWBLayout.controlRadius, style: .continuous).stroke(Color.fwbLine, lineWidth: 1) }
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel("Start fresh")
                 }
 
                 Text("You logged \(request.exercise.name.fwbTitleCased) before. Copy those set values into today’s workout?")
-                    .font(.subheadline.weight(.semibold))
+                    .font(FWBFont.subheadline.weight(.semibold))
                     .foregroundStyle(Color.fwbMuted)
                     .fixedSize(horizontal: false, vertical: true)
 
                 VStack(alignment: .leading, spacing: 12) {
                     VStack(alignment: .leading, spacing: 3) {
                         Text(Self.formattedDate(request.source.entryDate).uppercased())
-                            .font(.headline.weight(.black))
-                            .fontWidth(.condensed)
+                            .font(FWBFont.headline.weight(.semibold))
+
                             .foregroundStyle(Color.fwbWarmWhite)
                         Text(request.source.workoutTitle.uppercased())
-                            .font(.caption.weight(.bold))
+                            .font(FWBFont.caption.weight(.bold))
                             .tracking(0.5)
                             .foregroundStyle(Color.fwbMuted)
                             .lineLimit(2)
@@ -2843,8 +3042,8 @@ private struct WorkoutHistoryCopyPromptView: View {
                     }
                 }
                 .padding(14)
-                .background(Color.fwbCard, in: Rectangle())
-                .overlay { Rectangle().stroke(Color.fwbLime.opacity(0.65), lineWidth: 1) }
+                .background(Color.fwbCard, in: RoundedRectangle(cornerRadius: FWBLayout.controlRadius, style: .continuous))
+                .overlay { RoundedRectangle(cornerRadius: FWBLayout.controlRadius, style: .continuous).stroke(Color.fwbLime.opacity(0.65), lineWidth: 1) }
 
                 Button("COPY LAST WORKOUT") {
                     onCopy()
@@ -2860,18 +3059,18 @@ private struct WorkoutHistoryCopyPromptView: View {
                 .accessibilityIdentifier("workout.historyCopy.fresh")
 
                 Text("You can edit every copied value before finishing the workout.")
-                    .font(.caption)
+                    .font(FWBFont.caption)
                     .foregroundStyle(Color.fwbMuted)
                     .frame(maxWidth: .infinity, alignment: .center)
             }
-            .padding(20)
+            .padding(FWBLayout.pagePadding)
         }
         .background(Color.fwbBackground.ignoresSafeArea())
     }
 
     private func promptHeading(_ text: String, width: CGFloat?) -> some View {
         Text(text)
-            .font(.caption2.weight(.black))
+            .font(FWBFont.caption2.weight(.semibold))
             .tracking(0.55)
             .foregroundStyle(Color.fwbMuted)
             .frame(maxWidth: width == nil ? .infinity : nil)
@@ -2880,13 +3079,13 @@ private struct WorkoutHistoryCopyPromptView: View {
 
     private func promptValue(_ text: String, width: CGFloat?) -> some View {
         Text(text)
-            .font(.subheadline.weight(.black))
+            .font(FWBFont.subheadline.weight(.semibold))
             .foregroundStyle(Color.fwbWarmWhite)
             .frame(maxWidth: width == nil ? .infinity : nil)
             .frame(width: width)
             .frame(minHeight: 48)
-            .background(Color.fwbSurface, in: Rectangle())
-            .overlay { Rectangle().stroke(Color.fwbLine, lineWidth: 1) }
+            .background(Color.fwbSurface, in: RoundedRectangle(cornerRadius: FWBLayout.controlRadius, style: .continuous))
+            .overlay { RoundedRectangle(cornerRadius: FWBLayout.controlRadius, style: .continuous).stroke(Color.fwbLine, lineWidth: 1) }
     }
 
     private static func setLabel(for record: WorkoutHistoryRecord) -> String {
@@ -2916,6 +3115,9 @@ private struct WorkoutExerciseLogCard: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     let exercise: Exercise
+    let media: ExerciseMedia
+    let groupedSummary: Bool
+    let exerciseNumber: Int
     @Binding var drafts: [WorkoutSetDraft]
     @FocusState.Binding var focusedField: WorkoutLogFocus?
     let entryStyle: WorkoutEntryStyle
@@ -2933,6 +3135,7 @@ private struct WorkoutExerciseLogCard: View {
     let isSavingProgress: Bool
     let didSaveProgress: Bool
     let saveProgressDisabled: Bool
+    let onReorderExercise: (() -> Void)?
     let onAddSet: () -> Void
     let onDeleteSet: (UUID) -> Void
     let onCopyLastWorkout: (WorkoutExerciseCopySource) -> Void
@@ -2953,9 +3156,13 @@ private struct WorkoutExerciseLogCard: View {
     @State private var areInstructionsExpanded = false
     @State private var pendingCopyRequest: WorkoutCopyRequest?
     @State private var calculatorRequest: WorkoutCalculatorKind?
+    @State private var mediaViewerRequest: ExerciseMediaViewerRequest?
 
     init(
         exercise: Exercise,
+        media: ExerciseMedia,
+        groupedSummary: Bool,
+        exerciseNumber: Int,
         drafts: Binding<[WorkoutSetDraft]>,
         focusedField: FocusState<WorkoutLogFocus?>.Binding,
         entryStyle: WorkoutEntryStyle,
@@ -2974,6 +3181,7 @@ private struct WorkoutExerciseLogCard: View {
         isSavingProgress: Bool,
         didSaveProgress: Bool,
         saveProgressDisabled: Bool,
+        onReorderExercise: (() -> Void)?,
         onAddSet: @escaping () -> Void,
         onDeleteSet: @escaping (UUID) -> Void,
         onCopyLastWorkout: @escaping (WorkoutExerciseCopySource) -> Void,
@@ -2991,6 +3199,9 @@ private struct WorkoutExerciseLogCard: View {
         onSendFormCheck: @escaping () -> Void
     ) {
         self.exercise = exercise
+        self.media = media
+        self.groupedSummary = groupedSummary
+        self.exerciseNumber = exerciseNumber
         _drafts = drafts
         _focusedField = focusedField
         self.entryStyle = entryStyle
@@ -3008,6 +3219,7 @@ private struct WorkoutExerciseLogCard: View {
         self.isSavingProgress = isSavingProgress
         self.didSaveProgress = didSaveProgress
         self.saveProgressDisabled = saveProgressDisabled
+        self.onReorderExercise = onReorderExercise
         self.onAddSet = onAddSet
         self.onDeleteSet = onDeleteSet
         self.onCopyLastWorkout = onCopyLastWorkout
@@ -3029,52 +3241,82 @@ private struct WorkoutExerciseLogCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .top, spacing: 8) {
+                if let onReorderExercise {
+                    Button(action: onReorderExercise) {
+                        Image(systemName: "circle.grid.2x3.fill")
+                            .font(FWBFont.sized(14))
+                            .foregroundStyle(Color.fwbMuted)
+                            .frame(width: 30, height: groupedSummary ? 86 : 96)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Reorder \(exercise.name)")
+                    .accessibilityHint("Opens exercise and group ordering")
+                }
+
+                if media.imageURL != nil {
+                    exerciseThumbnail
+                }
+
                 Button {
                     withAnimation(.easeOut(duration: 0.18)) {
                         isExpanded.toggle()
                     }
                 } label: {
-                    HStack(alignment: .top, spacing: 12) {
-                        VStack(alignment: .leading, spacing: 4) {
-                            if !exercise.code.isEmpty {
-                                Text(exercise.code.uppercased())
-                                    .font(.footnote.bold())
-                                    .tracking(0.8)
-                                    .foregroundStyle(Color.fwbLime)
-                            }
-                            Text(exercise.name.isEmpty ? "Exercise" : exercise.name.fwbTitleCased)
-                                .font(.title3.weight(.black))
-                                .fontWidth(.condensed)
-                                .foregroundStyle(Color.fwbWarmWhite)
-                                .multilineTextAlignment(.leading)
-                            if !exercise.prescription.isEmpty {
-                                Text(exercise.prescription)
-                                    .font(.footnote)
-                                    .foregroundStyle(Color.fwbMuted)
-                            }
-                            Text("\(completedSetCount) / \(workingDrafts.count) working sets completed")
-                                .font(.footnote.weight(.semibold))
-                                .foregroundStyle(Color.fwbLime)
-                            if let guidedRoundText {
-                                Label(guidedRoundText.uppercased(), systemImage: "location.fill")
-                                    .font(.footnote.weight(.black))
-                                    .tracking(0.5)
-                                    .foregroundStyle(Color.fwbLime)
-                                    .padding(.top, 3)
-                            }
+                    VStack(alignment: .leading, spacing: 5) {
+                        exerciseCodeBadge
+                        Text(exercise.name.isEmpty ? "Exercise" : exercise.name.fwbTitleCased)
+                            .font(FWBFont.sized(groupedSummary ? 15 : 17).weight(.bold))
+                            .foregroundStyle(Color.fwbWarmWhite)
+                            .multilineTextAlignment(.leading)
+                            .lineLimit(3)
+                            .minimumScaleFactor(0.82)
+                        if !exercise.prescription.isEmpty {
+                            Text(exercise.prescription)
+                                .font(FWBFont.footnote)
+                                .foregroundStyle(Color.fwbMuted)
                         }
-
-                        Spacer()
-
-                        Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                            .font(.footnote.bold())
-                            .foregroundStyle(Color.fwbMuted)
-                            .padding(.top, 8)
+                        if !mediaMetadata.isEmpty {
+                            Text(mediaMetadata)
+                                .font(FWBFont.caption2)
+                                .foregroundStyle(Color.fwbMuted)
+                                .lineLimit(1)
+                        }
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("\(exercise.name), \(isExpanded ? "collapse" : "expand")")
+
+                if media.hasVisual {
+                    Button {
+                        mediaViewerRequest = ExerciseMediaViewerRequest(
+                            exerciseName: exercise.name,
+                            media: media
+                        )
+                    } label: {
+                        Image(systemName: "play.fill")
+                            .font(FWBFont.sized(13).weight(.bold))
+                            .foregroundStyle(Color.fwbWarmWhite)
+                            .frame(width: 40, height: 40)
+                            .background(Color.fwbCard, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                            .overlay {
+                                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                    .stroke(Color.fwbWarmWhite, lineWidth: 2)
+                            }
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Open animated demonstration for \(exercise.name)")
+                } else if let url = media.fallbackDemoURL {
+                    Link(destination: url) {
+                        Image(systemName: "play.rectangle")
+                            .font(FWBFont.sized(16).weight(.semibold))
+                            .foregroundStyle(Color.fwbLime)
+                            .frame(width: 44, height: 44)
+                    }
+                    .accessibilityLabel("Watch \(exercise.name) demo")
+                }
 
                 Menu {
                     Button(action: onSubstituteExercise) {
@@ -3089,15 +3331,33 @@ private struct WorkoutExerciseLogCard: View {
                         .accessibilityIdentifier("workout.revertSubstitution.\(accessibilityExerciseID)")
                     }
 
+                    Button(action: onSendFormCheck) {
+                        Label("Send form check", systemImage: "video.badge.plus")
+                    }
+                    .accessibilityIdentifier("formCheck.open.\(accessibilityExerciseID)")
+                    if entryStyle == .strength && exercise.supportsBarbellCalculators {
+                        Button { calculatorRequest = .plates } label: {
+                            Label("Plate calculator", systemImage: "circle.grid.cross")
+                        }
+                        .accessibilityIdentifier("workout.plateCalculator.\(accessibilityExerciseID)")
+                        Button { calculatorRequest = .warmUp } label: {
+                            Label("Warm-up sets", systemImage: "flame")
+                        }
+                        .accessibilityIdentifier("workout.warmUpCalculator.\(accessibilityExerciseID)")
+                    }
+                    Button(action: onSaveProgress) {
+                        Label(didSaveProgress ? "Progress saved" : "Save progress", systemImage: "tray.and.arrow.down")
+                    }
+                    .disabled(saveProgressDisabled || !hasExerciseEntry)
                     Button(role: .destructive, action: onDeleteExercise) {
                         Label("Remove Exercise", systemImage: "trash")
                     }
                 } label: {
                     Image(systemName: "ellipsis")
-                        .font(.headline)
+                        .font(FWBFont.headline)
                         .foregroundStyle(Color.fwbWarmWhite)
-                        .frame(width: 36, height: 36)
-                        .background(Color.fwbSurface, in: Rectangle())
+                        .frame(width: 44, height: 44)
+                        .background(Color.fwbSurface, in: RoundedRectangle(cornerRadius: FWBLayout.controlRadius, style: .continuous))
                 }
                 .accessibilityLabel("Exercise options")
                 .accessibilityIdentifier("workout.exerciseOptions.\(exercise.id)")
@@ -3121,34 +3381,34 @@ private struct WorkoutExerciseLogCard: View {
                     )
                 }
 
-                ExerciseDemoLink(exercise: exercise)
-
-                ExerciseInstructionsDisclosure(
-                    exercise: exercise,
-                    isExpanded: $areInstructionsExpanded
-                )
-
-                copyLastWorkoutControl
-
-                if entryStyle == .strength && exercise.supportsBarbellCalculators {
-                    calculatorTools
+                HStack(spacing: 6) {
+                    Button {
+                        withAnimation(.easeOut(duration: 0.18)) { areInstructionsExpanded.toggle() }
+                    } label: {
+                        Label("Instructions", systemImage: "info.circle")
+                    }
+                    .buttonStyle(LoggerCompactButtonStyle())
+                    .accessibilityIdentifier("exercise.instructions.\(exercise.id)")
+                    Spacer(minLength: 0)
+                    copyLastWorkoutControl
                 }
 
-                Button(action: onSendFormCheck) {
-                    Label("SEND FORM CHECK", systemImage: "video.badge.plus")
+                if areInstructionsExpanded {
+                    VStack(alignment: .leading, spacing: 7) {
+                        ForEach(Array(exercise.instructionSteps.prefix(5).enumerated()), id: \.offset) { index, step in
+                            Text("\(index + 1). \(step)")
+                        }
+                        if !exercise.rest.isEmpty { Text("Rest: \(exercise.rest)") }
+                    }
+                    .font(FWBFont.sized(12))
+                    .foregroundStyle(Color.fwbMuted)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .buttonStyle(FWBSecondaryButtonStyle())
-                .accessibilityHint("Choose a private photo or short video for your coach to review")
-                .accessibilityIdentifier("formCheck.open.\(accessibilityExerciseID)")
 
+                if !groupedSummary {
                 let matchingDrafts = exerciseDrafts
                 VStack(spacing: 6) {
-                    HStack(spacing: 4) {
-                        TableHeading(text: "SET", width: 42)
-                        TableHeading(text: entryStyle.firstHeading, width: nil)
-                        TableHeading(text: entryStyle.secondHeading, width: 66)
-                        TableHeading(text: "RIR", width: 56)
-                    }
+                    LoggerTableHeadings(entryStyle: entryStyle)
 
                     ForEach(matchingDrafts) { draft in
                         WorkoutSetLogRow(
@@ -3177,7 +3437,7 @@ private struct WorkoutExerciseLogCard: View {
 
                 if matchingDrafts.isEmpty {
                     Text("No sets yet. Add one when you’re ready.")
-                        .font(.footnote)
+                        .font(FWBFont.footnote)
                         .foregroundStyle(Color.fwbMuted)
                         .frame(maxWidth: .infinity, alignment: .center)
                         .padding(.vertical, 14)
@@ -3185,7 +3445,7 @@ private struct WorkoutExerciseLogCard: View {
 
                 HStack(spacing: 10) {
                     Button(action: onAddSet) {
-                        Label("ADD SET", systemImage: "plus")
+                        Label("Add set", systemImage: "plus")
                             .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(WorkoutSetActionButtonStyle(color: Color.blue))
@@ -3195,7 +3455,7 @@ private struct WorkoutExerciseLogCard: View {
                         guard let lastDraft = matchingDrafts.last else { return }
                         onDeleteSet(lastDraft.id)
                     } label: {
-                        Text("DELETE SET")
+                        Text("Delete set")
                             .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(WorkoutSetActionButtonStyle(color: Color.fwbRed))
@@ -3203,55 +3463,33 @@ private struct WorkoutExerciseLogCard: View {
                     .accessibilityIdentifier("workout.deleteLastSet.\(exercise.id)")
                 }
 
-                FWBRule()
-
-                LazyVGrid(columns: metricColumns, spacing: 12) {
-                    if entryStyle == .mobility {
-                        LoggerMetric(title: "TIME", value: formatted(totalTime), suffix: "sec")
-                        LoggerMetric(title: "ROUNDS", value: formatted(totalReps), suffix: "")
-                        LoggerMetric(title: "AVG TIME", value: formatted(averageWeight), suffix: "sec")
-                    } else {
-                        LoggerMetric(title: "VOLUME", value: formatted(volume), suffix: "lb")
-                        LoggerMetric(title: "REPS", value: formatted(totalReps), suffix: "")
-                        LoggerMetric(title: "AVG WEIGHT", value: formatted(averageWeight), suffix: "lb")
-                        if totalTimedSeconds > 0 {
-                            LoggerMetric(title: "TIMED WORK", value: formatted(totalTimedSeconds), suffix: "sec")
-                        }
+                HStack(spacing: 6) {
+                    Text(entryStyle == .mobility ? "\(formatted(totalTime)) sec · \(formatted(totalReps)) rounds" : "\(formatted(volume)) lb volume · \(formatted(totalReps)) reps")
+                        .font(FWBFont.sized(11).weight(.medium))
+                        .foregroundStyle(Color.fwbMuted)
+                    Spacer(minLength: 4)
+                    Button(action: onSaveProgress) {
+                        Label(isSavingProgress ? "Saving…" : didSaveProgress ? "Saved" : "Save", systemImage: didSaveProgress ? "checkmark" : "tray.and.arrow.down")
                     }
+                    .buttonStyle(LoggerCompactButtonStyle())
+                    .disabled(saveProgressDisabled || !hasExerciseEntry)
+                    .accessibilityIdentifier("workout.saveProgress.\(exercise.id)")
                 }
-
-                Button(action: onSaveProgress) {
-                    HStack(spacing: 10) {
-                        if isSavingProgress {
-                            ProgressView()
-                                .tint(Color.fwbLime)
-                        } else {
-                            Image(systemName: didSaveProgress ? "checkmark.circle.fill" : "tray.and.arrow.down")
-                        }
-                        Text(
-                            isSavingProgress
-                                ? "SAVING PROGRESS…"
-                                : didSaveProgress
-                                    ? "PROGRESS SAVED"
-                                    : "SAVE PROGRESS"
-                        )
-                    }
                 }
-                .buttonStyle(FWBSecondaryButtonStyle())
-                .disabled(saveProgressDisabled || !hasExerciseEntry)
-                .accessibilityIdentifier("workout.saveProgress.\(exercise.id)")
 
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .fwbCard()
+        .padding(groupedSummary ? 8 : 12)
+        .background(groupedSummary ? Color.fwbSurface : Color.fwbCard, in: RoundedRectangle(cornerRadius: groupedSummary ? 12 : 20))
+        .overlay { RoundedRectangle(cornerRadius: groupedSummary ? 12 : 20).stroke(Color.fwbLine, lineWidth: 1) }
         .overlay {
-            if isGuidedCurrent {
-                Rectangle().stroke(Color.fwbLime, lineWidth: 2)
+            if isGuidedCurrent && !groupedSummary {
+                RoundedRectangle(cornerRadius: FWBLayout.controlRadius, style: .continuous).stroke(Color.fwbLime, lineWidth: 2)
             }
         }
         .onChange(of: isGuidedCurrent) { isCurrent in
-            guard isCurrent else { return }
+            guard isCurrent, !groupedSummary else { return }
             withAnimation(.easeOut(duration: 0.18)) {
                 isExpanded = true
             }
@@ -3277,40 +3515,77 @@ private struct WorkoutExerciseLogCard: View {
                 onInsertWarmUps: onInsertWarmUps
             )
         }
+        .sheet(item: $mediaViewerRequest) { request in
+            ExerciseMediaViewer(request: request)
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+        }
+    }
+
+    private var exerciseThumbnail: some View {
+        Button {
+            mediaViewerRequest = ExerciseMediaViewerRequest(
+                exerciseName: exercise.name,
+                media: media
+            )
+        } label: {
+            ZStack(alignment: .bottomTrailing) {
+                ExerciseRemoteImage(urls: media.thumbnailURLs, animated: false)
+                    .frame(width: groupedSummary ? 112 : 124, height: groupedSummary ? 86 : 96)
+                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+
+                Image(systemName: "play.fill")
+                    .font(FWBFont.sized(10).weight(.bold))
+                    .foregroundStyle(Color.fwbWarmWhite)
+                    .frame(width: 28, height: 28)
+                    .background(Color.fwbCard, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 7, style: .continuous)
+                            .stroke(Color.fwbWarmWhite, lineWidth: 1.5)
+                    }
+                    .padding(6)
+            }
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("View start and end demonstration for \(exercise.name)")
+        .accessibilityHint(media.motionURL == nil ? "Opens a larger exercise image" : "Opens the animated exercise demonstration")
+    }
+
+    private var exerciseCodeBadge: some View {
+        Text(displayCode)
+            .font(FWBFont.footnote.weight(.bold))
+            .foregroundStyle(.white)
+            .padding(.horizontal, 10)
+            .frame(minHeight: 28)
+            .background(Color.fwbLime, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .overlay(alignment: .leading) {
+                Rectangle()
+                    .fill(Color.fwbGold)
+                    .frame(width: 4)
+                    .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
+            }
+            .accessibilityLabel("Exercise \(displayCode)")
+    }
+
+    private var displayCode: String {
+        let trimmed = exercise.code.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? String(exerciseNumber) : trimmed.uppercased()
+    }
+
+    private var mediaMetadata: String {
+        [media.primaryMuscle, media.equipment]
+            .map { $0.fwbTitleCased }
+            .filter { !$0.isEmpty }
+            .joined(separator: "  |  ")
     }
 
     private var copyLastWorkoutControl: some View {
         Button { requestCopyLastWorkout() } label: {
-            HStack(spacing: 12) {
-                Image(systemName: "rectangle.on.rectangle")
-                    .font(.subheadline.weight(.black))
-                    .foregroundStyle(copySource == nil ? Color.fwbMuted : .black)
-                    .frame(width: 34, height: 34)
-                    .background(copySource == nil ? Color.fwbCard : Color.fwbAccentFill, in: Rectangle())
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("COPY LAST WORKOUT")
-                        .font(.footnote.weight(.black))
-                        .tracking(0.7)
-                        .foregroundStyle(copySource == nil ? Color.fwbMuted : Color.fwbWarmWhite)
-                    Text(copySourceDetail)
-                        .font(.caption)
-                        .foregroundStyle(Color.fwbMuted)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-
-                Spacer(minLength: 4)
-                Image(systemName: "chevron.right")
-                    .font(.caption.weight(.black))
-                    .foregroundStyle(copySource == nil ? Color.fwbMuted : Color.fwbLime)
-            }
-            .padding(10)
-            .contentShape(Rectangle())
+            Label("Copy last", systemImage: "doc.on.doc")
         }
-        .buttonStyle(.plain)
+        .buttonStyle(LoggerCompactButtonStyle(accented: copySource != nil))
         .disabled(copySource == nil)
-        .background(Color.fwbSurface, in: Rectangle())
-        .overlay { Rectangle().stroke(copySource == nil ? Color.fwbLine : Color.fwbLime, lineWidth: 1) }
+        .accessibilityLabel("Copy last workout")
         .accessibilityHint(copySource == nil ? copySourceDetail : "Copies saved values into editable, incomplete sets")
         .accessibilityIdentifier("workout.copyLastWorkout.\(accessibilityExerciseID)")
     }
@@ -3509,6 +3784,253 @@ private struct WorkoutExerciseLogCard: View {
     }
 }
 
+@MainActor
+private final class ExerciseRemoteImageLoader: ObservableObject {
+    @Published private(set) var image: UIImage?
+    @Published private(set) var isLoading = false
+
+    private static let cache = NSCache<NSString, UIImage>()
+
+    func load(urls: [URL], animated: Bool) async {
+        guard !urls.isEmpty else { return }
+        let key = NSString(string: "\(animated ? "motion" : "still")|\(urls.map(\.absoluteString).joined(separator: "|"))")
+        if let cached = Self.cache.object(forKey: key) {
+            image = cached
+            return
+        }
+
+        isLoading = true
+        defer { isLoading = false }
+
+        for url in urls {
+            guard !Task.isCancelled else { return }
+            do {
+                let request = URLRequest(url: url, cachePolicy: .returnCacheDataElseLoad, timeoutInterval: 20)
+                let (data, response) = try await URLSession.shared.data(for: request)
+                guard !Task.isCancelled,
+                      let http = response as? HTTPURLResponse,
+                      (200..<300).contains(http.statusCode),
+                      let decoded = Self.decode(data: data, animated: animated) else { continue }
+                Self.cache.setObject(decoded, forKey: key, cost: data.count)
+                image = decoded
+                return
+            } catch is CancellationError {
+                return
+            } catch {
+                continue
+            }
+        }
+    }
+
+    private static func decode(data: Data, animated: Bool) -> UIImage? {
+        guard let source = CGImageSourceCreateWithData(data as CFData, nil) else {
+            return UIImage(data: data)
+        }
+        let frameCount = CGImageSourceGetCount(source)
+        guard animated, frameCount > 1 else {
+            return thumbnail(from: source, at: 0)
+        }
+
+        var images: [UIImage] = []
+        var duration: TimeInterval = 0
+        images.reserveCapacity(frameCount)
+        for index in 0..<frameCount {
+            guard let image = thumbnail(from: source, at: index) else { continue }
+            images.append(image)
+            duration += frameDuration(source: source, index: index)
+        }
+        guard !images.isEmpty else { return nil }
+        return UIImage.animatedImage(with: images, duration: max(duration, Double(images.count) * 0.08))
+    }
+
+    private static func thumbnail(from source: CGImageSource, at index: Int) -> UIImage? {
+        let options: [CFString: Any] = [
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceCreateThumbnailWithTransform: true,
+            kCGImageSourceThumbnailMaxPixelSize: 1_200,
+            kCGImageSourceShouldCacheImmediately: true
+        ]
+        guard let cgImage = CGImageSourceCreateThumbnailAtIndex(source, index, options as CFDictionary) else { return nil }
+        return UIImage(cgImage: cgImage)
+    }
+
+    private static func frameDuration(source: CGImageSource, index: Int) -> TimeInterval {
+        guard let properties = CGImageSourceCopyPropertiesAtIndex(source, index, nil) as? [String: Any] else { return 0.1 }
+        let delay = recursiveDelay(in: properties)
+        return delay >= 0.02 ? delay : 0.1
+    }
+
+    private static func recursiveDelay(in dictionary: [String: Any]) -> TimeInterval {
+        for key in ["UnclampedDelayTime", "DelayTime"] {
+            if let number = dictionary[key] as? NSNumber { return number.doubleValue }
+        }
+        for value in dictionary.values {
+            if let nested = value as? [String: Any] {
+                let delay = recursiveDelay(in: nested)
+                if delay > 0 { return delay }
+            }
+        }
+        return 0
+    }
+}
+
+private struct ExerciseRemoteImage: View {
+    @StateObject private var loader = ExerciseRemoteImageLoader()
+    let urls: [URL]
+    let animated: Bool
+
+    init(url: URL?, animated: Bool) {
+        urls = url.map { [$0] } ?? []
+        self.animated = animated
+    }
+
+    init(urls: [URL], animated: Bool) {
+        self.urls = urls
+        self.animated = animated
+    }
+
+    var body: some View {
+        ZStack {
+            Color.fwbSurface
+            if let image = loader.image {
+                ExerciseUIImageView(image: image)
+            } else if loader.isLoading {
+                ProgressView()
+                    .tint(Color.fwbLime)
+            } else {
+                Image(systemName: "figure.strengthtraining.traditional")
+                    .font(FWBFont.sized(24))
+                    .foregroundStyle(Color.fwbMuted)
+            }
+        }
+        .clipped()
+        .task(id: cacheIdentity) {
+            await loader.load(urls: urls, animated: animated)
+        }
+    }
+
+    private var cacheIdentity: String {
+        "\(animated)|\(urls.map(\.absoluteString).joined(separator: "|"))"
+    }
+}
+
+private struct ExerciseUIImageView: UIViewRepresentable {
+    let image: UIImage
+
+    func makeUIView(context: Context) -> UIImageView {
+        let imageView = UIImageView()
+        imageView.contentMode = .scaleAspectFit
+        imageView.clipsToBounds = true
+        return imageView
+    }
+
+    func updateUIView(_ imageView: UIImageView, context: Context) {
+        imageView.image = image
+        if image.images != nil {
+            imageView.startAnimating()
+        } else {
+            imageView.stopAnimating()
+        }
+    }
+}
+
+@MainActor
+private final class ExerciseLoopingVideoController: ObservableObject {
+    let player = AVQueuePlayer()
+    private var looper: AVPlayerLooper?
+
+    init(url: URL) {
+        player.isMuted = true
+        player.actionAtItemEnd = .none
+        looper = AVPlayerLooper(player: player, templateItem: AVPlayerItem(url: url))
+    }
+
+    func play() {
+        player.play()
+    }
+
+    func pause() {
+        player.pause()
+    }
+}
+
+private struct ExerciseLoopingVideo: View {
+    @StateObject private var controller: ExerciseLoopingVideoController
+
+    init(url: URL) {
+        _controller = StateObject(wrappedValue: ExerciseLoopingVideoController(url: url))
+    }
+
+    var body: some View {
+        VideoPlayer(player: controller.player)
+            .background(Color.black)
+            .onAppear { controller.play() }
+            .onDisappear { controller.pause() }
+    }
+}
+
+private struct ExerciseMediaViewer: View {
+    @Environment(\.dismiss) private var dismiss
+    let request: ExerciseMediaViewerRequest
+
+    var body: some View {
+        NavigationStack {
+            VStack(alignment: .leading, spacing: 16) {
+                Group {
+                    if let motionURL = request.media.motionURL,
+                       ExerciseMediaURL.isVideo(motionURL) {
+                        ExerciseLoopingVideo(url: motionURL)
+                    } else {
+                        ExerciseRemoteImage(urls: preferredURLs, animated: true)
+                    }
+                }
+                    .aspectRatio(5 / 7, contentMode: .fit)
+                    .frame(maxWidth: .infinity)
+                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .stroke(Color.fwbLine, lineWidth: 1)
+                    }
+                    .accessibilityLabel("Animated demonstration for \(request.exerciseName)")
+
+                Text(request.exerciseName.fwbTitleCased)
+                    .font(FWBFont.title3.weight(.bold))
+                    .foregroundStyle(Color.fwbWarmWhite)
+
+                Text(request.media.motionURL == nil
+                     ? "START / END FORM REFERENCE"
+                     : "MOVEMENT DEMONSTRATION · LOOPS AUTOMATICALLY")
+                    .font(FWBFont.caption.weight(.semibold))
+                    .tracking(0.5)
+                    .foregroundStyle(Color.fwbMuted)
+
+                if let demoURL = request.media.fallbackDemoURL {
+                    Link(destination: demoURL) {
+                        Label("Open full exercise instructions", systemImage: "arrow.up.right.square")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(FWBSecondaryButtonStyle())
+                }
+
+                Spacer(minLength: 0)
+            }
+            .padding(16)
+            .background(Color.fwbBackground.ignoresSafeArea())
+            .navigationTitle("Exercise demo")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Done") { dismiss() }
+                }
+            }
+        }
+    }
+
+    private var preferredURLs: [URL] {
+        [request.media.motionURL, request.media.imageURL].compactMap { $0 }
+    }
+}
+
 private struct ExerciseInstructionsDisclosure: View {
     let exercise: Exercise
     @Binding var isExpanded: Bool
@@ -3522,13 +4044,13 @@ private struct ExerciseInstructionsDisclosure: View {
             } label: {
                 HStack(spacing: 10) {
                     Image(systemName: "figure.strengthtraining.traditional")
-                        .font(.subheadline.weight(.bold))
+                        .font(FWBFont.subheadline.weight(.bold))
                     Text("EXERCISE INSTRUCTIONS")
-                        .font(.footnote.weight(.black))
+                        .font(FWBFont.footnote.weight(.semibold))
                         .tracking(0.7)
                     Spacer()
                     Image(systemName: isExpanded ? "minus" : "plus")
-                        .font(.footnote.weight(.black))
+                        .font(FWBFont.footnote.weight(.semibold))
                 }
                 .foregroundStyle(Color.fwbLime)
                 .padding(12)
@@ -3545,13 +4067,13 @@ private struct ExerciseInstructionsDisclosure: View {
                     ForEach(Array(exercise.instructionSteps.prefix(5).enumerated()), id: \.offset) { index, step in
                         HStack(alignment: .top, spacing: 10) {
                             Text("\(index + 1)")
-                                .font(.footnote.weight(.black))
+                                .font(FWBFont.footnote.weight(.semibold))
                                 .foregroundStyle(.black)
                                 .frame(width: 22, height: 22)
-                                .background(Color.fwbAccentFill, in: Rectangle())
+                                .background(Color.fwbAccentFill, in: RoundedRectangle(cornerRadius: FWBLayout.controlRadius, style: .continuous))
 
                             Text(step)
-                                .font(.footnote)
+                                .font(FWBFont.footnote)
                                 .foregroundStyle(Color.fwbWarmWhite)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
@@ -3559,15 +4081,15 @@ private struct ExerciseInstructionsDisclosure: View {
 
                     if !exercise.rest.isEmpty {
                         Label("Rest: \(exercise.rest)", systemImage: "timer")
-                            .font(.footnote.weight(.semibold))
+                            .font(FWBFont.footnote.weight(.semibold))
                             .foregroundStyle(Color.fwbMuted)
                     }
                 }
                 .padding(12)
             }
         }
-        .background(Color.fwbSurface, in: Rectangle())
-        .overlay { Rectangle().stroke(Color.fwbLine, lineWidth: 1) }
+        .background(Color.fwbSurface, in: RoundedRectangle(cornerRadius: FWBLayout.controlRadius, style: .continuous))
+        .overlay { RoundedRectangle(cornerRadius: FWBLayout.controlRadius, style: .continuous).stroke(Color.fwbLine, lineWidth: 1) }
     }
 }
 
@@ -3579,18 +4101,18 @@ private struct WorkoutSubstitutionBanner: View {
     var body: some View {
         HStack(spacing: 12) {
             Image(systemName: "arrow.left.arrow.right")
-                .font(.subheadline.weight(.black))
+                .font(FWBFont.subheadline.weight(.semibold))
                 .foregroundStyle(.black)
                 .frame(width: 34, height: 34)
-                .background(Color.fwbAccentFill, in: Rectangle())
+                .background(Color.fwbAccentFill, in: RoundedRectangle(cornerRadius: FWBLayout.controlRadius, style: .continuous))
 
             VStack(alignment: .leading, spacing: 2) {
                 Text("SUBSTITUTED")
-                    .font(.footnote.weight(.black))
+                    .font(FWBFont.footnote.weight(.semibold))
                     .tracking(0.9)
                     .foregroundStyle(Color.fwbLime)
                 Text("In place of \(originalName)")
-                    .font(.footnote.weight(.semibold))
+                    .font(FWBFont.footnote.weight(.semibold))
                     .foregroundStyle(Color.fwbWarmWhite)
                     .lineLimit(2)
             }
@@ -3598,18 +4120,18 @@ private struct WorkoutSubstitutionBanner: View {
             Spacer(minLength: 4)
 
             Button("RESTORE", action: onRevert)
-                .font(.footnote.weight(.black))
+                .font(FWBFont.footnote.weight(.semibold))
                 .tracking(0.6)
                 .foregroundStyle(Color.fwbLime)
                 .padding(.horizontal, 10)
                 .frame(minHeight: 34)
-                .overlay { Rectangle().stroke(Color.fwbLime, lineWidth: 1) }
+                .overlay { RoundedRectangle(cornerRadius: FWBLayout.controlRadius, style: .continuous).stroke(Color.fwbLime, lineWidth: 1) }
                 .accessibilityLabel("Restore \(originalName)")
                 .accessibilityIdentifier("workout.revertSubstitution.\(accessibilityExerciseID).banner")
         }
         .padding(12)
-        .background(Color.fwbSurface, in: Rectangle())
-        .overlay { Rectangle().stroke(Color.fwbLime.opacity(0.75), lineWidth: 1) }
+        .background(Color.fwbSurface, in: RoundedRectangle(cornerRadius: FWBLayout.controlRadius, style: .continuous))
+        .overlay { RoundedRectangle(cornerRadius: FWBLayout.controlRadius, style: .continuous).stroke(Color.fwbLime.opacity(0.75), lineWidth: 1) }
         .accessibilityIdentifier("workout.substitutionBadge.\(accessibilityExerciseID)")
     }
 }
@@ -3620,7 +4142,7 @@ private struct TableHeading: View {
 
     var body: some View {
         Text(text)
-            .font(.footnote.bold())
+            .font(FWBFont.footnote.bold())
             .tracking(0.7)
             .foregroundStyle(Color.fwbMuted)
             .lineLimit(1)
@@ -3635,12 +4157,12 @@ private struct WorkoutSetActionButtonStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.subheadline.weight(.black))
-            .tracking(0.25)
+            .font(FWBFont.sized(12).weight(.semibold))
+
             .foregroundStyle(color)
-            .frame(minHeight: 50)
-            .background(Color.fwbCard.opacity(configuration.isPressed ? 0.72 : 1), in: Rectangle())
-            .overlay { Rectangle().stroke(color.opacity(0.9), lineWidth: 1) }
+            .frame(minHeight: 44)
+            .background(Color.fwbCard.opacity(configuration.isPressed ? 0.72 : 1), in: RoundedRectangle(cornerRadius: FWBLayout.controlRadius, style: .continuous))
+            .overlay { RoundedRectangle(cornerRadius: FWBLayout.controlRadius, style: .continuous).stroke(color.opacity(0.9), lineWidth: 1) }
             .opacity(configuration.isPressed ? 0.82 : 1)
     }
 }
@@ -3654,76 +4176,52 @@ private struct WorkoutSetLogRow: View {
     let isPreviousHistoryLoading: Bool
     let canCopyPreviousSet: Bool
     let wasCopied: Bool
+    var groupCode: String? = nil
     let onCompletionChanged: (Bool) -> Void
     let onSetTypeChanged: (WorkoutSetType) -> Void
     let onSetLabelChanged: (String) -> Void
     let onCopyPreviousSet: () -> Void
     let onDelete: () -> Void
     @State private var rirRequest: WorkoutRIRRequest?
+    @State private var isNoteVisible = false
 
     var body: some View {
-        VStack(spacing: 4) {
-            HStack(spacing: 4) {
-                EditableSetLabelField(
-                    draft: $draft,
-                    focus: $focusedField,
-                    onCommit: onSetLabelChanged
-                )
-                .frame(width: 42)
-
-                if entryStyle == .strength && draft.setType == .timed {
-                    NumericLogField(
-                        placeholder: "0",
-                        suffix: "sec",
-                        text: $draft.duration,
-                        focus: $focusedField,
-                        focusValue: .duration(draft.id)
-                    )
+        VStack(alignment: .leading, spacing: 5) {
+            HStack(spacing: 5) {
+                if let groupCode {
+                    Button { onCompletionChanged(!draft.isCompleted) } label: {
+                        Text(groupCode)
+                            .font(FWBFont.sized(14).weight(.semibold))
+                            .foregroundStyle(Color.fwbWarmWhite)
+                            .frame(width: 40, height: 44)
+                            .background(draft.isCompleted ? Color.fwbAccentFill : Color.fwbSurface, in: RoundedRectangle(cornerRadius: 9))
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(!draft.containsEntry)
+                    .accessibilityLabel("\(draft.exerciseName), \(setAccessibilityName), \(draft.isCompleted ? "reopen" : "mark complete")")
                 } else {
-                    NumericLogField(
-                        placeholder: "0",
-                        suffix: entryStyle.firstSuffix,
-                        text: $draft.weight,
-                        focus: $focusedField,
-                        focusValue: .weight(draft.id)
-                    )
+                    EditableSetLabelField(draft: $draft, focus: $focusedField, onCommit: onSetLabelChanged)
+                        .frame(width: 40)
                 }
 
                 if entryStyle == .strength && draft.setType == .timed {
-                    NumericLogField(
-                        placeholder: "0",
-                        suffix: "lb",
-                        text: $draft.weight,
-                        focus: $focusedField,
-                        focusValue: .weight(draft.id)
-                    )
-                    .frame(width: 66)
+                    NumericLogField(placeholder: "0", suffix: "sec", text: $draft.duration, focus: $focusedField, focusValue: .duration(draft.id))
+                    NumericLogField(placeholder: "0", suffix: "lb", text: $draft.weight, focus: $focusedField, focusValue: .weight(draft.id))
                 } else {
-                    NumericLogField(
-                        placeholder: "0",
-                        suffix: entryStyle.secondSuffix,
-                        text: $draft.reps,
-                        focus: $focusedField,
-                        focusValue: .reps(draft.id)
-                    )
-                    .frame(width: 66)
+                    NumericLogField(placeholder: "0", suffix: entryStyle.firstSuffix, text: $draft.weight, focus: $focusedField, focusValue: .weight(draft.id))
+                    NumericLogField(placeholder: "0", suffix: entryStyle.secondSuffix, text: $draft.reps, focus: $focusedField, focusValue: .reps(draft.id))
                 }
 
                 Button {
                     focusedField = nil
                     rirRequest = WorkoutRIRRequest(id: draft.id)
                 } label: {
-                    VStack(spacing: 1) {
-                        Text("RIR")
-                            .font(.caption2.weight(.black))
-                            .foregroundStyle(Color.fwbMuted)
-                        Text(rirDisplayValue)
-                            .font(.subheadline.weight(.black))
-                            .foregroundStyle(Color.fwbWarmWhite)
-                    }
-                    .frame(width: 56, height: 48)
-                    .background(Color.fwbCard, in: Rectangle())
-                    .overlay { Rectangle().stroke(Color.fwbLine, lineWidth: 1) }
+                    Text(rirDisplayValue)
+                        .font(FWBFont.sized(14).weight(.semibold))
+                        .foregroundStyle(Color.fwbWarmWhite)
+                        .frame(width: 48, height: 44)
+                        .background(Color.fwbCard, in: RoundedRectangle(cornerRadius: 9))
+                        .overlay { RoundedRectangle(cornerRadius: 9).stroke(Color.fwbLine, lineWidth: 1) }
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("Choose reps in reserve for \(setAccessibilityName.lowercased())")
@@ -3731,66 +4229,59 @@ private struct WorkoutSetLogRow: View {
                 .accessibilityHint(WorkoutEffortScale.rir.explanation)
                 .accessibilityIdentifier("workout.rir.\(draft.id)")
 
-            }
-
-            if previousResult != nil || isPreviousHistoryLoading {
-                PreviousSetResultView(
-                    result: previousResult,
-                    entryStyle: entryStyle,
-                    isLoading: isPreviousHistoryLoading
-                )
-            }
-
-            HStack(spacing: 4) {
-                setNoteField
-
-                Menu {
-                    Button(action: onCopyPreviousSet) {
-                        Label("Copy Previous Set", systemImage: "rectangle.on.rectangle")
-                    }
-                    .disabled(!canCopyPreviousSet)
-
-                    Button(role: .destructive, action: onDelete) {
-                        Label("Delete Set", systemImage: "trash")
-                    }
+                Button {
+                    guard draft.containsEntry || draft.isCompleted else { return }
+                    onCompletionChanged(!draft.isCompleted)
                 } label: {
-                    Image(systemName: "ellipsis")
-                        .font(.subheadline.bold())
-                        .foregroundStyle(Color.fwbWarmWhite)
-                        .frame(width: 40, height: 38)
-                        .background(Color.fwbSurface, in: Rectangle())
-                        .overlay { Rectangle().stroke(Color.fwbLine, lineWidth: 1) }
+                    Image(systemName: "checkmark")
+                        .font(FWBFont.sized(14).weight(.semibold))
+                        .foregroundStyle(draft.isCompleted ? Color.black : Color.fwbMuted)
+                        .frame(width: 44, height: 44)
+                        .background(draft.isCompleted ? Color.fwbAccentFill : Color.fwbSurface, in: RoundedRectangle(cornerRadius: 9))
+                        .overlay { RoundedRectangle(cornerRadius: 9).stroke(Color.fwbLine, lineWidth: 1) }
                 }
-                .accessibilityLabel("\(setAccessibilityName) options")
+                .buttonStyle(.plain)
+                .accessibilityLabel("\(setAccessibilityName), \(draft.isCompleted ? "reopen" : "mark complete")")
+                .accessibilityHint("Touch and hold for note, copy, set type, and delete options")
+                .accessibilityIdentifier("workout.completeSet.\(draft.id)")
+                .contextMenu {
+                    setActions
+                }
+                .accessibilityAction(named: "Add note") { isNoteVisible = true; focusedField = .note(draft.id) }
+                .accessibilityAction(named: "Copy previous set") { if canCopyPreviousSet { onCopyPreviousSet() } }
+                .accessibilityAction(named: "Delete set", onDelete)
+
+            }
+
+            if previousResult != nil {
+                PreviousSetResultView(result: previousResult, entryStyle: entryStyle, isLoading: isPreviousHistoryLoading)
+            }
+
+            if isNoteVisible || !draft.notes.isEmpty {
+                TextField("Note for this set", text: $draft.notes, axis: .vertical)
+                    .font(FWBFont.sized(12))
+                    .foregroundStyle(Color.fwbWarmWhite)
+                    .focused($focusedField, equals: .note(draft.id))
+                    .padding(8)
+                    .frame(minHeight: 40)
+                    .background(Color.fwbSurface, in: RoundedRectangle(cornerRadius: 8))
+                    .accessibilityLabel("Set note")
             }
 
             if let message = draft.effortValidationMessage {
                 Label(message, systemImage: "exclamationmark.triangle.fill")
-                    .font(.caption.weight(.semibold))
+                    .font(FWBFont.sized(11))
                     .foregroundStyle(Color.fwbRed)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 7)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Color.fwbSurface)
                     .accessibilityIdentifier("workout.effortError.\(draft.id)")
             }
-
             if wasCopied {
-                Label("COPIED · TAP ANY FIELD TO EDIT", systemImage: "pencil")
-                    .font(.caption2.weight(.black))
-                    .tracking(0.5)
+                Label("Copied · tap a field to edit", systemImage: "pencil")
+                    .font(FWBFont.sized(10).weight(.medium))
                     .foregroundStyle(Color.fwbLime)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Color.fwbLime.opacity(0.08))
-                    .accessibilityLabel("Copied values. All fields are editable.")
                     .accessibilityIdentifier("workout.copiedSet.\(draft.id)")
             }
         }
-        .overlay {
-            Rectangle().stroke(wasCopied ? Color.fwbLime : Color.fwbLine, lineWidth: wasCopied ? 2 : 1)
-        }
+        .padding(.vertical, 2)
         .sheet(item: $rirRequest) { _ in
             WorkoutRIRSelectionSheet(draft: $draft)
                 .presentationDetents([.medium, .large])
@@ -3798,31 +4289,32 @@ private struct WorkoutSetLogRow: View {
         }
     }
 
-    private var setNoteField: some View {
-        TextField("Note", text: $draft.notes)
-            .accessibilityLabel("Set note")
-            .font(.footnote)
-            .foregroundStyle(Color.fwbWarmWhite)
-            .focused($focusedField, equals: .note(draft.id))
-            .padding(.horizontal, 12)
-            .padding(.vertical, 5)
-            .frame(maxWidth: .infinity)
-            .frame(minHeight: 38)
-            .background(Color.fwbSurface)
+    @ViewBuilder
+    private var setActions: some View {
+        Button { isNoteVisible = true; focusedField = .note(draft.id) } label: {
+            Label("Add note", systemImage: "note.text")
+        }
+        Button(action: onCopyPreviousSet) {
+            Label("Copy previous set", systemImage: "doc.on.doc")
+        }
+        .disabled(!canCopyPreviousSet)
+        Menu("Set type") {
+            ForEach(WorkoutSetType.allCases, id: \.self) { type in
+                Button(type.title) { onSetTypeChanged(type) }
+            }
+        }
+        Button(role: .destructive, action: onDelete) { Label("Delete set", systemImage: "trash") }
     }
 
     private var rirDisplayValue: String {
         guard draft.effortScale == .rir,
-              let value = Double(draft.effort.trimmingCharacters(in: .whitespacesAndNewlines)) else {
-            return "—"
-        }
+              let value = Double(draft.effort.trimmingCharacters(in: .whitespacesAndNewlines)) else { return "—" }
         return value >= 4 ? "4+" : WorkoutEffortScale.rir.formatted(value)
     }
 
     private var setAccessibilityName: String {
         draft.isWarmUp ? "Warm-up set \(draft.warmUpOrdinal ?? 1)" : "Set \(draft.setNumber)"
     }
-
 }
 
 private struct WorkoutRIRRequest: Identifiable {
@@ -3851,12 +4343,12 @@ private struct EditableSetLabelField: View {
             .textInputAutocapitalization(.characters)
             .autocorrectionDisabled()
             .multilineTextAlignment(.center)
-            .font(.subheadline.weight(.black))
+            .font(FWBFont.sized(14).weight(.semibold))
             .foregroundStyle(Color.fwbWarmWhite)
             .focused($focus, equals: .set(draft.id))
-            .frame(height: 48)
-            .background(Color.fwbCard, in: Rectangle())
-            .overlay { Rectangle().stroke(Color.fwbLine, lineWidth: 1) }
+            .frame(height: 44)
+            .background(Color.fwbCard, in: RoundedRectangle(cornerRadius: FWBLayout.controlRadius, style: .continuous))
+            .overlay { RoundedRectangle(cornerRadius: FWBLayout.controlRadius, style: .continuous).stroke(Color.fwbLine, lineWidth: 1) }
             .submitLabel(.done)
             .onSubmit(commit)
             .onChange(of: label) { nextValue in
@@ -3920,12 +4412,12 @@ private struct WorkoutRIRSelectionSheet: View {
             HStack(alignment: .top, spacing: 12) {
                 VStack(alignment: .leading, spacing: 5) {
                     Text("SET EFFORT")
-                        .font(.footnote.weight(.black))
+                        .font(FWBFont.footnote.weight(.semibold))
                         .tracking(1)
                         .foregroundStyle(Color.fwbLime)
                     Text("HOW MANY MORE REPS?")
-                        .font(.title.weight(.black))
-                        .fontWidth(.condensed)
+                        .font(FWBFont.sized(23).weight(.bold))
+
                         .foregroundStyle(Color.fwbWarmWhite)
                 }
                 Spacer(minLength: 8)
@@ -3933,7 +4425,7 @@ private struct WorkoutRIRSelectionSheet: View {
                     dismiss()
                 } label: {
                     Image(systemName: "xmark")
-                        .font(.headline.weight(.bold))
+                        .font(FWBFont.headline.weight(.bold))
                         .frame(width: 40, height: 40)
                         .background(Color.fwbSurface, in: Circle())
                 }
@@ -3942,7 +4434,7 @@ private struct WorkoutRIRSelectionSheet: View {
             }
 
             Text("If you kept going, how many more good-form reps could you have completed?")
-                .font(.subheadline.weight(.semibold))
+                .font(FWBFont.subheadline.weight(.semibold))
                 .foregroundStyle(Color.fwbMuted)
                 .fixedSize(horizontal: false, vertical: true)
 
@@ -3953,21 +4445,21 @@ private struct WorkoutRIRSelectionSheet: View {
                     } label: {
                         HStack(spacing: 14) {
                             Text(option.value == 4 ? "4+" : String(option.value))
-                                .font(.title3.weight(.black))
+                                .font(FWBFont.sized(17).weight(.semibold))
                                 .frame(width: 34, alignment: .leading)
                             Text(option.label)
-                                .font(.subheadline.weight(.bold))
+                                .font(FWBFont.subheadline.weight(.bold))
                             Spacer()
                             if selection == option.value {
                                 Image(systemName: "checkmark")
-                                    .font(.headline.weight(.black))
+                                    .font(FWBFont.headline.weight(.semibold))
                             }
                         }
                         .foregroundStyle(selection == option.value ? Color.black : Color.fwbWarmWhite)
                         .padding(.horizontal, 12)
                         .frame(minHeight: 48)
-                        .background(selection == option.value ? Color.fwbAccentFill : Color.fwbSurface, in: Rectangle())
-                        .overlay { Rectangle().stroke(selection == option.value ? Color.fwbLime : Color.fwbLine, lineWidth: 1) }
+                        .background(selection == option.value ? Color.fwbAccentFill : Color.fwbSurface, in: RoundedRectangle(cornerRadius: FWBLayout.controlRadius, style: .continuous))
+                        .overlay { RoundedRectangle(cornerRadius: FWBLayout.controlRadius, style: .continuous).stroke(selection == option.value ? Color.fwbLime : Color.fwbLine, lineWidth: 1) }
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel("\(option.value == 4 ? "Four or more" : option.label) reps in reserve")
@@ -3976,17 +4468,17 @@ private struct WorkoutRIRSelectionSheet: View {
 
             VStack(alignment: .leading, spacing: 4) {
                 Text("RIR MEANS REPS IN RESERVE")
-                    .font(.footnote.weight(.black))
+                    .font(FWBFont.footnote.weight(.semibold))
                     .tracking(0.5)
                     .foregroundStyle(Color.fwbLime)
                 Text("It estimates how many additional reps you could have completed with good form.")
-                    .font(.footnote)
+                    .font(FWBFont.footnote)
                     .foregroundStyle(Color.fwbMuted)
             }
             .padding(12)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.fwbSurface, in: Rectangle())
-            .overlay { Rectangle().stroke(Color.fwbLine, lineWidth: 1) }
+            .background(Color.fwbSurface, in: RoundedRectangle(cornerRadius: FWBLayout.controlRadius, style: .continuous))
+            .overlay { RoundedRectangle(cornerRadius: FWBLayout.controlRadius, style: .continuous).stroke(Color.fwbLine, lineWidth: 1) }
 
             Button("SAVE RIR") {
                 guard let selection else { return }
@@ -3998,7 +4490,7 @@ private struct WorkoutRIRSelectionSheet: View {
             .disabled(selection == nil)
             .accessibilityIdentifier("workout.rir.save")
         }
-        .padding(20)
+        .padding(FWBLayout.pagePadding)
         .background(Color.fwbBackground.ignoresSafeArea())
     }
 
@@ -4023,14 +4515,14 @@ private struct WorkoutEffortLogField: View {
     var body: some View {
         HStack(spacing: 6) {
             Text(displayedScale.title)
-                .font(.caption.weight(.black))
+                .font(FWBFont.caption.weight(.semibold))
                 .tracking(0.4)
                 .foregroundStyle(Color.fwbLime)
 
             TextField(displayedScale.rangeLabel, text: $draft.effort)
                 .keyboardType(.decimalPad)
                 .multilineTextAlignment(.trailing)
-                .font(.subheadline.weight(.bold))
+                .font(FWBFont.subheadline.weight(.bold))
                 .foregroundStyle(Color.fwbWarmWhite)
                 .focused($focus, equals: .effort(draft.id))
                 .accessibilityLabel("Set \(draft.setNumber) \(displayedScale.title)")
@@ -4078,11 +4570,11 @@ private struct PreviousSetContext: View {
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 7) {
             Text("LAST")
-                .font(.caption2.weight(.black))
+                .font(FWBFont.caption2.weight(.semibold))
                 .tracking(0.7)
                 .foregroundStyle(Color.fwbLime)
             Text(summary)
-                .font(.caption.weight(.semibold))
+                .font(FWBFont.caption.weight(.semibold))
                 .foregroundStyle(Color.fwbMuted)
                 .lineLimit(2)
             Spacer(minLength: 0)
@@ -4129,7 +4621,7 @@ private struct PreviousSetResultView: View {
                 Spacer(minLength: 4)
                 if let result {
                     Text(Self.date(result.entryDate))
-                        .font(.caption2.weight(.bold))
+                        .font(FWBFont.sized(10))
                         .foregroundStyle(Color.fwbMuted)
                 }
             }
@@ -4139,13 +4631,13 @@ private struct PreviousSetResultView: View {
                 value
                 if let result {
                     Text(Self.date(result.entryDate))
-                        .font(.caption2.weight(.bold))
+                        .font(FWBFont.sized(10))
                         .foregroundStyle(Color.fwbMuted)
                 }
             }
         }
         .padding(.horizontal, 10)
-        .padding(.vertical, 7)
+        .padding(.vertical, 3)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color.fwbSurface.opacity(0.72))
         .accessibilityElement(children: .ignore)
@@ -4153,16 +4645,16 @@ private struct PreviousSetResultView: View {
     }
 
     private var label: some View {
-        Text("PREVIOUS")
-            .font(.caption2.weight(.black))
-            .tracking(0.7)
+        Text("Last")
+            .font(FWBFont.sized(10).weight(.semibold))
+
             .foregroundStyle(Color.fwbLime)
             .lineLimit(1)
     }
 
     private var value: some View {
         Text(valueText)
-            .font(.footnote.weight(.semibold))
+            .font(FWBFont.sized(10).weight(.medium))
             .foregroundStyle(result == nil ? Color.fwbMuted : Color.fwbWarmWhite)
             .lineLimit(1)
     }
@@ -4236,9 +4728,9 @@ private struct SetTypeMenu: View {
         } label: {
             HStack(spacing: 5) {
                 Image(systemName: selection.systemImage)
-                    .font(.caption2.weight(.black))
+                    .font(FWBFont.caption2.weight(.semibold))
                 Text(selection.compactTitle)
-                    .font(.caption2.weight(.black))
+                    .font(FWBFont.caption2.weight(.semibold))
                     .tracking(0.35)
             }
             .foregroundStyle(typeColor)
@@ -4276,14 +4768,14 @@ private struct NumericLogField: View {
         TextField(placeholder, text: $text)
             .keyboardType(.decimalPad)
             .multilineTextAlignment(.center)
-            .font(.headline.weight(.bold))
+            .font(FWBFont.sized(14).weight(.semibold))
             .foregroundStyle(Color.fwbWarmWhite)
             .focused($isFocused)
             .padding(.horizontal, 5)
         .frame(maxWidth: .infinity)
-        .frame(minHeight: 48)
-        .background(Color.fwbCard)
-        .overlay { Rectangle().stroke(Color.fwbLine, lineWidth: 1) }
+        .frame(minHeight: 44)
+        .background(Color.fwbCard, in: RoundedRectangle(cornerRadius: FWBLayout.controlRadius, style: .continuous))
+        .overlay { RoundedRectangle(cornerRadius: FWBLayout.controlRadius, style: .continuous).stroke(Color.fwbLine, lineWidth: 1) }
         .accessibilityIdentifier(focusValue.accessibilityIdentifier)
         .accessibilityHint(suffix)
         .onAppear {
@@ -4315,12 +4807,12 @@ private struct LoggerMetric: View {
     var body: some View {
         VStack(spacing: 3) {
             Text(title)
-                .font(.footnote.bold())
+                .font(FWBFont.footnote.bold())
                 .tracking(0.5)
                 .foregroundStyle(Color.fwbMuted)
             Text(suffix.isEmpty ? value : "\(value) \(suffix)")
-                .font(.footnote.weight(.black))
-                .fontWidth(.condensed)
+                .font(FWBFont.footnote.weight(.semibold))
+
                 .foregroundStyle(Color.fwbWarmWhite)
                 .lineLimit(1)
                 .minimumScaleFactor(0.95)
@@ -4343,16 +4835,16 @@ private struct WorkoutSessionSummary: View {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("WORKOUT SUMMARY")
-                        .font(.footnote.bold())
+                        .font(FWBFont.footnote.bold())
                         .tracking(1)
                         .foregroundStyle(Color.fwbLime)
                     Text("Keep the session moving.")
-                        .font(.title3.weight(.black))
-                        .fontWidth(.condensed)
+                        .font(FWBFont.sized(17).weight(.semibold))
+
                 }
                 Spacer()
                 Image(systemName: "figure.strengthtraining.traditional")
-                    .font(.title2)
+                    .font(FWBFont.title2)
                     .foregroundStyle(Color.fwbLime)
             }
 
@@ -4391,22 +4883,22 @@ private struct SummaryBlock: View {
     var body: some View {
         VStack(spacing: 4) {
             Text(title)
-                .font(.footnote.bold())
+                .font(FWBFont.footnote.bold())
                 .tracking(0.4)
                 .foregroundStyle(Color.fwbMuted)
                 .lineLimit(1)
                 .minimumScaleFactor(0.72)
             Text(value)
-                .font(.footnote.weight(.black))
-                .fontWidth(.condensed)
+                .font(FWBFont.footnote.weight(.semibold))
+
                 .foregroundStyle(Color.fwbWarmWhite)
                 .lineLimit(1)
                 .minimumScaleFactor(0.95)
         }
         .padding(.vertical, 10)
         .frame(maxWidth: .infinity, minHeight: 62)
-        .background(Color.fwbSurface, in: Rectangle())
-        .overlay { Rectangle().stroke(Color.fwbLine, lineWidth: 1) }
+        .background(Color.fwbSurface, in: RoundedRectangle(cornerRadius: FWBLayout.controlRadius, style: .continuous))
+        .overlay { RoundedRectangle(cornerRadius: FWBLayout.controlRadius, style: .continuous).stroke(Color.fwbLine, lineWidth: 1) }
     }
 }
 
@@ -4414,12 +4906,12 @@ private struct LoggerEmptyState: View {
     var body: some View {
         VStack(spacing: 10) {
             Image(systemName: "plus.square.dashed")
-                .font(.largeTitle)
+                .font(FWBFont.largeTitle)
                 .foregroundStyle(Color.fwbLime)
             Text("Add your first exercise")
-                .font(.headline.weight(.black))
+                .font(FWBFont.headline.weight(.semibold))
             Text("Build this workout as you go.")
-                .font(.footnote)
+                .font(FWBFont.footnote)
                 .foregroundStyle(Color.fwbMuted)
         }
         .frame(maxWidth: .infinity)
@@ -4486,12 +4978,12 @@ private struct ExercisePickerSheet: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 18) {
                         Text(request.title.uppercased())
-                            .font(.largeTitle.weight(.black))
-                            .fontWidth(.condensed)
+                            .font(FWBFont.sized(24).weight(.bold))
+
                             .foregroundStyle(Color.fwbWarmWhite)
 
                         Text(instructionText)
-                            .font(.subheadline)
+                            .font(FWBFont.subheadline)
                             .foregroundStyle(Color.fwbMuted)
 
                         HStack(spacing: 10) {
@@ -4517,8 +5009,8 @@ private struct ExercisePickerSheet: View {
                         .padding(.horizontal, 14)
                         .padding(.vertical, 10)
                         .frame(minHeight: 50)
-                        .background(Color.fwbSurface, in: Rectangle())
-                        .overlay { Rectangle().stroke(Color.fwbLine, lineWidth: 1) }
+                        .background(Color.fwbSurface, in: RoundedRectangle(cornerRadius: FWBLayout.controlRadius, style: .continuous))
+                        .overlay { RoundedRectangle(cornerRadius: FWBLayout.controlRadius, style: .continuous).stroke(Color.fwbLine, lineWidth: 1) }
 
                         LazyVGrid(columns: categoryColumns, alignment: .leading, spacing: 8) {
                             ForEach(categoryOptions, id: \.self) { category in
@@ -4526,7 +5018,7 @@ private struct ExercisePickerSheet: View {
                                     selectedCategory = category
                                 } label: {
                                     Text(category.uppercased())
-                                        .font(.footnote.weight(.black))
+                                        .font(FWBFont.footnote.weight(.semibold))
                                         .tracking(0.45)
                                         .multilineTextAlignment(.center)
                                         .foregroundStyle(selectedCategory == category ? Color.black : Color.fwbLime)
@@ -4534,9 +5026,9 @@ private struct ExercisePickerSheet: View {
                                         .frame(maxWidth: .infinity, minHeight: 48)
                                         .background(
                                             selectedCategory == category ? Color.fwbAccentFill : Color.clear,
-                                            in: Rectangle()
+                                            in: RoundedRectangle(cornerRadius: FWBLayout.controlRadius, style: .continuous)
                                         )
-                                        .overlay { Rectangle().stroke(Color.fwbLime, lineWidth: 1) }
+                                        .overlay { RoundedRectangle(cornerRadius: FWBLayout.controlRadius, style: .continuous).stroke(Color.fwbLime, lineWidth: 1) }
                                         .contentShape(Rectangle())
                                 }
                                 .buttonStyle(.plain)
@@ -4549,12 +5041,12 @@ private struct ExercisePickerSheet: View {
                         VStack(alignment: .leading, spacing: 0) {
                             HStack {
                                 Text("EXERCISE LIBRARY")
-                                    .font(.footnote.weight(.black))
+                                    .font(FWBFont.footnote.weight(.semibold))
                                     .tracking(0.8)
                                     .foregroundStyle(Color.fwbLime)
                                 Spacer()
                                 Text("\(visibleSuggestions.count) RESULTS")
-                                    .font(.footnote.weight(.bold))
+                                    .font(FWBFont.footnote.weight(.bold))
                                     .foregroundStyle(Color.fwbMuted)
                             }
                             .padding(12)
@@ -4563,7 +5055,7 @@ private struct ExercisePickerSheet: View {
 
                             if visibleSuggestions.isEmpty {
                                 Text("No library match. You can add the typed name as a custom exercise below.")
-                                    .font(.footnote)
+                                    .font(FWBFont.footnote)
                                     .foregroundStyle(Color.fwbMuted)
                                     .fixedSize(horizontal: false, vertical: true)
                                     .padding(14)
@@ -4576,25 +5068,25 @@ private struct ExercisePickerSheet: View {
                                         } label: {
                                             HStack(spacing: 12) {
                                                 Image(systemName: exerciseIcon(for: suggestion))
-                                                    .font(.subheadline.weight(.bold))
+                                                    .font(FWBFont.subheadline.weight(.bold))
                                                     .foregroundStyle(Color.black)
                                                     .frame(width: 34, height: 34)
-                                                    .background(Color.fwbAccentFill, in: Rectangle())
+                                                    .background(Color.fwbAccentFill, in: RoundedRectangle(cornerRadius: FWBLayout.controlRadius, style: .continuous))
 
                                                 VStack(alignment: .leading, spacing: 3) {
                                                     Text(suggestion.fwbTitleCased)
-                                                        .font(.subheadline.weight(.bold))
+                                                        .font(FWBFont.subheadline.weight(.bold))
                                                         .foregroundStyle(Color.fwbWarmWhite)
                                                         .multilineTextAlignment(.leading)
                                                     Text((ExerciseLibrary.category(for: suggestion) ?? "Program & history").uppercased())
-                                                        .font(.footnote.weight(.black))
+                                                        .font(FWBFont.footnote.weight(.semibold))
                                                         .tracking(0.5)
                                                         .foregroundStyle(Color.fwbMuted)
                                                 }
 
                                                 Spacer(minLength: 6)
                                                 Image(systemName: "plus")
-                                                    .font(.footnote.weight(.black))
+                                                    .font(FWBFont.footnote.weight(.semibold))
                                                     .foregroundStyle(Color.fwbLime)
                                             }
                                             .padding(.horizontal, 12)
@@ -4611,20 +5103,20 @@ private struct ExercisePickerSheet: View {
                                 }
                             }
                         }
-                        .background(Color.fwbCard, in: Rectangle())
-                        .overlay { Rectangle().stroke(Color.fwbLine, lineWidth: 1) }
+                        .background(Color.fwbCard, in: RoundedRectangle(cornerRadius: FWBLayout.controlRadius, style: .continuous))
+                        .overlay { RoundedRectangle(cornerRadius: FWBLayout.controlRadius, style: .continuous).stroke(Color.fwbLine, lineWidth: 1) }
 
                         if case .substitute(let exercise) = request.mode {
                             Label(
                                 "Replacing \(exercise.name) keeps its logged weights, reps, notes, and completed sets.",
                                 systemImage: "arrow.left.arrow.right"
                             )
-                            .font(.footnote.weight(.semibold))
+                            .font(FWBFont.footnote.weight(.semibold))
                             .foregroundStyle(Color.fwbMuted)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(14)
-                            .background(Color.fwbSurface, in: Rectangle())
-                            .overlay { Rectangle().stroke(Color.fwbLine, lineWidth: 1) }
+                            .background(Color.fwbSurface, in: RoundedRectangle(cornerRadius: FWBLayout.controlRadius, style: .continuous))
+                            .overlay { RoundedRectangle(cornerRadius: FWBLayout.controlRadius, style: .continuous).stroke(Color.fwbLine, lineWidth: 1) }
                         }
 
                         if canSave && !isExactSuggestion {
@@ -4632,12 +5124,12 @@ private struct ExercisePickerSheet: View {
                                 "Exact name not required. This will be saved as a manual exercise.",
                                 systemImage: "pencil.line"
                             )
-                            .font(.footnote.weight(.semibold))
+                            .font(FWBFont.footnote.weight(.semibold))
                             .foregroundStyle(Color.fwbMuted)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(14)
-                            .background(Color.fwbSurface, in: Rectangle())
-                            .overlay { Rectangle().stroke(Color.fwbLine, lineWidth: 1) }
+                            .background(Color.fwbSurface, in: RoundedRectangle(cornerRadius: FWBLayout.controlRadius, style: .continuous))
+                            .overlay { RoundedRectangle(cornerRadius: FWBLayout.controlRadius, style: .continuous).stroke(Color.fwbLine, lineWidth: 1) }
                         }
 
                         Button {
@@ -4650,7 +5142,7 @@ private struct ExercisePickerSheet: View {
                         .disabled(!canSave)
                         .accessibilityIdentifier("workout.exercisePicker.save")
                     }
-                    .padding(20)
+                    .padding(FWBLayout.pagePadding)
                 }
                 .scrollDismissesKeyboard(.interactively)
             }
@@ -4730,12 +5222,12 @@ private struct LoggerStatusBanner: View {
 
     var body: some View {
         Label(text, systemImage: icon)
-            .font(.footnote.weight(.semibold))
+            .font(FWBFont.footnote.weight(.semibold))
             .foregroundStyle(color)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(14)
-            .background(Color.fwbSurface, in: Rectangle())
-            .overlay { Rectangle().stroke(color.opacity(0.7), lineWidth: 1) }
+            .background(Color.fwbSurface, in: RoundedRectangle(cornerRadius: FWBLayout.controlRadius, style: .continuous))
+            .overlay { RoundedRectangle(cornerRadius: FWBLayout.controlRadius, style: .continuous).stroke(color.opacity(0.7), lineWidth: 1) }
     }
 }
 
@@ -4761,10 +5253,6 @@ private struct ExerciseNameAutocompleteField: View {
                 .textFieldStyle(FWBTextFieldStyle())
                 .accessibilityIdentifier(accessibilityIdentifier)
 
-            Text("Choose a suggestion or type any name or short description. Exact wording is not required.")
-                .font(.caption)
-                .foregroundStyle(Color.fwbMuted)
-                .fixedSize(horizontal: false, vertical: true)
 
             if isFocused && !matches.isEmpty {
                 VStack(spacing: 0) {
@@ -4778,7 +5266,7 @@ private struct ExerciseNameAutocompleteField: View {
                                 Image(systemName: "figure.strengthtraining.traditional")
                                     .foregroundStyle(Color.fwbLime)
                                 Text(suggestion.fwbTitleCased)
-                                    .font(.subheadline.weight(.semibold))
+                                    .font(FWBFont.subheadline.weight(.semibold))
                                     .foregroundStyle(Color.fwbWarmWhite)
                                 Spacer()
                             }
@@ -4795,8 +5283,8 @@ private struct ExerciseNameAutocompleteField: View {
                         }
                     }
                 }
-                .background(Color.fwbSurface, in: Rectangle())
-                .overlay { Rectangle().stroke(Color.fwbLine, lineWidth: 1) }
+                .background(Color.fwbSurface, in: RoundedRectangle(cornerRadius: FWBLayout.controlRadius, style: .continuous))
+                .overlay { RoundedRectangle(cornerRadius: FWBLayout.controlRadius, style: .continuous).stroke(Color.fwbLine, lineWidth: 1) }
             }
         }
         .onAppear {
@@ -4810,5 +5298,320 @@ private struct ExerciseNameAutocompleteField: View {
         suggestion
             .lowercased()
             .replacingOccurrences(of: " ", with: "-")
+    }
+}
+
+// Blank slots belong to the builder UI until the user supplies a name. They never
+// enter the persisted exercise or set arrays, so autosave cannot create empty logs.
+private struct CustomBlankExerciseSlot: View {
+    let number: Int
+    let suggestions: [String]
+    var showsSetGrid = true
+    let onAdd: (String) -> Void
+    @State private var name = ""
+    @FocusState private var isFocused: Bool
+
+    private var trimmedName: String { name.trimmingCharacters(in: .whitespacesAndNewlines) }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                Text("\(number)")
+                    .font(FWBFont.sized(12).weight(.semibold))
+                    .frame(width: 28, height: 28)
+                    .background(Color.fwbSurface, in: RoundedRectangle(cornerRadius: 8))
+                TextField("Input exercise name here", text: $name)
+                    .font(FWBFont.sized(14))
+                    .textInputAutocapitalization(.words)
+                    .autocorrectionDisabled()
+                    .focused($isFocused)
+                    .submitLabel(.done)
+                    .onSubmit { commit(trimmedName) }
+                    .accessibilityLabel("Exercise \(number) name")
+                    .accessibilityHint("Choose or enter a name before editing weight, reps, or effort.")
+                    .accessibilityIdentifier("customWorkout.blankExercise.\(number)")
+                if !trimmedName.isEmpty {
+                    Button { commit(trimmedName) } label: { Image(systemName: "plus.circle.fill").frame(width: 44, height: 44) }
+                        .buttonStyle(.plain)
+                        .foregroundStyle(Color.fwbLime)
+                        .accessibilityLabel("Add \(trimmedName)")
+                }
+            }
+            .frame(minHeight: 44)
+            if isFocused && !trimmedName.isEmpty {
+                ForEach(Array(ExerciseSuggestionLibrary.matches(query: trimmedName, within: suggestions).prefix(5)), id: \.self) { suggestion in
+                    Button { commit(suggestion) } label: {
+                        Text(suggestion).frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                    }
+                    .font(FWBFont.sized(13))
+                    .buttonStyle(.plain)
+                }
+            }
+            if showsSetGrid {
+                EmptyWorkoutSetGrid(labels: ["1", "2", "3"])
+                Text("Choose an exercise name to enter your sets.")
+                    .font(FWBFont.sized(11))
+                    .foregroundStyle(Color.fwbMuted)
+            }
+        }
+        .padding(12)
+        .background(Color.fwbCard, in: RoundedRectangle(cornerRadius: 14))
+        .overlay { RoundedRectangle(cornerRadius: 14).stroke(Color.fwbLine, lineWidth: 1) }
+    }
+
+    private func commit(_ value: String) {
+        guard !value.isEmpty else { return }
+        onAdd(value)
+        name = ""
+        isFocused = false
+    }
+}
+
+// Read-only placeholders show the pending grid without presenting inactive
+// text fields or buttons as editable workout entries.
+private struct EmptyWorkoutSetGrid: View {
+    let labels: [String]
+    var firstTitle = "Set"
+
+    var body: some View {
+        VStack(spacing: 5) {
+            LoggerTableHeadings(entryStyle: .strength, firstTitle: firstTitle)
+            ForEach(Array(labels.enumerated()), id: \.offset) { _, label in
+                HStack(spacing: 5) {
+                    cell(label).frame(width: 40)
+                    cell("—").frame(maxWidth: .infinity)
+                    cell("—").frame(maxWidth: .infinity)
+                    cell("—").frame(width: 48)
+                    Image(systemName: "checkmark")
+                        .font(FWBFont.sized(14).weight(.semibold))
+                        .foregroundStyle(Color.fwbMuted.opacity(0.35))
+                        .frame(width: 44, height: 44)
+                        .background(Color.fwbSurface, in: RoundedRectangle(cornerRadius: 9))
+                }
+            }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(labels.count) empty \(firstTitle == "Set" ? "sets" : "exercise rows")")
+        .accessibilityHint("Choose an exercise name above to enter weight, reps, and reps in reserve.")
+    }
+
+    private func cell(_ label: String) -> some View {
+        Text(label)
+            .font(FWBFont.sized(13).weight(.medium))
+            .foregroundStyle(Color.fwbMuted.opacity(0.6))
+            .frame(maxWidth: .infinity, minHeight: 44)
+            .background(Color.fwbSurface.opacity(0.65), in: RoundedRectangle(cornerRadius: 9))
+            .overlay { RoundedRectangle(cornerRadius: 9).stroke(Color.fwbLine.opacity(0.6), lineWidth: 1) }
+    }
+}
+
+private struct WorkoutRoundStepperButtonStyle: ButtonStyle {
+    @Environment(\.isEnabled) private var isEnabled
+    let accented: Bool
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(FWBFont.title3.weight(.bold))
+            .foregroundStyle(accented ? Color.black : Color.fwbWarmWhite)
+            .background(accented ? Color.fwbAccentFill : Color.fwbCard, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .stroke(accented ? Color.fwbWarmWhite : Color.fwbLine, lineWidth: accented ? 2 : 1.5)
+            }
+            .opacity(isEnabled ? (configuration.isPressed ? 0.72 : 1) : 0.35)
+    }
+}
+
+private struct LoggerCompactButtonStyle: ButtonStyle {
+    var accented = false
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(FWBFont.sized(12).weight(.semibold))
+            .lineLimit(1)
+            .foregroundStyle(accented ? Color.black : Color.fwbWarmWhite)
+            .padding(.horizontal, 9)
+            .frame(minHeight: 44)
+            .background(accented ? Color.fwbAccentFill : Color.fwbSurface, in: RoundedRectangle(cornerRadius: 10))
+            .overlay { RoundedRectangle(cornerRadius: 10).stroke(Color.fwbLine, lineWidth: 1) }
+            .opacity(configuration.isPressed ? 0.7 : 1)
+    }
+}
+
+private struct LoggerTableHeadings: View {
+    let entryStyle: WorkoutEntryStyle
+    var firstTitle = "Set"
+    var body: some View {
+        HStack(spacing: 5) {
+            Text(firstTitle)
+                .font(FWBFont.sized(firstTitle == "Exercise" ? 9 : 10).weight(.semibold))
+                .minimumScaleFactor(0.7)
+                .frame(width: 40)
+            Text(entryStyle == .mobility ? "Seconds" : "Weight").frame(maxWidth: .infinity)
+            Text(entryStyle == .mobility ? "Rounds" : "Reps").frame(maxWidth: .infinity)
+            Text("RIR").frame(width: 48)
+            Image(systemName: "checkmark").frame(width: 44)
+        }
+        .font(FWBFont.sized(10).weight(.semibold))
+        .foregroundStyle(Color.fwbMuted)
+        .lineLimit(1)
+        .padding(.vertical, 4)
+        .accessibilityHidden(true)
+    }
+}
+
+// Round calculations exclude the reserved 1000+ warm-up set numbers and preserve
+// intentionally unequal assigned set counts. Kept pure for focused regression tests.
+enum WorkoutRoundLayout {
+    static func roundCount(exercises: [Exercise], drafts: [WorkoutSetDraft]) -> Int {
+        workingDrafts(exercises: exercises, drafts: drafts).map(\.setNumber).max() ?? 0
+    }
+
+    static func lastRoundSetIDs(exercises: [Exercise], drafts: [WorkoutSetDraft]) -> Set<UUID> {
+        let working = workingDrafts(exercises: exercises, drafts: drafts)
+        guard let lastRound = working.map(\.setNumber).max() else { return [] }
+        return Set(working.filter { $0.setNumber == lastRound }.map(\.id))
+    }
+
+    static func canComplete(_ draft: WorkoutSetDraft) -> Bool {
+        draft.containsEntry && draft.effortValidationMessage == nil
+            && (draft.setType != .timed || draft.durationValue > 0)
+    }
+
+    static func sections(exercises: [Exercise], assignments: [String: WorkoutGroupAssignment], preserveSingleGroups: Bool) -> [WorkoutSequenceSection] {
+        WorkoutSequencePlanner.sections(exercises: exercises, assignments: assignments).map { section in
+            let assignment = section.assignment ?? (preserveSingleGroups ? section.exercises.first.flatMap { assignments[$0.id] } : nil)
+            return WorkoutSequenceSection(id: section.id, assignment: assignment, exercises: section.exercises)
+        }
+    }
+
+    struct GroupSlot: Identifiable {
+        let id: String
+        let number: Int
+        let section: WorkoutSequenceSection?
+    }
+
+    static func groupSlots(sections: [WorkoutSequenceSection], format: CustomWorkoutFormat) -> [GroupSlot] {
+        let kind = format == .superset ? "SUPERSET" : "CIRCUIT"
+        let prefix = "CUSTOM_\(kind)_"
+        var numbered: [Int: WorkoutSequenceSection] = [:]
+        var additional: [WorkoutSequenceSection] = []
+        for section in sections {
+            if let id = section.assignment?.id, id.hasPrefix(prefix),
+               let number = Int(id.dropFirst(prefix.count)), number > 0,
+               numbered[number] == nil {
+                numbered[number] = section
+            } else {
+                additional.append(section)
+            }
+        }
+        let maximum = max(5, numbered.keys.max() ?? 0)
+        let slots = (1...maximum).map { number in
+            GroupSlot(id: "\(prefix)\(number)", number: number, section: numbered[number])
+        }
+        return slots + additional.enumerated().map { index, section in
+            GroupSlot(id: section.id, number: maximum + index + 1, section: section)
+        }
+    }
+
+    static func circuitAssignments(exercises: [Exercise]) -> [String: WorkoutGroupAssignment] {
+        Dictionary(uniqueKeysWithValues: exercises.enumerated().map { index, exercise in
+            let number = index / 3 + 1
+            return (exercise.id, WorkoutGroupAssignment(id: "CUSTOM_CIRCUIT_\(number)", kind: .circuit, label: "Circuit \(number)"))
+        })
+    }
+
+    private static func workingDrafts(exercises: [Exercise], drafts: [WorkoutSetDraft]) -> [WorkoutSetDraft] {
+        drafts.filter { draft in
+            !draft.isWarmUp && exercises.contains { $0.code == draft.exerciseCode && $0.name == draft.exerciseName }
+        }
+    }
+}
+
+// A new plan is created once when Copy Workout is tapped. Its distinct title is
+// also required for legacy date/title storage, independent of the fresh UUID.
+struct WorkoutHistoryCopyPlan: Identifiable {
+    let id: UUID
+    let workout: Workout
+    let session: WorkoutHistorySession
+
+    init(session: WorkoutHistorySession) {
+        let id = UUID()
+        self.id = id
+        self.session = session
+        let sourceExercises = Self.copyableExercises(session)
+        let exercises = sourceExercises.enumerated().map { index, source in
+            Exercise(
+                code: String(format: "CW%02d", index + 1),
+                name: source.name,
+                prescription: "\(source.records.filter { !$0.isWarmUp }.count) sets",
+                rest: ""
+            )
+        }
+        workout = Workout(
+            id: id,
+            title: "Copy of \(session.workoutTitle) · \(id.uuidString.prefix(8).lowercased())",
+            focus: "Copied from \(session.entryDate)",
+            format: "custom",
+            exercises: exercises
+        )
+    }
+
+    static func seedDrafts(session: WorkoutHistorySession, exercises: [Exercise]) -> [WorkoutSetDraft] {
+        zip(copyableExercises(session), exercises).flatMap { source, exercise in
+            var workingNumber = 0
+            var warmUpNumber = 0
+            return source.records.map { record in
+                let setNumber: Int
+                if record.isWarmUp {
+                    warmUpNumber += 1
+                    setNumber = WorkoutSetNumber.warmUp(warmUpNumber)
+                } else {
+                    workingNumber += 1
+                    setNumber = workingNumber
+                }
+                return WorkoutSetDraft(
+                    exercise: exercise,
+                    setNumber: setNumber,
+                    weight: number(record.weightUsed),
+                    reps: record.reps.map(number) ?? "",
+                    duration: record.durationSeconds.map(number) ?? "",
+                    notes: record.notes ?? "",
+                    effortScale: record.effortScale,
+                    effort: record.effortValue.map(number) ?? "",
+                    isCompleted: false,
+                    setType: record.resolvedSetType
+                )
+            }
+        }
+    }
+
+    static func freshDrafts(_ drafts: [WorkoutSetDraft], exercises: [Exercise]) -> [WorkoutSetDraft] {
+        drafts.map { draft in
+            let exercise = exercises.first { $0.code == draft.exerciseCode && $0.name == draft.exerciseName }
+                ?? Exercise(code: draft.exerciseCode, name: draft.exerciseName)
+            return WorkoutSetDraft(
+                exercise: exercise,
+                setNumber: draft.setNumber,
+                weight: draft.weight,
+                reps: draft.reps,
+                duration: draft.duration,
+                notes: draft.notes,
+                effortScale: draft.effortScale,
+                effort: draft.effort,
+                isCompleted: false,
+                setType: draft.setType
+            )
+        }
+    }
+
+    private static func copyableExercises(_ session: WorkoutHistorySession) -> [WorkoutHistoryExercise] {
+        let records = session.records.filter {
+            !$0.isCardio && $0.exerciseCode.caseInsensitiveCompare("WARMUP") != .orderedSame
+        }
+        return WorkoutHistorySession(entryDate: session.entryDate, workoutTitle: session.workoutTitle, records: records).exercises
+    }
+
+    private static func number(_ value: Double) -> String {
+        value.rounded() == value ? String(Int(value)) : String(format: "%g", value)
     }
 }

@@ -46,6 +46,14 @@
 		F10000000000000000000010 /* NotificationsFeature.swift in Sources */ = {isa = PBXBuildFile; fileRef = F20000000000000000000010 /* NotificationsFeature.swift */; };
 		F10000000000000000000011 /* NotificationAppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F20000000000000000000011 /* NotificationAppDelegate.swift */; };
 		B10000000000000000000001 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = B80000000000000000000001 /* Supabase */; };
+		FA1000000000000000000001 /* ClientNavigationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA2000000000000000000001 /* ClientNavigationView.swift */; };
+		FA1000000000000000000002 /* ClientWebDestinations.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA2000000000000000000002 /* ClientWebDestinations.swift */; };
+		FA1000000000000000000003 /* Fonts/Inter.ttf in Resources */ = {isa = PBXBuildFile; fileRef = FA2000000000000000000003 /* Fonts/Inter.ttf */; };
+		FA1000000000000000000004 /* Fonts/Inter-OFL.txt in Resources */ = {isa = PBXBuildFile; fileRef = FA2000000000000000000004 /* Fonts/Inter-OFL.txt */; };
+		FA1000000000000000000005 /* WorkoutLayoutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA2000000000000000000005 /* WorkoutLayoutTests.swift */; };
+		FB1000000000000000000001 /* ErrorReporting.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB2000000000000000000001 /* ErrorReporting.swift */; };
+		FB1000000000000000000002 /* ErrorReportingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB2000000000000000000002 /* ErrorReportingTests.swift */; };
+		FB1000000000000000000003 /* Sentry in Frameworks */ = {isa = PBXBuildFile; productRef = FB8000000000000000000001 /* Sentry */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -101,6 +109,13 @@
 		F2000000000000000000000F /* WeeklyCoachCheckIn.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyCoachCheckIn.swift; sourceTree = "<group>"; };
 		F20000000000000000000010 /* NotificationsFeature.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationsFeature.swift; sourceTree = "<group>"; };
 		F20000000000000000000011 /* NotificationAppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationAppDelegate.swift; sourceTree = "<group>"; };
+		FA2000000000000000000001 /* ClientNavigationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ClientNavigationView.swift"; sourceTree = "<group>"; };
+		FA2000000000000000000002 /* ClientWebDestinations.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ClientWebDestinations.swift"; sourceTree = "<group>"; };
+		FA2000000000000000000003 /* Fonts/Inter.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Fonts/Inter.ttf"; sourceTree = "<group>"; };
+		FA2000000000000000000004 /* Fonts/Inter-OFL.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Fonts/Inter-OFL.txt"; sourceTree = "<group>"; };
+		FA2000000000000000000005 /* WorkoutLayoutTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutLayoutTests.swift; sourceTree = "<group>"; };
+		FB2000000000000000000001 /* ErrorReporting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorReporting.swift; sourceTree = "<group>"; };
+		FB2000000000000000000002 /* ErrorReportingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorReportingTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXContainerItemProxy section */
@@ -119,6 +134,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				B10000000000000000000001 /* Supabase in Frameworks */,
+				FB1000000000000000000003 /* Sentry in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -145,6 +161,8 @@
 			isa = PBXGroup;
 			children = (
 				T20000000000000000000001 /* ContinuitySyncTests.swift */,
+				FB2000000000000000000002 /* ErrorReportingTests.swift */,
+				FA2000000000000000000005 /* WorkoutLayoutTests.swift */,
 				T20000000000000000000003 /* WorkoutCalculatorsTests.swift */,
 				H20000000000000000000002 /* WorkoutCommentStoreTests.swift */,
 				N20000000000000000000001 /* NutritionCalculatorTests.swift */,
@@ -157,6 +175,7 @@
 			isa = PBXGroup;
 			children = (
 				A20000000000000000000001 /* FWBCoachApp.swift */,
+				FB2000000000000000000001 /* ErrorReporting.swift */,
 				A20000000000000000000002 /* CoachAppView.swift */,
 				A20000000000000000000007 /* AppConfiguration.swift */,
 				A20000000000000000000008 /* AppModels.swift */,
@@ -164,6 +183,10 @@
 				A2000000000000000000000A /* BrandStyle.swift */,
 				A2000000000000000000000B /* LoginView.swift */,
 				A2000000000000000000000C /* ClientViews.swift */,
+				FA2000000000000000000004 /* Fonts/Inter-OFL.txt */,
+				FA2000000000000000000003 /* Fonts/Inter.ttf */,
+				FA2000000000000000000002 /* ClientWebDestinations.swift */,
+				FA2000000000000000000001 /* ClientNavigationView.swift */,
 				A2000000000000000000000E /* WorkoutLoggerViews.swift */,
 				F2000000000000000000000D /* WorkoutSequence.swift */,
 				C20000000000000000000001 /* WorkoutHistoryViews.swift */,
@@ -222,6 +245,7 @@
 			name = FWBCoach;
 			packageProductDependencies = (
 				B80000000000000000000001 /* Supabase */,
+				FB8000000000000000000001 /* Sentry */,
 			);
 			productName = FWBCoach;
 			productReference = A20000000000000000000006 /* FWBCoach.app */;
@@ -279,6 +303,7 @@
 			mainGroup = A40000000000000000000001;
 			packageReferences = (
 				B70000000000000000000001 /* XCRemoteSwiftPackageReference "supabase-swift" */,
+				FB7000000000000000000001 /* XCRemoteSwiftPackageReference "sentry-cocoa" */,
 			);
 			productRefGroup = A40000000000000000000003 /* Products */;
 			projectDirPath = "";
@@ -296,6 +321,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				A10000000000000000000004 /* Assets.xcassets in Resources */,
+				FA1000000000000000000004 /* Fonts/Inter-OFL.txt in Resources */,
+				FA1000000000000000000003 /* Fonts/Inter.ttf in Resources */,
 				A10000000000000000000010 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -315,6 +342,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A10000000000000000000001 /* FWBCoachApp.swift in Sources */,
+				FB1000000000000000000001 /* ErrorReporting.swift in Sources */,
 				A10000000000000000000002 /* CoachAppView.swift in Sources */,
 				A10000000000000000000005 /* AppConfiguration.swift in Sources */,
 				A10000000000000000000006 /* AppModels.swift in Sources */,
@@ -322,6 +350,8 @@
 				A10000000000000000000008 /* BrandStyle.swift in Sources */,
 				A10000000000000000000009 /* LoginView.swift in Sources */,
 				A1000000000000000000000A /* ClientViews.swift in Sources */,
+				FA1000000000000000000002 /* ClientWebDestinations.swift in Sources */,
+				FA1000000000000000000001 /* ClientNavigationView.swift in Sources */,
 				A1000000000000000000000C /* WorkoutLoggerViews.swift in Sources */,
 				F1000000000000000000000D /* WorkoutSequence.swift in Sources */,
 				C10000000000000000000001 /* WorkoutHistoryViews.swift in Sources */,
@@ -353,6 +383,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				T10000000000000000000001 /* ContinuitySyncTests.swift in Sources */,
+				FB1000000000000000000002 /* ErrorReportingTests.swift in Sources */,
+				FA1000000000000000000005 /* WorkoutLayoutTests.swift in Sources */,
 				T10000000000000000000002 /* WorkoutCalculatorsTests.swift in Sources */,
 				H10000000000000000000002 /* WorkoutCommentStoreTests.swift in Sources */,
 				N10000000000000000000001 /* NutritionCalculatorTests.swift in Sources */,
@@ -425,6 +457,8 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = FWBCoach/Info.plist;
+				SENTRY_DSN = "";
+				SENTRY_ENVIRONMENT = production;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -454,6 +488,8 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = FWBCoach/Info.plist;
+				SENTRY_DSN = "";
+				SENTRY_ENVIRONMENT = production;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -546,6 +582,11 @@
 				version = 2.55.1;
 			};
 		};
+		FB7000000000000000000001 /* XCRemoteSwiftPackageReference "sentry-cocoa" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/getsentry/sentry-cocoa.git";
+			requirement = { kind = exactVersion; version = 9.29.0; };
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -553,6 +594,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = B70000000000000000000001 /* XCRemoteSwiftPackageReference "supabase-swift" */;
 			productName = Supabase;
+		};
+		FB8000000000000000000001 /* Sentry */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FB7000000000000000000001 /* XCRemoteSwiftPackageReference "sentry-cocoa" */;
+			productName = Sentry;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

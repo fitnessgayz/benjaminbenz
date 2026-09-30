@@ -5,14 +5,14 @@ struct CoachAppView: View {
     @StateObject private var sessionStore = SessionStore()
     @StateObject private var workoutSyncStore = WorkoutOfflineSyncStore.shared
     @StateObject private var readinessSyncStore = ReadinessSyncStore.shared
-    @AppStorage(AppAppearancePreference.modeKey) private var storedAppearanceMode = AppAppearanceMode.dark.rawValue
+    @AppStorage(AppAppearancePreference.modeKey) private var storedAppearanceMode = AppAppearanceMode.light.rawValue
     @AppStorage(AppAppearancePreference.lightStartKey) private var lightStartMinute = AppAppearancePreference.defaultLightStart
     @AppStorage(AppAppearancePreference.darkStartKey) private var darkStartMinute = AppAppearancePreference.defaultDarkStart
     @State private var appearanceDate = Date()
 
     private var appearancePreference: AppAppearancePreference {
         AppAppearancePreference(
-            mode: AppAppearanceMode(rawValue: storedAppearanceMode) ?? .dark,
+            mode: AppAppearanceMode(rawValue: storedAppearanceMode) ?? .light,
             lightStartMinute: lightStartMinute,
             darkStartMinute: darkStartMinute
         )
@@ -142,7 +142,13 @@ private struct ClientFeatureAuditRootView: View {
         _sessionStore = StateObject(wrappedValue: SessionStore(previewAccount: account))
         initialTab = switch ProcessInfo.processInfo.arguments.first(where: { $0.hasPrefix("--audit-tab=") }) {
         case "--audit-tab=workouts": .workouts
+        case "--audit-tab=logs": .logs
         case "--audit-tab=progress": .progress
+        case "--audit-tab=stats": .stats
+        case "--audit-tab=nutrition": .nutrition
+        case "--audit-tab=questionnaire": .questionnaire
+        case "--audit-tab=sessions": .sessions
+        case "--audit-tab=settings": .notifications
         case "--audit-tab=macros": .macros
         case "--audit-tab=account": .account
         default: .today

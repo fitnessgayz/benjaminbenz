@@ -296,17 +296,17 @@ struct WeeklyCoachCheckInCard: View {
             HStack(alignment: .firstTextBaseline, spacing: 12) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("WEEKLY COACH CHECK-IN")
-                        .font(.footnote.bold())
+                        .font(FWBFont.footnote.bold())
                         .tracking(1.2)
                         .foregroundStyle(Color.fwbLime)
                     Text(store.weekRangeLabel)
-                        .font(.title3.weight(.black))
-                        .fontWidth(.condensed)
+                        .font(FWBFont.title3.weight(.black))
+
                         .foregroundStyle(Color.fwbWarmWhite)
                 }
                 Spacer()
                 Image(systemName: "bubble.left.and.bubble.right.fill")
-                    .font(.title2.weight(.semibold))
+                    .font(FWBFont.title2.weight(.semibold))
                     .foregroundStyle(Color.fwbLime)
             }
 
@@ -328,10 +328,10 @@ struct WeeklyCoachCheckInCard: View {
         case .failed(let message):
             VStack(alignment: .leading, spacing: 10) {
                 Text(message)
-                    .font(.footnote)
+                    .font(FWBFont.footnote)
                     .foregroundStyle(Color.fwbMuted)
                 Button("TRY AGAIN") { Task { await store.load() } }
-                    .font(.footnote.bold())
+                    .font(FWBFont.footnote.bold())
                     .foregroundStyle(Color.fwbLime)
             }
         case .loaded:
@@ -346,7 +346,7 @@ struct WeeklyCoachCheckInCard: View {
     private var dueContent: some View {
         VStack(alignment: .leading, spacing: 14) {
             Text("Share your wins, challenges, recovery, and any limitations once this week.")
-                .font(.subheadline)
+                .font(FWBFont.subheadline)
                 .foregroundStyle(Color.fwbMuted)
                 .fixedSize(horizontal: false, vertical: true)
 
@@ -363,7 +363,7 @@ struct WeeklyCoachCheckInCard: View {
     private func submittedContent(_ checkIn: WeeklyCoachCheckIn) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             Label("SUBMITTED", systemImage: "checkmark.circle.fill")
-                .font(.subheadline.weight(.black))
+                .font(FWBFont.subheadline.weight(.black))
                 .tracking(0.7)
                 .foregroundStyle(Color.fwbLime)
 
@@ -372,14 +372,14 @@ struct WeeklyCoachCheckInCard: View {
                     ? "Benjamin has responded to this week’s check-in."
                     : "Your coach can now review your update on the website."
             )
-            .font(.subheadline)
+            .font(FWBFont.subheadline)
             .foregroundStyle(Color.fwbMuted)
             .fixedSize(horizontal: false, vertical: true)
 
             NavigationLink(checkIn.hasCoachResponse ? "VIEW COACH RESPONSE" : "VIEW SUBMISSION") {
                 WeeklyCoachCheckInView(store: store)
             }
-            .font(.subheadline.bold())
+            .font(FWBFont.subheadline.bold())
             .tracking(0.7)
             .foregroundStyle(Color.fwbLime)
             .accessibilityIdentifier("weeklyCheckIn.viewSubmission")
@@ -475,7 +475,7 @@ struct WeeklyCoachCheckInView: View {
 
                 if showValidation && !requiredFieldsComplete {
                     Label("Complete the four required sections before submitting.", systemImage: "exclamationmark.triangle.fill")
-                        .font(.footnote.weight(.semibold))
+                        .font(FWBFont.footnote.weight(.semibold))
                         .foregroundStyle(Color.fwbRed)
                         .accessibilityIdentifier("weeklyCheckIn.validation")
                 }
@@ -494,17 +494,17 @@ struct WeeklyCoachCheckInView: View {
                 .accessibilityIdentifier("weeklyCheckIn.submit")
 
                 Text("You can submit once per week. Your answers go to your coach’s website and cannot be edited after submission.")
-                    .font(.footnote)
+                    .font(FWBFont.footnote)
                     .foregroundStyle(Color.fwbMuted)
                     .fixedSize(horizontal: false, vertical: true)
 
                 if case .failed(let message) = store.state {
                     Text(message)
-                        .font(.footnote)
+                        .font(FWBFont.footnote)
                         .foregroundStyle(Color.fwbRed)
                 }
             }
-            .padding(20)
+            .padding(FWBLayout.pagePadding)
         }
         .scrollDismissesKeyboard(.interactively)
     }
@@ -512,15 +512,15 @@ struct WeeklyCoachCheckInView: View {
     private var header: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(store.weekRangeLabel.uppercased())
-                .font(.footnote.bold())
+                .font(FWBFont.footnote.bold())
                 .tracking(1.4)
                 .foregroundStyle(Color.fwbLime)
             Text("HOW DID THIS\nWEEK GO?")
-                .font(.largeTitle.weight(.black))
-                .fontWidth(.condensed)
+                .font(FWBFont.largeTitle.weight(.black))
+
                 .foregroundStyle(Color.fwbWarmWhite)
             Text("Give your coach the context behind your training. Honest, brief answers are enough.")
-                .font(.subheadline)
+                .font(FWBFont.subheadline)
                 .foregroundStyle(Color.fwbMuted)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -531,15 +531,15 @@ struct WeeklyCoachCheckInView: View {
             VStack(alignment: .leading, spacing: 18) {
                 VStack(alignment: .leading, spacing: 10) {
                     Label("SUBMITTED", systemImage: "checkmark.circle.fill")
-                        .font(.footnote.weight(.black))
+                        .font(FWBFont.footnote.weight(.black))
                         .tracking(1.1)
                         .foregroundStyle(Color.fwbLime)
                     Text("YOUR WEEKLY\nUPDATE IS IN")
-                        .font(.largeTitle.weight(.black))
-                        .fontWidth(.condensed)
+                        .font(FWBFont.largeTitle.weight(.black))
+
                         .foregroundStyle(Color.fwbWarmWhite)
                     Text(checkIn.submittedAt.formatted(date: .abbreviated, time: .shortened))
-                        .font(.subheadline)
+                        .font(FWBFont.subheadline)
                         .foregroundStyle(Color.fwbMuted)
                 }
 
@@ -560,7 +560,7 @@ struct WeeklyCoachCheckInView: View {
                 .buttonStyle(FWBSecondaryButtonStyle())
                 .accessibilityIdentifier("weeklyCheckIn.refresh")
             }
-            .padding(20)
+            .padding(FWBLayout.pagePadding)
         }
         .refreshable { await store.load() }
     }
@@ -590,11 +590,11 @@ private struct WeeklyReadinessContextCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Label("LATEST DAILY READINESS", systemImage: "waveform.path.ecg")
-                .font(.footnote.bold())
+                .font(FWBFont.footnote.bold())
                 .tracking(1)
                 .foregroundStyle(Color.fwbLime)
             Text("Use this as context, then describe how recovery felt across the full week.")
-                .font(.footnote)
+                .font(FWBFont.footnote)
                 .foregroundStyle(Color.fwbMuted)
 
             if dynamicTypeSize.isAccessibilitySize {
@@ -623,11 +623,11 @@ private struct WeeklyReadinessMetric: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 3) {
             Text(title)
-                .font(.caption2.bold())
+                .font(FWBFont.caption2.bold())
                 .tracking(0.7)
                 .foregroundStyle(Color.fwbMuted)
             Text("\(value) / 5")
-                .font(.headline.weight(.black))
+                .font(FWBFont.headline.weight(.black))
                 .foregroundStyle(Color.fwbWarmWhite)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -647,27 +647,27 @@ private struct WeeklyCheckInTextCard: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .firstTextBaseline) {
                 Text(title)
-                    .font(.footnote.bold())
+                    .font(FWBFont.footnote.bold())
                     .tracking(1)
                     .foregroundStyle(Color.fwbLime)
                 Spacer()
                 if !isRequired {
                     Text("OPTIONAL")
-                        .font(.caption2.bold())
+                        .font(FWBFont.caption2.bold())
                         .tracking(0.6)
                         .foregroundStyle(Color.fwbMuted)
                 }
             }
 
             Text(prompt)
-                .font(.headline)
+                .font(FWBFont.headline)
                 .foregroundStyle(Color.fwbWarmWhite)
                 .fixedSize(horizontal: false, vertical: true)
 
             ZStack(alignment: .topLeading) {
                 if text.isEmpty {
                     Text(placeholder)
-                        .font(.body)
+                        .font(FWBFont.body)
                         .foregroundStyle(Color.fwbMuted)
                         .padding(.horizontal, 18)
                         .padding(.vertical, 17)
@@ -675,7 +675,7 @@ private struct WeeklyCheckInTextCard: View {
                 }
 
                 TextEditor(text: $text)
-                    .font(.body)
+                    .font(FWBFont.body)
                     .scrollContentBackground(.hidden)
                     .frame(minHeight: 116)
                     .padding(10)
@@ -686,11 +686,11 @@ private struct WeeklyCheckInTextCard: View {
                     .accessibilityLabel(prompt)
                     .accessibilityIdentifier(accessibilityID)
             }
-            .background(Color.fwbSurface, in: Rectangle())
-            .overlay { Rectangle().stroke(Color.fwbLine, lineWidth: 1) }
+            .background(Color.fwbSurface, in: RoundedRectangle(cornerRadius: FWBLayout.controlRadius, style: .continuous))
+            .overlay { RoundedRectangle(cornerRadius: FWBLayout.controlRadius, style: .continuous).stroke(Color.fwbLine, lineWidth: 1) }
 
             Text("\(text.count)/\(limit)")
-                .font(.footnote)
+                .font(FWBFont.footnote)
                 .foregroundStyle(Color.fwbMuted)
                 .frame(maxWidth: .infinity, alignment: .trailing)
         }
@@ -705,11 +705,11 @@ private struct WeeklySubmissionAnswer: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(title)
-                .font(.footnote.bold())
+                .font(FWBFont.footnote.bold())
                 .tracking(1)
                 .foregroundStyle(Color.fwbLime)
             Text(text)
-                .font(.body)
+                .font(FWBFont.body)
                 .foregroundStyle(Color.fwbWarmWhite)
                 .fixedSize(horizontal: false, vertical: true)
                 .textSelection(.enabled)
@@ -728,32 +728,32 @@ private struct CoachResponseCard: View {
                 checkIn.hasCoachResponse ? "COACH RESPONSE" : "AWAITING COACH RESPONSE",
                 systemImage: checkIn.hasCoachResponse ? "bubble.left.fill" : "clock.fill"
             )
-            .font(.footnote.bold())
+            .font(FWBFont.footnote.bold())
             .tracking(1)
             .foregroundStyle(Color.fwbLime)
 
             if checkIn.hasCoachResponse {
                 Text(checkIn.coachResponse)
-                    .font(.body)
+                    .font(FWBFont.body)
                     .foregroundStyle(Color.fwbWarmWhite)
                     .fixedSize(horizontal: false, vertical: true)
                     .textSelection(.enabled)
                 if let respondedAt = checkIn.coachRespondedAt {
                     Text("Responded \(respondedAt.formatted(date: .abbreviated, time: .shortened))")
-                        .font(.footnote)
+                        .font(FWBFont.footnote)
                         .foregroundStyle(Color.fwbMuted)
                 }
             } else {
                 Text("Benjamin will review this on the coach website. Pull to refresh after you receive a reply.")
-                    .font(.subheadline)
+                    .font(FWBFont.subheadline)
                     .foregroundStyle(Color.fwbMuted)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(18)
-        .background(Color.fwbLime.opacity(0.08), in: Rectangle())
-        .overlay { Rectangle().stroke(Color.fwbLime, lineWidth: 1) }
+        .background(Color.fwbLime.opacity(0.08), in: RoundedRectangle(cornerRadius: FWBLayout.controlRadius, style: .continuous))
+        .overlay { RoundedRectangle(cornerRadius: FWBLayout.controlRadius, style: .continuous).stroke(Color.fwbLime, lineWidth: 1) }
         .accessibilityIdentifier("weeklyCheckIn.coachResponse")
     }
 }

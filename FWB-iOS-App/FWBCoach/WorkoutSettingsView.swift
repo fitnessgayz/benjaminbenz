@@ -154,7 +154,7 @@ struct WorkoutSettingsView: View {
                     appleHealthCard
                     remindersCard
                 }
-                .padding(20)
+                .padding(FWBLayout.pagePadding)
             }
         }
         .navigationTitle("Workout Settings")
@@ -186,16 +186,16 @@ struct WorkoutSettingsView: View {
     private var restTimerCard: some View {
         VStack(alignment: .leading, spacing: 14) {
             Label("REST TIMER", systemImage: "timer")
-                .font(.footnote.bold())
+                .font(FWBFont.footnote.bold())
                 .tracking(1)
                 .foregroundStyle(Color.fwbLime)
 
             Text("Stay on pace between sets")
-                .font(.title3.weight(.black))
-                .fontWidth(.condensed)
+                .font(FWBFont.title3.weight(.black))
+
 
             Text("Completing a set starts the prescribed rest time for that exercise automatically.")
-                .font(.subheadline)
+                .font(FWBFont.subheadline)
                 .foregroundStyle(Color.fwbMuted)
 
             FWBRule()
@@ -203,9 +203,9 @@ struct WorkoutSettingsView: View {
             Toggle(isOn: $restTimerHapticsEnabled) {
                 VStack(alignment: .leading, spacing: 3) {
                     Text("Completion haptic")
-                        .font(.subheadline.weight(.bold))
+                        .font(FWBFont.subheadline.weight(.bold))
                     Text("Feel a tap when rest is finished")
-                        .font(.footnote)
+                        .font(FWBFont.footnote)
                         .foregroundStyle(Color.fwbMuted)
                 }
             }
@@ -217,16 +217,16 @@ struct WorkoutSettingsView: View {
     private var effortTrackingCard: some View {
         VStack(alignment: .leading, spacing: 16) {
             Label("EFFORT TRACKING", systemImage: "gauge.with.dots.needle.50percent")
-                .font(.footnote.bold())
+                .font(FWBFont.footnote.bold())
                 .tracking(1)
                 .foregroundStyle(Color.fwbLime)
 
             Text("Choose your scale")
-                .font(.title3.weight(.black))
-                .fontWidth(.condensed)
+                .font(FWBFont.title3.weight(.black))
+
 
             Text("Effort is optional and appears beneath each strength set, so weight and reps stay fast to enter.")
-                .font(.subheadline)
+                .font(FWBFont.subheadline)
                 .foregroundStyle(Color.fwbMuted)
                 .fixedSize(horizontal: false, vertical: true)
 
@@ -242,10 +242,10 @@ struct WorkoutSettingsView: View {
 
             VStack(alignment: .leading, spacing: 5) {
                 Text("\(selectedEffortScale.title) · \(selectedEffortScale.rangeLabel)")
-                    .font(.subheadline.weight(.black))
+                    .font(FWBFont.subheadline.weight(.black))
                     .foregroundStyle(Color.fwbWarmWhite)
                 Text(selectedEffortScale.explanation)
-                    .font(.footnote)
+                    .font(FWBFont.footnote)
                     .foregroundStyle(Color.fwbMuted)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -263,12 +263,12 @@ struct WorkoutSettingsView: View {
             HStack(alignment: .top, spacing: 12) {
                 VStack(alignment: .leading, spacing: 4) {
                     Label("WORKOUT REMINDERS", systemImage: "bell.fill")
-                        .font(.footnote.bold())
+                        .font(FWBFont.footnote.bold())
                         .tracking(1)
                         .foregroundStyle(Color.fwbLime)
                     Text("Build consistency")
-                        .font(.title3.weight(.black))
-                        .fontWidth(.condensed)
+                        .font(FWBFont.title3.weight(.black))
+
                 }
 
                 Spacer()
@@ -280,13 +280,13 @@ struct WorkoutSettingsView: View {
             }
 
             Text("Choose the days and time you want a private reminder on this iPhone.")
-                .font(.subheadline)
+                .font(FWBFont.subheadline)
                 .foregroundStyle(Color.fwbMuted)
 
             FWBRule()
 
             Text("TRAINING DAYS")
-                .font(.footnote.bold())
+                .font(FWBFont.footnote.bold())
                 .tracking(1)
                 .foregroundStyle(Color.fwbMuted)
 
@@ -296,12 +296,12 @@ struct WorkoutSettingsView: View {
                         toggle(day.weekday)
                     } label: {
                         Text(day.symbol)
-                            .font(.subheadline.weight(.black))
+                            .font(FWBFont.subheadline.weight(.black))
                             .foregroundStyle(selectedWeekdays.contains(day.weekday) ? Color.black : Color.fwbWarmWhite)
                             .frame(maxWidth: .infinity)
                             .frame(height: 42)
                             .background(selectedWeekdays.contains(day.weekday) ? Color.fwbAccentFill : Color.fwbSurface)
-                            .overlay { Rectangle().stroke(Color.fwbLine, lineWidth: 1) }
+                            .overlay { RoundedRectangle(cornerRadius: FWBLayout.controlRadius, style: .continuous).stroke(Color.fwbLine, lineWidth: 1) }
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel(day.fullName)
@@ -312,7 +312,7 @@ struct WorkoutSettingsView: View {
             }
 
             DatePicker("Reminder time", selection: $reminderTime, displayedComponents: .hourAndMinute)
-                .font(.subheadline.weight(.bold))
+                .font(FWBFont.subheadline.weight(.bold))
                 .tint(Color.fwbLime)
                 .padding(.vertical, 4)
 
@@ -343,7 +343,7 @@ struct WorkoutSettingsView: View {
                         .foregroundStyle(Color.fwbWarmWhite)
                 }
             }
-            .font(.footnote)
+            .font(FWBFont.footnote)
             .foregroundStyle(Color.fwbMuted)
             .accessibilityElement(children: .combine)
 
@@ -361,16 +361,16 @@ struct WorkoutSettingsView: View {
     private var celebrationsCard: some View {
         VStack(alignment: .leading, spacing: 16) {
             Label("WORKOUT CELEBRATIONS", systemImage: "hands.clap.fill")
-                .font(.footnote.bold())
+                .font(FWBFont.footnote.bold())
                 .tracking(1)
                 .foregroundStyle(Color.fwbLime)
 
             Text("Praise the work")
-                .font(.title3.weight(.black))
-                .fontWidth(.condensed)
+                .font(FWBFont.title3.weight(.black))
+
 
             Text("Get encouraging feedback for completed exercises, personal bests, and consistency—without points, XP, or rankings.")
-                .font(.subheadline)
+                .font(FWBFont.subheadline)
                 .foregroundStyle(Color.fwbMuted)
                 .fixedSize(horizontal: false, vertical: true)
 
@@ -379,9 +379,9 @@ struct WorkoutSettingsView: View {
             Toggle(isOn: $workoutPraiseHapticsEnabled) {
                 VStack(alignment: .leading, spacing: 3) {
                     Text("Celebration haptics")
-                        .font(.subheadline.weight(.bold))
+                        .font(FWBFont.subheadline.weight(.bold))
                     Text("Feel a tap for an exercise or workout completion")
-                        .font(.footnote)
+                        .font(FWBFont.footnote)
                         .foregroundStyle(Color.fwbMuted)
                 }
             }
@@ -393,14 +393,14 @@ struct WorkoutSettingsView: View {
                 HStack {
                     VStack(alignment: .leading, spacing: 3) {
                         Text("Weekly workout goal")
-                            .font(.subheadline.weight(.bold))
+                            .font(FWBFont.subheadline.weight(.bold))
                         Text("Used for weekly goal praise")
-                            .font(.footnote)
+                            .font(FWBFont.footnote)
                             .foregroundStyle(Color.fwbMuted)
                     }
                     Spacer()
                     Text("\(weeklyWorkoutGoal)")
-                        .font(.title3.weight(.black))
+                        .font(FWBFont.title3.weight(.black))
                         .foregroundStyle(Color.fwbLime)
                         .accessibilityHidden(true)
                 }
@@ -413,16 +413,16 @@ struct WorkoutSettingsView: View {
     private var appleHealthCard: some View {
         VStack(alignment: .leading, spacing: 14) {
             Label("APPLE HEALTH", systemImage: "heart.fill")
-                .font(.footnote.bold())
+                .font(FWBFont.footnote.bold())
                 .tracking(1)
                 .foregroundStyle(Color.fwbLime)
 
             Text("Keep every workout together")
-                .font(.title3.weight(.black))
-                .fontWidth(.condensed)
+                .font(FWBFont.title3.weight(.black))
+
 
             Text("FWB can save completed strength and cardio workouts, plus any distance or calories you enter. It does not read your Health data.")
-                .font(.subheadline)
+                .font(FWBFont.subheadline)
                 .foregroundStyle(Color.fwbMuted)
                 .fixedSize(horizontal: false, vertical: true)
 
@@ -434,7 +434,7 @@ struct WorkoutSettingsView: View {
                     ? "checkmark.circle.fill"
                     : "info.circle.fill"
             )
-            .font(.footnote)
+            .font(FWBFont.footnote)
             .foregroundStyle(
                 healthKitStore.connectionStatus == .connected
                     ? Color.fwbLime
@@ -444,7 +444,7 @@ struct WorkoutSettingsView: View {
 
             if !healthKitStore.message.isEmpty {
                 Text(healthKitStore.message)
-                    .font(.footnote)
+                    .font(FWBFont.footnote)
                     .foregroundStyle(Color.fwbWarmWhite)
                     .fixedSize(horizontal: false, vertical: true)
             }

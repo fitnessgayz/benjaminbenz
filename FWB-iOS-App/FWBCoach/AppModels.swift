@@ -1,4 +1,5 @@
 import Foundation
+import JavaScriptCore
 
 struct SignedInAccount: Equatable {
     let id: UUID
@@ -20,6 +21,9 @@ struct ClientProgram: Decodable, Identifiable, Equatable {
     let coachNoteBody: String
     let nutritionPlan: NutritionPlan?
     let workouts: [Workout]
+    let assignedWorkouts: [Workout]
+    let clientWorkoutLayout: ClientWorkoutLayout?
+    private let rawAssignedWorkouts: WorkoutLayoutJSON?
     let updatedAt: String?
     let syncSource: String?
     let sourceVersion: Int?
@@ -39,9 +43,66 @@ struct ClientProgram: Decodable, Identifiable, Equatable {
         case coachNoteBody = "coach_note_body"
         case nutritionPlan = "nutrition_plan"
         case workouts
+        case clientWorkoutLayout = "client_workout_layout"
         case updatedAt = "updated_at"
         case syncSource = "sync_source"
         case sourceVersion = "source_version"
+    }
+
+    init(
+        id: UUID, clientEmail: String, clientName: String, initials: String,
+        programTitle: String, programSummary: String, sessionCountUsed: Int,
+        sessionCountTotal: Int, fitnessGoal: String, focusTarget: String,
+        coachNoteTitle: String, coachNoteBody: String, nutritionPlan: NutritionPlan?,
+        workouts: [Workout], updatedAt: String?, syncSource: String?, sourceVersion: Int?,
+        assignedWorkouts: [Workout]? = nil, clientWorkoutLayout: ClientWorkoutLayout? = nil,
+        rawAssignedWorkouts: WorkoutLayoutJSON? = nil
+    ) {
+        self.id = id
+        self.clientEmail = clientEmail
+        self.clientName = clientName
+        self.initials = initials
+        self.programTitle = programTitle
+        self.programSummary = programSummary
+        self.sessionCountUsed = sessionCountUsed
+        self.sessionCountTotal = sessionCountTotal
+        self.fitnessGoal = fitnessGoal
+        self.focusTarget = focusTarget
+        self.coachNoteTitle = coachNoteTitle
+        self.coachNoteBody = coachNoteBody
+        self.nutritionPlan = nutritionPlan
+        self.workouts = workouts
+        self.assignedWorkouts = assignedWorkouts ?? workouts
+        self.clientWorkoutLayout = clientWorkoutLayout
+        self.rawAssignedWorkouts = rawAssignedWorkouts
+        self.updatedAt = updatedAt
+        self.syncSource = syncSource
+        self.sourceVersion = sourceVersion
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        clientEmail = try container.decode(String.self, forKey: .clientEmail)
+        clientName = try container.decodeIfPresent(String.self, forKey: .clientName) ?? "Client"
+        initials = try container.decodeIfPresent(String.self, forKey: .initials) ?? ""
+        programTitle = try container.decodeIfPresent(String.self, forKey: .programTitle) ?? "Your Program"
+        programSummary = try container.decodeIfPresent(String.self, forKey: .programSummary) ?? ""
+        sessionCountUsed = try container.decodeIfPresent(Int.self, forKey: .sessionCountUsed) ?? 0
+        sessionCountTotal = try container.decodeIfPresent(Int.self, forKey: .sessionCountTotal) ?? 0
+        fitnessGoal = try container.decodeIfPresent(String.self, forKey: .fitnessGoal) ?? ""
+        focusTarget = try container.decodeIfPresent(String.self, forKey: .focusTarget) ?? ""
+        coachNoteTitle = try container.decodeIfPresent(String.self, forKey: .coachNoteTitle) ?? ""
+        coachNoteBody = try container.decodeIfPresent(String.self, forKey: .coachNoteBody) ?? ""
+        nutritionPlan = try container.decodeIfPresent(NutritionPlan.self, forKey: .nutritionPlan)
+        updatedAt = try container.decodeIfPresent(String.self, forKey: .updatedAt)
+        syncSource = try container.decodeIfPresent(String.self, forKey: .syncSource)
+        sourceVersion = try container.decodeIfPresent(Int.self, forKey: .sourceVersion)
+        assignedWorkouts = try container.decodeIfPresent([Workout].self, forKey: .workouts) ?? []
+        clientWorkoutLayout = try? container.decodeIfPresent(ClientWorkoutLayout.self, forKey: .clientWorkoutLayout)
+        let source = try container.decodeIfPresent(WorkoutLayoutJSON.self, forKey: .workouts) ?? .array([])
+        rawAssignedWorkouts = source
+        workouts = clientWorkoutLayout?.apply(to: assignedWorkouts, source: source) ?? assignedWorkouts
     }
 
     var displayInitials: String {
@@ -80,8 +141,208 @@ struct ClientProgram: Decodable, Identifiable, Equatable {
             workouts: workouts,
             updatedAt: updatedAt,
             syncSource: ContinuitySync.source,
-            sourceVersion: ContinuitySync.sourceVersion
+            sourceVersion: ContinuitySync.sourceVersion,
+            assignedWorkouts: assignedWorkouts,
+            clientWorkoutLayout: clientWorkoutLayout,
+            rawAssignedWorkouts: rawAssignedWorkouts
         )
+    }
+
+    func hasSameWorkoutRevision(as other: ClientProgram) -> Bool {
+        id == other.id && rawAssignedWorkouts == other.rawAssignedWorkouts
+            && assignedWorkouts == other.assignedWorkouts && clientWorkoutLayout == other.clientWorkoutLayout
+    }
+
+    func workoutLayoutPreviewResponseData() throws -> Data {
+        try JSONEncoder().encode(WorkoutLayoutJSON.object(["workouts": workoutSource]))
+    }
+
+    func replacingWorkoutLayout(_ layout: ClientWorkoutLayout) -> ClientProgram {
+        ClientProgram(
+            id: id, clientEmail: clientEmail, clientName: clientName, initials: initials,
+            programTitle: programTitle, programSummary: programSummary,
+            sessionCountUsed: sessionCountUsed, sessionCountTotal: sessionCountTotal,
+            fitnessGoal: fitnessGoal, focusTarget: focusTarget, coachNoteTitle: coachNoteTitle,
+            coachNoteBody: coachNoteBody, nutritionPlan: nutritionPlan,
+            workouts: layout.apply(to: assignedWorkouts, source: workoutSource),
+            updatedAt: updatedAt, syncSource: syncSource, sourceVersion: sourceVersion,
+            assignedWorkouts: assignedWorkouts, clientWorkoutLayout: layout,
+            rawAssignedWorkouts: workoutSource
+        )
+    }
+
+    private var workoutSource: WorkoutLayoutJSON {
+        rawAssignedWorkouts ?? .array(assignedWorkouts.map { workout in
+            .object([
+                "id": .string(workout.id.uuidString), "title": .string(workout.title),
+                "focus": .string(workout.focus), "format": .string(workout.format),
+                "exercises": .array(workout.exercises.map { exercise in
+                    .object([
+                        "code": .string(exercise.code), "name": .string(exercise.name),
+                        "prescription": .string(exercise.prescription), "rest": .string(exercise.rest),
+                        "instructions": .array(exercise.instructions.map(WorkoutLayoutJSON.string)),
+                        "video": .string(exercise.video)
+                    ])
+                })
+            ])
+        })
+    }
+}
+
+/// Matches WorkoutLayout.apply in js/workout-layout.js: version 2 changes only
+/// exercises. Coach changes invalidate the saved edit, including source fields
+/// that this version of the native Workout model does not otherwise display.
+struct ClientWorkoutLayout: Codable, Equatable {
+    private let value: WorkoutLayoutJSON
+
+    init(from decoder: Decoder) throws {
+        value = try WorkoutLayoutJSON(from: decoder)
+    }
+
+    fileprivate init(value: WorkoutLayoutJSON) { self.value = value }
+
+    func encode(to encoder: Encoder) throws { try value.encode(to: encoder) }
+
+    fileprivate func apply(to assigned: [Workout], source: WorkoutLayoutJSON) -> [Workout] {
+        return assigned.enumerated().map { index, workout in
+            guard let values = exerciseOverride(at: index, source: source),
+                  let data = try? JSONEncoder().encode(values),
+                  let exercises = try? JSONDecoder().decode([Exercise].self, from: data) else { return workout }
+            return Workout(id: workout.id, title: workout.title, focus: workout.focus, format: workout.format, exercises: exercises)
+        }
+    }
+
+    fileprivate func exerciseOverride(at index: Int, source: WorkoutLayoutJSON) -> [WorkoutLayoutJSON]? {
+        guard case .object(let layout) = value,
+              layout["version"] == .number(2),
+              case .string(let serializedSource) = layout["source"],
+              let sourceData = serializedSource.data(using: .utf8),
+              let savedSource = try? JSONDecoder().decode(WorkoutLayoutJSON.self, from: sourceData),
+              savedSource == source else { return nil }
+        let replacement: WorkoutLayoutJSON?
+        // JavaScript supports both arrays and numeric-keyed objects here.
+        switch layout["exercises"] {
+        case .array(let values): replacement = values.indices.contains(index) ? values[index] : nil
+        case .object(let values): replacement = values[String(index)]
+        default: replacement = nil
+        }
+        guard case .array(let values) = replacement,
+              values.allSatisfy({ exercise in
+                  guard case .object(let fields) = exercise,
+                        case .string(let name) = fields["name"] else { return false }
+                  return !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+              }),
+              let data = try? JSONEncoder().encode(values),
+              (try? JSONDecoder().decode([Exercise].self, from: data)) != nil else { return nil }
+        return values
+    }
+}
+
+struct ClientWorkoutLayoutUpdate: Encodable {
+    let clientWorkoutLayout: ClientWorkoutLayout
+    let source: String
+
+    enum CodingKeys: String, CodingKey { case clientWorkoutLayout = "client_workout_layout" }
+
+    /// Uses the raw PostgREST response so JavaScript object-key ordering and
+    /// JSON.stringify escaping match the web's exact source fingerprint.
+    /// Only fixed JSON parsing/stringifying code runs; server text is a JS string.
+    static func make(
+        from program: ClientProgram, responseData: Data,
+        workoutID: UUID? = nil, exercises: [Exercise]? = nil, restoring: Bool = false
+    ) throws -> ClientWorkoutLayoutUpdate {
+        guard case .object(let row) = try JSONDecoder().decode(WorkoutLayoutJSON.self, from: responseData),
+              case .array(let rawWorkouts) = row["workouts"],
+              rawWorkouts.count == program.assignedWorkouts.count,
+              let responseText = String(data: responseData, encoding: .utf8), let context = JSContext() else {
+            throw ClientWorkoutLayoutError.invalidSource
+        }
+        context.setObject(responseText, forKeyedSubscript: "programJSON" as NSString)
+        guard let source = context.evaluateScript("JSON.stringify(JSON.parse(programJSON).workouts)")?.toString(),
+              context.exception == nil,
+              let sourceData = source.data(using: .utf8),
+              let sourceValue = try? JSONDecoder().decode(WorkoutLayoutJSON.self, from: sourceData),
+              sourceValue == .array(rawWorkouts) else { throw ClientWorkoutLayoutError.invalidSource }
+
+        var overrides = rawWorkouts.enumerated().map { index, value -> [WorkoutLayoutJSON] in
+            if !restoring, let saved = program.clientWorkoutLayout?.exerciseOverride(at: index, source: sourceValue) { return saved }
+            guard case .object(let fields) = value, case .array(let assigned) = fields["exercises"] else { return [] }
+            return assigned
+        }
+        if !restoring {
+            guard let workoutID, let exercises,
+                  let index = program.assignedWorkouts.firstIndex(where: { $0.id == workoutID }),
+                  exercises.allSatisfy({ !$0.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }) else {
+                throw ClientWorkoutLayoutError.invalidWorkout
+            }
+            overrides[index] = try merging(exercises, into: overrides[index])
+        }
+        return ClientWorkoutLayoutUpdate(
+            clientWorkoutLayout: ClientWorkoutLayout(value: .object([
+                "version": .number(2), "source": .string(source),
+                "order": .array(rawWorkouts.indices.map { .number(Double($0)) }),
+                "exercises": .array(overrides.map(WorkoutLayoutJSON.array))
+            ])), source: source
+        )
+    }
+
+    private static func merging(_ exercises: [Exercise], into raw: [WorkoutLayoutJSON]) throws -> [WorkoutLayoutJSON] {
+        let decoded = try JSONDecoder().decode([Exercise].self, from: JSONEncoder().encode(raw))
+        var remaining = Set(raw.indices)
+        return exercises.map { exercise in
+            let indices = remaining.sorted()
+            let match = indices.first(where: { decoded[$0] == exercise })
+                ?? indices.first(where: { !exercise.code.isEmpty && decoded[$0].code == exercise.code })
+                ?? indices.first(where: { decoded[$0].name == exercise.name })
+            if let match { remaining.remove(match) }
+            if let match, decoded[match] == exercise { return raw[match] }
+            var fields: [String: WorkoutLayoutJSON] = [:]
+            if let match, case .object(let original) = raw[match] { fields = original }
+            let previous = match.map { decoded[$0] }
+            if previous?.code != exercise.code { fields["code"] = .string(exercise.code) }
+            if previous?.name != exercise.name { fields["name"] = .string(exercise.name) }
+            if previous?.prescription != exercise.prescription { fields["prescription"] = .string(exercise.prescription) }
+            if previous?.rest != exercise.rest { fields["rest"] = .string(exercise.rest) }
+            if previous?.instructions != exercise.instructions {
+                ["instruction", "howTo", "how_to", "cues"].forEach { fields.removeValue(forKey: $0) }
+                fields["instructions"] = .array(exercise.instructions.map(WorkoutLayoutJSON.string))
+            }
+            if previous?.video != exercise.video {
+                ["videoUrl", "video_url", "youtube_url"].forEach { fields.removeValue(forKey: $0) }
+                fields["video"] = .string(exercise.video)
+            }
+            return .object(fields)
+        }
+    }
+}
+
+enum ClientWorkoutLayoutError: Error { case invalidSource, invalidWorkout }
+
+/// Structural JSON comparison avoids Swift dictionary ordering differences while
+/// retaining unknown source keys, array order, nulls, and primitive types.
+enum WorkoutLayoutJSON: Codable, Equatable {
+    case string(String), number(Double), bool(Bool), array([WorkoutLayoutJSON]), object([String: WorkoutLayoutJSON]), null
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        if container.decodeNil() { self = .null }
+        else if let value = try? container.decode(Bool.self) { self = .bool(value) }
+        else if let value = try? container.decode(String.self) { self = .string(value) }
+        else if let value = try? container.decode(Double.self) { self = .number(value) }
+        else if let value = try? container.decode([WorkoutLayoutJSON].self) { self = .array(value) }
+        else { self = .object(try container.decode([String: WorkoutLayoutJSON].self)) }
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        switch self {
+        case .string(let value): try container.encode(value)
+        case .number(let value): try container.encode(value)
+        case .bool(let value): try container.encode(value)
+        case .array(let value): try container.encode(value)
+        case .object(let value): try container.encode(value)
+        case .null: try container.encodeNil()
+        }
     }
 }
 
@@ -611,6 +872,8 @@ struct ApprovedExercise: Decodable, Identifiable, Equatable {
     let defaultRestSeconds: Int
     let substitutionGroup: String
     let demoURL: String?
+    let imageURL: String?
+    let motionURL: String?
     let instructions: String
 
     enum CodingKeys: String, CodingKey {
@@ -627,6 +890,8 @@ struct ApprovedExercise: Decodable, Identifiable, Equatable {
         case defaultRestSeconds = "default_rest_seconds"
         case substitutionGroup = "substitution_group"
         case demoURL = "demo_url"
+        case imageURL = "image_url"
+        case motionURL = "motion_url"
         case instructions
     }
 }

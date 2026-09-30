@@ -2,6 +2,12 @@ import SwiftUI
 import UIKit
 
 extension String {
+    /// A copied log retains a unique storage title without exposing its suffix in UI.
+    var fwbWorkoutDisplayTitle: String {
+        guard hasPrefix("Copy of "), let suffix = range(of: " · [0-9a-f]{8}$", options: .regularExpression) else { return self }
+        return String(self[..<suffix.lowerBound])
+    }
+
     /// Capitalizes the first letter of each displayed word without lowercasing
     /// the rest of the word, so exercise acronyms such as RDL and TRX survive.
     var fwbTitleCased: String {
@@ -33,11 +39,12 @@ extension String {
 }
 
 extension Color {
-    // Fitness with Benjamin web palette.
-    static let fwbAccentFill = Color(red: 0.843, green: 1.0, blue: 0.247)
+    // Shared with css/fwb-design-system.css; semantic variants preserve dark mode.
+    static let fwbAccentFill = Color(red: 214 / 255, green: 1, blue: 53 / 255)
+    static let fwbGold = Color(red: 0.91, green: 0.65, blue: 0.08)
     static let fwbLime = Color(UIColor { traits in
         traits.userInterfaceStyle == .dark
-            ? UIColor(red: 0.843, green: 1.0, blue: 0.247, alpha: 1)
+            ? UIColor(red: 214 / 255, green: 1, blue: 53 / 255, alpha: 1)
             : UIColor(red: 0.286, green: 0.408, blue: 0.0, alpha: 1)
     })
     static let fwbRed = Color(UIColor { traits in
@@ -48,32 +55,32 @@ extension Color {
     static let fwbBackground = Color(UIColor { traits in
         traits.userInterfaceStyle == .dark
             ? UIColor(red: 0.090, green: 0.098, blue: 0.094, alpha: 1)
-            : UIColor(red: 0.957, green: 0.957, blue: 0.937, alpha: 1)
+            : UIColor(red: 242 / 255, green: 243 / 255, blue: 238 / 255, alpha: 1)
     })
     static let fwbCard = Color(UIColor { traits in
         traits.userInterfaceStyle == .dark
             ? UIColor(red: 0.125, green: 0.137, blue: 0.125, alpha: 1)
-            : UIColor(red: 0.992, green: 0.992, blue: 0.976, alpha: 1)
+            : UIColor.white
     })
     static let fwbSurface = Color(UIColor { traits in
         traits.userInterfaceStyle == .dark
             ? UIColor(red: 0.133, green: 0.145, blue: 0.133, alpha: 1)
-            : UIColor(red: 0.914, green: 0.922, blue: 0.890, alpha: 1)
+            : UIColor(red: 247 / 255, green: 248 / 255, blue: 244 / 255, alpha: 1)
     })
     static let fwbWarmWhite = Color(UIColor { traits in
         traits.userInterfaceStyle == .dark
             ? UIColor(red: 0.969, green: 0.969, blue: 0.949, alpha: 1)
-            : UIColor(red: 0.067, green: 0.075, blue: 0.063, alpha: 1)
+            : UIColor(red: 23 / 255, green: 26 / 255, blue: 23 / 255, alpha: 1)
     })
     static let fwbMuted = Color(UIColor { traits in
         traits.userInterfaceStyle == .dark
             ? UIColor(red: 0.62, green: 0.62, blue: 0.58, alpha: 1)
-            : UIColor(red: 0.32, green: 0.33, blue: 0.30, alpha: 1)
+            : UIColor(red: 102 / 255, green: 107 / 255, blue: 98 / 255, alpha: 1)
     })
     static let fwbLine = Color(UIColor { traits in
         traits.userInterfaceStyle == .dark
             ? UIColor(red: 0.357, green: 0.376, blue: 0.357, alpha: 1)
-            : UIColor(red: 0.72, green: 0.74, blue: 0.69, alpha: 1)
+            : UIColor(red: 220 / 255, green: 222 / 255, blue: 215 / 255, alpha: 1)
     })
 }
 
@@ -87,7 +94,7 @@ struct FWBMark: View {
 
             Text("FWB")
                 .font(.system(size: size * 0.34, weight: .black, design: .default))
-                .fontWidth(.condensed)
+
                 .foregroundStyle(Color.black)
         }
         .frame(width: size, height: size)
@@ -106,15 +113,22 @@ struct FWBRule: View {
     }
 }
 
+enum FWBLayout {
+    static let cardRadius: CGFloat = 18
+    static let controlRadius: CGFloat = 12
+    static let pagePadding: CGFloat = 16
+}
+
 struct FWBCardModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
-            .padding(18)
-            .background(Color.fwbCard, in: Rectangle())
+            .padding(16)
+            .background(Color.fwbCard, in: RoundedRectangle(cornerRadius: FWBLayout.cardRadius, style: .continuous))
             .overlay {
-                Rectangle()
-                    .stroke(Color.fwbLine, lineWidth: 1)
+                RoundedRectangle(cornerRadius: FWBLayout.cardRadius, style: .continuous)
+                    .strokeBorder(Color.fwbLine, lineWidth: 1)
             }
+            .shadow(color: .black.opacity(0.025), radius: 10, y: 4)
     }
 }
 
@@ -123,14 +137,14 @@ struct FWBPrimaryButtonStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.headline.weight(.black))
+            .font(FWBFont.headline.weight(.bold))
             .foregroundStyle(Color.black)
             .frame(maxWidth: .infinity)
             .frame(minHeight: 52)
             .padding(.horizontal, 16)
-            .background(Color.fwbAccentFill, in: Rectangle())
+            .background(Color.fwbAccentFill, in: RoundedRectangle(cornerRadius: FWBLayout.controlRadius, style: .continuous))
             .overlay {
-                Rectangle()
+                RoundedRectangle(cornerRadius: FWBLayout.controlRadius, style: .continuous)
                     .stroke(Color.fwbAccentFill, lineWidth: 1)
             }
             .opacity(isEnabled ? 1 : 0.42)
@@ -144,14 +158,14 @@ struct FWBSecondaryButtonStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.headline.weight(.bold))
+            .font(FWBFont.headline.weight(.bold))
             .foregroundStyle(Color.fwbLime)
             .frame(maxWidth: .infinity)
             .frame(minHeight: 50)
             .padding(.horizontal, 16)
-            .background(Color.fwbCard, in: Rectangle())
+            .background(Color.fwbCard, in: RoundedRectangle(cornerRadius: FWBLayout.controlRadius, style: .continuous))
             .overlay {
-                Rectangle()
+                RoundedRectangle(cornerRadius: FWBLayout.controlRadius, style: .continuous)
                     .stroke(Color.fwbLime, lineWidth: 1)
             }
             .opacity(isEnabled ? 1 : 0.42)
@@ -165,14 +179,14 @@ struct FWBDestructiveButtonStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.headline.weight(.bold))
+            .font(FWBFont.headline.weight(.bold))
             .foregroundStyle(Color.fwbRed)
             .frame(maxWidth: .infinity)
             .frame(minHeight: 50)
             .padding(.horizontal, 16)
-            .background(Color.fwbCard, in: Rectangle())
+            .background(Color.fwbCard, in: RoundedRectangle(cornerRadius: FWBLayout.controlRadius, style: .continuous))
             .overlay {
-                Rectangle()
+                RoundedRectangle(cornerRadius: FWBLayout.controlRadius, style: .continuous)
                     .stroke(Color.fwbRed.opacity(0.75), lineWidth: 1)
             }
             .opacity(isEnabled ? 1 : 0.42)
@@ -187,9 +201,9 @@ struct FWBTextFieldStyle: TextFieldStyle {
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
             .frame(minHeight: 52)
-            .background(Color.fwbSurface, in: Rectangle())
+            .background(Color.fwbSurface, in: RoundedRectangle(cornerRadius: FWBLayout.controlRadius, style: .continuous))
             .overlay {
-                Rectangle()
+                RoundedRectangle(cornerRadius: FWBLayout.controlRadius, style: .continuous)
                     .stroke(Color.fwbLine, lineWidth: 1)
             }
     }
@@ -199,4 +213,23 @@ extension View {
     func fwbCard() -> some View {
         modifier(FWBCardModifier())
     }
+}
+
+/// The web app's Inter family, using the same compact size hierarchy while
+/// retaining the user's Dynamic Type preference.
+enum FWBFont {
+    static func sized(_ size: CGFloat, relativeTo style: Font.TextStyle = .body) -> Font {
+        .custom("Inter-Regular", size: size, relativeTo: style)
+    }
+    static let largeTitle = sized(30, relativeTo: .largeTitle)
+    static let title = sized(28, relativeTo: .title)
+    static let title2 = sized(24, relativeTo: .title2)
+    static let title3 = sized(20, relativeTo: .title3)
+    static let headline = sized(17, relativeTo: .headline)
+    static let body = sized(16)
+    static let callout = sized(16, relativeTo: .callout)
+    static let subheadline = sized(14, relativeTo: .subheadline)
+    static let footnote = sized(13, relativeTo: .footnote)
+    static let caption = sized(12, relativeTo: .caption)
+    static let caption2 = sized(11, relativeTo: .caption2)
 }

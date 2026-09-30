@@ -600,6 +600,7 @@ final class DailyReadinessStore: ObservableObject {
 }
 
 struct ReadinessDashboardCard: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @StateObject private var store: DailyReadinessStore
 
     init(clientEmail: String) {
@@ -608,21 +609,41 @@ struct ReadinessDashboardCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .firstTextBaseline) {
-                VStack(alignment: .leading, spacing: 4) {
+            let headingLayout = dynamicTypeSize.isAccessibilitySize
+                ? AnyLayout(VStackLayout(alignment: .leading, spacing: 12))
+                : AnyLayout(HStackLayout(alignment: .top, spacing: 12))
+            headingLayout {
+                VStack(alignment: .leading, spacing: 5) {
                     Text("DAILY CHECK-IN")
-                        .font(.footnote.bold())
-                        .tracking(1.2)
-                        .foregroundStyle(Color.fwbLime)
-                    Text("How are you showing up?")
-                        .font(.title3.weight(.black))
-                        .fontWidth(.condensed)
+                        .font(FWBFont.caption.weight(.bold))
+                        .tracking(1)
+                        .foregroundStyle(Color.fwbMuted)
+                    Text("How are you feeling?")
+                        .font(FWBFont.title3.weight(.bold))
                         .foregroundStyle(Color.fwbWarmWhite)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
-                Spacer()
-                Image(systemName: "waveform.path.ecg")
-                    .font(.title2.weight(.semibold))
-                    .foregroundStyle(Color.fwbLime)
+                if !dynamicTypeSize.isAccessibilitySize { Spacer(minLength: 0) }
+                if case .loaded = store.state {
+                    NavigationLink {
+                        ReadinessCheckInView(store: store)
+                    } label: {
+                        HStack(spacing: 6) {
+                            Text(store.today == nil ? "Open" : "Update")
+                            Image(systemName: store.today == nil ? "plus" : "arrow.right")
+                        }
+                        .font(FWBFont.subheadline.weight(.semibold))
+                        .foregroundStyle(Color.fwbWarmWhite)
+                        .padding(.horizontal, 12)
+                        .frame(minHeight: 44)
+                        .background(Color.fwbSurface, in: RoundedRectangle(cornerRadius: 12))
+                        .overlay { RoundedRectangle(cornerRadius: 12).stroke(Color.fwbLine, lineWidth: 1) }
+                    }
+                    .buttonStyle(.plain)
+                    .fixedSize()
+                    .accessibilityLabel(store.today == nil ? "Start readiness check-in" : "Update readiness check-in")
+                    .accessibilityIdentifier(store.today == nil ? "readiness.start" : "readiness.update")
+                }
             }
 
             content
@@ -642,69 +663,46 @@ struct ReadinessDashboardCard: View {
         case .idle, .loading:
             ProgressView()
                 .tint(.fwbLime)
-                .frame(maxWidth: .infinity, minHeight: 62)
+                .frame(maxWidth: .infinity, minHeight: 44)
         case .failed(let message):
             VStack(alignment: .leading, spacing: 10) {
                 Text(message)
-                    .font(.footnote)
+                    .font(FWBFont.footnote)
                     .foregroundStyle(Color.fwbMuted)
-                Button("TRY AGAIN") { Task { await store.load() } }
-                    .font(.footnote.bold())
+                Button("Try again") { Task { await store.load() } }
+                    .font(FWBFont.footnote.bold())
                     .foregroundStyle(Color.fwbLime)
             }
         case .loaded:
             if let checkIn = store.today {
                 completedContent(checkIn)
             } else {
-                incompleteContent
+                Text("Log energy, soreness, sleep quality, and whether you’ve eaten before today’s training.")
+                    .font(FWBFont.subheadline)
+                    .foregroundStyle(Color.fwbMuted)
+                    .fixedSize(horizontal: false, vertical: true)
             }
-        }
-    }
-
-    private var incompleteContent: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Text("Log energy, soreness, sleep quality, and whether you’ve eaten before today’s training.")
-                .font(.subheadline)
-                .foregroundStyle(Color.fwbMuted)
-
-            NavigationLink {
-                ReadinessCheckInView(store: store)
-            } label: {
-                Label("START CHECK-IN", systemImage: "arrow.right")
-            }
-            .buttonStyle(FWBPrimaryButtonStyle())
-            .accessibilityIdentifier("readiness.start")
         }
     }
 
     private func completedContent(_ checkIn: ReadinessCheckIn) -> some View {
-        HStack(spacing: 16) {
+        HStack(alignment: .top, spacing: 12) {
             readinessScore(checkIn.result)
 
             VStack(alignment: .leading, spacing: 5) {
                 Text(checkIn.result.title)
-                    .font(.subheadline.weight(.black))
-                    .tracking(0.7)
+                    .font(FWBFont.caption.weight(.bold))
                     .foregroundStyle(readinessColor(checkIn.result))
                 Text(checkIn.result.recommendation)
-                    .font(.subheadline)
+                    .font(FWBFont.footnote)
                     .foregroundStyle(Color.fwbMuted)
                     .fixedSize(horizontal: false, vertical: true)
                 Label(
-                    checkIn.syncState == .synced ? "SYNCED" : "SAVED OFFLINE — WILL SYNC",
+                    checkIn.syncState == .synced ? "Synced" : "Saved offline — will sync",
                     systemImage: checkIn.syncState == .synced ? "checkmark.icloud" : "icloud.slash"
                 )
-                .font(.footnote.bold())
-                .tracking(0.5)
+                .font(FWBFont.caption.weight(.semibold))
                 .foregroundStyle(checkIn.syncState == .synced ? Color.fwbLime : Color.fwbMuted)
-                NavigationLink("UPDATE CHECK-IN") {
-                    ReadinessCheckInView(store: store)
-                }
-                .font(.subheadline.bold())
-                .tracking(0.7)
-                .foregroundStyle(Color.fwbLime)
-                .padding(.top, 3)
-                .accessibilityIdentifier("readiness.update")
             }
         }
     }
@@ -712,14 +710,13 @@ struct ReadinessDashboardCard: View {
     private func readinessScore(_ result: ReadinessResult) -> some View {
         VStack(spacing: 0) {
             Text("\(result.score)")
-                .font(.title.weight(.black))
-                .fontWidth(.condensed)
+                .font(FWBFont.title.weight(.bold))
             Text("/100")
-                .font(.footnote.bold())
+                .font(FWBFont.caption.weight(.semibold))
         }
-        .foregroundStyle(.black)
-        .frame(width: 70, height: 70)
-        .background(readinessColor(result), in: Rectangle())
+        .foregroundStyle(readinessScoreTextColor(result))
+        .frame(minWidth: 64, minHeight: 64)
+        .background(readinessScoreFillColor(result), in: RoundedRectangle(cornerRadius: 14))
         .accessibilityLabel("Readiness score \(result.score) out of 100")
     }
 }
@@ -760,30 +757,30 @@ struct ReadinessCheckInView: View {
             Color.fwbBackground.ignoresSafeArea()
 
             ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
+                VStack(alignment: .leading, spacing: 16) {
                     checkInHeader
 
                     ReadinessScale(
-                        title: "ENERGY",
+                        title: "Energy",
                         prompt: "How much energy do you have?",
-                        lowLabel: "LOW",
-                        highLabel: "HIGH",
+                        lowLabel: "Low",
+                        highLabel: "High",
                         selection: $energy
                     )
 
                     ReadinessScale(
-                        title: "SORENESS",
+                        title: "Soreness",
                         prompt: "How sore does your body feel?",
-                        lowLabel: "FRESH",
-                        highLabel: "VERY SORE",
+                        lowLabel: "Fresh",
+                        highLabel: "Very sore",
                         selection: $soreness
                     )
 
                     ReadinessScale(
-                        title: "SLEEP QUALITY",
+                        title: "Sleep quality",
                         prompt: "How well did you sleep last night?",
-                        lowLabel: "POOR",
-                        highLabel: "GREAT",
+                        lowLabel: "Poor",
+                        highLabel: "Great",
                         selection: $sleepRecovery
                     )
 
@@ -798,7 +795,7 @@ struct ReadinessCheckInView: View {
                         if isSaving {
                             ProgressView().tint(.black)
                         } else {
-                            Label(store.today == nil ? "SAVE TODAY’S CHECK-IN" : "UPDATE TODAY’S CHECK-IN", systemImage: "checkmark")
+                            Label(store.today == nil ? "Save today’s check-in" : "Update today’s check-in", systemImage: "checkmark")
                         }
                     }
                     .buttonStyle(FWBPrimaryButtonStyle())
@@ -807,11 +804,11 @@ struct ReadinessCheckInView: View {
 
                     if case .failed(let message) = store.state {
                         Text(message)
-                            .font(.footnote)
+                            .font(FWBFont.footnote)
                             .foregroundStyle(Color.fwbRed)
                     }
                 }
-                .padding(20)
+                .padding(16)
             }
             .scrollDismissesKeyboard(.interactively)
         }
@@ -823,36 +820,35 @@ struct ReadinessCheckInView: View {
     private var checkInHeader: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("TODAY’S READINESS")
-                .font(.footnote.bold())
+                .font(FWBFont.footnote.bold())
                 .tracking(1.4)
                 .foregroundStyle(Color.fwbLime)
-            Text("CHECK IN\nBEFORE YOU TRAIN")
-                .font(.system(size: 34, weight: .black))
-                .fontWidth(.condensed)
+            Text("Check in before you train")
+                .font(FWBFont.title.weight(.bold))
                 .foregroundStyle(Color.fwbWarmWhite)
             Text("Choose the answer that best reflects how you feel right now. You can update it later today.")
-                .font(.subheadline)
+                .font(FWBFont.subheadline)
                 .foregroundStyle(Color.fwbMuted)
         }
     }
 
     private var notesCard: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("OPTIONAL NOTE")
-                .font(.footnote.bold())
+            Text("Optional note")
+                .font(FWBFont.footnote.bold())
                 .tracking(1)
                 .foregroundStyle(Color.fwbLime)
             TextField("Add context for today", text: $note, axis: .vertical)
                 .lineLimit(3...6)
                 .padding(14)
-                .background(Color.fwbSurface, in: Rectangle())
-                .overlay { Rectangle().stroke(Color.fwbLine, lineWidth: 1) }
+                .background(Color.fwbSurface, in: RoundedRectangle(cornerRadius: 12))
+                .overlay { RoundedRectangle(cornerRadius: 12).stroke(Color.fwbLine, lineWidth: 1) }
                 .onChange(of: note) { value in
                     if value.count > 300 { note = String(value.prefix(300)) }
                 }
                 .accessibilityIdentifier("readiness.note")
             Text("\(note.count)/300")
-                .font(.footnote)
+                .font(FWBFont.footnote)
                 .foregroundStyle(Color.fwbMuted)
                 .frame(maxWidth: .infinity, alignment: .trailing)
         }
@@ -881,22 +877,22 @@ private struct FoodTodayQuestion: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             VStack(alignment: .leading, spacing: 4) {
-                Text("FUEL")
-                    .font(.footnote.bold())
+                Text("Fuel")
+                    .font(FWBFont.footnote.bold())
                     .tracking(1)
                     .foregroundStyle(Color.fwbLime)
                 Text("Have you eaten today?")
-                    .font(.headline)
+                    .font(FWBFont.headline)
                     .foregroundStyle(Color.fwbWarmWhite)
             }
 
             HStack(spacing: 10) {
-                answerButton(title: "YES", value: true, icon: "checkmark")
-                answerButton(title: "NOT YET", value: false, icon: "clock")
+                answerButton(title: "Yes", value: true, icon: "checkmark")
+                answerButton(title: "Not yet", value: false, icon: "clock")
             }
 
             Text("You can update this check-in later today.")
-                .font(.footnote)
+                .font(FWBFont.footnote)
                 .foregroundStyle(Color.fwbMuted)
         }
         .fwbCard()
@@ -907,13 +903,12 @@ private struct FoodTodayQuestion: View {
             selection = value
         } label: {
             Label(title, systemImage: icon)
-                .font(.subheadline.weight(.black))
-                .tracking(0.5)
+                .font(FWBFont.subheadline.weight(.semibold))
                 .foregroundStyle(selection == value ? Color.black : Color.fwbWarmWhite)
                 .frame(maxWidth: .infinity, minHeight: 48)
-                .background(selection == value ? Color.fwbAccentFill : Color.fwbSurface, in: Rectangle())
+                .background(selection == value ? Color.fwbAccentFill : Color.fwbSurface, in: RoundedRectangle(cornerRadius: 12))
                 .overlay {
-                    Rectangle().stroke(
+                    RoundedRectangle(cornerRadius: 12).stroke(
                         selection == value ? Color.fwbAccentFill : Color.fwbLine,
                         lineWidth: 1
                     )
@@ -937,11 +932,11 @@ private struct ReadinessScale: View {
         VStack(alignment: .leading, spacing: 14) {
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
-                    .font(.footnote.bold())
+                    .font(FWBFont.footnote.bold())
                     .tracking(1)
                     .foregroundStyle(Color.fwbLime)
                 Text(prompt)
-                    .font(.headline)
+                    .font(FWBFont.headline)
                     .foregroundStyle(Color.fwbWarmWhite)
             }
 
@@ -951,13 +946,13 @@ private struct ReadinessScale: View {
                         selection = rating
                     } label: {
                         Text("\(rating)")
-                            .font(.headline.weight(.black))
-                            .foregroundStyle(selection == rating ? .black : .white)
+                            .font(FWBFont.headline.weight(.black))
+                            .foregroundStyle(selection == rating ? Color.black : Color.fwbWarmWhite)
                             .frame(maxWidth: .infinity)
                             .frame(height: 48)
-                            .background(selection == rating ? Color.fwbAccentFill : Color.fwbSurface, in: Rectangle())
+                            .background(selection == rating ? Color.fwbAccentFill : Color.fwbSurface, in: RoundedRectangle(cornerRadius: 12))
                             .overlay {
-                                Rectangle().stroke(selection == rating ? Color.fwbAccentFill : Color.fwbLine, lineWidth: 1)
+                                RoundedRectangle(cornerRadius: 12).stroke(selection == rating ? Color.fwbAccentFill : Color.fwbLine, lineWidth: 1)
                             }
                     }
                     .buttonStyle(.plain)
@@ -972,7 +967,7 @@ private struct ReadinessScale: View {
                 Spacer()
                 Text(highLabel)
             }
-            .font(.footnote.bold())
+            .font(FWBFont.footnote.bold())
             .tracking(0.8)
             .foregroundStyle(Color.fwbMuted)
             .lineLimit(2)
@@ -989,26 +984,24 @@ private struct ReadinessResultCard: View {
         HStack(alignment: .top, spacing: 16) {
             VStack(spacing: 0) {
                 Text("\(result.score)")
-                    .font(.system(size: 36, weight: .black))
-                    .fontWidth(.condensed)
+                    .font(FWBFont.title.weight(.bold))
                 Text("/100")
-                    .font(.footnote.bold())
+                    .font(FWBFont.footnote.bold())
             }
-            .foregroundStyle(.black)
-            .frame(width: 82, height: 82)
-            .background(readinessColor(result), in: Rectangle())
+            .foregroundStyle(readinessScoreTextColor(result))
+            .frame(minWidth: 70, minHeight: 70)
+            .background(readinessScoreFillColor(result), in: RoundedRectangle(cornerRadius: 14))
 
             VStack(alignment: .leading, spacing: 7) {
                 Text("READINESS RESULT")
-                    .font(.footnote.bold())
+                    .font(FWBFont.footnote.bold())
                     .tracking(1)
                     .foregroundStyle(Color.fwbMuted)
                 Text(result.title)
-                    .font(.headline.weight(.black))
-                    .fontWidth(.condensed)
+                    .font(FWBFont.subheadline.weight(.bold))
                     .foregroundStyle(readinessColor(result))
                 Text(result.recommendation)
-                    .font(.footnote)
+                    .font(FWBFont.footnote)
                     .foregroundStyle(Color.fwbMuted)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -1026,4 +1019,14 @@ private func readinessColor(_ result: ReadinessResult) -> Color {
     case .adjust: .orange
     case .recover: .fwbRed
     }
+}
+
+private func readinessScoreTextColor(_ result: ReadinessResult) -> Color {
+    if case .adjust = result { return .black }
+    return readinessColor(result)
+}
+
+private func readinessScoreFillColor(_ result: ReadinessResult) -> Color {
+    if case .adjust = result { return .orange }
+    return readinessColor(result).opacity(0.12)
 }

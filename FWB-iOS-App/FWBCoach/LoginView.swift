@@ -16,7 +16,7 @@ struct LoginView: View {
             Color.fwbBackground.ignoresSafeArea()
 
             ScrollView {
-                VStack(spacing: 30) {
+                VStack(spacing: 24) {
                     brandHeader
                     loginForm
                     webAccess
@@ -37,18 +37,18 @@ struct LoginView: View {
 
             VStack(spacing: 7) {
                 Text("FITNESS WITH BENJAMIN")
-                    .font(.footnote.weight(.black))
+                    .font(FWBFont.footnote.weight(.black))
                     .tracking(1.8)
-                    .foregroundStyle(Color.fwbRed)
+                    .foregroundStyle(Color.fwbMuted)
 
                 Text("FWB TRAINING")
-                    .font(.largeTitle.weight(.black))
-                    .fontWidth(.condensed)
+                    .font(FWBFont.largeTitle.weight(.black))
+
                     .tracking(0.6)
                     .foregroundStyle(Color.fwbWarmWhite)
 
                 Text("Your training. Wherever you are.")
-                    .font(.subheadline)
+                    .font(FWBFont.subheadline)
                     .foregroundStyle(Color.fwbMuted)
             }
         }
@@ -57,14 +57,13 @@ struct LoginView: View {
 
     private var loginForm: some View {
         VStack(alignment: .leading, spacing: 20) {
-            FWBRule()
 
             VStack(alignment: .leading, spacing: 7) {
-                Text("WELCOME BACK")
-                    .font(.title2.weight(.black))
-                    .fontWidth(.condensed)
+                Text("Welcome back")
+                    .font(FWBFont.title2.weight(.black))
+
                 Text("Use the same client account as the web app.")
-                    .font(.subheadline)
+                    .font(FWBFont.subheadline)
                     .foregroundStyle(Color.fwbMuted)
             }
 
@@ -92,7 +91,7 @@ struct LoginView: View {
 
             if let message = sessionStore.message {
                 Text(message)
-                    .font(.footnote)
+                    .font(FWBFont.footnote)
                     .foregroundStyle(message.contains("sent") ? Color.fwbLime : Color.fwbRed)
                     .accessibilityIdentifier("login.message")
             }
@@ -103,7 +102,7 @@ struct LoginView: View {
                         ProgressView()
                             .tint(.black)
                     }
-                    Text(sessionStore.isSubmitting ? "SIGNING IN…" : "SIGN IN")
+                    Text(sessionStore.isSubmitting ? "Signing in…" : "Sign in")
                 }
             }
             .buttonStyle(FWBPrimaryButtonStyle())
@@ -114,28 +113,28 @@ struct LoginView: View {
                 focusedField = nil
                 Task { await sessionStore.sendPasswordReset(email: email) }
             }
-            .font(.subheadline.weight(.bold))
+            .font(FWBFont.subheadline.weight(.bold))
             .foregroundStyle(Color.fwbWarmWhite)
             .underline()
             .disabled(sessionStore.isSubmitting)
             .frame(maxWidth: .infinity)
             .accessibilityIdentifier("login.reset")
 
-            FWBRule()
         }
+        .fwbCard()
     }
 
     private var webAccess: some View {
         VStack(spacing: 14) {
             Link(destination: URL(string: "https://benjaminbenz.com/client-login.html")!) {
                 Label("Use FWB Training on the web", systemImage: "globe")
-                    .font(.footnote.weight(.semibold))
+                    .font(FWBFont.footnote.weight(.semibold))
                     .foregroundStyle(Color.fwbWarmWhite)
             }
 
             Link(destination: AppConfiguration.coachWebPortalURL) {
                 Label("Coach administration on the website", systemImage: "arrow.up.right.square")
-                    .font(.footnote.weight(.semibold))
+                    .font(FWBFont.footnote.weight(.semibold))
                     .foregroundStyle(Color.fwbMuted)
             }
         }

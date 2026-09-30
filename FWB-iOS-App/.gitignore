@@ -3,8 +3,27 @@ DerivedData/
 DerivedData-*/
 SourcePackages/
 Artifacts/
+/build/
 *.xcarchive
 *.ipa
 *.xcuserstate
 xcuserdata/
 supabase/.temp/
+
+# Never commit signing credentials or local release configuration.
+*.p8
+*.p12
+*.pfx
+*.mobileprovision
+*.provisionprofile
+*.cer
+*.key
+.env
+.env.*
+!.env.example
+!.env.*.example
+.bundle/
+vendor/bundle/
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/test_output/

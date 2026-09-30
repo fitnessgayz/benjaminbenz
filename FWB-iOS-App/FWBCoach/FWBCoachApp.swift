@@ -4,6 +4,10 @@ import SwiftUI
 struct FWBCoachApp: App {
     @UIApplicationDelegateAdaptor(NotificationAppDelegate.self) private var notificationAppDelegate
 
+    init() {
+        ErrorReporting.start()
+    }
+
     var body: some Scene {
         WindowGroup {
             rootView

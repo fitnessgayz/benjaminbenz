@@ -25,3 +25,9 @@ The Supabase Swift package is pinned to version `2.55.1`. Only the publishable c
 4. Run.
 
 Clients use the same credentials as the web app. The coach account is intentionally rejected by the iOS app and continues to use Coach Admin on the website. Authenticated clients can only access their own rows as permitted by Supabase RLS.
+
+## TestFlight releases and error reporting
+
+See [DEPLOYMENT.md](DEPLOYMENT.md) for the private GitHub repository setup, Apple signing credentials, Sentry configuration, and the automatic TestFlight workflow. Release credentials stay in GitHub Actions secrets and are excluded from source control.
+
+The Sentry integration reports crashes and sanitized operation failures from configured release builds. Debug builds, tests, and UI audits disable reporting by default. It excludes user details, workout and health data, request contents, screenshots, and session replays.
