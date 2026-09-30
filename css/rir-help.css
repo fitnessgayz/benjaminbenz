@@ -45,6 +45,20 @@
   align-items: center;
 }
 
+@media (max-width: 760px) {
+  .dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-columns .rir-help-trigger {
+    gap: 2px;
+    font-size: min(.58rem, 2.5vw) !important;
+    white-space: normal;
+  }
+
+  .dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-columns .rir-help-trigger svg {
+    flex-basis: 13px;
+    width: 13px;
+    height: 13px;
+  }
+}
+
 .rir-help-dialog {
   --rir-help-ink: #171a17;
   --rir-help-muted: #666b62;

@@ -15635,14 +15635,15 @@ body.client-dashboard-page.is-loading > :is(.client-dashboard-tabs,
   .dashboard-page .client-dashboard-tab-label {
     display: block !important;
     width: 100%;
-    overflow: hidden;
+    overflow: visible;
     color: inherit;
     font-size: .52rem;
     font-weight: 800;
     letter-spacing: .015em;
     line-height: 1.1;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    overflow-wrap: anywhere;
+    text-overflow: clip;
+    white-space: normal;
   }
 
   .dashboard-page .client-dashboard-tab.is-active .client-dashboard-tab-label {
@@ -15698,7 +15699,7 @@ body.client-dashboard-page.is-loading > :is(.client-dashboard-tabs,
   }
 
   .dashboard-page .client-dashboard-tab-label {
-    font-size: .5rem;
+    font-size: min(.5rem, 2.15vw);
   }
 }
 
