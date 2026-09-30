@@ -44,9 +44,7 @@ jobs:
   deploy:
     name: Upload media and apply migrations
     needs: validate
-    # Keep production deployment manual until the first credentialed run has
-    # completed successfully. Main-branch pushes still validate the bundle.
-    if: github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch'
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     timeout-minutes: 20
     environment: production
