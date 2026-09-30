@@ -50,8 +50,6 @@ jobs:
     environment: production
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
-      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY || secrets.SUPABASE_SERVICE_ROLE_KEY }}
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
@@ -64,25 +62,12 @@ jobs:
             echo '::error::Missing SUPABASE_ACCESS_TOKEN'
             missing=1
           fi
-          if [ -z "$SUPABASE_DB_PASSWORD" ]; then
-            echo '::error::Missing SUPABASE_DB_PASSWORD'
-            missing=1
-          fi
-          if [ -z "$SUPABASE_SECRET_KEY" ]; then
-            echo '::error::Missing SUPABASE_SECRET_KEY or SUPABASE_SERVICE_ROLE_KEY'
-            missing=1
-          fi
           exit "$missing"
       - name: Upload versioned media
         run: node scripts/supabase/deploy-media.mjs upload
-      - uses: supabase/setup-cli@3c2f5e2ae34c34e428e8e206e2c4d21fa2d20fbf # v2.1.1
-        with:
-          version: 2.118.0
-      - name: Link production project
-        run: supabase link --project-ref "$SUPABASE_PROJECT_ID" --password "$SUPABASE_DB_PASSWORD"
       - name: Preview pending migrations
-        run: supabase db push --linked --password "$SUPABASE_DB_PASSWORD" --dry-run
+        run: node scripts/supabase/deploy-migrations.mjs dry-run
       - name: Apply pending migrations
-        run: supabase db push --linked --password "$SUPABASE_DB_PASSWORD" --yes
+        run: node scripts/supabase/deploy-migrations.mjs apply
       - name: Verify uploaded bytes and exercise mappings
         run: node scripts/supabase/deploy-media.mjs verify

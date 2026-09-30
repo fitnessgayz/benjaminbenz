@@ -164,6 +164,26 @@ async function verifyExerciseMedia(baseUrl, secretKey) {
   }
 }
 
+async function fetchProjectSecretKey(accessToken, projectId) {
+  assert(accessToken.length > 20, "Set SUPABASE_ACCESS_TOKEN.");
+  assert(/^[a-z0-9]{20}$/.test(projectId), "Set a valid SUPABASE_PROJECT_ID.");
+
+  const response = await fetch(
+    `https://api.supabase.com/v1/projects/${encodeURIComponent(projectId)}/api-keys?reveal=true`,
+    { headers: { Authorization: `Bearer ${accessToken}`, Accept: "application/json" } },
+  );
+  if (!response.ok) {
+    throw new Error(`Could not retrieve the project secret API key: HTTP ${response.status}`);
+  }
+
+  const keys = await response.json();
+  const secret = keys.find((key) => key.type === "secret" && key.name === "github_actions_production")
+    || keys.find((key) => key.type === "secret");
+  const value = String(secret?.api_key || secret?.apiKey || secret?.key || "").trim();
+  assert(value.startsWith("sb_secret_") && value.length > 20, "The project has no usable secret API key.");
+  return value;
+}
+
 validateManifest();
 
 if (mode === "validate") {
@@ -173,9 +193,11 @@ if (mode === "validate") {
 }
 
 const baseUrl = normalizeBaseUrl(process.env.SUPABASE_URL);
-const secretKey = String(process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || "").trim();
+const projectId = String(process.env.SUPABASE_PROJECT_ID || "").trim();
+const accessToken = String(process.env.SUPABASE_ACCESS_TOKEN || "").trim();
+const configuredSecretKey = String(process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || "").trim();
 assert(/^https:\/\/[a-z0-9-]+[.]supabase[.]co$/.test(baseUrl), "SUPABASE_URL must be a hosted Supabase project URL.");
-assert(secretKey.length > 20, "Set SUPABASE_SECRET_KEY (preferred) or SUPABASE_SERVICE_ROLE_KEY.");
+const secretKey = configuredSecretKey || await fetchProjectSecretKey(accessToken, projectId);
 
 if (mode === "upload") {
   await uploadAssets(baseUrl, secretKey);
