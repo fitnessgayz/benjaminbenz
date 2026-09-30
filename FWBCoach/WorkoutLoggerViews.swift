@@ -63,7 +63,7 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
     @StateObject private var logStore = WorkoutLogStore()
     @StateObject private var suggestionStore = ExerciseSuggestionStore()
     @StateObject private var exerciseLibraryStore = ExerciseLibraryStore()
-    @StateObject private var restTimerStore = RestTimerStore()
+    @ObservedObject private var restTimerStore = RestTimerStore.shared
     @StateObject private var achievementHistoryStore = WorkoutHistoryStore()
     @ObservedObject private var offlineSyncStore = WorkoutOfflineSyncStore.shared
     @AppStorage("restTimerHapticsEnabled") private var restTimerHapticsEnabled = true

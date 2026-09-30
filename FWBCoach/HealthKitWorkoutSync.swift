@@ -94,7 +94,7 @@ final class HealthKitWorkoutSyncStore: ObservableObject {
         let duration = max(60, endedAt.timeIntervalSince(startedAt))
         let start = Self.date(entryDate, applyingTimeFrom: startedAt)
         let end = start.addingTimeInterval(duration)
-        let identifier = Self.syncIdentifier(kind: "strength", title: title, entryDate: entryDate)
+        let identifier = Self.syncIdentifier(kind: "strength", title: title, start: start)
 
         await saveWorkout(
             activityType: .traditionalStrengthTraining,
@@ -122,7 +122,7 @@ final class HealthKitWorkoutSyncStore: ObservableObject {
         let end = Self.date(entryDate, applyingTimeFrom: Date())
         let start = end.addingTimeInterval(-duration)
         let mapping = Self.cardioMapping(for: type)
-        let identifier = Self.syncIdentifier(kind: "cardio", title: type, entryDate: entryDate)
+        let identifier = Self.syncIdentifier(kind: "cardio", title: type, start: start)
 
         await saveWorkout(
             activityType: mapping.activityType,
@@ -245,14 +245,13 @@ final class HealthKitWorkoutSyncStore: ObservableObject {
         return calendar.date(from: components) ?? date
     }
 
-    private static func syncIdentifier(kind: String, title: String, entryDate: Date) -> String {
+    private static func syncIdentifier(kind: String, title: String, start: Date) -> String {
         let normalizedTitle = title
             .lowercased()
             .components(separatedBy: CharacterSet.alphanumerics.inverted)
             .filter { !$0.isEmpty }
             .joined(separator: "-")
-        let day = Calendar.current.startOfDay(for: entryDate)
-        return "com.benjaminbenz.fwbcoach.\(kind).\(Int(day.timeIntervalSince1970)).\(normalizedTitle)"
+        return "com.benjaminbenz.fwbcoach.\(kind).\(Int(start.timeIntervalSince1970)).\(normalizedTitle)"
     }
 
     private static func cardioMapping(

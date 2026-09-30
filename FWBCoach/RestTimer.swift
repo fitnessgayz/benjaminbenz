@@ -10,6 +10,8 @@ final class RestTimerStore: ObservableObject {
         case complete
     }
 
+    static let shared = RestTimerStore()
+
     @Published private(set) var phase: Phase = .idle
     @Published private(set) var remainingSeconds = 0
     @Published private(set) var exerciseName = ""
@@ -17,6 +19,8 @@ final class RestTimerStore: ObservableObject {
     private var countdownTask: Task<Void, Never>?
     private var hapticsEnabled = true
     private var endDate: Date?
+
+    private init() {}
 
     var isVisible: Bool { phase != .idle }
 

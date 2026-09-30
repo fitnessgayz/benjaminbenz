@@ -32,25 +32,16 @@ struct LoginView: View {
     }
 
     private var brandHeader: some View {
-        VStack(spacing: 12) {
-            FWBMark(size: 76)
+        VStack(spacing: 14) {
+            Image("BrandLogo")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 184, height: 184)
+                .accessibilityLabel("Fitness with Benjamin")
 
-            VStack(spacing: 7) {
-                Text("FITNESS WITH BENJAMIN")
-                    .font(.footnote.weight(.black))
-                    .tracking(1.8)
-                    .foregroundStyle(Color.fwbRed)
-
-                Text("FWB TRAINING")
-                    .font(.largeTitle.weight(.black))
-                    .fontWidth(.condensed)
-                    .tracking(0.6)
-                    .foregroundStyle(Color.fwbWarmWhite)
-
-                Text("Your training. Wherever you are.")
-                    .font(.subheadline)
-                    .foregroundStyle(Color.fwbMuted)
-            }
+            Text("Your training. Wherever you are.")
+                .font(.subheadline)
+                .foregroundStyle(Color.fwbMuted)
         }
         .accessibilityElement(children: .combine)
     }
@@ -126,7 +117,7 @@ struct LoginView: View {
     private var webAccess: some View {
         VStack(spacing: 14) {
             Link(destination: URL(string: "https://benjaminbenz.com/client-login.html")!) {
-                Label("Use FWB Training on the web", systemImage: "globe")
+                Label("Use the web app", systemImage: "globe")
                     .font(.footnote.weight(.semibold))
                     .foregroundStyle(Color.fwbWarmWhite)
             }

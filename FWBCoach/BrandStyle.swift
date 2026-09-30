@@ -17,7 +17,7 @@ extension Color {
     static let fwbBackground = Color(UIColor { traits in
         traits.userInterfaceStyle == .dark
             ? UIColor(red: 0.090, green: 0.098, blue: 0.094, alpha: 1)
-            : UIColor(red: 0.957, green: 0.957, blue: 0.937, alpha: 1)
+            : UIColor(red: 0.922, green: 0.918, blue: 0.894, alpha: 1)
     })
     static let fwbCard = Color(UIColor { traits in
         traits.userInterfaceStyle == .dark
