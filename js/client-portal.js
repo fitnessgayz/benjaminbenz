@@ -7429,12 +7429,16 @@ function workoutDifficultyPromptMarkup() {
   return `
     <div class="workout-difficulty-overlay" data-workout-difficulty-overlay hidden>
       <section class="workout-difficulty-sheet" role="dialog" aria-modal="true" aria-labelledby="workout-difficulty-title">
-        <header class="rir-heading">
-          <div>
+        <header class="rir-heading workout-difficulty-header">
+          <div class="workout-difficulty-heading-copy">
             <small>Workout complete</small>
             <strong id="workout-difficulty-title">How was your workout?</strong>
           </div>
-          <button class="rir-close" type="button" data-workout-difficulty-close aria-label="Close workout difficulty prompt">×</button>
+          <div class="workout-difficulty-top-actions" aria-label="Workout feedback actions">
+            <button class="workout-difficulty-skip" type="button" data-workout-difficulty-skip>Skip</button>
+            <button class="workout-difficulty-done" type="button" data-workout-difficulty-save disabled>Done</button>
+            <button class="rir-close" type="button" data-workout-difficulty-close aria-label="Close workout difficulty prompt">×</button>
+          </div>
         </header>
         <p class="workout-difficulty-congratulations">Congratulations for completing the workout!</p>
         <p class="workout-difficulty-question">How hard was it overall?</p>
@@ -7486,10 +7490,9 @@ function renderWorkoutDifficultyPrompt() {
     button.setAttribute("aria-checked", isSelected ? "true" : "false");
   });
 
-  const saveButton = overlay?.querySelector("[data-workout-difficulty-save]");
-  if (saveButton) {
+  overlay?.querySelectorAll("[data-workout-difficulty-save]").forEach((saveButton) => {
     saveButton.disabled = pendingWorkoutDifficulty === null || !pendingWorkoutEnergy.before || !pendingWorkoutEnergy.after;
-  }
+  });
 }
 
 function requestWorkoutDifficulty(returnFocus) {
@@ -17012,6 +17015,7 @@ function handleWorkoutInteractions() {
     const rirCloseButton = event.target.closest("[data-rir-close]");
     const workoutDifficultyOptionButton = event.target.closest("[data-workout-difficulty-option]");
     const workoutDifficultySaveButton = event.target.closest("[data-workout-difficulty-save]");
+    const workoutDifficultySkipButton = event.target.closest("[data-workout-difficulty-skip]");
     const workoutDifficultyCloseButton = event.target.closest("[data-workout-difficulty-close]");
     const nextExerciseYesButton = event.target.closest("[data-next-exercise-yes]");
     const nextExerciseFinishButton = event.target.closest("[data-next-exercise-finish]");
@@ -17341,6 +17345,11 @@ function handleWorkoutInteractions() {
 
     if (workoutDifficultySaveButton) {
       saveWorkoutDifficultySelection();
+      return;
+    }
+
+    if (workoutDifficultySkipButton) {
+      closeWorkoutDifficultyPrompt({ skipped: true });
       return;
     }
 
@@ -19088,8 +19097,9 @@ async function handleTrainingLogSave() {
           if (pendingGroupedCustomWorkoutRestart?.panel === section) pendingGroupedCustomWorkoutRestart = null;
           return;
         }
-        const workoutDifficulty = workoutFeedback.difficulty;
-        const difficultySummary = workoutHistoryDifficultyLabel(workoutDifficulty);
+        const workoutFeedbackSkipped = workoutFeedback.skipped === true;
+        const workoutDifficulty = workoutFeedbackSkipped ? null : workoutFeedback.difficulty;
+        const difficultySummary = workoutFeedbackSkipped ? "" : workoutHistoryDifficultyLabel(workoutDifficulty);
         const saveResult = await saveTrainingLogRows(workoutButton, logElements, status, {
           savingMessage: "Finishing workout...",
           successMessage: "Workout saved. Saving feedback...",
@@ -19106,7 +19116,9 @@ async function handleTrainingLogSave() {
         section.workoutCompletionPendingFeedback = workoutCompletion;
         section.workoutAchievementBeforeFeedback = achievementsBefore;
         if (!isCardioOnly) finishWorkoutElapsedTimer();
-        const feedbackResult = await saveWorkoutDifficultyFeedback(saveResult.rows, workoutDifficulty, workoutFeedback);
+        const feedbackResult = workoutFeedbackSkipped
+          ? { saved: true }
+          : await saveWorkoutDifficultyFeedback(saveResult.rows, workoutDifficulty, workoutFeedback);
         if (!feedbackResult.saved) {
           const retryMessage = isCardioOnly
             ? "Cardio saved. Tap Save & finish cardio again to retry saving your ratings."
@@ -19118,7 +19130,9 @@ async function handleTrainingLogSave() {
 
         renderClientTrainingLogs();
         completionSucceeded = true;
-        if (status) status.textContent = `Workout finished · ${difficultySummary}.`;
+        if (status) status.textContent = difficultySummary
+          ? `Workout finished · ${difficultySummary}.`
+          : "Workout finished.";
         delete section.workoutCompletionPendingFeedback;
         delete section.workoutAchievementBeforeFeedback;
         const groupedRestart = pendingGroupedCustomWorkoutRestart?.panel === section

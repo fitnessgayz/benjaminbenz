@@ -127,7 +127,7 @@
   inset: 0;
   z-index: 145;
   display: grid;
-  align-items: end;
+  align-items: center;
   padding: 16px;
   background: rgba(0, 0, 0, .62);
 }
@@ -138,15 +138,98 @@
 
 .workout-difficulty-sheet {
   display: grid;
-  width: min(480px, 100%);
-  max-height: min(92dvh, 760px);
-  gap: 14px;
+  width: min(430px, 100%);
+  max-height: min(82dvh, 660px);
+  gap: 11px;
   margin: 0 auto;
-  padding: 18px;
+  padding: 14px;
   overflow-y: auto;
+  overscroll-behavior: contain;
   border: 1px solid var(--line);
-  border-radius: 12px 12px 0 0;
+  border-radius: 16px;
   background: var(--paper);
+}
+
+.workout-difficulty-header {
+  position: sticky;
+  z-index: 3;
+  top: -14px;
+  align-items: center;
+  margin: -14px -14px 0;
+  padding: 14px;
+  border-bottom: 1px solid var(--line);
+  background: var(--paper);
+}
+
+.rir-heading .workout-difficulty-top-actions {
+  display: flex;
+  grid-template-columns: none;
+  align-items: center;
+  gap: 6px;
+}
+
+.workout-difficulty-top-actions button {
+  min-height: 42px;
+  padding: 0 11px;
+  border: 1px solid var(--black);
+  border-radius: 10px;
+  font: inherit;
+  font-size: .75rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.workout-difficulty-skip {
+  background: var(--paper);
+  color: var(--black);
+}
+
+.workout-difficulty-done {
+  background: var(--lime);
+  color: var(--black);
+}
+
+.workout-difficulty-done:disabled {
+  border-color: var(--line);
+  background: var(--paper);
+  color: var(--muted);
+  cursor: not-allowed;
+  opacity: .55;
+}
+
+.workout-difficulty-top-actions .rir-close {
+  flex-basis: 42px;
+  padding: 0;
+  border-color: var(--line);
+  border-radius: 50%;
+  font-size: 1rem;
+  text-transform: none;
+}
+
+@media (max-width: 480px) {
+  .workout-difficulty-overlay {
+    padding: max(10px, env(safe-area-inset-top)) 10px max(10px, env(safe-area-inset-bottom));
+  }
+
+  .workout-difficulty-sheet {
+    max-height: min(78dvh, 600px);
+  }
+
+  .workout-difficulty-header .workout-difficulty-heading-copy strong {
+    font-size: 1.12rem;
+    line-height: 1.05;
+  }
+
+  .workout-difficulty-header .workout-difficulty-heading-copy small {
+    font-size: .6rem;
+  }
+
+  .workout-difficulty-top-actions button {
+    min-height: 40px;
+    padding-inline: 9px;
+    font-size: .68rem;
+  }
 }
 
 .workout-difficulty-question {
