@@ -59,9 +59,20 @@ jobs:
       - name: Require deployment credentials
         shell: bash
         run: |
-          test -n "$SUPABASE_ACCESS_TOKEN" || { echo 'Missing SUPABASE_ACCESS_TOKEN'; exit 1; }
-          test -n "$SUPABASE_DB_PASSWORD" || { echo 'Missing SUPABASE_DB_PASSWORD'; exit 1; }
-          test -n "$SUPABASE_SECRET_KEY" || { echo 'Missing SUPABASE_SECRET_KEY or SUPABASE_SERVICE_ROLE_KEY'; exit 1; }
+          missing=0
+          if [ -z "$SUPABASE_ACCESS_TOKEN" ]; then
+            echo '::error::Missing SUPABASE_ACCESS_TOKEN'
+            missing=1
+          fi
+          if [ -z "$SUPABASE_DB_PASSWORD" ]; then
+            echo '::error::Missing SUPABASE_DB_PASSWORD'
+            missing=1
+          fi
+          if [ -z "$SUPABASE_SECRET_KEY" ]; then
+            echo '::error::Missing SUPABASE_SECRET_KEY or SUPABASE_SERVICE_ROLE_KEY'
+            missing=1
+          fi
+          exit "$missing"
       - name: Upload versioned media
         run: node scripts/supabase/deploy-media.mjs upload
       - uses: supabase/setup-cli@3c2f5e2ae34c34e428e8e206e2c4d21fa2d20fbf # v2.1.1
