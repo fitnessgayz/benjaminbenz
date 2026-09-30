@@ -2451,11 +2451,13 @@ function trustedExerciseMotionUrl(value) {
   try {
     const url = new URL(value);
     const storageOrigin = new URL(window.FWB_SUPABASE_CONFIG.url).origin;
-    const storageMotion = url.origin === storageOrigin
+    const storageWebp = url.origin === storageOrigin
       && /^\/storage\/v1\/object\/public\/exercise-images\/approved\/[a-z0-9/-]+\.webp$/i.test(url.pathname);
-    const siteMotion = url.origin === "https://benjaminbenz.com"
+    const storageVideo = url.origin === storageOrigin
+      && /^\/storage\/v1\/object\/public\/exercise-videos\/generated\/[a-z0-9/-]+\.mp4$/i.test(url.pathname);
+    const siteWebp = url.origin === "https://benjaminbenz.com"
       && /^\/images\/exercises\/[a-z0-9/-]+\.webp$/i.test(url.pathname);
-    return url.protocol === "https:" && !url.username && !url.password && (storageMotion || siteMotion)
+    return url.protocol === "https:" && !url.username && !url.password && (storageWebp || storageVideo || siteWebp)
       ? url.href : "";
   } catch {
     return "";
@@ -2601,11 +2603,24 @@ function openExerciseMedia(button) {
   dialog.querySelector("[data-exercise-media-caption]").textContent = animatedUrl
     ? "Start and end demonstration · motion preview"
     : "Start and end positions";
-  const image = document.createElement("img");
-  image.src = animatedUrl || staticUrl;
-  image.alt = `${name} ${animatedUrl ? "moving demonstration" : "start and end positions"}`;
-  image.decoding = "async";
-  stage.replaceChildren(image);
+  if (animatedUrl && /\.mp4(?:$|[?#])/i.test(animatedUrl)) {
+    const video = document.createElement("video");
+    video.src = animatedUrl;
+    video.setAttribute("aria-label", `${name} moving demonstration`);
+    video.autoplay = true;
+    video.muted = true;
+    video.loop = true;
+    video.playsInline = true;
+    video.controls = true;
+    video.preload = "metadata";
+    stage.replaceChildren(video);
+  } else {
+    const image = document.createElement("img");
+    image.src = animatedUrl || staticUrl;
+    image.alt = `${name} ${animatedUrl ? "moving demonstration" : "start and end positions"}`;
+    image.decoding = "async";
+    stage.replaceChildren(image);
+  }
   dialog.showModal();
 }
 
