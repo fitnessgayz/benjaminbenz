@@ -45,20 +45,25 @@ class ReleaseSupportTest < Minitest::Test
     assert_raises(RuntimeError) { FWBRelease.validate_configuration!(env.merge("SENTRY_URL" => "http://sentry.io")) }
   end
 
-  def test_private_branch_guard_rejects_public_repository_without_network
-    env = {"GITHUB_ACTIONS" => "true", "GITHUB_REF" => "refs/heads/main", "GITHUB_EVENT_NAME" => "push"}
-    error = assert_raises(RuntimeError) { FWBRelease.require_private_main!(env, {"repository" => {"private" => false}}) }
-    assert_includes error.message, "private repository"
+  def test_trusted_main_guard_accepts_main_push
+    env = trusted_main_env
+    FWBRelease.require_trusted_main!(env)
+  end
+
+  def test_trusted_main_guard_rejects_another_repository
+    assert_raises(RuntimeError) do
+      FWBRelease.require_trusted_main!(trusted_main_env.merge("GITHUB_REPOSITORY" => "another/repository"))
+    end
   end
 
   def test_branch_guard_rejects_manual_dispatch_from_another_branch
-    env = {"GITHUB_ACTIONS" => "true", "GITHUB_REF" => "refs/heads/feature", "GITHUB_EVENT_NAME" => "workflow_dispatch"}
-    assert_raises(RuntimeError) { FWBRelease.require_private_main!(env, {"repository" => {"private" => true}}) }
+    env = trusted_main_env.merge("GITHUB_REF" => "refs/heads/feature", "GITHUB_EVENT_NAME" => "workflow_dispatch")
+    assert_raises(RuntimeError) { FWBRelease.require_trusted_main!(env) }
   end
 
   def test_pull_request_cannot_release
-    env = {"GITHUB_ACTIONS" => "true", "GITHUB_REF" => "refs/heads/main", "GITHUB_EVENT_NAME" => "pull_request"}
-    assert_raises(RuntimeError) { FWBRelease.require_private_main!(env, {"repository" => {"private" => true}}) }
+    env = trusted_main_env.merge("GITHUB_EVENT_NAME" => "pull_request")
+    assert_raises(RuntimeError) { FWBRelease.require_trusted_main!(env) }
   end
 
   def test_base64_credentials_are_private_and_invalid_values_are_not_echoed
@@ -94,5 +99,16 @@ class ReleaseSupportTest < Minitest::Test
       end
       signing.cleanup
     end
+  end
+
+  private
+
+  def trusted_main_env
+    {
+      "GITHUB_ACTIONS" => "true",
+      "GITHUB_REPOSITORY" => FWBRelease::RELEASE_REPOSITORY,
+      "GITHUB_REF" => "refs/heads/main",
+      "GITHUB_EVENT_NAME" => "push"
+    }
   end
 end

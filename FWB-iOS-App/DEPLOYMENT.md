@@ -15,7 +15,7 @@ This guide prepares the existing app. Do not create a second App Store Connect a
 
 You need a private GitHub repository with a `main` branch and admin access, an active Apple Developer membership with access to this app, and a Sentry organization/project. GitHub Free supports this repository-secret setup. Private-repository runs still use the account's included Actions minutes and storage; review the existing usage/budget before running macOS builds. See [GitHub Actions billing](https://docs.github.com/en/billing/concepts/product-billing/github-actions).
 
-Choose the intended **private** repository and verify its visibility in GitHub **before any push**. The existing `fitnessgayz/benjaminbenz` repository is public and hosts the website; do not change its visibility or use it as the release destination without the owner's decision. A standalone private iOS repository must retain `FWB-iOS-App/`, `scripts/ios/`, and `.github/workflows/ios.yml` at those same paths.
+The owner has approved `fitnessgayz/benjaminbenz` as the iOS release destination. It is a public repository, so signing credentials must remain repository secrets and the release job must stay restricted to trusted `main` push or manual-dispatch events. Forked pull requests and feature branches must never receive signing credentials. The repository must retain `FWB-iOS-App/`, `scripts/ios/`, and `.github/workflows/ios.yml` at those same paths.
 
 On your Mac, have Python 3.9 or newer and the [GitHub CLI](https://cli.github.com/) installed and signed in with `gh auth login`. The setup helper does not install tools, create accounts, change repository visibility, or start a release.
 

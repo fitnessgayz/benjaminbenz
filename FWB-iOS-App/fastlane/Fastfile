@@ -24,9 +24,9 @@ platform :ios do
     )
   end
 
-  desc "Sign a private-main build, upload Sentry symbols, and upload to TestFlight"
+  desc "Sign a trusted-main build, upload Sentry symbols, and upload to TestFlight"
   lane :beta do
-    FWBRelease.require_private_main!
+    FWBRelease.require_trusted_main!
     FWBRelease.validate_configuration!
     signing = FWBRelease::Signing.new(File.join(ENV.fetch("RUNNER_TEMP"), "fwb-signing"))
     begin
@@ -88,7 +88,7 @@ platform :ios do
       dsym_directory = File.join(OUTPUT_DIRECTORY, "FWBCoach.xcarchive", "dSYMs")
       UI.user_error!("Archive has no dSYMs; refusing an unsymbolicated release.") if Dir.glob(File.join(dsym_directory, "*.dSYM")).empty?
       sh(ENV.fetch("SENTRY_CLI_PATH"), "debug-files", "upload", "--wait", dsym_directory)
-      FWBRelease.require_private_main!
+      FWBRelease.require_trusted_main!
       upload_to_testflight(
         api_key: api_key,
         app_identifier: FWBRelease::APP_ID,

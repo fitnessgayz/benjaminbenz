@@ -13,6 +13,7 @@ require "uri"
 module FWBRelease
   APP_ID = "com.benjaminbenz.fwbcoach".freeze
   TEAM_ID = "5Q4FU299QH".freeze
+  RELEASE_REPOSITORY = "fitnessgayz/benjaminbenz".freeze
   REQUIRED = %w[
     ASC_KEY_ID ASC_ISSUER_ID ASC_PRIVATE_KEY_P8_BASE64
     IOS_DISTRIBUTION_P12_BASE64 IOS_DISTRIBUTION_P12_PASSWORD
@@ -36,25 +37,12 @@ module FWBRelease
     raise "Invalid Sentry URL configuration."
   end
 
-  def self.require_private_main!(env = ENV, event = nil)
+  def self.require_trusted_main!(env = ENV)
     raise "Release requires GitHub Actions." unless env["GITHUB_ACTIONS"] == "true"
+    raise "Release requires the approved repository." unless env["GITHUB_REPOSITORY"] == RELEASE_REPOSITORY
     raise "Release requires main." unless env["GITHUB_REF"] == "refs/heads/main"
     unless %w[push workflow_dispatch].include?(env["GITHUB_EVENT_NAME"])
       raise "Release only runs for a push or manual dispatch."
-    end
-    event ||= JSON.parse(File.read(env.fetch("GITHUB_EVENT_PATH")))
-    raise "Release requires a private repository." unless event.dig("repository", "private") == true
-    # Re-check current visibility, rather than trusting a possibly queued event.
-    repository = env.fetch("GITHUB_REPOSITORY")
-    raise "Invalid GitHub repository." unless repository.match?(%r{\A[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+\z})
-    uri = URI("https://api.github.com/repos/#{repository}")
-    request = Net::HTTP::Get.new(uri)
-    request["Authorization"] = "Bearer #{env.fetch('GH_TOKEN')}"
-    request["Accept"] = "application/vnd.github+json"
-    request["X-GitHub-Api-Version"] = "2022-11-28"
-    response = Net::HTTP.start(uri.host, uri.port, use_ssl: true, open_timeout: 15, read_timeout: 30) { |http| http.request(request) }
-    unless response.is_a?(Net::HTTPSuccess) && JSON.parse(response.body)["private"] == true
-      raise "GitHub could not confirm this repository is private; release stopped."
     end
   end
 

@@ -60,13 +60,13 @@ jobs:
     name: Sign and upload to TestFlight
     needs: tests
     if: >-
-      github.event.repository.private == true &&
       github.ref == 'refs/heads/main' &&
       (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: macos-26
     timeout-minutes: 60
-    # Repository-scoped secrets support private repositories on GitHub Free.
-    # Private/main/event checks also run inside the release lane before upload.
+    # Repository secrets are available only to trusted main-branch runs; forked
+    # pull requests cannot execute this release job with signing credentials.
+    # Main/event checks also run inside the release lane before upload.
     # Queue uploads; never cancel an archive/upload already in progress.
     concurrency:
       group: ios-testflight-release
@@ -75,11 +75,6 @@ jobs:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           persist-credentials: false
-      - name: Confirm repository is still private
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          test "$(gh api "repos/$GITHUB_REPOSITORY" --jq '.private')" = true
       - name: Verify Xcode
         run: xcodebuild -version
       - uses: ruby/setup-ruby@14594264cd68ce8a2345dd349bc3d138a4ef85c8 # v1.327.0
@@ -97,7 +92,6 @@ jobs:
       - name: Archive, upload debug symbols, and upload to TestFlight
         working-directory: FWB-iOS-App
         env:
-          GH_TOKEN: ${{ github.token }}
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
           ASC_PRIVATE_KEY_P8_BASE64: ${{ secrets.ASC_PRIVATE_KEY_P8_BASE64 }}
