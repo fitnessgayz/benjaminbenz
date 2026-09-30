@@ -1,17 +1,16 @@
 .DS_Store
-.supabase/
-supabase/.temp/
-supabase/.branches/
 DerivedData/
 DerivedData-*/
 SourcePackages/
 Artifacts/
+/build/
 *.xcarchive
 *.ipa
 *.xcuserstate
 xcuserdata/
+supabase/.temp/
 
-# Local iOS release credentials and generated signing material
+# Never commit signing credentials or local release configuration.
 *.p8
 *.p12
 *.pfx
