@@ -8,12 +8,15 @@ const portal = fs.readFileSync(path.join(root, "js/client-portal.js"), "utf8");
 const css = fs.readFileSync(path.join(root, "css/custom-workout-mobile-fix.css"), "utf8");
 const workoutCss = fs.readFileSync(path.join(root, "css/workout-layout.css"), "utf8");
 
-test("uses a static lazy thumbnail and defers the optional motion WebP until activation", () => {
+test("uses a static lazy thumbnail and defers optional motion until activation", () => {
   assert.match(portal, /data-exercise-media-static/);
   assert.match(portal, /data-exercise-media-animated/);
   assert.match(portal, /loading="lazy"[\s\S]{0,80}decoding="async"/);
   assert.match(portal, /exercise\.motion_url \|\| exercise\.motionUrl \|\| approvedExercise\?\.motion_url/);
+  assert.match(portal, /video\.src = animatedUrl/);
   assert.match(portal, /image\.src = animatedUrl \|\| staticUrl/);
+  assert.match(portal, /video\.muted = true/);
+  assert.match(portal, /video\.playsInline = true/);
   assert.doesNotMatch(portal, /class="exercise-media-button[\s\S]{0,500}<video/);
 });
 
@@ -32,8 +35,9 @@ test("crops branded list thumbnails to the Start and End photo panels", () => {
   assert.match(workoutCss, /\.workout-preview-exercise-media \.exercise-media-button-branded-crop/);
 });
 
-test("accepts motion only from approved first-party WebP locations", () => {
+test("accepts motion only from approved first-party WebP and MP4 locations", () => {
   assert.match(portal, /exercise-images\\\/approved[\s\S]*\\\.webp/);
+  assert.match(portal, /exercise-videos\\\/generated[\s\S]*\\\.mp4/);
   assert.match(portal, /images\\\/exercises[\s\S]*\\\.webp/);
   assert.match(portal, /select\("[^"]*image_url,motion_url/);
 });
