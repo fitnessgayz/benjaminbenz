@@ -11708,15 +11708,74 @@ textarea:focus {
   }
 
   .exercise-library-list {
-    max-height: 620px;
+    gap: 14px;
+    max-height: none;
+    padding-right: 0;
+    overflow: visible;
   }
 
   .exercise-library-card {
-    grid-template-columns: minmax(0, 1.18fr) minmax(130px, .82fr);
+    grid-template-columns: minmax(0, 1fr);
+    border-radius: 14px;
   }
 
   .exercise-library-card-media {
-    min-height: 198px;
+    min-height: 0;
+  }
+
+  .exercise-library-card-media.has-artwork:not(.has-video) {
+    aspect-ratio: auto;
+  }
+
+  .exercise-library-card-media.has-artwork:not(.has-video) img,
+  .exercise-library-card-media img.is-instruction-card {
+    width: 100%;
+    height: auto;
+    object-fit: contain;
+    object-position: center;
+  }
+
+  .exercise-library-card-media.has-video,
+  .exercise-library-card-media:not(.has-artwork):not(.has-video) {
+    aspect-ratio: 16 / 9;
+  }
+
+  .exercise-library-card-media::after {
+    display: none;
+  }
+
+  .exercise-library-card-select {
+    gap: 10px;
+    padding: 14px 16px 16px;
+  }
+
+  .exercise-library-card-heading strong {
+    overflow-wrap: normal;
+    font-size: 1.18rem;
+    word-break: normal;
+  }
+
+  .exercise-library-card-meta {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .exercise-library-card-meta small {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .exercise-library-badges {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: 7px;
+  }
+
+  .exercise-library-badges small {
+    min-width: 92px;
+    padding-inline: 12px;
+    white-space: nowrap;
   }
 
   .client-added-exercise-row {

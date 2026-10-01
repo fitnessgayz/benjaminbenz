@@ -58,6 +58,14 @@ test("exercise library exposes an all-client approval queue", () => {
   assert.match(styles, /\.client-added-exercises-link\s*\{[\s\S]*?border-left: 5px solid var\(--lime\)/);
 });
 
+test("mobile exercise cards preserve the full branded artwork", () => {
+  assert.match(html, /css\/style\.css\?v=[^"']*mobile-card-media=1/);
+  assert.match(styles, /@media \(max-width: 620px\)[\s\S]*?\.exercise-library-card\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\)/);
+  assert.match(styles, /\.exercise-library-card-media\.has-artwork:not\(\.has-video\) img,[\s\S]*?object-fit:\s*contain[^}]*object-position:\s*center/);
+  assert.match(styles, /\.exercise-library-card-media\.has-artwork:not\(\.has-video\)\s*\{[^}]*aspect-ratio:\s*auto/);
+  assert.match(styles, /@media \(max-width: 620px\)[\s\S]*?\.exercise-library-list\s*\{[^}]*max-height:\s*none[^}]*overflow:\s*visible/);
+});
+
 test("known branded exercise artwork is connected to matching catalog names", () => {
   for (const relativePath of Object.values({
     arnold: "images/exercises/instruction-cards/2026-09-29/arnold-press.png",
