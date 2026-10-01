@@ -16822,6 +16822,118 @@ body.client-dashboard-page.is-loading > :is(.client-dashboard-tabs,
   color: var(--lime);
 }
 
+.admin-tab-mobile-more,
+.coach-home-mobile-toolbar,
+.selected-client-mobile-menu,
+.coach-notification-close {
+  display: none !important;
+}
+
+.coach-mobile-more-dialog {
+  width: min(520px, calc(100vw - 16px));
+  max-height: min(620px, calc(100dvh - 24px));
+  margin: auto auto 8px;
+  padding: 20px 16px calc(20px + env(safe-area-inset-bottom));
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 24px 24px 16px 16px;
+  color: var(--black);
+  background: var(--paper);
+  box-shadow: 0 24px 70px rgba(5, 8, 5, .28);
+}
+
+.coach-mobile-more-dialog::backdrop {
+  background: rgba(5, 8, 5, .46);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.coach-mobile-more-heading {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.coach-mobile-more-heading h2 {
+  margin: 0;
+}
+
+.coach-mobile-more-heading > button,
+.coach-notification-close {
+  display: grid;
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  color: var(--black);
+  background: #fff;
+  font: inherit;
+  font-size: 1.7rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.coach-mobile-more-menu {
+  display: grid;
+  gap: 8px;
+}
+
+.coach-mobile-more-menu > :is(a, button),
+.selected-client-mobile-menu button {
+  position: relative;
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+  padding: 14px 48px 14px 15px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  color: var(--black);
+  background: #fff;
+  font: inherit;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.coach-mobile-more-menu > :is(a, button)::after,
+.selected-client-mobile-menu button::after {
+  position: absolute;
+  top: 50%;
+  right: 16px;
+  content: "›";
+  font-size: 1.5rem;
+  font-weight: 900;
+  transform: translateY(-50%);
+}
+
+.coach-mobile-more-menu strong,
+.coach-mobile-more-menu span,
+.selected-client-mobile-menu strong,
+.selected-client-mobile-menu span {
+  display: block;
+  min-width: 0;
+}
+
+.coach-mobile-more-menu span,
+.selected-client-mobile-menu span {
+  color: var(--muted);
+  font-size: .76rem;
+  font-weight: 700;
+}
+
+.coach-mobile-more-menu .fwb-message-badge {
+  position: absolute;
+  top: 50%;
+  right: 40px;
+  color: var(--black);
+  transform: translateY(-50%);
+}
+
 .coach-admin-sidebar-backdrop {
   display: none;
 }
@@ -16939,6 +17051,23 @@ body.client-dashboard-page.is-loading > :is(.client-dashboard-tabs,
     scrollbar-width: none;
   }
 
+  .coach-admin-page .admin-tabs > :not([data-admin-tab="home"]):not([data-admin-tab="clients"]):not(.admin-tab-mobile-more) {
+    display: none !important;
+  }
+
+  .coach-admin-page .admin-tab[data-admin-tab="home"] {
+    order: 1;
+  }
+
+  .coach-admin-page .admin-tab[data-admin-tab="clients"] {
+    order: 2;
+  }
+
+  .coach-admin-page .admin-tab-mobile-more {
+    display: flex !important;
+    order: 3;
+  }
+
   .coach-admin-page .admin-tab,
   .coach-admin-page .admin-workspace.is-sidebar-collapsed .admin-tab {
     position: relative;
@@ -16963,6 +17092,18 @@ body.client-dashboard-page.is-loading > :is(.client-dashboard-tabs,
     line-height: 1 !important;
     text-align: center;
     scroll-snap-align: center;
+  }
+
+  .coach-admin-page .admin-tab[data-admin-tab="home"],
+  .coach-admin-page .admin-tab[data-admin-tab="clients"],
+  .coach-admin-page .admin-tab-mobile-more,
+  .coach-admin-page .admin-workspace.is-sidebar-collapsed .admin-tab[data-admin-tab="home"],
+  .coach-admin-page .admin-workspace.is-sidebar-collapsed .admin-tab[data-admin-tab="clients"],
+  .coach-admin-page .admin-workspace.is-sidebar-collapsed .admin-tab-mobile-more {
+    flex: 1 1 33.333% !important;
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: none !important;
   }
 
   .coach-admin-page .admin-tab::after {
@@ -17052,6 +17193,102 @@ body.client-dashboard-page.is-loading > :is(.client-dashboard-tabs,
 
   .coach-admin-page .admin-tabs::-webkit-scrollbar {
     display: none;
+  }
+
+  .coach-admin-page .admin-workspace:not([data-active-tab="clients"]) .admin-client-list {
+    display: none;
+  }
+
+  .coach-home-mobile-toolbar {
+    display: flex !important;
+    justify-content: flex-start;
+  }
+
+  .coach-home-notification-button {
+    position: relative;
+    display: inline-flex;
+    min-height: 44px;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 13px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    color: var(--black);
+    background: #fff;
+    font: inherit;
+    font-size: .78rem;
+    font-weight: 900;
+    cursor: pointer;
+  }
+
+  .coach-home-notification-button svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  .coach-home-notification-button .admin-nav-unread-count {
+    top: -6px;
+    right: -6px;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 5px;
+    transform: none;
+  }
+
+  .selected-client-mobile-menu {
+    grid-area: tools;
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .selected-client-panel {
+    grid-template-areas:
+      "identity"
+      "meta"
+      "tools"
+      "actions";
+  }
+
+  .selected-client-mobile-menu button:disabled {
+    opacity: .46;
+    cursor: not-allowed;
+  }
+
+  .selected-client-mobile-menu button {
+    min-height: 76px;
+    padding: 12px 34px 12px 12px;
+  }
+
+  .selected-client-mobile-menu button::after {
+    right: 12px;
+  }
+
+  .coach-admin-page .admin-workspace[data-active-tab="notifications"]::before {
+    position: fixed;
+    z-index: 1090;
+    inset: 0;
+    content: "";
+    background: rgba(5, 8, 5, .46);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+
+  .coach-admin-page .coach-notification-panel:not([hidden]) {
+    position: fixed;
+    z-index: 1100;
+    inset: 12px 8px calc(12px + env(safe-area-inset-bottom));
+    display: grid;
+    max-height: calc(100dvh - 24px - env(safe-area-inset-bottom));
+    padding: 20px 16px;
+    overflow: auto;
+    border-radius: 22px;
+    box-shadow: 0 24px 70px rgba(5, 8, 5, .28);
+  }
+
+  .coach-notification-close {
+    display: grid !important;
+    order: -1;
   }
 }
 

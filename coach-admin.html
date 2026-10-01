@@ -30,7 +30,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=client-view-shortcut-1&amp;home-shortcuts=1&amp;coach-dock=6&amp;exercise-images=1&amp;exercise-cards=1&amp;videos-tab=3&amp;client-added=1&amp;mobile-card-media=1&amp;coach-layout-repair=1" />
+  <link rel="stylesheet" href="css/style.css?v=client-view-shortcut-1&amp;home-shortcuts=1&amp;coach-dock=7&amp;mobile-client-hub=1&amp;home-notifications=1&amp;exercise-images=1&amp;exercise-cards=1&amp;videos-tab=3&amp;client-added=1&amp;mobile-card-media=1&amp;coach-layout-repair=1" />
   <link rel="stylesheet" href="css/coach-messages.css?v=1" />
   <link rel="stylesheet" href="css/workout-layout.css?v=workout-preview-1" />
   <link rel="stylesheet" href="css/apple-workout.css?v=1" />
@@ -153,8 +153,28 @@
             <span class="admin-nav-label">Settings</span>
             <span class="admin-nav-unread-count" data-web-notification-unread hidden aria-label="0 unread notifications">0</span>
           </button>
+          <button class="admin-tab admin-tab-mobile-more" type="button" aria-label="More coach tools" aria-haspopup="dialog" data-coach-mobile-more-open>
+            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+            <span class="admin-nav-label">More</span>
+          </button>
         </nav>
       </aside>
+
+      <dialog class="coach-mobile-more-dialog" aria-labelledby="coach-mobile-more-title" data-coach-mobile-more-dialog>
+        <div class="coach-mobile-more-heading">
+          <div>
+            <p class="kicker">FWB Coach</p>
+            <h2 id="coach-mobile-more-title">More tools</h2>
+          </div>
+          <button type="button" aria-label="Close more tools" data-coach-mobile-more-close>×</button>
+        </div>
+        <nav class="coach-mobile-more-menu" aria-label="Additional coach tools">
+          <button type="button" data-coach-mobile-more-destination="inbox"><strong>Messages</strong><span>Open your client inbox</span><span class="fwb-message-badge" data-coach-message-unread hidden aria-label="0 unread messages">0</span></button>
+          <a href="coach-workout-log.html"><strong>Workout logger</strong><span>Record an in-person session</span></a>
+          <a href="coach-exercise-library.html"><strong>Exercise library</strong><span>Manage exercises and media</span></a>
+          <button type="button" data-coach-mobile-more-destination="notifications"><strong>Settings</strong><span>Notifications, support, and privacy</span></button>
+        </nav>
+      </dialog>
 
       <form class="admin-editor" id="program-editor">
         <input type="hidden" name="id" />
@@ -182,6 +202,13 @@
         </section>
 
         <section class="admin-card coach-home-panel" data-admin-panel="home" aria-labelledby="coach-home-title">
+          <div class="coach-home-mobile-toolbar">
+            <button class="coach-home-notification-button" type="button" aria-label="Open notifications" aria-haspopup="dialog" data-coach-home-notifications>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg>
+              <span>Notifications</span>
+              <span class="admin-nav-unread-count" data-web-notification-unread hidden aria-label="0 unread notifications">0</span>
+            </button>
+          </div>
           <div class="coach-home-heading">
             <div>
               <p class="kicker">Coach home</p>
@@ -301,6 +328,16 @@
           <div class="selected-client-meta" id="selected-client-meta">
             <span>No client selected</span>
           </div>
+          <nav class="selected-client-mobile-menu" aria-label="Selected client tools">
+            <button type="button" data-client-mobile-destination="profile"><strong>Profile</strong><span>Contact and account details</span></button>
+            <button type="button" data-client-mobile-destination="program"><strong>Program</strong><span>Training plan and goals</span></button>
+            <button type="button" data-client-mobile-destination="workouts"><strong>Workouts</strong><span>Assigned training</span></button>
+            <button type="button" data-client-mobile-destination="nutrition"><strong>Food</strong><span>Nutrition targets and logs</span></button>
+            <button type="button" data-client-mobile-destination="progress"><strong>Progress</strong><span>Stats and check-ins</span></button>
+            <button type="button" data-client-mobile-destination="sessions"><strong>Sessions</strong><span>Package and dates</span></button>
+            <button type="button" data-client-mobile-destination="logs"><strong>Logs</strong><span>Workout history</span></button>
+            <button type="button" data-client-mobile-destination="notes"><strong>Notes</strong><span>Private coaching notes</span></button>
+          </nav>
           <div class="selected-client-actions">
             <button class="button button-ghost" type="button" id="selected-client-message-button" hidden>View messages</button>
             <a class="button coach-client-view-link" id="selected-client-view-link" target="_blank" rel="noopener" hidden>View client page <span aria-hidden="true">↗</span></a>
@@ -325,6 +362,7 @@
               <p>Manage every coach alert in one place, including browser access, alert choices, testing, and recent notifications.</p>
             </div>
             <div class="coach-notification-actions">
+              <button class="coach-notification-close" type="button" aria-label="Close notifications" data-coach-notification-close>×</button>
               <button class="button button-dark" type="button" data-web-notification-enable>Enable browser alerts</button>
               <button class="button button-ghost" type="button" data-web-notification-test disabled>Send test</button>
             </div>
@@ -1148,6 +1186,6 @@
   <script src="js/apple-workout.js?v=3"></script>
   <script src="js/apple-health-sync.js?v=1"></script>
   <script src="js/workout-progression.js?v=1"></script>
-  <script src="js/coach-admin.js?v=client-view-shortcut-1&amp;remember-login=1&amp;home-shortcuts=1&amp;apple-workout=1&amp;viewport-dock=1&amp;apple-health=1&amp;recovery-catalog=1&amp;messages=2&amp;progression=1&amp;invitations=2&amp;exercise-images=1&amp;exercise-cards=1&amp;videos-tab=3&amp;client-added=1&amp;client-name-list=2"></script>
+  <script src="js/coach-admin.js?v=client-view-shortcut-1&amp;remember-login=1&amp;home-shortcuts=1&amp;mobile-client-hub=1&amp;home-notifications=1&amp;apple-workout=1&amp;viewport-dock=1&amp;apple-health=1&amp;recovery-catalog=1&amp;messages=2&amp;progression=1&amp;invitations=2&amp;exercise-images=1&amp;exercise-cards=1&amp;videos-tab=3&amp;client-added=1&amp;client-name-list=2"></script>
 </body>
 </html>

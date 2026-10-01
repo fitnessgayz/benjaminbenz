@@ -949,8 +949,10 @@ function updateClientViewLink(program = selectedProgram()) {
 
 function setAdminTab(tabName) {
   const nextTab = coachAdminTabNames.has(tabName) ? tabName : "home";
+  const workspace = document.getElementById("coach-admin-workspace");
 
   activeAdminTab = nextTab;
+  if (workspace) workspace.dataset.activeTab = nextTab;
   document.querySelectorAll("[data-admin-tab]").forEach((button) => {
     const isActive = button.dataset.adminTab === nextTab;
 
@@ -1479,6 +1481,10 @@ function updateSelectedClientSummary(program = selectedProgram()) {
   if (saveButton) {
     saveButton.disabled = !isExistingClient;
   }
+
+  document.querySelectorAll("[data-client-mobile-destination]").forEach((button) => {
+    button.disabled = !isExistingClient;
+  });
 
   if (profileArchiveButton) {
     profileArchiveButton.disabled = !isExistingClient;
@@ -4516,14 +4522,22 @@ function renderClientSuggestions() {
 
 function selectClientSuggestion(programId) {
   const program = matchingClientSuggestions().find((item) => item.id === programId);
+  const useMobileClientHub = globalThis.matchMedia?.("(max-width: 900px)")?.matches === true;
   if (!program) return;
   document.getElementById("client-search-input").value = program.client_name || program.client_email;
   clientSearchTerm = "";
   closeClientSuggestions();
   fillForm(program);
   renderClientList();
-  setAdminTab("profile");
+  setAdminTab(useMobileClientHub ? "clients" : "profile");
   adminStatus("Ready.");
+  if (useMobileClientHub) {
+    window.requestAnimationFrame(() => {
+      const panel = document.querySelector("[data-admin-client-context]");
+      panel?.scrollIntoView({ behavior: "smooth", block: "start" });
+      panel?.querySelector("[data-client-mobile-destination]")?.focus({ preventScroll: true });
+    });
+  }
 }
 
 async function loadPrograms() {
@@ -4551,6 +4565,7 @@ async function loadPrograms() {
   renderCoachWorkoutClientOptions();
 
   const visiblePrograms = programsForCurrentClientView();
+  const useMobileClientHub = globalThis.matchMedia?.("(max-width: 900px)")?.matches === true;
 
   const requestedClientId = new URLSearchParams(window.location.search).get("client");
   const requestedClient = programs.find((program) => program.id === requestedClientId);
@@ -4559,7 +4574,7 @@ async function loadPrograms() {
   } else if (requestedClientId) {
     // Never show another client's information for an expired notification link.
     fillForm();
-  } else if (visiblePrograms.length > 0) {
+  } else if (visiblePrograms.length > 0 && !useMobileClientHub) {
     fillForm(visiblePrograms[0]);
   } else {
     fillForm();
@@ -6019,6 +6034,63 @@ function handleCoachHomeActions() {
     if (tabButton) {
       setAdminTab(tabButton.dataset.coachHomeTab);
     }
+  });
+}
+
+function handleCoachMobileNavigation() {
+  const moreButton = document.querySelector("[data-coach-mobile-more-open]");
+  const moreDialog = document.querySelector("[data-coach-mobile-more-dialog]");
+  const notificationButton = document.querySelector("[data-coach-home-notifications]");
+  const notificationClose = document.querySelector("[data-coach-notification-close]");
+  let moreReturnFocus = null;
+
+  const closeMoreDialog = ({ restoreFocus = true } = {}) => {
+    if (!moreDialog?.open) return;
+    if (typeof moreDialog.close === "function") moreDialog.close();
+    else moreDialog.removeAttribute("open");
+    if (restoreFocus) window.requestAnimationFrame(() => moreReturnFocus?.focus({ preventScroll: true }));
+  };
+
+  moreButton?.addEventListener("click", () => {
+    moreReturnFocus = moreButton;
+    if (typeof moreDialog?.showModal === "function") moreDialog.showModal();
+    else moreDialog?.setAttribute("open", "");
+    window.requestAnimationFrame(() => moreDialog?.querySelector("[data-coach-mobile-more-close]")?.focus({ preventScroll: true }));
+  });
+
+  moreDialog?.querySelector("[data-coach-mobile-more-close]")?.addEventListener("click", () => closeMoreDialog());
+  moreDialog?.addEventListener("cancel", (event) => {
+    event.preventDefault();
+    closeMoreDialog();
+  });
+  moreDialog?.addEventListener("click", (event) => {
+    if (event.target === moreDialog) closeMoreDialog();
+  });
+  moreDialog?.querySelectorAll("[data-coach-mobile-more-destination]").forEach((button) => {
+    button.addEventListener("click", () => {
+      closeMoreDialog({ restoreFocus: false });
+      setAdminTab(button.dataset.coachMobileMoreDestination);
+    });
+  });
+
+  notificationButton?.addEventListener("click", () => setAdminTab("notifications"));
+  notificationClose?.addEventListener("click", () => {
+    setAdminTab("home");
+    window.requestAnimationFrame(() => notificationButton?.focus({ preventScroll: true }));
+  });
+
+  document.querySelectorAll("[data-client-mobile-destination]").forEach((button) => {
+    button.addEventListener("click", () => {
+      if (!selectedProgram()) {
+        adminStatus("Choose a client first.");
+        return;
+      }
+      const destination = button.dataset.clientMobileDestination;
+      setAdminTab(destination);
+      window.requestAnimationFrame(() => {
+        document.querySelector(`[data-admin-panel="${destination}"]`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    });
   });
 }
 
@@ -7680,6 +7752,7 @@ async function bootCoachAdmin() {
   renderWorkoutFields();
   handleAdminTabs();
   handleCoachHomeActions();
+  handleCoachMobileNavigation();
   handleCoachAdminSidebar();
   handleExerciseLibraryEditor();
   handleClientExerciseNameManager();

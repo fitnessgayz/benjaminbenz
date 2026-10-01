@@ -55,7 +55,7 @@ test("mobile coach tabs use client-style icons, labels, and selected state", () 
   const navEnd = adminHtml.indexOf("</nav>", navStart);
   const navMarkup = adminHtml.slice(navStart, navEnd);
 
-  assert.equal((navMarkup.match(/<svg class="admin-nav-icon/g) || []).length, 14);
+  assert.equal((navMarkup.match(/<svg class="admin-nav-icon/g) || []).length, 15);
   assert.match(navMarkup, /data-admin-tab="inbox"[^>]*aria-label="Inbox"/);
   assert.doesNotMatch(navMarkup, /<span class="admin-nav-icon"[^>]*>(?:SL|CL|PR|PG|WO|EX|AL|FD|PS|NT|LG|SE)<\/span>/);
   assert.match(styleSource, /\.coach-admin-page \.admin-tab\.is-active \.admin-nav-icon\s*\{[\s\S]*?background:\s*var\(--lime\)[\s\S]*?border-radius:\s*13px[\s\S]*?box-shadow:\s*none[\s\S]*?transform:\s*none/);
@@ -88,4 +88,23 @@ test("selected client summary reserves readable identity space beside its action
   assert.match(styleSource, /\.selected-client-copy\s*\{[^}]*grid-area:\s*identity[^}]*min-width:\s*0/s);
   assert.match(styleSource, /\.selected-client-copy h2\s*\{[^}]*overflow-wrap:\s*normal[^}]*word-break:\s*normal/s);
   assert.match(styleSource, /@media \(max-width: 1180px\)[\s\S]*?\.selected-client-panel\s*\{[^}]*grid-template-columns:\s*1fr[^}]*grid-template-areas:\s*"identity"\s*"meta"\s*"actions"/s);
+});
+
+test("mobile coach navigation keeps Home first and reduces the dock to Home, Clients, and More", () => {
+  assert.match(adminHtml, /data-admin-tab="home"[\s\S]*?data-admin-tab="clients"[\s\S]*?data-coach-mobile-more-open/);
+  assert.match(adminHtml, /data-coach-mobile-more-dialog[\s\S]*?Messages[\s\S]*?Workout logger[\s\S]*?Exercise library[\s\S]*?Settings/);
+  assert.match(styleSource, /@media \(max-width: 900px\)[\s\S]*?\.admin-tabs > :not\(\[data-admin-tab="home"\]\):not\(\[data-admin-tab="clients"\]\):not\(\.admin-tab-mobile-more\)[^}]*display:\s*none !important/s);
+  assert.match(styleSource, /\.admin-tab\[data-admin-tab="home"\]\s*\{[^}]*order:\s*1/s);
+  assert.match(styleSource, /\.admin-tab\[data-admin-tab="clients"\]\s*\{[^}]*order:\s*2/s);
+  assert.match(styleSource, /\.admin-tab-mobile-more\s*\{[^}]*display:\s*flex !important[^}]*order:\s*3/s);
+});
+
+test("mobile Clients becomes the selector and selected-client tool hub", () => {
+  for (const destination of ["profile", "program", "workouts", "nutrition", "progress", "sessions", "logs", "notes"]) {
+    assert.match(adminHtml, new RegExp(`data-client-mobile-destination="${destination}"`));
+  }
+  assert.match(adminSource, /setAdminTab\(useMobileClientHub \? "clients" : "profile"\)/);
+  assert.match(adminSource, /workspace\.dataset\.activeTab = nextTab/);
+  assert.match(styleSource, /\.admin-workspace:not\(\[data-active-tab="clients"\]\) \.admin-client-list\s*\{[^}]*display:\s*none/s);
+  assert.match(styleSource, /\.selected-client-mobile-menu\s*\{[^}]*grid-area:\s*tools[^}]*display:\s*grid !important/s);
 });

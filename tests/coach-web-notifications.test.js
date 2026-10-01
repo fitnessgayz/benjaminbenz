@@ -110,3 +110,12 @@ test("coach notification settings stay compact and stack on narrow screens", () 
   assert.match(styleSource, /@media \(max-width: 780px\)[\s\S]*?\.coach-notification-preference-grid\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\)/s);
   assert.match(styleSource, /\.admin-nav-unread-count\s*\{[^}]*position:\s*absolute/s);
 });
+
+test("mobile Home exposes notification status in a dismissible overlay", () => {
+  assert.match(adminHtml, /data-coach-home-notifications[\s\S]*?data-web-notification-unread/);
+  assert.match(adminHtml, /data-coach-notification-close/);
+  assert.match(adminSource, /notificationButton\?\.addEventListener\("click", \(\) => setAdminTab\("notifications"\)\)/);
+  assert.match(adminSource, /notificationClose\?\.addEventListener\("click"[\s\S]*?setAdminTab\("home"\)/);
+  assert.match(styleSource, /\.admin-workspace\[data-active-tab="notifications"\]::before/);
+  assert.match(styleSource, /\.coach-notification-panel:not\(\[hidden\]\)\s*\{[^}]*position:\s*fixed[^}]*z-index:\s*1100/s);
+});
