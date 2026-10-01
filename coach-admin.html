@@ -30,7 +30,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=client-view-shortcut-1&amp;home-shortcuts=1&amp;coach-dock=6&amp;exercise-images=1&amp;exercise-cards=1&amp;videos-tab=3" />
+  <link rel="stylesheet" href="css/style.css?v=client-view-shortcut-1&amp;home-shortcuts=1&amp;coach-dock=6&amp;exercise-images=1&amp;exercise-cards=1&amp;videos-tab=3&amp;client-added=1" />
   <link rel="stylesheet" href="css/coach-messages.css?v=1" />
   <link rel="stylesheet" href="css/workout-layout.css?v=workout-preview-1" />
   <link rel="stylesheet" href="css/apple-workout.css?v=1" />
@@ -998,6 +998,39 @@
             </div>
 
             <div class="exercise-library-browser">
+              <button
+                class="client-added-exercises-link"
+                type="button"
+                id="client-added-exercises-link"
+                aria-expanded="false"
+                aria-controls="client-added-exercise-review"
+              >
+                <span>
+                  <small>Coach review</small>
+                  <strong>Client-added exercises</strong>
+                </span>
+                <span class="client-added-exercises-link-count" id="client-added-exercise-pending-count">—</span>
+              </button>
+
+              <section class="client-added-exercise-review" id="client-added-exercise-review" aria-labelledby="client-added-exercise-review-title" hidden>
+                <div class="client-added-exercise-review-heading">
+                  <div>
+                    <p class="kicker">All clients</p>
+                    <h3 id="client-added-exercise-review-title">Client-added exercises</h3>
+                    <p>Review custom workout exercises and promote approved names into the shared library.</p>
+                  </div>
+                  <button type="button" aria-label="Close client-added exercise review" data-close-client-added-exercises>×</button>
+                </div>
+                <label class="client-added-exercise-search">
+                  Search client-added exercises
+                  <input type="search" id="client-added-exercise-search" placeholder="Exercise or client..." autocomplete="off" />
+                </label>
+                <p class="client-added-exercise-status" id="client-added-exercise-status" role="status">Open this list to load client exercises.</p>
+                <div class="client-added-exercise-list" id="client-added-exercise-list" aria-live="polite">
+                  <p class="exercise-library-empty">Client-added exercises will appear here.</p>
+                </div>
+              </section>
+
               <div class="exercise-library-view-tabs" role="tablist" aria-label="Exercise library views">
                 <button class="is-selected" type="button" role="tab" aria-selected="true" aria-controls="exercise-library-list" data-exercise-library-view="cards">
                   Exercise cards
@@ -1120,6 +1153,6 @@
   <script src="js/apple-workout.js?v=3"></script>
   <script src="js/apple-health-sync.js?v=1"></script>
   <script src="js/workout-progression.js?v=1"></script>
-  <script src="js/coach-admin.js?v=client-view-shortcut-1&amp;remember-login=1&amp;home-shortcuts=1&amp;apple-workout=1&amp;viewport-dock=1&amp;apple-health=1&amp;recovery-catalog=1&amp;messages=2&amp;progression=1&amp;invitations=2&amp;exercise-images=1&amp;exercise-cards=1&amp;videos-tab=3"></script>
+  <script src="js/coach-admin.js?v=client-view-shortcut-1&amp;remember-login=1&amp;home-shortcuts=1&amp;apple-workout=1&amp;viewport-dock=1&amp;apple-health=1&amp;recovery-catalog=1&amp;messages=2&amp;progression=1&amp;invitations=2&amp;exercise-images=1&amp;exercise-cards=1&amp;videos-tab=3&amp;client-added=1"></script>
 </body>
 </html>
