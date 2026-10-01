@@ -106,6 +106,18 @@ test("client uses the uploaded library demo for existing workouts and rejects un
   }
 });
 
+test("client prefers approved motion media over a later YouTube catalog link", () => {
+  const resolve = Function("window", "approvedExerciseForName", "youtubeExerciseSearchUrl", `
+    ${sourceFunction(portal, "uploadedExerciseDemoUrl")}
+    ${sourceFunction(portal, "exerciseVideoUrl")}
+    return exerciseVideoUrl;
+  `)({ FWB_SUPABASE_CONFIG: { url: projectUrl } }, () => ({
+    motion_url: demoUrl,
+    demo_url: "https://youtu.be/legacy",
+  }), () => "https://youtube.com/results?search_query=demo");
+  assert.equal(resolve({ name: "Bulgarian Split Squat", video: "https://youtu.be/saved" }), demoUrl);
+});
+
 test("coach workout editor retains an uploaded video URL", () => {
   const resolve = Function("window", `
     ${sourceFunction(admin, "uploadedExerciseDemoUrl")}

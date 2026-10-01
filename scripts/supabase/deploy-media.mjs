@@ -197,6 +197,12 @@ async function fetchExercise(baseUrl, secretKey, name) {
 }
 
 async function verifyExerciseMedia(baseUrl, secretKey, nasmExerciseCatalog) {
+  const explicitDemoOverrides = new Set(
+    manifest.exerciseMedia
+      .filter((expected) => expected.demoUrl)
+      .map((expected) => expected.name.toLocaleLowerCase("en-US")),
+  );
+
   for (const expected of manifest.exerciseMedia) {
     const row = await fetchExercise(baseUrl, secretKey, expected.name);
     if (expected.imageUrl) assert(row.image_url === expected.imageUrl, `${expected.name} image_url mismatch.`);
@@ -206,6 +212,7 @@ async function verifyExerciseMedia(baseUrl, secretKey, nasmExerciseCatalog) {
   }
 
   for (const expected of nasmExerciseCatalog) {
+    if (explicitDemoOverrides.has(expected.name.toLocaleLowerCase("en-US"))) continue;
     const row = await fetchExercise(baseUrl, secretKey, expected.name);
     assert(row.demo_url === expected.demoUrl, `${expected.name} NASM demo_url mismatch.`);
     console.log(`verified NASM exercise: ${expected.name}`);

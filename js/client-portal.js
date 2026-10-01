@@ -2663,9 +2663,10 @@ function openExerciseMedia(button) {
 
 function exerciseVideoUrl(exercise) {
   const approvedExercise = approvedExerciseForName(exercise.name);
-  // A newly uploaded library demo also applies to existing workout plans,
-  // which can already contain a generated YouTube search link.
-  const libraryUpload = uploadedExerciseDemoUrl(approvedExercise?.demo_url);
+  // Approved uploaded motion media wins over legacy YouTube fields in saved
+  // workouts and later catalog imports.
+  const libraryUpload = uploadedExerciseDemoUrl(approvedExercise?.motion_url)
+    || uploadedExerciseDemoUrl(approvedExercise?.demo_url);
   if (libraryUpload) return libraryUpload;
   let rawUrl = String(
     exercise.video ||

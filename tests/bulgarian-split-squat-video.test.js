@@ -10,6 +10,13 @@ const migration = fs.readFileSync(
   ),
   "utf8",
 );
+const demoMigration = fs.readFileSync(
+  path.join(
+    __dirname,
+    "../supabase/migrations/20261001040539_prefer_uploaded_exercise_demos.sql",
+  ),
+  "utf8",
+);
 
 test("one uploaded video is assigned to all three Bulgarian split-squat variants", () => {
   assert.match(migration, /'Bulgarian Split Squat'/);
@@ -33,4 +40,10 @@ test("replacement migration assigns the supplied upright-row and incline-curl vi
   assert.match(migration, /'Incline Dumbbell Curl'/);
   assert.match(migration, /generated\/2026-09-30\/upright-row[.]mp4/);
   assert.match(migration, /generated\/2026-09-30\/incline-dumbbell-curl[.]mp4/);
+});
+
+test("later catalog imports cannot leave Bulgarian split squat on YouTube", () => {
+  assert.match(demoMigration, /demo_url\s*=\s*'[^']*generated\/2026-09-30\/bulgarian-split-squat[.]mp4'/i);
+  assert.match(demoMigration, /motion_url\s*=\s*'[^']*generated\/2026-09-30\/bulgarian-split-squat[.]mp4'/i);
+  assert.doesNotMatch(demoMigration, /youtu(?:be[.]com|[.]be)/i);
 });

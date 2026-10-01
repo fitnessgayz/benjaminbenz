@@ -10,7 +10,8 @@
     "20261001021758_add_nasm_dynamic_flexibility_cards.sql",
     "20261001025452_replace_exercise_videos.sql",
     "20261001031354_link_nasm_exercise_videos.sql",
-    "20261001032427_add_complete_nasm_exercise_library.sql"
+    "20261001032427_add_complete_nasm_exercise_library.sql",
+    "20261001040539_prefer_uploaded_exercise_demos.sql"
   ],
   "nasmExerciseCatalogMigration": "20261001032427_add_complete_nasm_exercise_library.sql",
   "nasmExerciseCatalogCount": 75,
@@ -845,15 +846,17 @@
     {
       "name": "Bulgarian Split Squat",
       "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-videos/generated/2026-09-30/bulgarian-split-squat.mp4",
-      "demoUrl": "https://www.youtube.com/watch?v=hbw7hdyOpq0"
+      "demoUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-videos/generated/2026-09-30/bulgarian-split-squat.mp4"
     },
     {
       "name": "One Dumbbell Bulgarian Split Squat",
-      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-videos/generated/2026-09-30/bulgarian-split-squat.mp4"
+      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-videos/generated/2026-09-30/bulgarian-split-squat.mp4",
+      "demoUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-videos/generated/2026-09-30/bulgarian-split-squat.mp4"
     },
     {
       "name": "Two Dumbbell Bulgarian Split Squat",
-      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-videos/generated/2026-09-30/bulgarian-split-squat.mp4"
+      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-videos/generated/2026-09-30/bulgarian-split-squat.mp4",
+      "demoUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-videos/generated/2026-09-30/bulgarian-split-squat.mp4"
     },
     {
       "name": "Chest-Supported Dumbbell Wide Row",
