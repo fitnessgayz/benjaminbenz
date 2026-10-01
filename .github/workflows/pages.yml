@@ -13,7 +13,9 @@ permissions:
 
 concurrency:
   group: pages
-  cancel-in-progress: false
+  # Static site releases are snapshots: when main advances, deploy the newest
+  # snapshot instead of letting an older environment-waiting run block it.
+  cancel-in-progress: true
 
 jobs:
   deploy:
