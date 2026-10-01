@@ -199,7 +199,11 @@ struct ClientRootView: View {
         case .today:
             ClientDashboardView(store: programStore, notificationStore: notificationStore, account: account)
         case .workouts:
-            WorkoutLibraryView(store: programStore, clientEmail: account.email)
+            WorkoutLibraryView(
+                store: programStore,
+                notificationStore: notificationStore,
+                clientEmail: account.email
+            )
         case .logs:
             WorkoutHistoryView(clientEmail: account.email)
         case .progress:

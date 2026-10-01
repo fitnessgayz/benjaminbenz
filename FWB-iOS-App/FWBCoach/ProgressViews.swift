@@ -75,37 +75,62 @@ private struct ProgressDashboardContent: View {
     }
 
     var body: some View {
-        ScrollView {
-            LazyVStack(alignment: .leading, spacing: 16) {
-                ProgressHero()
-                ProgressOverviewGrid(snapshot: snapshot)
-                PersonalRecordsSection(records: snapshot.exerciseRecords)
-                ExerciseProgressSection(records: snapshot.exerciseRecords)
-                TrainingVolumeCard(points: snapshot.volumePoints)
-                ProgressSharePanel(summary: shareSummary)
-                AchievementSection(achievements: snapshot.achievements)
+        ScrollViewReader { proxy in
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 16) {
+                    ProgressHero {
+                        withAnimation(.easeInOut(duration: 0.28)) {
+                            proxy.scrollTo("progress.badges", anchor: .top)
+                        }
+                    }
+                    ProgressOverviewGrid(snapshot: snapshot)
+                    PersonalRecordsSection(records: snapshot.exerciseRecords)
+                    ExerciseProgressSection(records: snapshot.exerciseRecords)
+                    TrainingVolumeCard(points: snapshot.volumePoints)
+                    ProgressSharePanel(summary: shareSummary)
+                    AchievementSection(achievements: snapshot.achievements)
+                        .id("progress.badges")
+                }
+                .padding(16)
             }
-            .padding(16)
         }
     }
 }
 
 private struct ProgressHero: View {
+    let onShowBadges: () -> Void
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Client dashboard")
-                .font(FWBFont.caption.weight(.semibold))
-                .foregroundStyle(Color.fwbMuted)
+        HStack(alignment: .top, spacing: 14) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Client dashboard")
+                    .font(FWBFont.caption.weight(.semibold))
+                    .foregroundStyle(Color.fwbMuted)
 
-            Text("Progress")
-                .font(FWBFont.title.weight(.bold))
-                .tracking(-0.6)
-                .foregroundStyle(Color.fwbWarmWhite)
-                .fixedSize(horizontal: false, vertical: true)
+                Text("Progress")
+                    .font(FWBFont.title.weight(.bold))
+                    .tracking(-0.6)
+                    .foregroundStyle(Color.fwbWarmWhite)
+                    .fixedSize(horizontal: false, vertical: true)
 
-            Text("Your training, personal bests, and progress over time.")
-                .font(FWBFont.subheadline)
-                .foregroundStyle(Color.fwbMuted)
+                Text("Your training, personal bests, and progress over time.")
+                    .font(FWBFont.subheadline)
+                    .foregroundStyle(Color.fwbMuted)
+            }
+
+            Spacer(minLength: 0)
+
+            Button(action: onShowBadges) {
+                Label("Badges", systemImage: "trophy.fill")
+                    .font(FWBFont.footnote.weight(.bold))
+                    .foregroundStyle(Color.black)
+                    .padding(.horizontal, 12)
+                    .frame(minHeight: 42)
+                    .background(Color.fwbAccentFill, in: Capsule())
+            }
+            .buttonStyle(.plain)
+            .accessibilityHint("Jump to your achievement badges")
+            .accessibilityIdentifier("progress.badges")
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }

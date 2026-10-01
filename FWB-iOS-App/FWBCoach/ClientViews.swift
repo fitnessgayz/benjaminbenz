@@ -340,6 +340,7 @@ struct WorkoutLibraryView: View {
     @State private var programSelected = false
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @ObservedObject var store: ClientProgramStore
+    @ObservedObject var notificationStore: NotificationInboxStore
     let clientEmail: String
 
     private static let customWorkout = Workout(
@@ -379,18 +380,11 @@ struct WorkoutLibraryView: View {
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 NavigationLink {
-                    WorkoutHistoryView(clientEmail: clientEmail)
+                    NotificationInboxView(store: notificationStore)
                 } label: {
-                    HStack(spacing: 6) {
-                        Text("Logs")
-                            .font(FWBFont.footnote.bold())
-                        Image(systemName: "list.bullet.clipboard")
-                            .font(FWBFont.subheadline.weight(.bold))
-                    }
-                    .foregroundStyle(Color.fwbLime)
+                    MessageInboxBadge(unreadCount: notificationStore.unreadCount)
                 }
-                .accessibilityLabel("Workout history and log")
-                .accessibilityIdentifier("workout.history")
+                .accessibilityIdentifier("workout.messages")
             }
         }
         .refreshable {
@@ -583,6 +577,38 @@ struct WorkoutLibraryView: View {
             .buttonStyle(.plain)
             .accessibilityIdentifier("workout.quickStart.mobility")
         }
+    }
+}
+
+private struct MessageInboxBadge: View {
+    let unreadCount: Int
+
+    var body: some View {
+        ZStack(alignment: .topTrailing) {
+            Image(systemName: unreadCount > 0 ? "message.fill" : "message")
+                .font(FWBFont.body.weight(.bold))
+                .foregroundStyle(Color.fwbLime)
+                .frame(width: 38, height: 38)
+
+            if unreadCount > 0 {
+                Text(unreadCount > 99 ? "99+" : String(unreadCount))
+                    .font(.system(size: 9, weight: .black, design: .rounded))
+                    .foregroundStyle(Color.black)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+                    .frame(minWidth: 17, minHeight: 17)
+                    .padding(.horizontal, unreadCount > 9 ? 2 : 0)
+                    .background(Color.fwbAccentFill, in: Capsule())
+                    .overlay { Capsule().stroke(Color.fwbBackground, lineWidth: 2) }
+                    .offset(x: 5, y: -3)
+                    .accessibilityHidden(true)
+            }
+        }
+        .accessibilityLabel(
+            unreadCount == 0
+                ? "Messages, no unread updates"
+                : "Messages, \(unreadCount) unread"
+        )
     }
 }
 
