@@ -10985,6 +10985,192 @@ textarea:focus {
   background: #202420;
 }
 
+.client-added-exercises-link {
+  display: flex;
+  width: 100%;
+  min-height: 58px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin: 0 0 12px;
+  padding: 10px 12px 10px 15px;
+  border: 1px solid #cfd5cc;
+  border-left: 5px solid var(--lime);
+  border-radius: 10px;
+  color: var(--ink);
+  background: #fff;
+  text-align: left;
+  cursor: pointer;
+}
+
+.client-added-exercises-link:hover,
+.client-added-exercises-link[aria-expanded="true"] {
+  border-color: #9cc80e;
+  background: #f7fce9;
+}
+
+.client-added-exercises-link > span:first-child {
+  display: grid;
+  gap: 2px;
+}
+
+.client-added-exercises-link small {
+  color: #697067;
+  font-size: .62rem;
+  font-weight: 900;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+.client-added-exercises-link strong {
+  font-size: .9rem;
+}
+
+.client-added-exercises-link-count {
+  display: grid;
+  min-width: 34px;
+  height: 34px;
+  padding: 0 8px;
+  place-items: center;
+  border-radius: 999px;
+  color: #0b0d0a;
+  background: var(--lime);
+  font-size: .78rem;
+  font-weight: 950;
+}
+
+.client-added-exercise-review {
+  margin: 0 0 16px;
+  padding: 14px;
+  border: 1px solid #cfd5cc;
+  border-radius: 12px;
+  background: #f8faf6;
+  box-shadow: 0 10px 24px rgba(30, 37, 28, .08);
+}
+
+.client-added-exercise-review[hidden] {
+  display: none;
+}
+
+.client-added-exercise-review-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.client-added-exercise-review-heading h3,
+.client-added-exercise-review-heading p {
+  margin: 0;
+}
+
+.client-added-exercise-review-heading p:not(.kicker) {
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: .8rem;
+  line-height: 1.4;
+}
+
+.client-added-exercise-review-heading > button {
+  display: grid;
+  flex: 0 0 auto;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border: 1px solid #cfd5cc;
+  border-radius: 50%;
+  color: #2d332c;
+  background: #fff;
+  font-size: 1.25rem;
+  cursor: pointer;
+}
+
+.client-added-exercise-search {
+  display: grid;
+  gap: 7px;
+  margin-top: 14px;
+  font-size: .78rem;
+  font-weight: 850;
+}
+
+.client-added-exercise-search input {
+  width: 100%;
+  min-height: 44px;
+}
+
+.client-added-exercise-status {
+  margin: 12px 0 8px;
+  color: var(--muted);
+  font-size: .72rem;
+  font-weight: 800;
+}
+
+.client-added-exercise-list {
+  display: grid;
+  max-height: 430px;
+  overflow-y: auto;
+  border-top: 1px solid #d9ded6;
+}
+
+.client-added-exercise-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid #d9ded6;
+}
+
+.client-added-exercise-row > div {
+  min-width: 0;
+}
+
+.client-added-exercise-row-heading {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+}
+
+.client-added-exercise-row-heading strong {
+  overflow-wrap: anywhere;
+}
+
+.client-added-exercise-row-heading small {
+  flex: 0 0 auto;
+  padding: 4px 7px;
+  border-radius: 999px;
+  font-size: .58rem;
+  font-weight: 900;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.client-added-exercise-row-heading small.is-pending {
+  color: #111;
+  background: var(--lime);
+}
+
+.client-added-exercise-row-heading small.is-shared {
+  color: #174824;
+  background: #e8f5e5;
+}
+
+.client-added-exercise-row p {
+  margin: 5px 0 0;
+  overflow-wrap: anywhere;
+  color: var(--muted);
+  font-size: .7rem;
+  line-height: 1.4;
+}
+
+.client-added-exercise-row .button {
+  min-height: 38px;
+  padding: 8px 10px;
+  font-size: .7rem;
+  white-space: nowrap;
+}
+
 .exercise-library-view-tabs button {
   display: inline-flex;
   align-items: center;
@@ -11512,6 +11698,14 @@ textarea:focus {
 
   .exercise-library-card-media {
     min-height: 198px;
+  }
+
+  .client-added-exercise-row {
+    grid-template-columns: 1fr;
+  }
+
+  .client-added-exercise-row .button {
+    width: 100%;
   }
 
   .exercise-library-name-field,
