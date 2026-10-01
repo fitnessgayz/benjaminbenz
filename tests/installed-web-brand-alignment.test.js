@@ -34,6 +34,7 @@ test("auth, support, and privacy surfaces preserve install-to-launch identity", 
     "coach-login.html",
     "coach-admin.html",
     "coach-workout-log.html",
+    "coach-exercise-library.html",
     "fwb-coach-support.html",
     "fwb-coach-privacy.html",
   ];

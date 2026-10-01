@@ -30,6 +30,11 @@
       "name": "Log a workout",
       "short_name": "Workout log",
       "url": "/coach-workout-log.html"
+    },
+    {
+      "name": "Exercise library",
+      "short_name": "Exercises",
+      "url": "/coach-exercise-library.html"
     }
   ],
   "icons": [

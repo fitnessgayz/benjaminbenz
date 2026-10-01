@@ -226,9 +226,9 @@ function sendToCoachLogin({ preserveInbox = false } = {}) {
   const workspace = document.getElementById("coach-admin-workspace");
   if (workspace) workspace.hidden = true;
   syncCoachAdminMobileNavigationMount();
-  const returnTo = preserveInbox && requestedCoachAdminTab() === "inbox"
-    ? "/coach-admin.html?tab=inbox"
-    : "";
+  const returnTo = document.querySelector(".coach-exercise-library-page")
+    ? "/coach-exercise-library.html"
+    : (preserveInbox && requestedCoachAdminTab() === "inbox" ? "/coach-admin.html?tab=inbox" : "");
   window.location.href = returnTo
     ? `${coachLoginUrl}${coachLoginUrl.includes("?") ? "&" : "?"}return_to=${encodeURIComponent(returnTo)}`
     : coachLoginUrl;
@@ -236,6 +236,13 @@ function sendToCoachLogin({ preserveInbox = false } = {}) {
 
 function showCoachAccessError() {
   let status = document.getElementById("coach-access-status");
+
+  const exerciseLibraryStatus = document.getElementById("coach-exercise-library-access-status");
+  if (exerciseLibraryStatus) {
+    exerciseLibraryStatus.textContent = "We couldn't confirm your sign-in. Check your connection and refresh this page to try again.";
+    exerciseLibraryStatus.hidden = false;
+    return;
+  }
 
   if (!status) {
     const workspace = document.getElementById("coach-admin-workspace");
@@ -7750,3 +7757,89 @@ async function bootCoachAdmin() {
 }
 
 bootCoachAdmin();
+
+function renderStandaloneExerciseLibraryClients() {
+  const select = document.getElementById("exercise-library-client-select");
+  if (!select) return;
+
+  const clients = activeClientPrograms();
+  const options = clients.map((program) => new Option(
+    `${program.client_name || "Client"} — ${program.client_email}`,
+    program.id
+  ));
+
+  select.replaceChildren(new Option("Choose a client", ""), ...options);
+  select.value = selectedProgramId;
+}
+
+async function loadStandaloneExerciseLibraryClients() {
+  const { data, error } = await coachSupabase
+    .from("client_programs")
+    .select("*")
+    .order("client_name", { ascending: true });
+
+  if (error) throw error;
+
+  programs = data || [];
+  const clients = activeClientPrograms();
+  const requestedClientId = new URLSearchParams(window.location.search).get("client");
+  selectedProgramId = clients.some((program) => program.id === requestedClientId)
+    ? requestedClientId
+    : (clients[0]?.id || "");
+  renderStandaloneExerciseLibraryClients();
+  await loadClientCustomExerciseNames(selectedProgram()?.client_email);
+}
+
+function handleStandaloneExerciseLibraryClientSelect() {
+  const select = document.getElementById("exercise-library-client-select");
+  if (!select) return;
+
+  select.addEventListener("change", async () => {
+    selectedProgramId = select.value;
+    await loadClientCustomExerciseNames(selectedProgram()?.client_email);
+  });
+}
+
+async function bootCoachExerciseLibrary() {
+  if (!document.querySelector(".coach-exercise-library-page")) return;
+
+  const workspace = document.getElementById("coach-exercise-library-workspace");
+  const accessStatus = document.getElementById("coach-exercise-library-access-status");
+  const signOutButton = document.querySelector("[data-coach-sign-out]");
+
+  handleExerciseLibraryEditor();
+  handleClientExerciseNameManager();
+  handleAllClientAddedExercises();
+  handleStandaloneExerciseLibraryClientSelect();
+  handleCoachSignOut();
+
+  if (!coachSupabase) {
+    sendToCoachLogin();
+    return;
+  }
+
+  const user = await restoreCoachAdminUser();
+  if (!user) return;
+
+  if (!isCoachEmail(user.email)) {
+    await coachSupabase.auth.signOut();
+    sendToCoachLogin();
+    return;
+  }
+
+  try {
+    await loadExerciseLibrary();
+    await loadStandaloneExerciseLibraryClients();
+    await loadAllClientAddedExercises();
+    if (workspace) workspace.hidden = false;
+    if (accessStatus) accessStatus.hidden = true;
+    if (signOutButton) signOutButton.hidden = false;
+  } catch (error) {
+    if (accessStatus) {
+      accessStatus.textContent = error?.message || "The exercise library could not be loaded.";
+      accessStatus.classList.add("is-error");
+    }
+  }
+}
+
+bootCoachExerciseLibrary();

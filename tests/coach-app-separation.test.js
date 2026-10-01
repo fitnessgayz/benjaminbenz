@@ -8,6 +8,7 @@ const coachLogin = fs.readFileSync(path.join(root, "coach-login.html"), "utf8");
 const clientLogin = fs.readFileSync(path.join(root, "client-login.html"), "utf8");
 const coachAdmin = fs.readFileSync(path.join(root, "coach-admin.html"), "utf8");
 const coachWorkout = fs.readFileSync(path.join(root, "coach-workout-log.html"), "utf8");
+const coachExerciseLibrary = fs.readFileSync(path.join(root, "coach-exercise-library.html"), "utf8");
 const coachManifest = JSON.parse(fs.readFileSync(path.join(root, "coach.webmanifest"), "utf8"));
 const clientManifest = JSON.parse(fs.readFileSync(path.join(root, "client.webmanifest"), "utf8"));
 const adminScript = fs.readFileSync(path.join(root, "js/coach-admin.js"), "utf8");
@@ -30,7 +31,7 @@ test("coach app has a distinct install identity and coach entry point", () => {
 });
 
 test("every coach surface stays inside the coach app install identity", () => {
-  for (const html of [coachAdmin, coachWorkout]) {
+  for (const html of [coachAdmin, coachWorkout, coachExerciseLibrary]) {
     assert.match(html, /rel="manifest" href="\/coach\.webmanifest"/);
     assert.match(html, /apple-mobile-web-app-title" content="FWB Coach"/);
   }

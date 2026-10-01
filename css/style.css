@@ -11,6 +11,70 @@
   --max: 1320px;
 }
 
+/* Standalone coach exercise library. Kept outside the client/program editor so
+   the catalog has the same focused workspace model as the workout logger. */
+.coach-exercise-library-page .coach-exercise-library-shell {
+  width: min(1440px, calc(100% - 48px));
+  margin-inline: auto;
+}
+
+.coach-exercise-library-hero {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.coach-exercise-library-hero > div {
+  min-width: 0;
+}
+
+.coach-exercise-library-hero h1 {
+  max-width: 900px;
+}
+
+.coach-exercise-library-hero .button {
+  flex: 0 0 auto;
+}
+
+.coach-exercise-library-page .exercise-library-panel {
+  display: block;
+  min-width: 0;
+  overflow: clip;
+}
+
+.coach-exercise-library-page .exercise-library-panel[hidden] {
+  display: none;
+}
+
+.coach-exercise-library-access-status.is-error {
+  border-color: #b42318;
+  color: #b42318;
+}
+
+.exercise-library-client-selector {
+  display: grid;
+  gap: 8px;
+  max-width: 520px;
+  margin: 18px 0 22px;
+  font-weight: 800;
+}
+
+@media (max-width: 760px) {
+  .coach-exercise-library-page .coach-exercise-library-shell {
+    width: min(100% - 24px, 1440px);
+  }
+
+  .coach-exercise-library-hero {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .coach-exercise-library-hero .button {
+    width: 100%;
+  }
+}
+
 /* Unified workout logger: editable set label, RIR picker, and completion control. */
 .set-header,
 .set-row {
