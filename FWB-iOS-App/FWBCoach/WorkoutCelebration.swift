@@ -563,18 +563,20 @@ struct WorkoutDifficultyPromptView: View {
                         }
                     }
 
-                    Button("SAVE FEEDBACK & FINISH") {
-                        complete(with: selection?.rawValue)
-                    }
-                    .buttonStyle(FWBPrimaryButtonStyle())
-                    .disabled(selection == nil)
-                    .accessibilityIdentifier("workout.difficulty.save")
+                    HStack(spacing: 10) {
+                        Button("SKIP") {
+                            complete(with: nil)
+                        }
+                        .buttonStyle(FWBSecondaryButtonStyle())
+                        .accessibilityIdentifier("workout.difficulty.skip")
 
-                    Button("SKIP FEEDBACK") {
-                        complete(with: nil)
+                        Button("SAVE") {
+                            complete(with: selection?.rawValue)
+                        }
+                        .buttonStyle(FWBPrimaryButtonStyle())
+                        .disabled(selection == nil)
+                        .accessibilityIdentifier("workout.difficulty.save")
                     }
-                    .buttonStyle(FWBSecondaryButtonStyle())
-                    .accessibilityIdentifier("workout.difficulty.skip")
                 }
                 .padding(20)
                 .padding(.bottom, 24)
@@ -600,10 +602,14 @@ struct WorkoutDifficultyPromptView: View {
 
 struct WorkoutCelebrationView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let celebration: WorkoutCelebration
     var onContinue: () -> Void = {}
 
     @State private var isAnimated = false
+    @State private var animatedWeeklyProgress = 0.0
+    @State private var isGoalCelebrated = false
+    @State private var revealedAchievementIDs: Set<String> = []
 
     var body: some View {
         ZStack {
@@ -633,11 +639,9 @@ struct WorkoutCelebrationView: View {
             }
         }
         .interactiveDismissDisabled()
-        .onAppear {
-            withAnimation(.spring(response: 0.55, dampingFraction: 0.72)) {
-                isAnimated = true
-            }
+        .task {
             UIAccessibility.post(notification: .announcement, argument: celebration.headline)
+            await runCelebrationAnimation()
         }
     }
 
@@ -729,9 +733,20 @@ struct WorkoutCelebrationView: View {
                         .foregroundStyle(Color.fwbWarmWhite)
                 }
                 Spacer()
-                Text("\(min(celebration.weeklyCompleted, celebration.weeklyGoal))/\(celebration.weeklyGoal)")
-                    .font(.title2.weight(.black))
-                    .foregroundStyle(Color.fwbLime)
+                HStack(spacing: 8) {
+                    if didMeetWeeklyGoal {
+                        Image(systemName: "checkmark.seal.fill")
+                            .font(.title2.weight(.black))
+                            .foregroundStyle(Color.fwbLime)
+                            .scaleEffect(isGoalCelebrated ? 1 : 0.55)
+                            .rotationEffect(.degrees(isGoalCelebrated ? 0 : -18))
+                            .opacity(isGoalCelebrated ? 1 : 0)
+                    }
+
+                    Text("\(min(celebration.weeklyCompleted, celebration.weeklyGoal))/\(celebration.weeklyGoal)")
+                        .font(.title2.weight(.black))
+                        .foregroundStyle(Color.fwbLime)
+                }
             }
 
             GeometryReader { geometry in
@@ -739,12 +754,7 @@ struct WorkoutCelebrationView: View {
                     Rectangle().fill(Color.fwbSurface)
                     Rectangle()
                         .fill(Color.fwbAccentFill)
-                        .frame(
-                            width: geometry.size.width * min(
-                                Double(celebration.weeklyCompleted) / Double(celebration.weeklyGoal),
-                                1
-                            )
-                        )
+                        .frame(width: geometry.size.width * animatedWeeklyProgress)
                 }
             }
             .frame(height: 8)
@@ -781,7 +791,58 @@ struct WorkoutCelebrationView: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .fwbCard()
+                .scaleEffect(revealedAchievementIDs.contains(achievement.id) ? 1 : 0.9)
+                .offset(y: revealedAchievementIDs.contains(achievement.id) ? 0 : 14)
+                .opacity(revealedAchievementIDs.contains(achievement.id) ? 1 : 0)
                 .accessibilityElement(children: .combine)
+            }
+        }
+    }
+
+    private var weeklyProgress: Double {
+        min(
+            Double(celebration.weeklyCompleted) / Double(max(celebration.weeklyGoal, 1)),
+            1
+        )
+    }
+
+    private var didMeetWeeklyGoal: Bool {
+        celebration.weeklyCompleted >= max(celebration.weeklyGoal, 1)
+    }
+
+    @MainActor
+    private func runCelebrationAnimation() async {
+        if reduceMotion {
+            isAnimated = true
+            animatedWeeklyProgress = weeklyProgress
+            isGoalCelebrated = didMeetWeeklyGoal
+            revealedAchievementIDs = Set(celebration.achievements.map(\.id))
+            return
+        }
+
+        withAnimation(.spring(response: 0.55, dampingFraction: 0.72)) {
+            isAnimated = true
+        }
+
+        try? await Task.sleep(nanoseconds: 180_000_000)
+        guard !Task.isCancelled else { return }
+        withAnimation(.easeOut(duration: 0.7)) {
+            animatedWeeklyProgress = weeklyProgress
+        }
+
+        if didMeetWeeklyGoal {
+            try? await Task.sleep(nanoseconds: 350_000_000)
+            guard !Task.isCancelled else { return }
+            withAnimation(.spring(response: 0.42, dampingFraction: 0.62)) {
+                isGoalCelebrated = true
+            }
+        }
+
+        for achievement in celebration.achievements {
+            try? await Task.sleep(nanoseconds: 140_000_000)
+            guard !Task.isCancelled else { return }
+            withAnimation(.spring(response: 0.44, dampingFraction: 0.7)) {
+                _ = revealedAchievementIDs.insert(achievement.id)
             }
         }
     }

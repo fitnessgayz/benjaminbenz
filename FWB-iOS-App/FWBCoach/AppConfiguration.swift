@@ -32,6 +32,20 @@ enum AppConfiguration {
     }
 }
 
+enum AuthSessionPreference {
+    static let keepSignedInKey = "auth.keepSignedIn"
+
+    static var keepSignedIn: Bool {
+        get {
+            guard UserDefaults.standard.object(forKey: keepSignedInKey) != nil else { return true }
+            return UserDefaults.standard.bool(forKey: keepSignedInKey)
+        }
+        set {
+            UserDefaults.standard.set(newValue, forKey: keepSignedInKey)
+        }
+    }
+}
+
 #if targetEnvironment(simulator)
 private struct SimulatorAuthStorage: AuthLocalStorage {
     private func namespaced(_ key: String) -> String {

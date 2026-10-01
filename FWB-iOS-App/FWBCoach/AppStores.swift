@@ -32,6 +32,12 @@ final class SessionStore: ObservableObject {
         guard !didRestore else { return }
         didRestore = true
 
+        guard AuthSessionPreference.keepSignedIn else {
+            try? await client.auth.signOut(scope: .local)
+            state = .signedOut
+            return
+        }
+
         do {
             let session = try await client.auth.session
             apply(session: session)
@@ -51,7 +57,7 @@ final class SessionStore: ObservableObject {
         }
     }
 
-    func signIn(email: String, password: String) async {
+    func signIn(email: String, password: String, keepSignedIn: Bool = true) async {
         let normalizedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         guard !normalizedEmail.isEmpty, !password.isEmpty else {
             message = "Enter your email and password."
@@ -60,6 +66,7 @@ final class SessionStore: ObservableObject {
 
         isSubmitting = true
         message = nil
+        AuthSessionPreference.keepSignedIn = keepSignedIn
 
         do {
             let session = try await client.auth.signIn(email: normalizedEmail, password: password)

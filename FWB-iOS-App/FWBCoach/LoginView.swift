@@ -7,6 +7,7 @@ struct LoginView: View {
     }
 
     @ObservedObject var sessionStore: SessionStore
+    @AppStorage(AuthSessionPreference.keepSignedInKey) private var keepSignedIn = true
     @State private var email = ""
     @State private var password = ""
     @FocusState private var focusedField: Field?
@@ -89,6 +90,19 @@ struct LoginView: View {
             }
             .textFieldStyle(FWBTextFieldStyle())
 
+            Toggle(isOn: $keepSignedIn) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Keep me signed in")
+                        .font(FWBFont.subheadline.weight(.bold))
+                        .foregroundStyle(Color.fwbWarmWhite)
+                    Text("Use this on your personal device.")
+                        .font(FWBFont.caption2)
+                        .foregroundStyle(Color.fwbMuted)
+                }
+            }
+            .tint(Color.fwbLime)
+            .accessibilityIdentifier("login.keepSignedIn")
+
             if let message = sessionStore.message {
                 Text(message)
                     .font(FWBFont.footnote)
@@ -142,7 +156,13 @@ struct LoginView: View {
 
     private func signIn() {
         focusedField = nil
-        Task { await sessionStore.signIn(email: email, password: password) }
+        Task {
+            await sessionStore.signIn(
+                email: email,
+                password: password,
+                keepSignedIn: keepSignedIn
+            )
+        }
     }
 }
 

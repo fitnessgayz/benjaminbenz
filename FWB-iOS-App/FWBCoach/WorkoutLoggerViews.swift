@@ -268,6 +268,7 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
     @State private var completionCelebration: WorkoutCelebration?
     @State private var historyCopyPrompt: WorkoutHistoryCopyPromptRequest?
     @State private var pendingHistoryCopyExerciseID: String?
+    @State private var navigationTargetExerciseID: String?
     @FocusState private var focusedField: WorkoutLogFocus?
 
     init(
@@ -394,6 +395,7 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
                             .filter { $0.setType == .timed }
                             .reduce(0) { $0 + $1.durationValue }
                     )
+                    .id("workout.summary")
 
                     statusMessage
 
@@ -833,6 +835,7 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
     private func exerciseCard(for exercise: Exercise, initiallyExpanded: Bool? = nil, groupedSummary: Bool = false) -> some View {
         let index = exercises.firstIndex(where: { $0.id == exercise.id }) ?? 0
         let step = guidedStep
+        VStack(spacing: 10) {
         WorkoutExerciseLogCard(
             exercise: exercise,
             media: media(for: exercise),
@@ -863,6 +866,7 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
                 ? "Round \(step?.round ?? 1) · exercise \(step?.position ?? 1) of \(step?.exerciseCount ?? 1)"
                 : nil,
             isGuidedCurrent: step?.exerciseID == exercise.id,
+            isNavigationTarget: navigationTargetExerciseID == exercise.id,
             isSavingProgress: isSyncing && activeExerciseSaveID == exercise.id,
             didSaveProgress: lastSavedExerciseID == exercise.id,
             saveProgressDisabled: isSyncing || logStore.state == .loading,
@@ -919,7 +923,55 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
                 )
             }
         )
+            exerciseNavigationButton(after: exercise)
+        }
         .id("workout.exercise.\(exercise.id)")
+    }
+
+    @ViewBuilder
+    private func exerciseNavigationButton(after exercise: Exercise) -> some View {
+        if let index = exercises.firstIndex(where: { $0.id == exercise.id }),
+           exercises.indices.contains(index + 1) {
+            let nextExercise = exercises[index + 1]
+            Button {
+                focusedField = nil
+                navigationTargetExerciseID = nextExercise.id
+                scrollRequest = WorkoutScrollRequest(target: "workout.exercise.\(nextExercise.id)")
+            } label: {
+                HStack(spacing: 12) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("GO TO NEXT EXERCISE")
+                            .font(FWBFont.sized(13).weight(.bold))
+                            .tracking(0.5)
+                        Text(nextExercise.name.isEmpty ? "Exercise \(index + 2)" : nextExercise.name.fwbTitleCased)
+                            .font(FWBFont.sized(11).weight(.medium))
+                            .lineLimit(1)
+                    }
+                    Spacer(minLength: 8)
+                    Image(systemName: "arrow.down")
+                        .font(FWBFont.sized(15).weight(.bold))
+                }
+            }
+            .buttonStyle(FWBPrimaryButtonStyle())
+            .accessibilityLabel("Go to next exercise, \(nextExercise.name.isEmpty ? "Exercise \(index + 2)" : nextExercise.name)")
+            .accessibilityIdentifier("workout.nextExercise.\(exercise.id)")
+        } else {
+            Button {
+                focusedField = nil
+                navigationTargetExerciseID = nil
+                scrollRequest = WorkoutScrollRequest(target: "workout.summary")
+            } label: {
+                HStack(spacing: 12) {
+                    Text("REVIEW & FINISH")
+                        .tracking(0.5)
+                    Spacer(minLength: 8)
+                    Image(systemName: "arrow.down")
+                }
+            }
+            .buttonStyle(FWBSecondaryButtonStyle())
+            .accessibilityLabel("Review workout and finish")
+            .accessibilityIdentifier("workout.reviewAndFinish")
+        }
     }
 
     @ViewBuilder
@@ -3197,6 +3249,7 @@ private struct WorkoutExerciseLogCard: View {
     let copiedDraftIDs: Set<UUID>
     let guidedRoundText: String?
     let isGuidedCurrent: Bool
+    let isNavigationTarget: Bool
     let isSavingProgress: Bool
     let didSaveProgress: Bool
     let saveProgressDisabled: Bool
@@ -3244,6 +3297,7 @@ private struct WorkoutExerciseLogCard: View {
         initiallyExpanded: Bool,
         guidedRoundText: String?,
         isGuidedCurrent: Bool,
+        isNavigationTarget: Bool,
         isSavingProgress: Bool,
         didSaveProgress: Bool,
         saveProgressDisabled: Bool,
@@ -3283,6 +3337,7 @@ private struct WorkoutExerciseLogCard: View {
         self.copiedDraftIDs = copiedDraftIDs
         self.guidedRoundText = guidedRoundText
         self.isGuidedCurrent = isGuidedCurrent
+        self.isNavigationTarget = isNavigationTarget
         self.isSavingProgress = isSavingProgress
         self.didSaveProgress = didSaveProgress
         self.saveProgressDisabled = saveProgressDisabled
@@ -3558,6 +3613,12 @@ private struct WorkoutExerciseLogCard: View {
         }
         .onChange(of: isGuidedCurrent) { isCurrent in
             guard isCurrent, !groupedSummary else { return }
+            withAnimation(.easeOut(duration: 0.18)) {
+                isExpanded = true
+            }
+        }
+        .onChange(of: isNavigationTarget) { isTarget in
+            guard isTarget else { return }
             withAnimation(.easeOut(duration: 0.18)) {
                 isExpanded = true
             }
@@ -4245,6 +4306,7 @@ private struct WorkoutSetActionButtonStyle: ButtonStyle {
 }
 
 private struct WorkoutSetLogRow: View {
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
     @Binding var draft: WorkoutSetDraft
     @FocusState.Binding var focusedField: WorkoutLogFocus?
     let entryStyle: WorkoutEntryStyle
@@ -4261,6 +4323,8 @@ private struct WorkoutSetLogRow: View {
     let onDelete: () -> Void
     @State private var rirRequest: WorkoutRIRRequest?
     @State private var isNoteVisible = false
+    @State private var completionSweepProgress: CGFloat = -0.5
+    @State private var completionCheckScale: CGFloat = 1
 
     var body: some View {
         VStack(alignment: .leading, spacing: 5) {
@@ -4313,6 +4377,7 @@ private struct WorkoutSetLogRow: View {
                     Image(systemName: "checkmark")
                         .font(FWBFont.sized(14).weight(.semibold))
                         .foregroundStyle(draft.isCompleted ? Color.black : Color.fwbMuted)
+                        .scaleEffect(draft.isCompleted ? completionCheckScale : 1)
                         .frame(width: 44, height: 44)
                         .background(draft.isCompleted ? Color.fwbAccentFill : Color.fwbSurface, in: RoundedRectangle(cornerRadius: 9))
                         .overlay { RoundedRectangle(cornerRadius: 9).stroke(Color.fwbLine, lineWidth: 1) }
@@ -4359,6 +4424,34 @@ private struct WorkoutSetLogRow: View {
             }
         }
         .padding(.vertical, 2)
+        .overlay {
+            GeometryReader { proxy in
+                LinearGradient(
+                    colors: [.clear, Color.fwbLime.opacity(0.24), .clear],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+                .frame(width: proxy.size.width * 0.42)
+                .offset(x: proxy.size.width * completionSweepProgress)
+            }
+            .allowsHitTesting(false)
+            .clipped()
+            .opacity(accessibilityReduceMotion ? 0 : 1)
+        }
+        .onChange(of: draft.isCompleted) { isCompleted in
+            guard isCompleted, !accessibilityReduceMotion else { return }
+            completionSweepProgress = -0.5
+            completionCheckScale = 0.82
+            Task { @MainActor in
+                await Task.yield()
+                withAnimation(.easeOut(duration: 0.62)) {
+                    completionSweepProgress = 1.15
+                }
+                withAnimation(.spring(response: 0.32, dampingFraction: 0.58)) {
+                    completionCheckScale = 1
+                }
+            }
+        }
         .sheet(item: $rirRequest) { _ in
             WorkoutRIRSelectionSheet(draft: $draft)
                 .presentationDetents([.medium, .large])
