@@ -82,3 +82,10 @@ test("Session Logger is distinct without looking like the selected admin section
   assert.doesNotMatch(sessionStyle, /background:\s*var\(--lime\)/);
   assert.match(sessionStyle, /border-color:\s*rgba\(215, 255, 63,/);
 });
+
+test("selected client summary reserves readable identity space beside its actions", () => {
+  assert.match(styleSource, /\.selected-client-panel\s*\{[^}]*grid-template-columns:\s*minmax\(280px, \.8fr\) minmax\(420px, 1\.2fr\)[^}]*grid-template-areas:\s*"identity actions"\s*"meta actions"/s);
+  assert.match(styleSource, /\.selected-client-copy\s*\{[^}]*grid-area:\s*identity[^}]*min-width:\s*0/s);
+  assert.match(styleSource, /\.selected-client-copy h2\s*\{[^}]*overflow-wrap:\s*normal[^}]*word-break:\s*normal/s);
+  assert.match(styleSource, /@media \(max-width: 1180px\)[\s\S]*?\.selected-client-panel\s*\{[^}]*grid-template-columns:\s*1fr[^}]*grid-template-areas:\s*"identity"\s*"meta"\s*"actions"/s);
+});

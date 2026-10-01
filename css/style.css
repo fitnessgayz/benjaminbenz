@@ -7651,12 +7651,16 @@ body.is-client-checkin-prompt-open {
 }
 
 .selected-client-panel {
-  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-columns: minmax(280px, .8fr) minmax(420px, 1.2fr);
+  grid-template-areas:
+    "identity actions"
+    "meta actions";
   align-items: center;
   gap: 16px;
 }
 
 .selected-client-copy {
+  grid-area: identity;
   min-width: 0;
 }
 
@@ -7664,6 +7668,8 @@ body.is-client-checkin-prompt-open {
   margin-bottom: 6px;
   font-size: clamp(1.8rem, 3vw, 3rem);
   line-height: 1;
+  overflow-wrap: normal;
+  word-break: normal;
 }
 
 .selected-client-copy p:not(.kicker) {
@@ -7677,8 +7683,17 @@ body.is-client-checkin-prompt-open {
 .selected-client-actions {
   display: flex;
   flex-wrap: wrap;
-  justify-content: flex-end;
   gap: 8px;
+}
+
+.selected-client-meta {
+  grid-area: meta;
+  justify-content: flex-start;
+}
+
+.selected-client-actions {
+  grid-area: actions;
+  justify-content: flex-end;
 }
 
 .selected-client-meta span {
@@ -9347,6 +9362,20 @@ textarea:focus {
 }
 
 @media (max-width: 1180px) {
+  .selected-client-panel {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "identity"
+      "meta"
+      "actions";
+    align-items: stretch;
+  }
+
+  .selected-client-meta,
+  .selected-client-actions {
+    justify-content: flex-start;
+  }
+
   .client-access {
     grid-template-columns: 1fr;
     align-items: start;
@@ -9492,16 +9521,6 @@ textarea:focus {
 
   .admin-client-list {
     position: static;
-  }
-
-  .selected-client-panel {
-    grid-template-columns: 1fr;
-    align-items: stretch;
-  }
-
-  .selected-client-meta,
-  .selected-client-actions {
-    justify-content: flex-start;
   }
 
   .coach-panel,
