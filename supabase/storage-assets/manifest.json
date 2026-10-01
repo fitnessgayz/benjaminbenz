@@ -13,7 +13,14 @@
     "20261001032427_add_complete_nasm_exercise_library.sql",
     "20261001040539_prefer_uploaded_exercise_demos.sql",
     "20261001040950_add_leg_extension_video.sql",
-    "20261001041547_add_seated_dip_video.sql"
+    "20261001041547_add_seated_dip_video.sql",
+    "20261001042737_link_verified_nasm_mobility_videos.sql",
+    "20261001044225_add_cross_source_exercise_cards.sql",
+    "20261001050521_add_diverse_exercise_cards_batch_two.sql",
+    "20261001052254_add_diverse_exercise_cards_batch_three.sql",
+    "20261001053702_add_diverse_exercise_cards_batch_four.sql",
+    "20261001055047_add_diverse_exercise_cards_batch_five.sql",
+    "20261001060718_add_diverse_exercise_cards_batch_six.sql"
   ],
   "nasmExerciseCatalogMigration": "20261001032427_add_complete_nasm_exercise_library.sql",
   "nasmExerciseCatalogCount": 75,
@@ -796,6 +803,846 @@
       "cacheControl": 31536000
     },
     {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/png/barbell-row.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/png/barbell-row.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-480/barbell-row.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-480/barbell-row.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-768/barbell-row.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-768/barbell-row.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/png/reverse-lunge.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/png/reverse-lunge.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-480/reverse-lunge.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-480/reverse-lunge.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-768/reverse-lunge.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-768/reverse-lunge.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/png/cable-pull-through.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/png/cable-pull-through.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-480/cable-pull-through.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-480/cable-pull-through.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-768/cable-pull-through.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-768/cable-pull-through.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/png/nordic-hamstring-curl.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/png/nordic-hamstring-curl.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-480/nordic-hamstring-curl.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-480/nordic-hamstring-curl.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-768/nordic-hamstring-curl.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-768/nordic-hamstring-curl.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/png/copenhagen-plank.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/png/copenhagen-plank.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-480/copenhagen-plank.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-480/copenhagen-plank.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-768/copenhagen-plank.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-768/copenhagen-plank.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/png/sumo-deadlift.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/png/sumo-deadlift.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-480/sumo-deadlift.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-480/sumo-deadlift.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-768/sumo-deadlift.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-768/sumo-deadlift.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/png/suitcase-carry.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/png/suitcase-carry.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-480/suitcase-carry.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-480/suitcase-carry.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-768/suitcase-carry.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-768/suitcase-carry.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/png/band-external-rotation.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/png/band-external-rotation.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-480/band-external-rotation.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-480/band-external-rotation.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-768/band-external-rotation.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-768/band-external-rotation.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/png/dumbbell-pullover.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/png/dumbbell-pullover.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-480/dumbbell-pullover.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-480/dumbbell-pullover.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-768/dumbbell-pullover.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-768/dumbbell-pullover.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/png/meadows-row.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/png/meadows-row.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-480/meadows-row.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-480/meadows-row.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-768/meadows-row.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-768/meadows-row.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/png/turkish-get-up.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/png/turkish-get-up.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-480/turkish-get-up.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-480/turkish-get-up.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-768/turkish-get-up.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-768/turkish-get-up.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/png/tall-kneeling-pallof-press.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/png/tall-kneeling-pallof-press.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-480/tall-kneeling-pallof-press.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-480/tall-kneeling-pallof-press.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-768/tall-kneeling-pallof-press.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-768/tall-kneeling-pallof-press.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/png/bear-crawl.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/png/bear-crawl.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-480/bear-crawl.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-480/bear-crawl.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-768/bear-crawl.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-768/bear-crawl.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/png/forward-step-down.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/png/forward-step-down.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-480/forward-step-down.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-480/forward-step-down.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-768/forward-step-down.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-768/forward-step-down.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/png/lateral-lunge.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/png/lateral-lunge.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-480/lateral-lunge.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-480/lateral-lunge.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-768/lateral-lunge.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-768/lateral-lunge.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/png/single-leg-glute-bridge.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/png/single-leg-glute-bridge.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-480/single-leg-glute-bridge.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-480/single-leg-glute-bridge.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-768/single-leg-glute-bridge.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-768/single-leg-glute-bridge.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/png/hand-release-push-up.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/png/hand-release-push-up.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-480/hand-release-push-up.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-480/hand-release-push-up.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-768/hand-release-push-up.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-768/hand-release-push-up.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/png/plank-row.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/png/plank-row.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-480/plank-row.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-480/plank-row.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-768/plank-row.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-768/plank-row.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/png/bent-over-fly.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/png/bent-over-fly.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-480/bent-over-fly.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-480/bent-over-fly.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-768/bent-over-fly.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-768/bent-over-fly.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/png/rotational-press.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/png/rotational-press.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-480/rotational-press.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-480/rotational-press.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-768/rotational-press.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-768/rotational-press.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/png/overhead-carry.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/png/overhead-carry.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-480/overhead-carry.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-480/overhead-carry.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-768/overhead-carry.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-768/overhead-carry.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/png/cossack-squat.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/png/cossack-squat.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-480/cossack-squat.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-480/cossack-squat.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-768/cossack-squat.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-768/cossack-squat.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/png/scapular-push-up.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/png/scapular-push-up.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-480/scapular-push-up.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-480/scapular-push-up.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-768/scapular-push-up.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-768/scapular-push-up.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/png/kettlebell-swing.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/png/kettlebell-swing.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-480/kettlebell-swing.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-480/kettlebell-swing.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-768/kettlebell-swing.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-768/kettlebell-swing.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/png/farmers-carry.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/png/farmers-carry.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-480/farmers-carry.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-480/farmers-carry.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-768/farmers-carry.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-768/farmers-carry.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/png/dead-hang.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/png/dead-hang.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-480/dead-hang.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-480/dead-hang.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-768/dead-hang.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-768/dead-hang.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/png/cable-hip-abduction.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/png/cable-hip-abduction.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-480/cable-hip-abduction.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-480/cable-hip-abduction.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-768/cable-hip-abduction.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-768/cable-hip-abduction.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/png/cable-hip-adduction.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/png/cable-hip-adduction.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-480/cable-hip-adduction.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-480/cable-hip-adduction.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-768/cable-hip-adduction.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-768/cable-hip-adduction.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/png/band-pull-apart.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/png/band-pull-apart.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-480/band-pull-apart.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-480/band-pull-apart.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-768/band-pull-apart.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-768/band-pull-apart.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/png/wall-slide.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/png/wall-slide.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-480/wall-slide.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-480/wall-slide.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-768/wall-slide.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-768/wall-slide.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/png/landmine-squat.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/png/landmine-squat.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-480/landmine-squat.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-480/landmine-squat.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-768/landmine-squat.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-768/landmine-squat.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/png/pendlay-row.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/png/pendlay-row.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-480/pendlay-row.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-480/pendlay-row.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-768/pendlay-row.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-768/pendlay-row.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/png/barbell-back-squat.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/png/barbell-back-squat.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-480/barbell-back-squat.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-480/barbell-back-squat.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-768/barbell-back-squat.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-768/barbell-back-squat.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/png/barbell-overhead-press.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/png/barbell-overhead-press.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-480/barbell-overhead-press.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-480/barbell-overhead-press.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-768/barbell-overhead-press.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-768/barbell-overhead-press.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/png/trap-bar-deadlift.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/png/trap-bar-deadlift.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-480/trap-bar-deadlift.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-480/trap-bar-deadlift.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-768/trap-bar-deadlift.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-768/trap-bar-deadlift.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/png/push-press.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/png/push-press.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-480/push-press.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-480/push-press.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-768/push-press.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-768/push-press.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/png/reverse-hyperextension.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/png/reverse-hyperextension.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-480/reverse-hyperextension.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-480/reverse-hyperextension.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-768/reverse-hyperextension.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-768/reverse-hyperextension.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/png/tibialis-raise.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/png/tibialis-raise.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-480/tibialis-raise.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-480/tibialis-raise.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-768/tibialis-raise.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-768/tibialis-raise.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/png/battle-rope-alternating-waves.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/png/battle-rope-alternating-waves.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-480/battle-rope-alternating-waves.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-480/battle-rope-alternating-waves.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-768/battle-rope-alternating-waves.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-768/battle-rope-alternating-waves.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/png/seal-row.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/png/seal-row.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-480/seal-row.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-480/seal-row.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-768/seal-row.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-768/seal-row.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
       "source": "supabase/storage-assets/exercise-videos/generated/barbell-upright-row.mp4",
       "bucket": "exercise-videos",
       "objectPath": "generated/barbell-upright-row.mp4",
@@ -842,6 +1689,174 @@
       "bucket": "exercise-videos",
       "objectPath": "generated/2026-09-30/bulgarian-split-squat.mp4",
       "contentType": "video/mp4",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/png/sled-push.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/png/sled-push.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-480/sled-push.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-480/sled-push.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-768/sled-push.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-768/sled-push.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/png/reverse-nordic-curl.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/png/reverse-nordic-curl.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-480/reverse-nordic-curl.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-480/reverse-nordic-curl.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-768/reverse-nordic-curl.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-768/reverse-nordic-curl.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/png/hip-airplane.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/png/hip-airplane.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-480/hip-airplane.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-480/hip-airplane.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-768/hip-airplane.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-768/hip-airplane.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/png/barbell-shrug.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/png/barbell-shrug.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-480/barbell-shrug.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-480/barbell-shrug.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-768/barbell-shrug.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-768/barbell-shrug.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/png/dumbbell-front-raise.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/png/dumbbell-front-raise.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-480/dumbbell-front-raise.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-480/dumbbell-front-raise.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-768/dumbbell-front-raise.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-768/dumbbell-front-raise.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/png/hanging-leg-raise.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/png/hanging-leg-raise.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-480/hanging-leg-raise.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-480/hanging-leg-raise.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-768/hanging-leg-raise.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-768/hanging-leg-raise.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/png/glute-ham-raise.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/png/glute-ham-raise.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-480/glute-ham-raise.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-480/glute-ham-raise.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-768/glute-ham-raise.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-768/glute-ham-raise.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/png/single-leg-calf-raise.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/png/single-leg-calf-raise.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-480/single-leg-calf-raise.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-480/single-leg-calf-raise.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-768/single-leg-calf-raise.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-768/single-leg-calf-raise.webp",
+      "contentType": "image/webp",
       "cacheControl": 31536000
     }
   ],
@@ -1112,6 +2127,246 @@
     {
       "name": "Seated Butterfly Stretch",
       "demoUrl": "https://www.youtube.com/watch?v=v4OLkxi5-Q0"
+    },
+    {
+      "name": "Barbell Row",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/barbell-row.webp",
+      "demoUrl": "https://www.youtube.com/watch?v=TZLCvXbej_Q"
+    },
+    {
+      "name": "Reverse Lunge",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/reverse-lunge.webp",
+      "demoUrl": "https://www.youtube.com/watch?v=TQfhY5oJ_Sc"
+    },
+    {
+      "name": "Cable Pull-Through",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/cable-pull-through.webp",
+      "demoUrl": "https://www.youtube.com/watch?v=pv8e6OSyETE"
+    },
+    {
+      "name": "Nordic Hamstring Curl",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/nordic-hamstring-curl.webp",
+      "demoUrl": "https://www.youtube.com/watch?v=_e9vFU9-tkc"
+    },
+    {
+      "name": "Copenhagen Plank",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/copenhagen-plank.webp",
+      "demoUrl": "https://www.youtube.com/watch?v=kD1t1hWzIDE"
+    },
+    {
+      "name": "Sumo Deadlift",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/sumo-deadlift.webp",
+      "demoUrl": "https://www.youtube.com/watch?v=GyeXtU8vj-Y"
+    },
+    {
+      "name": "Suitcase Carry",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/suitcase-carry.webp",
+      "demoUrl": "https://www.youtube.com/watch?v=LJaq4BS7KpE"
+    },
+    {
+      "name": "Band External Rotation",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/band-external-rotation.webp",
+      "demoUrl": "https://www.youtube.com/watch?v=ZJgOL828OvY"
+    },
+    {
+      "name": "Dumbbell Pullover",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/dumbbell-pullover.webp",
+      "demoUrl": "https://www.youtube.com/watch?v=jQjWlIwG4sI"
+    },
+    {
+      "name": "Meadows Row",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/meadows-row.webp",
+      "demoUrl": "https://www.youtube.com/watch?v=j-H6OxNlhi8"
+    },
+    {
+      "name": "Turkish Get-Up",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/turkish-get-up.webp",
+      "demoUrl": "https://www.youtube.com/watch?v=jFK8FOiLa_M"
+    },
+    {
+      "name": "Tall-Kneeling Pallof Press",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/tall-kneeling-pallof-press.webp",
+      "demoUrl": "https://www.youtube.com/watch?v=tYsV8_X3vtw"
+    },
+    {
+      "name": "Bear Crawl",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/bear-crawl.webp",
+      "demoUrl": "https://www.youtube.com/watch?v=ZnYa6e_MCvQ"
+    },
+    {
+      "name": "Forward Step-Down",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/forward-step-down.webp",
+      "demoUrl": "https://www.youtube.com/watch?v=B3CjUyMouBA"
+    },
+    {
+      "name": "Lateral Lunge",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/lateral-lunge.webp",
+      "demoUrl": "https://www.youtube.com/watch?v=tVqYQkAYabo"
+    },
+    {
+      "name": "Single-Leg Glute Bridge",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/single-leg-glute-bridge.webp",
+      "demoUrl": "https://www.youtube.com/watch?v=hpLQEPdqUXM"
+    },
+    {
+      "name": "Hand-Release Push-Up",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/hand-release-push-up.webp",
+      "demoUrl": "https://www.youtube.com/watch?v=K0e8omOJZ14"
+    },
+    {
+      "name": "Plank Row",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/plank-row.webp",
+      "demoUrl": "https://www.youtube.com/watch?v=BSdf2Y4nfXY"
+    },
+    {
+      "name": "Bent-Over Fly",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/bent-over-fly.webp",
+      "demoUrl": "https://www.youtube.com/watch?v=R0TK2cWM96s"
+    },
+    {
+      "name": "Rotational Press",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/rotational-press.webp",
+      "demoUrl": "https://www.youtube.com/watch?v=IwrtVPsaZAA"
+    },
+    {
+      "name": "Overhead Carry",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/overhead-carry.webp",
+      "demoUrl": "https://www.youtube.com/watch?v=HkRlHxxI1oI"
+    },
+    {
+      "name": "Cossack Squat",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/cossack-squat.webp",
+      "demoUrl": "https://www.youtube.com/watch?v=shYSWbqBJPM"
+    },
+    {
+      "name": "Scapular Push-Up",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/scapular-push-up.webp",
+      "demoUrl": "https://www.youtube.com/watch?v=DQKayQOU5Pw"
+    },
+    {
+      "name": "Kettlebell Swing",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/kettlebell-swing.webp",
+      "demoUrl": "https://www.youtube.com/watch?v=1cVT3ee9mgU"
+    },
+    {
+      "name": "Farmer's Carry",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/farmers-carry.webp",
+      "demoUrl": "https://www.youtube.com/watch?v=lLAw6fUccKA"
+    },
+    {
+      "name": "Dead Hang",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/dead-hang.webp",
+      "demoUrl": "https://www.youtube.com/watch?v=Ay_qvzYZfqE"
+    },
+    {
+      "name": "Cable Hip Abduction",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/cable-hip-abduction.webp",
+      "demoUrl": "https://www.youtube.com/watch?v=EHq78mQYLbI"
+    },
+    {
+      "name": "Cable Hip Adduction",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/cable-hip-adduction.webp",
+      "demoUrl": "https://www.youtube.com/watch?v=EHq78mQYLbI"
+    },
+    {
+      "name": "Band Pull-Apart",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/band-pull-apart.webp",
+      "demoUrl": "https://www.youtube.com/watch?v=nMB_zabRo74"
+    },
+    {
+      "name": "Wall Slide",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/wall-slide.webp",
+      "demoUrl": "https://www.youtube.com/watch?v=D351y9ecIwc"
+    },
+    {
+      "name": "Landmine Squat",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/landmine-squat.webp",
+      "demoUrl": "https://www.youtube.com/watch?v=_mfORB47xMs"
+    },
+    {
+      "name": "Pendlay Row",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/pendlay-row.webp",
+      "demoUrl": "https://www.youtube.com/watch?v=h4nkoayPFWw"
+    },
+    {
+      "name": "Barbell Back Squat",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/barbell-back-squat.webp",
+      "demoUrl": "https://www.youtube.com/watch?v=UFs6E3Ti1jg"
+    },
+    {
+      "name": "Barbell Overhead Press",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/barbell-overhead-press.webp",
+      "demoUrl": "https://www.youtube.com/watch?v=eNFXEEdfQp4"
+    },
+    {
+      "name": "Trap-Bar Deadlift",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/trap-bar-deadlift.webp",
+      "demoUrl": "https://www.youtube.com/watch?v=1a7WNMgKIZQ"
+    },
+    {
+      "name": "Push Press",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/push-press.webp",
+      "demoUrl": "https://www.youtube.com/watch?v=iaBVSJm78ko"
+    },
+    {
+      "name": "Reverse Hyperextension",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/reverse-hyperextension.webp",
+      "demoUrl": "https://www.youtube.com/watch?v=Ef4noCz83A4"
+    },
+    {
+      "name": "Tibialis Raise",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/tibialis-raise.webp",
+      "demoUrl": "https://www.youtube.com/watch?v=boFuKPm5w2Q"
+    },
+    {
+      "name": "Battle-Rope Alternating Waves",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/battle-rope-alternating-waves.webp",
+      "demoUrl": "https://www.youtube.com/watch?v=uyaANzMXQHY"
+    },
+    {
+      "name": "Seal Row",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/seal-row.webp",
+      "demoUrl": "https://www.youtube.com/watch?v=Xq_C_USoHdk"
+    },
+    {
+      "name": "Sled Push",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/sled-push.webp",
+      "demoUrl": "https://www.youtube.com/watch?v=YJbKlXj4WhI"
+    },
+    {
+      "name": "Reverse Nordic Curl",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/reverse-nordic-curl.webp",
+      "demoUrl": "https://www.youtube.com/watch?v=DmiMI62lmWM"
+    },
+    {
+      "name": "Hip Airplane",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/hip-airplane.webp",
+      "demoUrl": "https://www.youtube.com/watch?v=zNGpdD6ig4U"
+    },
+    {
+      "name": "Barbell Shrug",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/barbell-shrug.webp",
+      "demoUrl": "https://www.youtube.com/watch?v=NAqCVe2mwzM"
+    },
+    {
+      "name": "Dumbbell Front Raise",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/dumbbell-front-raise.webp",
+      "demoUrl": "https://www.youtube.com/watch?v=zkP0MsTcIVU"
+    },
+    {
+      "name": "Hanging Leg Raise",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/hanging-leg-raise.webp",
+      "demoUrl": "https://www.youtube.com/watch?v=Pr1ieGZ5atk"
+    },
+    {
+      "name": "Glute-Ham Raise",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/glute-ham-raise.webp",
+      "demoUrl": "https://www.youtube.com/watch?v=cwaCdA9qFNI"
+    },
+    {
+      "name": "Single-Leg Calf Raise",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/single-leg-calf-raise.webp",
+      "demoUrl": "https://www.youtube.com/watch?v=qkZZLWPAt-A"
     }
   ]
 }
