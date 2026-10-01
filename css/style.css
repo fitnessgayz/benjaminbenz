@@ -7733,7 +7733,8 @@ body.is-client-checkin-prompt-open {
   grid-template-columns: minmax(280px, .8fr) minmax(420px, 1.2fr);
   grid-template-areas:
     "identity actions"
-    "meta actions";
+    "meta actions"
+    "tools tools";
   align-items: center;
   gap: 16px;
 }
@@ -9446,6 +9447,7 @@ textarea:focus {
     grid-template-areas:
       "identity"
       "meta"
+      "tools"
       "actions";
     align-items: stretch;
   }
@@ -16671,10 +16673,12 @@ body.client-dashboard-page.is-loading > :is(.client-dashboard-tabs,
   gap: 10px;
   padding: 10px;
   overflow: hidden;
-  border: 1px solid #31342f;
+  border: 1px solid #d8dad3;
   border-radius: 14px;
-  background: #171a17;
-  box-shadow: 0 16px 38px rgba(0, 0, 0, .14);
+  background: rgba(247, 248, 245, .96);
+  box-shadow: 0 16px 38px rgba(20, 24, 20, .1);
+  backdrop-filter: blur(18px) saturate(145%);
+  -webkit-backdrop-filter: blur(18px) saturate(145%);
 }
 
 .coach-admin-sidebar-header {
@@ -16690,7 +16694,7 @@ body.client-dashboard-page.is-loading > :is(.client-dashboard-tabs,
   min-width: 0;
   align-items: center;
   gap: 9px;
-  color: #f7f7f2;
+  color: #171a17;
   text-decoration: none;
 }
 
@@ -16700,7 +16704,7 @@ body.client-dashboard-page.is-loading > :is(.client-dashboard-tabs,
   width: 38px;
   height: 38px;
   place-items: center;
-  border: 1px solid rgba(255, 255, 255, .18);
+  border: 1px solid var(--lime);
   border-radius: 10px;
   color: #f7f7f2;
   font-size: .68rem;
@@ -16741,10 +16745,10 @@ body.client-dashboard-page.is-loading > :is(.client-dashboard-tabs,
   min-height: 34px;
   padding: 0 !important;
   place-items: center;
-  border: 1px solid rgba(255, 255, 255, .2);
+  border: 1px solid #d8dad3;
   border-radius: 9px !important;
-  color: #f7f7f2;
-  background: rgba(255, 255, 255, .06);
+  color: #171a17;
+  background: #fff;
   font: inherit;
   font-size: 1.45rem !important;
   font-weight: 900;
@@ -16754,7 +16758,8 @@ body.client-dashboard-page.is-loading > :is(.client-dashboard-tabs,
 }
 
 .coach-admin-sidebar-toggle:hover {
-  background: rgba(255, 255, 255, .12);
+  border-color: #afb3aa;
+  background: #f0f1eb;
 }
 
 .coach-admin-page .admin-tabs {
@@ -16770,7 +16775,7 @@ body.client-dashboard-page.is-loading > :is(.client-dashboard-tabs,
   background: transparent;
   backdrop-filter: none;
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, .22) transparent;
+  scrollbar-color: #c9ccc3 transparent;
 }
 
 .coach-admin-page .admin-tab {
@@ -16787,7 +16792,7 @@ body.client-dashboard-page.is-loading > :is(.client-dashboard-tabs,
   overflow: hidden !important;
   border: 1px solid transparent;
   border-radius: 10px !important;
-  color: #c7c9c3;
+  color: #555a52;
   background: transparent;
   font-size: .78rem !important;
   line-height: 1.1 !important;
@@ -16797,8 +16802,9 @@ body.client-dashboard-page.is-loading > :is(.client-dashboard-tabs,
 }
 
 .coach-admin-page .admin-tab:hover {
-  color: #f7f7f2;
-  background: rgba(255, 255, 255, .07);
+  color: #171a17;
+  background: #fff;
+  border-color: #d8dad3;
 }
 
 .coach-admin-page .admin-tab.is-active {
@@ -16813,9 +16819,9 @@ body.client-dashboard-page.is-loading > :is(.client-dashboard-tabs,
 
 .coach-admin-page .admin-tab-session-logger {
   margin-bottom: 6px;
-  color: #f7f7f2;
-  background: rgba(215, 255, 63, .1);
-  border-color: rgba(215, 255, 63, .38);
+  color: #344000;
+  background: rgba(215, 255, 63, .2);
+  border-color: rgba(137, 173, 0, .42);
 }
 
 .coach-admin-page .admin-tab-session-logger .admin-nav-icon {
@@ -16823,10 +16829,86 @@ body.client-dashboard-page.is-loading > :is(.client-dashboard-tabs,
 }
 
 .admin-tab-mobile-more,
-.coach-home-mobile-toolbar,
-.selected-client-mobile-menu,
 .coach-notification-close {
   display: none !important;
+}
+
+@media (min-width: 901px) {
+  .coach-admin-page .admin-tab[data-admin-tab="profile"],
+  .coach-admin-page .admin-tab[data-admin-tab="program"],
+  .coach-admin-page .admin-tab[data-admin-tab="workouts"],
+  .coach-admin-page .admin-tab[data-admin-tab="nutrition"],
+  .coach-admin-page .admin-tab[data-admin-tab="progress"],
+  .coach-admin-page .admin-tab[data-admin-tab="notes"],
+  .coach-admin-page .admin-tab[data-admin-tab="logs"],
+  .coach-admin-page .admin-tab[data-admin-tab="sessions"],
+  .coach-admin-page .admin-nav-group-title {
+    display: none !important;
+  }
+}
+
+.coach-admin-page .admin-workspace:not([data-active-tab="clients"]) .admin-client-list {
+  display: none;
+}
+
+.coach-home-mobile-toolbar {
+  display: flex !important;
+  justify-content: flex-start;
+}
+
+.coach-home-notification-button {
+  position: relative;
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 13px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--black);
+  background: #fff;
+  font: inherit;
+  font-size: .78rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.coach-home-notification-button:hover,
+.coach-home-notification-button:focus-visible {
+  border-color: #9ea398;
+  background: #f7f8f3;
+}
+
+.coach-home-notification-button svg {
+  width: 22px;
+  height: 22px;
+}
+
+.coach-home-notification-button .admin-nav-unread-count {
+  top: -6px;
+  right: -6px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  transform: none;
+}
+
+.selected-client-mobile-menu {
+  grid-area: tools;
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  padding-top: 4px;
+}
+
+.selected-client-mobile-menu button.is-active {
+  border-color: #93ad22;
+  background: rgba(215, 255, 63, .24);
+}
+
+.selected-client-mobile-menu button:disabled {
+  opacity: .46;
+  cursor: not-allowed;
 }
 
 .coach-mobile-more-dialog {
@@ -17051,21 +17133,8 @@ body.client-dashboard-page.is-loading > :is(.client-dashboard-tabs,
     scrollbar-width: none;
   }
 
-  .coach-admin-page .admin-tabs > :not([data-admin-tab="home"]):not([data-admin-tab="clients"]):not(.admin-tab-mobile-more) {
-    display: none !important;
-  }
-
-  .coach-admin-page .admin-tab[data-admin-tab="home"] {
-    order: 1;
-  }
-
-  .coach-admin-page .admin-tab[data-admin-tab="clients"] {
-    order: 2;
-  }
-
   .coach-admin-page .admin-tab-mobile-more {
-    display: flex !important;
-    order: 3;
+    display: none !important;
   }
 
   .coach-admin-page .admin-tab,
@@ -17092,18 +17161,6 @@ body.client-dashboard-page.is-loading > :is(.client-dashboard-tabs,
     line-height: 1 !important;
     text-align: center;
     scroll-snap-align: center;
-  }
-
-  .coach-admin-page .admin-tab[data-admin-tab="home"],
-  .coach-admin-page .admin-tab[data-admin-tab="clients"],
-  .coach-admin-page .admin-tab-mobile-more,
-  .coach-admin-page .admin-workspace.is-sidebar-collapsed .admin-tab[data-admin-tab="home"],
-  .coach-admin-page .admin-workspace.is-sidebar-collapsed .admin-tab[data-admin-tab="clients"],
-  .coach-admin-page .admin-workspace.is-sidebar-collapsed .admin-tab-mobile-more {
-    flex: 1 1 33.333% !important;
-    width: auto !important;
-    min-width: 0 !important;
-    max-width: none !important;
   }
 
   .coach-admin-page .admin-tab::after {
@@ -17207,18 +17264,27 @@ body.client-dashboard-page.is-loading > :is(.client-dashboard-tabs,
   .coach-home-notification-button {
     position: relative;
     display: inline-flex;
+    flex: 0 0 44px;
+    width: 44px;
+    max-width: 44px;
+    height: 44px;
     min-height: 44px;
     align-items: center;
-    gap: 8px;
-    padding: 9px 13px;
+    justify-content: center;
+    gap: 0;
+    padding: 0;
     border: 1px solid var(--line);
-    border-radius: 999px;
+    border-radius: 50%;
     color: var(--black);
     background: #fff;
     font: inherit;
     font-size: .78rem;
     font-weight: 900;
     cursor: pointer;
+  }
+
+  .coach-home-notification-button > span:not(.admin-nav-unread-count) {
+    display: none;
   }
 
   .coach-home-notification-button svg {

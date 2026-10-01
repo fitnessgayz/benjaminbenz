@@ -8,14 +8,17 @@ const adminHtml = fs.readFileSync(path.join(projectRoot, "coach-admin.html"), "u
 const adminSource = fs.readFileSync(path.join(projectRoot, "js/coach-admin.js"), "utf8");
 const styleSource = fs.readFileSync(path.join(projectRoot, "css/style.css"), "utf8");
 
-test("puts Session Logger first in the coach admin sidebar", () => {
+test("puts Home first in the coach admin sidebar", () => {
   const navigationStart = adminHtml.indexOf('id="coach-admin-sidebar-nav"');
+  const home = adminHtml.indexOf('data-admin-tab="home"', navigationStart);
+  const clients = adminHtml.indexOf('data-admin-tab="clients"', navigationStart);
   const sessionLogger = adminHtml.indexOf('href="coach-workout-log.html"', navigationStart);
-  const firstEditorTab = adminHtml.indexOf("data-admin-tab=", navigationStart);
 
   assert.ok(navigationStart >= 0);
+  assert.ok(home > navigationStart);
+  assert.ok(home < clients);
+  assert.ok(clients < sessionLogger);
   assert.ok(sessionLogger > navigationStart);
-  assert.ok(sessionLogger < firstEditorTab);
   assert.doesNotMatch(adminHtml, /href="coach-workout-log\.html"[^>]*target="_blank"/);
 });
 
@@ -80,23 +83,36 @@ test("Session Logger is distinct without looking like the selected admin section
   const sessionStyle = styleSource.match(/\.coach-admin-page \.admin-tab-session-logger\s*\{([^}]*)\}/)?.[1] || "";
 
   assert.doesNotMatch(sessionStyle, /background:\s*var\(--lime\)/);
-  assert.match(sessionStyle, /border-color:\s*rgba\(215, 255, 63,/);
+  assert.match(sessionStyle, /background:\s*rgba\(215, 255, 63,/);
+  assert.match(sessionStyle, /border-color:\s*rgba\(137, 173, 0,/);
 });
 
 test("selected client summary reserves readable identity space beside its actions", () => {
-  assert.match(styleSource, /\.selected-client-panel\s*\{[^}]*grid-template-columns:\s*minmax\(280px, \.8fr\) minmax\(420px, 1\.2fr\)[^}]*grid-template-areas:\s*"identity actions"\s*"meta actions"/s);
+  assert.match(styleSource, /\.selected-client-panel\s*\{[^}]*grid-template-columns:\s*minmax\(280px, \.8fr\) minmax\(420px, 1\.2fr\)[^}]*grid-template-areas:\s*"identity actions"\s*"meta actions"\s*"tools tools"/s);
   assert.match(styleSource, /\.selected-client-copy\s*\{[^}]*grid-area:\s*identity[^}]*min-width:\s*0/s);
   assert.match(styleSource, /\.selected-client-copy h2\s*\{[^}]*overflow-wrap:\s*normal[^}]*word-break:\s*normal/s);
-  assert.match(styleSource, /@media \(max-width: 1180px\)[\s\S]*?\.selected-client-panel\s*\{[^}]*grid-template-columns:\s*1fr[^}]*grid-template-areas:\s*"identity"\s*"meta"\s*"actions"/s);
+  assert.match(styleSource, /@media \(max-width: 1180px\)[\s\S]*?\.selected-client-panel\s*\{[^}]*grid-template-columns:\s*1fr[^}]*grid-template-areas:\s*"identity"\s*"meta"\s*"tools"\s*"actions"/s);
 });
 
-test("mobile coach navigation keeps Home first and reduces the dock to Home, Clients, and More", () => {
-  assert.match(adminHtml, /data-admin-tab="home"[\s\S]*?data-admin-tab="clients"[\s\S]*?data-coach-mobile-more-open/);
-  assert.match(adminHtml, /data-coach-mobile-more-dialog[\s\S]*?Messages[\s\S]*?Workout logger[\s\S]*?Exercise library[\s\S]*?Settings/);
-  assert.match(styleSource, /@media \(max-width: 900px\)[\s\S]*?\.admin-tabs > :not\(\[data-admin-tab="home"\]\):not\(\[data-admin-tab="clients"\]\):not\(\.admin-tab-mobile-more\)[^}]*display:\s*none !important/s);
-  assert.match(styleSource, /\.admin-tab\[data-admin-tab="home"\]\s*\{[^}]*order:\s*1/s);
-  assert.match(styleSource, /\.admin-tab\[data-admin-tab="clients"\]\s*\{[^}]*order:\s*2/s);
-  assert.match(styleSource, /\.admin-tab-mobile-more\s*\{[^}]*display:\s*flex !important[^}]*order:\s*3/s);
+test("desktop navigation stays light and keeps client tools in the selected-client hub", () => {
+  assert.match(styleSource, /\.coach-admin-sidebar\s*\{[^}]*background:\s*rgba\(247, 248, 245, \.96\)/s);
+  assert.match(styleSource, /\.coach-admin-page \.admin-tab\s*\{[^}]*color:\s*#555a52[^}]*background:\s*transparent/s);
+  assert.match(styleSource, /@media \(min-width: 901px\)[\s\S]*?\.coach-admin-page \.admin-tab\[data-admin-tab="profile"\],[\s\S]*?\.coach-admin-page \.admin-tab\[data-admin-tab="sessions"\],[\s\S]*?\.coach-admin-page \.admin-nav-group-title\s*\{[^}]*display:\s*none !important/s);
+  assert.match(styleSource, /\.coach-admin-page \.admin-workspace:not\(\[data-active-tab="clients"\]\) \.admin-client-list\s*\{[^}]*display:\s*none/s);
+  assert.match(adminSource, /button\.dataset\.clientMobileDestination === nextTab/);
+});
+
+test("mobile coach navigation keeps every destination in a scrollable icon dock", () => {
+  assert.match(adminHtml, /data-admin-tab="home"[\s\S]*?data-admin-tab="clients"[\s\S]*?data-admin-tab="inbox"[\s\S]*?href="coach-workout-log\.html"[\s\S]*?href="coach-exercise-library\.html"[\s\S]*?data-admin-tab="profile"[\s\S]*?data-admin-tab="program"[\s\S]*?data-admin-tab="workouts"[\s\S]*?data-admin-tab="nutrition"[\s\S]*?data-admin-tab="progress"[\s\S]*?data-admin-tab="notes"[\s\S]*?data-admin-tab="logs"[\s\S]*?data-admin-tab="sessions"[\s\S]*?data-admin-tab="notifications"/);
+  assert.match(styleSource, /@media \(max-width: 900px\)[\s\S]*?\.coach-admin-page \.admin-tabs\s*\{[^}]*overflow-x:\s*auto[^}]*scroll-snap-type:\s*x proximity/s);
+  assert.match(styleSource, /@media \(max-width: 900px\)[\s\S]*?\.coach-admin-page \.admin-tab-mobile-more\s*\{[^}]*display:\s*none !important/s);
+  assert.doesNotMatch(styleSource, /\.admin-tabs > :not\(\[data-admin-tab="home"\]\):not\(\[data-admin-tab="clients"\]\):not\(\.admin-tab-mobile-more\)/);
+});
+
+test("mobile Home uses a compact notification bell with a corner badge", () => {
+  assert.match(styleSource, /@media \(max-width: 900px\)[\s\S]*?\.coach-home-notification-button\s*\{[^}]*width:\s*44px[^}]*height:\s*44px[^}]*padding:\s*0[^}]*border-radius:\s*50%/s);
+  assert.match(styleSource, /\.coach-home-notification-button > span:not\(\.admin-nav-unread-count\)\s*\{[^}]*display:\s*none/s);
+  assert.match(styleSource, /\.coach-home-notification-button \.admin-nav-unread-count\s*\{[^}]*top:\s*-6px[^}]*right:\s*-6px/s);
 });
 
 test("mobile Clients becomes the selector and selected-client tool hub", () => {

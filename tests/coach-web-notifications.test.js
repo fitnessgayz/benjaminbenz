@@ -23,23 +23,25 @@ const coachPreferenceKeys = [
   "client_inactivity"
 ];
 
-test("keeps Session Logger first and adds a coach Settings destination", () => {
+test("keeps Home first and adds a coach Settings destination", () => {
   const navigationStart = adminHtml.indexOf('id="coach-admin-sidebar-nav"');
   const navigationEnd = adminHtml.indexOf("</nav>", navigationStart);
   const navigation = adminHtml.slice(navigationStart, navigationEnd);
+  const home = navigation.indexOf('data-admin-tab="home"');
   const sessionLogger = navigation.indexOf('href="coach-workout-log.html"');
-  const firstPanelTab = navigation.indexOf("data-admin-tab=");
   const sessionsTab = navigation.indexOf('data-admin-tab="sessions"');
   const settingsTab = navigation.indexOf('data-admin-tab="notifications"');
 
+  assert.ok(home >= 0);
   assert.ok(sessionLogger >= 0);
-  assert.ok(sessionLogger < firstPanelTab);
+  assert.ok(home < sessionLogger);
   assert.ok(settingsTab > sessionsTab);
   assert.equal(settingsTab, navigation.lastIndexOf("data-admin-tab="));
   assert.match(navigation, /data-admin-tab="notifications"[^>]*aria-label="Settings"/);
   assert.match(navigation, /admin-nav-settings-icon/);
   assert.match(navigation, /<span class="admin-nav-label">Settings<\/span>/);
-  assert.match(navigation, /data-web-notification-unread/);
+  assert.doesNotMatch(navigation, /data-web-notification-unread/);
+  assert.match(adminHtml, /data-coach-home-notifications[\s\S]*?data-web-notification-unread/);
 });
 
 test("Settings panel keeps every notification feature together", () => {

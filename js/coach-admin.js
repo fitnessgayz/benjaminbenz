@@ -964,6 +964,17 @@ function setAdminTab(tabName) {
     }
   });
 
+  document.querySelectorAll("[data-client-mobile-destination]").forEach((button) => {
+    const isActive = button.dataset.clientMobileDestination === nextTab;
+
+    button.classList.toggle("is-active", isActive);
+    if (isActive) {
+      button.setAttribute("aria-current", "page");
+    } else {
+      button.removeAttribute("aria-current");
+    }
+  });
+
   document.querySelectorAll("[data-admin-panel]").forEach((panel) => {
     panel.hidden = panel.dataset.adminPanel !== nextTab;
   });

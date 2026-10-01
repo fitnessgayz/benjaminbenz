@@ -20,12 +20,12 @@ function javascriptFunction(name) {
   return adminSource.slice(start, end);
 }
 
-test("Coach Home is the default destination directly after Session Logger", () => {
+test("Coach Home is the first and default sidebar destination", () => {
   const navStart = adminHtml.indexOf('id="coach-admin-sidebar-nav"');
   const navEnd = adminHtml.indexOf("</nav>", navStart);
   const navigation = adminHtml.slice(navStart, navEnd);
 
-  assert.ok(navigation.indexOf('href="coach-workout-log.html"') < navigation.indexOf('data-admin-tab="home"'));
+  assert.ok(navigation.indexOf('data-admin-tab="home"') < navigation.indexOf('href="coach-workout-log.html"'));
   assert.match(navigation, /data-admin-tab="home"[^>]*aria-label="Home"[^>]*aria-current="page"/);
   assert.match(adminSource, /get\("tab"\) \|\| "home"/);
   assert.match(adminSource, /coachAdminTabNames\.has\(tabName\) \? tabName : "home"/);
