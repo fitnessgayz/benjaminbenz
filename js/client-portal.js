@@ -6590,6 +6590,25 @@ function exerciseSuggestionNames() {
   return exerciseSuggestionRecords().map((record) => record.name);
 }
 
+function exerciseSuggestionMuscleLabel(libraryEntry) {
+  const secondaryMuscles = Array.isArray(libraryEntry?.secondary_muscles)
+    ? libraryEntry.secondary_muscles : [];
+  const seen = new Set();
+
+  return [libraryEntry?.primary_muscle, ...secondaryMuscles]
+    .map((muscle) => String(muscle || "").trim())
+    .filter((muscle) => {
+      const key = muscle.toLowerCase();
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .map((muscle) => muscle
+      .replace(/[_-]+/g, " ")
+      .replace(/\b\w/g, (letter) => letter.toUpperCase()))
+    .join(" · ");
+}
+
 function customExerciseSuggestionMatches(value) {
   const query = String(value || "").trim();
   const normalizedQuery = exerciseNameMatcher?.normalizeName(query) || query.toLowerCase();
@@ -6623,14 +6642,19 @@ function customExerciseSuggestionMatches(value) {
       return right.score - left.score || left.name.localeCompare(right.name);
     })
     .slice(0, recommendation ? 11 : 12)
-    .map((record) => ({ name: record.name, recommended: false }));
+    .map((record) => ({
+      name: record.name,
+      recommended: false,
+      muscleLabel: exerciseSuggestionMuscleLabel(record.libraryEntry)
+    }));
 
   if (recommendation) {
     matches.unshift({
       name: recommendationName,
       recommended: true,
       matchedLabel: recommendation.matchedLabel,
-      score: recommendation.score
+      score: recommendation.score,
+      muscleLabel: exerciseSuggestionMuscleLabel(recommendation.exercise)
     });
   }
 
@@ -6688,8 +6712,12 @@ function renderCustomExerciseSuggestions(input) {
       ${match.recommended ? `
         <small>Did you mean?</small>
         <strong>${escapeHtml(match.name)}</strong>
-        <span>Use the library name to keep progress together.</span>
-      ` : escapeHtml(match.name)}
+        ${match.muscleLabel ? `<span class="custom-workout-suggestion-muscles">${escapeHtml(match.muscleLabel)}</span>` : ""}
+        <span class="custom-workout-suggestion-note">Use the library name to keep progress together.</span>
+      ` : `
+        <strong>${escapeHtml(match.name)}</strong>
+        ${match.muscleLabel ? `<span class="custom-workout-suggestion-muscles">${escapeHtml(match.muscleLabel)}</span>` : ""}
+      `}
     </button>
   `).join("");
   menu.hidden = matches.length === 0;

@@ -293,6 +293,50 @@ test("empty picker submission does not add a card and a named submission adds ex
   assert.deepEqual(fixture.calls.add, ["Cable Row"]);
 });
 
+test("custom builder search results include primary and secondary muscles", () => {
+  const library = [{
+    name: "45-Degree Back Extension",
+    aliases: [],
+    primary_muscle: "glutes",
+    secondary_muscles: ["hamstrings", "erector_spinae", "glutes"]
+  }];
+  const context = evaluate([
+    "approvedExerciseForName", "exerciseSuggestionRecords", "exerciseSuggestionMuscleLabel",
+    "customExerciseSuggestionMatches"
+  ], {
+    exerciseLibraryEntries: library,
+    exerciseNameMatcher: null,
+    currentProgram: null,
+    trainingLogs: [],
+    warmupExerciseCode: "WARMUP",
+    cardioExerciseCode: "CARDIO"
+  });
+
+  const matches = plain(context.customExerciseSuggestionMatches("back extension"));
+  assert.equal(matches[0].name, "45-Degree Back Extension");
+  assert.equal(matches[0].muscleLabel, "Glutes · Hamstrings · Erector Spinae");
+});
+
+test("custom builder renders muscles directly below the exercise name", () => {
+  const menu = { innerHTML: "", hidden: true };
+  const card = { classList: { toggle() {} } };
+  const editor = { querySelector: () => menu, closest: () => card };
+  const input = { value: "back", closest: () => editor, setAttribute() {} };
+  const context = evaluate(["renderCustomExerciseSuggestions"], {
+    customExerciseSuggestionMatches: () => [{
+      name: "45-Degree Back Extension",
+      recommended: false,
+      muscleLabel: "Glutes · Hamstrings"
+    }],
+    escapeHtml: String,
+    closeCustomExerciseSuggestions() {}
+  });
+
+  context.renderCustomExerciseSuggestions(input);
+  assert.match(menu.innerHTML, /<strong>45-Degree Back Extension<\/strong>\s*<span class="custom-workout-suggestion-muscles">Glutes · Hamstrings<\/span>/);
+  assert.equal(menu.hidden, false);
+});
+
 test("exercise key opens its matching editor while a nested demo link keeps its own behavior", async () => {
   const listeners = {};
   const opened = [];

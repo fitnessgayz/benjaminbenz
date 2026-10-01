@@ -13354,7 +13354,8 @@ textarea,
 }
 
 .custom-workout-suggestion-menu button {
-  display: block;
+  display: grid;
+  gap: 3px;
   width: 100%;
   min-height: 42px;
   padding: 9px 11px;
@@ -13374,7 +13375,6 @@ textarea,
 }
 
 .custom-workout-suggestion-menu button.is-recommended {
-  display: grid;
   gap: 2px;
   border-bottom: 2px solid var(--black);
   background: var(--lime);
@@ -13393,7 +13393,18 @@ textarea,
   font-size: .94rem;
 }
 
-.custom-workout-suggestion-menu button.is-recommended span {
+.custom-workout-suggestion-menu .custom-workout-suggestion-muscles {
+  color: var(--muted);
+  font-size: .72rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.custom-workout-suggestion-menu button.is-recommended .custom-workout-suggestion-muscles {
+  color: inherit;
+}
+
+.custom-workout-suggestion-menu button.is-recommended .custom-workout-suggestion-note {
   font-size: .7rem;
   font-weight: 700;
   line-height: 1.25;
@@ -13861,7 +13872,8 @@ textarea,
 }
 
 .coach-workout-suggestion-menu button {
-  display: block;
+  display: grid;
+  gap: 3px;
   width: 100%;
   min-height: 44px;
   padding: 9px 11px;
@@ -13874,6 +13886,17 @@ textarea,
   font-weight: 800;
   text-align: left;
   cursor: pointer;
+}
+
+.coach-workout-suggestion-menu button strong {
+  font: inherit;
+}
+
+.coach-workout-suggestion-menu button span {
+  color: var(--muted);
+  font-size: .72rem;
+  font-weight: 700;
+  line-height: 1.3;
 }
 
 .coach-workout-suggestion-menu button:last-child {

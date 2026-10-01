@@ -332,11 +332,23 @@ test("makes the warm-up set editable and accepts zero weight and reps", () => {
   assert.doesNotMatch(loggerScript, /reps < 1/);
 });
 
-test("filters the exercise library into a scrollable name dropdown", () => {
+test("filters the exercise library into a scrollable dropdown with muscles under each name", () => {
   assert.match(loggerScript, /role="combobox"/);
   assert.match(loggerScript, /data-coach-workout-suggestions/);
   assert.match(loggerScript, /data-coach-workout-suggestion=/);
   assert.match(loggerScript, /\.filter\(\(item\) => item\.is_active !== false/);
   assert.match(loggerScript, /\.slice\(0, 16\)/);
+  assert.match(loggerScript, /\.select\("name,primary_muscle,secondary_muscles,is_active,sort_order"\)/);
+  assert.match(sourceForFunction("renderCoachWorkoutSuggestions"), /<strong>\$\{escapeCoachWorkoutHtml\(item\.name\)\}<\/strong>[\s\S]*?<span>\$\{escapeCoachWorkoutHtml\(muscleLabel\)\}<\/span>/);
   assert.match(styles, /\.coach-workout-suggestion-menu\s*\{[\s\S]*?max-height:\s*190px[\s\S]*?overflow-y:\s*auto/);
+  assert.match(styles, /\.coach-workout-suggestion-menu button span\s*\{[\s\S]*?color:\s*var\(--muted\)/);
+});
+
+test("formats primary and secondary exercise muscles without duplicates", () => {
+  const muscleLabel = new Function(`${sourceForFunction("coachWorkoutMuscleLabel")}; return coachWorkoutMuscleLabel;`)();
+
+  assert.equal(muscleLabel({
+    primary_muscle: "glutes",
+    secondary_muscles: ["hamstrings", "erector_spinae", "glutes"]
+  }), "Glutes · Hamstrings · Erector Spinae");
 });

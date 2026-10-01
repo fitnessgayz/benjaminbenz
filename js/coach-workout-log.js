@@ -226,6 +226,25 @@ function closeCoachWorkoutSuggestions(exceptInput = null) {
   });
 }
 
+function coachWorkoutMuscleLabel(exercise) {
+  const secondaryMuscles = Array.isArray(exercise?.secondary_muscles)
+    ? exercise.secondary_muscles : [];
+  const seen = new Set();
+
+  return [exercise?.primary_muscle, ...secondaryMuscles]
+    .map((muscle) => String(muscle || "").trim())
+    .filter((muscle) => {
+      const key = muscle.toLowerCase();
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .map((muscle) => muscle
+      .replace(/[_-]+/g, " ")
+      .replace(/\b\w/g, (letter) => letter.toUpperCase()))
+    .join(" · ");
+}
+
 function renderCoachWorkoutSuggestions(input) {
   const editor = input?.closest("[data-coach-workout-exercise], [data-coach-grouped-name-row]");
   const menu = editor?.querySelector("[data-coach-workout-suggestions]");
@@ -247,9 +266,15 @@ function renderCoachWorkoutSuggestions(input) {
     })
     .slice(0, 16);
 
-  menu.innerHTML = matches.map((item) => `
-    <button type="button" role="option" data-coach-workout-suggestion="${escapeCoachWorkoutHtml(item.name)}">${escapeCoachWorkoutHtml(item.name)}</button>
-  `).join("");
+  menu.innerHTML = matches.map((item) => {
+    const muscleLabel = coachWorkoutMuscleLabel(item);
+    return `
+      <button type="button" role="option" data-coach-workout-suggestion="${escapeCoachWorkoutHtml(item.name)}">
+        <strong>${escapeCoachWorkoutHtml(item.name)}</strong>
+        ${muscleLabel ? `<span>${escapeCoachWorkoutHtml(muscleLabel)}</span>` : ""}
+      </button>
+    `;
+  }).join("");
   menu.hidden = matches.length === 0;
   input.setAttribute("aria-expanded", String(matches.length > 0));
   closeCoachWorkoutSuggestions(input);
@@ -2824,7 +2849,7 @@ async function loadCoachWorkoutData() {
       .order("client_name", { ascending: true }),
     coachWorkoutSupabase
       .from("exercise_library")
-      .select("name,is_active,sort_order")
+      .select("name,primary_muscle,secondary_muscles,is_active,sort_order")
       .setHeader("x-fwb-recovery-catalog", "1")
       .order("sort_order", { ascending: true })
       .order("name", { ascending: true })
