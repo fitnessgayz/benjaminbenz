@@ -16,9 +16,12 @@ function sourceForFunction(name) {
 
 test("approved aliases replace stale workout artwork with the canonical branded WebP", () => {
   const source = [
+    "youtubeExerciseSearchUrl",
     "approvedExerciseForName",
+    "uploadedExerciseDemoUrl",
     "trustedExerciseImageUrl",
     "trustedExerciseMotionUrl",
+    "exerciseVideoUrl",
     "exerciseMedia"
   ].map(sourceForFunction).join("\n");
   const resolveMedia = Function(
@@ -30,7 +33,8 @@ test("approved aliases replace stale workout artwork with the canonical branded 
     [{
       name: "Dumbbell Bench Press",
       aliases: ["Flat DB Bench Press", "Flat dumbbell bench press"],
-      image_url: "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-29/webp-768/dumbbell-bench-press.webp"
+      image_url: "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-29/webp-768/dumbbell-bench-press.webp",
+      demo_url: "https://youtu.be/example"
     }],
     require("../js/exercise-name-matcher.js"),
     { FWB_SUPABASE_CONFIG: { url: "https://qukdfjeupjhpthfbaonv.supabase.co" } }
@@ -43,6 +47,7 @@ test("approved aliases replace stale workout artwork with the canonical branded 
 
   assert.match(result.imageUrl, /webp-768\/dumbbell-bench-press[.]webp$/);
   assert.doesNotMatch(result.imageUrl, /old-bench-card/);
+  assert.equal(result.demoUrl, "https://youtu.be/example");
 });
 
 test("mobile thumbnails use 480px cards while the clickable demo keeps the 768px source", () => {
@@ -75,6 +80,6 @@ test("late exercise-library results hydrate programmed, custom, and active demo 
 
 test("the mobile dashboard cache key advances for the hydrated branded-card bundle", () => {
   assert.match(dashboard, /client-portal[.]js[^\"]*exercise-images=5/);
-  assert.match(dashboard, /client-portal[.]js[^\"]*exercise-guide=2/);
-  assert.match(dashboard, /custom-workout-mobile-fix[.]css[^\"]*exercise-guide=2/);
+  assert.match(dashboard, /client-portal[.]js[^\"]*exercise-guide=3/);
+  assert.match(dashboard, /custom-workout-mobile-fix[.]css[^\"]*exercise-guide=3/);
 });

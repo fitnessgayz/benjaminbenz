@@ -2494,12 +2494,13 @@ function exerciseMedia(exercise = {}) {
     || trustedExerciseImageUrl(exercise.image_url);
   const motionUrl = trustedExerciseMotionUrl(approvedExercise?.motion_url)
     || trustedExerciseMotionUrl(exercise.motion_url);
+  const demoUrl = exerciseVideoUrl(exercise);
   const instructions = String(approvedExercise?.instructions || exercise.instructions || "").trim();
-  return { imageUrl, motionUrl, instructions };
+  return { imageUrl, motionUrl, demoUrl, instructions };
 }
 
 function exerciseMediaButtonMarkup(exercise, options = {}) {
-  const { imageUrl, motionUrl, instructions } = exerciseMedia(exercise);
+  const { imageUrl, motionUrl, demoUrl, instructions } = exerciseMedia(exercise);
   if (!imageUrl) return "";
   const { fullUrl, thumbnailUrl } = responsiveExerciseImageUrls(imageUrl);
   const name = String(exercise.name || "Exercise").trim() || "Exercise";
@@ -2513,6 +2514,7 @@ function exerciseMediaButtonMarkup(exercise, options = {}) {
       data-exercise-media-open
       data-exercise-media-static="${escapeHtml(fullUrl)}"
       data-exercise-media-video="${escapeHtml(motionUrl)}"
+      data-exercise-media-demo="${escapeHtml(demoUrl)}"
       data-exercise-media-instructions="${escapeHtml(instructions)}"
       data-exercise-media-name="${escapeHtml(name)}"
       aria-label="Open ${escapeHtml(name)} exercise card and instructions"
@@ -2589,6 +2591,10 @@ function ensureExerciseMediaDialog() {
           <span aria-hidden="true">▶</span>
           <span data-exercise-media-video-label>Watch exercise video</span>
         </button>
+        <a data-exercise-media-video-link target="_blank" rel="noopener noreferrer" hidden>
+          <span aria-hidden="true">▶</span>
+          <span>Watch exercise video</span>
+        </a>
       </div>
       <section class="exercise-media-dialog-instructions" data-exercise-media-instructions-block>
         <h3>How to perform</h3>
@@ -2613,14 +2619,24 @@ function renderExerciseMediaDialog(dialog, showVideo = false) {
   const caption = dialog.querySelector("[data-exercise-media-caption]");
   const toggle = dialog.querySelector("[data-exercise-media-video-toggle]");
   const toggleLabel = dialog.querySelector("[data-exercise-media-video-label]");
+  const videoLink = dialog.querySelector("[data-exercise-media-video-link]");
   const name = String(dialog.dataset.exerciseMediaName || "Exercise").trim();
   const staticUrl = trustedExerciseImageUrl(dialog.dataset.exerciseMediaStatic);
   const videoUrl = trustedExerciseMotionUrl(dialog.dataset.exerciseMediaVideo);
+  const demoUrl = exerciseVideoUrl({ name, video: dialog.dataset.exerciseMediaDemo });
   if (!stage || !staticUrl) return;
 
   const shouldShowVideo = Boolean(showVideo && videoUrl);
   dialog.dataset.exerciseMediaShowingVideo = String(shouldShowVideo);
   if (toggle) toggle.hidden = !videoUrl;
+  if (videoLink) {
+    videoLink.hidden = Boolean(videoUrl || !demoUrl);
+    if (videoUrl || !demoUrl) videoLink.removeAttribute("href");
+    else {
+      videoLink.href = demoUrl;
+      videoLink.setAttribute("aria-label", `Watch ${name} exercise video (opens in a new tab)`);
+    }
+  }
   if (toggleLabel) toggleLabel.textContent = shouldShowVideo ? "Show static card" : "Watch exercise video";
   if (caption) caption.textContent = shouldShowVideo ? "Exercise video demonstration" : "Static start and end reference";
 
@@ -2647,6 +2663,7 @@ function openExerciseMedia(button) {
   const name = String(button?.dataset.exerciseMediaName || "Exercise").trim();
   const staticUrl = trustedExerciseImageUrl(button?.dataset.exerciseMediaStatic);
   const videoUrl = trustedExerciseMotionUrl(button?.dataset.exerciseMediaVideo);
+  const demoUrl = exerciseVideoUrl({ name, video: button?.dataset.exerciseMediaDemo });
   const instructions = String(button?.dataset.exerciseMediaInstructions || "").trim();
   if (!staticUrl) return;
   dialog.querySelector("h2").textContent = name;
@@ -2657,6 +2674,7 @@ function openExerciseMedia(button) {
   dialog.dataset.exerciseMediaName = name;
   dialog.dataset.exerciseMediaStatic = staticUrl;
   dialog.dataset.exerciseMediaVideo = videoUrl;
+  dialog.dataset.exerciseMediaDemo = demoUrl;
   renderExerciseMediaDialog(dialog, false);
   dialog.showModal();
 }

@@ -2958,7 +2958,7 @@ body.dashboard-page.custom-workout-grouped-finish-open {
   padding: 0 16px 14px;
 }
 
-.exercise-media-dialog [data-exercise-media-video-toggle] {
+.exercise-media-dialog :is([data-exercise-media-video-toggle], [data-exercise-media-video-link]) {
   display: flex;
   width: 100%;
   min-height: 48px;
@@ -2972,9 +2972,10 @@ body.dashboard-page.custom-workout-grouped-finish-open {
   color: #fff;
   font: inherit;
   font-weight: 900;
+  text-decoration: none;
 }
 
-.exercise-media-dialog [data-exercise-media-video-toggle][hidden] {
+.exercise-media-dialog :is([data-exercise-media-video-toggle], [data-exercise-media-video-link])[hidden] {
   display: none;
 }
 

@@ -896,6 +896,40 @@ struct ApprovedExercise: Decodable, Identifiable, Equatable {
     }
 }
 
+enum ExerciseSuggestionMetadata {
+    static func muscleSummary(primary: String, secondary: [String]) -> String? {
+        var seen = Set<String>()
+        let muscles = [primary] + secondary
+        let labels = muscles.compactMap { muscle -> String? in
+            let trimmed = muscle.trimmingCharacters(in: .whitespacesAndNewlines)
+            let key = trimmed.lowercased()
+            guard !key.isEmpty, seen.insert(key).inserted else { return nil }
+            return trimmed
+                .replacingOccurrences(of: "[_-]+", with: " ", options: .regularExpression)
+                .fwbTitleCased
+        }
+
+        return labels.isEmpty ? nil : labels.joined(separator: " · ")
+    }
+
+    static func muscleSummary(
+        for name: String,
+        approvedExercises: [ApprovedExercise]
+    ) -> String? {
+        let identity = ExerciseNameIdentity.key(for: name)
+        guard !identity.isEmpty,
+              let exercise = approvedExercises.first(where: { candidate in
+                  ExerciseNameIdentity.key(for: candidate.name) == identity
+                      || candidate.aliases.contains { ExerciseNameIdentity.key(for: $0) == identity }
+              }) else { return nil }
+
+        return muscleSummary(
+            primary: exercise.primaryMuscle,
+            secondary: exercise.secondaryMuscles
+        )
+    }
+}
+
 enum ExerciseSuggestionLibrary {
     static func merged(_ groups: [[String]]) -> [String] {
         var namesByKey: [String: String] = [:]

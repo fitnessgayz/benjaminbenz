@@ -44,6 +44,47 @@ private struct ExerciseMediaViewerRequest: Identifiable {
     let media: ExerciseMedia
 }
 
+private struct ExerciseSuggestionText: View {
+    let name: String
+    let approvedExercises: [ApprovedExercise]
+    var fallbackSubtitle: String? = nil
+
+    private var subtitle: String? {
+        ExerciseSuggestionMetadata.muscleSummary(
+            for: name,
+            approvedExercises: approvedExercises
+        ) ?? fallbackSubtitle
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(name.fwbTitleCased)
+                .font(FWBFont.subheadline.weight(.semibold))
+                .foregroundStyle(Color.fwbWarmWhite)
+                .multilineTextAlignment(.leading)
+            if let subtitle, !subtitle.isEmpty {
+                Text(subtitle)
+                    .font(FWBFont.footnote.weight(.semibold))
+                    .foregroundStyle(Color.fwbMuted)
+                    .multilineTextAlignment(.leading)
+            }
+        }
+        .accessibilityElement(children: .combine)
+    }
+}
+
+private func exerciseSuggestionAccessibilityLabel(
+    action: String,
+    name: String,
+    approvedExercises: [ApprovedExercise]
+) -> String {
+    guard let muscles = ExerciseSuggestionMetadata.muscleSummary(
+        for: name,
+        approvedExercises: approvedExercises
+    ) else { return "\(action) \(name)" }
+    return "\(action) \(name), muscles: \(muscles)"
+}
+
 private enum WorkoutLogFocus: Hashable {
     case set(UUID)
     case weight(UUID)
@@ -516,7 +557,8 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
         .sheet(item: $exerciseEditorRequest, onDismiss: { pendingSlotAssignment = nil }) { request in
             ExercisePickerSheet(
                 request: request,
-                suggestions: suggestionNames
+                suggestions: suggestionNames,
+                approvedExercises: exerciseLibraryStore.exercises
             ) { exerciseName in
                 applyExerciseEdit(request, exerciseName: exerciseName)
             }
@@ -686,6 +728,7 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
         if isCustomWorkout {
             CustomExerciseNameComposer(
                 suggestions: suggestionNames,
+                approvedExercises: exerciseLibraryStore.exercises,
                 format: customWorkoutFormat
             ) { exerciseName, placement in
                 let exercise = insertCustomExercise(
@@ -808,6 +851,7 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
                 || achievementHistoryStore.state == .loading,
             editableName: isCustomWorkout ? nameBinding(for: exercise) : nil,
             suggestions: suggestionNames,
+            approvedExercises: exerciseLibraryStore.exercises,
             substitutedFromName: substitutionOriginals[exercise.code]?.name,
             copySource: copySource(for: exercise),
             isCopyHistoryLoading: achievementHistoryStore.state == .idle
@@ -1094,7 +1138,11 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
     private var customBlankSlots: some View {
         if isCustomWorkout && customWorkoutFormat == .single {
             ForEach(exercises.count..<max(exercises.count, 6), id: \.self) { index in
-                CustomBlankExerciseSlot(number: index + 1, suggestions: suggestionNames) { name in
+                CustomBlankExerciseSlot(
+                    number: index + 1,
+                    suggestions: suggestionNames,
+                    approvedExercises: exerciseLibraryStore.exercises
+                ) { name in
                     let exercise = insertCustomExercise(code: nextAddedExerciseCode(), name: name, placement: .currentGroup)
                     offerHistoryCopy(for: exercise)
                 }
@@ -1113,7 +1161,12 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
                 Text("0 / 0 complete").font(FWBFont.sized(11).weight(.semibold)).foregroundStyle(Color.fwbMuted)
             }
             ForEach(0..<count, id: \.self) { slot in
-                CustomBlankExerciseSlot(number: (number - 1) * count + slot + 1, suggestions: suggestionNames, showsSetGrid: false) { name in
+                CustomBlankExerciseSlot(
+                    number: (number - 1) * count + slot + 1,
+                    suggestions: suggestionNames,
+                    approvedExercises: exerciseLibraryStore.exercises,
+                    showsSetGrid: false
+                ) { name in
                     let existingAssignments = groupAssignments
                     let exercise = insertCustomExercise(code: nextAddedExerciseCode(), name: name, placement: .currentGroup)
                     groupAssignments = existingAssignments
@@ -2335,6 +2388,7 @@ private struct WorkoutSessionHeader: View {
 
 private struct CustomExerciseNameComposer: View {
     let suggestions: [String]
+    let approvedExercises: [ApprovedExercise]
     let format: CustomWorkoutFormat
     let onAdd: (String, CustomExercisePlacement) -> Void
 
@@ -2503,10 +2557,10 @@ private struct CustomExerciseNameComposer: View {
             HStack(spacing: 10) {
                 Image(systemName: "figure.strengthtraining.traditional")
                     .foregroundStyle(Color.fwbLime)
-                Text(suggestion.fwbTitleCased)
-                    .font(FWBFont.subheadline.weight(.semibold))
-                    .foregroundStyle(Color.fwbWarmWhite)
-                    .multilineTextAlignment(.leading)
+                ExerciseSuggestionText(
+                    name: suggestion,
+                    approvedExercises: approvedExercises
+                )
                 Spacer(minLength: 8)
                 Image(systemName: "plus")
                     .font(FWBFont.footnote.weight(.semibold))
@@ -2517,7 +2571,11 @@ private struct CustomExerciseNameComposer: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("Add \(suggestion)")
+        .accessibilityLabel(exerciseSuggestionAccessibilityLabel(
+            action: "Add",
+            name: suggestion,
+            approvedExercises: approvedExercises
+        ))
         .accessibilityIdentifier("customWorkout.suggestion.\(suggestionIdentifier(suggestion))")
     }
 
@@ -3132,6 +3190,7 @@ private struct WorkoutExerciseLogCard: View {
     let isPreviousHistoryLoading: Bool
     let editableName: Binding<String>?
     let suggestions: [String]
+    let approvedExercises: [ApprovedExercise]
     let substitutedFromName: String?
     let copySource: WorkoutExerciseCopySource?
     let isCopyHistoryLoading: Bool
@@ -3177,6 +3236,7 @@ private struct WorkoutExerciseLogCard: View {
         isPreviousHistoryLoading: Bool,
         editableName: Binding<String>?,
         suggestions: [String],
+        approvedExercises: [ApprovedExercise],
         substitutedFromName: String?,
         copySource: WorkoutExerciseCopySource?,
         isCopyHistoryLoading: Bool,
@@ -3216,6 +3276,7 @@ private struct WorkoutExerciseLogCard: View {
         self.isPreviousHistoryLoading = isPreviousHistoryLoading
         self.editableName = editableName
         self.suggestions = suggestions
+        self.approvedExercises = approvedExercises
         self.substitutedFromName = substitutedFromName
         self.copySource = copySource
         self.isCopyHistoryLoading = isCopyHistoryLoading
@@ -3382,6 +3443,7 @@ private struct WorkoutExerciseLogCard: View {
                     ExerciseNameAutocompleteField(
                         text: editableName,
                         suggestions: suggestions,
+                        approvedExercises: approvedExercises,
                         onSuggestionSelected: onExerciseNameSuggestionSelected,
                         accessibilityIdentifier: "customWorkout.exercise.\(exercise.code)"
                     )
@@ -4939,6 +5001,7 @@ private struct ExercisePickerSheet: View {
 
     let request: ExerciseEditorRequest
     let suggestions: [String]
+    let approvedExercises: [ApprovedExercise]
     let onSave: (String) -> Void
 
     @State private var exerciseName = ""
@@ -5088,16 +5151,11 @@ private struct ExercisePickerSheet: View {
                                                     .frame(width: 34, height: 34)
                                                     .background(Color.fwbAccentFill, in: RoundedRectangle(cornerRadius: FWBLayout.controlRadius, style: .continuous))
 
-                                                VStack(alignment: .leading, spacing: 3) {
-                                                    Text(suggestion.fwbTitleCased)
-                                                        .font(FWBFont.subheadline.weight(.bold))
-                                                        .foregroundStyle(Color.fwbWarmWhite)
-                                                        .multilineTextAlignment(.leading)
-                                                    Text((ExerciseLibrary.category(for: suggestion) ?? "Program & history").uppercased())
-                                                        .font(FWBFont.footnote.weight(.semibold))
-                                                        .tracking(0.5)
-                                                        .foregroundStyle(Color.fwbMuted)
-                                                }
+                                                ExerciseSuggestionText(
+                                                    name: suggestion,
+                                                    approvedExercises: approvedExercises,
+                                                    fallbackSubtitle: (ExerciseLibrary.category(for: suggestion) ?? "Program & history").uppercased()
+                                                )
 
                                                 Spacer(minLength: 6)
                                                 Image(systemName: "plus")
@@ -5109,7 +5167,11 @@ private struct ExercisePickerSheet: View {
                                             .contentShape(Rectangle())
                                         }
                                         .buttonStyle(.plain)
-                                        .accessibilityLabel("Add \(suggestion)")
+                                        .accessibilityLabel(exerciseSuggestionAccessibilityLabel(
+                                            action: "Add",
+                                            name: suggestion,
+                                            approvedExercises: approvedExercises
+                                        ))
 
                                         if suggestion != visibleSuggestions.last {
                                             FWBRule()
@@ -5249,6 +5311,7 @@ private struct LoggerStatusBanner: View {
 private struct ExerciseNameAutocompleteField: View {
     @Binding var text: String
     let suggestions: [String]
+    let approvedExercises: [ApprovedExercise]
     var autoFocus = false
     var onSuggestionSelected: () -> Void = {}
     let accessibilityIdentifier: String
@@ -5280,9 +5343,10 @@ private struct ExerciseNameAutocompleteField: View {
                             HStack(spacing: 10) {
                                 Image(systemName: "figure.strengthtraining.traditional")
                                     .foregroundStyle(Color.fwbLime)
-                                Text(suggestion.fwbTitleCased)
-                                    .font(FWBFont.subheadline.weight(.semibold))
-                                    .foregroundStyle(Color.fwbWarmWhite)
+                                ExerciseSuggestionText(
+                                    name: suggestion,
+                                    approvedExercises: approvedExercises
+                                )
                                 Spacer()
                             }
                             .padding(.horizontal, 12)
@@ -5290,7 +5354,11 @@ private struct ExerciseNameAutocompleteField: View {
                             .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
-                        .accessibilityLabel("Use \(suggestion)")
+                        .accessibilityLabel(exerciseSuggestionAccessibilityLabel(
+                            action: "Use",
+                            name: suggestion,
+                            approvedExercises: approvedExercises
+                        ))
                         .accessibilityIdentifier("workout.exercisePicker.suggestion.\(suggestionIdentifier(suggestion))")
 
                         if suggestion != matches.last {
@@ -5321,6 +5389,7 @@ private struct ExerciseNameAutocompleteField: View {
 private struct CustomBlankExerciseSlot: View {
     let number: Int
     let suggestions: [String]
+    let approvedExercises: [ApprovedExercise]
     var showsSetGrid = true
     let onAdd: (String) -> Void
     @State private var name = ""
@@ -5356,7 +5425,11 @@ private struct CustomBlankExerciseSlot: View {
             if isFocused && !trimmedName.isEmpty {
                 ForEach(Array(ExerciseSuggestionLibrary.matches(query: trimmedName, within: suggestions).prefix(5)), id: \.self) { suggestion in
                     Button { commit(suggestion) } label: {
-                        Text(suggestion).frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                        ExerciseSuggestionText(
+                            name: suggestion,
+                            approvedExercises: approvedExercises
+                        )
+                        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
                     }
                     .font(FWBFont.sized(13))
                     .buttonStyle(.plain)

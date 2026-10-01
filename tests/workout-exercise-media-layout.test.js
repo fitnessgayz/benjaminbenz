@@ -11,12 +11,15 @@ const workoutCss = fs.readFileSync(path.join(root, "css/workout-layout.css"), "u
 test("opens the static branded card first and offers video as a secondary action", () => {
   assert.match(portal, /data-exercise-media-static/);
   assert.match(portal, /data-exercise-media-video/);
+  assert.match(portal, /data-exercise-media-demo/);
   assert.match(portal, /data-exercise-media-instructions/);
   assert.match(portal, /loading="lazy"[\s\S]{0,80}decoding="async"/);
   assert.match(portal, /approvedExercise\?\.instructions \|\| exercise\.instructions/);
   assert.match(portal, /image\.src = staticUrl/);
   assert.match(portal, /renderExerciseMediaDialog\(dialog, false\)/);
   assert.match(portal, /Watch exercise video/);
+  assert.match(portal, /data-exercise-media-video-link target="_blank" rel="noopener noreferrer"/);
+  assert.match(portal, /videoLink\.href = demoUrl/);
   assert.match(portal, /video\.src = videoUrl/);
   assert.match(portal, /video\.controls = true/);
   assert.match(portal, /Show static card/);
@@ -39,6 +42,12 @@ test("crops branded list thumbnails to the Start and End photo panels", () => {
   assert.match(css, /\.exercise-media-button-branded-crop\s*\{[\s\S]*aspect-ratio: 1\.16 \/ 1/);
   assert.match(css, /\.exercise-media-button-branded-crop > img\s*\{[\s\S]*object-position: left center/);
   assert.match(workoutCss, /\.workout-preview-exercise-media \.exercise-media-button-branded-crop/);
+});
+
+test("offers approved YouTube demos when a static card has no uploaded motion video", () => {
+  assert.match(portal, /const demoUrl = exerciseVideoUrl\(exercise\)/);
+  assert.match(portal, /videoLink\.hidden = Boolean\(videoUrl \|\| !demoUrl\)/);
+  assert.match(css, /data-exercise-media-video-link/);
 });
 
 test("loads both static artwork and instructions from the approved exercise library", () => {

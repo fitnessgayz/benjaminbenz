@@ -320,6 +320,17 @@ final class WorkoutCalculatorsTests: XCTestCase {
         )
     }
 
+    func testExerciseSuggestionMuscleSummaryFormatsAndDeduplicatesMuscles() {
+        XCTAssertEqual(
+            ExerciseSuggestionMetadata.muscleSummary(
+                primary: "glutes",
+                secondary: ["hamstrings", "erector_spinae", "glutes"]
+            ),
+            "Glutes · Hamstrings · Erector Spinae"
+        )
+        XCTAssertNil(ExerciseSuggestionMetadata.muscleSummary(primary: " ", secondary: []))
+    }
+
     func testWorkoutHistoryConsolidatesDuplicateExerciseNamesWithoutLosingSets() {
         let records = [
             WorkoutHistoryRecord(
