@@ -99,6 +99,8 @@ let clientAddedExerciseLoadToken = 0;
 let clientAddedExerciseLoaded = false;
 let isClientAddedExerciseLoading = false;
 let clientAddedExerciseLoadError = "";
+let editingClientAddedExerciseKey = "";
+let isClientAddedExerciseMutating = false;
 let coachNotificationsController = null;
 let coachMessagesController = null;
 let inviteClientReturnFocus = null;
@@ -4866,7 +4868,7 @@ function renderAllClientAddedExercises() {
 
   pendingCount.textContent = isClientAddedExerciseLoading ? "…" : String(pendingGroups.length);
   pendingCount.setAttribute("aria-label", `${pendingGroups.length} exercise${pendingGroups.length === 1 ? "" : "s"} awaiting review`);
-  searchInput.disabled = isClientAddedExerciseLoading || Boolean(clientAddedExerciseLoadError);
+  searchInput.disabled = isClientAddedExerciseLoading || isClientAddedExerciseMutating || Boolean(clientAddedExerciseLoadError);
 
   if (isClientAddedExerciseLoading) {
     status.textContent = "Loading client-added exercises…";
@@ -4895,9 +4897,10 @@ function renderAllClientAddedExercises() {
           ? "Needs approval"
           : "Client-created";
       const actionLabel = existingButUnavailable ? "Review library entry" : "Approve & add to shared library";
+      const isEditing = group.key === editingClientAddedExerciseKey;
 
       return `
-        <article class="client-added-exercise-row">
+        <article class="client-added-exercise-row${isEditing ? " is-editing" : ""}" data-client-added-exercise-row="${escapeHtml(group.key)}">
           <div>
             <span class="client-added-exercise-row-heading">
               <strong>${escapeHtml(group.name)}</strong>
@@ -4905,11 +4908,70 @@ function renderAllClientAddedExercises() {
             </span>
             <p>${escapeHtml(clientSummary)} · ${group.logs.length} saved set${group.logs.length === 1 ? "" : "s"} · ${group.workoutKeys.size} workout${group.workoutKeys.size === 1 ? "" : "s"}</p>
           </div>
-          ${available ? "" : `<button class="button button-dark" type="button" data-approve-client-added-exercise="${escapeHtml(group.key)}">${escapeHtml(actionLabel)}</button>`}
+          <div class="client-added-exercise-actions">
+            ${available ? "" : `<button class="button button-ghost" type="button" data-edit-client-added-exercise="${escapeHtml(group.key)}" ${isClientAddedExerciseMutating ? "disabled" : ""}>Edit name</button>`}
+            <button class="button ${available ? "button-ghost" : "button-dark"}" type="button" data-approve-client-added-exercise="${escapeHtml(group.key)}" ${isClientAddedExerciseMutating ? "disabled" : ""}>${available ? "Edit shared exercise" : escapeHtml(actionLabel)}</button>
+          </div>
+          ${isEditing ? `
+            <div class="client-added-exercise-edit-form">
+              <label for="client-added-exercise-edit-${escapeHtml(group.key)}">Corrected exercise name</label>
+              <input id="client-added-exercise-edit-${escapeHtml(group.key)}" type="text" value="${escapeHtml(group.name)}" minlength="2" maxlength="120" autocomplete="off" data-client-added-exercise-edit-input />
+              <p>Updates this name for ${group.clients.size} client${group.clients.size === 1 ? "" : "s"} while preserving their workout history.</p>
+              <div>
+                <button class="button button-dark" type="button" data-save-client-added-exercise-name="${escapeHtml(group.key)}">Save name</button>
+                <button class="button button-ghost" type="button" data-cancel-client-added-exercise-edit>Cancel</button>
+              </div>
+            </div>
+          ` : ""}
         </article>
       `;
     }).join("")
     : `<p class="exercise-library-empty">${term ? "No client-added exercises match that search." : "No client-added exercises have been saved yet."}</p>`;
+}
+
+async function renameClientAddedExercise(group, correctedName) {
+  const cleanedName = String(correctedName || "").trim().replace(/\s+/g, " ");
+
+  if (!coachSupabase || !group || isClientAddedExerciseMutating) return;
+  if (cleanedName.length < 2 || cleanedName.length > 120 || normalizeClientExerciseName(cleanedName) === group.key) {
+    document.getElementById("client-added-exercise-status").textContent = "Enter a different exercise name between 2 and 120 characters.";
+    return;
+  }
+
+  const confirmed = window.confirm(
+    `Rename “${group.name}” to “${cleanedName}” for ${group.clients.size} client${group.clients.size === 1 ? "" : "s"}?\n\nSaved sets, weights, reps, dates, notes, and progress will be preserved.`
+  );
+  if (!confirmed) return;
+
+  isClientAddedExerciseMutating = true;
+  editingClientAddedExerciseKey = "";
+  renderAllClientAddedExercises();
+  document.getElementById("client-added-exercise-status").textContent = `Renaming ${group.name}…`;
+
+  try {
+    const results = await Promise.all(Array.from(group.clients.keys()).map(async (clientEmail) => {
+      const { data, error } = await coachSupabase.rpc("correct_client_exercise_name", {
+        target_client_email: clientEmail,
+        previous_exercise_name: group.name,
+        corrected_exercise_name: cleanedName
+      });
+      if (error) throw error;
+      return Number(data || 0);
+    }));
+    const affectedCount = results.reduce((total, count) => total + count, 0);
+
+    isClientAddedExerciseMutating = false;
+    clientAddedExerciseLoaded = false;
+    await loadAllClientAddedExercises({ force: true });
+    document.getElementById("client-added-exercise-status").textContent = affectedCount > 0
+      ? `${affectedCount} saved set${affectedCount === 1 ? "" : "s"} renamed to ${cleanedName}.`
+      : "That exercise name was already updated.";
+  } catch (error) {
+    isClientAddedExerciseMutating = false;
+    clientAddedExerciseLoaded = false;
+    await loadAllClientAddedExercises({ force: true });
+    document.getElementById("client-added-exercise-status").textContent = error?.message || "The client-added exercise could not be renamed.";
+  }
 }
 
 async function loadAllClientAddedExercises({ force = false } = {}) {
@@ -4986,6 +5048,31 @@ function handleAllClientAddedExercises() {
     renderAllClientAddedExercises();
   });
   list.addEventListener("click", (event) => {
+    const editButton = event.target.closest("[data-edit-client-added-exercise]");
+    if (editButton) {
+      editingClientAddedExerciseKey = editButton.dataset.editClientAddedExercise || "";
+      renderAllClientAddedExercises();
+      window.requestAnimationFrame(() => (
+        list.querySelector(`[data-client-added-exercise-row="${CSS.escape(editingClientAddedExerciseKey)}"] [data-client-added-exercise-edit-input]`)
+          ?.focus({ preventScroll: true })
+      ));
+      return;
+    }
+
+    if (event.target.closest("[data-cancel-client-added-exercise-edit]")) {
+      editingClientAddedExerciseKey = "";
+      renderAllClientAddedExercises();
+      return;
+    }
+
+    const saveNameButton = event.target.closest("[data-save-client-added-exercise-name]");
+    if (saveNameButton) {
+      const group = allClientAddedExerciseGroups().find((item) => item.key === saveNameButton.dataset.saveClientAddedExerciseName);
+      const input = saveNameButton.closest("[data-client-added-exercise-row]")?.querySelector("[data-client-added-exercise-edit-input]");
+      renameClientAddedExercise(group, input?.value);
+      return;
+    }
+
     const button = event.target.closest("[data-approve-client-added-exercise]");
     const group = allClientAddedExerciseGroups().find((item) => item.key === button?.dataset.approveClientAddedExercise);
     if (!group) return;
@@ -5646,6 +5733,82 @@ function exerciseLibraryPayload() {
   };
 }
 
+const exerciseLibraryBodyPartGroups = [
+  { key: "chest", label: "Chest", muscles: ["chest"] },
+  { key: "back", label: "Back", muscles: ["back", "lats"] },
+  { key: "shoulders", label: "Shoulders", muscles: ["shoulders"] },
+  { key: "arms", label: "Arms", muscles: ["biceps", "triceps"] },
+  { key: "legs", label: "Legs", muscles: ["quads", "hamstrings", "glutes", "calves", "adductors"] },
+  { key: "core", label: "Core", muscles: ["core"] },
+  { key: "full-body", label: "Full body", muscles: ["full_body"] },
+  { key: "other", label: "Other", muscles: [] }
+];
+
+function exerciseLibraryBodyParts(record = {}) {
+  const muscles = [record.primary_muscle, ...(record.secondary_muscles || [])]
+    .map((muscle) => String(muscle || "").trim().toLowerCase())
+    .filter(Boolean);
+  const groups = exerciseLibraryBodyPartGroups.filter((group) => (
+    group.key !== "other" && group.muscles.some((muscle) => muscles.includes(muscle))
+  ));
+
+  return groups.length ? groups : [exerciseLibraryBodyPartGroups.at(-1)];
+}
+
+function exerciseLibraryCardMarkup(record) {
+  return `
+    <article class="exercise-library-card${record.id === selectedExerciseLibraryId ? " is-selected" : ""}">
+      ${exerciseLibraryMediaMarkup(record)}
+      <button class="exercise-library-card-select" type="button" data-exercise-library-id="${escapeHtml(record.id)}" aria-pressed="${record.id === selectedExerciseLibraryId}">
+        <span class="exercise-library-card-heading">
+          <span>
+            <strong>${escapeHtml(record.name)}</strong>
+            <small>${escapeHtml(exerciseLibraryLabel(record.primary_muscle))}</small>
+          </span>
+          <i aria-hidden="true">↗</i>
+        </span>
+        <span class="exercise-library-card-meta">
+          <small>${escapeHtml(exerciseLibraryLabel(record.equipment))}</small>
+          <small>${escapeHtml(exerciseLibraryLabel(record.difficulty))}</small>
+          <small>${escapeHtml(record.default_sets || 3)} × ${escapeHtml(record.default_reps || "8–12")}</small>
+        </span>
+        ${record.instructions ? `<span class="exercise-library-card-instructions">${escapeHtml(record.instructions)}</span>` : ""}
+        <span class="exercise-library-badges">
+          ${exerciseLibraryHasVideo(record) ? '<small class="has-demo">Video</small>' : ""}
+          ${record.is_approved ? '<small class="is-approved">Approved</small>' : '<small>Hidden</small>'}
+          ${record.is_active ? "" : '<small>Archived</small>'}
+        </span>
+      </button>
+    </article>
+  `;
+}
+
+function exerciseLibraryGroupedMarkup(records = []) {
+  const grouped = new Map(exerciseLibraryBodyPartGroups.map((group) => [group.key, []]));
+
+  records.forEach((record) => {
+    exerciseLibraryBodyParts(record).forEach((group) => grouped.get(group.key).push(record));
+  });
+
+  return exerciseLibraryBodyPartGroups.map((group) => {
+    const groupRecords = grouped.get(group.key);
+    if (!groupRecords.length) return "";
+    const headingId = `exercise-library-group-${group.key}`;
+
+    return `
+      <section class="exercise-library-group" aria-labelledby="${headingId}" data-exercise-library-group="${group.key}">
+        <div class="exercise-library-group-heading">
+          <h4 id="${headingId}">${group.label}</h4>
+          <span>${groupRecords.length} ${groupRecords.length === 1 ? "exercise" : "exercises"}</span>
+        </div>
+        <div class="exercise-library-group-list">
+          ${groupRecords.map(exerciseLibraryCardMarkup).join("")}
+        </div>
+      </section>
+    `;
+  }).join("");
+}
+
 function renderExerciseLibrary() {
   const list = document.getElementById("exercise-library-list");
   const count = document.getElementById("exercise-library-count");
@@ -5690,31 +5853,7 @@ function renderExerciseLibrary() {
     : "Name, muscle, equipment...";
   count.textContent = `${visible.length} of ${catalog.length} ${exerciseLibraryView === "videos" ? "videos" : "exercises"}`;
   list.innerHTML = visible.length > 0
-    ? visible.map((record) => `
-      <article class="exercise-library-card${record.id === selectedExerciseLibraryId ? " is-selected" : ""}">
-        ${exerciseLibraryMediaMarkup(record)}
-        <button class="exercise-library-card-select" type="button" data-exercise-library-id="${escapeHtml(record.id)}" aria-pressed="${record.id === selectedExerciseLibraryId}">
-          <span class="exercise-library-card-heading">
-            <span>
-              <strong>${escapeHtml(record.name)}</strong>
-              <small>${escapeHtml(exerciseLibraryLabel(record.primary_muscle))}</small>
-            </span>
-            <i aria-hidden="true">↗</i>
-          </span>
-          <span class="exercise-library-card-meta">
-            <small>${escapeHtml(exerciseLibraryLabel(record.equipment))}</small>
-            <small>${escapeHtml(exerciseLibraryLabel(record.difficulty))}</small>
-            <small>${escapeHtml(record.default_sets || 3)} × ${escapeHtml(record.default_reps || "8–12")}</small>
-          </span>
-          ${record.instructions ? `<span class="exercise-library-card-instructions">${escapeHtml(record.instructions)}</span>` : ""}
-          <span class="exercise-library-badges">
-            ${exerciseLibraryHasVideo(record) ? '<small class="has-demo">Video</small>' : ""}
-            ${record.is_approved ? '<small class="is-approved">Approved</small>' : '<small>Hidden</small>'}
-            ${record.is_active ? "" : '<small>Archived</small>'}
-          </span>
-        </button>
-      </article>
-    `).join("")
+    ? exerciseLibraryGroupedMarkup(visible)
     : `<p class="exercise-library-empty">${exerciseLibraryView === "videos"
       ? (term ? "No videos match that search." : "No exercise videos have been added yet.")
       : "No exercises match that search."}</p>`;

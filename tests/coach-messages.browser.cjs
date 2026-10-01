@@ -135,7 +135,7 @@ async function setup(browser, role, viewport, { search = "", autoOpen = false } 
     await client.close();
 
     const coach = await setup(browser, "coach", { width: 1280, height: 900 });
-    assert.equal(await coach.locator("[data-coach-messages]").evaluate(el => getComputedStyle(el).backgroundColor), "rgb(23, 27, 22)");
+    assert.equal(await coach.locator("[data-coach-messages]").evaluate(el => getComputedStyle(el).backgroundColor), "rgb(248, 249, 245)");
     await coach.locator("[data-client-email]").click();
     await coach.waitForFunction(() => document.querySelectorAll(".fwb-message-bubble").length === 50);
     await coach.locator("#coach-message-draft").fill("Thanks for the update. Let’s adjust your next workout.");

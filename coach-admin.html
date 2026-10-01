@@ -31,7 +31,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css?v=client-view-shortcut-1&amp;home-shortcuts=1&amp;coach-dock=8&amp;mobile-client-hub=2&amp;home-notifications=2&amp;exercise-images=1&amp;exercise-cards=1&amp;videos-tab=3&amp;client-added=1&amp;mobile-card-media=1&amp;coach-layout-repair=1" />
-  <link rel="stylesheet" href="css/coach-messages.css?v=1" />
+  <link rel="stylesheet" href="css/coach-messages.css?v=3" />
   <link rel="stylesheet" href="css/workout-layout.css?v=workout-preview-1" />
   <link rel="stylesheet" href="css/apple-workout.css?v=1" />
   <link rel="stylesheet" href="css/apple-health-sync.css?v=1" />
@@ -365,6 +365,20 @@
             </div>
           </div>
 
+          <div class="coach-notification-inbox" aria-labelledby="coach-notification-inbox-title">
+            <div class="coach-notification-section-heading">
+              <div>
+                <p class="kicker">Inbox</p>
+                <h3 id="coach-notification-inbox-title">Recent alerts</h3>
+              </div>
+              <button class="button button-ghost coach-notification-mark-all" type="button" data-web-notification-mark-all hidden>
+                Mark all read
+              </button>
+            </div>
+            <ul class="web-notification-list" data-web-notification-list aria-live="polite"></ul>
+            <p class="web-notification-empty" data-web-notification-empty>Your recent coach alerts will appear here.</p>
+          </div>
+
           <p class="coach-notification-status" data-web-notification-status role="status" aria-live="polite">
             Choose Enable browser alerts to receive notifications on this device.
           </p>
@@ -425,19 +439,6 @@
             </div>
           </div>
 
-          <div class="coach-notification-inbox" aria-labelledby="coach-notification-inbox-title">
-            <div class="coach-notification-section-heading">
-              <div>
-                <p class="kicker">Inbox</p>
-                <h3 id="coach-notification-inbox-title">Recent alerts</h3>
-              </div>
-              <button class="button button-ghost coach-notification-mark-all" type="button" data-web-notification-mark-all hidden>
-                Mark all read
-              </button>
-            </div>
-            <ul class="web-notification-list" data-web-notification-list aria-live="polite"></ul>
-            <p class="web-notification-empty" data-web-notification-empty>Your recent coach alerts will appear here.</p>
-          </div>
           <nav class="coach-support-links" aria-label="FWB Coach help and policies">
             <a href="fwb-coach-support.html"><strong>Help &amp; support</strong><span>Get sign-in, client-data, or workspace help</span></a>
             <a href="fwb-coach-privacy.html"><strong>Privacy</strong><span>How FWB Coach handles coaching information</span></a>

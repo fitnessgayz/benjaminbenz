@@ -14,7 +14,7 @@ test("exercise library opens as a focused coach tool like the workout logger", (
   assert.match(adminHtml, /href="coach-exercise-library\.html"[^>]*aria-label="Exercise library"/);
   assert.doesNotMatch(adminHtml, /data-admin-tab="library"/);
   assert.ok(adminHtml.indexOf('href="coach-exercise-library.html"') > adminHtml.indexOf('href="coach-workout-log.html"'));
-  assert.ok(adminHtml.indexOf('href="coach-exercise-library.html"') < adminHtml.indexOf('data-admin-tab="home"'));
+  assert.ok(adminHtml.indexOf('data-admin-tab="home"') < adminHtml.indexOf('href="coach-workout-log.html"'));
   assert.match(libraryHtml, /<body class="dashboard-page coach-exercise-library-page">/);
   assert.match(libraryHtml, /id="exercise-library-page-title">Exercise library<\/h1>/);
   assert.match(libraryHtml, /href="coach-admin\.html">Back to FWB Coach<\/a>/);
@@ -45,4 +45,17 @@ test("catalog controls and exercise cards appear before client-name management a
   assert.match(styles, /\.coach-exercise-library-page \.exercise-library-browser\s*\{[^}]*order:\s*1/s);
   assert.match(styles, /\.coach-exercise-library-page :is\(\.client-exercise-name-manager\)\s*\{[^}]*order:\s*2/s);
   assert.match(styles, /\.coach-exercise-library-page \.exercise-library-editor\s*\{[^}]*order:\s*3/s);
+});
+
+test("exercise cards and videos are grouped into familiar body-part sections", () => {
+  assert.match(adminSource, /const exerciseLibraryBodyPartGroups = \[[\s\S]*?Chest[\s\S]*?Back[\s\S]*?Shoulders[\s\S]*?Arms[\s\S]*?Legs[\s\S]*?Core[\s\S]*?Full body[\s\S]*?Other/);
+  assert.match(adminSource, /function exerciseLibraryBodyParts\(record = \{\}\)/);
+  assert.match(adminSource, /\[record\.primary_muscle, \.\.\.\(record\.secondary_muscles \|\| \[\]\)\]/);
+  assert.match(adminSource, /group\.muscles\.some\(\(muscle\) => muscles\.includes\(muscle\)\)/);
+  assert.match(adminSource, /function exerciseLibraryGroupedMarkup\(records = \[\]\)/);
+  assert.match(adminSource, /data-exercise-library-group="\$\{group\.key\}"/);
+  assert.match(adminSource, /exerciseLibraryGroupedMarkup\(visible\)/);
+  assert.match(styles, /\.exercise-library-group-heading\s*\{[^}]*border-bottom:\s*2px solid #dfe3dc/s);
+  assert.match(styles, /\.exercise-library-group-list\s*\{[^}]*display:\s*grid[^}]*gap:\s*10px/s);
+  assert.match(libraryHtml, /body-parts=2/);
 });

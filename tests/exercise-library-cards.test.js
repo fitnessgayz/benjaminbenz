@@ -53,9 +53,15 @@ test("exercise library exposes an all-client approval queue", () => {
   assert.match(source, /function allClientAddedExerciseGroups\(logs = allClientAddedExerciseLogs\)/);
   assert.match(source, /\.from\("client_workout_logs"\)[\s\S]*?\.ilike\("workout_title", "Custom workout%"\)/);
   assert.match(source, /data-approve-client-added-exercise=/);
+  assert.match(source, /data-edit-client-added-exercise=/);
+  assert.match(source, /data-save-client-added-exercise-name=/);
+  assert.match(source, /async function renameClientAddedExercise\(group, correctedName\)/);
+  assert.match(source, /\.rpc\("correct_client_exercise_name",\s*\{[\s\S]*?target_client_email:[\s\S]*?previous_exercise_name:[\s\S]*?corrected_exercise_name:/);
+  assert.match(source, /Saved sets, weights, reps, dates, notes, and progress will be preserved/);
   assert.match(source, /Saving will approve it and add it to the shared library/);
   assert.match(source, /is_approved: true[\s\S]*?is_active: true/);
   assert.match(styles, /\.client-added-exercises-link\s*\{[\s\S]*?border-left: 5px solid var\(--lime\)/);
+  assert.match(styles, /\.client-added-exercise-edit-form\s*\{[^}]*grid-column:\s*1 \/ -1/s);
 });
 
 test("mobile exercise cards preserve the full branded artwork", () => {

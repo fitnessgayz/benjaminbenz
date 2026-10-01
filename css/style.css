@@ -11185,6 +11185,14 @@ textarea:focus {
   cursor: pointer;
 }
 
+.client-added-exercise-review-heading > button {
+  width: 36px !important;
+  min-width: 36px !important;
+  max-width: 36px !important;
+  inline-size: 36px !important;
+  padding: 0 !important;
+}
+
 .client-added-exercise-search {
   display: grid;
   gap: 7px;
@@ -11223,6 +11231,13 @@ textarea:focus {
 
 .client-added-exercise-row > div {
   min-width: 0;
+}
+
+.client-added-exercise-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 7px;
 }
 
 .client-added-exercise-row-heading {
@@ -11269,6 +11284,41 @@ textarea:focus {
   padding: 8px 10px;
   font-size: .7rem;
   white-space: nowrap;
+}
+
+.client-added-exercise-edit-form {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 7px 10px;
+  padding: 12px;
+  border: 1px solid #cdd5c7;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.client-added-exercise-edit-form label,
+.client-added-exercise-edit-form p {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+.client-added-exercise-edit-form label {
+  color: var(--ink);
+  font-size: .72rem;
+  font-weight: 900;
+}
+
+.client-added-exercise-edit-form input {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+}
+
+.client-added-exercise-edit-form > div {
+  display: flex;
+  align-items: center;
+  gap: 7px;
 }
 
 .exercise-library-view-tabs button {
@@ -11435,11 +11485,54 @@ textarea:focus {
   display: grid;
   grid-auto-rows: max-content;
   align-content: start;
-  gap: 10px;
+  gap: 24px;
   max-height: 680px;
   padding: 0 3px 6px 0;
   overflow-y: auto;
   scrollbar-color: var(--lime) #e4e8e1;
+}
+
+.exercise-library-group {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.exercise-library-group-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 2px 9px;
+  border-bottom: 2px solid #dfe3dc;
+}
+
+.exercise-library-group-heading h4 {
+  margin: 0;
+  color: var(--ink);
+  font-size: clamp(1.05rem, 2vw, 1.28rem);
+  font-weight: 950;
+  letter-spacing: -.025em;
+}
+
+.exercise-library-group-heading span {
+  display: inline-flex;
+  min-height: 28px;
+  align-items: center;
+  padding: 5px 9px;
+  border: 1px solid #cfd5ca;
+  border-radius: 999px;
+  color: #596056;
+  background: #f7f9f3;
+  font-size: .68rem;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.exercise-library-group-list {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
 }
 
 .exercise-library-card {
@@ -11793,10 +11886,19 @@ textarea:focus {
   }
 
   .exercise-library-list {
-    gap: 14px;
+    gap: 26px;
     max-height: none;
     padding-right: 0;
     overflow: visible;
+  }
+
+  .exercise-library-group,
+  .exercise-library-group-list {
+    gap: 14px;
+  }
+
+  .exercise-library-group-heading {
+    padding-bottom: 10px;
   }
 
   .exercise-library-card {
@@ -11869,6 +11971,17 @@ textarea:focus {
 
   .client-added-exercise-row .button {
     width: 100%;
+  }
+
+  .client-added-exercise-actions,
+  .client-added-exercise-edit-form > div {
+    display: grid;
+    grid-template-columns: 1fr;
+    width: 100%;
+  }
+
+  .client-added-exercise-edit-form {
+    grid-template-columns: 1fr;
   }
 
   .exercise-library-name-field,

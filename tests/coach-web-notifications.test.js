@@ -58,6 +58,10 @@ test("Settings panel keeps every notification feature together", () => {
   assert.match(settingsPanel, /data-web-notification-list[^>]*aria-live="polite"/);
   assert.match(settingsPanel, /data-web-notification-empty/);
   assert.match(settingsPanel, /data-web-notification-mark-all[^>]*hidden/);
+  assert.ok(
+    settingsPanel.indexOf('id="coach-notification-inbox-title"') < settingsPanel.indexOf('id="coach-notification-settings-title"'),
+    "Recent alerts should appear before notification preferences"
+  );
   assert.match(adminHtml, /src="js\/web-notifications\.js\?v=notification-default-on-1"[\s\S]*src="js\/coach-admin\.js\?[^"\s]+"/);
 });
 
