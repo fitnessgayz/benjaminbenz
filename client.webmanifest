@@ -1,13 +1,13 @@
 {
   "id": "/client-dashboard.html",
-  "name": "Fitness with Benjamin",
-  "short_name": "FWB",
-  "description": "Fitness with Benjamin client workouts, progress, and coaching.",
+  "name": "FWB Training",
+  "short_name": "FWB Training",
+  "description": "Your Fitness with Benjamin training plan, progress, and coach connection.",
   "start_url": "/client-dashboard.html",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#f5f6f2",
-  "theme_color": "#050505",
+  "background_color": "#F2F3EE",
+  "theme_color": "#080A08",
   "icons": [
     {
       "src": "/fwb-home-icon-180.png",

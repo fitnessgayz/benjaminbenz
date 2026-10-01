@@ -9,6 +9,7 @@ const script = fs.readFileSync(path.join(root, "js/script.js"), "utf8");
 
 test("directs visitors to the questionnaire without an inquiry form", () => {
   assert.doesNotMatch(homepage, /id="contact-message-form"|name="(?:name|email|phone)"|Send inquiry/);
+  assert.match(homepage, /class="button button-light" href="questionnaire\.html">Find your coaching fit<\/a>/);
   assert.match(homepage, /href="questionnaire\.html">Start Questionnaire<\/a>/);
 });
 

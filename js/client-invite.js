@@ -11,7 +11,7 @@ const inviteSupabase = inviteConfigured && window.supabase
     })
   : null;
 const inviteSteps = ["account", "fitness", "macros"];
-const inviteStepLabels = ["Account", "Fitness", "Macros"];
+const inviteStepLabels = ["Account", "About your training", "Optional nutrition"];
 let passwordFlow = "invite";
 let activeInviteStep = 0;
 let invitePasswordSaved = false;
@@ -257,9 +257,9 @@ function updateInviteDeckPeeks() {
   const rightState = document.getElementById("invite-deck-right-state");
 
   if (activeInviteStep === 0) {
-    if (leftLabel) leftLabel.textContent = "Fitness";
+    if (leftLabel) leftLabel.textContent = "About your training";
     if (leftState) leftState.textContent = "Next";
-    if (rightLabel) rightLabel.textContent = "Macros";
+    if (rightLabel) rightLabel.textContent = "Optional nutrition";
     if (rightState) rightState.textContent = "Optional";
   } else if (activeInviteStep === 1) {
     if (leftLabel) leftLabel.textContent = "Account";
@@ -269,7 +269,7 @@ function updateInviteDeckPeeks() {
   } else {
     if (leftLabel) leftLabel.textContent = "Account";
     if (leftState) leftState.textContent = "Saved";
-    if (rightLabel) rightLabel.textContent = "Fitness";
+    if (rightLabel) rightLabel.textContent = "About your training";
     if (rightState) rightState.textContent = "Saved";
   }
 }

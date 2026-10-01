@@ -1,6 +1,6 @@
 const coachWorkoutConfig = window.FWB_SUPABASE_CONFIG || {};
 const coachWorkoutEmails = ["benjaminbenz.fit@gmail.com"];
-const coachWorkoutLoginUrl = "client-login.html?return_to=%2Fcoach-workout-log.html";
+const coachWorkoutLoginUrl = "coach-login.html?return_to=%2Fcoach-workout-log.html";
 const coachWorkoutAutosaveDelayMs = 10000;
 const coachWorkoutWarmUpSetNumberBase = 1000;
 const coachWorkoutWarmUpSetType = "warm_up";
@@ -347,8 +347,8 @@ function coachWorkoutExerciseMarkup(values = {}) {
       <p class="coach-workout-set-progress" data-coach-workout-progress>0 / ${sets.length} working sets completed</p>
       <div class="coach-workout-exercise-detail" id="${id}">
         <div class="coach-workout-set-table">
-          <div class="coach-workout-set-header" aria-hidden="true">
-            <span>Set</span><span>Weight</span><span>Reps</span><span>RIR</span>
+          <div class="coach-workout-set-header">
+            <span>Set</span><button class="one-rm-trigger" type="button" data-one-rm-open aria-label="Open estimated 1RM calculator from this set">Weight <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="5" y="2.5" width="14" height="19" rx="2"/><path d="M8 6.5h8M8.5 11h1M12 11h1M15.5 11h1M8.5 14.5h1M12 14.5h1M15.5 14.5h1M8.5 18h1M12 18h1M15.5 18h1"/></svg></button><span>Reps</span><span>RIR</span>
           </div>
           <div class="coach-workout-set-rows" data-coach-workout-set-rows>
             ${sets.map((set, index) => coachWorkoutSetMarkup(set, index)).join("")}
@@ -561,8 +561,8 @@ function coachWorkoutGroupedSetRowMarkup(row, code, exerciseIndex, setType, setI
 
 function coachWorkoutGroupedColumnLabelsMarkup() {
   return `
-    <div class="coach-workout-grouped-columns" aria-hidden="true">
-      <span>Set</span><span>Weight</span><span>Reps</span><span>RIR</span>
+    <div class="coach-workout-grouped-columns">
+      <span>Set</span><button class="one-rm-trigger" type="button" data-one-rm-open aria-label="Open estimated 1RM calculator from this set">Weight <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="5" y="2.5" width="14" height="19" rx="2"/><path d="M8 6.5h8M8.5 11h1M12 11h1M15.5 11h1M8.5 14.5h1M12 14.5h1M15.5 14.5h1M8.5 18h1M12 18h1M15.5 18h1"/></svg></button><span>Reps</span><span>RIR</span>
     </div>
   `;
 }
@@ -882,6 +882,21 @@ function clearCoachWorkoutWeightCopy(row) {
 function refreshCoachWorkoutCopyControls(card) {
   card?.querySelectorAll("[data-coach-grouped-round]").forEach((section) => {
     const entries = coachWorkoutCopyEntries(section);
+    const oneRepMaxSources = entries.map(({ exercise }) => {
+      const best = coachWorkoutPersonalBestForExercise(exercise);
+      return {
+        label: exercise.querySelector("[data-coach-workout-name]")?.value.trim() || "Exercise",
+        weight: best?.weight_used,
+        reps: best?.reps
+      };
+    }).filter((source, index, sources) => (
+      Number(source.weight) > 0 && Number.isInteger(Number(source.reps)) && Number(source.reps) >= 1 && Number(source.reps) <= 30 &&
+      sources.findIndex((candidate) => candidate.label === source.label) === index
+    ));
+    section.querySelectorAll('[data-one-rm-source="pr"]').forEach((button) => {
+      button.dataset.oneRmSources = JSON.stringify(oneRepMaxSources);
+      button.disabled = oneRepMaxSources.length === 0;
+    });
     const copies = entries.filter(({ exercise, row, input, visible }) => {
       const copy = coachWorkoutWeightCopies.get(row);
       if (!copy) return false;
@@ -1019,6 +1034,7 @@ function coachWorkoutGroupedSectionsMarkup(group, format = coachWorkoutGroupForm
           <div class="coach-workout-copy-actions">
             <button type="button" class="coach-workout-copy-button" data-coach-copy-weights="previous"${roundNumber === 1 ? " disabled" : ""}>Copy previous ${format === "single" ? "set" : "round"}</button>
             <button type="button" class="coach-workout-copy-button" data-coach-copy-weights="pr" disabled>Use PR weight</button>
+            <button type="button" class="one-rm-pr-trigger" data-one-rm-open data-one-rm-source="pr" aria-label="Estimate 1RM from personal record" disabled><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="5" y="2.5" width="14" height="19" rx="2"/><path d="M8 6.5h8M8.5 11h1M12 11h1M15.5 11h1M8.5 14.5h1M12 14.5h1M15.5 14.5h1M8.5 18h1M12 18h1M15.5 18h1"/></svg><span>Estimate 1RM</span></button>
           </div>
         </header>
         <p class="coach-workout-pr-preview" data-coach-pr-preview hidden></p>

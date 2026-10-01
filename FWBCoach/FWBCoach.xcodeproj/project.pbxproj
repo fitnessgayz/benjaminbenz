@@ -1,0 +1,336 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 60;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		000000000000000000000101 /* FWBCoachApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000201 /* FWBCoachApp.swift */; };
+		000000000000000000000102 /* AppConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000202 /* AppConfiguration.swift */; };
+		000000000000000000000103 /* CoachProgram.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000203 /* CoachProgram.swift */; };
+		000000000000000000000104 /* AuthSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000204 /* AuthSession.swift */; };
+		000000000000000000000105 /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000205 /* KeychainStore.swift */; };
+		000000000000000000000106 /* SupabaseClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000206 /* SupabaseClient.swift */; };
+		000000000000000000000107 /* AppSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000207 /* AppSession.swift */; };
+		000000000000000000000108 /* AppRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000208 /* AppRootView.swift */; };
+		000000000000000000000109 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000209 /* LoginView.swift */; };
+		00000000000000000000010A /* CoachTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000020A /* CoachTabView.swift */; };
+		00000000000000000000010B /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000020B /* HomeView.swift */; };
+		00000000000000000000010C /* ClientsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000020C /* ClientsView.swift */; };
+		00000000000000000000010D /* ProgramDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000020D /* ProgramDetailView.swift */; };
+		00000000000000000000010E /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000020E /* SettingsView.swift */; };
+		00000000000000000000010F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000020F /* Assets.xcassets */; };
+		000000000000000000000110 /* CoachWebAppView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000211 /* CoachWebAppView.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		000000000000000000000201 /* FWBCoachApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FWBCoachApp.swift; sourceTree = "<group>"; };
+		000000000000000000000202 /* AppConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppConfiguration.swift; sourceTree = "<group>"; };
+		000000000000000000000203 /* CoachProgram.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachProgram.swift; sourceTree = "<group>"; };
+		000000000000000000000204 /* AuthSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthSession.swift; sourceTree = "<group>"; };
+		000000000000000000000205 /* KeychainStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainStore.swift; sourceTree = "<group>"; };
+		000000000000000000000206 /* SupabaseClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseClient.swift; sourceTree = "<group>"; };
+		000000000000000000000207 /* AppSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSession.swift; sourceTree = "<group>"; };
+		000000000000000000000208 /* AppRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppRootView.swift; sourceTree = "<group>"; };
+		000000000000000000000209 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
+		00000000000000000000020A /* CoachTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachTabView.swift; sourceTree = "<group>"; };
+		00000000000000000000020B /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		00000000000000000000020C /* ClientsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClientsView.swift; sourceTree = "<group>"; };
+		00000000000000000000020D /* ProgramDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProgramDetailView.swift; sourceTree = "<group>"; };
+		00000000000000000000020E /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		00000000000000000000020F /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		000000000000000000000210 /* FWBCoach.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FWBCoach.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		000000000000000000000211 /* CoachWebAppView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachWebAppView.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		000000000000000000000403 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		000000000000000000000301 = {
+			isa = PBXGroup;
+			children = (
+				000000000000000000000303 /* FWBCoach */,
+				000000000000000000000302 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		000000000000000000000302 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				000000000000000000000210 /* FWBCoach.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		000000000000000000000303 /* FWBCoach */ = {
+			isa = PBXGroup;
+			children = (
+				000000000000000000000201 /* FWBCoachApp.swift */,
+				000000000000000000000202 /* AppConfiguration.swift */,
+				000000000000000000000304 /* Models */,
+				000000000000000000000305 /* Services */,
+				000000000000000000000306 /* State */,
+				000000000000000000000307 /* Views */,
+				00000000000000000000020F /* Assets.xcassets */,
+			);
+			path = FWBCoach;
+			sourceTree = "<group>";
+		};
+		000000000000000000000304 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				000000000000000000000203 /* CoachProgram.swift */,
+				000000000000000000000204 /* AuthSession.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		000000000000000000000305 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				000000000000000000000205 /* KeychainStore.swift */,
+				000000000000000000000206 /* SupabaseClient.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		000000000000000000000306 /* State */ = {
+			isa = PBXGroup;
+			children = (
+				000000000000000000000207 /* AppSession.swift */,
+			);
+			path = State;
+			sourceTree = "<group>";
+		};
+		000000000000000000000307 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				000000000000000000000208 /* AppRootView.swift */,
+				000000000000000000000209 /* LoginView.swift */,
+				00000000000000000000020A /* CoachTabView.swift */,
+				00000000000000000000020B /* HomeView.swift */,
+				00000000000000000000020C /* ClientsView.swift */,
+				00000000000000000000020D /* ProgramDetailView.swift */,
+				00000000000000000000020E /* SettingsView.swift */,
+				000000000000000000000211 /* CoachWebAppView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		000000000000000000000501 /* FWBCoach */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 000000000000000000000602 /* Build configuration list for PBXNativeTarget "FWBCoach" */;
+			buildPhases = (
+				000000000000000000000401 /* Sources */,
+				000000000000000000000403 /* Frameworks */,
+				000000000000000000000402 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = FWBCoach;
+			productName = FWBCoach;
+			productReference = 000000000000000000000210 /* FWBCoach.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		000000000000000000000502 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2660;
+				LastUpgradeCheck = 2660;
+				TargetAttributes = {
+					000000000000000000000501 = {
+						CreatedOnToolsVersion = 26.6;
+					};
+				};
+			};
+			buildConfigurationList = 000000000000000000000601 /* Build configuration list for PBXProject "FWBCoach" */;
+			compatibilityVersion = "Xcode 15.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 000000000000000000000301;
+			productRefGroup = 000000000000000000000302 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				000000000000000000000501 /* FWBCoach */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		000000000000000000000402 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				00000000000000000000010F /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		000000000000000000000401 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				000000000000000000000101 /* FWBCoachApp.swift in Sources */,
+				000000000000000000000102 /* AppConfiguration.swift in Sources */,
+				000000000000000000000103 /* CoachProgram.swift in Sources */,
+				000000000000000000000104 /* AuthSession.swift in Sources */,
+				000000000000000000000105 /* KeychainStore.swift in Sources */,
+				000000000000000000000106 /* SupabaseClient.swift in Sources */,
+				000000000000000000000107 /* AppSession.swift in Sources */,
+				000000000000000000000108 /* AppRootView.swift in Sources */,
+				000000000000000000000109 /* LoginView.swift in Sources */,
+				00000000000000000000010A /* CoachTabView.swift in Sources */,
+				00000000000000000000010B /* HomeView.swift in Sources */,
+				00000000000000000000010C /* ClientsView.swift in Sources */,
+				00000000000000000000010D /* ProgramDetailView.swift in Sources */,
+				00000000000000000000010E /* SettingsView.swift in Sources */,
+				000000000000000000000110 /* CoachWebAppView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		000000000000000000000701 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		000000000000000000000702 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		000000000000000000000703 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "";
+				DEVELOPMENT_TEAM = 5Q4FU299QH;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "FWB Coach";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.benjaminbenz.FWBCoach;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		000000000000000000000704 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "";
+				DEVELOPMENT_TEAM = 5Q4FU299QH;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "FWB Coach";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.benjaminbenz.FWBCoach;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		000000000000000000000601 /* Build configuration list for PBXProject "FWBCoach" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				000000000000000000000701 /* Debug */,
+				000000000000000000000702 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		000000000000000000000602 /* Build configuration list for PBXNativeTarget "FWBCoach" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				000000000000000000000703 /* Debug */,
+				000000000000000000000704 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 000000000000000000000502 /* Project object */;
+}

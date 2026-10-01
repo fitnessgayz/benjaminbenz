@@ -10,8 +10,8 @@ const signupScript = fs.readFileSync(path.join(root, "js/client-signup.js"), "ut
 const inviteScript = fs.readFileSync(path.join(root, "js/client-invite.js"), "utf8");
 const styles = fs.readFileSync(path.join(root, "css/style.css"), "utf8");
 
-test("places Create new account beside the client password recovery action", () => {
-  assert.match(loginHtml, /class="login-help-links"[\s\S]*?data-password-reset="client"[\s\S]*?href="client-signup\.html">Create new account/);
+test("places the invited-client setup link beside password recovery", () => {
+  assert.match(loginHtml, /class="login-help-links"[\s\S]*?data-password-reset="client"[\s\S]*?href="client-signup\.html">Need a fresh setup link\?/);
   assert.match(styles, /\.login-help-links \{[\s\S]*?display: flex/);
 });
 

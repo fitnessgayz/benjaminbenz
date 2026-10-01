@@ -1,0 +1,111 @@
+/* Shared estimated 1RM calculator and compact workout-header triggers. */
+.one-rm-trigger {
+  display: inline-flex;
+  width: 100%;
+  min-width: 0;
+  min-height: 32px;
+  padding: 2px;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: inherit;
+  letter-spacing: inherit;
+  line-height: inherit;
+  text-transform: inherit;
+  cursor: pointer;
+}
+
+.one-rm-trigger svg {
+  flex: 0 0 15px;
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.6;
+}
+
+.one-rm-trigger:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 1px;
+}
+
+.one-rm-pr-trigger {
+  display: inline-flex;
+  width: auto !important;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 8px 10px;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border: 1px solid currentColor;
+  border-radius: 10px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: .75rem;
+  font-weight: 700;
+  line-height: 1.2;
+  cursor: pointer;
+}
+
+.one-rm-pr-trigger svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.7; }
+.one-rm-pr-trigger:disabled { cursor: default; opacity: .48; }
+.one-rm-pr-trigger:focus-visible { outline: 3px solid #2878ff; outline-offset: 2px; }
+
+.one-rm-dialog {
+  width: min(480px, calc(100vw - 24px));
+  max-height: calc(100dvh - 24px);
+  margin: auto;
+  padding: 0;
+  overflow: auto;
+  border: 1px solid #353a31;
+  border-radius: 24px;
+  background: #f8f8f3;
+  color: #111411;
+  box-shadow: 0 24px 70px rgb(0 0 0 / 28%);
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.one-rm-dialog::backdrop { background: rgb(5 8 5 / 68%); backdrop-filter: blur(5px); }
+.one-rm-card { display: grid; gap: 18px; margin: 0; padding: 22px; }
+.one-rm-heading { display: flex; align-items: start; justify-content: space-between; gap: 16px; }
+.one-rm-heading :is(p, h2), .one-rm-intro, .one-rm-prompt { margin: 0; }
+.one-rm-heading .kicker { color: #687064; font-size: .68rem; font-weight: 900; letter-spacing: .09em; text-transform: uppercase; }
+.one-rm-heading h2 { margin-top: 4px; font-size: 1.75rem; font-weight: 900; letter-spacing: -.035em; }
+.one-rm-close { width: 44px; height: 44px; padding: 0; border: 1px solid #d7d9d2; border-radius: 50%; background: #fff; color: #111411; font: 700 1.6rem/1 Inter, sans-serif; cursor: pointer; }
+.one-rm-intro, .one-rm-prompt { color: #687064; font-size: .88rem; line-height: 1.5; }
+.one-rm-source, .one-rm-inputs label { display: grid; gap: 6px; color: #687064; font-size: .7rem; font-weight: 900; letter-spacing: .04em; text-transform: uppercase; }
+.one-rm-source[hidden] { display: none; }
+.one-rm-inputs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.one-rm-dialog :is(input, select) { box-sizing: border-box; width: 100%; min-height: 50px; padding: 9px 11px; border: 1px solid #c9cdc5; border-radius: 11px; background: #fff; color: #111411; font: 800 1rem/1 Inter, sans-serif; text-transform: none; }
+.one-rm-dialog :is(input, select):focus { border-color: #111411; outline: 3px solid #d7ff3f; outline-offset: 1px; }
+.one-rm-result { display: grid; padding: 18px; gap: 5px; border-radius: 16px; background: #111411; color: #fff; text-align: center; }
+.one-rm-result[hidden], .one-rm-percentages[hidden], .one-rm-prompt[hidden] { display: none; }
+.one-rm-result > span { color: #cdd2ca; font-size: .72rem; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; }
+.one-rm-result strong { color: #d7ff3f; font-size: 2.25rem; font-variant-numeric: tabular-nums; font-weight: 900; line-height: 1; }
+.one-rm-result small { margin-top: 4px; color: #cdd2ca; font-size: .72rem; line-height: 1.35; }
+.one-rm-percentages { display: grid; gap: 9px; }
+.one-rm-percentages h3 { margin: 0; font-size: .85rem; font-weight: 900; text-transform: uppercase; }
+.one-rm-percentages > div { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 5px; }
+.one-rm-percentages > div > div { display: grid; padding: 9px 3px; gap: 4px; border: 1px solid #d7d9d2; border-radius: 10px; background: #fff; text-align: center; }
+.one-rm-percentages span { color: #687064; font-size: .65rem; font-weight: 800; }
+.one-rm-percentages strong { font-size: .78rem; font-variant-numeric: tabular-nums; }
+.one-rm-percentages small { color: #687064; font-size: .68rem; }
+.one-rm-done { min-height: 50px; border: 1px solid #111411; border-radius: 12px; background: #d7ff3f; color: #111411; font: 900 1rem/1 Inter, sans-serif; cursor: pointer; }
+
+@media (max-width: 600px) {
+  .one-rm-card { padding: 18px 15px; }
+  .one-rm-pr-trigger span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+}
+
+@media (max-width: 380px) {
+  .one-rm-percentages > div { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}

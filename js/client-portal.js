@@ -188,6 +188,13 @@ const customWorkoutDefaultWorkingSetCount = 3;
 const customWorkoutDraftVersion = 2;
 const clientDashboardUrl = "client-dashboard.html?v=manual-sessions-1";
 const clientDashboardSidebarStorageKey = "fwb_client_dashboard_sidebar_collapsed_v1";
+const clientDashboardMoreTabNames = new Set([
+  "stats",
+  "nutrition",
+  "questionnaire",
+  "sessions",
+  "notifications"
+]);
 const clientHomeCheckinPromptStoragePrefix = "fwb_daily_checkin_prompt_v2";
 const clientDailyPromptMemory = new Set();
 let clientDailyCheckinReady = false;
@@ -5143,7 +5150,7 @@ function exerciseLogFields(exercise, workoutTitle, options = {}) {
       <div class="set-table" aria-label="${escapeHtml(exercise.name)} set tracker">
       <div class="set-header">
         <span>Set</span>
-        <span>Weight</span>
+        <button class="one-rm-trigger" type="button" data-one-rm-open aria-label="Open estimated 1RM calculator from this set">Weight <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="5" y="2.5" width="14" height="19" rx="2"/><path d="M8 6.5h8M8.5 11h1M12 11h1M15.5 11h1M8.5 14.5h1M12 14.5h1M15.5 14.5h1M8.5 18h1M12 18h1M15.5 18h1"/></svg></button>
         <span>Reps</span>
         <button class="rir-help-trigger" type="button" data-rir-help aria-label="What does RIR mean?" aria-haspopup="dialog"><span>RIR</span><svg viewBox="0 0 20 20" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="8"/><path d="M10 9v5M10 5.5v1"/></svg></button>
       </div>
@@ -9247,6 +9254,18 @@ function refreshCustomWorkoutGroupedCopyWeights(carousel) {
       personalBests.set(logElement, personalBestWeightLog(logsForExerciseDisplay(logElement)));
     });
   }
+  const oneRepMaxSources = logElements.map((logElement) => {
+    const best = personalBests.get(logElement);
+    return {
+      label: logElement.querySelector("[data-exercise-name-input]")?.value.trim() || logElement.dataset.exerciseName || "Exercise",
+      weight: best?.weight_used,
+      reps: best?.reps
+    };
+  }).filter((source) => Number(source.weight) > 0 && Number.isInteger(Number(source.reps)) && Number(source.reps) >= 1 && Number(source.reps) <= 30);
+  carousel?.querySelectorAll('[data-one-rm-source="pr"]').forEach((button) => {
+    button.dataset.oneRmSources = JSON.stringify(oneRepMaxSources);
+    button.disabled = oneRepMaxSources.length === 0;
+  });
   carousel?.querySelectorAll("[data-custom-grouped-pr-preview]").forEach((preview) => {
     const logElement = logElements[Number(preview.dataset.customGroupedPrPreview)];
     const record = customWorkoutGroupedPersonalBestLabel(logElement, personalBests.get(logElement), false);
@@ -9375,7 +9394,7 @@ function customWorkoutGroupedSectionsMarkup(carousel) {
   const warmUps = [];
   const columnLabelsMarkup = `
     <div class="custom-workout-grouped-columns">
-      <span>Set</span><span>Weight</span><span>Reps</span>
+      <span>Set</span><button class="one-rm-trigger" type="button" data-one-rm-open aria-label="Open estimated 1RM calculator from this set">Weight <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="5" y="2.5" width="14" height="19" rx="2"/><path d="M8 6.5h8M8.5 11h1M12 11h1M15.5 11h1M8.5 14.5h1M12 14.5h1M15.5 14.5h1M8.5 18h1M12 18h1M15.5 18h1"/></svg></button><span>Reps</span>
       <button class="rir-help-trigger" type="button" data-rir-help aria-label="What does RIR mean?" aria-haspopup="dialog"><span>RIR</span><svg viewBox="0 0 20 20" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="8"/><path d="M10 9v5M10 5.5v1"/></svg></button>
     </div>
   `;
@@ -9432,6 +9451,10 @@ function customWorkoutGroupedSectionsMarkup(carousel) {
               aria-label="Copy personal record weights and reps into empty fields in ${workoutSetUnit(carousel).toLowerCase()} ${roundNumber}">Copy PR</button>
             <button class="custom-workout-grouped-pr-info" type="button" data-pr-help aria-label="What does PR mean?" aria-expanded="false">
               <svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="8"/><path d="M10 9v5M10 5.5v1"/></svg>
+            </button>
+            <button class="one-rm-pr-trigger" type="button" data-one-rm-open data-one-rm-source="pr" aria-label="Estimate 1RM from personal record" disabled>
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="5" y="2.5" width="14" height="19" rx="2"/><path d="M8 6.5h8M8.5 11h1M12 11h1M15.5 11h1M8.5 14.5h1M12 14.5h1M15.5 14.5h1M8.5 18h1M12 18h1M15.5 18h1"/></svg>
+              <span>Estimate 1RM</span>
             </button>
           </div>
           </div>
@@ -15258,6 +15281,79 @@ function setClientDashboardMobileNavigationExpanded(expanded, options = {}) {
   });
 }
 
+function setClientMobileMoreOpen(open, options = {}) {
+  const menu = document.querySelector("[data-client-mobile-more]");
+  const toggle = document.querySelector("[data-client-mobile-more-toggle]");
+  const mobileNavigation = window.matchMedia?.("(max-width: 900px)")?.matches ?? false;
+
+  if (!menu || !toggle) return;
+
+  const shouldOpen = Boolean(open) && mobileNavigation;
+  menu.hidden = !shouldOpen;
+  toggle.setAttribute("aria-expanded", String(shouldOpen));
+  document.body.classList.toggle("is-client-mobile-more-open", shouldOpen);
+
+  if (shouldOpen) {
+    window.requestAnimationFrame?.(() => {
+      menu.querySelector("[data-client-dashboard-tab].is-active, [data-client-dashboard-tab]")?.focus({ preventScroll: true });
+    });
+  } else if (options.restoreFocus) {
+    window.requestAnimationFrame?.(() => toggle.focus({ preventScroll: true }));
+  }
+}
+
+function closeClientMobileMore(options = {}) {
+  const menu = document.querySelector("[data-client-mobile-more]");
+  if (!menu || menu.hidden) return false;
+  setClientMobileMoreOpen(false, options);
+  return true;
+}
+
+function handleClientMobileMore() {
+  const menu = document.querySelector("[data-client-mobile-more]");
+  const toggle = document.querySelector("[data-client-mobile-more-toggle]");
+  if (!menu || !toggle) return;
+
+  toggle.addEventListener("click", () => {
+    setClientMobileMoreOpen(menu.hidden);
+  });
+
+  menu.querySelectorAll("[data-client-mobile-more-close]").forEach((button) => {
+    button.addEventListener("click", () => closeClientMobileMore({ restoreFocus: true }));
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (menu.hidden) return;
+
+    if (event.key === "Escape") {
+      event.preventDefault();
+      closeClientMobileMore({ restoreFocus: true });
+      return;
+    }
+
+    if (event.key !== "Tab") return;
+    const focusable = Array.from(menu.querySelectorAll("button:not([disabled])"))
+      .filter((element) => !element.hidden && element.getClientRects().length > 0);
+    if (focusable.length === 0) return;
+
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  });
+
+  window.addEventListener("resize", () => {
+    if (!(window.matchMedia?.("(max-width: 900px)")?.matches ?? false)) {
+      closeClientMobileMore();
+    }
+  });
+}
+
 function syncClientDashboardMobileNavigationMount() {
   const page = document.querySelector(".client-dashboard-page");
   const content = document.getElementById("dashboard-content");
@@ -15366,6 +15462,12 @@ function setClientDashboardTab(tabName) {
       button.removeAttribute("aria-current");
     }
   });
+  const moreToggle = document.querySelector("[data-client-mobile-more-toggle]");
+  const moreIsActive = clientDashboardMoreTabNames.has(nextTab);
+  moreToggle?.classList.toggle("is-active", moreIsActive);
+  if (moreIsActive) moreToggle?.setAttribute("aria-current", "page");
+  else moreToggle?.removeAttribute("aria-current");
+  closeClientMobileMore();
   syncClientDashboardMobileNavigationIcon(nextTab);
   panels.forEach((panel) => {
     const isActive = panel.dataset.clientDashboardPanel === nextTab;
@@ -15394,14 +15496,12 @@ function setClientDashboardTab(tabName) {
 }
 
 function setClientNotificationSettingsAvailable(available) {
-  const settingsTab = document.querySelector('[data-client-dashboard-tab="notifications"]');
+  const settingsTabs = document.querySelectorAll('[data-client-dashboard-tab="notifications"]');
   const settingsEntries = document.querySelectorAll("[data-client-settings-entry]");
   const settingsPanel = document.querySelector('[data-client-dashboard-panel="notifications"]');
   const isAvailable = Boolean(available);
 
-  if (settingsTab) {
-    settingsTab.hidden = !isAvailable;
-  }
+  settingsTabs.forEach((settingsTab) => { settingsTab.hidden = !isAvailable; });
   settingsEntries.forEach((entry) => { entry.hidden = !isAvailable; });
   if (!isAvailable && settingsPanel) {
     settingsPanel.hidden = true;
@@ -16333,6 +16433,7 @@ function handleClientDashboardTabs() {
     );
 
     setClientDashboardTab(tabName);
+    closeClientMobileMore();
     if (mobileNavigation && tabName === "workouts") {
       window.requestAnimationFrame?.(() => window.WorkoutExerciseDock?.open?.());
     }
@@ -17744,7 +17845,8 @@ function portalLoginDestination(user) {
   const returnTo = new URLSearchParams(window.location.search).get("return_to");
   if (returnTo?.startsWith("/") && !returnTo.startsWith("//")) {
     const destination = new URL(returnTo, window.location.origin);
-    if (destination.origin === window.location.origin && !destination.pathname.endsWith("/client-login.html")) {
+    const isLoginPage = ["/client-login.html", "/coach-login.html"].some((path) => destination.pathname.endsWith(path));
+    if (destination.origin === window.location.origin && !isLoginPage) {
       return destination.href;
     }
   }
@@ -17754,7 +17856,10 @@ function portalLoginDestination(user) {
 }
 
 async function restorePortalLogin() {
-  if (!document.getElementById("client-login-form") || !supabaseClient) {
+  if (!document.getElementById("client-login-form") && !document.getElementById("coach-login-form")) {
+    return;
+  }
+  if (!supabaseClient) {
     return;
   }
   try {
@@ -17824,7 +17929,7 @@ async function handleLogin() {
   });
 
   if (status && supabaseClient) {
-    status.textContent = "Use the email and password from your coach.";
+    status.textContent = "Use the email Benjamin has on file and your password.";
   }
 }
 
@@ -18899,25 +19004,10 @@ async function handleSignOut() {
   });
 }
 
-function disableClientDashboardZoom() {
-  const preventGestureZoom = (event) => {
-    event.preventDefault();
-  };
-
-  document.addEventListener("gesturestart", preventGestureZoom, { passive: false });
-  document.addEventListener("gesturechange", preventGestureZoom, { passive: false });
-  document.addEventListener("gestureend", preventGestureZoom, { passive: false });
-  document.addEventListener("touchmove", (event) => {
-    if (event.touches.length > 1) {
-      event.preventDefault();
-    }
-  }, { passive: false });
-}
-
-disableClientDashboardZoom();
 initializeRestTimerNotifications();
 handleClientDashboardSidebar();
 handleClientDashboardMobileNavigation();
+handleClientMobileMore();
 handleLogin();
 handleCoachPortalLogin();
 void restorePortalLogin();

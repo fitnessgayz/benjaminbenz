@@ -185,7 +185,7 @@ describe("Benjamin MCP server", () => {
     expect(prompts.prompts).toEqual([
       expect.objectContaining({
         name: "coach_with_benjamin",
-        title: "FWB Coach",
+        title: "FWB Training Assistant",
       }),
     ]);
 
@@ -336,7 +336,7 @@ describe("Benjamin MCP server", () => {
     expect(repository.workoutCorrections).toHaveLength(0);
   });
 
-  it("undoes the last complete FWB Coach workout", async () => {
+  it("undoes the last complete FWB Training Assistant workout", async () => {
     const result = await client.callTool({ name: "undo_my_last_workout" });
     expect(result.isError).not.toBe(true);
     expect(result.structuredContent).toMatchObject({

@@ -33,6 +33,8 @@ test("scopes the client navigation styles and cache-busts dashboard assets", () 
   assert.match(styleSource, /body\.client-dashboard-page\s*\{[^}]*padding-bottom:\s*0;/s);
   assert.match(dashboardHtml, /css\/style\.css\?v=workout-preview-1/);
   assert.match(dashboardHtml, /js\/client-portal\.js\?[^"\s]*viewport-dock=\d+/);
+  assert.match(dashboardHtml, /<title>FWB Training \| Fitness with Benjamin<\/title>/);
+  assert.doesNotMatch(dashboardHtml, /maximum-scale|user-scalable=no/);
 });
 
 test("renders nine labeled client destinations in order with current-page semantics", () => {
@@ -56,23 +58,23 @@ test("renders nine labeled client destinations in order with current-page semant
   ]);
   assert.deepEqual(buttons.map((match) => match[1].match(/aria-label="([^"]+)"/)?.[1]), [
     "Home",
-    "Workouts",
-    "Logs",
+    "Train",
+    "History",
     "Progress",
     "Stats and measurements",
-    "Food",
-    "PAR-Q",
+    "Nutrition",
+    "Readiness",
     "Sessions",
     "Settings"
   ]);
   assert.deepEqual(buttons.map((match) => match[3].match(/client-dashboard-tab-label">([^<]+)</)?.[1]), [
     "Home",
-    "Workouts",
-    "Logs",
+    "Train",
+    "History",
     "Progress",
     "Stats",
-    "Food",
-    "PAR-Q",
+    "Nutrition",
+    "Readiness",
     "Sessions",
     "Settings"
   ]);
@@ -80,7 +82,7 @@ test("renders nine labeled client destinations in order with current-page semant
   assert.equal(buttons.find((match) => /aria-current="page"/.test(match[1]))?.[2], "home");
   assert.doesNotMatch(navMarkup, /aria-selected=/);
   assert.match(navMarkup, /data-client-dashboard-tab="notifications"[\s\S]*?client-dashboard-settings-icon/);
-  assert.equal((dashboardHtml.match(/data-client-notification-unread hidden/g) || []).length, 4);
+  assert.equal((dashboardHtml.match(/data-client-notification-unread hidden/g) || []).length, 5);
   assert.equal((dashboardHtml.match(/aria-describedby="client-notification-unread-status"/g) || []).length, 2);
   assert.match(dashboardHtml, /data-client-notification-unread-status aria-live="polite">0 unread notifications/);
 });
@@ -99,22 +101,21 @@ test("uses a sticky 240px desktop sidebar with a persistent 78px icon rail", () 
   assert.match(dashboardHtml, /client-dashboard-sidebar-toggle-label">Minimize</);
 });
 
-test("uses a permanent six-destination frosted safe-area dock on mobile", () => {
+test("uses a permanent five-destination branded safe-area dock on mobile", () => {
   const mobileStyles = sourceBetween("@media (max-width: 900px)", "@media (max-width: 420px)");
 
-  assert.match(mobileStyles, /body\.client-dashboard-page\s*\{[^}]*--client-mobile-dock-height:\s*90px[^}]*min-height:\s*100dvh[^}]*padding-bottom:\s*calc\(var\(--client-bottom-dock-clearance\) \+ 24px\)/s);
+  assert.match(styleSource, /FWB Training mobile IA:[\s\S]*?body\.client-dashboard-page\s*\{[^}]*--client-mobile-dock-height:\s*78px[^}]*padding-bottom:\s*calc\(var\(--client-bottom-dock-clearance\) \+ 20px\)/s);
   assert.match(mobileStyles, /\.client-dashboard-page \.dashboard-shell\s*\{[^}]*padding-top:\s*10px/s);
   assert.match(mobileStyles, /\.client-dashboard-page \.dashboard-grid\s*\{[^}]*padding-top:\s*0/s);
-  assert.match(mobileStyles, /\.dashboard-page \.client-dashboard-tabs\s*\{[^}]*position:\s*fixed[^}]*inset:\s*auto 0 0[^}]*z-index:\s*1000[^}]*grid-template-columns:\s*repeat\(6, minmax\(0, 1fr\)\)[^}]*width:\s*100%[^}]*overflow:\s*visible/s);
-  assert.match(mobileStyles, /background:\s*rgba\(247, 248, 245, \.82\)[^}]*border-top:\s*1px solid rgba\(59, 64, 58, \.14\)[^}]*box-shadow:\s*0 -10px 30px rgba\(20, 24, 20, \.1\)/s);
-  assert.match(mobileStyles, /backdrop-filter:\s*blur\(18px\) saturate\(180%\)/);
-  assert.match(mobileStyles, /-webkit-backdrop-filter:\s*blur\(18px\) saturate\(180%\)/);
+  assert.match(styleSource, /FWB Training mobile IA:[\s\S]*?\.dashboard-page \.client-dashboard-tabs\s*\{[^}]*grid-template-columns:\s*repeat\(5, minmax\(0, 1fr\)\)/s);
+  assert.match(styleSource, /FWB Training mobile IA:[\s\S]*?background:\s*rgba\(247, 248, 244, \.96\)[^}]*box-shadow:\s*0 -8px 24px rgba\(24, 30, 18, \.1\)/s);
+  assert.match(styleSource, /FWB Training mobile IA:[\s\S]*?backdrop-filter:\s*blur\(18px\) saturate\(120%\)/);
   assert.match(mobileStyles, /padding:[^;]*env\(safe-area-inset-right\)[^;]*env\(safe-area-inset-bottom\)[^;]*env\(safe-area-inset-left\)/);
-  assert.match(mobileStyles, /data-client-dashboard-tab="questionnaire"[\s\S]*?data-client-dashboard-tab="sessions"[\s\S]*?data-client-dashboard-tab="notifications"[\s\S]*?display:\s*none !important/);
-  assert.doesNotMatch(mobileStyles, /data-client-dashboard-tab="nutrition"[^}]*display:\s*none/);
-  assert.match(mobileStyles, /\.client-dashboard-tab\.is-active \.client-dashboard-tab-icon\s*\{[^}]*color:\s*var\(--black\)[^}]*background:\s*var\(--lime\)[^}]*border-radius:\s*13px[^}]*box-shadow:\s*none/s);
-  assert.match(mobileStyles, /\.client-dashboard-tab\.is-active \.client-dashboard-tab-label\s*\{[^}]*color:\s*#344000[^}]*font-weight:\s*900[^}]*text-shadow:\s*none/s);
-  assert.match(mobileStyles, /\.client-dashboard-tab-label\s*\{[^}]*display:\s*block !important[^}]*font-size:\s*\.52rem/s);
+  assert.match(styleSource, /data-client-dashboard-tab="stats"[\s\S]*?data-client-dashboard-tab="nutrition"[\s\S]*?data-client-dashboard-tab="questionnaire"[\s\S]*?data-client-dashboard-tab="sessions"[\s\S]*?data-client-dashboard-tab="notifications"[\s\S]*?display:\s*none !important/);
+  assert.match(styleSource, /\.client-dashboard-tab-more\s*\{[^}]*order:\s*5[^}]*display:\s*flex !important/s);
+  assert.match(styleSource, /\.client-dashboard-tab\.is-active,[\s\S]*?\.client-dashboard-tab-more\.is-active\s*\{[^}]*background:\s*var\(--lime\)/s);
+  assert.match(styleSource, /\.client-dashboard-tab-icon,[\s\S]*?\.client-dashboard-tab\.is-active \.client-dashboard-tab-icon[\s\S]*?width:\s*24px[^}]*transform:\s*none/s);
+  assert.match(styleSource, /\.client-dashboard-tab-label,[\s\S]*?font-size:\s*\.64rem !important[^}]*font-weight:\s*700/s);
   assert.match(mobileStyles, /\.client-dashboard-nav-title,[\s\S]*?\.client-dashboard-sidebar-toggle\s*\{[^}]*display:\s*none !important/s);
 });
 
@@ -137,7 +138,7 @@ test("removes mobile scrolling, the arrow cue, and the dark capsule", () => {
   assert.doesNotMatch(mobileStyles, /overflow-x:\s*auto|scroll-snap-type|rgba\(23, 26, 23, \.98\)|border-radius:\s*34px/);
   assert.doesNotMatch(mobileHandler, /addEventListener\("scroll"/);
   assert.match(dashboardHtml, /fwb-design-system\.css\?v=reference-overhaul-3/);
-  assert.match(designSystemSource, /@media \(max-width: 900px\)[\s\S]*?:root body\.client-dashboard-page \.client-dashboard-tabs \{[\s\S]*?background:\s*rgba\(247, 248, 245, \.82\)[\s\S]*?border-radius:\s*0 !important/);
+  assert.match(designSystemSource, /@media \(max-width: 900px\)[\s\S]*?:root body\.client-dashboard-page \.client-dashboard-tabs \{[\s\S]*?background:\s*rgba\(247, 248, 244, \.96\)[\s\S]*?border-radius:\s*0 !important/);
   assert.doesNotMatch(designSystemSource, /@media \(max-width: 900px\)[\s\S]*?client-dashboard-tabs \{\s*border-radius:\s*34px !important/);
 });
 
@@ -160,15 +161,14 @@ test("keeps mobile navigation permanently expanded while preserving selected-tab
   assert.match(portalSource, /handleClientDashboardMobileNavigation\(\);/);
 });
 
-test("uses large, flat, evenly sized icons and legible labels in the mobile dock", () => {
-  const mobileStyles = sourceBetween("@media (max-width: 900px)", "@media (max-width: 420px)");
-  const narrowStyles = sourceBetween("@media (max-width: 420px)", "@media (prefers-reduced-motion: reduce)");
-
-  assert.match(mobileStyles, /\.client-dashboard-tab-icon\s*\{[^}]*width:\s*32px[^}]*height:\s*32px[^}]*padding:\s*3px[^}]*background:\s*transparent[^}]*box-shadow:\s*none/s);
-  assert.match(mobileStyles, /\.client-dashboard-tab\[data-client-dashboard-tab\]\s*\{[^}]*width:\s*100% !important[^}]*min-width:\s*0 !important[^}]*max-width:\s*none !important/s);
-  assert.match(mobileStyles, /\.client-dashboard-tab\.is-active \.client-dashboard-tab-icon\s*\{[^}]*width:\s*42px[^}]*height:\s*42px[^}]*padding:\s*8px/s);
-  assert.match(narrowStyles, /\.client-dashboard-tab-icon\s*\{[^}]*width:\s*30px[^}]*height:\s*30px/s);
-  assert.match(narrowStyles, /\.client-dashboard-tab\.is-active \.client-dashboard-tab-icon\s*\{[^}]*width:\s*40px[^}]*height:\s*40px/s);
+test("keeps mobile icons stable and exposes secondary destinations through More", () => {
+  assert.match(styleSource, /\.client-dashboard-tab-icon,[\s\S]*?flex:\s*0 0 24px[^}]*width:\s*24px[^}]*height:\s*24px/);
+  assert.match(dashboardHtml, /data-client-mobile-more-toggle/);
+  assert.match(dashboardHtml, /id="client-mobile-more"[\s\S]*?data-client-dashboard-tab="stats"[\s\S]*?data-client-dashboard-tab="nutrition"[\s\S]*?data-client-dashboard-tab="questionnaire"[\s\S]*?data-client-dashboard-tab="sessions"[\s\S]*?data-client-dashboard-tab="notifications"/);
+  assert.match(portalSource, /const clientDashboardMoreTabNames = new Set/);
+  assert.match(portalSource, /function handleClientMobileMore\(\)/);
+  assert.match(portalSource, /clientDashboardMoreTabNames\.has\(nextTab\)/);
+  assert.match(styleSource, /\.client-mobile-more-panel\s*\{[\s\S]*?background:\s*var\(--surface, #fff\)/);
 });
 
 test("keeps PAR-Q and Sessions available from Settings", () => {

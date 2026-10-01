@@ -1,0 +1,40 @@
+{
+  "scriptId": "1AW34lMKDOV40e9vGDE5GkfmUs4k95VOh21odSBz4_WnvdSqDDoZMx6wz",
+  "projectUrl": "https://script.google.com/u/0/home/projects/1AW34lMKDOV40e9vGDE5GkfmUs4k95VOh21odSBz4_WnvdSqDDoZMx6wz/edit",
+  "deploymentId": "AKfycbwvaSYvFV-Ls22i_K1httUktwmOgmeIIqPdurdyGvH99R_tM7IgJUfu0kqU7j1EoLjZ",
+  "versionNumber": 3,
+  "endpoint": "https://script.google.com/macros/s/AKfycbwvaSYvFV-Ls22i_K1httUktwmOgmeIIqPdurdyGvH99R_tM7IgJUfu0kqU7j1EoLjZ/exec",
+  "deploymentTimeAsDisplayed": "Sep 26, 2026, 8:22 PM",
+  "status": "DEPLOYED",
+  "liveVerification": "PASSED",
+  "liveVerificationDate": "2026-09-28",
+  "liveChecks": {
+    "anonymousSignupSaved": true,
+    "mixedCaseDuplicatePrevented": true,
+    "whitespaceOnlyNameRejected": true,
+    "emailPermissionAuthorized": true,
+    "newSignupEmailReceived": true,
+    "duplicateEmailSuppressed": true,
+    "realSignupEmailReceived": true,
+    "syntheticRecordRemoved": true,
+    "realSignupRecordsPreserved": true,
+    "invalidResponseHomepageLinkVerified": true
+  },
+  "frontendFile": "app-interest.html",
+  "frontendPublication": "UNLISTED_PUBLIC_MAIN_DOMAIN",
+  "notificationRecipient": "benjaminbenz.fit@gmail.com",
+  "authorizedPermissions": {
+    "oauthScopes": [
+      "https://www.googleapis.com/auth/spreadsheets",
+      "https://www.googleapis.com/auth/script.send_mail"
+    ],
+    "webapp": {
+      "access": "ANYONE_ANONYMOUS",
+      "executeAs": "USER_DEPLOYING"
+    }
+  },
+  "sourceSha256": {
+    "Code.gs": "89d6e71212daf1b82d6296a8c92882e610baae31e7013698de79adf7476c4f89",
+    "appsscript.json": "f1045e21fc14e13673211841e24f8c3cb068f062abe9ab067b3995ab78f908ef"
+  }
+}

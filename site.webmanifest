@@ -4,8 +4,8 @@
   "description": "Fitness with Benjamin personal training and online coaching.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#050505",
-  "theme_color": "#050505",
+  "background_color": "#F2F3EE",
+  "theme_color": "#080A08",
   "icons": [
     {
       "src": "/fwb-home-icon-180.png",

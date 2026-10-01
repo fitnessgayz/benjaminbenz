@@ -109,7 +109,7 @@ test("renders the exercise key, compact round stepper, round rows, and grouped a
   assert.match(sections, /<h4>Warm-up<\/h4>/);
   assert.match(sections, /Optional · excluded from working volume/);
   assert.match(sections, /<h4>\$\{workoutSetUnit\(carousel\)\} \$\{roundNumber\}<\/h4>/);
-  assert.match(sections, /const columnLabelsMarkup = `[\s\S]*?<span>Weight<\/span><span>Reps<\/span>[\s\S]*?<button[^>]*data-rir-help[^>]*><span>RIR<\/span>/);
+  assert.match(sections, /const columnLabelsMarkup = `[\s\S]*?<button[^>]*data-one-rm-open[^>]*>Weight[\s\S]*?<\/button><span>Reps<\/span>[\s\S]*?<button[^>]*data-rir-help[^>]*><span>RIR<\/span>/);
   assert.equal(
     (sections.match(/\$\{columnLabelsMarkup\}/g) || []).length,
     2,
