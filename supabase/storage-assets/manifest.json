@@ -8,7 +8,8 @@
     "20261001005226_add_controlled_articular_rotation_cards.sql",
     "20261001011107_add_nasm_mobility_flexibility_cards.sql",
     "20261001021758_add_nasm_dynamic_flexibility_cards.sql",
-    "20261001025452_replace_exercise_videos.sql"
+    "20261001025452_replace_exercise_videos.sql",
+    "20261001031354_link_nasm_exercise_videos.sql"
   ],
   "assets": [
     {
@@ -840,7 +841,8 @@
     },
     {
       "name": "Bulgarian Split Squat",
-      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-videos/generated/2026-09-30/bulgarian-split-squat.mp4"
+      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-videos/generated/2026-09-30/bulgarian-split-squat.mp4",
+      "demoUrl": "https://www.youtube.com/watch?v=hbw7hdyOpq0"
     },
     {
       "name": "One Dumbbell Bulgarian Split Squat",
@@ -892,7 +894,8 @@
     },
     {
       "name": "Child's Pose",
-      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/childs-pose.webp"
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/childs-pose.webp",
+      "demoUrl": "https://www.youtube.com/watch?v=_ZX_zTOBgp8"
     },
     {
       "name": "Downward-Facing Dog",
@@ -993,6 +996,90 @@
     {
       "name": "Push-Up With Rotation",
       "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/push-up-with-rotation.webp"
+    },
+    {
+      "name": "Barbell Bench Press",
+      "demoUrl": "https://www.youtube.com/watch?v=CayG6UYqL8g"
+    },
+    {
+      "name": "Incline Barbell Bench Press",
+      "demoUrl": "https://www.youtube.com/watch?v=BjGLs6KGWUc"
+    },
+    {
+      "name": "Machine Chest Press",
+      "demoUrl": "https://www.youtube.com/watch?v=lRo9zZ7EwpM"
+    },
+    {
+      "name": "Single-Arm Dumbbell Chest Press",
+      "demoUrl": "https://www.youtube.com/watch?v=qFTnmyC-nf4"
+    },
+    {
+      "name": "Incline Dumbbell Press",
+      "demoUrl": "https://www.youtube.com/watch?v=JKnpHchOWPU"
+    },
+    {
+      "name": "Push-Up",
+      "demoUrl": "https://www.youtube.com/watch?v=WDIpL0pjun0"
+    },
+    {
+      "name": "Pull-Up",
+      "demoUrl": "https://www.youtube.com/watch?v=9yVGh3XbJ34"
+    },
+    {
+      "name": "Face Pull",
+      "demoUrl": "https://www.youtube.com/watch?v=eTCBSFlCJ_s"
+    },
+    {
+      "name": "Barbell Curl",
+      "demoUrl": "https://www.youtube.com/watch?v=pQfJR-sSIvA"
+    },
+    {
+      "name": "Bench Dip",
+      "demoUrl": "https://www.youtube.com/watch?v=WVeZDBhZwLA"
+    },
+    {
+      "name": "Goblet Squat",
+      "demoUrl": "https://www.youtube.com/watch?v=nfX7IFK9UNI"
+    },
+    {
+      "name": "Dumbbell Front Squat",
+      "demoUrl": "https://www.youtube.com/watch?v=hZI8Yy5elZs"
+    },
+    {
+      "name": "Leg Press",
+      "demoUrl": "https://www.youtube.com/watch?v=cDGOn-yfKJA"
+    },
+    {
+      "name": "Single-Leg Leg Press",
+      "demoUrl": "https://www.youtube.com/watch?v=3aYsOsBA7ZE"
+    },
+    {
+      "name": "Dumbbell Romanian Deadlift",
+      "demoUrl": "https://www.youtube.com/watch?v=V8Hdl1FiNt4"
+    },
+    {
+      "name": "Seated Leg Curl",
+      "demoUrl": "https://www.youtube.com/watch?v=_2Kd0d-JEUM"
+    },
+    {
+      "name": "Plank",
+      "demoUrl": "https://www.youtube.com/watch?v=mwlp75MS6Rg"
+    },
+    {
+      "name": "Side Plank",
+      "demoUrl": "https://www.youtube.com/watch?v=44ND4bOB-T0"
+    },
+    {
+      "name": "Dead Bug",
+      "demoUrl": "https://www.youtube.com/watch?v=bxn9FBrt4-A"
+    },
+    {
+      "name": "Russian Twist",
+      "demoUrl": "https://www.youtube.com/watch?v=s0kT80JLCfA"
+    },
+    {
+      "name": "Seated Butterfly Stretch",
+      "demoUrl": "https://www.youtube.com/watch?v=v4OLkxi5-Q0"
     }
   ]
 }

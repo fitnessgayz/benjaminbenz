@@ -70,7 +70,7 @@ function validateManifest() {
 
   for (const expected of manifest.exerciseMedia) {
     assert(typeof expected.name === "string" && expected.name.length > 0, "Each exerciseMedia entry needs a name.");
-    assert(expected.imageUrl || expected.motionUrl, `${expected.name} needs an imageUrl or motionUrl.`);
+    assert(expected.imageUrl || expected.motionUrl || expected.demoUrl, `${expected.name} needs an imageUrl, motionUrl, or demoUrl.`);
   }
 }
 
@@ -164,6 +164,7 @@ async function verifyExerciseMedia(baseUrl, secretKey) {
     const row = await fetchExercise(baseUrl, secretKey, expected.name);
     if (expected.imageUrl) assert(row.image_url === expected.imageUrl, `${expected.name} image_url mismatch.`);
     if (expected.motionUrl) assert(row.motion_url === expected.motionUrl, `${expected.name} motion_url mismatch.`);
+    if (expected.demoUrl) assert(row.demo_url === expected.demoUrl, `${expected.name} demo_url mismatch.`);
     console.log(`verified exercise mapping: ${expected.name}`);
   }
 }
