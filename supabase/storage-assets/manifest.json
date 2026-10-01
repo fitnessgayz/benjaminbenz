@@ -12,7 +12,8 @@
     "20261001031354_link_nasm_exercise_videos.sql",
     "20261001032427_add_complete_nasm_exercise_library.sql",
     "20261001040539_prefer_uploaded_exercise_demos.sql",
-    "20261001040950_add_leg_extension_video.sql"
+    "20261001040950_add_leg_extension_video.sql",
+    "20261001041547_add_seated_dip_video.sql"
   ],
   "nasmExerciseCatalogMigration": "20261001032427_add_complete_nasm_exercise_library.sql",
   "nasmExerciseCatalogCount": 75,
@@ -830,6 +831,13 @@
       "cacheControl": 31536000
     },
     {
+      "source": "supabase/storage-assets/exercise-videos/generated/2026-09-30/seated-dip-machine.mp4",
+      "bucket": "exercise-videos",
+      "objectPath": "generated/2026-09-30/seated-dip-machine.mp4",
+      "contentType": "video/mp4",
+      "cacheControl": 31536000
+    },
+    {
       "source": "supabase/storage-assets/exercise-videos/generated/2026-09-30/bulgarian-split-squat.mp4",
       "bucket": "exercise-videos",
       "objectPath": "generated/2026-09-30/bulgarian-split-squat.mp4",
@@ -855,6 +863,11 @@
       "name": "Leg Extension",
       "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-videos/generated/2026-09-30/leg-extension.mp4",
       "demoUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-videos/generated/2026-09-30/leg-extension.mp4"
+    },
+    {
+      "name": "Seated Dip Machine",
+      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-videos/generated/2026-09-30/seated-dip-machine.mp4",
+      "demoUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-videos/generated/2026-09-30/seated-dip-machine.mp4"
     },
     {
       "name": "Bulgarian Split Squat",
