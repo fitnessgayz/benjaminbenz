@@ -1,0 +1,109 @@
+name: iOS TestFlight
+
+on:
+  pull_request:
+    paths:
+      - 'FWB-iOS-App/**'
+      - 'scripts/ios/**'
+      - '.github/workflows/ios.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'FWB-iOS-App/**'
+      - 'scripts/ios/**'
+      - '.github/workflows/ios.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
+  FASTLANE_SKIP_UPDATE_CHECK: 'true'
+  FASTLANE_OPT_OUT_USAGE: 'true'
+  FASTLANE_HIDE_CHANGELOG: 'true'
+  CI: 'true'
+
+jobs:
+  tests:
+    name: Unsigned simulator tests
+    runs-on: macos-26
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - name: Verify Xcode
+        run: xcodebuild -version
+      - uses: ruby/setup-ruby@14594264cd68ce8a2345dd349bc3d138a4ef85c8 # v1.327.0
+        with:
+          ruby-version: '3.3.11'
+          bundler: '2.5.22'
+          bundler-cache: true
+          working-directory: FWB-iOS-App
+      - name: Check release validation and unsigned app tests
+        working-directory: FWB-iOS-App
+        run: |
+          python3 ../scripts/ios/configure-release-secrets.py --self-test
+          bundle exec ruby fastlane/release_support_test.rb
+          bundle exec fastlane ios tests
+      - name: Preserve test diagnostics
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: ios-test-results-${{ github.run_id }}-${{ github.run_attempt }}
+          path: FWB-iOS-App/build/test-results/
+          if-no-files-found: ignore
+          retention-days: 3
+
+  testflight:
+    name: Sign and upload to TestFlight
+    needs: tests
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    runs-on: macos-26
+    timeout-minutes: 60
+    # Repository secrets are available only to trusted main-branch runs; forked
+    # pull requests cannot execute this release job with signing credentials.
+    # Main/event checks also run inside the release lane before upload.
+    # Queue uploads; never cancel an archive/upload already in progress.
+    concurrency:
+      group: ios-testflight-release
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - name: Verify Xcode
+        run: xcodebuild -version
+      - uses: ruby/setup-ruby@14594264cd68ce8a2345dd349bc3d138a4ef85c8 # v1.327.0
+        with:
+          ruby-version: '3.3.11'
+          bundler: '2.5.22'
+          working-directory: FWB-iOS-App
+      - name: Install locked release tools
+        working-directory: FWB-iOS-App
+        run: |
+          bundle config set --local deployment true
+          bundle config set --local path vendor/bundle
+          bundle install --jobs 4 --retry 3
+          bash ../scripts/ios/install-sentry-cli.sh
+      - name: Archive, upload debug symbols, and upload to TestFlight
+        working-directory: FWB-iOS-App
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_PRIVATE_KEY_P8_BASE64: ${{ secrets.ASC_PRIVATE_KEY_P8_BASE64 }}
+          IOS_DISTRIBUTION_P12_BASE64: ${{ secrets.IOS_DISTRIBUTION_P12_BASE64 }}
+          IOS_DISTRIBUTION_P12_PASSWORD: ${{ secrets.IOS_DISTRIBUTION_P12_PASSWORD }}
+          IOS_PROVISIONING_PROFILE_BASE64: ${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_DSN: ${{ vars.SENTRY_DSN }}
+          SENTRY_ORG: ${{ vars.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
+          SENTRY_URL: ${{ vars.SENTRY_URL || 'https://sentry.io' }}
+        run: bundle exec fastlane ios beta
+      - name: Remove signing material and archives
+        if: always()
+        run: bash scripts/ios/cleanup-release.sh

@@ -1,0 +1,968 @@
+{
+  "version": 1,
+  "migrations": [
+    "20260930110000_add_barbell_upright_row_media.sql",
+    "20260930180001_assign_bulgarian_split_squat_video.sql",
+    "20260930231839_add_missing_strength_exercise_cards.sql",
+    "20260930233202_add_mobility_flexibility_cards.sql",
+    "20261001005226_add_controlled_articular_rotation_cards.sql",
+    "20261001011107_add_nasm_mobility_flexibility_cards.sql",
+    "20261001021758_add_nasm_dynamic_flexibility_cards.sql"
+  ],
+  "assets": [
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-29/png/barbell-upright-row.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-29/png/barbell-upright-row.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-29/webp-480/barbell-upright-row.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-29/webp-480/barbell-upright-row.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-29/webp-768/barbell-upright-row.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-29/webp-768/barbell-upright-row.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/png/chest-supported-dumbbell-wide-row.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/png/chest-supported-dumbbell-wide-row.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-480/chest-supported-dumbbell-wide-row.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-480/chest-supported-dumbbell-wide-row.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-768/chest-supported-dumbbell-wide-row.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-768/chest-supported-dumbbell-wide-row.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/png/overhead-rope-triceps-extension.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/png/overhead-rope-triceps-extension.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-480/overhead-rope-triceps-extension.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-480/overhead-rope-triceps-extension.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-768/overhead-rope-triceps-extension.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-768/overhead-rope-triceps-extension.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/png/lateral-step-up.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/png/lateral-step-up.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-480/lateral-step-up.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-480/lateral-step-up.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-768/lateral-step-up.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-768/lateral-step-up.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/png/half-kneeling-single-arm-landmine-press.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/png/half-kneeling-single-arm-landmine-press.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-480/half-kneeling-single-arm-landmine-press.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-480/half-kneeling-single-arm-landmine-press.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-768/half-kneeling-single-arm-landmine-press.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-768/half-kneeling-single-arm-landmine-press.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/png/standing-single-arm-landmine-press.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/png/standing-single-arm-landmine-press.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-480/standing-single-arm-landmine-press.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-480/standing-single-arm-landmine-press.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-768/standing-single-arm-landmine-press.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-768/standing-single-arm-landmine-press.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/png/landmine-row.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/png/landmine-row.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-480/landmine-row.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-480/landmine-row.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-768/landmine-row.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-768/landmine-row.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/png/90-90-hip-switch.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/png/90-90-hip-switch.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-480/90-90-hip-switch.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-480/90-90-hip-switch.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-768/90-90-hip-switch.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-768/90-90-hip-switch.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/png/worlds-greatest-stretch.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/png/worlds-greatest-stretch.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-480/worlds-greatest-stretch.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-480/worlds-greatest-stretch.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-768/worlds-greatest-stretch.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-768/worlds-greatest-stretch.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/png/thread-the-needle.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/png/thread-the-needle.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-480/thread-the-needle.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-480/thread-the-needle.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-768/thread-the-needle.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-768/thread-the-needle.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/png/kneeling-ankle-mobilization.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/png/kneeling-ankle-mobilization.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-480/kneeling-ankle-mobilization.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-480/kneeling-ankle-mobilization.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-768/kneeling-ankle-mobilization.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-768/kneeling-ankle-mobilization.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/png/childs-pose.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/png/childs-pose.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-480/childs-pose.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-480/childs-pose.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-768/childs-pose.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-768/childs-pose.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/png/downward-facing-dog.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/png/downward-facing-dog.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-480/downward-facing-dog.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-480/downward-facing-dog.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-768/downward-facing-dog.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-768/downward-facing-dog.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/png/quadruped-hip-cars.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/png/quadruped-hip-cars.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-480/quadruped-hip-cars.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-480/quadruped-hip-cars.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-768/quadruped-hip-cars.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-768/quadruped-hip-cars.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/png/standing-shoulder-cars.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/png/standing-shoulder-cars.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-480/standing-shoulder-cars.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-480/standing-shoulder-cars.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-768/standing-shoulder-cars.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-768/standing-shoulder-cars.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/png/scapular-cars.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/png/scapular-cars.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-480/scapular-cars.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-480/scapular-cars.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-768/scapular-cars.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-768/scapular-cars.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/png/cervical-cars.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/png/cervical-cars.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-480/cervical-cars.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-480/cervical-cars.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-768/cervical-cars.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-768/cervical-cars.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/png/thoracic-cars.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/png/thoracic-cars.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-480/thoracic-cars.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-480/thoracic-cars.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-768/thoracic-cars.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-768/thoracic-cars.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/png/knee-cars.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/png/knee-cars.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-480/knee-cars.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-480/knee-cars.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-768/knee-cars.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-768/knee-cars.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/png/ankle-cars.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/png/ankle-cars.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-480/ankle-cars.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-480/ankle-cars.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-768/ankle-cars.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-768/ankle-cars.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/png/wrist-cars.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/png/wrist-cars.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-480/wrist-cars.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-480/wrist-cars.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-768/wrist-cars.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-768/wrist-cars.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/png/foam-roll-adductors.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/png/foam-roll-adductors.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-480/foam-roll-adductors.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-480/foam-roll-adductors.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-768/foam-roll-adductors.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-768/foam-roll-adductors.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/png/foam-roll-calves.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/png/foam-roll-calves.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-480/foam-roll-calves.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-480/foam-roll-calves.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-768/foam-roll-calves.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-768/foam-roll-calves.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/png/foam-roll-latissimus-dorsi.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/png/foam-roll-latissimus-dorsi.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-480/foam-roll-latissimus-dorsi.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-480/foam-roll-latissimus-dorsi.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-768/foam-roll-latissimus-dorsi.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-768/foam-roll-latissimus-dorsi.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/png/static-latissimus-dorsi-ball-stretch.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/png/static-latissimus-dorsi-ball-stretch.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-480/static-latissimus-dorsi-ball-stretch.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-480/static-latissimus-dorsi-ball-stretch.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-768/static-latissimus-dorsi-ball-stretch.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-768/static-latissimus-dorsi-ball-stretch.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/png/static-seated-calf-stretch.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/png/static-seated-calf-stretch.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-480/static-seated-calf-stretch.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-480/static-seated-calf-stretch.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-768/static-seated-calf-stretch.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-768/static-seated-calf-stretch.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/png/static-standing-adductor-stretch.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/png/static-standing-adductor-stretch.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-480/static-standing-adductor-stretch.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-480/static-standing-adductor-stretch.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-768/static-standing-adductor-stretch.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-768/static-standing-adductor-stretch.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/png/doorway-chest-stretch.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/png/doorway-chest-stretch.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-480/doorway-chest-stretch.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-480/doorway-chest-stretch.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-768/doorway-chest-stretch.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-768/doorway-chest-stretch.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/png/walking-lunge-with-rotation.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/png/walking-lunge-with-rotation.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-480/walking-lunge-with-rotation.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-480/walking-lunge-with-rotation.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-768/walking-lunge-with-rotation.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-768/walking-lunge-with-rotation.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/png/arm-circles.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/png/arm-circles.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-480/arm-circles.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-480/arm-circles.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-768/arm-circles.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-768/arm-circles.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/png/standing-hip-opener.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/png/standing-hip-opener.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-480/standing-hip-opener.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-480/standing-hip-opener.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-768/standing-hip-opener.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-768/standing-hip-opener.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/png/front-to-back-leg-swings.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/png/front-to-back-leg-swings.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-480/front-to-back-leg-swings.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-480/front-to-back-leg-swings.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-768/front-to-back-leg-swings.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-768/front-to-back-leg-swings.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/png/lateral-leg-swings.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/png/lateral-leg-swings.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-480/lateral-leg-swings.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-480/lateral-leg-swings.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-768/lateral-leg-swings.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-768/lateral-leg-swings.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/png/multiplanar-lunge-with-reach.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/png/multiplanar-lunge-with-reach.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-480/multiplanar-lunge-with-reach.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-480/multiplanar-lunge-with-reach.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-768/multiplanar-lunge-with-reach.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-768/multiplanar-lunge-with-reach.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/png/lateral-tube-walk.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/png/lateral-tube-walk.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-480/lateral-tube-walk.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-480/lateral-tube-walk.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-768/lateral-tube-walk.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-768/lateral-tube-walk.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/png/medicine-ball-chop-and-lift.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/png/medicine-ball-chop-and-lift.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-480/medicine-ball-chop-and-lift.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-480/medicine-ball-chop-and-lift.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-768/medicine-ball-chop-and-lift.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-768/medicine-ball-chop-and-lift.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/png/push-up-with-rotation.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/png/push-up-with-rotation.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-480/push-up-with-rotation.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-480/push-up-with-rotation.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-09-30/webp-768/push-up-with-rotation.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-09-30/webp-768/push-up-with-rotation.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-videos/generated/barbell-upright-row.mp4",
+      "bucket": "exercise-videos",
+      "objectPath": "generated/barbell-upright-row.mp4",
+      "contentType": "video/mp4",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-videos/generated/bulgarian-split-squat.mp4",
+      "bucket": "exercise-videos",
+      "objectPath": "generated/bulgarian-split-squat.mp4",
+      "contentType": "video/mp4",
+      "cacheControl": 31536000
+    }
+  ],
+  "exerciseMedia": [
+    {
+      "name": "Barbell Upright Row",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-29/webp-768/barbell-upright-row.webp",
+      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-videos/generated/barbell-upright-row.mp4"
+    },
+    {
+      "name": "Bulgarian Split Squat",
+      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-videos/generated/bulgarian-split-squat.mp4"
+    },
+    {
+      "name": "One Dumbbell Bulgarian Split Squat",
+      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-videos/generated/bulgarian-split-squat.mp4"
+    },
+    {
+      "name": "Two Dumbbell Bulgarian Split Squat",
+      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-videos/generated/bulgarian-split-squat.mp4"
+    },
+    {
+      "name": "Chest-Supported Dumbbell Wide Row",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/chest-supported-dumbbell-wide-row.webp"
+    },
+    {
+      "name": "Overhead Rope Triceps Extension",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/overhead-rope-triceps-extension.webp"
+    },
+    {
+      "name": "Lateral Step-Up",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/lateral-step-up.webp"
+    },
+    {
+      "name": "Half-Kneeling Single-Arm Landmine Press",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/half-kneeling-single-arm-landmine-press.webp"
+    },
+    {
+      "name": "Standing Single-Arm Landmine Press",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/standing-single-arm-landmine-press.webp"
+    },
+    {
+      "name": "Landmine Row",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/landmine-row.webp"
+    },
+    {
+      "name": "90/90 Hip Switch",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/90-90-hip-switch.webp"
+    },
+    {
+      "name": "World's Greatest Stretch",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/worlds-greatest-stretch.webp"
+    },
+    {
+      "name": "Thread the Needle",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/thread-the-needle.webp"
+    },
+    {
+      "name": "Kneeling Ankle Mobilization",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/kneeling-ankle-mobilization.webp"
+    },
+    {
+      "name": "Child's Pose",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/childs-pose.webp"
+    },
+    {
+      "name": "Downward-Facing Dog",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/downward-facing-dog.webp"
+    },
+    {
+      "name": "Quadruped Hip CARs",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/quadruped-hip-cars.webp"
+    },
+    {
+      "name": "Standing Shoulder CARs",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/standing-shoulder-cars.webp"
+    },
+    {
+      "name": "Scapular CARs",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/scapular-cars.webp"
+    },
+    {
+      "name": "Cervical CARs",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/cervical-cars.webp"
+    },
+    {
+      "name": "Thoracic CARs",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/thoracic-cars.webp"
+    },
+    {
+      "name": "Knee CARs",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/knee-cars.webp"
+    },
+    {
+      "name": "Ankle CARs",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/ankle-cars.webp"
+    },
+    {
+      "name": "Wrist CARs",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/wrist-cars.webp"
+    },
+    {
+      "name": "Foam Roll Adductors",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/foam-roll-adductors.webp"
+    },
+    {
+      "name": "Foam Roll Calves",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/foam-roll-calves.webp"
+    },
+    {
+      "name": "Foam Roll Latissimus Dorsi",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/foam-roll-latissimus-dorsi.webp"
+    },
+    {
+      "name": "Static Latissimus Dorsi Ball Stretch",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/static-latissimus-dorsi-ball-stretch.webp"
+    },
+    {
+      "name": "Static Seated Calf Stretch",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/static-seated-calf-stretch.webp"
+    },
+    {
+      "name": "Static Standing Adductor Stretch",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/static-standing-adductor-stretch.webp"
+    },
+    {
+      "name": "Doorway Chest Stretch",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/doorway-chest-stretch.webp"
+    },
+    {
+      "name": "Walking Lunge With Rotation",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/walking-lunge-with-rotation.webp"
+    },
+    {
+      "name": "Arm Circles",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/arm-circles.webp"
+    },
+    {
+      "name": "Standing Hip Opener",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/standing-hip-opener.webp"
+    },
+    {
+      "name": "Front-to-Back Leg Swings",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/front-to-back-leg-swings.webp"
+    },
+    {
+      "name": "Lateral Leg Swings",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/lateral-leg-swings.webp"
+    },
+    {
+      "name": "Multiplanar Lunge With Reach",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/multiplanar-lunge-with-reach.webp"
+    },
+    {
+      "name": "Lateral Tube Walk",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/lateral-tube-walk.webp"
+    },
+    {
+      "name": "Medicine Ball Chop and Lift",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/medicine-ball-chop-and-lift.webp"
+    },
+    {
+      "name": "Push-Up With Rotation",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/push-up-with-rotation.webp"
+    }
+  ]
+}

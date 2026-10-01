@@ -2,14 +2,14 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Coach Workout Logger | Fitness with Benjamin</title>
-  <meta name="description" content="Private coach-only workout logger for Fitness with Benjamin." />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Workout Logger | FWB Coach</title>
+  <meta name="description" content="Log client workouts in FWB Coach." />
   <meta name="robots" content="noindex, nofollow, noarchive" />
   <link rel="shortcut icon" href="/favicon.ico" />
   <link rel="icon" href="/favicon.ico" sizes="any" />
   <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
-  <link rel="apple-touch-icon" href="/fwb-home-icon-180.png" />
+  <link rel="apple-touch-icon" href="/fwb-brand-icon-lime-180-v1.png" />
   <link rel="manifest" href="/coach.webmanifest" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="FWB Coach" />
@@ -19,17 +19,17 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css?v=client-view-shortcut-1&amp;coach-copy-weights=1" />
-  <link rel="stylesheet" href="/css/fwb-design-system.css?v=reference-overhaul-1" />
-  <link rel="stylesheet" href="css/one-rep-max.css?v=1" />
+  <link rel="stylesheet" href="/css/fwb-design-system.css?v=web-app-brand-1" />
+  <link rel="stylesheet" href="css/one-rep-max.css?v=2" />
 </head>
 <body class="dashboard-page coach-workout-log-page">
   <header class="site-header dashboard-header">
-    <a class="brand" href="index.html#top" aria-label="Fitness with Benjamin home">
+    <a class="brand" href="index.html#top" aria-label="FWB Coach home">
       <span>FWB</span>
-      <strong>Fitness with Benjamin</strong>
+      <strong>Coach</strong>
     </a>
     <div class="header-actions">
-      <a class="login-link" href="coach-admin.html">Coach Admin</a>
+      <a class="login-link" href="coach-admin.html">Coach Home</a>
       <button class="login-link is-current sign-out-button" type="button" data-coach-workout-sign-out hidden>Sign Out</button>
     </div>
   </header>
@@ -37,15 +37,15 @@
   <main class="admin-shell coach-workout-log-shell">
     <section class="dashboard-hero coach-workout-log-hero" aria-labelledby="coach-workout-page-title">
       <div>
-        <p class="kicker">Coach only</p>
-        <h1 id="coach-workout-page-title">Session workout logger</h1>
+        <p class="kicker">FWB Coach</p>
+        <h1 id="coach-workout-page-title">Log a client workout</h1>
         <p>Record a client’s exercises after your session and save them directly to their Custom workout history.</p>
       </div>
-      <a class="button button-ghost" href="coach-admin.html">Back to Coach Admin</a>
+      <a class="button button-ghost" href="coach-admin.html">Back to FWB Coach</a>
     </section>
 
     <section class="admin-card coach-workout-access-status" id="coach-workout-access-status" role="status">
-      Confirming coach access…
+      Preparing FWB Coach…
     </section>
 
     <form class="coach-workout-logger" id="coach-workout-log-form" hidden>
@@ -144,7 +144,7 @@
     </div>
   </aside>
   <script src="js/coach-rest-timer.js?v=inline-rest-1"></script>
-  <script src="js/one-rep-max.js?v=1"></script>
+  <script src="js/one-rep-max.js?v=2"></script>
   <script src="js/coach-workout-log.js?v=client-view-shortcut-1&amp;remember-login=1&amp;coach-copy-weights=1&amp;blank-zero=1&amp;recovery-catalog=1"></script>
 </body>
 </html>

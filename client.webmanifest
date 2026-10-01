@@ -6,29 +6,48 @@
   "start_url": "/client-dashboard.html",
   "scope": "/",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
   "background_color": "#F2F3EE",
   "theme_color": "#080A08",
+  "categories": ["fitness", "health", "lifestyle"],
+  "shortcuts": [
+    {
+      "name": "Start training",
+      "short_name": "Train",
+      "url": "/client-dashboard.html?tab=workouts"
+    },
+    {
+      "name": "View progress",
+      "short_name": "Progress",
+      "url": "/client-dashboard.html?tab=progress"
+    },
+    {
+      "name": "Message your coach",
+      "short_name": "Messages",
+      "url": "/client-dashboard.html?messages=1"
+    }
+  ],
   "icons": [
     {
-      "src": "/fwb-home-icon-180.png",
+      "src": "/fwb-brand-icon-lime-180-v1.png",
       "sizes": "180x180",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/fwb-home-icon-192.png",
+      "src": "/fwb-brand-icon-lime-192-v1.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/fwb-home-icon-512.png",
+      "src": "/fwb-brand-icon-lime-512-v1.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/fwb-home-icon-1024.png",
+      "src": "/fwb-brand-icon-lime-1024-v1.png",
       "sizes": "1024x1024",
       "type": "image/png",
       "purpose": "any"

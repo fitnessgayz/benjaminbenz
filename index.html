@@ -16,24 +16,32 @@
   <link rel="icon" href="/favicon.ico" sizes="any" />
   <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
   <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
-  <link rel="apple-touch-icon" href="/fwb-home-icon-180.png" />
-  <link rel="apple-touch-icon-precomposed" href="/fwb-home-icon-180.png" />
+  <link rel="apple-touch-icon" href="/fwb-brand-icon-lime-180-v1.png" />
+  <link rel="apple-touch-icon-precomposed" href="/fwb-brand-icon-lime-180-v1.png" />
   <link rel="apple-touch-icon" sizes="120x120" href="/apple-touch-icon-120x120.png" />
   <link rel="apple-touch-icon" sizes="152x152" href="/apple-touch-icon-152x152.png" />
   <link rel="apple-touch-icon" sizes="167x167" href="/apple-touch-icon-167x167.png" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/fwb-home-icon-180.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/fwb-brand-icon-lime-180-v1.png" />
   <link rel="manifest" href="/site.webmanifest" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="Fitness with Benjamin" />
   <meta name="application-name" content="Fitness with Benjamin" />
   <meta name="theme-color" content="#080A08" />
+  <link rel="canonical" href="https://benjaminbenz.com/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Fitness with Benjamin | Train with intention" />
+  <meta property="og:description" content="Personal coaching in San Francisco and online, built around how you move and the progress you want to feel." />
+  <meta property="og:url" content="https://benjaminbenz.com/" />
+  <meta property="og:image" content="https://benjaminbenz.com/fwb-brand-icon-lime-1024-v1.png" />
+  <meta name="twitter:card" content="summary_large_image" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css?v=physical-card-decks-1" />
   <link rel="stylesheet" href="/css/fwb-design-system.css?v=start-questionnaire-3" />
+  <link rel="stylesheet" href="/css/public-brand.css?v=public-nav-3" />
 </head>
-<body class="homepage">
+<body class="homepage public-page">
   <header class="site-header">
     <a class="brand" href="#top" aria-label="Fitness with Benjamin home">
       <span>FWB</span>
@@ -62,22 +70,34 @@
 
   <main id="top">
     <section class="hero" aria-label="Fitness with Benjamin campaign">
-      <img src="images/home/benjamin-split-squat.jpg" alt="Benjamin performing a split squat in the gym" fetchpriority="high" />
+      <img src="images/home/benjamin-strength-rack.jpg" alt="Benjamin preparing a strength-training station in the gym" fetchpriority="high" />
       <div class="hero-overlay"></div>
       <div class="hero-content">
         <p class="kicker">San Francisco personal training + online coaching</p>
         <h1><span class="hero-accent">Train</span> with intention. <span class="hero-accent">Feel</span> your progress.</h1>
         <p>Sixteen years of certified coaching to help you build strength, move with awareness, and stay consistent with a plan shaped around you.</p>
+        <div class="hero-meta" aria-label="Training principles">
+          <span>16 years certified</span>
+          <span>San Francisco + online</span>
+          <span>Human coaching, connected tools</span>
+        </div>
         <div class="button-row">
           <a class="button button-light" href="questionnaire.html">Find your coaching fit</a>
           <a class="button button-outline" href="#training" data-home-tab-link="training">See how Benjamin coaches</a>
         </div>
       </div>
-      <div class="hero-meta" aria-label="Training principles">
-        <span>Mindset</span>
-        <span>Discipline</span>
-        <span>Awareness</span>
+    </section>
+
+    <section class="public-pathway" aria-labelledby="public-pathway-title">
+      <div class="public-pathway-heading">
+        <p class="kicker">A clear coaching path</p>
+        <h2 id="public-pathway-title">Know what you’re working toward—and why.</h2>
       </div>
+      <ol>
+        <li><span>01</span><strong>Share your starting point.</strong><p>Tell Benjamin about your goals, training history, and schedule.</p></li>
+        <li><span>02</span><strong>Build the right plan.</strong><p>Choose in-person, online, or hybrid coaching around the support you need.</p></li>
+        <li><span>03</span><strong>Feel the progress.</strong><p>Train with feedback, track what changes, and keep the plan moving with you.</p></li>
+      </ol>
     </section>
 
     <section class="homepage-tab-stage" aria-label="Homepage sections">
@@ -106,7 +126,7 @@
             <div
               class="coaching-option-deck"
               data-coaching-option-deck
-              data-coaching-option-start="1"
+              data-coaching-option-start="0"
               role="region"
               aria-roledescription="carousel"
               aria-label="Coaching options"
@@ -176,7 +196,7 @@
                   </article>
                 </div>
               </div>
-              <p class="coaching-option-deck-status" data-coaching-option-status aria-live="polite">Option 2 of 3 · Hybrid Coaching</p>
+              <p class="coaching-option-deck-status" data-coaching-option-status aria-live="polite">Option 1 of 3 · Online Coaching</p>
               <div class="coaching-option-deck-controls">
                 <button class="coaching-option-deck-arrow" type="button" data-coaching-option-previous aria-label="Previous coaching option">←</button>
                 <div class="coaching-option-deck-dots" data-coaching-option-dots role="group" aria-label="Choose a coaching option"></div>
@@ -247,6 +267,25 @@
                     <p>Better positions, stronger patterns, cleaner mechanics.</p>
                   </div>
                 </article>
+              </section>
+
+              <section class="connected-coaching" aria-labelledby="connected-coaching-title">
+                <div>
+                  <p class="kicker">Coaching between sessions</p>
+                  <h2 id="connected-coaching-title">Your plan stays connected to Benjamin.</h2>
+                  <p>FWB Training keeps workouts, progress, check-ins, and coach feedback in one place—so the work you do between sessions still feels personal.</p>
+                </div>
+                <div class="connected-coaching-actions">
+                  <ul>
+                    <li>See the next workout and the intent behind it.</li>
+                    <li>Track progress without losing the human context.</li>
+                    <li>Keep questions and feedback connected to your plan.</li>
+                  </ul>
+                  <div class="button-row">
+                    <a class="button button-dark" href="questionnaire.html">Find your coaching fit</a>
+                    <a class="button button-ghost" href="app-interest.html">Explore FWB Training</a>
+                  </div>
+                </div>
               </section>
 
             </div>
@@ -366,6 +405,7 @@
             </div>
             <div class="proof-actions">
               <a class="button button-dark" href="https://www.yelp.com/biz/benjamin-benz-san-francisco-5" target="_blank" rel="noopener">Read Yelp reviews</a>
+              <a class="button button-ghost" href="questionnaire.html">Find your coaching fit</a>
             </div>
           </section>
         </section>
@@ -374,13 +414,13 @@
   </main>
 
   <footer>
-    <span>© <span id="year"></span> Fitness with Benjamin</span>
-    <span>San Francisco · fwb@benjaminbenz.com</span>
-    <span><a href="fwb-training-support.html"><u>Support</u></a> · <a href="fwb-training-privacy.html"><u>Privacy</u></a></span>
+    <span><strong>Fitness with Benjamin</strong> · Train with intention. Feel your progress.</span>
+    <span>© <span id="year"></span> · San Francisco · <a href="mailto:fwb@benjaminbenz.com">fwb@benjaminbenz.com</a></span>
+    <nav aria-label="Footer"><a href="fwb-training-support.html">Support</a> · <a href="fwb-training-privacy.html">Privacy</a></nav>
   </footer>
 
   <script src="js/supabase-config.js"></script>
   <script src="js/auth-session.js?v=remember-login-1"></script>
-  <script src="js/script.js?v=physical-card-decks-1&amp;remember-login=1"></script>
+  <script src="js/script.js?v=physical-card-decks-1&amp;remember-login=1&amp;start-online=1"></script>
 </body>
 </html>

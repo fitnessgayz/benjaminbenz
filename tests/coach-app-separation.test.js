@@ -12,6 +12,7 @@ const coachManifest = JSON.parse(fs.readFileSync(path.join(root, "coach.webmanif
 const clientManifest = JSON.parse(fs.readFileSync(path.join(root, "client.webmanifest"), "utf8"));
 const adminScript = fs.readFileSync(path.join(root, "js/coach-admin.js"), "utf8");
 const workoutScript = fs.readFileSync(path.join(root, "js/coach-workout-log.js"), "utf8");
+const pagesWorkflow = fs.readFileSync(path.join(root, ".github/workflows/pages.yml"), "utf8");
 
 test("coach app has a distinct install identity and coach entry point", () => {
   assert.equal(coachManifest.id, "/coach-app");
@@ -25,6 +26,7 @@ test("coach app has a distinct install identity and coach entry point", () => {
   assert.match(clientLogin, /id="client-login-form"/);
   assert.doesNotMatch(clientLogin, /id="coach-login-form"/);
   assert.match(clientLogin, /href="coach-login\.html">Open the FWB Coach app/);
+  assert.match(pagesWorkflow, /client\.webmanifest coach\.webmanifest/);
 });
 
 test("every coach surface stays inside the coach app install identity", () => {

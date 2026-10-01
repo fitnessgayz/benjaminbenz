@@ -17,7 +17,7 @@ const coachSupabase = hasCoachConfig && window.supabase
     })
   : null;
 const workoutSlots = [1, 2, 3, 4, 5, 6, 7];
-const coachLoginUrl = "coach-login.html?v=coach-app-1";
+const coachLoginUrl = "coach-login.html";
 const warmupExerciseCode = "WARMUP";
 const cardioExerciseCode = "CARDIO";
 const warmUpSetNumberBase = 1000;
@@ -30,18 +30,6 @@ const coachAdminTabNames = new Set([
   "home",
   "inbox",
   "clients",
-  "profile",
-  "program",
-  "workouts",
-  "library",
-  "notifications",
-  "nutrition",
-  "progress",
-  "notes",
-  "logs",
-  "sessions"
-]);
-const coachAdminMoreTabNames = new Set([
   "profile",
   "program",
   "workouts",
@@ -106,12 +94,6 @@ let clientExerciseNameLoadToken = 0;
 let isClientExerciseNameLoading = false;
 let clientExerciseNameLoadError = "";
 let isClientExerciseNameMutating = false;
-let allClientAddedExerciseLogs = [];
-let clientAddedExerciseSearchTerm = "";
-let clientAddedExerciseLoadToken = 0;
-let clientAddedExerciseLoaded = false;
-let isClientAddedExerciseLoading = false;
-let clientAddedExerciseLoadError = "";
 let coachNotificationsController = null;
 let coachMessagesController = null;
 let inviteClientReturnFocus = null;
@@ -267,7 +249,7 @@ async function restoreCoachAdminUser() {
   try {
     const { data, error } = await withRequestTimeout(
       coachSupabase.auth.getSession(),
-      "Coach access check timed out."
+      "FWB Coach access check timed out."
     );
     if (error) throw error;
 
@@ -972,13 +954,6 @@ function setAdminTab(tabName) {
     panel.hidden = panel.dataset.adminPanel !== nextTab;
   });
 
-  const moreToggle = document.querySelector("[data-coach-mobile-more-toggle]");
-  const moreIsActive = coachAdminMoreTabNames.has(nextTab);
-  moreToggle?.classList.toggle("is-active", moreIsActive);
-  if (moreIsActive) moreToggle?.setAttribute("aria-current", "page");
-  else moreToggle?.removeAttribute("aria-current");
-  closeCoachMobileMore();
-
   document.querySelectorAll("[data-admin-client-context]").forEach((panel) => {
     panel.hidden = nextTab === "notifications" || nextTab === "home" || nextTab === "inbox";
   });
@@ -1002,7 +977,6 @@ function setAdminTab(tabName) {
   if (nextTab === "library") {
     renderExerciseLibrary();
     loadClientCustomExerciseNames(selectedProgram()?.client_email);
-    loadAllClientAddedExercises();
   }
 
   if (nextTab === "progress") {
@@ -1043,84 +1017,6 @@ function setAdminTab(tabName) {
 
 function isCoachAdminSidebarMobile() {
   return window.matchMedia("(max-width: 900px)").matches;
-}
-
-function setCoachMobileMoreOpen(open, options = {}) {
-  const menu = document.querySelector("[data-coach-mobile-more]");
-  const toggle = document.querySelector("[data-coach-mobile-more-toggle]");
-
-  if (!menu || !toggle) return;
-
-  const shouldOpen = Boolean(open) && isCoachAdminSidebarMobile();
-  menu.hidden = !shouldOpen;
-  toggle.setAttribute("aria-expanded", String(shouldOpen));
-  document.body.classList.toggle("is-coach-mobile-more-open", shouldOpen);
-
-  if (shouldOpen) {
-    const program = selectedProgram();
-    const context = menu.querySelector("[data-coach-mobile-more-context]");
-    if (context) {
-      context.textContent = program?.client_name
-        ? `Coaching tools for ${program.client_name}.`
-        : "Choose a client to open their coaching tools.";
-    }
-    window.requestAnimationFrame(() => {
-      menu.querySelector("[data-admin-tab].is-active, [data-admin-tab]")?.focus({ preventScroll: true });
-    });
-  } else if (options.restoreFocus) {
-    window.requestAnimationFrame(() => toggle.focus({ preventScroll: true }));
-  }
-}
-
-function closeCoachMobileMore(options = {}) {
-  const menu = document.querySelector("[data-coach-mobile-more]");
-  if (!menu || menu.hidden) return false;
-  setCoachMobileMoreOpen(false, options);
-  return true;
-}
-
-function handleCoachMobileMore() {
-  const menu = document.querySelector("[data-coach-mobile-more]");
-  const toggle = document.querySelector("[data-coach-mobile-more-toggle]");
-  if (!menu || !toggle) return;
-
-  toggle.addEventListener("click", () => {
-    setCoachMobileMoreOpen(menu.hidden);
-  });
-
-  menu.querySelectorAll("[data-coach-mobile-more-close]").forEach((button) => {
-    button.addEventListener("click", () => closeCoachMobileMore({ restoreFocus: true }));
-  });
-
-  document.addEventListener("keydown", (event) => {
-    if (menu.hidden) return;
-
-    if (event.key === "Escape") {
-      event.preventDefault();
-      closeCoachMobileMore({ restoreFocus: true });
-      return;
-    }
-
-    if (event.key !== "Tab") return;
-
-    const focusable = Array.from(menu.querySelectorAll("button:not([disabled])"))
-      .filter((element) => !element.hidden && element.getClientRects().length > 0);
-    if (focusable.length === 0) return;
-
-    const first = focusable[0];
-    const last = focusable[focusable.length - 1];
-    if (event.shiftKey && document.activeElement === first) {
-      event.preventDefault();
-      last.focus();
-    } else if (!event.shiftKey && document.activeElement === last) {
-      event.preventDefault();
-      first.focus();
-    }
-  });
-
-  window.addEventListener("resize", () => {
-    if (!isCoachAdminSidebarMobile()) closeCoachMobileMore();
-  });
 }
 
 function syncCoachAdminMobileNavigationMount() {
@@ -4633,7 +4529,7 @@ async function loadPrograms() {
   const { data, error } = programResult;
 
   if (error) {
-    adminStatus("Could not load clients. Check the coach admin Supabase policy.");
+    adminStatus("Could not load clients. Check the FWB Coach Supabase policy.");
     return;
   }
 
@@ -4742,7 +4638,7 @@ function exerciseLibraryMediaMarkup(record) {
   const name = String(record?.name || "Exercise");
   const uploadedVideo = uploadedExerciseDemoUrl(record?.demo_url);
   const youtubeId = exerciseLibraryYoutubeId(record?.demo_url);
-  const artworkUrl = exerciseLibraryArtworkUrl(record);
+  const artworkUrl = trustedExerciseImageUrl(record?.image_url) || exerciseLibraryArtworkUrl(record);
   const instructionArtwork = artworkUrl.includes("/instruction-cards/");
   const artwork = artworkUrl
     ? `<img${instructionArtwork ? ' class="is-instruction-card"' : ""} src="${escapeHtml(artworkUrl)}" alt="${escapeHtml(name)} exercise demonstration" loading="lazy" />`
@@ -4852,238 +4748,6 @@ function clientCustomExerciseNameGroups(logs = clientCustomExerciseLogs) {
     .sort((left, right) => (
       right.latestDate.localeCompare(left.latestDate) || left.name.localeCompare(right.name)
     ));
-}
-
-function allClientAddedExerciseGroups(logs = allClientAddedExerciseLogs) {
-  const groups = new Map();
-  const clientNames = new Map(programs.map((program) => [
-    normalizeEmail(program.client_email),
-    program.client_name || normalizeEmail(program.client_email)
-  ]));
-
-  logs.forEach((log) => {
-    const exerciseCode = String(log.exercise_code || "").trim().toUpperCase();
-    const workoutTitle = String(log.workout_title || "").trim().toLowerCase();
-    const exerciseName = String(log.exercise_name || "").trim().replace(/\s+/g, " ");
-    const clientEmail = normalizeEmail(log.client_email);
-    const key = normalizeClientExerciseName(exerciseName);
-
-    if (
-      !key ||
-      !clientEmail ||
-      !workoutTitle.startsWith("custom workout") ||
-      exerciseCode === warmupExerciseCode ||
-      exerciseCode === cardioExerciseCode
-    ) {
-      return;
-    }
-
-    if (!groups.has(key)) {
-      groups.set(key, {
-        key,
-        name: exerciseName,
-        logs: [],
-        clients: new Map(),
-        workoutKeys: new Set(),
-        latestDate: ""
-      });
-    }
-
-    const group = groups.get(key);
-    const workoutKey = log.workout_session_id || [clientEmail, log.entry_date, log.workout_title].join("::");
-
-    group.logs.push(log);
-    group.clients.set(clientEmail, clientNames.get(clientEmail) || clientEmail);
-    group.workoutKeys.add(workoutKey);
-    if (String(log.entry_date || "") > group.latestDate) {
-      group.latestDate = String(log.entry_date || "");
-    }
-  });
-
-  return Array.from(groups.values())
-    .map((group) => ({ ...group, libraryMatch: clientExerciseLibraryMatch(group.name) }))
-    .sort((left, right) => (
-      Number(Boolean(left.libraryMatch)) - Number(Boolean(right.libraryMatch)) ||
-      right.latestDate.localeCompare(left.latestDate) ||
-      left.name.localeCompare(right.name)
-    ));
-}
-
-function renderAllClientAddedExercises() {
-  const link = document.getElementById("client-added-exercises-link");
-  const pendingCount = document.getElementById("client-added-exercise-pending-count");
-  const status = document.getElementById("client-added-exercise-status");
-  const list = document.getElementById("client-added-exercise-list");
-  const searchInput = document.getElementById("client-added-exercise-search");
-
-  if (!link || !pendingCount || !status || !list || !searchInput) return;
-
-  const groups = allClientAddedExerciseGroups();
-  const pendingGroups = groups.filter((group) => !group.libraryMatch?.availableToClients);
-  const term = clientAddedExerciseSearchTerm.trim().toLowerCase();
-  const visibleGroups = groups.filter((group) => (
-    !term || [
-      group.name,
-      ...group.clients.values(),
-      ...group.clients.keys()
-    ].join(" ").toLowerCase().includes(term)
-  ));
-
-  pendingCount.textContent = isClientAddedExerciseLoading ? "…" : String(pendingGroups.length);
-  pendingCount.setAttribute("aria-label", `${pendingGroups.length} exercise${pendingGroups.length === 1 ? "" : "s"} awaiting review`);
-  searchInput.disabled = isClientAddedExerciseLoading || Boolean(clientAddedExerciseLoadError);
-
-  if (isClientAddedExerciseLoading) {
-    status.textContent = "Loading client-added exercises…";
-    list.innerHTML = '<p class="exercise-library-empty">Checking custom workouts across all clients…</p>';
-    return;
-  }
-
-  if (clientAddedExerciseLoadError) {
-    status.textContent = clientAddedExerciseLoadError;
-    list.innerHTML = '<p class="exercise-library-empty">Close and reopen this review list to try again.</p>';
-    return;
-  }
-
-  status.textContent = `${visibleGroups.length} of ${groups.length} client-added exercise${groups.length === 1 ? "" : "s"} · ${pendingGroups.length} awaiting review`;
-  list.innerHTML = visibleGroups.length > 0
-    ? visibleGroups.map((group) => {
-      const clientLabels = Array.from(group.clients.values());
-      const clientSummary = clientLabels.length <= 2
-        ? clientLabels.join(" · ")
-        : `${clientLabels.slice(0, 2).join(" · ")} +${clientLabels.length - 2} more`;
-      const available = group.libraryMatch?.availableToClients;
-      const existingButUnavailable = group.libraryMatch && !available;
-      const statusLabel = available
-        ? "Shared library"
-        : existingButUnavailable
-          ? "Needs approval"
-          : "Client-created";
-      const actionLabel = existingButUnavailable ? "Review library entry" : "Approve & add to shared library";
-
-      return `
-        <article class="client-added-exercise-row">
-          <div>
-            <span class="client-added-exercise-row-heading">
-              <strong>${escapeHtml(group.name)}</strong>
-              <small class="${available ? "is-shared" : "is-pending"}">${escapeHtml(statusLabel)}</small>
-            </span>
-            <p>${escapeHtml(clientSummary)} · ${group.logs.length} saved set${group.logs.length === 1 ? "" : "s"} · ${group.workoutKeys.size} workout${group.workoutKeys.size === 1 ? "" : "s"}</p>
-          </div>
-          ${available ? "" : `<button class="button button-dark" type="button" data-approve-client-added-exercise="${escapeHtml(group.key)}">${escapeHtml(actionLabel)}</button>`}
-        </article>
-      `;
-    }).join("")
-    : `<p class="exercise-library-empty">${term ? "No client-added exercises match that search." : "No client-added exercises have been saved yet."}</p>`;
-}
-
-async function loadAllClientAddedExercises({ force = false } = {}) {
-  if (!coachSupabase || isClientAddedExerciseLoading || (clientAddedExerciseLoaded && !force)) {
-    renderAllClientAddedExercises();
-    return;
-  }
-
-  const loadToken = ++clientAddedExerciseLoadToken;
-  isClientAddedExerciseLoading = true;
-  clientAddedExerciseLoadError = "";
-  renderAllClientAddedExercises();
-
-  try {
-    const rows = [];
-    const pageSize = 1000;
-
-    for (let from = 0; ; from += pageSize) {
-      const { data, error } = await withRequestTimeout(
-        coachSupabase
-          .from("client_workout_logs")
-          .select("client_email,entry_date,workout_title,workout_session_id,exercise_code,exercise_name,created_at")
-          .ilike("workout_title", "Custom workout%")
-          .order("entry_date", { ascending: false })
-          .order("created_at", { ascending: false })
-          .range(from, from + pageSize - 1),
-        "Client-added exercises took too long to load."
-      );
-
-      if (error) throw error;
-      rows.push(...(data || []));
-      if ((data || []).length < pageSize) break;
-    }
-
-    if (loadToken !== clientAddedExerciseLoadToken) return;
-    allClientAddedExerciseLogs = rows;
-    clientAddedExerciseLoaded = true;
-    isClientAddedExerciseLoading = false;
-    renderAllClientAddedExercises();
-  } catch (error) {
-    if (loadToken !== clientAddedExerciseLoadToken) return;
-    allClientAddedExerciseLogs = [];
-    clientAddedExerciseLoaded = false;
-    isClientAddedExerciseLoading = false;
-    clientAddedExerciseLoadError = error?.message || "Client-added exercises could not be loaded.";
-    renderAllClientAddedExercises();
-  }
-}
-
-function handleAllClientAddedExercises() {
-  const link = document.getElementById("client-added-exercises-link");
-  const panel = document.getElementById("client-added-exercise-review");
-  const closeButton = document.querySelector("[data-close-client-added-exercises]");
-  const searchInput = document.getElementById("client-added-exercise-search");
-  const list = document.getElementById("client-added-exercise-list");
-
-  if (!link || !panel || !closeButton || !searchInput || !list) return;
-
-  const setOpen = (open) => {
-    panel.hidden = !open;
-    link.setAttribute("aria-expanded", String(open));
-    if (open) {
-      loadAllClientAddedExercises({ force: Boolean(clientAddedExerciseLoadError) });
-      window.requestAnimationFrame(() => searchInput.focus({ preventScroll: true }));
-    } else {
-      link.focus({ preventScroll: true });
-    }
-  };
-
-  link.addEventListener("click", () => setOpen(panel.hidden));
-  closeButton.addEventListener("click", () => setOpen(false));
-  searchInput.addEventListener("input", () => {
-    clientAddedExerciseSearchTerm = searchInput.value;
-    renderAllClientAddedExercises();
-  });
-  list.addEventListener("click", (event) => {
-    const button = event.target.closest("[data-approve-client-added-exercise]");
-    const group = allClientAddedExerciseGroups().find((item) => item.key === button?.dataset.approveClientAddedExercise);
-    if (!group) return;
-
-    if (group.libraryMatch) {
-      fillExerciseLibraryEditor(group.libraryMatch.record);
-    } else {
-      fillExerciseLibraryEditor({
-        name: group.name,
-        primary_muscle: "full_body",
-        equipment: "other",
-        difficulty: "beginner",
-        secondary_muscles: [],
-        aliases: [],
-        movement_pattern: "",
-        substitution_group: "",
-        default_sets: 3,
-        default_reps: "8–12",
-        default_rest_seconds: 90,
-        demo_url: "",
-        instructions: "",
-        is_approved: true,
-        is_active: true
-      });
-    }
-
-    renderExerciseLibrary();
-    exerciseLibraryStatus(group.libraryMatch
-      ? `Review ${group.libraryMatch.record.name}, approve it for clients, then save.`
-      : `Review the details for ${group.name}. Saving will approve it and add it to the shared library.`);
-    document.querySelector(".exercise-library-editor")?.scrollIntoView({ behavior: "smooth", block: "start" });
-    window.requestAnimationFrame(() => document.getElementById("exercise-library-primary")?.focus({ preventScroll: true }));
-  });
 }
 
 function clientExerciseNameStatus(message) {
@@ -5562,6 +5226,20 @@ function uploadedExerciseDemoUrl(value) {
   }
 }
 
+function trustedExerciseImageUrl(value) {
+  try {
+    const url = new URL(value);
+    const storageOrigin = new URL(window.FWB_SUPABASE_CONFIG.url).origin;
+    const storageImage = url.origin === storageOrigin
+      && /^\/storage\/v1\/object\/public\/exercise-images\/approved\/[a-z0-9/-]+\.(png|jpe?g|webp)$/i.test(url.pathname);
+    const siteImage = url.origin === "https://benjaminbenz.com"
+      && /^\/images\/exercises\/[a-z0-9/-]+\.(png|jpe?g|webp)$/i.test(url.pathname);
+    return url.protocol === "https:" && !url.username && !url.password && (storageImage || siteImage) ? url.href : "";
+  } catch {
+    return "";
+  }
+}
+
 function exerciseVideoFileDetails(file) {
   const types = { mp4: "video/mp4", mov: "video/quicktime", m4v: "video/x-m4v", webm: "video/webm" };
   const extension = String(file?.name || "").split(".").pop().toLowerCase();
@@ -5578,23 +5256,29 @@ function exerciseVideoFileDetails(file) {
 function renderExerciseVideoPreview() {
   const input = document.getElementById("exercise-library-video");
   const preview = document.getElementById("exercise-library-video-preview");
+  const imagePreview = document.getElementById("exercise-library-image-preview");
   const status = document.getElementById("exercise-library-video-status");
   const cancel = document.getElementById("clear-exercise-library-video");
-  if (!input || !preview || !status || !cancel) return;
+  if (!input || !preview || !imagePreview || !status || !cancel) return;
 
   preview.pause();
   preview.removeAttribute("src");
+  imagePreview.removeAttribute("src");
+  imagePreview.hidden = true;
   if (exerciseVideoPreviewUrl) URL.revokeObjectURL(exerciseVideoPreviewUrl);
   exerciseVideoPreviewUrl = "";
   const file = input.files?.[0];
   const savedUrl = uploadedExerciseDemoUrl(document.getElementById("exercise-library-demo").value.trim());
+  const savedImageUrl = trustedExerciseImageUrl(document.getElementById("exercise-library-image").value.trim());
   let src = savedUrl;
-  status.textContent = savedUrl ? "Uploaded demo attached." : "";
+  let imageSrc = savedImageUrl;
+  status.textContent = savedImageUrl ? "Exercise image attached." : savedUrl ? "Uploaded demo attached." : "";
   if (file) {
     try {
       exerciseVideoFileDetails(file);
       exerciseVideoPreviewUrl = URL.createObjectURL(file);
       src = exerciseVideoPreviewUrl;
+      imageSrc = "";
       status.textContent = `${file.name} · ${(file.size / 1024 / 1024).toFixed(1)} MB · Ready to save`;
     } catch (error) {
       input.value = "";
@@ -5602,9 +5286,14 @@ function renderExerciseVideoPreview() {
     }
   }
   cancel.hidden = !input.files?.length;
-  preview.hidden = !src;
-  if (src) preview.src = src;
-  preview.load();
+  preview.hidden = !src || Boolean(imageSrc);
+  imagePreview.hidden = !imageSrc;
+  if (imageSrc) {
+    imagePreview.src = imageSrc;
+  } else {
+    if (src) preview.src = src;
+    preview.load();
+  }
 }
 
 async function saveExerciseLibraryRecord(payload, id, file) {
@@ -5650,6 +5339,7 @@ function fillExerciseLibraryEditor(record = null) {
     default_reps: "8–12",
     default_rest_seconds: 90,
     demo_url: "",
+    image_url: "",
     instructions: "",
     is_approved: true,
     is_active: true
@@ -5670,6 +5360,8 @@ function fillExerciseLibraryEditor(record = null) {
     ? Number(values.default_rest_seconds)
     : 90;
   document.getElementById("exercise-library-demo").value = values.demo_url || "";
+  document.getElementById("exercise-library-image").value = values.image_url || "";
+  document.getElementById("exercise-library-image-preview").alt = `${values.name || "Exercise"} demo preview`;
   document.getElementById("exercise-library-video").value = "";
   renderExerciseVideoPreview();
   document.getElementById("exercise-library-instructions").value = values.instructions || "";
@@ -5811,7 +5503,6 @@ async function loadExerciseLibrary() {
 
   exerciseLibraryRecords = data || [];
   renderExerciseLibrary();
-  renderAllClientAddedExercises();
   renderCoachWorkoutExerciseSuggestions();
   renderClientExerciseNameCorrectionOptions();
   renderClientCustomExerciseNames();
@@ -6021,7 +5712,6 @@ function handleAdminTabs() {
   tabs.forEach((button) => {
     button.addEventListener("click", () => {
       setAdminTab(button.dataset.adminTab);
-      closeCoachMobileMore();
       closeCoachAdminSidebarDrawer({ restoreFocus: true });
     });
   });
@@ -6715,7 +6405,7 @@ async function deleteClientProgram(program, button) {
   }
 
   const label = program.client_name || program.client_email || "this client";
-  const confirmed = window.confirm(`Delete ${label} from the coach admin? This removes their saved programs from this page.`);
+  const confirmed = window.confirm(`Delete ${label} from FWB Coach? This removes their saved programs from this workspace.`);
 
   if (!confirmed) {
     return;
@@ -6746,8 +6436,8 @@ async function deleteClientProgram(program, button) {
   selectedProgramId = nextProgram.id || "";
   fillForm(nextProgram);
   renderClientList();
-  adminStatus("Client deleted from coach admin.");
-  profileManagementStatus("Client deleted from coach admin.");
+  adminStatus("Client deleted from FWB Coach.");
+  profileManagementStatus("Client deleted from FWB Coach.");
   if (button) {
     button.disabled = false;
   }
@@ -7027,8 +6717,8 @@ async function copyProgramToClient(program, button, targetEmail, options = {}) {
   }
 
   if (!coachSupabase) {
-    copyClientStatus("Coach admin is not connected yet.");
-    status("Coach admin is not connected yet.");
+    copyClientStatus("FWB Coach is not connected yet.");
+    status("FWB Coach is not connected yet.");
     return;
   }
 
@@ -7407,7 +7097,7 @@ async function handleSendInvite() {
     }
 
     if (!coachSupabase) {
-      inviteStatus("Coach admin is not connected yet.");
+      inviteStatus("FWB Coach is not connected yet.");
       return;
     }
 
@@ -7774,12 +7464,10 @@ async function bootCoachAdmin() {
 
   renderWorkoutFields();
   handleAdminTabs();
-  handleCoachMobileMore();
   handleCoachHomeActions();
   handleCoachAdminSidebar();
   handleExerciseLibraryEditor();
   handleClientExerciseNameManager();
-  handleAllClientAddedExercises();
   handleSelectedClientActions();
   handleNutritionEditor();
   handleSessionManualEditor();

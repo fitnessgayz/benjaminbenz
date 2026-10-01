@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>FWB Coach | Fitness with Benjamin</title>
-  <meta name="description" content="FWB Coach workspace for clients, training, progress, and messages." />
+  <meta name="description" content="FWB Coach workspace for managing clients, training, and messages." />
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-P3FPJMJ4PK"></script>
   <script>
     window.dataLayer = window.dataLayer || [];
@@ -16,12 +16,12 @@
   <link rel="icon" href="/favicon.ico" sizes="any" />
   <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
   <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
-  <link rel="apple-touch-icon" href="/fwb-home-icon-180.png" />
-  <link rel="apple-touch-icon-precomposed" href="/fwb-home-icon-180.png" />
+  <link rel="apple-touch-icon" href="/fwb-brand-icon-lime-180-v1.png" />
+  <link rel="apple-touch-icon-precomposed" href="/fwb-brand-icon-lime-180-v1.png" />
   <link rel="apple-touch-icon" sizes="120x120" href="/apple-touch-icon-120x120.png" />
   <link rel="apple-touch-icon" sizes="152x152" href="/apple-touch-icon-152x152.png" />
   <link rel="apple-touch-icon" sizes="167x167" href="/apple-touch-icon-167x167.png" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/fwb-home-icon-180.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/fwb-brand-icon-lime-180-v1.png" />
   <link rel="manifest" href="/coach.webmanifest" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="FWB Coach" />
@@ -30,19 +30,19 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=client-view-shortcut-1&amp;home-shortcuts=1&amp;coach-dock=3&amp;exercise-cards=1&amp;videos-tab=3&amp;client-added=1" />
+  <link rel="stylesheet" href="css/style.css?v=client-view-shortcut-1&amp;home-shortcuts=1&amp;coach-dock=6&amp;exercise-images=1&amp;exercise-cards=1&amp;videos-tab=3" />
   <link rel="stylesheet" href="css/coach-messages.css?v=1" />
   <link rel="stylesheet" href="css/workout-layout.css?v=workout-preview-1" />
-  <link rel="stylesheet" href="/css/fwb-design-system.css?v=reference-overhaul-1" />
   <link rel="stylesheet" href="css/apple-workout.css?v=1" />
   <link rel="stylesheet" href="css/apple-health-sync.css?v=1" />
   <link rel="stylesheet" href="css/workout-progression.css?v=1" />
+  <link rel="stylesheet" href="/css/fwb-design-system.css?v=web-app-brand-1" />
 </head>
 <body class="dashboard-page coach-admin-page">
   <header class="site-header dashboard-header">
-    <a class="brand" href="coach-admin.html" aria-label="FWB Coach home">
+    <a class="brand" href="index.html#top" aria-label="FWB Coach home">
       <span>FWB</span>
-      <strong>FWB Coach</strong>
+      <strong>Coach</strong>
     </a>
     <nav class="nav-links" aria-label="Primary navigation">
       <a href="#clients">Clients</a>
@@ -90,9 +90,9 @@
         </div>
 
         <nav class="admin-tabs" id="coach-admin-sidebar-nav" aria-label="FWB Coach sections">
-          <a class="admin-tab admin-tab-link admin-tab-session-logger" href="coach-workout-log.html" aria-label="Log workout">
+          <a class="admin-tab admin-tab-link admin-tab-session-logger" href="coach-workout-log.html" aria-label="Workout logger">
             <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-3"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="m9 14 2 2 4-5"/></svg>
-            <span class="admin-nav-label">Log workout</span>
+            <span class="admin-nav-label">Workout logger</span>
           </a>
 
           <button class="admin-tab is-active" type="button" data-admin-tab="home" aria-label="Home" aria-current="page">
@@ -111,13 +111,13 @@
             <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
             <span class="admin-nav-label">Clients</span>
           </button>
-          <button class="admin-tab" type="button" data-admin-tab="profile" aria-label="Client details">
+          <button class="admin-tab" type="button" data-admin-tab="profile" aria-label="Profile">
             <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
-            <span class="admin-nav-label">Client details</span>
+            <span class="admin-nav-label">Profile</span>
           </button>
-          <button class="admin-tab" type="button" data-admin-tab="program" aria-label="Training plan">
+          <button class="admin-tab" type="button" data-admin-tab="program" aria-label="Program">
             <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 2 9 5-9 5-9-5 9-5Z"/><path d="m3 12 9 5 9-5M3 17l9 5 9-5"/></svg>
-            <span class="admin-nav-label">Training plan</span>
+            <span class="admin-nav-label">Program</span>
           </button>
           <button class="admin-tab" type="button" data-admin-tab="workouts" aria-label="Workouts">
             <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 7v10M3.5 9v6M18 7v10M20.5 9v6M6 12h12"/></svg>
@@ -129,9 +129,9 @@
           </button>
 
           <p class="admin-nav-group-title">Coach</p>
-          <button class="admin-tab" type="button" data-admin-tab="nutrition" aria-label="Nutrition">
+          <button class="admin-tab" type="button" data-admin-tab="nutrition" aria-label="Food">
             <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3v8M4 3v5a3 3 0 0 0 6 0V3M7 11v10M16 3v18M16 3c3 2 4 5 4 8h-4"/></svg>
-            <span class="admin-nav-label">Nutrition</span>
+            <span class="admin-nav-label">Food</span>
           </button>
           <button class="admin-tab" type="button" data-admin-tab="progress" aria-label="Progress and stats">
             <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V5M4 20h16"/><path d="m7 15 4-4 3 3 5-7"/></svg>
@@ -141,9 +141,9 @@
             <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M8 13h8M8 17h6"/></svg>
             <span class="admin-nav-label">Notes</span>
           </button>
-          <button class="admin-tab" type="button" data-admin-tab="logs" aria-label="Training history">
+          <button class="admin-tab" type="button" data-admin-tab="logs" aria-label="Logs">
             <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-3"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M8 12h8M8 16h8"/></svg>
-            <span class="admin-nav-label">Training history</span>
+            <span class="admin-nav-label">Logs</span>
           </button>
           <button class="admin-tab" type="button" data-admin-tab="sessions" aria-label="Sessions">
             <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></svg>
@@ -154,59 +154,19 @@
             <span class="admin-nav-label">Settings</span>
             <span class="admin-nav-unread-count" data-web-notification-unread hidden aria-label="0 unread notifications">0</span>
           </button>
-          <button class="admin-tab admin-tab-more" type="button" aria-label="More coach tools" aria-expanded="false" aria-controls="coach-mobile-more" data-coach-mobile-more-toggle>
-            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
-            <span class="admin-nav-label">More</span>
-          </button>
         </nav>
       </aside>
-
-      <div class="coach-mobile-more" id="coach-mobile-more" data-coach-mobile-more hidden>
-        <button class="coach-mobile-more-backdrop" type="button" aria-label="Close more coach tools" data-coach-mobile-more-close></button>
-        <section class="coach-mobile-more-panel" role="dialog" aria-modal="true" aria-labelledby="coach-mobile-more-title">
-          <header class="coach-mobile-more-heading">
-            <div>
-              <p class="kicker">FWB Coach</p>
-              <h2 id="coach-mobile-more-title">More coach tools</h2>
-              <p data-coach-mobile-more-context>Choose a client to open their coaching tools.</p>
-            </div>
-            <button type="button" aria-label="Close more coach tools" data-coach-mobile-more-close>×</button>
-          </header>
-
-          <div class="coach-mobile-more-group" aria-labelledby="coach-mobile-client-tools-title">
-            <h3 id="coach-mobile-client-tools-title">Selected client</h3>
-            <div class="coach-mobile-more-grid">
-              <button type="button" data-admin-tab="profile">Client details</button>
-              <button type="button" data-admin-tab="program">Training plan</button>
-              <button type="button" data-admin-tab="workouts">Workouts</button>
-              <button type="button" data-admin-tab="nutrition">Nutrition</button>
-              <button type="button" data-admin-tab="progress">Progress</button>
-              <button type="button" data-admin-tab="notes">Notes</button>
-              <button type="button" data-admin-tab="logs">Training history</button>
-              <button type="button" data-admin-tab="sessions">Sessions</button>
-            </div>
-          </div>
-
-          <div class="coach-mobile-more-group" aria-labelledby="coach-mobile-workspace-tools-title">
-            <h3 id="coach-mobile-workspace-tools-title">Workspace</h3>
-            <div class="coach-mobile-more-grid">
-              <button type="button" data-admin-tab="library">Exercise library</button>
-              <button type="button" data-admin-tab="notifications">Settings</button>
-            </div>
-          </div>
-        </section>
-      </div>
 
       <form class="admin-editor" id="program-editor">
         <input type="hidden" name="id" />
         <input type="hidden" name="sheet_url" />
         <input type="hidden" name="session_package_history" />
 
-        <section class="admin-client-list" id="clients" aria-label="Client selector">
+        <section class="admin-client-list" id="clients" aria-label="Client list">
           <div class="admin-section-heading">
             <div>
               <p class="kicker">Clients</p>
-              <h2>Client selector</h2>
+              <h2>Choose a client</h2>
             </div>
             <div class="client-list-actions">
               <button class="button button-ghost" type="button" id="archived-clients-button">Archived clients</button>
@@ -444,6 +404,10 @@
             <ul class="web-notification-list" data-web-notification-list aria-live="polite"></ul>
             <p class="web-notification-empty" data-web-notification-empty>Your recent coach alerts will appear here.</p>
           </div>
+          <nav class="coach-support-links" aria-label="FWB Coach help and policies">
+            <a href="fwb-coach-support.html"><strong>Help &amp; support</strong><span>Get sign-in, client-data, or workspace help</span></a>
+            <a href="fwb-coach-privacy.html"><strong>Privacy</strong><span>How FWB Coach handles coaching information</span></a>
+          </nav>
         </section>
 
         <section class="admin-card programming-heading-card" data-admin-panel="profile" hidden>
@@ -572,7 +536,7 @@
           </div>
           <label>
             Program summary
-            <textarea name="program_summary" placeholder="Short summary for the top of the client dashboard."></textarea>
+            <textarea name="program_summary" placeholder="Short summary for the top of FWB Training."></textarea>
           </label>
           <div class="training-block-actions">
             <p id="training-block-status" role="status">Training block saves with this program.</p>
@@ -1013,8 +977,10 @@
                 <label for="exercise-library-video">Upload video</label>
                 <input type="file" id="exercise-library-video" accept="video/mp4,video/quicktime,video/x-m4v,video/webm,.mp4,.mov,.m4v,.webm" aria-describedby="exercise-library-video-help exercise-library-video-status" />
                 <p id="exercise-library-video-help">MP4, MOV, M4V, or WebM, up to 50 MB. MP4 works best across devices. Save the exercise to attach your video in place of its current demo link. Demo videos can be viewed by anyone with the link.</p>
+                <input type="hidden" id="exercise-library-image" />
                 <p id="exercise-library-video-status" role="status"></p>
                 <video id="exercise-library-video-preview" controls playsinline preload="metadata" aria-label="Exercise demo preview" hidden></video>
+                <img id="exercise-library-image-preview" alt="Exercise demo preview" hidden />
                 <button class="button button-ghost" type="button" id="clear-exercise-library-video" hidden>Cancel video selection</button>
               </div>
               <label class="exercise-library-instructions-field">
@@ -1032,39 +998,6 @@
             </div>
 
             <div class="exercise-library-browser">
-              <button
-                class="client-added-exercises-link"
-                type="button"
-                id="client-added-exercises-link"
-                aria-expanded="false"
-                aria-controls="client-added-exercise-review"
-              >
-                <span>
-                  <small>Coach review</small>
-                  <strong>Client-added exercises</strong>
-                </span>
-                <span class="client-added-exercises-link-count" id="client-added-exercise-pending-count">—</span>
-              </button>
-
-              <section class="client-added-exercise-review" id="client-added-exercise-review" aria-labelledby="client-added-exercise-review-title" hidden>
-                <div class="client-added-exercise-review-heading">
-                  <div>
-                    <p class="kicker">All clients</p>
-                    <h3 id="client-added-exercise-review-title">Client-added exercises</h3>
-                    <p>Review custom workout exercises and promote approved names into the shared library.</p>
-                  </div>
-                  <button type="button" aria-label="Close client-added exercise review" data-close-client-added-exercises>×</button>
-                </div>
-                <label class="client-added-exercise-search">
-                  Search client-added exercises
-                  <input type="search" id="client-added-exercise-search" placeholder="Exercise or client..." autocomplete="off" />
-                </label>
-                <p class="client-added-exercise-status" id="client-added-exercise-status" role="status">Open this list to load client exercises.</p>
-                <div class="client-added-exercise-list" id="client-added-exercise-list" aria-live="polite">
-                  <p class="exercise-library-empty">Client-added exercises will appear here.</p>
-                </div>
-              </section>
-
               <div class="exercise-library-view-tabs" role="tablist" aria-label="Exercise library views">
                 <button class="is-selected" type="button" role="tab" aria-selected="true" aria-controls="exercise-library-list" data-exercise-library-view="cards">
                   Exercise cards
@@ -1187,6 +1120,6 @@
   <script src="js/apple-workout.js?v=3"></script>
   <script src="js/apple-health-sync.js?v=1"></script>
   <script src="js/workout-progression.js?v=1"></script>
-  <script src="js/coach-admin.js?v=client-view-shortcut-1&amp;remember-login=1&amp;home-shortcuts=1&amp;apple-workout=1&amp;viewport-dock=1&amp;apple-health=1&amp;recovery-catalog=1&amp;messages=2&amp;progression=1&amp;invitations=2&amp;exercise-cards=1&amp;videos-tab=3&amp;client-added=1&amp;mobile-more=1"></script>
+  <script src="js/coach-admin.js?v=client-view-shortcut-1&amp;remember-login=1&amp;home-shortcuts=1&amp;apple-workout=1&amp;viewport-dock=1&amp;apple-health=1&amp;recovery-catalog=1&amp;messages=2&amp;progression=1&amp;invitations=2&amp;exercise-images=1&amp;exercise-cards=1&amp;videos-tab=3"></script>
 </body>
 </html>

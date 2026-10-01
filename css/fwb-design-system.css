@@ -23,12 +23,12 @@
 
   /* Legacy aliases stay available while feature styles migrate to semantic roles. */
   --black: var(--ink-deep);
-  --white: #F4F5F1;
+  --white: var(--surface);
   --paper: var(--surface);
   --muted: var(--text-muted);
   --line: var(--border);
   --lime: var(--brand-primary);
-  --nav-surface: #1c1f1b;
+  --nav-surface: var(--ink-deep);
   --ui-radius: 12px;
   --card-radius: 22px;
   --panel-radius: 26px;
@@ -194,7 +194,7 @@
   background: transparent;
   border-color: var(--line);
 }
-:root body .danger-button { color: #b52d25; border-color: #e1b6b2; background: #fff5f4; }
+:root body .danger-button { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 30%, var(--surface)); background: color-mix(in srgb, var(--danger) 6%, var(--surface)); }
 @media (hover: hover) {
   :root body .button:hover { transform: none; filter: brightness(.96); }
 }
@@ -222,10 +222,10 @@
   font-size: 1rem;
   line-height: 1.4;
 }
-:root body :is(input, textarea)::placeholder { color: #71766c; opacity: 1; }
-:root body :is(input[type="checkbox"], input[type="radio"], input[type="range"]) { accent-color: #678000; }
+:root body :is(input, textarea)::placeholder { color: var(--text-muted); opacity: 1; }
+:root body :is(input[type="checkbox"], input[type="radio"], input[type="range"]) { accent-color: var(--focus); }
 :root body :is(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
-  outline: 3px solid #718a18;
+  outline: 3px solid var(--focus);
   outline-offset: 3px;
 }
 :root body :is(.client-dashboard-tabs, .coach-admin-sidebar) :focus-visible {
@@ -281,6 +281,43 @@
 :root body .site-header { border-bottom-color: var(--line); }
 :root body .brand strong { font-weight: 700; letter-spacing: -.025em; }
 
+/* Keep installed authentication focused on the product, while ordinary web pages
+ * retain the public-site navigation around the sign-in flow. */
+@media (display-mode: standalone) {
+  :root body.login-page .site-header .nav-links { display: none; }
+}
+
+:root body .access-footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px 20px;
+  margin: 24px auto 0;
+  font-size: .875rem;
+  font-weight: 700;
+}
+:root body .access-footer-links a { color: var(--ink); text-underline-offset: 3px; }
+
+:root body .coach-support-links {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+}
+:root body .coach-support-links a {
+  display: grid;
+  gap: 4px;
+  min-height: 48px;
+  padding: 16px;
+  color: var(--ink);
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
+  border-radius: var(--ui-radius);
+  text-decoration: none;
+}
+:root body .coach-support-links span { color: var(--text-muted); font-size: .8125rem; }
+
 @media (min-width: 901px) {
   :root body.client-dashboard-page .client-dashboard-tabs { border-radius: 22px !important; }
   :root body.client-dashboard-page .dashboard-grid { column-gap: 24px; }
@@ -290,11 +327,11 @@
 
 @media (max-width: 900px) {
   :root body.client-dashboard-page .client-dashboard-tabs {
-    background: rgba(247, 248, 244, .96);
+    background: rgba(247, 248, 245, .64);
     border: 0;
-    border-top: 1px solid rgba(59, 64, 58, .14);
+    border-top: 1px solid rgba(255, 255, 255, .72);
     border-radius: 0 !important;
-    box-shadow: 0 -8px 24px rgba(24, 30, 18, .1);
+    box-shadow: 0 -10px 30px rgba(20, 24, 20, .08);
   }
   :root body.client-dashboard-page .client-dashboard-tab-label {
     font-size: .58rem;
@@ -368,6 +405,14 @@
   background: var(--surface-soft);
 }
 :root body.fwb-document-page footer { margin-top: 32px; padding-top: 20px; border-top: 1px solid var(--line); }
+:root body.fwb-coach-document-page::before {
+  content: "";
+  position: fixed;
+  inset: 0 0 auto;
+  height: 8px;
+  background: var(--ink-deep);
+}
+:root body.fwb-coach-document-page .eyebrow { color: var(--focus); }
 :root body.fwb-consent-page { display: grid; place-items: center; }
 :root body.fwb-consent-page main { max-width: 560px; }
 :root body.fwb-consent-page .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
@@ -386,6 +431,7 @@
   :root body .client-weekly-totals span { font-size: .9375rem; }
   :root body .client-weekly-header { flex-wrap: wrap; }
   :root body.fwb-document-page main { padding: 24px 20px; }
+  :root body .coach-support-links { grid-template-columns: minmax(0, 1fr); }
 }
 
 @media (prefers-reduced-motion: reduce) {

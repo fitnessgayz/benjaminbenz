@@ -1,0 +1,159 @@
+require "base64"
+require "fileutils"
+require "json"
+require "net/http"
+require "open3"
+require "openssl"
+require "securerandom"
+require "shellwords"
+require "uri"
+
+# Shared, independently testable release checks. Never interpolate credentials
+# into shell commands, write them to the checkout, or include them in errors.
+module FWBRelease
+  APP_ID = "com.benjaminbenz.fwbcoach".freeze
+  TEAM_ID = "5Q4FU299QH".freeze
+  RELEASE_REPOSITORY = "fitnessgayz/benjaminbenz".freeze
+  REQUIRED = %w[
+    ASC_KEY_ID ASC_ISSUER_ID ASC_PRIVATE_KEY_P8_BASE64
+    IOS_DISTRIBUTION_P12_BASE64 IOS_DISTRIBUTION_P12_PASSWORD
+    IOS_PROVISIONING_PROFILE_BASE64 SENTRY_AUTH_TOKEN
+    SENTRY_DSN SENTRY_ORG SENTRY_PROJECT
+  ].freeze
+
+  def self.validate_configuration!(env = ENV)
+    missing = REQUIRED.select { |name| env[name].to_s.strip.empty? }
+    raise "Missing release configuration: #{missing.join(', ')}. See DEPLOYMENT.md." unless missing.empty?
+    dsn = URI.parse(env.fetch("SENTRY_DSN"))
+    unless dsn.scheme == "https" && dsn.host && dsn.user && dsn.path.match?(%r{\A/\d+\z}) && !dsn.password && !dsn.query && !dsn.fragment
+      raise "SENTRY_DSN must be the project's HTTPS public DSN."
+    end
+    sentry_url = URI.parse(env.fetch("SENTRY_URL", "https://sentry.io"))
+    raise "SENTRY_URL must use HTTPS." unless sentry_url.scheme == "https" && sentry_url.host && !sentry_url.userinfo
+    %w[SENTRY_ORG SENTRY_PROJECT].each do |key|
+      raise "#{key} must be a Sentry slug." unless env.fetch(key).match?(/\A[a-zA-Z0-9_-]+\z/)
+    end
+  rescue URI::InvalidURIError
+    raise "Invalid Sentry URL configuration."
+  end
+
+  def self.require_trusted_main!(env = ENV)
+    raise "Release requires GitHub Actions." unless env["GITHUB_ACTIONS"] == "true"
+    raise "Release requires the approved repository." unless env["GITHUB_REPOSITORY"] == RELEASE_REPOSITORY
+    raise "Release requires main." unless env["GITHUB_REF"] == "refs/heads/main"
+    unless %w[push workflow_dispatch].include?(env["GITHUB_EVENT_NAME"])
+      raise "Release only runs for a push or manual dispatch."
+    end
+  end
+
+  def self.build_ordinal(value)
+    parts = value.to_s.split(".")
+    unless (1..3).cover?(parts.length) && parts.all? { |part| part.match?(/\A\d+\z/) }
+      raise "App Store Connect returned an unsupported build number."
+    end
+    parts = parts.map(&:to_i)
+    parts << 0 while parts.length < 3
+    raise "Build number exceeds Apple's component limits." unless parts[0] <= 9999 && parts[1..2].all? { |part| part <= 99 }
+    parts[0] * 10_000 + parts[1] * 100 + parts[2]
+  end
+
+  def self.next_build_number(latest:, run_number:, run_attempt:)
+    run = Integer(run_number)
+    attempt = Integer(run_attempt)
+    raise "Invalid GitHub run number or attempt." unless run.positive? && (1..99).cover?(attempt)
+    # A new run or retry has a distinct baseline even while ASC processes the
+    # previous upload. The ASC comparison also accommodates manual releases.
+    ordinal = [1_000_000 + run * 100 + attempt, build_ordinal(latest) + 1].max
+    raise "Build number space exhausted; update the release numbering strategy." if ordinal > 99_999_999
+    [ordinal / 10_000, (ordinal / 100) % 100, ordinal % 100].join(".")
+  end
+
+  def self.decode_secret!(env, name, path)
+    bytes = Base64.strict_decode64(env.fetch(name).gsub(/\s/, ""))
+    raise ArgumentError if bytes.empty?
+    File.write(path, bytes, mode: "wb", perm: 0o600)
+    path
+  rescue ArgumentError
+    raise "#{name} must contain valid base64 data."
+  end
+
+  def self.command!(*args)
+    output, _errors, status = Open3.capture3(*args)
+    raise "Release command failed: #{File.basename(args.first)}. Check signing credentials and DEPLOYMENT.md." unless status.success?
+    output
+  end
+
+  class Signing
+    attr_reader :keychain, :profile_uuid, :identity, :api_key_path
+
+    def initialize(directory, env = ENV)
+      @directory, @env = directory, env
+      @keychain = File.join(directory, "release.keychain-db")
+      @old_keychains = nil
+      @profile_paths = []
+      FileUtils.mkdir_p(directory, mode: 0o700)
+    end
+
+    def prepare!
+      require "plist"
+      @api_key_path = FWBRelease.decode_secret!(@env, "ASC_PRIVATE_KEY_P8_BASE64", File.join(@directory, "AuthKey.p8"))
+      private_key = OpenSSL::PKey.read(File.read(@api_key_path))
+      raise "ASC_PRIVATE_KEY_P8_BASE64 must be an EC private key." unless private_key.is_a?(OpenSSL::PKey::EC) && private_key.private?
+      p12 = FWBRelease.decode_secret!(@env, "IOS_DISTRIBUTION_P12_BASE64", File.join(@directory, "distribution.p12"))
+      mobileprovision = FWBRelease.decode_secret!(@env, "IOS_PROVISIONING_PROFILE_BASE64", File.join(@directory, "app.mobileprovision"))
+      profile = Plist.parse_xml(FWBRelease.command!("security", "cms", "-D", "-i", mobileprovision))
+      validate_profile!(profile)
+      @profile_uuid = profile.fetch("UUID")
+      raise "Invalid provisioning profile UUID." unless @profile_uuid.match?(/\A[0-9a-fA-F-]{36}\z/)
+      # Import into a temporary keychain and give codesign access without any
+      # interactive prompt. The user's/runner's default keychain is unchanged.
+      password = SecureRandom.hex(32)
+      @old_keychains = Shellwords.split(FWBRelease.command!("security", "list-keychains", "-d", "user"))
+      FWBRelease.command!("security", "create-keychain", "-p", password, @keychain)
+      FWBRelease.command!("security", "set-keychain-settings", "-lut", "7200", @keychain)
+      FWBRelease.command!("security", "unlock-keychain", "-p", password, @keychain)
+      FWBRelease.command!("security", "list-keychains", "-d", "user", "-s", @keychain, *@old_keychains)
+      FWBRelease.command!("security", "import", p12, "-k", @keychain, "-P", @env.fetch("IOS_DISTRIBUTION_P12_PASSWORD"), "-T", "/usr/bin/codesign", "-T", "/usr/bin/security")
+      FWBRelease.command!("security", "set-key-partition-list", "-S", "apple-tool:,apple:,codesign:", "-s", "-k", password, @keychain)
+      identities = FWBRelease.command!("security", "find-identity", "-v", "-p", "codesigning", @keychain)
+      hashes = profile.fetch("DeveloperCertificates").map { |cert| OpenSSL::Digest::SHA1.hexdigest(cert.respond_to?(:string) ? cert.string : cert).upcase }
+      @identity = identities.scan(/([0-9A-F]{40}) "Apple Distribution:[^"]+"/).flatten.find { |hash| hashes.include?(hash) }
+      raise "The P12 must contain the Apple Distribution private key matching this profile." unless @identity
+      # Xcode 16+ uses UserData; the legacy directory supports earlier tooling.
+      ["Library/Developer/Xcode/UserData/Provisioning Profiles", "Library/MobileDevice/Provisioning Profiles"].each do |subdir|
+        destination = File.join(Dir.home, subdir, "#{@profile_uuid}.mobileprovision")
+        raise "Unexpected pre-existing CI provisioning profile." if File.exist?(destination)
+        FileUtils.mkdir_p(File.dirname(destination))
+        @profile_paths << destination
+        FileUtils.cp(mobileprovision, destination)
+        File.chmod(0o600, destination)
+      end
+    rescue OpenSSL::PKey::PKeyError
+      raise "ASC_PRIVATE_KEY_P8_BASE64 is not a valid private key."
+    end
+
+    def validate_profile!(profile)
+      unless profile.is_a?(Hash) && profile.fetch("TeamIdentifier", []).include?(TEAM_ID)
+        raise "Provisioning profile belongs to the wrong Apple Developer team."
+      end
+      entitlements = profile.fetch("Entitlements", {})
+      unless entitlements["application-identifier"] == "#{TEAM_ID}.#{APP_ID}"
+        raise "Provisioning profile does not match the FWB app identifier."
+      end
+      if profile.key?("ProvisionedDevices") || profile["ProvisionsAllDevices"] || entitlements["get-task-allow"] != false
+        raise "Use an App Store Connect distribution profile, not a development or ad hoc profile."
+      end
+      raise "The distribution profile must enable HealthKit for FWB." unless entitlements["com.apple.developer.healthkit"] == true
+      expiration = profile.fetch("ExpirationDate")
+      expiration = expiration.to_time if expiration.respond_to?(:to_time)
+      raise "Provisioning profile has expired or has an invalid expiry date." unless expiration.is_a?(Time) && expiration > Time.now
+    end
+
+    def cleanup
+      @profile_paths.each { |path| FileUtils.rm_f(path) }
+      Open3.capture3("security", "list-keychains", "-d", "user", "-s", *@old_keychains) if @old_keychains
+      Open3.capture3("security", "delete-keychain", @keychain) if File.exist?(@keychain)
+      FileUtils.rm_rf(@directory)
+    end
+  end
+end

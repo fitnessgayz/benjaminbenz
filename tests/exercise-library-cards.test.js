@@ -46,18 +46,6 @@ test("videos view exposes the existing secure upload flow", () => {
   assert.match(styles, /\.exercise-library-upload-video-button\s*\{[\s\S]*?background: var\(--lime\)/);
 });
 
-test("exercise library exposes an all-client approval queue", () => {
-  assert.match(html, /id="client-added-exercises-link"[^>]*aria-controls="client-added-exercise-review"/);
-  assert.match(html, /id="client-added-exercise-review"[^>]*hidden/);
-  assert.match(html, /id="client-added-exercise-list"[^>]*aria-live="polite"/);
-  assert.match(source, /function allClientAddedExerciseGroups\(logs = allClientAddedExerciseLogs\)/);
-  assert.match(source, /\.from\("client_workout_logs"\)[\s\S]*?\.ilike\("workout_title", "Custom workout%"\)/);
-  assert.match(source, /data-approve-client-added-exercise=/);
-  assert.match(source, /Saving will approve it and add it to the shared library/);
-  assert.match(source, /is_approved: true[\s\S]*?is_active: true/);
-  assert.match(styles, /\.client-added-exercises-link\s*\{[\s\S]*?border-left: 5px solid var\(--lime\)/);
-});
-
 test("known branded exercise artwork is connected to matching catalog names", () => {
   for (const relativePath of Object.values({
     arnold: "images/exercises/instruction-cards/2026-09-29/arnold-press.png",

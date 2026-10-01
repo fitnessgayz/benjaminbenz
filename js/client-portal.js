@@ -188,13 +188,6 @@ const customWorkoutDefaultWorkingSetCount = 3;
 const customWorkoutDraftVersion = 2;
 const clientDashboardUrl = "client-dashboard.html?v=manual-sessions-1";
 const clientDashboardSidebarStorageKey = "fwb_client_dashboard_sidebar_collapsed_v1";
-const clientDashboardMoreTabNames = new Set([
-  "stats",
-  "nutrition",
-  "questionnaire",
-  "sessions",
-  "notifications"
-]);
 const clientHomeCheckinPromptStoragePrefix = "fwb_daily_checkin_prompt_v2";
 const clientDailyPromptMemory = new Set();
 let clientDailyCheckinReady = false;
@@ -2440,6 +2433,234 @@ function uploadedExerciseDemoUrl(value) {
   }
 }
 
+function trustedExerciseImageUrl(value) {
+  try {
+    const url = new URL(value);
+    const storageOrigin = new URL(window.FWB_SUPABASE_CONFIG.url).origin;
+    const storageImage = url.origin === storageOrigin
+      && /^\/storage\/v1\/object\/public\/exercise-images\/approved\/[a-z0-9/-]+\.(png|jpe?g|webp)$/i.test(url.pathname);
+    const siteImage = url.origin === "https://benjaminbenz.com"
+      && /^\/images\/exercises\/[a-z0-9/-]+\.(png|jpe?g|webp)$/i.test(url.pathname);
+    return url.protocol === "https:" && !url.username && !url.password && (storageImage || siteImage) ? url.href : "";
+  } catch {
+    return "";
+  }
+}
+
+function trustedExerciseMotionUrl(value) {
+  try {
+    const url = new URL(value);
+    const storageOrigin = new URL(window.FWB_SUPABASE_CONFIG.url).origin;
+    const storageWebp = url.origin === storageOrigin
+      && /^\/storage\/v1\/object\/public\/exercise-images\/approved\/[a-z0-9/-]+\.webp$/i.test(url.pathname);
+    const storageVideo = url.origin === storageOrigin
+      && /^\/storage\/v1\/object\/public\/exercise-videos\/generated\/[a-z0-9/-]+\.mp4$/i.test(url.pathname);
+    const siteWebp = url.origin === "https://benjaminbenz.com"
+      && /^\/images\/exercises\/[a-z0-9/-]+\.webp$/i.test(url.pathname);
+    return url.protocol === "https:" && !url.username && !url.password && (storageWebp || storageVideo || siteWebp)
+      ? url.href : "";
+  } catch {
+    return "";
+  }
+}
+
+function responsiveExerciseImageUrls(value) {
+  const fullUrl = trustedExerciseImageUrl(value);
+  if (!fullUrl) return { fullUrl: "", thumbnailUrl: "" };
+
+  try {
+    const url = new URL(fullUrl);
+    const thumbnailPath = url.pathname.replace(
+      /(\/exercise-images\/approved\/\d{4}-\d{2}-\d{2}\/)(webp-768)(\/[a-z0-9-]+\.webp)$/i,
+      "$1webp-480$3"
+    );
+    if (thumbnailPath === url.pathname) return { fullUrl, thumbnailUrl: fullUrl };
+    url.pathname = thumbnailPath;
+    return {
+      fullUrl,
+      thumbnailUrl: trustedExerciseImageUrl(url.href) || fullUrl
+    };
+  } catch {
+    return { fullUrl, thumbnailUrl: fullUrl };
+  }
+}
+
+function exerciseMedia(exercise = {}) {
+  const approvedExercise = approvedExerciseForName(exercise.name);
+  // The approved library is the source of truth for branded artwork. Older
+  // workout payloads can contain a stale image URL, so prefer the canonical
+  // name/alias match whenever it has approved media.
+  const imageUrl = trustedExerciseImageUrl(approvedExercise?.image_url)
+    || trustedExerciseImageUrl(exercise.image_url);
+  const motionUrl = trustedExerciseMotionUrl(approvedExercise?.motion_url)
+    || trustedExerciseMotionUrl(exercise.motion_url);
+  const instructions = String(approvedExercise?.instructions || exercise.instructions || "").trim();
+  return { imageUrl, motionUrl, instructions };
+}
+
+function exerciseMediaButtonMarkup(exercise, options = {}) {
+  const { imageUrl, motionUrl, instructions } = exerciseMedia(exercise);
+  if (!imageUrl) return "";
+  const { fullUrl, thumbnailUrl } = responsiveExerciseImageUrls(imageUrl);
+  const name = String(exercise.name || "Exercise").trim() || "Exercise";
+  const compact = options.compact ? " exercise-media-button-compact" : "";
+  const brandedCrop = /\/exercise-images\/approved\/\d{4}-\d{2}-\d{2}\/(?:webp-(?:480|768)|png)\//i.test(thumbnailUrl)
+    ? " exercise-media-button-branded-crop" : "";
+  return `
+    <button
+      class="exercise-media-button${compact}${brandedCrop}"
+      type="button"
+      data-exercise-media-open
+      data-exercise-media-static="${escapeHtml(fullUrl)}"
+      data-exercise-media-video="${escapeHtml(motionUrl)}"
+      data-exercise-media-instructions="${escapeHtml(instructions)}"
+      data-exercise-media-name="${escapeHtml(name)}"
+      aria-label="Open ${escapeHtml(name)} exercise card and instructions"
+    >
+      <img
+        src="${escapeHtml(thumbnailUrl)}"
+        ${thumbnailUrl !== fullUrl ? `srcset="${escapeHtml(thumbnailUrl)} 480w, ${escapeHtml(fullUrl)} 768w" sizes="(max-width: 700px) 42vw, 320px"` : ""}
+        ${thumbnailUrl !== fullUrl ? `data-exercise-media-fallback="${escapeHtml(fullUrl)}"` : ""}
+        alt=""
+        loading="lazy"
+        decoding="async"
+      />
+      <span class="exercise-media-info" aria-hidden="true">i</span>
+    </button>
+  `;
+}
+
+function exerciseImageMarkup(exercise) {
+  const approvedImageUrl = approvedExerciseForName(exercise.name)?.image_url;
+  const imageUrl = trustedExerciseImageUrl(approvedImageUrl) || trustedExerciseImageUrl(exercise.image_url);
+  const media = exerciseMediaButtonMarkup({ ...exercise, image_url: imageUrl });
+  return media ? `<figure class="exercise-demo-image">${media}</figure>` : "";
+}
+
+function refreshExerciseMediaViews(root = document) {
+  root.querySelectorAll("[data-workout-preview-exercise-media]").forEach((slot) => {
+    const name = String(slot.dataset.workoutPreviewExerciseMedia || "").trim();
+    slot.innerHTML = name ? exerciseMediaButtonMarkup({ name }, { compact: true }) : "";
+  });
+
+  root.querySelectorAll("[data-exercise-log]").forEach((logElement) => {
+    const name = String(
+      exerciseNameInputForLog(logElement)?.value || logElement.dataset.exerciseName || ""
+    ).trim();
+    const current = Array.from(logElement.children).find((child) => child.matches?.(".exercise-demo-image"));
+    const markup = name ? exerciseImageMarkup({ name }) : "";
+
+    if (current) {
+      if (markup) current.outerHTML = markup;
+      else current.remove();
+      return;
+    }
+
+    if (!markup) return;
+    const anchor = Array.from(logElement.children).find((child) => (
+      child.matches?.(".exercise-video-link, .exercise-date, [data-workout-progression]")
+    ));
+    if (anchor) anchor.insertAdjacentHTML("beforebegin", markup);
+    else logElement.insertAdjacentHTML("afterbegin", markup);
+  });
+
+  root.querySelectorAll("[data-custom-workout-carousel]").forEach((carousel) => {
+    renderCustomWorkoutGroupedExerciseKey(carousel);
+  });
+}
+
+function ensureExerciseMediaDialog() {
+  let dialog = document.querySelector("[data-exercise-media-dialog]");
+  if (dialog) return dialog;
+  dialog = document.createElement("dialog");
+  dialog.className = "exercise-media-dialog";
+  dialog.dataset.exerciseMediaDialog = "";
+  dialog.setAttribute("aria-labelledby", "exercise-media-dialog-title");
+  dialog.innerHTML = `
+    <div class="exercise-media-dialog-card">
+      <header>
+        <div><small>Exercise guide</small><h2 id="exercise-media-dialog-title"></h2></div>
+        <button type="button" data-exercise-media-close aria-label="Close exercise guide">×</button>
+      </header>
+      <div class="exercise-media-dialog-stage" data-exercise-media-stage></div>
+      <p data-exercise-media-caption>Static start and end reference</p>
+      <div class="exercise-media-dialog-actions">
+        <button type="button" data-exercise-media-video-toggle hidden>
+          <span aria-hidden="true">▶</span>
+          <span data-exercise-media-video-label>Watch exercise video</span>
+        </button>
+      </div>
+      <section class="exercise-media-dialog-instructions" data-exercise-media-instructions-block>
+        <h3>How to perform</h3>
+        <p data-exercise-media-instructions></p>
+      </section>
+    </div>
+  `;
+  dialog.addEventListener("close", () => {
+    const stage = dialog.querySelector("[data-exercise-media-stage]");
+    if (stage) stage.replaceChildren();
+    dialog.dataset.exerciseMediaShowingVideo = "false";
+  });
+  dialog.querySelector("[data-exercise-media-video-toggle]")?.addEventListener("click", () => {
+    renderExerciseMediaDialog(dialog, dialog.dataset.exerciseMediaShowingVideo !== "true");
+  });
+  document.body.append(dialog);
+  return dialog;
+}
+
+function renderExerciseMediaDialog(dialog, showVideo = false) {
+  const stage = dialog.querySelector("[data-exercise-media-stage]");
+  const caption = dialog.querySelector("[data-exercise-media-caption]");
+  const toggle = dialog.querySelector("[data-exercise-media-video-toggle]");
+  const toggleLabel = dialog.querySelector("[data-exercise-media-video-label]");
+  const name = String(dialog.dataset.exerciseMediaName || "Exercise").trim();
+  const staticUrl = trustedExerciseImageUrl(dialog.dataset.exerciseMediaStatic);
+  const videoUrl = trustedExerciseMotionUrl(dialog.dataset.exerciseMediaVideo);
+  if (!stage || !staticUrl) return;
+
+  const shouldShowVideo = Boolean(showVideo && videoUrl);
+  dialog.dataset.exerciseMediaShowingVideo = String(shouldShowVideo);
+  if (toggle) toggle.hidden = !videoUrl;
+  if (toggleLabel) toggleLabel.textContent = shouldShowVideo ? "Show static card" : "Watch exercise video";
+  if (caption) caption.textContent = shouldShowVideo ? "Exercise video demonstration" : "Static start and end reference";
+
+  if (shouldShowVideo) {
+    const video = document.createElement("video");
+    video.src = videoUrl;
+    video.controls = true;
+    video.playsInline = true;
+    video.preload = "metadata";
+    video.setAttribute("aria-label", `${name} exercise video`);
+    stage.replaceChildren(video);
+    return;
+  }
+
+  const image = document.createElement("img");
+  image.src = staticUrl;
+  image.alt = `${name} start and end positions`;
+  image.decoding = "async";
+  stage.replaceChildren(image);
+}
+
+function openExerciseMedia(button) {
+  const dialog = ensureExerciseMediaDialog();
+  const name = String(button?.dataset.exerciseMediaName || "Exercise").trim();
+  const staticUrl = trustedExerciseImageUrl(button?.dataset.exerciseMediaStatic);
+  const videoUrl = trustedExerciseMotionUrl(button?.dataset.exerciseMediaVideo);
+  const instructions = String(button?.dataset.exerciseMediaInstructions || "").trim();
+  if (!staticUrl) return;
+  dialog.querySelector("h2").textContent = name;
+  const instructionsBlock = dialog.querySelector("[data-exercise-media-instructions-block]");
+  const instructionsCopy = dialog.querySelector("[data-exercise-media-instructions]");
+  if (instructionsCopy) instructionsCopy.textContent = instructions;
+  if (instructionsBlock) instructionsBlock.hidden = !instructions;
+  dialog.dataset.exerciseMediaName = name;
+  dialog.dataset.exerciseMediaStatic = staticUrl;
+  dialog.dataset.exerciseMediaVideo = videoUrl;
+  renderExerciseMediaDialog(dialog, false);
+  dialog.showModal();
+}
+
 function exerciseVideoUrl(exercise) {
   const approvedExercise = approvedExerciseForName(exercise.name);
   // A newly uploaded library demo also applies to existing workout plans,
@@ -2481,14 +2702,19 @@ function exerciseVideoUrl(exercise) {
 }
 
 function exerciseVideoMarkup(exercise, options = {}) {
+  const staticMedia = exerciseMedia(exercise);
+  if (staticMedia.imageUrl) {
+    return options.iconOnly
+      ? exerciseMediaButtonMarkup(exercise, { compact: true })
+      : exerciseImageMarkup(exercise);
+  }
   const videoUrl = exerciseVideoUrl(exercise);
 
   if (!videoUrl) {
     return "";
   }
 
-  return `
-    <a class="exercise-video-link" href="${escapeHtml(videoUrl)}" target="_blank" rel="noopener noreferrer" aria-label="View demo for ${escapeHtml(exercise.name)} (opens in a new tab)" title="View demo for ${escapeHtml(exercise.name)}">
+  return `<a class="exercise-video-link" href="${escapeHtml(videoUrl)}" target="_blank" rel="noopener noreferrer" aria-label="View demo for ${escapeHtml(exercise.name)} (opens in a new tab)" title="View demo for ${escapeHtml(exercise.name)}">
       ${options.iconOnly ? '<span aria-hidden="true">🎥</span>' : "View demo"}
     </a>
   `;
@@ -3987,7 +4213,7 @@ function configureClientProgressAccess() {
   });
 
   if (coachPreview) {
-    setClientProgressStatus("Client measurements are read-only here. Use Coach Admin to make changes.");
+    setClientProgressStatus("Client measurements are read-only here. Use FWB Coach to make changes.");
     setClientProgressPhotoStatus("Client progress photos are read-only in Coach View.");
     setClientDexaStatus("DEXA reports are read-only in Coach View.");
   }
@@ -4814,7 +5040,7 @@ function handleClientProgressPhotoUpload() {
       fileInput.value = "";
       noteInput.value = "";
       await loadClientProgressPhotos();
-      setClientProgressPhotoStatus("Private photo uploaded. It is now available in the iOS app and Coach Admin.");
+      setClientProgressPhotoStatus("Private photo uploaded. It is now available in the iOS app and FWB Coach.");
     } catch (error) {
       setClientProgressPhotoStatus(error?.message || "Photo upload failed.");
     } finally {
@@ -6717,7 +6943,7 @@ async function showRestTimerCompleteNotification() {
 
   const options = {
     body: "Your next set is ready.",
-    icon: "/fwb-home-icon-192.png",
+    icon: "/fwb-brand-icon-lime-192-v1.png",
     badge: "/favicon-32.png",
     tag: "fwb-rest-timer-complete",
     renotify: true,
@@ -7249,12 +7475,16 @@ function workoutDifficultyPromptMarkup() {
   return `
     <div class="workout-difficulty-overlay" data-workout-difficulty-overlay hidden>
       <section class="workout-difficulty-sheet" role="dialog" aria-modal="true" aria-labelledby="workout-difficulty-title">
-        <header class="rir-heading">
-          <div>
+        <header class="rir-heading workout-difficulty-header">
+          <div class="workout-difficulty-heading-copy">
             <small>Workout complete</small>
             <strong id="workout-difficulty-title">How was your workout?</strong>
           </div>
-          <button class="rir-close" type="button" data-workout-difficulty-close aria-label="Close workout difficulty prompt">×</button>
+          <div class="workout-difficulty-top-actions" aria-label="Workout feedback actions">
+            <button class="workout-difficulty-skip" type="button" data-workout-difficulty-skip>Skip</button>
+            <button class="workout-difficulty-done" type="button" data-workout-difficulty-save disabled>Done</button>
+            <button class="rir-close" type="button" data-workout-difficulty-close aria-label="Close workout difficulty prompt">×</button>
+          </div>
         </header>
         <p class="workout-difficulty-congratulations">Congratulations for completing the workout!</p>
         <p class="workout-difficulty-question">How hard was it overall?</p>
@@ -7306,10 +7536,9 @@ function renderWorkoutDifficultyPrompt() {
     button.setAttribute("aria-checked", isSelected ? "true" : "false");
   });
 
-  const saveButton = overlay?.querySelector("[data-workout-difficulty-save]");
-  if (saveButton) {
+  overlay?.querySelectorAll("[data-workout-difficulty-save]").forEach((saveButton) => {
     saveButton.disabled = pendingWorkoutDifficulty === null || !pendingWorkoutEnergy.before || !pendingWorkoutEnergy.after;
-  }
+  });
 }
 
 function requestWorkoutDifficulty(returnFocus) {
@@ -8806,6 +9035,15 @@ function customWorkoutGroupedRoundCardMarkup(format, exercises, groupIndex = 0, 
   const groupTitle = format === "circuit"
     ? `Circuit ${groupIndex + 1}`
     : format === "single" ? `Straight sets ${groupIndex + 1}` : `Superset ${groupIndex + 1}`;
+  const exerciseMarkers = (exercises || []).map((exercise, index) => (
+    workoutCarouselExerciseCode(format, groupIndex, index)
+  ));
+  const groupRepeatCount = Math.max(1, ...(exercises || []).map((exercise) => (
+    setCountFromPrescription(exercise?.prescription)
+  )));
+  const groupCue = format === "single"
+    ? "Complete each working set"
+    : `Complete ${exerciseMarkers.join(" → ")}, rest 60–90s, repeat ${groupRepeatCount}×`;
 
   return `
     <section
@@ -8822,7 +9060,10 @@ function customWorkoutGroupedRoundCardMarkup(format, exercises, groupIndex = 0, 
       ${customWorkoutGroupNameEditorMarkup(format, exercises, groupIndex, options.assigned ? `${encodeURIComponent(workoutTitle)}-` : "", startIndex)}
       <article class="custom-workout-grouped-card">
         <header class="custom-workout-grouped-card-heading">
-          <h3>${escapeHtml(groupTitle)}</h3>
+          <div>
+            <h3>${escapeHtml(groupTitle)}</h3>
+            <p class="custom-workout-grouped-cue">${escapeHtml(groupCue)}</p>
+          </div>
           <p class="custom-workout-grouped-progress" data-custom-grouped-progress aria-live="polite">0 / 0 complete</p>
         </header>
         ${!options.assigned && panelFormat === "single"
@@ -9086,8 +9327,19 @@ function assignedWorkoutPrescriptionLabel(logElement) {
   return `Target: ${sets ? `${sets} ${sets === 1 ? "set" : "sets"}${targetLabel ? " × " : ""}` : ""}${targetLabel || (sets ? "" : prescription)}`;
 }
 
+function exerciseLibraryMetaLabel(exerciseName) {
+  const entry = approvedExerciseForName(exerciseName);
+  const primary = String(entry?.primary_muscle || "").trim();
+  const equipment = String(entry?.equipment || "").trim();
+  return [primary, equipment].filter(Boolean).map((value) => (
+    value.replace(/[_-]+/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase())
+  )).join("  |  ");
+}
+
 function customWorkoutGroupedExerciseKeyMarkup(carousel) {
   const isCustom = Boolean(carousel?.closest?.(".client-workout-panel-custom"));
+  const format = String(carousel?.dataset?.customWorkoutFormat || "single").toLowerCase();
+  const groupIndex = Math.max(Number(carousel?.dataset?.customWorkoutGroup) || 0, 0);
   return customWorkoutGroupedLogElements(carousel).map((logElement, index) => {
     const exerciseNumber = (Number(carousel?.dataset?.exerciseStartIndex) || 0) + index + 1;
     const nameInput = exerciseNameInputForLog(logElement);
@@ -9099,17 +9351,26 @@ function customWorkoutGroupedExerciseKeyMarkup(carousel) {
       ? logElement.querySelector(".exercise-video-link")?.getAttribute("href") || logElement.dataset.generatedVideo || ""
       : "";
     const demo = exerciseName ? exerciseVideoMarkup({ name: exerciseName, video: originalVideo }, { iconOnly: true }) : "";
+    const media = exerciseName && typeof exerciseMediaButtonMarkup === "function"
+      ? exerciseMediaButtonMarkup({ name: exerciseName }, { compact: true }) : "";
+    const marker = `${String.fromCharCode(65 + Math.min(groupIndex, 25))}${index + 1}`;
+    const meta = typeof exerciseLibraryMetaLabel === "function" ? exerciseLibraryMetaLabel(exerciseName) : "";
     const target = assignedWorkoutPrescriptionLabel(logElement);
 
     return `
       <div class="custom-workout-grouped-exercise-key-item" role="listitem">
-        <span class="custom-workout-grouped-exercise-number">${exerciseNumber}</span>
-        ${isCustom ? `<button type="button" data-open-custom-exercise="${index}" aria-label="Edit ${escapeHtml(name)}: sets, reps and weight"><strong data-custom-grouped-exercise-name="${index}">${escapeHtml(name)}</strong></button>` : `<strong data-custom-grouped-exercise-name="${index}">${escapeHtml(name)}</strong>`}
-        ${demo}
-        ${target ? `<p class="custom-workout-grouped-target" data-custom-grouped-target="${index}">${escapeHtml(target)}</p>` : ""}
+        ${media || `<span class="custom-workout-grouped-media-placeholder" aria-hidden="true"></span>`}
+        <span class="custom-workout-grouped-exercise-copy">
+          <span class="custom-workout-grouped-exercise-number">${escapeHtml(marker)}</span>
+          ${isCustom ? `<button type="button" data-open-custom-exercise="${index}" aria-label="Edit ${escapeHtml(name)}: sets, reps and weight"><strong data-custom-grouped-exercise-name="${index}">${escapeHtml(name)}</strong></button>` : `<strong data-custom-grouped-exercise-name="${index}">${escapeHtml(name)}</strong>`}
+          ${target ? `<p class="custom-workout-grouped-target" data-custom-grouped-target="${index}">${escapeHtml(target)}</p>` : ""}
+          ${meta ? `<p class="custom-workout-grouped-meta">${escapeHtml(meta)}</p>` : ""}
+        </span>
+        ${media ? "" : demo}
+        <span class="custom-workout-grouped-chevron" aria-hidden="true">›</span>
         ${logElement.dataset.generatedExercise === "true" && logElement.dataset.generatedInstructions ? `<p class="custom-workout-grouped-target">${escapeHtml(logElement.dataset.generatedInstructions)}</p>` : ""}
-        <div class="workout-progression-group-slot" data-workout-progression-index="${index}"></div>
         <p class="custom-workout-grouped-pr-preview" data-custom-grouped-pr-preview="${index}" hidden></p>
+        <div class="workout-progression-group-slot" data-workout-progression-index="${index}"></div>
       </div>
     `;
   }).join("");
@@ -9254,12 +9515,18 @@ function refreshCustomWorkoutGroupedCopyWeights(carousel) {
       personalBests.set(logElement, personalBestWeightLog(logsForExerciseDisplay(logElement)));
     });
   }
-  const oneRepMaxSources = logElements.map((logElement) => {
+  const oneRepMaxSources = logElements.map((logElement, exerciseIndex) => {
     const best = personalBests.get(logElement);
+    const program = window.FWBOneRepMax?.programForLog?.(logElement);
     return {
       label: logElement.querySelector("[data-exercise-name-input]")?.value.trim() || logElement.dataset.exerciseName || "Exercise",
       weight: best?.weight_used,
-      reps: best?.reps
+      reps: best?.reps,
+      exerciseIndex,
+      exerciseCode: logElement.dataset.exerciseCode || "",
+      exerciseName: logElement.querySelector("[data-exercise-name-input]")?.value.trim() || logElement.dataset.exerciseName || "Exercise",
+      repMin: program?.rep_min,
+      repMax: program?.rep_max
     };
   }).filter((source) => Number(source.weight) > 0 && Number.isInteger(Number(source.reps)) && Number(source.reps) >= 1 && Number(source.reps) <= 30);
   carousel?.querySelectorAll('[data-one-rm-source="pr"]').forEach((button) => {
@@ -12211,15 +12478,27 @@ function clientWorkoutListMarkup(workouts) {
       </div>
       <div id="workout-preview-body-${index}" class="workout-preview-body" ${position === 0 ? "" : "hidden"}>
         <div class="workout-preview-columns"><span>Exercises</span><span>Sets × reps</span></div>
-        <ol class="workout-preview-exercises" data-preview-workout="${position}">${exercises.map((exercise, exerciseIndex) => `<li data-preview-exercise="${exerciseIndex}">
-          <button type="button" class="workout-drag" data-exercise-drag ${locked ? "disabled" : ""} aria-label="Reorder ${escapeHtml(exercise.name || "exercise")}. Use up and down arrow keys.">⠿</button>
-          <span class="workout-row-number">${exerciseIndex + 1}</span><strong>${escapeHtml(exercise.name || "Exercise")}</strong><span class="workout-prescription">${escapeHtml(WorkoutLayout.label(exercise.prescription))}</span>
-          <details class="workout-preview-menu"><summary aria-label="${escapeHtml(exercise.name || "Exercise")} options">•••</summary><div>
-            <button type="button" data-exercise-edit ${locked ? "disabled" : ""}>Edit exercise</button>
-            <button type="button" data-exercise-substitute ${locked ? "disabled" : ""}>Substitute exercise</button>
-            <button type="button" data-exercise-delete ${locked ? "disabled" : ""}>Delete exercise</button>
-          </div></details>
-        </li>`).join("")}</ol>
+        <ol class="workout-preview-exercises" data-preview-workout="${position}">${exercises.map((exercise, exerciseIndex) => {
+          const approvedExercise = approvedExerciseForName(exercise.name);
+          const exerciseMeta = [approvedExercise?.primary_muscle, approvedExercise?.equipment]
+            .map((value) => String(value || "").trim())
+            .filter(Boolean)
+            .join(" · ");
+          return `<li class="workout-preview-exercise-card" data-preview-exercise="${exerciseIndex}">
+            <button type="button" class="workout-drag" data-exercise-drag ${locked ? "disabled" : ""} aria-label="Reorder ${escapeHtml(exercise.name || "exercise")}. Use up and down arrow keys.">⠿</button>
+            <div class="workout-preview-exercise-media" data-workout-preview-exercise-media="${escapeHtml(exercise.name || "")}">${exerciseMediaButtonMarkup(exercise, { compact: true })}</div>
+            <span class="workout-preview-exercise-copy">
+              <span class="workout-row-number">${exerciseIndex + 1}</span>
+              <span><strong>${escapeHtml(exercise.name || "Exercise")}</strong>${exerciseMeta ? `<small>${escapeHtml(exerciseMeta)}</small>` : ""}</span>
+            </span>
+            <span class="workout-prescription">${escapeHtml(WorkoutLayout.label(exercise.prescription))}</span>
+            <details class="workout-preview-menu"><summary aria-label="${escapeHtml(exercise.name || "Exercise")} options">•••</summary><div>
+              <button type="button" data-exercise-edit ${locked ? "disabled" : ""}>Edit exercise</button>
+              <button type="button" data-exercise-substitute ${locked ? "disabled" : ""}>Substitute exercise</button>
+              <button type="button" data-exercise-delete ${locked ? "disabled" : ""}>Delete exercise</button>
+            </div></details>
+          </li>`;
+        }).join("")}</ol>
         <button type="button" class="button button-dark workout-preview-start" data-preview-start="${index}" ${exercises.length ? "" : "disabled"}>▶ Start workout</button>
       </div>
     </article>`;
@@ -12993,10 +13272,12 @@ function updateSetHistoryPlaceholders(logElement, logs = logsForExerciseDisplay(
     }
 
     if (repsInput) {
-      repsInput.placeholder = historyPlaceholder(
-        previousLog?.reps,
-        repsInput.dataset.defaultPlaceholder || ""
-      );
+      const prescribedReps = setType === workingSetType
+        ? String(repsInput.dataset.defaultPlaceholder || "").trim()
+        : "";
+      repsInput.placeholder = prescribedReps && prescribedReps !== "0"
+        ? prescribedReps
+        : historyPlaceholder(previousLog?.reps, repsInput.dataset.defaultPlaceholder || "");
     }
   });
   syncCustomWorkoutGroupedHistoryPlaceholders(logElement);
@@ -13485,6 +13766,17 @@ function configureClientProfilePhoto() {
     isPreview: isCoachDashboardPreview
   }) || null;
   void clientProfilePhotoController?.initialize();
+}
+
+function configureClientAccountSettings() {
+  window.FWB_CLIENT_ACCOUNT_SETTINGS_CONTROLLER?.destroy();
+  window.FWB_CLIENT_ACCOUNT_SETTINGS_CONTROLLER = window.FWB_CLIENT_ACCOUNT_SETTINGS?.createController({
+    root: document.querySelector("[data-client-account-settings]"),
+    supabaseClient,
+    user: activeDashboardUser,
+    isPreview: isCoachDashboardPreview
+  }) || null;
+  window.FWB_CLIENT_ACCOUNT_SETTINGS_CONTROLLER?.initialize();
 }
 
 function isCopyableWorkoutHistoryLog(log = {}) {
@@ -15281,79 +15573,6 @@ function setClientDashboardMobileNavigationExpanded(expanded, options = {}) {
   });
 }
 
-function setClientMobileMoreOpen(open, options = {}) {
-  const menu = document.querySelector("[data-client-mobile-more]");
-  const toggle = document.querySelector("[data-client-mobile-more-toggle]");
-  const mobileNavigation = window.matchMedia?.("(max-width: 900px)")?.matches ?? false;
-
-  if (!menu || !toggle) return;
-
-  const shouldOpen = Boolean(open) && mobileNavigation;
-  menu.hidden = !shouldOpen;
-  toggle.setAttribute("aria-expanded", String(shouldOpen));
-  document.body.classList.toggle("is-client-mobile-more-open", shouldOpen);
-
-  if (shouldOpen) {
-    window.requestAnimationFrame?.(() => {
-      menu.querySelector("[data-client-dashboard-tab].is-active, [data-client-dashboard-tab]")?.focus({ preventScroll: true });
-    });
-  } else if (options.restoreFocus) {
-    window.requestAnimationFrame?.(() => toggle.focus({ preventScroll: true }));
-  }
-}
-
-function closeClientMobileMore(options = {}) {
-  const menu = document.querySelector("[data-client-mobile-more]");
-  if (!menu || menu.hidden) return false;
-  setClientMobileMoreOpen(false, options);
-  return true;
-}
-
-function handleClientMobileMore() {
-  const menu = document.querySelector("[data-client-mobile-more]");
-  const toggle = document.querySelector("[data-client-mobile-more-toggle]");
-  if (!menu || !toggle) return;
-
-  toggle.addEventListener("click", () => {
-    setClientMobileMoreOpen(menu.hidden);
-  });
-
-  menu.querySelectorAll("[data-client-mobile-more-close]").forEach((button) => {
-    button.addEventListener("click", () => closeClientMobileMore({ restoreFocus: true }));
-  });
-
-  document.addEventListener("keydown", (event) => {
-    if (menu.hidden) return;
-
-    if (event.key === "Escape") {
-      event.preventDefault();
-      closeClientMobileMore({ restoreFocus: true });
-      return;
-    }
-
-    if (event.key !== "Tab") return;
-    const focusable = Array.from(menu.querySelectorAll("button:not([disabled])"))
-      .filter((element) => !element.hidden && element.getClientRects().length > 0);
-    if (focusable.length === 0) return;
-
-    const first = focusable[0];
-    const last = focusable[focusable.length - 1];
-    if (event.shiftKey && document.activeElement === first) {
-      event.preventDefault();
-      last.focus();
-    } else if (!event.shiftKey && document.activeElement === last) {
-      event.preventDefault();
-      first.focus();
-    }
-  });
-
-  window.addEventListener("resize", () => {
-    if (!(window.matchMedia?.("(max-width: 900px)")?.matches ?? false)) {
-      closeClientMobileMore();
-    }
-  });
-}
-
 function syncClientDashboardMobileNavigationMount() {
   const page = document.querySelector(".client-dashboard-page");
   const content = document.getElementById("dashboard-content");
@@ -15462,12 +15681,6 @@ function setClientDashboardTab(tabName) {
       button.removeAttribute("aria-current");
     }
   });
-  const moreToggle = document.querySelector("[data-client-mobile-more-toggle]");
-  const moreIsActive = clientDashboardMoreTabNames.has(nextTab);
-  moreToggle?.classList.toggle("is-active", moreIsActive);
-  if (moreIsActive) moreToggle?.setAttribute("aria-current", "page");
-  else moreToggle?.removeAttribute("aria-current");
-  closeClientMobileMore();
   syncClientDashboardMobileNavigationIcon(nextTab);
   panels.forEach((panel) => {
     const isActive = panel.dataset.clientDashboardPanel === nextTab;
@@ -15496,12 +15709,14 @@ function setClientDashboardTab(tabName) {
 }
 
 function setClientNotificationSettingsAvailable(available) {
-  const settingsTabs = document.querySelectorAll('[data-client-dashboard-tab="notifications"]');
+  const settingsTab = document.querySelector('[data-client-dashboard-tab="notifications"]');
   const settingsEntries = document.querySelectorAll("[data-client-settings-entry]");
   const settingsPanel = document.querySelector('[data-client-dashboard-panel="notifications"]');
   const isAvailable = Boolean(available);
 
-  settingsTabs.forEach((settingsTab) => { settingsTab.hidden = !isAvailable; });
+  if (settingsTab) {
+    settingsTab.hidden = !isAvailable;
+  }
   settingsEntries.forEach((entry) => { entry.hidden = !isAvailable; });
   if (!isAvailable && settingsPanel) {
     settingsPanel.hidden = true;
@@ -16193,7 +16408,7 @@ function handleClientProgressSave() {
     }
 
     renderProgress(data || []);
-    setText("#client-progress-save-status", "Measurements saved. They are now available in the iOS app and Coach Admin.");
+    setText("#client-progress-save-status", "Measurements saved. They are now available in the iOS app and FWB Coach.");
 
     if (button) {
       button.disabled = false;
@@ -16433,7 +16648,6 @@ function handleClientDashboardTabs() {
     );
 
     setClientDashboardTab(tabName);
-    closeClientMobileMore();
     if (mobileNavigation && tabName === "workouts") {
       window.requestAnimationFrame?.(() => window.WorkoutExerciseDock?.open?.());
     }
@@ -16753,7 +16967,31 @@ function removeExerciseLog(logElement) {
 }
 
 function handleWorkoutInteractions() {
+  document.addEventListener("error", (event) => {
+    const image = event.target?.closest?.("img[data-exercise-media-fallback]");
+    if (!image || image.dataset.exerciseMediaFallbackUsed === "true") return;
+    const fallback = trustedExerciseImageUrl(image.dataset.exerciseMediaFallback);
+    if (!fallback) return;
+    image.dataset.exerciseMediaFallbackUsed = "true";
+    image.removeAttribute("srcset");
+    image.removeAttribute("sizes");
+    image.src = fallback;
+  }, true);
+
   document.addEventListener("click", async (event) => {
+    const exerciseMediaOpen = event.target.closest("[data-exercise-media-open]");
+    const exerciseMediaClose = event.target.closest("[data-exercise-media-close]");
+    const exerciseMediaDialog = event.target.closest("[data-exercise-media-dialog]");
+    if (exerciseMediaClose || (exerciseMediaDialog && event.target === exerciseMediaDialog)) {
+      exerciseMediaDialog?.close();
+      return;
+    }
+    if (exerciseMediaOpen) {
+      event.preventDefault();
+      event.stopPropagation();
+      openExerciseMedia(exerciseMediaOpen);
+      return;
+    }
     const generateWorkoutButton = event.target.closest("[data-generate-workout]");
     if (generateWorkoutButton) {
       event.preventDefault();
@@ -16823,6 +17061,7 @@ function handleWorkoutInteractions() {
     const rirCloseButton = event.target.closest("[data-rir-close]");
     const workoutDifficultyOptionButton = event.target.closest("[data-workout-difficulty-option]");
     const workoutDifficultySaveButton = event.target.closest("[data-workout-difficulty-save]");
+    const workoutDifficultySkipButton = event.target.closest("[data-workout-difficulty-skip]");
     const workoutDifficultyCloseButton = event.target.closest("[data-workout-difficulty-close]");
     const nextExerciseYesButton = event.target.closest("[data-next-exercise-yes]");
     const nextExerciseFinishButton = event.target.closest("[data-next-exercise-finish]");
@@ -17152,6 +17391,11 @@ function handleWorkoutInteractions() {
 
     if (workoutDifficultySaveButton) {
       saveWorkoutDifficultySelection();
+      return;
+    }
+
+    if (workoutDifficultySkipButton) {
+      closeWorkoutDifficultyPrompt({ skipped: true });
       return;
     }
 
@@ -17845,8 +18089,7 @@ function portalLoginDestination(user) {
   const returnTo = new URLSearchParams(window.location.search).get("return_to");
   if (returnTo?.startsWith("/") && !returnTo.startsWith("//")) {
     const destination = new URL(returnTo, window.location.origin);
-    const isLoginPage = ["/client-login.html", "/coach-login.html"].some((path) => destination.pathname.endsWith(path));
-    if (destination.origin === window.location.origin && !isLoginPage) {
+    if (destination.origin === window.location.origin && !destination.pathname.endsWith("/client-login.html")) {
       return destination.href;
     }
   }
@@ -17856,10 +18099,7 @@ function portalLoginDestination(user) {
 }
 
 async function restorePortalLogin() {
-  if (!document.getElementById("client-login-form") && !document.getElementById("coach-login-form")) {
-    return;
-  }
-  if (!supabaseClient) {
+  if (!document.getElementById("client-login-form") || !supabaseClient) {
     return;
   }
   try {
@@ -17967,7 +18207,7 @@ async function handleCoachPortalLogin() {
 
       if (!isCoachPortalEmail(loginData.user?.email)) {
         await supabaseClient.auth.signOut();
-        if (status) status.textContent = "This login is not set up as a coach admin.";
+        if (status) status.textContent = "This login is not authorized for FWB Coach.";
         return;
       }
 
@@ -18082,6 +18322,8 @@ async function loadDashboard() {
   clientAppleHealthController = null;
   clientProfilePhotoController?.destroy();
   clientProfilePhotoController = null;
+  window.FWB_CLIENT_ACCOUNT_SETTINGS_CONTROLLER?.destroy();
+  window.FWB_CLIENT_ACCOUNT_SETTINGS_CONTROLLER = null;
 
   try {
     if (!supabaseClient) {
@@ -18126,11 +18368,12 @@ async function loadDashboard() {
     isCoachDashboardPreview = isCoachPortalEmail(signedInEmail) && Boolean(previewEmail);
     setClientNotificationSettingsAvailable(!isCoachDashboardPreview);
     configureClientProfilePhoto();
+    configureClientAccountSettings();
 
     if (!targetClientEmail) {
       setDashboardMessage(
         "Choose a client",
-        "Open Client View from the coach admin after selecting a client."
+        "Select a client in FWB Coach, then open Client View."
       );
       return;
     }
@@ -18243,7 +18486,7 @@ async function loadDashboard() {
       withTimeout(
         supabaseClient
           .from("exercise_library")
-          .select("id,name,aliases,primary_muscle,secondary_muscles,equipment,difficulty,movement_pattern,default_sets,default_reps,default_rest_seconds,substitution_group,demo_url,instructions,is_active,is_approved")
+          .select("id,name,aliases,primary_muscle,secondary_muscles,equipment,difficulty,movement_pattern,default_sets,default_reps,default_rest_seconds,substitution_group,demo_url,image_url,motion_url,instructions,is_active,is_approved")
           .setHeader("x-fwb-recovery-catalog", "1")
           .eq("is_active", true)
           .eq("is_approved", true)
@@ -18289,6 +18532,7 @@ async function loadDashboard() {
     clientDailyCheckinReady = progressResult.status === "fulfilled" && !progressResult.value.error
       && trainingLogResult.status === "fulfilled" && !trainingLogResult.value.error;
     exerciseLibraryEntries = exerciseLibraryData || [];
+    refreshExerciseMediaViews();
     workoutSessionFeedback = workoutFeedbackData || [];
 
     renderProgress(progressData || []);
@@ -18899,8 +19143,9 @@ async function handleTrainingLogSave() {
           if (pendingGroupedCustomWorkoutRestart?.panel === section) pendingGroupedCustomWorkoutRestart = null;
           return;
         }
-        const workoutDifficulty = workoutFeedback.difficulty;
-        const difficultySummary = workoutHistoryDifficultyLabel(workoutDifficulty);
+        const workoutFeedbackSkipped = workoutFeedback.skipped === true;
+        const workoutDifficulty = workoutFeedbackSkipped ? null : workoutFeedback.difficulty;
+        const difficultySummary = workoutFeedbackSkipped ? "" : workoutHistoryDifficultyLabel(workoutDifficulty);
         const saveResult = await saveTrainingLogRows(workoutButton, logElements, status, {
           savingMessage: "Finishing workout...",
           successMessage: "Workout saved. Saving feedback...",
@@ -18917,7 +19162,9 @@ async function handleTrainingLogSave() {
         section.workoutCompletionPendingFeedback = workoutCompletion;
         section.workoutAchievementBeforeFeedback = achievementsBefore;
         if (!isCardioOnly) finishWorkoutElapsedTimer();
-        const feedbackResult = await saveWorkoutDifficultyFeedback(saveResult.rows, workoutDifficulty, workoutFeedback);
+        const feedbackResult = workoutFeedbackSkipped
+          ? { saved: true }
+          : await saveWorkoutDifficultyFeedback(saveResult.rows, workoutDifficulty, workoutFeedback);
         if (!feedbackResult.saved) {
           const retryMessage = isCardioOnly
             ? "Cardio saved. Tap Save & finish cardio again to retry saving your ratings."
@@ -18929,7 +19176,9 @@ async function handleTrainingLogSave() {
 
         renderClientTrainingLogs();
         completionSucceeded = true;
-        if (status) status.textContent = `Workout finished · ${difficultySummary}.`;
+        if (status) status.textContent = difficultySummary
+          ? `Workout finished · ${difficultySummary}.`
+          : "Workout finished.";
         delete section.workoutCompletionPendingFeedback;
         delete section.workoutAchievementBeforeFeedback;
         const groupedRestart = pendingGroupedCustomWorkoutRestart?.panel === section
@@ -18988,6 +19237,8 @@ async function handleSignOut() {
       clientAppleHealthController = null;
       clientProfilePhotoController?.destroy();
       clientProfilePhotoController = null;
+      window.FWB_CLIENT_ACCOUNT_SETTINGS_CONTROLLER?.destroy();
+      window.FWB_CLIENT_ACCOUNT_SETTINGS_CONTROLLER = null;
       dexaReports = [];
       archivedDexaReportsExpanded = false;
       sharedFoodLibrary = [];
@@ -19004,10 +19255,25 @@ async function handleSignOut() {
   });
 }
 
+function disableClientDashboardZoom() {
+  const preventGestureZoom = (event) => {
+    event.preventDefault();
+  };
+
+  document.addEventListener("gesturestart", preventGestureZoom, { passive: false });
+  document.addEventListener("gesturechange", preventGestureZoom, { passive: false });
+  document.addEventListener("gestureend", preventGestureZoom, { passive: false });
+  document.addEventListener("touchmove", (event) => {
+    if (event.touches.length > 1) {
+      event.preventDefault();
+    }
+  }, { passive: false });
+}
+
+disableClientDashboardZoom();
 initializeRestTimerNotifications();
 handleClientDashboardSidebar();
 handleClientDashboardMobileNavigation();
-handleClientMobileMore();
 handleLogin();
 handleCoachPortalLogin();
 void restorePortalLogin();

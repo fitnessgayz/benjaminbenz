@@ -19,7 +19,7 @@ function functionSource(name) {
 const wrapIndex = Function(`${functionSource("wrapCoachingOptionIndex")}; return wrapCoachingOptionIndex;`)();
 const swipeDirection = Function(`${functionSource("coachingOptionSwipeDirection")}; return coachingOptionSwipeDirection;`)();
 
-test("keeps all three coaching plans and opens the featured Hybrid card", () => {
+test("keeps all three coaching plans and opens Online Coaching first", () => {
   assert.equal((homepage.match(/data-coaching-option-card/g) || []).length, 3);
 
   const onlineIndex = homepage.indexOf("<h3>Online Coaching</h3>");
@@ -29,7 +29,8 @@ test("keeps all three coaching plans and opens the featured Hybrid card", () => 
   assert.ok(onlineIndex >= 0);
   assert.ok(hybridIndex > onlineIndex);
   assert.ok(personalIndex > hybridIndex);
-  assert.match(homepage, /data-coaching-option-start="1"/);
+  assert.match(homepage, /data-coaching-option-start="0"/);
+  assert.match(homepage, /data-coaching-option-status aria-live="polite">Option 1 of 3 · Online Coaching/);
   assert.match(homepage, /coaching-option-card coaching-option-card-featured[\s\S]*?<h3>Hybrid Coaching<\/h3>/);
   assert.match(homepage, /One in-person session per month/);
   assert.match(homepage, /In-person training per session/);
@@ -60,12 +61,17 @@ test("wraps the card deck and ignores short or vertical swipes", () => {
 
 test("synchronizes slide accessibility and supports every navigation method", () => {
   const syncSource = functionSource("setCoachingOptionDeckCard");
+  const resetSource = functionSource("resetCoachingOptionDeck");
   const initializeSource = functionSource("initializeCoachingOptionDeck");
+  const activateSource = functionSource("activateHomeTab");
 
   assert.match(syncSource, /classList\.toggle\("is-current", isCurrent\)/);
   assert.match(syncSource, /setAttribute\("aria-hidden", isCurrent \? "false" : "true"\)/);
   assert.match(syncSource, /toggleAttribute\("inert", !isCurrent\)/);
   assert.match(syncSource, /setAttribute\("aria-pressed", isActive \? "true" : "false"\)/);
+  assert.match(resetSource, /dataset\.coachingOptionStart/);
+  assert.match(initializeSource, /resetCoachingOptionDeck\(deck\)/);
+  assert.match(activateSource, /tabId === "start"[\s\S]*?forEach\(resetCoachingOptionDeck\)/);
   assert.match(initializeSource, /aria-roledescription", "slide"/);
   assert.match(initializeSource, /data-coaching-option-dot/);
   assert.match(initializeSource, /previousButton\?\.addEventListener\("click"/);
@@ -91,5 +97,5 @@ test("renders a layered, content-driven deck with mobile-safe controls", () => {
 
 test("cache-busts the homepage deck assets", () => {
   assert.match(homepage, /css\/style\.css\?v=physical-card-decks-1/);
-  assert.match(homepage, /js\/script\.js\?v=physical-card-decks-1/);
+  assert.match(homepage, /js\/script\.js\?v=physical-card-decks-1&amp;remember-login=1&amp;start-online=1/);
 });

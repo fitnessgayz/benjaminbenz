@@ -1,0 +1,1032 @@
+import Foundation
+import Network
+import Supabase
+import SwiftUI
+
+struct ReadinessCheckIn: Codable, Equatable, Identifiable {
+    enum SyncState: String, Codable {
+        case queued
+        case synced
+    }
+
+    let id: UUID
+    let clientEmail: String
+    let localDate: String
+    var energy: Int
+    var soreness: Int
+    var sleepRecovery: Int
+    var hasEatenToday: Bool?
+    var note: String
+    var updatedAt: Date
+    var syncState: SyncState
+
+    init(
+        id: UUID = UUID(),
+        clientEmail: String,
+        localDate: String = Self.localDateKey(),
+        energy: Int,
+        soreness: Int,
+        sleepRecovery: Int,
+        hasEatenToday: Bool? = nil,
+        note: String,
+        updatedAt: Date = Date(),
+        syncState: SyncState = .queued
+    ) {
+        self.id = id
+        self.clientEmail = clientEmail.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        self.localDate = localDate
+        self.energy = Self.validatedRating(energy)
+        self.soreness = Self.validatedRating(soreness)
+        self.sleepRecovery = Self.validatedRating(sleepRecovery)
+        self.hasEatenToday = hasEatenToday
+        self.note = String(note.trimmingCharacters(in: .whitespacesAndNewlines).prefix(300))
+        self.updatedAt = updatedAt
+        self.syncState = syncState
+    }
+
+    var readinessScore: Int {
+        let recoveredFromSoreness = 6 - soreness
+        let favorablePoints = energy + sleepRecovery + recoveredFromSoreness
+        return Int((Double(favorablePoints) / 15.0 * 100.0).rounded())
+    }
+
+    var result: ReadinessResult {
+        ReadinessResult(score: readinessScore)
+    }
+
+    static func localDateKey(for date: Date = Date(), calendar: Calendar = .current) -> String {
+        let components = calendar.dateComponents([.year, .month, .day], from: date)
+        return String(
+            format: "%04d-%02d-%02d",
+            components.year ?? 0,
+            components.month ?? 0,
+            components.day ?? 0
+        )
+    }
+
+    private static func validatedRating(_ value: Int) -> Int {
+        min(max(value, 1), 5)
+    }
+}
+
+enum ReadinessResult: Equatable {
+    case ready(score: Int)
+    case adjust(score: Int)
+    case recover(score: Int)
+
+    init(score: Int) {
+        switch score {
+        case 80...:
+            self = .ready(score: score)
+        case 60...:
+            self = .adjust(score: score)
+        default:
+            self = .recover(score: score)
+        }
+    }
+
+    var score: Int {
+        switch self {
+        case .ready(let score), .adjust(let score), .recover(let score): score
+        }
+    }
+
+    var title: String {
+        switch self {
+        case .ready: "READY TO TRAIN"
+        case .adjust: "TRAIN WITH ADJUSTMENTS"
+        case .recover: "RECOVERY RECOMMENDED"
+        }
+    }
+
+    var recommendation: String {
+        switch self {
+        case .ready:
+            "Train as planned. Your energy and recovery are in a strong place today."
+        case .adjust:
+            "Keep the session, but reduce load or volume if your warm-up feels heavier than usual."
+        case .recover:
+            "Favor mobility or an easy session today. Stop if soreness feels sharp or unusual."
+        }
+    }
+}
+
+actor ReadinessCheckInRepository {
+    static let shared = ReadinessCheckInRepository()
+
+    private let fileURL: URL
+    private let encoder: JSONEncoder
+    private let decoder: JSONDecoder
+
+    init(fileManager: FileManager = .default) {
+        let baseURL = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
+            ?? fileManager.temporaryDirectory
+        let directoryURL = baseURL.appendingPathComponent("FWB", isDirectory: true)
+        fileURL = directoryURL.appendingPathComponent("readiness-check-ins.json")
+
+        encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        encoder.outputFormatting = [.sortedKeys]
+
+        decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+    }
+
+    func checkIn(clientEmail: String, localDate: String = ReadinessCheckIn.localDateKey()) throws -> ReadinessCheckIn? {
+        let normalizedEmail = clientEmail.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        return try loadAll().first {
+            $0.clientEmail == normalizedEmail && $0.localDate == localDate
+        }
+    }
+
+    func save(_ checkIn: ReadinessCheckIn) throws {
+        var records = try loadAll()
+        records.removeAll {
+            $0.clientEmail == checkIn.clientEmail && $0.localDate == checkIn.localDate
+        }
+        records.append(checkIn)
+        records.sort { $0.updatedAt > $1.updatedAt }
+
+        try FileManager.default.createDirectory(
+            at: fileURL.deletingLastPathComponent(),
+            withIntermediateDirectories: true
+        )
+        let data = try encoder.encode(records)
+        try data.write(to: fileURL, options: [.atomic, .completeFileProtection])
+    }
+
+    func queuedCheckIns() throws -> [ReadinessCheckIn] {
+        try loadAll().filter { $0.syncState == .queued }
+    }
+
+    func mergeRemote(_ remote: ReadinessCheckIn) throws -> ReadinessCheckIn {
+        var records = try loadAll()
+        let index = records.firstIndex {
+            $0.clientEmail == remote.clientEmail && $0.localDate == remote.localDate
+        }
+
+        if let index {
+            let local = records[index]
+            if local.syncState == .queued && local.updatedAt > remote.updatedAt {
+                return local
+            }
+
+            var merged = remote
+            merged = ReadinessCheckIn(
+                id: local.id,
+                clientEmail: remote.clientEmail,
+                localDate: remote.localDate,
+                energy: remote.energy,
+                soreness: remote.soreness,
+                sleepRecovery: remote.sleepRecovery,
+                hasEatenToday: remote.hasEatenToday,
+                note: remote.note,
+                updatedAt: remote.updatedAt,
+                syncState: .synced
+            )
+            records[index] = merged
+            try write(records)
+            return merged
+        }
+
+        records.append(remote)
+        records.sort { $0.updatedAt > $1.updatedAt }
+        try write(records)
+        return remote
+    }
+
+    func markSynced(_ uploaded: ReadinessCheckIn) throws -> ReadinessCheckIn? {
+        var records = try loadAll()
+        guard let index = records.firstIndex(where: {
+            $0.clientEmail == uploaded.clientEmail && $0.localDate == uploaded.localDate
+        }) else { return nil }
+
+        // A newer edit may have been saved while this upload was in flight.
+        // Leave that newer version queued for the next retry.
+        guard records[index].updatedAt <= uploaded.updatedAt else {
+            return records[index]
+        }
+
+        records[index].syncState = .synced
+        try write(records)
+        return records[index]
+    }
+
+    func pendingCount(clientEmail: String? = nil) throws -> Int {
+        let normalizedEmail = clientEmail?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .lowercased()
+        return try loadAll().filter {
+            $0.syncState == .queued && (normalizedEmail == nil || $0.clientEmail == normalizedEmail)
+        }.count
+    }
+
+    private func loadAll() throws -> [ReadinessCheckIn] {
+        guard FileManager.default.fileExists(atPath: fileURL.path) else { return [] }
+        return try decoder.decode([ReadinessCheckIn].self, from: Data(contentsOf: fileURL))
+    }
+
+    private func write(_ records: [ReadinessCheckIn]) throws {
+        try FileManager.default.createDirectory(
+            at: fileURL.deletingLastPathComponent(),
+            withIntermediateDirectories: true
+        )
+        let data = try encoder.encode(records)
+        try data.write(to: fileURL, options: [.atomic, .completeFileProtection])
+    }
+}
+
+private struct ReadinessCheckInPayload: Encodable {
+    let clientMutationID: UUID
+    let clientEmail: String
+    let occurredOn: String
+    let energy: Int
+    let soreness: Int
+    let sleepRecovery: Int
+    let hasEatenToday: Bool?
+    let note: String?
+    let source = "ios_app"
+    let sourceVersion = ContinuitySync.sourceVersion
+    let updatedAt: String
+
+    init(_ checkIn: ReadinessCheckIn) {
+        clientMutationID = checkIn.id
+        clientEmail = checkIn.clientEmail
+        occurredOn = checkIn.localDate
+        energy = checkIn.energy
+        soreness = checkIn.soreness
+        sleepRecovery = checkIn.sleepRecovery
+        hasEatenToday = checkIn.hasEatenToday
+        note = checkIn.note.isEmpty ? nil : checkIn.note
+        updatedAt = ReadinessDateCoding.string(from: checkIn.updatedAt)
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case clientMutationID = "client_mutation_id"
+        case clientEmail = "client_email"
+        case occurredOn = "occurred_on"
+        case energy
+        case soreness
+        case sleepRecovery = "sleep_recovery"
+        case hasEatenToday = "has_eaten_today"
+        case note
+        case source
+        case sourceVersion = "source_version"
+        case updatedAt = "updated_at"
+    }
+}
+
+private struct LegacyReadinessCheckInPayload: Encodable {
+    let clientEmail: String
+    let occurredOn: String
+    let energy: Int
+    let soreness: Int
+    let sleepRecovery: Int
+    let note: String?
+    let source = "ios_app"
+    let updatedAt: String
+
+    init(_ checkIn: ReadinessCheckIn) {
+        clientEmail = checkIn.clientEmail
+        occurredOn = checkIn.localDate
+        energy = checkIn.energy
+        soreness = checkIn.soreness
+        sleepRecovery = checkIn.sleepRecovery
+        note = checkIn.note.isEmpty ? nil : checkIn.note
+        updatedAt = ContinuityDateCoding.string(from: checkIn.updatedAt)
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case clientEmail = "client_email"
+        case occurredOn = "occurred_on"
+        case energy
+        case soreness
+        case sleepRecovery = "sleep_recovery"
+        case note
+        case source
+        case updatedAt = "updated_at"
+    }
+}
+
+private struct ReadinessRemoteRecord: Decodable {
+    let id: UUID
+    let clientEmail: String
+    let occurredOn: String
+    let energy: Int?
+    let soreness: Int?
+    let sleepRecovery: Int?
+    let hasEatenToday: Bool?
+    let stress: Int?
+    let note: String?
+    let createdAt: String
+    let updatedAt: String
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case clientEmail = "client_email"
+        case occurredOn = "occurred_on"
+        case energy
+        case soreness
+        case sleepRecovery = "sleep_recovery"
+        case hasEatenToday = "has_eaten_today"
+        case stress
+        case note
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+    }
+
+    var checkIn: ReadinessCheckIn? {
+        guard energy != nil && soreness != nil && (sleepRecovery != nil || stress != nil) else {
+            return nil
+        }
+        return ReadinessCheckIn(
+            id: id,
+            clientEmail: clientEmail,
+            localDate: occurredOn,
+            energy: energy ?? 3,
+            soreness: soreness ?? 3,
+            sleepRecovery: sleepRecovery ?? stress.map { 6 - $0 } ?? 3,
+            hasEatenToday: hasEatenToday,
+            note: note ?? "",
+            updatedAt: ReadinessDateCoding.date(from: updatedAt)
+                ?? ReadinessDateCoding.date(from: createdAt)
+                ?? Date(),
+            syncState: .synced
+        )
+    }
+}
+
+enum CheckInDateCoding {
+    private static let fractionalFormatter: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return formatter
+    }()
+
+    private static let standardFormatter = ISO8601DateFormatter()
+
+    static func string(from date: Date) -> String {
+        fractionalFormatter.string(from: date)
+    }
+
+    static func date(from string: String) -> Date? {
+        fractionalFormatter.date(from: string) ?? standardFormatter.date(from: string)
+    }
+}
+
+private typealias ReadinessDateCoding = CheckInDateCoding
+
+@MainActor
+final class ReadinessSyncStore: ObservableObject {
+    enum State: Equatable {
+        case idle
+        case syncing
+        case synced
+        case queued(Int)
+    }
+
+    static let shared = ReadinessSyncStore()
+
+    @Published private(set) var state: State = .idle
+    @Published private(set) var pendingCount = 0
+
+    private let client: SupabaseClient
+    private let repository: ReadinessCheckInRepository
+    private let monitor: NWPathMonitor
+    private let monitorQueue = DispatchQueue(label: "com.benjaminbenz.fwbcoach.readiness-network")
+    private var activeClientEmail: String?
+    private var isNetworkAvailable = true
+    private var isSynchronizing = false
+
+    private init(
+        client: SupabaseClient = AppConfiguration.supabase,
+        repository: ReadinessCheckInRepository = .shared,
+        monitor: NWPathMonitor = NWPathMonitor()
+    ) {
+        self.client = client
+        self.repository = repository
+        self.monitor = monitor
+
+        monitor.pathUpdateHandler = { [weak self] path in
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                let wasUnavailable = !self.isNetworkAvailable
+                self.isNetworkAvailable = path.status == .satisfied
+                if self.isNetworkAvailable && wasUnavailable,
+                   let activeClientEmail = self.activeClientEmail {
+                    await self.retryPending(clientEmail: activeClientEmail)
+                }
+            }
+        }
+        monitor.start(queue: monitorQueue)
+    }
+
+    func activate(clientEmail: String) async {
+        let normalizedEmail = normalize(clientEmail)
+        guard !normalizedEmail.isEmpty else { return }
+        activeClientEmail = normalizedEmail
+        await retryPending(clientEmail: normalizedEmail)
+    }
+
+    func loadToday(clientEmail: String) async throws -> ReadinessCheckIn? {
+        let normalizedEmail = normalize(clientEmail)
+        activeClientEmail = normalizedEmail
+        await retryPending(clientEmail: normalizedEmail)
+
+        let local = try await repository.checkIn(clientEmail: normalizedEmail)
+        guard isNetworkAvailable else { return local }
+
+        do {
+            let records: [ReadinessRemoteRecord] = try await client
+                .from("client_check_ins")
+                .select("id,client_email,occurred_on,energy,soreness,sleep_recovery,has_eaten_today,stress,note,created_at,updated_at")
+                .eq("client_email", value: normalizedEmail)
+                .eq("occurred_on", value: ReadinessCheckIn.localDateKey())
+                .order("updated_at", ascending: false)
+                .limit(1)
+                .execute()
+                .value
+
+            guard let remote = records.lazy.compactMap(\.checkIn).first else { return local }
+            return try await repository.mergeRemote(remote)
+        } catch is CancellationError {
+            throw CancellationError()
+        } catch {
+            return local
+        }
+    }
+
+    func save(_ checkIn: ReadinessCheckIn) async throws -> ReadinessCheckIn {
+        try await repository.save(checkIn)
+        activeClientEmail = checkIn.clientEmail
+        await retryPending(clientEmail: checkIn.clientEmail)
+        return try await repository.checkIn(
+            clientEmail: checkIn.clientEmail,
+            localDate: checkIn.localDate
+        ) ?? checkIn
+    }
+
+    func retryPending(clientEmail: String) async {
+        let normalizedEmail = normalize(clientEmail)
+        guard !normalizedEmail.isEmpty else { return }
+
+        guard isNetworkAvailable else {
+            pendingCount = (try? await repository.pendingCount(clientEmail: normalizedEmail)) ?? 0
+            state = pendingCount > 0 ? .queued(pendingCount) : .idle
+            return
+        }
+
+        guard !isSynchronizing else { return }
+        isSynchronizing = true
+        state = .syncing
+        defer { isSynchronizing = false }
+
+        let queued = ((try? await repository.queuedCheckIns()) ?? [])
+            .filter { $0.clientEmail == normalizedEmail }
+            .sorted { $0.updatedAt < $1.updatedAt }
+
+        for checkIn in queued {
+            do {
+                try await persist(checkIn)
+                _ = try await repository.markSynced(checkIn)
+            } catch is CancellationError {
+                break
+            } catch {
+                break
+            }
+        }
+
+        pendingCount = (try? await repository.pendingCount(clientEmail: normalizedEmail)) ?? 0
+        state = pendingCount > 0 ? .queued(pendingCount) : .synced
+    }
+
+    private func normalize(_ email: String) -> String {
+        email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+    }
+
+    private func persist(_ checkIn: ReadinessCheckIn) async throws {
+        let existing: [CheckInRowIdentifier] = try await client
+            .from("client_check_ins")
+            .select("id")
+            .eq("client_email", value: checkIn.clientEmail)
+            .eq("occurred_on", value: checkIn.localDate)
+            .limit(1)
+            .execute()
+            .value
+
+        let payload = ReadinessCheckInPayload(checkIn)
+        if let id = existing.first?.id {
+            try await client
+                .from("client_check_ins")
+                .update(payload)
+                .eq("id", value: id.uuidString)
+                .execute()
+        } else {
+            try await client
+                .from("client_check_ins")
+                .insert(payload)
+                .execute()
+        }
+    }
+}
+
+@MainActor
+final class DailyReadinessStore: ObservableObject {
+    enum LoadState: Equatable {
+        case idle
+        case loading
+        case loaded
+        case failed(String)
+    }
+
+    @Published private(set) var state: LoadState = .idle
+    @Published private(set) var today: ReadinessCheckIn?
+
+    let clientEmail: String
+    private let repository: ReadinessCheckInRepository
+    private let syncStore: ReadinessSyncStore
+
+    init(
+        clientEmail: String,
+        repository: ReadinessCheckInRepository = .shared,
+        syncStore: ReadinessSyncStore? = nil
+    ) {
+        self.clientEmail = clientEmail
+        self.repository = repository
+        self.syncStore = syncStore ?? .shared
+    }
+
+    func load() async {
+        state = .loading
+        do {
+            today = try await syncStore.loadToday(clientEmail: clientEmail)
+            state = .loaded
+        } catch is CancellationError {
+            return
+        } catch {
+            state = .failed("Your readiness check-in could not be loaded.")
+        }
+    }
+
+    @discardableResult
+    func save(
+        energy: Int,
+        soreness: Int,
+        sleepRecovery: Int,
+        hasEatenToday: Bool,
+        note: String
+    ) async -> Bool {
+        let checkIn = ReadinessCheckIn(
+            id: today?.id ?? UUID(),
+            clientEmail: clientEmail,
+            energy: energy,
+            soreness: soreness,
+            sleepRecovery: sleepRecovery,
+            hasEatenToday: hasEatenToday,
+            note: note
+        )
+
+        do {
+            today = try await syncStore.save(checkIn)
+            state = .loaded
+            return true
+        } catch is CancellationError {
+            return false
+        } catch {
+            state = .failed("Your readiness check-in could not be saved. Please try again.")
+            return false
+        }
+    }
+}
+
+struct ReadinessDashboardCard: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @StateObject private var store: DailyReadinessStore
+
+    init(clientEmail: String) {
+        _store = StateObject(wrappedValue: DailyReadinessStore(clientEmail: clientEmail))
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            let headingLayout = dynamicTypeSize.isAccessibilitySize
+                ? AnyLayout(VStackLayout(alignment: .leading, spacing: 12))
+                : AnyLayout(HStackLayout(alignment: .top, spacing: 12))
+            headingLayout {
+                VStack(alignment: .leading, spacing: 5) {
+                    Text("DAILY CHECK-IN")
+                        .font(FWBFont.caption.weight(.bold))
+                        .tracking(1)
+                        .foregroundStyle(Color.fwbMuted)
+                    Text("How are you feeling?")
+                        .font(FWBFont.title3.weight(.bold))
+                        .foregroundStyle(Color.fwbWarmWhite)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                if !dynamicTypeSize.isAccessibilitySize { Spacer(minLength: 0) }
+                if case .loaded = store.state {
+                    NavigationLink {
+                        ReadinessCheckInView(store: store)
+                    } label: {
+                        HStack(spacing: 6) {
+                            Text(store.today == nil ? "Open" : "Update")
+                            Image(systemName: store.today == nil ? "plus" : "arrow.right")
+                        }
+                        .font(FWBFont.subheadline.weight(.semibold))
+                        .foregroundStyle(Color.fwbWarmWhite)
+                        .padding(.horizontal, 12)
+                        .frame(minHeight: 44)
+                        .background(Color.fwbSurface, in: RoundedRectangle(cornerRadius: 12))
+                        .overlay { RoundedRectangle(cornerRadius: 12).stroke(Color.fwbLine, lineWidth: 1) }
+                    }
+                    .buttonStyle(.plain)
+                    .fixedSize()
+                    .accessibilityLabel(store.today == nil ? "Start readiness check-in" : "Update readiness check-in")
+                    .accessibilityIdentifier(store.today == nil ? "readiness.start" : "readiness.update")
+                }
+            }
+
+            content
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .fwbCard()
+        .task { await store.load() }
+        .onReceive(NotificationCenter.default.publisher(for: .fwbForegroundRefresh)) { _ in
+            Task { await store.load() }
+        }
+        .accessibilityIdentifier("readiness.dashboardCard")
+    }
+
+    @ViewBuilder
+    private var content: some View {
+        switch store.state {
+        case .idle, .loading:
+            ProgressView()
+                .tint(.fwbLime)
+                .frame(maxWidth: .infinity, minHeight: 44)
+        case .failed(let message):
+            VStack(alignment: .leading, spacing: 10) {
+                Text(message)
+                    .font(FWBFont.footnote)
+                    .foregroundStyle(Color.fwbMuted)
+                Button("Try again") { Task { await store.load() } }
+                    .font(FWBFont.footnote.bold())
+                    .foregroundStyle(Color.fwbLime)
+            }
+        case .loaded:
+            if let checkIn = store.today {
+                completedContent(checkIn)
+            } else {
+                Text("Log energy, soreness, sleep quality, and whether you’ve eaten before today’s training.")
+                    .font(FWBFont.subheadline)
+                    .foregroundStyle(Color.fwbMuted)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
+    private func completedContent(_ checkIn: ReadinessCheckIn) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            readinessScore(checkIn.result)
+
+            VStack(alignment: .leading, spacing: 5) {
+                Text(checkIn.result.title)
+                    .font(FWBFont.caption.weight(.bold))
+                    .foregroundStyle(readinessColor(checkIn.result))
+                Text(checkIn.result.recommendation)
+                    .font(FWBFont.footnote)
+                    .foregroundStyle(Color.fwbMuted)
+                    .fixedSize(horizontal: false, vertical: true)
+                Label(
+                    checkIn.syncState == .synced ? "Synced" : "Saved offline — will sync",
+                    systemImage: checkIn.syncState == .synced ? "checkmark.icloud" : "icloud.slash"
+                )
+                .font(FWBFont.caption.weight(.semibold))
+                .foregroundStyle(checkIn.syncState == .synced ? Color.fwbLime : Color.fwbMuted)
+            }
+        }
+    }
+
+    private func readinessScore(_ result: ReadinessResult) -> some View {
+        VStack(spacing: 0) {
+            Text("\(result.score)")
+                .font(FWBFont.title.weight(.bold))
+            Text("/100")
+                .font(FWBFont.caption.weight(.semibold))
+        }
+        .foregroundStyle(readinessScoreTextColor(result))
+        .frame(minWidth: 64, minHeight: 64)
+        .background(readinessScoreFillColor(result), in: RoundedRectangle(cornerRadius: 14))
+        .accessibilityLabel("Readiness score \(result.score) out of 100")
+    }
+}
+
+struct ReadinessCheckInView: View {
+    @Environment(\.dismiss) private var dismiss
+    @ObservedObject var store: DailyReadinessStore
+
+    @State private var energy: Int
+    @State private var soreness: Int
+    @State private var sleepRecovery: Int
+    @State private var hasEatenToday: Bool?
+    @State private var note: String
+    @State private var isSaving = false
+
+    init(store: DailyReadinessStore) {
+        self.store = store
+        _energy = State(initialValue: store.today?.energy ?? 3)
+        _soreness = State(initialValue: store.today?.soreness ?? 3)
+        _sleepRecovery = State(initialValue: store.today?.sleepRecovery ?? 3)
+        _hasEatenToday = State(initialValue: store.today?.hasEatenToday)
+        _note = State(initialValue: store.today?.note ?? "")
+    }
+
+    private var draft: ReadinessCheckIn {
+        ReadinessCheckIn(
+            clientEmail: store.clientEmail,
+            energy: energy,
+            soreness: soreness,
+            sleepRecovery: sleepRecovery,
+            hasEatenToday: hasEatenToday,
+            note: note
+        )
+    }
+
+    var body: some View {
+        ZStack {
+            Color.fwbBackground.ignoresSafeArea()
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    checkInHeader
+
+                    ReadinessScale(
+                        title: "Energy",
+                        prompt: "How much energy do you have?",
+                        lowLabel: "Low",
+                        highLabel: "High",
+                        selection: $energy
+                    )
+
+                    ReadinessScale(
+                        title: "Soreness",
+                        prompt: "How sore does your body feel?",
+                        lowLabel: "Fresh",
+                        highLabel: "Very sore",
+                        selection: $soreness
+                    )
+
+                    ReadinessScale(
+                        title: "Sleep quality",
+                        prompt: "How well did you sleep last night?",
+                        lowLabel: "Poor",
+                        highLabel: "Great",
+                        selection: $sleepRecovery
+                    )
+
+                    FoodTodayQuestion(selection: $hasEatenToday)
+
+                    notesCard
+                    ReadinessResultCard(result: draft.result)
+
+                    Button {
+                        Task { await save() }
+                    } label: {
+                        if isSaving {
+                            ProgressView().tint(.black)
+                        } else {
+                            Label(store.today == nil ? "Save today’s check-in" : "Update today’s check-in", systemImage: "checkmark")
+                        }
+                    }
+                    .buttonStyle(FWBPrimaryButtonStyle())
+                    .disabled(isSaving || hasEatenToday == nil)
+                    .accessibilityIdentifier("readiness.save")
+
+                    if case .failed(let message) = store.state {
+                        Text(message)
+                            .font(FWBFont.footnote)
+                            .foregroundStyle(Color.fwbRed)
+                    }
+                }
+                .padding(16)
+            }
+            .scrollDismissesKeyboard(.interactively)
+        }
+        .navigationTitle("Readiness")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(Color.fwbBackground, for: .navigationBar)
+    }
+
+    private var checkInHeader: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("TODAY’S READINESS")
+                .font(FWBFont.footnote.bold())
+                .tracking(1.4)
+                .foregroundStyle(Color.fwbLime)
+            Text("Check in before you train")
+                .font(FWBFont.title.weight(.bold))
+                .foregroundStyle(Color.fwbWarmWhite)
+            Text("Choose the answer that best reflects how you feel right now. You can update it later today.")
+                .font(FWBFont.subheadline)
+                .foregroundStyle(Color.fwbMuted)
+        }
+    }
+
+    private var notesCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Optional note")
+                .font(FWBFont.footnote.bold())
+                .tracking(1)
+                .foregroundStyle(Color.fwbLime)
+            TextField("Add context for today", text: $note, axis: .vertical)
+                .lineLimit(3...6)
+                .padding(14)
+                .background(Color.fwbSurface, in: RoundedRectangle(cornerRadius: 12))
+                .overlay { RoundedRectangle(cornerRadius: 12).stroke(Color.fwbLine, lineWidth: 1) }
+                .onChange(of: note) { value in
+                    if value.count > 300 { note = String(value.prefix(300)) }
+                }
+                .accessibilityIdentifier("readiness.note")
+            Text("\(note.count)/300")
+                .font(FWBFont.footnote)
+                .foregroundStyle(Color.fwbMuted)
+                .frame(maxWidth: .infinity, alignment: .trailing)
+        }
+        .fwbCard()
+    }
+
+    private func save() async {
+        guard !isSaving else { return }
+        guard let hasEatenToday else { return }
+        isSaving = true
+        let didSave = await store.save(
+            energy: energy,
+            soreness: soreness,
+            sleepRecovery: sleepRecovery,
+            hasEatenToday: hasEatenToday,
+            note: note
+        )
+        isSaving = false
+        if didSave { dismiss() }
+    }
+}
+
+private struct FoodTodayQuestion: View {
+    @Binding var selection: Bool?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Fuel")
+                    .font(FWBFont.footnote.bold())
+                    .tracking(1)
+                    .foregroundStyle(Color.fwbLime)
+                Text("Have you eaten today?")
+                    .font(FWBFont.headline)
+                    .foregroundStyle(Color.fwbWarmWhite)
+            }
+
+            HStack(spacing: 10) {
+                answerButton(title: "Yes", value: true, icon: "checkmark")
+                answerButton(title: "Not yet", value: false, icon: "clock")
+            }
+
+            Text("You can update this check-in later today.")
+                .font(FWBFont.footnote)
+                .foregroundStyle(Color.fwbMuted)
+        }
+        .fwbCard()
+    }
+
+    private func answerButton(title: String, value: Bool, icon: String) -> some View {
+        Button {
+            selection = value
+        } label: {
+            Label(title, systemImage: icon)
+                .font(FWBFont.subheadline.weight(.semibold))
+                .foregroundStyle(selection == value ? Color.black : Color.fwbWarmWhite)
+                .frame(maxWidth: .infinity, minHeight: 48)
+                .background(selection == value ? Color.fwbAccentFill : Color.fwbSurface, in: RoundedRectangle(cornerRadius: 12))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 12).stroke(
+                        selection == value ? Color.fwbAccentFill : Color.fwbLine,
+                        lineWidth: 1
+                    )
+                }
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(value ? "Yes, I have eaten today" : "No, I have not eaten yet")
+        .accessibilityAddTraits(selection == value ? .isSelected : [])
+        .accessibilityIdentifier(value ? "readiness.food.yes" : "readiness.food.notYet")
+    }
+}
+
+private struct ReadinessScale: View {
+    let title: String
+    let prompt: String
+    let lowLabel: String
+    let highLabel: String
+    @Binding var selection: Int
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(FWBFont.footnote.bold())
+                    .tracking(1)
+                    .foregroundStyle(Color.fwbLime)
+                Text(prompt)
+                    .font(FWBFont.headline)
+                    .foregroundStyle(Color.fwbWarmWhite)
+            }
+
+            HStack(spacing: 8) {
+                ForEach(1...5, id: \.self) { rating in
+                    Button {
+                        selection = rating
+                    } label: {
+                        Text("\(rating)")
+                            .font(FWBFont.headline.weight(.black))
+                            .foregroundStyle(selection == rating ? Color.black : Color.fwbWarmWhite)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 48)
+                            .background(selection == rating ? Color.fwbAccentFill : Color.fwbSurface, in: RoundedRectangle(cornerRadius: 12))
+                            .overlay {
+                                RoundedRectangle(cornerRadius: 12).stroke(selection == rating ? Color.fwbAccentFill : Color.fwbLine, lineWidth: 1)
+                            }
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("\(title), \(rating) out of 5")
+                    .accessibilityAddTraits(selection == rating ? .isSelected : [])
+                    .accessibilityIdentifier("readiness.\(title.lowercased()).\(rating)")
+                }
+            }
+
+            HStack {
+                Text(lowLabel)
+                Spacer()
+                Text(highLabel)
+            }
+            .font(FWBFont.footnote.bold())
+            .tracking(0.8)
+            .foregroundStyle(Color.fwbMuted)
+            .lineLimit(2)
+            .minimumScaleFactor(0.75)
+        }
+        .fwbCard()
+    }
+}
+
+private struct ReadinessResultCard: View {
+    let result: ReadinessResult
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 16) {
+            VStack(spacing: 0) {
+                Text("\(result.score)")
+                    .font(FWBFont.title.weight(.bold))
+                Text("/100")
+                    .font(FWBFont.footnote.bold())
+            }
+            .foregroundStyle(readinessScoreTextColor(result))
+            .frame(minWidth: 70, minHeight: 70)
+            .background(readinessScoreFillColor(result), in: RoundedRectangle(cornerRadius: 14))
+
+            VStack(alignment: .leading, spacing: 7) {
+                Text("READINESS RESULT")
+                    .font(FWBFont.footnote.bold())
+                    .tracking(1)
+                    .foregroundStyle(Color.fwbMuted)
+                Text(result.title)
+                    .font(FWBFont.subheadline.weight(.bold))
+                    .foregroundStyle(readinessColor(result))
+                Text(result.recommendation)
+                    .font(FWBFont.footnote)
+                    .foregroundStyle(Color.fwbMuted)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .fwbCard()
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("readiness.result")
+    }
+}
+
+private func readinessColor(_ result: ReadinessResult) -> Color {
+    switch result {
+    case .ready: .fwbLime
+    case .adjust: .orange
+    case .recover: .fwbRed
+    }
+}
+
+private func readinessScoreTextColor(_ result: ReadinessResult) -> Color {
+    if case .adjust = result { return .black }
+    return readinessColor(result)
+}
+
+private func readinessScoreFillColor(_ result: ReadinessResult) -> Color {
+    if case .adjust = result { return .orange }
+    return readinessColor(result).opacity(0.12)
+}

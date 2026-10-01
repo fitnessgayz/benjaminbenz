@@ -61,16 +61,15 @@ test("Home report dialog is outside hidden dashboard panels", () => {
   assert.match(portal, /dialog\.showModal\(\)/);
 });
 
-test("moves the client sign-out control from the header to the bottom of Home", () => {
+test("moves sign-out and password recovery from Home into Settings", () => {
   const homePanel = dashboard.match(/data-client-dashboard-panel="home"[\s\S]*?data-client-dashboard-panel="workouts"/)?.[0] || "";
-  const checklistIndex = homePanel.indexOf('class="client-home-card client-home-card-checklist"');
-  const signOutIndex = homePanel.indexOf('class="client-home-signout"');
+  const settingsPanel = dashboard.match(/data-client-dashboard-panel="notifications"[\s\S]*?data-client-dashboard-panel=/)?.[0]
+    || dashboard.slice(dashboard.indexOf('data-client-dashboard-panel="notifications"'));
 
   assert.doesNotMatch(dashboard, /<header class="site-header dashboard-header">/);
   assert.equal((dashboard.match(/data-sign-out/g) || []).length, 1);
-  assert.notEqual(checklistIndex, -1);
-  assert.ok(signOutIndex > checklistIndex);
-  assert.match(homePanel, /class="button button-ghost client-home-signout-button"[^>]*data-sign-out>Sign Out<\/button>/);
+  assert.doesNotMatch(homePanel, /data-sign-out|client-dashboard-reset-password-button/);
+  assert.match(settingsPanel, /class="client-account-signout"[^>]*data-sign-out>Sign out<\/button>/);
+  assert.match(settingsPanel, /id="client-dashboard-reset-password-button">Email me a reset link<\/button>/);
   assert.match(portal, /document\.querySelectorAll\("\[data-sign-out\]"\)/);
-  assert.match(styles, /\.dashboard-page \.client-home-signout-button\s*\{[\s\S]*?min-height:\s*48px;/);
 });

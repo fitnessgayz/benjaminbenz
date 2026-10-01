@@ -1,0 +1,109 @@
+require_relative "release_support"
+
+default_platform(:ios)
+APP_DIRECTORY = File.expand_path("..", __dir__)
+OUTPUT_DIRECTORY = File.join(APP_DIRECTORY, "build")
+
+platform :ios do
+  desc "Build and run the iOS unit tests without signing credentials"
+  lane :tests do
+    run_tests(
+      project: File.join(APP_DIRECTORY, "FWBCoach.xcodeproj"),
+      scheme: "FWBCoach",
+      configuration: "Debug",
+      devices: ["iPhone 17 (26.5)"],
+      ensure_devices_found: true,
+      clean: true,
+      disable_package_automatic_updates: true,
+      xcargs: "CODE_SIGNING_ALLOWED=NO -onlyUsePackageVersionsFromResolvedFile",
+      output_directory: File.join(OUTPUT_DIRECTORY, "test-results"),
+      output_types: "junit",
+      output_files: "unit-tests.xml",
+      result_bundle: true,
+      buildlog_path: File.join(OUTPUT_DIRECTORY, "logs")
+    )
+  end
+
+  desc "Sign a trusted-main build, upload Sentry symbols, and upload to TestFlight"
+  lane :beta do
+    FWBRelease.require_trusted_main!
+    FWBRelease.validate_configuration!
+    signing = FWBRelease::Signing.new(File.join(ENV.fetch("RUNNER_TEMP"), "fwb-signing"))
+    begin
+      signing.prepare!
+      api_key = app_store_connect_api_key(
+        key_id: ENV.fetch("ASC_KEY_ID"),
+        issuer_id: ENV.fetch("ASC_ISSUER_ID"),
+        key_filepath: signing.api_key_path,
+        duration: 1200,
+        in_house: false
+      )
+      version = get_version_number(xcodeproj: File.join(APP_DIRECTORY, "FWBCoach.xcodeproj"), target: "FWBCoach")
+      latest = latest_testflight_build_number(
+        api_key: api_key,
+        app_identifier: FWBRelease::APP_ID,
+        version: version,
+        initial_build_number: 0
+      )
+      build_number = FWBRelease.next_build_number(
+        latest: latest,
+        run_number: ENV.fetch("GITHUB_RUN_NUMBER"),
+        run_attempt: ENV.fetch("GITHUB_RUN_ATTEMPT")
+      )
+      UI.message("Building #{version} (#{build_number}) for TestFlight")
+      arguments = [
+        "CURRENT_PROJECT_VERSION=#{build_number}",
+        "DEVELOPMENT_TEAM=#{FWBRelease::TEAM_ID}",
+        "CODE_SIGN_STYLE=Manual",
+        "CODE_SIGN_IDENTITY=#{signing.identity}",
+        "PROVISIONING_PROFILE_SPECIFIER=#{signing.profile_uuid}",
+        "OTHER_CODE_SIGN_FLAGS=--keychain #{signing.keychain}",
+        "SENTRY_DSN=#{ENV.fetch('SENTRY_DSN')}",
+        "SENTRY_ENVIRONMENT=testflight",
+        "DEBUG_INFORMATION_FORMAT=dwarf-with-dsym",
+        "-onlyUsePackageVersionsFromResolvedFile"
+      ]
+      build_app(
+        project: File.join(APP_DIRECTORY, "FWBCoach.xcodeproj"),
+        scheme: "FWBCoach",
+        configuration: "Release",
+        clean: true,
+        archive_path: File.join(OUTPUT_DIRECTORY, "FWBCoach.xcarchive"),
+        output_directory: OUTPUT_DIRECTORY,
+        output_name: "FWBCoach.ipa",
+        buildlog_path: File.join(OUTPUT_DIRECTORY, "logs"),
+        skip_profile_detection: true,
+        disable_package_automatic_updates: true,
+        xcargs: Shellwords.join(arguments),
+        export_options: {
+          method: "app-store-connect",
+          signingStyle: "manual",
+          signingCertificate: signing.identity,
+          teamID: FWBRelease::TEAM_ID,
+          provisioningProfiles: { FWBRelease::APP_ID => signing.profile_uuid },
+          manageAppVersionAndBuildNumber: false,
+          uploadSymbols: true
+        }
+      )
+      dsym_directory = File.join(OUTPUT_DIRECTORY, "FWBCoach.xcarchive", "dSYMs")
+      UI.user_error!("Archive has no dSYMs; refusing an unsymbolicated release.") if Dir.glob(File.join(dsym_directory, "*.dSYM")).empty?
+      sh(ENV.fetch("SENTRY_CLI_PATH"), "debug-files", "upload", "--wait", dsym_directory)
+      FWBRelease.require_trusted_main!
+      upload_to_testflight(
+        api_key: api_key,
+        app_identifier: FWBRelease::APP_ID,
+        ipa: File.join(OUTPUT_DIRECTORY, "FWBCoach.ipa"),
+        skip_waiting_for_build_processing: true,
+        distribute_external: false
+      )
+      if ENV["GITHUB_STEP_SUMMARY"]
+        File.open(ENV.fetch("GITHUB_STEP_SUMMARY"), "a") do |file|
+          file.puts "Uploaded **FWB Training #{version} (#{build_number})** to App Store Connect."
+          file.puts "Sentry debug symbols uploaded. TestFlight appears after Apple's processing completes."
+        end
+      end
+    ensure
+      signing.cleanup
+    end
+  end
+end

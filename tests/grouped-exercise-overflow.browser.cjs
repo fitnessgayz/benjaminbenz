@@ -5,7 +5,12 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 const vm = require("node:vm");
-const playwright = require("playwright");
+let playwright;
+try {
+  playwright = require("playwright");
+} catch {
+  playwright = require("playwright-core");
+}
 
 const root = path.resolve(__dirname, "..");
 const source = fs.readFileSync(path.join(root, "js/client-portal.js"), "utf8");
@@ -36,8 +41,8 @@ const context = vm.createContext({
   escapeHtml: (value) => String(value ?? "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;"),
 });
 vm.runInContext([
-  "youtubeExerciseSearchUrl", "approvedExerciseForName", "uploadedExerciseDemoUrl",
-  "exerciseVideoUrl", "exerciseVideoMarkup", "repTargetsFromPrescription",
+  "youtubeExerciseSearchUrl", "approvedExerciseForName", "uploadedExerciseDemoUrl", "trustedExerciseImageUrl",
+  "exerciseImageMarkup", "exerciseVideoUrl", "exerciseVideoMarkup", "repTargetsFromPrescription",
   "assignedWorkoutPrescriptionLabel", "customWorkoutGroupedExerciseKeyMarkup",
 ].map(functionSource).join("\n"), context);
 
@@ -89,6 +94,16 @@ function markup(panel, demo, details) {
         <header class="custom-workout-grouped-card-heading"><h3>Straight sets 1</h3><p class="custom-workout-grouped-progress">0 / 2 complete</p></header>
         <div class="custom-workout-grouped-exercise-key" role="list">${key}</div>
         <div class="custom-workout-grouped-round-stepper"><button aria-label="Remove set">−</button><output><span>Sets</span><strong>2</strong></output><button aria-label="Add set">+</button></div>
+        <section class="custom-workout-grouped-section" data-kind="warmup">
+          <header class="custom-workout-grouped-section-heading"><h4>Warm-up</h4><p>Optional · excluded from working volume</p></header>
+          <div class="custom-workout-grouped-columns">
+            <span>Set</span>
+            <button class="one-rm-trigger" type="button">Weight <svg viewBox="0 0 24 24"><rect x="5" y="2.5" width="14" height="19" rx="2"/></svg></button>
+            <span>Reps</span>
+            <button class="rir-help-trigger" type="button"><span>RIR</span><svg viewBox="0 0 20 20"><circle cx="10" cy="10" r="8"/></svg></button>
+          </div>
+          <div class="custom-workout-grouped-row"><button class="custom-workout-grouped-code">W1</button><label class="custom-workout-grouped-field"><input value="45"></label><label class="custom-workout-grouped-field"><input value="12"></label><label class="custom-workout-grouped-field"><input></label></div>
+        </section>
       </article>
     </section>
   </section>`;
@@ -115,10 +130,19 @@ async function measurements(page) {
           ...rect(element), scrollWidth: element.scrollWidth, clientWidth: element.clientWidth,
         })),
       },
+      columnHeaders: [...document.querySelectorAll(".custom-workout-grouped-columns > *")].map((element) => ({
+        ...rect(element), scrollWidth: element.scrollWidth, clientWidth: element.clientWidth,
+        text: element.textContent.trim(),
+        fontSize: getComputedStyle(element).fontSize,
+        gap: getComputedStyle(element).gap,
+      })),
       items: [...document.querySelectorAll(".custom-workout-grouped-exercise-key-item")].map((item) => ({
         bounds: rect(item),
+        placeholder: item.querySelector(".custom-workout-grouped-media-placeholder")
+          ? rect(item.querySelector(".custom-workout-grouped-media-placeholder")) : null,
         title: rect(item.querySelector("[data-open-custom-exercise], [data-custom-grouped-exercise-name]")),
         demo: item.querySelector(".exercise-video-link") ? rect(item.querySelector(".exercise-video-link")) : null,
+        chevron: rect(item.querySelector(".custom-workout-grouped-chevron")),
         details: [...item.querySelectorAll("p:not([hidden])")].map((element) => ({
           ...rect(element), text: element.textContent,
           scrollWidth: element.scrollWidth, clientWidth: element.clientWidth,
@@ -144,11 +168,19 @@ function checkLayout(result, label, expectedDetails) {
     || groupTitle.bottom <= progress.top + epsilon || progress.bottom <= groupTitle.top + epsilon,
   `${label}: group title and completion count overlap`);
   assert.equal(heading.firstWordLines, 1, `${label}: completion count squeezes group title into broken word fragments`);
+  for (const header of result.columnHeaders) {
+    assert.ok(header.left >= -epsilon && header.right <= result.viewport + epsilon,
+      `${label}: ${header.text || "set"} header extends outside the viewport`);
+    assert.ok(header.scrollWidth <= header.clientWidth + epsilon,
+      `${label}: ${header.text || "set"} header is horizontally clipped (${header.scrollWidth}px > ${header.clientWidth}px; font ${header.fontSize}; gap ${header.gap})`);
+  }
   assert.equal(result.items.length, exercises.length);
   result.items.forEach((item, index) => {
     const message = `${label}: ${exercises[index].name}`;
     assert.equal(item.details.length, expectedDetails, `${message}: visible details missing`);
-    let previous = item.demo && item.demo.bottom > item.title.bottom ? item.demo : item.title;
+    // Details follow the title in the copy column. The fallback demo now lives
+    // independently inside the media placeholder and can be taller than copy.
+    let previous = item.title;
     for (const detail of item.details) {
       assert.ok(detail.top >= previous.bottom - epsilon,
         `${message}: overlapping rows (${detail.top.toFixed(1)} < ${previous.bottom.toFixed(1)}): ${detail.text}`);
@@ -163,7 +195,17 @@ function checkLayout(result, label, expectedDetails) {
       assert.ok(element.left >= item.bounds.left - epsilon && element.right <= item.bounds.right + epsilon,
         `${message}: title or demo extends past card`);
     }
-    if (item.demo) assert.ok(item.title.right <= item.demo.left + epsilon, `${message}: title overlaps demo`);
+    assert.ok(item.title.left < item.chevron.left, `${message}: title does not stay left of chevron`);
+    assert.ok(item.chevron.top >= item.bounds.top - epsilon && item.chevron.bottom <= item.bounds.bottom + epsilon,
+      `${message}: chevron wraps outside its exercise row`);
+    if (item.demo) {
+      assert.ok(item.placeholder, `${message}: fallback demo is missing its media placeholder`);
+      assert.ok(item.demo.left >= item.placeholder.left - epsilon && item.demo.right <= item.placeholder.right + epsilon,
+        `${message}: fallback demo does not stay inside media placeholder`);
+      assert.ok(item.demo.top >= item.placeholder.top - epsilon && item.demo.bottom <= item.placeholder.bottom + epsilon,
+        `${message}: fallback demo does not stay inside media placeholder`);
+      assert.ok(item.placeholder.right <= item.title.left + epsilon, `${message}: media placeholder overlaps title`);
+    }
   });
 }
 
