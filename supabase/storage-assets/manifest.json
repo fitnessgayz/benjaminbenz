@@ -9,8 +9,11 @@
     "20261001011107_add_nasm_mobility_flexibility_cards.sql",
     "20261001021758_add_nasm_dynamic_flexibility_cards.sql",
     "20261001025452_replace_exercise_videos.sql",
-    "20261001031354_link_nasm_exercise_videos.sql"
+    "20261001031354_link_nasm_exercise_videos.sql",
+    "20261001032427_add_complete_nasm_exercise_library.sql"
   ],
+  "nasmExerciseCatalogMigration": "20261001032427_add_complete_nasm_exercise_library.sql",
+  "nasmExerciseCatalogCount": 75,
   "assets": [
     {
       "source": "supabase/storage-assets/exercise-images/approved/2026-09-29/png/barbell-upright-row.png",
@@ -1038,7 +1041,7 @@
       "demoUrl": "https://www.youtube.com/watch?v=WVeZDBhZwLA"
     },
     {
-      "name": "Goblet Squat",
+      "name": "Kettlebell Goblet Squat",
       "demoUrl": "https://www.youtube.com/watch?v=nfX7IFK9UNI"
     },
     {
@@ -1074,7 +1077,7 @@
       "demoUrl": "https://www.youtube.com/watch?v=bxn9FBrt4-A"
     },
     {
-      "name": "Russian Twist",
+      "name": "Stability Ball Russian Twist",
       "demoUrl": "https://www.youtube.com/watch?v=s0kT80JLCfA"
     },
     {

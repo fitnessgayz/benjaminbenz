@@ -53,6 +53,18 @@ function validateManifest() {
   }
   assert(Array.isArray(manifest.assets) && manifest.assets.length > 0, "Manifest must contain assets.");
   assert(Array.isArray(manifest.exerciseMedia), "Manifest exerciseMedia must be an array.");
+  assert(
+    /^\d{14}_[a-z0-9_]+[.]sql$/.test(manifest.nasmExerciseCatalogMigration || ""),
+    "Manifest needs a valid nasmExerciseCatalogMigration.",
+  );
+  assert(
+    manifest.migrations.includes(manifest.nasmExerciseCatalogMigration),
+    "NASM catalog migration must be included in manifest migrations.",
+  );
+  assert(
+    Number.isInteger(manifest.nasmExerciseCatalogCount) && manifest.nasmExerciseCatalogCount > 0,
+    "Manifest needs a positive nasmExerciseCatalogCount.",
+  );
 
   const destinations = new Set();
   for (const asset of manifest.assets) {
@@ -72,6 +84,31 @@ function validateManifest() {
     assert(typeof expected.name === "string" && expected.name.length > 0, "Each exerciseMedia entry needs a name.");
     assert(expected.imageUrl || expected.motionUrl || expected.demoUrl, `${expected.name} needs an imageUrl, motionUrl, or demoUrl.`);
   }
+}
+
+async function loadNasmExerciseCatalog() {
+  const migrationPath = path.resolve(
+    repositoryRoot,
+    "supabase/migrations",
+    manifest.nasmExerciseCatalogMigration,
+  );
+  const migrationSql = await readFile(migrationPath, "utf8");
+  const catalog = [];
+  const tuplePattern = /^\s+\('((?:''|[^'])+)'[\s\S]*?'(https:\/\/www[.]youtube[.]com\/watch[?]v=[A-Za-z0-9_-]+)',\s*\d+\),?$/;
+
+  for (const line of migrationSql.split(/\r?\n/)) {
+    const match = line.match(tuplePattern);
+    if (!match) continue;
+    catalog.push({ name: match[1].replaceAll("''", "'"), demoUrl: match[2] });
+  }
+
+  assert(
+    catalog.length === manifest.nasmExerciseCatalogCount,
+    `Expected ${manifest.nasmExerciseCatalogCount} NASM catalog rows; found ${catalog.length}.`,
+  );
+  assert(new Set(catalog.map((entry) => entry.name.toLowerCase())).size === catalog.length, "Duplicate NASM catalog name.");
+  assert(new Set(catalog.map((entry) => entry.demoUrl)).size === catalog.length, "Duplicate NASM catalog video URL.");
+  return catalog;
 }
 
 async function loadAsset(asset) {
@@ -159,13 +196,19 @@ async function fetchExercise(baseUrl, secretKey, name) {
   return rows[0];
 }
 
-async function verifyExerciseMedia(baseUrl, secretKey) {
+async function verifyExerciseMedia(baseUrl, secretKey, nasmExerciseCatalog) {
   for (const expected of manifest.exerciseMedia) {
     const row = await fetchExercise(baseUrl, secretKey, expected.name);
     if (expected.imageUrl) assert(row.image_url === expected.imageUrl, `${expected.name} image_url mismatch.`);
     if (expected.motionUrl) assert(row.motion_url === expected.motionUrl, `${expected.name} motion_url mismatch.`);
     if (expected.demoUrl) assert(row.demo_url === expected.demoUrl, `${expected.name} demo_url mismatch.`);
     console.log(`verified exercise mapping: ${expected.name}`);
+  }
+
+  for (const expected of nasmExerciseCatalog) {
+    const row = await fetchExercise(baseUrl, secretKey, expected.name);
+    assert(row.demo_url === expected.demoUrl, `${expected.name} NASM demo_url mismatch.`);
+    console.log(`verified NASM exercise: ${expected.name}`);
   }
 }
 
@@ -190,10 +233,13 @@ async function fetchProjectSecretKey(accessToken, projectId) {
 }
 
 validateManifest();
+const nasmExerciseCatalog = await loadNasmExerciseCatalog();
 
 if (mode === "validate") {
   await validateLocalAssets();
-  console.log(`manifest valid: ${manifest.assets.length} assets, ${manifest.exerciseMedia.length} exercise mappings`);
+  console.log(
+    `manifest valid: ${manifest.assets.length} assets, ${manifest.exerciseMedia.length} exercise mappings, ${nasmExerciseCatalog.length} NASM exercises`,
+  );
   process.exit(0);
 }
 
@@ -208,5 +254,5 @@ if (mode === "upload") {
   await uploadAssets(baseUrl, secretKey);
 } else {
   await verifyAssets(baseUrl);
-  await verifyExerciseMedia(baseUrl, secretKey);
+  await verifyExerciseMedia(baseUrl, secretKey, nasmExerciseCatalog);
 }
