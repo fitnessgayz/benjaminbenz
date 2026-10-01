@@ -72,4 +72,7 @@ for (const file of pending) {
     { method: "POST", body: JSON.stringify({ name, query }) },
   );
   console.log(`applied ${file}`);
+  // The Management API assigns its own second-resolution migration version.
+  // Space sequential writes so two migrations cannot receive the same key.
+  await new Promise((resolve) => setTimeout(resolve, 1100));
 }
