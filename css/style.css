@@ -7220,7 +7220,7 @@ body.is-client-checkin-prompt-open {
 }
 
 .coach-admin-page .admin-shell {
-  width: min(1120px, calc(100% - 48px));
+  width: min(1440px, calc(100% - 48px));
   padding: clamp(28px, 4vw, 48px) 0;
 }
 
@@ -10886,7 +10886,7 @@ textarea:focus {
 
 .exercise-library-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(280px, .8fr);
+  grid-template-columns: minmax(0, 1.35fr) minmax(360px, .8fr);
   gap: 28px;
   margin-top: 24px;
 }
@@ -11352,6 +11352,8 @@ textarea:focus {
 
 .exercise-library-list {
   display: grid;
+  grid-auto-rows: max-content;
+  align-content: start;
   gap: 10px;
   max-height: 680px;
   padding: 0 3px 6px 0;
@@ -11362,7 +11364,7 @@ textarea:focus {
 .exercise-library-card {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1.15fr) minmax(135px, .85fr);
+  grid-template-columns: minmax(0, 1.1fr) minmax(160px, .9fr);
   min-width: 0;
   overflow: hidden;
   border: 1px solid #d9ded6;
@@ -11662,17 +11664,19 @@ textarea:focus {
   color: var(--muted);
 }
 
-@media (max-width: 900px) {
-  .client-exercise-name-manager-layout {
-    grid-template-columns: 1fr;
-  }
-
+@media (max-width: 1280px) {
   .exercise-library-layout {
     grid-template-columns: 1fr;
   }
 
   .exercise-library-browser {
     order: -1;
+  }
+}
+
+@media (max-width: 900px) {
+  .client-exercise-name-manager-layout {
+    grid-template-columns: 1fr;
   }
 
   .exercise-library-list {

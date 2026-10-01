@@ -66,6 +66,13 @@ test("mobile exercise cards preserve the full branded artwork", () => {
   assert.match(styles, /@media \(max-width: 620px\)[\s\S]*?\.exercise-library-list\s*\{[^}]*max-height:\s*none[^}]*overflow:\s*visible/);
 });
 
+test("desktop exercise cards keep their intrinsic row height", () => {
+  assert.match(html, /css\/style\.css\?v=[^"']*coach-layout-repair=1/);
+  assert.match(styles, /\.exercise-library-list\s*\{[^}]*grid-auto-rows:\s*max-content[^}]*align-content:\s*start/);
+  assert.match(styles, /@media \(max-width: 1280px\)[\s\S]*?\.exercise-library-layout\s*\{[^}]*grid-template-columns:\s*1fr/);
+  assert.match(styles, /\.coach-admin-page \.admin-shell\s*\{[^}]*width:\s*min\(1440px, calc\(100% - 48px\)\)/);
+});
+
 test("known branded exercise artwork is connected to matching catalog names", () => {
   for (const relativePath of Object.values({
     arnold: "images/exercises/instruction-cards/2026-09-29/arnold-press.png",
