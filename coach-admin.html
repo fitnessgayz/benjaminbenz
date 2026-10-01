@@ -30,7 +30,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=client-view-shortcut-1&amp;home-shortcuts=1&amp;coach-dock=2" />
+  <link rel="stylesheet" href="css/style.css?v=client-view-shortcut-1&amp;home-shortcuts=1&amp;coach-dock=2&amp;exercise-cards=1&amp;videos-tab=3" />
   <link rel="stylesheet" href="css/coach-messages.css?v=1" />
   <link rel="stylesheet" href="css/workout-layout.css?v=workout-preview-1" />
   <link rel="stylesheet" href="/css/fwb-design-system.css?v=reference-overhaul-1" />
@@ -836,7 +836,8 @@
             <div>
               <p class="kicker">Shared catalog</p>
               <h2>Exercise library</h2>
-              <p>Approve exercises once, then use the same searchable list on the website and iPhone app.</p>
+              <h3 class="exercise-library-intro-title">Visual catalog</h3>
+              <p>Exercise cards with photos, muscles, equipment and more.</p>
             </div>
             <button class="button button-ghost" type="button" id="clear-exercise-library">New exercise</button>
           </div>
@@ -991,12 +992,26 @@
             </div>
 
             <div class="exercise-library-browser">
-              <label>
-                Search library
+              <div class="exercise-library-view-tabs" role="tablist" aria-label="Exercise library views">
+                <button class="is-selected" type="button" role="tab" aria-selected="true" aria-controls="exercise-library-list" data-exercise-library-view="cards">
+                  Exercise cards
+                </button>
+                <button type="button" role="tab" aria-selected="false" aria-controls="exercise-library-list" data-exercise-library-view="videos">
+                  Videos <span id="exercise-library-video-count">0</span>
+                </button>
+              </div>
+              <label class="exercise-library-search-field">
+                <span>Search library</span>
                 <input type="search" id="exercise-library-search" placeholder="Name, muscle, equipment..." autocomplete="off" />
               </label>
               <p id="exercise-library-count" class="exercise-library-count">Loading exercises…</p>
-              <div id="exercise-library-list" class="exercise-library-list" aria-live="polite"></div>
+              <div class="exercise-library-view-heading">
+                <h3 class="exercise-library-view-title" id="exercise-library-view-title">Exercise cards</h3>
+                <button class="exercise-library-upload-video-button" type="button" id="exercise-library-upload-video" hidden>
+                  <span aria-hidden="true">↑</span> Upload video
+                </button>
+              </div>
+              <div id="exercise-library-list" class="exercise-library-list" role="tabpanel" aria-live="polite"></div>
             </div>
           </div>
         </section>
@@ -1099,6 +1114,6 @@
   <script src="js/apple-workout.js?v=3"></script>
   <script src="js/apple-health-sync.js?v=1"></script>
   <script src="js/workout-progression.js?v=1"></script>
-  <script src="js/coach-admin.js?v=client-view-shortcut-1&amp;remember-login=1&amp;home-shortcuts=1&amp;apple-workout=1&amp;viewport-dock=1&amp;apple-health=1&amp;recovery-catalog=1&amp;messages=2&amp;progression=1&amp;invitations=2"></script>
+  <script src="js/coach-admin.js?v=client-view-shortcut-1&amp;remember-login=1&amp;home-shortcuts=1&amp;apple-workout=1&amp;viewport-dock=1&amp;apple-health=1&amp;recovery-catalog=1&amp;messages=2&amp;progression=1&amp;invitations=2&amp;exercise-cards=1&amp;videos-tab=3"></script>
 </body>
 </html>

@@ -83,6 +83,7 @@ let pendingProgramCopy = null;
 let exerciseLibraryRecords = [];
 let selectedExerciseLibraryId = "";
 let exerciseLibrarySearchTerm = "";
+let exerciseLibraryView = "cards";
 let isExerciseLibrarySaving = false;
 let exerciseVideoPreviewUrl = "";
 let clientCustomExerciseLogs = [];
@@ -4578,6 +4579,103 @@ function exerciseLibraryList(value) {
     .filter((item, index, items) => items.indexOf(item) === index);
 }
 
+const exerciseLibraryArtworkByName = {
+  "arnold press": "images/exercises/instruction-cards/2026-09-29/arnold-press.png",
+  "barbell upright row": "images/exercises/instruction-cards/2026-09-30/barbell-upright-row.webp",
+  "bulgarian split squat": "images/mockups/exercise-card-v2/bulgarian-split-squat.png",
+  "chest supported dumbbell row": "images/mockups/exercise-card-v2/chest-supported-row.png",
+  "double dumbbell front squat": "images/exercises/instruction-cards/2026-09-29/double-dumbbell-front-squat.png",
+  "ez bar or dumbbell curl": "images/exercises/instruction-cards/2026-09-29/ez-bar-or-dumbbell-curl.png",
+  "front foot elevated reverse lunge": "images/exercises/instruction-cards/2026-09-29/front-foot-elevated-reverse-lunge.png",
+  "half kneeling landmine press": "images/exercises/instruction-cards/2026-09-29/half-kneeling-landmine-press.png",
+  "incline dumbbell press": "images/mockups/exercise-card-v2/incline-dumbbell-press.png",
+  "lateral step up": "images/exercises/instruction-cards/2026-09-29/lateral-step-up.png",
+  "lean away lateral raise": "images/exercises/instruction-cards/2026-09-29/lean-away-lateral-raise.png",
+  "overhead rope triceps extension": "images/exercises/instruction-cards/2026-09-29/overhead-rope-triceps-extension.png",
+  "pec deck chest fly": "images/exercises/instruction-cards/2026-09-29/pec-deck-chest-fly.png",
+  "step up": "images/exercises/instruction-cards/2026-09-29/step-up.png",
+  "straight arm cable pulldown": "images/exercises/instruction-cards/2026-09-29/straight-arm-cable-pulldown.png",
+  "supine ankle circles": "images/exercises/instruction-cards/2026-09-29/supine-ankle-circles.png"
+};
+
+function exerciseLibraryArtworkUrl(record) {
+  const normalizedName = String(record?.name || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[–—-]/g, " ")
+    .replace(/[^a-z0-9 ]/g, "")
+    .replace(/\s+/g, " ");
+
+  return exerciseLibraryArtworkByName[normalizedName] || "";
+}
+
+function exerciseLibraryYoutubeId(value) {
+  try {
+    const url = new URL(String(value || "").trim());
+    const host = url.hostname.replace(/^www\./i, "").toLowerCase();
+    let id = "";
+
+    if (host === "youtu.be") {
+      id = url.pathname.split("/").filter(Boolean)[0] || "";
+    } else if (["youtube.com", "m.youtube.com", "youtube-nocookie.com"].includes(host)) {
+      if (url.pathname === "/watch") id = url.searchParams.get("v") || "";
+      if (url.pathname.startsWith("/shorts/") || url.pathname.startsWith("/embed/")) {
+        id = url.pathname.split("/").filter(Boolean)[1] || "";
+      }
+    }
+
+    return /^[a-zA-Z0-9_-]{6,15}$/.test(id) ? id : "";
+  } catch {
+    return "";
+  }
+}
+
+function exerciseLibraryHasVideo(record) {
+  return Boolean(uploadedExerciseDemoUrl(record?.demo_url) || exerciseLibraryYoutubeId(record?.demo_url));
+}
+
+function exerciseLibraryMediaMarkup(record) {
+  const name = String(record?.name || "Exercise");
+  const uploadedVideo = uploadedExerciseDemoUrl(record?.demo_url);
+  const youtubeId = exerciseLibraryYoutubeId(record?.demo_url);
+  const artworkUrl = exerciseLibraryArtworkUrl(record);
+  const instructionArtwork = artworkUrl.includes("/instruction-cards/");
+  const artwork = artworkUrl
+    ? `<img${instructionArtwork ? ' class="is-instruction-card"' : ""} src="${escapeHtml(artworkUrl)}" alt="${escapeHtml(name)} exercise demonstration" loading="lazy" />`
+    : `<span class="exercise-library-card-placeholder" aria-hidden="true"><b>${escapeHtml(exerciseLibraryLabel(record?.primary_muscle || "Exercise"))}</b><i>Move well. Get stronger.</i></span>`;
+
+  if (uploadedVideo) {
+    return `
+      <div class="exercise-library-card-media has-video${instructionArtwork ? " has-instruction-card" : ""}">
+        <video controls playsinline preload="metadata"${artworkUrl ? ` poster="${escapeHtml(artworkUrl)}"` : ""} aria-label="${escapeHtml(name)} demo video">
+          <source src="${escapeHtml(uploadedVideo)}" />
+        </video>
+        <span class="exercise-library-card-brand" aria-hidden="true">FWB</span>
+      </div>
+    `;
+  }
+
+  if (youtubeId) {
+    return `
+      <div class="exercise-library-card-media has-video${instructionArtwork ? " has-instruction-card" : ""}">
+        <button type="button" class="exercise-library-card-video-button" data-exercise-library-youtube-id="${escapeHtml(youtubeId)}" aria-label="Play ${escapeHtml(name)} demo video">
+          ${artwork}
+          <span class="exercise-library-card-play" aria-hidden="true"><i></i></span>
+          <strong>Play demo</strong>
+        </button>
+        <span class="exercise-library-card-brand" aria-hidden="true">FWB</span>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="exercise-library-card-media${artworkUrl ? " has-artwork" : ""}${instructionArtwork ? " has-instruction-card" : ""}">
+      ${artwork}
+      <span class="exercise-library-card-brand" aria-hidden="true">FWB</span>
+    </div>
+  `;
+}
+
 function normalizeClientExerciseName(value) {
   return String(value || "")
     .trim()
@@ -5283,13 +5381,19 @@ function exerciseLibraryPayload() {
 function renderExerciseLibrary() {
   const list = document.getElementById("exercise-library-list");
   const count = document.getElementById("exercise-library-count");
+  const title = document.getElementById("exercise-library-view-title");
+  const videoCount = document.getElementById("exercise-library-video-count");
+  const uploadVideoButton = document.getElementById("exercise-library-upload-video");
+  const searchInput = document.getElementById("exercise-library-search");
 
   if (!list || !count) {
     return;
   }
 
+  const videoRecords = exerciseLibraryRecords.filter(exerciseLibraryHasVideo);
+  const catalog = exerciseLibraryView === "videos" ? videoRecords : exerciseLibraryRecords;
   const term = exerciseLibrarySearchTerm.trim().toLowerCase();
-  const visible = exerciseLibraryRecords.filter((record) => {
+  const visible = catalog.filter((record) => {
     if (!term) {
       return true;
     }
@@ -5304,21 +5408,48 @@ function renderExerciseLibrary() {
     ].join(" ").toLowerCase().includes(term);
   });
 
-  count.textContent = `${visible.length} of ${exerciseLibraryRecords.length} exercises`;
+  document.querySelectorAll("[data-exercise-library-view]").forEach((button) => {
+    const selected = button.dataset.exerciseLibraryView === exerciseLibraryView;
+    button.classList.toggle("is-selected", selected);
+    button.setAttribute("aria-selected", String(selected));
+    button.tabIndex = selected ? 0 : -1;
+  });
+  if (title) title.textContent = exerciseLibraryView === "videos" ? "Exercise videos" : "Exercise cards";
+  if (videoCount) videoCount.textContent = String(videoRecords.length);
+  if (uploadVideoButton) uploadVideoButton.hidden = exerciseLibraryView !== "videos";
+  if (searchInput) searchInput.placeholder = exerciseLibraryView === "videos"
+    ? "Search videos..."
+    : "Name, muscle, equipment...";
+  count.textContent = `${visible.length} of ${catalog.length} ${exerciseLibraryView === "videos" ? "videos" : "exercises"}`;
   list.innerHTML = visible.length > 0
     ? visible.map((record) => `
-      <button class="exercise-library-row${record.id === selectedExerciseLibraryId ? " is-selected" : ""}" type="button" data-exercise-library-id="${escapeHtml(record.id)}">
-        <span>
-          <strong>${escapeHtml(record.name)}</strong>
-          <small>${escapeHtml(exerciseLibraryLabel(record.primary_muscle))} · ${escapeHtml(exerciseLibraryLabel(record.equipment))}</small>
-        </span>
-        <span class="exercise-library-badges">
-          ${record.is_approved ? '<small class="is-approved">Approved</small>' : '<small>Hidden</small>'}
-          ${record.is_active ? "" : '<small>Archived</small>'}
-        </span>
-      </button>
+      <article class="exercise-library-card${record.id === selectedExerciseLibraryId ? " is-selected" : ""}">
+        ${exerciseLibraryMediaMarkup(record)}
+        <button class="exercise-library-card-select" type="button" data-exercise-library-id="${escapeHtml(record.id)}" aria-pressed="${record.id === selectedExerciseLibraryId}">
+          <span class="exercise-library-card-heading">
+            <span>
+              <strong>${escapeHtml(record.name)}</strong>
+              <small>${escapeHtml(exerciseLibraryLabel(record.primary_muscle))}</small>
+            </span>
+            <i aria-hidden="true">↗</i>
+          </span>
+          <span class="exercise-library-card-meta">
+            <small>${escapeHtml(exerciseLibraryLabel(record.equipment))}</small>
+            <small>${escapeHtml(exerciseLibraryLabel(record.difficulty))}</small>
+            <small>${escapeHtml(record.default_sets || 3)} × ${escapeHtml(record.default_reps || "8–12")}</small>
+          </span>
+          ${record.instructions ? `<span class="exercise-library-card-instructions">${escapeHtml(record.instructions)}</span>` : ""}
+          <span class="exercise-library-badges">
+            ${exerciseLibraryHasVideo(record) ? '<small class="has-demo">Video</small>' : ""}
+            ${record.is_approved ? '<small class="is-approved">Approved</small>' : '<small>Hidden</small>'}
+            ${record.is_active ? "" : '<small>Archived</small>'}
+          </span>
+        </button>
+      </article>
     `).join("")
-    : '<p class="exercise-library-empty">No exercises match that search.</p>';
+    : `<p class="exercise-library-empty">${exerciseLibraryView === "videos"
+      ? (term ? "No videos match that search." : "No exercise videos have been added yet.")
+      : "No exercises match that search."}</p>`;
 }
 
 async function loadExerciseLibrary() {
@@ -5354,8 +5485,10 @@ function handleExerciseLibraryEditor() {
   const clearButton = document.getElementById("clear-exercise-library");
   const searchInput = document.getElementById("exercise-library-search");
   const list = document.getElementById("exercise-library-list");
+  const viewTabs = document.querySelector(".exercise-library-view-tabs");
+  const uploadVideoButton = document.getElementById("exercise-library-upload-video");
 
-  if (!saveButton || !clearButton || !searchInput || !list) {
+  if (!saveButton || !clearButton || !searchInput || !list || !viewTabs || !uploadVideoButton) {
     return;
   }
 
@@ -5371,8 +5504,55 @@ function handleExerciseLibraryEditor() {
     renderExerciseLibrary();
   });
 
+  viewTabs.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-exercise-library-view]");
+    const nextView = button?.dataset.exerciseLibraryView;
+    if (!["cards", "videos"].includes(nextView) || nextView === exerciseLibraryView) return;
+    exerciseLibraryView = nextView;
+    renderExerciseLibrary();
+  });
+
+  viewTabs.addEventListener("keydown", (event) => {
+    if (!["ArrowLeft", "ArrowRight"].includes(event.key)) return;
+    event.preventDefault();
+    exerciseLibraryView = exerciseLibraryView === "cards" ? "videos" : "cards";
+    renderExerciseLibrary();
+    viewTabs.querySelector(`[data-exercise-library-view="${exerciseLibraryView}"]`)?.focus();
+  });
+
+  uploadVideoButton.addEventListener("click", () => {
+    if (isExerciseLibrarySaving) return;
+    if (!selectedExerciseLibraryId) {
+      fillExerciseLibraryEditor();
+      renderExerciseLibrary();
+    }
+    exerciseLibraryStatus(selectedExerciseLibraryId
+      ? "Choose a replacement demo video, then save the exercise."
+      : "Choose a demo video, finish the exercise details, then save.");
+    document.getElementById("exercise-library-video").click();
+  });
+
   list.addEventListener("click", (event) => {
     if (isExerciseLibrarySaving) return;
+    const videoButton = event.target.closest("[data-exercise-library-youtube-id]");
+
+    if (videoButton) {
+      const youtubeId = videoButton.dataset.exerciseLibraryYoutubeId || "";
+      const media = videoButton.closest(".exercise-library-card-media");
+      if (!media || !/^[a-zA-Z0-9_-]{6,15}$/.test(youtubeId)) return;
+      media.innerHTML = `
+        <iframe
+          src="https://www.youtube-nocookie.com/embed/${encodeURIComponent(youtubeId)}?autoplay=1&amp;rel=0"
+          title="Exercise demo video"
+          loading="lazy"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allowfullscreen
+        ></iframe>
+        <span class="exercise-library-card-brand" aria-hidden="true">FWB</span>
+      `;
+      return;
+    }
+
     const button = event.target.closest("[data-exercise-library-id]");
     const record = exerciseLibraryRecords.find((item) => item.id === button?.dataset.exerciseLibraryId);
 

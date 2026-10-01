@@ -216,8 +216,8 @@ test("library matching differentiates exact names, aliases, and client-created n
 });
 
 test("coach admin cache-busts both assets", () => {
-  assert.match(adminHtml, /href="css\/style\.css\?v=exercise-video-upload-1"/);
-  assert.match(adminHtml, /src="js\/coach-admin\.js\?v=exercise-video-upload-1(?:&amp;[^"\s]+)*"/);
+  assert.match(adminHtml, /href="css\/style\.css\?[^"\s]*exercise-cards=1/);
+  assert.match(adminHtml, /src="js\/coach-admin\.js\?[^"\s]*exercise-cards=1/);
 });
 
 test("spelling correction uses the protected RPC and keeps deletion separate", () => {
