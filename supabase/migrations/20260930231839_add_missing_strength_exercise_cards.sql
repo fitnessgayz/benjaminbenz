@@ -3,6 +3,15 @@
 -- movement points at its immutable 768px branded card; the 480px derivative
 -- and PNG master are published alongside it for responsive clients and future
 -- editing.
+alter table public.exercise_library
+  drop constraint if exists exercise_library_equipment_check;
+
+alter table public.exercise_library
+  add constraint exercise_library_equipment_check check (equipment in (
+    'bodyweight', 'dumbbell', 'barbell', 'cable', 'machine',
+    'smith_machine', 'bench', 'landmine', 'other'
+  ));
+
 with new_exercises as (
   select *
   from jsonb_to_recordset($exercises$
