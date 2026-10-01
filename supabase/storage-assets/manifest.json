@@ -7,7 +7,8 @@
     "20260930233202_add_mobility_flexibility_cards.sql",
     "20261001005226_add_controlled_articular_rotation_cards.sql",
     "20261001011107_add_nasm_mobility_flexibility_cards.sql",
-    "20261001021758_add_nasm_dynamic_flexibility_cards.sql"
+    "20261001021758_add_nasm_dynamic_flexibility_cards.sql",
+    "20261001025452_replace_exercise_videos.sql"
   ],
   "assets": [
     {
@@ -800,25 +801,54 @@
       "objectPath": "generated/bulgarian-split-squat.mp4",
       "contentType": "video/mp4",
       "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-videos/generated/2026-09-30/upright-row.mp4",
+      "bucket": "exercise-videos",
+      "objectPath": "generated/2026-09-30/upright-row.mp4",
+      "contentType": "video/mp4",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-videos/generated/2026-09-30/incline-dumbbell-curl.mp4",
+      "bucket": "exercise-videos",
+      "objectPath": "generated/2026-09-30/incline-dumbbell-curl.mp4",
+      "contentType": "video/mp4",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-videos/generated/2026-09-30/bulgarian-split-squat.mp4",
+      "bucket": "exercise-videos",
+      "objectPath": "generated/2026-09-30/bulgarian-split-squat.mp4",
+      "contentType": "video/mp4",
+      "cacheControl": 31536000
     }
   ],
   "exerciseMedia": [
     {
       "name": "Barbell Upright Row",
       "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-29/webp-768/barbell-upright-row.webp",
-      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-videos/generated/barbell-upright-row.mp4"
+      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-videos/generated/2026-09-30/upright-row.mp4"
+    },
+    {
+      "name": "Upright Row",
+      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-videos/generated/2026-09-30/upright-row.mp4"
+    },
+    {
+      "name": "Incline Dumbbell Curl",
+      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-videos/generated/2026-09-30/incline-dumbbell-curl.mp4"
     },
     {
       "name": "Bulgarian Split Squat",
-      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-videos/generated/bulgarian-split-squat.mp4"
+      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-videos/generated/2026-09-30/bulgarian-split-squat.mp4"
     },
     {
       "name": "One Dumbbell Bulgarian Split Squat",
-      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-videos/generated/bulgarian-split-squat.mp4"
+      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-videos/generated/2026-09-30/bulgarian-split-squat.mp4"
     },
     {
       "name": "Two Dumbbell Bulgarian Split Squat",
-      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-videos/generated/bulgarian-split-squat.mp4"
+      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-videos/generated/2026-09-30/bulgarian-split-squat.mp4"
     },
     {
       "name": "Chest-Supported Dumbbell Wide Row",
