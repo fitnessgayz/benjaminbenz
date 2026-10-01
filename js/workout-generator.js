@@ -39,7 +39,8 @@
     { value: "cable", label: "Cables" },
     { value: "machine", label: "Machines" },
     { value: "smith_machine", label: "Smith machine" },
-    { value: "bench", label: "Bench" }
+    { value: "bench", label: "Bench" },
+    { value: "suspension_trainer", label: "Suspension trainer" }
   ];
   const EQUIPMENT = new Set(EQUIPMENT_OPTIONS.map((option) => option.value));
   const INTENSITIES = new Set(["easy", "moderate", "challenging"]);
@@ -108,7 +109,8 @@
     if (!available.has(entry.equipment)) return false;
     const name = nameKey(entry.name);
     // A normal bench is not a back-extension station or a hanging/pull-up bar.
-    if (/\b(hanging|pull up|chin up|inverted row|suspension|trx|rings?|box|step up|back extension)\b/.test(name)) return false;
+    if (entry.equipment !== "suspension_trainer"
+      && /\b(hanging|pull up|chin up|inverted row|suspension|trx|rings?|box|step up|back extension)\b/.test(name)) return false;
     if (entry.equipment === "bodyweight" && /\bdips?\b/.test(name) && !/\bbench\b/.test(name)) return false;
     if (/\b(back squat|front squat)\b/.test(name) && entry.equipment === "barbell") return false;
     if (!["machine", "smith_machine"].includes(entry.equipment)) {
