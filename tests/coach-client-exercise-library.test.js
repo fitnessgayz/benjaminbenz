@@ -66,7 +66,7 @@ test("Exercise Library exposes an accessible selected-client custom-name manager
   assert.ok(managerStart >= 0);
   assert.match(managerMarkup, /aria-labelledby="client-exercise-name-manager-title"/);
   assert.match(managerMarkup, /id="client-exercise-name-manager-title">Client custom exercise names/);
-  assert.match(managerMarkup, /<label>[\s\S]*?id="client-exercise-name-search"/);
+  assert.doesNotMatch(managerMarkup, /id="client-exercise-name-search"|Search client names/);
   assert.match(managerMarkup, /id="client-exercise-name-count"[^>]*role="status"/);
   assert.match(managerMarkup, /id="client-exercise-name-list"[^>]*aria-live="polite"/);
   assert.match(managerMarkup, /id="client-exercise-name-status"[^>]*role="status"[^>]*aria-live="polite"/);
@@ -317,7 +317,7 @@ test("client-name mutations keep every manager control locked until refresh fini
   const loader = javascriptFunction("loadClientCustomExerciseNames");
 
   assert.match(adminSource, /let isClientExerciseNameMutating = false;/);
-  assert.match(renderer, /searchInput\.disabled = isClientExerciseNameMutating/);
+  assert.doesNotMatch(renderer, /client-exercise-name-search|searchInput/);
   assert.match(renderer, /isClientExerciseNameMutating \? "disabled" : ""/);
   assert.match(busyState, /isClientExerciseNameMutating = isBusy/);
   assert.match(busyState, /querySelectorAll\("\[data-client-exercise-name-key\]"\)[\s\S]*?button\.disabled = isBusy/);

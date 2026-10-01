@@ -17,7 +17,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=exercise-library-page-1&amp;mobile-card-media=1&amp;coach-layout-repair=1" />
+  <link rel="stylesheet" href="css/style.css?v=exercise-library-page-4&amp;mobile-card-media=1&amp;coach-layout-repair=1&amp;catalog-first=1" />
   <link rel="stylesheet" href="/css/fwb-design-system.css?v=web-app-brand-1" />
 </head>
 <body class="dashboard-page coach-exercise-library-page">
@@ -65,19 +65,8 @@
           </div>
           <span class="status-pill" id="client-exercise-name-manager-pill">No client selected</span>
         </div>
-        <label class="exercise-library-client-selector">
-          Client
-          <select id="exercise-library-client-select" autocomplete="off">
-            <option value="">Choose a client</option>
-          </select>
-        </label>
-
         <div class="client-exercise-name-manager-layout">
           <div class="client-exercise-name-browser">
-            <label>
-              Search client names
-              <input type="search" id="client-exercise-name-search" placeholder="Exercise name..." autocomplete="off" />
-            </label>
             <p class="exercise-library-count" id="client-exercise-name-count" role="status">Choose a client first.</p>
             <div class="client-exercise-name-list" id="client-exercise-name-list" aria-live="polite">
               <p class="exercise-library-empty">Custom workout names will appear here.</p>
@@ -173,6 +162,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js?v=client-session-link-1"></script>
   <script src="js/auth-session.js?v=remember-login-1"></script>
-  <script src="js/coach-admin.js?v=exercise-library-page-1&amp;exercise-cards=1&amp;videos-tab=3&amp;client-added=1"></script>
+  <script src="js/coach-admin.js?v=exercise-library-page-3&amp;exercise-cards=1&amp;videos-tab=3&amp;client-added=1&amp;client-name-list=2"></script>
 </body>
 </html>

@@ -13,6 +13,8 @@ const manifest = JSON.parse(fs.readFileSync(path.join(root, "coach.webmanifest")
 test("exercise library opens as a focused coach tool like the workout logger", () => {
   assert.match(adminHtml, /href="coach-exercise-library\.html"[^>]*aria-label="Exercise library"/);
   assert.doesNotMatch(adminHtml, /data-admin-tab="library"/);
+  assert.ok(adminHtml.indexOf('href="coach-exercise-library.html"') > adminHtml.indexOf('href="coach-workout-log.html"'));
+  assert.ok(adminHtml.indexOf('href="coach-exercise-library.html"') < adminHtml.indexOf('data-admin-tab="home"'));
   assert.match(libraryHtml, /<body class="dashboard-page coach-exercise-library-page">/);
   assert.match(libraryHtml, /id="exercise-library-page-title">Exercise library<\/h1>/);
   assert.match(libraryHtml, /href="coach-admin\.html">Back to FWB Coach<\/a>/);
@@ -24,7 +26,8 @@ test("standalone library preserves cards, videos, uploads, and approvals", () =>
   assert.match(libraryHtml, /data-exercise-library-view="videos"/);
   assert.match(libraryHtml, /id="exercise-library-upload-video"/);
   assert.match(libraryHtml, /id="client-added-exercises-link"/);
-  assert.match(libraryHtml, /id="exercise-library-client-select"/);
+  assert.doesNotMatch(libraryHtml, /id="exercise-library-client-select"|>Client\s*<select/);
+  assert.doesNotMatch(libraryHtml, /id="client-exercise-name-search"|Search client names/);
   assert.match(adminSource, /async function bootCoachExerciseLibrary\(\)/);
   assert.match(adminSource, /loadStandaloneExerciseLibraryClients\(\)/);
   assert.match(adminSource, /loadAllClientAddedExercises\(\)/);
@@ -33,6 +36,13 @@ test("standalone library preserves cards, videos, uploads, and approvals", () =>
 
 test("standalone library has a full-width responsive shell", () => {
   assert.match(styles, /\.coach-exercise-library-page \.coach-exercise-library-shell\s*\{[^}]*width:\s*min\(1440px, calc\(100% - 48px\)\)/s);
-  assert.match(styles, /\.coach-exercise-library-page \.exercise-library-panel\s*\{[^}]*display:\s*block/s);
+  assert.match(styles, /\.coach-exercise-library-page \.exercise-library-panel\s*\{[^}]*display:\s*flex[^}]*flex-direction:\s*column/s);
   assert.match(styles, /@media \(max-width: 760px\)[\s\S]*?\.coach-exercise-library-hero\s*\{[^}]*flex-direction:\s*column/s);
+});
+
+test("catalog controls and exercise cards appear before client-name management and editing", () => {
+  assert.match(styles, /\.coach-exercise-library-page \.exercise-library-layout\s*\{[^}]*display:\s*contents/s);
+  assert.match(styles, /\.coach-exercise-library-page \.exercise-library-browser\s*\{[^}]*order:\s*1/s);
+  assert.match(styles, /\.coach-exercise-library-page :is\(\.client-exercise-name-manager\)\s*\{[^}]*order:\s*2/s);
+  assert.match(styles, /\.coach-exercise-library-page \.exercise-library-editor\s*\{[^}]*order:\s*3/s);
 });

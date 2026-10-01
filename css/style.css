@@ -38,7 +38,8 @@
 }
 
 .coach-exercise-library-page .exercise-library-panel {
-  display: block;
+  display: flex;
+  flex-direction: column;
   min-width: 0;
   overflow: clip;
 }
@@ -52,12 +53,26 @@
   color: #b42318;
 }
 
-.exercise-library-client-selector {
-  display: grid;
-  gap: 8px;
-  max-width: 520px;
-  margin: 18px 0 22px;
-  font-weight: 800;
+.coach-exercise-library-page .exercise-library-heading {
+  order: 0;
+}
+
+.coach-exercise-library-page .exercise-library-layout {
+  display: contents;
+}
+
+.coach-exercise-library-page .exercise-library-browser {
+  order: 1;
+  margin-top: 24px;
+}
+
+.coach-exercise-library-page :is(.client-exercise-name-manager) {
+  order: 2;
+}
+
+.coach-exercise-library-page .exercise-library-editor {
+  order: 3;
+  margin-top: 24px;
 }
 
 @media (max-width: 760px) {

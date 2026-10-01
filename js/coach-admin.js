@@ -88,7 +88,6 @@ let isExerciseLibrarySaving = false;
 let exerciseVideoPreviewUrl = "";
 let clientCustomExerciseLogs = [];
 let clientExerciseNameClientEmail = "";
-let clientExerciseNameSearchTerm = "";
 let selectedClientExerciseNameKey = "";
 let clientExerciseNameLoadToken = 0;
 let isClientExerciseNameLoading = false;
@@ -5043,20 +5042,18 @@ function renderClientCustomExerciseNames() {
   const selectedName = document.getElementById("client-exercise-name-selected");
   const impact = document.getElementById("client-exercise-name-impact");
   const guidance = document.getElementById("client-exercise-name-guidance");
-  const searchInput = document.getElementById("client-exercise-name-search");
   const correctionInput = document.getElementById("client-exercise-name-correction");
   const deleteButton = document.getElementById("delete-client-exercise-name");
   const program = selectedProgram();
   const clientEmail = normalizeEmail(program?.client_email);
 
-  if (!summary || !pill || !count || !list || !selectedName || !impact || !guidance || !searchInput || !correctionInput || !deleteButton) {
+  if (!summary || !pill || !count || !list || !selectedName || !impact || !guidance || !correctionInput || !deleteButton) {
     return;
   }
 
   renderClientExerciseNameCorrectionOptions();
 
   if (!clientEmail) {
-    searchInput.disabled = true;
     summary.textContent = "Choose a client to review names saved from their custom workouts.";
     pill.textContent = "No client selected";
     count.textContent = "Choose a client first.";
@@ -5075,7 +5072,6 @@ function renderClientCustomExerciseNames() {
   summary.textContent = `${clientName} · ${clientEmail}`;
 
   if (isClientExerciseNameLoading) {
-    searchInput.disabled = true;
     pill.textContent = "Loading";
     count.textContent = "Loading custom workout names…";
     list.innerHTML = '<p class="exercise-library-empty">Checking saved custom workouts…</p>';
@@ -5090,7 +5086,6 @@ function renderClientCustomExerciseNames() {
   }
 
   if (clientExerciseNameLoadError) {
-    searchInput.disabled = true;
     pill.textContent = "Unavailable";
     count.textContent = clientExerciseNameLoadError;
     list.innerHTML = '<p class="exercise-library-empty">Refresh or reopen the Exercise Library tab to try again.</p>';
@@ -5105,15 +5100,7 @@ function renderClientCustomExerciseNames() {
   }
 
   const allGroups = clientCustomExerciseNameGroups();
-  searchInput.disabled = isClientExerciseNameMutating;
-  const term = clientExerciseNameSearchTerm.trim().toLowerCase();
-  const visibleGroups = allGroups.filter((group) => (
-    !term || [
-      group.name,
-      group.libraryMatch?.record?.name || "",
-      ...(group.libraryMatch?.record?.aliases || [])
-    ].join(" ").toLowerCase().includes(term)
-  ));
+  const visibleGroups = allGroups;
 
   if (selectedClientExerciseNameKey && !allGroups.some((group) => group.key === selectedClientExerciseNameKey)) {
     selectedClientExerciseNameKey = "";
@@ -5150,7 +5137,7 @@ function renderClientCustomExerciseNames() {
         </button>
       `;
     }).join("")
-    : '<p class="exercise-library-empty">No custom workout names match that search.</p>';
+    : '<p class="exercise-library-empty">No custom exercise names yet.</p>';
 
   const group = selectedClientExerciseNameGroup(allGroups);
 
@@ -5205,11 +5192,6 @@ async function loadClientCustomExerciseNames(email = selectedProgram()?.client_e
 
   if (clientExerciseNameClientEmail !== normalizedEmail) {
     selectedClientExerciseNameKey = "";
-    clientExerciseNameSearchTerm = "";
-    const searchInput = document.getElementById("client-exercise-name-search");
-    if (searchInput) {
-      searchInput.value = "";
-    }
     clientExerciseNameStatus("No changes made.");
   }
 
@@ -5267,14 +5249,10 @@ async function loadClientCustomExerciseNames(email = selectedProgram()?.client_e
 
 function setClientExerciseNameManagerBusy(isBusy) {
   isClientExerciseNameMutating = isBusy;
-  const searchInput = document.getElementById("client-exercise-name-search");
   const correctionInput = document.getElementById("client-exercise-name-correction");
   const correctButton = document.getElementById("correct-client-exercise-name");
   const deleteButton = document.getElementById("delete-client-exercise-name");
 
-  if (searchInput) {
-    searchInput.disabled = isBusy || isClientExerciseNameLoading || !clientExerciseNameClientEmail;
-  }
   document.querySelectorAll("[data-client-exercise-name-key]").forEach((button) => {
     button.disabled = isBusy;
   });
@@ -5416,24 +5394,14 @@ async function deleteSelectedClientExerciseName() {
 }
 
 function handleClientExerciseNameManager() {
-  const searchInput = document.getElementById("client-exercise-name-search");
   const list = document.getElementById("client-exercise-name-list");
   const correctionInput = document.getElementById("client-exercise-name-correction");
   const correctButton = document.getElementById("correct-client-exercise-name");
   const deleteButton = document.getElementById("delete-client-exercise-name");
 
-  if (!searchInput || !list || !correctionInput || !correctButton || !deleteButton) {
+  if (!list || !correctionInput || !correctButton || !deleteButton) {
     return;
   }
-
-  searchInput.addEventListener("input", () => {
-    if (isClientExerciseNameMutating) {
-      return;
-    }
-
-    clientExerciseNameSearchTerm = searchInput.value;
-    renderClientCustomExerciseNames();
-  });
 
   list.addEventListener("click", (event) => {
     if (isClientExerciseNameMutating) {
@@ -7758,20 +7726,6 @@ async function bootCoachAdmin() {
 
 bootCoachAdmin();
 
-function renderStandaloneExerciseLibraryClients() {
-  const select = document.getElementById("exercise-library-client-select");
-  if (!select) return;
-
-  const clients = activeClientPrograms();
-  const options = clients.map((program) => new Option(
-    `${program.client_name || "Client"} — ${program.client_email}`,
-    program.id
-  ));
-
-  select.replaceChildren(new Option("Choose a client", ""), ...options);
-  select.value = selectedProgramId;
-}
-
 async function loadStandaloneExerciseLibraryClients() {
   const { data, error } = await coachSupabase
     .from("client_programs")
@@ -7786,18 +7740,7 @@ async function loadStandaloneExerciseLibraryClients() {
   selectedProgramId = clients.some((program) => program.id === requestedClientId)
     ? requestedClientId
     : (clients[0]?.id || "");
-  renderStandaloneExerciseLibraryClients();
   await loadClientCustomExerciseNames(selectedProgram()?.client_email);
-}
-
-function handleStandaloneExerciseLibraryClientSelect() {
-  const select = document.getElementById("exercise-library-client-select");
-  if (!select) return;
-
-  select.addEventListener("change", async () => {
-    selectedProgramId = select.value;
-    await loadClientCustomExerciseNames(selectedProgram()?.client_email);
-  });
 }
 
 async function bootCoachExerciseLibrary() {
@@ -7810,7 +7753,6 @@ async function bootCoachExerciseLibrary() {
   handleExerciseLibraryEditor();
   handleClientExerciseNameManager();
   handleAllClientAddedExercises();
-  handleStandaloneExerciseLibraryClientSelect();
   handleCoachSignOut();
 
   if (!coachSupabase) {
