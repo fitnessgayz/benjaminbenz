@@ -23,7 +23,8 @@
     "20261001060718_add_diverse_exercise_cards_batch_six.sql",
     "20261001130710_add_rp_squat_university_exercise_cards.sql",
     "20261001133436_add_burpee_trx_exercise_cards.sql",
-    "20261001161518_add_official_trx_exercise_cards_batch_two.sql"
+    "20261001161518_add_official_trx_exercise_cards_batch_two.sql",
+    "20261001201652_add_heel_elevated_kettlebell_rdl_media.sql"
   ],
   "nasmExerciseCatalogMigration": "20261001032427_add_complete_nasm_exercise_library.sql",
   "nasmExerciseCatalogCount": 75,
@@ -2932,6 +2933,34 @@
       "objectPath": "approved/2026-10-01/webp-768/trx-body-saw.webp",
       "contentType": "image/webp",
       "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-10-01/png/heel-elevated-kettlebell-rdl.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-10-01/png/heel-elevated-kettlebell-rdl.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-10-01/webp-480/heel-elevated-kettlebell-rdl.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-10-01/webp-480/heel-elevated-kettlebell-rdl.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-10-01/webp-768/heel-elevated-kettlebell-rdl.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-10-01/webp-768/heel-elevated-kettlebell-rdl.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-videos/generated/2026-10-01/heel-elevated-kettlebell-rdl.mp4",
+      "bucket": "exercise-videos",
+      "objectPath": "generated/2026-10-01/heel-elevated-kettlebell-rdl.mp4",
+      "contentType": "video/mp4",
+      "cacheControl": 31536000
     }
   ],
   "exerciseMedia": [
@@ -3696,6 +3725,11 @@
       "name": "TRX Body Saw",
       "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-10-01/webp-768/trx-body-saw.webp",
       "demoUrl": "https://www.youtube.com/watch?v=ClXC0_yNsoM"
+    },
+    {
+      "name": "Heel-Elevated Kettlebell RDL",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-10-01/webp-768/heel-elevated-kettlebell-rdl.webp",
+      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-videos/generated/2026-10-01/heel-elevated-kettlebell-rdl.mp4"
     }
   ]
 }
