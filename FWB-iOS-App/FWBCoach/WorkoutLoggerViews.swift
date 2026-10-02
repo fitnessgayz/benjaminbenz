@@ -1,7 +1,6 @@
 import SwiftUI
 import UIKit
 import ImageIO
-import AVKit
 
 enum ExerciseMediaURL {
     static func thumbnail(for imageURL: URL?) -> URL? {
@@ -14,22 +13,25 @@ enum ExerciseMediaURL {
         return components.url ?? imageURL
     }
 
-    static func isVideo(_ url: URL?) -> Bool {
-        guard let url else { return false }
-        return ["mp4", "mov", "m4v", "webm"].contains(url.pathExtension.lowercased())
+    static func isBrandedCard(_ imageURL: URL?) -> Bool {
+        guard let path = imageURL?.path.lowercased() else { return false }
+        return path.contains("/exercise-images/approved/")
+            && (path.contains("/webp-480/") || path.contains("/webp-768/"))
+            && path.hasSuffix(".webp")
     }
+
 }
 
-private struct ExerciseMedia: Equatable {
+struct ExerciseMedia: Equatable {
     let imageURL: URL?
     let thumbnailURL: URL?
-    let motionURL: URL?
+    let instructions: String
     let primaryMuscle: String
     let equipment: String
-    let instructions: String
     let fallbackDemoURL: URL?
 
     var hasVisual: Bool { imageURL != nil }
+    var cropsThumbnailToPhotoPanels: Bool { ExerciseMediaURL.isBrandedCard(imageURL) }
 
     var thumbnailURLs: [URL] {
         [thumbnailURL, imageURL].compactMap { $0 }.reduce(into: []) { urls, url in
@@ -38,51 +40,20 @@ private struct ExerciseMedia: Equatable {
     }
 }
 
-private struct ExerciseMediaViewerRequest: Identifiable {
+struct ExerciseMediaViewerRequest: Identifiable {
     let id = UUID()
     let exerciseName: String
     let media: ExerciseMedia
 }
 
-private struct ExerciseSuggestionText: View {
-    let name: String
-    let approvedExercises: [ApprovedExercise]
-    var fallbackSubtitle: String? = nil
-
-    private var subtitle: String? {
-        ExerciseSuggestionMetadata.muscleSummary(
-            for: name,
-            approvedExercises: approvedExercises
-        ) ?? fallbackSubtitle
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 3) {
-            Text(name.fwbTitleCased)
-                .font(FWBFont.subheadline.weight(.semibold))
-                .foregroundStyle(Color.fwbWarmWhite)
-                .multilineTextAlignment(.leading)
-            if let subtitle, !subtitle.isEmpty {
-                Text(subtitle)
-                    .font(FWBFont.footnote.weight(.semibold))
-                    .foregroundStyle(Color.fwbMuted)
-                    .multilineTextAlignment(.leading)
-            }
-        }
-        .accessibilityElement(children: .combine)
-    }
-}
-
-private func exerciseSuggestionAccessibilityLabel(
-    action: String,
-    name: String,
-    approvedExercises: [ApprovedExercise]
-) -> String {
-    guard let muscles = ExerciseSuggestionMetadata.muscleSummary(
-        for: name,
-        approvedExercises: approvedExercises
-    ) else { return "\(action) \(name)" }
-    return "\(action) \(name), muscles: \(muscles)"
+private enum WorkoutEntryDateFormatter {
+    static let day: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter
+    }()
 }
 
 private enum WorkoutLogFocus: Hashable {
@@ -190,7 +161,7 @@ private struct WorkoutScrollRequest: Equatable {
 
 private struct WorkoutExerciseNavigationRow: Identifiable {
     let id: String
-    let number: Int
+    let label: String
     let title: String
     let group: String?
     let completed: Int
@@ -207,7 +178,50 @@ private struct WorkoutHistoryCopyPromptRequest: Identifiable {
     }
 }
 
+/// Generated targets initialize empty sets; saved entries and edits remain authoritative.
+enum GeneratedWorkoutLoggerPreparation {
+    static func initialSetType(for exercise: Exercise) -> WorkoutSetType {
+        let prescription = exercise.prescription.trimmingCharacters(in: .whitespacesAndNewlines)
+        let timedTarget = #"^\d+(?:\s*[-–—−]\s*\d+)?\s*(?:sec(?:onds?)?|s|min(?:utes?)?)(?:\s*/\s*side)?\s*[x×]\s*\d+\s*sets?$"#
+        return prescription.range(of: timedTarget, options: [.regularExpression, .caseInsensitive]) == nil
+            ? .working : .timed
+    }
+
+    static func restoredExercises(
+        originals: [Exercise],
+        records: [WorkoutLogRecord],
+        isCompleted: Bool = false
+    ) -> [Exercise] {
+        // A finished log is the final inventory; absent plan exercises were skipped or removed.
+        var exercises = isCompleted ? [] : originals
+        var restoredCodes = Set<String>()
+        for record in records where restoredCodes.insert(record.exerciseCode).inserted {
+            let original = originals.first {
+                $0.code == record.exerciseCode &&
+                    ExerciseNameIdentity.key(for: $0.name) == ExerciseNameIdentity.key(for: record.exerciseName)
+            }
+            let restored = Exercise(
+                code: record.exerciseCode,
+                name: record.exerciseName,
+                prescription: original?.prescription ?? "Custom",
+                rest: original?.rest ?? "",
+                instructions: original?.instructions ?? [],
+                video: original?.video ?? "",
+                progression: original?.progression ?? record.progressionTarget,
+                hasInvalidProgression: original?.hasInvalidProgression ?? false
+            )
+            if let index = exercises.firstIndex(where: { $0.code == record.exerciseCode }) {
+                exercises[index] = restored
+            } else {
+                exercises.append(restored)
+            }
+        }
+        return exercises
+    }
+}
+
 struct WorkoutLoggingView<WorkoutSelector: View>: View {
+    @Environment(\.activeWorkoutSessionStore) private var activeWorkoutStore
     @Environment(\.dismiss) private var dismiss
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.clientNavigationTabID) private var clientNavigationTabID
@@ -216,10 +230,14 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
 
     let workout: Workout
     let seedSession: WorkoutHistorySession?
+    let resumeSession: ActiveWorkoutSession?
     let clientEmail: String
     let embedded: Bool
     let suggestedExercises: [Exercise]
     let workoutSelector: WorkoutSelector
+    let previewMode: Bool
+    let isGeneratedWorkout: Bool
+    let coachAccountID: UUID?
 
     @StateObject private var logStore = WorkoutLogStore()
     @StateObject private var suggestionStore = ExerciseSuggestionStore()
@@ -227,13 +245,17 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
     @StateObject private var restTimerStore = RestTimerStore()
     @StateObject private var achievementHistoryStore = WorkoutHistoryStore()
     @StateObject private var commentStore = WorkoutCommentStore()
-    @ObservedObject private var offlineSyncStore = WorkoutOfflineSyncStore.shared
+    @ObservedObject private var offlineSyncStore: WorkoutOfflineSyncStore
     @AppStorage("restTimerHapticsEnabled") private var restTimerHapticsEnabled = true
     @AppStorage("workoutPraiseHapticsEnabled") private var workoutPraiseHapticsEnabled = true
     @AppStorage("weeklyWorkoutGoal") private var weeklyWorkoutGoal = 3
     @AppStorage("workoutEffortScale") private var workoutEffortScale = WorkoutEffortScale.rpe.rawValue
+    @State private var activeWorkoutOwner = UUID()
     @State private var entryDate = Date()
     @State private var exercises: [Exercise]
+    // Display lookups follow library/history changes, never numeric keystrokes.
+    @State private var entryReferenceData = WorkoutEntryReferenceData.empty
+    @State private var progressionRecommendations: [String: WorkoutProgressionRecommendation] = [:]
     @State private var drafts: [WorkoutSetDraft]
     @State private var groupAssignments: [String: WorkoutGroupAssignment]
     @State private var customWorkoutFormat: CustomWorkoutFormat
@@ -268,8 +290,26 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
     @State private var completionCelebration: WorkoutCelebration?
     @State private var historyCopyPrompt: WorkoutHistoryCopyPromptRequest?
     @State private var pendingHistoryCopyExerciseID: String?
-    @State private var navigationTargetExerciseID: String?
-    @State private var skippedWarmUpSectionIDs: Set<String> = []
+    @State private var parityValidation: [String: String] = [:]
+    @State private var parityCopies: [String: WorkoutParityCopyResult] = [:]
+    @State private var paritySavingGroup: String?
+    @State private var parityRestGroup: String?
+    @State private var parityRestRound: Int?
+    @State private var parityMessage: String?
+    @State private var parityExercise: Exercise?
+    @State private var parityMediaRequest: ExerciseMediaViewerRequest?
+    @State private var progressionExercise: Exercise?
+    @State private var parityEditingSet: UUID?
+    @State private var parityRemovePicker = false
+    @State private var parityResetPrompt = false
+    @State private var paritySessionStarted = false
+    @State private var parityFinishedAt: Date?
+    @State private var parityResumeRestAfterFeedback = false
+    @State private var parityEnergyBefore: Int?
+    @State private var parityEnergyAfter: Int?
+    @State private var parityCalculator: WorkoutCalculatorKind?
+    @State private var parityCalculatorExercise: Exercise?
+    @State private var parityCalculatorSources: [OneRepMaxSource] = []
     @FocusState private var focusedField: WorkoutLogFocus?
 
     init(
@@ -278,23 +318,46 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
         embedded: Bool = false,
         suggestedExercises: [Exercise] = [],
         seedSession: WorkoutHistorySession? = nil,
+        previewMode: Bool = false,
+        previewFormat: CustomWorkoutFormat? = nil,
+        initialDate: Date? = nil,
+        isGeneratedWorkout: Bool = false,
+        coachAccountID: UUID? = nil,
+        resumeSession: ActiveWorkoutSession? = nil,
         @ViewBuilder workoutSelector: () -> WorkoutSelector
     ) {
         self.workout = workout
         self.seedSession = seedSession
+        self.resumeSession = resumeSession
         self.clientEmail = clientEmail
         self.embedded = embedded
         self.suggestedExercises = suggestedExercises
         self.workoutSelector = workoutSelector()
+        self.previewMode = previewMode
+        self.isGeneratedWorkout = isGeneratedWorkout
+        self.coachAccountID = coachAccountID
+        _entryDate = State(initialValue: resumeSession?.entryDate ?? initialDate ?? Date())
+        _offlineSyncStore = ObservedObject(wrappedValue: previewMode ? WorkoutOfflineSyncStore.previewStore()
+            : coachAccountID.map { WorkoutOfflineSyncStore.coachStore(accountID: $0) } ?? .shared)
+#if DEBUG
+        if previewMode { _restTimerStore = StateObject(wrappedValue: RestTimerStore(notificationScheduler: WorkoutParityPreviewNotifications())) }
+#endif
         _exercises = State(initialValue: workout.exercises)
-        _drafts = State(initialValue: Self.makeDrafts(for: workout.exercises))
+        _drafts = State(initialValue: Self.makeDrafts(for: workout.exercises, isGeneratedWorkout: isGeneratedWorkout))
+#if DEBUG
+        if previewMode && ProcessInfo.processInfo.arguments.contains("--workout-progression-audit") {
+            var entries = Self.makeDrafts(for: workout.exercises, isGeneratedWorkout: isGeneratedWorkout)
+            if let first = entries.firstIndex(where: { $0.setType == .working }) { entries[first].weight = "41" }
+            _drafts = State(initialValue: entries)
+        }
+#endif
         _groupAssignments = State(initialValue: WorkoutSequencePlanner.inferredAssignments(for: workout))
         _customWorkoutFormat = State(
-            initialValue: seedSession == nil ? Self.savedCustomWorkoutFormat(for: clientEmail) : .single
+            initialValue: previewFormat ?? (seedSession == nil ? Self.savedCustomWorkoutFormat(for: clientEmail) : .single)
         )
     }
 
-    var body: some View {
+    private var workoutContent: some View {
         ZStack {
             Color.fwbBackground.ignoresSafeArea()
 
@@ -307,7 +370,7 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
                     if embedded {
                         EmbeddedWorkoutHeader(workout: workout)
                     } else {
-                        WorkoutSessionHeader(title: workout.title.fwbWorkoutDisplayTitle, startedAt: startedAt)
+                        WorkoutSessionHeader(title: workout.title.fwbWorkoutDisplayTitle)
                     }
                     workoutDateCard
 
@@ -328,15 +391,27 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
                     }
 
                     if isCustomWorkout {
-                        CustomWorkoutFormatPicker(selection: customWorkoutFormatBinding)
+                        WorkoutParityFormatPicker(selection: customWorkoutFormatBinding)
+                        paritySessionControls
+                        WorkoutParityCountStepper(
+                            label: "Exercises", count: exercises.count,
+                            onMinus: { parityRemovePicker = true },
+                            onPlus: { exerciseEditorRequest = ExerciseEditorRequest(mode: .add(.newCircuit)) }
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: 20))
+                    } else {
+                        paritySessionControls
                     }
 
                     HStack(spacing: 6) {
-                        Button { commentsExpanded.toggle() } label: {
-                            Label("Comments", systemImage: "bubble.left")
+                        if coachAccountID == nil {
+                            Button { commentsExpanded.toggle() } label: {
+                                Label("Comments", systemImage: "bubble.left")
+                            }
+                            .buttonStyle(LoggerCompactButtonStyle())
+                            .accessibilityIdentifier("workout.commentsToggle")
+                            .disabled(previewMode)
                         }
-                        .buttonStyle(LoggerCompactButtonStyle())
-                        .accessibilityIdentifier("workout.commentsToggle")
                         Spacer(minLength: 0)
                         Button { sequenceEditorRequest = SequenceEditorRequest() } label: {
                             Label("Exercises & groups", systemImage: "list.bullet")
@@ -345,63 +420,40 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
                         .disabled(exercises.isEmpty)
                         .accessibilityIdentifier("workout.editSequence")
                     }
-                    if commentsExpanded {
+                    if commentsExpanded && coachAccountID == nil {
                         WorkoutCommentSummaryCard(store: commentStore, context: commentContext)
                     }
 
-                    if isCustomWorkout && customWorkoutFormat != .single {
-                        ForEach(WorkoutRoundLayout.groupSlots(sections: sequenceSections, format: customWorkoutFormat)) { slot in
-                            if let section = slot.section {
-                                if let assignment = section.assignment {
-                                    groupedSection(section, assignment: assignment)
-                                } else {
-                                    ForEach(section.exercises) { exercise in exerciseCard(for: exercise) }
-                                }
-                            } else {
-                                blankCustomGroup(number: slot.number)
-                            }
-                        }
-                    } else {
-                        ForEach(sequenceSections) { section in
-                            if let assignment = section.assignment {
-                                groupedSection(section, assignment: assignment)
-                            } else {
-                                ForEach(section.exercises) { exercise in
-                                    exerciseCard(for: exercise)
-                                }
-                            }
-                        }
+                    ForEach(parityGroups) { group in
+                        parityGroupView(group)
+                            .id("workout.parity.\(group.id)")
                     }
+                    if exercises.isEmpty && !isCustomWorkout { LoggerEmptyState() }
+                    if !isCustomWorkout { customExerciseActions }
 
-                    if exercises.isEmpty && !isCustomWorkout {
-                        LoggerEmptyState()
-                    }
 
-                    customBlankSlots
-
-                    customExerciseActions
-
-                    WorkoutSessionSummary(
-                        entryStyle: entryStyle,
-                        exerciseCount: exercises.count,
-                        completedSets: drafts.filter { !$0.isWarmUp && $0.isCompleted }.count,
-                        totalSets: drafts.filter { !$0.isWarmUp }.count,
-                        totalReps: drafts
-                            .filter { !$0.isWarmUp && (entryStyle == .mobility || $0.setType.countsTowardWorkingMetrics) }
-                            .reduce(0) { $0 + $1.repsValue },
-                        totalVolume: entryStyle == .mobility
-                            ? drafts.filter { !$0.isWarmUp }.reduce(0) { $0 + $1.weightValue }
-                            : drafts.filter { !$0.isWarmUp }.reduce(0) { $0 + $1.volume },
-                        totalTimedSeconds: drafts
-                            .filter { $0.setType == .timed }
-                            .reduce(0) { $0 + $1.durationValue }
-                    )
-                    .id("workout.summary")
+                    paritySessionSummary
 
                     statusMessage
+                    if let parityMessage {
+                        Text(parityMessage).font(FWBFont.footnote)
+                            .foregroundStyle(Color.fwbMuted)
+                            .accessibilityIdentifier("workout.parity.message")
+                    }
+
+                    if coachAccountID == nil && !previewMode {
+                        Button {
+                            finishWorkoutLater()
+                        } label: {
+                            Label("Finish Later", systemImage: "tray.and.arrow.down")
+                        }
+                        .buttonStyle(FWBSecondaryButtonStyle())
+                        .disabled(isSyncing || paritySavingGroup != nil || logStore.state == .loading)
+                        .accessibilityIdentifier("workout.finishLater")
+                    }
 
                     Button {
-                        difficultyPrompt = WorkoutDifficultyPromptRequest(workoutTitle: workout.title)
+                        parityRequestFinish()
                     } label: {
                         HStack(spacing: 10) {
                             if isSyncing && activeSaveIntent == .finish {
@@ -414,11 +466,11 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
                         }
                     }
                     .buttonStyle(FWBPrimaryButtonStyle())
-                    .disabled(isSyncing || logStore.state == .loading)
+                    .disabled(isSyncing || paritySavingGroup != nil || logStore.state == .loading)
                     .accessibilityIdentifier("workout.finish")
                 }
-                .padding(.horizontal, 12)
-                .padding(.vertical, FWBLayout.pagePadding)
+                .disabled(isWorkoutEntryLocked)
+                .padding(FWBLayout.pagePadding)
                 .padding(.bottom, 22)
             }
             .scrollDismissesKeyboard(.interactively)
@@ -431,15 +483,22 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
             }
             }
         }
-        .safeAreaInset(edge: .bottom, spacing: 0) {
-            if restTimerStore.isVisible {
-                RestTimerBanner(store: restTimerStore)
-                    .padding(.horizontal, 14)
-                    .padding(.bottom, 8)
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
-            }
-        }
-        .animation(.easeOut(duration: 0.2), value: restTimerStore.isVisible)
+    }
+
+    private var workoutWithReferenceData: some View {
+        workoutContent
+        .onChange(of: exercises) { _ in refreshEntryReferenceData() }
+        .onChange(of: suggestedExercises) { _ in refreshEntryReferenceData() }
+        .onChange(of: exerciseLibraryStore.exercises) { _ in refreshEntryReferenceData() }
+        .onChange(of: suggestionStore.historyNames) { _ in refreshEntryReferenceData() }
+        .onChange(of: achievementHistoryStore.sessions) { _ in refreshEntryReferenceData() }
+        .onAppear { refreshEntryReferenceData() }
+        .onChange(of: progressionReferenceToken) { _ in refreshProgressionRecommendations() }
+        .onChange(of: achievementHistoryStore.hasCompleteHistory) { _ in refreshProgressionRecommendations() }
+    }
+
+    var body: some View {
+        workoutWithReferenceData
         .overlay(alignment: .top) {
             if let praiseBanner {
                 WorkoutPraiseBanner(item: praiseBanner)
@@ -468,15 +527,39 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
         .task(id: dateString) {
             didLoadSession = false
             restoredPersistenceToken = nil
-            await loadSavedSets()
+            if !restoreActiveWorkout() {
+                if !previewMode { await loadSavedSets() }
+            }
+            guard !Task.isCancelled else { return }
+            prepareParitySession()
             lastAutosavedPersistenceToken = draftPersistenceToken
             didLoadSession = true
+            refreshProgressionRecommendations()
+            if !previewMode { publishWatchWorkout() }
         }
-        .task(id: commentContext) {
-            await commentStore.refresh(context: commentContext)
+        .task(id: "resume|\(draftPersistenceTaskID)|\(customWorkoutFormat.rawValue)|\(parityEnergyBefore ?? -1)|\(parityEnergyAfter ?? -1)") {
+            guard didLoadSession, paritySessionStarted else { return }
+            try? await Task.sleep(nanoseconds: 300_000_000)
+            guard !Task.isCancelled else { return }
+            persistActiveWorkout()
         }
         .task(id: draftPersistenceTaskID) {
-            guard didLoadSession,
+            guard !previewMode, didLoadSession else { return }
+            try? await Task.sleep(nanoseconds: 400_000_000)
+            guard !Task.isCancelled else { return }
+            publishWatchWorkout()
+        }
+        .task(id: commentContext) {
+            guard !previewMode, coachAccountID == nil else { return }
+            await commentStore.refresh(context: commentContext)
+        }
+        .task(id: "\(isAutosaving)-\(isSyncing)-\(paritySavingGroup ?? "")") {
+            guard !previewMode, didLoadSession, !isAutosaving, !isSyncing,
+                  paritySavingGroup == nil else { return }
+            publishWatchWorkout()
+        }
+        .task(id: draftPersistenceTaskID) {
+            guard !previewMode, didLoadSession,
                   draftPersistenceToken != restoredPersistenceToken else { return }
             try? await Task.sleep(nanoseconds: 350_000_000)
             guard !Task.isCancelled else { return }
@@ -507,7 +590,7 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
             seededCopyWasEdited = true
         }
         .task(id: autosaveTaskID) {
-            guard didLoadSession,
+            guard !previewMode, didLoadSession,
                   shouldAutosaveProgress,
                   draftPersistenceToken != lastAutosavedPersistenceToken else { return }
             try? await Task.sleep(nanoseconds: 1_250_000_000)
@@ -516,30 +599,42 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
             await autosaveProgress(expectedToken: draftPersistenceToken)
         }
         .task {
+            guard !previewMode else { return }
             await suggestionStore.load(email: clientEmail)
         }
         .task {
+            guard !previewMode else { return }
             await exerciseLibraryStore.loadIfNeeded()
         }
         .task {
+            guard !previewMode else { return }
             await achievementHistoryStore.loadIfNeeded(email: clientEmail)
         }
         .onAppear {
+            if didLoadSession { _ = restoreActiveWorkout() }
+            if !previewMode, didLoadSession { publishWatchWorkout() }
             NotificationCenter.default.post(name: Notification.Name("fwbWorkoutExerciseListAvailabilityChanged"), object: nil, userInfo: ["available": true, "tab": clientNavigationTabID])
         }
         .onDisappear {
+            persistActiveWorkout()
+            if !previewMode { AppleCompanionCoordinator.shared.detachLogger(sessionID: sessionID.uuidString.lowercased()) }
             NotificationCenter.default.post(name: Notification.Name("fwbWorkoutExerciseListAvailabilityChanged"), object: nil, userInfo: ["available": false, "tab": clientNavigationTabID])
         }
         .onChange(of: clientNavigationTabIsSelected) { selected in
+            if !selected { persistActiveWorkout() }
             if selected {
+                _ = restoreActiveWorkout()
+                if !previewMode, didLoadSession { publishWatchWorkout() }
                 NotificationCenter.default.post(name: Notification.Name("fwbWorkoutExerciseListAvailabilityChanged"), object: nil, userInfo: ["available": true, "tab": clientNavigationTabID])
             }
         }
         .onChange(of: scenePhase) { phase in
-            guard phase == .active else { return }
+            if phase != .active { persistActiveWorkout() }
+            guard phase == .active, !previewMode else { return }
             Task {
+                await exerciseLibraryStore.reload()
                 await offlineSyncStore.retryPending()
-                await commentStore.refresh(context: commentContext)
+                if coachAccountID == nil { await commentStore.refresh(context: commentContext) }
             }
         }
         .onChange(of: achievementHistoryStore.state) { state in
@@ -560,8 +655,7 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
         .sheet(item: $exerciseEditorRequest, onDismiss: { pendingSlotAssignment = nil }) { request in
             ExercisePickerSheet(
                 request: request,
-                suggestions: suggestionNames,
-                approvedExercises: exerciseLibraryStore.exercises
+                suggestions: suggestionNames
             ) { exerciseName in
                 applyExerciseEdit(request, exerciseName: exerciseName)
             }
@@ -595,9 +689,18 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
                 .presentationDragIndicator(.visible)
         }
         .sheet(item: $difficultyPrompt) { request in
-            WorkoutDifficultyPromptView(request: request) { rating in
-                saveWorkout(intent: .finish, difficultyRating: rating)
-            }
+            WorkoutDifficultyPromptView(
+                request: request,
+                onEnergyChange: { before, after in
+                    parityEnergyBefore = before
+                    parityEnergyAfter = after
+                },
+                onCancel: {
+                    if parityResumeRestAfterFeedback && restTimerStore.phase == .paused { restTimerStore.togglePause() }
+                    parityResumeRestAfterFeedback = false
+                },
+                onComplete: { rating in saveWorkout(intent: .finish, difficultyRating: rating) }
+            )
             .presentationDetents([.large])
             .presentationDragIndicator(.hidden)
         }
@@ -616,6 +719,58 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
             }
             .presentationDetents([.large])
             .presentationDragIndicator(.hidden)
+        }
+        .sheet(item: $parityExercise) { exercise in parityExerciseDetails(exercise) }
+        .sheet(item: $parityMediaRequest) { request in
+            ExerciseMediaViewer(request: request)
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+        }
+        .sheet(item: $progressionExercise) { exercise in
+            WorkoutProgressionSettings(exercise: exercise,
+                plannedSets: drafts.filter { matches($0, exercise) && $0.setType == .working }.count) { config in
+                guard let index = exercises.firstIndex(where: { $0.id == exercise.id }) else { return }
+                exercises[index] = Exercise(code: exercise.code, name: exercise.name,
+                    prescription: "\(config.plannedSets) × \(config.repMin)–\(config.repMax)",
+                    rest: exercise.rest, instructions: exercise.instructions, video: exercise.video,
+                    progression: config)
+                refreshProgressionRecommendations()
+            }
+        }
+        .sheet(item: $parityCalculator) { kind in
+            WorkoutCalculatorSheet(
+                kind: kind,
+                exerciseName: parityCalculatorExercise?.name ?? "Exercise",
+                suggestedWorkingWeight: parityCalculatorSources.first?.weight ?? 0,
+                suggestedReps: parityCalculatorSources.first?.reps ?? 0,
+                oneRepMaxSources: parityCalculatorSources,
+                recommendedRepRange: parityCalculatorExercise.flatMap {
+                    WorkoutProgressionIntegration.recommendedRepRange(for: $0, drafts: drafts)
+                },
+                onUseRecommendedWeight: { weight, exerciseName in
+                    applyRecommendedWeight(weight, toExerciseNamed: exerciseName)
+                }
+            ) { weights in
+                if let exercise = parityCalculatorExercise { insertWarmUps(weights, for: exercise) }
+            }
+        }
+        .confirmationDialog("Remove an exercise", isPresented: $parityRemovePicker, titleVisibility: .visible) {
+            ForEach(exercises) { exercise in
+                Button(exercise.name.isEmpty ? "Exercise \(displayExerciseLabel(exercise))" : exercise.name, role: .destructive) {
+                    pendingExerciseRemoval = exercise
+                }
+            }
+        }
+        .confirmationDialog("Reset this workout draft?", isPresented: $parityResetPrompt, titleVisibility: .visible) {
+            Button("Reset draft", role: .destructive) { parityReset() }
+        } message: { Text("Start a fresh workout draft. Previously saved workout history is kept.") }
+        .confirmationDialog("Set options", isPresented: Binding(get: { parityEditingSet != nil }, set: { if !$0 { parityEditingSet = nil } }), titleVisibility: .visible) {
+            if let id = parityEditingSet, let row = drafts.first(where: { $0.id == id }), let exercise = exercises.first(where: { $0.code == row.exerciseCode }) {
+                ForEach(WorkoutSetType.allCases, id: \.self) { type in
+                    Button(type.title) { updateSetType(type, for: id, in: exercise); parityEditingSet = nil }
+                }
+                Button("Delete set", role: .destructive) { deleteSet(id, from: exercise); parityEditingSet = nil }
+            }
         }
         .confirmationDialog(
             "Replace entered set values?",
@@ -692,7 +847,12 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
                     .font(FWBFont.footnote.bold())
                     .tracking(0.8)
                     .foregroundStyle(Color.fwbMuted)
-                DatePicker("Workout date", selection: $entryDate, in: ...Date(), displayedComponents: .date)
+                DatePicker("Workout date", selection: Binding(get: { entryDate }, set: { date in
+                    persistActiveWorkout()
+                    paritySessionStarted = false
+                    parityFinishedAt = nil
+                    entryDate = date
+                }), in: ...Date(), displayedComponents: .date)
                     .labelsHidden()
                     .tint(Color.fwbLime)
             }
@@ -715,6 +875,477 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
         .accessibilityElement(children: .combine)
     }
 
+    private var paritySessionSummary: some View {
+        let working = drafts.filter { !$0.isWarmUp && !$0.exerciseName.isEmpty }
+        let completed = working.filter(\.isCompleted)
+        let reps: Double = completed.filter { $0.setType.countsTowardWorkingMetrics }.reduce(0.0) { $0 + $1.repsValue }
+        let volume: Double = completed.reduce(0.0) { $0 + $1.volume }
+        let seconds: Double = completed.filter { $0.setType == .timed }.reduce(0.0) { $0 + $1.durationValue }
+        return WorkoutSessionSummary(entryStyle: entryStyle, exerciseCount: exercises.filter { !$0.name.isEmpty }.count,
+            completedSets: completed.count, totalSets: working.count, totalReps: reps, totalVolume: volume, totalTimedSeconds: seconds)
+    }
+
+    private var parityGroups: [WorkoutParityGroup] {
+        WorkoutParityModel.groups(exercises: exercises, assignments: groupAssignments)
+    }
+
+    private var parityHistory: [WorkoutHistorySession] {
+#if DEBUG
+        if previewMode && ProcessInfo.processInfo.arguments.contains("--workout-progression-audit") {
+            return WorkoutProgressionAudit.history(exercises: exercises)
+        }
+        if previewMode { return WorkoutParityAuditData.history }
+#endif
+        return achievementHistoryStore.sessions
+    }
+
+    private var paritySessionControls: some View {
+        HStack(spacing: 12) {
+            if paritySessionStarted {
+                TimelineView(.periodic(from: .now, by: 1)) { context in
+                    let elapsed = max(0, Int((parityFinishedAt ?? context.date).timeIntervalSince(startedAt)))
+                    Label(String(format: "%02d:%02d", elapsed / 60, elapsed % 60), systemImage: "stopwatch")
+                        .monospacedDigit().font(FWBFont.headline.weight(.bold))
+                        .accessibilityLabel("Workout time \(elapsed / 60) minutes \(elapsed % 60) seconds")
+                }
+            } else {
+                Button("START WORKOUT") { parityStart() }
+                    .buttonStyle(FWBPrimaryButtonStyle())
+                    .accessibilityIdentifier("workout.start")
+            }
+            Spacer(minLength: 0)
+            Button("Reset") { parityResetPrompt = true }
+                .font(FWBFont.footnote.weight(.bold))
+                .accessibilityIdentifier("workout.parity.reset")
+        }
+        .foregroundStyle(Color.fwbWarmWhite)
+    }
+
+    private func parityGroupView(_ group: WorkoutParityGroup) -> some View {
+        WorkoutParityGroupView(
+            group: group, drafts: $drafts,
+            labels: Dictionary(group.exercises.map { ($0.code, displayExerciseLabel($0)) }, uniquingKeysWith: { first, _ in first }),
+            mediaByCode: Dictionary(group.exercises.map { ($0.code, media(for: $0)) }, uniquingKeysWith: { first, _ in first }),
+            isCustom: isCustomWorkout, suggestions: suggestionNames,
+            isSaving: isWorkoutEntryLocked, isSyncing: isSyncing,
+            validationMessage: parityValidation[group.id],
+            restTimer: restTimerStore,
+            restingRound: parityRestGroup == group.id ? parityRestRound : nil,
+            actions: WorkoutParityActions(
+                rename: { renameExercise(code: $0.code, to: $1) },
+                deleteExercise: { pendingExerciseRemoval = $0 },
+                changeFormat: { parityChangeGroup(group, to: $0) },
+                addRound: { group.exercises.forEach { addSet(to: $0) } },
+                removeRound: { parityRemoveRound(group) },
+                logRound: { parityLogRound(group, round: $0) },
+                copyPR: { parityCopy(group, round: $0, previous: false) },
+                estimateOneRepMax: { round, usePR in parityOpenOneRepMax(group, round: round, usePR: usePR) },
+                copyPrevious: { parityCopy(group, round: $0, previous: true) },
+                undoCopy: { round in
+                    if let copy = parityCopies.removeValue(forKey: "\(group.id)|\(round)") {
+                        drafts = WorkoutParityModel.undoCopy(copy, in: drafts)
+                    }
+                },
+                showPR: { _ in parityShowPR(group) },
+                editDraft: { parityEditingSet = $0 },
+                reopenDraft: { id in
+                    if let index = drafts.firstIndex(where: { $0.id == id }) {
+                        drafts[index].isCompleted = false
+                        parityFinishedAt = nil
+                        parityValidation[group.id] = nil
+                        if parityRestGroup == group.id { restTimerStore.dismiss() }
+                    }
+                },
+                showExercise: { parityExercise = $0 },
+                showMedia: { exercise in
+                    let exerciseMedia = media(for: exercise)
+                    guard exerciseMedia.hasVisual else {
+                        parityExercise = exercise
+                        return
+                    }
+                    parityMediaRequest = ExerciseMediaViewerRequest(exerciseName: exercise.name, media: exerciseMedia)
+                }
+            ),
+            canCopyPR: group.exercises.contains { parityRecord(for: $0) != nil },
+            copiedRounds: Set((0...max(1, WorkoutParityModel.roundCount(group: group, drafts: drafts))).filter { parityCopies["\(group.id)|\($0)"] != nil }),
+            showInlineGrouping: isCustomWorkout && customWorkoutFormat == .single,
+            progressionRecommendations: progressionRecommendations,
+            applyProgression: applyProgressionTargets,
+            canEditProgression: isCustomWorkout && !paritySessionStarted && drafts.allSatisfy { $0.progressionTarget == nil },
+            editProgression: { progressionExercise = $0 },
+            personalRecordSummaries: Dictionary(group.exercises.compactMap { exercise -> (String, String)? in
+                guard let record = parityRecord(for: exercise) else { return nil }
+                let metrics = record.resolvedSetType == .timed
+                    ? "\(Self.numberString(record.durationSeconds ?? 0)) sec"
+                    : "\(Self.numberString(record.weightUsed)) lb × \(Self.numberString(record.reps ?? 0))"
+                return (exercise.code, "\(metrics) · \(record.entryDate)")
+            }, uniquingKeysWith: { first, _ in first })
+        )
+    }
+
+    private func prepareParitySession() {
+        if isCustomWorkout && exercises.isEmpty {
+            let count = customWorkoutFormat == .single ? 6 : customWorkoutFormat == .superset ? 10 : 15
+            for _ in 0..<count { _ = parityAppendBlank() }
+        }
+        if isCustomWorkout && groupAssignments.isEmpty {
+            groupAssignments = customWorkoutFormat == .circuit
+                ? WorkoutRoundLayout.circuitAssignments(exercises: exercises)
+                : WorkoutSequencePlanner.customAssignments(for: customWorkoutFormat, exercises: exercises)
+        }
+        for exercise in exercises where !drafts.contains(where: { matches($0, exercise) && $0.isWarmUp }) {
+            drafts.append(WorkoutSetDraft(exercise: exercise, setNumber: WorkoutSetNumber.warmUp(1), setType: .warmUp))
+        }
+        restTimerStore.dismiss()
+        parityValidation = [:]
+        parityCopies = [:]
+        parityRestGroup = nil
+        parityRestRound = nil
+    }
+
+    @discardableResult
+    private func parityAppendBlank(assignment: WorkoutGroupAssignment? = nil) -> Exercise {
+        let exercise = Exercise(code: nextAddedExerciseCode(), name: "", prescription: "3 sets")
+        exercises.append(exercise)
+        drafts.append(contentsOf: (1...3).map { WorkoutSetDraft(exercise: exercise, setNumber: $0) })
+        drafts.append(WorkoutSetDraft(exercise: exercise, setNumber: WorkoutSetNumber.warmUp(1), setType: .warmUp))
+        if let assignment { groupAssignments[exercise.id] = assignment }
+        return exercise
+    }
+
+    private func parityChangeGroup(_ group: WorkoutParityGroup, to format: CustomWorkoutFormat) {
+        guard isCustomWorkout else { return }
+        for exercise in group.exercises { groupAssignments.removeValue(forKey: exercise.id) }
+        guard format != .single else { return }
+        let assignment = WorkoutGroupAssignment(id: "CUSTOM_\(format.rawValue.uppercased())_\(UUID().uuidString)", kind: format == .superset ? .superset : .circuit, label: "\(format.title) \(group.number)")
+        for exercise in group.exercises { groupAssignments[exercise.id] = assignment }
+        let minimum = format == .superset ? 2 : 3
+        for _ in group.exercises.count..<max(group.exercises.count, minimum) {
+            let added = parityAppendBlank(assignment: assignment)
+            if let oldIndex = exercises.firstIndex(where: { $0.id == added.id }),
+               let groupEnd = exercises.lastIndex(where: { group.exercises.contains($0) }) {
+                exercises.remove(at: oldIndex)
+                exercises.insert(added, at: groupEnd + 1)
+            }
+        }
+    }
+
+    private func parityRemoveRound(_ group: WorkoutParityGroup) {
+        let count = WorkoutParityModel.roundCount(group: group, drafts: drafts)
+        guard count > 1 else { return }
+        let rows = WorkoutParityModel.roundDrafts(group: group, round: count, drafts: drafts)
+        guard !rows.contains(where: { $0.isCompleted || $0.containsEntry }) else {
+            parityValidation[group.id] = "This round has entries. Reopen or clear those sets before removing the round."
+            return
+        }
+        let ids = Set(rows.map(\.id))
+        drafts.removeAll { ids.contains($0.id) }
+        parityValidation[group.id] = nil
+    }
+
+    private func parityCopy(_ group: WorkoutParityGroup, round: Int, previous: Bool) {
+        let result = previous
+            ? WorkoutParityModel.copyPreviousRound(group: group, round: round, drafts: drafts)
+            : WorkoutParityModel.copyPersonalRecords(group: group, round: round, drafts: drafts, history: parityHistory.flatMap(\.records))
+        guard !result.changes.isEmpty else { return }
+        drafts = result.drafts
+        parityCopies["\(group.id)|\(round)"] = result
+        parityValidation[group.id] = nil
+    }
+
+    private func parityRecord(for exercise: Exercise) -> WorkoutHistoryRecord? {
+        let type = drafts.first { $0.exerciseCode == exercise.code && !$0.isWarmUp }?.setType ?? .working
+        return entryReferenceData.personalRecord(for: exercise, setType: type)
+    }
+
+    private func parityShowPR(_ group: WorkoutParityGroup) {
+        let summaries = group.exercises.compactMap { exercise -> String? in
+            guard let record = parityRecord(for: exercise) else { return nil }
+            return "\(exercise.name): \(Self.numberString(record.weightUsed)) lb × \(Self.numberString(record.reps ?? 0)) reps (\(record.entryDate))"
+        }
+        parityMessage = summaries.isEmpty ? "No working-set PR is available for these exercises yet." : summaries.joined(separator: "\n")
+    }
+
+    private func parityOpenOneRepMax(_ group: WorkoutParityGroup, round: Int, usePR: Bool) {
+        let sources: [OneRepMaxSource]
+        if usePR {
+            sources = group.exercises.compactMap { exercise in
+                guard let record = parityRecord(for: exercise),
+                      record.weightUsed > 0,
+                      let reps = record.reps.map({ Int($0.rounded()) }), reps > 0 else { return nil }
+                return OneRepMaxSource(
+                    exerciseName: exercise.name,
+                    weight: record.weightUsed,
+                    reps: reps,
+                    recommendedRepRange: WorkoutProgressionIntegration.recommendedRepRange(
+                        for: exercise,
+                        drafts: drafts
+                    )
+                )
+            }
+        } else {
+            sources = WorkoutParityModel.roundDrafts(group: group, round: round, drafts: drafts).compactMap { draft in
+                guard draft.weightValue > 0, draft.repsValue > 0,
+                      let exercise = group.exercises.first(where: {
+                          $0.code == draft.exerciseCode && $0.name == draft.exerciseName
+                      }) else { return nil }
+                return OneRepMaxSource(
+                    exerciseName: draft.exerciseName,
+                    weight: draft.weightValue,
+                    reps: Int(draft.repsValue.rounded()),
+                    recommendedRepRange: WorkoutProgressionIntegration.recommendedRepRange(
+                        for: exercise,
+                        drafts: drafts
+                    )
+                )
+            }
+        }
+        parityCalculatorSources = sources
+        parityCalculatorExercise = group.exercises.first
+        Task { @MainActor in
+            await Task.yield()
+            parityCalculator = .oneRepMax
+        }
+    }
+
+    private func applyRecommendedWeight(_ weight: Double, toExerciseNamed exerciseName: String) {
+        let value = PlateCalculator.formatted(weight)
+        for index in drafts.indices where drafts[index].exerciseName == exerciseName
+            && drafts[index].setType == .working
+            && !drafts[index].isCompleted
+            && drafts[index].weight.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            drafts[index].weight = value
+            copiedDraftIDs.remove(drafts[index].id)
+        }
+    }
+
+    private func parityLogRound(_ group: WorkoutParityGroup, round: Int) {
+        guard didLoadSession, paritySavingGroup == nil, !isSyncing else { return }
+        let rows = WorkoutParityModel.rowsToLog(group: group, round: round, drafts: drafts)
+        guard !rows.isEmpty else {
+            parityValidation[group.id] = round == 0 ? "Enter a warm-up weight and reps, or continue to your working sets." : nil
+            return
+        }
+        for row in rows {
+            guard !row.exerciseName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                parityValidation[group.id] = "Name each exercise before logging this round."
+                return
+            }
+            if let message = WorkoutParityModel.validationMessage(for: row) {
+                parityValidation[group.id] = "\(row.exerciseName): \(message)"
+                return
+            }
+        }
+        parityValidation[group.id] = nil
+        if round > 0 { parityStart() }
+        let ids = Set(rows.map(\.id))
+        for index in drafts.indices where ids.contains(drafts[index].id) { drafts[index].isCompleted = true }
+        paritySavingGroup = group.id
+        let savedToken = draftPersistenceToken
+        let savedExercises = exercises
+        let savedDrafts = drafts
+        let savedAssignments = groupAssignments
+        let savedDate = dateString
+        let savedSessionID = sessionID
+        Task { @MainActor in
+            let result: OfflineWorkoutSaveResult
+            if previewMode {
+                result = .synced
+            } else {
+                result = await offlineSyncStore.save(
+                    email: clientEmail, sessionID: savedSessionID, workoutTemplateID: workout.id,
+                    workoutTitle: workout.title, entryDate: savedDate, exercises: savedExercises,
+                    drafts: savedDrafts, groupAssignments: savedAssignments,
+                    baseRemoteUpdatedAt: baseRemoteUpdatedAt, isFinished: false, loggedSetsOnly: true
+                )
+            }
+            paritySavingGroup = nil
+            guard sessionID == savedSessionID, dateString == savedDate else { return }
+            guard result == .synced || result == .queued else {
+                for index in drafts.indices where ids.contains(drafts[index].id) { drafts[index].isCompleted = false }
+                parityValidation[group.id] = "This round could not be saved. Your entries are still here; try logging again."
+                return
+            }
+            lastSuccessfulSave = .progress
+            parityCopies.removeValue(forKey: "\(group.id)|\(round)")
+            lastAutosavedPersistenceToken = savedToken
+            parityMessage = previewMode ? "Preview: round saved locally for this test." : nil
+            parityRestGroup = group.id
+            parityRestRound = round
+            let remaining = drafts.contains { !$0.isWarmUp && !$0.isCompleted && !$0.exerciseName.isEmpty }
+            if remaining && round > 0 {
+                restTimerStore.start(seconds: group.exercises.map { RestDurationParser.seconds(from: $0.rest) }.max() ?? 60, exerciseName: group.title, hapticsEnabled: restTimerHapticsEnabled)
+            } else { restTimerStore.dismiss() }
+        }
+    }
+
+    private var activeWorkoutSnapshot: ActiveWorkoutSession {
+        ActiveWorkoutSession(
+            snapshot: OfflineWorkoutSession(
+                clientEmail: clientEmail, sessionID: sessionID, workoutTemplateID: workout.id,
+                entryDate: dateString, workoutTitle: workout.title, exercises: exercises, drafts: drafts,
+                groupAssignments: groupAssignments, baseRemoteUpdatedAt: baseRemoteUpdatedAt
+            ),
+            startedAt: startedAt, entryDate: entryDate, workoutID: workout.id,
+            workoutFocus: workout.focus, workoutFormat: workout.format,
+            isGeneratedWorkout: isGeneratedWorkout, customWorkoutFormatRaw: customWorkoutFormat.rawValue,
+            energyBefore: parityEnergyBefore, energyAfter: parityEnergyAfter
+        )
+    }
+
+    private func persistActiveWorkout() {
+        guard coachAccountID == nil, didLoadSession, paritySessionStarted, parityFinishedAt == nil else { return }
+        activeWorkoutStore?.update(activeWorkoutSnapshot, owner: activeWorkoutOwner)
+    }
+
+    @discardableResult
+    private func restoreActiveWorkout() -> Bool {
+        guard coachAccountID == nil, clientNavigationTabIsSelected,
+              let store = activeWorkoutStore else { return false }
+        guard let active = store.session,
+              active.workoutID == workout.id,
+              active.snapshot.entryDate == dateString,
+              resumeSession == nil || active.id == resumeSession?.id else {
+            // Another tab may have finished or reset this retained logger's session.
+            if didLoadSession, paritySessionStarted, parityFinishedAt == nil { parityReset() }
+            return false
+        }
+        sessionID = active.id
+        startedAt = active.startedAt
+        paritySessionStarted = true
+        parityFinishedAt = nil
+        exercises = active.snapshot.restoredExercises
+        drafts = active.snapshot.restoredDrafts
+        groupAssignments = active.snapshot.restoredGroupAssignments
+        customWorkoutFormat = CustomWorkoutFormat(rawValue: active.customWorkoutFormatRaw) ?? .single
+        baseRemoteUpdatedAt = active.snapshot.baseRemoteUpdatedAt
+        parityEnergyBefore = active.energyBefore
+        parityEnergyAfter = active.energyAfter
+        restoredPersistenceToken = draftPersistenceToken
+        store.claim(owner: activeWorkoutOwner)
+        return true
+    }
+
+    private func parityStart() {
+        guard didLoadSession else { return }
+        drafts = WorkoutProgressionIntegration.freeze(exercises: exercises, drafts: drafts)
+        guard !paritySessionStarted else { return }
+        startedAt = Date()
+        paritySessionStarted = true
+        parityFinishedAt = nil
+        if coachAccountID == nil, let activeWorkoutStore {
+            activeWorkoutStore.start(activeWorkoutSnapshot)
+            activeWorkoutStore.claim(owner: activeWorkoutOwner)
+        }
+    }
+
+    private func finishWorkoutLater() {
+        focusedField = nil
+        parityStart()
+        persistActiveWorkout()
+        dismiss()
+    }
+
+    private func parityRequestFinish() {
+        if let message = WorkoutParityModel.finishValidationMessage(drafts: drafts) {
+            parityMessage = message
+            if let invalid = drafts.first(where: { !$0.isWarmUp && (!$0.exerciseName.isEmpty || $0.containsEntry) && (!$0.isCompleted || $0.exerciseName.isEmpty || WorkoutParityModel.validationMessage(for: $0) != nil) }),
+               let group = parityGroups.first(where: { $0.exercises.contains(where: { $0.code == invalid.exerciseCode }) }) {
+                parityValidation[group.id] = message
+                scrollRequest = WorkoutScrollRequest(target: "workout.parity.\(group.id)")
+            }
+            return
+        }
+        if coachAccountID != nil {
+            saveWorkout(intent: .finish)
+            return
+        }
+        parityResumeRestAfterFeedback = restTimerStore.phase == .running
+        if parityResumeRestAfterFeedback { restTimerStore.togglePause() }
+        difficultyPrompt = WorkoutDifficultyPromptRequest(workoutTitle: workout.title)
+    }
+
+    private func parityFinishPreview() {
+        restTimerStore.dismiss()
+        parityFinishedAt = Date()
+        activeWorkoutStore?.clear(sessionID: sessionID)
+        parityMessage = "Preview workout finished. No account or workout history was changed."
+        completionCelebration = WorkoutPraiseEvaluator.strength(clientEmail: clientEmail, workoutTitle: workout.title, entryDate: dateString, startedAt: startedAt, drafts: drafts, history: parityHistory, weeklyGoal: weeklyWorkoutGoal, sessionID: sessionID, recordAwards: false)
+    }
+
+    private func parityReset() {
+        activeWorkoutStore?.clear(sessionID: sessionID)
+        restTimerStore.dismiss()
+        sessionID = UUID()
+        baseRemoteUpdatedAt = nil
+        paritySessionStarted = false
+        parityFinishedAt = nil
+        parityMessage = nil
+        exercises = isCustomWorkout ? [] : workout.exercises
+        drafts = Self.makeDrafts(for: exercises, isGeneratedWorkout: isGeneratedWorkout)
+        groupAssignments = isCustomWorkout ? [:] : WorkoutSequencePlanner.inferredAssignments(for: workout)
+        prepareParitySession()
+    }
+
+    private func parityExerciseDetails(_ exercise: Exercise) -> some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    Text(exercise.name.isEmpty ? "Exercise" : exercise.name)
+                        .font(FWBFont.title2.weight(.heavy))
+                        .fixedSize(horizontal: false, vertical: true)
+                    if !exercise.prescription.isEmpty {
+                        Text(exercise.prescription)
+                            .font(FWBFont.headline)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    ExerciseDemoLink(exercise: exercise)
+                    ForEach(Array(exercise.instructionSteps.enumerated()), id: \.offset) { index, step in
+                        Text("\(index + 1). \(step)")
+                            .font(FWBFont.body)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    Button("Substitute exercise") {
+                        parityExercise = nil
+                        Task { @MainActor in
+                            try? await Task.sleep(nanoseconds: 300_000_000)
+                            exerciseEditorRequest = ExerciseEditorRequest(mode: .substitute(exercise))
+                        }
+                    }.buttonStyle(FWBSecondaryButtonStyle())
+                    if substitutionOriginals[exercise.code] != nil {
+                        Button("Restore original exercise") {
+                            revertSubstitution(for: exercise)
+                            parityExercise = nil
+                        }.buttonStyle(FWBSecondaryButtonStyle())
+                    }
+                    if coachAccountID == nil {
+                    Button("Send form check") {
+                        parityExercise = nil
+                        Task { @MainActor in
+                            try? await Task.sleep(nanoseconds: 300_000_000)
+                            formCheckContext = FormCheckContext(exerciseCode: exercise.code, exerciseName: exercise.name, workoutTitle: workout.title)
+                        }
+                    }.buttonStyle(FWBSecondaryButtonStyle()).disabled(previewMode)
+                    }
+                    ForEach([WorkoutCalculatorKind.plates, .warmUp, .oneRepMax]) { kind in
+                        Button(kind == .plates ? "Plate calculator" : kind == .warmUp ? "Warm-up calculator" : "1RM calculator") {
+                            parityCalculatorExercise = exercise
+                            parityCalculatorSources = []
+                            parityExercise = nil
+                            Task { @MainActor in
+                                try? await Task.sleep(nanoseconds: 300_000_000)
+                                parityCalculator = kind
+                            }
+                        }.buttonStyle(FWBSecondaryButtonStyle())
+                    }
+                }.padding(20)
+            }
+            .background(Color.fwbBackground)
+            .navigationTitle("Exercise details")
+            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { parityExercise = nil } } }
+        }
+    }
+
     private var isCustomWorkout: Bool {
         workout.format.lowercased() == "custom"
     }
@@ -731,7 +1362,6 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
         if isCustomWorkout {
             CustomExerciseNameComposer(
                 suggestions: suggestionNames,
-                approvedExercises: exerciseLibraryStore.exercises,
                 format: customWorkoutFormat
             ) { exerciseName, placement in
                 let exercise = insertCustomExercise(
@@ -756,23 +1386,50 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
         workout.format.lowercased() == "mobility" ? .mobility : .strength
     }
 
-    private var suggestionNames: [String] {
-        let rawNames = [
-            exerciseLibraryStore.suggestionNames,
-            ExerciseLibrary.names,
-            suggestedExercises.map(\.name),
-            exercises.map(\.name),
-            suggestionStore.historyNames
-        ]
-        .flatMap { $0 }
-        .map {
-            ExerciseNameIdentity.canonicalName(
-                for: $0,
-                approvedExercises: exerciseLibraryStore.exercises
-            )
-        }
+    private var suggestionNames: [String] { entryReferenceData.suggestionNames }
 
-        return ExerciseSuggestionLibrary.merged([rawNames])
+    private func refreshEntryReferenceData() {
+        refreshProgressionRecommendations()
+        entryReferenceData = WorkoutEntryReferenceData.make(
+            exercises: exercises,
+            suggestedExercises: suggestedExercises,
+            approvedExercises: exerciseLibraryStore.exercises,
+            historyNames: suggestionStore.historyNames,
+            history: parityHistory
+        )
+    }
+
+    private var progressionReferenceToken: String {
+        drafts.map { "\($0.exerciseCode)|\($0.exerciseName)|\($0.setNumber)|\($0.setType.rawValue)|\(WorkoutProgressionIntegration.token($0.progressionTarget))" }.joined(separator: ";")
+    }
+
+    private func refreshProgressionRecommendations() {
+        let history = parityHistory.flatMap(\.records)
+        var recommendations: [String: WorkoutProgressionRecommendation] = [:]
+        for exercise in exercises where !exercise.name.isEmpty {
+            guard let config = WorkoutProgressionIntegration.config(for: exercise, drafts: drafts) else {
+                recommendations[exercise.code] = WorkoutProgressionRecommendation(kind: "baseline", reason: "Add a reps-per-set target to this exercise to build comparable progression history.", targets: [])
+                continue
+            }
+            guard config.enabled else { continue }
+            // Native workout-entry weights currently use pounds. Never apply kilogram targets as pounds.
+            guard config.unit == "lb" else {
+                recommendations[exercise.code] = WorkoutProgressionRecommendation(kind: "baseline", reason: "This plan uses kilograms. Review its targets with your coach before entering weights in this pounds-based logger.", targets: [])
+                continue
+            }
+            recommendations[exercise.code] = WorkoutProgression.recommend(config: config, history: history,
+                now: Date(), excludedSessionID: sessionID, historyComplete: previewMode || achievementHistoryStore.hasCompleteHistory)
+        }
+        progressionRecommendations = recommendations
+    }
+
+    private func applyProgressionTargets(_ exercise: Exercise) {
+        guard didLoadSession, let suggestion = progressionRecommendations[exercise.code], !suggestion.targets.isEmpty else { return }
+        drafts = WorkoutProgressionIntegration.freeze(exercises: [exercise], drafts: drafts)
+        drafts = WorkoutProgressionIntegration.applying(suggestion.targets, to: exercise, drafts: drafts)
+        parityMessage = "Suggested targets filled the empty working-set fields. Adjust any value before logging."
+        refreshProgressionRecommendations()
+        persistActiveWorkout()
     }
 
     private var sequenceSections: [WorkoutSequenceSection] {
@@ -788,15 +1445,88 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
                 let sets = drafts.filter { matches($0, exercise) && !$0.isWarmUp }
                 return WorkoutExerciseNavigationRow(
                     id: exercise.id,
-                    number: displayExerciseNumber(exercise),
+                    label: displayExerciseLabel(exercise),
                     title: exercise.name.isEmpty ? "Exercise" : exercise.name,
-                    group: section.assignment?.label,
+                    group: section.assignment.map(displayGroupLabel),
                     completed: sets.filter(\.isCompleted).count,
                     total: sets.count,
-                    target: section.assignment == nil ? "workout.exercise.\(exercise.id)" : "workout.group.\(section.id)"
+                    target: "workout.parity.\(parityGroups.first(where: { $0.exercises.contains(where: { $0.id == exercise.id }) })?.id ?? "")"
                 )
             }
         }
+    }
+
+    private func publishWatchWorkout() {
+        guard !previewMode, didLoadSession,
+              let account = AppleCompanionCoordinator.shared.account,
+              account.email.lowercased() == clientEmail.lowercased() else { return }
+        let session = sessionID.uuidString.lowercased()
+        restTimerStore.companionSessionID = session
+        AppleCompanionCoordinator.shared.attachLogger(sessionID: session,
+            refresh: { publishWatchWorkout() }, logSet: { command in await saveWatchSet(command) })
+        guard parityFinishedAt == nil, let step = guidedStep,
+              let exercise = exercises.first(where: { $0.id == step.exerciseID }),
+              let draft = drafts.first(where: { matches($0, exercise) && !$0.isWarmUp && $0.setNumber == step.round && !$0.isCompleted }) else {
+            WatchCompanionBridge.shared.publish(workout: nil)
+            return
+        }
+        let snapshot = FWBWatchWorkoutSnapshot(
+            accountID: account.id.uuidString.lowercased(), sessionID: session,
+            title: workout.title, exerciseID: exercise.id, exerciseName: exercise.name,
+            setID: draft.id.uuidString.lowercased(), setNumber: draft.setNumber,
+            totalSets: drafts.filter { matches($0, exercise) && !$0.isWarmUp }.count,
+            suggestedWeight: Double(draft.weight), suggestedReps: Int(draft.reps), weightUnit: "lb",
+            setType: draft.setType.rawValue, suggestedDurationSeconds: Double(draft.duration)
+        )
+        WatchCompanionBridge.shared.publish(workout: snapshot)
+        WorkoutSystemFeatures.shared.updateAssignedWorkout(title: workout.title, scheduledDate: entryDate)
+    }
+
+    private func saveWatchSet(_ command: FWBWatchCommand) async -> FWBWatchCommandOutcome {
+        guard !previewMode, didLoadSession, parityFinishedAt == nil,
+              sessionID.uuidString.lowercased() == command.sessionID else { return .rejected("This workout is no longer open.") }
+        guard !isSyncing, !isAutosaving, paritySavingGroup == nil else { return .deferred("Finishing an earlier save. Keep this workout open on iPhone.") }
+        guard let index = drafts.firstIndex(where: { $0.id.uuidString.lowercased() == command.setID }),
+              let exercise = exercises.first(where: { $0.id == command.exerciseID }),
+              matches(drafts[index], exercise), !drafts[index].isWarmUp else { return .rejected("This set changed on iPhone.") }
+        if drafts[index].isCompleted { return .accepted }
+        guard let step = guidedStep, step.exerciseID == exercise.id, step.round == drafts[index].setNumber else {
+            return .rejected("A different set is now active. Refresh your Watch.")
+        }
+        var edited = drafts[index]
+        edited.weight = Self.numberString(command.weight ?? 0)
+        if edited.setType == .timed {
+            guard let seconds = command.durationSeconds, seconds.isFinite, seconds > 0, seconds <= 86_400 else { return .rejected("Enter a valid duration.") }
+            edited.duration = Self.numberString(seconds)
+            edited.reps = ""
+        } else {
+            guard let reps = command.reps, reps > 0, let weight = command.weight, weight.isFinite, weight >= 0 else { return .rejected("Enter a valid weight and rep count.") }
+            edited.reps = String(reps)
+        }
+        if let message = WorkoutParityModel.validationMessage(for: edited) { return .rejected(message) }
+        parityStart()
+        edited.progressionTarget = drafts[index].progressionTarget
+        edited.isCompleted = true
+        drafts[index] = edited
+        parityStart()
+        paritySavingGroup = "watch"
+        let savedSessionID = sessionID
+        let token = draftPersistenceToken
+        let result = await offlineSyncStore.save(email: clientEmail, sessionID: savedSessionID,
+            workoutTemplateID: workout.id, workoutTitle: workout.title, entryDate: dateString,
+            exercises: exercises, drafts: drafts, groupAssignments: groupAssignments,
+            baseRemoteUpdatedAt: baseRemoteUpdatedAt, isFinished: false, loggedSetsOnly: true)
+        paritySavingGroup = nil
+        guard result == .synced || result == .queued else {
+            if let current = drafts.firstIndex(where: { $0.id == edited.id }) { drafts[current].isCompleted = false }
+            return .deferred("Your set could not be saved yet. Open FWB Training on iPhone to retry.")
+        }
+        guard sessionID == savedSessionID else { return .accepted }
+        lastAutosavedPersistenceToken = token
+        lastSuccessfulSave = .progress
+        handleSetCompletion(for: exercise, draft: edited, isCompleted: true)
+        publishWatchWorkout()
+        return .accepted
     }
 
     private var guidedStep: GuidedWorkoutStep? {
@@ -804,11 +1534,7 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
     }
 
     private func media(for exercise: Exercise) -> ExerciseMedia {
-        let exerciseKey = ExerciseNameIdentity.key(for: exercise.name)
-        let approved = exerciseLibraryStore.exercises.first { candidate in
-            ExerciseNameIdentity.key(for: candidate.name) == exerciseKey
-                || candidate.aliases.contains { ExerciseNameIdentity.key(for: $0) == exerciseKey }
-        }
+        let approved = approvedExercise(matching: exercise.name)
 
         func url(_ value: String?) -> URL? {
             guard let value = value?.trimmingCharacters(in: .whitespacesAndNewlines),
@@ -817,17 +1543,12 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
         }
 
         let imageURL = url(approved?.imageURL)
-        let approvedInstructions = approved?.instructions.trimmingCharacters(in: .whitespacesAndNewlines)
-        let displayInstructions = approvedInstructions?.isEmpty == false
-            ? approvedInstructions ?? ""
-            : exercise.instructionSteps.joined(separator: "\n")
         return ExerciseMedia(
             imageURL: imageURL,
             thumbnailURL: ExerciseMediaURL.thumbnail(for: imageURL),
-            motionURL: url(approved?.motionURL),
+            instructions: approved?.instructions.trimmingCharacters(in: .whitespacesAndNewlines) ?? "",
             primaryMuscle: approved?.primaryMuscle.trimmingCharacters(in: .whitespacesAndNewlines) ?? "",
             equipment: approved?.equipment.trimmingCharacters(in: .whitespacesAndNewlines) ?? "",
-            instructions: displayInstructions,
             fallbackDemoURL: exercise.demoURL
         )
     }
@@ -836,12 +1557,10 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
     private func exerciseCard(for exercise: Exercise, initiallyExpanded: Bool? = nil, groupedSummary: Bool = false) -> some View {
         let index = exercises.firstIndex(where: { $0.id == exercise.id }) ?? 0
         let step = guidedStep
-        VStack(spacing: 10) {
         WorkoutExerciseLogCard(
             exercise: exercise,
-            media: media(for: exercise),
             groupedSummary: groupedSummary,
-            exerciseNumber: displayExerciseNumber(exercise),
+            exerciseLabel: displayExerciseLabel(exercise),
             drafts: $drafts,
             focusedField: $focusedField,
             entryStyle: entryStyle,
@@ -855,7 +1574,6 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
                 || achievementHistoryStore.state == .loading,
             editableName: isCustomWorkout ? nameBinding(for: exercise) : nil,
             suggestions: suggestionNames,
-            approvedExercises: exerciseLibraryStore.exercises,
             substitutedFromName: substitutionOriginals[exercise.code]?.name,
             copySource: copySource(for: exercise),
             isCopyHistoryLoading: achievementHistoryStore.state == .idle
@@ -867,13 +1585,9 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
                 ? "Round \(step?.round ?? 1) · exercise \(step?.position ?? 1) of \(step?.exerciseCount ?? 1)"
                 : nil,
             isGuidedCurrent: step?.exerciseID == exercise.id,
-            isNavigationTarget: navigationTargetExerciseID == exercise.id,
             isSavingProgress: isSyncing && activeExerciseSaveID == exercise.id,
             didSaveProgress: lastSavedExerciseID == exercise.id,
             saveProgressDisabled: isSyncing || logStore.state == .loading,
-            onReorderExercise: isCustomWorkout ? {
-                sequenceEditorRequest = SequenceEditorRequest()
-            } : nil,
             onAddSet: { addSet(to: exercise) },
             onDeleteSet: { deleteSet($0, from: exercise) },
             onCopyLastWorkout: { source in
@@ -917,76 +1631,25 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
                 saveExerciseProgress(for: exercise)
             },
             onSendFormCheck: {
+                guard coachAccountID == nil else { return }
                 formCheckContext = FormCheckContext(
                     exerciseCode: exercise.code,
                     exerciseName: exercise.name,
                     workoutTitle: workout.title
                 )
-            }
+            },
+            allowsClientActions: coachAccountID == nil
         )
-            exerciseNavigationButton(after: exercise)
-        }
         .id("workout.exercise.\(exercise.id)")
-    }
-
-    @ViewBuilder
-    private func exerciseNavigationButton(after exercise: Exercise) -> some View {
-        if let index = exercises.firstIndex(where: { $0.id == exercise.id }),
-           exercises.indices.contains(index + 1) {
-            let nextExercise = exercises[index + 1]
-            Button {
-                focusedField = nil
-                navigationTargetExerciseID = nextExercise.id
-                scrollRequest = WorkoutScrollRequest(target: "workout.exercise.\(nextExercise.id)")
-            } label: {
-                HStack(spacing: 12) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("GO TO NEXT EXERCISE")
-                            .font(FWBFont.sized(13).weight(.bold))
-                            .tracking(0.5)
-                        Text(nextExercise.name.isEmpty ? "Exercise \(index + 2)" : nextExercise.name.fwbTitleCased)
-                            .font(FWBFont.sized(11).weight(.medium))
-                            .lineLimit(1)
-                    }
-                    Spacer(minLength: 8)
-                    Image(systemName: "arrow.down")
-                        .font(FWBFont.sized(15).weight(.bold))
-                }
-            }
-            .buttonStyle(FWBPrimaryButtonStyle())
-            .accessibilityLabel("Go to next exercise, \(nextExercise.name.isEmpty ? "Exercise \(index + 2)" : nextExercise.name)")
-            .accessibilityIdentifier("workout.nextExercise.\(exercise.id)")
-        } else {
-            Button {
-                focusedField = nil
-                navigationTargetExerciseID = nil
-                scrollRequest = WorkoutScrollRequest(target: "workout.summary")
-            } label: {
-                HStack(spacing: 12) {
-                    Text("REVIEW & FINISH")
-                        .tracking(0.5)
-                    Spacer(minLength: 8)
-                    Image(systemName: "arrow.down")
-                }
-            }
-            .buttonStyle(FWBSecondaryButtonStyle())
-            .accessibilityLabel("Review workout and finish")
-            .accessibilityIdentifier("workout.reviewAndFinish")
-        }
     }
 
     @ViewBuilder
     private func groupedSection(_ section: WorkoutSequenceSection, assignment: WorkoutGroupAssignment) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(assignment.label)
-                        .font(FWBFont.sized(24).weight(.bold))
-                        .foregroundStyle(Color.fwbWarmWhite)
-                    Text(groupInstruction(for: section))
-                        .font(FWBFont.footnote)
-                        .foregroundStyle(Color.fwbMuted)
-                }
+            HStack(alignment: .firstTextBaseline) {
+                Text(displayGroupLabel(assignment))
+                    .font(FWBFont.sized(21).weight(.bold))
+                    .foregroundStyle(Color.fwbWarmWhite)
                 Spacer(minLength: 8)
                 Text("\(section.exercises.reduce(0) { $0 + completedRounds(for: section)[$1.id, default: 0] }) / \(section.exercises.reduce(0) { $0 + roundTargets(for: section)[$1.id, default: 0] }) complete")
                     .font(FWBFont.sized(11).weight(.semibold))
@@ -1020,92 +1683,34 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
                             deleteSet(draft.id, from: exercise)
                         }
                     }
-                } label: { Image(systemName: "minus").frame(width: 54, height: 50) }
-                .buttonStyle(WorkoutRoundStepperButtonStyle(accented: false))
+                } label: { Image(systemName: "minus").frame(width: 44) }
+                .buttonStyle(LoggerCompactButtonStyle())
                 .accessibilityLabel("Remove last round")
                 .disabled(roundCount(for: section) <= 1)
-                HStack(spacing: 12) {
-                    Text("ROUNDS")
-                        .font(FWBFont.caption.weight(.bold))
-                        .tracking(1.1)
-                        .foregroundStyle(Color.fwbMuted)
-                    Text("\(roundCount(for: section))")
-                        .font(FWBFont.sized(22).weight(.bold))
-                        .foregroundStyle(Color.fwbWarmWhite)
-                }
+                Text("Rounds  \(roundCount(for: section))")
+                    .font(FWBFont.sized(13).weight(.semibold))
                     .frame(maxWidth: .infinity)
-                    .frame(height: 50)
-                    .background(Color.fwbCard, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                    .overlay { RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(Color.fwbLine, lineWidth: 1) }
                 Button {
                     for exercise in section.exercises { addSet(to: exercise) }
-                } label: { Image(systemName: "plus").frame(width: 54, height: 50) }
-                .buttonStyle(WorkoutRoundStepperButtonStyle(accented: true))
+                } label: { Image(systemName: "plus").frame(width: 44) }
+                .buttonStyle(LoggerCompactButtonStyle())
                 .accessibilityLabel("Add round")
             }
 
             let warmUps = drafts.filter { draft in draft.isWarmUp && section.exercises.contains { matches(draft, $0) } }
             if !warmUps.isEmpty {
-                let enteredWarmUps = warmUps.filter(\.containsEntry)
-                let warmUpLogged = !enteredWarmUps.isEmpty && enteredWarmUps.allSatisfy(\.isCompleted)
-                let warmUpSkipped = skippedWarmUpSectionIDs.contains(section.id)
-                VStack(alignment: .leading, spacing: 9) {
-                    HStack(alignment: .firstTextBaseline) {
-                        Text("Warm-up")
-                            .font(FWBFont.sized(18).weight(.bold))
-                        Spacer(minLength: 8)
-                        Text("OPTIONAL · EXCLUDED FROM WORKING VOLUME")
-                            .font(FWBFont.caption2.weight(.bold))
-                            .foregroundStyle(Color.fwbMuted)
-                            .multilineTextAlignment(.trailing)
-                    }
-                    LoggerTableHeadings(entryStyle: entryStyle, firstTitle: "Exercise")
-                    ForEach(warmUps) { draft in
-                        if let exercise = section.exercises.first(where: { matches(draft, $0) }) {
-                            groupedSetRow(draft, exercise: exercise, section: section)
-                        }
-                    }
-                    HStack(spacing: 8) {
-                        Button {
-                            skipWarmUp(in: section)
-                        } label: {
-                            Label(warmUpSkipped ? "Warm-up skipped" : "Skip warm-up", systemImage: warmUpSkipped ? "forward.fill" : "forward")
-                                .frame(maxWidth: .infinity)
-                        }
-                        .buttonStyle(LoggerCompactButtonStyle())
-                        .disabled(warmUpLogged || warmUpSkipped)
-                        .accessibilityIdentifier("workout.group.skipWarmUp.\(section.id)")
-
-                        Button {
-                            logWarmUp(enteredWarmUps, in: section)
-                        } label: {
-                            Label(warmUpLogged ? "Warm-up logged" : "Log warm-up", systemImage: warmUpLogged ? "checkmark.circle.fill" : "checkmark")
-                                .frame(maxWidth: .infinity)
-                        }
-                        .buttonStyle(LoggerCompactButtonStyle(accented: true))
-                        .disabled(warmUpLogged || enteredWarmUps.isEmpty || !enteredWarmUps.allSatisfy(WorkoutRoundLayout.canComplete))
-                        .accessibilityIdentifier("workout.group.logWarmUp.\(section.id)")
+                Text("Warm-up")
+                    .font(FWBFont.sized(13).weight(.semibold))
+                LoggerTableHeadings(entryStyle: entryStyle, firstTitle: "Exercise")
+                ForEach(warmUps) { draft in
+                    if let exercise = section.exercises.first(where: { matches(draft, $0) }) {
+                        groupedSetRow(draft, exercise: exercise, section: section)
                     }
                 }
-                .padding(12)
-                .background(Color.fwbGold.opacity(0.08), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-                .overlay(alignment: .leading) {
-                    RoundedRectangle(cornerRadius: 3, style: .continuous)
-                        .fill(Color.fwbGold)
-                        .frame(width: 5)
-                }
-                .overlay { RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(Color.fwbLine, lineWidth: 1) }
             }
 
             ForEach(1...max(roundCount(for: section), 1), id: \.self) { round in
                 VStack(alignment: .leading, spacing: 6) {
-                    Text(groupedRoundExerciseTitle(for: section))
-                        .font(FWBFont.sized(10).weight(.bold))
-                        .foregroundStyle(Color.fwbMuted)
-                        .tracking(0.25)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.68)
-                        .accessibilityLabel("Exercises: \(groupedRoundExerciseAccessibilityTitle(for: section))")
                     HStack {
                         Text("Round \(round)")
                             .font(FWBFont.sized(13).weight(.semibold))
@@ -1118,10 +1723,9 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
                                     }
                                 }
                             } label: {
-                                Label("Last round", systemImage: "doc.on.doc")
+                                Label("Copy previous", systemImage: "doc.on.doc")
                             }
-                            .buttonStyle(LoggerRoundCopyButtonStyle())
-                            .accessibilityLabel("Copy last round")
+                            .buttonStyle(LoggerCompactButtonStyle())
                             .accessibilityHint("Copies the previous round into empty sets only")
                         }
                     }
@@ -1147,18 +1751,11 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
                     .disabled(!completed && (roundDrafts.isEmpty || !roundDrafts.allSatisfy(WorkoutRoundLayout.canComplete)))
                     .accessibilityIdentifier("workout.group.logRound.\(section.id).\(round)")
                 }
-                .padding(12)
-                .background(Color.fwbCard, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-                .overlay(alignment: .leading) {
-                    RoundedRectangle(cornerRadius: 3, style: .continuous)
-                        .fill(Color.fwbLime)
-                        .frame(width: 5)
-                }
-                .overlay { RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(Color.fwbLine, lineWidth: 1) }
+                .padding(.vertical, 8)
             }
 
             if let status = roundRestStatus(for: section) {
-                WorkoutRoundRestCallout(status: status, restText: roundRestText(for: section), firstExerciseCode: section.exercises.first?.code ?? "1")
+                WorkoutRoundRestCallout(status: status, restText: roundRestText(for: section), firstExerciseCode: section.exercises.first.map(displayExerciseLabel) ?? "1")
             }
             HStack {
                 Label(groupSaveStatus.title.capitalized, systemImage: groupSaveStatus.systemImage)
@@ -1170,11 +1767,90 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
             .font(FWBFont.sized(11).weight(.medium))
             .foregroundStyle(Color.fwbMuted)
         }
-        .padding(10)
-        .background(Color.fwbSurface, in: RoundedRectangle(cornerRadius: 18))
-        .overlay { RoundedRectangle(cornerRadius: 18).stroke(Color.fwbLine, lineWidth: 1) }
+        .padding(12)
+        .background(Color.fwbCard, in: RoundedRectangle(cornerRadius: 20))
+        .overlay { RoundedRectangle(cornerRadius: 20).stroke(Color.fwbLine, lineWidth: 1) }
         .id("workout.group.\(section.id)")
         .accessibilityIdentifier("workout.group.\(section.id)")
+    }
+
+    private func supersetLetter(_ number: Int) -> String {
+        var number = max(number, 1)
+        var letter = ""
+        while number > 0 {
+            number -= 1
+            letter = String(UnicodeScalar(65 + number % 26)!) + letter
+            number /= 26
+        }
+        return letter
+    }
+
+    private func preferredSupersetPrefix(_ assignment: WorkoutGroupAssignment) -> String? {
+        let identifier = assignment.id.uppercased()
+        if identifier.hasPrefix("CUSTOM_SUPERSET_"),
+           let number = Int(identifier.dropFirst("CUSTOM_SUPERSET_".count)), number > 0 {
+            return supersetLetter(number)
+        }
+        guard !identifier.isEmpty,
+              identifier.unicodeScalars.allSatisfy({ (65...90).contains($0.value) }) else { return nil }
+        return identifier
+    }
+
+    private var supersetDisplayPrefixes: [String: String] {
+        var candidates: [(id: String, preferred: String?)] = []
+        if isCustomWorkout && customWorkoutFormat == .superset {
+            for slot in WorkoutRoundLayout.groupSlots(sections: sequenceSections, format: .superset) {
+                if let section = slot.section {
+                    guard let assignment = section.assignment, assignment.kind == .superset else { continue }
+                    candidates.append((assignment.id, preferredSupersetPrefix(assignment)))
+                } else {
+                    // Reserve empty slots too, so filling slot 4 continues to display D1.
+                    candidates.append((slot.id, supersetLetter(slot.number)))
+                }
+            }
+        } else {
+            candidates = sequenceSections.compactMap { section in
+                guard let assignment = section.assignment, assignment.kind == .superset else { return nil }
+                return (assignment.id, preferredSupersetPrefix(assignment))
+            }
+        }
+
+        let reserved = Set(candidates.compactMap(\.preferred))
+        var used = Set<String>()
+        var prefixes: [String: String] = [:]
+        var nextNumber = 1
+        for candidate in candidates {
+            guard prefixes[candidate.id] == nil else { continue }
+            let prefix: String
+            if let preferred = candidate.preferred, !used.contains(preferred) {
+                prefix = preferred
+            } else {
+                while reserved.contains(supersetLetter(nextNumber)) || used.contains(supersetLetter(nextNumber)) {
+                    nextNumber += 1
+                }
+                prefix = supersetLetter(nextNumber)
+                nextNumber += 1
+            }
+            prefixes[candidate.id] = prefix
+            used.insert(prefix)
+        }
+        return prefixes
+    }
+
+    private func displayGroupLabel(_ assignment: WorkoutGroupAssignment) -> String {
+        guard assignment.kind == .superset,
+              let prefix = supersetDisplayPrefixes[assignment.id] else { return assignment.label }
+        return "Superset \(prefix)"
+    }
+
+    private func displayExerciseLabel(_ exercise: Exercise) -> String {
+        guard let section = sequenceSections.first(where: { $0.exercises.contains(where: { $0.id == exercise.id }) }),
+              let assignment = section.assignment, assignment.kind == .superset,
+              let position = section.exercises.firstIndex(where: { $0.id == exercise.id }),
+              let prefix = supersetDisplayPrefixes[assignment.id] else {
+            return String(displayExerciseNumber(exercise))
+        }
+        return "\(prefix)\(position + 1)"
     }
 
     private func displayExerciseNumber(_ exercise: Exercise) -> Int {
@@ -1189,20 +1865,7 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
         return (exercises.firstIndex(where: { $0.id == exercise.id }) ?? 0) + 1
     }
 
-    private func groupedRoundExerciseTitle(for section: WorkoutSequenceSection) -> String {
-        section.exercises.enumerated().map { index, exercise in
-            "A\(index + 1) \(exercise.name.fwbTitleCased.uppercased())"
-        }.joined(separator: "  ·  ")
-    }
-
-    private func groupedRoundExerciseAccessibilityTitle(for section: WorkoutSequenceSection) -> String {
-        section.exercises.enumerated().map { index, exercise in
-            "A\(index + 1), \(exercise.name)"
-        }.joined(separator: ", ")
-    }
-
     private func groupedSetRow(_ draft: WorkoutSetDraft, exercise: Exercise, section: WorkoutSequenceSection) -> some View {
-        let exerciseNumber = displayExerciseNumber(exercise)
         return WorkoutSetLogRow(
             draft: Binding(
                 get: { drafts.first(where: { $0.id == draft.id }) ?? draft },
@@ -1210,19 +1873,20 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
                     guard let index = drafts.firstIndex(where: { $0.id == draft.id }) else { return }
                     copiedDraftIDs.remove(draft.id)
                     drafts[index] = updated
-                    if updated.isWarmUp {
-                        skippedWarmUpSectionIDs.remove(section.id)
-                    }
                 }
             ),
             focusedField: $focusedField,
             entryStyle: entryStyle,
             preferredEffortScale: preferredEffortScale,
+            recommendedRepsPlaceholder: WorkoutProgressionIntegration.recommendedRepsPlaceholder(
+                for: exercise,
+                drafts: drafts
+            ),
             previousResult: PreviousWorkoutResults.sets(for: exercise, before: dateString, in: achievementHistoryStore.sessions)[draft.setNumber],
             isPreviousHistoryLoading: false,
             canCopyPreviousSet: draft.setNumber > 1,
             wasCopied: copiedDraftIDs.contains(draft.id),
-            groupCode: String(exerciseNumber),
+            groupCode: displayExerciseLabel(exercise),
             onCompletionChanged: { handleSetCompletion(for: exercise, draft: draft, isCompleted: $0) },
             onSetTypeChanged: { updateSetType($0, for: draft.id, in: exercise) },
             onSetLabelChanged: { updateSetLabel($0, for: draft.id, in: exercise) },
@@ -1234,56 +1898,11 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
         )
     }
 
-    private func logWarmUp(_ enteredWarmUps: [WorkoutSetDraft], in section: WorkoutSequenceSection) {
-        guard !enteredWarmUps.isEmpty,
-              enteredWarmUps.allSatisfy(WorkoutRoundLayout.canComplete) else { return }
-
-        focusedField = nil
-        for warmUp in enteredWarmUps {
-            guard let index = drafts.firstIndex(where: { $0.id == warmUp.id }) else { continue }
-            drafts[index].isCompleted = true
-        }
-        skippedWarmUpSectionIDs.remove(section.id)
-        showPraise(
-            WorkoutPraiseBannerItem(
-                title: "WARM-UP LOGGED.",
-                detail: "Rest, then begin your first working round.",
-                icon: "flame.fill"
-            )
-        )
-        restTimerStore.start(
-            seconds: RestDurationParser.seconds(from: roundRestText(for: section)),
-            exerciseName: "\(section.label) · after warm-up",
-            hapticsEnabled: restTimerHapticsEnabled
-        )
-    }
-
-    private func skipWarmUp(in section: WorkoutSequenceSection) {
-        focusedField = nil
-        skippedWarmUpSectionIDs.insert(section.id)
-        showPraise(
-            WorkoutPraiseBannerItem(
-                title: "WARM-UP SKIPPED.",
-                detail: "Start your first working round when you’re ready.",
-                icon: "forward.fill"
-            )
-        )
-        if let firstWorkingDraft = drafts.first(where: { draft in
-            !draft.isWarmUp && !draft.isCompleted && section.exercises.contains { matches(draft, $0) }
-        }) {
-            focusedField = .weight(firstWorkingDraft.id)
-        }
-    }
-
     @ViewBuilder
     private var customBlankSlots: some View {
         if isCustomWorkout && customWorkoutFormat == .single {
             ForEach(exercises.count..<max(exercises.count, 6), id: \.self) { index in
-                CustomBlankExerciseSlot(
-                    number: index + 1,
-                    suggestions: suggestionNames,
-                    approvedExercises: exerciseLibraryStore.exercises
-                ) { name in
+                CustomBlankExerciseSlot(number: index + 1, suggestions: suggestionNames) { name in
                     let exercise = insertCustomExercise(code: nextAddedExerciseCode(), name: name, placement: .currentGroup)
                     offerHistoryCopy(for: exercise)
                 }
@@ -1295,19 +1914,19 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
         let kind: WorkoutGroupKind = customWorkoutFormat == .superset ? .superset : .circuit
         let count = kind == .superset ? 2 : 3
         let assignment = WorkoutGroupAssignment(id: "CUSTOM_\(kind.rawValue.uppercased())_\(number)", kind: kind, label: "\(kind.title) \(number)")
+        let labels = (0..<count).map { position in
+            kind == .superset
+                ? "\(supersetDisplayPrefixes[assignment.id] ?? supersetLetter(number))\(position + 1)"
+                : String((number - 1) * count + position + 1)
+        }
         return VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text(assignment.label).font(FWBFont.sized(19).weight(.bold))
+                Text(displayGroupLabel(assignment)).font(FWBFont.sized(19).weight(.bold))
                 Spacer()
                 Text("0 / 0 complete").font(FWBFont.sized(11).weight(.semibold)).foregroundStyle(Color.fwbMuted)
             }
             ForEach(0..<count, id: \.self) { slot in
-                CustomBlankExerciseSlot(
-                    number: (number - 1) * count + slot + 1,
-                    suggestions: suggestionNames,
-                    approvedExercises: exerciseLibraryStore.exercises,
-                    showsSetGrid: false
-                ) { name in
+                CustomBlankExerciseSlot(number: (number - 1) * count + slot + 1, suggestions: suggestionNames, showsSetGrid: false, displayLabel: labels[slot]) { name in
                     let existingAssignments = groupAssignments
                     let exercise = insertCustomExercise(code: nextAddedExerciseCode(), name: name, placement: .currentGroup)
                     groupAssignments = existingAssignments
@@ -1323,7 +1942,7 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
             ForEach(1...3, id: \.self) { round in
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Round \(round)").font(FWBFont.sized(12).weight(.semibold))
-                    EmptyWorkoutSetGrid(labels: (0..<count).map { String((number - 1) * count + $0 + 1) }, firstTitle: "Exercise")
+                    EmptyWorkoutSetGrid(labels: labels, firstTitle: "Exercise")
                 }
             }
             Text("Choose exercise names above to enter your rounds.")
@@ -1338,17 +1957,6 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
 
     private func roundCount(for section: WorkoutSequenceSection) -> Int {
         WorkoutRoundLayout.roundCount(exercises: section.exercises, drafts: drafts)
-    }
-
-    private func groupInstruction(for section: WorkoutSequenceSection) -> String {
-        let codes = section.exercises.map { exercise in
-            let code = exercise.code.trimmingCharacters(in: .whitespacesAndNewlines)
-            return code.isEmpty ? String(displayExerciseNumber(exercise)) : code.uppercased()
-        }
-        let sequence = codes.joined(separator: " → ")
-        let rest = roundRestText(for: section).trimmingCharacters(in: .whitespacesAndNewlines)
-        let restText = rest.isEmpty ? "rest as prescribed" : "rest \(rest)"
-        return "Complete \(sequence), \(restText), repeat \(max(roundCount(for: section), 1))×"
     }
 
     private func completedRounds(for section: WorkoutSequenceSection) -> [String: Int] {
@@ -1402,6 +2010,7 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
               drafts[index].effortValidationMessage == nil else { return }
 
         focusedField = nil
+        parityStart()
         drafts[index].isCompleted = true
         let completedDraft = drafts[index]
         handleSetCompletion(for: exercise, draft: completedDraft, isCompleted: true)
@@ -1491,17 +2100,21 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
         }
     }
 
-    private var isSyncing: Bool {
-        offlineSyncStore.state == .syncing
+    /// Initial restoration and explicit saves lock edits. Background autosave owns an immutable
+    /// snapshot and must not interrupt typing while it waits for the network.
+    private var isWorkoutEntryLocked: Bool {
+        !didLoadSession || paritySavingGroup != nil || activeSaveIntent != nil || activeExerciseSaveID != nil
     }
 
-    private var dateString: String {
-        let formatter = DateFormatter()
-        formatter.calendar = Calendar(identifier: .gregorian)
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.dateFormat = "yyyy-MM-dd"
-        return formatter.string(from: entryDate)
+    private var isSyncing: Bool {
+#if DEBUG
+        // Exercise the production input-lock policy without any backend writes.
+        if previewMode && ProcessInfo.processInfo.arguments.contains("--parity-background-sync") { return true }
+#endif
+        return offlineSyncStore.state == .syncing
     }
+
+    private var dateString: String { WorkoutEntryDateFormatter.day.string(from: entryDate) }
 
     private var commentContext: WorkoutCommentContext {
         WorkoutCommentContext(
@@ -1531,7 +2144,8 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
                 $0.prescription,
                 $0.rest,
                 $0.instructions.joined(separator: "\u{1C}"),
-                $0.video
+                $0.video,
+                WorkoutProgressionIntegration.token($0.progression)
             ].joined(separator: "\u{1F}")
         }.joined(separator: "\u{1E}")
         let setPart = drafts.map {
@@ -1546,7 +2160,8 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
                 $0.effortScale?.rawValue ?? "",
                 $0.effort,
                 String($0.isCompleted),
-                $0.setType.rawValue
+                $0.setType.rawValue,
+                WorkoutProgressionIntegration.token($0.progressionTarget)
             ].joined(separator: "\u{1F}")
         }.joined(separator: "\u{1E}")
         let groupPart = groupAssignments
@@ -1567,10 +2182,10 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
     }
 
     private var shouldAutosaveProgress: Bool {
-        guard (seedSession == nil || seededCopyWasEdited),
+        guard !previewMode, paritySavingGroup == nil, (seedSession == nil || seededCopyWasEdited),
               activeSaveIntent == nil,
               activeExerciseSaveID == nil,
-              drafts.contains(where: \.containsEntry),
+              drafts.contains(where: { $0.isCompleted && $0.containsEntry }),
               !drafts.contains(where: { $0.effortValidationMessage != nil }) else { return false }
 
         return !drafts.contains {
@@ -1601,7 +2216,8 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
             drafts: drafts,
             groupAssignments: groupAssignments,
             baseRemoteUpdatedAt: baseRemoteUpdatedAt,
-            isFinished: false
+            isFinished: false,
+            loggedSetsOnly: true
         )
 
         guard !Task.isCancelled else { return }
@@ -1617,6 +2233,10 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
         difficultyRating: Int? = nil
     ) {
         focusedField = nil
+        if previewMode {
+            if intent == .finish { parityFinishPreview() }
+            return
+        }
         let persistenceTokenAtSave = draftPersistenceToken
         activeSaveIntent = exerciseID == nil ? intent : nil
         activeExerciseSaveID = exerciseID
@@ -1632,17 +2252,29 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
                 groupAssignments: groupAssignments,
                 baseRemoteUpdatedAt: baseRemoteUpdatedAt,
                 isFinished: intent == .finish,
-                difficultyRating: difficultyRating
+                difficultyRating: difficultyRating,
+                energyBefore: parityEnergyBefore,
+                energyAfter: parityEnergyAfter,
+                loggedSetsOnly: true
             )
             activeSaveIntent = nil
             activeExerciseSaveID = nil
 
-            guard result == .synced || result == .queued else { return }
+            guard result == .synced || result == .queued else {
+                if parityResumeRestAfterFeedback && restTimerStore.phase == .paused { restTimerStore.togglePause() }
+                parityResumeRestAfterFeedback = false
+                return
+            }
             lastSuccessfulSave = intent
             lastSavedExerciseID = exerciseID
             lastAutosavedPersistenceToken = persistenceTokenAtSave
 
             if intent == .finish {
+                restTimerStore.dismiss()
+                parityFinishedAt = Date()
+                activeWorkoutStore?.clear(sessionID: sessionID)
+                WatchCompanionBridge.shared.publish(workout: nil)
+                parityResumeRestAfterFeedback = false
                 let celebration = WorkoutPraiseEvaluator.strength(
                     clientEmail: clientEmail,
                     workoutTitle: workout.title,
@@ -1650,17 +2282,22 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
                     startedAt: startedAt,
                     drafts: drafts,
                     history: achievementHistoryStore.sessions,
-                    weeklyGoal: weeklyWorkoutGoal
+                    weeklyGoal: weeklyWorkoutGoal,
+                    sessionID: sessionID,
+                    historyIsComplete: achievementHistoryStore.hasCompleteHistory && offlineSyncStore.state == .synced,
+                    syncPending: result == .queued
                 )
                 completionCelebration = celebration
                 WorkoutPraiseHaptics.workoutComplete(isEnabled: workoutPraiseHapticsEnabled)
 
-                await HealthKitWorkoutSyncStore.shared.saveStrengthWorkoutIfAuthorized(
-                    title: workout.title,
-                    entryDate: entryDate,
-                    startedAt: startedAt,
-                    endedAt: Date()
-                )
+                if coachAccountID == nil {
+                    await HealthKitWorkoutSyncStore.shared.saveStrengthWorkoutIfAuthorized(
+                        title: workout.title,
+                        entryDate: entryDate,
+                        startedAt: startedAt,
+                        endedAt: Date()
+                    )
+                }
             }
 
             if let exerciseID {
@@ -1679,14 +2316,19 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
             .map(\.setNumber)
             .max()
             .map { $0 + 1 } ?? 1
-        let draft = WorkoutSetDraft(exercise: exercise, setNumber: nextSet)
+        let setType: WorkoutSetType = isGeneratedWorkout
+            ? drafts.last(where: { matches($0, exercise) && !$0.isWarmUp })?.setType
+                ?? GeneratedWorkoutLoggerPreparation.initialSetType(for: exercise)
+            : .working
+        let draft = WorkoutSetDraft(exercise: exercise, setNumber: nextSet, setType: setType)
         withAnimation(.easeOut(duration: 0.18)) {
             drafts.append(draft)
         }
-        focusedField = .weight(draft.id)
+        focusedField = setType == .timed ? .duration(draft.id) : .weight(draft.id)
     }
 
     private func saveExerciseProgress(for exercise: Exercise) {
+        parityStart()
         for index in drafts.indices where matches(drafts[index], exercise) && drafts[index].containsEntry {
             drafts[index].isCompleted = true
         }
@@ -1700,6 +2342,7 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
     ) {
         guard let draftIndex = drafts.firstIndex(where: { $0.id == draft.id }),
               !isCompleted || WorkoutRoundLayout.canComplete(drafts[draftIndex]) else { return }
+        if isCompleted && !draft.isWarmUp { parityStart() }
         drafts[draftIndex].isCompleted = isCompleted
         guard isCompleted else { return }
         let exerciseDrafts = drafts.filter { matches($0, exercise) && !$0.isWarmUp }
@@ -1915,6 +2558,14 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
                 groupAssignments[exercise.id] = assignment
                 pendingSlotAssignment = nil
             }
+            if isCustomWorkout && customWorkoutFormat != .single && pendingSlotAssignment == nil {
+                let assignment = groupAssignments[exercise.id]
+                let required = customWorkoutFormat == .superset ? 2 : 3
+                let existing = exercises.filter { groupAssignments[$0.id] == assignment }.count
+                if let assignment, existing < required {
+                    for _ in existing..<required { _ = parityAppendBlank(assignment: assignment) }
+                }
+            }
             offerHistoryCopy(for: exercise)
         case .substitute(let exercise):
             substituteExercise(exercise, with: exerciseName)
@@ -1950,10 +2601,13 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
             prescription: template?.prescription ?? "Custom sets",
             rest: template?.rest ?? "",
             instructions: template?.instructions ?? [],
-            video: template?.video ?? ""
+            video: template?.video ?? "",
+            progression: template?.progression,
+            hasInvalidProgression: template?.hasInvalidProgression ?? false
         )
         exercises.append(exercise)
         drafts.append(contentsOf: (1...3).map { WorkoutSetDraft(exercise: exercise, setNumber: $0) })
+        drafts.append(WorkoutSetDraft(exercise: exercise, setNumber: WorkoutSetNumber.warmUp(1), setType: .warmUp))
 
         guard isCustomWorkout else { return exercise }
         switch customWorkoutFormat {
@@ -2023,13 +2677,18 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
 
     private func updateCustomWorkoutFormat(_ format: CustomWorkoutFormat) {
         guard isCustomWorkout else { return }
+        if exercises.allSatisfy({ $0.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }) && !drafts.contains(where: \.containsEntry) {
+            exercises = []
+            drafts = []
+        }
         customWorkoutFormat = format
-        Self.saveCustomWorkoutFormat(format, for: clientEmail)
+        if !previewMode { Self.saveCustomWorkoutFormat(format, for: clientEmail) }
         withAnimation(.easeInOut(duration: 0.22)) {
             groupAssignments = format == .circuit
                 ? WorkoutRoundLayout.circuitAssignments(exercises: exercises)
                 : WorkoutSequencePlanner.customAssignments(for: format, exercises: exercises)
         }
+        prepareParitySession()
     }
 
     private static func savedCustomWorkoutFormat(for clientEmail: String) -> CustomWorkoutFormat {
@@ -2094,6 +2753,7 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
             exercises[exerciseIndex] = replacement
             for draftIndex in drafts.indices where matches(drafts[draftIndex], exercise) {
                 drafts[draftIndex].exerciseName = replacement.name
+                drafts[draftIndex].progressionTarget = nil
             }
         }
     }
@@ -2136,6 +2796,7 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
             exercises[exerciseIndex] = original
             for draftIndex in drafts.indices where matches(drafts[draftIndex], exercise) {
                 drafts[draftIndex].exerciseName = original.name
+                drafts[draftIndex].progressionTarget = nil
             }
             substitutionOriginals.removeValue(forKey: exercise.code)
         }
@@ -2156,17 +2817,24 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
     private func renameExercise(code: String, to nextName: String) {
         guard let exerciseIndex = exercises.firstIndex(where: { $0.code == code }) else { return }
         let current = exercises[exerciseIndex]
+        let changedIdentity = ExerciseNameIdentity.key(for: current.name) != ExerciseNameIdentity.key(for: nextName)
+        let approved = approvedExercise(matching: nextName)
+        let template = suggestedExercises.first { ExerciseNameIdentity.key(for: $0.name) == ExerciseNameIdentity.key(for: nextName) }
+            ?? libraryTemplate(from: approved) ?? ExerciseLibrary.exercise(named: nextName)
         exercises[exerciseIndex] = Exercise(
             code: current.code,
             name: nextName,
             prescription: current.prescription,
             rest: current.rest,
-            instructions: current.instructions,
-            video: current.video
+            instructions: changedIdentity ? template?.instructions ?? [] : current.instructions,
+            video: changedIdentity ? template?.video ?? "" : current.video,
+            progression: changedIdentity ? nil : current.progression,
+            hasInvalidProgression: changedIdentity ? false : current.hasInvalidProgression
         )
 
         for draftIndex in drafts.indices where drafts[draftIndex].exerciseCode == code {
             drafts[draftIndex].exerciseName = nextName
+            if changedIdentity { drafts[draftIndex].progressionTarget = nil }
         }
     }
 
@@ -2214,12 +2882,12 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
         copiedDraftIDs = []
         groupAssignments = WorkoutSequencePlanner.inferredAssignments(for: workout)
 
-        if isCustomWorkout {
+        if isCustomWorkout && !isGeneratedWorkout {
             exercises = []
             drafts = []
         } else {
             exercises = workout.exercises
-            drafts = Self.makeDrafts(for: exercises)
+            drafts = Self.makeDrafts(for: exercises, isGeneratedWorkout: isGeneratedWorkout)
         }
 
         let records = await logStore.load(
@@ -2228,8 +2896,21 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
             entryDate: dateString,
             excludedExerciseCodes: ["WARMUP", "CARDIO"]
         )
+        guard !Task.isCancelled else { return }
         sessionID = logStore.remoteSessionID ?? UUID()
         baseRemoteUpdatedAt = logStore.baseRemoteUpdatedAt
+
+        if isGeneratedWorkout {
+            exercises = GeneratedWorkoutLoggerPreparation.restoredExercises(
+                originals: workout.exercises,
+                records: records,
+                isCompleted: logStore.completedAt != nil
+            )
+            // Retain exactly the saved sets when reopening a finished generated session.
+            drafts = logStore.completedAt == nil
+                ? Self.makeDrafts(for: exercises, isGeneratedWorkout: true)
+                : []
+        }
 
         for record in records {
             if !isCustomWorkout,
@@ -2264,7 +2945,8 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
                     effortScale: record.effortScale,
                     effort: record.effortValue.map(Self.numberString) ?? "",
                     isCompleted: true,
-                    setType: record.resolvedSetType
+                    setType: record.resolvedSetType,
+                    progressionTarget: record.progressionTarget
                 )
             } else {
                 drafts.append(
@@ -2279,15 +2961,16 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
                         effortScale: record.effortScale,
                         effort: record.effortValue.map(Self.numberString) ?? "",
                         isCompleted: true,
-                        setType: record.resolvedSetType
+                        setType: record.resolvedSetType,
+                        progressionTarget: record.progressionTarget
                     )
                 )
             }
         }
 
-        if isCustomWorkout && exercises.isEmpty {
+        if isCustomWorkout && exercises.isEmpty && !(isGeneratedWorkout && logStore.completedAt != nil) {
             exercises = workout.exercises
-            drafts = Self.makeDrafts(for: exercises)
+            drafts = Self.makeDrafts(for: exercises, isGeneratedWorkout: isGeneratedWorkout)
         }
 
         if let recovered = await offlineSyncStore.restoreDraft(
@@ -2295,6 +2978,7 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
             workoutTitle: workout.title,
             entryDate: dateString
         ) {
+            guard !Task.isCancelled else { return }
             sessionID = recovered.stableSessionID
             baseRemoteUpdatedAt = recovered.baseRemoteUpdatedAt ?? baseRemoteUpdatedAt
             exercises = recovered.restoredExercises
@@ -2333,25 +3017,24 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
             restoredPersistenceToken = draftPersistenceToken
         }
 
-        if isCustomWorkout {
-            if let restoredFormat = WorkoutSequencePlanner.customFormat(from: groupAssignments) {
-                customWorkoutFormat = restoredFormat
-                Self.saveCustomWorkoutFormat(restoredFormat, for: clientEmail)
-            } else {
-                groupAssignments = WorkoutSequencePlanner.customAssignments(
-                    for: customWorkoutFormat,
-                    exercises: exercises
-                )
-            }
+        if isCustomWorkout && groupAssignments.isEmpty {
+            groupAssignments = customWorkoutFormat == .circuit
+                ? WorkoutRoundLayout.circuitAssignments(exercises: exercises)
+                : WorkoutSequencePlanner.customAssignments(for: customWorkoutFormat, exercises: exercises)
         }
     }
 
-    private static func makeDrafts(for exercises: [Exercise]) -> [WorkoutSetDraft] {
-        exercises.flatMap { exercise in
+    private static func makeDrafts(for exercises: [Exercise], isGeneratedWorkout: Bool = false) -> [WorkoutSetDraft] {
+        let drafts = exercises.flatMap { exercise in
             (1...setCount(from: exercise.prescription)).map {
-                WorkoutSetDraft(exercise: exercise, setNumber: $0)
+                WorkoutSetDraft(
+                    exercise: exercise,
+                    setNumber: $0,
+                    setType: isGeneratedWorkout ? GeneratedWorkoutLoggerPreparation.initialSetType(for: exercise) : .working
+                )
             }
         }
+        return drafts
     }
 
     private static func setCount(from prescription: String) -> Int {
@@ -2403,14 +3086,16 @@ extension WorkoutLoggingView where WorkoutSelector == EmptyView {
         clientEmail: String,
         embedded: Bool = false,
         suggestedExercises: [Exercise] = [],
-        seedSession: WorkoutHistorySession? = nil
+        seedSession: WorkoutHistorySession? = nil,
+        previewMode: Bool = false
     ) {
         self.init(
             workout: workout,
             clientEmail: clientEmail,
             embedded: embedded,
             suggestedExercises: suggestedExercises,
-            seedSession: seedSession
+            seedSession: seedSession,
+            previewMode: previewMode
         ) {
             EmptyView()
         }
@@ -2440,7 +3125,7 @@ private struct EmbeddedWorkoutHeader: View {
                     Text("FOCUS")
                         .font(FWBFont.footnote.bold())
                         .tracking(0.7)
-                        .foregroundStyle(Color.black)
+                        .foregroundStyle(Color.fwbBrandPrimaryInk)
                         .padding(.horizontal, 7)
                         .padding(.vertical, 4)
                         .frame(minHeight: 22)
@@ -2471,30 +3156,9 @@ private struct EmbeddedWorkoutHeader: View {
 }
 
 private struct WorkoutSessionHeader: View {
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
-
     let title: String
-    let startedAt: Date
 
     var body: some View {
-        Group {
-            if dynamicTypeSize.isAccessibilitySize {
-                VStack(alignment: .leading, spacing: 14) {
-                    titleContent
-                    timerContent
-                }
-            } else {
-                HStack(alignment: .top, spacing: 14) {
-                    titleContent
-                    Spacer(minLength: 10)
-                    timerContent
-                }
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    private var titleContent: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Active workout")
                 .font(FWBFont.footnote.bold())
@@ -2508,28 +3172,10 @@ private struct WorkoutSessionHeader: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
-
-    private var timerContent: some View {
-        TimelineView(.periodic(from: startedAt, by: 1)) { context in
-            VStack(alignment: dynamicTypeSize.isAccessibilitySize ? .leading : .trailing, spacing: 4) {
-                Image(systemName: "timer")
-                    .foregroundStyle(Color.fwbLime)
-                Text(Self.duration(from: startedAt, to: context.date))
-                    .font(.system(.headline, design: .monospaced).weight(.bold))
-                    .foregroundStyle(Color.fwbWarmWhite)
-            }
-        }
-    }
-
-    private static func duration(from start: Date, to end: Date) -> String {
-        let seconds = max(Int(end.timeIntervalSince(start)), 0)
-        return String(format: "%02d:%02d", seconds / 60, seconds % 60)
-    }
 }
 
 private struct CustomExerciseNameComposer: View {
     let suggestions: [String]
-    let approvedExercises: [ApprovedExercise]
     let format: CustomWorkoutFormat
     let onAdd: (String, CustomExercisePlacement) -> Void
 
@@ -2698,10 +3344,10 @@ private struct CustomExerciseNameComposer: View {
             HStack(spacing: 10) {
                 Image(systemName: "figure.strengthtraining.traditional")
                     .foregroundStyle(Color.fwbLime)
-                ExerciseSuggestionText(
-                    name: suggestion,
-                    approvedExercises: approvedExercises
-                )
+                Text(suggestion.fwbTitleCased)
+                    .font(FWBFont.subheadline.weight(.semibold))
+                    .foregroundStyle(Color.fwbWarmWhite)
+                    .multilineTextAlignment(.leading)
                 Spacer(minLength: 8)
                 Image(systemName: "plus")
                     .font(FWBFont.footnote.weight(.semibold))
@@ -2712,11 +3358,7 @@ private struct CustomExerciseNameComposer: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(exerciseSuggestionAccessibilityLabel(
-            action: "Add",
-            name: suggestion,
-            approvedExercises: approvedExercises
-        ))
+        .accessibilityLabel("Add \(suggestion)")
         .accessibilityIdentifier("customWorkout.suggestion.\(suggestionIdentifier(suggestion))")
     }
 
@@ -2975,7 +3617,7 @@ private struct WorkoutExerciseNavigationSheet: View {
                             dismiss()
                         } label: {
                             HStack(spacing: 10) {
-                                Text("\(row.number)")
+                                Text(row.label)
                                     .font(FWBFont.sized(12).weight(.semibold))
                                     .foregroundStyle(Color.fwbWarmWhite)
                                     .frame(width: 32, height: 32)
@@ -3316,13 +3958,257 @@ private struct WorkoutHistoryCopyPromptView: View {
     }
 }
 
+@MainActor
+final class ExerciseRemoteImageLoader: ObservableObject {
+    @Published private(set) var image: UIImage?
+    @Published private(set) var isLoading = false
+
+    private static let cache = NSCache<NSString, UIImage>()
+
+    func load(urls: [URL], animated: Bool) async {
+        guard !urls.isEmpty else { return }
+        let key = NSString(string: "\(animated ? "motion" : "still")|\(urls.map(\.absoluteString).joined(separator: "|"))")
+        if let cached = Self.cache.object(forKey: key) {
+            image = cached
+            return
+        }
+
+        isLoading = true
+        defer { isLoading = false }
+        for url in urls {
+            guard !Task.isCancelled else { return }
+            do {
+                let request = URLRequest(url: url, cachePolicy: .returnCacheDataElseLoad, timeoutInterval: 20)
+                let (data, response) = try await URLSession.shared.data(for: request)
+                guard !Task.isCancelled,
+                      let http = response as? HTTPURLResponse,
+                      (200..<300).contains(http.statusCode),
+                      let decoded = Self.decode(data: data, animated: animated) else { continue }
+                Self.cache.setObject(decoded, forKey: key, cost: data.count)
+                image = decoded
+                return
+            } catch is CancellationError {
+                return
+            } catch {
+                continue
+            }
+        }
+    }
+
+    private static func decode(data: Data, animated: Bool) -> UIImage? {
+        guard let source = CGImageSourceCreateWithData(data as CFData, nil) else {
+            return UIImage(data: data)
+        }
+        let frameCount = CGImageSourceGetCount(source)
+        guard animated, frameCount > 1 else { return thumbnail(from: source, at: 0) }
+
+        var images: [UIImage] = []
+        var duration: TimeInterval = 0
+        images.reserveCapacity(frameCount)
+        for index in 0..<frameCount {
+            guard let image = thumbnail(from: source, at: index) else { continue }
+            images.append(image)
+            duration += frameDuration(source: source, index: index)
+        }
+        guard !images.isEmpty else { return nil }
+        return UIImage.animatedImage(with: images, duration: max(duration, Double(images.count) * 0.08))
+    }
+
+    private static func thumbnail(from source: CGImageSource, at index: Int) -> UIImage? {
+        let options: [CFString: Any] = [
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceCreateThumbnailWithTransform: true,
+            kCGImageSourceThumbnailMaxPixelSize: 1_200,
+            kCGImageSourceShouldCacheImmediately: true
+        ]
+        guard let cgImage = CGImageSourceCreateThumbnailAtIndex(source, index, options as CFDictionary) else { return nil }
+        return UIImage(cgImage: cgImage)
+    }
+
+    private static func frameDuration(source: CGImageSource, index: Int) -> TimeInterval {
+        guard let properties = CGImageSourceCopyPropertiesAtIndex(source, index, nil) as? [String: Any] else { return 0.1 }
+        let delay = recursiveDelay(in: properties)
+        return delay >= 0.02 ? delay : 0.1
+    }
+
+    private static func recursiveDelay(in dictionary: [String: Any]) -> TimeInterval {
+        for key in ["UnclampedDelayTime", "DelayTime"] {
+            if let number = dictionary[key] as? NSNumber { return number.doubleValue }
+        }
+        for value in dictionary.values {
+            if let nested = value as? [String: Any] {
+                let delay = recursiveDelay(in: nested)
+                if delay > 0 { return delay }
+            }
+        }
+        return 0
+    }
+}
+
+struct ExerciseRemoteImage: View {
+    @StateObject private var loader = ExerciseRemoteImageLoader()
+    let urls: [URL]
+    let animated: Bool
+    let cropLeadingFraction: CGFloat?
+
+    init(url: URL?, animated: Bool, cropLeadingFraction: CGFloat? = nil) {
+        urls = url.map { [$0] } ?? []
+        self.animated = animated
+        self.cropLeadingFraction = cropLeadingFraction
+    }
+
+    init(urls: [URL], animated: Bool, cropLeadingFraction: CGFloat? = nil) {
+        self.urls = urls
+        self.animated = animated
+        self.cropLeadingFraction = cropLeadingFraction
+    }
+
+    var body: some View {
+        ZStack {
+            Color.fwbSurface
+            if let image = loader.image {
+                ExerciseUIImageView(image: image, cropLeadingFraction: cropLeadingFraction)
+            } else if loader.isLoading {
+                ProgressView().tint(Color.fwbLime)
+            } else {
+                Image(systemName: "figure.strengthtraining.traditional")
+                    .font(FWBFont.sized(24))
+                    .foregroundStyle(Color.fwbMuted)
+            }
+        }
+        .clipped()
+        .task(id: cacheIdentity) { await loader.load(urls: urls, animated: animated) }
+    }
+
+    private var cacheIdentity: String {
+        "\(animated)|\(urls.map(\.absoluteString).joined(separator: "|"))"
+    }
+}
+
+private struct ExerciseUIImageView: UIViewRepresentable {
+    let image: UIImage
+    let cropLeadingFraction: CGFloat?
+
+    func makeUIView(context: Context) -> UIImageView {
+        let imageView = UIImageView()
+        imageView.contentMode = .scaleAspectFit
+        imageView.clipsToBounds = true
+        return imageView
+    }
+
+    func updateUIView(_ imageView: UIImageView, context: Context) {
+        let displayedImage = croppedImage ?? image
+        imageView.image = displayedImage
+        if displayedImage.images != nil { imageView.startAnimating() } else { imageView.stopAnimating() }
+    }
+
+    func sizeThatFits(_ proposal: ProposedViewSize, uiView: UIImageView, context: Context) -> CGSize? {
+        guard let width = proposal.width, let height = proposal.height else { return nil }
+        return CGSize(width: width, height: height)
+    }
+
+    private var croppedImage: UIImage? {
+        guard let fraction = cropLeadingFraction,
+              fraction > 0,
+              fraction < 1,
+              image.images == nil,
+              let cgImage = image.cgImage else { return nil }
+        let cropWidth = max(CGFloat(1), (CGFloat(cgImage.width) * fraction).rounded(.down))
+        let cropRect = CGRect(x: 0, y: 0, width: cropWidth, height: CGFloat(cgImage.height))
+        guard let cropped = cgImage.cropping(to: cropRect) else { return nil }
+        return UIImage(cgImage: cropped, scale: image.scale, orientation: image.imageOrientation)
+    }
+}
+
+struct ExerciseMediaViewer: View {
+    @Environment(\.dismiss) private var dismiss
+    let request: ExerciseMediaViewerRequest
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    GeometryReader { proxy in
+                        mediaContent
+                            .frame(width: proxy.size.width, height: proxy.size.height)
+                    }
+                    .aspectRatio(preferredAspectRatio, contentMode: .fit)
+                    .frame(maxWidth: .infinity)
+                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .overlay { RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(Color.fwbLine, lineWidth: 1) }
+                    .accessibilityLabel("Static start and end form reference for \(request.exerciseName)")
+
+                    Text(request.exerciseName.fwbTitleCased)
+                        .font(FWBFont.title3.weight(.bold))
+                        .foregroundStyle(Color.fwbWarmWhite)
+                    Text("START / END FORM REFERENCE")
+                        .font(FWBFont.caption.weight(.semibold))
+                        .tracking(0.5)
+                        .foregroundStyle(Color.fwbMuted)
+
+                    if !metadata.isEmpty {
+                        Text(metadata)
+                            .font(FWBFont.subheadline.weight(.semibold))
+                            .foregroundStyle(Color.fwbMuted)
+                    }
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("HOW TO PERFORM")
+                            .font(FWBFont.caption.weight(.bold))
+                            .tracking(0.5)
+                            .foregroundStyle(Color.fwbMuted)
+                        Text(displayInstructions)
+                            .font(FWBFont.body)
+                            .foregroundStyle(Color.fwbWarmWhite)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(14)
+                    .background(Color.fwbCard, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .overlay { RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(Color.fwbLine, lineWidth: 1) }
+                }
+                .padding(16)
+            }
+            .background(Color.fwbBackground.ignoresSafeArea())
+            .navigationTitle("Exercise guide")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar { ToolbarItem(placement: .topBarTrailing) { Button("Done") { dismiss() } } }
+        }
+    }
+
+    @ViewBuilder
+    private var mediaContent: some View {
+        ExerciseRemoteImage(urls: preferredURLs, animated: false)
+    }
+
+    private var preferredURLs: [URL] {
+        [request.media.imageURL].compactMap { $0 }
+    }
+
+    private var preferredAspectRatio: CGFloat {
+        return ExerciseMediaURL.isBrandedCard(request.media.imageURL) ? 1902 / 827 : 16 / 9
+    }
+
+    private var metadata: String {
+        [request.media.primaryMuscle, request.media.equipment]
+            .filter { !$0.isEmpty }
+            .joined(separator: " · ")
+    }
+
+    private var displayInstructions: String {
+        let instructions = request.media.instructions.trimmingCharacters(in: .whitespacesAndNewlines)
+        return instructions.isEmpty
+            ? "Use the start and end positions shown above as your form reference. Move with control and stop if you feel pain."
+            : instructions
+    }
+}
+
 private struct WorkoutExerciseLogCard: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     let exercise: Exercise
-    let media: ExerciseMedia
     let groupedSummary: Bool
-    let exerciseNumber: Int
+    let exerciseLabel: String
     @Binding var drafts: [WorkoutSetDraft]
     @FocusState.Binding var focusedField: WorkoutLogFocus?
     let entryStyle: WorkoutEntryStyle
@@ -3331,18 +4217,15 @@ private struct WorkoutExerciseLogCard: View {
     let isPreviousHistoryLoading: Bool
     let editableName: Binding<String>?
     let suggestions: [String]
-    let approvedExercises: [ApprovedExercise]
     let substitutedFromName: String?
     let copySource: WorkoutExerciseCopySource?
     let isCopyHistoryLoading: Bool
     let copiedDraftIDs: Set<UUID>
     let guidedRoundText: String?
     let isGuidedCurrent: Bool
-    let isNavigationTarget: Bool
     let isSavingProgress: Bool
     let didSaveProgress: Bool
     let saveProgressDisabled: Bool
-    let onReorderExercise: (() -> Void)?
     let onAddSet: () -> Void
     let onDeleteSet: (UUID) -> Void
     let onCopyLastWorkout: (WorkoutExerciseCopySource) -> Void
@@ -3358,18 +4241,17 @@ private struct WorkoutExerciseLogCard: View {
     let onDeleteExercise: () -> Void
     let onSaveProgress: () -> Void
     let onSendFormCheck: () -> Void
+    let allowsClientActions: Bool
 
     @State private var isExpanded: Bool
     @State private var areInstructionsExpanded = false
     @State private var pendingCopyRequest: WorkoutCopyRequest?
     @State private var calculatorRequest: WorkoutCalculatorKind?
-    @State private var mediaViewerRequest: ExerciseMediaViewerRequest?
 
     init(
         exercise: Exercise,
-        media: ExerciseMedia,
         groupedSummary: Bool,
-        exerciseNumber: Int,
+        exerciseLabel: String,
         drafts: Binding<[WorkoutSetDraft]>,
         focusedField: FocusState<WorkoutLogFocus?>.Binding,
         entryStyle: WorkoutEntryStyle,
@@ -3378,7 +4260,6 @@ private struct WorkoutExerciseLogCard: View {
         isPreviousHistoryLoading: Bool,
         editableName: Binding<String>?,
         suggestions: [String],
-        approvedExercises: [ApprovedExercise],
         substitutedFromName: String?,
         copySource: WorkoutExerciseCopySource?,
         isCopyHistoryLoading: Bool,
@@ -3386,11 +4267,9 @@ private struct WorkoutExerciseLogCard: View {
         initiallyExpanded: Bool,
         guidedRoundText: String?,
         isGuidedCurrent: Bool,
-        isNavigationTarget: Bool,
         isSavingProgress: Bool,
         didSaveProgress: Bool,
         saveProgressDisabled: Bool,
-        onReorderExercise: (() -> Void)?,
         onAddSet: @escaping () -> Void,
         onDeleteSet: @escaping (UUID) -> Void,
         onCopyLastWorkout: @escaping (WorkoutExerciseCopySource) -> Void,
@@ -3405,12 +4284,12 @@ private struct WorkoutExerciseLogCard: View {
         onRevertSubstitution: @escaping () -> Void,
         onDeleteExercise: @escaping () -> Void,
         onSaveProgress: @escaping () -> Void,
-        onSendFormCheck: @escaping () -> Void
+        onSendFormCheck: @escaping () -> Void,
+        allowsClientActions: Bool = true
     ) {
         self.exercise = exercise
-        self.media = media
         self.groupedSummary = groupedSummary
-        self.exerciseNumber = exerciseNumber
+        self.exerciseLabel = exerciseLabel
         _drafts = drafts
         _focusedField = focusedField
         self.entryStyle = entryStyle
@@ -3419,18 +4298,15 @@ private struct WorkoutExerciseLogCard: View {
         self.isPreviousHistoryLoading = isPreviousHistoryLoading
         self.editableName = editableName
         self.suggestions = suggestions
-        self.approvedExercises = approvedExercises
         self.substitutedFromName = substitutedFromName
         self.copySource = copySource
         self.isCopyHistoryLoading = isCopyHistoryLoading
         self.copiedDraftIDs = copiedDraftIDs
         self.guidedRoundText = guidedRoundText
         self.isGuidedCurrent = isGuidedCurrent
-        self.isNavigationTarget = isNavigationTarget
         self.isSavingProgress = isSavingProgress
         self.didSaveProgress = didSaveProgress
         self.saveProgressDisabled = saveProgressDisabled
-        self.onReorderExercise = onReorderExercise
         self.onAddSet = onAddSet
         self.onDeleteSet = onDeleteSet
         self.onCopyLastWorkout = onCopyLastWorkout
@@ -3446,80 +4322,64 @@ private struct WorkoutExerciseLogCard: View {
         self.onDeleteExercise = onDeleteExercise
         self.onSaveProgress = onSaveProgress
         self.onSendFormCheck = onSendFormCheck
+        self.allowsClientActions = allowsClientActions
         _isExpanded = State(initialValue: initiallyExpanded)
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .top, spacing: 8) {
-                if let onReorderExercise {
-                    Button(action: onReorderExercise) {
-                        Image(systemName: "circle.grid.2x3.fill")
-                            .font(FWBFont.sized(14))
-                            .foregroundStyle(Color.fwbMuted)
-                            .frame(width: 30, height: groupedSummary ? 86 : 96)
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("Reorder \(exercise.name)")
-                    .accessibilityHint("Opens exercise and group ordering")
-                }
-
-                if media.imageURL != nil {
-                    exerciseThumbnail
-                }
-
                 Button {
                     withAnimation(.easeOut(duration: 0.18)) {
                         isExpanded.toggle()
                     }
                 } label: {
-                    VStack(alignment: .leading, spacing: 5) {
-                        exerciseCodeBadge
-                        Text(exercise.name.isEmpty ? "Exercise" : exercise.name.fwbTitleCased)
-                            .font(FWBFont.sized(groupedSummary ? 15 : 17).weight(.bold))
-                            .foregroundStyle(Color.fwbWarmWhite)
-                            .multilineTextAlignment(.leading)
-                            .lineLimit(3)
-                            .minimumScaleFactor(0.82)
-                        if !exercise.prescription.isEmpty {
-                            Text(exercise.prescription)
-                                .font(FWBFont.footnote)
-                                .foregroundStyle(Color.fwbMuted)
+                    HStack(alignment: .top, spacing: 9) {
+                        if groupedSummary {
+                            Text(exerciseLabel)
+                                .font(FWBFont.sized(12).weight(.semibold))
+                                .foregroundStyle(Color.fwbWarmWhite)
+                                .frame(width: 28, height: 28)
+                                .background(Color.fwbCard, in: RoundedRectangle(cornerRadius: 8))
                         }
-                        if !mediaMetadata.isEmpty {
-                            Text(mediaMetadata)
-                                .font(FWBFont.caption2)
-                                .foregroundStyle(Color.fwbMuted)
-                                .lineLimit(1)
+                        VStack(alignment: .leading, spacing: 4) {
+                            if !groupedSummary && !exercise.code.isEmpty {
+                                Text(exercise.code.uppercased())
+                                    .font(FWBFont.footnote.bold())
+                                    .tracking(0.8)
+                                    .foregroundStyle(Color.fwbLime)
+                            }
+                            Text(exercise.name.isEmpty ? "Exercise" : exercise.name.fwbTitleCased)
+                                .font(FWBFont.sized(17).weight(.semibold))
+                                .foregroundStyle(Color.fwbWarmWhite)
+                                .multilineTextAlignment(.leading)
+                                .fixedSize(horizontal: false, vertical: true)
+                            if !exercise.prescription.isEmpty {
+                                Text(exercise.prescription)
+                                    .font(FWBFont.footnote)
+                                    .foregroundStyle(Color.fwbMuted)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                            Text("\(completedSetCount) / \(workingDrafts.count) working sets completed")
+                                .font(FWBFont.footnote.weight(.semibold))
+                                .foregroundStyle(Color.fwbLime)
+                                .fixedSize(horizontal: false, vertical: true)
+
                         }
+
+                        Spacer()
+
+                        Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                            .font(FWBFont.footnote.bold())
+                            .foregroundStyle(Color.fwbMuted)
+                            .padding(.top, 8)
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("\(exercise.name), \(isExpanded ? "collapse" : "expand")")
 
-                if media.hasVisual {
-                    Button {
-                        mediaViewerRequest = ExerciseMediaViewerRequest(
-                            exerciseName: exercise.name,
-                            media: media
-                        )
-                    } label: {
-                        Image(systemName: "info")
-                            .font(FWBFont.sized(13).weight(.bold))
-                            .foregroundStyle(Color.fwbWarmWhite)
-                            .frame(width: 40, height: 40)
-                            .background(Color.fwbCard, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-                            .overlay {
-                                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                    .stroke(Color.fwbWarmWhite, lineWidth: 2)
-                            }
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("Open exercise guide for \(exercise.name)")
-                } else if let url = media.fallbackDemoURL {
+                if let url = exercise.demoURL {
                     Link(destination: url) {
                         Image(systemName: "play.rectangle")
                             .font(FWBFont.sized(16).weight(.semibold))
@@ -3542,10 +4402,12 @@ private struct WorkoutExerciseLogCard: View {
                         .accessibilityIdentifier("workout.revertSubstitution.\(accessibilityExerciseID)")
                     }
 
-                    Button(action: onSendFormCheck) {
-                        Label("Send form check", systemImage: "video.badge.plus")
+                    if allowsClientActions {
+                        Button(action: onSendFormCheck) {
+                            Label("Send form check", systemImage: "video.badge.plus")
+                        }
+                        .accessibilityIdentifier("formCheck.open.\(accessibilityExerciseID)")
                     }
-                    .accessibilityIdentifier("formCheck.open.\(accessibilityExerciseID)")
                     if entryStyle == .strength && exercise.supportsBarbellCalculators {
                         Button { calculatorRequest = .plates } label: {
                             Label("Plate calculator", systemImage: "circle.grid.cross")
@@ -3555,6 +4417,10 @@ private struct WorkoutExerciseLogCard: View {
                             Label("Warm-up sets", systemImage: "flame")
                         }
                         .accessibilityIdentifier("workout.warmUpCalculator.\(accessibilityExerciseID)")
+                        Button { calculatorRequest = .oneRepMax } label: {
+                            Label("1RM calculator", systemImage: "gauge.with.dots.needle.67percent")
+                        }
+                        .accessibilityIdentifier("workout.oneRepMaxCalculator.\(accessibilityExerciseID)")
                     }
                     Button(action: onSaveProgress) {
                         Label(didSaveProgress ? "Progress saved" : "Save progress", systemImage: "tray.and.arrow.down")
@@ -3587,7 +4453,6 @@ private struct WorkoutExerciseLogCard: View {
                     ExerciseNameAutocompleteField(
                         text: editableName,
                         suggestions: suggestions,
-                        approvedExercises: approvedExercises,
                         onSuggestionSelected: onExerciseNameSuggestionSelected,
                         accessibilityIdentifier: "customWorkout.exercise.\(exercise.code)"
                     )
@@ -3609,8 +4474,12 @@ private struct WorkoutExerciseLogCard: View {
                     VStack(alignment: .leading, spacing: 7) {
                         ForEach(Array(exercise.instructionSteps.prefix(5).enumerated()), id: \.offset) { index, step in
                             Text("\(index + 1). \(step)")
+                                .fixedSize(horizontal: false, vertical: true)
                         }
-                        if !exercise.rest.isEmpty { Text("Rest: \(exercise.rest)") }
+                        if !exercise.rest.isEmpty {
+                            Text("Rest: \(exercise.rest)")
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
                     }
                     .font(FWBFont.sized(12))
                     .foregroundStyle(Color.fwbMuted)
@@ -3620,7 +4489,9 @@ private struct WorkoutExerciseLogCard: View {
                 if !groupedSummary {
                 let matchingDrafts = exerciseDrafts
                 VStack(spacing: 6) {
-                    LoggerTableHeadings(entryStyle: entryStyle)
+                    LoggerTableHeadings(entryStyle: entryStyle) {
+                        calculatorRequest = .oneRepMax
+                    }
 
                     ForEach(matchingDrafts) { draft in
                         WorkoutSetLogRow(
@@ -3628,11 +4499,14 @@ private struct WorkoutExerciseLogCard: View {
                             focusedField: $focusedField,
                             entryStyle: entryStyle,
                             preferredEffortScale: preferredEffortScale,
+                            recommendedRepsPlaceholder: WorkoutProgressionIntegration.recommendedRepsPlaceholder(
+                                for: exercise,
+                                drafts: exerciseDrafts
+                            ),
                             previousResult: previousSets[draft.setNumber],
                             isPreviousHistoryLoading: isPreviousHistoryLoading,
                             canCopyPreviousSet: previousDraft(for: draft)?.containsEntry == true,
                             wasCopied: copiedDraftIDs.contains(draft.id),
-                            exerciseTitle: exercise.name,
                             onCompletionChanged: { isCompleted in
                                 onSetCompletionChanged(draft, isCompleted)
                             },
@@ -3707,12 +4581,6 @@ private struct WorkoutExerciseLogCard: View {
                 isExpanded = true
             }
         }
-        .onChange(of: isNavigationTarget) { isTarget in
-            guard isTarget else { return }
-            withAnimation(.easeOut(duration: 0.18)) {
-                isExpanded = true
-            }
-        }
         .confirmationDialog(
             copyDialogTitle,
             isPresented: Binding(
@@ -3731,71 +4599,17 @@ private struct WorkoutExerciseLogCard: View {
                 kind: kind,
                 exerciseName: exercise.name,
                 suggestedWorkingWeight: suggestedWorkingWeight,
+                suggestedReps: suggestedReps,
+                recommendedRepRange: WorkoutProgressionIntegration.recommendedRepRange(
+                    for: exercise,
+                    drafts: exerciseDrafts
+                ),
+                onUseRecommendedWeight: { weight, _ in
+                    applyRecommendedWeight(weight)
+                },
                 onInsertWarmUps: onInsertWarmUps
             )
         }
-        .sheet(item: $mediaViewerRequest) { request in
-            ExerciseMediaViewer(request: request)
-                .presentationDetents([.medium, .large])
-                .presentationDragIndicator(.visible)
-        }
-    }
-
-    private var exerciseThumbnail: some View {
-        Button {
-            mediaViewerRequest = ExerciseMediaViewerRequest(
-                exerciseName: exercise.name,
-                media: media
-            )
-        } label: {
-            ZStack(alignment: .bottomTrailing) {
-                ExerciseRemoteImage(urls: media.thumbnailURLs, animated: false)
-                    .frame(width: groupedSummary ? 112 : 124, height: groupedSummary ? 86 : 96)
-                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-
-                Image(systemName: "info")
-                    .font(FWBFont.sized(10).weight(.bold))
-                    .foregroundStyle(Color.fwbWarmWhite)
-                    .frame(width: 28, height: 28)
-                    .background(Color.fwbCard, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
-                    .overlay {
-                        RoundedRectangle(cornerRadius: 7, style: .continuous)
-                            .stroke(Color.fwbWarmWhite, lineWidth: 1.5)
-                    }
-                    .padding(6)
-            }
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel("View exercise guide for \(exercise.name)")
-        .accessibilityHint("Opens the full start and end card with exercise instructions")
-    }
-
-    private var exerciseCodeBadge: some View {
-        Text(displayCode)
-            .font(FWBFont.footnote.weight(.bold))
-            .foregroundStyle(.white)
-            .padding(.horizontal, 10)
-            .frame(minHeight: 28)
-            .background(Color.fwbLime, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-            .overlay(alignment: .leading) {
-                Rectangle()
-                    .fill(Color.fwbGold)
-                    .frame(width: 4)
-                    .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
-            }
-            .accessibilityLabel("Exercise \(displayCode)")
-    }
-
-    private var displayCode: String {
-        let trimmed = exercise.code.trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmed.isEmpty ? String(exerciseNumber) : trimmed.uppercased()
-    }
-
-    private var mediaMetadata: String {
-        [media.primaryMuscle, media.equipment]
-            .map { $0.fwbTitleCased }
-            .filter { !$0.isEmpty }
-            .joined(separator: "  |  ")
     }
 
     private var copyLastWorkoutControl: some View {
@@ -3910,6 +4724,15 @@ private struct WorkoutExerciseLogCard: View {
             .buttonStyle(FWBSecondaryButtonStyle())
             .accessibilityLabel("Generate warm-up sets for \(exercise.name)")
             .accessibilityIdentifier("workout.warmUpCalculator.\(accessibilityExerciseID)")
+
+            Button {
+                calculatorRequest = .oneRepMax
+            } label: {
+                Label("1RM", systemImage: "gauge.with.dots.needle.67percent")
+            }
+            .buttonStyle(FWBSecondaryButtonStyle())
+            .accessibilityLabel("Estimate one rep max for \(exercise.name)")
+            .accessibilityIdentifier("workout.oneRepMaxCalculator.\(accessibilityExerciseID)")
         }
 
         if dynamicTypeSize.isAccessibilitySize {
@@ -3935,6 +4758,25 @@ private struct WorkoutExerciseLogCard: View {
 
     private var suggestedWorkingWeight: Double {
         workingDrafts.map(\.weightValue).filter { $0 > 0 }.max() ?? 0
+    }
+
+    private var suggestedReps: Int {
+        guard let source = workingDrafts
+            .filter({ $0.weightValue > 0 && $0.repsValue > 0 })
+            .max(by: { $0.weightValue < $1.weightValue }) else { return 0 }
+        return Int(source.repsValue.rounded())
+    }
+
+    private func applyRecommendedWeight(_ weight: Double) {
+        let value = PlateCalculator.formatted(weight)
+        for index in drafts.indices where drafts[index].exerciseCode == exercise.code
+            && drafts[index].exerciseName == exercise.name
+            && drafts[index].setType == .working
+            && !drafts[index].isCompleted
+            && drafts[index].weight.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            drafts[index].weight = value
+            onDraftEdited(drafts[index].id)
+        }
     }
 
     private var metricColumns: [GridItem] {
@@ -4003,262 +4845,6 @@ private struct WorkoutExerciseLogCard: View {
     }
 }
 
-@MainActor
-private final class ExerciseRemoteImageLoader: ObservableObject {
-    @Published private(set) var image: UIImage?
-    @Published private(set) var isLoading = false
-
-    private static let cache = NSCache<NSString, UIImage>()
-
-    func load(urls: [URL], animated: Bool) async {
-        guard !urls.isEmpty else { return }
-        let key = NSString(string: "\(animated ? "motion" : "still")|\(urls.map(\.absoluteString).joined(separator: "|"))")
-        if let cached = Self.cache.object(forKey: key) {
-            image = cached
-            return
-        }
-
-        isLoading = true
-        defer { isLoading = false }
-
-        for url in urls {
-            guard !Task.isCancelled else { return }
-            do {
-                let request = URLRequest(url: url, cachePolicy: .returnCacheDataElseLoad, timeoutInterval: 20)
-                let (data, response) = try await URLSession.shared.data(for: request)
-                guard !Task.isCancelled,
-                      let http = response as? HTTPURLResponse,
-                      (200..<300).contains(http.statusCode),
-                      let decoded = Self.decode(data: data, animated: animated) else { continue }
-                Self.cache.setObject(decoded, forKey: key, cost: data.count)
-                image = decoded
-                return
-            } catch is CancellationError {
-                return
-            } catch {
-                continue
-            }
-        }
-    }
-
-    private static func decode(data: Data, animated: Bool) -> UIImage? {
-        guard let source = CGImageSourceCreateWithData(data as CFData, nil) else {
-            return UIImage(data: data)
-        }
-        let frameCount = CGImageSourceGetCount(source)
-        guard animated, frameCount > 1 else {
-            return thumbnail(from: source, at: 0)
-        }
-
-        var images: [UIImage] = []
-        var duration: TimeInterval = 0
-        images.reserveCapacity(frameCount)
-        for index in 0..<frameCount {
-            guard let image = thumbnail(from: source, at: index) else { continue }
-            images.append(image)
-            duration += frameDuration(source: source, index: index)
-        }
-        guard !images.isEmpty else { return nil }
-        return UIImage.animatedImage(with: images, duration: max(duration, Double(images.count) * 0.08))
-    }
-
-    private static func thumbnail(from source: CGImageSource, at index: Int) -> UIImage? {
-        let options: [CFString: Any] = [
-            kCGImageSourceCreateThumbnailFromImageAlways: true,
-            kCGImageSourceCreateThumbnailWithTransform: true,
-            kCGImageSourceThumbnailMaxPixelSize: 1_200,
-            kCGImageSourceShouldCacheImmediately: true
-        ]
-        guard let cgImage = CGImageSourceCreateThumbnailAtIndex(source, index, options as CFDictionary) else { return nil }
-        return UIImage(cgImage: cgImage)
-    }
-
-    private static func frameDuration(source: CGImageSource, index: Int) -> TimeInterval {
-        guard let properties = CGImageSourceCopyPropertiesAtIndex(source, index, nil) as? [String: Any] else { return 0.1 }
-        let delay = recursiveDelay(in: properties)
-        return delay >= 0.02 ? delay : 0.1
-    }
-
-    private static func recursiveDelay(in dictionary: [String: Any]) -> TimeInterval {
-        for key in ["UnclampedDelayTime", "DelayTime"] {
-            if let number = dictionary[key] as? NSNumber { return number.doubleValue }
-        }
-        for value in dictionary.values {
-            if let nested = value as? [String: Any] {
-                let delay = recursiveDelay(in: nested)
-                if delay > 0 { return delay }
-            }
-        }
-        return 0
-    }
-}
-
-private struct ExerciseRemoteImage: View {
-    @StateObject private var loader = ExerciseRemoteImageLoader()
-    let urls: [URL]
-    let animated: Bool
-
-    init(url: URL?, animated: Bool) {
-        urls = url.map { [$0] } ?? []
-        self.animated = animated
-    }
-
-    init(urls: [URL], animated: Bool) {
-        self.urls = urls
-        self.animated = animated
-    }
-
-    var body: some View {
-        ZStack {
-            Color.fwbSurface
-            if let image = loader.image {
-                ExerciseUIImageView(image: image)
-            } else if loader.isLoading {
-                ProgressView()
-                    .tint(Color.fwbLime)
-            } else {
-                Image(systemName: "figure.strengthtraining.traditional")
-                    .font(FWBFont.sized(24))
-                    .foregroundStyle(Color.fwbMuted)
-            }
-        }
-        .clipped()
-        .task(id: cacheIdentity) {
-            await loader.load(urls: urls, animated: animated)
-        }
-    }
-
-    private var cacheIdentity: String {
-        "\(animated)|\(urls.map(\.absoluteString).joined(separator: "|"))"
-    }
-}
-
-private struct ExerciseUIImageView: UIViewRepresentable {
-    let image: UIImage
-
-    func makeUIView(context: Context) -> UIImageView {
-        let imageView = UIImageView()
-        imageView.contentMode = .scaleAspectFit
-        imageView.clipsToBounds = true
-        return imageView
-    }
-
-    func updateUIView(_ imageView: UIImageView, context: Context) {
-        imageView.image = image
-        if image.images != nil {
-            imageView.startAnimating()
-        } else {
-            imageView.stopAnimating()
-        }
-    }
-}
-
-private struct ExerciseMediaViewer: View {
-    @Environment(\.dismiss) private var dismiss
-    let request: ExerciseMediaViewerRequest
-    @State private var isShowingVideo = false
-    @State private var player: AVPlayer?
-
-    var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    Group {
-                        if isShowingVideo, let player {
-                            VideoPlayer(player: player)
-                                .onAppear { player.play() }
-                                .accessibilityLabel("Video demonstration for \(request.exerciseName)")
-                        } else {
-                            ExerciseRemoteImage(urls: preferredURLs, animated: false)
-                                .accessibilityLabel("Static start and end reference for \(request.exerciseName)")
-                        }
-                    }
-                    .aspectRatio(1904 / 826, contentMode: .fit)
-                    .frame(maxWidth: .infinity)
-                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                    .overlay {
-                        RoundedRectangle(cornerRadius: 16, style: .continuous)
-                            .stroke(Color.fwbLine, lineWidth: 1)
-                    }
-
-                    Text(request.exerciseName.fwbTitleCased)
-                        .font(FWBFont.title3.weight(.bold))
-                        .foregroundStyle(Color.fwbWarmWhite)
-
-                    Text(isShowingVideo ? "EXERCISE VIDEO DEMONSTRATION" : "STATIC START / END FORM REFERENCE")
-                        .font(FWBFont.caption.weight(.semibold))
-                        .tracking(0.5)
-                        .foregroundStyle(Color.fwbMuted)
-
-                    if let videoURL {
-                        Button {
-                            if isShowingVideo {
-                                player?.pause()
-                                player = nil
-                                isShowingVideo = false
-                            } else {
-                                player = AVPlayer(url: videoURL)
-                                isShowingVideo = true
-                            }
-                        } label: {
-                            Label(
-                                isShowingVideo ? "Show static card" : "Watch exercise video",
-                                systemImage: isShowingVideo ? "photo" : "play.fill"
-                            )
-                            .frame(maxWidth: .infinity)
-                        }
-                        .buttonStyle(FWBPrimaryButtonStyle())
-                    }
-
-                    if !request.media.instructions.isEmpty {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("HOW TO PERFORM")
-                                .font(FWBFont.caption.weight(.bold))
-                                .tracking(0.7)
-                                .foregroundStyle(Color.fwbLime)
-
-                            Text(request.media.instructions)
-                                .font(FWBFont.body)
-                                .foregroundStyle(Color.fwbWarmWhite)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-                        .padding(14)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(Color.fwbCard, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-                    }
-
-                    if let demoURL = request.media.fallbackDemoURL {
-                        Link(destination: demoURL) {
-                            Label("Open additional exercise reference", systemImage: "arrow.up.right.square")
-                                .frame(maxWidth: .infinity)
-                        }
-                        .buttonStyle(FWBSecondaryButtonStyle())
-                    }
-                }
-                .padding(16)
-            }
-            .background(Color.fwbBackground.ignoresSafeArea())
-            .navigationTitle("Exercise guide")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Done") { dismiss() }
-                }
-            }
-            .onDisappear { player?.pause() }
-        }
-    }
-
-    private var videoURL: URL? {
-        guard ExerciseMediaURL.isVideo(request.media.motionURL) else { return nil }
-        return request.media.motionURL
-    }
-
-    private var preferredURLs: [URL] {
-        [request.media.imageURL].compactMap { $0 }
-    }
-}
-
 private struct ExerciseInstructionsDisclosure: View {
     let exercise: Exercise
     @Binding var isExpanded: Bool
@@ -4296,7 +4882,7 @@ private struct ExerciseInstructionsDisclosure: View {
                         HStack(alignment: .top, spacing: 10) {
                             Text("\(index + 1)")
                                 .font(FWBFont.footnote.weight(.semibold))
-                                .foregroundStyle(.black)
+                                .foregroundStyle(Color.fwbBrandPrimaryInk)
                                 .frame(width: 22, height: 22)
                                 .background(Color.fwbAccentFill, in: RoundedRectangle(cornerRadius: FWBLayout.controlRadius, style: .continuous))
 
@@ -4330,7 +4916,7 @@ private struct WorkoutSubstitutionBanner: View {
         HStack(spacing: 12) {
             Image(systemName: "arrow.left.arrow.right")
                 .font(FWBFont.subheadline.weight(.semibold))
-                .foregroundStyle(.black)
+                .foregroundStyle(Color.fwbBrandPrimaryInk)
                 .frame(width: 34, height: 34)
                 .background(Color.fwbAccentFill, in: RoundedRectangle(cornerRadius: FWBLayout.controlRadius, style: .continuous))
 
@@ -4396,16 +4982,15 @@ private struct WorkoutSetActionButtonStyle: ButtonStyle {
 }
 
 private struct WorkoutSetLogRow: View {
-    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
     @Binding var draft: WorkoutSetDraft
     @FocusState.Binding var focusedField: WorkoutLogFocus?
     let entryStyle: WorkoutEntryStyle
     let preferredEffortScale: WorkoutEffortScale
+    let recommendedRepsPlaceholder: String?
     let previousResult: PreviousWorkoutResult?
     let isPreviousHistoryLoading: Bool
     let canCopyPreviousSet: Bool
     let wasCopied: Bool
-    var exerciseTitle: String? = nil
     var groupCode: String? = nil
     let onCompletionChanged: (Bool) -> Void
     let onSetTypeChanged: (WorkoutSetType) -> Void
@@ -4414,20 +4999,9 @@ private struct WorkoutSetLogRow: View {
     let onDelete: () -> Void
     @State private var rirRequest: WorkoutRIRRequest?
     @State private var isNoteVisible = false
-    @State private var completionSweepProgress: CGFloat = -0.5
-    @State private var completionCheckScale: CGFloat = 1
 
     var body: some View {
         VStack(alignment: .leading, spacing: 5) {
-            if let exerciseTitle, !exerciseTitle.isEmpty {
-                Text(exerciseTitle.fwbTitleCased.uppercased())
-                    .font(FWBFont.sized(10).weight(.bold))
-                    .foregroundStyle(Color.fwbMuted)
-                    .tracking(0.25)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.68)
-                    .accessibilityHidden(true)
-            }
             HStack(spacing: 5) {
                 if let groupCode {
                     Button { onCompletionChanged(!draft.isCompleted) } label: {
@@ -4450,7 +5024,13 @@ private struct WorkoutSetLogRow: View {
                     NumericLogField(placeholder: "0", suffix: "lb", text: $draft.weight, focus: $focusedField, focusValue: .weight(draft.id))
                 } else {
                     NumericLogField(placeholder: "0", suffix: entryStyle.firstSuffix, text: $draft.weight, focus: $focusedField, focusValue: .weight(draft.id))
-                    NumericLogField(placeholder: "0", suffix: entryStyle.secondSuffix, text: $draft.reps, focus: $focusedField, focusValue: .reps(draft.id))
+                    NumericLogField(
+                        placeholder: draft.setType == .working ? (recommendedRepsPlaceholder ?? "0") : "0",
+                        suffix: entryStyle.secondSuffix,
+                        text: $draft.reps,
+                        focus: $focusedField,
+                        focusValue: .reps(draft.id)
+                    )
                 }
 
                 Button {
@@ -4477,7 +5057,6 @@ private struct WorkoutSetLogRow: View {
                     Image(systemName: "checkmark")
                         .font(FWBFont.sized(14).weight(.semibold))
                         .foregroundStyle(draft.isCompleted ? Color.black : Color.fwbMuted)
-                        .scaleEffect(draft.isCompleted ? completionCheckScale : 1)
                         .frame(width: 44, height: 44)
                         .background(draft.isCompleted ? Color.fwbAccentFill : Color.fwbSurface, in: RoundedRectangle(cornerRadius: 9))
                         .overlay { RoundedRectangle(cornerRadius: 9).stroke(Color.fwbLine, lineWidth: 1) }
@@ -4524,34 +5103,6 @@ private struct WorkoutSetLogRow: View {
             }
         }
         .padding(.vertical, 2)
-        .overlay {
-            GeometryReader { proxy in
-                LinearGradient(
-                    colors: [.clear, Color.fwbLime.opacity(0.24), .clear],
-                    startPoint: .leading,
-                    endPoint: .trailing
-                )
-                .frame(width: proxy.size.width * 0.42)
-                .offset(x: proxy.size.width * completionSweepProgress)
-            }
-            .allowsHitTesting(false)
-            .clipped()
-            .opacity(accessibilityReduceMotion ? 0 : 1)
-        }
-        .onChange(of: draft.isCompleted) { isCompleted in
-            guard isCompleted, !accessibilityReduceMotion else { return }
-            completionSweepProgress = -0.5
-            completionCheckScale = 0.82
-            Task { @MainActor in
-                await Task.yield()
-                withAnimation(.easeOut(duration: 0.62)) {
-                    completionSweepProgress = 1.15
-                }
-                withAnimation(.spring(response: 0.32, dampingFraction: 0.58)) {
-                    completionCheckScale = 1
-                }
-            }
-        }
         .sheet(item: $rirRequest) { _ in
             WorkoutRIRSelectionSheet(draft: $draft)
                 .presentationDetents([.medium, .large])
@@ -5035,7 +5586,7 @@ private struct NumericLogField: View {
     @FocusState private var isFocused: Bool
 
     var body: some View {
-        TextField(placeholder, text: $text)
+        TextField("", text: $text, prompt: Text(placeholder).foregroundStyle(Color.fwbMuted))
             .keyboardType(.decimalPad)
             .multilineTextAlignment(.center)
             .font(FWBFont.sized(14).weight(.semibold))
@@ -5194,7 +5745,6 @@ private struct ExercisePickerSheet: View {
 
     let request: ExerciseEditorRequest
     let suggestions: [String]
-    let approvedExercises: [ApprovedExercise]
     let onSave: (String) -> Void
 
     @State private var exerciseName = ""
@@ -5340,15 +5890,20 @@ private struct ExercisePickerSheet: View {
                                             HStack(spacing: 12) {
                                                 Image(systemName: exerciseIcon(for: suggestion))
                                                     .font(FWBFont.subheadline.weight(.bold))
-                                                    .foregroundStyle(Color.black)
+                                                    .foregroundStyle(Color.fwbBrandPrimaryInk)
                                                     .frame(width: 34, height: 34)
                                                     .background(Color.fwbAccentFill, in: RoundedRectangle(cornerRadius: FWBLayout.controlRadius, style: .continuous))
 
-                                                ExerciseSuggestionText(
-                                                    name: suggestion,
-                                                    approvedExercises: approvedExercises,
-                                                    fallbackSubtitle: (ExerciseLibrary.category(for: suggestion) ?? "Program & history").uppercased()
-                                                )
+                                                VStack(alignment: .leading, spacing: 3) {
+                                                    Text(suggestion.fwbTitleCased)
+                                                        .font(FWBFont.subheadline.weight(.bold))
+                                                        .foregroundStyle(Color.fwbWarmWhite)
+                                                        .multilineTextAlignment(.leading)
+                                                    Text((ExerciseLibrary.category(for: suggestion) ?? "Program & history").uppercased())
+                                                        .font(FWBFont.footnote.weight(.semibold))
+                                                        .tracking(0.5)
+                                                        .foregroundStyle(Color.fwbMuted)
+                                                }
 
                                                 Spacer(minLength: 6)
                                                 Image(systemName: "plus")
@@ -5360,11 +5915,7 @@ private struct ExercisePickerSheet: View {
                                             .contentShape(Rectangle())
                                         }
                                         .buttonStyle(.plain)
-                                        .accessibilityLabel(exerciseSuggestionAccessibilityLabel(
-                                            action: "Add",
-                                            name: suggestion,
-                                            approvedExercises: approvedExercises
-                                        ))
+                                        .accessibilityLabel("Add \(suggestion)")
 
                                         if suggestion != visibleSuggestions.last {
                                             FWBRule()
@@ -5504,7 +6055,6 @@ private struct LoggerStatusBanner: View {
 private struct ExerciseNameAutocompleteField: View {
     @Binding var text: String
     let suggestions: [String]
-    let approvedExercises: [ApprovedExercise]
     var autoFocus = false
     var onSuggestionSelected: () -> Void = {}
     let accessibilityIdentifier: String
@@ -5536,10 +6086,9 @@ private struct ExerciseNameAutocompleteField: View {
                             HStack(spacing: 10) {
                                 Image(systemName: "figure.strengthtraining.traditional")
                                     .foregroundStyle(Color.fwbLime)
-                                ExerciseSuggestionText(
-                                    name: suggestion,
-                                    approvedExercises: approvedExercises
-                                )
+                                Text(suggestion.fwbTitleCased)
+                                    .font(FWBFont.subheadline.weight(.semibold))
+                                    .foregroundStyle(Color.fwbWarmWhite)
                                 Spacer()
                             }
                             .padding(.horizontal, 12)
@@ -5547,11 +6096,7 @@ private struct ExerciseNameAutocompleteField: View {
                             .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
-                        .accessibilityLabel(exerciseSuggestionAccessibilityLabel(
-                            action: "Use",
-                            name: suggestion,
-                            approvedExercises: approvedExercises
-                        ))
+                        .accessibilityLabel("Use \(suggestion)")
                         .accessibilityIdentifier("workout.exercisePicker.suggestion.\(suggestionIdentifier(suggestion))")
 
                         if suggestion != matches.last {
@@ -5582,8 +6127,8 @@ private struct ExerciseNameAutocompleteField: View {
 private struct CustomBlankExerciseSlot: View {
     let number: Int
     let suggestions: [String]
-    let approvedExercises: [ApprovedExercise]
     var showsSetGrid = true
+    var displayLabel: String? = nil
     let onAdd: (String) -> Void
     @State private var name = ""
     @FocusState private var isFocused: Bool
@@ -5593,7 +6138,7 @@ private struct CustomBlankExerciseSlot: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 8) {
-                Text("\(number)")
+                Text(displayLabel ?? String(number))
                     .font(FWBFont.sized(12).weight(.semibold))
                     .frame(width: 28, height: 28)
                     .background(Color.fwbSurface, in: RoundedRectangle(cornerRadius: 8))
@@ -5604,7 +6149,7 @@ private struct CustomBlankExerciseSlot: View {
                     .focused($isFocused)
                     .submitLabel(.done)
                     .onSubmit { commit(trimmedName) }
-                    .accessibilityLabel("Exercise \(number) name")
+                    .accessibilityLabel("Exercise \(displayLabel ?? String(number)) name")
                     .accessibilityHint("Choose or enter a name before editing weight, reps, or effort.")
                     .accessibilityIdentifier("customWorkout.blankExercise.\(number)")
                 if !trimmedName.isEmpty {
@@ -5618,11 +6163,7 @@ private struct CustomBlankExerciseSlot: View {
             if isFocused && !trimmedName.isEmpty {
                 ForEach(Array(ExerciseSuggestionLibrary.matches(query: trimmedName, within: suggestions).prefix(5)), id: \.self) { suggestion in
                     Button { commit(suggestion) } label: {
-                        ExerciseSuggestionText(
-                            name: suggestion,
-                            approvedExercises: approvedExercises
-                        )
-                        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                        Text(suggestion).frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
                     }
                     .font(FWBFont.sized(13))
                     .buttonStyle(.plain)
@@ -5686,23 +6227,6 @@ private struct EmptyWorkoutSetGrid: View {
     }
 }
 
-private struct WorkoutRoundStepperButtonStyle: ButtonStyle {
-    @Environment(\.isEnabled) private var isEnabled
-    let accented: Bool
-
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .font(FWBFont.title3.weight(.bold))
-            .foregroundStyle(accented ? Color.black : Color.fwbWarmWhite)
-            .background(accented ? Color.fwbAccentFill : Color.fwbCard, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-            .overlay {
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .stroke(accented ? Color.fwbWarmWhite : Color.fwbLine, lineWidth: accented ? 2 : 1.5)
-            }
-            .opacity(isEnabled ? (configuration.isPressed ? 0.72 : 1) : 0.35)
-    }
-}
-
 private struct LoggerCompactButtonStyle: ButtonStyle {
     var accented = false
     func makeBody(configuration: Configuration) -> some View {
@@ -5718,30 +6242,29 @@ private struct LoggerCompactButtonStyle: ButtonStyle {
     }
 }
 
-private struct LoggerRoundCopyButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .font(FWBFont.sized(10).weight(.semibold))
-            .lineLimit(1)
-            .foregroundStyle(Color.fwbWarmWhite)
-            .padding(.horizontal, 7)
-            .frame(minHeight: 36)
-            .background(Color.fwbSurface, in: RoundedRectangle(cornerRadius: 9))
-            .overlay { RoundedRectangle(cornerRadius: 9).stroke(Color.fwbLine, lineWidth: 1) }
-            .opacity(configuration.isPressed ? 0.7 : 1)
-    }
-}
-
 private struct LoggerTableHeadings: View {
     let entryStyle: WorkoutEntryStyle
     var firstTitle = "Set"
+    var onEstimateOneRepMax: (() -> Void)? = nil
     var body: some View {
         HStack(spacing: 5) {
             Text(firstTitle)
                 .font(FWBFont.sized(firstTitle == "Exercise" ? 9 : 10).weight(.semibold))
                 .minimumScaleFactor(0.7)
                 .frame(width: 40)
-            Text(entryStyle == .mobility ? "Seconds" : "Weight").frame(maxWidth: .infinity)
+            if entryStyle == .strength, let onEstimateOneRepMax {
+                Button(action: onEstimateOneRepMax) {
+                    HStack(spacing: 3) {
+                        Text("Weight")
+                        Image(systemName: "gauge.with.dots.needle.67percent")
+                    }
+                    .frame(maxWidth: .infinity, minHeight: 36)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Open one rep max calculator")
+            } else {
+                Text(entryStyle == .mobility ? "Seconds" : "Weight").frame(maxWidth: .infinity)
+            }
             Text(entryStyle == .mobility ? "Rounds" : "Reps").frame(maxWidth: .infinity)
             Text("RIR").frame(width: 48)
             Image(systemName: "checkmark").frame(width: 44)
@@ -5750,7 +6273,7 @@ private struct LoggerTableHeadings: View {
         .foregroundStyle(Color.fwbMuted)
         .lineLimit(1)
         .padding(.vertical, 4)
-        .accessibilityHidden(true)
+        .accessibilityHidden(onEstimateOneRepMax == nil)
     }
 }
 
@@ -5839,12 +6362,13 @@ struct WorkoutHistoryCopyPlan: Identifiable {
                 code: String(format: "CW%02d", index + 1),
                 name: source.name,
                 prescription: "\(source.records.filter { !$0.isWarmUp }.count) sets",
-                rest: ""
+                rest: "",
+                progression: source.records.compactMap(\.progressionTarget).first
             )
         }
         workout = Workout(
             id: id,
-            title: "Copy of \(session.workoutTitle) · \(id.uuidString.prefix(8).lowercased())",
+            title: "Copy of \(session.workoutTitle.fwbWorkoutDisplayTitle) · \(id.uuidString.prefix(8).lowercased())",
             focus: "Copied from \(session.entryDate)",
             format: "custom",
             exercises: exercises

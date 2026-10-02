@@ -15,6 +15,7 @@ struct ReadinessCheckIn: Codable, Equatable, Identifiable {
     var energy: Int
     var soreness: Int
     var sleepRecovery: Int
+    var mood: Int?
     var hasEatenToday: Bool?
     var note: String
     var updatedAt: Date
@@ -27,6 +28,7 @@ struct ReadinessCheckIn: Codable, Equatable, Identifiable {
         energy: Int,
         soreness: Int,
         sleepRecovery: Int,
+        mood: Int? = nil,
         hasEatenToday: Bool? = nil,
         note: String,
         updatedAt: Date = Date(),
@@ -38,6 +40,7 @@ struct ReadinessCheckIn: Codable, Equatable, Identifiable {
         self.energy = Self.validatedRating(energy)
         self.soreness = Self.validatedRating(soreness)
         self.sleepRecovery = Self.validatedRating(sleepRecovery)
+        self.mood = mood.map(Self.validatedRating)
         self.hasEatenToday = hasEatenToday
         self.note = String(note.trimmingCharacters(in: .whitespacesAndNewlines).prefix(300))
         self.updatedAt = updatedAt
@@ -118,11 +121,11 @@ actor ReadinessCheckInRepository {
     private let encoder: JSONEncoder
     private let decoder: JSONDecoder
 
-    init(fileManager: FileManager = .default) {
+    init(fileManager: FileManager = .default, fileURL: URL? = nil) {
         let baseURL = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
             ?? fileManager.temporaryDirectory
         let directoryURL = baseURL.appendingPathComponent("FWB", isDirectory: true)
-        fileURL = directoryURL.appendingPathComponent("readiness-check-ins.json")
+        self.fileURL = fileURL ?? directoryURL.appendingPathComponent("readiness-check-ins.json")
 
         encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
@@ -179,6 +182,7 @@ actor ReadinessCheckInRepository {
                 energy: remote.energy,
                 soreness: remote.soreness,
                 sleepRecovery: remote.sleepRecovery,
+                mood: remote.mood,
                 hasEatenToday: remote.hasEatenToday,
                 note: remote.note,
                 updatedAt: remote.updatedAt,
@@ -236,7 +240,7 @@ actor ReadinessCheckInRepository {
     }
 }
 
-private struct ReadinessCheckInPayload: Encodable {
+struct ReadinessCheckInPayload: Encodable {
     let clientMutationID: UUID
     let clientEmail: String
     let occurredOn: String
@@ -257,7 +261,7 @@ private struct ReadinessCheckInPayload: Encodable {
         soreness = checkIn.soreness
         sleepRecovery = checkIn.sleepRecovery
         hasEatenToday = checkIn.hasEatenToday
-        note = checkIn.note.isEmpty ? nil : checkIn.note
+        note = ReadinessMoodNote.encode(mood: checkIn.mood, note: checkIn.note)
         updatedAt = ReadinessDateCoding.string(from: checkIn.updatedAt)
     }
 
@@ -276,7 +280,7 @@ private struct ReadinessCheckInPayload: Encodable {
     }
 }
 
-private struct LegacyReadinessCheckInPayload: Encodable {
+struct LegacyReadinessCheckInPayload: Encodable {
     let clientEmail: String
     let occurredOn: String
     let energy: Int
@@ -292,7 +296,7 @@ private struct LegacyReadinessCheckInPayload: Encodable {
         energy = checkIn.energy
         soreness = checkIn.soreness
         sleepRecovery = checkIn.sleepRecovery
-        note = checkIn.note.isEmpty ? nil : checkIn.note
+        note = ReadinessMoodNote.encode(mood: checkIn.mood, note: checkIn.note)
         updatedAt = ContinuityDateCoding.string(from: checkIn.updatedAt)
     }
 
@@ -308,7 +312,7 @@ private struct LegacyReadinessCheckInPayload: Encodable {
     }
 }
 
-private struct ReadinessRemoteRecord: Decodable {
+struct ReadinessRemoteRecord: Decodable {
     let id: UUID
     let clientEmail: String
     let occurredOn: String
@@ -339,6 +343,7 @@ private struct ReadinessRemoteRecord: Decodable {
         guard energy != nil && soreness != nil && (sleepRecovery != nil || stress != nil) else {
             return nil
         }
+        let decodedNote = ReadinessMoodNote.decode(note ?? "")
         return ReadinessCheckIn(
             id: id,
             clientEmail: clientEmail,
@@ -346,13 +351,48 @@ private struct ReadinessRemoteRecord: Decodable {
             energy: energy ?? 3,
             soreness: soreness ?? 3,
             sleepRecovery: sleepRecovery ?? stress.map { 6 - $0 } ?? 3,
+            mood: decodedNote.mood,
             hasEatenToday: hasEatenToday,
-            note: note ?? "",
+            note: decodedNote.note,
             updatedAt: ReadinessDateCoding.date(from: updatedAt)
                 ?? ReadinessDateCoding.date(from: createdAt)
                 ?? Date(),
             syncState: .synced
         )
+    }
+}
+
+// The deployed check-in table has no mood column. Keep mood in a readable,
+// strictly recognized first line so older web/coach screens still show it.
+// Only our exact heading is parsed; arbitrary numbers in a client's note are not.
+enum ReadinessMoodNote {
+    static func label(for rating: Int) -> String {
+        switch rating {
+        case 1: "Very low"
+        case 2: "Low"
+        case 4: "Good"
+        case 5: "Great"
+        default: "Okay"
+        }
+    }
+
+    static func encode(mood: Int?, note: String) -> String? {
+        guard let mood, (1...5).contains(mood) else {
+            return note.isEmpty ? nil : note
+        }
+        let heading = "Mood check-in: \(label(for: mood)) (\(mood)/5)"
+        return note.isEmpty ? heading : heading + "\n\n" + note
+    }
+
+    static func decode(_ value: String) -> (mood: Int?, note: String) {
+        for rating in 1...5 {
+            let heading = "Mood check-in: \(label(for: rating)) (\(rating)/5)"
+            if value == heading { return (rating, "") }
+            if value.hasPrefix(heading + "\n\n") {
+                return (rating, String(value.dropFirst(heading.count + 2)))
+            }
+        }
+        return (nil, value)
     }
 }
 
@@ -377,7 +417,13 @@ enum CheckInDateCoding {
 private typealias ReadinessDateCoding = CheckInDateCoding
 
 @MainActor
-final class ReadinessSyncStore: ObservableObject {
+protocol DailyReadinessSyncing: AnyObject {
+    func loadToday(clientEmail: String) async throws -> ReadinessCheckIn?
+    func save(_ checkIn: ReadinessCheckIn) async throws -> ReadinessCheckIn
+}
+
+@MainActor
+final class ReadinessSyncStore: ObservableObject, DailyReadinessSyncing {
     enum State: Equatable {
         case idle
         case syncing
@@ -543,27 +589,59 @@ final class DailyReadinessStore: ObservableObject {
     @Published private(set) var today: ReadinessCheckIn?
 
     let clientEmail: String
-    private let repository: ReadinessCheckInRepository
-    private let syncStore: ReadinessSyncStore
+    private let syncStore: (any DailyReadinessSyncing)?
+    private let now: () -> Date
+    private var operationID = UUID()
 
     init(
         clientEmail: String,
         repository: ReadinessCheckInRepository = .shared,
-        syncStore: ReadinessSyncStore? = nil
+        syncStore: (any DailyReadinessSyncing)? = nil,
+        now: @escaping () -> Date = Date.init
     ) {
-        self.clientEmail = clientEmail
-        self.repository = repository
-        self.syncStore = syncStore ?? .shared
+        self.clientEmail = clientEmail.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        self.syncStore = syncStore ?? ReadinessSyncStore.shared
+        self.now = now
+    }
+
+    // Local-only UI fixture: neither loading nor saving touches the shared queue.
+    init(
+        previewCheckIn: ReadinessCheckIn?,
+        clientEmail: String,
+        now: @escaping () -> Date = Date.init
+    ) {
+        self.clientEmail = clientEmail.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        self.syncStore = nil
+        self.now = now
+        self.today = previewCheckIn?.clientEmail == self.clientEmail ? previewCheckIn : nil
+        self.state = .loaded
     }
 
     func load() async {
+        let requestID = UUID()
+        operationID = requestID
+        let requestedDay = ReadinessCheckIn.localDateKey(for: now())
+        if today?.localDate != requestedDay { today = nil }
         state = .loading
+        guard let syncStore else {
+            state = .loaded
+            return
+        }
         do {
-            today = try await syncStore.loadToday(clientEmail: clientEmail)
+            let loaded = try await syncStore.loadToday(clientEmail: clientEmail)
+            guard operationID == requestID, !Task.isCancelled else { return }
+            let currentDay = ReadinessCheckIn.localDateKey(for: now())
+            guard requestedDay == currentDay else {
+                today = nil
+                state = .idle
+                return
+            }
+            today = loaded?.localDate == currentDay ? loaded : nil
             state = .loaded
         } catch is CancellationError {
-            return
+            if operationID == requestID { state = .idle }
         } catch {
+            guard operationID == requestID else { return }
             state = .failed("Your readiness check-in could not be loaded.")
         }
     }
@@ -573,26 +651,46 @@ final class DailyReadinessStore: ObservableObject {
         energy: Int,
         soreness: Int,
         sleepRecovery: Int,
+        mood: Int? = nil,
         hasEatenToday: Bool,
         note: String
     ) async -> Bool {
+        let requestID = UUID()
+        operationID = requestID
+        let savedAt = now()
+        let localDate = ReadinessCheckIn.localDateKey(for: savedAt)
+        let sameDayRecord = today.flatMap { $0.localDate == localDate ? $0 : nil }
         let checkIn = ReadinessCheckIn(
-            id: today?.id ?? UUID(),
+            id: sameDayRecord?.id ?? UUID(),
             clientEmail: clientEmail,
+            localDate: localDate,
             energy: energy,
             soreness: soreness,
             sleepRecovery: sleepRecovery,
+            mood: mood,
             hasEatenToday: hasEatenToday,
-            note: note
+            note: note,
+            updatedAt: savedAt,
+            syncState: syncStore == nil ? .synced : .queued
         )
 
         do {
-            today = try await syncStore.save(checkIn)
+            let saved: ReadinessCheckIn
+            if let syncStore { saved = try await syncStore.save(checkIn) }
+            else { saved = checkIn }
+            guard operationID == requestID, !Task.isCancelled else { return false }
+            guard localDate == ReadinessCheckIn.localDateKey(for: now()) else {
+                today = nil
+                state = .idle
+                return false
+            }
+            today = saved
             state = .loaded
             return true
         } catch is CancellationError {
             return false
         } catch {
+            guard operationID == requestID else { return false }
             state = .failed("Your readiness check-in could not be saved. Please try again.")
             return false
         }
@@ -677,7 +775,7 @@ struct ReadinessDashboardCard: View {
             if let checkIn = store.today {
                 completedContent(checkIn)
             } else {
-                Text("Log energy, soreness, sleep quality, and whether you’ve eaten before today’s training.")
+                Text("Log mood, energy, soreness, sleep quality, and whether you’ve eaten before today’s training.")
                     .font(FWBFont.subheadline)
                     .foregroundStyle(Color.fwbMuted)
                     .fixedSize(horizontal: false, vertical: true)
@@ -724,7 +822,9 @@ struct ReadinessDashboardCard: View {
 struct ReadinessCheckInView: View {
     @Environment(\.dismiss) private var dismiss
     @ObservedObject var store: DailyReadinessStore
+    private let onSaved: ((ReadinessCheckIn) -> Void)?
 
+    @State private var mood: Int
     @State private var energy: Int
     @State private var soreness: Int
     @State private var sleepRecovery: Int
@@ -732,8 +832,10 @@ struct ReadinessCheckInView: View {
     @State private var note: String
     @State private var isSaving = false
 
-    init(store: DailyReadinessStore) {
+    init(store: DailyReadinessStore, onSaved: ((ReadinessCheckIn) -> Void)? = nil) {
         self.store = store
+        self.onSaved = onSaved
+        _mood = State(initialValue: store.today?.mood ?? 3)
         _energy = State(initialValue: store.today?.energy ?? 3)
         _soreness = State(initialValue: store.today?.soreness ?? 3)
         _sleepRecovery = State(initialValue: store.today?.sleepRecovery ?? 3)
@@ -747,6 +849,7 @@ struct ReadinessCheckInView: View {
             energy: energy,
             soreness: soreness,
             sleepRecovery: sleepRecovery,
+            mood: mood,
             hasEatenToday: hasEatenToday,
             note: note
         )
@@ -759,6 +862,14 @@ struct ReadinessCheckInView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     checkInHeader
+
+                    ReadinessScale(
+                        title: "Mood",
+                        prompt: "How are you feeling today?",
+                        lowLabel: "Very low",
+                        highLabel: "Great",
+                        selection: $mood
+                    )
 
                     ReadinessScale(
                         title: "Energy",
@@ -787,7 +898,7 @@ struct ReadinessCheckInView: View {
                     FoodTodayQuestion(selection: $hasEatenToday)
 
                     notesCard
-                    ReadinessResultCard(result: draft.result)
+                    if onSaved == nil { ReadinessResultCard(result: draft.result) }
 
                     Button {
                         Task { await save() }
@@ -795,7 +906,7 @@ struct ReadinessCheckInView: View {
                         if isSaving {
                             ProgressView().tint(.black)
                         } else {
-                            Label(store.today == nil ? "Save today’s check-in" : "Update today’s check-in", systemImage: "checkmark")
+                            Label(onSaved == nil ? (store.today == nil ? "Save today’s check-in" : "Update today’s check-in") : "Find today’s workout", systemImage: onSaved == nil ? "checkmark" : "arrow.right")
                         }
                     }
                     .buttonStyle(FWBPrimaryButtonStyle())
@@ -812,7 +923,7 @@ struct ReadinessCheckInView: View {
             }
             .scrollDismissesKeyboard(.interactively)
         }
-        .navigationTitle("Readiness")
+        .navigationTitle("Daily check-in")
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(Color.fwbBackground, for: .navigationBar)
     }
@@ -863,11 +974,15 @@ struct ReadinessCheckInView: View {
             energy: energy,
             soreness: soreness,
             sleepRecovery: sleepRecovery,
+            mood: mood,
             hasEatenToday: hasEatenToday,
             note: note
         )
         isSaving = false
-        if didSave { dismiss() }
+        if didSave, let saved = store.today {
+            if let onSaved { onSaved(saved) }
+            else { dismiss() }
+        }
     }
 }
 

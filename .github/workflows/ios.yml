@@ -8,10 +8,6 @@ on:
       - '.github/workflows/ios.yml'
   push:
     branches: [main]
-    paths:
-      - 'FWB-iOS-App/**'
-      - 'scripts/ios/**'
-      - '.github/workflows/ios.yml'
   workflow_dispatch:
 
 permissions:
@@ -57,19 +53,20 @@ jobs:
           retention-days: 3
 
   testflight:
-    name: Sign and upload to TestFlight
+    name: Publish coach app to internal TestFlight
     needs: tests
     if: >-
+      github.repository == 'fitnessgayz/benjaminbenz' &&
       github.ref == 'refs/heads/main' &&
       (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: macos-26
-    timeout-minutes: 60
+    timeout-minutes: 120
     # Repository secrets are available only to trusted main-branch runs; forked
     # pull requests cannot execute this release job with signing credentials.
     # Main/event checks also run inside the release lane before upload.
     # Queue uploads; never cancel an archive/upload already in progress.
     concurrency:
-      group: ios-testflight-release
+      group: ios-testflight-fwbcoach
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
@@ -89,7 +86,7 @@ jobs:
           bundle config set --local path vendor/bundle
           bundle install --jobs 4 --retry 3
           bash ../scripts/ios/install-sentry-cli.sh
-      - name: Archive, upload debug symbols, and upload to TestFlight
+      - name: Archive and publish to FWB Coach Beta
         working-directory: FWB-iOS-App
         env:
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}

@@ -124,6 +124,7 @@ struct WorkoutSettingsView: View {
     @AppStorage("workoutReminderMinute") private var storedMinute = 0
 
     @StateObject private var reminderManager = WorkoutReminderManager()
+    @StateObject private var restTimerNotifications = RestTimerNotificationManager.shared
     @StateObject private var healthKitStore = HealthKitWorkoutSyncStore.shared
     @State private var selectedWeekdays: Set<Int> = [2, 4, 6]
     @State private var reminderTime = Calendar.current.date(from: DateComponents(hour: 9)) ?? Date()
@@ -164,6 +165,13 @@ struct WorkoutSettingsView: View {
             loadPreferences()
             healthKitStore.refreshAuthorizationStatus()
             await reminderManager.refreshAuthorizationStatus()
+            await restTimerNotifications.refreshAuthorizationStatus()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
+            Task {
+                await reminderManager.refreshAuthorizationStatus()
+                await restTimerNotifications.refreshAuthorizationStatus()
+            }
         }
         .onChange(of: workoutRemindersEnabled) { enabled in
             guard hasLoadedPreferences else { return }
@@ -210,6 +218,43 @@ struct WorkoutSettingsView: View {
                 }
             }
             .tint(Color.fwbLime)
+
+            FWBRule()
+
+            Toggle(isOn: Binding(
+                get: { restTimerNotifications.isEnabled },
+                set: { enabled in Task { await restTimerNotifications.setEnabled(enabled) } }
+            )) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Timer alerts")
+                        .font(FWBFont.subheadline.weight(.bold))
+                    Text("A notification when rest ends, including on the Lock Screen")
+                        .font(FWBFont.footnote)
+                        .foregroundStyle(Color.fwbMuted)
+                }
+            }
+            .tint(Color.fwbLime)
+            .disabled(restTimerNotifications.isWorking)
+            .accessibilityIdentifier("rest-timer-alerts-toggle")
+
+            Text(restTimerNotifications.authorizationLabel)
+                .font(FWBFont.footnote)
+                .foregroundStyle(Color.fwbMuted)
+                .fixedSize(horizontal: false, vertical: true)
+
+            if !restTimerNotifications.message.isEmpty {
+                Text(restTimerNotifications.message)
+                    .font(FWBFont.footnote)
+                    .foregroundStyle(Color.fwbMuted)
+            }
+
+            if restTimerNotifications.authorizationStatus == .denied,
+               let settingsURL = URL(string: UIApplication.openSettingsURLString) {
+                Link(destination: settingsURL) {
+                    Label("OPEN IPHONE SETTINGS", systemImage: "gear")
+                }
+                .buttonStyle(FWBSecondaryButtonStyle())
+            }
         }
         .fwbCard()
     }

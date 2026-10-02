@@ -2,6 +2,17 @@ import XCTest
 @testable import FWBCoach
 
 final class WorkoutLayoutTests: XCTestCase {
+    func testCoachNavigationUsesCoachDestinationsOnly() {
+        XCTAssertEqual(CoachWorkspaceTab.allCases.map(\.rawValue), ["home", "clients", "inbox", "exercises", "account"])
+        XCTAssertEqual(Set(CoachWorkspaceTab.allCases.map(\.id)).count, CoachWorkspaceTab.allCases.count)
+        XCTAssertEqual(CoachWorkspaceTab.clients.title, "Clients")
+    }
+
+    func testCanonicalClientBrandCopy() {
+        XCTAssertEqual(FWBBrand.productName, "FWB Training")
+        XCTAssertEqual(FWBBrand.promise, "Train with intention. Feel your progress.")
+    }
+
     private let programID = UUID(uuidString: "A6875577-72B1-4EB5-85F1-85A856CA93F0")!
     private var source: [[String: Any]] {
         [

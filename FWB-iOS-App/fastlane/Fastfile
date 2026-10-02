@@ -24,9 +24,10 @@ platform :ios do
     )
   end
 
-  desc "Sign a trusted-main build, upload Sentry symbols, and upload to TestFlight"
+  desc "Publish the coach app to its internal TestFlight group from trusted main"
   lane :beta do
     FWBRelease.require_trusted_main!
+    FWBRelease.validate_app_boundary!(APP_DIRECTORY)
     FWBRelease.validate_configuration!
     signing = FWBRelease::Signing.new(File.join(ENV.fetch("RUNNER_TEMP"), "fwb-signing"))
     begin
@@ -38,11 +39,13 @@ platform :ios do
         duration: 1200,
         in_house: false
       )
+      app = Spaceship::ConnectAPI::App.find(FWBRelease::APP_ID)
+      UI.user_error!("The coach App Store Connect app could not be found.") unless app
+      FWBRelease.validate_internal_beta_group!(app.get_beta_groups)
       version = get_version_number(xcodeproj: File.join(APP_DIRECTORY, "FWBCoach.xcodeproj"), target: "FWBCoach")
       latest = latest_testflight_build_number(
         api_key: api_key,
         app_identifier: FWBRelease::APP_ID,
-        version: version,
         initial_build_number: 0
       )
       build_number = FWBRelease.next_build_number(
@@ -51,12 +54,12 @@ platform :ios do
         run_attempt: ENV.fetch("GITHUB_RUN_ATTEMPT")
       )
       UI.message("Building #{version} (#{build_number}) for TestFlight")
+      require "xcodeproj"
+      project = Xcodeproj::Project.open(File.join(APP_DIRECTORY, "FWBCoach.xcodeproj"))
+      signing.configure_project!(project)
+      project.save
       arguments = [
         "CURRENT_PROJECT_VERSION=#{build_number}",
-        "DEVELOPMENT_TEAM=#{FWBRelease::TEAM_ID}",
-        "CODE_SIGN_STYLE=Manual",
-        "CODE_SIGN_IDENTITY=#{signing.identity}",
-        "PROVISIONING_PROFILE_SPECIFIER=#{signing.profile_uuid}",
         "OTHER_CODE_SIGN_FLAGS=--keychain #{signing.keychain}",
         "SENTRY_DSN=#{ENV.fetch('SENTRY_DSN')}",
         "SENTRY_ENVIRONMENT=testflight",
@@ -76,7 +79,8 @@ platform :ios do
         disable_package_automatic_updates: true,
         xcargs: Shellwords.join(arguments),
         export_options: {
-          method: "app-store-connect",
+          # Fastlane 2.240.1 accepts this alias for Xcode's App Store export.
+          method: "app-store",
           signingStyle: "manual",
           signingCertificate: signing.identity,
           teamID: FWBRelease::TEAM_ID,
@@ -93,13 +97,13 @@ platform :ios do
         api_key: api_key,
         app_identifier: FWBRelease::APP_ID,
         ipa: File.join(OUTPUT_DIRECTORY, "FWBCoach.ipa"),
-        skip_waiting_for_build_processing: true,
-        distribute_external: false
+        **FWBRelease.testflight_distribution_options(build_number: build_number, version: version)
       )
       if ENV["GITHUB_STEP_SUMMARY"]
         File.open(ENV.fetch("GITHUB_STEP_SUMMARY"), "a") do |file|
-          file.puts "Uploaded **FWB Training #{version} (#{build_number})** to App Store Connect."
-          file.puts "Sentry debug symbols uploaded. TestFlight appears after Apple's processing completes."
+          file.puts "Uploaded **FWB Coach #{version} (#{build_number})** to App Store Connect."
+          file.puts "Apple processing completed. **#{FWBRelease::TESTFLIGHT_GROUP}** receives the build through automatic internal distribution."
+          file.puts "Sentry debug symbols uploaded. External distribution and Beta App Review were not requested."
         end
       end
     ensure

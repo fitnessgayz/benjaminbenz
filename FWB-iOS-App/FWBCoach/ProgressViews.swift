@@ -12,18 +12,12 @@ struct ProgressDashboardView: View {
 
             switch store.state {
             case .idle, .loading:
-                ProgressView("Loading your progress…")
-                    .tint(Color.fwbLime)
+                FWBLoadingState(
+                    title: "Building your progress view",
+                    message: "Your completed training and personal bests will appear here."
+                )
             case .loaded:
-                if store.sessions.isEmpty {
-                    FWBEmptyState(
-                        icon: "chart.line.uptrend.xyaxis",
-                        title: "Your progress starts here",
-                        message: "Finish your first workout to unlock personal records, trends, and achievements."
-                    )
-                } else {
-                    ProgressDashboardContent(sessions: store.sessions)
-                }
+                ProgressDashboardContent(sessions: store.sessions, hasCompleteHistory: store.hasCompleteHistory)
             case .failed(let message):
                 FWBErrorState(message: message) {
                     Task { await store.reload(email: clientEmail) }
@@ -46,8 +40,15 @@ struct ProgressDashboardView: View {
 }
 
 private struct ProgressDashboardContent: View {
+    private enum PresentedSheet: String, Identifiable {
+        case badges
+        var id: String { rawValue }
+    }
+
     let sessions: [WorkoutHistorySession]
+    let hasCompleteHistory: Bool
     @AppStorage("weeklyWorkoutGoal") private var weeklyWorkoutGoal = 3
+    @State private var presentedSheet: PresentedSheet?
 
     private var snapshot: ProgressSnapshot {
         ProgressSnapshot(sessions: sessions, weeklyGoal: weeklyWorkoutGoal)
@@ -75,30 +76,60 @@ private struct ProgressDashboardContent: View {
     }
 
     var body: some View {
-        ScrollViewReader { proxy in
-            ScrollView {
-                LazyVStack(alignment: .leading, spacing: 16) {
-                    ProgressHero {
-                        withAnimation(.easeInOut(duration: 0.28)) {
-                            proxy.scrollTo("progress.badges", anchor: .top)
+        ScrollView {
+            LazyVStack(alignment: .leading, spacing: 16) {
+                ProgressHero { presentedSheet = .badges }
+                ProgressOverviewGrid(snapshot: snapshot)
+                PersonalRecordsSection(records: snapshot.exerciseRecords)
+                ExerciseProgressSection(records: snapshot.exerciseRecords)
+                TrainingVolumeCard(points: snapshot.volumePoints)
+                ProgressSharePanel(summary: shareSummary)
+            }
+            .padding(16)
+        }
+        .sheet(item: $presentedSheet) { sheet in
+            switch sheet {
+            case .badges:
+                NavigationStack {
+                    Group {
+                        if hasCompleteHistory {
+                            ScrollView {
+                                ClientAchievementsSection(snapshot: ClientAchievementEngine.evaluate(
+                                    records: sessions.flatMap(\.records), today: AchievementDisplay.today
+                                ))
+                                .padding(16)
+                            }
+                        } else {
+                            VStack(spacing: 12) {
+                                Image(systemName: "trophy")
+                                    .font(.system(size: 34, weight: .semibold))
+                                    .foregroundStyle(Color.fwbLime)
+                                Text("Connect and pull to refresh your badges and level.")
+                                    .font(FWBFont.subheadline)
+                                    .foregroundStyle(Color.fwbMuted)
+                                    .multilineTextAlignment(.center)
+                            }
+                            .padding(24)
                         }
                     }
-                    ProgressOverviewGrid(snapshot: snapshot)
-                    PersonalRecordsSection(records: snapshot.exerciseRecords)
-                    ExerciseProgressSection(records: snapshot.exerciseRecords)
-                    TrainingVolumeCard(points: snapshot.volumePoints)
-                    ProgressSharePanel(summary: shareSummary)
-                    AchievementSection(achievements: snapshot.achievements)
-                        .id("progress.badges")
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(Color.fwbBackground)
+                    .navigationTitle("Your badges")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .confirmationAction) {
+                            Button("Done") { presentedSheet = nil }
+                        }
+                    }
                 }
-                .padding(16)
+                .tint(Color.fwbLime)
             }
         }
     }
 }
 
 private struct ProgressHero: View {
-    let onShowBadges: () -> Void
+    let showBadges: () -> Void
 
     var body: some View {
         HStack(alignment: .top, spacing: 14) {
@@ -117,19 +148,19 @@ private struct ProgressHero: View {
                     .font(FWBFont.subheadline)
                     .foregroundStyle(Color.fwbMuted)
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
 
-            Spacer(minLength: 0)
-
-            Button(action: onShowBadges) {
-                Label("Badges", systemImage: "trophy.fill")
-                    .font(FWBFont.footnote.weight(.bold))
-                    .foregroundStyle(Color.black)
-                    .padding(.horizontal, 12)
-                    .frame(minHeight: 42)
-                    .background(Color.fwbAccentFill, in: Capsule())
+            Button(action: showBadges) {
+                Image(systemName: "trophy.fill")
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundStyle(Color.fwbBrandPrimaryInk)
+                    .frame(width: 48, height: 48)
+                    .background(Color.fwbAccentFill, in: Circle())
+                    .overlay { Circle().stroke(Color.fwbLime.opacity(0.65), lineWidth: 1) }
             }
             .buttonStyle(.plain)
-            .accessibilityHint("Jump to your achievement badges")
+            .accessibilityLabel("Open your badges")
+            .accessibilityHint("Shows badges you have earned and can earn")
             .accessibilityIdentifier("progress.badges")
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -492,7 +523,7 @@ private struct PersonalRecordCard: View {
         HStack(spacing: 14) {
             Image(systemName: "trophy.fill")
                 .font(FWBFont.headline.weight(.bold))
-                .foregroundStyle(Color.black)
+                .foregroundStyle(Color.fwbBrandPrimaryInk)
                 .frame(width: 44, height: 44)
                 .background(Color.fwbAccentFill, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
 
@@ -519,72 +550,6 @@ private struct PersonalRecordCard: View {
         .fwbCard()
         .accessibilityElement(children: .combine)
         .accessibilityHint("Shows exercise progress")
-    }
-}
-
-private struct AchievementSection: View {
-    let achievements: [ProgressAchievement]
-
-    private var unlockedCount: Int {
-        achievements.filter(\.isUnlocked).count
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            ProgressSectionHeading(
-                kicker: "Achievements",
-                title: "Keep building momentum",
-                detail: "\(unlockedCount) of \(achievements.count) milestones unlocked"
-            )
-
-            ForEach(achievements) { achievement in
-                AchievementCard(achievement: achievement)
-            }
-        }
-    }
-}
-
-private struct AchievementCard: View {
-    let achievement: ProgressAchievement
-
-    var body: some View {
-        HStack(spacing: 14) {
-            Image(systemName: achievement.icon)
-                .font(FWBFont.headline.weight(.bold))
-                .foregroundStyle(achievement.isUnlocked ? Color.black : Color.fwbMuted)
-                .frame(width: 44, height: 44)
-                .background(achievement.isUnlocked ? Color.fwbAccentFill : Color.fwbSurface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                .overlay { RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(Color.fwbLine, lineWidth: 1) }
-
-            VStack(alignment: .leading, spacing: 7) {
-                HStack {
-                    Text(achievement.title)
-                        .font(FWBFont.headline.weight(.bold))
-                        .foregroundStyle(achievement.isUnlocked ? Color.fwbWarmWhite : Color.fwbMuted)
-                    Spacer()
-                    Text(achievement.isUnlocked ? "Unlocked" : achievement.progressLabel)
-                        .font(FWBFont.footnote.bold())
-                        .foregroundStyle(achievement.isUnlocked ? Color.fwbLime : Color.fwbMuted)
-                }
-
-                Text(achievement.detail)
-                    .font(FWBFont.footnote)
-                    .foregroundStyle(Color.fwbMuted)
-
-                GeometryReader { geometry in
-                    ZStack(alignment: .leading) {
-                        Rectangle().fill(Color.fwbSurface)
-                        Rectangle()
-                            .fill(achievement.isUnlocked ? Color.fwbAccentFill : Color.fwbLine)
-                            .frame(width: geometry.size.width * achievement.progress)
-                    }
-                }
-                .frame(height: 4)
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .fwbCard()
-        .accessibilityElement(children: .combine)
     }
 }
 
@@ -813,26 +778,17 @@ private struct ProgressSnapshot {
     let personalBestCount: Int
     let volumePoints: [ProgressVolumePoint]
     let exerciseRecords: [ProgressExerciseRecord]
-    let achievements: [ProgressAchievement]
 
     init(sessions: [WorkoutHistorySession], weeklyGoal: Int) {
-        workoutCount = sessions.count
+        let sessions = sessions.filter { $0.records.contains { $0.completedAt != nil } }
+        workoutCount = ClientAchievementEngine.evaluate(records: sessions.flatMap(\.records), today: AchievementDisplay.today).workoutCount
         totalSets = sessions.reduce(0) { $0 + $1.strengthSetCount }
         totalVolume = sessions.reduce(0) { $0 + $1.totalVolume }
 
         volumePoints = Self.makeVolumePoints(sessions: sessions)
         exerciseRecords = Self.makeExerciseRecords(sessions: sessions)
         personalBestCount = exerciseRecords.filter { $0.bestWeight > 0 || $0.bestReps > 0 }.count
-        achievements = Self.makeAchievements(
-            workouts: workoutCount,
-            sets: totalSets,
-            volume: totalVolume,
-            personalBests: personalBestCount,
-            cardioWorkouts: sessions.filter { !$0.cardioRecords.isEmpty }.count,
-            currentWeekWorkouts: Self.currentWeekWorkoutCount(sessions),
-            weeklyGoal: weeklyGoal,
-            consecutiveWeeks: Self.longestConsecutiveWeekStreak(sessions)
-        )
+
     }
 
     private static func makeVolumePoints(sessions: [WorkoutHistorySession]) -> [ProgressVolumePoint] {
@@ -929,133 +885,6 @@ private struct ProgressSnapshot {
         }
     }
 
-    private static func makeAchievements(
-        workouts: Int,
-        sets: Int,
-        volume: Double,
-        personalBests: Int,
-        cardioWorkouts: Int,
-        currentWeekWorkouts: Int,
-        weeklyGoal: Int,
-        consecutiveWeeks: Int
-    ) -> [ProgressAchievement] {
-        [
-            ProgressAchievement(
-                id: "first-workout",
-                icon: "flag.checkered",
-                title: "First Workout",
-                detail: "Complete and save your first training session.",
-                current: Double(workouts),
-                target: 1,
-                unit: "workout"
-            ),
-            ProgressAchievement(
-                id: "first-personal-best",
-                icon: "trophy.fill",
-                title: "First Personal Best",
-                detail: "Establish a personal best in any exercise.",
-                current: Double(personalBests),
-                target: 1,
-                unit: "record"
-            ),
-            ProgressAchievement(
-                id: "first-cardio",
-                icon: "figure.run",
-                title: "First Cardio Workout",
-                detail: "Complete and save your first cardio session.",
-                current: Double(cardioWorkouts),
-                target: 1,
-                unit: "workout"
-            ),
-            ProgressAchievement(
-                id: "weekly-goal",
-                icon: "calendar.badge.checkmark",
-                title: "Weekly Goal",
-                detail: "Complete your workout goal for the current week.",
-                current: Double(currentWeekWorkouts),
-                target: Double(max(weeklyGoal, 1)),
-                unit: "workouts"
-            ),
-            ProgressAchievement(
-                id: "three-consistent-weeks",
-                icon: "calendar.badge.clock",
-                title: "Three Consistent Weeks",
-                detail: "Train in three consecutive calendar weeks.",
-                current: Double(consecutiveWeeks),
-                target: 3,
-                unit: "weeks"
-            ),
-            ProgressAchievement(
-                id: "five-workouts",
-                icon: "flame.fill",
-                title: "Momentum",
-                detail: "Build consistency with five finished workouts.",
-                current: Double(workouts),
-                target: 5,
-                unit: "workouts"
-            ),
-            ProgressAchievement(
-                id: "fifty-sets",
-                icon: "square.stack.3d.up.fill",
-                title: "Set Collector",
-                detail: "Log fifty completed working sets.",
-                current: Double(sets),
-                target: 50,
-                unit: "sets"
-            ),
-            ProgressAchievement(
-                id: "ten-thousand-volume",
-                icon: "scalemass.fill",
-                title: "Ten Thousand Club",
-                detail: "Move a cumulative 10,000 lb in logged workouts.",
-                current: volume,
-                target: 10_000,
-                unit: "lb"
-            ),
-            ProgressAchievement(
-                id: "five-records",
-                icon: "trophy.fill",
-                title: "Record Breaker",
-                detail: "Establish personal bests in five exercises.",
-                current: Double(personalBests),
-                target: 5,
-                unit: "records"
-            )
-        ]
-    }
-
-    private static func currentWeekWorkoutCount(_ sessions: [WorkoutHistorySession]) -> Int {
-        let calendar = Calendar.current
-        return sessions.filter { session in
-            guard let date = ProgressFormat.dateValue(session.entryDate) else { return false }
-            return calendar.isDate(date, equalTo: Date(), toGranularity: .weekOfYear)
-        }.count
-    }
-
-    private static func longestConsecutiveWeekStreak(_ sessions: [WorkoutHistorySession]) -> Int {
-        let calendar = Calendar.current
-        let weekStarts = Set(sessions.compactMap { session -> Date? in
-            guard let date = ProgressFormat.dateValue(session.entryDate) else { return nil }
-            return calendar.dateInterval(of: .weekOfYear, for: date)?.start
-        })
-        guard !weekStarts.isEmpty else { return 0 }
-
-        var best = 1
-        var current = 1
-        let sorted = weekStarts.sorted()
-        for index in sorted.indices.dropFirst() {
-            guard let expected = calendar.date(byAdding: .weekOfYear, value: 1, to: sorted[index - 1]) else {
-                continue
-            }
-            if calendar.isDate(sorted[index], inSameDayAs: expected) {
-                current += 1
-                best = max(best, current)
-            } else {
-                current = 1
-            }
-        }
-        return best
-    }
 }
 
 private struct ProgressVolumePoint: Identifiable {
@@ -1133,21 +962,6 @@ private struct ProgressExercisePoint: Identifiable {
     let bestSetDescription: String
 }
 
-private struct ProgressAchievement: Identifiable {
-    let id: String
-    let icon: String
-    let title: String
-    let detail: String
-    let current: Double
-    let target: Double
-    let unit: String
-
-    var isUnlocked: Bool { current >= target }
-    var progress: Double { min(max(current / target, 0), 1) }
-    var progressLabel: String {
-        "\(ProgressFormat.compactNumber(current))/\(ProgressFormat.compactNumber(target)) \(unit)"
-    }
-}
 
 private enum ProgressFormat {
     private static let databaseDate: DateFormatter = {

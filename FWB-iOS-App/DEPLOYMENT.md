@@ -2,7 +2,7 @@
 
 The iOS workflow tests pull requests, then signs and uploads trusted `main` builds to TestFlight. It also uploads the matching dSYM files to Sentry. Signing credentials and the Sentry upload token live in GitHub **repository secrets**. This setup works with GitHub Free and does not use a GitHub deployment environment.
 
-This guide prepares the existing app. Do not create a second App Store Connect app or change its identifier.
+This guide prepares only the existing coach app. Its bundle stays unchanged. The separate native client app is owned by `fitnessgayz/fwb-ios` and must create/use `com.benjaminbenz.fwb`, never this coach app entry.
 
 | App setting | Value |
 | --- | --- |
@@ -12,8 +12,9 @@ This guide prepares the existing app. Do not create a second App Store Connect a
 | Release workflow | `.github/workflows/ios.yml` |
 | Release branch | `main` |
 | Sentry environment in CI | `testflight` |
+| TestFlight group | `FWB Coach Beta` (internal, automatic distribution) |
 
-You need a private GitHub repository with a `main` branch and admin access, an active Apple Developer membership with access to this app, and a Sentry organization/project. GitHub Free supports this repository-secret setup. Private-repository runs still use the account's included Actions minutes and storage; review the existing usage/budget before running macOS builds. See [GitHub Actions billing](https://docs.github.com/en/billing/concepts/product-billing/github-actions).
+You need admin access to the approved `fitnessgayz/benjaminbenz` repository with a `main` branch, an active Apple Developer membership with access to this app, and a Sentry organization/project. GitHub Free supports this repository-secret setup. Review the account's Actions minutes and storage; review the existing usage/budget before running macOS builds. See [GitHub Actions billing](https://docs.github.com/en/billing/concepts/product-billing/github-actions).
 
 The owner has approved `fitnessgayz/benjaminbenz` as the iOS release destination. It is a public repository, so signing credentials must remain repository secrets and the release job must stay restricted to trusted `main` push or manual-dispatch events. Forked pull requests and feature branches must never receive signing credentials. The repository must retain `FWB-iOS-App/`, `scripts/ios/`, and `.github/workflows/ios.yml` at those same paths.
 
@@ -35,7 +36,7 @@ The upload key authenticates to App Store Connect. The signing identity below si
 
 1. In Xcode → **Settings → Accounts**, select your Apple account and team `5Q4FU299QH`, then **Manage Certificates**. Reuse a valid **Apple Distribution** identity if you have its private key. Otherwise create a local Apple Distribution certificate using the `+` control, if your team permissions allow it.
 2. Open **Keychain Access → login → My Certificates**. Find the Apple Distribution certificate for this team and expand it to verify that its private key is present. Export the signing identity as a password-protected `.p12`, including the private key. Choose a strong password and retain it privately. A downloaded `.cer` alone, or a cloud-managed certificate without a local private key, is insufficient. See Apple's [signing-certificate export guidance](https://developer.apple.com/documentation/xcode/sharing-your-teams-signing-certificates).
-3. In Apple Developer → **Certificates, Identifiers & Profiles → Identifiers**, open `com.benjaminbenz.fwbcoach` and confirm **HealthKit** is enabled. The checked-in app currently requires HealthKit. Its local notifications do not require an APNs credential. If remote push is added later, enable **Push Notifications**, add the app's `aps-environment` entitlement, and regenerate a profile that supplies the production push entitlement.
+3. In Apple Developer → **Certificates, Identifiers & Profiles → Identifiers**, open `com.benjaminbenz.fwbcoach` and confirm **HealthKit** and **Push Notifications** are enabled. Shared exercise logging retains HealthKit compatibility, but the coach app does not start personal Health observation. Native coach notifications require a profile supplying the production push entitlement.
 4. Under **Profiles**, press `+`, choose the **App Store Connect** distribution type, select this explicit App ID, and select the same Apple Distribution certificate exported into your `.p12`. Name the profile and download its `.mobileprovision` file. Use an App Store distribution profile, not Development, Ad Hoc, or Enterprise. See [Apple's profile instructions](https://developer.apple.com/help/account/provisioning-profiles/create-an-app-store-provisioning-profile).
 
 The helper validates the profile's app, team, expiry, distribution type, and required capabilities. It does not prove that the `.p12` password/private key matches the selected certificate; the signing job performs that check. If the certificate expires or app capabilities change, [regenerate the profile](https://developer.apple.com/help/account/provisioning-profiles/edit-download-or-delete-profiles) and replace the corresponding GitHub secrets.
@@ -52,17 +53,17 @@ Only dSYM files are uploaded by this workflow; source bundles are not included. 
 
 ## 4. Provision repository settings from your Mac
 
-Use GitHub → repository **Settings → Secrets and variables → Actions** for release credentials. The workflow enforces tests, private-repository checks, and the trusted `main` branch directly; no GitHub deployment environment needs to be created.
+Use GitHub → repository **Settings → Secrets and variables → Actions** for release credentials. The workflow enforces tests, the exact approved repository, and the trusted `main` branch directly; no GitHub deployment environment needs to be created.
 
-All commands below run from the repository root. Replace `OWNER/REPO` with the intended private repository. The default/dry-run command is offline, reads no credential files, and lists names only:
+All commands below run from the repository root. Use the exact approved coach repository `fitnessgayz/benjaminbenz`. The default/dry-run command is offline, reads no credential files, and lists names only:
 
 ```sh
 python3 scripts/ios/configure-release-secrets.py --dry-run
-python3 scripts/ios/configure-release-secrets.py --check --repo OWNER/REPO
-python3 scripts/ios/configure-release-secrets.py --apply --repo OWNER/REPO
+python3 scripts/ios/configure-release-secrets.py --check --repo fitnessgayz/benjaminbenz
+python3 scripts/ios/configure-release-secrets.py --apply --repo fitnessgayz/benjaminbenz
 ```
 
-`--check` verifies repository privacy, admin access, and the `main` branch without changing anything. `--apply` asks for file paths and hidden secret input in your local Terminal, validates everything it can locally, rechecks GitHub access, and uploads the settings below. It does not trigger the workflow.
+`--check` verifies the exact approved repository, admin access, and the `main` branch without changing anything. `--apply` asks for file paths and hidden secret input in your local Terminal, validates everything it can locally, rechecks GitHub access, and uploads the settings below. It does not trigger the workflow.
 
 | Repository secret | Enter locally |
 | --- | --- |
@@ -88,21 +89,21 @@ The helper sends values to [`gh secret set`](https://cli.github.com/manual/gh_se
 To replace just one set of credentials later:
 
 ```sh
-python3 scripts/ios/configure-release-secrets.py --apply --component apple --repo OWNER/REPO
-python3 scripts/ios/configure-release-secrets.py --apply --component sentry --repo OWNER/REPO
+python3 scripts/ios/configure-release-secrets.py --apply --component apple --repo fitnessgayz/benjaminbenz
+python3 scripts/ios/configure-release-secrets.py --apply --component sentry --repo fitnessgayz/benjaminbenz
 ```
 
 A failed upload may have updated earlier settings; rerun the selected component once access is fixed. The helper deliberately does not print raw CLI errors containing possible credentials. Use GitHub's settings page to confirm the names and update times; saved secret values cannot be read back.
 
 ## 5. Run the release and enable internal distribution
 
-After provisioning, use GitHub **Actions → iOS TestFlight → Run workflow**, choosing `main`, or push a relevant iOS/pipeline change to `main`. Pull requests run unsigned checks. Signed uploads run only for the private repository's trusted `main` branch after tests pass and the release job verifies that the repository is still private.
+After provisioning, use GitHub **Actions → iOS TestFlight → Run workflow**, choosing `main`, or push any change to `main`. Pull requests run unsigned checks. Signed uploads run only for `fitnessgayz/benjaminbenz` on trusted `main` push/dispatch events after tests pass and the release verifies the coach-only entry point, bundle, and profile.
 
 CI derives a unique increasing build number from the run/attempt and the latest uploaded build. It does not rely on the local Xcode build number `8`; the archive gets a valid dotted Apple build number. Avoid manually uploading the same build number while CI is running.
 
 In App Store Connect, open the existing app → **TestFlight** and wait for Apple's processing. Address any export-compliance or account-agreement questions there. A successful upload does not itself invite every tester.
 
-Create or choose an **Internal Testing** group, enable **automatic distribution**, and add eligible App Store Connect users. They accept the invitation in TestFlight. If automatic distribution is off, manually add each processed build to the group. Apple documents the group controls in [Add internal testers](https://developer.apple.com/help/app-store-connect/test-a-beta-version/add-internal-testers). This workflow does not submit external beta review, automatically invite external testers, or publish to the App Store; external testing has a separate [TestFlight review process](https://developer.apple.com/help/app-store-connect/test-a-beta-version/testflight-overview/).
+Use the **FWB Coach Beta** internal group, enable **automatic distribution**, and add only explicitly approved eligible App Store Connect users. They accept the invitation in TestFlight. If automatic distribution is off, this release lane stops before uploading; enable it once in the group's Settings. CI waits for the exact uploaded build to finish processing, without external review or external tester notifications. Apple documents the group controls in [Add internal testers](https://developer.apple.com/help/app-store-connect/test-a-beta-version/add-internal-testers). This workflow does not submit external beta review, automatically invite external testers, or publish to the App Store; external testing has a separate [TestFlight review process](https://developer.apple.com/help/app-store-connect/test-a-beta-version/testflight-overview/).
 
 ## 6. Verify diagnostics and update the privacy disclosure
 
@@ -124,7 +125,7 @@ Before distributing configured diagnostics, review the published privacy policy 
 
 | Symptom | Check |
 | --- | --- |
-| Helper cannot verify access | Correct private `OWNER/REPO`, GitHub CLI login, repository admin permission, and existing `main` branch |
+| Helper cannot verify access | Exact approved `fitnessgayz/benjaminbenz`, GitHub CLI login, repository admin permission, and existing `main` branch |
 | No signing identity / failed import | `.p12` includes the private key, password is correct, and the certificate is valid |
 | Provisioning profile mismatch | Explicit bundle ID, correct team/certificate, App Store profile type, HealthKit capability, and expiry |
 | Upload authorization failure | Team API Key ID/Issuer ID pair, original `.p8`, role, active membership, and outstanding Apple agreements |

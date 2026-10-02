@@ -2,7 +2,7 @@ import Foundation
 import Sentry
 
 /// Only fixed operation codes enter telemetry. Never pass account, workout,
-/// nutrition, questionnaire, HealthKit, request, or backend error text to Sentry.
+/// nutrition, questionnaire, HealthKit, photo, request, or backend error text to Sentry.
 enum ErrorReporting {
     enum Operation: String, CaseIterable {
         case loadPrograms = "programs.load"
@@ -10,8 +10,22 @@ enum ErrorReporting {
         case saveNutritionLocally = "nutrition.local_save"
         case syncNutrition = "nutrition.sync"
         case loadWorkoutHistory = "workout_history.load"
+        case deleteWorkoutHistory = "workout_history.delete"
         case loadWorkoutSets = "workout_sets.load"
         case saveWorkoutSets = "workout_sets.save"
+        case loadClientStats = "stats.load"
+        case saveClientMeasurement = "measurements.save"
+        case saveClientMeasurementLocally = "measurements.local_save"
+        case syncClientMeasurement = "measurements.sync"
+        case loadProgressPhotos = "progress_photos.load"
+        case signProgressPhotoURL = "progress_photos.sign_url"
+        case uploadProgressPhoto = "progress_photos.upload"
+        case loadDexaReports = "dexa.load"
+        case uploadDexaReport = "dexa.upload"
+        case extractDexaReport = "dexa.extract"
+        case confirmDexaReport = "dexa.confirm"
+        case updateDexaReport = "dexa.update"
+        case signDexaReportURL = "dexa.sign_url"
         case integrationVerification = "integration.verification"
     }
 
@@ -114,7 +128,9 @@ enum ErrorReporting {
         options.configureProfiling = nil
         options.beforeSendLog = { _ in nil }
         options.beforeSendMetric = { _ in nil }
-        options.appHangTimeoutInterval = 0
+        // Watchdog tracking shares this timeout even when AppHang reporting is
+        // disabled. Keep the SDK's positive default to avoid a zero-delay loop.
+        options.enableAppHangTracking = false
         options.enableMetricKit = false
         options.attachScreenshot = false
         options.attachViewHierarchy = false
@@ -141,20 +157,27 @@ enum ErrorReporting {
     }
 
     static func failureCategory(_ error: Error) -> FailureCategory? {
-        if error is CancellationError { return nil }
-        let nsError = error as NSError
-        if nsError.domain == NSURLErrorDomain {
-            // Normal offline use and cancelled SwiftUI tasks are expected.
-            let expected = [NSURLErrorCancelled, NSURLErrorNotConnectedToInternet,
-                            NSURLErrorNetworkConnectionLost, NSURLErrorTimedOut,
-                            NSURLErrorCannotFindHost, NSURLErrorCannotConnectToHost,
-                            NSURLErrorDNSLookupFailed, NSURLErrorInternationalRoamingOff,
-                            NSURLErrorDataNotAllowed]
-            return expected.contains(nsError.code) ? nil : .network
+        var current: Error? = error
+        var visited: Set<ObjectIdentifier> = []
+        var category: FailureCategory = .unexpected
+        while let cause = current {
+            if cause is CancellationError { return nil }
+            let nsError = cause as NSError
+            guard visited.insert(ObjectIdentifier(nsError)).inserted else { break }
+            if nsError.domain == NSURLErrorDomain {
+                // Storage/network clients can wrap the expected offline or cancelled task error.
+                let expected = [NSURLErrorCancelled, NSURLErrorNotConnectedToInternet,
+                                NSURLErrorNetworkConnectionLost, NSURLErrorTimedOut,
+                                NSURLErrorCannotFindHost, NSURLErrorCannotConnectToHost,
+                                NSURLErrorDNSLookupFailed, NSURLErrorInternationalRoamingOff,
+                                NSURLErrorDataNotAllowed]
+                return expected.contains(nsError.code) ? nil : .network
+            }
+            if cause is DecodingError { return .decoding }
+            if nsError.domain == NSCocoaErrorDomain { category = .storage }
+            current = nsError.userInfo[NSUnderlyingErrorKey] as? Error
         }
-        if error is DecodingError { return .decoding }
-        if nsError.domain == NSCocoaErrorDomain { return .storage }
-        return .unexpected
+        return category
     }
 
     static func makeEvent(operation: Operation, category: FailureCategory) -> Event {

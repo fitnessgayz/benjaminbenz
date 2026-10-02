@@ -305,9 +305,83 @@ enum WarmUpCalculator {
     }
 }
 
+struct OneRepMaxSource: Identifiable, Equatable {
+    let id: String
+    let exerciseName: String
+    let weight: Double
+    let reps: Int
+    let recommendedRepRange: ClosedRange<Int>?
+
+    init(exerciseName: String, weight: Double, reps: Int, recommendedRepRange: ClosedRange<Int>? = nil) {
+        self.exerciseName = exerciseName
+        self.weight = weight
+        self.reps = reps
+        self.recommendedRepRange = recommendedRepRange
+        id = "\(exerciseName)|\(weight)|\(reps)"
+    }
+}
+
+struct OneRepMaxTrainingRecommendation: Equatable {
+    let repRange: ClosedRange<Int>
+    let startingWeight: Double
+    let workingWeightRange: ClosedRange<Double>
+    let percentageRange: ClosedRange<Double>
+}
+
+enum OneRepMaxCalculator {
+    static let trainingPercentages = [70, 75, 80, 85, 90]
+
+    // NSCA load chart values through 12RM. Eleven reps is interpolated.
+    private static let repetitionPercentages: [Int: Double] = [
+        1: 1.00, 2: 0.95, 3: 0.93, 4: 0.90, 5: 0.87, 6: 0.85,
+        7: 0.83, 8: 0.80, 9: 0.77, 10: 0.75, 11: 0.725, 12: 0.70
+    ]
+
+    static func estimate(weight: Double, reps: Int) -> Double? {
+        guard weight > 0, reps > 0 else { return nil }
+        if reps == 1 { return weight }
+        return weight * (1 + Double(reps) / 30)
+    }
+
+    static func roundedToNearestFive(_ value: Double) -> Double {
+        (value / 5).rounded() * 5
+    }
+
+    static func trainingWeight(oneRepMax: Double, percentage: Int) -> Double {
+        roundedToNearestFive(oneRepMax * Double(percentage) / 100)
+    }
+
+    static func percentage(forTargetReps reps: Int) -> Double? {
+        guard (1...30).contains(reps) else { return nil }
+        if let percentage = repetitionPercentages[reps] { return percentage }
+        return 1 / (1 + Double(reps) / 30)
+    }
+
+    static func recommendation(
+        oneRepMax: Double,
+        repRange: ClosedRange<Int>
+    ) -> OneRepMaxTrainingRecommendation? {
+        guard oneRepMax > 0,
+              let highRepPercentage = percentage(forTargetReps: repRange.upperBound),
+              let lowRepPercentage = percentage(forTargetReps: repRange.lowerBound) else { return nil }
+
+        let lowerPercentage = min(highRepPercentage, lowRepPercentage)
+        let upperPercentage = max(highRepPercentage, lowRepPercentage)
+        let lowerWeight = roundedToNearestFive(oneRepMax * lowerPercentage)
+        let upperWeight = roundedToNearestFive(oneRepMax * upperPercentage)
+        return OneRepMaxTrainingRecommendation(
+            repRange: repRange,
+            startingWeight: lowerWeight,
+            workingWeightRange: min(lowerWeight, upperWeight)...max(lowerWeight, upperWeight),
+            percentageRange: lowerPercentage...upperPercentage
+        )
+    }
+}
+
 enum WorkoutCalculatorKind: String, Identifiable {
     case plates
     case warmUp
+    case oneRepMax
 
     var id: String { rawValue }
 }
@@ -318,6 +392,10 @@ struct WorkoutCalculatorSheet: View {
     let kind: WorkoutCalculatorKind
     let exerciseName: String
     let suggestedWorkingWeight: Double
+    var suggestedReps: Int = 0
+    var oneRepMaxSources: [OneRepMaxSource] = []
+    var recommendedRepRange: ClosedRange<Int>? = nil
+    var onUseRecommendedWeight: ((Double, String) -> Void)? = nil
     let onInsertWarmUps: ([WarmUpSetPlan]) -> Void
 
     var body: some View {
@@ -334,9 +412,23 @@ struct WorkoutCalculatorSheet: View {
                             dismiss()
                         }
                     )
+                case .oneRepMax:
+                    OneRepMaxCalculatorView(
+                        exerciseName: exerciseName,
+                        initialWeight: suggestedWorkingWeight,
+                        initialReps: suggestedReps,
+                        sources: oneRepMaxSources,
+                        recommendedRepRange: recommendedRepRange,
+                        onUseRecommendedWeight: onUseRecommendedWeight.map { action in
+                            { weight, exerciseName in
+                                action(weight, exerciseName)
+                                dismiss()
+                            }
+                        }
+                    )
                 }
             }
-            .navigationTitle(kind == .plates ? "Plate Calculator" : "Warm-up Sets")
+            .navigationTitle(navigationTitle)
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(Color.fwbBackground, for: .navigationBar)
             .toolbar {
@@ -347,8 +439,206 @@ struct WorkoutCalculatorSheet: View {
         }
         .presentationDetents([.large])
         .presentationDragIndicator(.visible)
-        .accessibilityLabel("\(kind == .plates ? "Plate calculator" : "Warm-up sets") for \(exerciseName)")
+        .accessibilityLabel("\(navigationTitle) for \(exerciseName)")
         .accessibilityIdentifier("workout.calculator.\(kind.rawValue)")
+    }
+
+    private var navigationTitle: String {
+        switch kind {
+        case .plates: return "Plate Calculator"
+        case .warmUp: return "Warm-up Sets"
+        case .oneRepMax: return "1RM Calculator"
+        }
+    }
+}
+
+private struct OneRepMaxCalculatorView: View {
+    @State private var weight: String
+    @State private var reps: String
+    @State private var selectedSourceID: String?
+
+    let exerciseName: String
+    let sources: [OneRepMaxSource]
+    let recommendedRepRange: ClosedRange<Int>?
+    let onUseRecommendedWeight: ((Double, String) -> Void)?
+
+    init(
+        exerciseName: String,
+        initialWeight: Double,
+        initialReps: Int,
+        sources: [OneRepMaxSource],
+        recommendedRepRange: ClosedRange<Int>?,
+        onUseRecommendedWeight: ((Double, String) -> Void)?
+    ) {
+        self.exerciseName = exerciseName
+        self.sources = sources
+        self.recommendedRepRange = recommendedRepRange
+        self.onUseRecommendedWeight = onUseRecommendedWeight
+        let source = sources.first
+        let startingWeight = source?.weight ?? initialWeight
+        let startingReps = source?.reps ?? initialReps
+        _weight = State(initialValue: startingWeight > 0 ? PlateCalculator.formatted(startingWeight) : "")
+        _reps = State(initialValue: startingReps > 0 ? String(startingReps) : "")
+        _selectedSourceID = State(initialValue: source?.id)
+    }
+
+    var body: some View {
+        calculatorScroll {
+            CalculatorIntro(
+                eyebrow: "ESTIMATED STRENGTH",
+                title: "Turn a set into your 1RM.",
+                detail: "Uses the Epley formula to estimate a one-rep max and practical training loads. This is an estimate, not a max-out target."
+            )
+
+            if sources.count > 1 { sourcePicker }
+
+            VStack(alignment: .leading, spacing: 14) {
+                CalculatorNumberField(title: "WEIGHT", unit: "LB", text: $weight)
+                CalculatorNumberField(title: "REPS", unit: "REPS", text: $reps, keyboardType: .numberPad)
+            }
+            .fwbCard()
+
+            resultCard
+
+            if let recommendation {
+                recommendationCard(recommendation)
+            }
+
+            if (Int(reps) ?? 0) > 10 {
+                Label("Estimates become less reliable above 10 reps. Use a heavier, lower-rep set when possible.", systemImage: "exclamationmark.triangle.fill")
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(Color.fwbRed)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier("oneRepMax.highRepWarning")
+            }
+        }
+        .onAppear { applyFirstSourceIfAvailable() }
+        .onChange(of: sources) { _, _ in applyFirstSourceIfAvailable() }
+    }
+
+    private func applyFirstSourceIfAvailable() {
+        guard let source = sources.first else { return }
+        selectedSourceID = source.id
+        weight = PlateCalculator.formatted(source.weight)
+        reps = String(source.reps)
+    }
+
+    private var sourcePicker: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("PR SOURCE").calculatorSectionHeading()
+            Picker("PR source", selection: $selectedSourceID) {
+                ForEach(sources) { source in
+                    Text(source.exerciseName).tag(Optional(source.id))
+                }
+            }
+            .pickerStyle(.menu)
+            .tint(Color.fwbLime)
+            .onChange(of: selectedSourceID) { sourceID in
+                guard let source = sources.first(where: { $0.id == sourceID }) else { return }
+                weight = PlateCalculator.formatted(source.weight)
+                reps = String(source.reps)
+            }
+        }
+        .fwbCard()
+    }
+
+    private var estimate: Double? {
+        OneRepMaxCalculator.estimate(weight: Double(weight) ?? 0, reps: Int(reps) ?? 0)
+    }
+
+    private var selectedSource: OneRepMaxSource? {
+        sources.first(where: { $0.id == selectedSourceID })
+    }
+
+    private var activeRepRange: ClosedRange<Int>? {
+        selectedSource?.recommendedRepRange ?? recommendedRepRange
+    }
+
+    private var recommendation: OneRepMaxTrainingRecommendation? {
+        guard let estimate, let activeRepRange else { return nil }
+        return OneRepMaxCalculator.recommendation(oneRepMax: estimate, repRange: activeRepRange)
+    }
+
+    private var activeExerciseName: String {
+        selectedSource?.exerciseName ?? exerciseName
+    }
+
+    private var resultCard: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("ESTIMATED 1RM").calculatorSectionHeading()
+            if let estimate {
+                Text("\(PlateCalculator.formatted(OneRepMaxCalculator.roundedToNearestFive(estimate))) LB")
+                    .font(.system(size: 44, weight: .black, design: .rounded))
+                    .foregroundStyle(Color.fwbLime)
+                    .accessibilityIdentifier("oneRepMax.result")
+
+                FWBRule(color: Color.fwbLine.opacity(0.7))
+
+                Text("TRAINING LOADS").calculatorSectionHeading()
+                ForEach(OneRepMaxCalculator.trainingPercentages, id: \.self) { percentage in
+                    HStack {
+                        Text("\(percentage)%")
+                            .font(.headline.weight(.bold))
+                            .foregroundStyle(Color.fwbMuted)
+                        Spacer()
+                        Text("\(PlateCalculator.formatted(OneRepMaxCalculator.trainingWeight(oneRepMax: estimate, percentage: percentage))) lb")
+                            .font(.headline.weight(.black))
+                            .foregroundStyle(Color.fwbWarmWhite)
+                    }
+                }
+            } else {
+                Text("Enter a completed set’s weight and reps to calculate an estimate.")
+                    .font(.subheadline)
+                    .foregroundStyle(Color.fwbMuted)
+            }
+        }
+        .fwbCard()
+    }
+
+    private func recommendationCard(_ recommendation: OneRepMaxTrainingRecommendation) -> some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("PROGRAM STARTING WEIGHT").calculatorSectionHeading()
+
+            Text("\(PlateCalculator.formatted(recommendation.startingWeight)) LB")
+                .font(.system(size: 40, weight: .black, design: .rounded))
+                .foregroundStyle(Color.fwbLime)
+                .accessibilityIdentifier("oneRepMax.recommendedStartingWeight")
+
+            Text("For \(recommendation.repRange.lowerBound)–\(recommendation.repRange.upperBound) reps")
+                .font(.headline.weight(.bold))
+                .foregroundStyle(Color.fwbWarmWhite)
+
+            Text(
+                "About \(percentage(recommendation.percentageRange.lowerBound))–\(percentage(recommendation.percentageRange.upperBound))% of estimated 1RM "
+                    + "(\(PlateCalculator.formatted(recommendation.workingWeightRange.lowerBound))–\(PlateCalculator.formatted(recommendation.workingWeightRange.upperBound)) lb). "
+                    + "Start at the lighter end, follow the program’s effort target, and adjust gradually while keeping good form."
+            )
+            .font(.subheadline)
+            .foregroundStyle(Color.fwbMuted)
+            .fixedSize(horizontal: false, vertical: true)
+
+            if let onUseRecommendedWeight {
+                Button {
+                    onUseRecommendedWeight(recommendation.startingWeight, activeExerciseName)
+                } label: {
+                    Text("USE \(PlateCalculator.formatted(recommendation.startingWeight)) LB FOR EMPTY SETS")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(FWBPrimaryButtonStyle())
+                .accessibilityHint("Fills incomplete working sets without changing completed sets")
+                .accessibilityIdentifier("oneRepMax.useRecommendedWeight")
+            }
+
+            Text("Estimate only. Exercise choice, equipment, fatigue, technique, and training experience can change the appropriate load. Stop if form breaks down or you feel pain.")
+                .font(.caption)
+                .foregroundStyle(Color.fwbMuted)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .fwbCard()
+    }
+
+    private func percentage(_ value: Double) -> String {
+        String(Int((value * 100).rounded()))
     }
 }
 
@@ -664,6 +954,7 @@ private struct CalculatorNumberField: View {
     let title: String
     let unit: String
     @Binding var text: String
+    var keyboardType: UIKeyboardType = .decimalPad
 
     var body: some View {
         VStack(alignment: .leading, spacing: 7) {
@@ -671,7 +962,7 @@ private struct CalculatorNumberField: View {
                 .calculatorSectionHeading()
             HStack(spacing: 8) {
                 TextField("0", text: $text)
-                    .keyboardType(.decimalPad)
+                    .keyboardType(keyboardType)
                     .font(.title2.weight(.black))
                     .fontWidth(.condensed)
                     .foregroundStyle(Color.fwbWarmWhite)

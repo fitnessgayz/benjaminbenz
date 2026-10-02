@@ -1,11 +1,33 @@
 import SwiftUI
 import UIKit
 
+enum FWBBrand {
+    static let productName = "FWB Training"
+    static let promise = "Train with intention. Feel your progress."
+}
+
 extension String {
-    /// A copied log retains a unique storage title without exposing its suffix in UI.
+    /// Storage titles keep their original identifiers; presentation removes only
+    /// the generated wrapper and a validated trailing UUID.
     var fwbWorkoutDisplayTitle: String {
-        guard hasPrefix("Copy of "), let suffix = range(of: " · [0-9a-f]{8}$", options: .regularExpression) else { return self }
-        return String(self[..<suffix.lowerBound])
+        let title = trimmingCharacters(in: .whitespacesAndNewlines)
+        if title.lowercased().hasPrefix("copy of ") {
+            var source = String(title.dropFirst("Copy of ".count))
+            // Older copies used an eight-digit ID, only in this known format.
+            if let suffix = source.range(of: " · [0-9a-fA-F]{8}$", options: .regularExpression) {
+                source = String(source[..<suffix.lowerBound])
+            }
+            return "Copy of " + source.fwbWorkoutDisplayTitle
+        }
+        var parts = title.components(separatedBy: "·").map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+        if parts.count > 1, let last = parts.last, UUID(uuidString: last) != nil {
+            parts.removeLast()
+        }
+        if parts.count > 1, parts.first?.caseInsensitiveCompare("Custom workout") == .orderedSame {
+            parts.removeFirst()
+        }
+        let display = parts.joined(separator: " · ")
+        return display.isEmpty ? title : display
     }
 
     /// Capitalizes the first letter of each displayed word without lowercasing
@@ -39,9 +61,24 @@ extension String {
 }
 
 extension Color {
-    // Shared with css/fwb-design-system.css; semantic variants preserve dark mode.
-    static let fwbAccentFill = Color(red: 214 / 255, green: 1, blue: 53 / 255)
-    static let fwbGold = Color(red: 0.91, green: 0.65, blue: 0.08)
+    // Canonical cross-platform brand roles. Values live in Assets.xcassets so
+    // launch, SwiftUI, UIKit, widgets, and future extensions share one source.
+    static let fwbBrandPrimary = Color("BrandPrimary")
+    static let fwbBrandPrimaryInk = Color("BrandPrimaryInk")
+    static let fwbInk = Color("Ink")
+    static let fwbInkDeep = Color("InkDeep")
+    static let fwbCanvas = Color("Canvas")
+    static let fwbSurfaceSoft = Color("SurfaceSoft")
+    static let fwbSurfaceRaised = Color("Surface")
+    static let fwbTextMuted = Color("TextMuted")
+    static let fwbBorder = Color("Border")
+    static let fwbFocus = Color("Focus")
+
+    // Compatibility aliases keep the existing UI stable while feature views
+    // migrate to the semantic roles above. `fwbLime` is still widely used for
+    // small text, so its light value remains darker than the non-text focus
+    // token to preserve WCAG AA contrast on canvas and raised surfaces.
+    static let fwbAccentFill = fwbBrandPrimary
     static let fwbLime = Color(UIColor { traits in
         traits.userInterfaceStyle == .dark
             ? UIColor(red: 214 / 255, green: 1, blue: 53 / 255, alpha: 1)
@@ -52,53 +89,24 @@ extension Color {
             ? UIColor(red: 1.0, green: 0.231, blue: 0.188, alpha: 1)
             : UIColor(red: 0.72, green: 0.08, blue: 0.06, alpha: 1)
     })
-    static let fwbBackground = Color(UIColor { traits in
-        traits.userInterfaceStyle == .dark
-            ? UIColor(red: 0.090, green: 0.098, blue: 0.094, alpha: 1)
-            : UIColor(red: 242 / 255, green: 243 / 255, blue: 238 / 255, alpha: 1)
-    })
-    static let fwbCard = Color(UIColor { traits in
-        traits.userInterfaceStyle == .dark
-            ? UIColor(red: 0.125, green: 0.137, blue: 0.125, alpha: 1)
-            : UIColor.white
-    })
-    static let fwbSurface = Color(UIColor { traits in
-        traits.userInterfaceStyle == .dark
-            ? UIColor(red: 0.133, green: 0.145, blue: 0.133, alpha: 1)
-            : UIColor(red: 247 / 255, green: 248 / 255, blue: 244 / 255, alpha: 1)
-    })
-    static let fwbWarmWhite = Color(UIColor { traits in
-        traits.userInterfaceStyle == .dark
-            ? UIColor(red: 0.969, green: 0.969, blue: 0.949, alpha: 1)
-            : UIColor(red: 23 / 255, green: 26 / 255, blue: 23 / 255, alpha: 1)
-    })
-    static let fwbMuted = Color(UIColor { traits in
-        traits.userInterfaceStyle == .dark
-            ? UIColor(red: 0.62, green: 0.62, blue: 0.58, alpha: 1)
-            : UIColor(red: 102 / 255, green: 107 / 255, blue: 98 / 255, alpha: 1)
-    })
-    static let fwbLine = Color(UIColor { traits in
-        traits.userInterfaceStyle == .dark
-            ? UIColor(red: 0.357, green: 0.376, blue: 0.357, alpha: 1)
-            : UIColor(red: 220 / 255, green: 222 / 255, blue: 215 / 255, alpha: 1)
-    })
+    static let fwbBackground = fwbCanvas
+    static let fwbCard = fwbSurfaceRaised
+    static let fwbSurface = fwbSurfaceSoft
+    static let fwbWarmWhite = fwbInk
+    static let fwbMuted = fwbTextMuted
+    static let fwbLine = fwbBorder
 }
 
 struct FWBMark: View {
     var size: CGFloat = 72
 
     var body: some View {
-        ZStack {
-            Circle()
-                .fill(Color.fwbAccentFill)
-
-            Text("FWB")
-                .font(.system(size: size * 0.34, weight: .black, design: .default))
-
-                .foregroundStyle(Color.black)
-        }
+        Image("BrandMark")
+            .resizable()
+            .scaledToFit()
+            .clipShape(RoundedRectangle(cornerRadius: size * 0.22, style: .continuous))
         .frame(width: size, height: size)
-        .accessibilityLabel("Fitness with Benjamin")
+        .accessibilityLabel("FWB Training")
     }
 }
 
@@ -134,11 +142,12 @@ struct FWBCardModifier: ViewModifier {
 
 struct FWBPrimaryButtonStyle: ButtonStyle {
     @Environment(\.isEnabled) private var isEnabled
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(FWBFont.headline.weight(.bold))
-            .foregroundStyle(Color.black)
+            .foregroundStyle(Color.fwbBrandPrimaryInk)
             .frame(maxWidth: .infinity)
             .frame(minHeight: 52)
             .padding(.horizontal, 16)
@@ -148,13 +157,14 @@ struct FWBPrimaryButtonStyle: ButtonStyle {
                     .stroke(Color.fwbAccentFill, lineWidth: 1)
             }
             .opacity(isEnabled ? 1 : 0.42)
-            .scaleEffect(configuration.isPressed ? 0.985 : 1)
-            .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
+            .scaleEffect(configuration.isPressed && !reduceMotion ? 0.985 : 1)
+            .animation(reduceMotion ? nil : .easeOut(duration: 0.12), value: configuration.isPressed)
     }
 }
 
 struct FWBSecondaryButtonStyle: ButtonStyle {
     @Environment(\.isEnabled) private var isEnabled
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
@@ -169,13 +179,14 @@ struct FWBSecondaryButtonStyle: ButtonStyle {
                     .stroke(Color.fwbLime, lineWidth: 1)
             }
             .opacity(isEnabled ? 1 : 0.42)
-            .scaleEffect(configuration.isPressed ? 0.985 : 1)
-            .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
+            .scaleEffect(configuration.isPressed && !reduceMotion ? 0.985 : 1)
+            .animation(reduceMotion ? nil : .easeOut(duration: 0.12), value: configuration.isPressed)
     }
 }
 
 struct FWBDestructiveButtonStyle: ButtonStyle {
     @Environment(\.isEnabled) private var isEnabled
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
@@ -190,8 +201,8 @@ struct FWBDestructiveButtonStyle: ButtonStyle {
                     .stroke(Color.fwbRed.opacity(0.75), lineWidth: 1)
             }
             .opacity(isEnabled ? 1 : 0.42)
-            .scaleEffect(configuration.isPressed ? 0.985 : 1)
-            .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
+            .scaleEffect(configuration.isPressed && !reduceMotion ? 0.985 : 1)
+            .animation(reduceMotion ? nil : .easeOut(duration: 0.12), value: configuration.isPressed)
     }
 }
 
@@ -212,6 +223,51 @@ struct FWBTextFieldStyle: TextFieldStyle {
 extension View {
     func fwbCard() -> some View {
         modifier(FWBCardModifier())
+    }
+}
+
+struct FWBLoadingState: View {
+    let title: String
+    var message: String = FWBBrand.promise
+
+    var body: some View {
+        VStack(spacing: 14) {
+            ProgressView()
+                .controlSize(.large)
+                .tint(Color.fwbBrandPrimary)
+                .accessibilityHidden(true)
+            Text(title)
+                .font(FWBFont.title3.weight(.bold))
+                .foregroundStyle(Color.fwbInk)
+                .multilineTextAlignment(.center)
+            Text(message)
+                .font(FWBFont.subheadline)
+                .foregroundStyle(Color.fwbTextMuted)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: 320)
+        }
+        .padding(28)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(title). \(message)")
+    }
+}
+
+struct FWBBrandPromise: View {
+    var body: some View {
+        HStack(spacing: 10) {
+            FWBMark(size: 34)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(FWBBrand.productName)
+                    .font(FWBFont.footnote.weight(.bold))
+                    .foregroundStyle(Color.fwbInk)
+                Text(FWBBrand.promise)
+                    .font(FWBFont.caption)
+                    .foregroundStyle(Color.fwbTextMuted)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .accessibilityElement(children: .combine)
     }
 }
 

@@ -12,6 +12,13 @@ struct ClientNotification: Codable, Identifiable, Equatable {
     let body: String
     let createdAt: String
     var readAt: String?
+    let webURL: String?
+
+    init(id: UUID, userID: UUID, kind: String, title: String, body: String, createdAt: String, readAt: String?, webURL: String? = nil) {
+        self.id = id; self.userID = userID; self.kind = kind
+        self.title = title; self.body = body; self.createdAt = createdAt
+        self.readAt = readAt; self.webURL = webURL
+    }
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -21,6 +28,7 @@ struct ClientNotification: Codable, Identifiable, Equatable {
         case body
         case createdAt = "created_at"
         case readAt = "read_at"
+        case webURL = "web_url"
     }
 
     var isUnread: Bool { readAt == nil }
@@ -52,7 +60,7 @@ enum ClientNotificationCategory: String, CaseIterable {
         case .workoutReminder: "Workout reminder"
         case .achievement: "Achievement"
         case .weeklyCheckIn: "Weekly check-in"
-        case .general: "FWB update"
+        case .general: "FWB Training update"
         }
     }
 
@@ -138,7 +146,7 @@ final class NotificationInboxStore: ObservableObject {
         do {
             var records: [ClientNotification] = try await client
                 .from("client_notifications")
-                .select("id,user_id,kind,title,body,created_at,read_at")
+                .select("id,user_id,kind,title,body,created_at,read_at,web_url")
                 .eq("user_id", value: accountID.uuidString)
                 .order("created_at", ascending: false)
                 .limit(100)
@@ -331,7 +339,7 @@ final class NotificationPreferenceStore: ObservableObject {
             if let row = rows.first {
                 preferences = row.preferences
                 persistLocally()
-                syncMessage = "Preferences are synced with your FWB account."
+                syncMessage = "Preferences are synced with your FWB Training account."
             } else {
                 await sync()
             }
@@ -364,7 +372,7 @@ final class NotificationPreferenceStore: ObservableObject {
                     onConflict: "user_id"
                 )
                 .execute()
-            syncMessage = "Preferences are synced with your FWB account."
+            syncMessage = "Preferences are synced with your FWB Training account."
         } catch is CancellationError {
             return
         } catch {
@@ -402,11 +410,11 @@ final class SystemNotificationPermissionStore: ObservableObject {
     var authorizationDetail: String {
         switch authorizationStatus {
         case .authorized, .provisional, .ephemeral:
-            "FWB can show local alerts and is ready to register this device when remote push is activated."
+            "FWB Training can show local alerts and is ready to register this device when remote push is activated."
         case .denied:
-            "FWB cannot show local or future coach alerts unless you allow notifications in iPhone Settings."
+            "FWB Training cannot show local or future coaching alerts unless you allow notifications in iPhone Settings."
         case .notDetermined:
-            "Choose Allow Notifications when you’re ready. FWB asks only after you tap the button below."
+            "Choose Allow Notifications when you’re ready. FWB Training asks only after you tap the button below."
         @unknown default:
             "Your current notification permission could not be confirmed."
         }
@@ -498,9 +506,10 @@ struct NotificationInboxView: View {
         switch store.state {
         case .idle, .loading:
             if store.notifications.isEmpty {
-                ProgressView("Loading notifications…")
-                    .tint(Color.fwbLime)
-                    .foregroundStyle(Color.fwbMuted)
+                FWBLoadingState(
+                    title: "Loading your updates",
+                    message: "Training updates, reminders, and replies will appear here."
+                )
             } else {
                 inboxList
             }
@@ -517,7 +526,7 @@ struct NotificationInboxView: View {
                 FWBEmptyState(
                     icon: "bell.slash",
                     title: "You’re all caught up",
-                    message: "Coach replies, program updates, reminders, and achievements will appear here."
+                    message: "Training replies, program updates, reminders, and achievements will appear here."
                 )
             } else {
                 inboxList
@@ -653,7 +662,7 @@ private struct NotificationDetailView: View {
                     HStack(spacing: 12) {
                         Image(systemName: notification.category.icon)
                             .font(.title3)
-                            .foregroundStyle(Color.black)
+                            .foregroundStyle(Color.fwbBrandPrimaryInk)
                             .frame(width: 48, height: 48)
                             .background(Color.fwbAccentFill, in: Rectangle())
 
@@ -730,7 +739,7 @@ struct NotificationPreferencesView: View {
             HStack(alignment: .top, spacing: 12) {
                 Image(systemName: permissionIcon)
                     .font(.title3)
-                    .foregroundStyle(Color.black)
+                    .foregroundStyle(Color.fwbBrandPrimaryInk)
                     .frame(width: 44, height: 44)
                     .background(Color.fwbAccentFill, in: Rectangle())
 

@@ -1,9 +1,25 @@
 import Foundation
 import JavaScriptCore
 
+enum AccountRole: String, CaseIterable, Identifiable {
+    case client, coach
+
+    var id: String { rawValue }
+    var title: String { rawValue.capitalized }
+}
+
 struct SignedInAccount: Equatable {
     let id: UUID
     let email: String
+    let role: AccountRole
+
+    var isCoach: Bool { role == .coach }
+
+    init(id: UUID, email: String, role: AccountRole = .client) {
+        self.id = id
+        self.email = email
+        self.role = role
+    }
 }
 
 struct ClientProgram: Decodable, Identifiable, Equatable {
@@ -181,7 +197,8 @@ struct ClientProgram: Decodable, Identifiable, Equatable {
                         "code": .string(exercise.code), "name": .string(exercise.name),
                         "prescription": .string(exercise.prescription), "rest": .string(exercise.rest),
                         "instructions": .array(exercise.instructions.map(WorkoutLayoutJSON.string)),
-                        "video": .string(exercise.video)
+                        "video": .string(exercise.video),
+                        "progression": WorkoutProgressionIntegration.json(exercise.progression)
                     ])
                 })
             ])
@@ -310,6 +327,9 @@ struct ClientWorkoutLayoutUpdate: Encodable {
             if previous?.video != exercise.video {
                 ["videoUrl", "video_url", "youtube_url"].forEach { fields.removeValue(forKey: $0) }
                 fields["video"] = .string(exercise.video)
+            }
+            if previous?.progression != exercise.progression {
+                fields["progression"] = WorkoutProgressionIntegration.json(exercise.progression)
             }
             return .object(fields)
         }
@@ -553,12 +573,15 @@ struct Exercise: Decodable, Identifiable, Equatable, Hashable {
     let rest: String
     let instructions: [String]
     let video: String
+    let progression: WorkoutProgressionConfig?
+    let hasInvalidProgression: Bool
 
     var id: String {
         code.isEmpty ? name : code
     }
 
     enum CodingKeys: String, CodingKey {
+        case progression
         case code
         case name
         case prescription
@@ -580,7 +603,9 @@ struct Exercise: Decodable, Identifiable, Equatable, Hashable {
         prescription: String = "",
         rest: String = "",
         instructions: [String] = [],
-        video: String = ""
+        video: String = "",
+        progression: WorkoutProgressionConfig? = nil,
+        hasInvalidProgression: Bool = false
     ) {
         self.code = code
         self.name = name
@@ -588,10 +613,14 @@ struct Exercise: Decodable, Identifiable, Equatable, Hashable {
         self.rest = rest
         self.instructions = instructions
         self.video = video
+        self.progression = progression
+        self.hasInvalidProgression = hasInvalidProgression
     }
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
+        progression = try? container.decodeIfPresent(WorkoutProgressionConfig.self, forKey: .progression)
+        hasInvalidProgression = container.contains(.progression) && (try? container.decodeNil(forKey: .progression)) != true && progression == nil
         code = try container.decodeIfPresent(String.self, forKey: .code) ?? ""
         name = try container.decodeIfPresent(String.self, forKey: .name) ?? "Exercise"
         prescription = try container.decodeIfPresent(String.self, forKey: .prescription) ?? ""
@@ -613,6 +642,10 @@ struct Exercise: Decodable, Identifiable, Equatable, Hashable {
 
     var demoURL: URL? {
         let savedVideo = video.trimmingCharacters(in: .whitespacesAndNewlines)
+        let libraryVideo = WorkoutGenerator.safeDemoURL(savedVideo)
+        if !libraryVideo.isEmpty, let url = URL(string: libraryVideo) {
+            return url
+        }
         guard !savedVideo.isEmpty else {
             return Self.youtubeSearchURL(for: name)
         }
@@ -872,8 +905,8 @@ struct ApprovedExercise: Decodable, Identifiable, Equatable {
     let defaultRestSeconds: Int
     let substitutionGroup: String
     let demoURL: String?
-    let imageURL: String?
-    let motionURL: String?
+    var imageURL: String? = nil
+    var motionURL: String? = nil
     let instructions: String
 
     enum CodingKeys: String, CodingKey {
@@ -893,40 +926,6 @@ struct ApprovedExercise: Decodable, Identifiable, Equatable {
         case imageURL = "image_url"
         case motionURL = "motion_url"
         case instructions
-    }
-}
-
-enum ExerciseSuggestionMetadata {
-    static func muscleSummary(primary: String, secondary: [String]) -> String? {
-        var seen = Set<String>()
-        let muscles = [primary] + secondary
-        let labels = muscles.compactMap { muscle -> String? in
-            let trimmed = muscle.trimmingCharacters(in: .whitespacesAndNewlines)
-            let key = trimmed.lowercased()
-            guard !key.isEmpty, seen.insert(key).inserted else { return nil }
-            return trimmed
-                .replacingOccurrences(of: "[_-]+", with: " ", options: .regularExpression)
-                .fwbTitleCased
-        }
-
-        return labels.isEmpty ? nil : labels.joined(separator: " · ")
-    }
-
-    static func muscleSummary(
-        for name: String,
-        approvedExercises: [ApprovedExercise]
-    ) -> String? {
-        let identity = ExerciseNameIdentity.key(for: name)
-        guard !identity.isEmpty,
-              let exercise = approvedExercises.first(where: { candidate in
-                  ExerciseNameIdentity.key(for: candidate.name) == identity
-                      || candidate.aliases.contains { ExerciseNameIdentity.key(for: $0) == identity }
-              }) else { return nil }
-
-        return muscleSummary(
-            primary: exercise.primaryMuscle,
-            secondary: exercise.secondaryMuscles
-        )
     }
 }
 
@@ -1347,6 +1346,7 @@ struct WorkoutLogRecord: Decodable, Equatable {
     let effortValue: Double?
     let setType: WorkoutSetType?
     let durationSeconds: Double?
+    let progressionTarget: WorkoutProgressionConfig?
 
     enum CodingKeys: String, CodingKey {
         case sessionID = "session_id"
@@ -1366,6 +1366,7 @@ struct WorkoutLogRecord: Decodable, Equatable {
         case effortValue = "effort_value"
         case setType = "set_type"
         case durationSeconds = "duration_seconds"
+        case progressionTarget = "progression_target"
     }
 
     init(from decoder: Decoder) throws {
@@ -1387,6 +1388,7 @@ struct WorkoutLogRecord: Decodable, Equatable {
         effortValue = try container.decodeIfPresent(Double.self, forKey: .effortValue)
         setType = try container.decodeIfPresent(WorkoutSetType.self, forKey: .setType)
         durationSeconds = try container.decodeIfPresent(Double.self, forKey: .durationSeconds)
+        progressionTarget = try? container.decodeIfPresent(WorkoutProgressionConfig.self, forKey: .progressionTarget)
     }
 
     var key: WorkoutLogKey {
@@ -1404,6 +1406,8 @@ struct WorkoutLogRecord: Decodable, Equatable {
 }
 
 struct WorkoutHistoryRecord: Codable, Equatable {
+    let rowID: UUID?
+    let hasSessionIdentity: Bool
     let sessionID: UUID?
     let setID: UUID?
     let entryDate: String
@@ -1422,9 +1426,13 @@ struct WorkoutHistoryRecord: Codable, Equatable {
     let effortScale: WorkoutEffortScale?
     let effortValue: Double?
     let setType: WorkoutSetType?
+    let hasKnownSetType: Bool
     let durationSeconds: Double?
+    let progressionTarget: WorkoutProgressionConfig?
 
     enum CodingKeys: String, CodingKey {
+        case rowID = "id"
+        case hasSessionIdentity = "fwb_session_identity_known"
         case sessionID = "session_id"
         case setID = "set_id"
         case entryDate = "entry_date"
@@ -1443,11 +1451,16 @@ struct WorkoutHistoryRecord: Codable, Equatable {
         case effortScale = "effort_scale"
         case effortValue = "effort_value"
         case setType = "set_type"
+        case hasKnownSetType = "fwb_set_type_known"
         case durationSeconds = "duration_seconds"
+        case progressionTarget = "progression_target"
     }
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
+        rowID = try container.decodeIfPresent(UUID.self, forKey: .rowID)
+        hasSessionIdentity = try container.decodeIfPresent(Bool.self, forKey: .hasSessionIdentity)
+            ?? container.contains(.sessionID)
         sessionID = try container.decodeIfPresent(UUID.self, forKey: .sessionID)
         setID = try container.decodeIfPresent(UUID.self, forKey: .setID)
         entryDate = try container.decode(String.self, forKey: .entryDate)
@@ -1465,11 +1478,16 @@ struct WorkoutHistoryRecord: Codable, Equatable {
         completedAt = ContinuityDateCoding.date(from: try container.decodeIfPresent(String.self, forKey: .completedAt))
         effortScale = try container.decodeIfPresent(WorkoutEffortScale.self, forKey: .effortScale)
         effortValue = try container.decodeIfPresent(Double.self, forKey: .effortValue)
+        let rawSetType = try? container.decodeIfPresent(String.self, forKey: .setType)
+        hasKnownSetType = (try? container.decodeIfPresent(Bool.self, forKey: .hasKnownSetType)) ?? (rawSetType == nil || WorkoutSetType(rawValue: rawSetType!) != nil)
         setType = try container.decodeIfPresent(WorkoutSetType.self, forKey: .setType)
         durationSeconds = try container.decodeIfPresent(Double.self, forKey: .durationSeconds)
+        progressionTarget = try? container.decodeIfPresent(WorkoutProgressionConfig.self, forKey: .progressionTarget)
     }
 
     init(
+        rowID: UUID? = nil,
+        hasSessionIdentity: Bool = true,
         sessionID: UUID? = nil,
         setID: UUID? = nil,
         entryDate: String,
@@ -1488,8 +1506,11 @@ struct WorkoutHistoryRecord: Codable, Equatable {
         effortScale: WorkoutEffortScale? = nil,
         effortValue: Double? = nil,
         setType: WorkoutSetType? = nil,
-        durationSeconds: Double? = nil
+        durationSeconds: Double? = nil,
+        progressionTarget: WorkoutProgressionConfig? = nil
     ) {
+        self.rowID = rowID
+        self.hasSessionIdentity = hasSessionIdentity
         self.sessionID = sessionID
         self.setID = setID
         self.entryDate = entryDate
@@ -1508,7 +1529,9 @@ struct WorkoutHistoryRecord: Codable, Equatable {
         self.effortScale = effortScale
         self.effortValue = effortValue
         self.setType = setType
+        self.hasKnownSetType = true
         self.durationSeconds = durationSeconds
+        self.progressionTarget = progressionTarget
     }
 
     var isCardio: Bool {
@@ -1917,6 +1940,7 @@ struct WorkoutLogPayload: Encodable {
     let effortValue: Double?
     let setType: WorkoutSetType
     let durationSeconds: Double?
+    var progressionTarget: WorkoutProgressionConfig? = nil
 
     enum CodingKeys: String, CodingKey {
         case sessionID = "session_id"
@@ -1940,6 +1964,7 @@ struct WorkoutLogPayload: Encodable {
         case effortValue = "effort_value"
         case setType = "set_type"
         case durationSeconds = "duration_seconds"
+        case progressionTarget = "progression_target"
     }
 
     func encode(to encoder: Encoder) throws {
@@ -1963,6 +1988,7 @@ struct WorkoutLogPayload: Encodable {
         try container.encodeIfPresent(completedAt, forKey: .completedAt)
         try container.encode(setType, forKey: .setType)
         try container.encodeIfPresent(durationSeconds, forKey: .durationSeconds)
+        try container.encodeIfPresent(progressionTarget, forKey: .progressionTarget)
 
         if let effortScale, let effortValue {
             try container.encode(effortScale, forKey: .effortScale)
@@ -2040,6 +2066,7 @@ struct WorkoutSetDraft: Identifiable, Equatable {
     var effort: String
     var isCompleted: Bool
     var setType: WorkoutSetType
+    var progressionTarget: WorkoutProgressionConfig?
 
     init(
         id: UUID = UUID(),
@@ -2052,8 +2079,10 @@ struct WorkoutSetDraft: Identifiable, Equatable {
         effortScale: WorkoutEffortScale? = nil,
         effort: String = "",
         isCompleted: Bool = false,
-        setType: WorkoutSetType = .working
+        setType: WorkoutSetType = .working,
+        progressionTarget: WorkoutProgressionConfig? = nil
     ) {
+        self.progressionTarget = progressionTarget
         self.id = id
         exerciseCode = exercise.code
         exerciseName = exercise.name

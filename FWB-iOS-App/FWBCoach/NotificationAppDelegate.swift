@@ -17,6 +17,8 @@ final class NotificationAppDelegate: NSObject, UIApplicationDelegate, UNUserNoti
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
     ) -> Bool {
         UNUserNotificationCenter.current().delegate = self
+        // The coach app never observes a coach's personal Health data. Client
+        // Health import and Apple companions belong to the separate client app.
         return true
     }
 
@@ -44,7 +46,20 @@ final class NotificationAppDelegate: NSObject, UIApplicationDelegate, UNUserNoti
         willPresent notification: UNNotification,
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
     ) {
-        completionHandler([.banner, .sound, .badge])
+        if notification.request.content.userInfo["kind"] as? String == WorkoutDetectionNotificationPayload.kind {
+            let payload = WorkoutDetectionNotificationPayload.parse(notification.request.content.userInfo)
+            Task { @MainActor in
+                let health = AppleHealthImportStore.shared
+                guard let payload, health.account?.id == payload.accountID,
+                      health.selectedCategories.contains(.workouts), health.detectionNotifications.isEnabled else {
+                    completionHandler([])
+                    return
+                }
+                completionHandler([.banner, .sound])
+            }
+        } else {
+            completionHandler([.banner, .sound, .badge])
+        }
     }
 
     func userNotificationCenter(
@@ -53,9 +68,18 @@ final class NotificationAppDelegate: NSObject, UIApplicationDelegate, UNUserNoti
         withCompletionHandler completionHandler: @escaping () -> Void
     ) {
         Task { @MainActor in
-            NotificationCenter.default.post(name: .fwbNotificationInboxShouldOpen, object: nil)
+            defer { completionHandler() }
+            let info = response.notification.request.content.userInfo
+            if info["kind"] as? String == WorkoutDetectionNotificationPayload.kind {
+                guard response.actionIdentifier == UNNotificationDefaultActionIdentifier,
+                      let payload = WorkoutDetectionNotificationPayload.parse(info) else { return }
+                FWBSystemRouter.shared.enqueueHealthWorkout(payload)
+            } else if info["kind"] as? String == "rest_timer" {
+                NotificationCenter.default.post(name: Notification.Name("fwbRestTimerShouldOpen"), object: nil)
+            } else {
+                NotificationCenter.default.post(name: .fwbNotificationInboxShouldOpen, object: nil)
+            }
         }
-        completionHandler()
     }
 }
 
