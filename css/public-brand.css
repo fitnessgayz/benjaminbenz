@@ -499,3 +499,59 @@
     transition-duration: .01ms !important;
   }
 }
+
+/* Keep the Start introduction and coaching heading compact at every width. */
+:root body.homepage.public-page #start .coaching-options {
+  padding-top: clamp(28px, 4vw, 48px);
+  padding-bottom: clamp(28px, 4vw, 48px);
+}
+
+:root body.homepage.public-page .coaching-options-heading {
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: 12px;
+}
+
+:root body.homepage.public-page .coaching-options-heading > p {
+  margin: 0;
+}
+
+:root body.homepage.public-page .coaching-options-heading h2 {
+  max-width: none;
+}
+
+:root body.homepage.public-page .coaching-options-heading p:not(.kicker) {
+  max-width: 58ch;
+}
+
+@media (min-width: 801px) {
+  :root body.homepage.public-page #start .contact {
+    width: min(1040px, calc(100% - 40px));
+    margin-inline: auto;
+    padding: clamp(28px, 4vw, 44px);
+    gap: 0;
+  }
+
+  :root body.homepage.public-page #start .contact h2 {
+    max-width: none;
+    font-size: clamp(2rem, 3.4vw, 3rem);
+    line-height: 1.12;
+  }
+
+  :root body.homepage.public-page #start .contact h3 {
+    max-width: none;
+    font-size: clamp(1.4rem, 2vw, 1.75rem);
+    line-height: 1.25;
+  }
+
+  :root body.homepage.public-page #start .contact p:not(.kicker) {
+    max-width: none;
+    font-size: 1.125rem;
+    line-height: 1.55;
+    margin-block: 16px 0;
+  }
+
+  :root body.homepage.public-page #start .contact .button-row {
+    margin-block: 24px 0;
+  }
+}
