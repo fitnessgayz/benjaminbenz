@@ -76,7 +76,7 @@ test("shared app styles use the approved palette beneath the color bridges", () 
   for (const file of ["client-dashboard.html", "coach-admin.html"]) {
     const links = [...read(file).matchAll(/<link[^>]+rel="stylesheet"[^>]+href="([^"]+)"[^>]*>/g)];
     assert.ok(links.some((link) => /fwb-design-system\.css\?v=web-app-brand-1/.test(link[1])));
-    assert.match(links.at(-1)[1], /fwb-dark-theme\.css\?v=deep-forest-4/);
+    assert.match(links.at(-1)[1], /fwb-dark-theme\.css\?v=deep-forest-5/);
   }
 });
 

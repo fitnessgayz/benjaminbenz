@@ -3224,7 +3224,7 @@ body.dashboard-page.custom-workout-grouped-finish-open {
   outline-offset: 2px;
 }
 
-/* Keep copy actions together; only the heading may wrap at narrow widths. */
+/* Desktop keeps the title and actions alongside each other. */
 .dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-section-heading:has(.custom-workout-grouped-copy-weights) {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -3266,6 +3266,22 @@ body.dashboard-page.custom-workout-grouped-finish-open {
   align-items: center;
   justify-content: flex-end;
   gap: 5px;
+}
+
+/* Give mobile actions their own row so they cannot cover the round title. */
+@media (max-width: 600px) {
+  .dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-section-heading:has(.custom-workout-grouped-copy-weights) {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "exercise" "round" "actions";
+    gap: 8px;
+  }
+
+  .dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-copy-actions {
+    width: 100%;
+    margin-left: 0;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
 }
 
 .dashboard-page [data-custom-workout-grouped="true"] :is(.custom-workout-grouped-copy-weights, .custom-workout-grouped-undo-weights) {

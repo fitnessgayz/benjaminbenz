@@ -416,6 +416,15 @@
   color: var(--brand-primary-ink); background: var(--lime); border-color: var(--lime);
 }
 
+:root body.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-copy-weights:not(:disabled):not([data-custom-grouped-copy-source="pr"]) {
+  color: var(--brand-primary-ink); background: var(--lime); border-color: var(--lime);
+}
+@media (hover: hover) {
+  :root body.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-copy-weights:not(:disabled):not([data-custom-grouped-copy-source="pr"]):hover {
+    background: var(--brand-primary-hover); border-color: var(--brand-primary-hover);
+  }
+}
+
 /* Milestone art keeps its medal colors; surrounding cards stay dark. */
 :root body.dashboard-page .achievement-badge,
 :root body.dashboard-page .achievement-badge.is-earned {
