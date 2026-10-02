@@ -5573,6 +5573,13 @@ function exerciseCard(exercise, workoutTitle, isOpen = false, workoutFocus = "",
           <strong class="custom-workout-collapsed-name" data-exercise-collapsed-name>${escapeHtml(exerciseName || "Exercise name")}</strong>
           <strong class="custom-workout-editable-title" data-exercise-title>
             <span class="custom-workout-name-editor">
+              <span
+                class="custom-workout-suggestion-menu"
+                id="${suggestionMenuId}"
+                role="listbox"
+                data-custom-exercise-suggestions
+                hidden
+              ></span>
               <input
                 type="text"
                 value="${escapeHtml(exerciseName)}"
@@ -5585,13 +5592,6 @@ function exerciseCard(exercise, workoutTitle, isOpen = false, workoutFocus = "",
                 data-exercise-title-name
                 data-exercise-name-input
               />
-              <span
-                class="custom-workout-suggestion-menu"
-                id="${suggestionMenuId}"
-                role="listbox"
-                data-custom-exercise-suggestions
-                hidden
-              ></span>
             </span>
           </strong>
           <small data-set-progress>0 / ${setCount} working sets completed</small>
@@ -6649,14 +6649,20 @@ function exerciseSuggestionMuscleLabel(libraryEntry) {
 function customExerciseSuggestionMatches(value) {
   const query = String(value || "").trim();
   const normalizedQuery = exerciseNameMatcher?.normalizeName(query) || query.toLowerCase();
-  const recommendation = exerciseNameMatcher?.recommendedLibraryMatch(query, exerciseLibraryEntries) || null;
-  const recommendationName = recommendation?.exercise?.name || "";
+  if (!normalizedQuery) return [];
+  // Short entries are prefixes, not misspellings. Offer typo recovery only once
+  // there is enough intent to distinguish an exercise from an incidental substring.
+  const canRecommend = normalizedQuery.length >= 6 || normalizedQuery.includes(" ");
+  let recommendation = canRecommend
+    ? exerciseNameMatcher?.recommendedLibraryMatch(query, exerciseLibraryEntries) || null : null;
   const records = exerciseSuggestionRecords();
   const scored = records.map((record) => {
     const labels = [record.name, ...record.aliases];
-    const substringMatch = !normalizedQuery || labels.some((label) => {
-      const normalizedLabel = exerciseNameMatcher?.normalizeName(label) || label.toLowerCase();
-      return normalizedLabel.includes(normalizedQuery);
+    const prefixMatch = labels.some((label) => {
+      if (exerciseNameMatcher) return exerciseNameMatcher.matchesWordPrefixes(query, label);
+      const words = label.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+      return normalizedQuery.split(/[^a-z0-9]+/).filter(Boolean)
+        .every((prefix) => words.some((word) => word.startsWith(prefix)));
     });
     const score = query && exerciseNameMatcher
       ? Math.max(...labels.map((label) => exerciseNameMatcher.nameSimilarity(query, label, record.libraryEntry || {})))
@@ -6666,10 +6672,15 @@ function customExerciseSuggestionMatches(value) {
       return normalizedLabel.startsWith(normalizedQuery);
     });
 
-    return { ...record, substringMatch, score, startsWithQuery };
+    return { ...record, prefixMatch, score, startsWithQuery };
   });
+  if (scored.some((record) => record.prefixMatch) &&
+      !scored.some((record) => record.prefixMatch && record.name === recommendation?.exercise?.name)) {
+    recommendation = null;
+  }
+  const recommendationName = recommendation?.exercise?.name || "";
   const matches = scored
-    .filter((record) => !query || record.substringMatch || record.score >= 0.58)
+    .filter((record) => record.prefixMatch)
     .filter((record) => record.name !== recommendationName)
     .sort((left, right) => {
       if (left.startsWithQuery !== right.startsWithQuery) {
@@ -8967,6 +8978,13 @@ function customWorkoutGroupNameRowMarkup(exercise, format, groupIndex, index, na
     <div class="custom-workout-group-name-row">
       <span class="custom-workout-name-editor">
         <label class="custom-workout-group-name-label" for="custom-group-exercise-name-${groupKey}-${index}">${escapeHtml(position)}</label>
+        <span
+          class="custom-workout-suggestion-menu"
+          id="${suggestionMenuId}"
+          role="listbox"
+          data-custom-exercise-suggestions
+          hidden
+        ></span>
         <input
           id="custom-group-exercise-name-${groupKey}-${index}"
           type="text"
@@ -8981,13 +8999,6 @@ function customWorkoutGroupNameRowMarkup(exercise, format, groupIndex, index, na
           data-exercise-title-name
           data-exercise-name-input
         />
-        <span
-          class="custom-workout-suggestion-menu"
-          id="${suggestionMenuId}"
-          role="listbox"
-          data-custom-exercise-suggestions
-          hidden
-        ></span>
       </span>
       <button
         class="custom-workout-group-name-delete"
@@ -9055,6 +9066,13 @@ function customWorkoutCardMarkup(exercise, workoutTitle, index = 0, options = {}
           <strong class="custom-workout-collapsed-name" data-exercise-collapsed-name>${escapeHtml(exerciseName || "Exercise name")}</strong>
           <strong class="custom-workout-editable-title" data-exercise-title>
             <span class="custom-workout-name-editor">
+              <span
+                class="custom-workout-suggestion-menu"
+                id="${suggestionMenuId}"
+                role="listbox"
+                data-custom-exercise-suggestions
+                hidden
+              ></span>
               <input
                 type="text"
                 value="${escapeHtml(exerciseName)}"
@@ -9067,13 +9085,6 @@ function customWorkoutCardMarkup(exercise, workoutTitle, index = 0, options = {}
                 data-exercise-title-name
                 data-exercise-name-input
               />
-              <span
-                class="custom-workout-suggestion-menu"
-                id="${suggestionMenuId}"
-                role="listbox"
-                data-custom-exercise-suggestions
-                hidden
-              ></span>
             </span>
           </strong>
           <small data-set-progress>0 / ${customWorkoutDefaultWorkingSetCount} working sets completed</small>
@@ -11939,9 +11950,9 @@ function openCustomWorkoutExerciseDialog(trigger, mode = "add") {
         ${addConfig.hint ? `<p>${addConfig.hint}</p>` : ""}
         <div class="custom-workout-name-editor">
           <label for="custom-workout-picker-search">Search exercises</label>
+          <div class="custom-workout-exercise-options custom-workout-suggestion-menu" id="custom-workout-picker-options" role="listbox" aria-label="Exercise suggestions" data-custom-exercise-suggestions hidden></div>
           <input id="custom-workout-picker-search" type="text" maxlength="160" autocomplete="off" autofocus required
             data-exercise-title-name aria-autocomplete="list" aria-expanded="false" aria-controls="custom-workout-picker-options" />
-          <div class="custom-workout-exercise-options custom-workout-suggestion-menu" id="custom-workout-picker-options" role="listbox" aria-label="Exercise suggestions" data-custom-exercise-suggestions hidden></div>
         </div>
         <button class="button button-dark" type="submit">${addConfig.label}${addConfig.count > 1 ? ` · ${addConfig.count} exercises` : ""}</button>
       </form>`}
@@ -18975,7 +18986,16 @@ function workoutFinishIssues(section, options = {}) {
     const name = enteredName || `Exercise ${exerciseIndex + 1}`;
     let nameReported = false;
     const rows = Array.from(log.querySelectorAll("[data-set-row]"));
-    rows.filter((row) => setTypeForRow(row) !== warmUpSetType).forEach((row) => {
+    const workingRows = rows.filter((row) => setTypeForRow(row) !== warmUpSetType);
+    // An unused exercise card is optional. Once a working row has entries or
+    // was logged/reopened, keep validating the entire exercise as before.
+    const hasWorkingEntry = workingRows.some((row) => {
+      const values = setRowInputValues(row);
+      return row.classList.contains("is-complete") || row.dataset.customGroupedReopened === "true" ||
+        values.weightRaw !== "" || values.repsRaw !== "" || String(row.dataset.repsInReserve ?? "").trim() !== "";
+    });
+    if (!hasWorkingEntry) return;
+    workingRows.forEach((row) => {
       const values = setRowInputValues(row);
       const rir = String(row.dataset.repsInReserve ?? "").trim();
       const complete = row.classList.contains("is-complete");

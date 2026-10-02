@@ -60,6 +60,12 @@
     return new Set(normalizeName(value).split(" ").filter(Boolean));
   }
 
+  function matchesWordPrefixes(query, candidate) {
+    const prefixes = normalizeName(query).split(" ").filter(Boolean);
+    const words = normalizeName(candidate).split(" ").filter(Boolean);
+    return prefixes.length > 0 && prefixes.every((prefix) => words.some((word) => word.startsWith(prefix)));
+  }
+
   function levenshtein(left, right) {
     const a = normalizeName(left);
     const b = normalizeName(right);
@@ -181,6 +187,7 @@
   return {
     displayNameKey,
     normalizeName,
+    matchesWordPrefixes,
     nameSimilarity,
     rankedLibraryMatches,
     recommendedLibraryMatch

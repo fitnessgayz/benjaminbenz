@@ -41,3 +41,31 @@ test("does not confuse abduction with adduction", () => {
   assert.equal(matches[0].exercise.name, "Hip Adduction Machine");
   assert.ok(matches[0].score > matches.find((entry) => entry.exercise.name === "Hip Abduction Machine").score);
 });
+
+test("partial names match word prefixes, never the middle of an unrelated word", () => {
+  assert.equal(matcher.matchesWordPrefixes("Che", "Cable Chest Fly"), true);
+  assert.equal(matcher.matchesWordPrefixes("Che", "Alternating Dumbbell Chest Press"), true);
+  assert.equal(matcher.matchesWordPrefixes("Che", "Abs Crunches"), false);
+  assert.equal(matcher.matchesWordPrefixes("Che", "Archer Push-Up"), false);
+  assert.equal(matcher.matchesWordPrefixes("db che", "Alternating Dumbbell Chest Press"), true);
+  assert.equal(matcher.matchesWordPrefixes("db che", "Cable Chest Fly"), false);
+  assert.equal(matcher.matchesWordPrefixes("", "Cable Chest Fly"), false);
+});
+
+test("prefix matching applies to every exercise query and all typed words", () => {
+  for (const [query, related, unrelated] of [
+    ["sho", "Seated Dumbbell Shoulder Press", "Abs Crunches"],
+    ["cru", "Abs Crunches", "Cable Chest Fly"],
+    ["lat", "Lat Pulldown", "Flat Dumbbell Press"],
+    ["ham", "Hamstring Curl", "Machine Chest Press"],
+    ["db sho", "Seated Dumbbell Shoulder Press", "Machine Shoulder Press"],
+    ["leg cu", "Seated Leg Curl", "Leg Extension"]
+  ]) {
+    assert.equal(matcher.matchesWordPrefixes(query, related), true, query);
+    assert.equal(matcher.matchesWordPrefixes(query, unrelated), false, query);
+  }
+  // Words that share the typed prefix remain candidates until the user narrows it.
+  assert.equal(matcher.matchesWordPrefixes("lat", "Lateral Raise"), true);
+  assert.equal(matcher.matchesWordPrefixes("ham", "Hammer Curl"), true);
+  assert.equal(matcher.matchesWordPrefixes("hamst", "Hammer Curl"), false);
+});

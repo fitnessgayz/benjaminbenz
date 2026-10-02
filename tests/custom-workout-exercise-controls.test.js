@@ -317,6 +317,28 @@ test("custom builder search results include primary and secondary muscles", () =
   assert.equal(matches[0].muscleLabel, "Glutes · Hamstrings · Erector Spinae");
 });
 
+test("typing Che offers chest word prefixes without crunches or unrelated fuzzy matches", () => {
+  const library = [
+    { name: "Abs Crunches", aliases: [], primary_muscle: "abs" },
+    { name: "Archer Push-Up", aliases: [], primary_muscle: "chest" },
+    { name: "Cable Chest Fly", aliases: [], primary_muscle: "chest" },
+    { name: "Alternating Dumbbell Chest Press", aliases: [], primary_muscle: "chest", secondary_muscles: ["triceps"] }
+  ];
+  const context = evaluate([
+    "approvedExerciseForName", "exerciseSuggestionRecords", "exerciseSuggestionMuscleLabel",
+    "customExerciseSuggestionMatches"
+  ], {
+    exerciseLibraryEntries: library,
+    exerciseNameMatcher: require("../js/exercise-name-matcher.js"),
+    currentProgram: null, trainingLogs: [], warmupExerciseCode: "WARMUP", cardioExerciseCode: "CARDIO"
+  });
+  const matches = plain(context.customExerciseSuggestionMatches("Che"));
+  assert.deepEqual(matches.map((match) => match.name).sort(), ["Alternating Dumbbell Chest Press", "Cable Chest Fly"]);
+  assert.equal(matches.find((match) => match.name.includes("Press")).muscleLabel, "Chest · Triceps");
+  assert.deepEqual(plain(context.customExerciseSuggestionMatches("no such exercise")), []);
+  assert.deepEqual(plain(context.customExerciseSuggestionMatches("")), []);
+});
+
 test("custom builder renders muscles directly below the exercise name", () => {
   const menu = { innerHTML: "", hidden: true };
   const card = { classList: { toggle() {} } };

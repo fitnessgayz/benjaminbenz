@@ -241,8 +241,20 @@ test("valid but unlogged grouped values explain which Log set or Log round actio
   }
 });
 
+test("unused named and unnamed exercise cards do not block finishing completed work", () => {
+  for (const assigned of [false, true]) for (const format of ["single", "superset", "circuit"]) {
+    const h = fixture({ assigned, format });
+    h.addExercise("Press", [{ weight: "20", reps: "8", complete: true }]);
+    h.addExercise("", [{ weight: "", reps: "" }, { weight: "", reps: "" }]);
+    h.addExercise("Unused row", [{ weight: "", reps: "" }]);
+    assert.equal(h.issues().length, 0, `${assigned ? "assigned" : "custom"} ${format}`);
+  }
+});
+
 test("allowUnstarted skips only untouched blank working rows, preserving edited and reopened requirements", () => {
-  const blank = fixture(); blank.addExercise("Row", [{ weight: "", reps: "" }]);
+  const blank = fixture(); blank.addExercise("Row", [
+    { weight: "20", reps: "8", complete: true }, { weight: "", reps: "" }
+  ]);
   assert.ok(blank.issues().length > 0);
   assert.equal(blank.issues({ allowUnstarted: true }).length, 0);
   for (const spec of [

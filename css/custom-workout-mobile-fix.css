@@ -7,9 +7,23 @@
   width: 100% !important;
   max-width: 100% !important;
   min-width: 0 !important;
-  margin-top: 4px !important;
+  margin-top: 0 !important;
+  margin-bottom: 8px !important;
   overflow-y: auto !important;
   box-shadow: none !important;
+}
+
+/* Suggestions live above the field, with a dedicated second line for muscles. */
+.dashboard-page .custom-workout-suggestion-menu button {
+  display: grid !important;
+  justify-items: start;
+  justify-content: stretch !important;
+  text-align: left !important;
+  gap: 4px;
+}
+.dashboard-page .custom-workout-suggestion-menu button > :is(strong, small, span) {
+  width: 100%;
+  text-align: left;
 }
 
 .dashboard-page .custom-workout-card .custom-workout-card-toggle,
