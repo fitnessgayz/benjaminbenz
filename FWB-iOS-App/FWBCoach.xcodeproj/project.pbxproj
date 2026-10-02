@@ -838,7 +838,6 @@
 				MARKETING_VERSION = 100.35.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.benjaminbenz.fwbcoach;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = "270df21f-119c-4b50-b402-2e0b50292ad3";
 				SENTRY_DSN = "";
 				SENTRY_ENVIRONMENT = production;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
