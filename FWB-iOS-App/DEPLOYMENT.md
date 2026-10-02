@@ -28,7 +28,7 @@ Keep the `.p8`, `.p12`, provisioning profile, and passwords outside the checkout
 2. Under **Team Keys**, have an Account Holder or Admin generate a dedicated key, such as `FWB GitHub TestFlight`. Use **App Manager** for this workflow. Apple team keys apply across the account's apps; they cannot be restricted to this one app.
 3. Record the **Key ID** and **Issuer ID**, then download the `.p8` private key. Apple allows the private key download only once. Retain that file privately. Use a team key, not an individual key, for this Issuer ID setup. See Apple's [API access guide](https://developer.apple.com/help/app-store-connect/get-started/app-store-connect-api) and [key creation guide](https://developer.apple.com/documentation/AppStoreConnectAPI/creating-api-keys-for-app-store-connect-api).
 
-Fastlane supports upload-only access with the Developer role; App Manager also permits the build-information operations used by TestFlight tooling. Admin is unnecessary for the upload key. See [Fastlane's role requirements](https://docs.fastlane.tools/actions/pilot/#role-for-app-store-connect-user).
+The coach lane uses Developer upload access and read-only processing checks. It deliberately bypasses Pilot's beta metadata updates, including changelog and external auto-notify settings, which otherwise require App Manager access even when submission is skipped. Automatic internal group distribution remains enabled in Apple. Admin is unnecessary for the upload key. See [Fastlane's role requirements](https://docs.fastlane.tools/actions/pilot/#role-for-app-store-connect-user).
 
 ## 2. Export the signing identity and create its profile
 
