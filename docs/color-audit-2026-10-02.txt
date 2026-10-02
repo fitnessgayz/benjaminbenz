@@ -41,6 +41,8 @@ Requested fixes included
 - Logged set/round rows and legacy completed exercise/group decks stay dark.
 - Share workout and other primary actions use dark green with neon outlines.
 - Relevant CSS/JS asset URLs are versioned for existing installations.
+- Subtle contour lines on workout cards and diagonal canvas lines retain the
+  black/forest contrast without introducing large neon fills.
 
 Remaining confirmed issues (reported, not silently declared fixed)
 1. High — Client Home checklist text and support link

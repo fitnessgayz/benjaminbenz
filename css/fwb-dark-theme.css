@@ -934,3 +934,28 @@
   color: var(--lime); background: var(--surface-soft); border-color: var(--lime);
 }
 :root body.dashboard-page .achievement-mini-icon.achievement-level-medallion b { color: inherit; }
+
+/* Quiet contour lines add depth without competing with workout content. */
+:root {
+  --workout-linework:
+    radial-gradient(ellipse 82% 165% at 115% 110%, transparent 45%, rgb(96 116 102 / 20%) 45.1% 45.35%, transparent 45.6%),
+    radial-gradient(ellipse 82% 165% at 115% 110%, transparent 58%, rgb(96 116 102 / 16%) 58.1% 58.35%, transparent 58.6%),
+    radial-gradient(ellipse 82% 165% at 115% 110%, transparent 71%, rgb(96 116 102 / 12%) 71.1% 71.35%, transparent 71.6%);
+}
+:root body:is(.dashboard-page, .homepage) {
+  background-image:
+    linear-gradient(135deg, transparent 0 68%, rgb(38 60 46 / 14%) 68.05% 68.12%, transparent 68.2%),
+    radial-gradient(ellipse 700px 900px at 100% 0, transparent 65%, rgb(38 60 46 / 18%) 65.08% 65.2%, transparent 65.3%);
+  background-repeat: no-repeat;
+}
+:root body.dashboard-page :is(.client-home-card-primary, .client-workout-resume-card,
+  .client-workout-picker-card, .workout-preview-card, .coach-workout-grouped-card-heading,
+  .custom-workout-grouped-card-heading) {
+  background-color: var(--surface);
+  background-image: var(--workout-linework), linear-gradient(125deg, var(--surface-soft), var(--surface));
+  background-repeat: no-repeat;
+}
+:root body.dashboard-page .client-home-workout-button {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding-right: 18px; padding-left: 18px;
+}
