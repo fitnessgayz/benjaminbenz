@@ -208,7 +208,7 @@
     title.id = isCoach ? "coach-inbox-title" : "client-message-title";
     headingCopy.append(title, node("p", "fwb-message-subtitle", "Your conversations stay in sync on the app and website."));
     heading.append(headingCopy);
-    const refreshButton = button("Refresh");
+    const refreshButton = button("Refresh", "fwb-message-secondary fwb-message-refresh");
     heading.append(refreshButton);
     if (dialog) {
       const close = button("Close");

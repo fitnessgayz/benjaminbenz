@@ -499,6 +499,76 @@
 :root body.homepage .coaching-option-card-featured .coaching-option-icon {
   color: var(--secondary-accent); background: var(--secondary-surface); border-color: var(--secondary-border);
 }
+
+/* Builder controls and empty exercise slots use the same dark surface roles. */
+:root body.dashboard-page .client-workout-panel-custom .custom-workout-exercise-control,
+:root body.dashboard-page .client-workout-panel-custom .custom-workout-format-picker,
+:root body.dashboard-page .workout-session-date {
+  color: var(--ink); background: var(--surface-soft); border-color: var(--line);
+}
+:root body.dashboard-page .client-workout-panel-custom .custom-workout-exercise-control :is(button, output),
+:root body.dashboard-page .workout-session-date-control,
+:root body.dashboard-page .workout-format-pill {
+  color: var(--ink); background: var(--surface); border-color: var(--control-border);
+}
+:root body.dashboard-page .client-workout-panel-custom .custom-workout-exercise-control output span,
+:root body.dashboard-page .client-workout-panel-custom .custom-workout-format-heading > span,
+:root body.dashboard-page .client-workout-panel-custom [data-custom-workout-format-guide],
+:root body.dashboard-page .workout-session-date > small {
+  color: var(--muted);
+}
+:root body.dashboard-page .client-workout-panel-custom .custom-workout-exercise-control output strong {
+  color: var(--ink);
+}
+:root body.dashboard-page .workout-session-date > span,
+:root body.dashboard-page .client-workout-panel-custom .custom-workout-format-heading strong,
+:root body.dashboard-page .client-workout-panel-custom .custom-workout-format-button {
+  color: var(--ink);
+}
+:root body.dashboard-page .client-workout-panel-custom .custom-workout-format-button[aria-pressed="true"] {
+  color: var(--brand-primary-ink); background: var(--lime); border-color: var(--lime);
+}
+:root body.dashboard-page .client-workout-panel-custom .custom-workout-exercise-control [data-pick-custom-exercise],
+:root body.dashboard-page [data-custom-workout-grouped="true"] [data-custom-grouped-add-round] {
+  color: var(--brand-primary-ink); background: var(--lime); border-color: var(--lime);
+}
+:root body.dashboard-page .client-workout-panel-custom .custom-workout-exercise-control button:disabled {
+  color: var(--muted); background: var(--surface-soft); border-color: var(--line);
+}
+:root body.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-progress {
+  color: var(--lime);
+}
+:root body.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-media-placeholder {
+  background: linear-gradient(135deg, var(--surface-soft), var(--surface));
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+:root body.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-exercise-number {
+  color: var(--lime); background: var(--selected-surface);
+}
+:root body.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-chevron {
+  color: var(--muted);
+}
+:root body.dashboard-page [data-custom-workout-grouped="true"] :is(
+  .custom-workout-group-name-delete, [data-custom-workout-group-name-delete]),
+:root body.dashboard-page .client-workout-panel-custom .custom-workout-delete-icon {
+  color: var(--danger); background: var(--reminder-surface); border-color: var(--reminder-border);
+}
+
+/* Refresh is a supporting action; composing and sending use the neon accent. */
+:root body.dashboard-page .fwb-messages .fwb-message-refresh {
+  color: var(--brand-primary-ink); background: var(--secondary-accent); border-color: var(--secondary-accent);
+}
+:root body.dashboard-page .fwb-message-launch,
+:root body.dashboard-page :is(.client-home-card-note, .client-home-coach-note) .fwb-message-launch {
+  color: var(--ink); background: var(--selected-surface); border-color: var(--lime);
+}
+:root body.dashboard-page .fwb-message-launch strong,
+:root body.dashboard-page :is(.client-home-card-note, .client-home-coach-note) .fwb-message-launch strong {
+  color: var(--lime);
+}
+:root body.dashboard-page .fwb-messages .fwb-message-send {
+  color: var(--brand-primary-ink); background: var(--lime); border-color: var(--lime);
+}
 :root body.homepage .coaching-options-footer {
   background: var(--reminder-surface); border-color: var(--reminder-border);
 }
