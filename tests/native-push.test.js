@@ -10,6 +10,21 @@ const worker = readFileSync(
   new URL("../supabase/functions/fwb-native-push/index.ts", import.meta.url),
   "utf8"
 );
+const splitMigration = readFileSync(
+  new URL("../supabase/migrations/20261002051621_allow_separate_client_coach_native_push.sql", import.meta.url),
+  "utf8"
+);
+
+test("separate native client and coach bundles preserve push ownership and privileges", () => {
+  assert.match(splitMigration, /device\.bundle_identifier in\s*\(\s*'com\.benjaminbenz\.fwbcoach',\s*'com\.benjaminbenz\.fwb'\s*\)/);
+  assert.match(splitMigration, /device\.user_id = new\.user_id/);
+  assert.match(splitMigration, /device\.platform = 'ios'/);
+  assert.match(splitMigration, /device\.is_active is true/);
+  assert.match(splitMigration, /set search_path = ''/);
+  assert.match(splitMigration, /on conflict \(notification_id, device_id\) do nothing/);
+  assert.match(splitMigration, /revoke all on function private\.fwb_enqueue_native_push\(\) from public, anon, authenticated/);
+  assert.match(worker, /"apns-topic": job\.bundle_identifier/);
+});
 
 test("native jobs are scoped to the notification owner and active FWB iOS devices", () => {
   assert.match(migration, /device\.user_id = new\.user_id/);

@@ -143,6 +143,9 @@ module FWBRelease
         unless settings["PRODUCT_BUNDLE_IDENTIFIER"] == APP_ID
           raise "The coach release target must use #{APP_ID}."
         end
+        # Device-specific overrides take precedence over generic settings. Never
+        # let a stale local signing profile override the validated CI profile.
+        settings.delete_if { |key, _| key.match?(/\A(?:CODE_SIGN_STYLE|CODE_SIGN_IDENTITY|DEVELOPMENT_TEAM|PROVISIONING_PROFILE(?:_SPECIFIER)?)(?:\[.*\])?\z/) }
         settings["DEVELOPMENT_TEAM"] = TEAM_ID
         settings["CODE_SIGN_STYLE"] = "Manual"
         settings["CODE_SIGN_IDENTITY"] = @identity

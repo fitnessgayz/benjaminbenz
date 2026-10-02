@@ -45,7 +45,7 @@ class ReleaseSupportTest < Minitest::Test
     configuration = Struct.new(:build_settings)
     target = Struct.new(:name, :build_configurations)
     project = Struct.new(:targets)
-    settings = {"PRODUCT_BUNDLE_IDENTIFIER" => FWBRelease::APP_ID}
+    settings = {"PRODUCT_BUNDLE_IDENTIFIER" => FWBRelease::APP_ID, "PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" => "stale-profile", "CODE_SIGN_IDENTITY[sdk=iphoneos*]" => "stale-identity"}
     coach = target.new("FWBCoach", [configuration.new(settings)])
     unrelated_settings = {}
     unrelated = target.new("OtherTarget", [configuration.new(unrelated_settings)])
@@ -53,6 +53,8 @@ class ReleaseSupportTest < Minitest::Test
       signing = FWBRelease::Signing.new(File.join(dir, "signing"), {})
       signing.configure_project!(project.new([coach, unrelated]))
       assert_equal "Manual", settings.fetch("CODE_SIGN_STYLE")
+      refute settings.key?("PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]")
+      refute settings.key?("CODE_SIGN_IDENTITY[sdk=iphoneos*]")
       assert_equal({}, unrelated_settings)
       settings["PRODUCT_BUNDLE_IDENTIFIER"] = "com.benjaminbenz.fwb"
       assert_raises(RuntimeError) { signing.configure_project!(project.new([coach])) }
