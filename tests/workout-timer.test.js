@@ -65,9 +65,12 @@ test("set completion checkmark sits after RIR and starts the rest timer", () => 
   assert.match(rowMarkupSource, /set-complete-button/);
   assert.match(rowMarkupSource, /aria-pressed="false"/);
   assert.match(interactionsSource, /completeSetButton[\s\S]*classList\.add\("is-complete"\)/);
+  assert.match(interactionsSource, /completeSetButton[\s\S]*animateCompletedSet\(setRow\)/);
   assert.match(interactionsSource, /completeSetButton[\s\S]*scheduleTrainingLogAutosave\(logElement\)[\s\S]*resetRestTimer\(\)[\s\S]*openRestTimer\(completeSetButton\)[\s\S]*startOrPauseRestTimer\(\)/);
   assert.match(styleSource, /grid-template-columns:\s*52px minmax\(0, 1fr\) minmax\(0, 1fr\) 60px 48px/);
   assert.match(styleSource, /\.set-complete-button\s*\{[^}]*width:\s*48px;[^}]*height:\s*48px;/s);
+  assert.match(styleSource, /fwb-set-completion-sweep/);
+  assert.match(styleSource, /prefers-reduced-motion:\s*reduce[\s\S]*\.set-row\.is-completion-animating::after/);
 });
 
 test("orphaned and day-old timer state expires by wall-clock age", () => {

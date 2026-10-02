@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { weekRange, summarize, readRows, saveVisit } = require('../js/client-weekly-activity.js');
+const { weekRange, summarize, readRows, saveVisit, celebrateCheckIn } = require('../js/client-weekly-activity.js');
 
 test('Monday–Sunday boundaries include Sunday and cross year and DST changes', () => {
   assert.equal(weekRange(new Date(2026, 8, 20)).start, '2026-09-14');
@@ -43,4 +43,25 @@ test('check-in retries use an idempotent date key and propagate database failure
   assert.equal(options.ignoreDuplicates,true);
   assert.equal(options.onConflict,'client_email,entry_date');
   await assert.rejects(()=>saveVisit({from:()=>({upsert:()=>({abortSignal:async()=>({error:new Error('offline')})})})},'a','2026-09-18'),/offline/);
+});
+
+test('successful check-ins animate the panel and mark today before clearing the motion class', () => {
+  const panelClasses = new Set();
+  const dayClasses = new Set();
+  let scheduled;
+  const classList = set => ({ add: value => set.add(value), remove: value => set.delete(value) });
+  const panel = {
+    offsetWidth: 680,
+    classList: classList(panelClasses),
+    querySelector(selector) {
+      assert.equal(selector, '[data-client-weekly-date="2026-10-01"]');
+      return { classList: classList(dayClasses) };
+    }
+  };
+
+  assert.equal(celebrateCheckIn(panel, '2026-10-01', callback => { scheduled = callback; }), true);
+  assert.equal(panelClasses.has('is-checkin-celebrating'), true);
+  assert.equal(dayClasses.has('is-today'), true);
+  scheduled();
+  assert.equal(panelClasses.has('is-checkin-celebrating'), false);
 });

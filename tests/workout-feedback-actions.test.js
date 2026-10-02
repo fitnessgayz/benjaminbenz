@@ -16,15 +16,19 @@ function functionSource(name) {
   return next < 0 ? rest : rest.slice(0, next + 1);
 }
 
-test("the feedback header exposes Skip and Done while preserving the bottom completion action", () => {
+test("the feedback footer places Skip beside the single completion action", () => {
   const markupSource = functionSource("workoutDifficultyPromptMarkup");
+  assert.match(markupSource, /workout-difficulty-bottom-actions/);
   assert.match(markupSource, /data-workout-difficulty-skip>Skip<\/button>/);
-  assert.match(markupSource, /data-workout-difficulty-save disabled>Done<\/button>/);
-  assert.equal((markupSource.match(/data-workout-difficulty-save/g) || []).length, 2);
+  assert.match(markupSource, /data-workout-difficulty-save disabled>Save<\/button>/);
+  assert.doesNotMatch(markupSource, /data-workout-difficulty-save disabled>Done<\/button>/);
+  assert.doesNotMatch(markupSource, /Save and finish workout/);
+  assert.equal((markupSource.match(/data-workout-difficulty-save/g) || []).length, 1);
+  assert.match(styleSource, /\.workout-difficulty-bottom-actions\s*\{[^}]*display:\s*grid[^}]*grid-template-columns:/s);
 });
 
-test("both Done buttons enable only after every rating has an answer", () => {
-  const buttons = [{ disabled: true }, { disabled: true }];
+test("the finish button enables only after every rating has an answer", () => {
+  const buttons = [{ disabled: true }];
   const option = {
     dataset: { workoutDifficultyOption: "3" },
     classList: { toggle() {} },
@@ -42,11 +46,11 @@ test("both Done buttons enable only after every rating has an answer", () => {
   });
   vm.runInContext(functionSource("renderWorkoutDifficultyPrompt"), context);
   context.renderWorkoutDifficultyPrompt();
-  assert.deepEqual(buttons.map((button) => button.disabled), [false, false]);
+  assert.deepEqual(buttons.map((button) => button.disabled), [false]);
 
   context.pendingWorkoutEnergy.after = null;
   context.renderWorkoutDifficultyPrompt();
-  assert.deepEqual(buttons.map((button) => button.disabled), [true, true]);
+  assert.deepEqual(buttons.map((button) => button.disabled), [true]);
 });
 
 test("Skip completes without saving an incomplete feedback record", () => {

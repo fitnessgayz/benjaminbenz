@@ -66,6 +66,7 @@ test("renders grouped custom workouts as one full-width card instead of a swipe 
 
   assert.match(groupedMarkup, /data-custom-workout-grouped="true"/);
   assert.equal((groupedMarkup.match(/class="custom-workout-grouped-card"/g) || []).length, 1);
+  assert.match(groupedMarkup, /data-workout-next-exercise/);
   assert.match(groupedMarkup, /data-custom-workout-grouped-source hidden aria-hidden="true"/);
   assert.doesNotMatch(groupedMarkup, /data-custom-workout-exercise-deck|data-workout-group-next-card/);
   assert.match(

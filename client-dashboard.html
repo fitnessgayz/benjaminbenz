@@ -40,11 +40,11 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=workout-preview-1&amp;cancel-workout=1&amp;energy-feedback=1&amp;viewport-dock=9&amp;workout-delete=1&amp;exercise-images=1&amp;settings-tabs=3&amp;workout-feedback-actions=1" />
+  <link rel="stylesheet" href="css/style.css?v=workout-preview-1&amp;cancel-workout=1&amp;energy-feedback=1&amp;viewport-dock=9&amp;workout-delete=1&amp;exercise-images=1&amp;settings-tabs=3&amp;workout-feedback-actions=1&amp;set-motion=1" />
   <link rel="stylesheet" href="css/coach-messages.css?v=3" />
-  <link rel="stylesheet" href="css/custom-workout-mobile-fix.css?v=assigned-layout-3&amp;visible-demos=1&amp;copy-last-weights=1&amp;demo-icons=2&amp;copy-set-pr=3&amp;compact-copy=1&amp;exercise-pr-notes=1&amp;pr-info=1&amp;finish-workout=2&amp;prescribed-targets=1&amp;exercise-controls=1&amp;exercise-labels=1&amp;exercise-dialog=2&amp;exercise-text-flow=1&amp;photo-cards=3&amp;exercise-guide=3&amp;warmup-actions=1&amp;round-titles=1" />
+  <link rel="stylesheet" href="css/custom-workout-mobile-fix.css?v=assigned-layout-3&amp;visible-demos=1&amp;copy-last-weights=1&amp;demo-icons=2&amp;copy-set-pr=3&amp;compact-copy=1&amp;exercise-pr-notes=1&amp;pr-info=1&amp;finish-workout=2&amp;prescribed-targets=1&amp;exercise-controls=1&amp;exercise-labels=1&amp;exercise-dialog=2&amp;exercise-text-flow=1&amp;photo-cards=3&amp;exercise-guide=3&amp;next-exercise=1&amp;warmup-actions=1&amp;round-titles=1" />
   <link rel="stylesheet" href="css/workout-layout.css?v=exercise-preview-6" />
-  <link rel="stylesheet" href="css/client-weekly-activity.css?v=1" />
+  <link rel="stylesheet" href="css/client-weekly-activity.css?v=2" />
   <link rel="stylesheet" href="css/mood-checkin.css?v=1" />
   <link rel="stylesheet" href="css/daily-checkin.css?v=1" />
   <link rel="stylesheet" href="css/coach-preview.css?v=return-coach-1" />
@@ -59,7 +59,7 @@
   <link rel="stylesheet" href="css/workout-exercise-list.css?v=2" />
   <link rel="stylesheet" href="css/workout-generator.css?v=6" />
   <link rel="stylesheet" href="css/apple-health-sync.css?v=1" />
-  <link rel="stylesheet" href="css/client-achievements.css?v=3" />
+  <link rel="stylesheet" href="css/client-achievements.css?v=4" />
   <link rel="stylesheet" href="css/client-home-today.css?v=5" />
   <link rel="stylesheet" href="css/workout-progression.css?v=1" />
   <link rel="stylesheet" href="/css/fwb-design-system.css?v=web-app-brand-1" />
@@ -106,6 +106,11 @@
           <button class="client-dashboard-tab" type="button" data-client-dashboard-tab="logs" aria-label="Logs">
             <svg class="client-dashboard-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-3"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M8 12h8M8 16h8"/></svg>
             <span class="client-dashboard-tab-label">Logs</span>
+          </button>
+          <button class="client-dashboard-tab client-dashboard-message-tab" type="button" data-message-coach disabled aria-label="Messages">
+            <svg class="client-dashboard-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4Z"/><path d="M8 9h8M8 13h5"/></svg>
+            <span class="client-dashboard-tab-label">Messages</span>
+            <span class="client-dashboard-nav-unread" data-client-message-unread hidden aria-label="0 unread messages">0</span>
           </button>
           <button class="client-dashboard-tab" type="button" data-client-dashboard-tab="progress" aria-label="Progress">
             <svg class="client-dashboard-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V5M4 20h16"/><path d="m7 15 4-4 3 3 5-7"/></svg>
@@ -172,7 +177,12 @@
               <button class="button client-home-workout-button" type="button" data-client-summary-go-tab="workouts">Start workout <span aria-hidden="true">→</span></button>
             </article>
             <section class="client-weekly-activity" id="client-weekly-activity" aria-labelledby="client-weekly-heading">
-              <button class="button client-gym-checkin" id="client-gym-checkin" type="button" disabled>Gym check-in</button>
+              <button class="button client-gym-checkin" id="client-gym-checkin" type="button" disabled>
+                <span class="client-gym-checkin-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m14.8 8.4-2.1 5.1-5.1 2.1 2.1-5.1 5.1-2.1Z"/></svg>
+                </span>
+                <span data-client-gym-checkin-label>Gym check-in</span>
+              </button>
               <p class="client-weekly-caption" id="client-gym-checkin-status" role="status">At the gym? Check in for today.</p>
               <div class="client-weekly-summary">
                 <header class="client-weekly-header">
@@ -210,10 +220,6 @@
                 <h3 id="client-home-note-title">No note yet</h3>
                 <p id="client-home-note-body">Coach notes will appear here when Benjamin adds one.</p>
               </div>
-              <button class="fwb-message-launch" type="button" data-message-coach disabled>
-                <span><strong>Reply to Benjamin</strong><small>Questions, updates, and replies in one place.</small></span>
-                <span class="fwb-message-badge" data-client-message-unread hidden aria-label="0 unread messages">0</span>
-              </button>
             </article>
             <details class="client-home-more">
               <summary><span>More from your dashboard</span><span class="client-home-more-icon" aria-hidden="true">+</span></summary>
@@ -665,8 +671,9 @@
               <h2 id="progress-title">Progress</h2>
             </div>
             <div class="progress-panel-actions">
-              <button class="client-achievements-progress-button" type="button" data-achievements-dialog-open aria-haspopup="dialog" aria-controls="client-achievements-dialog" aria-label="Open your badges">
+              <button class="client-achievements-progress-button" type="button" data-achievements-dialog-open aria-haspopup="dialog" aria-controls="client-achievements-dialog" aria-label="Open badges">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3h8v5a4 4 0 0 1-8 0V3Z"/><path d="M8 5H4v2a4 4 0 0 0 4 4m8-6h4v2a4 4 0 0 1-4 4M12 12v6m-4 3h8m-6-3h4v3"/></svg>
+                <span>Badges</span>
               </button>
               <span class="status-pill" id="client-progress-report-month">Monthly</span>
             </div>
@@ -1287,7 +1294,7 @@
   <script src="js/web-notifications.js?v=notification-default-on-1"></script>
   <script src="https://cdn.jsdelivr.net/npm/@zxing/browser@0.2.1/umd/zxing-browser.min.js" integrity="sha384-HRtzk9lZgkbSgvUyQrnfC/GxiXZgwaNyD7hC9wcXlsBpDhkS80ISl73juef2FRuf" crossorigin="anonymous"></script>
   <script src="js/workout-layout.js?v=exercise-preview-3"></script>
-  <script src="js/client-weekly-activity.js?v=2"></script>
+  <script src="js/client-weekly-activity.js?v=3"></script>
   <script src="js/apple-workout.js?v=3"></script>
   <script src="js/google-health.js?v=1"></script>
   <script src="js/profile-photo-store.js?v=1"></script>
@@ -1308,7 +1315,7 @@
   <script src="js/client-achievements-ui.js?v=2"></script>
   <script src="js/workout-progression.js?v=1"></script>
   <script src="js/workout-progression-ui.js?v=1"></script>
-  <script src="js/client-portal.js?v=workout-preview-1&amp;custom-workout-history-1&amp;cancel-workout=1&amp;energy-feedback=1&amp;mood-redesign=1&amp;visible-group-controls=1&amp;exercise-videos=1&amp;remember-login=1&amp;visible-demos=1&amp;personal-bests=1&amp;copy-last-weights=1&amp;demo-icons=1&amp;keyboard-entry=1&amp;copy-set-pr=3&amp;return-coach=1&amp;apple-workout=2&amp;apple-share=1&amp;rir-help=1&amp;viewport-dock=6&amp;home-actions=1&amp;compact-copy=1&amp;exercise-pr-notes=1&amp;pr-info=1&amp;finish-workout=2&amp;prescribed-targets=1&amp;exercise-controls=1&amp;session-alerts=1&amp;exercise-labels=1&amp;exercise-list=2&amp;grouped-add=1&amp;google-health=1&amp;exercise-defaults=2&amp;workout-generator=4&amp;profile-photo=1&amp;account-settings=1&amp;workout-delete=1&amp;apple-health=1&amp;daily-checkin=1&amp;recovery-catalog=1&amp;messages=2&amp;cardio-shortcut=1&amp;achievements=1&amp;progression=1&amp;exercise-images=5&amp;exercise-motion=2&amp;exercise-guide=3&amp;settings-tabs=2&amp;workout-feedback-actions=1&amp;warmup-actions=1"></script>
+  <script src="js/client-portal.js?v=workout-preview-1&amp;custom-workout-history-1&amp;cancel-workout=1&amp;energy-feedback=1&amp;mood-redesign=1&amp;visible-group-controls=1&amp;exercise-videos=1&amp;remember-login=1&amp;visible-demos=1&amp;personal-bests=1&amp;copy-last-weights=1&amp;demo-icons=1&amp;keyboard-entry=1&amp;copy-set-pr=3&amp;return-coach=1&amp;apple-workout=2&amp;apple-share=1&amp;rir-help=1&amp;viewport-dock=6&amp;home-actions=1&amp;compact-copy=1&amp;exercise-pr-notes=1&amp;pr-info=1&amp;finish-workout=2&amp;prescribed-targets=1&amp;exercise-controls=1&amp;session-alerts=1&amp;exercise-labels=1&amp;exercise-list=2&amp;grouped-add=1&amp;google-health=1&amp;exercise-defaults=2&amp;workout-generator=4&amp;profile-photo=1&amp;account-settings=1&amp;workout-delete=1&amp;apple-health=1&amp;daily-checkin=1&amp;recovery-catalog=1&amp;messages=2&amp;cardio-shortcut=1&amp;achievements=1&amp;progression=1&amp;exercise-images=5&amp;exercise-motion=2&amp;exercise-guide=3&amp;settings-tabs=2&amp;workout-feedback-actions=3&amp;set-motion=1&amp;next-exercise=1&amp;warmup-actions=1"></script>
   <script src="js/workout-exercise-dock.js?v=2"></script>
 </body>
 </html>

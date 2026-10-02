@@ -110,8 +110,10 @@ test("uses a permanent six-destination frosted safe-area dock on mobile", () => 
   assert.match(mobileStyles, /backdrop-filter:\s*blur\(20px\) saturate\(175%\)/);
   assert.match(mobileStyles, /-webkit-backdrop-filter:\s*blur\(20px\) saturate\(175%\)/);
   assert.match(mobileStyles, /padding:[^;]*env\(safe-area-inset-right\)[^;]*env\(safe-area-inset-bottom\)[^;]*env\(safe-area-inset-left\)/);
-  assert.match(mobileStyles, /data-client-dashboard-tab="questionnaire"[\s\S]*?data-client-dashboard-tab="sessions"[\s\S]*?data-client-dashboard-tab="notifications"[\s\S]*?display:\s*none !important/);
+  assert.match(mobileStyles, /data-client-dashboard-tab="questionnaire"[\s\S]*?data-client-dashboard-tab="sessions"[\s\S]*?data-client-dashboard-tab="notifications"[\s\S]*?data-client-dashboard-tab="logs"[\s\S]*?display:\s*none !important/);
   assert.doesNotMatch(mobileStyles, /data-client-dashboard-tab="nutrition"[^}]*display:\s*none/);
+  assert.match(mobileStyles, /\.client-dashboard-message-tab\s*\{[^}]*display:\s*flex !important/s);
+  assert.match(dashboardHtml, /class="client-dashboard-tab client-dashboard-message-tab"[^>]*data-message-coach[^>]*aria-label="Messages"[\s\S]*?client-dashboard-tab-label">Messages<[\s\S]*?data-client-message-unread/);
   assert.match(mobileStyles, /\.client-dashboard-tab\.is-active \.client-dashboard-tab-icon\s*\{[^}]*color:\s*var\(--black\)[^}]*background:\s*var\(--lime\)[^}]*border-radius:\s*13px[^}]*box-shadow:\s*none/s);
   assert.match(mobileStyles, /\.client-dashboard-tab\.is-active \.client-dashboard-tab-label\s*\{[^}]*color:\s*#344000[^}]*font-weight:\s*900[^}]*text-shadow:\s*none/s);
   assert.match(mobileStyles, /\.client-dashboard-tab-label\s*\{[^}]*display:\s*block !important[^}]*font-size:\s*\.52rem/s);
@@ -179,6 +181,14 @@ test("keeps PAR-Q and Sessions available from Settings", () => {
   assert.match(dashboardHtml, /class="client-settings-shortcut"[^>]*data-message-coach disabled[\s\S]*?<strong>Messages<\/strong>/);
   assert.match(tabHandlerSource, /settingsDestination\.dataset\.clientSettingsDestination/);
   assert.match(tabHandlerSource, /setClientDashboardTab\(settingsDestination\.dataset\.clientSettingsDestination\)/);
+});
+
+test("keeps Logs on desktop while replacing it with Messages in the mobile dock", () => {
+  const mobileStyles = sourceBetween("@media (max-width: 900px)", "@media (max-width: 420px)");
+
+  assert.match(dashboardHtml, /data-client-dashboard-tab="logs" aria-label="Logs"/);
+  assert.match(mobileStyles, /data-client-dashboard-tab="logs"\][^}]*display:\s*none !important/s);
+  assert.match(dashboardHtml, /client-dashboard-message-tab[\s\S]*?data-client-message-unread hidden aria-label="0 unread messages"/);
 });
 
 test("lets the Workouts tab open the active exercise list", () => {

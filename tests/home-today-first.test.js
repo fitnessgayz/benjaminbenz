@@ -20,6 +20,7 @@ test("Home leads with today’s workout, weekly rhythm, and the coach note", () 
   assert.ok(noteIndex > weeklyIndex);
   assert.ok(moreIndex > noteIndex);
   assert.match(home, /data-client-summary-go-tab="workouts">Start workout/);
+  assert.doesNotMatch(home, /data-message-coach|fwb-message-launch/);
   assert.doesNotMatch(home, />Up next</);
   assert.doesNotMatch(home, /id="client-home-workout-(?:title|meta)"/);
   assert.match(portal, /activeWorkoutTabIndex - 1/);

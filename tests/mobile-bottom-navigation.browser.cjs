@@ -69,13 +69,20 @@ const scenarios = [
           </main>${navigation}
         </body></html>`);
         await page.locator(".client-dashboard-mobile-nav-toggle").evaluate((node) => { node.hidden = true; });
+        await page.locator(".client-dashboard-message-tab").evaluate((node) => { node.disabled = false; });
+        await page.locator(".client-dashboard-message-tab [data-client-message-unread]").evaluate((node) => {
+          node.hidden = false;
+          node.textContent = "2";
+          node.setAttribute("aria-label", "2 unread messages");
+        });
         await page.evaluate(() => window.scrollTo(0, 620));
 
         const result = await page.evaluate(() => {
           const nav = document.querySelector(".client-dashboard-tabs");
           const rect = nav.getBoundingClientRect();
-          const visibleTabs = [...nav.querySelectorAll("[data-client-dashboard-tab]")]
+          const visibleTabs = [...nav.querySelectorAll(".client-dashboard-tab")]
             .filter((tab) => getComputedStyle(tab).display !== "none");
+          const messageBadge = nav.querySelector(".client-dashboard-message-tab [data-client-message-unread]");
           return {
             viewport: { width: innerWidth, height: innerHeight },
             documentWidth: document.documentElement.scrollWidth,
@@ -83,15 +90,21 @@ const scenarios = [
             nav: { left: rect.left, right: rect.right, bottom: rect.bottom, width: rect.width },
             position: getComputedStyle(nav).position,
             overflowX: getComputedStyle(nav).overflowX,
-            visibleTabs: visibleTabs.map((tab) => tab.dataset.clientDashboardTab),
+            visibleTabs: visibleTabs.map((tab) => tab.dataset.clientDashboardTab || (tab.matches("[data-message-coach]") ? "messages" : "")),
             tabWidths: visibleTabs.map((tab) => tab.getBoundingClientRect().width),
+            messageBadge: {
+              display: getComputedStyle(messageBadge).display,
+              label: messageBadge.getAttribute("aria-label"),
+              text: messageBadge.textContent,
+            },
             bodyPaddingBottom: parseFloat(getComputedStyle(document.body).paddingBottom),
           };
         });
 
         assert.equal(result.position, "fixed");
         if (!baseline) {
-          assert.deepEqual(result.visibleTabs, ["home", "workouts", "logs", "progress", "stats", "nutrition"]);
+          assert.deepEqual(result.visibleTabs, ["home", "workouts", "messages", "progress", "stats", "nutrition"]);
+          assert.deepEqual(result.messageBadge, { display: "grid", label: "2 unread messages", text: "2" });
           assert.equal(result.nav.left, 0);
           assert.equal(result.nav.right, viewport.width);
           assert.equal(result.nav.bottom, viewport.height);

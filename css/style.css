@@ -260,21 +260,17 @@
 }
 
 .workout-difficulty-skip {
+  min-height: 50px;
+  padding: 0 14px;
+  border: 1px solid var(--black);
+  border-radius: 8px;
   background: var(--paper);
   color: var(--black);
-}
-
-.workout-difficulty-done {
-  background: var(--lime);
-  color: var(--black);
-}
-
-.workout-difficulty-done:disabled {
-  border-color: var(--line);
-  background: var(--paper);
-  color: var(--muted);
-  cursor: not-allowed;
-  opacity: .55;
+  font: inherit;
+  font-size: .82rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  cursor: pointer;
 }
 
 .workout-difficulty-top-actions .rir-close {
@@ -377,6 +373,12 @@
   font-weight: 900;
   text-transform: uppercase;
   cursor: pointer;
+}
+
+.workout-difficulty-bottom-actions {
+  display: grid;
+  grid-template-columns: minmax(88px, .55fr) minmax(0, 1.45fr);
+  gap: 8px;
 }
 
 .workout-difficulty-save:disabled {
@@ -4944,8 +4946,25 @@ body.is-client-checkin-prompt-open {
 }
 
 .set-row {
+  position: relative;
+  isolation: isolate;
   font-size: 1.05rem;
   font-weight: 900;
+}
+
+.set-row.is-completion-animating::after {
+  content: "";
+  position: absolute;
+  z-index: 2;
+  top: -4px;
+  bottom: -4px;
+  left: 0;
+  width: 42%;
+  border-radius: 14px;
+  background: linear-gradient(90deg, transparent, rgba(202, 255, 38, .3), transparent);
+  pointer-events: none;
+  transform: translateX(-135%);
+  animation: fwb-set-completion-sweep .62s cubic-bezier(.2, .75, .25, 1) forwards;
 }
 
 .set-row > span {
@@ -5059,6 +5078,27 @@ body.is-client-checkin-prompt-open {
   color: #1fa637;
   background: var(--paper);
   border-color: #1fa637;
+}
+
+.set-row.is-completion-animating .set-complete-button {
+  animation: fwb-set-completion-pop .5s cubic-bezier(.2, .85, .25, 1.3);
+}
+
+@keyframes fwb-set-completion-sweep {
+  to { transform: translateX(338%); }
+}
+
+@keyframes fwb-set-completion-pop {
+  0% { transform: scale(.86); box-shadow: 0 0 0 0 rgba(202, 255, 38, .5); }
+  52% { transform: scale(1.1); box-shadow: 0 0 0 8px rgba(202, 255, 38, .16); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(202, 255, 38, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .set-row.is-completion-animating::after,
+  .set-row.is-completion-animating .set-complete-button {
+    animation: none;
+  }
 }
 
 .rest-timer-open {
@@ -16295,6 +16335,14 @@ body.client-dashboard-page {
   background: var(--black);
 }
 
+.dashboard-page .client-dashboard-message-tab {
+  display: none !important;
+}
+
+.dashboard-page .client-dashboard-message-tab[hidden] {
+  display: none !important;
+}
+
 .client-dashboard-sidebar-toggle {
   display: grid;
   grid-template-columns: 38px minmax(0, 1fr);
@@ -16588,8 +16636,18 @@ body.client-dashboard-page.is-loading > :is(.client-dashboard-tabs,
 
   .dashboard-page .client-dashboard-tab[data-client-dashboard-tab="questionnaire"],
   .dashboard-page .client-dashboard-tab[data-client-dashboard-tab="sessions"],
-  .dashboard-page .client-dashboard-tab[data-client-dashboard-tab="notifications"] {
+  .dashboard-page .client-dashboard-tab[data-client-dashboard-tab="notifications"],
+  .dashboard-page .client-dashboard-tab[data-client-dashboard-tab="logs"] {
     display: none !important;
+  }
+
+  .dashboard-page .client-dashboard-message-tab {
+    display: flex !important;
+  }
+
+  .dashboard-page .client-dashboard-message-tab:disabled {
+    cursor: wait;
+    opacity: .55;
   }
 
   .dashboard-page .client-dashboard-tab::after {

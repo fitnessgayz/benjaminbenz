@@ -42,6 +42,16 @@
     }).abortSignal(AbortSignal.timeout(15000));
     if (result.error) throw result.error;
   }
+  function celebrateCheckIn(panel, today, schedule = setTimeout) {
+    if (!panel) return false;
+    const day = panel.querySelector(`[data-client-weekly-date="${today}"]`);
+    panel.classList.remove('is-checkin-celebrating');
+    day?.classList.add('is-today');
+    void panel.offsetWidth;
+    panel.classList.add('is-checkin-celebrating');
+    schedule(() => panel.classList.remove('is-checkin-celebrating'), 1250);
+    return true;
+  }
   function mount(document) {
     const panel = document.getElementById('client-weekly-activity');
     if (!panel) return { configure() {} };
@@ -51,8 +61,10 @@
     const shortDate = key => new Date(`${key}T12:00:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
     function buttonState() {
       const done = checkedDate === dateKey(new Date());
-      find('client-gym-checkin').disabled = !email || preview || busy || done;
-      text('client-gym-checkin', busy ? 'Saving check-in…' : done ? '✓ Checked in today' : 'Gym check-in');
+      const button = find('client-gym-checkin');
+      const label = button.querySelector('[data-client-gym-checkin-label]') || button;
+      button.disabled = !email || preview || busy || done;
+      label.textContent = busy ? 'Saving check-in…' : done ? 'Checked in today' : 'Gym check-in';
     }
     async function refresh() {
       if (!client || !email) return;
@@ -84,6 +96,8 @@
           const visit = visits.some(row => row.entry_date === date);
           const day = document.createElement('div');
           day.className = 'client-weekly-day';
+          day.dataset.clientWeeklyDate = date;
+          if (date === today) day.classList.add('is-today');
           day.setAttribute('aria-label', `${shortDate(date)}: ${workout ? 'workout logged' : 'no workout'}, ${visit ? 'gym check-in' : 'no gym check-in'}`);
           const label = document.createElement('span'); label.textContent = ['M', 'T', 'W', 'T', 'F', 'S', 'S'][i];
           const mark = document.createElement('span'); mark.className = `client-weekly-mark${workout ? ' has-workout' : ''}${visit ? ' has-checkin' : ''}`;
@@ -115,8 +129,9 @@
         await saveVisit(client, targetEmail, today);
         if (email !== targetEmail) throw new Error('Your account changed. Reopen your check-in.');
         checkedDate = today; offset = 0;
-        text('client-gym-checkin-status', 'Gym check-in saved for today.');
         await refresh();
+        text('client-gym-checkin-status', 'You showed up. Check-in complete.');
+        celebrateCheckIn(panel, today);
         return today === dateKey(new Date()) ? 'Gym check-in saved for today.' : 'Gym check-in saved for yesterday. Check in again for today.';
       } catch (error) {
         if (email === targetEmail) text('client-gym-checkin-status', 'Could not save your check-in. Please try again.');
@@ -133,7 +148,7 @@
       clearTimeout(timer); timer = setTimeout(() => void refresh(), 150);
     } };
   }
-  const api = { dateKey, weekRange, summarize, readRows, saveVisit, mount };
+  const api = { dateKey, weekRange, summarize, readRows, saveVisit, celebrateCheckIn, mount };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   if (root.document) root.FWB_WEEKLY_ACTIVITY = mount(root.document);
 })(typeof window !== 'undefined' ? window : globalThis);

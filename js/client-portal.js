@@ -5198,6 +5198,17 @@ function setRows(exercise, setCount = setCountFromPrescription(exercise.prescrip
   ].join("");
 }
 
+function animateCompletedSet(setRow) {
+  if (!setRow || window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches) {
+    return;
+  }
+
+  setRow.classList.remove("is-completion-animating");
+  void setRow.offsetWidth;
+  setRow.classList.add("is-completion-animating");
+  window.setTimeout(() => setRow.classList.remove("is-completion-animating"), 700);
+}
+
 function exerciseDisplayName(code, name) {
   return code ? `${code} ${name}` : name;
 }
@@ -7533,8 +7544,6 @@ function workoutDifficultyPromptMarkup() {
             <strong id="workout-difficulty-title">How was your workout?</strong>
           </div>
           <div class="workout-difficulty-top-actions" aria-label="Workout feedback actions">
-            <button class="workout-difficulty-skip" type="button" data-workout-difficulty-skip>Skip</button>
-            <button class="workout-difficulty-done" type="button" data-workout-difficulty-save disabled>Done</button>
             <button class="rir-close" type="button" data-workout-difficulty-close aria-label="Close workout difficulty prompt">×</button>
           </div>
         </header>
@@ -7562,7 +7571,10 @@ function workoutDifficultyPromptMarkup() {
             <div class="workout-energy-endpoints"><span>1 · Very low</span><span>5 · Very high</span></div>
           </fieldset>`).join("")}
         </div>
-        <button class="workout-difficulty-save" type="button" data-workout-difficulty-save disabled>Save and finish workout</button>
+        <div class="workout-difficulty-bottom-actions" aria-label="Finish workout actions">
+          <button class="workout-difficulty-skip" type="button" data-workout-difficulty-skip>Skip</button>
+          <button class="workout-difficulty-save" type="button" data-workout-difficulty-save disabled>Save</button>
+        </div>
       </section>
     </div>
   `;
@@ -9141,6 +9153,10 @@ function customWorkoutGroupedRoundCardMarkup(format, exercises, groupIndex = 0, 
         ${showSessionControls ? '<footer class="custom-workout-grouped-actions"><button type="button" data-custom-grouped-finish-workout>Finish workout</button></footer>' : ""}
         <p class="custom-workout-grouped-status" data-custom-grouped-status aria-live="polite"></p>
       </article>
+      <button class="workout-next-exercise-button" type="button" data-workout-next-exercise>
+        <span data-workout-next-exercise-label>Go to next exercise</span>
+        <span aria-hidden="true">↓</span>
+      </button>
       <div class="custom-workout-grouped-source" data-custom-workout-grouped-source hidden aria-hidden="true">
         <div class="workout-app-list custom-workout-list" data-custom-workout-list data-custom-workout-format="${escapeHtml(format)}">
           ${options.assigned
@@ -11603,12 +11619,16 @@ function syncCustomWorkoutCarousel(panel, options = {}) {
   }
 
   syncCustomWorkoutFormatMarkers(panel);
+  syncWorkoutNextExerciseButtons(panel);
   syncCustomWorkoutExerciseControls(panel);
   syncWorkoutExerciseList(panel);
 }
 
 function syncCustomWorkoutCarousels() {
-  document.querySelectorAll(".client-workout-panel-custom").forEach((panel) => syncCustomWorkoutCarousel(panel));
+  document.querySelectorAll(".client-workout-panel-custom").forEach((panel) => {
+    syncCustomWorkoutCarousel(panel);
+    syncWorkoutNextExerciseButtons(panel);
+  });
   if (!syncCustomWorkoutCarousels.resizeBound) {
     syncCustomWorkoutCarousels.resizeBound = true;
     let viewportWidth = window.innerWidth;
@@ -11636,8 +11656,43 @@ function syncAssignedWorkoutCarousels(panel = null) {
       bindCustomWorkoutCarousel(carousel);
       renderCustomWorkoutCarousel(carousel);
     });
+    syncWorkoutNextExerciseButtons(assignedPanel);
     syncWorkoutExerciseList(assignedPanel);
   });
+}
+
+function syncWorkoutNextExerciseButtons(panel) {
+  const carousels = Array.from(panel?.querySelectorAll("[data-custom-workout-carousel]") || []);
+
+  carousels.forEach((carousel, index) => {
+    const button = carousel.querySelector(":scope > [data-workout-next-exercise]");
+    const label = button?.querySelector("[data-workout-next-exercise-label]");
+    const isLast = index === carousels.length - 1;
+
+    if (!button || !label) return;
+    label.textContent = isLast ? "Review & finish" : "Go to next exercise";
+    button.classList.toggle("is-finish-link", isLast);
+    button.setAttribute("aria-label", isLast ? "Review workout and finish" : "Go to next exercise");
+  });
+}
+
+function goToNextWorkoutExercise(button) {
+  const carousel = button?.closest("[data-custom-workout-carousel]");
+  const panel = carousel?.closest(".client-workout-panel-custom, .client-workout-panel-assigned");
+  const carousels = Array.from(panel?.querySelectorAll("[data-custom-workout-carousel]") || []);
+  const index = carousels.indexOf(carousel);
+  const target = carousels[index + 1]
+    || panel?.querySelector("[data-custom-grouped-finish-workout], [data-workout-finish]");
+
+  if (!target) return;
+  target.scrollIntoView({
+    behavior: window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches ? "auto" : "smooth",
+    block: "start"
+  });
+  if (target.matches?.("[data-custom-workout-carousel]")) {
+    target.classList.add("is-navigation-target");
+    window.setTimeout(() => target.classList.remove("is-navigation-target"), 700);
+  }
 }
 
 function workoutExerciseListMarkup() {
@@ -17108,6 +17163,11 @@ function handleWorkoutInteractions() {
       jumpToWorkoutExercise(exerciseJump);
       return;
     }
+    const nextExerciseButton = event.target.closest("[data-workout-next-exercise]");
+    if (nextExerciseButton) {
+      goToNextWorkoutExercise(nextExerciseButton);
+      return;
+    }
     const exercisePicker = event.target.closest("[data-pick-custom-exercise]");
     const exerciseRemover = event.target.closest("[data-remove-custom-exercise]");
     if (exercisePicker || exerciseRemover) {
@@ -17397,12 +17457,16 @@ function handleWorkoutInteractions() {
     if (completeSetButton) {
       const setRow = completeSetButton.closest("[data-set-row]");
       const logElement = completeSetButton.closest("[data-exercise-log]");
+      const wasComplete = setRow?.classList.contains("is-complete");
 
       if (!workoutElapsedTimerState) {
         startWorkoutElapsedTimer(logElement?.dataset.workoutTitle || activeWorkoutElapsedTitle());
       }
       setRow?.classList.add("is-complete");
       completeSetButton.setAttribute("aria-pressed", "true");
+      if (!wasComplete) {
+        animateCompletedSet(setRow);
+      }
       if (logElement) {
         updateVisibleSetProgress(logElement);
         persistCustomWorkoutDraftForElement(logElement);

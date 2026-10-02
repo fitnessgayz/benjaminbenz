@@ -4,7 +4,7 @@ Clients and coaches use the same conversation in the FWB Training iOS app and on
 
 ## Clients
 
-Open **Home → Message coach**, write your message, and tap **Send**. Your first message starts the conversation. You need an active assigned program to start one. The badge on **Message coach** shows unread replies.
+Open **Messages** from the mobile bottom navigation, write your message, and tap **Send**. Your first message starts the conversation. You need an active assigned program to start one. The badge on **Messages** shows unread replies. On larger screens, Messages remains available from Settings.
 
 ## Coaches
 

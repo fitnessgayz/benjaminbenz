@@ -83,7 +83,7 @@ test("home links to Progress and displays the next reachable badge and XP", () =
 
 test("Progress has an upper-right badge button that opens the full collection dialog", () => {
   assert.doesNotMatch(dashboard, /client-achievements-nav-launcher|data-profile-badge-image|data-profile-badge-placeholder/);
-  assert.match(dashboard, /class="client-achievements-progress-button"[\s\S]*data-achievements-dialog-open[\s\S]*aria-label="Open your badges"/);
+  assert.match(dashboard, /class="client-achievements-progress-button"[\s\S]*data-achievements-dialog-open[\s\S]*aria-label="Open badges"[\s\S]*?<span>Badges<\/span>/);
   assert.match(dashboard, /<dialog class="client-achievements-dialog"[\s\S]*data-client-achievements-room/);
   assert.match(achievementStyles, /\.progress-panel-actions/);
   assert.match(achievementStyles, /\.client-achievements-progress-button/);
