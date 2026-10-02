@@ -109,10 +109,35 @@
     return Boolean(error && (
       error.name === "AuthSessionMissingError" ||
       [401, 403].includes(error.status) ||
-      ["session_not_found", "session_expired", "refresh_token_not_found",
+      ["session_not_found", "session_expired", "PGRST301", "refresh_token_not_found",
         "refresh_token_already_used", "bad_jwt", "user_not_found", "user_banned"].includes(error.code)
     ));
   }
 
-  window.FWB_AUTH_SESSION = { storage, getRememberMe, setRememberMe, requiresLogin };
+  function expiredSession() {
+    const error = new Error("Your sign-in has expired. Sign in again to reconnect your account.");
+    error.code = "session_expired";
+    return error;
+  }
+
+  async function withAccount(client, expected, operation) {
+    const matches = session => session?.access_token && session.user?.id
+      && (!expected.id || session.user.id === expected.id)
+      && (!expected.email || String(session.user.email || "").trim().toLowerCase() === expected.email.trim().toLowerCase());
+    const current = await client.auth.getSession();
+    if (current.error) throw current.error;
+    if (!matches(current.data?.session)) throw expiredSession();
+    const accountId = current.data.session.user.id;
+    const result = await operation();
+    const error = result?.error;
+    // A suspended mobile app can resume with a rejected token. Refresh once,
+    // keeping the operation bound to the original account and preserving drafts.
+    if (!error || !([401, 403].includes(Number(error.status)) || error.code === "PGRST301" || error.code === "42501")) return result;
+    const refreshed = await client.auth.refreshSession();
+    if (refreshed.error) throw refreshed.error;
+    if (!matches(refreshed.data?.session) || refreshed.data.session.user.id !== accountId) throw expiredSession();
+    return operation();
+  }
+
+  window.FWB_AUTH_SESSION = { storage, getRememberMe, setRememberMe, requiresLogin, withAccount };
 })();

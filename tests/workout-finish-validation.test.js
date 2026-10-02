@@ -14,6 +14,27 @@ function functionSource(name) {
   return next < 0 ? rest : rest.slice(0, next + 1);
 }
 
+test("Finish workout later preserves entries, pauses timers and exposes Resume without completing", () => {
+  const calls = [];
+  const panel = { dataset: {}, querySelector: selector => selector === "[data-workout-start]" ? { dataset: { workoutTitle: "Strength" } } : null };
+  const sandbox = {
+    workoutElapsedTimerState: { workoutTitle: "Strength", running: true },
+    persistWorkoutProgressionPending: value => { assert.equal(value, panel); calls.push("entries"); },
+    persistCustomWorkoutDraftFromPanel: value => { assert.equal(value, panel); calls.push("draft"); },
+    pauseWorkoutTimersForCompletion: () => calls.push("pause"),
+    renderWorkoutResumeActions: () => calls.push("resume"),
+    setClientDashboardTab: tab => calls.push(tab),
+    document: { querySelector: () => ({ focus: () => calls.push("focus") }) }
+  };
+  vm.runInNewContext(functionSource("finishWorkoutLater"), sandbox);
+  sandbox.finishWorkoutLater({ closest: () => panel });
+  assert.deepEqual(calls, ["entries", "draft", "pause", "resume", "home", "focus"]);
+  calls.length = 0;
+  sandbox.workoutElapsedTimerState.workoutTitle = "Another workout";
+  sandbox.finishWorkoutLater({ closest: () => panel });
+  assert.equal(calls.length, 0, "do not pause another workout");
+});
+
 const dataKey = (value) => value.replace(/^data-/, "").replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
 class Element {
   constructor(tag = "div", dataset = {}, classes = []) {

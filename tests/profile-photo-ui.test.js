@@ -43,7 +43,11 @@ function fixture(options = {}) {
   root.querySelector = (selector) => nodes[selector.match(/^\[data-profile-(.*)\]$/)[1]];
   root.closest = () => panel;
   const document = element();
+  const homeImage = element();
+  const homePlaceholder = element();
+  const homeAvatar = { querySelector: selector => selector === "[data-client-settings-avatar-image]" ? homeImage : homePlaceholder };
   document.querySelector = () => options.missingRoot ? null : root;
+  document.querySelectorAll = () => [homeAvatar];
   document.visibilityState = "visible";
   const calls = [];
   const urls = [];
@@ -76,7 +80,7 @@ function fixture(options = {}) {
   vm.runInNewContext(source, { window: global });
   const controller = global.FWB_PROFILE_PHOTO.createController({ supabaseClient: client, user: options.user === undefined ? user : options.user, isPreview: options.preview });
   return {
-    controller, nodes, root, panel, document, calls, urls, revoked, timers,
+    controller, nodes, root, panel, document, calls, urls, revoked, timers, homeImage, homePlaceholder,
     get unsubscribed() { return unsubscribed; },
     auth(event, session = { user }) { return authCallback?.(event, session); },
     async runTimers() { const ready = [...timers.values()]; timers.clear(); ready.forEach((handler) => handler()); await flush(); },
@@ -94,6 +98,9 @@ test("Settings loads the account photo and safely renders the current account em
   await h.controller.initialize();
   assert.equal(h.calls[0].args[0].userId, user.id);
   assert.equal(h.nodes.image.src, "blob:photo-1");
+  assert.equal(h.homeImage.src, "blob:photo-1");
+  assert.equal(h.homeImage.hidden, false);
+  assert.equal(h.homePlaceholder.hidden, true);
   assert.equal(h.nodes.placeholder.hidden, true);
   assert.equal(h.nodes.label.textContent, "Change profile photo");
   assert.equal(h.nodes.open.disabled, false);
@@ -312,23 +319,24 @@ test("USER_UPDATED defers auth reads until the callback returns and cancels queu
   assert.equal(h.count("load"), 2);
 });
 
-test("visibility refreshes only visible Settings and never overwrites an open photo editor", async () => {
+test("visibility refreshes the Home photo while Settings is hidden and preserves an open editor", async () => {
   const h = fixture();
   await h.controller.initialize();
   h.panel.hidden = true;
   h.document.emit("visibilitychange");
   await flush();
-  assert.equal(h.count("load"), 1);
+  assert.equal(h.count("load"), 2);
+  assert.equal(h.homeImage.src, "blob:photo-2");
   h.panel.hidden = false;
   h.document.emit("visibilitychange");
   await flush();
-  assert.equal(h.count("load"), 2);
+  assert.equal(h.count("load"), 3);
   await h.nodes.open.click();
   await h.select();
   h.document.emit("visibilitychange");
   await h.controller.refresh();
-  assert.equal(h.count("load"), 2);
-  assert.equal(h.nodes.preview.src, "blob:photo-3");
+  assert.equal(h.count("load"), 3);
+  assert.equal(h.nodes.preview.src, "blob:photo-4");
 });
 
 test("coach preview, a missing account, or absent Settings does not initialize backend access", () => {

@@ -43,7 +43,7 @@ function fakeElement() {
   };
 }
 
-function createClientNotificationHarness({ deferredPreferences = false, permission = null, pushEnabled = false, inboxError = null, missingSubscription = false } = {}) {
+function createClientNotificationHarness({ deferredPreferences = false, permission = null, pushEnabled = false, inboxError = null, missingSubscription = false, deployedSchema = false, recoverSession = false } = {}) {
   const internalBadge = fakeElement();
   const externalBadges = [fakeElement(), fakeElement()];
   const unreadStatus = fakeElement();
@@ -59,6 +59,8 @@ function createClientNotificationHarness({ deferredPreferences = false, permissi
     read_at: null
   }];
   let preferenceProbeCount = 0;
+  let sessionRefreshes = 0;
+  let deniedPreferences = recoverSession;
   let releasePreferences = () => {};
   const preferenceGate = deferredPreferences
     ? new Promise((resolve) => {
@@ -90,6 +92,10 @@ function createClientNotificationHarness({ deferredPreferences = false, permissi
   rootElement.addEventListener = () => {};
   rootElement.removeEventListener = () => {};
   const supabaseClient = {
+    auth: {
+      getSession: async () => ({ data: { session: { access_token: "test", user: { id: "client-1" } } } }),
+      refreshSession: async () => { sessionRefreshes++; return { data: { session: { access_token: "renewed", user: { id: "client-1" } } } }; }
+    },
     functions: { invoke: async () => ({ data: { publicKey: "a2V5" }, error: null }) },
     from(table) {
       const query = {
@@ -107,6 +113,10 @@ function createClientNotificationHarness({ deferredPreferences = false, permissi
         async maybeSingle() {
           preferenceProbeCount += 1;
           await preferenceGate;
+          if (deployedSchema && table === "client_notification_preferences") return { error: { code: "42703" } };
+          if (table === "fwb_notification_settings" && deniedPreferences) {
+            deniedPreferences = false; return { error: { code: "42501", status: 401 } };
+          }
           return { data: preferences, error: null };
         },
         async single() {
@@ -116,7 +126,7 @@ function createClientNotificationHarness({ deferredPreferences = false, permissi
           return { data: rows, error: inboxError };
         }
       };
-      assert.ok(["client_notification_preferences", "client_notifications", "web_push_subscriptions"].includes(table));
+      assert.ok(["client_notification_preferences", "client_notifications", "web_push_subscriptions", "fwb_notification_settings"].includes(table));
       return query;
     }
   };
@@ -148,6 +158,7 @@ function createClientNotificationHarness({ deferredPreferences = false, permissi
     getSubscription: async () => browserSubscription,
     subscribe: async () => { subscriptionCreations += 1; browserSubscription = pushSubscription; return pushSubscription; }
   } };
+  if (recoverSession) vm.runInNewContext(fs.readFileSync(path.join(root, "js/auth-session.js"), "utf8"), sandbox);
   vm.runInNewContext(notifications, sandbox);
   const controller = sandbox.window.FWBWebNotifications.createController({
     supabaseClient,
@@ -165,11 +176,20 @@ function createClientNotificationHarness({ deferredPreferences = false, permissi
     rows,
     releasePreferences,
     preferenceProbeCount: () => preferenceProbeCount,
+    sessionRefreshes: () => sessionRefreshes,
     enableButton, help, status, lifecycle,
     removeSubscription: () => { browserSubscription = null; },
     counts: () => ({ subscriptionSaves, subscriptionCreations, permissionRequests })
   };
 }
+
+test("deployed notification preferences reconnect after a rejected session token", async () => {
+  const h = createClientNotificationHarness({ deployedSchema: true, recoverSession: true });
+  assert.equal(await h.controller.init(), true);
+  assert.equal(h.sessionRefreshes(), 1);
+  assert.equal(h.unreadStatus.textContent, "1 unread notification");
+  assert.doesNotMatch(h.status.textContent, /being connected|expired/i);
+});
 
 test("client Supabase auth explicitly persists and refreshes the session", () => {
   assert.match(portal, /createClient\(config\.url, config\.anonKey,\s*\{[\s\S]*?persistSession:\s*true/);
@@ -257,7 +277,7 @@ test("notification categories and database preferences default on without forcin
   assert.match(notifications, /input\.checked = preferences\?\.\[key\] !== false/);
   assert.match(notifications, /preferences\?\.push_enabled !== false/);
   assert.doesNotMatch(notifications, /init\(\)[\s\S]*?Notification\.requestPermission\(\)/);
-  assert.match(dashboard, /src="js\/web-notifications\.js\?v=notification-recovery-2"/);
+  assert.match(dashboard, /src="js\/web-notifications\.js\?v=notification-recovery-3"/);
   [
     "push_enabled",
     "coach_replies",

@@ -8913,10 +8913,31 @@ function workoutActionsMarkup(workout, options = {}) {
     <div class="workout-actions">
       <div>
         <button class="workout-finish-button" type="button" data-workout-finish>${escapeHtml(options.finishLabel || "Finish workout")}</button>
+        <button class="workout-later-button" type="button" data-workout-finish-later>Finish workout later</button>
       </div>
       <small data-workout-status></small>
     </div>
   `;
+}
+
+function finishWorkoutLater(button) {
+  const panel = button?.closest(".client-workout-panel");
+  if (!panel) return;
+  const title = String(panel.querySelector("[data-workout-start]")?.dataset.workoutTitle
+    || panel.dataset.customWorkoutTitle || panel.querySelector("[data-exercise-log]")?.dataset.workoutTitle || "").trim();
+  const date = panel.querySelector("[data-workout-date]")?.value;
+  const status = panel.querySelector("[data-workout-status], [data-custom-grouped-status]");
+  if (!workoutElapsedTimerState || workoutElapsedTimerState.workoutTitle !== title
+    || (date && workoutElapsedTimerState.workoutDate !== date)) {
+    if (status) status.textContent = "Start this workout before pausing it.";
+    return;
+  }
+  persistWorkoutProgressionPending(panel);
+  persistCustomWorkoutDraftFromPanel(panel);
+  pauseWorkoutTimersForCompletion();
+  renderWorkoutResumeActions();
+  setClientDashboardTab("home");
+  document.querySelector(".client-home-resume-card [data-resume-active-workout]")?.focus();
 }
 
 function customWorkoutInlineGroupOptionsMarkup(groupType = "single", isVisible = true) {
@@ -9164,7 +9185,7 @@ function customWorkoutGroupedRoundCardMarkup(format, exercises, groupIndex = 0, 
             <time data-custom-grouped-timer-time datetime="PT0S">00:00</time>
           </div>
         ` : ""}
-        ${showSessionControls ? '<footer class="custom-workout-grouped-actions"><button type="button" data-custom-grouped-finish-workout>Finish workout</button></footer>' : ""}
+        ${showSessionControls ? '<footer class="custom-workout-grouped-actions"><button type="button" data-custom-grouped-finish-workout>Finish workout</button><button class="workout-later-button" type="button" data-workout-finish-later>Finish workout later</button></footer>' : ""}
         <p class="custom-workout-grouped-status" data-custom-grouped-status aria-live="polite"></p>
       </article>
       <button class="workout-next-exercise-button" type="button" data-workout-next-exercise>
@@ -17208,6 +17229,7 @@ function handleWorkoutInteractions() {
     const customGroupedRestAdjustButton = event.target.closest("[data-custom-grouped-rest-adjust]");
     const customGroupedRestToggleButton = event.target.closest("[data-custom-grouped-rest-toggle]");
     const customGroupedFinishButton = event.target.closest("[data-custom-grouped-finish-workout]");
+    const workoutLaterButton = event.target.closest("[data-workout-finish-later]");
     const customGroupedSetToggle = event.target.closest("[data-custom-grouped-set-toggle]");
     const customGroupedFinishClose = event.target.closest("[data-custom-grouped-finish-close]");
     const customGroupedStartNew = event.target.closest("[data-custom-grouped-start-new]");
@@ -17252,6 +17274,11 @@ function handleWorkoutInteractions() {
     const workoutElapsedCompactButton = event.target.closest("[data-workout-elapsed-compact]");
     const workoutElapsedCloseButton = event.target.closest("[data-workout-elapsed-close]");
     const resetCustomWorkoutButton = event.target.closest("[data-reset-custom-workout]");
+
+    if (workoutLaterButton) {
+      finishWorkoutLater(workoutLaterButton);
+      return;
+    }
 
     if (customGroupedFinishClose || event.target.matches("[data-custom-grouped-finish-overlay]")) {
       closeCustomWorkoutGroupedFinishPanel();

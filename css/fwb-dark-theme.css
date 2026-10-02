@@ -959,3 +959,177 @@
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
   padding-right: 18px; padding-left: 18px;
 }
+
+/* Coach audit: explicit legacy child fills and ink need semantic roles too. */
+:root body:is(.coach-admin-page, .coach-workout-log-page, .coach-exercise-library-page) :is(
+  strong, output, .coach-admin-sidebar-title, .session-package-history-heading,
+  .exercise-library-intro-title, .builder-progression-title
+) { color: var(--ink); }
+:root body:is(.coach-admin-page, .coach-workout-log-page, .coach-exercise-library-page) :is(
+  .profile-management-row, .client-onboarding-summary, .program-history,
+  .progress-actions, .notes-actions, .training-block-actions, .nutrition-actions,
+  .nutrition-coach-preview, .progress-history-row, .workout-analysis-panel,
+  .session-package-history-card, .training-log-workout-group, .training-log-summary-row,
+  .training-log-row-nested, .selected-session-count, .readonly-output-field output,
+  .invite-row, .client-added-exercise-review, .client-added-exercise-edit-form,
+  .exercise-library-card-select, .client-exercise-name-manager, .client-exercise-name-editor,
+  .coach-workout-exercise-heading, .coach-workout-format-fieldset,
+  .coach-workout-set-progress, .coach-workout-set-row.is-warm-up,
+  .coach-notification-status, .builder-progression, .builder-settings
+) { color: var(--ink); background: var(--surface); border-color: var(--line); }
+:root body:is(.coach-admin-page, .coach-workout-log-page, .coach-exercise-library-page) :is(
+  .coach-admin-sidebar-toggle, .coach-notification-close, .coach-mobile-more-heading > button,
+  .client-added-exercise-review-heading > button, .client-added-exercises-link,
+  .exercise-library-group-heading span, .exercise-library-card-heading small,
+  .exercise-library-view-tabs button span, .selected-client-meta span,
+  .session-date-chip, .coach-home-calendar-day i, .client-exercise-name-row,
+  .coach-workout-copy-undo, .coach-workout-set-actions button,
+  .coach-workout-grouped-actions button, .coach-workout-add-superset,
+  .coach-workout-group-add-exercise, .coach-workout-exercise-toggle,
+  .coach-workout-notes > button, .coach-workout-suggestion-menu button
+) { color: var(--ink); background: var(--surface-soft); border-color: var(--line); }
+:root body:is(.coach-admin-page, .coach-workout-log-page, .coach-exercise-library-page) :is(
+  .coach-notification-preference small, .coach-notification-section-heading > p,
+  .client-added-exercises-link small, .exercise-library-card-meta small,
+  .exercise-library-card-meta small::before, .exercise-library-badges small,
+  .coach-workout-previous, .coach-workout-set-header, .coach-workout-grouped-card-heading p,
+  .coach-workout-round-stepper output span, .coach-workout-history-empty,
+  .builder-progression label, .session-package-history-card p
+) { color: var(--muted); }
+:root body:is(.coach-admin-page, .coach-workout-log-page, .coach-exercise-library-page) :is(
+  .client-added-exercises-link:is(:hover, [aria-expanded="true"]),
+  .exercise-library-card-select:is(:hover, :focus-visible),
+  .exercise-library-view-tabs button.is-selected,
+  .coach-workout-suggestion-menu button:is(:hover, :focus-visible),
+  .coach-admin-sidebar-toggle:is(:hover, :focus-visible),
+  .coach-mobile-more-menu > :is(a, button):is(:hover, :focus-visible),
+  .selected-client-mobile-menu button.is-active
+) { color: var(--ink); background: var(--selected-surface); border-color: var(--lime); }
+:root body:is(.coach-admin-page, .coach-workout-log-page, .coach-exercise-library-page) :is(
+  .status-pill, .client-added-exercise-row-heading small.is-shared,
+  .exercise-library-badges .is-approved, .exercise-library-badges .has-demo
+) { color: var(--lime); background: var(--selected-surface); border-color: var(--line); }
+:root body:is(.coach-admin-page, .coach-workout-log-page, .coach-exercise-library-page) :is(
+  .copy-client-warning, .coach-home-status-badge.is-out
+) { color: var(--danger); background: var(--reminder-surface); border-color: var(--reminder-border); }
+:root body:is(.coach-admin-page, .coach-workout-log-page, .coach-exercise-library-page) :is(
+  .coach-workout-remove-exercise, .coach-workout-group-name-row > button,
+  .coach-workout-set-actions [data-coach-workout-delete-set], [data-builder-delete],
+  .client-added-exercise-actions .danger-button
+) { color: var(--danger); background: var(--reminder-surface); border-color: var(--reminder-border); }
+:root body:is(.coach-admin-page, .coach-workout-log-page, .coach-exercise-library-page) :is(
+  .coach-workout-remove-exercise, .coach-workout-group-name-row > button
+):is(:hover, :focus-visible) { color: var(--danger); background: var(--reminder-surface); border-color: var(--danger); }
+:root body:is(.coach-admin-page, .coach-workout-log-page, .coach-exercise-library-page) input[type="file"] {
+  color: var(--ink); background: var(--surface-soft); border-color: var(--control-border);
+}
+:root body:is(.coach-admin-page, .coach-workout-log-page, .coach-exercise-library-page) input[type="file"]::file-selector-button {
+  color: var(--ink); background: var(--surface); border: 1px solid var(--control-border);
+}
+:root body:is(.coach-admin-page, .coach-workout-log-page, .coach-exercise-library-page) input:is([type="checkbox"], [type="radio"]) {
+  accent-color: var(--lime); color-scheme: dark;
+}
+:root body.coach-login-page .access-demo strong { color: var(--ink); }
+:root body:is(.coach-admin-page, .coach-workout-log-page, .coach-exercise-library-page) .site-header .login-link {
+  color: var(--ink); border-color: var(--line);
+}
+
+/* Shared alert cards are dark in client Settings and every coach inbox state. */
+:root body.dashboard-page :is(.web-notification-item a, .web-notification-settings) {
+  color: var(--ink); background: var(--surface); border-color: var(--line);
+}
+:root body.dashboard-page .web-notification-item.is-unread a {
+  color: var(--ink); background: var(--surface-soft); border-left-color: var(--lime);
+}
+:root body.dashboard-page .web-notification-item a:is(:hover, :focus-visible) {
+  color: var(--ink); background: var(--selected-surface); border-color: var(--lime);
+}
+:root body.dashboard-page .web-notification-item strong { color: var(--ink); }
+:root body.dashboard-page .web-notification-item :is(span, time) { color: var(--muted); }
+:root body.dashboard-page .web-notification-inbox-heading button { color: var(--secondary-accent); }
+:root body.dashboard-page .web-notification-status[data-state="success"] { color: var(--lime); }
+
+/* The coach logger defines an isolated palette inside each workout group. */
+:root body.coach-workout-log-page .coach-workout-group-shell {
+  --coach-grouped-ink: var(--ink); --coach-grouped-muted: var(--muted);
+  --coach-grouped-line: var(--line); --coach-grouped-paper: var(--surface);
+  --coach-grouped-cream: var(--surface-soft); --coach-grouped-lime: var(--lime);
+  --coach-grouped-blue: var(--lime); --coach-grouped-gold: var(--secondary-accent);
+  color: var(--ink); color-scheme: dark;
+}
+:root body.coach-workout-log-page :is(.coach-workout-grouped-section.is-warm-up, .coach-rest-timer) {
+  color: var(--ink); background: var(--surface); border-color: var(--secondary-border);
+}
+:root body.coach-workout-log-page :is(.coach-workout-grouped-code, .coach-workout-grouped-row.is-warm-up .coach-workout-grouped-code,
+  .coach-workout-group-name-row > strong) {
+  color: var(--lime); background: var(--selected-surface); border-color: var(--line);
+}
+:root body.coach-workout-log-page .coach-workout-grouped-row.is-warm-up .coach-workout-grouped-code {
+  color: var(--secondary-accent); background: var(--secondary-surface); border-color: var(--secondary-border);
+}
+:root body.coach-workout-log-page :is(.coach-workout-log-round, .coach-workout-inline-rest button,
+  .coach-rest-timer button, .coach-rest-timer select) {
+  color: var(--ink); background: var(--surface-soft); border-color: var(--line);
+}
+:root body.coach-workout-log-page .coach-workout-log-round { border-color: var(--lime); }
+:root body.coach-workout-log-page :is(.coach-rest-timer output, .coach-workout-notes > button small) { color: var(--secondary-accent); }
+:root body.coach-workout-log-page .coach-workout-format-options label:has(input:checked) small { color: var(--muted); }
+:root body.coach-workout-log-page :is(.coach-workout-log-round, .coach-workout-copy-button, .coach-workout-grouped-actions button):disabled {
+  color: var(--muted); background: var(--surface-soft); border-color: var(--line);
+}
+
+/* Coach Inbox has a more specific legacy surface than the shared message bridge. */
+:root body.coach-admin-page .admin-card.fwb-messages {
+  color: var(--ink); background: var(--surface); border-color: var(--line);
+}
+:root body.coach-admin-page .fwb-messages .kicker,
+:root body.dashboard-page .fwb-message-dialog .kicker { color: var(--muted); }
+
+/* Client Settings and workout footers must also retain the forest palette. */
+:root body.dashboard-page :is(.rest-timer-notification-setting, .workout-actions,
+  .custom-workout-grouped-actions, .web-notification-settings > summary) {
+  color: var(--ink); background: var(--surface-soft); border-color: var(--line);
+}
+:root body.dashboard-page :is(.rest-timer-notification-setting strong,
+  .rest-timer-notification-setting label, .workout-cardio-card .exercise-card-summary > i,
+  .client-home-checklist strong) { color: var(--ink); }
+:root body.dashboard-page .client-home-support { color: var(--secondary-accent); }
+:root body.dashboard-page .client-home-checklist li:not(.is-done) > span {
+  color: var(--muted); background: var(--surface);
+}
+:root body.dashboard-page :is(.workout-actions, [data-custom-workout-grouped="true"] .custom-workout-grouped-actions) .workout-later-button {
+  color: var(--muted); background: var(--surface); border: 1px solid var(--line); min-height: 48px;
+}
+:root body.dashboard-page .rest-timer-notification-setting small { color: var(--muted); }
+:root body.dashboard-page #progress-date {
+  color: var(--lime); background: var(--selected-surface); border-color: var(--line);
+}
+:root body.dashboard-page .client-home-today-workout {
+  background: var(--surface-soft); border-color: var(--line);
+}
+:root body.dashboard-page .client-weekly-title { display: flex; align-items: center; gap: 12px; }
+:root body.dashboard-page .client-weekly-art {
+  display: grid; place-items: center; flex: 0 0 42px; width: 42px; height: 48px;
+  color: var(--lime); background: var(--selected-surface); border: 1px solid var(--line); border-radius: 12px;
+}
+:root body.dashboard-page .client-weekly-art svg { width: 28px; height: 32px; }
+:root body.dashboard-page .client-weekly-activity.is-checked-in .client-gym-checkin {
+  color: var(--lime); background: var(--selected-surface); border-color: var(--line); opacity: 1;
+}
+
+/* Short, restrained motion on cards and controls; no looping background motion. */
+@keyframes fwb-card-reveal { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: no-preference) {
+  :root body.dashboard-page :is(.client-home-card, .client-weekly-summary,
+    .coach-home-module, .exercise-library-card, .web-notification-item) {
+    animation: fwb-card-reveal 240ms ease-out both;
+  }
+  :root body.dashboard-page :is(button, .button) {
+    transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
+  }
+  :root body.dashboard-page :is(.client-gym-checkin-icon, .client-home-workout-button > span) {
+    transition: transform 150ms ease;
+  }
+  :root body.dashboard-page .client-home-workout-button:hover > span { transform: translateX(3px); }
+  :root body.dashboard-page .client-gym-checkin:active .client-gym-checkin-icon { transform: scale(.94); }
+}

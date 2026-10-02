@@ -187,12 +187,13 @@
     on(nodes.keep, "click", () => { confirming = false; render(); nodes.remove.focus(); });
     on(nodes["confirm-remove"], "click", () => write(true));
     on(document, "visibilitychange", () => {
-      if (document.visibilityState === "visible" && !root.closest("[data-client-dashboard-panel]")?.hidden) void refresh();
+      // Home also displays this photo, even while the Settings panel is hidden.
+      if (document.visibilityState === "visible") void refresh();
     });
     // Auth callbacks stay synchronous: starting an Auth request inside them can deadlock the SDK.
     subscription = options.supabaseClient.auth.onAuthStateChange?.((event, session) => {
       if (event === "SIGNED_OUT" || (session?.user && session.user.id !== options.user.id)) { destroy(); return; }
-      if (event === "USER_UPDATED" && !writing) {
+      if (["USER_UPDATED", "TOKEN_REFRESHED", "SIGNED_IN"].includes(event) && !writing) {
         global.clearTimeout(authTimer);
         authTimer = global.setTimeout(() => { void refresh(); }, 0);
       }

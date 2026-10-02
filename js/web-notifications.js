@@ -239,6 +239,16 @@
     }
 
     async function ensurePreferences() {
+      if (!global.FWB_AUTH_SESSION?.withAccount) return readPreferences();
+      const result = await global.FWB_AUTH_SESSION.withAccount(supabaseClient, { id: user.id }, async () => {
+        try { return { data: await readPreferences() }; }
+        catch (error) { return { error }; }
+      });
+      if (result.error) throw result.error;
+      return result.data;
+    }
+
+    async function readPreferences() {
       const probe = await modernPreferencesProbe();
       if (probe.error) {
         if (!isDeployedSchemaFallback(probe.error)) {
@@ -782,7 +792,9 @@
             }
             return !connectionError;
           } catch (error) {
-            setStatus(subscription && preferences?.push_enabled !== false
+            setStatus(global.FWB_AUTH_SESSION?.requiresLogin(error)
+              ? "Your sign-in has expired. Sign in again to reconnect notifications."
+              : subscription && preferences?.push_enabled !== false
               ? "Alerts are on, but recent updates could not load. Please try again soon."
               : "Notifications are being connected. Please try again soon.", "error");
             return false;

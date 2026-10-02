@@ -9,6 +9,52 @@ const projectUrl = "https://fwbtest.supabase.co";
 const tokenKey = "sb-fwbtest-auth-token";
 const preferenceKey = "fwb_keep_me_logged_in";
 const modeKey = "fwb_auth_storage_mode";
+const accountSession = { access_token: "test-token", user: { id: "client-a", email: "client@example.com" } };
+
+test("account requests refresh one rejected token and retry for the same client", async () => {
+  let requests = 0, refreshes = 0;
+  const client = { auth: {
+    getSession: async () => ({ data: { session: accountSession } }),
+    refreshSession: async () => { refreshes++; return { data: { session: accountSession } }; }
+  } };
+  const result = await loadPage().withAccount(client, { email: "CLIENT@example.com" }, async () => {
+    requests++;
+    return requests === 1 ? { error: { code: "42501", status: 401 } } : { data: "saved" };
+  });
+  assert.equal(result.data, "saved");
+  assert.equal(requests, 2);
+  assert.equal(refreshes, 1);
+});
+
+test("a refreshed account cannot receive the previous client's pending write", async () => {
+  let requests = 0;
+  const client = { auth: {
+    getSession: async () => ({ data: { session: accountSession } }),
+    refreshSession: async () => ({ data: { session: { ...accountSession, user: { ...accountSession.user, id: "client-b" } } } })
+  } };
+  await assert.rejects(loadPage().withAccount(client, { email: "client@example.com" }, async () => {
+    requests++; return { error: { status: 401 } };
+  }), error => error.code === "session_expired");
+  assert.equal(requests, 1);
+});
+
+test("missing sessions stop before a private read or write", async () => {
+  let requests = 0;
+  const client = { auth: { getSession: async () => ({ data: { session: null } }) } };
+  await assert.rejects(loadPage().withAccount(client, { id: "client-a" }, async () => { requests++; }), error => error.code === "session_expired");
+  assert.equal(requests, 0);
+});
+
+test("permission denial after token renewal is returned without another retry", async () => {
+  let requests = 0;
+  const denied = { error: { code: "42501", status: 403 } };
+  const client = { auth: {
+    getSession: async () => ({ data: { session: accountSession } }),
+    refreshSession: async () => ({ data: { session: accountSession } })
+  } };
+  assert.equal(await loadPage().withAccount(client, { id: "client-a" }, async () => { requests++; return denied; }), denied);
+  assert.equal(requests, 2);
+});
 const sessionValues = {
   [tokenKey]: JSON.stringify({ access_token: "access-1", refresh_token: "refresh-1" }),
   [`${tokenKey}-code-verifier`]: "pkce-verifier",

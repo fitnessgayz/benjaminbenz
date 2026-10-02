@@ -29,17 +29,27 @@
       const result = await client.from(table).select(columns).eq('client_email', email)
         .gte('entry_date', range.start).lte('entry_date', range.end)
         .order('entry_date', { ascending: true }).order(table === 'client_workout_logs' ? 'id' : 'client_email', { ascending: true })
-        .range(offset, offset + 499).abortSignal(AbortSignal.timeout(15000));
+        .range(offset, offset + 499).abortSignal(requestSignal());
       if (result.error) throw result.error;
       rows.push(...(result.data || []));
       if ((result.data || []).length < 500) return rows;
     }
   }
+  function requestSignal() {
+    if (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') return AbortSignal.timeout(15000);
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 15000);
+    timer?.unref?.();
+    return controller.signal;
+  }
   async function saveVisit(client, email, date) {
     // ON CONFLICT DO NOTHING makes retries and simultaneous tabs idempotent.
-    const result = await client.from('client_gym_checkins').upsert({ client_email: email, entry_date: date }, {
+    const save = () => client.from('client_gym_checkins').upsert({ client_email: email, entry_date: date }, {
       onConflict: 'client_email,entry_date', ignoreDuplicates: true
-    }).abortSignal(AbortSignal.timeout(15000));
+    }).abortSignal(requestSignal());
+    const result = root.FWB_AUTH_SESSION?.withAccount
+      ? await root.FWB_AUTH_SESSION.withAccount(client, { email }, save)
+      : await save();
     if (result.error) throw result.error;
   }
   function celebrateCheckIn(panel, today, schedule = setTimeout) {
@@ -61,6 +71,7 @@
     const shortDate = key => new Date(`${key}T12:00:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
     function buttonState() {
       const done = checkedDate === dateKey(new Date());
+      panel.classList.toggle('is-checked-in', done);
       const button = find('client-gym-checkin');
       const label = button.querySelector('[data-client-gym-checkin-label]') || button;
       button.disabled = !email || preview || busy || done;
@@ -134,7 +145,9 @@
         celebrateCheckIn(panel, today);
         return today === dateKey(new Date()) ? 'Gym check-in saved for today.' : 'Gym check-in saved for yesterday. Check in again for today.';
       } catch (error) {
-        if (email === targetEmail) text('client-gym-checkin-status', 'Could not save your check-in. Please try again.');
+        if (email === targetEmail) text('client-gym-checkin-status', root.FWB_AUTH_SESSION?.requiresLogin(error)
+          ? 'Your sign-in has expired. Sign in again to save your gym check-in.'
+          : 'Could not save your check-in. Please try again.');
         throw error;
       } finally { busy = false; buttonState(); }
     };

@@ -368,7 +368,7 @@ test("shows the grouped session timer and finish action on the last group only",
   assert.match(groupedMarkup, /\$\{showSessionControls \? `[\s\S]*?data-custom-grouped-timer[\s\S]*?` : ""\}/);
   assert.match(
     groupedMarkup,
-    /\$\{showSessionControls \? '<footer class="custom-workout-grouped-actions"><button type="button" data-custom-grouped-finish-workout>Finish workout<\/button><\/footer>' : ""\}/,
+    /\$\{showSessionControls \? '<footer class="custom-workout-grouped-actions"><button type="button" data-custom-grouped-finish-workout>Finish workout<\/button><button class="workout-later-button" type="button" data-workout-finish-later>Finish workout later<\/button><\/footer>' : ""\}/,
   );
   assert.match(initialGroups, /isLastGroup: index === groups\.length - 1/);
   assert.match(regroup, /isLastGroup: index === desiredGroups\.length - 1/);

@@ -63,7 +63,9 @@
 
     async function verifiedProfile() {
       let result;
-      try { result = await client.auth.getUser(); }
+      try { result = global.FWB_AUTH_SESSION?.withAccount
+        ? await global.FWB_AUTH_SESSION.withAccount(client, { id }, () => client.auth.getUser())
+        : await client.auth.getUser(); }
       catch (cause) { throw photoError("AUTH", "Your account could not be verified. Try again.", cause); }
       if (result?.error) throw photoError("AUTH", "Your account could not be verified. Try again.", result.error);
       return record(result?.data?.user);

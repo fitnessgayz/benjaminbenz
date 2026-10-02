@@ -1,6 +1,20 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const vm = require('node:vm');
 const { weekRange, summarize, readRows, saveVisit, celebrateCheckIn } = require('../js/client-weekly-activity.js');
+
+test('check-ins still save when the browser lacks AbortSignal.timeout', async () => {
+  let expire, suppliedSignal;
+  const sandbox = { module: { exports: {} }, AbortSignal: {}, AbortController,
+    setTimeout(callback, delay) { assert.equal(delay, 15000); expire = callback; } };
+  vm.runInNewContext(fs.readFileSync(require.resolve('../js/client-weekly-activity.js'), 'utf8'), sandbox);
+  const client = { from: () => ({ upsert: () => ({ abortSignal: async signal => { suppliedSignal = signal; return {}; } }) }) };
+  await sandbox.module.exports.saveVisit(client, 'client@example.com', '2026-10-02');
+  assert.equal(suppliedSignal.aborted, false);
+  expire();
+  assert.equal(suppliedSignal.aborted, true);
+});
 
 test('Monday–Sunday boundaries include Sunday and cross year and DST changes', () => {
   assert.equal(weekRange(new Date(2026, 8, 20)).start, '2026-09-14');
