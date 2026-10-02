@@ -402,6 +402,21 @@ final class WorkoutCalculatorsTests: XCTestCase {
         XCTAssertEqual(WorkoutSequencePlanner.customFormat(from: assignments), .circuit)
     }
 
+    func testCustomCircuitFormatUsesThreeExercisesPerCircuit() {
+        let exercises = (1...7).map { Exercise(code: "CW\($0)", name: "Exercise \($0)") }
+
+        let assignments = WorkoutSequencePlanner.customAssignments(
+            for: .circuit,
+            exercises: exercises
+        )
+
+        XCTAssertEqual(assignments[exercises[0].id]?.id, "CUSTOM_CIRCUIT_1")
+        XCTAssertEqual(assignments[exercises[2].id]?.id, "CUSTOM_CIRCUIT_1")
+        XCTAssertEqual(assignments[exercises[3].id]?.id, "CUSTOM_CIRCUIT_2")
+        XCTAssertEqual(assignments[exercises[5].id]?.id, "CUSTOM_CIRCUIT_2")
+        XCTAssertEqual(assignments[exercises[6].id]?.id, "CUSTOM_CIRCUIT_3")
+    }
+
     func testNextCustomCircuitUsesTheNextAvailableNumber() {
         let exercise = Exercise(code: "CW01", name: "Squat")
         let assignments = [

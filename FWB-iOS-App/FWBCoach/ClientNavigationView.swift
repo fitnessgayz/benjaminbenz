@@ -25,7 +25,7 @@ enum ClientRootTab: String, CaseIterable, Hashable, Identifiable {
         case .logs: return "Logs"
         case .progress: return "Progress"
         case .stats: return "Stats"
-        case .nutrition: return "Food"
+        case .nutrition: return "Nutrition"
         case .questionnaire: return "PAR-Q"
         case .sessions: return "Sessions"
         case .notifications: return "Settings"

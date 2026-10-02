@@ -44,6 +44,12 @@
   ];
   const EQUIPMENT = new Set(EQUIPMENT_OPTIONS.map((option) => option.value));
   const INTENSITIES = new Set(["easy", "moderate", "challenging"]);
+  const FORMAT_OPTIONS = [
+    { value: "single", label: "Straight set", groupSize: 1 },
+    { value: "superset", label: "Superset", groupSize: 2 },
+    { value: "circuit", label: "Circuit", groupSize: 3 }
+  ];
+  const FORMATS = new Set(FORMAT_OPTIONS.map((option) => option.value));
   const DURATIONS = new Set([20, 30, 45, 60]);
   const WARMUP_SECONDS = 180;
   const RECENT_DAYS = 14;
@@ -91,7 +97,9 @@
     if (!Array.isArray(input.equipment) || input.equipment.some((value) => !EQUIPMENT.has(value))) {
       throw new Error("Choose the equipment you have available.");
     }
-    return { focus, selectedMuscles, equipment: new Set(["bodyweight", ...input.equipment]), intensity: focus.recovery ? "easy" : input.intensity };
+    const format = input.format === undefined ? "single" : input.format;
+    if (!FORMATS.has(format)) throw new Error("Choose straight set, superset, or circuit format.");
+    return { focus, selectedMuscles, equipment: new Set(["bodyweight", ...input.equipment]), intensity: focus.recovery ? "easy" : input.intensity, format };
   }
 
   function isRecoveryMovement(entry) {
@@ -268,6 +276,8 @@
         : `This library and equipment combination provides about ${workout.estimatedMinutes} minutes of training. Choose more equipment or another focus for a longer session.`);
     }
     if (workout.recentHistoryUsed) notes.push("Recent exercise history helped vary the selection; it does not determine recovery readiness.");
+    if (workout.format === "superset") notes.push("Exercises are grouped in pairs. Alternate both exercises before beginning the next round.");
+    if (workout.format === "circuit") notes.push("Each circuit contains exactly 3 exercises. Complete all 3 before beginning the next round.");
     return notes;
   }
 
@@ -290,8 +300,10 @@
     const recent = recentHistory(input.history, input.now);
     const seed = input.seed === undefined ? Math.random() : input.seed;
     const chosen = [];
-    const maxExercises = Math.min({ 20: 4, 30: 5, 45: 6, 60: 8 }[input.minutes],
+    const groupSize = FORMAT_OPTIONS.find((option) => option.value === selection.format).groupSize;
+    const exerciseLimit = Math.min({ 20: 4, 30: 5, 45: 6, 60: 8 }[input.minutes],
       selection.focus.muscles.length <= 2 ? 4 : 8);
+    const maxExercises = Math.floor(exerciseLimit / groupSize) * groupSize;
     const timeError = () => new Error(`These muscles cannot all fit a ${input.minutes}-minute workout. ${input.minutes < 60 ? "Choose more time or fewer muscles." : "Choose fewer muscles."}`);
     if (requiredGroups(input.focus, selection.selectedMuscles).length > maxExercises) throw timeError();
     const remaining = [...pool];
@@ -318,14 +330,20 @@
       chosen.push(next);
       remaining.splice(remaining.findIndex((entry) => entry.id === next.id), 1);
     }
-    if (!chosen.length || missingGroups(input.focus, chosen, selection.selectedMuscles).length) {
+    const completeExerciseCount = Math.floor(chosen.length / groupSize) * groupSize;
+    const groupedExercises = chosen.slice(0, completeExerciseCount);
+    if (!groupedExercises.length || missingGroups(input.focus, groupedExercises, selection.selectedMuscles).length) {
+      if (selection.format !== "single") {
+        const label = selection.format === "circuit" ? "a complete 3-exercise circuit" : "a complete 2-exercise superset";
+        throw new Error(`There aren't enough matching exercises or time for ${label}. Try another focus, add equipment, or choose more time.`);
+      }
       throw selection.selectedMuscles.length ? timeError() : unavailable(selection.focus);
     }
     return finalize({
       title: selection.focus.recovery ? selection.focus.label : `${selection.focus.label} workout`, focus: input.focus,
       selectedMuscles: selection.selectedMuscles,
-      minutes: input.minutes, intensity: selection.intensity, equipment: [...selection.equipment],
-      exercises: chosen, recentHistoryUsed: pool.some((entry) => historyPenalty(entry, recent) > 0)
+      minutes: input.minutes, intensity: selection.intensity, format: selection.format, equipment: [...selection.equipment],
+      exercises: groupedExercises, recentHistoryUsed: pool.some((entry) => historyPenalty(entry, recent) > 0)
     });
   }
 
@@ -383,5 +401,5 @@
     return finalize({ ...workout, intensity: selection.intensity, exercises });
   }
 
-  return { FOCUS_OPTIONS, MUSCLE_OPTIONS, EQUIPMENT_OPTIONS, generate, alternatives, swap };
+  return { FOCUS_OPTIONS, MUSCLE_OPTIONS, EQUIPMENT_OPTIONS, FORMAT_OPTIONS, generate, alternatives, swap };
 }));

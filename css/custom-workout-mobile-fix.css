@@ -2114,6 +2114,35 @@
   padding: 6px 10px 0;
 }
 
+.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-warmup-actions {
+  display: grid;
+  grid-template-columns: minmax(0, .72fr) minmax(0, 1.28fr);
+  gap: 8px;
+}
+
+.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-warmup-actions[hidden] {
+  display: none !important;
+}
+
+.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-skip-warmup {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 2px solid var(--grouped-ink);
+  border-radius: 11px;
+  background: var(--grouped-paper);
+  color: var(--grouped-ink);
+  font: inherit;
+  font-size: .78rem;
+  font-weight: 950;
+  letter-spacing: .02em;
+  line-height: 1.15;
+  text-align: center;
+  text-transform: uppercase;
+  touch-action: manipulation;
+}
+
 .dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-log-round {
   width: 100%;
   min-width: 0;
@@ -2174,13 +2203,15 @@
   color: #126f24;
 }
 
-.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-log-round:disabled {
+.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-log-round:disabled,
+.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-skip-warmup:disabled {
   border-color: #c9ccc6;
   background: #e8e9e4;
   color: var(--grouped-muted);
 }
 
 .dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-log-round:focus-visible,
+.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-skip-warmup:focus-visible,
 .dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-round-stepper button:focus-visible,
 .dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-rest-controls button:focus-visible,
 .dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-actions button:focus-visible,
@@ -3145,12 +3176,37 @@ body.dashboard-page.custom-workout-grouped-finish-open {
 
 /* Keep copy actions together; only the heading may wrap at narrow widths. */
 .dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-section-heading:has(.custom-workout-grouped-copy-weights) {
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "exercise exercise"
+    "round actions";
   gap: 6px;
   padding: 6px 10px;
 }
 
+.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-round-heading > h4 {
+  grid-area: round;
+  align-self: center;
+}
+
+.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-round-exercise-title {
+  grid-area: exercise;
+  min-width: 0;
+  color: var(--grouped-ink) !important;
+  font-size: .62rem !important;
+  font-weight: 950 !important;
+  letter-spacing: .025em !important;
+  line-height: 1.2 !important;
+  text-align: left !important;
+  text-transform: uppercase;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-copy-actions {
+  grid-area: actions;
   display: flex;
   flex: 0 0 auto;
   flex-wrap: nowrap;
@@ -3169,9 +3225,9 @@ body.dashboard-page.custom-workout-grouped-finish-open {
   inline-size: auto !important;
   max-width: 100%;
   min-width: 0;
-  min-height: 44px;
+  min-height: 34px;
   margin: 0;
-  padding: 8px 10px;
+  padding: 5px 7px;
   align-items: center;
   justify-content: center;
   gap: 5px;
@@ -3181,7 +3237,7 @@ body.dashboard-page.custom-workout-grouped-finish-open {
   color: var(--grouped-ink);
   box-shadow: none;
   font-family: inherit;
-  font-size: .75rem !important;
+  font-size: .66rem !important;
   font-style: normal;
   font-weight: 800;
   letter-spacing: 0;
@@ -3197,7 +3253,7 @@ body.dashboard-page.custom-workout-grouped-finish-open {
 
 .dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-copy-actions .custom-workout-grouped-copy-weights {
   flex: 0 0 auto;
-  padding-inline: 8px;
+  padding-inline: 7px;
   gap: 4px;
   white-space: nowrap;
 }
@@ -3230,7 +3286,7 @@ body.dashboard-page.custom-workout-grouped-finish-open {
   min-inline-size: 32px !important;
   max-width: 32px !important;
   max-inline-size: 32px !important;
-  min-height: 44px;
+  min-height: 34px;
   margin: 0;
   padding: 8px;
   align-items: center;

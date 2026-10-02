@@ -269,6 +269,7 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
     @State private var historyCopyPrompt: WorkoutHistoryCopyPromptRequest?
     @State private var pendingHistoryCopyExerciseID: String?
     @State private var navigationTargetExerciseID: String?
+    @State private var skippedWarmUpSectionIDs: Set<String> = []
     @FocusState private var focusedField: WorkoutLogFocus?
 
     init(
@@ -1045,6 +1046,9 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
 
             let warmUps = drafts.filter { draft in draft.isWarmUp && section.exercises.contains { matches(draft, $0) } }
             if !warmUps.isEmpty {
+                let enteredWarmUps = warmUps.filter(\.containsEntry)
+                let warmUpLogged = !enteredWarmUps.isEmpty && enteredWarmUps.allSatisfy(\.isCompleted)
+                let warmUpSkipped = skippedWarmUpSectionIDs.contains(section.id)
                 VStack(alignment: .leading, spacing: 9) {
                     HStack(alignment: .firstTextBaseline) {
                         Text("Warm-up")
@@ -1061,6 +1065,27 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
                             groupedSetRow(draft, exercise: exercise, section: section)
                         }
                     }
+                    HStack(spacing: 8) {
+                        Button {
+                            skipWarmUp(in: section)
+                        } label: {
+                            Label(warmUpSkipped ? "Warm-up skipped" : "Skip warm-up", systemImage: warmUpSkipped ? "forward.fill" : "forward")
+                                .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(LoggerCompactButtonStyle())
+                        .disabled(warmUpLogged || warmUpSkipped)
+                        .accessibilityIdentifier("workout.group.skipWarmUp.\(section.id)")
+
+                        Button {
+                            logWarmUp(enteredWarmUps, in: section)
+                        } label: {
+                            Label(warmUpLogged ? "Warm-up logged" : "Log warm-up", systemImage: warmUpLogged ? "checkmark.circle.fill" : "checkmark")
+                                .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(LoggerCompactButtonStyle(accented: true))
+                        .disabled(warmUpLogged || enteredWarmUps.isEmpty || !enteredWarmUps.allSatisfy(WorkoutRoundLayout.canComplete))
+                        .accessibilityIdentifier("workout.group.logWarmUp.\(section.id)")
+                    }
                 }
                 .padding(12)
                 .background(Color.fwbGold.opacity(0.08), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
@@ -1074,6 +1099,13 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
 
             ForEach(1...max(roundCount(for: section), 1), id: \.self) { round in
                 VStack(alignment: .leading, spacing: 6) {
+                    Text(groupedRoundExerciseTitle(for: section))
+                        .font(FWBFont.sized(10).weight(.bold))
+                        .foregroundStyle(Color.fwbMuted)
+                        .tracking(0.25)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.68)
+                        .accessibilityLabel("Exercises: \(groupedRoundExerciseAccessibilityTitle(for: section))")
                     HStack {
                         Text("Round \(round)")
                             .font(FWBFont.sized(13).weight(.semibold))
@@ -1086,9 +1118,10 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
                                     }
                                 }
                             } label: {
-                                Label("Copy previous", systemImage: "doc.on.doc")
+                                Label("Last round", systemImage: "doc.on.doc")
                             }
-                            .buttonStyle(LoggerCompactButtonStyle())
+                            .buttonStyle(LoggerRoundCopyButtonStyle())
+                            .accessibilityLabel("Copy last round")
                             .accessibilityHint("Copies the previous round into empty sets only")
                         }
                     }
@@ -1156,6 +1189,18 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
         return (exercises.firstIndex(where: { $0.id == exercise.id }) ?? 0) + 1
     }
 
+    private func groupedRoundExerciseTitle(for section: WorkoutSequenceSection) -> String {
+        section.exercises.enumerated().map { index, exercise in
+            "A\(index + 1) \(exercise.name.fwbTitleCased.uppercased())"
+        }.joined(separator: "  ·  ")
+    }
+
+    private func groupedRoundExerciseAccessibilityTitle(for section: WorkoutSequenceSection) -> String {
+        section.exercises.enumerated().map { index, exercise in
+            "A\(index + 1), \(exercise.name)"
+        }.joined(separator: ", ")
+    }
+
     private func groupedSetRow(_ draft: WorkoutSetDraft, exercise: Exercise, section: WorkoutSequenceSection) -> some View {
         let exerciseNumber = displayExerciseNumber(exercise)
         return WorkoutSetLogRow(
@@ -1165,6 +1210,9 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
                     guard let index = drafts.firstIndex(where: { $0.id == draft.id }) else { return }
                     copiedDraftIDs.remove(draft.id)
                     drafts[index] = updated
+                    if updated.isWarmUp {
+                        skippedWarmUpSectionIDs.remove(section.id)
+                    }
                 }
             ),
             focusedField: $focusedField,
@@ -1184,6 +1232,47 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
             },
             onDelete: { deleteSet(draft.id, from: exercise) }
         )
+    }
+
+    private func logWarmUp(_ enteredWarmUps: [WorkoutSetDraft], in section: WorkoutSequenceSection) {
+        guard !enteredWarmUps.isEmpty,
+              enteredWarmUps.allSatisfy(WorkoutRoundLayout.canComplete) else { return }
+
+        focusedField = nil
+        for warmUp in enteredWarmUps {
+            guard let index = drafts.firstIndex(where: { $0.id == warmUp.id }) else { continue }
+            drafts[index].isCompleted = true
+        }
+        skippedWarmUpSectionIDs.remove(section.id)
+        showPraise(
+            WorkoutPraiseBannerItem(
+                title: "WARM-UP LOGGED.",
+                detail: "Rest, then begin your first working round.",
+                icon: "flame.fill"
+            )
+        )
+        restTimerStore.start(
+            seconds: RestDurationParser.seconds(from: roundRestText(for: section)),
+            exerciseName: "\(section.label) · after warm-up",
+            hapticsEnabled: restTimerHapticsEnabled
+        )
+    }
+
+    private func skipWarmUp(in section: WorkoutSequenceSection) {
+        focusedField = nil
+        skippedWarmUpSectionIDs.insert(section.id)
+        showPraise(
+            WorkoutPraiseBannerItem(
+                title: "WARM-UP SKIPPED.",
+                detail: "Start your first working round when you’re ready.",
+                icon: "forward.fill"
+            )
+        )
+        if let firstWorkingDraft = drafts.first(where: { draft in
+            !draft.isWarmUp && !draft.isCompleted && section.exercises.contains { matches(draft, $0) }
+        }) {
+            focusedField = .weight(firstWorkingDraft.id)
+        }
     }
 
     @ViewBuilder
@@ -3543,6 +3632,7 @@ private struct WorkoutExerciseLogCard: View {
                             isPreviousHistoryLoading: isPreviousHistoryLoading,
                             canCopyPreviousSet: previousDraft(for: draft)?.containsEntry == true,
                             wasCopied: copiedDraftIDs.contains(draft.id),
+                            exerciseTitle: exercise.name,
                             onCompletionChanged: { isCompleted in
                                 onSetCompletionChanged(draft, isCompleted)
                             },
@@ -4315,6 +4405,7 @@ private struct WorkoutSetLogRow: View {
     let isPreviousHistoryLoading: Bool
     let canCopyPreviousSet: Bool
     let wasCopied: Bool
+    var exerciseTitle: String? = nil
     var groupCode: String? = nil
     let onCompletionChanged: (Bool) -> Void
     let onSetTypeChanged: (WorkoutSetType) -> Void
@@ -4328,6 +4419,15 @@ private struct WorkoutSetLogRow: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 5) {
+            if let exerciseTitle, !exerciseTitle.isEmpty {
+                Text(exerciseTitle.fwbTitleCased.uppercased())
+                    .font(FWBFont.sized(10).weight(.bold))
+                    .foregroundStyle(Color.fwbMuted)
+                    .tracking(0.25)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.68)
+                    .accessibilityHidden(true)
+            }
             HStack(spacing: 5) {
                 if let groupCode {
                     Button { onCompletionChanged(!draft.isCompleted) } label: {
@@ -5614,6 +5714,20 @@ private struct LoggerCompactButtonStyle: ButtonStyle {
             .frame(minHeight: 44)
             .background(accented ? Color.fwbAccentFill : Color.fwbSurface, in: RoundedRectangle(cornerRadius: 10))
             .overlay { RoundedRectangle(cornerRadius: 10).stroke(Color.fwbLine, lineWidth: 1) }
+            .opacity(configuration.isPressed ? 0.7 : 1)
+    }
+}
+
+private struct LoggerRoundCopyButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(FWBFont.sized(10).weight(.semibold))
+            .lineLimit(1)
+            .foregroundStyle(Color.fwbWarmWhite)
+            .padding(.horizontal, 7)
+            .frame(minHeight: 36)
+            .background(Color.fwbSurface, in: RoundedRectangle(cornerRadius: 9))
+            .overlay { RoundedRectangle(cornerRadius: 9).stroke(Color.fwbLine, lineWidth: 1) }
             .opacity(configuration.isPressed ? 0.7 : 1)
     }
 }

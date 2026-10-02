@@ -60,7 +60,7 @@ test("renders nine labeled client destinations in order with current-page semant
     "Logs",
     "Progress",
     "Stats and measurements",
-    "Food",
+    "Nutrition",
     "PAR-Q",
     "Sessions",
     "Settings"
@@ -71,7 +71,7 @@ test("renders nine labeled client destinations in order with current-page semant
     "Logs",
     "Progress",
     "Stats",
-    "Food",
+    "Nutrition",
     "PAR-Q",
     "Sessions",
     "Settings"

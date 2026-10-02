@@ -19,7 +19,7 @@ enum CustomWorkoutFormat: String, CaseIterable, Equatable, Identifiable {
         switch self {
         case .single: "Finish all sets of one exercise before moving to the next."
         case .superset: "Alternate exercises in pairs, then repeat each pair for your remaining sets."
-        case .circuit: "Complete one set of every exercise in order, then begin the next round."
+        case .circuit: "Complete three exercises in order, then begin the next round."
         }
     }
 
@@ -98,13 +98,17 @@ enum WorkoutSequencePlanner {
             }
             return assignments
         case .circuit:
-            guard !exercises.isEmpty else { return [:] }
-            let assignment = WorkoutGroupAssignment(
-                id: "CUSTOM_CIRCUIT_1",
-                kind: .circuit,
-                label: "Circuit 1"
-            )
-            return Dictionary(uniqueKeysWithValues: exercises.map { ($0.id, assignment) })
+            return Dictionary(uniqueKeysWithValues: exercises.enumerated().map { index, exercise in
+                let groupNumber = (index / 3) + 1
+                return (
+                    exercise.id,
+                    WorkoutGroupAssignment(
+                        id: "CUSTOM_CIRCUIT_\(groupNumber)",
+                        kind: .circuit,
+                        label: "Circuit \(groupNumber)"
+                    )
+                )
+            })
         }
     }
 

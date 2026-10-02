@@ -65,8 +65,9 @@ function fixture() {
   const engine = {
     FOCUS_OPTIONS: require("../js/workout-generator.js").FOCUS_OPTIONS,
     MUSCLE_OPTIONS: require("../js/workout-generator.js").MUSCLE_OPTIONS,
+    FORMAT_OPTIONS: require("../js/workout-generator.js").FORMAT_OPTIONS,
     EQUIPMENT_OPTIONS: [{ value: "full_gym", label: "Full gym" }, { value: "bodyweight", label: "Bodyweight" }, { value: "dumbbell", label: "Dumbbells" }],
-    generate(options) { calls.push(options); return JSON.parse(JSON.stringify(workout)); },
+    generate(options) { calls.push(options); return { ...JSON.parse(JSON.stringify(workout)), format: options.format }; },
     alternatives() { return [{ ...workout.exercises[0], id: "two", name: "Split squat" }]; },
     swap(current, index, replacement) { const updated = JSON.parse(JSON.stringify(current)); updated.exercises[index] = replacement; return updated; }
   };
@@ -114,6 +115,7 @@ test("generation previews without applying, and preference changes invalidate th
   assert.equal(uses, 0);
   assert.equal(h.use.hidden, false);
   assert.equal(h.calls[0].focus, "full_body");
+  assert.equal(h.calls[0].format, "single");
   assert.equal(h.calls[0].minutes, 30);
   assert.deepEqual(Array.from(h.calls[0].equipment), ["full_gym", "bodyweight"]);
   await h.form.emit("change");
@@ -235,6 +237,7 @@ test("initial preferences prefill daily recommendations and reopening restores o
   assert.equal(h.calls[0].focus, "recovery_lower");
   assert.equal(h.calls[0].minutes, 20);
   assert.equal(h.calls[0].intensity, "easy");
+  assert.equal(h.calls[0].format, "single");
   assert.deepEqual(Array.from(h.calls[0].equipment), ["bodyweight"]);
   await h.dialog.emit("cancel");
   h.open();
@@ -242,8 +245,24 @@ test("initial preferences prefill daily recommendations and reopening restores o
   assert.equal(h.calls[1].focus, "full_body");
   assert.equal(h.calls[1].minutes, 30);
   assert.equal(h.calls[1].intensity, "moderate");
+  assert.equal(h.calls[1].format, "single");
   assert.deepEqual(Array.from(h.calls[1].equipment), ["full_gym", "bodyweight"]);
   assert.equal(h.dialog.querySelectorAll("select").find((node) => node.name === "intensity").disabled, false);
+});
+
+test("workout format offers straight set, superset, and three-exercise circuit", async () => {
+  const h = fixture();
+  h.open({ initialPreferences: { format: "circuit" } });
+  const format = h.dialog.querySelectorAll("select").find((node) => node.name === "format");
+  assert.deepEqual(format.options.map((option) => [option.value, option.textContent]), [
+    ["single", "Straight set"],
+    ["superset", "Superset · 2 exercises"],
+    ["circuit", "Circuit · 3 exercises"]
+  ]);
+  assert.equal(format.value, "circuit");
+  await h.form.emit("submit");
+  assert.equal(h.calls[0].format, "circuit");
+  assert.match(h.dialog.querySelector(".workout-generator-review-heading").querySelector(".workout-generator-muted").textContent, /Circuit/);
 });
 
 test("initial preferences validate each field and never accept unsupported equipment", async () => {

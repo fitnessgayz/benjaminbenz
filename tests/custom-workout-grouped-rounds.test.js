@@ -108,6 +108,10 @@ test("renders the exercise key, compact round stepper, round rows, and grouped a
   assert.match(exerciseKey, /data-custom-grouped-exercise-name/);
   assert.match(sections, /<h4>Warm-up<\/h4>/);
   assert.match(sections, /Optional · excluded from working volume/);
+  assert.match(sections, /data-custom-grouped-skip-warmup>Skip warm-up<\/button>/);
+  assert.match(sections, /data-custom-grouped-log-warmup[^>]*>Log warm-up<\/button>/);
+  assert.match(sections, /custom-workout-grouped-round-exercise-title/);
+  assert.match(sections, /`A\$\{exerciseIndex \+ 1\} \$\{item\.exerciseName\}`/);
   assert.match(sections, /<h4>\$\{workoutSetUnit\(carousel\)\} \$\{roundNumber\}<\/h4>/);
   assert.match(sections, /const columnLabelsMarkup = `[\s\S]*?<button[^>]*data-one-rm-open[^>]*>Weight[\s\S]*?<\/button><span>Reps<\/span>[\s\S]*?<button[^>]*data-rir-help[^>]*><span>RIR<\/span>/);
   assert.equal(
@@ -130,6 +134,9 @@ test("renders the exercise key, compact round stepper, round rows, and grouped a
     mobileStyles,
     /\.custom-workout-grouped-exercise-key-item \{[\s\S]*?font-style: italic;[\s\S]*?font-weight: 950;[\s\S]*?text-transform: uppercase;/,
   );
+  assert.match(mobileStyles, /grid-template-areas:[\s\S]*?"exercise exercise"[\s\S]*?"round actions"/);
+  assert.match(mobileStyles, /custom-workout-grouped-round-exercise-title[\s\S]*?text-overflow: ellipsis/);
+  assert.match(mobileStyles, /custom-workout-grouped-copy-weights, \.custom-workout-grouped-undo-weights\)[\s\S]*?min-height: 34px/);
 });
 
 test("accepts skipped warm-ups and optional RIR while validating working reps", () => {
@@ -207,6 +214,24 @@ test("starts the persistent workout timer and rest timer after a successful roun
   assert.match(readTimer, /startedAfterRound/);
   assert.match(startTimer, /context\.startedAfterRound/);
   assert.match(renderTimer, /renderCustomWorkoutGroupedTimerPanels\(\)/);
+});
+
+test("logging a grouped warm-up starts rest while skipping advances without touching the timer", () => {
+  const logWarmUp = sourceForFunction("logCustomWorkoutGroupedWarmUp");
+  const skipWarmUp = sourceForFunction("skipCustomWorkoutGroupedWarmUp");
+  const interactions = sourceForFunction("handleWorkoutInteractions");
+
+  assert.match(logWarmUp, /if \(!result\.saved\) return result/);
+  assert.match(logWarmUp, /customWorkoutGroupedRestAction = carousel\.querySelector/);
+  assert.match(logWarmUp, /resetRestTimer\(\)/);
+  assert.match(logWarmUp, /startOrPauseRestTimer\(\)/);
+  assert.ok(logWarmUp.indexOf("if (!result.saved) return result") < logWarmUp.indexOf("startOrPauseRestTimer()"));
+  assert.match(skipWarmUp, /Warm-up skipped\. Start the first round when you’re ready\./);
+  assert.match(skipWarmUp, /data-custom-grouped-round="1"/);
+  assert.doesNotMatch(skipWarmUp, /RestTimer|restTimer|startOrPause/);
+  assert.match(interactions, /data-custom-grouped-skip-warmup/);
+  assert.match(interactions, /skipCustomWorkoutGroupedWarmUp\(customGroupedSkipWarmUpButton\)/);
+  assert.match(mobileStyles, /\.custom-workout-grouped-warmup-actions \{[\s\S]*?grid-template-columns:/);
 });
 
 test("routes grouped controls through explicit round, add, finish, and edit handlers", () => {

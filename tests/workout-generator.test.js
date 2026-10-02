@@ -52,6 +52,22 @@ test('uses actual seed batches and exports the browser/CommonJS interface', () =
   assert.equal(globalThis.FWB_WORKOUT_GENERATOR, generator);
   assert.ok(generator.FOCUS_OPTIONS.some((option) => option.value === 'full_body'));
   assert.ok(generator.EQUIPMENT_OPTIONS.some((option) => option.value === 'bodyweight'));
+  assert.deepEqual(generator.FORMAT_OPTIONS.map(({ value, groupSize }) => [value, groupSize]), [
+    ['single', 1], ['superset', 2], ['circuit', 3]
+  ]);
+});
+
+test('straight sets stay ungrouped, supersets use pairs, and circuits use exactly three exercises', () => {
+  const straight = build({ minutes: 45, format: 'single' });
+  const superset = build({ minutes: 45, format: 'superset' });
+  const circuit = build({ minutes: 45, format: 'circuit' });
+  assert.equal(straight.format, 'single');
+  assert.equal(superset.format, 'superset');
+  assert.equal(circuit.format, 'circuit');
+  assert.equal(superset.exercises.length % 2, 0);
+  assert.equal(circuit.exercises.length % 3, 0);
+  assert.ok(circuit.notes.some((note) => note.includes('exactly 3 exercises')));
+  assert.throws(() => build({ focus: 'chest', equipment: [], format: 'circuit' }), /complete 3-exercise circuit/);
 });
 
 test('every focus, intensity and duration produces a bounded workout with a full gym', () => {
@@ -236,7 +252,7 @@ test('swap rejects duplicates, invalid indices, equipment mismatch and time over
 });
 
 test('invalid selections produce useful errors', () => {
-  for (const overrides of [{ focus: 'unknown' }, { intensity: 'extreme' }, { minutes: 5 }, { equipment: ['mystery'] }, { equipment: 'dumbbell' }]) {
+  for (const overrides of [{ focus: 'unknown' }, { intensity: 'extreme' }, { format: 'giant_set' }, { minutes: 5 }, { equipment: ['mystery'] }, { equipment: 'dumbbell' }]) {
     assert.throws(() => build(overrides), /Choose/);
   }
 });

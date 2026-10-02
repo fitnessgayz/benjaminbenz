@@ -59,7 +59,7 @@ test("generated sessions receive distinct identities, prescribed set counts, and
   assert.equal(first.nextExerciseNumber, 3);
   assert.deepEqual(first.generatedFrom, {
     id: first.generatedFrom.id, title: "Leg day", focus: "legs", minutes: 30,
-    intensity: "moderate", estimatedMinutes: 29
+    intensity: "moderate", format: "single", estimatedMinutes: 29
   });
   assert.match(first.workoutTitle, /^Custom workout · Leg day · /);
   assert.deepEqual(first.exercises.map(({ code, group, groupType, generated }) => ({ code, group, groupType, generated })), [
@@ -83,6 +83,20 @@ test("generated sessions receive distinct identities, prescribed set counts, and
   });
   assert.deepEqual(input, before, "Preparing a local draft must not change the generated preview");
   assert.throws(() => context.generatedCustomWorkoutDraft({ exercises: [] }), /Generate a workout/);
+});
+
+test("generated formats survive handoff with pairs for supersets and exactly three exercises per circuit", () => {
+  const context = evaluate(["customExerciseCode", "generatedCustomWorkoutDraft"]);
+  const exercises = Array.from({ length: 6 }, (_, index) => ({
+    name: `Exercise ${index + 1}`, sets: 3, prescription: "3 × 10", rest: "60 seconds"
+  }));
+  for (const [format, groupSize] of [["single", 1], ["superset", 2], ["circuit", 3]]) {
+    const draft = plain(context.generatedCustomWorkoutDraft({ ...workout(), format, exercises }));
+    assert.equal(draft.format, format);
+    assert.equal(draft.generatedFrom.format, format);
+    assert.deepEqual(draft.exercises.map((exercise) => exercise.groupType), Array(6).fill(format));
+    assert.deepEqual(draft.exercises.map((exercise) => exercise.group), [0, 0, 0, 0, 0, 0].map((_, index) => format === "single" ? index : Math.floor(index / groupSize)));
+  }
 });
 
 test("recovery draft handoff keeps timed targets and creates only the prescribed blank working sets", () => {
