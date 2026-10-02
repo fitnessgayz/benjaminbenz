@@ -84,7 +84,7 @@
   padding: 8px 11px;
   border: 1px solid rgb(255 255 255 / 28%);
   border-radius: 999px;
-  color: var(--surface);
+  color: var(--ink);
   font-size: clamp(.72rem, 1.2vw, .9rem);
   letter-spacing: .035em;
   text-transform: none;
@@ -93,16 +93,16 @@
 :root body.homepage.public-page .home-tabs-shell {
   background: linear-gradient(
     180deg,
-    rgb(242 243 238 / 0%) 0%,
-    rgb(242 243 238 / 58%) 36%,
-    rgb(242 243 238 / 88%) 100%
+    rgb(5 8 6 / 0%) 0%,
+    rgb(5 8 6 / 58%) 36%,
+    rgb(5 8 6 / 88%) 100%
   );
 }
 
 :root body.homepage.public-page .home-tabs {
   padding: 7px;
-  border: 1px solid rgb(23 26 23 / 14%);
-  background: rgb(255 255 255 / 78%);
+  border: 1px solid var(--border);
+  background: rgb(11 24 17 / 94%);
   -webkit-backdrop-filter: blur(28px) saturate(135%);
   backdrop-filter: blur(28px) saturate(135%);
   box-shadow: 0 14px 34px rgb(8 10 8 / 14%);
@@ -189,7 +189,7 @@
   gap: clamp(36px, 7vw, 90px);
   margin-block: clamp(64px, 9vw, 112px);
   padding: clamp(30px, 5vw, 64px);
-  color: var(--surface);
+  color: var(--ink);
   background: var(--ink-deep);
   border-radius: var(--panel-radius);
 }
@@ -208,12 +208,11 @@
 }
 
 .connected-coaching .button-ghost {
-  color: var(--surface);
+  color: var(--ink);
   border-color: rgb(255 255 255 / 56%);
 }
 
-/* Keep long-form proof and offer details on calm light surfaces. Deep ink is
- * reserved for brand anchors such as the hero, dock, and connected-coaching callout. */
+/* Surface roles keep proof and coaching offers consistent with the shared theme. */
 .homepage.public-page .review-card {
   color: var(--ink);
   background: var(--surface);
@@ -435,7 +434,7 @@
 .public-page footer a,
 .public-footer strong,
 .public-footer a {
-  color: var(--surface);
+  color: var(--ink);
 }
 
 @media (max-width: 760px) {

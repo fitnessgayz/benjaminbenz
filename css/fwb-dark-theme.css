@@ -1,0 +1,632 @@
+/* Deep forest color bridges for all web surfaces. Load last.
+ * Component styles retain layout, visibility, gestures, and animation.
+ * Palette roles live in fwb-design-system.css.
+ */
+:root { background-color: var(--canvas); }
+:root body { color-scheme: dark; }
+
+/* Legacy cards use a mixture of semantic variables and literal white fills. */
+:root body:is(.dashboard-page, .login-page, .public-page, .questionnaire-page, .fwb-document-page) :is(
+  .site-header, .dashboard-loading, .access-panel, .access-card, .access-demo,
+  .admin-login-panel, .admin-card, .dashboard-card, .progress-panel, .notes-panel,
+  .client-summary, .client-card, .client-profile-card, .client-home-card,
+  .client-weekly-summary, .client-home-more, .client-home-snapshot-card,
+  .client-workouts-panel, .client-workout-picker-card, .custom-workout-card,
+  .workout-exercise-card, .exercise-detail, .workout-format-group,
+  .workout-preview-card, .workout-preview-exercise-card, .workout-program-choice,
+  .builder-exercise-row, .coach-workout-exercise, .coach-workout-grouped-card,
+  .coach-workout-submit-panel, .coach-workout-history-exercise,
+  .coach-home-module, .coach-home-sheet-card, .exercise-library-card,
+  .exercise-library-editor, .exercise-library-access-status,
+  .nutrition-card, .nutrition-macro-card, .nutrition-calculator-card,
+  .nutrition-client-guide, .nutrition-guide-preview, .nutrition-food-log-card,
+  .coach-food-log-panel, .food-log-card, .session-card, .session-package-card,
+  .session-sheet-count-card, .session-sheet-link-card, .program-history-card,
+  .saved-log-card, .training-log-history-card, .training-log-exercise-group,
+  .client-progress-history-row, .client-questionnaire-group,
+  .progress-entry-card, .progress-dexa-card, .food-label-import-card,
+  .client-settings-section, .client-settings-nav, .client-account-card,
+  .workout-progression, .workout-exercise-guide, .workout-group-progress
+) {
+  color: var(--ink);
+  background-color: var(--surface);
+  border-color: var(--line);
+}
+
+:root body:is(.dashboard-page, .login-page, .public-page, .questionnaire-page, .fwb-document-page) :is(
+  h1, h2, h3, h4, h5, h6, label, legend,
+  .brand, .brand strong, .summary-metric strong, .progress-current strong,
+  .exercise-card-summary strong, .custom-workout-card-summary strong,
+  .custom-workout-exercise-name, .workout-session-date-value,
+  .workout-preview-toggle, .workout-preview-exercise-copy strong,
+  .set-row b, .set-number, .coach-home-row-date strong,
+  .coach-home-row-copy strong, .coach-home-sheet-card strong,
+  .nutrition-macro-card strong, .nutrition-macro-chart-center strong,
+  .session-sheet-count-card strong, .client-settings-nav-row strong
+) { color: var(--ink); }
+
+:root body:is(.dashboard-page, .login-page, .public-page, .questionnaire-page, .fwb-document-page) :is(
+  .kicker, .eyebrow, .access-intro p:not(.kicker), .dashboard-hero p:not(.kicker),
+  .client-home-card p:not(.kicker), .client-home-carousel-status,
+  .client-weekly-caption, .client-weekly-header p, .client-weekly-totals small,
+  .client-weekly-day, .client-weekly-legend, .client-weekly-retry,
+  .client-weekly-details li span:last-child, .client-home-snapshot-card small,
+  .client-home-snapshot-card header span, .client-home-snapshot-heading > span,
+  .client-home-training-total small, .exercise-card-summary small,
+  .custom-workout-card-summary small, .custom-workout-exercise-description,
+  .builder-column-head, .builder-exercise-details, .builder-settings summary,
+  .workout-preview-heading p, .workout-preview-toggle small,
+  .workout-preview-columns, .workout-preview-exercise-copy small,
+  .workout-program-choice span, .workout-drag, .exercise-notes label,
+  .coach-home-module-copy, .coach-home-metrics small,
+  .coach-home-list-row small, .coach-home-list-row span,
+  .coach-home-sheet-card small, .coach-home-sheet-card span,
+  .coach-workout-set-row label > span, .nutrition-macro-card > span,
+  .nutrition-guide-list span, .nutrition-macro-chart-legend em,
+  .nutrition-macro-chart-center span, .client-settings-nav-row span,
+  .client-account-settings p, .client-account-settings small
+) { color: var(--muted); }
+
+:root body:is(.dashboard-page, .login-page, .public-page, .questionnaire-page, .fwb-document-page) :is(
+  .summary-metric, .progress-current > span, .training-log-row, .training-log-day,
+  .client-home-snapshot-section, .client-home-monthly-report-card,
+  .client-home-snapshot-metrics > span, .client-home-training-metrics > span,
+  .coach-home-metrics :is(article, .coach-home-shortcut),
+  .coach-home-list-row, .coach-home-session-row, .session-sheet-editor,
+  .nutrition-macro-overview, .nutrition-macro-chart-center,
+  .workout-row-number, .exercise-library-badges small,
+  .client-home-settings-placeholder, .client-settings-nav-row,
+  .workout-preview-menu > div, .workout-preview-menu button,
+  .coach-mobile-more-menu button, .client-weekly-mark
+) {
+  color: var(--ink);
+  background-color: var(--surface-soft);
+  border-color: var(--line);
+}
+
+/* Native controls retain their original size, layout, and hidden states. */
+:root body:is(.dashboard-page, .login-page, .public-page, .questionnaire-page, .fwb-document-page) :is(
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="hidden"]),
+  select, textarea
+):not(.workout-session-date-control input) {
+  color: var(--ink);
+  background-color: var(--surface-soft);
+  border-color: var(--control-border);
+  caret-color: var(--ink);
+}
+:root body:is(.dashboard-page, .login-page, .public-page, .questionnaire-page, .fwb-document-page) :is(input, textarea)::placeholder {
+  color: var(--muted);
+}
+:root body:is(.dashboard-page, .login-page, .public-page, .questionnaire-page, .fwb-document-page) :is(button, .button) {
+  color: var(--ink);
+  border-color: var(--line);
+}
+:root body:is(.dashboard-page, .login-page, .public-page, .questionnaire-page, .fwb-document-page) :is(
+  .button:not(:where(.button-ghost, .button-outline, .danger-button)),
+  .client-home-workout-button, .client-gym-checkin, .workout-start-button.is-active,
+  .set-complete-button, .set-finished-button, .complete-exercise-button,
+  .workout-difficulty-save, .workout-finish-button, .rest-timer-start, .fwb-message-send
+) {
+  color: var(--brand-primary-ink);
+  background-color: var(--lime);
+  border-color: var(--lime);
+}
+:root body:is(.dashboard-page, .login-page, .public-page, .questionnaire-page, .fwb-document-page) :is(
+  .button-ghost, .button-outline, .add-set-button, .set-delete-button,
+  .set-rir-button, .set-rest-button, .workout-rest-timer-button,
+  .workout-preview-menu button, .coach-home-notification-button,
+  .client-home-settings-button, .workout-exercise-guide-button
+) {
+  color: var(--ink);
+  background-color: var(--surface-soft);
+  border-color: var(--line);
+}
+:root body:is(.dashboard-page, .login-page, .public-page, .questionnaire-page, .fwb-document-page) :is(
+  .access-footer-links a, .coach-support-links a, .coach-home-text-link,
+  .coach-home-row-action, .coach-home-sheet-card a, .workout-text-button,
+  .exercise-demo-link, .exercise-pr-notes, .add-set-button,
+  .client-home-snapshot-card a, .invite-row a, .invite-row .text-button
+) { color: var(--secondary-accent); }
+:root body:is(.dashboard-page, .login-page, .public-page, .questionnaire-page, .fwb-document-page) .button:disabled {
+  color: var(--muted);
+  background-color: var(--surface-soft);
+  border-color: var(--line);
+}
+
+/* Dark translucent docks retain every existing tab and safe-area inset. */
+:root body.client-dashboard-page .client-dashboard-tabs,
+:root body.coach-admin-page .coach-admin-sidebar,
+:root body.coach-admin-page .admin-tabs {
+  background: rgb(11 24 17 / 94%);
+  border-color: var(--line);
+  box-shadow: 0 -8px 24px rgb(0 0 0 / 24%);
+}
+:root body:is(.dashboard-page, .login-page, .public-page, .questionnaire-page, .fwb-document-page) :is(
+  .client-dashboard-tab, .client-dashboard-tab-icon, .admin-tab, .admin-nav-icon,
+  .client-dashboard-mobile-nav-toggle, .client-dashboard-sidebar-toggle
+) { color: var(--muted); background-color: transparent; }
+:root body:is(.dashboard-page, .login-page, .public-page, .questionnaire-page, .fwb-document-page) :is(
+  .client-dashboard-tab.is-active, .client-dashboard-tab.is-active .client-dashboard-tab-label, .admin-tab.is-active,
+  .admin-tab.is-active .admin-nav-label
+) { color: var(--lime); }
+:root body:is(.dashboard-page, .login-page, .public-page, .questionnaire-page, .fwb-document-page) :is(
+  .client-dashboard-tab.is-active .client-dashboard-tab-icon,
+  .admin-tab.is-active .admin-nav-icon
+) { color: var(--brand-primary-ink); background-color: var(--lime); }
+:root body:is(.dashboard-page, .login-page, .public-page, .questionnaire-page, .fwb-document-page) :is(
+  .client-dashboard-nav-unread, .admin-nav-unread-count, .fwb-message-badge
+) { color: var(--brand-primary-ink); background-color: var(--lime); border-color: var(--surface); }
+
+/* Lavender connects coaching, nutrition, and supporting actions. */
+:root body.dashboard-page :is(.client-home-card-note, .client-home-coach-note) {
+  color: var(--ink);
+  background-color: var(--secondary-surface);
+  border-color: var(--secondary-border);
+}
+:root body.dashboard-page .client-home-card-note :is(h3, p:not(.kicker)) { color: var(--ink); }
+:root body.dashboard-page .client-home-card-note :is(.kicker, .fwb-message-launch strong) { color: var(--secondary-accent); }
+:root body.dashboard-page .client-home-card-note .fwb-message-launch,
+:root body.dashboard-page .client-home-coach-note .fwb-message-launch {
+  background-color: var(--secondary-surface);
+  border-color: var(--secondary-border);
+}
+:root body.dashboard-page :is(.nutrition-macro-card strong, .client-home-snapshot-metrics #client-home-snapshot-protein,
+  .coach-home-metrics [data-coach-home-shortcut="sessions"] strong,
+  .rest-timer-countdown, .rest-timer-sheet strong) { color: var(--secondary-accent); }
+:root body.dashboard-page .nutrition-macro-chart {
+  background: conic-gradient(
+    var(--secondary-accent) 0 var(--macro-protein-end, 0%),
+    var(--lime) var(--macro-protein-end, 0%) var(--macro-carbs-end, 0%),
+    var(--danger) var(--macro-carbs-end, 0%) 100%
+  );
+  border-color: var(--line);
+}
+:root body.dashboard-page .nutrition-macro-chart.is-empty { background: var(--surface-soft); }
+:root body.dashboard-page .nutrition-macro-chart-legend .is-protein i { background-color: var(--secondary-accent); }
+:root body.dashboard-page .nutrition-macro-chart-legend .is-carbs i { background-color: var(--lime); }
+:root body.dashboard-page .nutrition-macro-chart-legend .is-fat i { background-color: var(--danger); }
+
+/* Coral is reserved for reminders, review requests, and destructive actions. */
+:root body.dashboard-page :is(.client-home-card-mood, .coach-home-attention-metric,
+  .client-session-alert, .client-session-alert-card) { border-color: var(--reminder-border); }
+:root body.dashboard-page .coach-home-metrics .coach-home-attention-metric {
+  color: var(--ink);
+  background-color: var(--reminder-surface);
+  border-color: var(--reminder-border);
+}
+:root body.dashboard-page .coach-home-attention-metric strong { color: var(--danger); }
+:root body:is(.dashboard-page, .login-page, .public-page, .questionnaire-page, .fwb-document-page) :is(
+  .client-home-checkin-toggle, .danger-button, .set-delete-last-button,
+  .workout-preview-menu [data-preview-delete], .workout-preview-menu [data-exercise-delete]
+) {
+  color: var(--danger);
+  background-color: var(--reminder-surface);
+  border-color: var(--reminder-border);
+}
+
+/* Keep state cues readable without relying on color alone. */
+:root body.dashboard-page :is(.client-weekly-mark.has-workout, .client-weekly-mark.has-workout.has-checkin) {
+  color: var(--brand-primary-ink);
+  background-color: var(--lime);
+}
+:root body.dashboard-page .client-weekly-mark.has-checkin:not(.has-workout) {
+  color: var(--secondary-accent);
+  background-color: var(--secondary-surface);
+}
+:root body.dashboard-page :is(.set-row.is-complete .set-complete-button,
+  .client-workout-picker-card.is-current, .client-home-snapshot-card.is-snapshot-active) {
+  color: var(--ink);
+  background-color: var(--selected-surface);
+  border-color: var(--lime);
+}
+:root body.dashboard-page .set-row.is-complete .set-complete-button { color: var(--lime); }
+:root body.dashboard-page .coach-home-metrics :is(article, .coach-home-shortcut):first-child {
+  color: var(--ink);
+  background-color: var(--surface-soft);
+  border-color: var(--line);
+}
+:root body.dashboard-page .coach-home-metrics :is(article, .coach-home-shortcut):first-child strong { color: var(--lime); }
+
+/* Sheets and native dialogs must not flash back to white. */
+:root body:is(.dashboard-page, .login-page, .public-page, .questionnaire-page, .fwb-document-page) :is(dialog,
+  .workout-difficulty-sheet, .workout-completion-share-sheet, .next-exercise-sheet,
+  .rir-sheet, .rest-timer-sheet, .coach-mobile-more-dialog,
+  .workout-exercise-list-dialog, .workout-generator-dialog,
+  .workout-substitute-dialog, .client-monthly-report-dialog,
+  .workout-exercise-editor, .workout-rest-timer-options button
+) { color-scheme: dark; color: var(--ink); background-color: var(--surface); border-color: var(--line); }
+:root body:is(.dashboard-page, .login-page, .public-page, .questionnaire-page, .fwb-document-page) dialog::backdrop { background: rgb(0 0 0 / 68%); }
+:root body.dashboard-page .daily-checkin-dialog {
+  --daily-ink: var(--ink);
+  --daily-muted: var(--muted);
+  --daily-line: var(--line);
+}
+:root body.dashboard-page .daily-checkin-dialog :is(.daily-checkin-close,
+  .daily-checkin-secondary, .daily-checkin-rating-choice > span, .daily-checkin-fallback) {
+  color: var(--ink);
+  background-color: var(--surface-soft);
+  border-color: var(--line);
+}
+:root body.dashboard-page :is(.daily-checkin-button:not(.daily-checkin-close):not(.daily-checkin-secondary),
+  .daily-checkin-result-label, .daily-checkin-rating-choice input:checked + span) {
+  color: var(--brand-primary-ink);
+  background-color: var(--lime);
+  border-color: var(--lime);
+}
+:root body.dashboard-page :is(.daily-checkin-status.is-error, .coach-home-calendar-status.is-error) { color: var(--danger); }
+
+/* The inbox has its own older color system. */
+:root body.dashboard-page .fwb-messages { --message-surface: var(--surface); color: var(--ink); }
+:root body.dashboard-page :is(.fwb-message-launch, .fwb-message-dialog,
+  .fwb-message-secondary, .fwb-message-inbox-item, .fwb-message-bubble) {
+  color: var(--ink);
+  background-color: var(--surface);
+  border-color: var(--line);
+}
+:root body.dashboard-page :is(.fwb-message-launch strong, .fwb-message-meta strong) { color: var(--secondary-accent); }
+:root body.dashboard-page :is(.fwb-message-heading h2, .fwb-message-recipient,
+  .fwb-message-bubble p, .fwb-message-composer label) { color: var(--ink); }
+:root body.dashboard-page :is(.fwb-message-subtitle, .fwb-message-preview,
+  .fwb-message-meta, .fwb-message-empty, .fwb-message-count,
+  .fwb-message-launch small, .fwb-message-inbox-item time) { color: var(--muted); }
+:root body.dashboard-page :is(.fwb-message-inbox-item.is-active, .fwb-message-bubble.is-own) {
+  background-color: var(--secondary-surface);
+  border-color: var(--secondary-border);
+}
+:root body.dashboard-page .fwb-message-status { color: var(--danger); }
+
+/* Settings, workout chooser, and auxiliary cards share the same surface roles. */
+:root body.dashboard-page :is(.client-account-settings, .client-settings-panel,
+  .client-settings-detail-header, .client-settings-shortcut, .client-suggestions,
+  .client-achievements-home, .client-workout-picker-card-body, .workout-choice-card,
+  .apple-health-card, .google-health-settings, .google-health-activity,
+  .profile-photo-card, .client-questionnaire-identity, .client-questionnaire-privacy,
+  .client-questionnaire-empty, .client-questionnaire-loading, .client-questionnaire-error,
+  .coach-home-calendar, .coach-notification-preference, .coach-mobile-more-menu > a,
+  .selected-client-mobile-menu button, .workout-exercise-dock-sheet,
+  .workout-exercise-list [data-workout-exercise-jump]) {
+  color: var(--ink); background: var(--surface); border-color: var(--line);
+}
+:root body.dashboard-page :is(.client-workout-picker-facts > div,
+  .client-workout-picker-preview li > span, .client-workout-picker-arrow,
+  .client-workout-picker-dot, .training-log-history-deck-controls button,
+  .training-log-history-card-details, .workout-energy-options span,
+  .coach-workout-round-stepper, .coach-workout-round-stepper button,
+  .coach-workout-round-stepper output, .workout-exercise-list-number,
+  .workout-exercise-dock-close, .profile-photo-avatar, .profile-photo-preview,
+  .one-rm-close, .one-rm-percentages > div > div, .one-rm-recommendation,
+  .apple-health-metrics > div, .apple-health-card button,
+  .google-health-settings button, .profile-photo-dialog button,
+  .workout-generator-equipment-choice, .workout-generator-muscle-choice,
+  .workout-generator-exercise, .workout-generator-close,
+  .workout-generator-button-secondary, .achievement-filters button,
+  .client-achievements-dialog-close, .achievement-link, .achievement-retry,
+  .achievement-collection-count, .achievement-mini-icon,
+  .client-account-secondary-actions button) {
+  color: var(--ink); background: var(--surface-soft); border-color: var(--line);
+}
+:root body.dashboard-page :is(.client-home-snapshot-metrics strong,
+  .client-home-training-metrics strong, .client-home-training-total > strong,
+  .client-workout-picker-facts dd, .client-workout-picker-preview li,
+  .client-workout-picker-status > strong, .client-questionnaire-name,
+  .client-questionnaire-email, .client-questionnaire-response,
+  .training-log-history-metrics dd, .training-log-history-deck-heading strong,
+  .client-account-form-title, .client-achievements, .achievement-celebration li strong,
+  .client-settings-detail-header > button) { color: var(--ink); }
+:root body:is(.dashboard-page, .login-page, .public-page, .questionnaire-page, .fwb-document-page) :is(.login-status, .login-session-option p,
+  .access-demo span, .password-reset-button, .client-workout-picker-description,
+  .client-workout-picker-facts dt, .client-account-current-email,
+  .profile-photo-account > span, .profile-photo-hint, .one-rm-intro, .one-rm-prompt,
+  .one-rm-source, .one-rm-percentages :is(span, small),
+  .one-rm-recommendation :is(p, small, span), .coach-notification-status,
+  .coach-notification-preference small, .achievement-intro, .achievement-state,
+  .achievement-how, .achievement-home-next small, .achievement-home-next div > span,
+  .achievement-badge p, .achievement-badge-target, .achievement-xp-label span,
+  .achievement-celebration li div > span) { color: var(--muted); }
+:root body.dashboard-page :is(.workout-generator-launch, .workout-generator-button,
+  .one-rm-done, .one-rm-recommendation button, .rir-help-done, .rir-help-scale strong,
+  .client-achievements-progress-button, .achievement-filters button[aria-pressed="true"],
+  .workout-energy-options input:checked + span,
+  .client-home-card-mood .mood-rating-choice input:checked + span,
+  .workout-generator-equipment-choice:has(input:checked),
+  .workout-generator-muscle-choice:has(input:checked),
+  .google-health-settings button[data-google-health-connect],
+  .google-health-settings button[data-google-health-sync], .profile-photo-save,
+  .client-account-form button, .coach-home-calendar-day.has-session,
+  .client-workout-picker-choose, .training-log-copy-button,
+  .coach-workout-round-stepper button:last-child) {
+  color: var(--brand-primary-ink); background: var(--lime); border-color: var(--lime);
+}
+:root body.dashboard-page :is(.profile-photo-link, .profile-photo-retry,
+  .workout-generator-demo, .workout-generator-number, .workout-generator-group-label,
+  .one-rm-recommendation > strong, .training-log-history-open,
+  .training-log-history-card-actions .training-log-copy-button) { color: var(--secondary-accent); }
+:root body.dashboard-page :is(.client-session-alert, .coach-home-status-badge,
+  .workout-generator-status.is-error, .apple-workout-warning, .profile-photo-confirm) {
+  color: var(--danger); background: var(--reminder-surface); border-color: var(--reminder-border);
+}
+:root body.dashboard-page :is(.client-session-alert-action, .client-account-signout,
+  .profile-photo-remove, .profile-photo-danger, .training-log-delete-button,
+  .client-account-settings .is-error, .apple-workout-save-status) { color: var(--danger); }
+:root body.dashboard-page .client-account-settings .is-success { color: var(--lime); }
+:root body.dashboard-page .coach-home-status-badge.is-inactive {
+  color: var(--muted); background: var(--surface-soft); border-color: var(--line);
+}
+:root body.dashboard-page .client-home-more-icon { color: var(--ink); background: var(--surface-soft); }
+:root body.dashboard-page .client-home-settings-badge { border-color: var(--surface); }
+
+/* Bridge the isolated color variables inside feature dialogs. */
+:root body.dashboard-page .workout-generator-dialog {
+  --generator-ink: var(--ink); --generator-muted: var(--muted); --generator-line: var(--line);
+}
+:root body.dashboard-page :is(.apple-workout-summary, .apple-workout-empty, .apple-workout-dialog) {
+  --apple-ink: var(--ink); --apple-muted: var(--muted); --apple-line: var(--line);
+  --apple-paper: var(--surface); --apple-soft: var(--surface-soft); --apple-lime: var(--lime);
+  color-scheme: dark;
+}
+:root body.dashboard-page .apple-workout-dialog .apple-workout-save { color: var(--brand-primary-ink); }
+:root body.dashboard-page .apple-health-card {
+  --apple-health-ink: var(--ink); --apple-health-muted: var(--muted); --apple-health-line: var(--line);
+}
+:root body.dashboard-page :is(.google-health-settings, .google-health-history) {
+  --health-ink: var(--ink); --health-muted: var(--muted); --health-line: var(--line);
+  --health-soft: var(--surface-soft); --health-lime: var(--lime);
+}
+:root body.dashboard-page .rir-help-dialog {
+  --rir-help-ink: var(--ink); --rir-help-muted: var(--muted); --rir-help-line: var(--line);
+  --rir-help-paper: var(--surface); --rir-help-soft: var(--surface-soft); --rir-help-lime: var(--lime);
+}
+:root body.dashboard-page [data-custom-workout-grouped="true"] {
+  --grouped-ink: var(--ink); --grouped-muted: var(--muted); --grouped-line: var(--line);
+  --grouped-paper: var(--surface); --grouped-cream: var(--surface-soft); --grouped-gold: var(--secondary-accent);
+  color-scheme: dark;
+}
+
+/* Legacy carousel and coach dock use important color declarations. */
+:root body.coach-admin-page .coach-admin-sidebar {
+  background: rgb(11 24 17 / 94%) !important;
+  border-top-color: var(--line) !important;
+  box-shadow: 0 -8px 24px rgb(0 0 0 / 24%) !important;
+}
+:root body.dashboard-page .custom-workout-carousel:is([data-carousel-enabled], [data-custom-workout-deck], [data-group-workout-deck]) .custom-workout-card {
+  background: var(--surface) !important; border-color: var(--line) !important;
+}
+:root body.dashboard-page .custom-workout-carousel:is([data-carousel-enabled], [data-custom-workout-deck], [data-group-workout-deck]) .custom-workout-card :is(
+  .custom-workout-editable-title, .custom-workout-card-summary,
+  .superset-exercise-heading strong, .exercise-notes-toggle, .previous-weights) { color: var(--ink); }
+:root body.dashboard-page .custom-workout-carousel:is([data-carousel-enabled], [data-custom-workout-deck], [data-group-workout-deck]) .custom-workout-card :is(
+  input, textarea, .set-rir-button):not(.workout-session-date-control input) {
+  background: var(--surface-soft) !important; color: var(--ink) !important; border-color: var(--control-border) !important;
+}
+:root body.dashboard-page .custom-workout-carousel:is([data-carousel-enabled], [data-custom-workout-deck], [data-group-workout-deck]) .custom-workout-card :is(
+  .set-header, .set-label-field em, .set-input-field em, [data-log-status], .manual-exercise-hint) { color: var(--muted) !important; }
+:root body.dashboard-page .custom-workout-carousel:is([data-carousel-enabled], [data-custom-workout-deck], [data-group-workout-deck]) .custom-workout-card :is(input, textarea)::placeholder { color: var(--muted) !important; }
+:root body.dashboard-page .custom-workout-carousel:is([data-carousel-enabled], [data-custom-workout-deck], [data-group-workout-deck]) .custom-workout-card.is-exercise-complete,
+:root body.dashboard-page .custom-workout-carousel[data-group-workout-deck]:is(.is-superset-complete, .is-circuit-complete) .custom-workout-card.is-carousel-active {
+  background: var(--selected-surface) !important; border-color: var(--lime) !important;
+}
+
+:root body.dashboard-page [data-custom-workout-grouped="true"] :is(
+  .custom-workout-grouped-timer, .custom-workout-grouped-rest-controls [data-custom-grouped-rest-toggle],
+  .custom-workout-grouped-actions button:last-child) {
+  color: var(--ink); background: var(--surface-soft); border-color: var(--line);
+}
+:root body.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-log-round,
+:root body.dashboard-page .workout-next-exercise-button {
+  color: var(--brand-primary-ink); background: var(--lime); border-color: var(--lime);
+}
+
+/* Milestone art keeps its medal colors; surrounding cards stay dark. */
+:root body.dashboard-page .achievement-badge,
+:root body.dashboard-page .achievement-badge.is-earned {
+  color: var(--ink); background: var(--surface-soft); border-color: var(--line);
+}
+:root body.dashboard-page .achievement-badge .achievement-tier {
+  color: var(--secondary-accent); background: var(--secondary-surface);
+}
+:root body.dashboard-page .achievement-celebration {
+  color: var(--ink); background: var(--selected-surface); border-color: var(--lime);
+}
+:root body.dashboard-page :is(.achievement-eyebrow, .achievement-badge-earned,
+  .achievement-celebration .achievement-eyebrow, .achievement-level-medallion) { color: var(--lime); }
+:root body.dashboard-page .achievement-progress,
+:root body.dashboard-page .achievement-progress::-webkit-progress-bar { background: var(--line); }
+:root body.dashboard-page .achievement-progress::-webkit-progress-value,
+:root body.dashboard-page .achievement-progress::-moz-progress-bar { background: var(--lime); }
+
+/* Invitation choices and signed-out account flows use the same palette. */
+:root body.login-page :is(.invite-deck-peek, .invite-segmented-control,
+  .invite-choice-grid span, .invite-segmented-control span) {
+  color: var(--ink); background: var(--surface-soft); border-color: var(--line);
+}
+:root body.login-page :is(.invite-deck-navigation strong, .invite-macro-target) { color: var(--ink); }
+:root body.login-page :is(.invite-choice-grid input:checked + span,
+  .invite-segmented-control input:checked + span) {
+  color: var(--brand-primary-ink); background: var(--lime); border-color: var(--lime);
+}
+:root body.login-page .invite-progress span { background: var(--line); }
+:root body.login-page .invite-progress span:is(.is-complete, .is-active) { background: var(--lime); }
+:root body.login-page .invite-secondary-button { color: var(--ink); background: var(--surface-soft); border-color: var(--line); }
+
+:root body.dashboard-page .client-settings-panel { --client-settings-surface: var(--surface); }
+:root body.dashboard-page .client-home-coach-note :is(.kicker, .fwb-message-launch strong) { color: var(--secondary-accent); }
+:root body.dashboard-page :is(.custom-workout-deck-layer, .custom-workout-group-next-card,
+  .custom-workout-new-exercise-card, .custom-workout-copy-status) {
+  color: var(--ink); background: var(--surface-soft); border-color: var(--line);
+}
+:root body:is(.dashboard-page, .login-page, .public-page, .questionnaire-page, .fwb-document-page) :is(a, button, input, select, textarea, summary, [tabindex]):focus-visible { outline-color: var(--lime); }
+
+:root body.dashboard-page :is(.client-home-checklist li, .training-subtab) {
+  color: var(--ink); background: var(--surface-soft); border-color: var(--line);
+}
+:root body.dashboard-page .training-subtab.is-active {
+  color: var(--brand-primary-ink); background: var(--lime); border-color: var(--lime);
+}
+:root body.dashboard-page :is(.client-monthly-report-dialog-bar,
+  .client-monthly-report-hero, .client-monthly-report-focus,
+  .progress-section-toggle:hover, .exercise-skip-button[aria-pressed="true"]) {
+  color: var(--ink); background: var(--surface-soft); border-color: var(--line);
+}
+:root body.dashboard-page .client-home-checkin-toggle:is(:hover, :focus-visible) {
+  color: var(--danger); background: var(--reminder-surface); border-color: var(--reminder-border);
+}
+
+/* Public website, conversion forms, and policy pages use the same color roles. */
+:root body:is(.homepage, .questionnaire-page) :is(.site-header, .credential-card,
+  .coaching-options-footer, .contact, .contact-form, .tile-light,
+  .form-section, .form-submit-panel) {
+  color: var(--ink);
+  background: var(--surface);
+  border-color: var(--line);
+}
+:root body:is(.homepage, .questionnaire-page, .login-page) :is(
+  .login-link, .online-link, .login-link:visited, .online-link:visited,
+  .login-link.is-current, .online-link.is-current) { color: var(--secondary-accent); }
+:root body.homepage :is(.coaching-option-card strong, .coaching-options-footer strong,
+  .credential-card strong, .training-tile:not(.tile-photo) span) { color: var(--ink); }
+:root body.homepage :is(.photo-story-button, .coaching-option-deck-arrow,
+  .coaching-option-deck-dot) {
+  color: var(--ink); background: var(--surface-soft); border-color: var(--line);
+}
+:root body.homepage :is(.coaching-option-deck-dot.is-active, .photo-story-dot.is-active) {
+  color: var(--brand-primary-ink); background: var(--lime); border-color: var(--lime);
+}
+:root body.homepage .photo-story-dot { border-color: var(--muted); }
+:root body.homepage .coaching-option-card-featured {
+  background: var(--secondary-surface); border-color: var(--secondary-border);
+  box-shadow: inset 0 5px 0 var(--secondary-accent), var(--shadow-soft);
+}
+:root body.homepage .coaching-option-card-featured .coaching-option-icon {
+  color: var(--secondary-accent); background: var(--secondary-surface); border-color: var(--secondary-border);
+}
+:root body.homepage .coaching-options-footer {
+  background: var(--reminder-surface); border-color: var(--reminder-border);
+}
+:root body.homepage .coaching-options-footer strong { color: var(--danger); }
+:root body.homepage .tile-lime { color: var(--ink); background: var(--selected-surface); }
+:root body.homepage .tile-lime span { color: var(--lime); }
+:root body.homepage.public-page .hero-meta span { color: var(--ink); border-color: var(--control-border); }
+:root body.homepage.public-page .connected-coaching {
+  color: var(--ink); background: var(--secondary-surface);
+}
+:root body.homepage.public-page .connected-coaching :is(.kicker, .button-ghost) { color: var(--secondary-accent); }
+:root body.homepage.public-page .connected-coaching .button-ghost { border-color: var(--secondary-border); }
+:root body.homepage.public-page .hero .kicker { color: var(--lime); }
+:root body.homepage #start .contact .button-dark {
+  color: var(--brand-primary-ink); background: var(--lime); border-color: var(--lime);
+}
+:root body:is(.homepage, .questionnaire-page) :is(.platform-note, footer, .public-footer) { color: var(--muted); }
+:root body:is(.homepage, .questionnaire-page) :is(footer a, .public-footer a,
+  .public-privacy-note a, .public-pathway li > span, .public-form-intro span) { color: var(--secondary-accent); }
+:root body.questionnaire-page #setup-note { color: var(--muted); background: var(--surface-soft); }
+:root body.questionnaire-page .form-section fieldset { color: var(--ink); border-color: var(--line); }
+:root body.questionnaire-page .form-submit-panel {
+  border-top-color: var(--lime);
+}
+:root body.fwb-document-page a { color: var(--secondary-accent); }
+:root body.fwb-consent-page #status { color: var(--danger); }
+
+/* Desktop navigation retains its sidebar layout; mobile docks keep their own geometry. */
+@media (min-width: 901px) {
+  :root body.client-dashboard-page .client-dashboard-tabs,
+  :root body.coach-admin-page .coach-admin-sidebar {
+    background: var(--surface);
+    border-color: var(--line);
+    box-shadow: var(--shadow-soft);
+  }
+  :root body.coach-admin-page .coach-admin-sidebar {
+    background: var(--surface) !important;
+    box-shadow: var(--shadow-soft) !important;
+  }
+  :root body:is(.client-dashboard-page, .coach-admin-page) :is(
+    .client-dashboard-tab:hover, .admin-tab:hover) {
+    color: var(--ink); background: var(--surface-soft);
+  }
+  :root body:is(.client-dashboard-page, .coach-admin-page) :is(
+    .client-dashboard-tab.is-active, .admin-tab.is-active) {
+    color: var(--lime); background: var(--selected-surface);
+  }
+}
+
+/* Coach and client grouped loggers have their own legacy token sets. */
+:root body.coach-workout-log-page,
+:root body.dashboard-page .coach-workout-group-shell {
+  --coach-grouped-ink: var(--ink);
+  --coach-grouped-muted: var(--muted);
+  --coach-grouped-line: var(--line);
+  --coach-grouped-paper: var(--surface);
+  --coach-grouped-cream: var(--surface-soft);
+  --coach-grouped-lime: var(--lime);
+  --coach-grouped-blue: var(--secondary-accent);
+  --coach-grouped-gold: var(--secondary-accent);
+  color-scheme: dark;
+}
+:root body.dashboard-page :is(.custom-workout-exercise-dialog,
+  .custom-workout-grouped-finish-overlay, .custom-workout-grouped-finish-dialog,
+  [data-custom-workout-grouped="true"]) :is(input, select, button) { color-scheme: dark; }
+:root body.dashboard-page :is(.custom-workout-grouped-finish-overlay,
+  .custom-workout-grouped-finish-heading strong) { color: var(--ink); color-scheme: dark; }
+:root body.dashboard-page :is(.custom-workout-grouped-finish-dialog,
+  .custom-workout-exercise-dialog > header button,
+  .custom-workout-grouped-finish-heading button,
+  .custom-workout-grouped-finish-choices button) {
+  color: var(--ink); background: var(--surface-soft); border-color: var(--line);
+}
+:root body.dashboard-page .custom-workout-grouped-finish-dialog > p { color: var(--muted); }
+:root body.dashboard-page :is(.custom-workout-grouped-finish-heading small,
+  .coach-workout-grouped-card-heading p) { color: var(--secondary-accent); }
+:root body.dashboard-page :is(.coach-workout-grouped-section.is-warm-up,
+  .coach-workout-grouped-row.is-warm-up .coach-workout-grouped-code) {
+  color: var(--secondary-accent); background: var(--secondary-surface); border-color: var(--secondary-border);
+}
+:root body.dashboard-page .coach-workout-grouped-code {
+  color: var(--lime); background: var(--selected-surface); border-color: var(--line);
+}
+:root body.coach-workout-log-page .coach-workout-inline-rest .coach-workout-inline-rest-toggle {
+  color: var(--secondary-accent); background: var(--surface-soft); border-color: var(--line);
+}
+:root body.coach-workout-log-page :is(.coach-workout-group-name-row > strong,
+  .coach-workout-grouped-notes label > span, .coach-workout-copy-button:not(:disabled):not([data-coach-copy-weights="pr"]),
+  .coach-workout-card-format > button[aria-pressed="true"],
+  .coach-workout-grouped-actions button:first-child),
+:root body.dashboard-page :is(.custom-workout-grouped-finish-choices button:last-child,
+  .custom-workout-exercise-options button.is-recommended) {
+  color: var(--brand-primary-ink); background: var(--lime); border-color: var(--lime);
+}
+:root body.dashboard-page .coach-workout-group-name-row > button {
+  color: var(--danger); background: var(--reminder-surface); border-color: var(--reminder-border);
+}
+:root body.dashboard-page .client-settings-panel {
+  --client-settings-accent: var(--secondary-accent);
+  --client-settings-line: var(--line);
+}
+:root body.homepage #start .contact .button-dark:focus-visible { outline-color: var(--lime); }
+
+/* Exercise photos and instructions keep their page text readable in every view. */
+:root body.dashboard-page .exercise-media-dialog :is(header, [data-exercise-media-close]) {
+  color: var(--ink); background: var(--surface-soft); border-color: var(--line);
+}
+:root body.dashboard-page .exercise-media-dialog header small { color: var(--secondary-accent); }
+:root body.dashboard-page .exercise-media-dialog-instructions,
+:root body.dashboard-page .exercise-media-dialog-instructions :is(p, h3, li) { color: var(--ink); }
+:root body.dashboard-page .exercise-media-dialog [data-exercise-media-caption] { color: var(--muted); }
+:root body.dashboard-page .exercise-media-dialog-stage { background: var(--canvas); }
+:root body.dashboard-page .exercise-media-dialog :is([data-exercise-media-video-toggle], [data-exercise-media-video-link]) {
+  color: var(--brand-primary-ink); background: var(--lime); border-color: var(--lime);
+}
+:root body.dashboard-page .exercise-media-info {
+  color: var(--ink); background: var(--surface-soft); border-color: var(--line);
+}
+:root body.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-code {
+  color: var(--lime); background: var(--selected-surface); border-color: var(--line);
+}
+:root body.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-section:is(
+  .is-warmup, .is-warm-up, [data-section="warmup"], [data-kind="warmup"],
+  [data-custom-grouped-section="warmup"], [data-custom-workout-grouped-section="warmup"]) {
+  color: var(--ink); background: var(--surface-soft); border-left-color: var(--secondary-accent);
+}
+:root body.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-section:is(
+  .is-warmup, .is-warm-up, [data-section="warmup"], [data-kind="warmup"],
+  [data-custom-grouped-section="warmup"], [data-custom-workout-grouped-section="warmup"]) .custom-workout-grouped-code {
+  color: var(--secondary-accent); background: var(--secondary-surface); border-color: var(--secondary-border);
+}

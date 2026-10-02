@@ -2499,13 +2499,17 @@ function exerciseMedia(exercise = {}) {
   return { imageUrl, motionUrl, demoUrl, instructions };
 }
 
+function isBrandedExerciseImage(value) {
+  return /\/exercise-images\/approved\/\d{4}-\d{2}-\d{2}\/(?:webp-(?:480|768)|png)\//i.test(String(value || ""));
+}
+
 function exerciseMediaButtonMarkup(exercise, options = {}) {
   const { imageUrl, motionUrl, demoUrl, instructions } = exerciseMedia(exercise);
   if (!imageUrl) return "";
   const { fullUrl, thumbnailUrl } = responsiveExerciseImageUrls(imageUrl);
   const name = String(exercise.name || "Exercise").trim() || "Exercise";
   const compact = options.compact ? " exercise-media-button-compact" : "";
-  const brandedCrop = /\/exercise-images\/approved\/\d{4}-\d{2}-\d{2}\/(?:webp-(?:480|768)|png)\//i.test(thumbnailUrl)
+  const brandedCrop = isBrandedExerciseImage(thumbnailUrl)
     ? " exercise-media-button-branded-crop" : "";
   return `
     <button
@@ -2627,6 +2631,7 @@ function renderExerciseMediaDialog(dialog, showVideo = false) {
   if (!stage || !staticUrl) return;
 
   const shouldShowVideo = Boolean(showVideo && videoUrl);
+  stage.classList.toggle("is-branded-photo", !shouldShowVideo && isBrandedExerciseImage(staticUrl));
   dialog.dataset.exerciseMediaShowingVideo = String(shouldShowVideo);
   if (toggle) toggle.hidden = !videoUrl;
   if (videoLink) {

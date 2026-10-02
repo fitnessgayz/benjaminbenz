@@ -37,9 +37,9 @@ test("uses the 480w branded card in lists and keeps the 768w card for the full d
   assert.match(portal, /data-exercise-media-static="\$\{escapeHtml\(fullUrl\)\}"/);
 });
 
-test("crops branded list thumbnails to the Start and End photo panels", () => {
+test("crops branded list thumbnails to the Start and End photos without the pale rim", () => {
   assert.match(portal, /exercise-media-button-branded-crop/);
-  assert.match(css, /\.exercise-media-button-branded-crop\s*\{[\s\S]*aspect-ratio: 1\.16 \/ 1/);
+  assert.match(css, /\.exercise-media-button-branded-crop\s*\{[\s\S]*aspect-ratio: 176 \/ 117/);
   assert.match(css, /\.exercise-media-button-branded-crop > img\s*\{[\s\S]*object-position: left center/);
   assert.match(workoutCss, /\.workout-preview-exercise-media \.exercise-media-button-branded-crop/);
 });
@@ -73,4 +73,42 @@ test("uses branded exercise cards in the editable workout-plan list", () => {
 
 test("keeps suggested-target UI out of the visible exercise card", () => {
   assert.match(css, /\.workout-progression-group-slot,[\s\S]*\[data-workout-progression\][\s\S]*display: none !important/);
+});
+
+test("photo framing applies only to branded stills and clears for video and ordinary images", () => {
+  const helper = portal.slice(portal.indexOf("function isBrandedExerciseImage("), portal.indexOf("function exerciseMediaButtonMarkup("));
+  const renderer = portal.slice(portal.indexOf("function renderExerciseMediaDialog("), portal.indexOf("function openExerciseMedia("));
+  const render = Function("trustedExerciseImageUrl", "trustedExerciseMotionUrl", "exerciseVideoUrl", "document",
+    `${helper}\n${renderer}\nreturn renderExerciseMediaDialog;`)(
+    (url) => url, (url) => url, () => "", {
+      createElement: (tag) => ({ tag, setAttribute() {} }),
+    });
+  let cropped = false;
+  let media;
+  const stage = {
+    classList: { toggle: (name, value) => { assert.equal(name, "is-branded-photo"); cropped = value; } },
+    replaceChildren: (node) => { media = node; },
+  };
+  const dialog = {
+    dataset: {
+      exerciseMediaName: "Shoulder press",
+      exerciseMediaStatic: "https://example.com/exercise-images/approved/2026-09-29/webp-768/shoulder-press.webp",
+      exerciseMediaVideo: "https://example.com/demo.mp4",
+    },
+    querySelector: (selector) => selector === "[data-exercise-media-stage]" ? stage : null,
+  };
+  render(dialog, false);
+  assert.equal(cropped, true);
+  assert.equal(media.tag, "img");
+  assert.equal(media.alt, "Shoulder press start and end positions");
+  render(dialog, true);
+  assert.equal(cropped, false);
+  assert.equal(media.tag, "video");
+  assert.equal(media.controls, true);
+  render(dialog, false);
+  assert.equal(cropped, true);
+  dialog.dataset.exerciseMediaStatic = "https://example.com/images/exercises/plain-photo.jpg";
+  render(dialog, false);
+  assert.equal(cropped, false);
+  assert.equal(media.tag, "img");
 });

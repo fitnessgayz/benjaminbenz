@@ -14,10 +14,10 @@ test("installed apps keep distinct product identities and useful launch shortcut
   assert.equal(coach.name, "FWB Coach");
   assert.notEqual(client.id, coach.id);
   assert.notEqual(client.start_url, coach.start_url);
-  assert.equal(client.background_color, "#F2F3EE");
-  assert.equal(coach.background_color, "#F2F3EE");
-  assert.equal(client.theme_color, "#080A08");
-  assert.equal(coach.theme_color, "#080A08");
+  assert.equal(client.background_color, "#050806");
+  assert.equal(coach.background_color, "#050806");
+  assert.equal(client.theme_color, "#050806");
+  assert.equal(coach.theme_color, "#050806");
   assert.ok(client.shortcuts.length >= 3);
   assert.ok(coach.shortcuts.length >= 3);
 });
@@ -56,18 +56,18 @@ test("auth, support, and privacy surfaces preserve install-to-launch identity", 
   }
 });
 
-test("shared app styles finish the cascade with canonical tokens and focus treatment", () => {
+test("shared app styles use the approved palette beneath the color bridges", () => {
   const css = read("css/fwb-design-system.css");
   for (const [token, value] of Object.entries({
-    "brand-primary": "#D6FF35",
-    ink: "#171A17",
-    "ink-deep": "#080A08",
-    canvas: "#F2F3EE",
-    "surface-soft": "#F7F8F4",
-    surface: "#FFFFFF",
-    "text-muted": "#666B62",
-    border: "#DCDED7",
-    focus: "#718A18",
+    "brand-primary": "#A3FF12",
+    ink: "#F2F0E8",
+    "ink-deep": "#050806",
+    canvas: "#050806",
+    "surface-soft": "#112219",
+    surface: "#0B1811",
+    "text-muted": "#A8B9AC",
+    border: "#263C2E",
+    focus: "#A3FF12",
   })) {
     assert.match(css, new RegExp(`--${token}: ${value};`, "i"));
   }
@@ -75,7 +75,8 @@ test("shared app styles finish the cascade with canonical tokens and focus treat
 
   for (const file of ["client-dashboard.html", "coach-admin.html"]) {
     const links = [...read(file).matchAll(/<link[^>]+rel="stylesheet"[^>]+href="([^"]+)"[^>]*>/g)];
-    assert.match(links.at(-1)[1], /fwb-design-system\.css\?v=web-app-brand-1/);
+    assert.ok(links.some((link) => /fwb-design-system\.css\?v=web-app-brand-1/.test(link[1])));
+    assert.match(links.at(-1)[1], /fwb-dark-theme\.css\?v=deep-forest-3/);
   }
 });
 

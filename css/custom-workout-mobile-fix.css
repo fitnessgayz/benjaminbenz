@@ -2894,7 +2894,7 @@ body.dashboard-page.custom-workout-grouped-finish-open {
 /* Branded masters include a text panel on the right. Exercise rows already
    render that information, so frame only the two Start/End photo panels here. */
 .exercise-media-button-branded-crop {
-  aspect-ratio: 1.16 / 1;
+  aspect-ratio: 176 / 117;
 }
 
 .exercise-media-button-branded-crop > img {
@@ -3554,3 +3554,33 @@ body.dashboard-page.custom-workout-grouped-finish-open {
   text-transform: none;
 }
 .dashboard-page .workout-finish-issues p { margin: 8px 0 0; }
+
+/* Approved branded masters share a 768×334 layout. Frame the photo area
+   (x=32, y=50, width=352, height=234), excluding the printed title and pale rim.
+   Percentage geometry also covers the proportional 480w thumbnails. */
+.exercise-media-button-branded-crop,
+.exercise-media-dialog-stage.is-branded-photo {
+  --exercise-photo-image-width: 218.182%;
+  --exercise-photo-image-height: 142.735%;
+  --exercise-photo-image-left: -9.091%;
+  --exercise-photo-image-top: -21.368%;
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 176 / 117;
+}
+:is(.exercise-media-button-branded-crop, .exercise-media-dialog-stage.is-branded-photo) > img {
+  position: absolute;
+  left: var(--exercise-photo-image-left);
+  top: var(--exercise-photo-image-top);
+  width: var(--exercise-photo-image-width);
+  max-width: none;
+  height: var(--exercise-photo-image-height);
+  max-height: none;
+  object-fit: fill;
+}
+.exercise-media-dialog-stage.is-branded-photo {
+  width: min(100%, 640px, calc(58dvh * 1.5042735));
+  min-height: 0;
+  justify-self: center;
+  border-radius: 12px;
+}

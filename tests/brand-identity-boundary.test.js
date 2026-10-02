@@ -6,19 +6,19 @@ const test = require("node:test");
 const root = path.resolve(__dirname, "..");
 const read = (file) => fs.readFileSync(path.join(root, file), "utf8");
 
-test("publishes canonical cross-platform tokens with migration aliases", () => {
+test("publishes the approved web palette with migration aliases", () => {
   const css = read("css/fwb-design-system.css");
   const values = {
-    "brand-primary": "#D6FF35",
-    "brand-primary-ink": "#171A17",
-    ink: "#171A17",
-    "ink-deep": "#080A08",
-    canvas: "#F2F3EE",
-    "surface-soft": "#F7F8F4",
-    surface: "#FFFFFF",
-    "text-muted": "#666B62",
-    border: "#DCDED7",
-    focus: "#718A18",
+    "brand-primary": "#A3FF12",
+    "brand-primary-ink": "#101900",
+    ink: "#F2F0E8",
+    "ink-deep": "#050806",
+    canvas: "#050806",
+    "surface-soft": "#112219",
+    surface: "#0B1811",
+    "text-muted": "#A8B9AC",
+    border: "#263C2E",
+    focus: "#A3FF12",
   };
 
   for (const [name, value] of Object.entries(values)) {
@@ -37,14 +37,14 @@ test("client and coach manifests use approved installed identities", () => {
   assert.equal(client.id, "/client-dashboard.html");
   assert.equal(client.name, "FWB Training");
   assert.equal(client.short_name, "FWB Training");
-  assert.equal(client.background_color, "#F2F3EE");
-  assert.equal(client.theme_color, "#080A08");
+  assert.equal(client.background_color, "#050806");
+  assert.equal(client.theme_color, "#050806");
   assert.equal(coach.name, "FWB Coach");
-  assert.equal(coach.background_color, "#F2F3EE");
-  assert.equal(coach.theme_color, "#080A08");
+  assert.equal(coach.background_color, "#050806");
+  assert.equal(coach.theme_color, "#050806");
   assert.deepEqual(client.icons.map((icon) => icon.src), coach.icons.map((icon) => icon.src));
   assert.deepEqual(client.shortcuts.map(({ name }) => name), ["Start training", "View progress", "Message your coach"]);
-  assert.deepEqual(coach.shortcuts.map(({ name }) => name), ["Coach home", "Coach inbox", "Manage clients", "Log a workout"]);
+  assert.deepEqual(coach.shortcuts.map(({ name }) => name), ["Coach home", "Coach inbox", "Manage clients", "Log a workout", "Exercise library"]);
 });
 
 test("client auth and onboarding stay inside the FWB Training identity", () => {
@@ -75,7 +75,7 @@ test("installed entry pages expose the same product names and deep-ink browser c
     const html = read(file);
     assert.match(html, /apple-mobile-web-app-title" content="FWB Coach"/);
     assert.match(html, /application-name" content="FWB Coach"/);
-    assert.match(html, /theme-color" content="#080A08"/);
+    assert.match(html, /theme-color" content="#050806"/);
   }
 
   assert.match(read("coach-admin.html"), /rel="manifest" href="\/coach\.webmanifest"/);
@@ -85,8 +85,8 @@ test("installed entry pages expose the same product names and deep-ink browser c
 
   const publicManifest = JSON.parse(read("site.webmanifest"));
   assert.equal(publicManifest.name, "Fitness with Benjamin");
-  assert.equal(publicManifest.background_color, "#F2F3EE");
-  assert.equal(publicManifest.theme_color, "#080A08");
+  assert.equal(publicManifest.background_color, "#050806");
+  assert.equal(publicManifest.theme_color, "#050806");
 });
 
 test("AI-facing pages use FWB Training Assistant without claiming the coach product name", () => {
