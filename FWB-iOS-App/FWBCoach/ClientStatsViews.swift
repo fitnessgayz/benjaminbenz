@@ -14,7 +14,9 @@ struct ClientMeasurementEntry: Decodable, Identifiable, Equatable {
     let bodyweight: Double?
     let bodyfat: Double?
     let muscleMass: Double?
+    let leanMass: Double?
     let measurements: [String: Double]
+    let measurementValues: [String: AnyJSON]
     let goalNote: String
     let source: String
     let sourceVersion: Int
@@ -27,6 +29,7 @@ struct ClientMeasurementEntry: Decodable, Identifiable, Equatable {
         case bodyweight
         case bodyfat
         case muscleMass = "muscle_mass"
+        case leanMass = "lean_mass"
         case measurements
         case goalNote = "goal_note"
         case source
@@ -42,43 +45,77 @@ struct ClientMeasurementEntry: Decodable, Identifiable, Equatable {
         bodyweight = try container.decodeIfPresent(Double.self, forKey: .bodyweight)
         bodyfat = try container.decodeIfPresent(Double.self, forKey: .bodyfat)
         muscleMass = try container.decodeIfPresent(Double.self, forKey: .muscleMass)
-        // The web client stores unfilled tape-measurement fields as JSON null.
-        // Treat those as absent values while continuing to reject genuinely
-        // malformed (for example, string-valued) measurements.
-        let nullableMeasurements = try container.decodeIfPresent(
-            [String: Double?].self,
-            forKey: .measurements
+        leanMass = try container.decodeIfPresent(Double.self, forKey: .leanMass)
+        // Web records also contain nested DEXA metadata. Keep the complete JSON
+        // for round-trip saves, and expose only numbers to measurement charts.
+        measurementValues = try container.decodeIfPresent(
+            [String: AnyJSON].self, forKey: .measurements
         ) ?? [:]
-        measurements = nullableMeasurements.compactMapValues { $0 }
+        let numericValues = measurementValues.compactMapValues { value -> Double? in
+            switch value {
+            case .integer(let number): return Double(number)
+            case .double(let number): return number
+            default: return nil
+            }
+        }
+        // Unknown metadata may have any JSON shape; actual tape fields must
+        // remain numeric or null so corrupt entries never look like valid data.
+        for key in ["chest", "waist", "hips", "arm", "arms", "thigh", "thighs"] {
+            if let value = measurementValues[key], value != .null, numericValues[key] == nil {
+                throw DecodingError.typeMismatch(Double.self, .init(
+                    codingPath: container.codingPath + [CodingKeys.measurements],
+                    debugDescription: "Tape measurements must be numbers or null."
+                ))
+            }
+        }
+        measurements = numericValues
         goalNote = try container.decodeIfPresent(String.self, forKey: .goalNote) ?? ""
         source = try container.decodeIfPresent(String.self, forKey: .source) ?? "legacy"
         sourceVersion = try container.decodeIfPresent(Int.self, forKey: .sourceVersion) ?? 0
         updatedAt = ContinuityDateCoding.date(from: try container.decodeIfPresent(String.self, forKey: .updatedAt))
     }
 
-    init(id: UUID, mutation: PendingMeasurementMutation) {
+    init(id: UUID, mutation: PendingMeasurementMutation, preserving existing: ClientMeasurementEntry? = nil) {
         self.id = id
         clientEmail = mutation.clientEmail
         entryDate = mutation.entryDate
         bodyweight = mutation.bodyweight
         bodyfat = mutation.bodyfat
         muscleMass = mutation.muscleMass
+        leanMass = existing?.leanMass
         measurements = mutation.measurements
+        measurementValues = Self.mergedMeasurements(mutation.measurements, preserving: existing)
         goalNote = mutation.goalNote
         source = ContinuitySync.source
         sourceVersion = ContinuitySync.sourceVersion
         updatedAt = mutation.clientUpdatedAt
     }
+
+    static func mergedMeasurements(
+        _ edits: [String: Double], preserving existing: ClientMeasurementEntry?
+    ) -> [String: AnyJSON] {
+        (existing?.measurementValues ?? [:]).merging(edits.mapValues(AnyJSON.double)) { _, edited in edited }
+    }
 }
 
-private struct ClientMeasurementPayload: Encodable {
+struct ClientMeasurementPayload: Encodable {
     let clientEmail: String
     let entryDate: String
     let bodyweight: Double?
     let bodyfat: Double?
     let muscleMass: Double?
-    let measurements: [String: Double]
+    let measurements: [String: AnyJSON]
     let goalNote: String
+
+    init(_ mutation: PendingMeasurementMutation, preserving existing: ClientMeasurementEntry?) {
+        clientEmail = mutation.clientEmail
+        entryDate = mutation.entryDate
+        bodyweight = mutation.bodyweight
+        bodyfat = mutation.bodyfat
+        muscleMass = mutation.muscleMass
+        measurements = ClientMeasurementEntry.mergedMeasurements(mutation.measurements, preserving: existing)
+        goalNote = mutation.goalNote
+    }
 
     enum CodingKeys: String, CodingKey {
         case clientEmail = "client_email"
@@ -91,27 +128,27 @@ private struct ClientMeasurementPayload: Encodable {
     }
 }
 
-private struct ClientMeasurementSyncPayload: Encodable {
+struct ClientMeasurementSyncPayload: Encodable {
     let mutationID: UUID
     let clientEmail: String
     let entryDate: String
     let bodyweight: Double?
     let bodyfat: Double?
     let muscleMass: Double?
-    let measurements: [String: Double]
+    let measurements: [String: AnyJSON]
     let goalNote: String
     let source = ContinuitySync.source
     let sourceVersion = ContinuitySync.sourceVersion
     let clientUpdatedAt: String
 
-    init(_ mutation: PendingMeasurementMutation) {
+    init(_ mutation: PendingMeasurementMutation, preserving existing: ClientMeasurementEntry?) {
         mutationID = mutation.id
         clientEmail = mutation.clientEmail
         entryDate = mutation.entryDate
         bodyweight = mutation.bodyweight
         bodyfat = mutation.bodyfat
         muscleMass = mutation.muscleMass
-        measurements = mutation.measurements
+        measurements = ClientMeasurementEntry.mergedMeasurements(mutation.measurements, preserving: existing)
         goalNote = mutation.goalNote
         clientUpdatedAt = ContinuityDateCoding.string(from: mutation.clientUpdatedAt)
     }
@@ -322,6 +359,7 @@ final class ClientStatsStore: ObservableObject {
             state = wasLoaded ? .loaded : .idle
             return
         } catch {
+            ErrorReporting.capture(error, operation: .loadClientStats)
             Self.logger.error("Stats load failed: \(String(describing: error), privacy: .private)")
             let isOffline = ClientStatsErrorClassifier.isConnectivityFailure(error)
             let failureMessage = isOffline
@@ -357,7 +395,7 @@ final class ClientStatsStore: ObservableObject {
         Self.set(draft.arm, for: "arm", in: &detailMeasurements)
         Self.set(draft.thigh, for: "thigh", in: &detailMeasurements)
 
-        let payload = ClientMeasurementPayload(
+        let mutation = PendingMeasurementMutation(
             clientEmail: normalizedEmail,
             entryDate: entryDate,
             bodyweight: draft.bodyweight ?? existing?.bodyweight,
@@ -366,16 +404,7 @@ final class ClientStatsStore: ObservableObject {
             measurements: detailMeasurements,
             goalNote: draft.note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
                 ? (existing?.goalNote ?? "")
-                : draft.note.trimmingCharacters(in: .whitespacesAndNewlines)
-        )
-        let mutation = PendingMeasurementMutation(
-            clientEmail: normalizedEmail,
-            entryDate: entryDate,
-            bodyweight: payload.bodyweight,
-            bodyfat: payload.bodyfat,
-            muscleMass: payload.muscleMass,
-            measurements: payload.measurements,
-            goalNote: payload.goalNote,
+                : draft.note.trimmingCharacters(in: .whitespacesAndNewlines),
             expectedRemoteUpdatedAt: existing?.updatedAt
         )
 
@@ -398,6 +427,7 @@ final class ClientStatsStore: ObservableObject {
             return false
         } catch {
             guard ClientStatsErrorClassifier.isConnectivityFailure(error) else {
+                ErrorReporting.capture(error, operation: .saveClientMeasurement)
                 Self.logger.error("Measurement save failed: \(String(describing: error), privacy: .private)")
                 message = "Your measurements could not be saved. Try again. If this continues, contact support."
                 return false
@@ -405,28 +435,36 @@ final class ClientStatsStore: ObservableObject {
 
             do {
                 try await ContinuityOutbox.shared.enqueue(mutation)
-                let local = ClientMeasurementEntry(id: existing?.id ?? mutation.id, mutation: mutation)
+                let local = ClientMeasurementEntry(id: existing?.id ?? mutation.id, mutation: mutation, preserving: existing)
                 measurements.removeAll { $0.id == local.id || $0.entryDate == local.entryDate }
                 measurements.append(local)
                 measurements.sort { $0.entryDate > $1.entryDate }
                 message = "Measurements saved on this iPhone. They’ll sync when you’re back online."
                 return true
             } catch {
+                ErrorReporting.capture(error, operation: .saveClientMeasurementLocally)
                 message = "Your measurements could not be secured on this iPhone. Try again."
                 return false
             }
         }
     }
 
-    private func loadMeasurements(email: String) async throws -> [ClientMeasurementEntry] {
+    private func loadMeasurements(email: String, entryDate: String? = nil) async throws -> [ClientMeasurementEntry] {
         if let measurementLoaderOverride {
-            return try await measurementLoaderOverride(email)
+            let rows = try await measurementLoaderOverride(email)
+            return rows.filter { entryDate == nil || $0.entryDate == entryDate }
         }
 
-        return try await client
+        let request = client
             .from("client_progress")
-            .select("id,client_email,entry_date,bodyweight,bodyfat,muscle_mass,measurements,goal_note,source,source_version,updated_at")
+            .select("id,client_email,entry_date,bodyweight,bodyfat,muscle_mass,lean_mass,measurements,goal_note,source,source_version,updated_at")
             .eq("client_email", value: email)
+        // Saving an older date must still read its metadata even when it falls
+        // outside the latest 365 records shown in Stats.
+        if let entryDate {
+            _ = request.eq("entry_date", value: entryDate)
+        }
+        return try await request
             .order("entry_date", ascending: false)
             .limit(365)
             .execute()
@@ -464,6 +502,7 @@ final class ClientStatsStore: ObservableObject {
                 } catch {
                     signedURL = nil
                     signedURLFailureCount += 1
+                    ErrorReporting.capture(error, operation: .signProgressPhotoURL)
                     Self.logger.error("Progress photo URL creation failed: \(String(describing: error), privacy: .private)")
                 }
                 signedPhotos.append(ClientProgressPhoto(record: record, signedURL: signedURL))
@@ -478,6 +517,7 @@ final class ClientStatsStore: ObservableObject {
         } catch is CancellationError {
             return
         } catch {
+            ErrorReporting.capture(error, operation: .loadProgressPhotos)
             Self.logger.error("Progress photos load failed: \(String(describing: error), privacy: .private)")
             photoLoadError = ClientStatsErrorClassifier.isConnectivityFailure(error)
                 ? "Progress photos are unavailable while you’re offline."
@@ -491,6 +531,7 @@ final class ClientStatsStore: ObservableObject {
             do {
                 _ = try await synchronizeMeasurement(mutation)
             } catch {
+                ErrorReporting.capture(error, operation: .syncClientMeasurement)
                 break
             }
         }
@@ -501,9 +542,9 @@ final class ClientStatsStore: ObservableObject {
             return try await measurementSynchronizerOverride(mutation)
         }
 
-        let currentRows = try await loadMeasurements(email: mutation.clientEmail)
-        if let remote = currentRows.first(where: { $0.entryDate == mutation.entryDate }),
-           let remoteUpdatedAt = remote.updatedAt,
+        let currentRows = try await loadMeasurements(email: mutation.clientEmail, entryDate: mutation.entryDate)
+        let remote = currentRows.first(where: { $0.entryDate == mutation.entryDate })
+        if let remoteUpdatedAt = remote?.updatedAt,
            remoteUpdatedAt > mutation.clientUpdatedAt,
            remoteUpdatedAt != mutation.expectedRemoteUpdatedAt {
             try? await ContinuityOutbox.shared.removeMeasurement(
@@ -517,25 +558,17 @@ final class ClientStatsStore: ObservableObject {
         do {
             saved = try await client
                 .from("client_progress")
-                .upsert(ClientMeasurementSyncPayload(mutation), onConflict: "client_email,entry_date")
-                .select("id,client_email,entry_date,bodyweight,bodyfat,muscle_mass,measurements,goal_note,source,source_version,updated_at")
+                .upsert(ClientMeasurementSyncPayload(mutation, preserving: remote), onConflict: "client_email,entry_date")
+                .select("id,client_email,entry_date,bodyweight,bodyfat,muscle_mass,lean_mass,measurements,goal_note,source,source_version,updated_at")
                 .single()
                 .execute()
                 .value
         } catch {
-            let legacy = ClientMeasurementPayload(
-                clientEmail: mutation.clientEmail,
-                entryDate: mutation.entryDate,
-                bodyweight: mutation.bodyweight,
-                bodyfat: mutation.bodyfat,
-                muscleMass: mutation.muscleMass,
-                measurements: mutation.measurements,
-                goalNote: mutation.goalNote
-            )
+            let legacy = ClientMeasurementPayload(mutation, preserving: remote)
             saved = try await client
                 .from("client_progress")
                 .upsert(legacy, onConflict: "client_email,entry_date")
-                .select("id,client_email,entry_date,bodyweight,bodyfat,muscle_mass,measurements,goal_note")
+                .select("id,client_email,entry_date,bodyweight,bodyfat,muscle_mass,lean_mass,measurements,goal_note")
                 .single()
                 .execute()
                 .value
@@ -604,9 +637,15 @@ final class ClientStatsStore: ObservableObject {
                         .value
                 }
 
-                let signedURL = try? await client.storage
-                    .from(progressPhotosBucket)
-                    .createSignedURL(path: path, expiresIn: 3_600)
+                let signedURL: URL?
+                do {
+                    signedURL = try await client.storage
+                        .from(progressPhotosBucket)
+                        .createSignedURL(path: path, expiresIn: 3_600)
+                } catch {
+                    ErrorReporting.capture(error, operation: .signProgressPhotoURL)
+                    signedURL = nil
+                }
                 photos.insert(ClientProgressPhoto(record: record, signedURL: signedURL), at: 0)
                 message = "Progress photo added."
                 return true
@@ -617,6 +656,7 @@ final class ClientStatsStore: ObservableObject {
         } catch is CancellationError {
             return false
         } catch {
+            ErrorReporting.capture(error, operation: .uploadProgressPhoto)
             message = "Your photo could not be uploaded. Check your connection and try again."
             return false
         }
@@ -664,6 +704,7 @@ private enum ProgressPhotoProcessor {
 private enum ClientStatsSheet: String, Identifiable {
     case measurement
     case photo
+    case dexa
 
     var id: String { rawValue }
 }
@@ -672,6 +713,7 @@ private enum ClientStatsMetric: String, CaseIterable, Identifiable {
     case bodyweight
     case bodyfat
     case muscleMass
+    case leanMass
     case waist
     case chest
 
@@ -682,6 +724,7 @@ private enum ClientStatsMetric: String, CaseIterable, Identifiable {
         case .bodyweight: "Body weight"
         case .bodyfat: "Body fat"
         case .muscleMass: "Muscle mass"
+        case .leanMass: "DEXA lean mass"
         case .waist: "Waist"
         case .chest: "Chest"
         }
@@ -692,6 +735,7 @@ private enum ClientStatsMetric: String, CaseIterable, Identifiable {
         case .bodyweight: "Weight"
         case .bodyfat: "Body fat"
         case .muscleMass: "Muscle"
+        case .leanMass: "Lean mass"
         case .waist: "Waist"
         case .chest: "Chest"
         }
@@ -699,7 +743,7 @@ private enum ClientStatsMetric: String, CaseIterable, Identifiable {
 
     var unit: String {
         switch self {
-        case .bodyweight, .muscleMass: "lb"
+        case .bodyweight, .muscleMass, .leanMass: "lb"
         case .bodyfat: "%"
         case .waist, .chest: "in"
         }
@@ -710,6 +754,7 @@ private enum ClientStatsMetric: String, CaseIterable, Identifiable {
         case .bodyweight: entry.bodyweight
         case .bodyfat: entry.bodyfat
         case .muscleMass: entry.muscleMass
+        case .leanMass: entry.leanMass
         case .waist: entry.measurements["waist"]
         case .chest: entry.measurements["chest"]
         }
@@ -729,17 +774,20 @@ struct ClientStatsView: View {
     let account: SignedInAccount
 
     @StateObject private var store: ClientStatsStore
+    @StateObject private var dexaStore: ClientDexaStore
     @State private var selectedMetric: ClientStatsMetric = .bodyweight
     @State private var presentedSheet: ClientStatsSheet?
 
     init(account: SignedInAccount) {
         self.account = account
         _store = StateObject(wrappedValue: ClientStatsStore())
+        _dexaStore = StateObject(wrappedValue: ClientDexaStore(accountID: account.id, email: account.email))
     }
 
-    init(account: SignedInAccount, store: ClientStatsStore) {
+    init(account: SignedInAccount, store: ClientStatsStore, dexaStore: ClientDexaStore? = nil) {
         self.account = account
         _store = StateObject(wrappedValue: store)
+        _dexaStore = StateObject(wrappedValue: dexaStore ?? ClientDexaStore(accountID: account.id, email: account.email))
     }
 
     private var chartPoints: [ClientStatsPoint] {
@@ -758,7 +806,10 @@ struct ClientStatsView: View {
             Group {
                 switch store.state {
                 case .idle, .loading:
-                    ProgressView("Loading client stats…")
+                    FWBLoadingState(
+                        title: "Loading your stats",
+                        message: "Measurements and private progress records will appear here."
+                    )
                         .tint(.fwbLime)
                         .foregroundStyle(Color.fwbMuted)
                 case .offline(let message):
@@ -795,6 +846,12 @@ struct ClientStatsView: View {
                     } label: {
                         Label("Add progress photo", systemImage: "photo.badge.plus")
                     }
+
+                    Button {
+                        presentedSheet = .dexa
+                    } label: {
+                        Label("Upload DEXA scan", systemImage: "arrow.up.doc")
+                    }
                 } label: {
                     Image(systemName: "plus")
                         .font(FWBFont.headline.bold())
@@ -809,6 +866,12 @@ struct ClientStatsView: View {
                 MeasurementEntrySheet(account: account, store: store)
             case .photo:
                 ProgressPhotoEntrySheet(account: account, store: store)
+            case .dexa:
+                ClientDexaReportsView(
+                    store: dexaStore, measurementDates: Set(store.measurements.map(\.entryDate))
+                ) {
+                    await store.reload(email: account.email)
+                }
             }
         }
         .task {
@@ -831,7 +894,7 @@ struct ClientStatsView: View {
                         .font(FWBFont.title.weight(.bold))
                         .foregroundStyle(Color.fwbWarmWhite)
                         .fixedSize(horizontal: false, vertical: true)
-                    Text("Track body measurements and private progress photos over time.")
+                    Text("Track measurements, DEXA scans, and private progress photos over time.")
                         .font(FWBFont.subheadline)
                         .foregroundStyle(Color.fwbMuted)
                 }
@@ -847,6 +910,7 @@ struct ClientStatsView: View {
                         .overlay { RoundedRectangle(cornerRadius: 18).stroke(Color.fwbLine, lineWidth: 1) }
                 }
 
+                ClientDexaEntryCard { presentedSheet = .dexa }
                 progressPhotosSection
                 measurementChartSection
                 measurementHistorySection
@@ -1120,6 +1184,7 @@ private struct MeasurementHistoryRow: View {
         var parts: [String] = []
         if let value = entry.bodyweight { parts.append("\(value.formatted(.number.precision(.fractionLength(0...1)))) lb") }
         if let value = entry.bodyfat { parts.append("\(value.formatted(.number.precision(.fractionLength(0...1))))% body fat") }
+        if let value = entry.leanMass { parts.append("\(value.formatted(.number.precision(.fractionLength(0...1)))) lb lean mass") }
         if let value = entry.measurements["waist"] { parts.append("\(value.formatted(.number.precision(.fractionLength(0...1)))) in waist") }
         return parts.isEmpty ? "Detailed measurements saved" : parts.joined(separator: "  •  ")
     }
@@ -1525,7 +1590,10 @@ struct ClientStatsSmokeHarness: View {
 
     var body: some View {
         NavigationStack {
-            ClientStatsView(account: account, store: store)
+            ClientStatsView(
+                account: account, store: store,
+                dexaStore: ClientDexaStore(accountID: account.id, email: account.email, repository: ClientDexaAuditRepository())
+            )
         }
     }
 }

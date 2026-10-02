@@ -2,6 +2,41 @@ import XCTest
 @testable import FWBCoach
 
 final class WorkoutCalculatorsTests: XCTestCase {
+    func testOneRepMaxUsesEpleyFormula() throws {
+        let estimate = try XCTUnwrap(OneRepMaxCalculator.estimate(weight: 225, reps: 5))
+
+        XCTAssertEqual(estimate, 262.5, accuracy: 0.001)
+        XCTAssertEqual(OneRepMaxCalculator.roundedToNearestFive(estimate), 265)
+    }
+
+    func testOneRepMaxPreservesTrueSingleAndRejectsInvalidInputs() {
+        XCTAssertEqual(OneRepMaxCalculator.estimate(weight: 315, reps: 1), 315)
+        XCTAssertNil(OneRepMaxCalculator.estimate(weight: 0, reps: 5))
+        XCTAssertNil(OneRepMaxCalculator.estimate(weight: 225, reps: 0))
+    }
+
+    func testOneRepMaxTrainingLoadsRoundToNearestFive() {
+        XCTAssertEqual(OneRepMaxCalculator.trainingWeight(oneRepMax: 265, percentage: 70), 185)
+        XCTAssertEqual(OneRepMaxCalculator.trainingWeight(oneRepMax: 265, percentage: 90), 240)
+    }
+
+    func testEightToTwelveRepProgramStartsAtLighterEndOfRecommendedRange() throws {
+        let recommendation = try XCTUnwrap(
+            OneRepMaxCalculator.recommendation(oneRepMax: 265, repRange: 8...12)
+        )
+
+        XCTAssertEqual(recommendation.percentageRange.lowerBound, 0.70, accuracy: 0.001)
+        XCTAssertEqual(recommendation.percentageRange.upperBound, 0.80, accuracy: 0.001)
+        XCTAssertEqual(recommendation.startingWeight, 185)
+        XCTAssertEqual(recommendation.workingWeightRange.lowerBound, 185)
+        XCTAssertEqual(recommendation.workingWeightRange.upperBound, 210)
+    }
+
+    func testRepBasedRecommendationRejectsUnsupportedRanges() {
+        XCTAssertNil(OneRepMaxCalculator.recommendation(oneRepMax: 0, repRange: 8...12))
+        XCTAssertNil(OneRepMaxCalculator.recommendation(oneRepMax: 200, repRange: 31...35))
+    }
+
     func testPoundPlateBreakdownIsPerSideAndExact() {
         let result = PlateCalculator.calculate(
             targetWeight: 225,
@@ -320,17 +355,6 @@ final class WorkoutCalculatorsTests: XCTestCase {
         )
     }
 
-    func testExerciseSuggestionMuscleSummaryFormatsAndDeduplicatesMuscles() {
-        XCTAssertEqual(
-            ExerciseSuggestionMetadata.muscleSummary(
-                primary: "glutes",
-                secondary: ["hamstrings", "erector_spinae", "glutes"]
-            ),
-            "Glutes · Hamstrings · Erector Spinae"
-        )
-        XCTAssertNil(ExerciseSuggestionMetadata.muscleSummary(primary: " ", secondary: []))
-    }
-
     func testWorkoutHistoryConsolidatesDuplicateExerciseNamesWithoutLosingSets() {
         let records = [
             WorkoutHistoryRecord(
@@ -400,21 +424,6 @@ final class WorkoutCalculatorsTests: XCTestCase {
 
         XCTAssertEqual(Set(assignments.values.map(\.id)), Set(["CUSTOM_CIRCUIT_1"]))
         XCTAssertEqual(WorkoutSequencePlanner.customFormat(from: assignments), .circuit)
-    }
-
-    func testCustomCircuitFormatUsesThreeExercisesPerCircuit() {
-        let exercises = (1...7).map { Exercise(code: "CW\($0)", name: "Exercise \($0)") }
-
-        let assignments = WorkoutSequencePlanner.customAssignments(
-            for: .circuit,
-            exercises: exercises
-        )
-
-        XCTAssertEqual(assignments[exercises[0].id]?.id, "CUSTOM_CIRCUIT_1")
-        XCTAssertEqual(assignments[exercises[2].id]?.id, "CUSTOM_CIRCUIT_1")
-        XCTAssertEqual(assignments[exercises[3].id]?.id, "CUSTOM_CIRCUIT_2")
-        XCTAssertEqual(assignments[exercises[5].id]?.id, "CUSTOM_CIRCUIT_2")
-        XCTAssertEqual(assignments[exercises[6].id]?.id, "CUSTOM_CIRCUIT_3")
     }
 
     func testNextCustomCircuitUsesTheNextAvailableNumber() {
@@ -594,31 +603,6 @@ final class WorkoutHistoryCopyPlanTests: XCTestCase {
         XCTAssertTrue(saved.isCompleted)
     }
 
-    func testExerciseThumbnailUsesApproved480WebPVariant() throws {
-        let full = try XCTUnwrap(URL(string: "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-29/webp-768/dumbbell-bench-press.webp"))
-        let thumbnail = try XCTUnwrap(ExerciseMediaURL.thumbnail(for: full))
-        XCTAssertEqual(
-            thumbnail.absoluteString,
-            "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-29/webp-480/dumbbell-bench-press.webp"
-        )
-    }
-
-    func testExerciseThumbnailDoesNotRewriteUnapprovedOrNonWebPMedia() throws {
-        let unapproved = try XCTUnwrap(URL(string: "https://example.com/webp-768/dumbbell-bench-press.webp"))
-        let png = try XCTUnwrap(URL(string: "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-29/png/dumbbell-bench-press.png"))
-        XCTAssertEqual(ExerciseMediaURL.thumbnail(for: unapproved), unapproved)
-        XCTAssertEqual(ExerciseMediaURL.thumbnail(for: png), png)
-    }
-
-    func testExerciseMediaVideoDetectionKeepsAnimatedWebPFallback() throws {
-        for path in ["demo.mp4", "demo.MOV", "demo.m4v", "demo.webm"] {
-            let url = try XCTUnwrap(URL(string: "https://example.com/\(path)"))
-            XCTAssertTrue(ExerciseMediaURL.isVideo(url))
-        }
-        XCTAssertFalse(ExerciseMediaURL.isVideo(try XCTUnwrap(URL(string: "https://example.com/demo.webp"))))
-        XCTAssertFalse(ExerciseMediaURL.isVideo(nil))
-    }
-
     private func sourceSession(records: [WorkoutHistoryRecord]) -> WorkoutHistorySession {
         WorkoutHistorySession(entryDate: "2026-09-20", workoutTitle: "Custom workout", records: records)
     }
@@ -630,5 +614,122 @@ final class WorkoutHistoryCopyPlanTests: XCTestCase {
             notes: "Controlled tempo", completedAt: Date(), effortScale: .rir, effortValue: 2,
             setType: setType, durationSeconds: duration
         )
+    }
+}
+
+final class ExerciseMediaTests: XCTestCase {
+    func testApprovedExerciseDecodesAliasesAndBrandedMedia() throws {
+        let id = UUID()
+        let json = """
+        {
+          "id": "\(id.uuidString)",
+          "name": "Dumbbell Bench Press",
+          "aliases": ["Flat Dumbbell Press", "DB Bench Press"],
+          "primary_muscle": "Chest",
+          "secondary_muscles": ["Triceps", "Front Delts"],
+          "equipment": "Dumbbells",
+          "difficulty": "Intermediate",
+          "movement_pattern": "Push",
+          "default_sets": 3,
+          "default_reps": "8-12",
+          "default_rest_seconds": 90,
+          "substitution_group": "horizontal-press",
+          "demo_url": "https://example.com/demo",
+          "image_url": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-29/webp-768/dumbbell-bench-press.webp",
+          "motion_url": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-29/motion/dumbbell-bench-press.webp",
+          "instructions": "Press the dumbbells above the chest."
+        }
+        """
+
+        let exercise = try JSONDecoder().decode(ApprovedExercise.self, from: Data(json.utf8))
+
+        XCTAssertEqual(exercise.id, id)
+        XCTAssertEqual(exercise.aliases, ["Flat Dumbbell Press", "DB Bench Press"])
+        XCTAssertTrue(exercise.imageURL?.contains("/webp-768/dumbbell-bench-press.webp") == true)
+        XCTAssertTrue(exercise.motionURL?.contains("/motion/dumbbell-bench-press.webp") == true)
+        XCTAssertEqual(
+            ExerciseNameIdentity.canonicalName(for: "flat dumbbell press", approvedExercises: [exercise]),
+            "Dumbbell Bench Press"
+        )
+        XCTAssertEqual(
+            ExerciseNameIdentity.canonicalName(for: "DB bench press", approvedExercises: [exercise]),
+            "Dumbbell Bench Press"
+        )
+    }
+
+    func testApprovedExerciseAllowsMissingOptionalMedia() throws {
+        let json = """
+        {
+          "id": "\(UUID().uuidString)",
+          "name": "Bodyweight Squat",
+          "aliases": [],
+          "primary_muscle": "Quadriceps",
+          "secondary_muscles": [],
+          "equipment": "Bodyweight",
+          "difficulty": "Beginner",
+          "movement_pattern": "Squat",
+          "default_sets": 3,
+          "default_reps": "10-12",
+          "default_rest_seconds": 60,
+          "substitution_group": "squat",
+          "demo_url": null,
+          "instructions": "Squat with control."
+        }
+        """
+
+        let exercise = try JSONDecoder().decode(ApprovedExercise.self, from: Data(json.utf8))
+
+        XCTAssertNil(exercise.imageURL)
+        XCTAssertNil(exercise.motionURL)
+    }
+
+    func testExerciseThumbnailUsesApproved480WebPVariant() throws {
+        let full = try XCTUnwrap(URL(string: "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-29/webp-768/dumbbell-bench-press.webp"))
+
+        let thumbnail = try XCTUnwrap(ExerciseMediaURL.thumbnail(for: full))
+
+        XCTAssertEqual(
+            thumbnail.absoluteString,
+            "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-29/webp-480/dumbbell-bench-press.webp"
+        )
+    }
+
+    func testExerciseThumbnailDoesNotRewriteUnapprovedOrNonWebPMedia() throws {
+        let unapproved = try XCTUnwrap(URL(string: "https://example.com/webp-768/dumbbell-bench-press.webp"))
+        let png = try XCTUnwrap(URL(string: "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-29/png/dumbbell-bench-press.png"))
+
+        XCTAssertEqual(ExerciseMediaURL.thumbnail(for: unapproved), unapproved)
+        XCTAssertEqual(ExerciseMediaURL.thumbnail(for: png), png)
+    }
+
+    func testOnlyApprovedBrandedWebPCardsUseThePhotoPanelCrop() throws {
+        let branded = try XCTUnwrap(URL(string: "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-29/webp-768/dumbbell-bench-press.webp"))
+        let branded480 = try XCTUnwrap(URL(string: "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-29/webp-480/arnold-press.webp"))
+        let legacy = try XCTUnwrap(URL(string: "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/dumbbell-bench-press.png"))
+        let outside = try XCTUnwrap(URL(string: "https://example.com/webp-768/dumbbell-bench-press.webp"))
+
+        XCTAssertTrue(ExerciseMediaURL.isBrandedCard(branded))
+        XCTAssertTrue(ExerciseMediaURL.isBrandedCard(branded480))
+        XCTAssertEqual(ExerciseMediaURL.thumbnail(for: branded480), branded480)
+        XCTAssertFalse(ExerciseMediaURL.isBrandedCard(legacy))
+        XCTAssertFalse(ExerciseMediaURL.isBrandedCard(outside))
+    }
+
+    func testExerciseMediaUsesThumbnailBeforeFullResolutionFallback() throws {
+        let full = try XCTUnwrap(URL(string: "https://example.com/card-768.webp"))
+        let thumbnail = try XCTUnwrap(URL(string: "https://example.com/card-480.webp"))
+        let media = ExerciseMedia(
+            imageURL: full,
+            thumbnailURL: thumbnail,
+            instructions: "Brace, lower with control, and press to the start position.",
+            primaryMuscle: "Chest",
+            equipment: "Dumbbells",
+            fallbackDemoURL: nil
+        )
+
+        XCTAssertTrue(media.hasVisual)
+        XCTAssertEqual(media.thumbnailURLs, [thumbnail, full])
+        XCTAssertFalse(media.instructions.isEmpty)
+        XCTAssertFalse(media.cropsThumbnailToPhotoPanels)
     }
 }

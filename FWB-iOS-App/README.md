@@ -1,33 +1,30 @@
 # FWB Coach for iOS
 
-Native SwiftUI app for Fitness with Benjamin. It connects to the same Supabase project as the existing web app, so iPhone, Android-browser, and desktop users share accounts, programs, and training data.
+This repository owns the website, client web app, and native coach iOS app.
+The native client iOS app is owned by [fitnessgayz/fwb-ios](https://github.com/fitnessgayz/fwb-ios).
 
-This is an independent app with the bundle identifier `com.benjaminbenz.fwbcoach`. It installs alongside Kwestly/FindSpottr instead of replacing it. The display name is **FWB Coach**.
+| Product | Repository | Native bundle / testing |
+| --- | --- | --- |
+| Website and client web app | fitnessgayz/benjaminbenz | benjaminbenz.com |
+| Native coach iOS app | fitnessgayz/benjaminbenz | com.benjaminbenz.fwbcoach · internal FWB Coach Beta |
+| Native client iOS app | fitnessgayz/fwb-ios | com.benjaminbenz.fwb · FWB Client Beta |
 
-## Native milestone
+## Coach app
 
-- Native email/password login and password reset using the existing Supabase accounts
-- Persistent Supabase session restoration
-- Client-only native experience; coach administration stays on the website
-- Native dashboard, workout library, exercise logging, history, charts, records, substitutions, reminders, and rest timer
-- Offline workout recovery plus automatic workout and readiness synchronization
-- Daily readiness check-ins shared through the existing `client_check_ins` data used by the coach website
-- Existing web Coach Admin retained as the coaching surface
-- Existing web app remains available at `benjaminbenz.com` for non-iPhone users
+The coach app uses the existing native coach workspace migrated from the client repository: client management, program editing, session records, workout logging on behalf of clients, shared progress, exercise library, messaging, notifications, and account settings.
 
-The Supabase Swift package is pinned to version `2.55.1`. Only the publishable client key is included in the app. Database authorization remains enforced by the existing Row Level Security policies; no service-role key is present in the iOS project. Sessions use Keychain on real devices and a simulator-only local store in development because unsigned Simulator builds do not receive Keychain entitlements.
+Sign-in and restored sessions must resolve to a coach through the server's `is_coach_admin` policy. An email constant, editable profile metadata, or a sign-in selector cannot grant coach access. Client accounts are rejected and directed to the separate client app or website. There is no native client navigation shell in this app.
 
-## Open and run
+Shared workout/data/UI components remain available where the coach workspace uses them; they do not constitute a second client app target. Client onboarding and its tutorial belong in the client repository, not the coach release.
 
-1. Open `FWBCoach.xcodeproj` in Xcode.
-2. Select the `FWBCoach` scheme and an iPhone or iPad.
-3. Choose a development team for device builds if Xcode requests one.
-4. Run.
+Open `FWBCoach.xcodeproj`, select `FWBCoach`, and run on iOS 17 or later. The project has one shipping app target: no client Watch or widget targets. Password reset uses the existing web recovery page so the two installed apps cannot compete for the client's `fwb://` links.
 
-Clients use the same credentials as the web app. The coach account is intentionally rejected by the iOS app and continues to use Coach Admin on the website. Authenticated clients can only access their own rows as permitted by Supabase RLS.
+## Releases
 
-## TestFlight releases and error reporting
+Every push to this repository's `main` runs unsigned tests, then signs and uploads only `com.benjaminbenz.fwbcoach`. The release validates the coach-only app boundary, exact bundle identifier, signing profile, trusted repository/branch, and internal automatic-distribution group before uploading.
 
-See [DEPLOYMENT.md](DEPLOYMENT.md) for the private GitHub repository setup, Apple signing credentials, Sentry configuration, and the automatic TestFlight workflow. Release credentials stay in GitHub Actions secrets and are excluded from source control.
+CI waits for the exact uploaded build to finish Apple processing. App Store Connect automatically distributes eligible builds to **FWB Coach Beta**, which must remain an internal group with automatic distribution enabled. Tester membership/invitations are separate one-time account administration.
 
-The Sentry integration reports crashes and sanitized operation failures from configured release builds. Debug builds, tests, and UI audits disable reporting by default. It excludes user details, workout and health data, request contents, screenshots, and session replays.
+This workflow does not distribute to external clients, submit Beta App Review, or publish to the App Store. See [DEPLOYMENT.md](DEPLOYMENT.md) for signing, repository-secret setup, and verification.
+
+The Supabase Swift package is pinned to 2.55.1. Only its publishable key is embedded; database RLS still enforces access. Sessions use a coach-specific Keychain namespace on devices. Sentry excludes user, workout, health, request, and replay data from diagnostics.

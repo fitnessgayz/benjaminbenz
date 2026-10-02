@@ -142,12 +142,14 @@ struct ProgressSharePanel: View {
 private struct ProgressSocialCard: View {
     let summary: ProgressShareSummary
 
-    private let background = Color(red: 0.09, green: 0.098, blue: 0.094)
-    private let card = Color(red: 0.125, green: 0.137, blue: 0.125)
-    private let surface = Color(red: 0.16, green: 0.172, blue: 0.16)
-    private let lime = Color(red: 0.843, green: 1, blue: 0.247)
-    private let warmWhite = Color(red: 0.969, green: 0.969, blue: 0.949)
-    private let muted = Color(red: 0.68, green: 0.68, blue: 0.64)
+    // Exported progress cards intentionally use fixed canonical brand colors so
+    // shared images look the same in light and dark system appearances.
+    private let background = Color(red: 8 / 255, green: 10 / 255, blue: 8 / 255)
+    private let card = Color(red: 23 / 255, green: 26 / 255, blue: 23 / 255)
+    private let surface = Color(red: 36 / 255, green: 40 / 255, blue: 36 / 255)
+    private let lime = Color(red: 214 / 255, green: 255 / 255, blue: 53 / 255)
+    private let warmWhite = Color(red: 247 / 255, green: 248 / 255, blue: 244 / 255)
+    private let muted = Color(red: 220 / 255, green: 222 / 255, blue: 215 / 255)
 
     var body: some View {
         ZStack {

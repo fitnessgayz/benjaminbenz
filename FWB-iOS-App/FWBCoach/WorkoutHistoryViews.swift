@@ -11,6 +11,7 @@ struct WorkoutHistoryView: View {
 
     @StateObject private var store = WorkoutHistoryStore()
     @StateObject private var exerciseLibraryStore = ExerciseLibraryStore()
+    @ObservedObject private var healthStore: AppleHealthImportStore
     @State private var exerciseSearch = ""
     @State private var workoutSearch = ""
     @State private var selectedDate = Date()
@@ -21,10 +22,23 @@ struct WorkoutHistoryView: View {
     @State private var exportStatus = ""
     @State private var copyPlan: WorkoutHistoryCopyPlan?
     @State private var isShowingCopiedWorkout = false
+    @State private var deletionCandidate: WorkoutHistorySession?
+    @State private var failedDeletion: WorkoutHistorySession?
+    @State private var isConfirmingDeletion = false
+#if DEBUG
+    @State private var auditDeletedSessionIDs: Set<String> = []
+    @State private var auditDeletionNotice: String?
+#endif
+
+    @MainActor init(clientEmail: String, healthStore: AppleHealthImportStore? = nil) {
+        self.clientEmail = clientEmail
+        self.healthStore = healthStore ?? .shared
+    }
 
     private var isAudit: Bool {
 #if DEBUG
-        ProcessInfo.processInfo.arguments.contains("--ui-audit")
+        ProcessInfo.processInfo.arguments.contains("--apple-health-history-audit")
+            || ProcessInfo.processInfo.arguments.contains("--ui-audit")
             || ProcessInfo.processInfo.environment["FWB_UI_AUDIT"] == "1"
 #else
         false
@@ -33,30 +47,23 @@ struct WorkoutHistoryView: View {
 
     private var sessions: [WorkoutHistorySession] {
 #if DEBUG
-        if isAudit { return WorkoutHistoryAudit.sessions }
+        if isAudit { return WorkoutHistoryAudit.sessions.filter { !auditDeletedSessionIDs.contains($0.id) } }
 #endif
         return store.sessions
+    }
+
+    private var deletionNotice: String? {
+#if DEBUG
+        if isAudit { return auditDeletionNotice }
+#endif
+        return store.deletionNotice
     }
 
     var body: some View {
         ZStack {
             Color.fwbBackground.ignoresSafeArea()
 
-            if isAudit {
-                historyContent
-            } else {
-                switch store.state {
-                case .idle, .loading:
-                    ProgressView("Loading workout history…")
-                        .tint(Color.fwbLime)
-                case .loaded:
-                    historyContent
-                case .failed(let message):
-                    FWBErrorState(message: message) {
-                        Task { await store.reload(email: clientEmail) }
-                    }
-                }
-            }
+            historyContent
         }
         .font(FWBFont.body)
         .navigationTitle("Logs")
@@ -66,7 +73,8 @@ struct WorkoutHistoryView: View {
             guard !isAudit else { return }
             async let historyLoad: Void = store.loadIfNeeded(email: clientEmail)
             async let libraryLoad: Void = exerciseLibraryStore.loadIfNeeded()
-            _ = await (historyLoad, libraryLoad)
+            async let healthLoad: Void = refreshAppleHealth()
+            _ = await (historyLoad, libraryLoad, healthLoad)
         }
         .onReceive(NotificationCenter.default.publisher(for: .fwbForegroundRefresh)) { _ in
             guard !isAudit else { return }
@@ -105,6 +113,25 @@ struct WorkoutHistoryView: View {
             case .failure: exportStatus = "The CSV could not be saved. Please try again."
             }
         }
+        .alert("Delete workout?", isPresented: $isConfirmingDeletion) {
+            Button("Delete workout", role: .destructive) {
+                if let deletionCandidate { deleteWorkout(deletionCandidate) }
+            }
+            Button("Cancel", role: .cancel) { deletionCandidate = nil }
+        } message: {
+            if let deletionCandidate {
+                Text("Delete \(deletionCandidate.workoutTitle.fwbWorkoutDisplayTitle.fwbTitleCased) from \(WorkoutHistoryFormat.date(deletionCandidate.entryDate)), including all logged sets? This cannot be undone.")
+            }
+        }
+        .alert("Couldn’t delete workout", isPresented: Binding(
+            get: { store.deletionError != nil },
+            set: { if !$0 { store.dismissDeletionError() } }
+        )) {
+            if let failedDeletion {
+                Button("Try again") { deleteWorkout(failedDeletion) }
+            }
+            Button("Cancel", role: .cancel) { store.dismissDeletionError() }
+        } message: { Text(store.deletionError ?? "Please try again.") }
         .navigationDestination(isPresented: $isShowingCopiedWorkout) {
             if let copyPlan {
                 WorkoutLoggingView(
@@ -123,57 +150,209 @@ struct WorkoutHistoryView: View {
     private var historyContent: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 14) {
+                ResumeWorkoutCard()
                 WorkoutHistoryHeading(
                     sessionCount: filteredSessions.count
                 )
                 historyFilters
-                WorkoutExerciseSearchField(text: $exerciseSearch)
-
-                if sessions.isEmpty {
-                    FWBEmptyState(
-                        icon: "list.bullet.clipboard",
-                        title: "No workouts logged yet",
-                        message: "Saved workouts will appear here after you record your first set."
-                    )
-                } else if filteredSessions.isEmpty {
-                    FWBEmptyState(
-                        icon: "magnifyingglass",
-                        title: "No matching logs",
-                        message: "No workouts match that date or search. Clear the filters to see your saved logs."
-                    )
-                } else if normalizedExerciseSearch.isEmpty {
-                    WorkoutHistorySessionDeck(sessions: filteredSessions) { session in
-                        copyPlan = WorkoutHistoryCopyPlan(session: session)
-                        isShowingCopiedWorkout = true
-                    }
-                } else if exerciseSearchResults.isEmpty {
-                    WorkoutExerciseSearchEmptyState(query: exerciseSearch)
-                } else {
-                    HStack {
-                        Text("Exercise results")
-                            .font(FWBFont.footnote.bold())
-                            .foregroundStyle(Color.fwbLime)
-                        Spacer()
-                        Text("\(exerciseSearchResults.count)")
-                            .font(FWBFont.footnote.bold())
-                            .foregroundStyle(Color.fwbMuted)
-                    }
-
-                    ForEach(exerciseSearchResults) { result in
-                        NavigationLink {
-                            WorkoutExerciseHistoryDetailView(result: result)
-                        } label: {
-                            WorkoutExerciseSearchResultCard(result: result)
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
+                appleHealthWorkouts
+                manualHistory
             }
             .padding(16)
         }
         .refreshable {
             guard !isAudit else { return }
-            await store.reload(email: clientEmail)
+            async let historyLoad: Void = store.reload(email: clientEmail)
+            async let healthLoad: Void = refreshAppleHealth(force: true)
+            _ = await (historyLoad, healthLoad)
+        }
+    }
+
+    @ViewBuilder
+    private var manualHistory: some View {
+        if isAudit {
+            savedWorkoutLogs
+        } else {
+            switch store.state {
+            case .idle, .loading:
+                FWBLoadingState(
+                    title: "Loading your training logs",
+                    message: "Your saved sets and completed workouts will appear here."
+                )
+                .frame(minHeight: 220)
+            case .loaded:
+                savedWorkoutLogs
+            case .failed(let message):
+                FWBErrorState(message: message) {
+                    Task { await store.reload(email: clientEmail) }
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var savedWorkoutLogs: some View {
+        if healthAccount != nil {
+            Text("Saved training logs")
+                .font(FWBFont.headline)
+                .padding(.top, 4)
+        }
+        if let notice = deletionNotice {
+            Label(notice, systemImage: "checkmark.circle")
+                .font(FWBFont.footnote)
+                .foregroundStyle(Color.fwbLime)
+                .accessibilityAddTraits(.updatesFrequently)
+        }
+        WorkoutExerciseSearchField(text: $exerciseSearch)
+
+        if sessions.isEmpty {
+            FWBEmptyState(
+                icon: "list.bullet.clipboard",
+                title: "No workouts logged yet",
+                message: "Saved workouts will appear here after you record your first set."
+            )
+        } else if filteredSessions.isEmpty {
+            FWBEmptyState(
+                icon: "magnifyingglass",
+                title: "No matching logs",
+                message: "No workouts match that date or search. Clear the filters to see your saved logs."
+            )
+        } else if normalizedExerciseSearch.isEmpty {
+            WorkoutHistorySessionDeck(
+                sessions: filteredSessions,
+                deletingSessionID: store.deletingSessionID,
+                allowsDeletion: true,
+                copyWorkout: { session in
+                    copyPlan = WorkoutHistoryCopyPlan(session: session)
+                    isShowingCopiedWorkout = true
+                },
+                deleteWorkout: { session in
+                    deletionCandidate = session
+                    isConfirmingDeletion = true
+                }
+            )
+        } else if exerciseSearchResults.isEmpty {
+            WorkoutExerciseSearchEmptyState(query: exerciseSearch)
+        } else {
+            HStack {
+                Text("Exercise results")
+                    .font(FWBFont.footnote.bold())
+                    .foregroundStyle(Color.fwbLime)
+                Spacer()
+                Text("\(exerciseSearchResults.count)")
+                    .font(FWBFont.footnote.bold())
+                    .foregroundStyle(Color.fwbMuted)
+            }
+
+            ForEach(exerciseSearchResults) { result in
+                NavigationLink {
+                    WorkoutExerciseHistoryDetailView(result: result)
+                } label: {
+                    WorkoutExerciseSearchResultCard(result: result)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+
+    /// Local Health data belongs only to the account using this device, never a
+    /// different client whose Logs a coach opens.
+    private var healthAccount: SignedInAccount? {
+        guard !isAudit || ProcessInfo.processInfo.arguments.contains("--apple-health-history-audit"),
+              let account = healthStore.account,
+              account.email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+                == clientEmail.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        else { return nil }
+        return account
+    }
+
+    private var importedWorkouts: [AppleHealthImportedWorkout] {
+        guard healthAccount != nil, healthStore.selectedCategories.contains(.workouts) else { return [] }
+        return healthStore.snapshot?.workouts ?? []
+    }
+
+    private var filteredImportedWorkouts: [AppleHealthImportedWorkout] {
+        let search = workoutSearch.trimmingCharacters(in: .whitespacesAndNewlines)
+        return importedWorkouts.filter { workout in
+            let matchesDate = !hasDateFilter || Calendar.current.isDate(workout.startedAt, inSameDayAs: selectedDate)
+            return matchesDate && (search.isEmpty
+                || workout.activityType.localizedStandardContains(search)
+                || workout.sourceName.localizedStandardContains(search))
+        }.sorted { $0.startedAt > $1.startedAt }
+    }
+
+    @ViewBuilder
+    private var appleHealthWorkouts: some View {
+        if let account = healthAccount {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(alignment: .firstTextBaseline) {
+                    Label("Apple Health workouts", systemImage: "heart.fill")
+                        .font(FWBFont.headline)
+                    Spacer()
+                    Text("\(filteredImportedWorkouts.count)")
+                        .font(FWBFont.footnote.bold())
+                        .foregroundStyle(Color.fwbMuted)
+                }
+                Text("Completed workouts from the last 30 days. Only available measurements are shown.")
+                    .font(FWBFont.footnote).foregroundStyle(Color.fwbMuted)
+
+                if !healthStore.selectedCategories.contains(.workouts) {
+                    Text("Connect Apple Health to see workouts recorded by Apple Watch and other Health apps here.")
+                        .font(FWBFont.footnote).foregroundStyle(Color.fwbMuted)
+                } else if healthStore.isWorking && importedWorkouts.isEmpty {
+                    ProgressView("Checking Apple Health…")
+                        .font(FWBFont.footnote).tint(Color.fwbLime)
+                } else if importedWorkouts.isEmpty {
+                    Text("No readable workouts yet. Record a workout in Apple Watch or a connected app and allow FWB to read workouts in Apple Health.")
+                        .font(FWBFont.footnote).foregroundStyle(Color.fwbMuted)
+                } else if filteredImportedWorkouts.isEmpty {
+                    Text("No Apple Health workouts match this date or workout search.")
+                        .font(FWBFont.footnote).foregroundStyle(Color.fwbMuted)
+                } else {
+                    ForEach(filteredImportedWorkouts) { workout in
+                        AppleHealthWorkoutRow(workout: workout)
+                        Divider()
+                    }
+                }
+
+                NavigationLink {
+                    AppleHealthImportSettingsView(account: account, store: healthStore)
+                } label: {
+                    Label("Apple Health settings", systemImage: "gearshape")
+                        .font(FWBFont.footnote.bold())
+                }
+                .foregroundStyle(Color.fwbLime)
+                .accessibilityIdentifier("workoutHistory.appleHealthSettings")
+            }
+            .padding(16)
+            .background(Color.fwbSurface, in: RoundedRectangle(cornerRadius: 20))
+            .accessibilityIdentifier("workoutHistory.appleHealthWorkouts")
+        }
+    }
+
+    private func refreshAppleHealth(force: Bool = false) async {
+        guard healthAccount != nil else { return }
+        await healthStore.refresh(force: force)
+    }
+
+    private func deleteWorkout(_ session: WorkoutHistorySession) {
+#if DEBUG
+        if isAudit {
+            // The UI audit uses only the synthetic records below. Never invoke
+            // the store, outbox or backend from this confirmation path.
+            auditDeletedSessionIDs.insert(session.id)
+            auditDeletionNotice = "Workout deleted from your logs."
+            deletionCandidate = nil
+            return
+        }
+#endif
+        guard !isAudit else { return }
+        failedDeletion = session
+        Task {
+            if await store.delete(session, email: clientEmail) {
+                failedDeletion = nil
+                deletionCandidate = nil
+            }
         }
     }
 
@@ -241,7 +420,8 @@ struct WorkoutHistoryView: View {
             } == true
             guard matchesDate else { return false }
             guard !search.isEmpty else { return true }
-            return session.workoutTitle.localizedStandardContains(search)
+            return session.workoutTitle.fwbWorkoutDisplayTitle.localizedStandardContains(search)
+                || session.workoutTitle.localizedStandardContains(search)
                 || session.records.contains { record in
                     record.exerciseName.localizedStandardContains(search)
                         || record.exerciseCode.localizedStandardContains(search)
@@ -726,7 +906,10 @@ private struct WorkoutHistorySessionDeck: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var index = 0
     let sessions: [WorkoutHistorySession]
+    let deletingSessionID: String?
+    let allowsDeletion: Bool
     let copyWorkout: (WorkoutHistorySession) -> Void
+    let deleteWorkout: (WorkoutHistorySession) -> Void
 
     private var safeIndex: Int { min(index, max(0, sessions.count - 1)) }
 
@@ -747,7 +930,8 @@ private struct WorkoutHistorySessionDeck: View {
                 deckButton("Next workout", icon: "arrow.right", step: 1)
             }
             if sessions.indices.contains(safeIndex) {
-                WorkoutHistorySessionCard(session: sessions[safeIndex], copyWorkout: copyWorkout)
+                WorkoutHistorySessionCard(session: sessions[safeIndex], deletingSessionID: deletingSessionID,
+                                          allowsDeletion: allowsDeletion, copyWorkout: copyWorkout, deleteWorkout: deleteWorkout)
                     .id(sessions[safeIndex].id)
                     .background {
                         if sessions.count > 1 {
@@ -797,7 +981,10 @@ private struct WorkoutHistorySessionDeck: View {
 private struct WorkoutHistorySessionCard: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     let session: WorkoutHistorySession
+    let deletingSessionID: String?
+    let allowsDeletion: Bool
     let copyWorkout: (WorkoutHistorySession) -> Void
+    let deleteWorkout: (WorkoutHistorySession) -> Void
 
     private var canCopyWorkout: Bool {
         session.records.contains {
@@ -813,7 +1000,7 @@ private struct WorkoutHistorySessionCard: View {
         return WorkoutHistoryFormat.number(values.reduce(0, +) / Double(values.count))
     }
     private var shareText: String {
-        "\(session.workoutTitle.fwbWorkoutDisplayTitle) · \(WorkoutHistoryFormat.date(session.entryDate))\n"
+        "\(session.workoutTitle.fwbWorkoutDisplayTitle.fwbTitleCased) · \(WorkoutHistoryFormat.date(session.entryDate))\n"
             + "\(session.exercises.count) exercises · \(session.strengthSetCount) working sets · \(WorkoutHistoryFormat.weight(session.totalVolume)) volume\n"
             + "Fitness with Benjamin"
     }
@@ -874,6 +1061,27 @@ private struct WorkoutHistorySessionCard: View {
                     if canCopyWorkout { copyWorkoutButton }
                     shareWorkout
                 }
+            }
+            Divider().overlay(Color.fwbLine)
+            Button(role: .destructive) { deleteWorkout(session) } label: {
+                HStack(spacing: 8) {
+                    if deletingSessionID == session.id { ProgressView().tint(.red) }
+                    else { Image(systemName: "trash") }
+                    Text(deletingSessionID == session.id ? "Deleting workout…" : "Delete workout")
+                }
+                .font(FWBFont.subheadline.weight(.semibold))
+                .frame(minHeight: 44)
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(.red)
+            .disabled(!allowsDeletion || deletingSessionID != nil || WorkoutHistoryDeletionTarget(session) == nil)
+            .accessibilityLabel("Delete \(session.workoutTitle.fwbWorkoutDisplayTitle.fwbTitleCased) from your workout logs")
+            .accessibilityHint("Asks for confirmation before deleting this workout and its logged sets.")
+            .accessibilityIdentifier("workoutHistory.deleteWorkout")
+            if allowsDeletion && WorkoutHistoryDeletionTarget(session) == nil {
+                Text("Pull down to refresh this log before deleting it.")
+                    .font(FWBFont.caption)
+                    .foregroundStyle(Color.fwbMuted)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -946,7 +1154,7 @@ private struct WorkoutHistorySessionCard: View {
                 .frame(minHeight: 44)
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("Copy \(session.workoutTitle) to a new custom workout")
+        .accessibilityLabel("Copy \(session.workoutTitle.fwbWorkoutDisplayTitle.fwbTitleCased) to a new custom workout")
         .accessibilityHint("Copies the exercises and set values. The new workout starts with every set unfinished.")
         .accessibilityIdentifier("workoutHistory.copyWorkout")
     }
@@ -1276,7 +1484,7 @@ private struct WorkoutHistoryFilterButtonStyle: ButtonStyle {
     }
 }
 
-private struct WorkoutHistoryCSVDocument: FileDocument {
+struct WorkoutHistoryCSVDocument: FileDocument {
     static var readableContentTypes: [UTType] { [.commaSeparatedText] }
     let data: Data
 
@@ -1285,7 +1493,7 @@ private struct WorkoutHistoryCSVDocument: FileDocument {
         let rows = sessions.flatMap(\.records).map { record in
             [
                 record.entryDate,
-                record.workoutTitle,
+                record.workoutTitle.fwbWorkoutDisplayTitle.fwbTitleCased,
                 record.exerciseCode,
                 record.exerciseName,
                 String(record.setNumber),
@@ -1324,7 +1532,7 @@ private struct WorkoutHistoryCSVDocument: FileDocument {
 #if DEBUG
 private enum WorkoutHistoryAudit {
     static let sessions: [WorkoutHistorySession] = [
-        session(date: "2026-09-24", title: "Strength Foundations", exercises: [
+        session(date: "2026-09-24", title: "Custom workout · Full body workout · e5b179d1-d9b9-4347-9bf9-7cdbb1e5c7b5", exercises: [
             ("A1", "Goblet Squat", 40.0, 10.0),
             ("A2", "Dumbbell Chest Press", 30.0, 10.0),
             ("B1", "Seated Cable Row", 65.0, 12.0),
@@ -1345,6 +1553,7 @@ private enum WorkoutHistoryAudit {
         let records = exercises.enumerated().flatMap { exerciseIndex, exercise in
             (1...3).map { set in
                 WorkoutHistoryRecord(
+                    sessionID: ContinuitySync.stableUUID(namespace: "history-audit", name: "\(date)|\(title)"),
                     entryDate: date,
                     workoutTitle: title,
                     exerciseCode: exercise.0,

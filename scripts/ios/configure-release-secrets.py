@@ -2,7 +2,7 @@
 """Provision iOS release repository settings without secrets in argv or files.
 
 Default is a names-only, offline dry run. --apply performs interactive collection
-and writes only after a private-repository/admin/main-branch preflight.
+and writes only after an approved-repository/admin/main-branch preflight.
 """
 from __future__ import annotations
 
@@ -28,6 +28,7 @@ import warnings
 
 TEAM_ID = "5Q4FU299QH"
 BUNDLE_ID = "com.benjaminbenz.fwbcoach"
+RELEASE_REPOSITORY = "fitnessgayz/benjaminbenz"
 REPO_ROOT = Path(__file__).resolve().parents[2]
 MAX_SECRET_BYTES = 48 * 1024
 APPLE_SECRETS = (
@@ -111,9 +112,9 @@ def required_environment() -> str | None:
 
 def preflight(gh: str, repo: str) -> str | None:
     repo = validate_repo(repo)
+    if repo != RELEASE_REPOSITORY:
+        raise SetupError("Coach release credentials must target " + RELEASE_REPOSITORY + ".")
     details = read_api(gh, f"repos/{repo}")
-    if details.get("private") is not True:
-        raise SetupError("The target repository must be private before release credentials are uploaded.")
     if details.get("permissions", {}).get("admin") is not True:
         raise SetupError("The signed-in GitHub account needs repository admin permission.")
     if details.get("archived") or details.get("disabled"):
@@ -277,7 +278,7 @@ def write_settings(gh: str, repo: str, settings: list[Setting]) -> None:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--repo", help="Explicit private GitHub.com OWNER/REPO")
+    parser.add_argument("--repo", help="Coach release repository: " + RELEASE_REPOSITORY)
     parser.add_argument("--component", choices=("all", "apple", "sentry"), default="all")
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--apply", action="store_true", help="Interactively collect credentials and update GitHub")
@@ -326,15 +327,19 @@ class SafetyTests(unittest.TestCase):
             self.assertEqual(main(["--dry-run"]), 0)
         self.assertEqual(output.getvalue().splitlines(), [kind + " " + name for kind, name in names("all")])
 
-    def test_public_repository_is_refused(self):
-        with mock.patch(__name__ + ".read_api", return_value={"private": False, "permissions": {"admin": True}}):
-            with self.assertRaisesRegex(SetupError, "must be private"):
+    def test_another_repository_is_refused_before_credentials_are_read(self):
+        with mock.patch(__name__ + ".read_api", side_effect=AssertionError("No API call expected")):
+            with self.assertRaisesRegex(SetupError, "Coach release credentials must target"):
                 preflight("gh", "owner/repo")
+
+    def test_approved_public_repository_is_supported(self):
+        with mock.patch(__name__ + ".read_api", return_value={"private": False, "permissions": {"admin": True}}), mock.patch(__name__ + ".required_environment", return_value=None):
+            self.assertIsNone(preflight("gh", RELEASE_REPOSITORY))
 
     def test_missing_admin_is_refused(self):
         with mock.patch(__name__ + ".read_api", return_value={"private": True, "permissions": {"admin": False}}):
             with self.assertRaisesRegex(SetupError, "admin permission"):
-                preflight("gh", "owner/repo")
+                preflight("gh", RELEASE_REPOSITORY)
 
     def test_workflow_environment_requirement_is_read_without_mutation(self):
         for declaration in ("    environment: testflight\n", "    environment: 'testflight' # release\n"):
@@ -350,16 +355,16 @@ class SafetyTests(unittest.TestCase):
         calls = []
         def response(gh, endpoint):
             calls.append(endpoint)
-            if endpoint == "repos/owner/repo":
+            if endpoint == "repos/" + RELEASE_REPOSITORY:
                 return {"private": True, "permissions": {"admin": True}}
             return {}
         with mock.patch(__name__ + ".read_api", side_effect=response), mock.patch(__name__ + ".required_environment", return_value="testflight"):
-            self.assertEqual(preflight("gh", "owner/repo"), "testflight")
-        self.assertEqual(calls, ["repos/owner/repo", "repos/owner/repo/branches/main", "repos/owner/repo/environments/testflight"])
+            self.assertEqual(preflight("gh", RELEASE_REPOSITORY), "testflight")
+        self.assertEqual(calls, ["repos/" + RELEASE_REPOSITORY, "repos/" + RELEASE_REPOSITORY + "/branches/main", "repos/" + RELEASE_REPOSITORY + "/environments/testflight"])
         calls.clear()
         with mock.patch(__name__ + ".read_api", side_effect=response), mock.patch(__name__ + ".required_environment", return_value=None):
-            self.assertIsNone(preflight("gh", "owner/repo"))
-        self.assertEqual(calls, ["repos/owner/repo", "repos/owner/repo/branches/main"])
+            self.assertIsNone(preflight("gh", RELEASE_REPOSITORY))
+        self.assertEqual(calls, ["repos/" + RELEASE_REPOSITORY, "repos/" + RELEASE_REPOSITORY + "/branches/main"])
 
     def test_secret_and_variable_values_travel_only_on_stdin(self):
         token = "sentinel-secret-not-for-argv"

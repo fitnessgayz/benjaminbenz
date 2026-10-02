@@ -14,12 +14,51 @@ module FWBRelease
   APP_ID = "com.benjaminbenz.fwbcoach".freeze
   TEAM_ID = "5Q4FU299QH".freeze
   RELEASE_REPOSITORY = "fitnessgayz/benjaminbenz".freeze
+  TESTFLIGHT_GROUP = "FWB Coach Beta".freeze
+  TESTFLIGHT_PROCESSING_TIMEOUT = 3_600
+  def self.validate_app_boundary!(app_directory)
+    root = File.read(File.join(app_directory, "FWBCoach", "CoachAppView.swift"))
+    configuration = File.read(File.join(app_directory, "FWBCoach", "AppConfiguration.swift"))
+    unless root.include?("CoachRootView(") && !root.include?("ClientRootView(") &&
+        configuration.include?("requiredAccountRole: AccountRole = .coach")
+      raise "The coach release must have a coach-only entry point and server-verified coach access."
+    end
+    if File.exist?(File.join(app_directory, "FWBCoach", "ClientNavigationView.swift"))
+      raise "The client native navigation shell belongs in fitnessgayz/fwb-ios, not the coach release."
+    end
+  end
+
   REQUIRED = %w[
     ASC_KEY_ID ASC_ISSUER_ID ASC_PRIVATE_KEY_P8_BASE64
     IOS_DISTRIBUTION_P12_BASE64 IOS_DISTRIBUTION_P12_PASSWORD
     IOS_PROVISIONING_PROFILE_BASE64 SENTRY_AUTH_TOKEN
     SENTRY_DSN SENTRY_ORG SENTRY_PROJECT
   ].freeze
+
+  def self.validate_internal_beta_group!(groups)
+    group = groups.find { |item| item.name == TESTFLIGHT_GROUP }
+    raise "Create the #{TESTFLIGHT_GROUP} internal TestFlight group in App Store Connect." unless group
+    raise "#{TESTFLIGHT_GROUP} must be an internal group." unless group.is_internal_group == true
+    unless group.has_access_to_all_builds == true
+      raise "Enable automatic distribution for #{TESTFLIGHT_GROUP} in App Store Connect."
+    end
+    group
+  end
+
+  def self.testflight_distribution_options(build_number:, version:)
+    {
+      app_version: version,
+      build_number: build_number,
+      changelog: "Automated coach beta build #{build_number} from main.",
+      skip_waiting_for_build_processing: false,
+      distribute_external: false,
+      submit_beta_review: false,
+      notify_external_testers: false,
+      skip_submission: true,
+      wait_processing_interval: 30,
+      wait_processing_timeout_duration: TESTFLIGHT_PROCESSING_TIMEOUT
+    }
+  end
 
   def self.validate_configuration!(env = ENV)
     missing = REQUIRED.select { |name| env[name].to_s.strip.empty? }
@@ -62,8 +101,10 @@ module FWBRelease
     attempt = Integer(run_attempt)
     raise "Invalid GitHub run number or attempt." unless run.positive? && (1..99).cover?(attempt)
     # A new run or retry has a distinct baseline even while ASC processes the
-    # previous upload. The ASC comparison also accommodates manual releases.
-    ordinal = [1_000_000 + run * 100 + attempt, build_ordinal(latest) + 1].max
+    # previous upload. A separate coach epoch also exceeds the old client
+    # pipeline's 1037.x builds while the bundle ownership migration settles.
+    # The ASC comparison accommodates manual releases.
+    ordinal = [(2_000 + run) * 10_000 + attempt * 100, build_ordinal(latest) + 1].max
     raise "Build number space exhausted; update the release numbering strategy." if ordinal > 99_999_999
     [ordinal / 10_000, (ordinal / 100) % 100, ordinal % 100].join(".")
   end
@@ -92,6 +133,21 @@ module FWBRelease
       @old_keychains = nil
       @profile_paths = []
       FileUtils.mkdir_p(directory, mode: 0o700)
+    end
+
+    def configure_project!(project)
+      target = project.targets.find { |item| item.name == "FWBCoach" }
+      raise "The coach app target is missing." unless target
+      target.build_configurations.each do |configuration|
+        settings = configuration.build_settings
+        unless settings["PRODUCT_BUNDLE_IDENTIFIER"] == APP_ID
+          raise "The coach release target must use #{APP_ID}."
+        end
+        settings["DEVELOPMENT_TEAM"] = TEAM_ID
+        settings["CODE_SIGN_STYLE"] = "Manual"
+        settings["CODE_SIGN_IDENTITY"] = @identity
+        settings["PROVISIONING_PROFILE_SPECIFIER"] = @profile_uuid
+      end
     end
 
     def prepare!

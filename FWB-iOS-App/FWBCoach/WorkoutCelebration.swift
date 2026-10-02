@@ -18,6 +18,10 @@ struct WorkoutCelebration: Identifiable {
     let achievements: [WorkoutPraiseAchievement]
     let weeklyCompleted: Int
     let weeklyGoal: Int
+    var progress: AchievementSnapshot? = nil
+    var earnedXP = 0
+    var leveledUp = false
+    var awardsPendingSync = false
 }
 
 struct WorkoutCelebrationMetric: Identifiable {
@@ -32,6 +36,7 @@ struct WorkoutPraiseAchievement: Identifiable, Hashable {
     let icon: String
     let title: String
     let detail: String
+    var badgeID: String? = nil
 }
 
 @MainActor
@@ -54,349 +59,101 @@ enum WorkoutPraiseHaptics {
 @MainActor
 enum WorkoutPraiseEvaluator {
     static func strength(
-        clientEmail: String,
-        workoutTitle: String,
-        entryDate: String,
-        startedAt: Date,
-        drafts: [WorkoutSetDraft],
-        history: [WorkoutHistorySession],
-        weeklyGoal: Int
+        clientEmail: String, workoutTitle: String, entryDate: String, startedAt: Date,
+        drafts: [WorkoutSetDraft], history: [WorkoutHistorySession], weeklyGoal: Int,
+        sessionID: UUID? = nil, historyIsComplete: Bool = true,
+        syncPending: Bool = false, recordAwards: Bool = true
     ) -> WorkoutCelebration {
-        let sessionKey = normalizedSessionKey(
-            clientEmail: clientEmail,
-            entryDate: entryDate,
-            workoutTitle: workoutTitle
-        )
-        let prior = priorSessions(history, entryDate: entryDate, workoutTitle: workoutTitle)
-        // Warm-up work supports the session without changing working-set totals,
-        // volume milestones, or personal-record evaluation.
-        let completed = drafts.filter { !$0.isWarmUp && ($0.isCompleted || $0.containsEntry) }
-        let personalRecords = personalRecordNames(current: completed, prior: prior)
-        var achievements = milestoneAchievements(
-            clientEmail: clientEmail,
-            sessionKey: sessionKey,
-            entryDate: entryDate,
-            prior: prior,
-            weeklyGoal: weeklyGoal,
-            isCardio: false
-        )
-
-        if !personalRecords.isEmpty {
-            let names = ListFormatter.localizedString(byJoining: Array(personalRecords.prefix(2)))
-            let suffix = personalRecords.count > 2 ? " and more" : ""
-            achievements.append(
-                WorkoutPraiseAchievement(
-                    id: "personal-record",
-                    icon: "trophy.fill",
-                    title: personalRecords.count == 1 ? "New Personal Best" : "New Personal Bests",
-                    detail: "You set a new mark in \(names)\(suffix)."
-                )
-            )
+        let finishedAt = history.flatMap(\.records).filter { sessionID != nil && $0.sessionID == sessionID }
+            .compactMap(\.completedAt).min() ?? Date()
+        let completed = drafts.filter { !$0.isWarmUp && $0.isCompleted }
+        let records = completed.map { draft in
+            WorkoutHistoryRecord(sessionID: sessionID, setID: draft.id,
+                entryDate: entryDate, workoutTitle: workoutTitle, exerciseCode: draft.exerciseCode,
+                exerciseName: draft.exerciseName, setNumber: draft.setNumber,
+                weightUsed: draft.weightValue, reps: draft.repsValue, notes: draft.notes,
+                completedAt: finishedAt, setType: draft.setType,
+                durationSeconds: draft.setType == .timed ? draft.durationValue : nil)
         }
-
-        achievements = WorkoutPraiseLedger.unawarded(
-            achievements,
-            clientEmail: clientEmail,
-            sessionKey: sessionKey
-        )
-        WorkoutPraiseLedger.record(
-            achievements,
-            clientEmail: clientEmail,
-            sessionKey: sessionKey
-        )
-
         let duration = max(Int(Date().timeIntervalSince(startedAt) / 60), 1)
-        let weeklyCompleted = workoutsInCurrentWeek(prior, including: entryDate)
-        let completedSets = completed.filter(\.isCompleted).count
-        let setCount = completedSets > 0 ? completedSets : completed.count
-        let volume = completed.reduce(0) { $0 + $1.volume }
-
-        return WorkoutCelebration(
-            sessionKey: sessionKey,
-            workoutTitle: workoutTitle,
-            headline: "YOU SHOWED UP.",
-            message: closingMessage(weeklyCompleted: weeklyCompleted, weeklyGoal: weeklyGoal),
-            metrics: [
-                WorkoutCelebrationMetric(title: "TIME", value: "\(duration) min"),
-                WorkoutCelebrationMetric(title: "SETS", value: "\(setCount)"),
-                WorkoutCelebrationMetric(title: "VOLUME", value: format(volume, suffix: " lb"))
-            ],
-            achievements: achievements,
-            weeklyCompleted: weeklyCompleted,
-            weeklyGoal: max(weeklyGoal, 1)
-        )
+        return celebration(clientEmail: clientEmail, workoutTitle: workoutTitle, entryDate: entryDate,
+            sessionID: sessionID, records: records, history: history, weeklyGoal: weeklyGoal,
+            metrics: [WorkoutCelebrationMetric(title: "TIME", value: "\(duration) min"),
+                      WorkoutCelebrationMetric(title: "SETS", value: "\(completed.count)"),
+                      WorkoutCelebrationMetric(title: "VOLUME", value: format(completed.reduce(0) { $0 + $1.volume }, suffix: " lb"))],
+            historyIsComplete: historyIsComplete, syncPending: syncPending, recordAwards: recordAwards)
     }
 
     static func cardio(
-        clientEmail: String,
-        cardioType: String,
-        entryDate: String,
-        durationMinutes: Double,
-        distanceMiles: Double?,
-        calories: Double?,
-        history: [WorkoutHistorySession],
-        weeklyGoal: Int
+        clientEmail: String, cardioType: String, entryDate: String,
+        durationMinutes: Double, distanceMiles: Double?, calories: Double?,
+        history: [WorkoutHistorySession], weeklyGoal: Int, sessionID: UUID? = nil,
+        historyIsComplete: Bool = true, syncPending: Bool = false
     ) -> WorkoutCelebration {
-        let workoutTitle = "Cardio"
-        let sessionKey = normalizedSessionKey(
-            clientEmail: clientEmail,
-            entryDate: entryDate,
-            workoutTitle: workoutTitle
-        )
-        let prior = priorSessions(history, entryDate: entryDate, workoutTitle: workoutTitle)
-        var achievements = milestoneAchievements(
-            clientEmail: clientEmail,
-            sessionKey: sessionKey,
-            entryDate: entryDate,
-            prior: prior,
-            weeklyGoal: weeklyGoal,
-            isCardio: true
-        )
-        achievements = WorkoutPraiseLedger.unawarded(
-            achievements,
-            clientEmail: clientEmail,
-            sessionKey: sessionKey
-        )
-        WorkoutPraiseLedger.record(
-            achievements,
-            clientEmail: clientEmail,
-            sessionKey: sessionKey
-        )
-
-        let weeklyCompleted = workoutsInCurrentWeek(prior, including: entryDate)
-        var metrics = [
-            WorkoutCelebrationMetric(title: "TIME", value: format(durationMinutes, suffix: " min"))
-        ]
-        if let distanceMiles, distanceMiles > 0 {
-            metrics.append(WorkoutCelebrationMetric(title: "DISTANCE", value: format(distanceMiles, suffix: " mi")))
-        }
-        if let calories, calories > 0 {
-            metrics.append(WorkoutCelebrationMetric(title: "CALORIES", value: format(calories, suffix: "")))
-        }
-
-        return WorkoutCelebration(
-            sessionKey: sessionKey,
-            workoutTitle: cardioType,
-            headline: "CARDIO COMPLETE.",
-            message: closingMessage(weeklyCompleted: weeklyCompleted, weeklyGoal: weeklyGoal),
-            metrics: metrics,
-            achievements: achievements,
-            weeklyCompleted: weeklyCompleted,
-            weeklyGoal: max(weeklyGoal, 1)
-        )
+        let record = WorkoutHistoryRecord(sessionID: sessionID, entryDate: entryDate, workoutTitle: "Cardio",
+            exerciseCode: "CARDIO", exerciseName: cardioType, setNumber: 1,
+            weightUsed: durationMinutes, reps: distanceMiles, notes: nil, completedAt: Date())
+        var metrics = [WorkoutCelebrationMetric(title: "TIME", value: format(durationMinutes, suffix: " min"))]
+        if let distanceMiles, distanceMiles > 0 { metrics.append(.init(title: "DISTANCE", value: format(distanceMiles, suffix: " mi"))) }
+        if let calories, calories > 0 { metrics.append(.init(title: "CALORIES", value: format(calories, suffix: ""))) }
+        return celebration(clientEmail: clientEmail, workoutTitle: cardioType, entryDate: entryDate,
+            sessionID: sessionID, records: [record], history: history, weeklyGoal: weeklyGoal, metrics: metrics,
+            historyIsComplete: historyIsComplete, syncPending: syncPending, recordAwards: true)
     }
 
-    private static func milestoneAchievements(
-        clientEmail: String,
-        sessionKey: String,
-        entryDate: String,
-        prior: [WorkoutHistorySession],
-        weeklyGoal: Int,
-        isCardio: Bool
-    ) -> [WorkoutPraiseAchievement] {
-        var achievements: [WorkoutPraiseAchievement] = []
-        let workoutCount = prior.count + 1
-        let priorWeeklyCount = workoutsInCurrentWeek(prior, including: nil)
-        let currentWeeklyCount = workoutsInCurrentWeek(prior, including: entryDate)
-
-        if prior.isEmpty {
-            achievements.append(
-                WorkoutPraiseAchievement(
-                    id: "first-workout",
-                    icon: "flag.checkered",
-                    title: "First Workout",
-                    detail: "Your first FWB workout is in the books."
-                )
-            )
+    private static func celebration(
+        clientEmail: String, workoutTitle: String, entryDate: String, sessionID: UUID?,
+        records: [WorkoutHistoryRecord], history: [WorkoutHistorySession], weeklyGoal: Int,
+        metrics: [WorkoutCelebrationMetric], historyIsComplete: Bool, syncPending: Bool, recordAwards: Bool
+    ) -> WorkoutCelebration {
+        let sessionKey = ClientAchievementEngine.sessionKey(sessionID: sessionID, entryDate: entryDate,
+                                                            workoutTitle: records.first?.workoutTitle ?? workoutTitle)
+        let previousRecords = history.flatMap(\.records)
+        let prior = previousRecords.filter {
+            ClientAchievementEngine.sessionKey(sessionID: $0.sessionID, entryDate: $0.entryDate, workoutTitle: $0.workoutTitle) != sessionKey
         }
-
-        if workoutCount >= 5, prior.count < 5 {
-            achievements.append(
-                WorkoutPraiseAchievement(
-                    id: "five-workouts",
-                    icon: "flame.fill",
-                    title: "Five Workouts Complete",
-                    detail: "You’re building real consistency."
-                )
-            )
+        let all = prior + records
+        let reliable = historyIsComplete && !syncPending
+        let before = ClientAchievementEngine.evaluate(records: previousRecords, today: AchievementDisplay.today)
+        let after = ClientAchievementEngine.evaluate(records: all, today: AchievementDisplay.today)
+        let previousEventIDs = Set(before.events.map(\.id))
+        let freshEvents = reliable ? after.events.filter { $0.sessionID == sessionKey && !previousEventIDs.contains($0.id) } : []
+        let candidates = freshEvents.map { event in
+            WorkoutPraiseAchievement(id: event.id,
+                icon: event.badgeID.flatMap { id in after.badges.first { $0.id == id }?.icon } ?? "trophy.fill",
+                title: event.title, detail: event.detail, badgeID: event.badgeID)
         }
-
-        let goal = max(weeklyGoal, 1)
-        if priorWeeklyCount < goal, currentWeeklyCount >= goal {
-            achievements.append(
-                WorkoutPraiseAchievement(
-                    id: "weekly-goal-\(weekIdentifier(for: entryDate))",
-                    icon: "calendar.badge.checkmark",
-                    title: "Weekly Goal Complete",
-                    detail: "You completed \(goal) workout\(goal == 1 ? "" : "s") this week."
-                )
-            )
+        let achievements = recordAwards ? WorkoutPraiseLedger.unawarded(candidates, clientEmail: clientEmail, sessionKey: sessionKey) : candidates
+        let firstPresentation = !WorkoutPraiseLedger.hasPresented(clientEmail: clientEmail, sessionKey: sessionKey)
+        if reliable && recordAwards {
+            WorkoutPraiseLedger.record(achievements, clientEmail: clientEmail, sessionKey: sessionKey)
+            WorkoutPraiseLedger.markPresented(clientEmail: clientEmail, sessionKey: sessionKey)
         }
-
-        if isCardio, !prior.contains(where: { !$0.cardioRecords.isEmpty }) {
-            achievements.append(
-                WorkoutPraiseAchievement(
-                    id: "first-cardio",
-                    icon: "figure.run",
-                    title: "First Cardio Workout",
-                    detail: "You added dedicated cardio to your training."
-                )
-            )
-        }
-
-        if hasThreeConsistentWeeks(prior: prior, including: entryDate) &&
-            !hasThreeConsistentWeeks(prior: prior, including: nil) {
-            achievements.append(
-                WorkoutPraiseAchievement(
-                    id: "three-consistent-weeks-\(weekIdentifier(for: entryDate))",
-                    icon: "calendar.badge.clock",
-                    title: "Three Consistent Weeks",
-                    detail: "You trained in three consecutive weeks."
-                )
-            )
-        }
-
-        if let latestDate = prior.compactMap({ dateValue($0.entryDate) }).max(),
-           let currentDate = dateValue(entryDate),
-           Calendar.current.dateComponents([.day], from: latestDate, to: currentDate).day ?? 0 >= 14 {
-            achievements.append(
-                WorkoutPraiseAchievement(
-                    id: "comeback-\(sessionKey)",
-                    icon: "arrow.uturn.up.circle.fill",
-                    title: "Comeback Workout",
-                    detail: "You came back and got the work done."
-                )
-            )
-        }
-
-        return achievements
+        let leveledUp = reliable && (firstPresentation || !recordAwards) && after.level.number > before.level.number
+        let weeklyCompleted = completedThisWeek(all, reference: entryDate)
+        return WorkoutCelebration(sessionKey: sessionKey, workoutTitle: workoutTitle,
+            headline: leveledUp ? "LEVEL UP!" : achievements.isEmpty ? "YOU SHOWED UP." : "LOOK AT YOU GO!",
+            message: syncPending ? "Your workout is saved on this iPhone. Your wins will update after it syncs."
+                : !historyIsComplete ? "Workout saved. Refresh your history to see your latest badges and level."
+                : "Another step forward. Celebrate your effort, then recover well.",
+            metrics: metrics, achievements: achievements, weeklyCompleted: weeklyCompleted,
+            weeklyGoal: max(weeklyGoal, 1), progress: reliable ? after : nil,
+            earnedXP: reliable && (firstPresentation || !recordAwards) ? max(0, after.xp - before.xp) : 0,
+            leveledUp: leveledUp, awardsPendingSync: !reliable)
     }
 
-    private static func personalRecordNames(
-        current: [WorkoutSetDraft],
-        prior: [WorkoutHistorySession]
-    ) -> [String] {
-        let strengthGroups = Dictionary(
-            grouping: current.filter { $0.setType.countsTowardWorkingMetrics }
-        ) { normalizedExercise($0.exerciseName, code: $0.exerciseCode) }
-        let timedGroups = Dictionary(
-            grouping: current.filter { $0.setType == .timed && $0.durationValue > 0 }
-        ) { normalizedExercise($0.exerciseName, code: $0.exerciseCode) }
-        let priorRecords = prior.flatMap(\.records).filter { !$0.isCardio }
-        let priorStrengthGroups = Dictionary(
-            grouping: priorRecords.filter(\.countsTowardWorkingMetrics)
-        ) { normalizedExercise($0.exerciseName, code: $0.exerciseCode) }
-        let priorTimedGroups = Dictionary(
-            grouping: priorRecords.filter { $0.resolvedSetType == .timed && ($0.durationSeconds ?? 0) > 0 }
-        ) { normalizedExercise($0.exerciseName, code: $0.exerciseCode) }
-
-        let strengthRecords: [String] = strengthGroups.compactMap { entry in
-            let (key, drafts) = entry
-            guard let records = priorStrengthGroups[key], !records.isEmpty else { return nil }
-            let currentScore = drafts.map { strengthScore(weight: $0.weightValue, reps: $0.repsValue) }.max() ?? 0
-            let priorScore = records.map { strengthScore(weight: $0.weightUsed, reps: $0.reps ?? 0) }.max() ?? 0
-            guard currentScore > priorScore + 0.01 else { return nil }
-            let name = drafts.first?.exerciseName.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-            return name.isEmpty ? drafts.first?.exerciseCode ?? "Exercise" : name
-        }
-
-        let timedRecords: [String] = timedGroups.compactMap { entry in
-            let (key, drafts) = entry
-            guard let records = priorTimedGroups[key], !records.isEmpty else { return nil }
-            let currentDuration = drafts.map(\.durationValue).max() ?? 0
-            let priorDuration = records.compactMap(\.durationSeconds).max() ?? 0
-            guard currentDuration > priorDuration + 0.01 else { return nil }
-            let name = drafts.first?.exerciseName.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-            return name.isEmpty ? drafts.first?.exerciseCode ?? "Exercise" : name
-        }
-
-        return Array(Set(strengthRecords + timedRecords)).sorted()
-    }
-
-    private static func strengthScore(weight: Double, reps: Double) -> Double {
-        weight > 0 ? weight * (1 + max(reps, 0) / 30) : max(reps, 0)
-    }
-
-    private static func priorSessions(
-        _ sessions: [WorkoutHistorySession],
-        entryDate: String,
-        workoutTitle: String
-    ) -> [WorkoutHistorySession] {
-        sessions.filter {
-            !($0.entryDate == entryDate &&
-              $0.workoutTitle.caseInsensitiveCompare(workoutTitle) == .orderedSame)
-        }
-    }
-
-    private static func workoutsInCurrentWeek(
-        _ sessions: [WorkoutHistorySession],
-        including entryDate: String?
-    ) -> Int {
-        let reference = entryDate.flatMap(dateValue) ?? Date()
-        let calendar = Calendar.current
-        let sessionIDs = sessions.compactMap { session -> String? in
-            guard let date = dateValue(session.entryDate), calendar.isDate(date, equalTo: reference, toGranularity: .weekOfYear) else {
-                return nil
-            }
-            return session.id
-        }
-        return Set(sessionIDs + (entryDate.map { ["\($0)|current"] } ?? [])).count
-    }
-
-    private static func hasThreeConsistentWeeks(
-        prior: [WorkoutHistorySession],
-        including entryDate: String?
-    ) -> Bool {
-        let calendar = Calendar.current
-        var dates = prior.compactMap { dateValue($0.entryDate) }
-        if let entryDate, let date = dateValue(entryDate) {
-            dates.append(date)
-        }
-        let weekStarts = Set(dates.compactMap { calendar.dateInterval(of: .weekOfYear, for: $0)?.start })
-        guard weekStarts.count >= 3 else { return false }
-        let sorted = weekStarts.sorted()
-        return sorted.indices.dropFirst(2).contains { index in
-            guard let oneWeekBack = calendar.date(byAdding: .weekOfYear, value: -1, to: sorted[index]),
-                  let twoWeeksBack = calendar.date(byAdding: .weekOfYear, value: -2, to: sorted[index]) else {
-                return false
-            }
-            return weekStarts.contains(oneWeekBack) && weekStarts.contains(twoWeeksBack)
-        }
-    }
-
-    private static func closingMessage(weeklyCompleted: Int, weeklyGoal: Int) -> String {
-        if weeklyCompleted >= max(weeklyGoal, 1) {
-            return "Weekly goal complete. Be proud of the work you put in."
-        }
-        let remaining = max(weeklyGoal - weeklyCompleted, 0)
-        return "Strong work. \(remaining) more workout\(remaining == 1 ? "" : "s") to reach your weekly goal."
-    }
-
-    private static func normalizedExercise(_ name: String, code: String) -> String {
-        let normalizedName = name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        return normalizedName.isEmpty ? code.lowercased() : normalizedName
-    }
-
-    private static func normalizedSessionKey(clientEmail: String, entryDate: String, workoutTitle: String) -> String {
-        [
-            clientEmail.trimmingCharacters(in: .whitespacesAndNewlines).lowercased(),
-            entryDate,
-            workoutTitle.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        ].joined(separator: "|")
-    }
-
-    private static func weekIdentifier(for entryDate: String) -> String {
-        guard let date = dateValue(entryDate) else { return entryDate }
-        let components = Calendar.current.dateComponents([.yearForWeekOfYear, .weekOfYear], from: date)
-        return "\(components.yearForWeekOfYear ?? 0)-\(components.weekOfYear ?? 0)"
-    }
-
-    private static func dateValue(_ value: String) -> Date? {
+    private static func completedThisWeek(_ records: [WorkoutHistoryRecord], reference: String) -> Int {
         let formatter = DateFormatter()
-        formatter.calendar = Calendar(identifier: .gregorian)
         formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.calendar = Calendar(identifier: .iso8601)
         formatter.dateFormat = "yyyy-MM-dd"
-        return formatter.date(from: value)
+        guard let reference = formatter.date(from: reference) else { return 0 }
+        let calendar = Calendar(identifier: .iso8601)
+        return Set(records.compactMap { record -> String? in
+            guard record.completedAt != nil, let date = formatter.date(from: record.entryDate),
+                  calendar.isDate(date, equalTo: reference, toGranularity: .weekOfYear) else { return nil }
+            return ClientAchievementEngine.sessionKey(sessionID: record.sessionID, entryDate: record.entryDate, workoutTitle: record.workoutTitle)
+        }).count
     }
 
     private static func format(_ value: Double, suffix: String) -> String {
@@ -408,6 +165,16 @@ enum WorkoutPraiseEvaluator {
 @MainActor
 private enum WorkoutPraiseLedger {
     private static let key = "workoutPraiseAwardLedger.v1"
+
+    static func hasPresented(clientEmail: String, sessionKey: String) -> Bool {
+        (UserDefaults.standard.stringArray(forKey: key) ?? []).contains("\(clientEmail.lowercased())|\(sessionKey)|presented")
+    }
+
+    static func markPresented(clientEmail: String, sessionKey: String) {
+        var awarded = Set(UserDefaults.standard.stringArray(forKey: key) ?? [])
+        awarded.insert("\(clientEmail.lowercased())|\(sessionKey)|presented")
+        UserDefaults.standard.set(Array(awarded).sorted(), forKey: key)
+    }
 
     static func unawarded(
         _ achievements: [WorkoutPraiseAchievement],
@@ -498,100 +265,186 @@ private enum WorkoutDifficultyRating: Int, CaseIterable, Identifiable {
 struct WorkoutDifficultyPromptView: View {
     @Environment(\.dismiss) private var dismiss
     let request: WorkoutDifficultyPromptRequest
+    let onEnergyChange: (Int?, Int?) -> Void
+    let onCancel: (() -> Void)?
     let onComplete: (Int?) -> Void
 
-    @State private var selection: WorkoutDifficultyRating?
+    @State private var selection: Int?
+    @State private var energyBefore: Int?
+    @State private var energyAfter: Int?
+    @State private var hasResolved = false
+
+    init(
+        request: WorkoutDifficultyPromptRequest,
+        onEnergyChange: @escaping (Int?, Int?) -> Void = { _, _ in },
+        onCancel: (() -> Void)? = nil,
+        onComplete: @escaping (Int?) -> Void
+    ) {
+        self.request = request
+        self.onEnergyChange = onEnergyChange
+        self.onCancel = onCancel
+        self.onComplete = onComplete
+    }
 
     var body: some View {
         ZStack {
             Color.fwbBackground.ignoresSafeArea()
 
             ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("WORKOUT COMPLETE")
-                            .font(.footnote.weight(.black))
-                            .tracking(1.5)
-                            .foregroundStyle(Color.fwbLime)
+                VStack(alignment: .leading, spacing: 24) {
+                    VStack(alignment: .leading, spacing: 10) {
+                        HStack {
+                            Text("WORKOUT COMPLETE")
+                                .font(FWBFont.footnote.weight(.black))
+                                .tracking(1.5)
+                                .foregroundStyle(Color.fwbLime)
+                            Spacer()
+                            if onCancel != nil {
+                                Button {
+                                    cancel()
+                                } label: {
+                                    Image(systemName: "xmark")
+                                        .font(FWBFont.body.weight(.bold))
+                                        .frame(width: 44, height: 44)
+                                }
+                                .buttonStyle(.plain)
+                                .accessibilityLabel("Cancel and return to workout")
+                                .accessibilityIdentifier("workout.difficulty.cancel")
+                            }
+                        }
 
-                        Text("HOW DIFFICULT WAS THIS WORKOUT?")
-                            .font(.system(.largeTitle, design: .default).weight(.black))
-                            .fontWidth(.condensed)
+                        Text("How was your workout?")
+                            .font(FWBFont.sized(30).weight(.black))
                             .foregroundStyle(Color.fwbWarmWhite)
                             .fixedSize(horizontal: false, vertical: true)
 
                         Text(request.workoutTitle.fwbTitleCased)
-                            .font(.headline.weight(.bold))
+                            .font(FWBFont.headline.weight(.bold))
                             .foregroundStyle(Color.fwbMuted)
                             .fixedSize(horizontal: false, vertical: true)
+
+                        Text("Congratulations for completing the workout!")
+                            .font(FWBFont.subheadline)
+                            .foregroundStyle(Color.fwbMuted)
                     }
 
-                    VStack(spacing: 10) {
-                        ForEach(WorkoutDifficultyRating.allCases) { rating in
-                            Button {
-                                selection = rating
-                            } label: {
-                                HStack(spacing: 14) {
-                                    Text("\(rating.rawValue)")
-                                        .font(.title3.weight(.black))
-                                        .frame(width: 32, alignment: .leading)
+                    ratingControl(
+                        title: "How hard was it overall?",
+                        value: $selection,
+                        labels: WorkoutDifficultyRating.allCases.map { $0.title.lowercased() },
+                        identifier: "workout.difficulty"
+                    )
 
-                                    Text(rating.title)
-                                        .font(.headline.weight(.black))
-                                        .tracking(0.5)
+                    FWBRule()
 
-                                    Spacer(minLength: 0)
-
-                                    Image(systemName: selection == rating ? "checkmark.square.fill" : "square")
-                                        .font(.title3.weight(.bold))
-                                }
-                                .foregroundStyle(selection == rating ? Color.black : Color.fwbWarmWhite)
-                                .padding(.horizontal, 16)
-                                .frame(maxWidth: .infinity, minHeight: 58)
-                                .background(selection == rating ? Color.fwbAccentFill : Color.fwbCard, in: Rectangle())
-                                .overlay {
-                                    Rectangle().stroke(
-                                        selection == rating ? Color.fwbLime : Color.fwbLine,
-                                        lineWidth: 1
-                                    )
-                                }
-                            }
-                            .buttonStyle(.plain)
-                            .accessibilityLabel("\(rating.rawValue), \(rating.title.lowercased())")
-                            .accessibilityAddTraits(selection == rating ? .isSelected : [])
-                            .accessibilityIdentifier("workout.difficulty.\(rating.rawValue)")
+                    VStack(alignment: .leading, spacing: 18) {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("How was your energy?")
+                                .font(FWBFont.title3.weight(.black))
+                            Text("Rate your energy before and after this workout. Energy ratings are optional.")
+                                .font(FWBFont.subheadline)
+                                .foregroundStyle(Color.fwbMuted)
                         }
+
+                        ratingControl(
+                            title: "Before the workout",
+                            value: $energyBefore,
+                            labels: ["Very low", "Low", "Moderate", "High", "Very high"],
+                            identifier: "workout.energy.before"
+                        )
+                        ratingControl(
+                            title: "After the workout",
+                            value: $energyAfter,
+                            labels: ["Very low", "Low", "Moderate", "High", "Very high"],
+                            identifier: "workout.energy.after"
+                        )
                     }
 
-                    HStack(spacing: 10) {
-                        Button("SKIP") {
-                            complete(with: nil)
-                        }
-                        .buttonStyle(FWBSecondaryButtonStyle())
-                        .accessibilityIdentifier("workout.difficulty.skip")
-
-                        Button("SAVE") {
-                            complete(with: selection?.rawValue)
-                        }
-                        .buttonStyle(FWBPrimaryButtonStyle())
-                        .disabled(selection == nil)
-                        .accessibilityIdentifier("workout.difficulty.save")
+                    Button("SAVE AND FINISH WORKOUT") {
+                        complete(with: selection, includeEnergy: true)
                     }
+                    .buttonStyle(FWBPrimaryButtonStyle())
+                    .disabled(selection == nil)
+                    .accessibilityIdentifier("workout.difficulty.save")
+
+                    Button("SKIP FEEDBACK") {
+                        complete(with: nil, includeEnergy: false)
+                    }
+                    .buttonStyle(FWBSecondaryButtonStyle())
+                    .accessibilityIdentifier("workout.difficulty.skip")
                 }
                 .padding(20)
                 .padding(.bottom, 24)
+                .disabled(hasResolved)
             }
         }
         .interactiveDismissDisabled()
         .onAppear {
             UIAccessibility.post(
                 notification: .announcement,
-                argument: "Workout complete. How difficult was this workout?"
+                argument: "Workout complete. How was your workout?"
             )
         }
     }
 
-    private func complete(with rating: Int?) {
+    private func ratingControl(
+        title: String,
+        value: Binding<Int?>,
+        labels: [String],
+        identifier: String
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(title)
+                .font(FWBFont.headline.weight(.bold))
+
+            HStack(spacing: 8) {
+                ForEach(1...5, id: \.self) { rating in
+                    Button {
+                        value.wrappedValue = value.wrappedValue == rating ? nil : rating
+                    } label: {
+                        Text("\(rating)")
+                            .font(FWBFont.title3.weight(.black))
+                            .foregroundStyle(value.wrappedValue == rating ? Color.black : Color.fwbWarmWhite)
+                            .frame(maxWidth: .infinity, minHeight: 52)
+                            .background(
+                                value.wrappedValue == rating ? Color.fwbAccentFill : Color.fwbCard,
+                                in: RoundedRectangle(cornerRadius: 12)
+                            )
+                            .overlay {
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(value.wrappedValue == rating ? Color.fwbWarmWhite : Color.fwbLine, lineWidth: 1.5)
+                            }
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("\(title), \(rating), \(labels[rating - 1])")
+                    .accessibilityAddTraits(value.wrappedValue == rating ? .isSelected : [])
+                    .accessibilityIdentifier("\(identifier).\(rating)")
+                }
+            }
+
+            HStack(alignment: .top) {
+                Text("1 · \(labels[0].capitalized)")
+                Spacer()
+                Text("5 · \(labels[4].capitalized)")
+                    .multilineTextAlignment(.trailing)
+            }
+            .font(FWBFont.footnote)
+            .foregroundStyle(Color.fwbMuted)
+        }
+    }
+
+    private func cancel() {
+        guard !hasResolved else { return }
+        hasResolved = true
+        dismiss()
+        onCancel?()
+    }
+
+    private func complete(with rating: Int?, includeEnergy: Bool) {
+        guard !hasResolved else { return }
+        hasResolved = true
+        // Capture energy synchronously before the logger starts its save.
+        onEnergyChange(includeEnergy ? energyBefore : nil, includeEnergy ? energyAfter : nil)
         dismiss()
         Task { @MainActor in
             await Task.yield()
@@ -601,15 +454,13 @@ struct WorkoutDifficultyPromptView: View {
 }
 
 struct WorkoutCelebrationView: View {
-    @Environment(\.dismiss) private var dismiss
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.dismiss) private var dismiss
     let celebration: WorkoutCelebration
     var onContinue: () -> Void = {}
 
     @State private var isAnimated = false
-    @State private var animatedWeeklyProgress = 0.0
-    @State private var isGoalCelebrated = false
-    @State private var revealedAchievementIDs: Set<String> = []
 
     var body: some View {
         ZStack {
@@ -619,6 +470,13 @@ struct WorkoutCelebrationView: View {
                 VStack(alignment: .leading, spacing: 20) {
                     celebrationHero
                     summaryCard
+                    if let progress = celebration.progress {
+                        if celebration.earnedXP > 0 {
+                            Label("+\(celebration.earnedXP) XP earned", systemImage: "sparkles")
+                                .font(FWBFont.title3.weight(.bold)).foregroundStyle(Color.fwbLime)
+                        }
+                        ClientAchievementLevelCard(snapshot: progress)
+                    }
                     weeklyGoalCard
 
                     if !celebration.achievements.isEmpty {
@@ -639,9 +497,10 @@ struct WorkoutCelebrationView: View {
             }
         }
         .interactiveDismissDisabled()
-        .task {
+        .onAppear {
+            if reduceMotion { isAnimated = true }
+            else { withAnimation(.spring(response: 0.55, dampingFraction: 0.72)) { isAnimated = true } }
             UIAccessibility.post(notification: .announcement, argument: celebration.headline)
-            await runCelebrationAnimation()
         }
     }
 
@@ -691,10 +550,7 @@ struct WorkoutCelebrationView: View {
                 .foregroundStyle(Color.fwbLime)
 
             LazyVGrid(
-                columns: [
-                    GridItem(.flexible(), spacing: 10),
-                    GridItem(.flexible(), spacing: 10)
-                ],
+                columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: dynamicTypeSize.isAccessibilitySize ? 1 : 2),
                 alignment: .leading,
                 spacing: 12
             ) {
@@ -733,20 +589,9 @@ struct WorkoutCelebrationView: View {
                         .foregroundStyle(Color.fwbWarmWhite)
                 }
                 Spacer()
-                HStack(spacing: 8) {
-                    if didMeetWeeklyGoal {
-                        Image(systemName: "checkmark.seal.fill")
-                            .font(.title2.weight(.black))
-                            .foregroundStyle(Color.fwbLime)
-                            .scaleEffect(isGoalCelebrated ? 1 : 0.55)
-                            .rotationEffect(.degrees(isGoalCelebrated ? 0 : -18))
-                            .opacity(isGoalCelebrated ? 1 : 0)
-                    }
-
-                    Text("\(min(celebration.weeklyCompleted, celebration.weeklyGoal))/\(celebration.weeklyGoal)")
-                        .font(.title2.weight(.black))
-                        .foregroundStyle(Color.fwbLime)
-                }
+                Text("\(min(celebration.weeklyCompleted, celebration.weeklyGoal))/\(celebration.weeklyGoal)")
+                    .font(.title2.weight(.black))
+                    .foregroundStyle(Color.fwbLime)
             }
 
             GeometryReader { geometry in
@@ -754,7 +599,12 @@ struct WorkoutCelebrationView: View {
                     Rectangle().fill(Color.fwbSurface)
                     Rectangle()
                         .fill(Color.fwbAccentFill)
-                        .frame(width: geometry.size.width * animatedWeeklyProgress)
+                        .frame(
+                            width: geometry.size.width * min(
+                                Double(celebration.weeklyCompleted) / Double(celebration.weeklyGoal),
+                                1
+                            )
+                        )
                 }
             }
             .frame(height: 8)
@@ -771,18 +621,18 @@ struct WorkoutCelebrationView: View {
                 .foregroundStyle(Color.fwbLime)
 
             ForEach(celebration.achievements) { achievement in
-                HStack(spacing: 14) {
-                    Image(systemName: achievement.icon)
-                        .font(.title3.weight(.black))
-                        .foregroundStyle(Color.black)
-                        .frame(width: 48, height: 48)
-                        .background(Color.fwbAccentFill, in: Rectangle())
+                let awardLayout = dynamicTypeSize.isAccessibilitySize
+                    ? AnyLayout(VStackLayout(alignment: .leading, spacing: 12))
+                    : AnyLayout(HStackLayout(alignment: .center, spacing: 14))
+                awardLayout {
+                    ClientAchievementArtwork(badgeID: achievement.badgeID ?? "pr-1", size: 72)
 
                     VStack(alignment: .leading, spacing: 4) {
                         Text(achievement.title)
                             .font(.headline.weight(.black))
                             .fontWidth(.condensed)
                             .foregroundStyle(Color.fwbWarmWhite)
+                            .fixedSize(horizontal: false, vertical: true)
                         Text(achievement.detail)
                             .font(.subheadline)
                             .foregroundStyle(Color.fwbMuted)
@@ -791,58 +641,7 @@ struct WorkoutCelebrationView: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .fwbCard()
-                .scaleEffect(revealedAchievementIDs.contains(achievement.id) ? 1 : 0.9)
-                .offset(y: revealedAchievementIDs.contains(achievement.id) ? 0 : 14)
-                .opacity(revealedAchievementIDs.contains(achievement.id) ? 1 : 0)
                 .accessibilityElement(children: .combine)
-            }
-        }
-    }
-
-    private var weeklyProgress: Double {
-        min(
-            Double(celebration.weeklyCompleted) / Double(max(celebration.weeklyGoal, 1)),
-            1
-        )
-    }
-
-    private var didMeetWeeklyGoal: Bool {
-        celebration.weeklyCompleted >= max(celebration.weeklyGoal, 1)
-    }
-
-    @MainActor
-    private func runCelebrationAnimation() async {
-        if reduceMotion {
-            isAnimated = true
-            animatedWeeklyProgress = weeklyProgress
-            isGoalCelebrated = didMeetWeeklyGoal
-            revealedAchievementIDs = Set(celebration.achievements.map(\.id))
-            return
-        }
-
-        withAnimation(.spring(response: 0.55, dampingFraction: 0.72)) {
-            isAnimated = true
-        }
-
-        try? await Task.sleep(nanoseconds: 180_000_000)
-        guard !Task.isCancelled else { return }
-        withAnimation(.easeOut(duration: 0.7)) {
-            animatedWeeklyProgress = weeklyProgress
-        }
-
-        if didMeetWeeklyGoal {
-            try? await Task.sleep(nanoseconds: 350_000_000)
-            guard !Task.isCancelled else { return }
-            withAnimation(.spring(response: 0.42, dampingFraction: 0.62)) {
-                isGoalCelebrated = true
-            }
-        }
-
-        for achievement in celebration.achievements {
-            try? await Task.sleep(nanoseconds: 140_000_000)
-            guard !Task.isCancelled else { return }
-            withAnimation(.spring(response: 0.44, dampingFraction: 0.7)) {
-                _ = revealedAchievementIDs.insert(achievement.id)
             }
         }
     }

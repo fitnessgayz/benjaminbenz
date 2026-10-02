@@ -425,7 +425,10 @@ struct CardioLoggingView<WorkoutSelector: View>: View {
                 distanceMiles: Double(distance),
                 calories: Double(calories),
                 history: achievementHistoryStore.sessions,
-                weeklyGoal: weeklyWorkoutGoal
+                weeklyGoal: weeklyWorkoutGoal,
+                sessionID: sessionID,
+                historyIsComplete: achievementHistoryStore.hasCompleteHistory && offlineSyncStore.state == .synced,
+                syncPending: result == .queued
             )
             WorkoutPraiseHaptics.workoutComplete(isEnabled: workoutPraiseHapticsEnabled)
 

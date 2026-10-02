@@ -16,7 +16,11 @@ struct ClientQuestionnaireView: View {
                     .foregroundStyle(Color.fwbMuted)
                 switch loadState {
                 case .loading:
-                    ProgressView("Loading your questionnaire…").frame(maxWidth: .infinity).padding(.vertical, 24)
+                    FWBLoadingState(
+                        title: "Loading your questionnaire",
+                        message: "Your answers stay connected to your FWB Training account."
+                    )
+                    .frame(minHeight: 240)
                 case .failed(let message):
                     DestinationRetry(message: message) { Task { await load() } }
                 case .loaded:
@@ -124,7 +128,11 @@ struct ClientSessionsView: View {
                 DestinationHeading(kicker: "Sessions", title: "Sessions", status: snapshot?.countDisplay == "--" ? "No sessions yet" : snapshot?.countDisplay ?? "No sessions yet")
                 switch loadState {
                 case .loading:
-                    ProgressView("Loading your sessions…").frame(maxWidth: .infinity).padding(.vertical, 24)
+                    FWBLoadingState(
+                        title: "Loading your sessions",
+                        message: "Your upcoming coaching sessions will appear here."
+                    )
+                    .frame(minHeight: 240)
                 case .failed(let message):
                     DestinationRetry(message: message) { Task { await load() } }
                 case .loaded:

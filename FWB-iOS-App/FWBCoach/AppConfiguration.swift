@@ -2,15 +2,23 @@ import Foundation
 import Supabase
 
 enum AppConfiguration {
+    static let requiredAccountRole: AccountRole = .coach
     static let supabaseURL = URL(string: "https://qukdfjeupjhpthfbaonv.supabase.co")!
     static let supabasePublishableKey = "sb_publishable_qeOpd7yy_l0K2iwm7ri6VA_EqD7NOjy"
     static let coachEmail = "benjaminbenz.fit@gmail.com"
 
     static let clientWebPortalURL = URL(string: "https://benjaminbenz.com/client-dashboard.html")!
-    static let coachWebPortalURL = URL(string: "https://benjaminbenz.com/coach-admin.html")!
+    // Retain the existing allow-listed web recovery flow; the client app owns
+    // the fwb:// URL scheme, so installing both apps cannot steal its links.
     static let passwordResetURL = URL(string: "https://benjaminbenz.com/client-invite.html")!
     static let supportURL = URL(string: "mailto:fwb@benjaminbenz.com?subject=FWB%20Training%20support")!
     static let accountDeletionRequestURL = URL(string: "mailto:fwb@benjaminbenz.com?subject=FWB%20Training%20account%20deletion%20request")!
+
+    static func isPasswordResetURL(_ url: URL) -> Bool {
+        url.scheme?.lowercased() == "fwb"
+            && url.host?.lowercased() == "auth"
+            && url.path == "/password-reset"
+    }
 
     static let supabase = SupabaseClient(
         supabaseURL: supabaseURL,
@@ -29,20 +37,6 @@ enum AppConfiguration {
         #else
         KeychainLocalStorage(service: "com.benjaminbenz.fwbcoach.auth")
         #endif
-    }
-}
-
-enum AuthSessionPreference {
-    static let keepSignedInKey = "auth.keepSignedIn"
-
-    static var keepSignedIn: Bool {
-        get {
-            guard UserDefaults.standard.object(forKey: keepSignedInKey) != nil else { return true }
-            return UserDefaults.standard.bool(forKey: keepSignedInKey)
-        }
-        set {
-            UserDefaults.standard.set(newValue, forKey: keepSignedInKey)
-        }
     }
 }
 

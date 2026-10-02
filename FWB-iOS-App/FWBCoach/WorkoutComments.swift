@@ -436,7 +436,7 @@ struct WorkoutCommentsView: View {
             Text("START THE CONVERSATION")
                 .font(.headline.weight(.black))
                 .foregroundStyle(Color.fwbWarmWhite)
-            Text("Share how the session felt, flag an exercise, or ask a question. Benjamin will reply from the coach website.")
+            Text("Share how the session felt, flag an exercise, or ask a question. Benjamin will reply here.")
                 .font(.body)
                 .foregroundStyle(Color.fwbMuted)
                 .fixedSize(horizontal: false, vertical: true)

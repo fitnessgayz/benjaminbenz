@@ -4,6 +4,11 @@ struct ClientDashboardView: View {
     @ObservedObject var store: ClientProgramStore
     @ObservedObject var notificationStore: NotificationInboxStore
     let account: SignedInAccount
+    @ObservedObject var messagingStore: MessagingInboxStore
+    @ObservedObject var profilePhotoStore: ProfilePhotoStore
+    let openProfile: () -> Void
+    var dailyReadiness: DailyReadinessStore? = nil
+    var openDailyCheckIn: ((DailyCheckInEntry) -> Void)? = nil
     @State private var isShowingNotificationInbox = false
 
     var body: some View {
@@ -12,27 +17,49 @@ struct ClientDashboardView: View {
 
             switch store.state {
             case .idle, .loading:
-                DashboardPlaceholder()
+                VStack {
+                    messageCoachCard.padding(.horizontal, 16)
+                    ResumeWorkoutCard().padding(.horizontal, 16)
+                    DashboardPlaceholder()
+                }
             case .loaded:
                 if let program = store.program {
                     dashboard(program)
                 } else {
-                    FWBEmptyState(
-                        icon: "calendar.badge.clock",
-                        title: "Your plan is on the way",
-                        message: "You’re signed in. Your active training program will appear here after your coach publishes it."
-                    )
+                    ScrollView {
+                        VStack(spacing: 16) {
+                            messageCoachCard
+                            ResumeWorkoutCard()
+                            dailyCards
+                            ClientWinsHomeCard(clientEmail: account.email, previewMode: store.isPreview)
+                            FWBEmptyState(icon: "calendar.badge.clock", title: "Your plan is on the way",
+                                message: "Your active training program will appear here after your coach publishes it.")
+                        }.padding(16)
+                    }
                 }
             case .failed(let message):
-                FWBErrorState(message: message) {
-                    Task { await store.reload() }
-                }
+                VStack(spacing: 16) {
+                    messageCoachCard
+                    ResumeWorkoutCard()
+                    FWBErrorState(message: message) {
+                        Task { await store.reload() }
+                    }
+                }.padding(16)
             }
         }
         .navigationTitle("Home")
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(Color.fwbBackground, for: .navigationBar)
         .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button(action: openProfile) {
+                    ProfilePhotoAvatar(data: profilePhotoStore.imageData, size: 36)
+                        .frame(width: 44, height: 44)
+                        .contentShape(Circle())
+                }
+                .accessibilityLabel("Open your profile")
+                .accessibilityIdentifier("home.profile")
+            }
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button {
                     isShowingNotificationInbox = true
@@ -48,6 +75,7 @@ struct ClientDashboardView: View {
         .refreshable {
             await store.reload()
             await notificationStore.reload()
+            await messagingStore.refresh()
         }
     }
 
@@ -55,8 +83,11 @@ struct ClientDashboardView: View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 16) {
                 ClientGreeting(program: program)
-                ReadinessDashboardCard(clientEmail: account.email)
+                messageCoachCard
+                ResumeWorkoutCard()
+                dailyCards
                 WeeklyCoachCheckInCard(clientEmail: account.email)
+                ClientWinsHomeCard(clientEmail: account.email, previewMode: store.isPreview)
                 ClientHomeSnapshots(store: store, program: program, account: account)
 
                 if let workout = program.workouts.first {
@@ -78,10 +109,23 @@ struct ClientDashboardView: View {
             .padding(16)
         }
         .navigationDestination(for: Workout.self) { workout in
-            WorkoutLoggingView(workout: workout, clientEmail: account.email)
+            WorkoutLoggingView(workout: workout, clientEmail: account.email, previewMode: store.isPreview)
                 .navigationTitle("Workout Log")
                 .navigationBarTitleDisplayMode(.inline)
         }
+    }
+
+    @ViewBuilder private var messageCoachCard: some View {
+        if !store.isPreview { MessageCoachCard(inbox: messagingStore) }
+    }
+
+    @ViewBuilder private var dailyCards: some View {
+        if let dailyReadiness, let openDailyCheckIn {
+            DailyCheckInHomeCard(store: dailyReadiness, open: openDailyCheckIn)
+        } else {
+            ReadinessDashboardCard(clientEmail: account.email)
+        }
+        GymCheckInCard(account: account, previewMode: store.isPreview)
     }
 }
 
@@ -338,10 +382,16 @@ private struct CoachNoteCard: View {
 
 struct WorkoutLibraryView: View {
     @State private var programSelected = false
+    @StateObject private var exerciseLibraryStore = ExerciseLibraryStore()
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @ObservedObject var store: ClientProgramStore
-    @ObservedObject var notificationStore: NotificationInboxStore
     let clientEmail: String
+
+    init(store: ClientProgramStore, clientEmail: String, initiallySelected: Bool = false) {
+        self.store = store
+        self.clientEmail = clientEmail
+        _programSelected = State(initialValue: initiallySelected)
+    }
 
     private static let customWorkout = Workout(
         id: UUID(uuidString: "2EAF699D-F7CC-4DA8-A060-E029292B40C2")!,
@@ -363,13 +413,22 @@ struct WorkoutLibraryView: View {
         Group {
             switch store.state {
             case .idle, .loading:
-                ProgressView("Loading workouts…")
+                VStack(spacing: 16) {
+                    ResumeWorkoutCard()
+                    FWBLoadingState(
+                        title: "Preparing your workouts",
+                        message: "Your plan and saved progress stay connected across FWB Training."
+                    )
+                }.padding(16)
             case .loaded:
                 libraryContent
             case .failed(let message):
-                FWBErrorState(message: message) {
-                    Task { await store.reload() }
-                }
+                VStack(spacing: 16) {
+                    ResumeWorkoutCard()
+                    FWBErrorState(message: message) {
+                        Task { await store.reload() }
+                    }
+                }.padding(16)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
@@ -380,16 +439,25 @@ struct WorkoutLibraryView: View {
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 NavigationLink {
-                    NotificationInboxView(store: notificationStore)
+                    WorkoutHistoryView(clientEmail: clientEmail)
                 } label: {
-                    MessageInboxBadge(unreadCount: notificationStore.unreadCount)
+                    HStack(spacing: 6) {
+                        Text("Logs")
+                            .font(FWBFont.footnote.bold())
+                        Image(systemName: "list.bullet.clipboard")
+                            .font(FWBFont.subheadline.weight(.bold))
+                    }
+                    .foregroundStyle(Color.fwbLime)
                 }
-                .accessibilityIdentifier("workout.messages")
+                .accessibilityLabel("Workout history and log")
+                .accessibilityIdentifier("workout.history")
             }
         }
         .refreshable {
             await store.reload()
+            await exerciseLibraryStore.reload()
         }
+        .task { await exerciseLibraryStore.loadIfNeeded() }
     }
 
     @ViewBuilder
@@ -408,42 +476,36 @@ struct WorkoutLibraryView: View {
                         Text("Training sessions").font(FWBFont.title2.weight(.bold))
                     }
                     if !dynamicTypeSize.isAccessibilitySize { Spacer(minLength: 0) }
-                    Text("\(workouts.count) workouts")
+                    Text("\(workouts.count) WORKOUTS")
                         .font(FWBFont.caption.weight(.bold))
-                        .foregroundStyle(Color.fwbMuted)
+                        .foregroundStyle(Color.fwbBrandPrimaryInk)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 7)
-                        .background(Color.fwbSurface, in: RoundedRectangle(cornerRadius: 9))
+                        .background(Color.fwbAccentFill, in: RoundedRectangle(cornerRadius: 9))
                 }
+
+                ResumeWorkoutCard()
 
                 if !programSelected {
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("Select a program")
+                        Text("Choose how to train")
                             .font(FWBFont.title3.weight(.bold))
+                            .foregroundStyle(Color.fwbWarmWhite)
+                            .accessibilityAddTraits(.isHeader)
                         if !store.availablePrograms.isEmpty {
                             ForEach(store.availablePrograms) { program in
-                            Button {
-                                store.selectProgram(program.id)
-                                programSelected = true
-                            } label: {
-                                HStack(spacing: 16) {
-                                    Text(program.programTitle)
-                                        .font(FWBFont.body.weight(.bold))
-                                        .foregroundStyle(Color.fwbWarmWhite)
-                                    Spacer(minLength: 0)
-                                    Text("\(program.workouts.count) workouts")
-                                        .font(FWBFont.footnote)
-                                        .foregroundStyle(Color.fwbMuted)
-                                    Image(systemName: "arrow.right")
-                                        .foregroundStyle(Color.fwbMuted)
+                                Button {
+                                    store.selectProgram(program.id)
+                                    programSelected = true
+                                } label: {
+                                    WorkoutTrainingChoiceCard(
+                                        title: program.programTitle,
+                                        description: "Follow your assigned program · \(program.workouts.count) \(program.workouts.count == 1 ? "workout" : "workouts")",
+                                        icon: "calendar"
+                                    )
                                 }
-                                .padding(20)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .background(Color.fwbCard, in: RoundedRectangle(cornerRadius: 14))
-                                .overlay { RoundedRectangle(cornerRadius: 14).stroke(Color.fwbLine, lineWidth: 1) }
-                            }
-                            .buttonStyle(.plain)
-                            .accessibilityIdentifier("workout.selectProgram.\(program.id)")
+                                .buttonStyle(.plain)
+                                .accessibilityIdentifier("workout.selectProgram.\(program.id)")
                             }
                         } else {
                             Text("Your coach will add your program here. You can build a custom workout now.")
@@ -452,7 +514,6 @@ struct WorkoutLibraryView: View {
                         }
                         customWorkoutLink(suggestedExercises: suggestedExercises)
                     }
-                    .fwbCard()
                 } else {
                     VStack(alignment: .leading, spacing: 10) {
                         Button {
@@ -477,7 +538,8 @@ struct WorkoutLibraryView: View {
                             workout: workout,
                             index: index,
                             clientEmail: clientEmail,
-                            suggestedExercises: suggestedExercises
+                            suggestedExercises: suggestedExercises,
+                            approvedExercises: exerciseLibraryStore.exercises
                         )
                     }
                     WorkoutLayoutSaveStatus(store: store)
@@ -531,19 +593,60 @@ struct WorkoutLibraryView: View {
     }
 
     private func customWorkoutLink(suggestedExercises: [Exercise]) -> some View {
-        NavigationLink {
-            WorkoutLoggingView(
-                workout: Self.customWorkout,
-                clientEmail: clientEmail,
-                suggestedExercises: suggestedExercises
-            )
-            .navigationTitle("Custom workout")
-            .navigationBarTitleDisplayMode(.inline)
-        } label: {
-            Label("Build custom workout", systemImage: "plus")
+        VStack(alignment: .leading, spacing: 12) {
+            NavigationLink {
+                WorkoutLoggingView(
+                    workout: Self.customWorkout,
+                    clientEmail: clientEmail,
+                    suggestedExercises: suggestedExercises,
+                    previewMode: store.isPreview
+                )
+                .navigationTitle("Custom workout")
+                .navigationBarTitleDisplayMode(.inline)
+            } label: {
+                WorkoutTrainingChoiceCard(
+                    title: "Build custom workout",
+                    description: "Choose your exercises, sets, and reps to build your own session.",
+                    icon: "plus"
+                )
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("workout.quickStart.custom")
+
+            NavigationLink {
+                #if DEBUG
+                if store.isPreview {
+                    WorkoutGeneratorView(previewLibrary: WorkoutGeneratorAuditRootView.library, clientEmail: clientEmail)
+                } else {
+                    WorkoutGeneratorView(clientEmail: clientEmail, suggestedExercises: suggestedExercises)
+                }
+                #else
+                WorkoutGeneratorView(clientEmail: clientEmail, suggestedExercises: suggestedExercises)
+                #endif
+            } label: {
+                WorkoutTrainingChoiceCard(
+                    title: "Generate today’s workout",
+                    description: "Get a workout based on your focus, equipment, time, and intensity.",
+                    icon: "sparkles"
+                )
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("workout.quickStart.generate")
+
+            NavigationLink {
+                CardioLoggingView(clientEmail: clientEmail) { EmptyView() }
+                    .navigationTitle("Cardio")
+                    .navigationBarTitleDisplayMode(.inline)
+            } label: {
+                WorkoutTrainingChoiceCard(
+                    title: "Log cardio",
+                    description: "Record a walk, run, ride, swim, or machine session.",
+                    icon: "figure.run"
+                )
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("workout.quickStart.cardio")
         }
-        .buttonStyle(FWBPrimaryButtonStyle())
-        .accessibilityIdentifier("workout.quickStart.custom")
     }
 
     private func quickStartActions(suggestedExercises: [Exercise]) -> some View {
@@ -553,16 +656,6 @@ struct WorkoutLibraryView: View {
                 : [GridItem(.adaptive(minimum: 96), spacing: 10)],
             spacing: 10
         ) {
-            NavigationLink {
-                CardioLoggingView(clientEmail: clientEmail) { EmptyView() }
-                    .navigationTitle("Cardio")
-                    .navigationBarTitleDisplayMode(.inline)
-            } label: {
-                WorkoutQuickStartCard(title: "Cardio", subtitle: "Log a walk, run, ride, swim, or machine session", icon: "figure.run")
-            }
-            .buttonStyle(.plain)
-            .accessibilityIdentifier("workout.quickStart.cardio")
-
             NavigationLink {
                 WorkoutLoggingView(
                     workout: Self.mobilityWorkout,
@@ -580,54 +673,65 @@ struct WorkoutLibraryView: View {
     }
 }
 
-private struct MessageInboxBadge: View {
-    let unreadCount: Int
+private struct WorkoutTrainingChoiceCard: View {
+    let title: String
+    let description: String
+    let icon: String
+    @ScaledMetric(relativeTo: .headline) private var iconSize = 48.0
 
     var body: some View {
-        ZStack(alignment: .topTrailing) {
-            Image(systemName: unreadCount > 0 ? "message.fill" : "message")
-                .font(FWBFont.body.weight(.bold))
-                .foregroundStyle(Color.fwbLime)
-                .frame(width: 38, height: 38)
+        HStack(spacing: 14) {
+            Image(systemName: icon)
+                .font(.system(size: min(iconSize * 0.44, 27), weight: .semibold))
+                .foregroundStyle(Color.fwbBrandPrimaryInk)
+                .frame(width: min(iconSize, 64), height: min(iconSize, 64))
+                .background(Color.fwbAccentFill, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .accessibilityHidden(true)
 
-            if unreadCount > 0 {
-                Text(unreadCount > 99 ? "99+" : String(unreadCount))
-                    .font(.system(size: 9, weight: .black, design: .rounded))
-                    .foregroundStyle(Color.black)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
-                    .frame(minWidth: 17, minHeight: 17)
-                    .padding(.horizontal, unreadCount > 9 ? 2 : 0)
-                    .background(Color.fwbAccentFill, in: Capsule())
-                    .overlay { Capsule().stroke(Color.fwbBackground, lineWidth: 2) }
-                    .offset(x: 5, y: -3)
-                    .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 5) {
+                Text(title)
+                    .font(FWBFont.headline.weight(.bold))
+                    .foregroundStyle(Color.fwbWarmWhite)
+                Text(description)
+                    .font(FWBFont.subheadline)
+                    .foregroundStyle(Color.fwbMuted)
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .fixedSize(horizontal: false, vertical: true)
+            .multilineTextAlignment(.leading)
+
+            Image(systemName: "arrow.right")
+                .font(FWBFont.subheadline.weight(.semibold))
+                .foregroundStyle(Color.fwbMuted)
+                .accessibilityHidden(true)
         }
-        .accessibilityLabel(
-            unreadCount == 0
-                ? "Messages, no unread updates"
-                : "Messages, \(unreadCount) unread"
-        )
+        .frame(maxWidth: .infinity, minHeight: 96, alignment: .leading)
+        .fwbCard()
+        .contentShape(RoundedRectangle(cornerRadius: FWBLayout.cardRadius, style: .continuous))
+        .accessibilityElement(children: .combine)
     }
 }
 
 private struct WorkoutRoutineCard: View {
     @ObservedObject var store: ClientProgramStore
     @State private var editor: WorkoutPreviewEditRequest?
+    @State private var mediaViewer: ExerciseMediaViewerRequest?
     @State private var draggedIndex: Int?
     let workout: Workout
     let index: Int
     let clientEmail: String
     let suggestedExercises: [Exercise]
+    let approvedExercises: [ApprovedExercise]
     @State private var isExpanded: Bool
 
-    init(store: ClientProgramStore, workout: Workout, index: Int, clientEmail: String, suggestedExercises: [Exercise]) {
+    init(store: ClientProgramStore, workout: Workout, index: Int, clientEmail: String,
+         suggestedExercises: [Exercise], approvedExercises: [ApprovedExercise]) {
         self.store = store
         self.workout = workout
         self.index = index
         self.clientEmail = clientEmail
         self.suggestedExercises = suggestedExercises
+        self.approvedExercises = approvedExercises
         _isExpanded = State(initialValue: index == 0)
     }
 
@@ -677,6 +781,7 @@ private struct WorkoutRoutineCard: View {
                 .foregroundStyle(Color.fwbMuted)
 
                 ForEach(Array(workout.exercises.enumerated()), id: \.offset) { exerciseIndex, exercise in
+                    let media = media(for: exercise)
                     HStack(spacing: 5) {
                         Image(systemName: "line.3.horizontal")
                             .font(FWBFont.footnote)
@@ -688,6 +793,30 @@ private struct WorkoutRoutineCard: View {
                                 return NSItemProvider(object: "\(workout.id):\(exerciseIndex)" as NSString)
                             }
                             .accessibilityLabel("Reorder \(exercise.name)")
+                        if media.imageURL != nil {
+                            Button {
+                                mediaViewer = ExerciseMediaViewerRequest(exerciseName: exercise.name, media: media)
+                            } label: {
+                                ZStack(alignment: .bottomTrailing) {
+                                    ExerciseRemoteImage(
+                                        urls: media.thumbnailURLs,
+                                        animated: false,
+                                        cropLeadingFraction: media.cropsThumbnailToPhotoPanels ? 0.51 : nil
+                                    )
+                                    .frame(width: 76, height: media.cropsThumbnailToPhotoPanels ? 66 : 54)
+                                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                                    Image(systemName: "info")
+                                        .font(FWBFont.sized(9).weight(.bold))
+                                        .foregroundStyle(.white)
+                                        .frame(width: 20, height: 20)
+                                        .background(Color.fwbInk, in: RoundedRectangle(cornerRadius: 6))
+                                        .overlay { RoundedRectangle(cornerRadius: 6).stroke(.white, lineWidth: 1) }
+                                        .padding(4)
+                                }
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel("View exercise card and instructions for \(exercise.name)")
+                        }
                         Text(exercise.name)
                             .font(FWBFont.footnote.weight(.semibold))
                             .frame(maxWidth: .infinity, alignment: .leading)
@@ -695,7 +824,7 @@ private struct WorkoutRoutineCard: View {
                         Text(exercise.prescription.isEmpty ? "—" : exercise.prescription)
                             .font(FWBFont.footnote.weight(.bold))
                             .multilineTextAlignment(.center)
-                            .foregroundStyle(Color.black)
+                            .foregroundStyle(Color.fwbBrandPrimaryInk)
                             .padding(.horizontal, 8).padding(.vertical, 9)
                             .background(Color.fwbAccentFill, in: RoundedRectangle(cornerRadius: 10))
                         Menu {
@@ -729,7 +858,8 @@ private struct WorkoutRoutineCard: View {
                     WorkoutLoggingView(
                         workout: workout,
                         clientEmail: clientEmail,
-                        suggestedExercises: suggestedExercises
+                        suggestedExercises: suggestedExercises,
+                        previewMode: store.isPreview
                     )
                     .navigationTitle("Workout Log")
                     .navigationBarTitleDisplayMode(.inline)
@@ -747,6 +877,30 @@ private struct WorkoutRoutineCard: View {
             WorkoutPreviewEditor(store: store, workoutID: workout.id, exercises: workout.exercises,
                                  request: request, suggestions: suggestedExercises)
         }
+        .sheet(item: $mediaViewer) { request in ExerciseMediaViewer(request: request) }
+    }
+
+    private func media(for exercise: Exercise) -> ExerciseMedia {
+        let normalizedName = ExerciseNameIdentity.key(for: exercise.name)
+        let approved = approvedExercises.first { candidate in
+            ExerciseNameIdentity.key(for: candidate.name) == normalizedName
+                || candidate.aliases.contains { ExerciseNameIdentity.key(for: $0) == normalizedName }
+        }
+
+        func url(_ value: String?) -> URL? {
+            guard let value = value?.trimmingCharacters(in: .whitespacesAndNewlines), !value.isEmpty else { return nil }
+            return URL(string: value)
+        }
+
+        let imageURL = url(approved?.imageURL)
+        return ExerciseMedia(
+            imageURL: imageURL,
+            thumbnailURL: ExerciseMediaURL.thumbnail(for: imageURL),
+            instructions: approved?.instructions.trimmingCharacters(in: .whitespacesAndNewlines) ?? "",
+            primaryMuscle: approved?.primaryMuscle.trimmingCharacters(in: .whitespacesAndNewlines) ?? "",
+            equipment: approved?.equipment.trimmingCharacters(in: .whitespacesAndNewlines) ?? "",
+            fallbackDemoURL: exercise.demoURL
+        )
     }
 
     private func moveExercise(from: Int, to: Int) {
@@ -823,7 +977,7 @@ struct WorkoutCard: View {
                 .tracking(0.8)
         }
         .frame(width: 48, height: 58)
-        .foregroundStyle(Color.black)
+        .foregroundStyle(Color.fwbBrandPrimaryInk)
         .background(Color.fwbAccentFill, in: RoundedRectangle(cornerRadius: FWBLayout.controlRadius, style: .continuous))
     }
 
@@ -876,17 +1030,23 @@ struct AccountView: View {
     let account: SignedInAccount
     @ObservedObject var sessionStore: SessionStore
     @ObservedObject var programStore: ClientProgramStore
+    @ObservedObject var notificationStore: NotificationInboxStore
+    private let profilePhotoStore: ProfilePhotoStore?
     @State private var isShowingFood: Bool
 
     init(
         account: SignedInAccount,
         sessionStore: SessionStore,
         programStore: ClientProgramStore,
-        initiallyShowFood: Bool = false
+        notificationStore: NotificationInboxStore,
+        initiallyShowFood: Bool = false,
+        profilePhotoStore: ProfilePhotoStore? = nil
     ) {
         self.account = account
         self.sessionStore = sessionStore
         self.programStore = programStore
+        self.notificationStore = notificationStore
+        self.profilePhotoStore = profilePhotoStore
         _isShowingFood = State(initialValue: initiallyShowFood)
     }
 
@@ -897,22 +1057,23 @@ struct AccountView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     SectionHeading(kicker: "Your app", title: "Settings")
-                    HStack(spacing: 12) {
-                        Image(systemName: "person.crop.circle.fill")
-                            .font(FWBFont.largeTitle)
-                            .foregroundStyle(Color.fwbLime)
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(account.email)
-                                .font(FWBFont.subheadline.weight(.semibold))
-                                .textSelection(.enabled)
-                            Text("Client account")
-                                .font(FWBFont.caption)
-                                .foregroundStyle(Color.fwbMuted)
+
+                    if notificationStore.unreadCount > 0,
+                       let latestUnread = notificationStore.notifications.first(where: \.isUnread) {
+                        NavigationLink {
+                            NotificationInboxView(store: notificationStore)
+                        } label: {
+                            SettingsUnreadUpdatesCard(
+                                notification: latestUnread,
+                                unreadCount: notificationStore.unreadCount
+                            )
                         }
-                        Spacer(minLength: 0)
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier("settings.unreadUpdates")
                     }
-                    .frame(maxWidth: .infinity)
-                    .fwbCard()
+
+                    ProfilePhotoAccountCard(account: account, store: profilePhotoStore)
+                        .id(account.id)
 
                     VStack(spacing: 0) {
                         NavigationLink {
@@ -922,6 +1083,26 @@ struct AccountView: View {
                         }
                         .buttonStyle(.plain)
                         .accessibilityIdentifier("more.food")
+
+                        Divider().overlay(Color.fwbLine)
+
+                        NavigationLink {
+                            ClientQuestionnaireView(account: account)
+                        } label: {
+                            SettingsRow(title: "PAR-Q fitness questionnaire", icon: "list.clipboard", trailingIcon: "chevron.right")
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier("settings.questionnaire")
+
+                        Divider().overlay(Color.fwbLine)
+
+                        NavigationLink {
+                            ClientSessionsView(store: programStore, account: account)
+                        } label: {
+                            SettingsRow(title: "Sessions", icon: "calendar.badge.clock", trailingIcon: "chevron.right")
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier("settings.sessions")
 
                         Divider().overlay(Color.fwbLine)
 
@@ -944,6 +1125,24 @@ struct AccountView: View {
                         Divider().overlay(Color.fwbLine)
 
                         NavigationLink {
+                            AppleHealthImportSettingsView(account: account)
+                        } label: {
+                            SettingsRow(title: "Apple Health imports", icon: "heart.fill", trailingIcon: "chevron.right")
+                        }
+                        .buttonStyle(.plain)
+
+                        Divider().overlay(Color.fwbLine)
+
+                        NavigationLink {
+                            AppleWorkoutFeaturesView(workouts: programStore.program?.workouts ?? [])
+                        } label: {
+                            SettingsRow(title: "Apple Watch & widgets", icon: "applewatch", trailingIcon: "chevron.right")
+                        }
+                        .buttonStyle(.plain)
+
+                        Divider().overlay(Color.fwbLine)
+
+                        NavigationLink {
                             NotificationPreferencesView(account: account)
                         } label: {
                             SettingsRow(title: "Notifications", icon: "bell.badge", trailingIcon: "chevron.right")
@@ -953,11 +1152,12 @@ struct AccountView: View {
                         Divider().overlay(Color.fwbLine)
 
                         NavigationLink {
-                            AppearanceSettingsView()
+                            PasswordChangeView(sessionStore: sessionStore)
                         } label: {
-                            SettingsRow(title: "Appearance", icon: "circle.lefthalf.filled", trailingIcon: "chevron.right")
+                            SettingsRow(title: "Change password", icon: "key.fill", trailingIcon: "chevron.right")
                         }
                         .buttonStyle(.plain)
+                        .accessibilityIdentifier("settings.changePassword")
 
                         Divider().overlay(Color.fwbLine)
 
@@ -991,6 +1191,9 @@ struct AccountView: View {
                         RoundedRectangle(cornerRadius: FWBLayout.cardRadius)
                             .stroke(Color.fwbLine, lineWidth: 1)
                     }
+
+                    FWBBrandPromise()
+                        .padding(.horizontal, 4)
 
                     Button(role: .destructive) {
                         Task { await sessionStore.signOut() }
@@ -1028,7 +1231,7 @@ private struct NotificationInboxBadge: View {
             if unreadCount > 0 {
                 Text(badgeLabel)
                     .font(.system(size: 9, weight: .black, design: .rounded))
-                    .foregroundStyle(Color.black)
+                    .foregroundStyle(Color.fwbBrandPrimaryInk)
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
                     .frame(minWidth: 17, minHeight: 17)
@@ -1060,13 +1263,19 @@ private struct PrivacyPolicyView: View {
                         .foregroundStyle(Color.fwbLime)
 
                     Text("FWB TRAINING\nPRIVACY NOTICE")
-                        .font(.system(size: 36, weight: .black))
+                        .font(FWBFont.largeTitle.weight(.black))
+                        .minimumScaleFactor(0.75)
+                        .fixedSize(horizontal: false, vertical: true)
                                 .foregroundStyle(Color.fwbWarmWhite)
 
                     privacyParagraph("FWB Training is available to authorized Fitness with Benjamin clients. The app uses your email address to authenticate you and connect you to your assigned coaching account.")
-                    privacyParagraph("The app processes assigned programs, exercise and cardio logs, workout history, daily readiness and weekly coach check-ins, progress measurements, progress photos you choose to upload, and calorie and macro targets to provide its training and progress features. Authentication and coaching records are handled through Fitness with Benjamin’s Supabase project.")
+                    privacyParagraph("The app processes assigned programs, exercise and cardio logs, workout history, daily readiness and weekly coach check-ins, progress measurements, DEXA reports, profile and progress photos you choose to upload, and calorie and macro targets to provide its training and progress features. Authentication and coaching records are handled through Fitness with Benjamin’s Supabase project.")
+                    privacyParagraph("DEXA reports you upload are stored privately and sent to OpenAI as a service provider to extract proposed measurements. This is optional; you can enter measurements manually instead. Review and confirm the extracted values before saving them to your progress history. Your authenticated account and authorized coach can access your reports.")
                     privacyParagraph("Limited preferences and unfinished workout data may be stored on your device to support timers, settings, and offline continuity. FWB Training does not use this data for advertising and does not track you across other companies’ apps or websites.")
-                    privacyParagraph("If you choose to connect Apple Health, FWB Training writes completed workout type, start and end time, duration, and any distance or calories you entered. The app does not read information from Apple Health or use Health data for advertising or marketing.")
+                    privacyParagraph("If you choose to connect Apple Health, FWB Training writes completed workout type, start and end time, duration, and any distance or calories you entered. You can separately allow FWB to read workouts, steps, sleep, heart-rate trends, and body weight. Selected information is shared with your FWB account and coach only when you enable sharing. Health data is never used for advertising or marketing.")
+
+                    FWBBrandPromise()
+                        .padding(.top, 8)
                     privacyParagraph("Exercise demo links may open YouTube. Your use of YouTube is governed by YouTube’s terms and privacy practices.")
                     privacyParagraph("Records are retained while needed to provide coaching services and meet applicable business or legal obligations. You may request access, correction, export, or deletion of your account and associated data through the Settings tab or by contacting FWB support.")
 
@@ -1113,6 +1322,56 @@ private struct SettingsRow: View {
     }
 }
 
+private struct SettingsUnreadUpdatesCard: View {
+    let notification: ClientNotification
+    let unreadCount: Int
+
+    private var countLabel: String {
+        unreadCount == 1 ? "1 unread update" : "\(unreadCount) unread updates"
+    }
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 14) {
+            Image(systemName: notification.category.icon)
+                .font(.title3.weight(.bold))
+                .foregroundStyle(Color.fwbBrandPrimaryInk)
+                .frame(width: 46, height: 46)
+                .background(Color.fwbAccentFill, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+
+            VStack(alignment: .leading, spacing: 5) {
+                Text(countLabel.uppercased())
+                    .font(FWBFont.footnote.bold())
+                    .tracking(0.8)
+                    .foregroundStyle(Color.fwbLime)
+                Text(notification.title)
+                    .font(FWBFont.headline.weight(.bold))
+                    .foregroundStyle(Color.fwbWarmWhite)
+                    .lineLimit(2)
+                Text("Review your updates to clear the Settings badge.")
+                    .font(FWBFont.footnote)
+                    .foregroundStyle(Color.fwbMuted)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Spacer(minLength: 0)
+
+            Image(systemName: "chevron.right")
+                .font(FWBFont.footnote.bold())
+                .foregroundStyle(Color.fwbMuted)
+                .padding(.top, 4)
+        }
+        .padding(17)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.fwbCard, in: RoundedRectangle(cornerRadius: FWBLayout.cardRadius, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: FWBLayout.cardRadius, style: .continuous)
+                .stroke(Color.fwbLime.opacity(0.55), lineWidth: 1)
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(countLabel). Latest: \(notification.title). Review updates to clear the Settings badge.")
+    }
+}
+
 struct SectionHeading: View {
     let kicker: String
     let title: String
@@ -1148,6 +1407,8 @@ struct FWBEmptyState: View {
         }
         .padding(28)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(title). \(message)")
     }
 }
 
@@ -1171,6 +1432,7 @@ struct FWBErrorState: View {
         }
         .padding(28)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .accessibilityElement(children: .contain)
     }
 }
 
@@ -1303,7 +1565,9 @@ private struct WorkoutPreviewEditor: View {
                         let updated = Exercise(code: original.code, name: name.trimmingCharacters(in: .whitespacesAndNewlines),
                                                prescription: prescription, rest: rest,
                                                instructions: request.substitution ? (replacement?.name == name ? replacement?.instructions ?? [] : []) : original.instructions,
-                                               video: request.substitution ? (replacement?.name == name ? replacement?.video ?? "" : "") : original.video)
+                                               video: request.substitution ? (replacement?.name == name ? replacement?.video ?? "" : "") : original.video,
+                                               progression: WorkoutProgressionIntegration.revisedConfig(from: original, name: name, prescription: prescription),
+                                               hasInvalidProgression: WorkoutProgression.exerciseKey(original.name) == WorkoutProgression.exerciseKey(name) && original.hasInvalidProgression)
                         var changed = exercises
                         guard changed.indices.contains(request.index) else { return }
                         changed[request.index] = updated

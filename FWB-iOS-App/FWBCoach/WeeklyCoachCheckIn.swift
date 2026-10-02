@@ -744,7 +744,7 @@ private struct CoachResponseCard: View {
                         .foregroundStyle(Color.fwbMuted)
                 }
             } else {
-                Text("Benjamin will review this on the coach website. Pull to refresh after you receive a reply.")
+                Text("Benjamin will review this. Pull to refresh after you receive a reply.")
                     .font(FWBFont.subheadline)
                     .foregroundStyle(Color.fwbMuted)
                     .fixedSize(horizontal: false, vertical: true)
