@@ -1104,8 +1104,9 @@
 :root body.dashboard-page #progress-date {
   color: var(--lime); background: var(--selected-surface); border-color: var(--line);
 }
-:root body.dashboard-page .client-home-today-workout {
-  background: var(--surface-soft); border-color: var(--line);
+:root body.dashboard-page.client-dashboard-page .client-home-grid .client-home-card.client-home-today-workout {
+  background: transparent; border: 0; border-radius: 0 !important;
+  overflow: visible; box-shadow: none;
 }
 :root body.dashboard-page .client-weekly-title { display: flex; align-items: center; gap: 12px; }
 :root body.dashboard-page .client-weekly-art {
@@ -1132,4 +1133,50 @@
   }
   :root body.dashboard-page .client-home-workout-button:hover > span { transform: translateX(3px); }
   :root body.dashboard-page .client-gym-checkin:active .client-gym-checkin-icon { transform: scale(.94); }
+}
+
+/* One quiet edge per workout control, without a second rounded card clipping it. */
+:root body.dashboard-page.client-dashboard-page .client-home-grid :is(.client-home-workout-button, .client-workout-resume-card .button) {
+  color: var(--ink); background: var(--surface-soft);
+  border: 1px solid var(--control-border); box-shadow: none;
+}
+:root body.dashboard-page .client-workout-resume-card { border-color: var(--line); }
+:root body.dashboard-page .client-workout-resume-card::before { background: var(--line); width: 3px; }
+:root body.dashboard-page.client-dashboard-page .client-home-grid .client-workout-resume-card .client-workout-cancel-button {
+  color: var(--muted); background: var(--surface); border-color: var(--line);
+}
+:root body.dashboard-page :is(.client-home-workout-button, .client-workout-resume-card .button):focus-visible {
+  outline: 2px solid var(--lime); outline-offset: 3px;
+}
+
+/* Restore the same icon, label, and arrow columns for links and mobile buttons. */
+:root body.dashboard-page .client-settings-shortcut {
+  display: grid !important; grid-template-columns: 32px minmax(0, 1fr) 24px;
+  align-items: center !important; justify-content: stretch !important;
+  gap: 13px; min-height: 68px !important; padding: 13px 14px !important;
+  text-align: left !important; border-radius: 0 !important;
+}
+:root body.dashboard-page .client-settings-shortcut > svg { grid-column: 1; grid-row: 1; justify-self: start; }
+:root body.dashboard-page .client-settings-shortcut-copy {
+  grid-column: 2; grid-row: 1; text-align: left;
+}
+:root body.dashboard-page .client-settings-shortcut-arrow {
+  grid-column: 3; grid-row: 1; justify-self: end;
+}
+:root body.dashboard-page .client-settings-shortcut:has(> .client-dashboard-nav-unread:not([hidden])) .client-settings-shortcut-copy {
+  padding-right: 28px;
+}
+:root body.dashboard-page .client-settings-shortcut > .client-dashboard-nav-unread {
+  top: 50%; right: 48px; transform: translateY(-50%);
+}
+
+/* Account reassurance and Safari autofill use the same readable forest palette. */
+:root body.login-page .access-demo strong { color: var(--ink); }
+:root body.login-page .login-form input:autofill {
+  color: var(--ink); caret-color: var(--ink);
+  box-shadow: 0 0 0 1000px var(--surface-soft) inset;
+}
+:root body.login-page .login-form input:-webkit-autofill {
+  -webkit-text-fill-color: var(--ink); caret-color: var(--ink);
+  box-shadow: 0 0 0 1000px var(--surface-soft) inset;
 }
