@@ -20,16 +20,44 @@ class ReleaseSupportTest < Minitest::Test
     assert_equal "2001.1.0", FWBRelease.next_build_number(latest: "1037.1.0", run_number: 1, run_attempt: 1)
   end
 
-  def test_internal_distribution_waits_for_exact_build_without_external_review
+  def test_internal_upload_does_not_write_beta_metadata
     options = FWBRelease.testflight_distribution_options(build_number: "100.42.1", version: "100.35.1")
     assert_equal "100.42.1", options.fetch(:build_number)
     assert_equal "100.35.1", options.fetch(:app_version)
-    assert_equal false, options.fetch(:skip_waiting_for_build_processing)
+    assert_equal true, options.fetch(:skip_waiting_for_build_processing)
     assert_equal false, options.fetch(:distribute_external)
     assert_equal false, options.fetch(:submit_beta_review)
     assert_equal true, options.fetch(:skip_submission)
     assert_equal 3_600, options.fetch(:wait_processing_timeout_duration)
     refute options.key?(:groups), "Apple assigns automatic internal groups; do not assign an external group."
+    refute options.key?(:changelog), "A changelog makes Pilot write metadata even when submission is skipped."
+    refute options.key?(:notify_external_testers), "Do not patch external auto-notify settings for an internal release."
+  end
+
+  def test_read_only_watcher_requires_exact_ready_internal_build
+    build_type = Struct.new(:app_version, :version, :ready) do
+      def ready_for_internal_testing?
+        ready
+      end
+    end
+    valid = build_type.new("100.35.1", "2012.1.0", true)
+    calls = []
+    watcher = Object.new
+    watcher.define_singleton_method(:wait_for_build_processing_to_be_complete) do |**options|
+      calls << options
+      valid
+    end
+    assert_same valid, FWBRelease.wait_for_internal_build!(watcher: watcher, app_id: "6804362327", build_number: "2012.1.0", version: "100.35.1")
+    assert_equal "6804362327", calls.first.fetch(:app_id)
+    assert_equal "2012.1.0", calls.first.fetch(:build_version)
+    assert_equal "100.35.1", calls.first.fetch(:app_version)
+    assert_equal false, calls.first.fetch(:select_latest)
+    assert_equal true, calls.first.fetch(:wait_for_build_beta_detail_processing)
+    assert_equal 3_600, calls.first.fetch(:timeout_duration)
+    [nil, build_type.new("1.0.1", "2012.1.0", true), build_type.new("100.35.1", "2011.1.0", true), build_type.new("100.35.1", "2012.1.0", false)].each do |wrong|
+      watcher.define_singleton_method(:wait_for_build_processing_to_be_complete) { |**_options| wrong }
+      assert_raises(RuntimeError) { FWBRelease.wait_for_internal_build!(watcher: watcher, app_id: "6804362327", build_number: "2012.1.0", version: "100.35.1") }
+    end
   end
 
   def test_internal_group_must_have_automatic_distribution

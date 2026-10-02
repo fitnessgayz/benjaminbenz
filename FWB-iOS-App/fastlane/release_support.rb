@@ -49,15 +49,29 @@ module FWBRelease
     {
       app_version: version,
       build_number: build_number,
-      changelog: "Automated coach beta build #{build_number} from main.",
-      skip_waiting_for_build_processing: false,
+      # Pilot updates beta metadata even with skip_submission. Return directly
+      # after upload, then use the read-only watcher below for internal builds.
+      skip_waiting_for_build_processing: true,
       distribute_external: false,
       submit_beta_review: false,
-      notify_external_testers: false,
       skip_submission: true,
       wait_processing_interval: 30,
       wait_processing_timeout_duration: TESTFLIGHT_PROCESSING_TIMEOUT
     }
+  end
+
+  def self.wait_for_internal_build!(watcher:, app_id:, build_number:, version:)
+    build = watcher.wait_for_build_processing_to_be_complete(
+      app_id: app_id, platform: "IOS", app_version: version,
+      build_version: build_number, poll_interval: 30,
+      timeout_duration: TESTFLIGHT_PROCESSING_TIMEOUT,
+      return_spaceship_testflight_build: false, select_latest: false,
+      wait_for_build_beta_detail_processing: true
+    )
+    unless build && build.app_version == version && build.version == build_number && build.ready_for_internal_testing?
+      raise "The exact uploaded coach build is not ready for internal TestFlight testing."
+    end
+    build
   end
 
   def self.validate_configuration!(env = ENV)

@@ -99,6 +99,12 @@ platform :ios do
         ipa: File.join(OUTPUT_DIRECTORY, "FWBCoach.ipa"),
         **FWBRelease.testflight_distribution_options(build_number: build_number, version: version)
       )
+      require "fastlane_core/build_watcher"
+      FWBRelease.wait_for_internal_build!(
+        watcher: FastlaneCore::BuildWatcher, app_id: app.id,
+        build_number: build_number, version: version
+      )
+      FWBRelease.validate_internal_beta_group!(app.get_beta_groups)
       if ENV["GITHUB_STEP_SUMMARY"]
         File.open(ENV.fetch("GITHUB_STEP_SUMMARY"), "a") do |file|
           file.puts "Uploaded **FWB Coach #{version} (#{build_number})** to App Store Connect."
