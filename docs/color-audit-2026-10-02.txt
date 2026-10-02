@@ -1,0 +1,123 @@
+FWB website and mobile web color audit — October 2, 2026
+
+Decision applied in this update
+Dark green is the main surface and action color. Neon green is limited to borders,
+small icons/badges, completion markers, and focus indicators. Text on main actions
+is warm white. Logged sets/rounds remain #0B1811, with neon state cues.
+
+Scope and method
+- Scanned all 21 production root HTML entry pages, shared CSS, and the five hosted
+  assistant/consent template mirrors. All 26 templates load the dark theme last.
+- Inspected public entry screens at 390px and 1280px, including homepage Training,
+  Results, and Start panels; signup/invite/conversion forms; support/privacy/terms;
+  consent; and client/coach sign-in.
+- Inspected the authenticated client's Home, Workouts, Logs, Progress, Settings,
+  Stats, and Nutrition panels at 390px before the coach access redirect.
+- Checked completed logging, recommendation, trash/video, and sharing styles in
+  representative component fixtures using the production stylesheets. No real
+  workouts were logged, copied, skipped, saved, or deleted to test these states.
+- Checked 32 representative action classes and nested labels in a component
+  fixture. Main actions use dark surfaces; small video icons retain a neon fill.
+- Coach Admin, Session Logger, and Exercise Library protected runtime screens
+  require coach sign-in. Reviewed their source and representative shared component
+  styles; did not verify authenticated coach flows end to end.
+- Native SwiftUI apps, email templates, and old design mockups are outside this
+  website/mobile web audit. Images' own pixels and native checkbox fill declarations
+  are not counted as confirmed page-surface bugs.
+- Contrast readings are diagnostics from computed solid colors. Gradients,
+  transparent layers, animations, and platform controls need visual judgment.
+
+Requested fixes included
+- Client dock: Home, Workouts, Logs, Progress, Settings. Messages is at the upper
+  left of Workouts; Stats and Nutrition open from Settings and have a back button.
+- Settings stays reachable in Coach Client View for Stats/Nutrition, while private
+  notification shortcuts remain unavailable in that preview.
+- Progress personal-best panel, stacked deck layers, comparison arrows, neutral/
+  positive/negative badges, and monthly report link use readable dark colors.
+- Stats DEXA upload/review/archive panels, native file picker text, privacy link,
+  metric tabs/graph line, photo gallery/history surfaces use the dark palette.
+- Recommended exercise suggestions retain readable nested text. Trash controls
+  use coral on a dark reminder surface. Video fallback uses an SVG instead of emoji.
+- Logged set/round rows and legacy completed exercise/group decks stay dark.
+- Share workout and other primary actions use dark green with neon outlines.
+- Relevant CSS/JS asset URLs are versioned for existing installations.
+
+Remaining confirmed issues (reported, not silently declared fixed)
+1. High — Client Home checklist text and support link
+   Checklist strong labels and the support link retain dark ink on forest surfaces
+   (about 1.1–1.2:1). Incomplete “Next” pills are pale with low-contrast sage text.
+   Source: css/style.css .client-home-checklist strong/span and .client-home-support.
+   Next correction: warm-white labels, lavender support link, dark neutral pills.
+
+2. High — Nutrition labels and food entry surfaces
+   Protein/Carbs/Fat legend labels retain dark ink on forest (about 1.2:1). Food
+   entry action panel and label-photo picker retain pale backgrounds; the action
+   status text is low contrast (about 2.0:1). Barcode graphic also uses dark ink.
+   Source: css/style.css .nutrition-macro-chart-legend strong, .nutrition-actions,
+   .food-label-photo-field input, and food-label barcode presentation.
+   Next correction: dark panels/picker, warm-white labels, lavender barcode icon.
+
+3. High — Public homepage Training panel
+   Inactive Credentials tab uses a light fill with warm-white text (about 1.0:1).
+   Assess/Connect/Optimize labels use dark ink against the dark page (about 1.0:1).
+   Source: css/style.css .training-subtab and .feature-list strong.
+   Next correction: dark inactive tabs and warm-white feature labels.
+
+4. High — Client and coach login supporting copy
+   “Your coaching stays connected” and “Connected to FWB Training” retain dark
+   ink inside dark cards (about 1.1:1).
+   Source: css/style.css .access-demo strong.
+   Next correction: warm-white supporting headings.
+
+5. Medium — Saved Logs status pills
+   Neutral “Saved” pills remain pale gray. Their text is readable, but the fill
+   does not match the dark palette.
+   Source: css/style.css .training-log-history-state.
+   Next correction: dark raised surface with muted/warm-white text.
+
+6. High — Notification inbox component (fixture reproduction)
+   Read/unread notification links retain white/pale fills. Detail text on unread
+   cards is about 2.0:1; timestamps about 3.5:1. Mark-all-read uses legacy dark ink.
+   Source: css/style.css .web-notification-item a, .web-notification-item.is-unread a,
+   .web-notification-item time, and .web-notification-inbox-heading button.
+   Next correction: forest cards, neon unread border, readable timestamps/actions.
+   Live notification interactions were not re-verified after the sign-in redirect.
+
+7. High — Coach client-added exercise review (fixture reproduction)
+   Launcher, review panel, close control, and edit form retain pale fills; headings
+   and form labels are warm white on those fills (about 1.1:1).
+   Source: css/style.css .client-added-exercises-link, .client-added-exercise-review,
+   .client-added-exercise-review-heading > button, .client-added-exercise-edit-form.
+   Next correction: forest review surfaces and warm-white labels.
+
+8. High — Coach Exercise Library selection panel (fixture reproduction)
+   Outer exercise card is dark, but its selection button remains white. Exercise
+   name is warm white on white (about 1.1:1); muscle pill also remains pale.
+   Source: css/style.css .exercise-library-card-select and .exercise-library-card-heading small.
+   Next correction: dark selection button and dark/lavender muscle pill.
+
+9. Low — Floating workout timer close button
+   A translucent white close button remains within the existing glass timer.
+   Text/icon contrast is good; this is a palette consistency decision rather than
+   a readability failure. Source: css/style.css .workout-elapsed-close.
+
+Underlying cause and recommended follow-up
+The source scan found 574 legacy light-fill/dark-ink rule candidates across 20 CSS
+files. This is NOT 574 confirmed bugs: many are already overridden by the shared
+bridge, intentional image/medal styles, or state-specific rules.
+The recurring cause is mixing literal colors and --black/--white aliases with
+semantic dark-theme roles. A parent dark surface does not repair explicit black
+child text, and a default-state bridge does not always cover selected/completed/
+hover/disabled states. Replace those component rules with semantic surface, ink,
+muted, accent, and danger tokens, then verify the state matrix at mobile/desktop.
+
+Validation and limits
+128 targeted Node checks passed, covering navigation/routing, Settings, dock
+mounting/focus, Progress records, DEXA import behavior, messages, exercise media,
+account settings, and sharing. Browser checks used production CSS and actual
+public/client panels where access was available; completion/sharing contrast
+checks used sample component fixtures. These checks are not a claim that every
+protected coach screen, modal, or native app has passed a full visual audit.
+The coach redirect signed out the local preview session; client sign-in is needed
+again to continue authenticated browser verification. No credentials or private
+measurement values are included in this report.

@@ -23,7 +23,7 @@ test("separates training progress from stats and measurements", () => {
   assert.match(progressPanel, /id="client-monthly-report-card"/);
   assert.match(progressPanel, /id="client-exercise-progress-title"/);
   assert.doesNotMatch(progressPanel, /id="progress-current"/);
-  assert.match(statsPanel, /id="client-stats-title">Stats &amp; measurements/);
+  assert.match(statsPanel, /id="client-stats-title" tabindex="-1">Stats &amp; measurements/);
   assert.doesNotMatch(statsPanel, /id="progress-current"/);
   assert.match(statsPanel, /id="client-progress-entry-title"/);
   assert.match(statsPanel, /id="client-current-rmr"/);

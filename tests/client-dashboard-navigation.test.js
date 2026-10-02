@@ -35,21 +35,19 @@ test("scopes the client navigation styles and cache-busts dashboard assets", () 
   assert.match(dashboardHtml, /js\/client-portal\.js\?[^"\s]*viewport-dock=\d+/);
 });
 
-test("renders nine labeled client destinations in order with current-page semantics", () => {
+test("renders seven labeled client destinations in order with current-page semantics", () => {
   const navStart = dashboardHtml.indexOf('<nav class="client-dashboard-tabs"');
   const navEnd = dashboardHtml.indexOf("</nav>", navStart);
   const navMarkup = dashboardHtml.slice(navStart, navEnd);
   const buttons = [...navMarkup.matchAll(/<button\b([^>]*data-client-dashboard-tab="([^"]+)"[^>]*)>([\s\S]*?)<\/button>/g)];
 
   assert.ok(navStart >= 0);
-  assert.equal(buttons.length, 9);
+  assert.equal(buttons.length, 7);
   assert.deepEqual(buttons.map((match) => match[2]), [
     "home",
     "workouts",
     "logs",
     "progress",
-    "stats",
-    "nutrition",
     "questionnaire",
     "sessions",
     "notifications"
@@ -59,8 +57,6 @@ test("renders nine labeled client destinations in order with current-page semant
     "Workouts",
     "Logs",
     "Progress",
-    "Stats and measurements",
-    "Nutrition",
     "PAR-Q",
     "Sessions",
     "Settings"
@@ -70,8 +66,6 @@ test("renders nine labeled client destinations in order with current-page semant
     "Workouts",
     "Logs",
     "Progress",
-    "Stats",
-    "Nutrition",
     "PAR-Q",
     "Sessions",
     "Settings"
@@ -99,21 +93,20 @@ test("uses a sticky 240px desktop sidebar with a persistent 78px icon rail", () 
   assert.match(dashboardHtml, /client-dashboard-sidebar-toggle-label">Minimize</);
 });
 
-test("uses a permanent six-destination frosted safe-area dock on mobile", () => {
+test("uses a permanent five-destination frosted safe-area dock on mobile", () => {
   const mobileStyles = sourceBetween("@media (max-width: 900px)", "@media (max-width: 420px)");
 
   assert.match(mobileStyles, /body\.client-dashboard-page\s*\{[^}]*--client-mobile-dock-height:\s*90px[^}]*min-height:\s*100dvh[^}]*padding-bottom:\s*calc\(var\(--client-bottom-dock-clearance\) \+ 24px\)/s);
   assert.match(mobileStyles, /\.client-dashboard-page \.dashboard-shell\s*\{[^}]*padding-top:\s*10px/s);
   assert.match(mobileStyles, /\.client-dashboard-page \.dashboard-grid\s*\{[^}]*padding-top:\s*0/s);
-  assert.match(mobileStyles, /\.dashboard-page \.client-dashboard-tabs\s*\{[^}]*position:\s*fixed[^}]*inset:\s*auto 0 0[^}]*z-index:\s*1000[^}]*grid-template-columns:\s*repeat\(6, minmax\(0, 1fr\)\)[^}]*width:\s*100%[^}]*overflow:\s*visible/s);
+  assert.match(mobileStyles, /\.dashboard-page \.client-dashboard-tabs\s*\{[^}]*position:\s*fixed[^}]*inset:\s*auto 0 0[^}]*z-index:\s*1000[^}]*grid-template-columns:\s*repeat\(5, minmax\(0, 1fr\)\)[^}]*width:\s*100%[^}]*overflow:\s*visible/s);
   assert.match(mobileStyles, /background:\s*rgba\(247, 248, 245, \.64\)[^}]*border-top:\s*1px solid rgba\(255, 255, 255, \.72\)[^}]*box-shadow:\s*0 -10px 30px rgba\(20, 24, 20, \.08\)/s);
   assert.match(mobileStyles, /backdrop-filter:\s*blur\(20px\) saturate\(175%\)/);
   assert.match(mobileStyles, /-webkit-backdrop-filter:\s*blur\(20px\) saturate\(175%\)/);
   assert.match(mobileStyles, /padding:[^;]*env\(safe-area-inset-right\)[^;]*env\(safe-area-inset-bottom\)[^;]*env\(safe-area-inset-left\)/);
-  assert.match(mobileStyles, /data-client-dashboard-tab="questionnaire"[\s\S]*?data-client-dashboard-tab="sessions"[\s\S]*?data-client-dashboard-tab="notifications"[\s\S]*?data-client-dashboard-tab="logs"[\s\S]*?display:\s*none !important/);
+  assert.match(mobileStyles, /data-client-dashboard-tab="questionnaire"[\s\S]*?data-client-dashboard-tab="sessions"[\s\S]*?display:\s*none !important/);
   assert.doesNotMatch(mobileStyles, /data-client-dashboard-tab="nutrition"[^}]*display:\s*none/);
-  assert.match(mobileStyles, /\.client-dashboard-message-tab\s*\{[^}]*display:\s*flex !important/s);
-  assert.match(dashboardHtml, /class="client-dashboard-tab client-dashboard-message-tab"[^>]*data-message-coach[^>]*aria-label="Messages"[\s\S]*?client-dashboard-tab-label">Messages<[\s\S]*?data-client-message-unread/);
+  assert.match(dashboardHtml, /class="client-workouts-message-button"[\s\S]*?data-message-coach[\s\S]*?data-client-message-unread/);
   assert.match(mobileStyles, /\.client-dashboard-tab\.is-active \.client-dashboard-tab-icon\s*\{[^}]*color:\s*var\(--black\)[^}]*background:\s*var\(--lime\)[^}]*border-radius:\s*13px[^}]*box-shadow:\s*none/s);
   assert.match(mobileStyles, /\.client-dashboard-tab\.is-active \.client-dashboard-tab-label\s*\{[^}]*color:\s*#344000[^}]*font-weight:\s*900[^}]*text-shadow:\s*none/s);
   assert.match(mobileStyles, /\.client-dashboard-tab-label\s*\{[^}]*display:\s*block !important[^}]*font-size:\s*\.52rem/s);
@@ -183,12 +176,13 @@ test("keeps PAR-Q and Sessions available from Settings", () => {
   assert.match(tabHandlerSource, /setClientDashboardTab\(settingsDestination\.dataset\.clientSettingsDestination\)/);
 });
 
-test("keeps Logs on desktop while replacing it with Messages in the mobile dock", () => {
+test("keeps Logs and Settings visible on mobile and moves Messages into Workouts", () => {
   const mobileStyles = sourceBetween("@media (max-width: 900px)", "@media (max-width: 420px)");
 
   assert.match(dashboardHtml, /data-client-dashboard-tab="logs" aria-label="Logs"/);
-  assert.match(mobileStyles, /data-client-dashboard-tab="logs"\][^}]*display:\s*none !important/s);
-  assert.match(dashboardHtml, /client-dashboard-message-tab[\s\S]*?data-client-message-unread hidden aria-label="0 unread messages"/);
+  assert.doesNotMatch(mobileStyles, /data-client-dashboard-tab="(?:logs|notifications)"\][^}]*display:\s*none !important/s);
+  assert.doesNotMatch(dashboardHtml, /client-dashboard-message-tab/);
+  assert.match(dashboardHtml, /data-client-dashboard-panel="workouts"[\s\S]*?client-workouts-message-button[\s\S]*?data-client-message-unread/);
 });
 
 test("lets the Workouts tab open the active exercise list", () => {
@@ -241,4 +235,55 @@ test("timer avoids the mobile dock and cannot overlap the desktop sidebar", () =
   assert.match(boundsSource, /return \{[\s\S]*?minLeft,[\s\S]*?maxLeft,[\s\S]*?maxTop:/);
   assert.match(applySource, /position\.edge === "left" \? `\$\{bounds\.minLeft\}px` : "auto"/);
   assert.match(dragSource, /Math\.min\(bounds\.maxLeft, Math\.max\(bounds\.minLeft,/);
+});
+
+test("Stats and Nutrition preserve Settings as the selected navigation parent", () => {
+  const vm = require("node:vm");
+  const buttons = ["home", "workouts", "logs", "progress", "notifications"].map((name) => ({
+    dataset: { clientDashboardTab: name },
+    active: false, attributes: {},
+    classList: { toggle(_name, active) { buttons.find((button) => button.dataset.clientDashboardTab === name).active = active; } },
+    setAttribute(key, value) { this.attributes[key] = value; },
+    removeAttribute(key) { delete this.attributes[key]; }
+  }));
+  const panels = ["home", "workouts", "logs", "progress", "stats", "nutrition", "notifications"].map((name) => ({
+    dataset: { clientDashboardPanel: name }, hidden: true
+  }));
+  const context = vm.createContext({
+    document: { querySelectorAll(selector) { return selector === "[data-client-dashboard-tab]" ? buttons : panels; } },
+    syncClientDashboardMobileNavigationIcon() {}, activeClientDashboardTab: "home",
+    clientWebNotificationController: null, clientProfilePhotoController: null,
+    clientAppleHealthController: null, clientGoogleHealthController: null,
+    setClientSettingsView() {}
+  });
+  vm.runInContext(sourceForFunction("setClientDashboardTab"), context);
+  for (const destination of ["stats", "nutrition", "logs", "notifications"]) {
+    context.setClientDashboardTab(destination);
+    assert.equal(context.activeClientDashboardTab, destination);
+    assert.deepEqual(panels.filter((panel) => !panel.hidden).map((panel) => panel.dataset.clientDashboardPanel), [destination]);
+    const selected = buttons.filter((button) => button.active);
+    assert.equal(selected.length, 1);
+    assert.equal(selected[0].dataset.clientDashboardTab, ["stats", "nutrition"].includes(destination) ? "notifications" : destination);
+    assert.equal(selected[0].attributes["aria-current"], "page");
+  }
+});
+
+test("Coach Client View retains Settings for measurements without private notification shortcuts", () => {
+  const vm = require("node:vm");
+  const settingsTab = { hidden: true };
+  const settingsEntries = [{ hidden: true }];
+  const notificationEntries = [{ hidden: false }, { hidden: false }];
+  const context = vm.createContext({
+    document: {
+      querySelector() { return settingsTab; },
+      querySelectorAll(selector) { return selector === "[data-client-settings-entry]" ? settingsEntries : notificationEntries; }
+    }
+  });
+  vm.runInContext(sourceForFunction("setClientNotificationSettingsAvailable"), context);
+  context.setClientNotificationSettingsAvailable(false);
+  assert.equal(settingsTab.hidden, false);
+  assert.equal(settingsEntries[0].hidden, false);
+  assert.ok(notificationEntries.every((entry) => entry.hidden));
+  context.setClientNotificationSettingsAvailable(true);
+  assert.ok(notificationEntries.every((entry) => !entry.hidden));
 });

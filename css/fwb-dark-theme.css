@@ -709,3 +709,228 @@
   [data-custom-grouped-section="warmup"], [data-custom-workout-grouped-section="warmup"]) .custom-workout-grouped-code {
   color: var(--secondary-accent); background: var(--secondary-surface); border-color: var(--secondary-border);
 }
+
+/* Workouts owns the inbox shortcut; Settings owns measurements and nutrition. */
+:root body.client-dashboard-page .client-workouts-tools {
+  display: flex; justify-content: flex-start; margin-bottom: 16px;
+}
+:root body.client-dashboard-page .client-workouts-message-button {
+  display: inline-flex; position: relative; align-items: center; gap: 8px;
+  min-height: 44px; padding: 10px 14px; border: 1px solid var(--secondary-border);
+  border-radius: 12px; color: var(--secondary-accent); background: var(--secondary-surface);
+  font: inherit; font-weight: 800; cursor: pointer;
+}
+:root body.client-dashboard-page .client-workouts-message-button > svg { width: 22px; height: 22px; }
+:root body.client-dashboard-page .client-workouts-message-button:disabled { opacity: .55; cursor: wait; }
+:root body.client-dashboard-page .client-settings-return { margin-bottom: 14px; }
+
+/* Progress panels, stacked cards, and gain badges remain readable on forest. */
+:root body.dashboard-page :is(.progress-exercise-section, .progress-exercise-page,
+  .progress-exercise-card, .progress-exercise-carousel, .client-monthly-report-link) {
+  color: var(--ink); background: var(--surface); border-color: var(--line);
+}
+:root body.dashboard-page .client-monthly-report-link { border-left-color: var(--lime); }
+:root body.dashboard-page :is(.progress-exercise-search, .client-monthly-report-copy strong,
+  .client-monthly-report-cta) { color: var(--ink); }
+:root body.dashboard-page .client-monthly-report-icon { color: var(--brand-primary-ink); }
+:root body.dashboard-page .progress-exercise-deck::before,
+:root body.dashboard-page .progress-exercise-deck::after {
+  background: var(--surface-soft); border-color: var(--line);
+}
+:root body.dashboard-page :is(.progress-exercise-change, .progress-exercise-carousel-bar button) {
+  color: var(--ink); background: var(--surface-soft); border-color: var(--line);
+}
+:root body.dashboard-page .progress-exercise-change.is-positive {
+  color: var(--brand-primary-ink); background: var(--lime); border-color: var(--lime);
+}
+:root body.dashboard-page .progress-exercise-change.is-negative {
+  color: var(--danger); background: var(--reminder-surface); border-color: var(--reminder-border);
+}
+:root body.dashboard-page .progress-exercise-comparison > i { color: var(--muted); }
+:root body.dashboard-page .progress-exercise-carousel-bar button:not(:disabled):hover {
+  color: var(--brand-primary-ink); background: var(--lime); border-color: var(--lime);
+}
+
+/* DEXA review/upload states and native file names share the Stats palette. */
+:root body.dashboard-page :is(.progress-actions, .dexa-review, .dexa-metric-group,
+  .dexa-report-row.is-archived, .dexa-archive-toggle) {
+  color: var(--ink); background: var(--surface-soft); border-color: var(--line);
+}
+:root body.dashboard-page .dexa-review { border-left-color: var(--lime); }
+:root body.dashboard-page .dexa-review-warning {
+  color: var(--ink); background: var(--reminder-surface); border-color: var(--reminder-border);
+}
+:root body.dashboard-page :is(.dexa-uploader, .client-stats-panel, .profile-photo-card) input[type="file"] {
+  color: var(--ink); background: var(--surface-soft); border-color: var(--control-border);
+}
+:root body.dashboard-page :is(.dexa-uploader, .client-stats-panel, .profile-photo-card) input[type="file"]::file-selector-button {
+  margin-right: 10px; padding: 6px 10px; border: 1px solid var(--secondary-accent);
+  border-radius: 7px; color: var(--brand-primary-ink); background: var(--secondary-accent);
+  font: inherit; font-size: .8rem; cursor: pointer;
+}
+:root body.dashboard-page .dexa-privacy-note a { color: var(--secondary-accent); }
+:root body.dashboard-page .dexa-report-delete { color: var(--danger); }
+
+/* Library suggestions preserve readable nested labels and a coral delete control. */
+:root body.dashboard-page .custom-workout-suggestion-menu {
+  color: var(--ink); background: var(--surface); border-color: var(--line);
+}
+:root body.dashboard-page .custom-workout-suggestion-menu button {
+  color: var(--ink); background: var(--surface); border-color: var(--line);
+}
+:root body.dashboard-page .custom-workout-suggestion-menu button strong { color: var(--ink); }
+:root body.dashboard-page .custom-workout-suggestion-menu button :is(small, span) { color: var(--muted); }
+:root body.dashboard-page .custom-workout-suggestion-menu button:is(:hover, :focus-visible) {
+  background: var(--surface-soft);
+}
+:root body.dashboard-page .custom-workout-suggestion-menu button.is-recommended {
+  color: var(--ink); background: var(--surface-soft); border-color: var(--lime);
+}
+:root body.dashboard-page .custom-workout-suggestion-menu button.is-recommended :is(strong, small, span) {
+  color: var(--ink);
+}
+:root body.dashboard-page .custom-workout-suggestion-menu button.is-recommended:is(:hover, :focus-visible) {
+  background: var(--surface-soft);
+}
+:root body.dashboard-page .custom-workout-suggestion-menu button:focus-visible {
+  outline: 3px solid var(--secondary-accent); outline-offset: -3px;
+}
+:root body.dashboard-page .custom-workout-delete-icon,
+:root body.dashboard-page .custom-workout-delete-icon:is(:hover, :focus-visible) {
+  color: var(--danger); background: var(--reminder-surface); border-color: var(--reminder-border);
+}
+:root body.dashboard-page .custom-workout-delete-icon:focus-visible {
+  outline: 2px solid var(--danger); outline-offset: 2px;
+}
+:root body.dashboard-page .exercise-video-link > span {
+  display: inline-grid; place-items: center; width: 28px; height: 28px;
+  color: var(--brand-primary-ink); background: var(--lime); border-color: var(--lime);
+}
+:root body.dashboard-page .exercise-video-link > span > svg {
+  display: block; width: 20px; height: 20px;
+}
+
+/* Completing a set/round changes the state cue, never to a light surface. */
+:root body.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-row:is(.is-complete, .is-logged) {
+  color: var(--ink); background: var(--selected-surface);
+}
+:root body.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-row:is(.is-complete, .is-logged) .custom-workout-grouped-code {
+  color: var(--lime); background: var(--selected-surface); border-color: var(--lime);
+}
+:root body.dashboard-page [data-custom-workout-grouped="true"] :is(.custom-workout-grouped-log-round, .custom-workout-grouped-skip-warmup):disabled {
+  color: var(--muted); background: var(--surface-soft); border-color: var(--line);
+}
+:root body.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-log-round:is(.is-logged, [aria-pressed="true"]),
+:root body.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-log-round[aria-pressed="true"]:disabled {
+  color: var(--lime); background: var(--selected-surface); border-color: var(--lime);
+}
+
+/* Neon is an accent. Main actions and selected controls keep dark surfaces. */
+:root body:is(.dashboard-page, .login-page, .public-page, .homepage, .questionnaire-page, .fwb-document-page) :is(
+  .button:not(:where(.button-ghost, .button-outline, .danger-button)),
+  .client-home-workout-button, .client-gym-checkin, .workout-start-button,
+  .set-complete-button, .set-finished-button, .complete-exercise-button,
+  .workout-difficulty-save, .workout-finish-button, .rest-timer-start,
+  .fwb-message-send, .workout-completion-share-button, [data-share-workout-history],
+  .next-exercise-confirm, .rir-save, .rir-options button.is-selected,
+  .workout-difficulty-options button.is-selected, .workout-difficulty-congratulations,
+  .workout-completion-share-card > p, .training-subtab.is-active,
+  .client-workout-tab.is-active, .client-home-card-primary,
+  .web-notification-center.is-enabled .web-notification-enable,
+  .rest-timer-presets button.is-active, .rest-timer-notification-setting button.is-enabled,
+  .progress-metric-tab.is-active, .progress-section-toggle,
+  .client-list-actions .button.is-selected, .food-label-import-controls .button,
+  .exercise-library-view-tabs button.is-selected, .exercise-library-upload-video-button,
+  .coach-workout-log-round, .coach-workout-format-options label:has(input:checked),
+  .coach-workout-add-superset, .coach-workout-card-format > button[aria-pressed="true"],
+  .coach-workout-grouped-actions button:first-child, .coach-workout-finish-button,
+  .workout-generator-launch, .workout-generator-button, .one-rm-done,
+  .one-rm-recommendation button, .rir-help-done,
+  .client-achievements-progress-button, .achievement-filters button[aria-pressed="true"],
+  .workout-energy-options input:checked + span,
+  .client-home-card-mood .mood-rating-choice input:checked + span,
+  .daily-checkin-button:not(.daily-checkin-close):not(.daily-checkin-secondary),
+  .daily-checkin-rating-choice input:checked + span,
+  .workout-generator-equipment-choice:has(input:checked),
+  .workout-generator-muscle-choice:has(input:checked),
+  .google-health-settings button[data-google-health-connect],
+  .google-health-settings button[data-google-health-sync], .profile-photo-save,
+  .client-account-form button, .client-workout-picker-choose, .training-log-copy-button,
+  .coach-workout-round-stepper button:last-child,
+  .custom-workout-exercise-control [data-pick-custom-exercise],
+  .custom-workout-exercise-control button:not(:disabled):hover,
+  .custom-workout-format-button[aria-pressed="true"], .custom-workout-format-button.is-active,
+  .custom-workout-grouped-round-stepper button:last-child,
+  .custom-workout-grouped-copy-weights:not(:disabled):not([data-custom-grouped-copy-source="pr"]),
+  .custom-workout-grouped-log-round, .workout-next-exercise-button,
+  .workout-group-primary-action [data-workout-group-log-set],
+  .custom-workout-grouped-finish-choices button:last-child,
+  .invite-primary-button, .invite-choice-grid input:checked + span,
+  .invite-segmented-control input:checked + span, .home-tab.is-active,
+  .client-suggestions [role="option"]:hover, .client-suggestions [aria-selected="true"],
+  .coach-preview-return, .apple-workout-save
+) {
+  color: var(--ink); background: var(--surface-soft); border-color: var(--lime);
+}
+:root body:is(.dashboard-page, .login-page, .public-page, .homepage, .questionnaire-page, .fwb-document-page) :is(
+  .button, .client-home-workout-button, .fwb-message-send, .workout-completion-share-button,
+  .workout-generator-button, .workout-generator-launch, .client-workout-picker-choose,
+  .client-suggestions [role="option"]:hover, .client-suggestions [aria-selected="true"],
+  .custom-workout-format-button[aria-pressed="true"], .workout-energy-options input:checked + span,
+  .daily-checkin-rating-choice input:checked + span, .invite-choice-grid input:checked + span,
+  .invite-segmented-control input:checked + span
+) :is(strong, small, span, label) { color: inherit; }
+:root body.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-log-round,
+:root body.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-copy-weights:not(:disabled):not([data-custom-grouped-copy-source="pr"]),
+:root body.dashboard-page .coach-workout-copy-button:not(:disabled):not([data-coach-copy-weights="pr"]) {
+  color: var(--ink); background: var(--surface-soft); border-color: var(--lime);
+}
+:root body.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-copy-weights:not(:disabled):hover {
+  color: var(--ink); background: var(--surface-soft); border-color: var(--lime);
+}
+:root body.dashboard-page .custom-workout-suggestion-menu button.is-recommended,
+:root body.dashboard-page .custom-workout-suggestion-menu button.is-recommended:is(:hover, :focus-visible),
+:root body.dashboard-page .custom-workout-exercise-options button.is-recommended {
+  color: var(--ink); background: var(--surface-soft); border-color: var(--lime);
+  box-shadow: inset 3px 0 0 var(--lime);
+}
+:root body.dashboard-page .custom-workout-suggestion-menu button.is-recommended :is(strong, small, span) { color: var(--ink); }
+:root body.dashboard-page .custom-workout-suggestion-menu button.is-recommended small { color: var(--lime); }
+:root body.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-row:is(.is-complete, .is-logged),
+:root body.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-row:is(.is-complete, .is-logged) .custom-workout-grouped-code,
+:root body.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-log-round:is(.is-logged, [aria-pressed="true"]),
+:root body.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-log-round[aria-pressed="true"]:disabled {
+  background: var(--surface);
+}
+:root body.homepage #start .contact .button-dark {
+  color: var(--ink); background: var(--surface-soft); border-color: var(--lime);
+}
+:root body.dashboard-page :is(.progress-metric-tab, .progress-section-toggle) { color: var(--ink); }
+:root body.dashboard-page .progress-metric-line { stroke: var(--secondary-accent); }
+:root body.dashboard-page .progress-metric-dot { stroke: var(--surface) !important; }
+:root body.dashboard-page .client-weekly-totals b { color: var(--brand-primary-ink); }
+:root body.dashboard-page :is(.progress-gallery-section, .progress-history-section, .progress-photo-card img, .progress-photo-unavailable) {
+  color: var(--ink); background: var(--surface); border-color: var(--line);
+}
+
+:root body.fwb-consent-page #approve { color: var(--ink); background: var(--surface-soft); border-color: var(--lime); }
+:root body.dashboard-page .set-row.is-complete,
+:root body.dashboard-page .set-row.is-complete .set-complete-button {
+  color: var(--lime); background: var(--surface); border-color: var(--lime);
+}
+:root body.dashboard-page :is(.client-workout-panel-custom, .client-workout-panel-assigned) .custom-workout-carousel[data-group-workout-deck="true"]:is(.is-superset-complete, .is-circuit-complete),
+:root body.dashboard-page :is(.client-workout-panel-custom, .client-workout-panel-assigned) .custom-workout-carousel[data-group-workout-deck="true"]:is(.is-superset-complete, .is-circuit-complete) .custom-workout-deck-layer,
+:root body.dashboard-page .custom-workout-group-next-card.is-complete {
+  color: var(--ink); background: var(--surface); border-color: var(--lime);
+}
+:root body.dashboard-page .custom-workout-carousel:is([data-carousel-enabled], [data-custom-workout-deck], [data-group-workout-deck]) .custom-workout-card.is-exercise-complete,
+:root body.dashboard-page .custom-workout-carousel[data-group-workout-deck]:is(.is-superset-complete, .is-circuit-complete) .custom-workout-card.is-carousel-active {
+  background: var(--surface) !important;
+}
+:root body:is(.dashboard-page, .login-page, .public-page, .homepage, .questionnaire-page, .fwb-document-page) :is(button, .button):disabled:not([aria-pressed="true"]):not(.is-logged) {
+  color: var(--muted); background: var(--surface-soft); border-color: var(--line);
+}
+:root body.dashboard-page .achievement-mini-icon.achievement-level-medallion {
+  color: var(--lime); background: var(--surface-soft); border-color: var(--lime);
+}
+:root body.dashboard-page .achievement-mini-icon.achievement-level-medallion b { color: inherit; }

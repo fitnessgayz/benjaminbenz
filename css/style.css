@@ -16335,14 +16335,6 @@ body.client-dashboard-page {
   background: var(--black);
 }
 
-.dashboard-page .client-dashboard-message-tab {
-  display: none !important;
-}
-
-.dashboard-page .client-dashboard-message-tab[hidden] {
-  display: none !important;
-}
-
 .client-dashboard-sidebar-toggle {
   display: grid;
   grid-template-columns: 38px minmax(0, 1fr);
@@ -16562,7 +16554,7 @@ body.client-dashboard-page.is-loading > :is(.client-dashboard-tabs,
     inset: auto 0 0;
     z-index: 1000;
     display: grid;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     align-items: end;
     width: 100%;
     max-width: none;
@@ -16635,19 +16627,8 @@ body.client-dashboard-page.is-loading > :is(.client-dashboard-tabs,
   }
 
   .dashboard-page .client-dashboard-tab[data-client-dashboard-tab="questionnaire"],
-  .dashboard-page .client-dashboard-tab[data-client-dashboard-tab="sessions"],
-  .dashboard-page .client-dashboard-tab[data-client-dashboard-tab="notifications"],
-  .dashboard-page .client-dashboard-tab[data-client-dashboard-tab="logs"] {
+  .dashboard-page .client-dashboard-tab[data-client-dashboard-tab="sessions"] {
     display: none !important;
-  }
-
-  .dashboard-page .client-dashboard-message-tab {
-    display: flex !important;
-  }
-
-  .dashboard-page .client-dashboard-message-tab:disabled {
-    cursor: wait;
-    opacity: .55;
   }
 
   .dashboard-page .client-dashboard-tab::after {

@@ -2739,7 +2739,7 @@ function exerciseVideoMarkup(exercise, options = {}) {
   }
 
   return `<a class="exercise-video-link" href="${escapeHtml(videoUrl)}" target="_blank" rel="noopener noreferrer" aria-label="View demo for ${escapeHtml(exercise.name)} (opens in a new tab)" title="View demo for ${escapeHtml(exercise.name)}">
-      ${options.iconOnly ? '<span aria-hidden="true">🎥</span>' : "View demo"}
+      ${options.iconOnly ? '<span aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="12" height="14" rx="2"/><path d="m15 9 6-4v14l-6-4Z"/></svg></span>' : "View demo"}
     </a>
   `;
 }
@@ -15832,12 +15832,13 @@ function clientDashboardMobileTabPressAction(tabName, activeTab, previousTabPres
 
 function setClientDashboardTab(tabName) {
   const nextTab = tabName || "home";
+  const navigationTab = ["stats", "nutrition"].includes(nextTab) ? "notifications" : nextTab;
   const tabs = document.querySelectorAll("[data-client-dashboard-tab]");
   const panels = document.querySelectorAll("[data-client-dashboard-panel]");
 
   activeClientDashboardTab = nextTab;
   tabs.forEach((button) => {
-    const isActive = button.dataset.clientDashboardTab === nextTab;
+    const isActive = button.dataset.clientDashboardTab === navigationTab;
 
     button.classList.toggle("is-active", isActive);
     if (isActive) {
@@ -15874,21 +15875,16 @@ function setClientDashboardTab(tabName) {
 }
 
 function setClientNotificationSettingsAvailable(available) {
+  // Settings remains reachable in Coach Client View for Stats and Nutrition.
   const settingsTab = document.querySelector('[data-client-dashboard-tab="notifications"]');
   const settingsEntries = document.querySelectorAll("[data-client-settings-entry]");
-  const settingsPanel = document.querySelector('[data-client-dashboard-panel="notifications"]');
-  const isAvailable = Boolean(available);
+  const notificationEntries = document.querySelectorAll('[data-client-settings-open="notifications"], [data-client-settings-open="recent-updates"]');
 
   if (settingsTab) {
-    settingsTab.hidden = !isAvailable;
+    settingsTab.hidden = false;
   }
-  settingsEntries.forEach((entry) => { entry.hidden = !isAvailable; });
-  if (!isAvailable && settingsPanel) {
-    settingsPanel.hidden = true;
-  }
-  if (!isAvailable && activeClientDashboardTab === "notifications") {
-    activeClientDashboardTab = "home";
-  }
+  settingsEntries.forEach((entry) => { entry.hidden = false; });
+  notificationEntries.forEach((entry) => { entry.hidden = !available; });
 }
 
 function clientHomeCheckinPromptStorageKey(user = activeDashboardUser) {
@@ -16789,6 +16785,9 @@ function handleClientDashboardTabs() {
     const settingsDestination = event.target.closest("[data-client-settings-destination]");
     if (settingsDestination) {
       setClientDashboardTab(settingsDestination.dataset.clientSettingsDestination);
+      const panel = document.querySelector(`[data-client-dashboard-panel="${settingsDestination.dataset.clientSettingsDestination}"]`);
+      panel?.scrollIntoView({ block: "start" });
+      panel?.querySelector('h2[tabindex="-1"]')?.focus({ preventScroll: true });
       return;
     }
     const tab = event.target.closest("[data-client-dashboard-tab]");
@@ -18534,8 +18533,8 @@ async function loadDashboard() {
     activeDashboardUser = user;
     renderCoachPreviewReturn();
     const requestedTab = new URLSearchParams(window.location.search).get("tab");
-    const availableTabs = new Set(Array.from(document.querySelectorAll("[data-client-dashboard-tab]"))
-      .map((button) => button.dataset.clientDashboardTab));
+    const availableTabs = new Set(Array.from(document.querySelectorAll("[data-client-dashboard-panel]"))
+      .map((panel) => panel.dataset.clientDashboardPanel));
 
     if (availableTabs.has(requestedTab)) {
       activeClientDashboardTab = requestedTab;

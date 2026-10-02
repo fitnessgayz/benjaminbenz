@@ -19,6 +19,8 @@ test("client Settings presents an iOS-style menu before the detailed controls", 
   assert.ok(settings.indexOf("data-profile-photo") > settings.indexOf('data-client-settings-view="menu"'));
   assert.match(css, /\.client-settings-menu \.profile-photo-card\s*\{[^}]*order: -1;/s);
   [
+    "Stats &amp; measurements",
+    "Nutrition",
     "Messages",
     "PAR-Q",
     "Sessions",
@@ -29,7 +31,7 @@ test("client Settings presents an iOS-style menu before the detailed controls", 
     "Privacy policy",
     "Help &amp; support"
   ].forEach((label) => assert.match(settings, new RegExp(label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))));
-  ["nutrition", "stats", "workouts"].forEach((destination) => {
+  ["workouts"].forEach((destination) => {
     assert.doesNotMatch(settings, new RegExp(`data-client-settings-destination="${destination}"`));
   });
 
