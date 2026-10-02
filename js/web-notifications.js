@@ -578,9 +578,11 @@
         throw new Error("FWB could not start background alerts on this device.");
       }
       const existing = await registration.pushManager.getSubscription();
+      if (destroyed) return false;
       let nextSubscription = existing;
       if (!nextSubscription) {
         const { publicKey } = await invokeNotificationFunction("public-key");
+        if (destroyed) return false;
         if (!publicKey) {
           throw new Error("Browser alerts are still being connected. Please try again soon.");
         }
@@ -590,6 +592,7 @@
         });
       }
 
+      if (destroyed) return false;
       await storeSubscription(nextSubscription);
       subscription = nextSubscription;
       await savePreferences({ push_enabled: true });
@@ -754,21 +757,34 @@
         refreshPromise = (async () => {
           try {
             await ensurePreferences();
-            await loadInbox();
-            subscription = pushSupport().supported && global.Notification.permission === "granted"
-              ? await currentSubscription()
-              : null;
-            if (!subscription) {
-              await restoreAlertsByDefault();
-            }
-            if (subscription && preferences?.push_enabled !== false) {
-              await storeSubscription(subscription);
+            if (destroyed) return false;
+            let connectionError = false;
+            try {
+              subscription = pushSupport().supported && global.Notification.permission === "granted"
+                ? await currentSubscription()
+                : null;
+              if (destroyed) return false;
+              if (!subscription) {
+                await restoreAlertsByDefault();
+              }
+              if (subscription && preferences?.push_enabled !== false) {
+                await storeSubscription(subscription);
+              }
+            } catch (error) {
+              connectionError = true;
             }
             renderPreferences();
             renderEnableState();
-            return true;
+            // Inbox availability must not prevent restoring this device's alerts.
+            await loadInbox();
+            if (connectionError) {
+              setStatus("Could not reconnect background alerts. Reopen FWB or try again in Settings.", "error");
+            }
+            return !connectionError;
           } catch (error) {
-            setStatus("Notifications are being connected. Please try again soon.", "error");
+            setStatus(subscription && preferences?.push_enabled !== false
+              ? "Alerts are on, but recent updates could not load. Please try again soon."
+              : "Notifications are being connected. Please try again soon.", "error");
             return false;
           }
         })();
@@ -783,6 +799,11 @@
       }
     }
 
+    function handleResume() {
+      if (global.document?.visibilityState === "hidden" || global.Notification?.permission !== "granted") return;
+      return refresh();
+    }
+
     async function init() {
       if (initialized || !root || !supabaseClient || !user?.id) {
         return false;
@@ -791,6 +812,8 @@
       root.hidden = false;
       root.addEventListener("click", handleClick);
       root.addEventListener("change", handleChange);
+      global.document?.addEventListener?.("visibilitychange", handleResume);
+      global.addEventListener?.("focus", handleResume);
       setBusy(true);
       setStatus("Loading notification settings…");
       const loaded = await refresh();
@@ -828,6 +851,8 @@
       destroyed = true;
       root?.removeEventListener("click", handleClick);
       root?.removeEventListener("change", handleChange);
+      global.document?.removeEventListener?.("visibilitychange", handleResume);
+      global.removeEventListener?.("focus", handleResume);
     }
 
     return {

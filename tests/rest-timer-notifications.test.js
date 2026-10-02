@@ -79,9 +79,11 @@ function createRestTimerHarness() {
   };
 }
 
-function createNotificationPreferenceHarness() {
+function createNotificationPreferenceHarness({ permission = "default", storedPreference = null, registrationFailures = 0, storageUnavailable = false } = {}) {
   const storage = new Map();
-  const registration = { showNotification: async () => {} };
+  if (storedPreference !== null) storage.set("test-rest-timer-notifications", storedPreference);
+  let notificationsShown = 0;
+  const registration = { showNotification: async () => { notificationsShown += 1; } };
   let permissionRequests = 0;
   let workerRegistrations = 0;
   const messageListeners = [];
@@ -107,7 +109,7 @@ function createNotificationPreferenceHarness() {
   });
   const timerHelpItems = [{ textContent: "" }, { textContent: "" }];
   const Notification = {
-    permission: "default",
+    permission,
     async requestPermission() {
       permissionRequests += 1;
       this.permission = "granted";
@@ -122,6 +124,7 @@ function createNotificationPreferenceHarness() {
       ready: Promise.resolve(registration),
       register: async () => {
         workerRegistrations += 1;
+        if (registrationFailures-- > 0) throw new Error("Temporary worker failure");
         return registration;
       },
       addEventListener(type, listener) {
@@ -137,9 +140,11 @@ function createNotificationPreferenceHarness() {
     navigator,
     localStorage: {
       getItem(key) {
+        if (storageUnavailable) throw new Error("Storage unavailable");
         return storage.has(key) ? storage.get(key) : null;
       },
       setItem(key, value) {
+        if (storageUnavailable) throw new Error("Storage unavailable");
         storage.set(key, value);
       }
     },
@@ -156,10 +161,10 @@ function createNotificationPreferenceHarness() {
       const restTimerNotificationPreferenceStorageKey = "test-rest-timer-notifications";
       const restTimerNotificationServiceWorkerUrl = "/timer-notifications-sw.js?v=test";
       let restTimerNotificationRegistrationPromise = null;
-      let restTimerNotificationPreferenceFallback = false;
+      ${portal.match(/let restTimerNotificationPreferenceFallback = [^;]+;/)[0]}
       function setClientDashboardTab() {}
       ${notificationFunctions}
-      return { initializeRestTimerNotifications, toggleRestTimerNotifications };
+      return { initializeRestTimerNotifications, toggleRestTimerNotifications, showRestTimerCompleteNotification };
     `
   )(window, navigator, {
     querySelectorAll(selector) {
@@ -177,7 +182,9 @@ function createNotificationPreferenceHarness() {
     ...api,
     counts: () => ({ permissionRequests, workerRegistrations, messageListeners: messageListeners.length }),
     timerButtons,
-    timerHelpItems
+    timerHelpItems,
+    storedPreference: () => storage.get("test-rest-timer-notifications"),
+    notificationsShown: () => notificationsShown
   };
 }
 
@@ -404,7 +411,7 @@ test("client PWA opens at the dashboard and cache-busts notification assets", ()
   assert.equal(manifest.display, "standalone");
   assert.match(dashboard, /href="\/client\.webmanifest"/);
   assert.match(dashboard, /css\/style\.css\?v=workout-preview-1/);
-  assert.match(dashboard, /js\/web-notifications\.js\?v=notification-default-on-1/);
+  assert.match(dashboard, /js\/web-notifications\.js\?v=notification-recovery-2/);
   assert.match(dashboard, /js\/client-portal\.js\?v=workout-preview-1/);
 });
 
@@ -421,4 +428,45 @@ test("rest timer sheet remains reachable in short and safe-area viewports", () =
     styles,
     /\.rest-timer-overlay \{[\s\S]*?padding:[\s\S]*?safe-area-inset-top[\s\S]*?safe-area-inset-right[\s\S]*?safe-area-inset-bottom[\s\S]*?safe-area-inset-left/
   );
+});
+
+
+test("previously granted timer alerts recover when the local preference is missing", async () => {
+  const harness = createNotificationPreferenceHarness({ permission: "granted" });
+  harness.initializeRestTimerNotifications();
+  assert.equal(harness.timerButtons[0].pressed, "true");
+  assert.equal(await harness.showRestTimerCompleteNotification(), true);
+  assert.equal(harness.notificationsShown(), 1);
+  assert.equal(harness.counts().permissionRequests, 0);
+});
+
+test("timer alert recovery respects an explicit off preference and denied permission", async () => {
+  for (const options of [
+    { permission: "granted", storedPreference: "false" },
+    { permission: "denied", storedPreference: "true" }
+  ]) {
+    const harness = createNotificationPreferenceHarness(options);
+    harness.initializeRestTimerNotifications();
+    assert.equal(await harness.showRestTimerCompleteNotification(), false);
+    assert.equal(harness.timerButtons[0].pressed, "false");
+    assert.equal(harness.counts().permissionRequests, 0);
+  }
+});
+
+test("a temporary worker failure does not save timer alerts as turned off", async () => {
+  const harness = createNotificationPreferenceHarness({ registrationFailures: 1 });
+  assert.equal(await harness.toggleRestTimerNotifications(), false);
+  assert.notEqual(harness.storedPreference(), "false");
+  harness.initializeRestTimerNotifications();
+  assert.equal(await harness.showRestTimerCompleteNotification(), true);
+  assert.equal(harness.counts().permissionRequests, 1);
+});
+
+test("timer alerts keep an explicit off choice in memory when storage is unavailable", async () => {
+  const harness = createNotificationPreferenceHarness({ permission: "granted", storageUnavailable: true });
+  harness.initializeRestTimerNotifications();
+  assert.equal(harness.timerButtons[0].pressed, "true");
+  assert.equal(await harness.toggleRestTimerNotifications(), false);
+  harness.initializeRestTimerNotifications();
+  assert.equal(await harness.showRestTimerCompleteNotification(), false);
 });

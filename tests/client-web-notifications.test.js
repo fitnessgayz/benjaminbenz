@@ -43,7 +43,7 @@ function fakeElement() {
   };
 }
 
-function createClientNotificationHarness({ deferredPreferences = false } = {}) {
+function createClientNotificationHarness({ deferredPreferences = false, permission = null, pushEnabled = false, inboxError = null, missingSubscription = false } = {}) {
   const internalBadge = fakeElement();
   const externalBadges = [fakeElement(), fakeElement()];
   const unreadStatus = fakeElement();
@@ -65,8 +65,20 @@ function createClientNotificationHarness({ deferredPreferences = false } = {}) {
       releasePreferences = resolve;
     })
     : Promise.resolve();
-  const preferences = { user_id: "client-1", push_enabled: false };
+  const preferences = { user_id: "client-1", push_enabled: pushEnabled };
+  const enableButton = fakeElement();
+  const help = fakeElement();
+  const status = fakeElement();
+  let subscriptionSaves = 0;
+  let subscriptionCreations = 0;
+  let permissionRequests = 0;
+  const lifecycle = new Map();
+  const pushSubscription = { endpoint: "https://push.test/client", toJSON: () => ({ endpoint: "https://push.test/client", keys: { p256dh: "key", auth: "auth" } }) };
+  let browserSubscription = missingSubscription ? null : pushSubscription;
   const selectorElements = new Map([
+    ["[data-web-notification-enable]", enableButton],
+    ["[data-web-notification-help]", help],
+    ["[data-web-notification-status]", status],
     ["[data-web-notification-list]", list],
     ["[data-web-notification-empty]", empty],
     ["[data-web-notification-unread]", internalBadge],
@@ -78,8 +90,11 @@ function createClientNotificationHarness({ deferredPreferences = false } = {}) {
   rootElement.addEventListener = () => {};
   rootElement.removeEventListener = () => {};
   const supabaseClient = {
+    functions: { invoke: async () => ({ data: { publicKey: "a2V5" }, error: null }) },
     from(table) {
       const query = {
+        async upsert() { subscriptionSaves += 1; return { error: null }; },
+        update(updates) { Object.assign(preferences, updates); return this; },
         select() {
           return this;
         },
@@ -98,19 +113,26 @@ function createClientNotificationHarness({ deferredPreferences = false } = {}) {
           return { data: preferences, error: null };
         },
         async limit() {
-          return { data: rows, error: null };
+          return { data: rows, error: inboxError };
         }
       };
-      assert.ok(["client_notification_preferences", "client_notifications"].includes(table));
+      assert.ok(["client_notification_preferences", "client_notifications", "web_push_subscriptions"].includes(table));
       return query;
     }
   };
-  const document = { createElement: () => fakeElement() };
+  const document = { createElement: () => fakeElement(), visibilityState: "visible",
+    addEventListener: (type, listener) => lifecycle.set(type, listener),
+    removeEventListener: (type) => lifecycle.delete(type) };
   const sandbox = {
     window: {
       document,
-      navigator: {},
-      isSecureContext: false,
+      navigator: permission === null ? {} : { serviceWorker: {
+        register: async () => registration, ready: Promise.resolve().then(() => registration)
+      } },
+      isSecureContext: permission !== null,
+      ...(permission === null ? {} : { Notification: { permission, requestPermission: async () => { permissionRequests += 1; return "granted"; } }, PushManager: function () {} }),
+      addEventListener: (type, listener) => lifecycle.set(type, listener),
+      removeEventListener: (type) => lifecycle.delete(type),
       location: { origin: "https://fitness.test" },
       URL,
       atob(value) {
@@ -122,6 +144,10 @@ function createClientNotificationHarness({ deferredPreferences = false } = {}) {
     Uint8Array,
     Buffer
   };
+  const registration = { pushManager: {
+    getSubscription: async () => browserSubscription,
+    subscribe: async () => { subscriptionCreations += 1; browserSubscription = pushSubscription; return pushSubscription; }
+  } };
   vm.runInNewContext(notifications, sandbox);
   const controller = sandbox.window.FWBWebNotifications.createController({
     supabaseClient,
@@ -138,7 +164,10 @@ function createClientNotificationHarness({ deferredPreferences = false } = {}) {
     unreadStatus,
     rows,
     releasePreferences,
-    preferenceProbeCount: () => preferenceProbeCount
+    preferenceProbeCount: () => preferenceProbeCount,
+    enableButton, help, status, lifecycle,
+    removeSubscription: () => { browserSubscription = null; },
+    counts: () => ({ subscriptionSaves, subscriptionCreations, permissionRequests })
   };
 }
 
@@ -228,7 +257,7 @@ test("notification categories and database preferences default on without forcin
   assert.match(notifications, /input\.checked = preferences\?\.\[key\] !== false/);
   assert.match(notifications, /preferences\?\.push_enabled !== false/);
   assert.doesNotMatch(notifications, /init\(\)[\s\S]*?Notification\.requestPermission\(\)/);
-  assert.match(dashboard, /src="js\/web-notifications\.js\?v=notification-default-on-1"/);
+  assert.match(dashboard, /src="js\/web-notifications\.js\?v=notification-recovery-2"/);
   [
     "push_enabled",
     "coach_replies",
@@ -309,4 +338,56 @@ test("service worker renders generic payload copy while retaining timer Workouts
   assert.match(worker, /searchParams\.get\("tab"\) === "workouts"/);
   assert.match(worker, /postMessage\(\{ type: "FWB_OPEN_WORKOUTS" \}\)/);
   assert.match(worker, /dashboard\.navigate\(destination\)/);
+});
+
+
+test("background alerts reconnect even when loading the inbox fails", async () => {
+  const harness = createClientNotificationHarness({ permission: "granted", pushEnabled: true, inboxError: new Error("Inbox unavailable") });
+  assert.equal(await harness.controller.init(), false);
+  assert.equal(harness.counts().subscriptionSaves, 1);
+  assert.equal(harness.enableButton["aria-pressed"], "true");
+  assert.match(harness.help.textContent, /Background alerts are on/);
+});
+
+test("returning to the app restores an expired subscription without another permission prompt", async () => {
+  const harness = createClientNotificationHarness({ permission: "granted", pushEnabled: true });
+  assert.equal(await harness.controller.init(), true);
+  harness.removeSubscription();
+  assert.ok(harness.lifecycle.has("visibilitychange"));
+  await harness.lifecycle.get("visibilitychange")();
+  assert.equal(harness.counts().subscriptionCreations, 1);
+  assert.equal(harness.counts().permissionRequests, 0);
+  assert.equal(harness.enableButton["aria-pressed"], "true");
+  harness.controller.destroy();
+  assert.equal(harness.lifecycle.size, 0);
+});
+
+test("background recovery respects explicit off and never prompts on page load", async () => {
+  for (const options of [
+    { permission: "granted", pushEnabled: false, missingSubscription: true },
+    { permission: "default", pushEnabled: true, missingSubscription: true },
+    { permission: "denied", pushEnabled: true, missingSubscription: true }
+  ]) {
+    const harness = createClientNotificationHarness(options);
+    await harness.controller.init();
+    assert.equal(harness.counts().subscriptionCreations, 0);
+    assert.equal(harness.counts().permissionRequests, 0);
+    assert.equal(harness.enableButton["aria-pressed"], "false");
+  }
+});
+
+test("client alert initialization is independent of the workout-plan request", () => {
+  const load = portal.slice(portal.indexOf("async function loadDashboard("));
+  assert.ok(load.indexOf("void initializeClientWebNotifications(user)") < load.indexOf('.from("client_programs")'));
+});
+
+
+test("destroying the client controller cancels recovery before preferences finish loading", async () => {
+  const harness = createClientNotificationHarness({ deferredPreferences: true, permission: "granted", pushEnabled: true });
+  const loading = harness.controller.init();
+  harness.controller.destroy();
+  harness.releasePreferences();
+  assert.equal(await loading, false);
+  assert.equal(harness.counts().subscriptionSaves, 0);
+  assert.equal(harness.lifecycle.size, 0);
 });

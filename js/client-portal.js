@@ -211,7 +211,7 @@ let restTimerActiveRunId = 0;
 let restTimerLastNotifiedRunId = 0;
 let customWorkoutGroupedRestAction = null;
 let restTimerNotificationRegistrationPromise = null;
-let restTimerNotificationPreferenceFallback = false;
+let restTimerNotificationPreferenceFallback = null;
 let workoutElapsedTimerState = null;
 let workoutElapsedTimerIntervalId = null;
 let workoutElapsedTimerIsCompact = null;
@@ -6878,13 +6878,16 @@ function restTimerNotificationSupport() {
 }
 
 function readRestTimerNotificationPreference() {
+  // Reuse existing notification permission unless the client explicitly opted out.
+  const defaultPreference = restTimerNotificationPreferenceFallback
+    ?? (window.Notification?.permission === "granted");
   try {
     const storedPreference = window.localStorage.getItem(restTimerNotificationPreferenceStorageKey);
     return storedPreference === null
-      ? restTimerNotificationPreferenceFallback
+      ? defaultPreference
       : storedPreference === "true";
   } catch (error) {
-    return restTimerNotificationPreferenceFallback;
+    return defaultPreference;
   }
 }
 
@@ -6997,7 +7000,8 @@ async function toggleRestTimerNotifications() {
     ? await restTimerNotificationRegistration()
     : null;
   const enabled = Boolean(permission === "granted" && registration);
-  storeRestTimerNotificationPreference(enabled);
+  // A connection failure must not become a saved opt-out.
+  if (permission === "granted") storeRestTimerNotificationPreference(true);
   renderRestTimerNotificationSetting();
   return enabled;
 }
@@ -7050,10 +7054,15 @@ function initializeRestTimerNotifications() {
       }
     });
   }
-  if (restTimerNotificationsEnabled()) {
-    void restTimerNotificationRegistration();
+  function refreshTimerAlerts() {
+    if (restTimerNotificationsEnabled()) void restTimerNotificationRegistration();
+    renderRestTimerNotificationSetting();
   }
-  renderRestTimerNotificationSetting();
+  window.addEventListener?.("focus", refreshTimerAlerts);
+  document.addEventListener?.("visibilitychange", () => {
+    if (document.visibilityState === "visible") refreshTimerAlerts();
+  });
+  refreshTimerAlerts();
 }
 
 function initializeClientMessages(user) {
@@ -18546,6 +18555,8 @@ async function loadDashboard() {
     signedInDashboardEmail = signedInEmail;
     isCoachDashboardPreview = isCoachPortalEmail(signedInEmail) && Boolean(previewEmail);
     setClientNotificationSettingsAvailable(!isCoachDashboardPreview);
+    // Alert recovery must not wait for workout data to load successfully.
+    void initializeClientWebNotifications(user);
     configureClientProfilePhoto();
     configureClientAccountSettings();
 
@@ -18594,7 +18605,6 @@ async function loadDashboard() {
     configureClientGoogleHealth();
     configureClientAppleHealth();
     initializeClientMessages(user);
-    void initializeClientWebNotifications(user);
     const questionnaireQuery = supabaseClient
       .from("client_fitness_questionnaires")
       .select("id,respondent_email,respondent_name,submitted_at,answers,linked_client_email,match_status,profile_imported_at")
