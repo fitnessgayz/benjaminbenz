@@ -142,6 +142,7 @@
         checkedDate = today; offset = 0;
         await refresh();
         text('client-gym-checkin-status', 'You showed up. Check-in complete.');
+        root.document?.dispatchEvent(new CustomEvent("fwb:gym-checkin-saved"));
         celebrateCheckIn(panel, today);
         return today === dateKey(new Date()) ? 'Gym check-in saved for today.' : 'Gym check-in saved for yesterday. Check in again for today.';
       } catch (error) {

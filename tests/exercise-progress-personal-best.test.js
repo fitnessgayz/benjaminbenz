@@ -21,6 +21,9 @@ const { records, markup, formatNumber } = Function(`
   const warmUpSetNumberBase = 1000;
   const escapeHtml = (value) => String(value).replaceAll("&", "&amp;").replaceAll("<", "&lt;");
   const formatLogDate = (date) => date;
+  const approvedExerciseForName = () => ({ primary_muscle: "Back", image_url: "https://example.com/row.webp" });
+  const exerciseMediaButtonMarkup = () => '<button class="exercise-media-button" data-exercise-media-open><img src="row.webp" alt=""></button>';
+  const exerciseSuggestionMuscleLabel = () => "Back";
   ${functionSource("normalizedSetType")}
   ${functionSource("normalizeExerciseHistoryName")}
   ${functionSource("exerciseProgressNumber")}
@@ -141,4 +144,14 @@ test("personal-best values preserve the exact logged decimal weight", () => {
   const [decimalChange] = records([log(17.1, "2026-09-19"), log(17.3, "2026-09-20")]);
   assert.equal(decimalChange.change, 0.2);
   assert.match(markup(decimalChange), /\+0\.2 lb<\/strong>/);
+});
+
+
+test("progress cards show exercise media, muscle group, and readable personal bests", () => {
+  const [record] = records([log(60, "2026-10-01")]);
+  const html = markup(record);
+  assert.match(html, /progress-exercise-media/);
+  assert.match(html, /data-exercise-media-open/);
+  assert.match(html, /progress-exercise-muscles">Back/);
+  assert.match(html, /Chest-Supported Dumbbell Row/);
 });

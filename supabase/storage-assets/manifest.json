@@ -24,7 +24,8 @@
     "20261001130710_add_rp_squat_university_exercise_cards.sql",
     "20261001133436_add_burpee_trx_exercise_cards.sql",
     "20261001161518_add_official_trx_exercise_cards_batch_two.sql",
-    "20261001201652_add_heel_elevated_kettlebell_rdl_media.sql"
+    "20261001201652_add_heel_elevated_kettlebell_rdl_media.sql",
+    "20261002230319_client_quarterly_goals.sql"
   ],
   "nasmExerciseCatalogMigration": "20261001032427_add_complete_nasm_exercise_library.sql",
   "nasmExerciseCatalogCount": 75,

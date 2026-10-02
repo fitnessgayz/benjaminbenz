@@ -322,7 +322,7 @@
     return { ...totals, xp, level, badges, events };
   }
 
-  const api = Object.freeze({ evaluate, sessionKey });
+  const api = Object.freeze({ evaluate, sessionKey, completedWorkoutDates: (records, options = {}) => sessionsFromRows(records, options.today, normalize(options.clientEmail)).map(session => session.date) });
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   if (root) root.FWB_ACHIEVEMENTS = api;
 })(typeof window !== "undefined" ? window : globalThis);

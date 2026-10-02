@@ -24,6 +24,7 @@ let isCoachDashboardPreview = false;
 let trainingLogs = [];
 let clientAchievementHistoryStatus = "loading";
 let clientAchievementController = null;
+let clientQuarterGoalController = null;
 let clientAchievementRetryInFlight = false;
 let workoutSessionFeedback = [];
 let clientWorkoutHistoryDeleteInFlight = false;
@@ -3342,12 +3343,20 @@ function clientExerciseProgressCardMarkup(record) {
   const changePrefix = record.change > 0 ? "+" : "";
   const changeClass = record.change > 0 ? " is-positive" : record.change < 0 ? " is-negative" : "";
 
+  const libraryExercise = approvedExerciseForName(record.name);
+  const media = exerciseMediaButtonMarkup({ ...libraryExercise, name: record.name }, { compact: true });
+  const muscles = libraryExercise ? exerciseSuggestionMuscleLabel(libraryExercise) : "";
+
   return `
     <article class="progress-exercise-card">
       <div class="progress-exercise-card-heading">
-        <div>
+        <div class="progress-exercise-identity">
+          ${media ? `<div class="progress-exercise-media">${media}</div>` : ""}
+          <div>
           ${record.code ? `<span>${escapeHtml(record.code)}</span>` : ""}
           <h4>${escapeHtml(record.name)}</h4>
+          ${muscles ? `<small class="progress-exercise-muscles">${escapeHtml(muscles)}</small>` : ""}
+          </div>
         </div>
         <strong class="progress-exercise-change${changeClass}">${escapeHtml(changePrefix)}${escapeHtml(exerciseProgressNumber(record.change))} ${escapeHtml(record.unit)}</strong>
       </div>
@@ -4189,6 +4198,7 @@ function clearClientQuestionnaire() {
 function renderProgress(entries) {
   const safeEntries = Array.isArray(entries) ? entries : [];
   progressEntries = safeEntries;
+  clientQuarterGoalController?.refresh();
   const latest = safeEntries[safeEntries.length - 1];
 
   if (!latest) {
@@ -14264,6 +14274,7 @@ function renderClientAchievements() {
   if (!window.FWB_ACHIEVEMENTS_UI) return;
   clientAchievementController ||= window.FWB_ACHIEVEMENTS_UI.createController(document, retryClientAchievements);
   clientAchievementController.render(clientAchievementSnapshot(), clientAchievementHistoryStatus);
+  clientQuarterGoalController?.render();
 }
 
 async function retryClientAchievements() {
@@ -18286,7 +18297,37 @@ function handleSkipToggle() {
   });
 }
 
+function setupWorkoutProgramWindows() {
+  const dialog = document.getElementById("client-program-info-dialog");
+  const links = document.querySelector(".client-workout-program-links");
+  if (!dialog || !links || links.dataset.bound) return;
+  links.dataset.bound = "true";
+  const cards = {
+    overview: document.querySelector(".client-home-program-card"),
+    notes: document.querySelector(".client-home-coach-note")
+  };
+  const title = document.createElement("h3");
+  title.id = "client-program-info-title";
+  const close = document.createElement("button");
+  close.type = "button"; close.className = "button button-ghost"; close.textContent = "Done";
+  dialog.append(title, close);
+  Object.values(cards).forEach(card => { if (card) { card.hidden = true; dialog.append(card); } });
+  let trigger = null;
+  links.addEventListener("click", event => {
+    const button = event.target.closest("[data-program-window]");
+    if (!button) return;
+    trigger = button;
+    const name = button.dataset.programWindow;
+    title.textContent = name === "notes" ? "Coach notes" : "Program overview";
+    Object.entries(cards).forEach(([key, card]) => { if (card) card.hidden = key !== name; });
+    dialog.showModal();
+  });
+  close.onclick = () => dialog.close();
+  dialog.addEventListener("close", () => trigger?.focus());
+}
+
 function renderProgram(program) {
+  setupWorkoutProgramWindows();
   renderCoachPreviewReturn(program);
   const assignedWorkouts = program.assignedWorkouts || (Array.isArray(program.workouts) ? program.workouts : []);
   currentProgram = { ...program, assignedWorkouts, workouts: WorkoutLayout.apply(assignedWorkouts, program.client_workout_layout) };
@@ -18791,6 +18832,14 @@ async function loadDashboard() {
         : demoTrainingLogsForProgram(data)
     );
     refreshExerciseSuggestionsDatalist();
+    clientQuarterGoalController ||= window.FWB_QUARTER_GOALS?.mount({
+      client: supabaseClient,
+      getContext: () => ({ user: activeDashboardUser, email: activeClientEmail, today: todayDate(), readOnly: isCoachDashboardPreview }),
+      historyReady: () => clientAchievementHistoryStatus === "ready",
+      retryHistory: retryClientAchievements,
+      getWorkoutDates: () => window.FWB_ACHIEVEMENTS.completedWorkoutDates(trainingLogs, { today: todayDate(), clientEmail: activeClientEmail })
+    });
+    void clientQuarterGoalController?.load();
     window.requestAnimationFrame?.(() => maybeShowClientHomeCheckinPrompt());
   } catch (error) {
     setDashboardMessage(
