@@ -26,11 +26,9 @@ jobs:
       - uses: android-actions/setup-android@v4
       - run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
       - uses: gradle/actions/setup-gradle@v6
-        with:
-          gradle-version: '8.13'
       - name: Assemble Android debug build
         working-directory: FWB-Android-App
-        run: gradle --no-daemon :app:assembleDebug
+        run: ./gradlew --no-daemon :app:assembleDebug
       - uses: actions/upload-artifact@v4
         with:
           name: fwb-android-debug
