@@ -27,7 +27,8 @@
     "20261001201652_add_heel_elevated_kettlebell_rdl_media.sql",
     "20261002230319_client_quarterly_goals.sql",
     "20261003030640_coach_correct_workout_weight.sql",
-    "20261003172116_coach_activity_likes.sql"
+    "20261003172116_coach_activity_likes.sql",
+    "20261003200955_add_cable_glute_kickback_bench_media.sql"
   ],
   "nasmExerciseCatalogMigration": "20261001032427_add_complete_nasm_exercise_library.sql",
   "nasmExerciseCatalogCount": 75,
@@ -2964,6 +2965,34 @@
       "objectPath": "generated/2026-10-01/heel-elevated-kettlebell-rdl.mp4",
       "contentType": "video/mp4",
       "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-10-03/png/cable-glute-kickback-bench.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-10-03/png/cable-glute-kickback-bench.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-10-03/webp-480/cable-glute-kickback-bench.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-10-03/webp-480/cable-glute-kickback-bench.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-10-03/webp-768/cable-glute-kickback-bench.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-10-03/webp-768/cable-glute-kickback-bench.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-videos/generated/2026-10-03/cable-glute-kickback-bench.mp4",
+      "bucket": "exercise-videos",
+      "objectPath": "generated/2026-10-03/cable-glute-kickback-bench.mp4",
+      "contentType": "video/mp4",
+      "cacheControl": 31536000
     }
   ],
   "exerciseMedia": [
@@ -3733,6 +3762,16 @@
       "name": "Heel-Elevated Kettlebell RDL",
       "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-10-01/webp-768/heel-elevated-kettlebell-rdl.webp",
       "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-videos/generated/2026-10-01/heel-elevated-kettlebell-rdl.mp4"
+    },
+    {
+      "name": "Cable Glute Kickback (Bench)",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-10-03/webp-768/cable-glute-kickback-bench.webp",
+      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-videos/generated/2026-10-03/cable-glute-kickback-bench.mp4"
+    },
+    {
+      "name": "Cable Glute Kickback",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-10-03/webp-768/cable-glute-kickback-bench.webp",
+      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-videos/generated/2026-10-03/cable-glute-kickback-bench.mp4"
     }
   ]
 }
