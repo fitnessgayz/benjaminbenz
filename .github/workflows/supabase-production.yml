@@ -56,6 +56,7 @@ jobs:
     environment: production
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_DEPLOY_TOKEN }}
+      SUPABASE_EDGE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
@@ -68,6 +69,10 @@ jobs:
             echo '::error::Missing SUPABASE_ACCESS_TOKEN'
             missing=1
           fi
+          if [ -z "$SUPABASE_EDGE_ACCESS_TOKEN" ]; then
+            echo '::error::Missing SUPABASE_EDGE_ACCESS_TOKEN'
+            missing=1
+          fi
           exit "$missing"
       - name: Upload versioned media
         run: node scripts/supabase/deploy-media.mjs upload
@@ -76,6 +81,8 @@ jobs:
       - name: Apply pending migrations
         run: node scripts/supabase/deploy-migrations.mjs apply
       - name: Deploy web push functions
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
         run: >-
           npx --yes supabase@2.119.0 functions deploy
           send-web-push fwb-web-push
