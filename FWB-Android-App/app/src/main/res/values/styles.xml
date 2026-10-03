@@ -1,0 +1,7 @@
+<resources>
+    <style name="Theme.FWBCoach" parent="android:style/Theme.Material.NoActionBar">
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:statusBarColor">#171917</item>
+        <item name="android:navigationBarColor">#171917</item>
+    </style>
+</resources>
