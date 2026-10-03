@@ -5,6 +5,9 @@ on:
     paths:
       - 'scripts/supabase/**'
       - 'supabase/migrations/**'
+      - 'supabase/functions/send-web-push/**'
+      - 'supabase/functions/fwb-web-push/**'
+      - 'supabase/config.toml'
       - 'supabase/storage-assets/**'
       - '.github/workflows/supabase-production.yml'
   push:
@@ -12,6 +15,9 @@ on:
     paths:
       - 'scripts/supabase/**'
       - 'supabase/migrations/**'
+      - 'supabase/functions/send-web-push/**'
+      - 'supabase/functions/fwb-web-push/**'
+      - 'supabase/config.toml'
       - 'supabase/storage-assets/**'
       - '.github/workflows/supabase-production.yml'
   workflow_dispatch:
@@ -69,5 +75,11 @@ jobs:
         run: node scripts/supabase/deploy-migrations.mjs dry-run
       - name: Apply pending migrations
         run: node scripts/supabase/deploy-migrations.mjs apply
+      - name: Deploy web push functions
+        run: >-
+          npx --yes supabase@2.119.0 functions deploy
+          send-web-push fwb-web-push
+          --project-ref "$SUPABASE_PROJECT_ID"
+          --use-api
       - name: Verify uploaded bytes and exercise mappings
         run: node scripts/supabase/deploy-media.mjs verify
