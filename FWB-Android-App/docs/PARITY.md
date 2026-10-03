@@ -36,6 +36,6 @@ Status: **in progress**. A checked box means the Android behavior has been imple
 
 ## Current development build
 
-Implemented in source: Compose shell, nine-tab dock, brand palette, Supabase email/password authentication, program loading, multiple-program selection, version 2 exercise layout reads, exercise demo links, and read-only Home, Workouts, Food, Sessions, and Settings views. The remaining tabs show a development notice. No client release should be made from this build.
+Implemented in source: Compose shell, nine-tab dock, brand palette, Supabase email/password authentication, program loading, multiple-program selection, version 2 exercise layout reads, exercise demo links, and read-only Home, Workouts, Logs, Progress, Stats, Food, Sessions, and Settings views. PAR-Q still shows a development notice. No client release should be made from this build.
 
 The Android SDK, JDK, and Gradle are not installed on this Mac. Compilation and device testing remain unverified until the GitHub build workflow runs on a pushed branch or those tools are available locally.

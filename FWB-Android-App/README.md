@@ -8,7 +8,7 @@ Native Android client for the existing FWB Training service. This project is bei
 - Existing-client email/password sign-in and password reset
 - Active client program loading from the same `client_programs` table as iOS
 - Multiple program selection and version 2 client workout layout reads
-- Live Home, Workouts, Food, Sessions, and Settings views
+- Live Home, Workouts, Logs, Progress, Stats, Food, Sessions, and Settings views; activity and measurement views are currently read-only
 
 See [docs/PARITY.md](docs/PARITY.md) for the screen-by-screen implementation and release checklist. This is an **in-progress development build**, not a client release.
 

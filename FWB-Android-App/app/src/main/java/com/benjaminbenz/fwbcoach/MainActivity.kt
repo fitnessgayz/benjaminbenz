@@ -115,6 +115,12 @@ private fun FwbApp() {
     var programs by remember { mutableStateOf<List<ClientProgram>>(emptyList()) }
     var programBusy by remember { mutableStateOf(false) }
     var programError by remember { mutableStateOf<String?>(null) }
+    var history by remember { mutableStateOf<List<WorkoutHistoryRecord>>(emptyList()) }
+    var historyBusy by remember { mutableStateOf(false) }
+    var historyError by remember { mutableStateOf<String?>(null) }
+    var measurements by remember { mutableStateOf<List<MeasurementEntry>>(emptyList()) }
+    var measurementsBusy by remember { mutableStateOf(false) }
+    var measurementsError by remember { mutableStateOf<String?>(null) }
     var selectedProgramId by remember { mutableStateOf<String?>(null) }
     var selectedTab by remember { mutableStateOf(ClientTab.HOME) }
     var selectedWorkout by remember { mutableStateOf<Workout?>(null) }
@@ -131,6 +137,24 @@ private fun FwbApp() {
             .onSuccess { programs = it }
             .onFailure { programError = "Your training plan could not be loaded. Check your connection and retry." }
         programBusy = false
+    }
+    LaunchedEffect(account) {
+        val current = account ?: return@LaunchedEffect
+        historyBusy = true
+        historyError = null
+        runCatching { SupabaseGateway.loadHistory(current) }
+            .onSuccess { history = it }
+            .onFailure { historyError = "Your workout history could not be loaded. Check your connection and retry." }
+        historyBusy = false
+    }
+    LaunchedEffect(account) {
+        val current = account ?: return@LaunchedEffect
+        measurementsBusy = true
+        measurementsError = null
+        runCatching { SupabaseGateway.loadMeasurements(current) }
+            .onSuccess { measurements = it }
+            .onFailure { measurementsError = "Your measurements could not be loaded. Check your connection and retry." }
+        measurementsBusy = false
     }
 
     Box(Modifier.fillMaxSize().background(FwbColor.background)) {
@@ -183,6 +207,9 @@ private fun FwbApp() {
                             when (selectedTab) {
                                 ClientTab.HOME -> HomeScreen(current, program, programs, onSelectProgram = { selectedProgramId = it }, onWorkout = { selectedWorkout = it })
                                 ClientTab.WORKOUTS -> WorkoutsScreen(program, programs, onSelectProgram = { selectedProgramId = it }, onWorkout = { selectedWorkout = it })
+                                ClientTab.LOGS -> LogsScreen(history, historyBusy, historyError)
+                                ClientTab.PROGRESS -> ProgressScreen(history, historyBusy, historyError)
+                                ClientTab.STATS -> StatsScreen(measurements, measurementsBusy, measurementsError)
                                 ClientTab.FOOD -> FoodScreen(program)
                                 ClientTab.SESSIONS -> SessionsScreen(program)
                                 ClientTab.SETTINGS -> SettingsScreen(current, onSignOut = {
@@ -190,6 +217,8 @@ private fun FwbApp() {
                                         authBusy = true
                                         runCatching { SupabaseGateway.signOut() }
                                         programs = emptyList()
+                                        history = emptyList()
+                                        measurements = emptyList()
                                         selectedProgramId = null
                                         account = null
                                         selectedTab = ClientTab.HOME

@@ -6,6 +6,7 @@ import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.postgrest.query.Order
 import kotlinx.serialization.json.JsonObject
 
 /** The same public project configuration used by the iOS client. RLS remains authoritative. */
@@ -61,5 +62,27 @@ internal object SupabaseGateway {
         }.decodeList<JsonObject>()
         return rows.mapNotNull(JsonObject::toClientProgram)
             .sortedWith(compareByDescending<ClientProgram> { it.updatedAt }.thenByDescending { it.id })
+    }
+
+    suspend fun loadHistory(account: ClientAccount): List<WorkoutHistoryRecord> {
+        val email = restoreAccount()?.email ?: error("Sign in again to load your history.")
+        require(email == account.email)
+        val rows = client.from("client_workout_logs").select {
+            filter { eq("client_email", email) }
+            order("entry_date", Order.DESCENDING)
+            limit(500)
+        }.decodeList<JsonObject>()
+        return rows.mapNotNull(JsonObject::toHistoryRecord)
+    }
+
+    suspend fun loadMeasurements(account: ClientAccount): List<MeasurementEntry> {
+        val email = restoreAccount()?.email ?: error("Sign in again to load your measurements.")
+        require(email == account.email)
+        val rows = client.from("client_progress").select {
+            filter { eq("client_email", email) }
+            order("entry_date", Order.DESCENDING)
+            limit(500)
+        }.decodeList<JsonObject>()
+        return rows.mapNotNull(JsonObject::toMeasurementEntry)
     }
 }
