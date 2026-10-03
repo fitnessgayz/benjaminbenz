@@ -161,4 +161,6 @@ test("shared branding exposes activity likes on responsive web surfaces", () => 
   assert.match(styles, /@media \(max-width: 600px\)[\s\S]*?\.web-notification-item\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0, 1fr\)/);
   assert.match(modernPush, /coach_reaction:\s*"coach_replies"/);
   assert.match(modernPush, /achievement:\s*"client_achievements"/);
+  assert.match(modernPush, /adminClient\.rpc\("fwb_push_config"\)/);
+  assert.match(modernPush, /pushConfig\?\.fwb_vapid_public/);
 });

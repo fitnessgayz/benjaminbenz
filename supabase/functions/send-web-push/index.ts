@@ -760,8 +760,8 @@ Deno.serve(async (request) => {
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
-  const vapidPublicKey = Deno.env.get("WEB_PUSH_VAPID_PUBLIC_KEY") || "";
-  const vapidPrivateKey = Deno.env.get("WEB_PUSH_VAPID_PRIVATE_KEY") || "";
+  let vapidPublicKey = Deno.env.get("WEB_PUSH_VAPID_PUBLIC_KEY") || "";
+  let vapidPrivateKey = Deno.env.get("WEB_PUSH_VAPID_PRIVATE_KEY") || "";
   const vapidSubject = Deno.env.get("WEB_PUSH_VAPID_SUBJECT") || "mailto:fwb@benjaminbenz.com";
 
   if (!supabaseUrl || !serviceRoleKey) {
@@ -771,6 +771,11 @@ Deno.serve(async (request) => {
   const adminClient = createClient(supabaseUrl, serviceRoleKey, {
     auth: { persistSession: false, autoRefreshToken: false }
   });
+  if (!vapidPublicKey || !vapidPrivateKey) {
+    const { data: pushConfig } = await adminClient.rpc("fwb_push_config");
+    vapidPublicKey ||= String(pushConfig?.fwb_vapid_public || "");
+    vapidPrivateKey ||= String(pushConfig?.fwb_vapid_private || "");
+  }
   const requestBody = request.method === "POST" ? await request.json().catch(() => ({})) : {};
   const url = new URL(request.url);
   const action = String((requestBody as JsonRecord).action || url.searchParams.get("action") || "public-key");
