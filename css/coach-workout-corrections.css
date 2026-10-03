@@ -1,0 +1,17 @@
+.coach-weight-dialog {
+  width: min(440px, calc(100vw - 32px)); box-sizing: border-box; padding: 24px;
+  max-height: calc(100dvh - 32px); overflow: auto;
+  border: 1px solid #304638; border-radius: 22px; background: #0b1912; color: #f3f1e8;
+}
+.coach-weight-dialog::backdrop { background: rgb(0 0 0 / 72%); }
+.coach-weight-dialog h2 { margin-top: 0; color: #f3f1e8; font-size: 24px; line-height: 1.2; text-transform: none; letter-spacing: -0.02em; }
+.coach-weight-dialog p { color: #a8b9ac; }
+.coach-weight-dialog label { display: block; margin-bottom: 8px; color: #f3f1e8; font-weight: 700; }
+.coach-weight-dialog input { width: 100%; box-sizing: border-box; padding: 14px; background: #13251b; color: #f3f1e8; border: 1px solid #48604e; border-radius: 12px; font-size: 18px; }
+.coach-weight-dialog input:focus { outline: 2px solid #b3ed52; outline-offset: 2px; }
+.coach-weight-dialog [data-weight-error] { color: #f3a28d; }
+.coach-weight-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.coach-weight-actions .button { flex: 1; min-height: 44px; background: #13251b; color: #f3f1e8; border: 1px solid #48604e; }
+.coach-weight-actions .button-dark { border-color: #b3ed52; }
+.training-log-corrections { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.training-log-corrections .coach-weight-correct { min-height: 44px; padding: 8px 12px; font-size: 12px; background: #13251b; color: #f3f1e8; border: 1px solid #48604e; }

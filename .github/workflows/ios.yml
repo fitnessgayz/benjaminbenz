@@ -8,6 +8,10 @@ on:
       - '.github/workflows/ios.yml'
   push:
     branches: [main]
+    # Website-only coach changes must not build or publish the native app.
+    paths:
+      - 'FWB-iOS-App/**'
+      - 'scripts/ios/**'
   workflow_dispatch:
 
 permissions:

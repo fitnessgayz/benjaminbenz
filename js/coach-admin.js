@@ -3352,6 +3352,7 @@ function configureCoachAppleWorkouts(email) {
 }
 
 function renderTrainingLogs() {
+  window.FWBCoachWorkoutCorrections?.setRecords(trainingLogs);
   const history = document.getElementById("training-log-history");
 
   if (!history) {
@@ -3416,6 +3417,7 @@ function renderTrainingLogs() {
     }
 
     supersetGroup.exercises.get(exerciseKey).sets.push({
+      id: log.id,
       set_number: log.set_number,
       set_type: log.set_type,
       weight_used: log.weight_used,
@@ -3506,6 +3508,7 @@ function renderTrainingLogs() {
                               : `${entry.exercise_code} ${entry.exercise_name}`
                           )}</span>
                           <em>${escapeHtml(setSummary || "Sets saved")}</em>
+                          <div class="training-log-corrections">${window.FWBCoachWorkoutCorrections?.buttonsForSets(entry.sets) || ""}</div>
                           ${noteSummary ? `<small class="training-log-notes"><strong>Notes:</strong> ${escapeHtml(noteSummary)}</small>` : ""}
                         </div>
                       </article>
@@ -3519,6 +3522,18 @@ function renderTrainingLogs() {
       </section>
     `;
   }).join("");
+}
+
+function handleCoachWorkoutWeightCorrections() {
+  window.FWBCoachWorkoutCorrections?.configure({
+    client: coachSupabase,
+    getEmail: () => selectedProgram()?.client_email,
+    onSaved: async (row) => {
+      await loadTrainingLogsForEmail(row.client_email);
+      const status = document.getElementById("coach-weight-correction-status");
+      if (status) status.textContent = "Weight corrected. Refresh the client’s workout history or progress to see the updated personal best.";
+    }
+  });
 }
 
 function handleTrainingLogDateFilter() {
@@ -3584,15 +3599,8 @@ async function loadTrainingLogsForEmail(email) {
 
   try {
     const [{ data, error }] = await withRequestTimeout(
-      Promise.all([coachSupabase
-        .from("client_workout_logs")
-        .select("*")
-        .ilike("client_email", normalizedEmail)
-        .order("entry_date", { ascending: false })
-        .order("workout_title", { ascending: true })
-        .order("exercise_code", { ascending: true })
-        .order("set_number", { ascending: true })
-        .limit(250),
+      Promise.all([window.FWBCoachWorkoutCorrections.loadHistory(coachSupabase, normalizedEmail)
+        .then((data) => ({ data, error: null })),
         Promise.resolve(window.FWBAppleWorkout?.load()).catch(() => null)
       ]),
       "Could not load weights right now. Please refresh and try again."
@@ -7930,6 +7938,7 @@ async function bootCoachAdmin() {
   handleSaveProgress();
   handleCoachDexaReports();
   handleTrainingLogDateFilter();
+  handleCoachWorkoutWeightCorrections();
   handleWorkoutAnalysis();
   handleCoachSignOut();
   handleNewClient();
