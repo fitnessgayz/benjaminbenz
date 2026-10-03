@@ -29,7 +29,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=client-view-shortcut-1&amp;home-shortcuts=1&amp;coach-dock=8&amp;mobile-client-hub=2&amp;home-notifications=2&amp;exercise-images=1&amp;exercise-cards=1&amp;videos-tab=3&amp;client-added=1&amp;mobile-card-media=1&amp;coach-layout-repair=1" />
+  <link rel="stylesheet" href="css/style.css?v=client-view-shortcut-1&amp;home-shortcuts=1&amp;coach-dock=8&amp;mobile-client-hub=2&amp;home-notifications=2&amp;exercise-images=1&amp;exercise-cards=1&amp;videos-tab=3&amp;client-added=1&amp;mobile-card-media=1&amp;coach-layout-repair=1&amp;activity-likes=1" />
   <link rel="stylesheet" href="css/coach-messages.css?v=3" />
   <link rel="stylesheet" href="css/workout-layout.css?v=workout-preview-1" />
   <link rel="stylesheet" href="css/apple-workout.css?v=1" />
@@ -371,14 +371,14 @@
             <div class="coach-notification-section-heading">
               <div>
                 <p class="kicker">Inbox</p>
-                <h3 id="coach-notification-inbox-title">Recent alerts</h3>
+                <h3 id="coach-notification-inbox-title">Recent client activity</h3>
               </div>
               <button class="button button-ghost coach-notification-mark-all" type="button" data-web-notification-mark-all hidden>
                 Mark all read
               </button>
             </div>
             <ul class="web-notification-list" data-web-notification-list aria-live="polite"></ul>
-            <p class="web-notification-empty" data-web-notification-empty>Your recent coach alerts will appear here.</p>
+            <p class="web-notification-empty" data-web-notification-empty>Client workouts, check-ins, gym visits, and badges will appear here.</p>
           </div>
 
           <p class="coach-notification-status" data-web-notification-status role="status" aria-live="polite">
@@ -397,6 +397,10 @@
               <label class="coach-notification-preference">
                 <input type="checkbox" data-web-notification-preference="client_workout_completed" checked />
                 <span><strong>A workout is completed</strong><small>Know when a client finishes and saves a workout.</small></span>
+              </label>
+              <label class="coach-notification-preference">
+                <input type="checkbox" data-web-notification-preference="client_achievements" checked />
+                <span><strong>A badge is earned</strong><small>Celebrate a client’s latest training milestone.</small></span>
               </label>
               <label class="coach-notification-preference">
                 <input type="checkbox" data-web-notification-preference="client_check_ins" checked />
@@ -1183,7 +1187,7 @@
   <script src="js/supabase-config.js?v=client-session-link-1"></script>
   <script src="js/auth-session.js?v=remember-login-2"></script>
   <script src="js/coach-messages.js?v=2"></script>
-  <script src="js/web-notifications.js?v=notification-recovery-3"></script>
+  <script src="js/web-notifications.js?v=coach-activity-likes-1"></script>
   <script src="js/workout-layout.js?v=workout-preview-2"></script>
   <script src="js/apple-workout.js?v=3"></script>
   <script src="js/apple-health-sync.js?v=1"></script>

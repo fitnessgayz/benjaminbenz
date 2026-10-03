@@ -14317,7 +14317,33 @@ function clientWorkoutAchievementCelebration(before, rows) {
   const celebration = ui.celebrationForSession(before, clientAchievementSnapshot(), sessionIds, { completedSession });
   let storage = null;
   try { storage = window.localStorage; } catch (_) { /* The page still works when storage is unavailable. */ }
+  if (typeof recordClientAchievementEvents === "function") {
+    void recordClientAchievementEvents(celebration?.events).catch(() => {
+      // The earned badge remains visible locally; a later badge can still be recorded.
+    });
+  }
   return ui.takeCelebration(celebration, activeClientEmail, storage);
+}
+
+async function recordClientAchievementEvents(events = []) {
+  const userId = activeDashboardUser?.id;
+  const clientEmail = normalizeClientEmail(activeClientEmail);
+  if (!supabaseClient || !userId || !clientEmail || isCoachDashboardPreview) return;
+
+  const badges = (Array.isArray(events) ? events : [])
+    .filter((event) => event?.kind === "badge" && event.badgeId && event.title && event.date)
+    .map((event) => ({
+      user_id: userId,
+      client_email: clientEmail,
+      badge_id: String(event.badgeId).slice(0, 80),
+      badge_title: String(event.title).trim().slice(0, 120),
+      earned_on: String(event.date).slice(0, 10)
+    }));
+
+  for (const badge of badges) {
+    const { error } = await supabaseClient.from("client_achievement_events").insert(badge);
+    if (error && String(error.code || "") !== "23505") throw error;
+  }
 }
 
 function renderClientTrainingLogs() {

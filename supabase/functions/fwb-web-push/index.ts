@@ -87,9 +87,14 @@ function safePushTitle(category: string, notification: Record<string, unknown> =
   if (category === "workout_completed") {
     return safeNotificationText(notification.title, 160) || "Client workout completed";
   }
+  if (category === "coach_reaction") {
+    return safeNotificationText(notification.title, 160) || "Benjamin liked your update";
+  }
 
   const titles: Record<string, string> = {
     workout_completed: "Client workout completed",
+    achievement: "Client badge earned",
+    coach_reaction: "Benjamin liked your update",
     check_in_submitted: "Client check-in submitted",
     client_message: "New client message",
     low_sessions: "Session balance update",
@@ -111,6 +116,12 @@ function safePushBody(category: string, notification: Record<string, unknown> = 
   if (category === "workout_completed") {
     return safeNotificationText(notification.body, 240) ||
       "Open Coach Admin to review the completed workout log.";
+  }
+  if (category === "coach_reaction") {
+    return "Open FWB to see which activity your coach celebrated.";
+  }
+  if (category === "achievement") {
+    return "Open FWB Coach to celebrate the client’s achievement.";
   }
 
   return "Open FWB to view your update.";

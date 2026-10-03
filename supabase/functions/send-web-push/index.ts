@@ -183,6 +183,7 @@ async function insertNotification(adminClient: AdminClient, payload: JsonRecord)
 function preferenceColumn(notification: NotificationRow) {
   const clientColumns: Record<string, string> = {
     coach_reply: "coach_replies",
+    coach_reaction: "coach_replies",
     program_update: "program_updates",
     nutrition_plan_update: "program_updates",
     session_reminder: "session_reminders",
@@ -198,6 +199,7 @@ function preferenceColumn(notification: NotificationRow) {
   };
   const coachColumns: Record<string, string> = {
     workout_completed: "client_workout_completed",
+    achievement: "client_achievements",
     check_in_submitted: "client_check_ins",
     progress_submitted: "client_progress_updates",
     dexa_uploaded: "client_dexa_uploads",
@@ -247,6 +249,10 @@ function pushCopy(notification: NotificationRow) {
     "client:coach_reply": {
       title: "New coaching update",
       body: "Open FWB to view your private coaching update."
+    },
+    "client:coach_reaction": {
+      title: "Benjamin liked your update",
+      body: "Open FWB to see which activity your coach celebrated."
     },
     "client:program_update": {
       title: "Training plan update",
@@ -299,6 +305,10 @@ function pushCopy(notification: NotificationRow) {
     "coach:workout_completed": {
       title: "Client workout completed",
       body: "Open Coach Admin to review the workout log."
+    },
+    "coach:achievement": {
+      title: "Client badge earned",
+      body: "Open FWB Coach to celebrate the achievement."
     },
     "coach:check_in_submitted": {
       title: "Client check-in submitted",

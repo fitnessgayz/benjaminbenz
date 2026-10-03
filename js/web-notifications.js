@@ -19,6 +19,7 @@
   ]);
   const coachPreferenceKeys = new Set([
     "client_workout_completed",
+    "client_achievements",
     "client_workout_comments",
     "client_check_ins",
     "client_progress_updates",
@@ -42,6 +43,7 @@
     progress_reminders: "progress_reminder",
     achievements: "achievement",
     client_workout_completed: "workout_completed",
+    client_achievements: "achievement",
     client_workout_comments: "client_message",
     client_check_ins: "check_in_submitted",
     client_progress_updates: "progress_submitted",
@@ -136,6 +138,8 @@
     let destroyed = false;
     let busy = false;
     let refreshPromise = null;
+    let inboxRows = [];
+    let likedNotificationIds = new Set();
 
     function element(selector) {
       return root?.querySelector(selector) || null;
@@ -490,6 +494,12 @@
       }
     }
 
+    function likeableCoachActivity(row) {
+      return role === "coach" &&
+        ["workout_completed", "check_in_submitted", "achievement"].includes(row?.kind) &&
+        Boolean(String(row?.metadata?.client_email || "").trim());
+    }
+
     function notificationItem(row) {
       const item = global.document.createElement("li");
       const link = global.document.createElement("a");
@@ -508,6 +518,17 @@
       date.textContent = formatNotificationDate(row.created_at);
       link.append(title, body, date);
       item.append(link);
+      if (likeableCoachActivity(row)) {
+        const liked = likedNotificationIds.has(row.id);
+        const likeButton = global.document.createElement("button");
+        likeButton.type = "button";
+        likeButton.className = "web-notification-like";
+        likeButton.dataset.webNotificationLike = row.id;
+        likeButton.setAttribute("aria-pressed", liked ? "true" : "false");
+        likeButton.setAttribute("aria-label", liked ? "Remove like from this client update" : "Like this client update");
+        likeButton.textContent = liked ? "♥ Liked" : "♡ Like";
+        item.append(likeButton);
+      }
       return item;
     }
 
@@ -547,7 +568,7 @@
         query = query.select("id,kind,title,body,web_url,created_at,read_at").eq("user_id", user.id);
       } else {
         query = query
-          .select("id,recipient_role,kind,title,body,action_url,created_at,read_at")
+          .select("id,recipient_role,kind,title,body,action_url,metadata,created_at,read_at")
           .eq("user_id", user.id)
           .eq("recipient_role", role);
       }
@@ -559,8 +580,43 @@
         ...row,
         action_url: row.action_url || row.web_url
       }));
+      if (role === "coach" && backend !== "deployed") {
+        const likeableIds = rows.filter(likeableCoachActivity).map((row) => row.id);
+        likedNotificationIds = new Set();
+        if (likeableIds.length) {
+          const { data: likes, error: likeError } = await supabaseClient
+            .from("coach_activity_likes")
+            .select("source_notification_id")
+            .eq("coach_user_id", user.id)
+            .in("source_notification_id", likeableIds);
+          if (likeError) throw likeError;
+          likedNotificationIds = new Set((likes || []).map((like) => like.source_notification_id));
+        }
+      }
+      inboxRows = rows;
       renderInbox(rows);
       return rows;
+    }
+
+    async function toggleActivityLike(button) {
+      const notificationId = String(button?.dataset?.webNotificationLike || "");
+      if (!notificationId || role !== "coach" || busy) return;
+      button.disabled = true;
+      setStatus("Sending encouragement…");
+      try {
+        const { data, error } = await supabaseClient.rpc("toggle_client_activity_like", {
+          p_notification_id: notificationId
+        });
+        if (error) throw error;
+        const result = Array.isArray(data) ? data[0] : data;
+        if (result?.liked) likedNotificationIds.add(notificationId);
+        else likedNotificationIds.delete(notificationId);
+        renderInbox(inboxRows);
+        setStatus(result?.liked ? "Client notified that you liked this update." : "Like removed.", "success");
+      } catch (_error) {
+        button.disabled = false;
+        setStatus("Could not update that like. Please try again.", "error");
+      }
     }
 
     async function enableAlerts() {
@@ -730,8 +786,12 @@
       const testButton = event.target.closest("[data-web-notification-test]");
       const markAllButton = event.target.closest("[data-web-notification-mark-all]");
       const notificationLink = event.target.closest("[data-web-notification-open]");
+      const likeButton = event.target.closest("[data-web-notification-like]");
 
-      if (enableButton) {
+      if (likeButton) {
+        event.preventDefault();
+        await toggleActivityLike(likeButton);
+      } else if (enableButton) {
         event.preventDefault();
         toggleAlerts();
       } else if (testButton) {

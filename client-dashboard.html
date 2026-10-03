@@ -39,7 +39,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=workout-preview-1&amp;cancel-workout=1&amp;energy-feedback=1&amp;viewport-dock=9&amp;workout-delete=1&amp;exercise-images=1&amp;settings-tabs=3&amp;workout-feedback-actions=1&amp;set-motion=1&amp;navigation=2" />
+  <link rel="stylesheet" href="css/style.css?v=workout-preview-1&amp;cancel-workout=1&amp;energy-feedback=1&amp;viewport-dock=9&amp;workout-delete=1&amp;exercise-images=1&amp;settings-tabs=3&amp;workout-feedback-actions=1&amp;set-motion=1&amp;navigation=2&amp;activity-likes=1" />
   <link rel="stylesheet" href="css/coach-messages.css?v=3" />
   <link rel="stylesheet" href="css/custom-workout-mobile-fix.css?v=assigned-layout-3&amp;visible-demos=1&amp;copy-last-weights=1&amp;demo-icons=2&amp;copy-set-pr=3&amp;compact-copy=1&amp;exercise-pr-notes=1&amp;pr-info=1&amp;finish-workout=2&amp;prescribed-targets=1&amp;exercise-controls=1&amp;exercise-labels=1&amp;exercise-dialog=2&amp;exercise-text-flow=1&amp;photo-cards=3&amp;exercise-guide=3&amp;next-exercise=1&amp;warmup-actions=1&amp;round-titles=1&amp;photo-crop=2&amp;round-actions=2&amp;suggestions-above=1" />
   <link rel="stylesheet" href="css/workout-layout.css?v=exercise-preview-6&amp;photo-crop=2" />
@@ -1211,7 +1211,7 @@
             <details class="web-notification-settings" open>
               <summary>Choose notification types</summary>
               <div class="web-notification-preference-grid">
-                <label><input type="checkbox" data-web-notification-preference="coach_replies" checked /> Coach replies + form reviews</label>
+                <label><input type="checkbox" data-web-notification-preference="coach_replies" checked /> Coach replies, likes + form reviews</label>
                 <label><input type="checkbox" data-web-notification-preference="program_updates" checked /> Program + nutrition updates</label>
                 <label><input type="checkbox" data-web-notification-preference="workout_reminders" checked /> Workout reminders</label>
                 <label><input type="checkbox" data-web-notification-preference="weekly_check_ins" checked /> Weekly check-ins</label>
@@ -1305,7 +1305,7 @@
   <script src="js/auth-session.js?v=remember-login-2"></script>
   <script src="js/exercise-name-matcher.js?v=exercise-prefix-2"></script>
   <script src="js/coach-messages.js?v=2"></script>
-  <script src="js/web-notifications.js?v=notification-recovery-3"></script>
+  <script src="js/web-notifications.js?v=coach-activity-likes-1"></script>
   <script src="https://cdn.jsdelivr.net/npm/@zxing/browser@0.2.1/umd/zxing-browser.min.js" integrity="sha384-HRtzk9lZgkbSgvUyQrnfC/GxiXZgwaNyD7hC9wcXlsBpDhkS80ISl73juef2FRuf" crossorigin="anonymous"></script>
   <script src="js/workout-layout.js?v=exercise-preview-3"></script>
   <script src="js/client-weekly-activity.js?v=quarter-goals-1"></script>
@@ -1332,7 +1332,7 @@
   <script src="js/client-achievements-ui.js?v=2"></script>
   <script src="js/workout-progression.js?v=1"></script>
   <script src="js/workout-progression-ui.js?v=1"></script>
-  <script src="js/client-portal.js?v=workout-preview-1&amp;custom-workout-history-1&amp;cancel-workout=1&amp;energy-feedback=1&amp;mood-redesign=1&amp;visible-group-controls=1&amp;exercise-videos=1&amp;remember-login=1&amp;visible-demos=1&amp;personal-bests=1&amp;copy-last-weights=1&amp;demo-icons=1&amp;keyboard-entry=1&amp;copy-set-pr=3&amp;return-coach=1&amp;apple-workout=2&amp;apple-share=1&amp;rir-help=1&amp;viewport-dock=6&amp;home-actions=1&amp;compact-copy=1&amp;exercise-pr-notes=1&amp;pr-info=1&amp;finish-workout=2&amp;prescribed-targets=1&amp;exercise-controls=1&amp;session-alerts=1&amp;exercise-labels=1&amp;exercise-list=2&amp;grouped-add=1&amp;google-health=1&amp;exercise-defaults=2&amp;workout-generator=4&amp;profile-photo=1&amp;account-settings=1&amp;workout-delete=1&amp;apple-health=1&amp;daily-checkin=1&amp;recovery-catalog=1&amp;messages=2&amp;cardio-shortcut=1&amp;achievements=1&amp;progression=1&amp;exercise-images=5&amp;exercise-motion=2&amp;exercise-guide=3&amp;settings-tabs=2&amp;workout-feedback-actions=3&amp;set-motion=1&amp;next-exercise=1&amp;warmup-actions=1&amp;photo-crop=2&amp;navigation=2&amp;demo-svg=1&amp;timer-alert-recovery=2&amp;finish-later=1&amp;suggestions-prefix=1&amp;quarter-goals=1&amp;progress-cards=1&amp;program-windows=1"></script>
+  <script src="js/client-portal.js?v=workout-preview-1&amp;custom-workout-history-1&amp;cancel-workout=1&amp;energy-feedback=1&amp;mood-redesign=1&amp;visible-group-controls=1&amp;exercise-videos=1&amp;remember-login=1&amp;visible-demos=1&amp;personal-bests=1&amp;copy-last-weights=1&amp;demo-icons=1&amp;keyboard-entry=1&amp;copy-set-pr=3&amp;return-coach=1&amp;apple-workout=2&amp;apple-share=1&amp;rir-help=1&amp;viewport-dock=6&amp;home-actions=1&amp;compact-copy=1&amp;exercise-pr-notes=1&amp;pr-info=1&amp;finish-workout=2&amp;prescribed-targets=1&amp;exercise-controls=1&amp;session-alerts=1&amp;exercise-labels=1&amp;exercise-list=2&amp;grouped-add=1&amp;google-health=1&amp;exercise-defaults=2&amp;workout-generator=4&amp;profile-photo=1&amp;account-settings=1&amp;workout-delete=1&amp;apple-health=1&amp;daily-checkin=1&amp;recovery-catalog=1&amp;messages=2&amp;cardio-shortcut=1&amp;achievements=1&amp;progression=1&amp;exercise-images=5&amp;exercise-motion=2&amp;exercise-guide=3&amp;settings-tabs=2&amp;workout-feedback-actions=3&amp;set-motion=1&amp;next-exercise=1&amp;warmup-actions=1&amp;photo-crop=2&amp;navigation=2&amp;demo-svg=1&amp;timer-alert-recovery=2&amp;finish-later=1&amp;suggestions-prefix=1&amp;quarter-goals=1&amp;progress-cards=1&amp;program-windows=1&amp;activity-likes=1"></script>
   <script src="js/workout-exercise-dock.js?v=2"></script>
 </body>
 </html>
