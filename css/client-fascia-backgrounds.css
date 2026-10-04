@@ -1,0 +1,25 @@
+/* Signed-in mobile web anatomy backgrounds. Desktop panels keep their current layout. */
+@media (max-width: 900px) {
+  :root body.client-dashboard-page [data-client-dashboard-panel] {
+    min-height: calc(100dvh - var(--client-bottom-dock-clearance, 90px) - 28px);
+    background-color: #101113 !important;
+    background-image:
+      linear-gradient(rgb(16 17 19 / 85%), rgb(16 17 19 / 85%)),
+      var(--client-fascia-image, none) !important;
+    background-position: center, calc(50% + 85px) -48px !important;
+    background-repeat: no-repeat !important;
+    background-size: 100% 100%, auto 1200px !important;
+  }
+
+  /* The workout surface lets the anatomy show through without dimming text. */
+  :root body.client-dashboard-page #client-workouts-panel.is-choosing-workout .workout-choice-card,
+  :root body.client-dashboard-page #client-workouts-panel .workout-exercise-card,
+  :root body.client-dashboard-page #client-workouts-panel .client-workout-picker-card {
+    background-color: rgb(39 41 44 / 50%) !important;
+  }
+
+  :root body.client-dashboard-page #client-workouts-panel .client-workout-picker-card-top,
+  :root body.client-dashboard-page #client-workouts-panel .client-workout-picker-card-body {
+    background-color: rgb(39 41 44 / 50%) !important;
+  }
+}
