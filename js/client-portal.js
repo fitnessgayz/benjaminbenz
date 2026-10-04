@@ -12623,8 +12623,11 @@ function clientWorkoutPickerMarkup(workouts) {
 
 function clientWorkoutChoiceContent({ icon, title, description, titleId, descriptionId }) {
   const icons = {
-    cardio: '<path d="M2 12h4l3-8 6 16 3-8h4"/>',
+    run: '<circle cx="13" cy="3.5" r="1.5"/><path d="m10 8 3-2 3 2-1 4 3 2m-8-5-3 3-3 1m8-1-2 4-4 3m6-4 4 4 3 1"/>',
     calendar: '<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M16 3v4M8 3v4M3 11h18"/><path d="M8 15h.01M12 15h.01M16 15h.01M8 18h.01M12 18h.01M16 18h.01"/>',
+    saved: '<rect x="3" y="4" width="17" height="17" rx="3"/><path d="M7 2v4m9-4v4M3 10h17m-13 4h5m-5 3h3"/><circle cx="18" cy="18" r="4" fill="currentColor" stroke="none"/><path d="m16.5 18 1 1 2-2" stroke="#1b2117" stroke-width="1.8"/>',
+    plan: '<rect x="3" y="4" width="17" height="17" rx="3"/><path d="M7 2v4m9-4v4M3 10h17m-13 4h5m-5 3h3"/><circle cx="18" cy="18" r="4" fill="currentColor" stroke="none"/><path d="M18 15.8v4.4m-2.2-2.2h4.4" stroke="#1b2117" stroke-width="1.8"/>',
+    mobility: '<circle cx="8" cy="4" r="1.5"/><path d="m8 7 2.5 3 3.5 1m-4-1-3 4 3 2m0 0-4 5m4-5 5 4h5m-13-6-4 2"/>',
     plus: '<path d="M12 5v14M5 12h14"/>',
     sparkles: '<path d="m9 3 2.2 5.8L17 11l-5.8 2.2L9 19l-2.2-5.8L1 11l5.8-2.2L9 3Z"/><path d="m19 14 1.1 2.9L23 18l-2.9 1.1L19 22l-1.1-2.9L15 18l2.9-1.1L19 14Z"/>'
   };
@@ -12638,44 +12641,42 @@ function clientWorkoutChoiceContent({ icon, title, description, titleId, descrip
 
 function clientWorkoutListMarkup(workouts) {
   if (!clientPreviewProgramSelected) {
-    const programs = clientAvailablePrograms.length ? clientAvailablePrograms : [currentProgram];
-    return `<div class="workout-program-picker"><h3>Choose how to train</h3>
-      <div class="workout-choice-list">${programs.map((program, index) => `
-        <button type="button" class="workout-choice-card" data-preview-program="${index}"
-          aria-labelledby="workout-program-title-${index}" aria-describedby="workout-program-description-${index}">
-          ${clientWorkoutChoiceContent({
-            icon: "calendar", title: program.program_title || "Your program",
-            description: `Follow your assigned program · ${(program.workouts || []).length} ${(program.workouts || []).length === 1 ? "workout" : "workouts"}`,
-            titleId: `workout-program-title-${index}`, descriptionId: `workout-program-description-${index}`
-          })}
-        </button>`).join("")}
-        <button type="button" class="workout-choice-card"
-          data-client-workout-picker-choose="0" data-client-workout-picker-card="0"
-          data-client-workout-selection-target="Custom workout"
-          aria-labelledby="client-workout-card-title-0" aria-describedby="workout-custom-description">
-          ${clientWorkoutChoiceContent({
-            icon: "plus", title: "Build custom workout",
-            description: "Choose your exercises, sets, and reps to build your own session.",
-            titleId: "client-workout-card-title-0", descriptionId: "workout-custom-description"
-          })}
-        </button>
-        <button type="button" class="workout-choice-card" data-generate-workout
-          aria-labelledby="workout-generate-title" aria-describedby="workout-generate-description">
-          ${clientWorkoutChoiceContent({
-            icon: "sparkles", title: "Generate today’s workout",
-            description: "Get a workout based on your focus, equipment, time, and intensity.",
-            titleId: "workout-generate-title", descriptionId: "workout-generate-description"
-          })}
-        </button>
-        ${clientCardioWorkoutChoiceMarkup(workouts)}
-      </div>
-    </div>`;
+    const programs = clientAvailablePrograms.length ? clientAvailablePrograms : [currentProgram || { workouts: [] }];
+    const cards = [
+      { icon: "calendar", title: "Trainer Prescribed Workouts",
+        description: `${programs[0].program_title || "Your program"} · ${(programs[0].workouts || []).length} ${(programs[0].workouts || []).length === 1 ? "workout" : "workouts"}${programs.length > 1 ? ` · ${programs.length} plans` : ""}`,
+        action: 'data-preview-program="0"', titleId: "workout-program-title-0", descriptionId: "workout-program-description-0" },
+      { icon: "saved", title: "Saved Workout Program",
+        description: "Access your saved workout plans and choose your next workout.",
+        action: "data-client-saved-workout-plans", titleId: "workout-saved-title", descriptionId: "workout-saved-description" },
+      { icon: "plus", title: "Log Workout",
+        description: "Follow your own program or log a workout as you go. Add exercises and track sets, reps, and weights.",
+        action: 'data-client-workout-picker-choose="0" data-client-workout-picker-card="0" data-client-workout-selection-target="Custom workout"',
+        titleId: "client-workout-card-title-0", descriptionId: "workout-custom-description" },
+      { icon: "plan", title: "Generate Workout Plan",
+        description: "Build a weekly program around your schedule, goals, focus, and equipment.",
+        action: "data-client-generate-workout-plan", titleId: "workout-plan-title", descriptionId: "workout-plan-description" },
+      { icon: "sparkles", title: "Generate Today’s Workout",
+        description: "Need help planning today’s session? Create a workout for your focus, time, and equipment.",
+        action: 'data-generate-workout data-generator-preset="today"',
+        titleId: "workout-generate-title", descriptionId: "workout-generate-description" },
+      { markup: clientCardioWorkoutChoiceMarkup(workouts) },
+      { icon: "mobility", title: "Mobility", description: "Stretching, joint mobility, and foam rolling.",
+        action: 'data-generate-workout data-generator-preset="mobility"',
+        titleId: "workout-mobility-title", descriptionId: "workout-mobility-description" }
+    ];
+    return `<div class="workout-program-picker"><div class="workout-choice-list">${cards.map((card) => card.markup || `
+      <button type="button" class="workout-choice-card" ${card.action}
+        aria-labelledby="${card.titleId}" aria-describedby="${card.descriptionId}">
+        ${clientWorkoutChoiceContent(card)}
+      </button>`).join("")}</div></div>`;
   }
   const assigned = workouts.filter(workout => !workout.isCustom && !workout.isCardio);
   const locked = clientWorkoutLayoutSaving || Boolean(workoutElapsedTimerState);
   return `<div class="workout-preview-heading">
     <button type="button" class="workout-text-button" data-preview-programs>← Programs</button>
     <h3>${escapeHtml(currentProgram?.program_title || "Your workouts")}</h3>
+    ${clientAvailablePrograms.length > 1 ? `<div class="workout-preview-program-switcher" aria-label="Trainer programs">${clientAvailablePrograms.map((program, index) => `<button type="button" data-preview-program="${index}" ${program.id === currentProgram?.id ? 'aria-current="true"' : ""}>${escapeHtml(program.program_title || `Program ${index + 1}`)}</button>`).join("")}</div>` : ""}
     <p>Drag exercises to reorder them. Use each exercise’s menu to edit, substitute, or delete.</p>
     ${workoutElapsedTimerState ? '<p>Finish or cancel your current workout before editing exercises.</p>' : ""}
     <p data-workout-layout-status role="status" aria-live="polite"></p>
@@ -12738,13 +12739,13 @@ function clientWorkoutListMarkup(workouts) {
 function clientCardioWorkoutChoiceMarkup(workouts) {
   const cardio = workouts.find(workout => workout.isCardio);
   if (!cardio) return "";
-  return `<button type="button" class="workout-choice-card" data-log-cardio
+  return `<button type="button" class="workout-choice-card" data-log-cardio aria-label="Log cardio"
     data-client-workout-picker-choose="${cardio.panelIndex}" data-client-workout-picker-card="${cardio.panelIndex}"
     data-client-workout-selection-target="Cardio"
     aria-labelledby="workout-cardio-title" aria-describedby="workout-cardio-description">
     ${clientWorkoutChoiceContent({
-      icon: "cardio", title: "Log cardio",
-      description: "Record a walk, run, ride, swim, or machine session.",
+      icon: "run", title: "Cardio",
+      description: "Walk, run, ride, or swim. Track time, distance, pace, and effort.",
       titleId: "workout-cardio-title", descriptionId: "workout-cardio-description"
     })}
   </button>`;
@@ -13007,6 +13008,7 @@ function activateClientWorkoutPanel(nextIndex, options = {}) {
   }
 
   clientWorkoutPickerIsOpen = false;
+  document.getElementById("client-workouts-panel")?.classList.remove("is-choosing-workout");
   syncClientWorkoutPicker(index);
   picker.hidden = true;
   panels.forEach((panel, panelIndex) => {
@@ -13049,6 +13051,7 @@ function showClientWorkoutPicker(options = {}) {
   }
 
   clientWorkoutPickerIsOpen = true;
+  document.getElementById("client-workouts-panel")?.classList.toggle("is-choosing-workout", !clientPreviewProgramSelected);
   picker.hidden = false;
   if (summary) {
     summary.hidden = true;
@@ -13083,9 +13086,7 @@ function renderClientWorkoutTabs(workouts = []) {
   const availableWorkouts = clientWorkoutPickerItems(scheduledWorkouts);
 
   if (count) {
-    count.textContent = scheduledWorkouts.length > 0
-      ? `${scheduledWorkouts.length} workout${scheduledWorkouts.length === 1 ? "" : "s"}`
-      : "Custom workout";
+    count.textContent = `${scheduledWorkouts.length} WORKOUT${scheduledWorkouts.length === 1 ? "" : "S"}`;
   }
 
   if (activeWorkoutTabIndex >= availableWorkouts.length) {
@@ -13093,6 +13094,7 @@ function renderClientWorkoutTabs(workouts = []) {
   }
 
   tabs.innerHTML = clientWorkoutListMarkup(availableWorkouts);
+  document.getElementById("client-workouts-panel")?.classList.toggle("is-choosing-workout", !clientPreviewProgramSelected);
 
   panels.innerHTML = availableWorkouts.map((workout, index) => {
     if (workout.isCardio) {
@@ -17234,10 +17236,42 @@ function handleWorkoutInteractions() {
       openExerciseMedia(exerciseMediaOpen);
       return;
     }
+    const savedPlanButton = event.target.closest("[data-client-saved-workout-plans]");
+    const generatePlanButton = event.target.closest("[data-client-generate-workout-plan]");
+    if (savedPlanButton || generatePlanButton) {
+      event.preventDefault();
+      if (isCoachDashboardPreview || !activeDashboardUser?.id) {
+        window.alert("Sign in as a client to manage saved workout plans.");
+        return;
+      }
+      const plans = window.FWB_CLIENT_WORKOUT_PLANS;
+      if (!plans) {
+        window.alert("Workout plans could not load. Refresh the page and try again.");
+        return;
+      }
+      const clientEmail = activeClientEmail;
+      const userId = activeDashboardUser.id;
+      const programId = currentProgram?.id;
+      void plans.open(savedPlanButton ? "saved" : "generate", {
+        supabase: supabaseClient, userId, returnFocus: savedPlanButton || generatePlanButton,
+        library: exerciseLibraryEntries,
+        history: trainingLogs.filter(log => normalizeClientEmail(log.client_email) === normalizeClientEmail(clientEmail)),
+        onStart(workout) {
+          if (activeClientEmail !== clientEmail || activeDashboardUser?.id !== userId || currentProgram?.id !== programId) {
+            throw new Error("Your selected program changed. Reopen your saved plan to start a workout.");
+          }
+          return useGeneratedClientWorkout(workout);
+        }
+      });
+      return;
+    }
     const generateWorkoutButton = event.target.closest("[data-generate-workout]");
     if (generateWorkoutButton) {
       event.preventDefault();
-      openClientWorkoutGenerator(generateWorkoutButton);
+      const preset = generateWorkoutButton.dataset.generatorPreset;
+      openClientWorkoutGenerator(generateWorkoutButton,
+        preset === "mobility" ? { focus: "recovery_full", intensity: "easy", minutes: 30, equipment: ["bodyweight"] }
+          : preset === "today" ? { focus: "full_body", minutes: 30 } : undefined);
       return;
     }
     const exerciseJump = event.target.closest("[data-workout-exercise-jump]");

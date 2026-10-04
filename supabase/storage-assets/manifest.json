@@ -28,7 +28,8 @@
     "20261002230319_client_quarterly_goals.sql",
     "20261003030640_coach_correct_workout_weight.sql",
     "20261003172116_coach_activity_likes.sql",
-    "20261003200955_add_cable_glute_kickback_bench_media.sql"
+    "20261003200955_add_cable_glute_kickback_bench_media.sql",
+    "20261004032702_client_saved_workout_plans.sql"
   ],
   "nasmExerciseCatalogMigration": "20261001032427_add_complete_nasm_exercise_library.sql",
   "nasmExerciseCatalogCount": 75,
