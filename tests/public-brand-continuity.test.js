@@ -28,7 +28,7 @@ test("presents services, inquiry and client access on one page", () => {
   assert.match(homepage, /id="home-login-form"/);
   assert.match(homepage, /Keep me signed in/);
   assert.match(homepage, /href="coach-login\.html"/);
-  assert.match(homepage, /San Francisco \+ online/);
+  assert.doesNotMatch(homepage, /San Francisco \+ online coaching/);
 });
 
 test("uses the anatomy artwork and complete sharing metadata", () => {
@@ -81,7 +81,7 @@ test("keeps public styling isolated and based on canonical tokens", () => {
     assert.match(page, /css\/public-brand\.css\?v=public-nav-3/);
     assert.match(page, /public-page/);
   }
-  assert.match(homepage, /css\/homepage-one-page\.css\?v=3/);
+  assert.match(homepage, /css\/homepage-one-page\.css\?v=4/);
   assert.match(homepage, /public-page/);
 
   assert.match(publicStyles, /\.public-page \{/);

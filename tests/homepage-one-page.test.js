@@ -13,7 +13,8 @@ test("keeps the one-page layout usable on a phone", () => {
   assert.match(homepage, /class="home-layout"/);
   assert.match(homepage, /id="training"[\s\S]*?id="start"[\s\S]*?id="client-login"/);
   assert.match(styles, /@media \(max-width: 900px\)[\s\S]*?\.home-layout \{ display: block; \}/);
-  assert.match(styles, /--figure-opacity: \.15/);
+  assert.match(homepage, /<main id="top" class="home-layout">\s*<div class="home-art"[\s\S]*?<section id="training"/);
+  assert.match(styles, /\.home-access \{[^}]*background: linear-gradient\(90deg/);
   assert.match(homepage, /href="questionnaire\.html"/);
   assert.match(homepage, /href="coach-login\.html"/);
   assert.match(homepage, /href="fwb-training-privacy\.html"/);
