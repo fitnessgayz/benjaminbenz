@@ -8,9 +8,10 @@ const homepage = fs.readFileSync(path.join(root, "index.html"), "utf8");
 const script = fs.readFileSync(path.join(root, "js/script.js"), "utf8");
 
 test("directs visitors to the questionnaire without an inquiry form", () => {
-  assert.doesNotMatch(homepage, /id="contact-message-form"|name="(?:name|email|phone)"|Send inquiry/);
-  assert.match(homepage, /class="button button-light" href="questionnaire\.html">Find your coaching fit<\/a>/);
-  assert.match(homepage, /href="questionnaire\.html">Start Questionnaire<\/a>/);
+  assert.doesNotMatch(homepage, /id="contact-message-form"|Send inquiry/);
+  assert.match(homepage, /href="questionnaire\.html">Fitness questionnaire/);
+  assert.match(homepage, /href="mailto:fwb@benjaminbenz\.com">Email Benjamin<\/a>/);
+  assert.match(homepage, /id="home-login-form"/);
 });
 
 test("sends a coaching inquiry without asking for message text", () => {
@@ -21,6 +22,6 @@ test("sends a coaching inquiry without asking for message text", () => {
 });
 
 test("cache-busts the updated homepage assets", () => {
-  assert.match(homepage, /css\/style\.css\?v=physical-card-decks-1/);
-  assert.match(homepage, /js\/script\.js\?v=physical-card-decks-1/);
+  assert.match(homepage, /css\/homepage-one-page\.css\?v=1/);
+  assert.match(homepage, /js\/homepage-one-page\.js\?v=1/);
 });

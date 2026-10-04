@@ -17,24 +17,22 @@ const assistantTerms = read("ai-coach-terms.html");
 const publicConversionPages = [homepage, questionnaire, interest, privateInterest];
 
 test("leads the homepage with the canonical promise and a direct coaching-fit action", () => {
-  assert.match(homepage, /Train<\/span> with intention\. <span class="hero-accent">Feel<\/span> your progress\./);
-  assert.match(homepage, /href="questionnaire\.html">Find your coaching fit<\/a>/);
-  assert.doesNotMatch(homepage, /href="#start"[^>]*>Take the questionnaire<\/a>/);
+  assert.match(homepage, /Train with intention\.<br><em>Feel your progress\.<\/em>/);
+  assert.match(homepage, /href="questionnaire\.html">Fitness questionnaire/);
+  assert.doesNotMatch(homepage, /home-tabs|data-home-tab-panel/);
 });
 
-test("presents one clear public journey from coaching promise to connected support", () => {
-  assert.match(homepage, /A clear coaching path/);
-  assert.match(homepage, /Share your starting point/);
-  assert.match(homepage, /Build the right plan/);
-  assert.match(homepage, /Feel the progress/);
-  assert.match(homepage, /Your plan stays connected to Benjamin/);
-  assert.match(homepage, /href="app-interest\.html">Explore FWB Training<\/a>/);
-  assert.match(homepage, /16 years certified/);
+test("presents services, inquiry and client access on one page", () => {
+  for (const service of ["Personal Training", "Online Coaching", "Hybrid Coaching"]) assert.match(homepage, new RegExp(service));
+  assert.match(homepage, /Interested in training\?/);
+  assert.match(homepage, /id="home-login-form"/);
+  assert.match(homepage, /Keep me signed in/);
+  assert.match(homepage, /href="coach-login\.html"/);
   assert.match(homepage, /San Francisco \+ online/);
 });
 
-test("uses a face-visible hero asset and complete sharing metadata", () => {
-  assert.match(homepage, /images\/home\/benjamin-strength-rack\.jpg/);
+test("uses the anatomy artwork and complete sharing metadata", () => {
+  assert.match(homepage, /images\/home\/anatomy\/curl\.png/);
   assert.match(homepage, /rel="canonical" href="https:\/\/benjaminbenz\.com\/"/);
   assert.match(homepage, /property="og:title" content="Fitness with Benjamin \| Train with intention"/);
   assert.match(homepage, /name="twitter:card" content="summary_large_image"/);
@@ -79,10 +77,12 @@ test("makes support and privacy visible on public conversion pages", () => {
 });
 
 test("keeps public styling isolated and based on canonical tokens", () => {
-  for (const page of [homepage, questionnaire, interest]) {
+  for (const page of [questionnaire, interest]) {
     assert.match(page, /css\/public-brand\.css\?v=public-nav-3/);
     assert.match(page, /public-page/);
   }
+  assert.match(homepage, /css\/homepage-one-page\.css\?v=1/);
+  assert.match(homepage, /public-page/);
 
   assert.match(publicStyles, /\.public-page \{/);
   assert.doesNotMatch(publicStyles, /(?:^|\n)\s*(?:body|:root|\.dashboard-page|\.coach-admin-page)\s*\{/);

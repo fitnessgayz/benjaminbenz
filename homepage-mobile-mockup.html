@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#07100b">
+  <title>Mobile homepage mockup | Fitness with Benjamin</title>
+  <link rel="icon" href="favicon-32.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root{--lime:#a3ff12;--dark:#050806;--forest:#0b1811;--cream:#f2f0e8;--ink:#171a17;--figure-opacity:.15}
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{margin:0;background:radial-gradient(circle at 50% 8%,#1b3020,#08100b 58%);color:var(--cream);font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+    button,input,select{font:inherit}
+    a{color:inherit}
+    a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #6aab00;outline-offset:3px}
+    .review{max-width:970px;margin:0 auto;padding:31px 24px 26px;display:flex;align-items:end;justify-content:space-between;gap:26px}
+    .review p{margin:0 0 7px;color:var(--lime);font-size:11px;font-weight:800;letter-spacing:.15em;text-transform:uppercase}
+    .review h1{margin:0;font-size:clamp(25px,3vw,38px);letter-spacing:-.05em;line-height:1.08}
+    .review .note{display:block;max-width:410px;margin-top:10px;color:#b9c9ba;font-size:12px;line-height:1.5}
+    .controls{display:flex;align-items:end;gap:11px;flex-wrap:wrap}
+    .controls label{display:grid;gap:6px;color:#cbd8cb;font-size:11px;font-weight:750}
+    .controls select,.controls input{accent-color:var(--lime)}
+    .controls select{min-width:150px;min-height:39px;padding:0 11px;border:1px solid #526552;border-radius:8px;background:#132017;color:var(--cream);font-size:12px}
+    .controls input{width:105px;height:39px;margin:0}
+    .stage{display:flex;justify-content:center;padding:0 20px 56px}
+    .phone{width:390px;max-width:100%;overflow:hidden;border:8px solid #222b24;border-radius:42px;background:var(--dark);box-shadow:0 36px 90px #000a,0 0 0 1px #80908055}
+    .page{overflow:hidden}
+    .hero{position:relative;isolation:isolate;overflow:hidden;padding:27px 25px 28px;background:radial-gradient(ellipse at 80% 27%,#1b3518,#09170e 48%,#050806 84%)}
+    .figure{position:absolute;z-index:-2;inset:0;overflow:hidden;opacity:var(--figure-opacity);pointer-events:none}
+    .figure img{position:absolute;top:4px;left:46%;width:auto;height:770px;max-width:none;transform:translateX(-50%)}
+    .hero:before{content:"";position:absolute;z-index:-1;inset:0;background:linear-gradient(90deg,#050806e8 0%,#0508069e 63%,#05080655 100%),linear-gradient(0deg,#050806 0%,transparent 39%);pointer-events:none}
+    .site-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .brand{display:flex;align-items:center;gap:9px;text-decoration:none;font-size:12px;font-weight:850;line-height:1.1;letter-spacing:-.035em}
+    .brand img{width:37px;height:37px;object-fit:cover;border-radius:9px}
+    .head-link{flex:none;border:1px solid #a3ff1270;border-radius:999px;padding:9px 11px;color:var(--lime);font-size:10px;font-weight:800;text-decoration:none}
+    .eyebrow{margin:0;color:var(--lime);font-size:10px;font-weight:850;letter-spacing:.15em;text-transform:uppercase}
+    .hero-copy{position:relative;padding-top:65px}
+    .hero h2{max-width:330px;margin:16px 0 15px;font-size:clamp(39px,10vw,47px);font-weight:850;letter-spacing:-.065em;line-height:1.01}
+    .hero h2 em{color:var(--lime);font-style:normal}
+    .sublead{max-width:310px;margin:0;color:#d8e2d6;font-size:13px;line-height:1.65}
+    .quick-link{display:inline-flex;align-items:center;gap:7px;margin-top:20px;color:var(--lime);font-size:12px;font-weight:800;text-decoration:none}
+    .services{position:relative;margin-top:72px}
+    .services-title{margin:0 0 10px;color:var(--lime);font-size:10px;font-weight:850;letter-spacing:.14em;text-transform:uppercase}
+    .service{display:grid;grid-template-columns:26px 1fr;gap:10px;padding:13px 0;border-top:1px solid #d8e8d138}
+    .service:last-child{border-bottom:1px solid #d8e8d138}
+    .service .num{padding-top:2px;color:var(--lime);font-size:10px;font-weight:800}
+    .service h3{margin:0;font-size:15px;letter-spacing:-.035em}
+    .service p{margin:4px 0 0;color:#c8d5c8;font-size:11px;line-height:1.48}
+    .lower{background:var(--cream);color:var(--ink);padding:31px 25px 28px;border-top:3px solid var(--lime)}
+    .lower .eyebrow{color:#5d8300}
+    .lower h2{margin:9px 0 11px;font-size:31px;letter-spacing:-.055em;line-height:1.05}
+    .lower p{margin:0;color:#4b5b4e;font-size:12px;line-height:1.58}
+    .primary{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:49px;margin-top:18px;padding:13px 15px;border:1px solid var(--lime);border-radius:10px;background:var(--lime);color:#142000;font-size:12px;font-weight:850;text-decoration:none}
+    .email{margin-top:14px!important;font-size:11px!important}
+    .email a,.login-meta a,.coach-link strong{text-underline-offset:3px;font-weight:750}
+    .divider{height:1px;margin:27px 0 22px;background:#bac6b8}
+    .login-heading{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+    .login-heading h2{margin:0;font-size:26px}
+    .login-heading span{color:#5e6e61;font-size:9px;font-weight:850;letter-spacing:.1em;text-transform:uppercase}
+    .login-intro{margin-top:8px!important}
+    .field{margin-top:17px}
+    .field span{display:block;margin-bottom:6px;font-size:10px;font-weight:800}
+    .field div{display:flex;align-items:center;height:46px;padding:0 13px;border:1px solid #b7c2b3;border-radius:9px;background:#fff;color:#718074;font-size:12px}
+    .remember{display:flex;align-items:center;gap:8px;width:max-content;margin-top:13px;font-size:11px;font-weight:700;cursor:pointer}
+    .remember input{width:16px;height:16px;margin:0;accent-color:#699800}
+    .login-meta{display:flex;justify-content:space-between;gap:8px;margin-top:15px;font-size:10px}
+    .coach-link{display:block;margin-top:25px;padding-top:18px;border-top:1px solid #bac6b8;font-size:11px;text-align:center;text-decoration:none}
+    .coach-link strong{text-decoration:underline}
+    .footer{padding:18px 25px 24px;background:#0b1811;color:#aebfae;font-size:10px;text-align:center}
+    @media(max-width:670px){body{background:#07100b}.review{display:block;padding:15px 16px}.review h1{font-size:20px}.review .note{margin-top:5px}.controls{margin-top:14px}.stage{padding:0}.phone{width:100%;max-width:430px;border:0;border-radius:0;box-shadow:none}.hero{padding-top:22px}}
+    @media(max-width:360px){.hero,.lower{padding-right:19px;padding-left:19px}.hero h2{font-size:39px}.brand{font-size:11px}}
+    @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+  </style>
+</head>
+<body>
+  <header class="review">
+    <div><p>FWB / Design preview</p><h1>Mobile homepage mockup</h1><span class="note">A phone-sized version of the selected Photo Split direction. Sign-in fields are visual placeholders; the live homepage is unchanged.</span></div>
+    <div class="controls" aria-label="Mockup controls">
+      <label>Artwork <select id="artwork" aria-label="Choose anatomy artwork"></select></label>
+      <label><span id="opacity-label">Figure opacity 15%</span><input id="opacity" type="range" min="10" max="20" value="15" step="1" aria-label="Figure opacity"></label>
+    </div>
+  </header>
+  <main class="stage">
+    <div class="phone">
+      <div class="page">
+        <section class="hero" aria-label="Coaching services">
+          <div class="figure" aria-hidden="true"><img id="figure-image" src="images/home/anatomy/curl.png" alt=""></div>
+          <div class="site-head"><a class="brand" href="index.html"><img src="fwb-brand-icon-lime-192-v1.png" alt=""><span>Fitness with<br>Benjamin</span></a><a class="head-link" href="#client-login">Client login ↗</a></div>
+          <div class="hero-copy"><p class="eyebrow">San Francisco + online coaching</p><h2>Train with intention.<br><em>Feel your progress.</em></h2><p class="sublead">Personal coaching built around how you move, what you want to achieve, and the life you’re living.</p><a class="quick-link" href="#training">Interested in training? <span aria-hidden="true">↓</span></a></div>
+          <div class="services"><p class="services-title">How we can work together</p><div class="service"><span class="num">01</span><div><h3>Personal Training</h3><p>One-on-one sessions in San Francisco with hands-on guidance and feedback.</p></div></div><div class="service"><span class="num">02</span><div><h3>Online Coaching</h3><p>A personalized plan, weekly check-ins, and support wherever you train.</p></div></div><div class="service"><span class="num">03</span><div><h3>Hybrid Coaching</h3><p>Online structure with in-person sessions for extra attention when it counts.</p></div></div></div>
+        </section>
+        <section class="lower" id="training" aria-label="Training inquiry and client login">
+          <p class="eyebrow">Start here</p><h2>Interested in training?</h2><p>Tell Benjamin what you’re working toward. He’ll review your answers and get in touch about the right coaching fit.</p><a class="primary" href="questionnaire.html">Fitness questionnaire <span aria-hidden="true">↗</span></a><p class="email">Questions? <a href="mailto:fwb@benjaminbenz.com">Email Benjamin</a></p>
+          <div class="divider"></div>
+          <div id="client-login" class="login-heading"><h2>Client login</h2><span>FWB Training</span></div><p class="login-intro">Pick up where you left off with your plan.</p>
+          <div class="field"><span>Email</span><div aria-hidden="true">you@example.com</div></div><div class="field"><span>Password</span><div aria-hidden="true">••••••••</div></div><label class="remember"><input type="checkbox"><span>Keep me signed in</span></label>
+          <a class="primary" href="client-login.html">Continue to client login <span aria-hidden="true">→</span></a><div class="login-meta"><a href="client-login.html">Forgot password?</a><a href="client-signup.html">Need a setup link?</a></div><a class="coach-link" href="coach-login.html">Are you a coach? <strong>Coach login →</strong></a>
+        </section>
+        <footer class="footer">Fitness with Benjamin · San Francisco + online</footer>
+      </div>
+    </div>
+  </main>
+  <script>
+    const artworks=[
+      ["Bicep curl","curl.png"],
+      ["Barbell squat","squat-fibers-forward-head.png"],
+      ["Running","running-fibers.png"],
+      ["Martial arts","martial-arts-fibers.png"],
+      ["Lunges","female-lunge-fibers.png"],
+      ["Shoulder press","shoulder-press-fibers.png"],
+      ["Front torso","torso-front-study.png"],
+      ["Back","torso-back-study.png"],
+      ["Side profile","torso-side-study.png"],
+      ["Legs","legs-study.png"],
+      ["Quads","quads-study.png"],
+      ["Glutes and hamstrings","glutes-hamstrings-study.png"],
+      ["Calves","calves-study.png"]
+    ];
+    const artworkSelect=document.querySelector("#artwork");
+    const figureImage=document.querySelector("#figure-image");
+    for(const [index,[name]] of artworks.entries()) artworkSelect.add(new Option(name,String(index)));
+    let previous=null;
+    try{
+      const saved=sessionStorage.getItem("fwb-mobile-last-artwork");
+      if(saved!==null) previous=Number(saved);
+    }catch{}
+    const choices=artworks.map((_,index)=>index).filter(index=>index!==previous);
+    const initial=previous===null?0:choices[Math.floor(Math.random()*choices.length)];
+    artworkSelect.value=String(initial);
+    const setArtwork=()=>{
+      const index=Number(artworkSelect.value);
+      figureImage.src=`images/home/anatomy/${artworks[index][1]}`;
+      try{sessionStorage.setItem("fwb-mobile-last-artwork",String(index));}catch{}
+    };
+    artworkSelect.addEventListener("change",setArtwork);
+    setArtwork();
+    const opacityInput=document.querySelector("#opacity");
+    const opacityLabel=document.querySelector("#opacity-label");
+    opacityInput.addEventListener("input",()=>{
+      document.documentElement.style.setProperty("--figure-opacity",Number(opacityInput.value)/100);
+      opacityLabel.textContent=`Figure opacity ${opacityInput.value}%`;
+    });
+  </script>
+</body>
+</html>
