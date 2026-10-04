@@ -1,31 +1,15 @@
 /* Direct exits from the client Settings menu and its standalone documents. */
-:root body.client-dashboard-page .client-settings-menu > .panel-heading {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-  align-items: center;
-  min-height: 56px;
-}
-
-:root body.client-dashboard-page .client-settings-menu > .panel-heading > div {
-  grid-column: 2;
-}
-
 :root body.client-dashboard-page .client-settings-menu .client-settings-signout {
-  grid-column: 3;
-  justify-self: end;
-  width: auto;
-  min-height: 44px;
-  margin: 0;
-  padding: 8px 4px;
-  border: 0;
-  background: transparent;
+  margin-top: 0;
   color: var(--danger);
-  font: 800 .9rem/1.25 var(--font-ui);
-  cursor: pointer;
+}
+
+:root body.client-dashboard-page .client-settings-menu .client-settings-signout svg {
+  color: var(--danger);
 }
 
 :root body.client-dashboard-page .client-settings-menu .client-settings-signout:hover {
-  text-decoration: underline;
+  background: var(--reminder-surface);
 }
 
 :root body.fwb-document-page .fwb-document-back {
