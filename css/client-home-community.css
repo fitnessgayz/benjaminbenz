@@ -188,7 +188,6 @@
 :root body.client-dashboard-page .client-home-coach-note h3 { color: #f4f5f3; }
 :root body.client-dashboard-page .client-home-coach-note p:not(.kicker) { color: var(--client-muted); }
 :root body.client-dashboard-page .client-home-resume-card { order: 2; }
-:root body.client-dashboard-page .client-home-more { order: 5; }
 :root body.client-dashboard-page .client-community-panel { width: min(100%, 760px); margin-inline: auto; padding: 18px; }
 :root body.client-dashboard-page #client-community-title { text-align: center; margin: 0 0 38px; }
 :root body.client-dashboard-page .client-community-hero { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; }

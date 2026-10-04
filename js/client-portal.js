@@ -18370,9 +18370,14 @@ function setupWorkoutProgramWindows() {
   const links = document.querySelector(".client-workout-program-links");
   if (!dialog || !links || links.dataset.bound) return;
   links.dataset.bound = "true";
+  const noteCard = document.createElement("article");
+  noteCard.className = "client-home-card client-program-note-preview";
+  const noteTitle = document.createElement("h3");
+  const noteBody = document.createElement("p");
+  noteCard.append(noteTitle, noteBody);
   const cards = {
     overview: document.querySelector(".client-home-program-card"),
-    notes: document.querySelector(".client-home-coach-note")
+    notes: noteCard
   };
   const title = document.createElement("h3");
   title.id = "client-program-info-title";
@@ -18387,6 +18392,10 @@ function setupWorkoutProgramWindows() {
     trigger = button;
     const name = button.dataset.programWindow;
     title.textContent = name === "notes" ? "Coach notes" : "Program overview";
+    if (name === "notes") {
+      noteTitle.textContent = document.getElementById("client-home-note-title")?.textContent || "No note yet";
+      noteBody.textContent = document.getElementById("client-home-note-body")?.textContent || "Coach notes will appear here when Benjamin adds one.";
+    }
     Object.entries(cards).forEach(([key, card]) => { if (card) card.hidden = key !== name; });
     dialog.showModal();
   });
