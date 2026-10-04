@@ -928,10 +928,24 @@ function clientViewUrl(program = selectedProgram()) {
   return email ? `${baseUrl}&client=${encodeURIComponent(email)}` : baseUrl;
 }
 
+function coachPasswordResetRedirectUrl() {
+  return `${window.location.origin}/client-invite.html`;
+}
+
 function updateClientViewLink(program = selectedProgram()) {
   const email = normalizeEmail(program?.client_email);
   const messageButton = document.getElementById("selected-client-message-button");
   if (messageButton) messageButton.hidden = !email;
+  const passwordResetButton = document.getElementById("selected-client-password-reset-button");
+  if (passwordResetButton) {
+    passwordResetButton.hidden = !email;
+    passwordResetButton.disabled = !email;
+    if (email) {
+      passwordResetButton.setAttribute("aria-label", `Send a password reset link to ${program.client_name || email}`);
+    } else {
+      passwordResetButton.removeAttribute("aria-label");
+    }
+  }
   ["client-view-link", "selected-client-view-link"].forEach((id) => {
     const link = document.getElementById(id);
     if (!link) return;
@@ -6259,6 +6273,42 @@ function handleSelectedClientActions() {
     setAdminTab("inbox");
     coachMessagesController?.open(program.client_email, program.client_name);
   });
+  const passwordResetButton = document.getElementById("selected-client-password-reset-button");
+
+  passwordResetButton?.addEventListener("click", async () => {
+    const program = selectedProgram();
+    const email = normalizeEmail(program?.client_email);
+    const clientName = program?.client_name || email;
+
+    if (!coachSupabase || !email) {
+      adminStatus("Choose a client with an email address first.");
+      return;
+    }
+
+    if (!window.confirm(`Send a password reset link to ${clientName} at ${email}?`)) {
+      return;
+    }
+
+    passwordResetButton.disabled = true;
+    adminStatus(`Sending password reset link to ${email}...`);
+
+    try {
+      const { error } = await coachSupabase.auth.resetPasswordForEmail(email, {
+        redirectTo: coachPasswordResetRedirectUrl()
+      });
+
+      if (error) {
+        adminStatus(error.message || "Could not send the password reset link.");
+        return;
+      }
+
+      adminStatus(`Password reset link sent to ${email}.`);
+    } catch (error) {
+      adminStatus(error?.message || "Could not send the password reset link.");
+    } finally {
+      passwordResetButton.disabled = false;
+    }
+  });
   const saveProfileButton = document.getElementById("selected-save-profile-button");
 
   saveProfileButton?.addEventListener("click", () => {
@@ -7795,6 +7845,8 @@ function openInviteClientModal(button) {
 
   inviteClientReturnFocus = button || document.activeElement;
   inviteClientSavedProgram = null;
+  // The mobile dock is mounted on body; keep this dialog in the same layer.
+  document.body.append(modal);
   form.elements.invite_client_email.value = "";
   form.elements.invite_client_name.value = "";
   form.elements.invite_client_phone.value = "";

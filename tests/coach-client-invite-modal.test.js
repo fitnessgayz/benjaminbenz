@@ -86,7 +86,7 @@ test("creates a clean starter program from only the invite fields", () => {
 });
 
 test("invite modal is mobile-safe and stays above the coach navigation", () => {
-  assert.match(styleSource, /\.invite-client-modal\s*\{[\s\S]*?z-index:\s*100[\s\S]*?place-items:\s*center/);
+  assert.match(styleSource, /\.invite-client-modal\s*\{[\s\S]*?z-index:\s*1200[\s\S]*?place-items:\s*center/);
   assert.match(styleSource, /\.invite-client-dialog\s*\{[\s\S]*?max-height:\s*min\(760px, calc\(100dvh - 36px\)\)[\s\S]*?overflow-y:\s*auto/);
   assert.match(styleSource, /@media \(max-width: 520px\)[\s\S]*?\.invite-client-modal\s*\{[\s\S]*?align-items:\s*end/);
   assert.match(styleSource, /\.invite-client-dialog\s*\{[\s\S]*?width:\s*calc\(100vw - 16px\)[\s\S]*?max-width:\s*calc\(100vw - 16px\)/);

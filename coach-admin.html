@@ -29,7 +29,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=client-view-shortcut-1&amp;home-shortcuts=1&amp;coach-dock=8&amp;mobile-client-hub=2&amp;home-notifications=2&amp;exercise-images=1&amp;exercise-cards=1&amp;videos-tab=3&amp;client-added=1&amp;mobile-card-media=1&amp;coach-layout-repair=1&amp;activity-likes=1" />
+  <link rel="stylesheet" href="css/style.css?v=client-view-shortcut-1&amp;home-shortcuts=1&amp;coach-dock=8&amp;mobile-client-hub=2&amp;home-notifications=2&amp;exercise-images=1&amp;exercise-cards=1&amp;videos-tab=3&amp;client-added=1&amp;mobile-card-media=1&amp;coach-layout-repair=1&amp;activity-likes=1&amp;invite-dialog=1" />
   <link rel="stylesheet" href="css/coach-messages.css?v=3" />
   <link rel="stylesheet" href="css/workout-layout.css?v=workout-preview-1" />
   <link rel="stylesheet" href="css/apple-workout.css?v=1" />
@@ -340,6 +340,7 @@
           <div class="selected-client-actions">
             <button class="button button-ghost" type="button" id="selected-client-message-button" hidden>View messages</button>
             <a class="button coach-client-view-link" id="selected-client-view-link" target="_blank" rel="noopener" hidden>View client page <span aria-hidden="true">↗</span></a>
+            <button class="button button-ghost" type="button" id="selected-client-password-reset-button" hidden>Send password reset link</button>
             <div class="selected-session-count" id="selected-session-count" hidden>
               <span>Session count</span>
               <strong id="selected-session-count-value">--</strong>
@@ -1132,15 +1133,15 @@
             <div class="admin-field-grid invite-client-fields">
               <label>
                 Client email
-                <input type="email" name="invite_client_email" placeholder="client@example.com" autocomplete="email" required />
+                <input type="email" name="invite_client_email" form="program-editor" placeholder="client@example.com" autocomplete="email" required />
               </label>
               <label>
                 Client name
-                <input type="text" name="invite_client_name" placeholder="Client name" autocomplete="name" required />
+                <input type="text" name="invite_client_name" form="program-editor" placeholder="Client name" autocomplete="name" required />
               </label>
               <label>
                 Client phone number (required for text)
-                <input type="tel" name="invite_client_phone" placeholder="(555) 555-5555" autocomplete="tel" aria-describedby="invite-phone-help" />
+                <input type="tel" name="invite_client_phone" form="program-editor" placeholder="(555) 555-5555" autocomplete="tel" aria-describedby="invite-phone-help" />
                 <span id="invite-phone-help">For international numbers, include + and the country code.</span>
               </label>
             </div>
@@ -1193,6 +1194,6 @@
   <script src="js/apple-health-sync.js?v=1"></script>
   <script src="js/workout-progression.js?v=1"></script>
   <script src="js/coach-workout-corrections.js?v=weight-corrections-1"></script>
-  <script src="js/coach-admin.js?v=client-view-shortcut-1&amp;remember-login=1&amp;home-shortcuts=1&amp;mobile-client-hub=2&amp;home-notifications=2&amp;apple-workout=1&amp;viewport-dock=1&amp;apple-health=1&amp;recovery-catalog=1&amp;messages=2&amp;progression=1&amp;invitations=2&amp;exercise-images=1&amp;exercise-cards=1&amp;videos-tab=3&amp;client-added=1&amp;client-name-list=2&amp;weight-corrections=1"></script>
+  <script src="js/coach-admin.js?v=client-view-shortcut-1&amp;remember-login=1&amp;home-shortcuts=1&amp;mobile-client-hub=2&amp;home-notifications=2&amp;apple-workout=1&amp;viewport-dock=1&amp;apple-health=1&amp;recovery-catalog=1&amp;messages=2&amp;progression=1&amp;invitations=2&amp;exercise-images=1&amp;exercise-cards=1&amp;videos-tab=3&amp;client-added=1&amp;client-name-list=2&amp;weight-corrections=1&amp;password-reset=1&amp;invite-dialog=1"></script>
 </body>
 </html>
