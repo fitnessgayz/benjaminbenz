@@ -830,6 +830,9 @@ function renderClientHomeSummary() {
     : "Log mood, energy, body readiness, or anything Benjamin should know today.");
   setText("#client-home-note-title", noteTitle || "No note yet");
   setText("#client-home-note-body", noteBody || "Coach notes will appear here when Benjamin adds one.");
+  const firstName = String(currentProgram.client_name || activeDashboardUser?.user_metadata?.full_name || "")
+    .trim().split(/\s+/)[0];
+  setText("#client-home-welcome", firstName ? `Welcome back, ${firstName}.` : "Welcome back.");
   renderClientHomeSnapshots(nutrition);
 
   if (checklist) {
@@ -16853,6 +16856,11 @@ function setClientSettingsView(viewName = "menu", options = {}) {
 
 function handleClientDashboardTabs() {
   document.addEventListener("click", (event) => {
+    if (event.target.closest("[data-client-home-notifications]")) {
+      setClientDashboardTab("notifications");
+      setClientSettingsView("notifications", { focus: true });
+      return;
+    }
     const settingsViewButton = event.target.closest("[data-client-settings-open]");
     if (settingsViewButton) {
       setClientSettingsView(settingsViewButton.dataset.clientSettingsOpen, { focus: true });
@@ -18737,6 +18745,7 @@ async function loadDashboard() {
     };
 
     activeClientEmail = data.client_email || targetClientEmail;
+    window.FWB_CLIENT_COMMUNITY?.configure(supabaseClient, user.id, isCoachDashboardPreview);
     configureClientAppleWorkouts();
     clientAvailablePrograms = Array.isArray(programRows) ? programRows : [];
     renderProgram(data);

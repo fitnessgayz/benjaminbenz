@@ -1,0 +1,252 @@
+/* Mobile Home and Community, based on the client app reference. */
+:root body.client-dashboard-page {
+  --client-neon: #9cf932;
+  --client-muted: #aac3b0;
+}
+:root body.client-dashboard-page :is(.client-home-panel, .client-community-panel) {
+  color: #f4f5f3;
+  background: #101113;
+  border: 0;
+  box-shadow: none;
+}
+:root body.client-dashboard-page .client-home-topbar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 58px;
+  margin-bottom: 18px;
+}
+:root body.client-dashboard-page .client-home-topbar h2,
+:root body.client-dashboard-page #client-community-title {
+  margin: 0;
+  color: #f4f5f3;
+  font-size: 19px;
+  font-weight: 750;
+  letter-spacing: -.02em;
+}
+:root body.client-dashboard-page .client-home-topbar h2 {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+}
+:root body.client-dashboard-page :is(.client-home-settings-button, .client-home-bell) {
+  display: grid !important;
+  width: 54px !important;
+  inline-size: 54px !important;
+  max-width: 54px !important;
+  min-width: 54px !important;
+  height: 54px !important;
+  min-height: 54px !important;
+  flex: 0 0 54px !important;
+  position: relative;
+  margin: 0 !important;
+  place-items: center;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid #3b3f42;
+  border-radius: 50%;
+  background: #202326;
+  color: var(--client-neon);
+}
+:root body.client-dashboard-page .client-home-settings-button img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+:root body.client-dashboard-page .client-home-settings-placeholder svg,
+:root body.client-dashboard-page .client-home-bell svg { width: 27px; height: 27px; }
+:root body.client-dashboard-page .client-home-intro { margin: 0 0 17px; }
+:root body.client-dashboard-page .client-home-intro h3 { margin: 0 0 4px; color: #f4f5f3; font-size: 26px; line-height: 1.1; }
+:root body.client-dashboard-page .client-home-intro p { margin: 0; color: var(--client-muted); font-size: 16px; }
+:root body.client-dashboard-page .client-home-grid {
+  display: flex;
+  flex-direction: column;
+  width: min(100%, 720px);
+  margin-inline: auto;
+  gap: 16px;
+}
+:root body.client-dashboard-page .client-home-grid > * { width: 100%; }
+:root body.client-dashboard-page .client-home-grid .client-home-today-workout { order: 4; }
+:root body.client-dashboard-page .client-weekly-activity {
+  order: 0;
+  max-width: none;
+  padding: 18px 16px 14px;
+  border: 1px solid #44474a;
+  border-radius: 20px;
+  background: #27292c;
+  box-shadow: none;
+}
+:root body.client-dashboard-page .client-gym-hero { display: flex; align-items: center; gap: 13px; }
+:root body.client-dashboard-page .client-gym-hero-icon {
+  display: grid;
+  width: 51px;
+  height: 51px;
+  flex: 0 0 51px;
+  place-items: center;
+  border-radius: 14px;
+  background: var(--client-neon);
+  color: #151a11;
+}
+:root body.client-dashboard-page .client-gym-hero-icon svg { width: 30px; height: 30px; }
+:root body.client-dashboard-page .client-gym-kicker { color: var(--client-muted); font-size: 12px; font-weight: 800; letter-spacing: .09em; text-transform: uppercase; }
+:root body.client-dashboard-page .client-gym-hero h3 { margin: 3px 0 0; color: #f5f6f3; font-size: 20px; line-height: 1.2; }
+:root body.client-dashboard-page .client-gym-description { margin: 16px 0 17px; color: var(--client-muted); font-size: 15px; }
+:root body.client-dashboard-page .client-weekly-summary {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #f4f5f3;
+}
+:root body.client-dashboard-page .client-weekly-header { align-items: baseline; margin-bottom: 14px; }
+:root body.client-dashboard-page .client-weekly-header h4 { margin: 0; color: #f4f5f3; font-size: 15px; }
+:root body.client-dashboard-page .client-weekly-header strong { color: var(--client-muted); font-size: 14px; font-weight: 650; }
+:root body.client-dashboard-page .client-weekly-days { gap: 3px; padding: 0; border: 0; }
+:root body.client-dashboard-page .client-weekly-day { gap: 9px; color: var(--client-muted); font-size: 12px; font-weight: 650; }
+:root body.client-dashboard-page .client-weekly-mark,
+:root body.client-dashboard-page .client-weekly-mark.has-workout,
+:root body.client-dashboard-page .client-weekly-mark.has-checkin,
+:root body.client-dashboard-page .client-weekly-mark.has-workout.has-checkin {
+  width: 25px;
+  min-height: 25px;
+  margin: 0 auto;
+  border: 2px solid #55595c;
+  border-radius: 50%;
+  background: transparent;
+  color: transparent;
+  font-size: 15px;
+  line-height: 1;
+  box-shadow: none;
+}
+:root body.client-dashboard-page :is(.client-weekly-mark.has-workout, .client-weekly-mark.has-checkin, .client-weekly-mark.has-workout.has-checkin) {
+  border-color: var(--client-neon);
+  background: var(--client-neon);
+  color: #192318;
+}
+:root body.client-dashboard-page .client-weekly-details { margin: 20px 0 16px; padding: 0; border: 0; }
+:root body.client-dashboard-page .client-weekly-details summary {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 38px;
+  padding: 0;
+  color: var(--client-neon);
+  font-size: 14px;
+  font-weight: 750;
+  list-style: none;
+}
+:root body.client-dashboard-page .client-weekly-details summary::-webkit-details-marker { display: none; }
+:root body.client-dashboard-page .client-weekly-details summary span:last-child { margin-left: auto; font-size: 25px; line-height: 1; }
+:root body.client-dashboard-page .client-weekly-details[open] summary span:last-child { transform: rotate(180deg); }
+:root body.client-dashboard-page .client-month-content { padding: 12px 2px 0; }
+:root body.client-dashboard-page .client-month-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+:root body.client-dashboard-page .client-month-heading button { width: 36px; min-height: 36px; padding: 0; border: 0; background: transparent; color: var(--client-neon); font-size: 25px; }
+:root body.client-dashboard-page .client-month-heading button:disabled { opacity: .35; }
+:root body.client-dashboard-page :is(.client-month-weekdays, .client-month-days) { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; text-align: center; }
+:root body.client-dashboard-page .client-month-weekdays { margin: 8px 0; color: var(--client-muted); font-size: 11px; }
+:root body.client-dashboard-page .client-month-day { display: grid; min-height: 31px; place-items: center; border-radius: 50%; color: #d4dbd5; font-size: 12px; }
+:root body.client-dashboard-page .client-month-day.is-checked { background: var(--client-neon); color: #182316; font-weight: 800; }
+:root body.client-dashboard-page .client-month-day.is-today:not(.is-checked) { outline: 1px solid var(--client-neon); }
+:root body.client-dashboard-page #client-month-status { color: var(--client-muted); font-size: 12px; }
+:root body.client-dashboard-page .client-weekly-activity > .client-weekly-caption { margin: 7px 0 0; color: var(--client-muted); text-align: left; }
+:root body.client-dashboard-page .client-gym-checkin {
+  min-height: 54px;
+  border: 1px solid #81c829;
+  border-radius: 12px;
+  background: var(--client-neon);
+  color: #14200f;
+  font-size: 17px;
+}
+:root body.client-dashboard-page .client-gym-checkin-icon { width: 23px; height: 23px; flex-basis: 23px; border: 0; font-size: 20px; }
+:root body.client-dashboard-page .client-weekly-activity.is-checked-in .client-gym-checkin { background: #548132; color: #d2efbf; border-color: #75a844; }
+:root body.client-dashboard-page .client-home-glance { order: 1; margin-top: 2px; }
+:root body.client-dashboard-page .client-home-glance > p { margin: 0; color: var(--client-muted); font-size: 13px; font-weight: 750; }
+:root body.client-dashboard-page .client-home-glance h3 { margin: 3px 0 14px; color: var(--client-neon); font-size: 23px; line-height: 1.15; }
+:root body.client-dashboard-page .client-home-glance-list { display: grid; gap: 11px; }
+:root body.client-dashboard-page .client-home-glance-list button {
+  display: grid;
+  grid-template-columns: 35px 1fr 15px;
+  align-items: center;
+  gap: 13px;
+  width: 100%;
+  min-height: 75px;
+  padding: 14px 17px;
+  border: 1px solid #45484b;
+  border-radius: 18px;
+  background: #27292c;
+  color: #f4f5f3;
+  font: inherit;
+  text-align: left;
+}
+:root body.client-dashboard-page .client-home-glance-list button > span:first-child { color: var(--client-neon); font-size: 25px; font-weight: 850; }
+:root body.client-dashboard-page .client-home-glance-list button > span:first-child svg { width: 27px; height: 27px; display: block; }
+:root body.client-dashboard-page .client-home-glance-list button > span:last-child { color: var(--client-neon); font-size: 28px; }
+:root body.client-dashboard-page .client-home-glance-list strong { font-size: 15px; }
+:root body.client-dashboard-page .client-home-coach-note { order: 3; min-height: 0; padding: 17px; border: 1px solid #45484b; border-radius: 18px; background: #27292c; }
+:root body.client-dashboard-page .client-home-coach-note .kicker { color: var(--client-neon); }
+:root body.client-dashboard-page .client-home-coach-note h3 { color: #f4f5f3; }
+:root body.client-dashboard-page .client-home-coach-note p:not(.kicker) { color: var(--client-muted); }
+:root body.client-dashboard-page .client-home-resume-card { order: 2; }
+:root body.client-dashboard-page .client-home-more { order: 5; }
+:root body.client-dashboard-page .client-community-panel { width: min(100%, 760px); margin-inline: auto; padding: 18px; }
+:root body.client-dashboard-page #client-community-title { text-align: center; margin: 0 0 38px; }
+:root body.client-dashboard-page .client-community-hero { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; }
+:root body.client-dashboard-page .client-community-hero-icon { display: grid; width: 66px; height: 66px; flex: 0 0 66px; place-items: center; border-radius: 18px; background: #1c2c17; color: var(--client-neon); }
+:root body.client-dashboard-page .client-community-hero-icon svg { width: 39px; height: 39px; }
+:root body.client-dashboard-page .client-community-hero h3 { margin: 0 0 3px; color: #f4f5f3; font-size: 24px; }
+:root body.client-dashboard-page .client-community-hero p { margin: 0; color: var(--client-muted); font-size: 15px; }
+:root body.client-dashboard-page .client-community-badges { display: grid; grid-template-columns: 34px 1fr 15px; align-items: center; gap: 12px; width: 100%; padding: 16px; min-height: 75px; border: 1px solid #45484b; border-radius: 18px; background: #27292c; color: #f4f5f3; font: inherit; text-align: left; }
+:root body.client-dashboard-page .client-community-badges svg { width: 31px; height: 31px; color: var(--client-neon); }
+:root body.client-dashboard-page .client-community-badges strong { display: block; font-size: 17px; font-weight: 650; }
+:root body.client-dashboard-page .client-community-badges small { display: block; margin-top: 3px; color: var(--client-muted); font-size: 13px; }
+:root body.client-dashboard-page .client-community-badges > span:last-child { color: var(--client-neon); font-size: 29px; }
+:root body.client-dashboard-page .client-community-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; margin: 20px 0; padding: 4px; border: 1px solid #45484b; border-radius: 17px; background: #27292c; }
+:root body.client-dashboard-page .client-community-tabs button { min-width: 0; min-height: 47px; padding: 8px 3px; border: 0; border-radius: 13px; background: transparent; color: var(--client-muted); font: inherit; font-size: 13px; font-weight: 700; }
+:root body.client-dashboard-page .client-community-tabs button[aria-selected="true"] { background: var(--client-neon); color: #182316; }
+:root body.client-dashboard-page .client-community-feature { position: relative; min-height: 190px; padding: 19px 17px; border: 1px solid #45484b; border-radius: 18px; background: #27292c; }
+:root body.client-dashboard-page .client-community-feature-icon svg { width: 34px; height: 34px; color: var(--client-neon); }
+:root body.client-dashboard-page .client-community-coming { position: absolute; top: 20px; right: 17px; padding: 6px 12px; border-radius: 99px; background: #303236; color: var(--client-muted); font-size: 12px; font-weight: 700; }
+:root body.client-dashboard-page .client-community-feature h3 { margin: 17px 0 12px; color: #f4f5f3; font-size: 22px; }
+:root body.client-dashboard-page .client-community-feature p { margin: 0; color: var(--client-muted); font-size: 14px; line-height: 1.4; }
+:root body.client-dashboard-page .client-community-privacy { display: flex; gap: 8px; margin: 18px 1px 0; color: var(--client-muted); font-size: 13px; line-height: 1.4; }
+:root body.client-dashboard-page .client-community-privacy svg { width: 17px; height: 17px; flex: 0 0 17px; }
+:root body.client-dashboard-page .client-community-consent { margin-top: 28px; padding: 18px; border: 1px solid #45484b; border-radius: 18px; background: #27292c; }
+:root body.client-dashboard-page .client-community-consent h3 { margin: 0 0 5px; color: #f4f5f3; font-size: 20px; }
+:root body.client-dashboard-page .client-community-consent > p { margin: 0 0 13px; color: var(--client-muted); font-size: 13px; }
+:root body.client-dashboard-page .client-community-consent label { display: flex; align-items: flex-start; gap: 11px; padding: 12px 0; border-top: 1px solid #3d4144; color: #f4f5f3; }
+:root body.client-dashboard-page .client-community-consent input { width: 20px; height: 20px; min-width: 20px; margin: 1px 0 0; accent-color: var(--client-neon); }
+:root body.client-dashboard-page .client-community-consent label strong { display: block; font-size: 14px; }
+:root body.client-dashboard-page .client-community-consent label small { display: block; margin-top: 4px; color: var(--client-muted); font-size: 12px; line-height: 1.4; }
+:root body.client-dashboard-page .client-community-save { width: 100%; min-height: 45px; margin: 8px 0; border: 0; border-radius: 10px; background: var(--client-neon); color: #182316; font: inherit; font-weight: 800; }
+:root body.client-dashboard-page .client-community-save:disabled { opacity: .55; }
+:root body.client-dashboard-page #client-community-consent-status { margin: 3px 0 0; }
+@media (max-width: 900px) {
+  :root body.client-dashboard-page { background: #101113; }
+  :root body.client-dashboard-page .client-home-panel { padding: 16px 15px 28px; }
+  :root body.client-dashboard-page .client-home-intro h3 { font-size: 25px; }
+  :root body.client-dashboard-page .dashboard-shell { padding-top: 0; }
+  :root body.client-dashboard-page .client-dashboard-tabs {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    inset: auto 8px calc(7px + env(safe-area-inset-bottom));
+    width: calc(100% - 16px);
+    min-height: 80px;
+    padding: 5px 5px 3px;
+    border: 1px solid #46494b;
+    border-radius: 32px !important;
+    background: #2a2e30f2;
+    box-shadow: 0 6px 25px #0008;
+  }
+  :root body.client-dashboard-page .client-dashboard-tab[data-client-dashboard-tab] { color: var(--client-muted); }
+  :root body.client-dashboard-page .client-dashboard-tab.is-active { color: var(--client-neon); }
+  :root body.client-dashboard-page .client-dashboard-tab-icon { color: var(--client-muted); }
+  :root body.client-dashboard-page .client-dashboard-tab.is-active .client-dashboard-tab-icon { background: var(--client-neon); color: #192318; border-radius: 50%; }
+  :root body.client-dashboard-page .client-dashboard-tab.is-active .client-dashboard-tab-label { color: var(--client-neon); }
+  :root body.client-dashboard-page .client-dashboard-tab.is-active::after { background: var(--client-neon); }
+  :root body.client-dashboard-page .client-dashboard-tab-label { font-size: 9px; }
+  :root body.client-dashboard-page .client-community-panel { padding: 18px 15px 28px; }
+}
+@media (max-width: 390px) {
+  :root body.client-dashboard-page .client-dashboard-tab-label { font-size: 8px; }
+  :root body.client-dashboard-page .client-weekly-activity { padding-inline: 14px; }
+}

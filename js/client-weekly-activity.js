@@ -66,12 +66,13 @@
     const panel = document.getElementById('client-weekly-activity');
     if (!panel) return { configure() {} };
     const find = id => document.getElementById(id);
-    let client, email = '', preview = false, offset = 0, busy = false, checkedDate = '', generation = 0, timer;
-    const text = (id, value) => { find(id).textContent = value; };
+    let client, email = '', preview = false, offset = 0, monthOffset = 0, busy = false, checkedDate = '', generation = 0, monthGeneration = 0, timer;
+    const text = (id, value) => { const node = find(id); if (node) node.textContent = value; };
     const shortDate = key => new Date(`${key}T12:00:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
     function buttonState() {
       const done = checkedDate === dateKey(new Date());
       panel.classList.toggle('is-checked-in', done);
+      text('client-gym-hero-title', done ? 'You showed up today' : 'Show up for yourself today');
       const button = find('client-gym-checkin');
       const label = button.querySelector('[data-client-gym-checkin-label]') || button;
       button.disabled = !email || preview || busy || done;
@@ -101,6 +102,7 @@
         buttonState();
         const summary = summarize(logs, visits, range);
         text('client-weekly-workouts', summary.workouts); text('client-weekly-checkins', summary.checkins);
+        text('client-weekly-checkins-summary', summary.checkins);
         text('client-weekly-status', summary.activity.length ? '' : 'No activity logged this week yet.');
         range.dates.forEach((date, i) => {
           const workout = summary.activity.some(row => row.date === date && row.type === 'workout');
@@ -124,9 +126,49 @@
       } catch (_) {
         if (request !== generation) return;
         text('client-weekly-workouts', '—'); text('client-weekly-checkins', '—');
+        text('client-weekly-checkins-summary', '—');
         text('client-weekly-status', 'Activity could not be loaded. Try again.');
       }
     }
+    async function renderMonth() {
+      const grid = find('client-month-days');
+      if (!grid || !client || !email) return;
+      const request = ++monthGeneration, requestEmail = email;
+      const month = new Date(new Date().getFullYear(), new Date().getMonth() + monthOffset, 1, 12);
+      const year = month.getFullYear(), monthNumber = month.getMonth();
+      const start = dateKey(month), end = dateKey(new Date(year, monthNumber + 1, 0, 12));
+      text('client-month-label', month.toLocaleDateString(undefined, { month: 'long', year: 'numeric' }));
+      find('client-month-next').disabled = monthOffset >= 0;
+      grid.replaceChildren();
+      text('client-month-status', 'Loading gym visits…');
+      try {
+        const visits = await readRows(client, 'client_gym_checkins', 'entry_date', requestEmail, { start, end });
+        if (request !== monthGeneration || requestEmail !== email) return;
+        const checked = new Set(visits.map(row => row.entry_date));
+        const blanks = (month.getDay() + 6) % 7;
+        for (let i = 0; i < blanks; i++) {
+          const blank = document.createElement('span'); blank.setAttribute('aria-hidden', 'true');
+          grid.append(blank);
+        }
+        const total = new Date(year, monthNumber + 1, 0).getDate();
+        for (let day = 1; day <= total; day++) {
+          const date = dateKey(new Date(year, monthNumber, day, 12));
+          const cell = document.createElement('span');
+          cell.className = `client-month-day${checked.has(date) ? ' is-checked' : ''}${date === dateKey(new Date()) ? ' is-today' : ''}`;
+          cell.textContent = checked.has(date) ? '✓' : String(day);
+          cell.setAttribute('aria-label', `${shortDate(date)}: ${checked.has(date) ? 'gym check-in' : 'no check-in'}`);
+          grid.append(cell);
+        }
+        text('client-month-status', `${checked.size} gym ${checked.size === 1 ? 'visit' : 'visits'} this month.`);
+      } catch (_) {
+        if (request === monthGeneration) text('client-month-status', 'Could not load this month. Try again.');
+      }
+    }
+    find('client-month-details')?.addEventListener('toggle', event => {
+      if (event.target.open) void renderMonth();
+    });
+    if (find('client-month-prev')) find('client-month-prev').onclick = () => { monthOffset--; void renderMonth(); };
+    if (find('client-month-next')) find('client-month-next').onclick = () => { monthOffset = Math.min(0, monthOffset + 1); void renderMonth(); };
     find('client-week-prev').onclick = () => { offset--; void refresh(); };
     find('client-week-next').onclick = () => { offset = Math.min(0, offset + 1); void refresh(); };
     find('client-weekly-retry').onclick = () => { void refresh(); };
@@ -141,6 +183,7 @@
         if (email !== targetEmail) throw new Error('Your account changed. Reopen your check-in.');
         checkedDate = today; offset = 0;
         await refresh();
+        if (find('client-month-details')?.open) void renderMonth();
         text('client-gym-checkin-status', 'You showed up. Check-in complete.');
         root.document?.dispatchEvent(new CustomEvent("fwb:gym-checkin-saved"));
         celebrateCheckIn(panel, today);
@@ -156,7 +199,7 @@
     return { checkIn, isCheckedIn: () => checkedDate === dateKey(new Date()), configure(nextClient, nextEmail, isPreview) {
       if (!nextClient || !nextEmail) return;
       const normalized = nextEmail.trim().toLowerCase();
-      if (email !== normalized) { offset = 0; checkedDate = ''; generation++; }
+      if (email !== normalized) { offset = 0; monthOffset = 0; checkedDate = ''; generation++; monthGeneration++; }
       client = nextClient; email = normalized; preview = Boolean(isPreview); buttonState();
       if (preview) text('client-gym-checkin-status', 'Viewing client activity. Gym check-in is available to the client.');
       clearTimeout(timer); timer = setTimeout(() => void refresh(), 150);
