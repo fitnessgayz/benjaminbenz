@@ -565,7 +565,10 @@
     async function loadInbox() {
       let query = supabaseClient.from("client_notifications");
       if (backend === "deployed") {
-        query = query.select("id,kind,title,body,web_url,created_at,read_at").eq("user_id", user.id);
+        query = query
+          .select("id,recipient_role,kind,title,body,action_url,metadata,created_at,read_at")
+          .eq("user_id", user.id)
+          .eq("recipient_role", role);
       } else {
         query = query
           .select("id,recipient_role,kind,title,body,action_url,metadata,created_at,read_at")
@@ -580,7 +583,7 @@
         ...row,
         action_url: row.action_url || row.web_url
       }));
-      if (role === "coach" && backend !== "deployed") {
+      if (role === "coach") {
         const likeableIds = rows.filter(likeableCoachActivity).map((row) => row.id);
         likedNotificationIds = new Set();
         if (likeableIds.length) {

@@ -62,7 +62,7 @@ test("Settings panel keeps every notification feature together", () => {
     settingsPanel.indexOf('id="coach-notification-inbox-title"') < settingsPanel.indexOf('id="coach-notification-settings-title"'),
     "Recent alerts should appear before notification preferences"
   );
-  assert.match(adminHtml, /src="js\/web-notifications\.js\?v=coach-activity-likes-1"[\s\S]*src="js\/coach-admin\.js\?[^"\s]+"/);
+  assert.match(adminHtml, /src="js\/web-notifications\.js\?v=coach-activity-likes-2"[\s\S]*src="js\/coach-admin\.js\?[^"\s]+"/);
 });
 
 test("all feasible coach notification categories start enabled", () => {

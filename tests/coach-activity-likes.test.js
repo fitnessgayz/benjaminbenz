@@ -31,7 +31,7 @@ function element(tag = "div") {
   };
 }
 
-function coachHarness() {
+function coachHarness({ deployedBackend = false } = {}) {
   const list = element("ul");
   const empty = element("p");
   const badge = element("span");
@@ -62,6 +62,7 @@ function coachHarness() {
     read_at: null
   };
   const rpcCalls = [];
+  const selectCalls = [];
   const supabaseClient = {
     rpc: async (name, args) => {
       rpcCalls.push({ name, args });
@@ -69,11 +70,17 @@ function coachHarness() {
     },
     from(table) {
       const query = {
-        select() { return this; },
+        select(columns) { selectCalls.push({ table, columns }); return this; },
         eq() { return this; },
         order() { return this; },
         in() { return Promise.resolve({ data: [], error: null }); },
         maybeSingle() {
+          if (table === "client_notification_preferences" && deployedBackend) {
+            return Promise.resolve({ data: null, error: { code: "PGRST204" } });
+          }
+          if (table === "fwb_notification_settings") {
+            return Promise.resolve({ data: { user_id: "coach-1", push_enabled: false, categories: {} }, error: null });
+          }
           assert.equal(table, "client_notification_preferences");
           return Promise.resolve({ data: { user_id: "coach-1", push_enabled: false }, error: null });
         },
@@ -86,7 +93,7 @@ function coachHarness() {
           return Promise.resolve({ data: [notice], error: null });
         }
       };
-      assert.ok(["client_notification_preferences", "client_notifications", "coach_activity_likes"].includes(table));
+      assert.ok(["client_notification_preferences", "fwb_notification_settings", "client_notifications", "coach_activity_likes"].includes(table));
       return query;
     }
   };
@@ -103,7 +110,7 @@ function coachHarness() {
   const controller = sandbox.window.FWBWebNotifications.createController({
     supabaseClient, user: { id: "coach-1" }, role: "coach", root: rootElement
   });
-  return { controller, list, status, listeners, rpcCalls };
+  return { controller, list, status, listeners, rpcCalls, selectCalls };
 }
 
 test("coach activity likes are source-bound, account-scoped, and notify the client", () => {
@@ -151,12 +158,29 @@ test("coach inbox presents an accessible like control and persists the toggle", 
   assert.match(harness.status.textContent, /Client notified/);
 });
 
+test("deployed notification fallback keeps activity metadata and like controls", async () => {
+  const harness = coachHarness({ deployedBackend: true });
+  assert.equal(await harness.controller.init(), true);
+
+  const inboxSelect = harness.selectCalls.find(({ table, columns }) =>
+    table === "client_notifications" && columns.includes("metadata")
+  );
+  assert.ok(inboxSelect);
+  assert.match(inboxSelect.columns, /recipient_role/);
+  assert.match(inboxSelect.columns, /action_url/);
+
+  const firstItem = harness.list.children[0];
+  const likeButton = firstItem.children.find((child) => child.dataset.webNotificationLike);
+  assert.ok(likeButton);
+  assert.equal(likeButton.textContent, "♡ Like");
+});
+
 test("shared branding exposes activity likes on responsive web surfaces", () => {
   assert.match(coach, /Recent client activity/);
   assert.match(coach, /data-web-notification-preference="client_achievements"/);
-  assert.match(coach, /web-notifications\.js\?v=coach-activity-likes-1/);
+  assert.match(coach, /web-notifications\.js\?v=coach-activity-likes-2/);
   assert.match(client, /Coach replies, likes \+ form reviews/);
-  assert.match(client, /web-notifications\.js\?v=coach-activity-likes-1/);
+  assert.match(client, /web-notifications\.js\?v=coach-activity-likes-2/);
   assert.match(styles, /\.web-notification-like\s*\{[\s\S]*?min-height:\s*44px/);
   assert.match(styles, /@media \(max-width: 600px\)[\s\S]*?\.web-notification-item\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0, 1fr\)/);
   assert.match(modernPush, /coach_reaction:\s*"coach_replies"/);
