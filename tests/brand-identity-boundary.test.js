@@ -111,12 +111,12 @@ test("AI-facing pages use FWB Training Assistant without claiming the coach prod
   }
 });
 
-test("PWA manifests use the versioned lime icon set at every declared size", () => {
+test("PWA manifests use the versioned electric-gold icon set at every declared size", () => {
   const manifests = ["site.webmanifest", "client.webmanifest", "coach.webmanifest"]
     .map((file) => JSON.parse(read(file)));
   const sizes = [180, 192, 512, 1024];
   for (const size of sizes) {
-    const filename = `fwb-brand-icon-lime-${size}-v1.png`;
+    const filename = `fwb-brand-icon-gold-${size}-v5.png`;
     const png = fs.readFileSync(path.join(root, filename));
     assert.equal(png.toString("ascii", 1, 4), "PNG");
     assert.equal(png.readUInt32BE(16), size);
@@ -125,5 +125,25 @@ test("PWA manifests use the versioned lime icon set at every declared size", () 
     for (const manifest of manifests) {
       assert.ok(manifest.icons.some((icon) => icon.src === `/${filename}` && icon.sizes === `${size}x${size}`));
     }
+  }
+});
+
+test("public and native products use the canonical version 5 monogram", () => {
+  const publicHome = read("index.html");
+  assert.match(publicHome, /fwb-brand-icon-gold-1024-v5\.png/);
+  assert.match(read("css/style.css"), /fwb-brand-icon-gold-192-v5\.png/);
+
+  const nativeIcons = [
+    "FWB-iOS-App/FWBCoach/Assets.xcassets/AppIcon.appiconset/AppIcon-1024-edited.png",
+    "FWBCoach/FWBCoach/Assets.xcassets/AppIcon.appiconset/FWBCoach-1024.png",
+    "FWB-iOS-App/FWBCoach/Assets.xcassets/BrandMark.imageset/BrandMark.png",
+  ];
+  const canonical = fs.readFileSync(path.join(root, "fwb-brand-icon-gold-1024-v5.png"));
+  for (const file of nativeIcons) {
+    const png = fs.readFileSync(path.join(root, file));
+    assert.equal(png.toString("ascii", 1, 4), "PNG");
+    assert.equal(png.readUInt32BE(16), 1024);
+    assert.equal(png.readUInt32BE(20), 1024);
+    assert.deepEqual(png, canonical);
   }
 });

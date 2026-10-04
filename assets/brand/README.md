@@ -4,18 +4,17 @@ This directory holds the shared identity source used by the website, installed w
 
 ## Canonical app icon
 
-- `fwb-app-icon-lime-master-v1.png` is the versioned high-resolution source.
-- `fwb-app-icon-lime-1024-v1.png` is the 1024 px distribution master.
-- Platform-specific sizes should be derived from the 1024 px file without adding text, borders, corner masks, gradients, or shadows.
+- `fwb-app-icon-gold-master-v5.png` is the versioned high-resolution source.
+- `fwb-brand-icon-gold-1024-v5.png` is the 1024 px distribution master.
+- Platform-specific sizes should be derived from the distribution master without adding text, borders, corner masks, or extra effects.
 
-The icon preserves the FWB monogram, removes small tagline and equipment details that fail at launcher sizes, and uses the shared product palette:
+Version 5 is the canonical FWB monogram: a chunky, forward-leaning white `F` and `B` joined behind an electric-gold `W` on black. It is used across the public website, client and coach web apps, notifications, native iOS products, and installed app surfaces.
 
-- Lime: `#D6FF35`
-- Ink: `#171A17`
-- Deep ink: `#080A08`
-- Off-white: `#F7F5EF`
+Core identity colors:
 
-Gold belongs to the legacy/heritage identity and should not be introduced into installed product UI or launcher assets.
+- Electric gold: the gold used in the version 5 master artwork
+- Black: `#000000`
+- White: `#FFFFFF`
 
 ## Naming
 

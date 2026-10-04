@@ -7037,7 +7037,7 @@ async function showRestTimerCompleteNotification() {
 
   const options = {
     body: "Your next set is ready.",
-    icon: "/fwb-brand-icon-lime-192-v1.png",
+    icon: "/fwb-brand-icon-gold-192-v5.png",
     badge: "/favicon-32.png",
     tag: "fwb-rest-timer-complete",
     renotify: true,

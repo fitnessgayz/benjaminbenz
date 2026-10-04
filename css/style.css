@@ -1244,10 +1244,12 @@ footer {
   place-items: center;
   width: 42px;
   height: 42px;
-  border-radius: 50%;
-  color: var(--black);
-  background: var(--lime);
-  font-size: .78rem;
+  flex: 0 0 42px;
+  overflow: hidden;
+  border-radius: 12px;
+  color: transparent;
+  background: var(--black) url("/fwb-brand-icon-gold-192-v5.png") center / cover no-repeat;
+  font-size: 0;
 }
 
 .brand strong {
