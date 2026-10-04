@@ -81,7 +81,7 @@ test("keeps public styling isolated and based on canonical tokens", () => {
     assert.match(page, /css\/public-brand\.css\?v=public-nav-3/);
     assert.match(page, /public-page/);
   }
-  assert.match(homepage, /css\/homepage-one-page\.css\?v=1/);
+  assert.match(homepage, /css\/homepage-one-page\.css\?v=2/);
   assert.match(homepage, /public-page/);
 
   assert.match(publicStyles, /\.public-page \{/);

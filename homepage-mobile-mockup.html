@@ -50,6 +50,10 @@
     .service .num{padding-top:2px;color:var(--lime);font-size:10px;font-weight:800}
     .service h3{margin:0;font-size:15px;letter-spacing:-.035em}
     .service p{margin:4px 0 0;color:#c8d5c8;font-size:11px;line-height:1.48}
+    .app-note{margin-top:19px;padding:16px;border:1px solid #a3ff1238;border-radius:12px;background:#a3ff120a}
+    .app-note h3{margin:8px 0 7px;font-size:20px;letter-spacing:-.045em;line-height:1.2}
+    .app-note p:last-child{margin:0;color:#cbd8ca;font-size:12px;line-height:1.55}
+    .app-note strong{color:var(--cream)}
     .lower{background:var(--cream);color:var(--ink);padding:31px 25px 28px;border-top:3px solid var(--lime)}
     .lower .eyebrow{color:#5d8300}
     .lower h2{margin:9px 0 11px;font-size:31px;letter-spacing:-.055em;line-height:1.05}
@@ -78,7 +82,7 @@
 </head>
 <body>
   <header class="review">
-    <div><p>FWB / Design preview</p><h1>Mobile homepage mockup</h1><span class="note">A phone-sized version of the selected Photo Split direction. Sign-in fields are visual placeholders; the live homepage is unchanged.</span></div>
+    <div><p>FWB / Design preview</p><h1>Mobile homepage mockup</h1><span class="note">A phone-sized preview of the live homepage. Sign-in fields are visual placeholders; use the live page to sign in.</span></div>
     <div class="controls" aria-label="Mockup controls">
       <label>Artwork <select id="artwork" aria-label="Choose anatomy artwork"></select></label>
       <label><span id="opacity-label">Figure opacity 15%</span><input id="opacity" type="range" min="10" max="20" value="15" step="1" aria-label="Figure opacity"></label>
@@ -92,6 +96,7 @@
           <div class="site-head"><a class="brand" href="index.html"><img src="fwb-brand-icon-lime-192-v1.png" alt=""><span>Fitness with<br>Benjamin</span></a><a class="head-link" href="#client-login">Client login ↗</a></div>
           <div class="hero-copy"><p class="eyebrow">San Francisco + online coaching</p><h2>Train with intention.<br><em>Feel your progress.</em></h2><p class="sublead">Personal coaching built around how you move, what you want to achieve, and the life you’re living.</p><a class="quick-link" href="#training">Interested in training? <span aria-hidden="true">↓</span></a></div>
           <div class="services"><p class="services-title">How we can work together</p><div class="service"><span class="num">01</span><div><h3>Personal Training</h3><p>One-on-one sessions in San Francisco with hands-on guidance and feedback.</p></div></div><div class="service"><span class="num">02</span><div><h3>Online Coaching</h3><p>A personalized plan, weekly check-ins, and support wherever you train.</p></div></div><div class="service"><span class="num">03</span><div><h3>Hybrid Coaching</h3><p>Online structure with in-person sessions for extra attention when it counts.</p></div></div></div>
+          <section class="app-note" aria-label="FWB Training app"><p class="eyebrow">Included with your coaching</p><h3>Coaching that goes with you.</h3><p>Benjamin built <strong>FWB Training</strong> to keep your workouts, progress, and feedback in one place between sessions.</p></section>
         </section>
         <section class="lower" id="training" aria-label="Training inquiry and client login">
           <p class="eyebrow">Start here</p><h2>Interested in training?</h2><p>Tell Benjamin what you’re working toward. He’ll review your answers and get in touch about the right coaching fit.</p><a class="primary" href="questionnaire.html">Fitness questionnaire <span aria-hidden="true">↗</span></a><p class="email">Questions? <a href="mailto:fwb@benjaminbenz.com">Email Benjamin</a></p>

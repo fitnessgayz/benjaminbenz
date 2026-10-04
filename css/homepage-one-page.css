@@ -58,6 +58,11 @@ body.homepage-v2 :is(a, button, input):focus-visible { outline: 3px solid #64930
 .home-service > span { padding-top: 3px; color: var(--home-lime); font-size: 11px; font-weight: 800; }
 .home-service h2 { margin: 0; font-size: 18px; letter-spacing: -.035em; line-height: 1.2; }
 .home-service p { max-width: 480px; margin: 5px 0 0; color: #c1cfc2; font-size: 12px; line-height: 1.52; }
+.home-app { max-width: 580px; margin-top: 22px; padding: 18px 20px; border: 1px solid #a3ff1238; border-radius: 12px; background: #a3ff120a; }
+.home-app .home-eyebrow { font-size: 10px; }
+.home-app h2 { margin: 8px 0 7px; font-size: 21px; letter-spacing: -.045em; line-height: 1.2; }
+.home-app > p:last-child { margin: 0; color: #cbd8ca; font-size: 12px; line-height: 1.55; }
+.home-app strong { color: var(--home-cream); }
 
 .home-access { display: flex; flex-direction: column; padding: 42px clamp(28px, 4vw, 64px) 27px; background: var(--home-cream); color: var(--home-ink); color-scheme: light; }
 .home-access .home-eyebrow { color: #617d0a; }
@@ -110,6 +115,8 @@ body.homepage-v2 :is(a, button, input):focus-visible { outline: 3px solid #64930
   .home-service { grid-template-columns: 26px 1fr; gap: 10px; padding: 13px 0; }
   .home-service h2 { font-size: 15px; }
   .home-service p { font-size: 11px; }
+  .home-app { margin-top: 19px; padding: 16px; }
+  .home-app h2 { font-size: 20px; }
   .home-inquiry h2 { font-size: 31px; }
   .home-inquiry .home-action, .home-action { display: flex; width: 100%; }
   .home-links { flex-wrap: wrap; }
