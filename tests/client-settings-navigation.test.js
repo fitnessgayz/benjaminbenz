@@ -22,7 +22,7 @@ test("client Settings presents an iOS-style menu before the detailed controls", 
     "Stats &amp; measurements",
     "Nutrition",
     "Messages",
-    "PAR-Q",
+    "Fitness questionnaire",
     "Sessions",
     "Login &amp; security",
     "Notifications",
@@ -42,6 +42,14 @@ test("client Settings presents an iOS-style menu before the detailed controls", 
   assert.match(settings, /data-client-settings-view="recent-updates"[\s\S]*?data-web-notification-list/);
   assert.match(settings, /data-client-settings-view="health-apps"[\s\S]*?data-apple-health-summary[\s\S]*?data-google-health-settings/);
   assert.match(settings, /data-client-settings-back aria-label="Back to Settings"/);
+  for (const destination of ["questionnaire", "sessions"]) {
+    const panel = html.match(new RegExp(`data-client-dashboard-panel="${destination}"[\\s\\S]*?<\\/section>`))?.[0] || "";
+    assert.match(panel, /data-client-settings-destination="notifications" aria-label="Back to Settings"/);
+  }
+  for (const document of ["fwb-training-privacy.html", "fwb-training-support.html"]) {
+    const page = fs.readFileSync(path.join(root, document), "utf8");
+    assert.match(page, /class="fwb-document-back" href="client-dashboard.html\?tab=notifications"/);
+  }
 });
 
 test("account actions live in Settings and focused views replace the long page", () => {

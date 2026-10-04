@@ -67,7 +67,8 @@ test("moves sign-out and password recovery from Home into Settings", () => {
     || dashboard.slice(dashboard.indexOf('data-client-dashboard-panel="notifications"'));
 
   assert.doesNotMatch(dashboard, /<header class="site-header dashboard-header">/);
-  assert.equal((dashboard.match(/data-sign-out/g) || []).length, 1);
+  assert.equal((dashboard.match(/data-sign-out/g) || []).length, 2);
+  assert.match(settingsPanel, /class="client-settings-signout"[^>]*data-sign-out>Sign out<\/button>/);
   assert.doesNotMatch(homePanel, /data-sign-out|client-dashboard-reset-password-button/);
   assert.match(settingsPanel, /class="client-account-signout"[^>]*data-sign-out>Sign out<\/button>/);
   assert.match(settingsPanel, /id="client-dashboard-reset-password-button">Email me a reset link<\/button>/);
