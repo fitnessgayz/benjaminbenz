@@ -1,6 +1,7 @@
 (function (root) {
   'use strict';
   const dateKey = date => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  const weeklyMarkText = (workout, visit) => workout || visit ? '✓' : '·';
   function weekRange(now = new Date(), offset = 0) {
     const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12);
     start.setDate(start.getDate() - (start.getDay() + 6) % 7 + offset * 7);
@@ -114,7 +115,7 @@
           day.setAttribute('aria-label', `${shortDate(date)}: ${workout ? 'workout logged' : 'no workout'}, ${visit ? 'gym check-in' : 'no gym check-in'}`);
           const label = document.createElement('span'); label.textContent = ['M', 'T', 'W', 'T', 'F', 'S', 'S'][i];
           const mark = document.createElement('span'); mark.className = `client-weekly-mark${workout ? ' has-workout' : ''}${visit ? ' has-checkin' : ''}`;
-          mark.textContent = workout && visit ? '✓✓' : workout || visit ? '✓' : '·';
+          mark.textContent = weeklyMarkText(workout, visit);
           day.append(label, mark); find('client-weekly-days').append(day);
         });
         summary.activity.forEach(row => {
@@ -205,7 +206,7 @@
       clearTimeout(timer); timer = setTimeout(() => void refresh(), 150);
     } };
   }
-  const api = { dateKey, weekRange, summarize, readRows, saveVisit, celebrateCheckIn, mount };
+  const api = { dateKey, weekRange, summarize, readRows, saveVisit, celebrateCheckIn, weeklyMarkText, mount };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   if (root.document) root.FWB_WEEKLY_ACTIVITY = mount(root.document);
 })(typeof window !== 'undefined' ? window : globalThis);

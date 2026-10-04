@@ -140,8 +140,39 @@
 :root body.client-dashboard-page .client-weekly-details summary span:last-child { margin-left: auto; font-size: 25px; line-height: 1; }
 :root body.client-dashboard-page .client-weekly-details[open] summary span:last-child { transform: rotate(180deg); }
 :root body.client-dashboard-page .client-month-content { padding: 12px 2px 0; }
-:root body.client-dashboard-page .client-month-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-:root body.client-dashboard-page .client-month-heading button { width: 36px; min-height: 36px; padding: 0; border: 0; background: transparent; color: var(--client-neon); font-size: 25px; }
+:root body.client-dashboard-page .client-month-heading {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) 40px;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+:root body.client-dashboard-page .client-month-heading strong {
+  min-width: 0;
+  overflow: hidden;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+:root body.client-dashboard-page .client-month-heading button {
+  display: grid !important;
+  width: 40px !important;
+  inline-size: 40px !important;
+  min-width: 40px !important;
+  min-inline-size: 40px !important;
+  max-width: 40px !important;
+  max-inline-size: 40px !important;
+  height: 40px !important;
+  min-height: 40px !important;
+  padding: 0 !important;
+  place-items: center;
+  border: 0 !important;
+  border-radius: 50% !important;
+  background: transparent !important;
+  color: var(--client-neon);
+  font-size: 25px !important;
+  line-height: 1 !important;
+}
 :root body.client-dashboard-page .client-month-heading button:disabled { opacity: .35; }
 :root body.client-dashboard-page :is(.client-month-weekdays, .client-month-days) { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; text-align: center; }
 :root body.client-dashboard-page .client-month-weekdays { margin: 8px 0; color: var(--client-muted); font-size: 11px; }

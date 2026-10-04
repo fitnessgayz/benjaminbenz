@@ -2,7 +2,21 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
-const { weekRange, summarize, readRows, saveVisit, celebrateCheckIn } = require('../js/client-weekly-activity.js');
+const { weekRange, summarize, readRows, saveVisit, celebrateCheckIn, weeklyMarkText } = require('../js/client-weekly-activity.js');
+
+test('weekly activity uses one checkmark while retaining combined workout and gym state', () => {
+  assert.equal(weeklyMarkText(true, true), '✓');
+  assert.equal(weeklyMarkText(true, false), '✓');
+  assert.equal(weeklyMarkText(false, true), '✓');
+  assert.equal(weeklyMarkText(false, false), '·');
+});
+
+test('the mobile month header reserves compact controls and a single-line date label', () => {
+  const styles = fs.readFileSync(require.resolve('../css/client-home-community.css'), 'utf8');
+  assert.match(styles, /\.client-month-heading\s*\{[^}]*grid-template-columns:\s*40px minmax\(0, 1fr\) 40px/s);
+  assert.match(styles, /\.client-month-heading strong\s*\{[^}]*white-space:\s*nowrap/s);
+  assert.match(styles, /\.client-month-heading button\s*\{[^}]*inline-size:\s*40px !important/s);
+});
 
 test('check-ins still save when the browser lacks AbortSignal.timeout', async () => {
   let expire, suppliedSignal;
