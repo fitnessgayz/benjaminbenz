@@ -1,10 +1,10 @@
 /* Public share artwork uses reviewed summary values, never private screenshots. */
 (() => {
   "use strict";
-  const ink = "#171a17";
-  const paper = "#f7f7f2";
-  const lime = "#d6ff35";
-  const line = "#4b5148";
+  const palettes = {
+    dark: { background: "#171a17", text: "#f7f7f2", accent: "#d6ff35", line: "#4b5148", muted: "#b8bfb2", tile: "#242923", brand: "#d6ff35", brandText: "#080a08" },
+    light: { background: "#f7f8f3", text: "#1b291f", accent: "#0069dd", line: "#cbd8c5", muted: "#516355", tile: "#edf2e8", brand: "#a3f43b", brandText: "#19250e" }
+  };
   const fontFamily = 'Inter, "Arial", sans-serif';
 
   function number(value) {
@@ -150,29 +150,30 @@
     return block;
   }
 
-  function drawCard(context, summary = {}, now = new Date()) {
+  function drawCard(context, summary = {}, now = new Date(), theme = "dark") {
     const data = content(summary, now);
+    const palette = palettes[theme] || palettes.dark;
     const width = 1080;
     const height = 1350;
     const left = 64;
     const innerWidth = width - left * 2;
-    context.fillStyle = ink;
+    context.fillStyle = palette.background;
     context.fillRect(0, 0, width, height);
-    context.fillStyle = lime;
+    context.fillStyle = palette.brand;
     context.fillRect(left, 58, 108, 108);
-    context.fillStyle = "#080a08";
+    context.fillStyle = palette.brandText;
     setFont(context, 38, 900);
     context.textAlign = "center";
     context.textBaseline = "middle";
     context.fillText("FWB", left + 54, 112);
-    context.fillStyle = paper;
+    context.fillStyle = palette.text;
     setFont(context, 27, 700);
     context.textAlign = "right";
     context.textBaseline = "top";
     context.fillText(data.date, width - left, 75);
-    context.fillStyle = lime;
+    context.fillStyle = palette.accent;
     drawBlock(context, data.status.toUpperCase(), left, 196, innerWidth, { maxSize: 28, minSize: 28, weight: 900 });
-    context.fillStyle = paper;
+    context.fillStyle = palette.text;
     const title = drawBlock(context, data.title, left, 242, innerWidth, { maxSize: 78, minSize: 44, maxLines: 3, maxHeight: 160, weight: 900 });
     let cursor = 242 + title.height + 30;
 
@@ -181,35 +182,35 @@
     const cellWidth = (innerWidth - gap * 2) / 3;
     main.forEach(([value, label], index) => {
       const x = left + index * (cellWidth + gap);
-      context.strokeStyle = line;
+      context.strokeStyle = palette.line;
       context.lineWidth = 2;
       context.strokeRect(x, cursor, cellWidth, 144);
-      context.fillStyle = paper;
+      context.fillStyle = palette.text;
       drawBlock(context, value, x + 18, cursor + 22, cellWidth - 36, { maxSize: 39, minSize: 24, maxLines: 1, weight: 900 });
-      context.fillStyle = lime;
+      context.fillStyle = palette.accent;
       drawBlock(context, label.toUpperCase(), x + 18, cursor + 81, cellWidth - 36, { maxSize: 23, minSize: 21, maxLines: 2, maxHeight: 50, weight: 800 });
     });
     cursor += 144;
 
     if (data.appleMetrics.length) {
-      context.fillStyle = lime;
+      context.fillStyle = palette.accent;
       drawBlock(context, "APPLE WORKOUT", left, cursor + 28, innerWidth, { maxSize: 24, minSize: 24 });
       cursor += 70;
       const appleWidth = (innerWidth - gap * (data.appleMetrics.length - 1)) / data.appleMetrics.length;
       data.appleMetrics.forEach((metric, index) => {
         const x = left + index * (appleWidth + gap);
-        context.fillStyle = "#242923";
+        context.fillStyle = palette.tile;
         context.fillRect(x, cursor, appleWidth, 111);
-        context.fillStyle = paper;
+        context.fillStyle = palette.text;
         drawBlock(context, metric.value, x + 18, cursor + 17, appleWidth - 36, { maxSize: 34, minSize: 22, weight: 900 });
-        context.fillStyle = "#b8bfb2";
+        context.fillStyle = palette.muted;
         drawBlock(context, metric.label.toUpperCase(), x + 18, cursor + 64, appleWidth - 36, { maxSize: 20, minSize: 18, maxLines: 2, maxHeight: 42 });
       });
       cursor += 111;
     }
 
     cursor += 36;
-    context.fillStyle = lime;
+    context.fillStyle = palette.accent;
     drawBlock(context, data.exerciseHeading.toUpperCase(), left, cursor, innerWidth, { maxSize: 25, minSize: 25 });
     cursor += 44;
     const exerciseWidth = (innerWidth - 36) / 2;
@@ -217,26 +218,26 @@
     data.exerciseNames.forEach((name, index) => {
       const x = left + (index % 2) * (exerciseWidth + 36);
       const y = cursor + Math.floor(index / 2) * 83;
-      context.fillStyle = line;
+      context.fillStyle = palette.line;
       context.fillRect(x, y, exerciseWidth, 1);
-      context.fillStyle = paper;
+      context.fillStyle = palette.text;
       drawBlock(context, name, x, y + 12, exerciseWidth, { maxSize: 29, minSize: 24, maxLines: 2, maxHeight: 64, weight: 750 });
     });
     if (!data.exerciseNames.length) {
-      context.fillStyle = paper;
+      context.fillStyle = palette.text;
       drawBlock(context, data.exerciseLabel, left, cursor, innerWidth, { maxSize: 29, minSize: 29 });
     }
     cursor += Math.max(1, rows) * 83;
     if (data.moreExercises) {
-      context.fillStyle = "#b8bfb2";
+      context.fillStyle = palette.muted;
       drawBlock(context, `+ ${data.moreExercises} more exercise${data.moreExercises === 1 ? "" : "s"}`, left, cursor + 2, innerWidth, { maxSize: 24, minSize: 22 });
       cursor += 31;
     }
 
     // The footer has its own reserved band, even for a three-line title and six long names.
-    context.fillStyle = paper;
+    context.fillStyle = palette.text;
     drawBlock(context, data.praise, left, Math.max(1194, Math.min(cursor + 28, 1204)), innerWidth, { maxSize: 34, minSize: 28, maxLines: 1, weight: 800 });
-    context.fillStyle = "#b8bfb2";
+    context.fillStyle = palette.muted;
     drawBlock(context, "Fitness with Benjamin · benjaminbenz.com", left, 1294, innerWidth, { maxSize: 24, minSize: 24, maxLines: 1, weight: 700 });
     return { contentBottom: cursor, footerTop: 1194, title, width, height };
   }
@@ -256,7 +257,7 @@
       canvas.height = 1350;
       const context = canvas.getContext("2d");
       if (!context) return null;
-      drawCard(context, summary);
+      drawCard(context, summary, new Date(), document.documentElement?.dataset?.clientTheme === "light" ? "light" : "dark");
       return await new Promise((resolve) => {
         canvas.toBlob((blob) => {
           try { resolve(blob ? new File([blob], summary.isComplete === false ? "fwb-workout-saved.png" : "fwb-workout-complete.png", { type: "image/png" }) : null); }

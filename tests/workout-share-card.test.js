@@ -24,9 +24,9 @@ function fakeCanvas() {
       const width = this.measureText(value).width;
       const left = this.textAlign === "right" ? x - width : this.textAlign === "center" ? x - width / 2 : x;
       const top = this.textBaseline === "middle" ? y - size / 2 : y;
-      texts.push({ value: String(value), x, y, left, top, right: left + width, bottom: top + size, size });
+      texts.push({ value: String(value), x, y, left, top, right: left + width, bottom: top + size, size, fill: this.fillStyle });
     },
-    fillRect(x, y, width, height) { boxes.push({ x, y, width, height }); },
+    fillRect(x, y, width, height) { boxes.push({ x, y, width, height, fill: this.fillStyle }); },
     strokeRect(x, y, width, height) { boxes.push({ x, y, width, height }); }
   };
   return { context, texts, boxes };
@@ -119,6 +119,14 @@ test("six names and a remainder count are shared rather than overflowing the can
   assert.ok(h.texts.some((item) => item.value === "+ 3 more exercises"));
 });
 
+test("light share artwork uses a light canvas with readable dark text", () => {
+  const h = fakeCanvas();
+  drawCard(h.context, example(), now, "light");
+  assert.equal(h.boxes[0].fill, "#f7f8f3");
+  assert.ok(h.texts.some((item) => item.value === "Upper-body strength" && item.fill === "#1b291f"));
+  assert.ok(h.texts.some((item) => item.value === "EXERCISES COMPLETED" && item.fill === "#0069dd"));
+});
+
 test("long titles, names, and metric values stay inside their reserved canvas regions", () => {
   const summary = example({
     title: "Very long strength and conditioning session for the entire upper and lower body ".repeat(8),
@@ -151,7 +159,7 @@ test("line fitting breaks unbroken names and truncates visibly instead of squeez
   for (const line of fitted.lines) assert.ok(h.context.measureText(line).width <= 200);
 });
 
-function imageHarness({ noContext = false, nullBlob = false, throwBlob = false, noFile = false } = {}) {
+function imageHarness({ noContext = false, nullBlob = false, throwBlob = false, noFile = false, theme = "dark" } = {}) {
   const h = fakeCanvas();
   const canvas = {
     getContext() { return noContext ? null : h.context; },
@@ -162,7 +170,7 @@ function imageHarness({ noContext = false, nullBlob = false, throwBlob = false, 
   };
   class FakeFile { constructor(parts, name, options) { this.parts = parts; this.name = name; this.type = options.type; } }
   const context = vm.createContext({
-    window: {}, document: { createElement: () => canvas, fonts: { load: async () => [] } },
+    window: {}, document: { documentElement: { dataset: { clientTheme: theme } }, createElement: () => canvas, fonts: { load: async () => [] } },
     File: noFile ? undefined : FakeFile, module: { exports: {} }, setTimeout, clearTimeout
   });
   vm.runInContext(fs.readFileSync(path.join(__dirname, "../js/workout-share-card.js"), "utf8"), context);
@@ -180,6 +188,12 @@ test("image exports a 1080×1350 PNG File with a saved-state filename and exact 
   assert.ok(h.texts.some((item) => item.value === "WORKOUT SAVED"));
   assert.ok(h.texts.some((item) => item.value === "EXERCISES LOGGED"));
   assert.equal(h.texts.some((item) => item.value === "WORKOUT COMPLETE"), false);
+});
+
+test("image export follows the current light-mode palette", async () => {
+  const h = imageHarness({ theme: "light" });
+  await h.api.image(example());
+  assert.equal(h.boxes[0].fill, "#f7f8f3");
 });
 
 test("unsupported or failed canvas exports resolve null so text sharing remains available", async () => {

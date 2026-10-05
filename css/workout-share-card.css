@@ -1,4 +1,20 @@
 /* Additional public share metrics and the saved workout share action. */
+.dashboard-page .workout-completion-share-overlay {
+  z-index: 1300;
+  box-sizing: border-box;
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
+}
+.dashboard-page .workout-completion-share-sheet {
+  max-height: min(820px, calc(100dvh - 32px - env(safe-area-inset-bottom)));
+  overscroll-behavior: contain;
+}
+.dashboard-page .workout-completion-share-actions {
+  position: sticky;
+  bottom: -18px;
+  z-index: 1;
+  padding: 10px 0 18px;
+  background: var(--surface, var(--paper));
+}
 .dashboard-page .workout-completion-share-card .workout-completion-share-brand { border-radius: 0; }
 .dashboard-page .workout-completion-share-card h2 { text-transform: none !important; }
 .dashboard-page .workout-completion-share-card .workout-completion-share-date {
