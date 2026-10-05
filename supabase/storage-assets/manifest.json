@@ -32,7 +32,8 @@
     "20261004032702_client_saved_workout_plans.sql",
     "20261004035631_client_community_preferences.sql",
     "20261005012637_update_glute_machine_bulgarian_split_squat_media.sql",
-    "20261005014515_update_belt_squat_media.sql"
+    "20261005014515_update_belt_squat_media.sql",
+    "20261005145002_update_45_degree_glute_hip_drive_media.sql"
   ],
   "nasmExerciseCatalogMigration": "20261001032427_add_complete_nasm_exercise_library.sql",
   "nasmExerciseCatalogCount": 75,
@@ -3053,6 +3054,34 @@
       "objectPath": "generated/2026-10-04/belt-squat.mp4",
       "contentType": "video/mp4",
       "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-10-05/png/45-degree-glute-hip-drive.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-10-05/png/45-degree-glute-hip-drive.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-10-05/webp-480/45-degree-glute-hip-drive.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-10-05/webp-480/45-degree-glute-hip-drive.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-10-05/webp-768/45-degree-glute-hip-drive.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-10-05/webp-768/45-degree-glute-hip-drive.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-videos/generated/2026-10-05/45-degree-glute-hip-drive.mp4",
+      "bucket": "exercise-videos",
+      "objectPath": "generated/2026-10-05/45-degree-glute-hip-drive.mp4",
+      "contentType": "video/mp4",
+      "cacheControl": 31536000
     }
   ],
   "exerciseMedia": [
@@ -3842,6 +3871,11 @@
       "name": "Belt Squat",
       "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-10-04/webp-768/belt-squat.webp",
       "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-videos/generated/2026-10-04/belt-squat.mp4"
+    },
+    {
+      "name": "45° Degree Glute Drive Machine",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-10-05/webp-768/45-degree-glute-hip-drive.webp",
+      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-videos/generated/2026-10-05/45-degree-glute-hip-drive.mp4"
     }
   ]
 }
