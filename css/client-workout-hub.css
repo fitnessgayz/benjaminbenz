@@ -300,7 +300,11 @@
 .client-workout-plan-dialog .plan-equipment { display: flex; align-items: center; gap: 5px; font-size: 13px; }
 .client-workout-plan-dialog input[type="checkbox"] { accent-color: #9cf932; }
 .client-workout-plan-dialog .plan-primary,
-.client-workout-plan-dialog .saved-plan-day button { min-height: 42px; padding: 10px 15px; border: 0; border-radius: 11px; background: #9cf932; color: #15200f; font-weight: 800; }
+.client-workout-plan-dialog .saved-plan-day button { min-height: 42px; padding: 10px 15px; border: 0; border-radius: 11px; background: #9cf932; font-weight: 800; }
+:root body.client-dashboard-page .client-workout-plan-dialog :is(.plan-primary, .saved-plan-day button) {
+  color: #000 !important;
+  -webkit-text-fill-color: #000 !important;
+}
 .client-workout-plan-dialog .plan-primary { width: 100%; }
 .client-workout-plan-dialog button:disabled { opacity: .65; cursor: wait; }
 .client-workout-plan-dialog .saved-plan-detail { margin-top: 18px; }

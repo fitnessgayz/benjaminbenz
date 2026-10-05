@@ -41,7 +41,7 @@ test('workout chooser routes saved plans through Log Custom Workout', () => {
   assert.match(markup, /data-generate-workout data-generator-preset="today"/);
   assert.match(markup, /data-generate-workout data-generator-preset="mobility"/);
   assert.match(markup, /data-log-cardio/);
-  assert.match(html, /client-workout-hub\.css\?v=3/);
+  assert.match(html, /client-workout-hub\.css\?v=4/);
   assert.match(html, /Choose Your Workout/);
 });
 
