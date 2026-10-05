@@ -204,6 +204,8 @@ const workoutTimerAutoShowStorageKey = "fwb_workout_timer_auto_show_v1";
 const dailyCheckinPromptStorageKey = "fwb_daily_checkin_prompt_enabled_v1";
 const restTimerNotificationServiceWorkerUrl = "/timer-notifications-sw.js?v=web-push-notifications-1";
 let exerciseLibraryEntries = [];
+const exerciseNameRefreshTimers = new WeakMap();
+const exerciseNameRefreshDelay = 120;
 let activeCustomWorkoutFormat = "single";
 let restTimerDurationSeconds = 60;
 let restTimerRemainingSeconds = 60;
@@ -2416,6 +2418,12 @@ function youtubeExerciseSearchUrl(exerciseName) {
   return `https://www.youtube.com/results?search_query=${encodeURIComponent(`${name} exercise demo`)}`;
 }
 
+function invalidateExerciseSearchCaches() {
+  approvedExerciseForName.lookup = null;
+  exerciseSuggestionRecords.cache = null;
+  exerciseHistoryLookup.cache = null;
+}
+
 function approvedExerciseForName(exerciseName) {
   const normalizeName = exerciseNameMatcher?.normalizeName || ((value) => String(value || "").trim().toLowerCase());
   const normalizedName = normalizeName(exerciseName);
@@ -2424,10 +2432,17 @@ function approvedExerciseForName(exerciseName) {
     return null;
   }
 
-  return exerciseLibraryEntries.find((exercise) => (
-    normalizeName(exercise.name) === normalizedName
-    || (exercise.aliases || []).some((alias) => normalizeName(alias) === normalizedName)
-  )) || null;
+  if (!approvedExerciseForName.lookup) {
+    const lookup = new Map();
+    exerciseLibraryEntries.forEach((exercise) => {
+      [exercise?.name, ...(exercise?.aliases || [])].forEach((label) => {
+        const key = normalizeName(label);
+        if (key && !lookup.has(key)) lookup.set(key, exercise);
+      });
+    });
+    approvedExerciseForName.lookup = lookup;
+  }
+  return approvedExerciseForName.lookup.get(normalizedName) || null;
 }
 
 function uploadedExerciseDemoUrl(value) {
@@ -5243,7 +5258,7 @@ function exerciseNameInputForLog(logElement) {
     null;
 }
 
-function syncExerciseNamePreview(logElement, nextName) {
+function syncExerciseNamePreview(logElement, nextName, options = {}) {
   if (!logElement) {
     return;
   }
@@ -5294,7 +5309,28 @@ function syncExerciseNamePreview(logElement, nextName) {
   if (groupInput && groupInput !== document.activeElement && groupInput.value !== rawName) {
     groupInput.value = rawName;
   }
-  syncWorkoutExerciseList(card?.closest(".client-workout-panel"));
+  if (!options.deferExerciseList) {
+    syncWorkoutExerciseList(card?.closest(".client-workout-panel"));
+  }
+}
+
+function flushExerciseNameRefresh(input) {
+  const pending = exerciseNameRefreshTimers.get(input);
+  if (!pending) return false;
+  window.clearTimeout(pending.timer);
+  exerciseNameRefreshTimers.delete(input);
+  pending.refresh();
+  return true;
+}
+
+function scheduleExerciseNameRefresh(input, refresh, delay = exerciseNameRefreshDelay) {
+  const pending = exerciseNameRefreshTimers.get(input);
+  if (pending) window.clearTimeout(pending.timer);
+  const timer = window.setTimeout(() => {
+    exerciseNameRefreshTimers.delete(input);
+    refresh();
+  }, delay);
+  exerciseNameRefreshTimers.set(input, { timer, refresh });
 }
 
 function setWorkoutExerciseCardExpanded(card, expanded) {
@@ -6590,6 +6626,10 @@ function restoreCustomWorkoutDrafts() {
 }
 
 function exerciseSuggestionRecords() {
+  if (exerciseSuggestionRecords.cache) {
+    return exerciseSuggestionRecords.cache;
+  }
+
   const suggestions = new Map();
   const addSuggestion = (value, libraryEntry = null) => {
     const name = String(value || "").trim();
@@ -6637,9 +6677,10 @@ function exerciseSuggestionRecords() {
     addSuggestion(log.exercise_name);
   });
 
-  return Array.from(suggestions.values())
+  exerciseSuggestionRecords.cache = Array.from(suggestions.values())
     .map((record) => ({ ...record, aliases: Array.from(record.aliases) }))
     .sort((left, right) => left.name.localeCompare(right.name));
+  return exerciseSuggestionRecords.cache;
 }
 
 function exerciseSuggestionNames() {
@@ -13287,6 +13328,27 @@ function currentExerciseHistoryName(logElement) {
   );
 }
 
+function exerciseHistoryLookup() {
+  if (exerciseHistoryLookup.cache) {
+    return exerciseHistoryLookup.cache;
+  }
+
+  const lookup = new Map();
+  trainingLogs.forEach((log) => {
+    const code = String(log.exercise_code || "").trim().toUpperCase();
+    const name = normalizeExerciseHistoryName(log.exercise_name);
+    if (!name || code === warmupExerciseCode || code === cardioExerciseCode) return;
+    if (!lookup.has(name)) lookup.set(name, []);
+    lookup.get(name).push(log);
+  });
+  lookup.forEach((logs) => logs.sort((left, right) => {
+    const dateCompare = String(right.entry_date).localeCompare(String(left.entry_date));
+    return dateCompare || Number(left.set_number || 1) - Number(right.set_number || 1);
+  }));
+  exerciseHistoryLookup.cache = lookup;
+  return lookup;
+}
+
 function logsForExerciseDisplay(logElement) {
   if (logElement.dataset.warmupLog !== undefined || logElement.dataset.cardioLog !== undefined) {
     return logsForExercise(logElement.dataset.workoutTitle, logElement.dataset.exerciseCode);
@@ -13298,17 +13360,7 @@ function logsForExerciseDisplay(logElement) {
     return [];
   }
 
-  return trainingLogs
-    .filter((log) => (
-      String(log.exercise_code || "").trim().toUpperCase() !== warmupExerciseCode &&
-      String(log.exercise_code || "").trim().toUpperCase() !== cardioExerciseCode &&
-      normalizeExerciseHistoryName(log.exercise_name) === exerciseName
-    ))
-    .sort((left, right) => {
-      const dateCompare = String(right.entry_date).localeCompare(String(left.entry_date));
-
-      return dateCompare || Number(left.set_number || 1) - Number(right.set_number || 1);
-    });
+  return exerciseHistoryLookup().get(exerciseName) || [];
 }
 
 function parseCardioNotes(notes = "") {
@@ -13753,6 +13805,7 @@ function updateExerciseLogField(logElement) {
 
 function populateTrainingLogs(logs) {
   trainingLogs = Array.isArray(logs) ? logs : [];
+  if (typeof invalidateExerciseSearchCaches === "function") invalidateExerciseSearchCaches();
 
   if (currentProgram) {
     renderClientWorkoutTabs(Array.isArray(currentProgram.workouts) ? currentProgram.workouts : []);
@@ -13835,6 +13888,7 @@ function upsertLocalTrainingLog(savedLog) {
   } else {
     trainingLogs.push(savedLog);
   }
+  if (typeof invalidateExerciseSearchCaches === "function") invalidateExerciseSearchCaches();
 }
 
 function handleTrainingDateChange() {
@@ -14399,6 +14453,7 @@ async function retryClientAchievements() {
       return;
     }
     trainingLogs = Array.isArray(result.data) ? result.data : [];
+    if (typeof invalidateExerciseSearchCaches === "function") invalidateExerciseSearchCaches();
     clientAchievementHistoryStatus = "ready";
     // populateTrainingLogs rebuilds workout editors and would discard unsaved
     // input. A badge retry only refreshes the saved-history projections.
@@ -15197,6 +15252,7 @@ function clearDeletedClientWorkoutState(target, sessionId) {
   trainingLogs = trainingLogs.filter((row) => (
     (!sessionId || workoutFeedbackSessionId(row) !== sessionId) && !ids.has(String(row.id || "").toLowerCase())
   ));
+  if (typeof invalidateExerciseSearchCaches === "function") invalidateExerciseSearchCaches();
   workoutSessionFeedback = workoutSessionFeedback.filter((row) => !sessionId || workoutFeedbackSessionId(row) !== sessionId);
   const contexts = new Set(target.rows.map(clientWorkoutLogContextKey));
   const clearedContexts = new Set();
@@ -15728,6 +15784,7 @@ function removeLocalTrainingLog(row) {
 
   if (index >= 0) {
     trainingLogs.splice(index, 1);
+    if (typeof invalidateExerciseSearchCaches === "function") invalidateExerciseSearchCaches();
   }
 }
 
@@ -16868,6 +16925,7 @@ async function saveClientNutritionPlan() {
 
   const assignedWorkouts = Array.isArray(data.workouts) ? data.workouts : [];
   currentProgram = { ...data, assignedWorkouts, workouts: WorkoutLayout.apply(assignedWorkouts, data.client_workout_layout) };
+  if (typeof invalidateExerciseSearchCaches === "function") invalidateExerciseSearchCaches();
   renderClientNutrition(currentProgram);
   return { data };
 }
@@ -18182,39 +18240,45 @@ function handleWorkoutInteractions() {
       exerciseNameInput.closest("[data-exercise-log]") ||
       exerciseNameInput.closest(".workout-exercise-card")?.querySelector("[data-exercise-log]");
 
-    syncExerciseNamePreview(logElement, exerciseNameInput.value);
+    syncExerciseNamePreview(logElement, exerciseNameInput.value, { deferExerciseList: true });
     if (String(exerciseNameInput.value || "").trim()) {
       exerciseNameInput.removeAttribute("aria-invalid");
     }
 
-    if (
-      logElement &&
-      logElement.dataset.cardioLog === undefined &&
-      logElement.dataset.warmupLog === undefined
-    ) {
-      renderPreviousExerciseWeights(logElement);
-    }
-    if (exerciseNameInput.matches("[data-exercise-title-name]")) {
-      renderCustomExerciseSuggestions(exerciseNameInput);
-    }
-    if (groupedCarousel?.dataset.customWorkoutGrouped === "true") {
-      const accessibleIndex = Number.isInteger(groupedIndex)
-        ? groupedIndex
-        : customWorkoutGroupedLogElements(groupedCarousel).indexOf(logElement);
-      renderCustomWorkoutGroupedExerciseKey(groupedCarousel);
-      refreshCustomWorkoutGroupedCopyWeights(groupedCarousel);
-      if (accessibleIndex >= 0) {
-        syncCustomWorkoutGroupedAccessibleNames(groupedCarousel, accessibleIndex, exerciseNameInput.value);
+    scheduleExerciseNameRefresh(exerciseNameInput, () => {
+      if (
+        logElement &&
+        logElement.dataset.cardioLog === undefined &&
+        logElement.dataset.warmupLog === undefined
+      ) {
+        renderPreviousExerciseWeights(logElement);
       }
-    }
-    persistCustomWorkoutDraftForElement(logElement);
-    if (groupedCarousel?.dataset.customWorkoutGrouped !== "true") {
-      scheduleTrainingLogAutosave(logElement);
-    }
+      if (exerciseNameInput.matches("[data-exercise-title-name]")) {
+        renderCustomExerciseSuggestions(exerciseNameInput);
+      }
+      if (groupedCarousel?.dataset.customWorkoutGrouped === "true") {
+        const accessibleIndex = Number.isInteger(groupedIndex)
+          ? groupedIndex
+          : customWorkoutGroupedLogElements(groupedCarousel).indexOf(logElement);
+        renderCustomWorkoutGroupedExerciseKey(groupedCarousel);
+        refreshCustomWorkoutGroupedCopyWeights(groupedCarousel);
+        if (accessibleIndex >= 0) {
+          syncCustomWorkoutGroupedAccessibleNames(groupedCarousel, accessibleIndex, exerciseNameInput.value);
+        }
+      }
+      syncWorkoutExerciseList(logElement?.closest(".client-workout-panel"));
+      persistCustomWorkoutDraftForElement(logElement);
+      if (groupedCarousel?.dataset.customWorkoutGrouped !== "true") {
+        scheduleTrainingLogAutosave(logElement);
+      }
+    });
   });
 
   document.addEventListener("change", (event) => {
+    const exerciseNameInput = event.target.closest("[data-exercise-name-input]");
     const dateInput = event.target.closest("[data-log-date]");
+
+    if (exerciseNameInput) flushExerciseNameRefresh(exerciseNameInput);
 
     if (dateInput) {
       const logElement = dateInput.closest("[data-exercise-log]");
@@ -18222,6 +18286,11 @@ function handleWorkoutInteractions() {
       persistCustomWorkoutDraftForElement(logElement || dateInput);
       scheduleTrainingLogAutosave(logElement);
     }
+  });
+
+  document.addEventListener("focusout", (event) => {
+    const exerciseNameInput = event.target.closest("[data-exercise-name-input]");
+    if (exerciseNameInput) flushExerciseNameRefresh(exerciseNameInput);
   });
 
   document.addEventListener("focusin", (event) => {
@@ -18509,6 +18578,7 @@ function renderProgram(program) {
   renderCoachPreviewReturn(program);
   const assignedWorkouts = program.assignedWorkouts || (Array.isArray(program.workouts) ? program.workouts : []);
   currentProgram = { ...program, assignedWorkouts, workouts: WorkoutLayout.apply(assignedWorkouts, program.client_workout_layout) };
+  if (typeof invalidateExerciseSearchCaches === "function") invalidateExerciseSearchCaches();
   activeCustomWorkoutFormat = storedCustomWorkoutFormat();
   const displayProgram = displayProgramForCurrentView(program);
   const workouts = currentProgram.workouts;
@@ -18979,6 +19049,7 @@ async function loadDashboard() {
     clientDailyCheckinReady = progressResult.status === "fulfilled" && !progressResult.value.error
       && trainingLogResult.status === "fulfilled" && !trainingLogResult.value.error;
     exerciseLibraryEntries = exerciseLibraryData || [];
+    if (typeof invalidateExerciseSearchCaches === "function") invalidateExerciseSearchCaches();
     refreshExerciseMediaViews();
     workoutSessionFeedback = workoutFeedbackData || [];
 

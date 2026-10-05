@@ -65,7 +65,7 @@ function fixture(format = "single", assigned = false) {
     { exercise_name: "Squat", exercise_code: "B1", entry_date: "2026-09-12", set_number: 1, weight_used: 0, reps: 12 }
   ];
   const functions = [
-    "normalizeExerciseHistoryName", "currentExerciseHistoryName", "logsForExerciseDisplay",
+    "normalizeExerciseHistoryName", "currentExerciseHistoryName", "exerciseHistoryLookup", "logsForExerciseDisplay",
     "logKey", "logsForExercise", "updateExerciseLogField", "renderPreviousExerciseWeights",
     "normalizedSetType", "setTypeForRow", "customWorkoutGroupedRows", "customWorkoutGroupedCanonicalRow",
     "customWorkoutCarouselCards", "customWorkoutGroupedLogElements",

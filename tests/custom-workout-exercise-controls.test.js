@@ -339,6 +339,52 @@ test("typing Che offers chest word prefixes without crunches or unrelated fuzzy 
   assert.deepEqual(plain(context.customExerciseSuggestionMatches("")), []);
 });
 
+test("exercise search indexes are reused until source data changes", () => {
+  const library = [{ name: "Lat Pulldown", aliases: ["Pulldown"] }];
+  const historyLookup = () => new Map();
+  const context = evaluate([
+    "invalidateExerciseSearchCaches", "approvedExerciseForName", "exerciseSuggestionRecords"
+  ], {
+    exerciseLibraryEntries: library,
+    exerciseNameMatcher: null,
+    currentProgram: null,
+    trainingLogs: [{ exercise_name: "Goblet Squat", exercise_code: "A1" }],
+    warmupExerciseCode: "WARMUP", cardioExerciseCode: "CARDIO",
+    exerciseHistoryLookup: historyLookup
+  });
+
+  const first = context.exerciseSuggestionRecords();
+  assert.equal(context.exerciseSuggestionRecords(), first);
+  assert.equal(context.approvedExerciseForName(" pulldown ").name, "Lat Pulldown");
+  library.push({ name: "Cable Row", aliases: [] });
+  context.invalidateExerciseSearchCaches();
+  assert.notEqual(context.exerciseSuggestionRecords(), first);
+  assert.equal(context.approvedExerciseForName("Cable Row").name, "Cable Row");
+});
+
+test("exercise-name refreshes coalesce while typing and flush on demand", () => {
+  let nextTimer = 0;
+  const callbacks = new Map();
+  const cleared = [];
+  const window = {
+    setTimeout(callback) { const id = ++nextTimer; callbacks.set(id, callback); return id; },
+    clearTimeout(id) { cleared.push(id); callbacks.delete(id); }
+  };
+  const context = evaluate(["flushExerciseNameRefresh", "scheduleExerciseNameRefresh"], {
+    window,
+    exerciseNameRefreshTimers: new WeakMap(),
+    exerciseNameRefreshDelay: 120
+  });
+  const input = {};
+  const calls = [];
+  context.scheduleExerciseNameRefresh(input, () => calls.push("first"));
+  context.scheduleExerciseNameRefresh(input, () => calls.push("second"));
+  assert.deepEqual(cleared, [1]);
+  assert.equal(context.flushExerciseNameRefresh(input), true);
+  assert.deepEqual(calls, ["second"]);
+  assert.equal(context.flushExerciseNameRefresh(input), false);
+});
+
 test("custom builder renders muscles directly below the exercise name", () => {
   const menu = { innerHTML: "", hidden: true };
   const card = { classList: { toggle() {} } };
