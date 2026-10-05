@@ -68,7 +68,7 @@
   <link rel="stylesheet" href="/css/fwb-dark-theme.css?v=deep-forest-9" />
   <link rel="stylesheet" href="css/client-quarterly-goals.css?v=1" />
   <link rel="stylesheet" href="css/client-workout-hub.css?v=4" />
-  <link rel="stylesheet" href="css/client-home-community.css?v=3" />
+  <link rel="stylesheet" href="css/client-home-community.css?v=4" />
   <link rel="stylesheet" href="css/client-fascia-backgrounds.css?v=2" />
   <link rel="stylesheet" href="css/client-settings-navigation.css?v=2" />
   <link rel="stylesheet" href="css/client-light-theme.css?v=5" />
@@ -294,12 +294,26 @@
           <section class="client-community-connections" data-community-connections hidden aria-labelledby="client-community-connections-title">
             <h3 id="client-community-connections-title">Your connections</h3>
             <p>Connect by invitation. Both people must accept before your selected milestones are visible.</p>
-            <div data-community-join>
-              <label for="client-community-display-name">Display name</label>
-              <input id="client-community-display-name" maxlength="40" autocomplete="nickname" placeholder="Name your friends will see" />
+            <div data-community-profile hidden>
+              <label for="client-community-display-name">Nickname</label>
+              <input id="client-community-display-name" maxlength="40" autocomplete="nickname" placeholder="Nickname your friends will see" />
+              <fieldset class="client-community-avatar-picker"><legend>Choose an avatar</legend>
+                <button type="button" data-community-avatar="strength" aria-label="Strength avatar" aria-pressed="true">💪</button>
+                <button type="button" data-community-avatar="runner" aria-label="Runner avatar" aria-pressed="false">🏃</button>
+                <button type="button" data-community-avatar="cycling" aria-label="Cycling avatar" aria-pressed="false">🚴</button>
+                <button type="button" data-community-avatar="boxing" aria-label="Boxing avatar" aria-pressed="false">🥊</button>
+                <button type="button" data-community-avatar="yoga" aria-label="Yoga avatar" aria-pressed="false">🧘</button>
+                <button type="button" data-community-avatar="swimming" aria-label="Swimming avatar" aria-pressed="false">🏊</button>
+                <button type="button" data-community-avatar="martial" aria-label="Martial arts avatar" aria-pressed="false">🥋</button>
+                <button type="button" data-community-avatar="star" aria-label="Star avatar" aria-pressed="false">⭐</button>
+              </fieldset>
+            </div>
+            <div data-community-join hidden>
               <button type="button" data-community-join-button>Join Community</button>
             </div>
             <div data-community-member hidden>
+              <button type="button" data-community-profile-save>Save nickname and avatar</button>
+              <p><strong>Your props:</strong> <output data-community-own-props>0</output></p>
               <strong>Your invite code</strong>
               <div class="client-community-code-row"><output id="client-community-own-code"></output><button type="button" data-community-copy>Copy</button><button type="button" data-community-rotate>New code</button></div>
               <label for="client-community-invite-code">Enter a friend's invite code</label>
@@ -1247,7 +1261,7 @@
   <script src="js/workout-generator-dialog.js?v=4"></script>
   <script src="js/client-workout-plans.js?v=2"></script>
   <script src="js/client-community.js?v=2"></script>
-  <script src="js/client-community-connections.js?v=1"></script>
+  <script src="js/client-community-connections.js?v=2"></script>
   <script src="js/apple-health-sync.js?v=1"></script>
   <dialog id="client-quarter-goals-dialog" aria-labelledby="quarter-goal-dialog-title"></dialog>
   <dialog id="client-program-info-dialog" aria-labelledby="client-program-info-title">
