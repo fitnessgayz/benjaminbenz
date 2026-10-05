@@ -34,7 +34,8 @@
     "20261005012637_update_glute_machine_bulgarian_split_squat_media.sql",
     "20261005014515_update_belt_squat_media.sql",
     "20261005145002_update_45_degree_glute_hip_drive_media.sql",
-    "20261005151552_update_neutral_grip_lat_pulldown_media.sql"
+    "20261005151552_update_neutral_grip_lat_pulldown_media.sql",
+    "20261005154213_update_standing_cable_crunch_star_trac_media.sql"
   ],
   "nasmExerciseCatalogMigration": "20261001032427_add_complete_nasm_exercise_library.sql",
   "nasmExerciseCatalogCount": 75,
@@ -3111,6 +3112,34 @@
       "objectPath": "generated/2026-10-05/neutral-grip-lat-pulldown.mp4",
       "contentType": "video/mp4",
       "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-10-05/png/standing-cable-crunch-star-trac.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-10-05/png/standing-cable-crunch-star-trac.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-10-05/webp-480/standing-cable-crunch-star-trac.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-10-05/webp-480/standing-cable-crunch-star-trac.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-10-05/webp-768/standing-cable-crunch-star-trac.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-10-05/webp-768/standing-cable-crunch-star-trac.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-videos/generated/2026-10-05/standing-cable-crunch-star-trac.mp4",
+      "bucket": "exercise-videos",
+      "objectPath": "generated/2026-10-05/standing-cable-crunch-star-trac.mp4",
+      "contentType": "video/mp4",
+      "cacheControl": 31536000
     }
   ],
   "exerciseMedia": [
@@ -3910,6 +3939,11 @@
       "name": "Close-Grip Lat Pulldown",
       "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-10-05/webp-768/neutral-grip-lat-pulldown.webp",
       "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-videos/generated/2026-10-05/neutral-grip-lat-pulldown.mp4"
+    },
+    {
+      "name": "Cable Crunch",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-10-05/webp-768/standing-cable-crunch-star-trac.webp",
+      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-videos/generated/2026-10-05/standing-cable-crunch-star-trac.mp4"
     }
   ]
 }
