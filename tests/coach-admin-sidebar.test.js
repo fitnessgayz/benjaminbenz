@@ -109,14 +109,13 @@ test("desktop navigation stays light and keeps client tools only in the selected
   assert.match(adminSource, /button\.dataset\.clientMobileDestination === nextTab/);
 });
 
-test("mobile coach navigation keeps six stable destinations and moves secondary tools into More", () => {
-  assert.match(adminHtml, /data-admin-tab="home"[\s\S]*?href="coach-workout-log\.html"[\s\S]*?data-admin-tab="clients"[\s\S]*?data-admin-tab="inbox"[\s\S]*?data-coach-mobile-more-open/);
+test("mobile coach navigation keeps six stable destinations including Exercise Library", () => {
+  assert.match(adminHtml, /data-admin-tab="home"[\s\S]*?href="coach-workout-log\.html"[\s\S]*?data-admin-tab="clients"[\s\S]*?data-admin-tab="inbox"[\s\S]*?href="coach-exercise-library\.html"[\s\S]*?data-admin-tab="notifications"/);
   assert.match(styleSource, /@media \(max-width: 900px\)[\s\S]*?\.coach-admin-page \.admin-tabs\s*\{[^}]*overflow-x:\s*hidden[^}]*touch-action:\s*manipulation/s);
-  assert.match(styleSource, /@media \(max-width: 900px\)[\s\S]*?\.coach-admin-page \.admin-tab-mobile-more\s*\{[^}]*display:\s*flex !important/s);
-  assert.match(styleSource, /\.coach-admin-page \.admin-tabs \.admin-tab-exercise-library\s*\{[^}]*display:\s*none !important/s);
+  assert.match(styleSource, /@media \(max-width: 900px\)[\s\S]*?\.coach-admin-page \.admin-tab-mobile-more\s*\{[^}]*display:\s*none !important/s);
   assert.match(styleSource, /flex:\s*1 1 0 !important[^}]*min-width:\s*0 !important/s);
   assert.match(adminHtml, /data-admin-tab="notifications"[^>]*aria-label="Recent activity"[\s\S]*?<span class="admin-nav-label">Activity<\/span>/);
-  assert.match(adminHtml, /data-coach-mobile-more-destination="notifications"/);
+  assert.match(adminHtml, /href="coach-exercise-library\.html"[^>]*aria-label="Exercise library"/);
 });
 
 test("mobile Home uses a compact Settings shortcut with a corner activity badge", () => {
