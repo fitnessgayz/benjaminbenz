@@ -31,7 +31,8 @@
     "20261003200955_add_cable_glute_kickback_bench_media.sql",
     "20261004032702_client_saved_workout_plans.sql",
     "20261004035631_client_community_preferences.sql",
-    "20261005012637_update_glute_machine_bulgarian_split_squat_media.sql"
+    "20261005012637_update_glute_machine_bulgarian_split_squat_media.sql",
+    "20261005014515_update_belt_squat_media.sql"
   ],
   "nasmExerciseCatalogMigration": "20261001032427_add_complete_nasm_exercise_library.sql",
   "nasmExerciseCatalogCount": 75,
@@ -3024,6 +3025,34 @@
       "objectPath": "generated/2026-10-04/glute-squat-machine-bulgarian-split-squat.mp4",
       "contentType": "video/mp4",
       "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-10-04/png/belt-squat.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-10-04/png/belt-squat.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-10-04/webp-480/belt-squat.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-10-04/webp-480/belt-squat.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-10-04/webp-768/belt-squat.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-10-04/webp-768/belt-squat.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-videos/generated/2026-10-04/belt-squat.mp4",
+      "bucket": "exercise-videos",
+      "objectPath": "generated/2026-10-04/belt-squat.mp4",
+      "contentType": "video/mp4",
+      "cacheControl": 31536000
     }
   ],
   "exerciseMedia": [
@@ -3808,6 +3837,11 @@
       "name": "Glute Machine Bulgarian Split Squat",
       "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-10-04/webp-768/glute-squat-machine-bulgarian-split-squat.webp",
       "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-videos/generated/2026-10-04/glute-squat-machine-bulgarian-split-squat.mp4"
+    },
+    {
+      "name": "Belt Squat",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-10-04/webp-768/belt-squat.webp",
+      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-videos/generated/2026-10-04/belt-squat.mp4"
     }
   ]
 }
