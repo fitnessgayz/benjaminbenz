@@ -12,7 +12,7 @@
     },
     connections: {
       title: 'Train With Your People',
-      body: 'Connect with other clients by mutual invitation. Shared progress will require an accepted connection and each person’s permission.'
+      body: 'Exchange invite codes, accept connections, and choose whether to share XP and badges.'
     },
     challenges: {
       title: 'Move Together',
@@ -38,6 +38,13 @@
       });
       panel.querySelector('#client-community-feature-title').textContent = view.title;
       panel.querySelector('#client-community-feature-body').textContent = view.body;
+      const connections = panel.querySelector('[data-community-connections]');
+      const feature = panel.querySelector('.client-community-feature');
+      if (connections && feature) {
+        connections.hidden = name !== 'connections';
+        feature.hidden = name === 'connections';
+        if (name === 'connections') void root.FWB_COMMUNITY_CONNECTIONS?.refresh();
+      }
     }
 
     function setControls(disabled) {
@@ -75,7 +82,7 @@
         badges.checked = data?.badges_opt_in === true;
         progress.checked = data?.progress_opt_in === true;
         status.textContent = data
-          ? 'Your sharing choices are saved. Community rankings and connections are coming soon.'
+          ? 'Your sharing choices are saved. Accepted connections can see only what you enable.'
           : 'Your activity is private. Both sharing choices are off.';
         setControls(false);
       } catch (_) {
@@ -98,7 +105,8 @@
         if (request !== generation || owner !== userId) return;
         badges.checked = data.badges_opt_in === true;
         progress.checked = data.progress_opt_in === true;
-        status.textContent = 'Saved. You can change either choice any time. Community sharing is coming soon.';
+        status.textContent = 'Saved. You can change either choice any time.';
+        void root.FWB_COMMUNITY_CONNECTIONS?.refresh();
       } catch (_) {
         if (request === generation && owner === userId) status.textContent = 'Could not save your sharing choices. Please try again.';
       } finally {
@@ -107,7 +115,7 @@
       }
     }
 
-    showView('leaderboard');
+    showView('connections');
     setControls(true);
     return { configure(nextClient, nextUserId, isPreview) {
       const id = String(nextUserId || '').trim();
