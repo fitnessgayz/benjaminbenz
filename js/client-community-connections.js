@@ -1,6 +1,8 @@
 /* Invite-only Community connections. Raw training and health records are never queried here. */
 (function attachCommunityConnections(root) {
   'use strict';
+  const avatars = { strength: '💪', runner: '🏃', cycling: '🚴', boxing: '🥊',
+    yoga: '🧘', swimming: '🏊', martial: '🥋', star: '⭐' };
 
   function achievementProjection(snapshot) {
     if (!snapshot || !Number.isFinite(snapshot.xp) || !Array.isArray(snapshot.badges)) return null;
@@ -16,13 +18,17 @@
     if (!panel) return { configure() {}, refresh() {}, syncAchievements() {} };
     const join = panel.querySelector('[data-community-join]');
     const member = panel.querySelector('[data-community-member]');
+    const profileEditor = panel.querySelector('[data-community-profile]');
     const nameInput = panel.querySelector('#client-community-display-name');
+    const avatarButtons = Array.from(panel.querySelectorAll('[data-community-avatar]'));
+    const ownProps = panel.querySelector('[data-community-own-props]');
     const codeOutput = panel.querySelector('#client-community-own-code');
     const codeInput = panel.querySelector('#client-community-invite-code');
     const list = panel.querySelector('[data-community-connection-list]');
     const status = panel.querySelector('[data-community-connection-status]');
     let client = null, userId = '', preview = false, generation = 0;
     let profile = null, preferences = null, snapshot = null, published = '', busy = false;
+    let selectedAvatar = 'strength';
 
     const current = (id, version) => id === userId && version === generation;
     const message = text => { status.textContent = text; };
@@ -32,6 +38,11 @@
       if (className) node.className = className;
       return node;
     };
+    function chooseAvatar(id) {
+      selectedAvatar = Object.hasOwn(avatars, id) ? id : 'strength';
+      avatarButtons.forEach(button => button.setAttribute('aria-pressed', String(button.dataset.communityAvatar === selectedAvatar)));
+    }
+    avatarButtons.forEach(button => button.addEventListener('click', () => chooseAvatar(button.dataset.communityAvatar)));
 
     async function publish() {
       const projection = achievementProjection(snapshot);
@@ -46,7 +57,7 @@
       if (error && current(id, version)) message('Your achievements could not be shared yet. Try opening Community again.');
     }
 
-    function renderConnections(connections, profiles, achievements) {
+    function renderConnections(connections, profiles, achievements, props) {
       list.replaceChildren();
       if (!connections.length) {
         list.append(field('p', 'No invitations yet. Share your code or enter a friend’s code.'));
@@ -54,8 +65,10 @@
       }
       for (const connection of connections) {
         const peer = connection.user_a === userId ? connection.user_b : connection.user_a;
-        const name = profiles.get(peer)?.display_name || 'Community member';
+        const peerProfile = profiles.get(peer);
+        const name = peerProfile?.display_name || 'Community member';
         const card = field('article', '', 'client-community-connection');
+        card.append(field('span', avatars[peerProfile?.avatar_id] || avatars.strength, 'client-community-avatar'));
         card.append(field('strong', name));
         const incoming = connection.status === 'pending' && connection.requested_by !== userId;
         const statusLabel = connection.status === 'accepted' ? 'Connected' : incoming ? 'Invitation received' : 'Invitation sent';
@@ -80,6 +93,15 @@
           card.append(field('p', 'Milestones are private until this member chooses to share them.'));
         }
         const actions = field('div', '', 'client-community-connection-actions');
+        if (connection.status === 'accepted') {
+          const summary = props.get(peer);
+          card.append(field('small', `${summary?.received_count || 0} props received`));
+          const give = field('button', summary?.sent_today ? 'Props sent today' : 'Give props 👏');
+          give.type = 'button';
+          give.disabled = Boolean(summary?.sent_today);
+          give.addEventListener('click', () => void giveProps(peer));
+          actions.append(give);
+        }
         if (incoming) {
           const accept = field('button', 'Accept');
           accept.type = 'button';
@@ -111,11 +133,16 @@
         if (!current(id, version)) return;
         profile = profileResult.data;
         preferences = preferenceResult.data;
+        profileEditor.hidden = false;
         join.hidden = Boolean(profile);
         member.hidden = !profile;
-        if (!profile) { list.replaceChildren(); message('Join Community to exchange invitations.'); return; }
+        if (!profile) {
+          list.replaceChildren(); chooseAvatar('strength');
+          message('Choose a nickname and avatar to join Community.'); return;
+        }
         codeOutput.textContent = profile.invite_code;
         nameInput.value = profile.display_name;
+        chooseAvatar(profile.avatar_id);
         const { data: rows, error: connectionError } = await client.from('client_community_connections')
           .select('id,user_a,user_b,requested_by,status').or(`user_a.eq.${id},user_b.eq.${id}`);
         if (connectionError) throw connectionError;
@@ -123,14 +150,17 @@
         const peerIds = connections.map(row => row.user_a === id ? row.user_b : row.user_a);
         const acceptedIds = connections.filter(row => row.status === 'accepted')
           .map(row => row.user_a === id ? row.user_b : row.user_a);
-        const [profilePeers, shared] = await Promise.all([
-          peerIds.length ? client.from('client_community_profiles').select('user_id,display_name').in('user_id', peerIds) : { data: [], error: null },
-          acceptedIds.length ? client.rpc('community_shared_progress') : { data: [], error: null }
+        const [profilePeers, shared, propsResult] = await Promise.all([
+          peerIds.length ? client.from('client_community_profiles').select('user_id,display_name,avatar_id').in('user_id', peerIds) : { data: [], error: null },
+          acceptedIds.length ? client.rpc('community_shared_progress') : { data: [], error: null },
+          client.rpc('community_props_summary')
         ]);
-        if (profilePeers.error || shared.error) throw profilePeers.error || shared.error;
+        if (profilePeers.error || shared.error || propsResult.error) throw profilePeers.error || shared.error || propsResult.error;
         if (!current(id, version)) return;
+        const props = new Map((propsResult.data || []).map(row => [row.user_id, row]));
+        ownProps.textContent = String(props.get(id)?.received_count || 0);
         renderConnections(connections, new Map((profilePeers.data || []).map(row => [row.user_id, row])),
-          new Map((shared.data || []).map(row => [row.user_id, row])));
+          new Map((shared.data || []).map(row => [row.user_id, row])), props);
         message('Only accepted connections can see milestones you choose to share.');
         void publish();
       } catch (_) {
@@ -161,11 +191,32 @@
     function changeConnection(rpc, connectionId) {
       void perform(() => client.rpc(rpc, { p_connection_id: connectionId }), 'Connection updated.');
     }
+    async function giveProps(peer) {
+      if (busy || !client || !userId || preview) return;
+      busy = true; message('Sending props…');
+      const id = userId;
+      try {
+        const { data, error } = await client.rpc('community_give_props', { p_receiver_id: peer });
+        if (error) throw error;
+        if (id !== userId) return;
+        await refresh();
+        message(data ? 'Props sent!' : 'You already sent props today.');
+      } catch (_) {
+        if (id === userId) message('Could not send props. Please try again.');
+      } finally { busy = false; }
+    }
 
     panel.querySelector('[data-community-join-button]').addEventListener('click', () => {
       const name = nameInput.value.trim();
-      if (name.length < 2 || name.length > 40) { message('Use a display name between 2 and 40 characters.'); return; }
-      void perform(() => client.from('client_community_profiles').insert({ user_id: userId, display_name: name }), 'Welcome to Community.');
+      if (name.length < 2 || name.length > 40) { message('Use a nickname between 2 and 40 characters.'); return; }
+      void perform(() => client.from('client_community_profiles')
+        .insert({ user_id: userId, display_name: name, avatar_id: selectedAvatar }), 'Welcome to Community.');
+    });
+    panel.querySelector('[data-community-profile-save]').addEventListener('click', () => {
+      const name = nameInput.value.trim();
+      if (name.length < 2 || name.length > 40) { message('Use a nickname between 2 and 40 characters.'); return; }
+      void perform(() => client.from('client_community_profiles')
+        .update({ display_name: name, avatar_id: selectedAvatar }).eq('user_id', userId), 'Profile updated.');
     });
     panel.querySelector('[data-community-invite]').addEventListener('click', () => {
       const code = codeInput.value.trim().toUpperCase();
@@ -202,7 +253,7 @@
         generation++;
         client = nextClient; userId = String(nextUserId || ''); preview = Boolean(isPreview);
         profile = null; preferences = null; snapshot = null; published = '';
-        join.hidden = true; member.hidden = true; list.replaceChildren();
+        profileEditor.hidden = true; join.hidden = true; member.hidden = true; list.replaceChildren();
         if (preview) { message('Connections are available only when the client signs in.'); return; }
         if (!client || !userId) { message('Sign in to join Community.'); return; }
         void refresh();
