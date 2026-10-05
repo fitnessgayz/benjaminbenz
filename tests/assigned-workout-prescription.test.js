@@ -118,9 +118,10 @@ const carouselFixture = (logs, assigned = true, format = "superset") => ({
 test("logger agrees with preview for multiplication signs, ranges, explicit sets and supported count limits", () => {
   const context = api();
   for (const [prescription, sets, reps] of [
-    ["5×6–8", 5, ["6–8"]], ["4 × 6–8", 4, ["6–8"]], ["5x6-8", 5, ["6-8"]],
+    ["5×6–8", 5, ["6–8"]], ["4 × 6–8", 4, ["6–8"]], ["5x6-8", 5, ["6–8"]],
     ["6–8 reps x 5 sets", 5, ["6–8"]], ["4 sets x 6–8", 4, ["6–8"]],
-    ["12, 10, 8 reps x 3 sets", 3, ["12", "10", "8"]], ["4 × 6–8/side", 4, ["6–8/side"]]
+    ["12, 10, 8 reps x 3 sets", 3, ["12", "10", "8"]], ["4 × 6–8/side", 4, ["6–8/side"]],
+    ["8-12 each x 3 sets", 3, ["8–12 each"]]
   ]) {
     assert.equal(context.setCountFromPrescription(prescription), sets, prescription);
     assert.equal(Number(WorkoutLayout.prescription(prescription).sets), sets);
@@ -132,6 +133,23 @@ test("logger agrees with preview for multiplication signs, ranges, explicit sets
   for (const prescription of ["3 × 30–45 seconds", "45 sec x 3 sets", "3 × AMRAP", "AMRAP"]) {
     assert.deepEqual(plain(context.repTargetsFromPrescription(prescription)), [], "Time and effort instructions must not become numeric reps");
   }
+});
+
+test("trainer, saved plan, and generated workout targets appear as gray guidance in empty rep fields", () => {
+  const context = api();
+  for (const prescription of ["4 sets x 6–8 reps", "6-8 reps x 4 sets", "4 × 6–8"]) {
+    const rows = rowsFromMarkup(context.setRows({ prescription }, 4));
+    const workingRows = rows.filter((row) => row.dataset.setType === "working");
+    assert.equal(workingRows.length, 4);
+    workingRows.forEach((row) => {
+      assert.equal(row.fields.reps.value, "");
+      assert.equal(row.fields.reps.placeholder, "6–8");
+    });
+  }
+  const generated = logFixture(context, "8-12 reps x 3 sets", { assigned: false });
+  assert.deepEqual(working(generated).map((row) => row.fields.reps.placeholder), ["8–12", "8–12", "8–12"]);
+  assert.ok(rowsFromMarkup(context.setRows({ prescription: "30 sec x 3 sets" }, 3))
+    .every((row) => row.fields.reps.placeholder === ""));
 });
 
 test("real assigned exercise markup initializes five or four working sets plus one separate warm-up", () => {

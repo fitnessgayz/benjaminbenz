@@ -157,6 +157,31 @@ test("personal-best weight is independent of selected date while reps remain his
   assert.equal(f.carousel.visibleRows[0].fields.reps.placeholder, "0");
 });
 
+test("generated and today's workouts keep the exercise PR as the empty weight hint", () => {
+  const f = fixture();
+  const log = f.carousel.logs[0];
+  log.dataset.generatedExercise = "true";
+  log.dataset.exercisePrescription = "8–12 reps x 3 sets";
+  for (const source of ["generated plan", "today's workout"]) {
+    log.dataset.generatedFrom = source;
+    f.updateSetHistoryPlaceholders(log);
+    assert.equal(log.rows[0].fields.weight.value, "");
+    assert.equal(log.rows[0].fields.weight.placeholder, "225");
+    assert.match(log.rows[0].fields.weight.attributes["aria-description"], /Personal best: 225 lb/);
+  }
+});
+
+test("previous workout weight remains a hint when no valid personal best exists", () => {
+  const f = fixture();
+  const log = f.carousel.logs[0];
+  const previous = { exercise_name: "Bench Press", exercise_code: "A1", entry_date: "2026-09-10", set_number: 1, weight_used: 135, reps: null };
+  f.history.splice(0, f.history.length, previous);
+  f.updateSetHistoryPlaceholders(log);
+  assert.equal(log.rows[0].fields.weight.value, "");
+  assert.equal(log.rows[0].fields.weight.placeholder, "135");
+  assert.equal(log.rows[0].fields.weight.attributes["aria-description"], undefined);
+});
+
 test("a record saved today replaces a previous record without changing typed values", () => {
   const f = fixture("superset");
   const bench = f.carousel.logs[0];

@@ -5155,9 +5155,10 @@ function setCountFromPrescription(prescription) {
 
 function repTargetsFromPrescription(prescription) {
   const target = WorkoutLayout.prescription(prescription).reps;
-  const targets = target.split(",").map((rep) => rep.trim().replace(/\s/g, "")).filter(Boolean);
+  const targets = target.split(",").map((rep) => rep.trim().replace(/\s+/g, " ")).filter(Boolean);
   // Timed holds and free-form instructions are displayed as targets, not reps.
-  return targets.length && targets.every((rep) => /^\d+(?:[-–—−]\d+)?(?:\/side)?$/.test(rep)) ? targets : [];
+  return targets.length && targets.every((rep) => /^\d+(?:\s*[-–—−]\s*\d+)?(?:\s*(?:\/side|each))?$/i.test(rep))
+    ? targets.map((rep) => rep.replace(/\s*[-—−]\s*/, "–")) : [];
 }
 
 function repsFromPrescription(prescription) {
@@ -13553,10 +13554,12 @@ function personalBestWeightLog(logs) {
   return logs.reduce((heaviestLog, log) => {
     const rawWeight = log.weight_used;
     const weight = Number(rawWeight);
+    const reps = Number(log.reps);
     const code = String(log.exercise_code || "").trim().toUpperCase();
     const isWorkingSet = Boolean(log.entry_date) &&
       ![warmupExerciseCode, cardioExerciseCode].includes(code) &&
-      normalizedSetType(log.set_type, log.set_number) !== warmUpSetType;
+      normalizedSetType(log.set_type, log.set_number) === workingSetType &&
+      Number.isFinite(reps) && reps > 0;
 
     if (
       !isWorkingSet ||
@@ -13631,7 +13634,7 @@ function updateSetHistoryPlaceholders(logElement, logs = logsForExerciseDisplay(
 
     if (weightInput) {
       weightInput.placeholder = historyPlaceholder(
-        (setType === warmUpSetType ? previousLog : best)?.weight_used,
+        (setType === warmUpSetType ? previousLog : best || previousLog)?.weight_used,
         weightInput.dataset.defaultPlaceholder || "0"
       );
       const hint = setType !== warmUpSetType && best
