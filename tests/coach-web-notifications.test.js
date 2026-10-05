@@ -29,19 +29,19 @@ test("keeps Home first and adds a coach Settings destination", () => {
   const navigation = adminHtml.slice(navigationStart, navigationEnd);
   const home = navigation.indexOf('data-admin-tab="home"');
   const sessionLogger = navigation.indexOf('href="coach-workout-log.html"');
-  const sessionsTab = navigation.indexOf('data-admin-tab="sessions"');
+  const inboxTab = navigation.indexOf('data-admin-tab="inbox"');
   const settingsTab = navigation.indexOf('data-admin-tab="notifications"');
 
   assert.ok(home >= 0);
   assert.ok(sessionLogger >= 0);
   assert.ok(home < sessionLogger);
-  assert.ok(settingsTab > sessionsTab);
+  assert.ok(settingsTab > inboxTab);
   assert.equal(settingsTab, navigation.lastIndexOf("data-admin-tab="));
   assert.match(navigation, /data-admin-tab="notifications"[^>]*aria-label="Settings"/);
   assert.match(navigation, /admin-nav-settings-icon/);
   assert.match(navigation, /<span class="admin-nav-label">Settings<\/span>/);
   assert.doesNotMatch(navigation, /data-web-notification-unread/);
-  assert.match(adminHtml, /data-coach-home-notifications[\s\S]*?data-web-notification-unread/);
+  assert.match(adminHtml, /data-coach-home-settings[\s\S]*?data-web-notification-unread/);
 });
 
 test("Settings panel keeps every notification feature together", () => {
@@ -51,7 +51,8 @@ test("Settings panel keeps every notification feature together", () => {
 
   assert.ok(panelStart >= 0);
   assert.match(settingsPanel, /<p class="kicker">Settings<\/p>/);
-  assert.match(settingsPanel, /<h2 id="coach-notification-title">Notification settings<\/h2>/);
+  assert.match(settingsPanel, /<h2 id="coach-notification-title">Coach settings<\/h2>/);
+  assert.match(settingsPanel, /<h3 id="coach-notification-inbox-title">Recent activity<\/h3>/);
   assert.match(settingsPanel, /data-web-notification-enable/);
   assert.match(settingsPanel, /data-web-notification-test[^>]*disabled/);
   assert.match(settingsPanel, /data-web-notification-status[^>]*role="status"[^>]*aria-live="polite"/);
@@ -117,10 +118,10 @@ test("coach notification settings stay compact and stack on narrow screens", () 
   assert.match(styleSource, /\.admin-nav-unread-count\s*\{[^}]*position:\s*absolute/s);
 });
 
-test("mobile Home exposes notification status in a dismissible overlay", () => {
-  assert.match(adminHtml, /data-coach-home-notifications[\s\S]*?data-web-notification-unread/);
+test("mobile Home exposes Settings and recent activity in a dismissible overlay", () => {
+  assert.match(adminHtml, /data-coach-home-settings[\s\S]*?data-web-notification-unread/);
   assert.match(adminHtml, /data-coach-notification-close/);
-  assert.match(adminSource, /notificationButton\?\.addEventListener\("click", \(\) => setAdminTab\("notifications"\)\)/);
+  assert.match(adminSource, /settingsButton\?\.addEventListener\("click", \(\) => setAdminTab\("notifications"\)\)/);
   assert.match(adminSource, /notificationClose\?\.addEventListener\("click"[\s\S]*?setAdminTab\("home"\)/);
   assert.match(styleSource, /\.admin-workspace\[data-active-tab="notifications"\]::before/);
   assert.match(styleSource, /\.coach-notification-panel:not\(\[hidden\]\)\s*\{[^}]*position:\s*fixed[^}]*z-index:\s*1100/s);

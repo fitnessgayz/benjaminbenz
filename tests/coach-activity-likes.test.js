@@ -197,7 +197,7 @@ test("customer-facing reaction copy uses props without renaming stable database 
 });
 
 test("shared branding exposes activity likes on responsive web surfaces", () => {
-  assert.match(coach, /Recent client activity/);
+  assert.match(coach, /Recent activity/);
   assert.match(coach, /data-web-notification-preference="client_achievements"/);
   assert.match(coach, /web-notifications\.js\?v=coach-activity-likes-5/);
   assert.match(client, /Coach replies, props \+ form reviews/);

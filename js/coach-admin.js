@@ -6212,7 +6212,7 @@ function handleCoachHomeActions() {
 function handleCoachMobileNavigation() {
   const moreButton = document.querySelector("[data-coach-mobile-more-open]");
   const moreDialog = document.querySelector("[data-coach-mobile-more-dialog]");
-  const notificationButton = document.querySelector("[data-coach-home-notifications]");
+  const settingsButton = document.querySelector("[data-coach-home-settings]");
   const notificationClose = document.querySelector("[data-coach-notification-close]");
   let moreReturnFocus = null;
 
@@ -6245,10 +6245,10 @@ function handleCoachMobileNavigation() {
     });
   });
 
-  notificationButton?.addEventListener("click", () => setAdminTab("notifications"));
+  settingsButton?.addEventListener("click", () => setAdminTab("notifications"));
   notificationClose?.addEventListener("click", () => {
     setAdminTab("home");
-    window.requestAnimationFrame(() => notificationButton?.focus({ preventScroll: true }));
+    window.requestAnimationFrame(() => settingsButton?.focus({ preventScroll: true }));
   });
 
   document.querySelectorAll("[data-client-mobile-destination]").forEach((button) => {

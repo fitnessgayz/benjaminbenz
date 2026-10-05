@@ -66,12 +66,14 @@ test("keeps Session logger as the first coach navigation link", () => {
   const navigationIndex = adminHtml.indexOf('id="coach-admin-sidebar-nav"');
   const clientsIndex = adminHtml.indexOf('data-admin-tab="clients"');
   const loggerIndex = adminHtml.indexOf('href="coach-workout-log.html"');
-  const profileIndex = adminHtml.indexOf('data-admin-tab="profile"');
 
   assert.ok(navigationIndex >= 0);
   assert.ok(loggerIndex > navigationIndex);
   assert.ok(clientsIndex > loggerIndex);
-  assert.ok(profileIndex > loggerIndex);
+  assert.doesNotMatch(
+    adminHtml.slice(navigationIndex, adminHtml.indexOf("</nav>", navigationIndex)),
+    /data-admin-tab="(?:profile|program|workouts|nutrition|progress|notes|logs|sessions)"/
+  );
 });
 
 test("matches the custom workout card per-set controls and actions", () => {

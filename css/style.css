@@ -17057,14 +17057,6 @@ body.client-dashboard-page.is-loading > :is(.client-dashboard-tabs,
 }
 
 @media (min-width: 901px) {
-  .coach-admin-page .admin-tab[data-admin-tab="profile"],
-  .coach-admin-page .admin-tab[data-admin-tab="program"],
-  .coach-admin-page .admin-tab[data-admin-tab="workouts"],
-  .coach-admin-page .admin-tab[data-admin-tab="nutrition"],
-  .coach-admin-page .admin-tab[data-admin-tab="progress"],
-  .coach-admin-page .admin-tab[data-admin-tab="notes"],
-  .coach-admin-page .admin-tab[data-admin-tab="logs"],
-  .coach-admin-page .admin-tab[data-admin-tab="sessions"],
   .coach-admin-page .admin-nav-group-title {
     display: none !important;
   }
@@ -17324,7 +17316,9 @@ body.client-dashboard-page.is-loading > :is(.client-dashboard-tabs,
     min-height: var(--coach-mobile-dock-height);
     padding: 7px max(8px, env(safe-area-inset-right)) calc(6px + env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
     overflow: visible;
-    transform: none;
+    transform: translate3d(0, 0, 0);
+    backface-visibility: hidden;
+    contain: layout paint;
     background: rgba(247, 248, 245, .64) !important;
     border: 0 !important;
     border-top: 1px solid rgba(255, 255, 255, .72) !important;
@@ -17343,20 +17337,22 @@ body.client-dashboard-page.is-loading > :is(.client-dashboard-tabs,
   .coach-admin-page .admin-tabs {
     display: flex;
     align-items: stretch;
+    justify-content: stretch;
     width: 100%;
     max-height: none;
     gap: 0;
     padding: 0;
-    overflow-x: auto;
+    overflow-x: hidden;
     overflow-y: hidden;
-    overscroll-behavior-x: contain;
-    scroll-padding-inline: 8px;
-    scroll-snap-type: x proximity;
-    touch-action: pan-x;
+    touch-action: manipulation;
     scrollbar-width: none;
   }
 
   .coach-admin-page .admin-tab-mobile-more {
+    display: flex !important;
+  }
+
+  .coach-admin-page .admin-tabs :is(.admin-tab-exercise-library, .admin-tab[data-admin-tab="notifications"]) {
     display: none !important;
   }
 
@@ -17364,11 +17360,11 @@ body.client-dashboard-page.is-loading > :is(.client-dashboard-tabs,
   .coach-admin-page .admin-workspace.is-sidebar-collapsed .admin-tab {
     position: relative;
     display: flex !important;
-    flex: 0 0 82px !important;
+    flex: 1 1 0 !important;
     flex-direction: column;
-    width: 82px !important;
-    min-width: 82px !important;
-    max-width: 82px !important;
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: none !important;
     min-height: 64px !important;
     align-items: center;
     justify-content: center;
@@ -17383,7 +17379,6 @@ body.client-dashboard-page.is-loading > :is(.client-dashboard-tabs,
     font-size: .63rem !important;
     line-height: 1 !important;
     text-align: center;
-    scroll-snap-align: center;
   }
 
   .coach-admin-page .admin-tab::after {
@@ -17593,10 +17588,10 @@ body.client-dashboard-page.is-loading > :is(.client-dashboard-tabs,
 
   .coach-admin-page .admin-tab,
   .coach-admin-page .admin-workspace.is-sidebar-collapsed .admin-tab {
-    flex-basis: 78px !important;
-    width: 78px !important;
-    min-width: 78px !important;
-    max-width: 78px !important;
+    flex-basis: 0 !important;
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: none !important;
     min-height: 63px !important;
     padding: 4px 1px 8px !important;
   }
