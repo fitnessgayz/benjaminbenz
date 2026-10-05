@@ -7,8 +7,8 @@
   "scope": "/",
   "display": "standalone",
   "display_override": ["standalone", "minimal-ui"],
-  "background_color": "#050806",
-  "theme_color": "#050806",
+  "background_color": "#030D1C",
+  "theme_color": "#030D1C",
   "categories": ["business", "fitness", "productivity"],
   "shortcuts": [
     {
