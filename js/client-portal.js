@@ -7900,6 +7900,15 @@ function workoutCompletionSharePromptMarkup() {
           <button type="button" data-workout-share-dismiss aria-label="Close workout sharing prompt">×</button>
         </header>
         <section class="achievement-celebration" data-workout-achievements aria-label="New workout achievements" hidden></section>
+        <fieldset class="workout-completion-share-options">
+          <legend>Choose what to share</legend>
+          <label><input type="checkbox" data-workout-share-option="workout"> Workout details and stats</label>
+          <label><input type="checkbox" data-workout-share-option="weekly"> Weekly workout count</label>
+          <label><input type="checkbox" data-workout-share-option="badges"> Earned badges</label>
+          <label><input type="checkbox" data-workout-share-option="visits"> Gym visit count</label>
+          <label><input type="checkbox" data-workout-share-option="total"> Total workouts</label>
+          <label><input type="checkbox" data-workout-share-option="apple"> Apple Workout stats</label>
+        </fieldset>
         <article class="workout-completion-share-card" aria-label="Workout completion share preview">
           <span class="workout-completion-share-brand">FWB</span>
           <p data-workout-share-state>Workout complete</p>
@@ -7910,6 +7919,7 @@ function workoutCompletionSharePromptMarkup() {
             <span><strong data-workout-share-exercises>0</strong><small data-workout-share-count-label>Exercises</small></span>
             <span><strong data-workout-share-week>0 workouts</strong><small data-workout-share-week-label>This week</small></span>
           </div>
+          <div class="workout-completion-share-milestones" data-workout-share-milestones hidden></div>
           <div class="workout-completion-share-apple" data-workout-share-apple-stats hidden>
             <small>Apple Workout</small>
             <div class="workout-completion-share-apple-metrics" data-workout-share-apple-metrics></div>
@@ -7921,7 +7931,7 @@ function workoutCompletionSharePromptMarkup() {
           </div>
           <strong class="workout-completion-share-praise" data-workout-share-praise>Strong work. You showed up.</strong>
         </article>
-        <p class="workout-completion-share-copy">Open your phone’s share menu to post this achievement to any available social app.</p>
+        <p class="workout-completion-share-copy">Your card is private until you tap Share. Preview the information above before opening your phone’s share menu.</p>
         <p class="workout-completion-share-status" data-workout-share-status aria-live="polite"></p>
         <div class="workout-completion-share-actions">
           <button class="workout-completion-share-button" type="button" data-workout-share>Share workout</button>
@@ -7931,6 +7941,79 @@ function workoutCompletionSharePromptMarkup() {
       </section>
     </div>
   `;
+}
+
+let workoutSharePreviewRevision = 0;
+
+function selectedWorkoutShareSummary(overlay, summary) {
+  const enabled = name => Boolean(overlay.querySelector(`[data-workout-share-option="${name}"]`)?.checked);
+  const options = {
+    workout: enabled("workout"), weekly: enabled("weekly"), badges: enabled("badges"),
+    visits: enabled("visits"), total: enabled("total"), apple: enabled("apple")
+  };
+  return { ...summary, shareOptions: options,
+    appleWorkout: options.apple ? summary.appleWorkout : null,
+    gymVisitCount: options.visits ? summary.gymVisitCount : null };
+}
+
+async function loadWorkoutShareGymVisits(summary) {
+  const email = activeClientEmail;
+  if (!email || !supabaseClient || isCoachDashboardPreview) throw new Error("Gym visits are unavailable.");
+  const { count, error } = await supabaseClient.from("client_gym_checkins")
+    .select("entry_date", { count: "exact", head: true }).eq("client_email", email);
+  if (error || activeClientEmail !== email || pendingWorkoutCompletionShare !== summary) throw new Error("Gym visits could not be loaded.");
+  summary.gymVisitCount = count ?? 0;
+  return summary.gymVisitCount;
+}
+
+function refreshWorkoutSharePreview(overlay, summary) {
+  if (pendingWorkoutCompletionShare !== summary) return;
+  const selected = selectedWorkoutShareSummary(overlay, summary);
+  const metrics = window.FWBWorkoutShareCard?.metrics(selected) || { durationLabel: "—", timeLabel: "Workout time", weekLabel: "This week", appleMetrics: [] };
+  overlay.querySelector("[data-workout-share-duration]").textContent = metrics.durationLabel;
+  overlay.querySelector("[data-workout-share-time-label]").textContent = metrics.timeLabel;
+  overlay.querySelector("[data-workout-share-state]").textContent = selected.shareOptions.workout ? (summary.isComplete ? "Workout complete" : "Workout saved") : "My progress";
+  overlay.querySelector("[data-workout-share-workout-title]").textContent = selected.shareOptions.workout ? summary.title : "Progress in motion";
+  overlay.querySelector("[data-workout-share-date]").hidden = !selected.shareOptions.workout;
+  const metricGrid = overlay.querySelector(".workout-completion-share-metrics");
+  metricGrid.hidden = !selected.shareOptions.workout && !selected.shareOptions.weekly;
+  metricGrid.style.gridTemplateColumns = selected.shareOptions.workout && selected.shareOptions.weekly
+    ? "repeat(3,minmax(0,1fr))" : selected.shareOptions.workout ? "repeat(2,minmax(0,1fr))" : "1fr";
+  overlay.querySelector("[data-workout-share-duration]").closest("span").hidden = !selected.shareOptions.workout;
+  overlay.querySelector("[data-workout-share-exercises]").closest("span").hidden = !selected.shareOptions.workout;
+  overlay.querySelector("[data-workout-share-week]").closest("span").hidden = !selected.shareOptions.weekly;
+  overlay.querySelector("[data-workout-share-apple-stats]").hidden = !selected.shareOptions.apple || !metrics.appleMetrics.length;
+  const hasMilestones = selected.shareOptions.total && summary.totalWorkouts != null ||
+    selected.shareOptions.visits && summary.gymVisitCount != null ||
+    selected.shareOptions.badges && summary.earnedBadges?.length;
+  overlay.querySelector(".workout-completion-share-exercises").hidden = !selected.shareOptions.workout || Boolean(hasMilestones);
+  overlay.querySelector("[data-workout-share-praise]").textContent = selected.shareOptions.workout
+    ? summary.isComplete === false ? "Your session is saved." : "Strong work. You showed up."
+    : "Keep showing up.";
+  const milestones = overlay.querySelector("[data-workout-share-milestones]");
+  const items = [];
+  if (selected.shareOptions.total && Number.isFinite(summary.totalWorkouts)) items.push(`<span><strong>${summary.totalWorkouts}</strong><small>Total workouts</small></span>`);
+  if (selected.shareOptions.visits && Number.isFinite(summary.gymVisitCount)) items.push(`<span><strong>${summary.gymVisitCount}</strong><small>Gym visits</small></span>`);
+  if (selected.shareOptions.badges) (summary.earnedBadges || []).slice(0, 2).forEach(badge => items.push(`<span><strong>✦ ${escapeHtml(badge)}</strong><small>Earned badge</small></span>`));
+  milestones.innerHTML = items.join("");
+  milestones.hidden = !items.length;
+  const revision = ++workoutSharePreviewRevision;
+  const button = overlay.querySelector("[data-workout-share]");
+  button.disabled = true;
+  button.textContent = "Preparing image…";
+  overlay.querySelector("[data-workout-share-status]").textContent = "Preparing your selected card…";
+  if (selected.shareOptions.visits && summary.gymVisitCount == null) {
+    overlay.querySelector("[data-workout-share-status]").textContent = "Loading gym visits…";
+    return;
+  }
+  Promise.resolve(workoutCompletionShareImage(selected)).catch(() => null).then(file => {
+    if (pendingWorkoutCompletionShare !== summary || revision !== workoutSharePreviewRevision) return;
+    pendingWorkoutCompletionShareFile = file;
+    button.disabled = false;
+    button.textContent = "Share this card";
+    overlay.querySelector("[data-workout-share-status]").textContent = summary.gymVisitError ||
+      (file ? "" : "The image couldn’t be prepared. You can still share the selected details as text.");
+  });
 }
 
 function ensureWorkoutCompletionSharePrompt() {
@@ -7955,6 +8038,13 @@ function openWorkoutCompletionSharePrompt(summary, returnFocus = null, achieveme
   };
 
   pendingWorkoutCompletionShare = summary;
+  const snapshot = typeof clientAchievementSnapshot === "function" ? clientAchievementSnapshot() : null;
+  summary.earnedBadges = (snapshot?.badges || []).filter(badge => badge.unlocked)
+    .sort((a, b) => String(b.earnedOn || "").localeCompare(String(a.earnedOn || "")))
+    .slice(0, 2).map(badge => badge.title);
+  summary.totalWorkouts = snapshot?.workouts ?? null;
+  summary.gymVisitCount = null;
+  summary.gymVisitError = "";
   const celebration = overlay.querySelector("[data-workout-achievements]");
   if (celebration) {
     celebration.innerHTML = window.FWB_ACHIEVEMENTS_UI?.celebrationMarkup(achievements) || "";
@@ -7983,6 +8073,14 @@ function openWorkoutCompletionSharePrompt(summary, returnFocus = null, achieveme
   overlay.querySelector("[data-workout-share-more]").hidden = !extraExercises;
   overlay.querySelector("[data-workout-share-more]").textContent = `+ ${extraExercises} more exercise${extraExercises === 1 ? "" : "s"}`;
   overlay.querySelector("[data-workout-share-praise]").textContent = summary.isComplete === false ? "Your session is saved." : "Strong work. You showed up.";
+  for (const name of ["workout", "weekly", "badges", "visits", "total", "apple"]) {
+    const input = overlay.querySelector(`[data-workout-share-option="${name}"]`);
+    if (input) input.checked = false;
+    const label = input?.closest?.("label");
+    if (label && name === "badges") label.hidden = !summary.earnedBadges.length;
+    if (label && name === "total") label.hidden = summary.totalWorkouts == null;
+    if (label && name === "apple") label.hidden = !shareMetrics.appleMetrics.length;
+  }
   const shareButton = overlay.querySelector("[data-workout-share]");
   shareButton.disabled = true;
   shareButton.textContent = "Preparing image…";
@@ -7993,14 +8091,7 @@ function openWorkoutCompletionSharePrompt(summary, returnFocus = null, achieveme
   document.body.classList.add("workout-completion-share-open");
   overlay.querySelector("[data-workout-share-dismiss]")?.focus();
 
-  Promise.resolve(workoutCompletionShareImage(summary)).catch(() => null).then((file) => {
-    if (pendingWorkoutCompletionShare === summary) {
-      pendingWorkoutCompletionShareFile = file;
-      shareButton.disabled = false;
-      shareButton.textContent = "Share workout";
-      overlay.querySelector("[data-workout-share-status]").textContent = file ? "" : "The image couldn’t be prepared. You can still share the workout details as text.";
-    }
-  });
+  if (typeof refreshWorkoutSharePreview === "function") refreshWorkoutSharePreview(overlay, summary);
 }
 
 function closeWorkoutCompletionSharePrompt(options = {}) {
@@ -8045,9 +8136,10 @@ async function shareCompletedWorkout(button) {
     return;
   }
 
-  const text = workoutCompletionShareText(summary);
+  const selected = selectedWorkoutShareSummary(overlay, summary);
+  const text = workoutCompletionShareText(selected);
   const url = `${window.location.origin}/`;
-  const shareData = { title: summary.isComplete === false ? "Workout saved" : "Workout complete", text, url };
+  const shareData = { title: selected.shareOptions.workout ? (summary.isComplete === false ? "Workout saved" : "Workout complete") : "My progress", text, url };
   const file = pendingWorkoutCompletionShareFile;
 
   if (file && typeof navigator.canShare === "function" && navigator.canShare({ files: [file] })) {
@@ -8085,6 +8177,23 @@ async function shareCompletedWorkout(button) {
 }
 
 function handleWorkoutCompletionSharePrompt() {
+  document.addEventListener("change", async event => {
+    const input = event.target.closest("[data-workout-share-option]");
+    const overlay = input?.closest("[data-workout-share-overlay]");
+    const summary = pendingWorkoutCompletionShare;
+    if (!overlay || !summary) return;
+    if (input.dataset.workoutShareOption === "visits" && input.checked && summary.gymVisitCount == null) {
+      input.disabled = true;
+      summary.gymVisitError = "";
+      overlay.querySelector("[data-workout-share-status]").textContent = "Loading gym visits…";
+      try { await loadWorkoutShareGymVisits(summary); }
+      catch (_) {
+        input.checked = false;
+        summary.gymVisitError = "Gym visits couldn’t be loaded. Try again.";
+      } finally { input.disabled = false; }
+    }
+    refreshWorkoutSharePreview(overlay, summary);
+  });
   document.addEventListener("click", async (event) => {
     const shareButton = event.target.closest("[data-workout-share]");
     const dismissButton = event.target.closest("[data-workout-share-dismiss]");

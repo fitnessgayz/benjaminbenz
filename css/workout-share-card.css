@@ -1,4 +1,39 @@
 /* Additional public share metrics and the saved workout share action. */
+.dashboard-page .workout-completion-share-options {
+  display: grid;
+  gap: 9px;
+  min-width: 0;
+  margin: 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+.dashboard-page .workout-completion-share-options legend { padding: 0 5px; font-weight: 850; }
+.dashboard-page .workout-completion-share-options label { display: flex; align-items: center; gap: 9px; min-height: 34px; }
+.dashboard-page .workout-completion-share-options label[hidden],
+.dashboard-page .workout-completion-share-card [hidden] { display: none !important; }
+.dashboard-page .workout-completion-share-options input { width: 20px; height: 20px; accent-color: var(--lime); }
+.dashboard-page .workout-completion-share-milestones { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.dashboard-page .workout-completion-share-milestones > span { display: grid; gap: 3px; padding: 10px; border: 1px solid #4b5148; }
+.dashboard-page .workout-completion-share-milestones strong { color: #f7f7f2; overflow-wrap: anywhere; }
+.dashboard-page .workout-completion-share-milestones small { color: #d6ff35; font-size: .7rem; font-weight: 800; text-transform: uppercase; }
+html[data-client-theme="light"] .dashboard-page .workout-completion-share-card {
+  background: #f7f8f3;
+  color: #1b291f;
+  border-color: #0069dd;
+}
+html[data-client-theme="light"] .dashboard-page .workout-completion-share-card h2,
+html[data-client-theme="light"] .dashboard-page .workout-completion-share-metrics strong,
+html[data-client-theme="light"] .dashboard-page .workout-completion-share-exercises li,
+html[data-client-theme="light"] .dashboard-page .workout-completion-share-praise,
+html[data-client-theme="light"] .dashboard-page .workout-completion-share-milestones strong { color: #1b291f; }
+html[data-client-theme="light"] .dashboard-page .workout-completion-share-metrics small,
+html[data-client-theme="light"] .dashboard-page .workout-completion-share-exercises > small,
+html[data-client-theme="light"] .dashboard-page .workout-completion-share-apple > small,
+html[data-client-theme="light"] .dashboard-page .workout-completion-share-milestones small { color: #0069dd; }
+html[data-client-theme="light"] .dashboard-page .workout-completion-share-milestones > span,
+html[data-client-theme="light"] .dashboard-page .workout-completion-share-apple-metrics > span { background: #eaf0f2; }
+html[data-client-theme="light"] .dashboard-page .workout-completion-share-apple-metrics strong { color: #1b291f; }
 .dashboard-page .workout-completion-share-overlay {
   z-index: 1300;
   box-sizing: border-box;

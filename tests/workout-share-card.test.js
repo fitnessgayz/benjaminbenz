@@ -105,6 +105,27 @@ test("text and canvas receive identical public metrics and exclude private attac
   for (const output of [result, drawn]) assert.doesNotMatch(output, /private@|private-history|secret\.example|private\/image|private-user/);
 });
 
+test("share choices keep unselected workout, Apple, badges and visits out of image and text", () => {
+  const summary = example({
+    appleWorkout: { duration_seconds: 1800, active_calories: 300 },
+    earnedBadges: ["First workout", "Ten workouts"], gymVisitCount: 12, totalWorkouts: 20,
+    shareOptions: { workout: false, weekly: false, apple: false, badges: false, visits: false, total: false }
+  });
+  const h = fakeCanvas();
+  drawCard(h.context, summary, now);
+  const output = `${text(summary, now)}\n${h.texts.map(item => item.value).join("\n")}`;
+  assert.match(output, /Progress in motion/);
+  assert.doesNotMatch(output, /Upper-body strength|Sep 21|Chest press|30:00|300 kcal|First workout|Gym visits|Total workouts|3 workouts/i);
+  const selected = { ...summary, shareOptions: { ...summary.shareOptions, badges: true, visits: true, total: true } };
+  const selectedCanvas = fakeCanvas();
+  const layout = drawCard(selectedCanvas.context, selected, now);
+  const selectedOutput = `${text(selected, now)}\n${selectedCanvas.texts.map(item => item.value).join("\n")}`;
+  assert.match(selectedOutput, /First workout/);
+  assert.match(selectedOutput, /GYM VISITS/);
+  assert.match(selectedOutput, /TOTAL WORKOUTS/);
+  assert.ok(layout.contentBottom < layout.footerTop - 28);
+});
+
 test("six names and a remainder count are shared rather than overflowing the canvas", () => {
   const names = Array.from({ length: 9 }, (_, index) => `Exercise ${index + 1}`);
   const summary = example({ exerciseNames: names, exerciseCount: 9 });

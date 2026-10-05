@@ -68,29 +68,44 @@
   }
 
   function content(summary = {}, now = new Date()) {
+    const options = summary.shareOptions || { workout: true, weekly: true, apple: true };
     const names = (Array.isArray(summary.exerciseNames) ? summary.exerciseNames : []).map((name) => cleanText(name)).filter(Boolean);
     const exerciseCount = Math.max(names.length, Math.floor(number(summary.exerciseCount) || 0));
     const weeklyCount = Math.floor(number(summary.weeklyWorkoutCount) || 0);
     const completed = summary.isComplete !== false;
+    const badges = options.badges ? (Array.isArray(summary.earnedBadges) ? summary.earnedBadges : []).map(name => cleanText(name)).filter(Boolean).slice(0, 2) : [];
+    const gymVisits = options.visits ? number(summary.gymVisitCount) : null;
+    const totalWorkouts = options.total ? number(summary.totalWorkouts) : null;
+    const hasMilestones = badges.length > 0 || gymVisits !== null || totalWorkouts !== null;
     return {
       ...metrics(summary, now),
-      title: cleanText(summary.title, "Workout"),
-      date: dateLabel(summary.entryDate),
-      status: completed ? "Workout complete" : "Workout saved",
+      title: options.workout ? cleanText(summary.title, "Workout") : "Progress in motion",
+      date: options.workout ? dateLabel(summary.entryDate) : "",
+      status: options.workout ? (completed ? "Workout complete" : "Workout saved") : "My progress",
+      showWorkout: Boolean(options.workout),
+      showWeekly: Boolean(options.weekly),
+      hasMilestones,
+      badges, gymVisits, totalWorkouts,
       exerciseCount,
       exerciseLabel: `${exerciseCount} exercise${exerciseCount === 1 ? "" : "s"}`,
       weeklyLabel: `${weeklyCount} workout${weeklyCount === 1 ? "" : "s"}`,
       exerciseHeading: completed ? "Exercises completed" : "Exercises logged",
-      exerciseNames: names.slice(0, 6),
-      moreExercises: Math.max(0, exerciseCount - Math.min(names.length, 6)),
-      praise: completed ? "Strong work. You showed up." : "Your session is saved."
+      exerciseNames: options.workout && !hasMilestones ? names.slice(0, 6) : [],
+      moreExercises: options.workout && !hasMilestones ? Math.max(0, exerciseCount - Math.min(names.length, 6)) : 0,
+      appleMetrics: options.apple ? metrics(summary, now).appleMetrics : [],
+      praise: options.workout ? (completed ? "Strong work. You showed up." : "Your session is saved.") : "Keep showing up."
     };
   }
 
   function text(summary = {}, now = new Date()) {
     const data = content(summary, now);
-    const lines = [data.status, data.title, data.date, "", `${data.timeLabel}: ${data.durationLabel}`, data.exerciseLabel, `${data.weeklyLabel} ${data.weekLabel.toLowerCase()}`];
+    const lines = [data.status, data.title];
+    if (data.showWorkout) lines.push(data.date, "", `${data.timeLabel}: ${data.durationLabel}`, data.exerciseLabel);
+    if (data.showWeekly) lines.push(`${data.weeklyLabel} ${data.weekLabel.toLowerCase()}`);
     if (data.appleMetrics.length) lines.push("", "Apple Workout", ...data.appleMetrics.map((metric) => `${metric.label}: ${metric.value}`));
+    if (data.totalWorkouts !== null) lines.push(`Total workouts: ${data.totalWorkouts}`);
+    if (data.gymVisits !== null) lines.push(`Gym visits: ${data.gymVisits}`);
+    if (data.badges.length) lines.push("", "Badges earned:", ...data.badges.map(badge => `• ${badge}`));
     if (data.exerciseNames.length) lines.push("", `${data.exerciseHeading}:`, ...data.exerciseNames.map((name) => `• ${name}`));
     if (data.moreExercises) lines.push(`+ ${data.moreExercises} more exercise${data.moreExercises === 1 ? "" : "s"}`);
     lines.push("", data.praise, "#FitnessWithBenjamin");
@@ -170,16 +185,18 @@
     setFont(context, 27, 700);
     context.textAlign = "right";
     context.textBaseline = "top";
-    context.fillText(data.date, width - left, 75);
+    if (data.date) context.fillText(data.date, width - left, 75);
     context.fillStyle = palette.accent;
     drawBlock(context, data.status.toUpperCase(), left, 196, innerWidth, { maxSize: 28, minSize: 28, weight: 900 });
     context.fillStyle = palette.text;
     const title = drawBlock(context, data.title, left, 242, innerWidth, { maxSize: 78, minSize: 44, maxLines: 3, maxHeight: 160, weight: 900 });
     let cursor = 242 + title.height + 30;
 
-    const main = [[data.durationLabel, data.timeLabel], [String(data.exerciseCount), data.exerciseCount === 1 ? "Exercise" : "Exercises"], [data.weeklyLabel, data.weekLabel]];
+    const main = [];
+    if (data.showWorkout) main.push([data.durationLabel, data.timeLabel], [String(data.exerciseCount), data.exerciseCount === 1 ? "Exercise" : "Exercises"]);
+    if (data.showWeekly) main.push([data.weeklyLabel, data.weekLabel]);
     const gap = 14;
-    const cellWidth = (innerWidth - gap * 2) / 3;
+    const cellWidth = (innerWidth - gap * (main.length - 1)) / Math.max(main.length, 1);
     main.forEach(([value, label], index) => {
       const x = left + index * (cellWidth + gap);
       context.strokeStyle = palette.line;
@@ -190,7 +207,7 @@
       context.fillStyle = palette.accent;
       drawBlock(context, label.toUpperCase(), x + 18, cursor + 81, cellWidth - 36, { maxSize: 23, minSize: 21, maxLines: 2, maxHeight: 50, weight: 800 });
     });
-    cursor += 144;
+    if (main.length) cursor += 144;
 
     if (data.appleMetrics.length) {
       context.fillStyle = palette.accent;
@@ -209,6 +226,36 @@
       cursor += 111;
     }
 
+    const milestones = [];
+    if (data.totalWorkouts !== null) milestones.push([String(data.totalWorkouts), "TOTAL WORKOUTS"]);
+    if (data.gymVisits !== null) milestones.push([String(data.gymVisits), "GYM VISITS"]);
+    if (milestones.length) {
+      cursor += 24;
+      const metricWidth = (innerWidth - gap * (milestones.length - 1)) / milestones.length;
+      milestones.forEach(([value, label], index) => {
+        const x = left + index * (metricWidth + gap);
+        context.fillStyle = palette.tile;
+        context.fillRect(x, cursor, metricWidth, 94);
+        context.fillStyle = palette.text;
+        drawBlock(context, value, x + 18, cursor + 11, metricWidth - 36, { maxSize: 35, minSize: 26 });
+        context.fillStyle = palette.accent;
+        drawBlock(context, label, x + 18, cursor + 57, metricWidth - 36, { maxSize: 21, minSize: 19 });
+      });
+      cursor += 94;
+    }
+    if (data.badges.length) {
+      cursor += 24;
+      context.fillStyle = palette.accent;
+      drawBlock(context, "BADGES EARNED", left, cursor, innerWidth, { maxSize: 23, minSize: 23 });
+      cursor += 36;
+      data.badges.forEach(badge => {
+        context.fillStyle = palette.text;
+        drawBlock(context, `✦ ${badge}`, left, cursor, innerWidth, { maxSize: 29, minSize: 23, maxLines: 1 });
+        cursor += 38;
+      });
+    }
+
+    if (data.showWorkout && !data.hasMilestones) {
     cursor += 36;
     context.fillStyle = palette.accent;
     drawBlock(context, data.exerciseHeading.toUpperCase(), left, cursor, innerWidth, { maxSize: 25, minSize: 25 });
@@ -232,6 +279,7 @@
       context.fillStyle = palette.muted;
       drawBlock(context, `+ ${data.moreExercises} more exercise${data.moreExercises === 1 ? "" : "s"}`, left, cursor + 2, innerWidth, { maxSize: 24, minSize: 22 });
       cursor += 31;
+    }
     }
 
     // The footer has its own reserved band, even for a three-line title and six long names.
@@ -260,7 +308,9 @@
       drawCard(context, summary, new Date(), document.documentElement?.dataset?.clientTheme === "light" ? "light" : "dark");
       return await new Promise((resolve) => {
         canvas.toBlob((blob) => {
-          try { resolve(blob ? new File([blob], summary.isComplete === false ? "fwb-workout-saved.png" : "fwb-workout-complete.png", { type: "image/png" }) : null); }
+          const filename = summary.shareOptions?.workout === false ? "fwb-progress.png" :
+            summary.isComplete === false ? "fwb-workout-saved.png" : "fwb-workout-complete.png";
+          try { resolve(blob ? new File([blob], filename, { type: "image/png" }) : null); }
           catch (_error) { resolve(null); }
         }, "image/png");
       });

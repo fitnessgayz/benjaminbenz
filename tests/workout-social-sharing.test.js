@@ -116,19 +116,23 @@ test("history sharing supports legacy workout keys, declines unknown sessions, a
 function shareSheetFixture(image) {
   const nodes = new Map();
   const focused = [];
+  const options = ["workout", "weekly", "badges", "visits", "total", "apple"];
   const overlay = {
     hidden: true,
     querySelector: (selector) => {
       if (!nodes.has(selector)) nodes.set(selector, {
         disabled: false,
+        style: {},
         focus: () => focused.push(selector),
-        closest: () => overlay
+        closest: (target) => target === "span" || target === "label" ? { hidden: false } : overlay
       });
       return nodes.get(selector);
-    }
+    },
+    querySelectorAll: () => options.map(name => overlay.querySelector(`[data-workout-share-option="${name}"]`))
   };
   const shares = [];
   const context = evaluate([
+    "selectedWorkoutShareSummary", "refreshWorkoutSharePreview",
     "openWorkoutCompletionSharePrompt", "closeWorkoutCompletionSharePrompt", "shareCompletedWorkout"
   ], {
     ensureWorkoutCompletionSharePrompt: () => overlay,
@@ -143,7 +147,9 @@ function shareSheetFixture(image) {
     escapeHtml: String,
     randomWorkoutCompletionMessage: () => "Well done",
     workoutCompletionShareImage: image,
-    workoutCompletionShareText: (summary) => `Saved ${summary.entryDate}`
+    workoutCompletionShareText: (summary) => `Saved ${summary.entryDate}`,
+    clientAchievementSnapshot: () => null,
+    workoutSharePreviewRevision: 0
   });
   return { context, nodes, focused, shares, overlay };
 }
@@ -187,7 +193,7 @@ test("an older image result cannot replace a newer preview or reenable its share
   await flush();
   assert.equal(context.pendingWorkoutCompletionShareFile, null);
   assert.equal(nodes.get("[data-workout-share]").disabled, true);
-  assert.equal(nodes.get("[data-workout-share-workout-title]").textContent, "New session");
+  assert.equal(nodes.get("[data-workout-share-workout-title]").textContent, "Progress in motion");
   const currentFile = { name: "new.png" };
   second.resolve(currentFile);
   await flush();
@@ -199,12 +205,12 @@ test("image failures explicitly fall back to text and sharing an unfinished work
   const { context, nodes, shares } = shareSheetFixture(() => Promise.reject(new Error("Canvas unavailable")));
   context.openWorkoutCompletionSharePrompt(summary({ isComplete: false }));
   await flush();
-  assert.equal(nodes.get("[data-workout-share-state]").textContent, "Workout saved");
-  assert.match(nodes.get("[data-workout-share-status]").textContent, /share the workout details as text/);
+  assert.equal(nodes.get("[data-workout-share-state]").textContent, "My progress");
+  assert.match(nodes.get("[data-workout-share-status]").textContent, /selected details as text/);
   const button = nodes.get("[data-workout-share]");
   assert.equal(button.disabled, false);
   await context.shareCompletedWorkout(button);
-  assert.equal(shares[0].title, "Workout saved");
+  assert.equal(shares[0].title, "My progress");
   assert.equal(shares[0].text, "Saved 2026-09-14");
   assert.equal(Object.hasOwn(shares[0], "files"), false);
 });
@@ -216,6 +222,10 @@ test("the preview uses the card renderer's historical labels and Apple metrics",
     appleMetrics: [{ label: "Active calories", value: "0 kcal" }, { label: "Average heart rate", value: "126 bpm" }]
   }) };
   context.openWorkoutCompletionSharePrompt(summary({ appleWorkout: { active_calories: 0 } }));
+  nodes.get('[data-workout-share-option="workout"]').checked = true;
+  nodes.get('[data-workout-share-option="weekly"]').checked = true;
+  nodes.get('[data-workout-share-option="apple"]').checked = true;
+  context.refreshWorkoutSharePreview(context.document.querySelector(), context.pendingWorkoutCompletionShare);
   assert.equal(nodes.get("[data-workout-share-date]").textContent, "Date 2026-09-14");
   assert.equal(nodes.get("[data-workout-share-duration]").textContent, "35:00");
   assert.equal(nodes.get("[data-workout-share-time-label]").textContent, "Apple workout time");
