@@ -16,6 +16,10 @@ const compatibilityMigration = fs.readFileSync(path.join(
   __dirname,
   "../supabase/migrations/20261005154941_fix_deployed_coach_activity_likes.sql"
 ), "utf8");
+const propsMigration = fs.readFileSync(path.join(
+  __dirname,
+  "../supabase/migrations/20261005160628_rename_coach_reactions_to_props.sql"
+), "utf8");
 
 test("Postgres securely toggles a coach like and queues client encouragement", {
   skip: !PGlite && "Install @electric-sql/pglite or set ACTIVITY_LIKES_PGLITE_PATH"
@@ -111,6 +115,7 @@ test("Postgres securely toggles a coach like and queues client encouragement", {
 
   await db.exec(migration);
   await db.exec(compatibilityMigration);
+  await db.exec(propsMigration);
   await db.query("insert into auth.users(id,email) values ($1,'benjaminbenz.fit@gmail.com'),($2,'client@example.com')", [coach, client]);
   await db.query("insert into public.client_programs(client_email,client_name) values ('client@example.com','Alex Rivera')");
   await db.query(`insert into public.client_notifications
@@ -130,7 +135,7 @@ test("Postgres securely toggles a coach like and queues client encouragement", {
   const encouragement = await db.query("select kind,title,user_id from public.client_notifications where recipient_role='client'");
   assert.equal(encouragement.rows.length, 1);
   assert.equal(encouragement.rows[0].kind, "coach_reaction");
-  assert.equal(encouragement.rows[0].title, "Benjamin liked your workout");
+  assert.equal(encouragement.rows[0].title, "Benjamin gave you props for your workout");
   assert.equal(encouragement.rows[0].user_id, client);
 
   const second = await db.query("select * from public.toggle_client_activity_like($1)", [notice]);
@@ -204,6 +209,7 @@ test("Postgres compatibility feed and toggle work on the deployed legacy notific
 
   await db.exec(migration);
   await db.exec(compatibilityMigration);
+  await db.exec(propsMigration);
   await db.query("insert into auth.users(id,email) values ($1,'benjaminbenz.fit@gmail.com'),($2,'client@example.com')", [coach, client]);
   await db.query("insert into public.client_programs(id,client_email,client_name) values ($1,'client@example.com','Alex Rivera')", [program]);
   await db.query(`insert into public.client_notifications
@@ -222,7 +228,7 @@ test("Postgres compatibility feed and toggle work on the deployed legacy notific
   assert.equal(liked.rows[0].liked, true);
   const clientNotice = await db.query("select kind,web_category,title from public.client_notifications where user_id=$1", [client]);
   assert.deepEqual(clientNotice.rows[0], {
-    kind: "coach_reaction", web_category: "coach_reaction", title: "Benjamin liked your workout"
+    kind: "coach_reaction", web_category: "coach_reaction", title: "Benjamin gave you props for your workout"
   });
   assert.equal((await db.query("select liked from public.coach_activity_feed() where id=$1", [workoutNotice])).rows[0].liked, true);
 

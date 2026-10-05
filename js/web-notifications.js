@@ -527,8 +527,8 @@
         likeButton.className = "web-notification-like";
         likeButton.dataset.webNotificationLike = row.id;
         likeButton.setAttribute("aria-pressed", liked ? "true" : "false");
-        likeButton.setAttribute("aria-label", liked ? "Remove like from this client update" : "Like this client update");
-        likeButton.textContent = liked ? "♥ Liked" : "♡ Like";
+        likeButton.setAttribute("aria-label", liked ? "Remove props from this client update" : "Give props for this client update");
+        likeButton.textContent = liked ? "♥ Props sent" : "♡ Give props";
         item.append(likeButton);
       }
       return item;
@@ -624,10 +624,10 @@
         if (result?.liked) likedNotificationIds.add(notificationId);
         else likedNotificationIds.delete(notificationId);
         renderInbox(inboxRows);
-        setStatus(result?.liked ? "Client notified that you liked this update." : "Like removed.", "success");
+        setStatus(result?.liked ? "Client notified that you gave props for this update." : "Props removed.", "success");
       } catch (_error) {
         button.disabled = false;
-        setStatus("Could not update that like. Please try again.", "error");
+        setStatus("Could not update those props. Please try again.", "error");
       }
     }
 

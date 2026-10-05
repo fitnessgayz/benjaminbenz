@@ -88,13 +88,13 @@ function safePushTitle(category: string, notification: Record<string, unknown> =
     return safeNotificationText(notification.title, 160) || "Client workout completed";
   }
   if (category === "coach_reaction") {
-    return safeNotificationText(notification.title, 160) || "Benjamin liked your update";
+    return safeNotificationText(notification.title, 160) || "Benjamin gave you props for your update";
   }
 
   const titles: Record<string, string> = {
     workout_completed: "Client workout completed",
     achievement: "Client badge earned",
-    coach_reaction: "Benjamin liked your update",
+    coach_reaction: "Benjamin gave you props for your update",
     check_in_submitted: "Client check-in submitted",
     client_message: "New client message",
     low_sessions: "Session balance update",

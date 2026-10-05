@@ -8,6 +8,7 @@ const root = path.resolve(__dirname, "..");
 const notificationsSource = fs.readFileSync(path.join(root, "js/web-notifications.js"), "utf8");
 const migration = fs.readFileSync(path.join(root, "supabase/migrations/20261003172116_coach_activity_likes.sql"), "utf8");
 const compatibilityMigration = fs.readFileSync(path.join(root, "supabase/migrations/20261005154941_fix_deployed_coach_activity_likes.sql"), "utf8");
+const propsMigration = fs.readFileSync(path.join(root, "supabase/migrations/20261005160628_rename_coach_reactions_to_props.sql"), "utf8");
 const coach = fs.readFileSync(path.join(root, "coach-admin.html"), "utf8");
 const client = fs.readFileSync(path.join(root, "client-dashboard.html"), "utf8");
 const portal = fs.readFileSync(path.join(root, "js/client-portal.js"), "utf8");
@@ -147,7 +148,7 @@ test("coach inbox presents an accessible like control and persists the toggle", 
   const likeButton = firstItem.children.find((child) => child.dataset.webNotificationLike);
   assert.ok(likeButton);
   assert.equal(likeButton["aria-pressed"], "false");
-  assert.equal(likeButton["aria-label"], "Like this client update");
+  assert.equal(likeButton["aria-label"], "Give props for this client update");
 
   await harness.listeners.get("click")({
     preventDefault() {},
@@ -172,7 +173,7 @@ test("deployed notification fallback keeps activity metadata and like controls",
   const firstItem = harness.list.children[0];
   const likeButton = firstItem.children.find((child) => child.dataset.webNotificationLike);
   assert.ok(likeButton);
-  assert.equal(likeButton.textContent, "♡ Like");
+  assert.equal(likeButton.textContent, "♡ Give props");
 });
 
 test("production compatibility feed resolves legacy activity without exposing arbitrary recipients", () => {
@@ -187,12 +188,20 @@ test("production compatibility feed resolves legacy activity without exposing ar
   assert.match(compatibilityMigration, /web_category, web_url, web_dedupe_key/);
 });
 
+test("customer-facing reaction copy uses props without renaming stable database identifiers", () => {
+  assert.match(propsMigration, /Benjamin gave you props for your workout/);
+  assert.match(notificationsSource, /Give props for this client update/);
+  assert.match(notificationsSource, /♥ Props sent/);
+  assert.doesNotMatch(notificationsSource, /Like this client update|♥ Liked|Client notified that you liked/);
+  assert.match(client, /Coach replies, props \+ form reviews/);
+});
+
 test("shared branding exposes activity likes on responsive web surfaces", () => {
   assert.match(coach, /Recent client activity/);
   assert.match(coach, /data-web-notification-preference="client_achievements"/);
-  assert.match(coach, /web-notifications\.js\?v=coach-activity-likes-3/);
-  assert.match(client, /Coach replies, likes \+ form reviews/);
-  assert.match(client, /web-notifications\.js\?v=coach-activity-likes-3/);
+  assert.match(coach, /web-notifications\.js\?v=coach-activity-likes-4/);
+  assert.match(client, /Coach replies, props \+ form reviews/);
+  assert.match(client, /web-notifications\.js\?v=coach-activity-likes-4/);
   assert.match(styles, /\.web-notification-like\s*\{[\s\S]*?min-height:\s*44px/);
   assert.match(styles, /@media \(max-width: 600px\)[\s\S]*?\.web-notification-item\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0, 1fr\)/);
   assert.match(modernPush, /coach_reaction:\s*"coach_replies"/);

@@ -251,7 +251,7 @@ function pushCopy(notification: NotificationRow) {
       body: "Open FWB to view your private coaching update."
     },
     "client:coach_reaction": {
-      title: "Benjamin liked your update",
+      title: "Benjamin gave you props for your update",
       body: "Open FWB to see which activity your coach celebrated."
     },
     "client:program_update": {
