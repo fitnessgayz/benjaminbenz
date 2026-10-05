@@ -293,7 +293,7 @@
           <article class="client-community-feature"><span class="client-community-feature-icon" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"><path d="M9 4h14v8c0 5-3 8-7 8s-7-3-7-8V4ZM9 7H4v3c0 5 3 7 7 7m12-10h5v3c0 5-3 7-7 7M16 20v5m-6 3h12m-10-3h8"/></svg></span><span class="client-community-coming">Coming Soon</span><h3 id="client-community-feature-title">Celebrate Your Consistency</h3><p id="client-community-feature-body">Compare XP, levels, and badges with other clients who choose to join. Weekly rankings give everyone a fresh start.</p></article>
           <section class="client-community-connections" data-community-connections hidden aria-labelledby="client-community-connections-title">
             <h3 id="client-community-connections-title">Your connections</h3>
-            <p>Connect by invitation. Both people must accept before any opted-in achievements are visible.</p>
+            <p>Connect by invitation. Both people must accept before your selected milestones are visible.</p>
             <div data-community-join>
               <label for="client-community-display-name">Display name</label>
               <input id="client-community-display-name" maxlength="40" autocomplete="nickname" placeholder="Name your friends will see" />
@@ -309,12 +309,14 @@
             </div>
             <p data-community-connection-status role="status"></p>
           </section>
-          <p class="client-community-privacy"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M10 2 17 5v5c0 4-3 6.5-7 8-4-1.5-7-4-7-8V5l7-3Z"/><rect x="7" y="9" width="6" height="5" rx="1"/><path d="M8 9V7a2 2 0 0 1 4 0v2"/></svg> Only accepted connections can see your XP and badges when you choose to share them. Workout and health records remain private.</p>
+          <p class="client-community-privacy"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M10 2 17 5v5c0 4-3 6.5-7 8-4-1.5-7-4-7-8V5l7-3Z"/><rect x="7" y="9" width="6" height="5" rx="1"/><path d="M8 9V7a2 2 0 0 1 4 0v2"/></svg> Only accepted connections can see the milestones you choose. Workout logs and health records remain private.</p>
           <section class="client-community-consent" aria-labelledby="client-community-consent-title">
             <h3 id="client-community-consent-title">Your sharing choices</h3>
             <p>Choose what accepted connections may see. Sharing starts off.</p>
-            <label><input type="checkbox" id="client-community-share-badges" /><span><strong>Share XP &amp; badges</strong><small>Let accepted connections see your level, XP, and earned badges. Workout logs stay private.</small></span></label>
-            <label hidden><input type="checkbox" id="client-community-share-progress" /><span><strong>Share progress with connections</strong><small>Progress sharing is not available yet.</small></span></label>
+            <label><input type="checkbox" id="client-community-share-xp" /><span><strong>Training XP</strong><small>Show your training XP. Your workout details stay private.</small></span></label>
+            <label><input type="checkbox" id="client-community-share-badges" /><span><strong>Earned badges</strong><small>Show the badges you have earned.</small></span></label>
+            <label><input type="checkbox" id="client-community-share-workouts" /><span><strong>Completed workouts</strong><small>Show your total completed workout count.</small></span></label>
+            <label><input type="checkbox" id="client-community-share-gym-visits" /><span><strong>Gym visit count</strong><small>Show how many days you checked in. Your gym location stays private.</small></span></label>
             <button class="client-community-save" type="button" data-community-save>Save sharing choices</button>
             <p id="client-community-consent-status" role="status">Your activity is private.</p>
           </section>
