@@ -44,6 +44,12 @@ test("crops branded list thumbnails to the Start and End photos without the pale
   assert.match(workoutCss, /\.workout-preview-exercise-media \.exercise-media-button-branded-crop/);
 });
 
+test("shows the complete branded card without cropping in the detail dialog", () => {
+  assert.match(css, /\.exercise-media-dialog-stage\.is-branded-card\s*\{[\s\S]*?width:\s*100%/);
+  assert.match(css, /\.exercise-media-dialog-stage\.is-branded-card > img\s*\{[\s\S]*?position:\s*static[\s\S]*?object-fit:\s*contain/);
+  assert.doesNotMatch(css, /\.exercise-media-dialog-stage\.is-branded-card\s*\{[\s\S]*?aspect-ratio:\s*176 \/ 117/);
+});
+
 test("offers approved YouTube demos when a static card has no uploaded motion video", () => {
   assert.match(portal, /const demoUrl = exerciseVideoUrl\(exercise\)/);
   assert.match(portal, /videoLink\.hidden = Boolean\(videoUrl \|\| !demoUrl\)/);
@@ -75,7 +81,7 @@ test("keeps suggested-target UI out of the visible exercise card", () => {
   assert.match(css, /\.workout-progression-group-slot,[\s\S]*\[data-workout-progression\][\s\S]*display: none !important/);
 });
 
-test("photo framing applies only to branded stills and clears for video and ordinary images", () => {
+test("full-card framing applies only to branded stills and clears for video and ordinary images", () => {
   const helper = portal.slice(portal.indexOf("function isBrandedExerciseImage("), portal.indexOf("function exerciseMediaButtonMarkup("));
   const renderer = portal.slice(portal.indexOf("function renderExerciseMediaDialog("), portal.indexOf("function openExerciseMedia("));
   const render = Function("trustedExerciseImageUrl", "trustedExerciseMotionUrl", "exerciseVideoUrl", "document",
@@ -83,10 +89,10 @@ test("photo framing applies only to branded stills and clears for video and ordi
     (url) => url, (url) => url, () => "", {
       createElement: (tag) => ({ tag, setAttribute() {} }),
     });
-  let cropped = false;
+  let showsFullCard = false;
   let media;
   const stage = {
-    classList: { toggle: (name, value) => { assert.equal(name, "is-branded-photo"); cropped = value; } },
+    classList: { toggle: (name, value) => { assert.equal(name, "is-branded-card"); showsFullCard = value; } },
     replaceChildren: (node) => { media = node; },
   };
   const dialog = {
@@ -98,17 +104,17 @@ test("photo framing applies only to branded stills and clears for video and ordi
     querySelector: (selector) => selector === "[data-exercise-media-stage]" ? stage : null,
   };
   render(dialog, false);
-  assert.equal(cropped, true);
+  assert.equal(showsFullCard, true);
   assert.equal(media.tag, "img");
   assert.equal(media.alt, "Shoulder press start and end positions");
   render(dialog, true);
-  assert.equal(cropped, false);
+  assert.equal(showsFullCard, false);
   assert.equal(media.tag, "video");
   assert.equal(media.controls, true);
   render(dialog, false);
-  assert.equal(cropped, true);
+  assert.equal(showsFullCard, true);
   dialog.dataset.exerciseMediaStatic = "https://example.com/images/exercises/plain-photo.jpg";
   render(dialog, false);
-  assert.equal(cropped, false);
+  assert.equal(showsFullCard, false);
   assert.equal(media.tag, "img");
 });

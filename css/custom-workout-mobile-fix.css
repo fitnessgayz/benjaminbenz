@@ -3585,11 +3585,10 @@ body.dashboard-page.custom-workout-grouped-finish-open {
 }
 .dashboard-page .workout-finish-issues p { margin: 8px 0 0; }
 
-/* Approved branded masters share a 768×334 layout. Frame the photo area
-   (x=32, y=50, width=352, height=234), excluding the printed title and pale rim.
-   Percentage geometry also covers the proportional 480w thumbnails. */
-.exercise-media-button-branded-crop,
-.exercise-media-dialog-stage.is-branded-photo {
+/* List rows already render the exercise name, so their compact thumbnails show
+   only the Start/End photos. The detail dialog must show the complete branded
+   card, including the exercise title and full end position. */
+.exercise-media-button-branded-crop {
   --exercise-photo-image-width: 218.182%;
   --exercise-photo-image-height: 142.735%;
   --exercise-photo-image-left: -9.091%;
@@ -3598,7 +3597,7 @@ body.dashboard-page.custom-workout-grouped-finish-open {
   overflow: hidden;
   aspect-ratio: 176 / 117;
 }
-:is(.exercise-media-button-branded-crop, .exercise-media-dialog-stage.is-branded-photo) > img {
+.exercise-media-button-branded-crop > img {
   position: absolute;
   left: var(--exercise-photo-image-left);
   top: var(--exercise-photo-image-top);
@@ -3608,9 +3607,17 @@ body.dashboard-page.custom-workout-grouped-finish-open {
   max-height: none;
   object-fit: fill;
 }
-.exercise-media-dialog-stage.is-branded-photo {
-  width: min(100%, 640px, calc(58dvh * 1.5042735));
+.exercise-media-dialog-stage.is-branded-card {
+  width: 100%;
   min-height: 0;
   justify-self: center;
-  border-radius: 12px;
+}
+.exercise-media-dialog-stage.is-branded-card > img {
+  position: static;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  max-height: min(58dvh, 600px);
+  object-fit: contain;
+  object-position: center;
 }

@@ -2635,7 +2635,7 @@ function renderExerciseMediaDialog(dialog, showVideo = false) {
   if (!stage || !staticUrl) return;
 
   const shouldShowVideo = Boolean(showVideo && videoUrl);
-  stage.classList.toggle("is-branded-photo", !shouldShowVideo && isBrandedExerciseImage(staticUrl));
+  stage.classList.toggle("is-branded-card", !shouldShowVideo && isBrandedExerciseImage(staticUrl));
   dialog.dataset.exerciseMediaShowingVideo = String(shouldShowVideo);
   if (toggle) toggle.hidden = !videoUrl;
   if (videoLink) {
