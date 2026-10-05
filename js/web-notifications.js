@@ -528,7 +528,7 @@
         likeButton.dataset.webNotificationLike = row.id;
         likeButton.setAttribute("aria-pressed", liked ? "true" : "false");
         likeButton.setAttribute("aria-label", liked ? "Remove props from this client update" : "Give props for this client update");
-        likeButton.textContent = liked ? "♥ Props sent" : "♡ Give props";
+        likeButton.textContent = liked ? "💪🏽 Props sent" : "💪🏽 Give props";
         item.append(likeButton);
       }
       return item;

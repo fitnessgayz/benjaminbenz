@@ -173,7 +173,7 @@ test("deployed notification fallback keeps activity metadata and like controls",
   const firstItem = harness.list.children[0];
   const likeButton = firstItem.children.find((child) => child.dataset.webNotificationLike);
   assert.ok(likeButton);
-  assert.equal(likeButton.textContent, "♡ Give props");
+  assert.equal(likeButton.textContent, "💪🏽 Give props");
 });
 
 test("production compatibility feed resolves legacy activity without exposing arbitrary recipients", () => {
@@ -191,7 +191,7 @@ test("production compatibility feed resolves legacy activity without exposing ar
 test("customer-facing reaction copy uses props without renaming stable database identifiers", () => {
   assert.match(propsMigration, /Benjamin gave you props for your workout/);
   assert.match(notificationsSource, /Give props for this client update/);
-  assert.match(notificationsSource, /♥ Props sent/);
+  assert.match(notificationsSource, /💪🏽 Props sent/);
   assert.doesNotMatch(notificationsSource, /Like this client update|♥ Liked|Client notified that you liked/);
   assert.match(client, /Coach replies, props \+ form reviews/);
 });
@@ -199,9 +199,9 @@ test("customer-facing reaction copy uses props without renaming stable database 
 test("shared branding exposes activity likes on responsive web surfaces", () => {
   assert.match(coach, /Recent client activity/);
   assert.match(coach, /data-web-notification-preference="client_achievements"/);
-  assert.match(coach, /web-notifications\.js\?v=coach-activity-likes-4/);
+  assert.match(coach, /web-notifications\.js\?v=coach-activity-likes-5/);
   assert.match(client, /Coach replies, props \+ form reviews/);
-  assert.match(client, /web-notifications\.js\?v=coach-activity-likes-4/);
+  assert.match(client, /web-notifications\.js\?v=coach-activity-likes-5/);
   assert.match(styles, /\.web-notification-like\s*\{[\s\S]*?min-height:\s*44px/);
   assert.match(styles, /@media \(max-width: 600px\)[\s\S]*?\.web-notification-item\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0, 1fr\)/);
   assert.match(modernPush, /coach_reaction:\s*"coach_replies"/);
