@@ -259,6 +259,11 @@
 :root body.client-dashboard-page .client-community-connections p { color: var(--client-muted); font-size: 13px; line-height: 1.45; }
 :root body.client-dashboard-page .client-community-connections label { display: block; margin: 15px 0 6px; font-size: 13px; font-weight: 700; }
 :root body.client-dashboard-page .client-community-connections input { width: 100%; min-height: 44px; min-width: 0; box-sizing: border-box; border: 1px solid #5e6463; border-radius: 10px; background: #171c1b; color: #fff; padding: 9px 12px; font: inherit; }
+:root body.client-dashboard-page .client-community-avatar-picker { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin: 14px 0; padding: 12px; border: 1px solid #5e6463; border-radius: 12px; }
+:root body.client-dashboard-page .client-community-avatar-picker legend { padding: 0 5px; font-size: 13px; font-weight: 700; }
+:root body.client-dashboard-page .client-community-connections .client-community-avatar-picker button { min-width: 0; min-height: 58px; padding: 4px; border: 2px solid transparent; background: #171c1b; font-size: 29px; }
+:root body.client-dashboard-page .client-community-connections .client-community-avatar-picker button[aria-pressed="true"] { border-color: var(--client-neon); background: #273528; }
+:root body.client-dashboard-page .client-community-avatar { display: inline-grid; place-items: center; width: 42px; height: 42px; margin-right: 10px; border-radius: 50%; background: #363d35; font-size: 24px; vertical-align: middle; }
 :root body.client-dashboard-page .client-community-connections button { min-height: 44px; border: 0; border-radius: 10px; background: var(--client-neon); color: #182316; padding: 8px 13px; font: inherit; font-weight: 800; }
 :root body.client-dashboard-page .client-community-connections button:disabled { opacity: .55; }
 :root body.client-dashboard-page .client-community-code-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
@@ -266,7 +271,7 @@
 :root body.client-dashboard-page #client-community-own-code { flex: 1 1 160px; overflow-wrap: anywhere; letter-spacing: .08em; font-weight: 800; }
 :root body.client-dashboard-page .client-community-connection { padding: 14px 0; border-top: 1px solid #45484b; }
 :root body.client-dashboard-page .client-community-connection:first-child { margin-top: 20px; }
-:root body.client-dashboard-page .client-community-connection strong { display: block; font-size: 16px; }
+:root body.client-dashboard-page .client-community-connection strong { display: inline-block; font-size: 16px; }
 :root body.client-dashboard-page .client-community-connection small { display: block; margin: 3px 0 8px; color: var(--client-muted); }
 :root body.client-dashboard-page .client-community-connection-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 :root body.client-dashboard-page .client-community-connections .client-community-leave { margin-top: 18px; background: transparent; color: var(--client-muted); border: 1px solid #5e6463; }
