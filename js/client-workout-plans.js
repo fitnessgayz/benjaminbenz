@@ -101,7 +101,7 @@
         <p>${workout.exercises.length} exercises · About ${Math.round(Number(workout.estimatedMinutes) || plan.minutes)} minutes</p>
         <ul>${workout.exercises.map((exercise) => `<li>${escape(exercise.name)} <span>${escape(exercise.prescription || `${exercise.sets} sets`)}</span></li>`).join("")}</ul>
         ${savedId ? `<button type="button" data-plan-start="${escape(savedId)}" data-plan-day="${index}">Start this workout</button>` : ""}</section>`).join("")}</div>
-      ${savedId ? `<button type="button" class="plan-delete" data-plan-delete="${escape(savedId)}">Delete this plan</button>` : '<button type="button" class="plan-primary" data-plan-save>Save to Saved Workout Program</button>'}</article>`;
+      ${savedId ? `<button type="button" class="plan-delete" data-plan-delete="${escape(savedId)}">Delete this plan</button>` : '<button type="button" class="plan-primary" data-plan-save>Save plan to Log Custom Workout</button>'}</article>`;
   }
 
   function ensureDialog() {
@@ -186,7 +186,7 @@
     try {
       preview = build(readForm(event.target), root.FWB_WORKOUT_GENERATOR);
       dialog.querySelector("[data-plan-preview]").innerHTML = planMarkup(preview);
-      status("Review your plan, then save it to your program library.");
+      status("Review your plan, then save it to find it in Log Custom Workout.");
       dialog.querySelector("[data-plan-preview]").scrollIntoView({ block: "start", behavior: "smooth" });
     } catch (error) { preview = null; dialog.querySelector("[data-plan-preview]").innerHTML = ""; status(error.message, true); }
   }
@@ -216,7 +216,7 @@
         saved.unshift(data); preview = null;
         setBusy(false); showView("saved");
         dialog.querySelector(`[data-plan-open="${data.id}"]`)?.click();
-        status("Your weekly plan is saved. Choose a day to start.");
+        status("Your weekly plan is saved in Log Custom Workout → Saved Workout Program. Choose a day to start.");
       } catch (error) { setBusy(false); status(`Could not save plan: ${error.message}`, true); }
       return;
     }

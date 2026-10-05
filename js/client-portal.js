@@ -12140,6 +12140,12 @@ function customWorkoutPanelMarkup(index) {
         </div>
         <span class="status-pill">Build your own</span>
       </div>
+      <button type="button" class="workout-choice-card custom-workout-saved-plan" data-client-saved-workout-plans
+        aria-labelledby="custom-workout-saved-title" aria-describedby="custom-workout-saved-description">
+        ${clientWorkoutChoiceContent({ icon: "saved", title: "Saved Workout Program",
+          description: "Open a saved weekly plan and choose your next workout.",
+          titleId: "custom-workout-saved-title", descriptionId: "custom-workout-saved-description" })}
+      </button>
       <p class="custom-workout-copy-status" data-custom-workout-copy-status role="status" aria-live="polite" ${copyStatusMessage ? "" : "hidden"}>${escapeHtml(copyStatusMessage)}</p>
       <label class="custom-workout-session-date workout-session-date">
         <span>Workout date</span>
@@ -12745,11 +12751,8 @@ function clientWorkoutListMarkup(workouts) {
       { icon: "calendar", title: "Trainer Prescribed Workouts",
         description: `${programs[0].program_title || "Your program"} · ${(programs[0].workouts || []).length} ${(programs[0].workouts || []).length === 1 ? "workout" : "workouts"}${programs.length > 1 ? ` · ${programs.length} plans` : ""}`,
         action: 'data-preview-program="0"', titleId: "workout-program-title-0", descriptionId: "workout-program-description-0" },
-      { icon: "saved", title: "Saved Workout Program",
-        description: "Access your saved workout plans and choose your next workout.",
-        action: "data-client-saved-workout-plans", titleId: "workout-saved-title", descriptionId: "workout-saved-description" },
-      { icon: "plus", title: "Log Workout",
-        description: "Follow your own program or log a workout as you go. Add exercises and track sets, reps, and weights.",
+      { icon: "plus", title: "Log Custom Workout",
+        description: "Open a saved workout plan or log your own exercises, sets, reps, and weights.",
         action: 'data-client-workout-picker-choose="0" data-client-workout-picker-card="0" data-client-workout-selection-target="Custom workout"',
         titleId: "client-workout-card-title-0", descriptionId: "workout-custom-description" },
       { icon: "plan", title: "Generate Workout Plan",
