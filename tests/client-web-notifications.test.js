@@ -277,7 +277,7 @@ test("notification categories and database preferences default on without forcin
   assert.match(notifications, /input\.checked = preferences\?\.\[key\] !== false/);
   assert.match(notifications, /preferences\?\.push_enabled !== false/);
   assert.doesNotMatch(notifications, /init\(\)[\s\S]*?Notification\.requestPermission\(\)/);
-  assert.match(dashboard, /src="js\/web-notifications\.js\?v=coach-activity-likes-2"/);
+  assert.match(dashboard, /src="js\/web-notifications\.js\?v=coach-activity-likes-3"/);
   [
     "push_enabled",
     "coach_replies",

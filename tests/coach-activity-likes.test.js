@@ -7,6 +7,7 @@ const vm = require("node:vm");
 const root = path.resolve(__dirname, "..");
 const notificationsSource = fs.readFileSync(path.join(root, "js/web-notifications.js"), "utf8");
 const migration = fs.readFileSync(path.join(root, "supabase/migrations/20261003172116_coach_activity_likes.sql"), "utf8");
+const compatibilityMigration = fs.readFileSync(path.join(root, "supabase/migrations/20261005154941_fix_deployed_coach_activity_likes.sql"), "utf8");
 const coach = fs.readFileSync(path.join(root, "coach-admin.html"), "utf8");
 const client = fs.readFileSync(path.join(root, "client-dashboard.html"), "utf8");
 const portal = fs.readFileSync(path.join(root, "js/client-portal.js"), "utf8");
@@ -66,6 +67,9 @@ function coachHarness({ deployedBackend = false } = {}) {
   const supabaseClient = {
     rpc: async (name, args) => {
       rpcCalls.push({ name, args });
+      if (name === "coach_activity_feed") {
+        return { data: [{ ...notice, can_like: true, liked: false }], error: null };
+      }
       return { data: [{ liked: true, reaction_id: "reaction-1" }], error: null };
     },
     from(table) {
@@ -162,12 +166,8 @@ test("deployed notification fallback keeps activity metadata and like controls",
   const harness = coachHarness({ deployedBackend: true });
   assert.equal(await harness.controller.init(), true);
 
-  const inboxSelect = harness.selectCalls.find(({ table, columns }) =>
-    table === "client_notifications" && columns.includes("metadata")
-  );
-  assert.ok(inboxSelect);
-  assert.match(inboxSelect.columns, /recipient_role/);
-  assert.match(inboxSelect.columns, /action_url/);
+  assert.ok(harness.rpcCalls.some(({ name }) => name === "coach_activity_feed"));
+  assert.equal(harness.selectCalls.some(({ table }) => table === "client_notifications"), false);
 
   const firstItem = harness.list.children[0];
   const likeButton = firstItem.children.find((child) => child.dataset.webNotificationLike);
@@ -175,12 +175,24 @@ test("deployed notification fallback keeps activity metadata and like controls",
   assert.equal(likeButton.textContent, "♡ Like");
 });
 
+test("production compatibility feed resolves legacy activity without exposing arbitrary recipients", () => {
+  assert.match(compatibilityMigration, /create or replace function public\.coach_activity_feed\(\)/);
+  assert.match(compatibilityMigration, /notice\.user_id = actor_id/);
+  assert.match(compatibilityMigration, /if actor_id is null or not coalesce\(public\.is_coach_admin\(\), false\)/);
+  assert.match(compatibilityMigration, /to_jsonb\(p_notice\)/);
+  assert.match(compatibilityMigration, /web_dedupe_key/);
+  assert.match(compatibilityMigration, /web_url/);
+  assert.match(compatibilityMigration, /revoke all on function public\.coach_activity_feed\(\) from public, anon/);
+  assert.match(compatibilityMigration, /notification\.id = p_notification_id[\s\S]*notification\.user_id = actor_id/);
+  assert.match(compatibilityMigration, /web_category, web_url, web_dedupe_key/);
+});
+
 test("shared branding exposes activity likes on responsive web surfaces", () => {
   assert.match(coach, /Recent client activity/);
   assert.match(coach, /data-web-notification-preference="client_achievements"/);
-  assert.match(coach, /web-notifications\.js\?v=coach-activity-likes-2/);
+  assert.match(coach, /web-notifications\.js\?v=coach-activity-likes-3/);
   assert.match(client, /Coach replies, likes \+ form reviews/);
-  assert.match(client, /web-notifications\.js\?v=coach-activity-likes-2/);
+  assert.match(client, /web-notifications\.js\?v=coach-activity-likes-3/);
   assert.match(styles, /\.web-notification-like\s*\{[\s\S]*?min-height:\s*44px/);
   assert.match(styles, /@media \(max-width: 600px\)[\s\S]*?\.web-notification-item\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0, 1fr\)/);
   assert.match(modernPush, /coach_reaction:\s*"coach_replies"/);

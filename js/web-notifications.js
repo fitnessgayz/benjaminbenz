@@ -496,8 +496,10 @@
 
     function likeableCoachActivity(row) {
       return role === "coach" &&
-        ["workout_completed", "check_in_submitted", "achievement"].includes(row?.kind) &&
-        Boolean(String(row?.metadata?.client_email || "").trim());
+        (row?.can_like === true || (
+          ["workout_completed", "check_in_submitted", "achievement"].includes(row?.kind) &&
+          Boolean(String(row?.metadata?.client_email || "").trim())
+        ));
     }
 
     function notificationItem(row) {
@@ -563,19 +565,24 @@
     }
 
     async function loadInbox() {
-      let query = supabaseClient.from("client_notifications");
-      if (backend === "deployed") {
-        query = query
-          .select("id,recipient_role,kind,title,body,action_url,metadata,created_at,read_at")
-          .eq("user_id", user.id)
-          .eq("recipient_role", role);
+      let result;
+      if (backend === "deployed" && role === "coach") {
+        result = await supabaseClient.rpc("coach_activity_feed");
       } else {
-        query = query
-          .select("id,recipient_role,kind,title,body,action_url,metadata,created_at,read_at")
-          .eq("user_id", user.id)
-          .eq("recipient_role", role);
+        let query = supabaseClient.from("client_notifications");
+        if (backend === "deployed") {
+          query = query
+            .select("id,kind,title,body,web_url,created_at,read_at")
+            .eq("user_id", user.id);
+        } else {
+          query = query
+            .select("id,recipient_role,kind,title,body,action_url,metadata,created_at,read_at")
+            .eq("user_id", user.id)
+            .eq("recipient_role", role);
+        }
+        result = await query.order("created_at", { ascending: false }).limit(maximumInboxItems);
       }
-      const { data, error } = await query.order("created_at", { ascending: false }).limit(maximumInboxItems);
+      const { data, error } = result;
       if (error) {
         throw error;
       }
@@ -583,7 +590,9 @@
         ...row,
         action_url: row.action_url || row.web_url
       }));
-      if (role === "coach") {
+      if (role === "coach" && backend === "deployed") {
+        likedNotificationIds = new Set(rows.filter((row) => row.liked).map((row) => row.id));
+      } else if (role === "coach") {
         const likeableIds = rows.filter(likeableCoachActivity).map((row) => row.id);
         likedNotificationIds = new Set();
         if (likeableIds.length) {
