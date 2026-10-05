@@ -49,6 +49,11 @@ function normalizeCoachWorkoutEmail(value) {
   return String(value || "").trim().toLowerCase();
 }
 
+function coachWorkoutGymValue() {
+  return String(document.getElementById("coach-workout-gym")?.value || "")
+    .trim().replace(/\s+/g, " ").slice(0, 80);
+}
+
 function isCoachWorkoutEmail(email) {
   return coachWorkoutEmails.includes(normalizeCoachWorkoutEmail(email));
 }
@@ -1563,6 +1568,7 @@ function coachWorkoutDraftPayload(extra = {}, context = coachWorkoutActiveContex
     updatedAt: new Date().toISOString(),
     clientEmail: normalized.clientEmail,
     entryDate: normalized.entryDate,
+    gymName: coachWorkoutGymValue(),
     format: coachWorkoutFormatValue(),
     exercises: coachWorkoutExerciseDrafts(),
     pendingDeletes: coachWorkoutPendingDeletes,
@@ -1696,6 +1702,8 @@ function readCoachWorkoutDraft(context = coachWorkoutActiveContext) {
 function resetCoachWorkoutEditor() {
   const exerciseList = document.getElementById("coach-workout-exercises");
   const singleFormat = document.querySelector('input[name="coach_workout_format"][value="single"]');
+  const gymInput = document.getElementById("coach-workout-gym");
+  if (gymInput) gymInput.value = "";
 
   if (singleFormat) {
     singleFormat.checked = true;
@@ -1736,6 +1744,9 @@ function restoreCoachWorkoutDraft(options = {}) {
       dateInput.value = context.entryDate;
     }
   }
+
+  const gymInput = document.getElementById("coach-workout-gym");
+  if (gymInput) gymInput.value = String(draft.gymName || "");
 
   const formatInput = document.querySelector(
     `input[name="coach_workout_format"][value="${String(draft.format || "single").replace(/[^a-z_]/gi, "")}"]`
@@ -1990,6 +2001,7 @@ function coachWorkoutSaveSignature(data) {
   return JSON.stringify({
     clientEmail: data.clientEmail,
     entryDate: data.entryDate,
+    gymName: data.gymName,
     format: data.format,
     exercises: data.exercises.map((exercise) => ({
       code: exercise.code || "",
@@ -2023,6 +2035,7 @@ function coachWorkoutAutosaveData() {
     return {
       clientEmail,
       entryDate,
+      gymName: coachWorkoutGymValue(),
       format: coachWorkoutFormatValue(),
       exercises: coachWorkoutExerciseValues()
     };
@@ -2138,6 +2151,7 @@ async function saveCoachWorkout(event, options = {}) {
   const finishButton = document.getElementById("coach-workout-finish");
   const clientEmail = normalizeCoachWorkoutEmail(document.getElementById("coach-workout-client")?.value);
   const entryDate = document.getElementById("coach-workout-date")?.value || "";
+  const gymName = coachWorkoutGymValue();
   const exerciseElements = Array.from(document.querySelectorAll("[data-coach-workout-exercise]"));
 
   if (!automatic) {
@@ -2200,7 +2214,7 @@ async function saveCoachWorkout(event, options = {}) {
   }
 
   const format = coachWorkoutFormatValue();
-  const requestedData = { clientEmail, entryDate, format, exercises };
+  const requestedData = { clientEmail, entryDate, gymName, format, exercises };
   const requestedSignature = coachWorkoutSaveSignature(requestedData);
   const requestedContext = { clientEmail, entryDate };
   const requestedPendingDeletes = coachWorkoutPendingDeletes
@@ -2278,6 +2292,7 @@ async function saveCoachWorkout(event, options = {}) {
           client_email: clientEmail,
           entry_date: entryDate,
           workout_title: "Custom workout",
+          gym_name: gymName || null,
           exercise_code: exercise.code,
           exercise_name: exercise.name,
           set_number: set.setNumber,
@@ -2371,6 +2386,7 @@ async function saveCoachWorkout(event, options = {}) {
     coachWorkoutLastSavedSignature = coachWorkoutSaveSignature({
       clientEmail,
       entryDate,
+      gymName,
       format,
       exercises: planned
     });

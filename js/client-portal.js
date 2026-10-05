@@ -331,6 +331,7 @@ function clientTrainingLogMatchesSearch(log, query) {
     log.entry_date,
     log.workout_title,
     workoutDisplayTitle(log.workout_title),
+    log.gym_name,
     log.exercise_code,
     log.exercise_name,
     log.notes
@@ -5371,7 +5372,8 @@ function workoutProgressionContext(logElement) {
         : rememberClientWorkoutSessionIdentity(context, window.crypto.randomUUID())
     ),
     name: exerciseNameInputForLog(logElement)?.value ?? logElement?.dataset.exerciseName ?? "",
-    history: trainingLogs, historyComplete: clientAchievementHistoryStatus === "ready",
+    history: trainingLogs.filter((row) => sameWorkoutGym(row.gym_name, workoutGymLocationForElement(logElement))),
+    historyComplete: clientAchievementHistoryStatus === "ready",
     custom: Boolean(logElement?.closest(".client-workout-panel-custom")),
     storage: window.localStorage,
     afterApply: () => {
@@ -6049,6 +6051,126 @@ function customWorkoutFormatPickerMarkup() {
   `;
 }
 
+function normalizeWorkoutGymName(value) {
+  return String(value || "").trim().replace(/\s+/g, " ").slice(0, 80);
+}
+
+function sameWorkoutGym(left, right) {
+  return normalizeWorkoutGymName(left).toLocaleLowerCase() === normalizeWorkoutGymName(right).toLocaleLowerCase();
+}
+
+function recentWorkoutGymLocations() {
+  return [...new Map(trainingLogs.map((log) => normalizeWorkoutGymName(log.gym_name))
+    .filter(Boolean).map((gym) => [gym.toLocaleLowerCase(), gym])).values()].slice(0, 12);
+}
+
+function workoutGymStorageKey(title, date) {
+  const email = String(activeClientEmail || "").trim().toLowerCase();
+  const programId = String(currentProgram?.id || "program");
+  return email && title && date ? `fwb_workout_gym:${email}:${programId}:${date}:${title}` : "";
+}
+
+function storedWorkoutGymLocation(title, date = todayDate()) {
+  const key = workoutGymStorageKey(title, date);
+  if (key) {
+    try {
+      const stored = normalizeWorkoutGymName(window.localStorage.getItem(key));
+      if (stored) return stored;
+    } catch (_) { /* Saved history can still supply the location. */ }
+  }
+  return normalizeWorkoutGymName(trainingLogs.find((log) => (
+    log.workout_title === title && log.entry_date === date && log.gym_name
+  ))?.gym_name);
+}
+
+function rememberWorkoutGymLocation(panel) {
+  const input = panel?.querySelector("[data-workout-gym]");
+  const title = panel?.dataset.customWorkoutTitle;
+  const date = panel?.querySelector("[data-workout-date]")?.value || todayDate();
+  const key = workoutGymStorageKey(title, date);
+  if (!input || !key) return;
+  const gym = normalizeWorkoutGymName(input.value);
+  try {
+    if (gym) window.localStorage.setItem(key, gym);
+    else window.localStorage.removeItem(key);
+  } catch (_) { /* Local storage is optional; the workout draft still saves locally. */ }
+}
+
+function workoutGymLocationForElement(element) {
+  return normalizeWorkoutGymName(element?.closest?.(".client-workout-panel")?.querySelector("[data-workout-gym]")?.value);
+}
+
+function syncGroupedWorkoutGymInputs(panel, activeInput = null) {
+  const source = panel?.querySelector("[data-workout-gym]");
+  if (!source) return;
+  panel.querySelectorAll("[data-custom-grouped-gym]").forEach((input) => {
+    if (input !== activeInput) input.value = source.value;
+    input.readOnly = source.readOnly;
+    input.title = source.title;
+    input.setAttribute("aria-invalid", source.getAttribute("aria-invalid") || "false");
+    if (source.getAttribute("list")) input.setAttribute("list", source.getAttribute("list"));
+    const error = input.closest(".custom-workout-grouped-gym")?.querySelector("[data-custom-grouped-gym-error]");
+    if (error) error.hidden = source.getAttribute("aria-invalid") !== "true";
+    const locked = input.closest(".custom-workout-grouped-gym")?.querySelector("[data-custom-grouped-gym-locked]");
+    if (locked) locked.hidden = !source.readOnly;
+  });
+}
+
+function syncWorkoutGymLock(panel) {
+  const input = panel?.querySelector("[data-workout-gym]");
+  if (!input) return;
+  const title = panel.dataset.customWorkoutTitle;
+  const date = panel.querySelector("[data-workout-date]")?.value || todayDate();
+  const savedGym = trainingLogs.find((log) => (
+    log.workout_title === title && log.entry_date === date && normalizeWorkoutGymName(log.gym_name)
+  ))?.gym_name;
+  input.readOnly = Boolean(savedGym);
+  if (savedGym) input.value = normalizeWorkoutGymName(savedGym);
+  input.title = savedGym ? "This location stays with the workout after a set is saved." : "";
+  syncGroupedWorkoutGymInputs(panel);
+}
+
+function workoutGymPickerMarkup(value = "", index = 0) {
+  const fieldId = `workout-gym-location-${index}`;
+  const listId = `workout-gym-locations-${index}`;
+  const instructionsId = `workout-gym-instructions-${index}`;
+  const recentGyms = recentWorkoutGymLocations();
+  return `<div class="workout-gym-picker">
+    <label for="${fieldId}">Add gym location</label>
+    <input id="${fieldId}" data-workout-gym type="text" maxlength="80" autocomplete="off"
+      list="${listId}" placeholder="Gym name, Home, or Outdoors" value="${escapeHtml(value)}"
+      aria-describedby="${instructionsId}" />
+    <datalist id="${listId}">${recentGyms.map((gym) => `<option value="${escapeHtml(gym)}"></option>`).join("")}</datalist>
+    <small id="${instructionsId}">Choose once before you start. Use the gym’s name if you train at different gyms, or enter Home or Outdoors. Your previous weights will match this location.</small>
+    <span class="workout-gym-error" data-workout-gym-error role="status" hidden></span>
+  </div>`;
+}
+
+function requireWorkoutGymLocation(panel, { focus = true, near = null } = {}) {
+  const input = panel?.querySelector("[data-workout-gym]");
+  if (!input) return true;
+  const gym = normalizeWorkoutGymName(input.value);
+  const error = panel.querySelector("[data-workout-gym-error]");
+  if (gym) {
+    input.value = gym;
+    input.removeAttribute("aria-invalid");
+    if (error) error.hidden = true;
+    rememberWorkoutGymLocation(panel);
+    syncGroupedWorkoutGymInputs(panel);
+    return true;
+  }
+  input.setAttribute("aria-invalid", "true");
+  syncGroupedWorkoutGymInputs(panel);
+  if (error) { error.textContent = "Choose a gym location before starting or logging a set."; error.hidden = false; }
+  if (focus) {
+    const target = near?.closest?.("[data-custom-workout-grouped='true']")?.querySelector("[data-custom-grouped-gym]")
+      || panel.querySelector("[data-custom-grouped-gym]") || input;
+    target.scrollIntoView({ block: "center" });
+    target.focus({ preventScroll: true });
+  }
+  return false;
+}
+
 function customExerciseCode(index = 0) {
   return `CW${String(index + 1).padStart(2, "0")}`;
 }
@@ -6223,6 +6345,7 @@ function freshCustomWorkoutStorageTitle(createdAt = new Date()) {
 function freshCustomWorkoutDraft(createdAt = new Date()) {
   return {
     format: "single",
+    gymName: "",
     date: todayDate(),
     workoutTitle: freshCustomWorkoutStorageTitle(createdAt),
     exercises: []
@@ -6241,6 +6364,7 @@ function generatedCustomWorkoutDraft(workout, createdAt = new Date()) {
   return {
     version: customWorkoutDraftVersion,
     format,
+    gymName: "",
     date,
     workoutTitle: `${customWorkoutTitle} · ${title} · ${id}`,
     nextExerciseNumber: workout.exercises.length + 1,
@@ -6274,7 +6398,7 @@ function generatedCustomWorkoutDraft(workout, createdAt = new Date()) {
   };
 }
 
-function useGeneratedClientWorkout(workout, preparedDraft = null) {
+function useGeneratedClientWorkout(workout, preparedDraft = null, gymName = "") {
   if (workoutElapsedTimerState) {
     throw new Error("Finish or cancel your current workout before using a generated workout.");
   }
@@ -6289,6 +6413,7 @@ function useGeneratedClientWorkout(workout, preparedDraft = null) {
   }
 
   const draft = preparedDraft || generatedCustomWorkoutDraft(workout);
+  if (gymName) draft.gymName = normalizeWorkoutGymName(gymName);
   const panelIndex = clientCustomWorkoutPanelIndex();
   // Stop queued writes from the old panel before replacing its local draft.
   cancelTrainingLogAutosaves(panel);
@@ -6326,7 +6451,7 @@ function useGeneratedClientWorkout(workout, preparedDraft = null) {
   return true;
 }
 
-function openClientWorkoutGenerator(button, initialPreferences) {
+function openClientWorkoutGenerator(button, initialPreferences, initialGymLocation = "") {
   const dialog = window.FWB_WORKOUT_GENERATOR_DIALOG;
   if (!dialog || !window.FWB_WORKOUT_GENERATOR) {
     window.alert("The workout generator could not load. Refresh the page and try again.");
@@ -6337,13 +6462,15 @@ function openClientWorkoutGenerator(button, initialPreferences) {
   const opened = dialog.open({
     library: exerciseLibraryEntries,
     initialPreferences,
+    gymLocation: normalizeWorkoutGymName(initialGymLocation),
+    gymLocations: recentWorkoutGymLocations(),
     history: trainingLogs.filter(log => normalizeClientEmail(log.client_email) === normalizeClientEmail(clientEmail)),
     returnFocus: button,
-    onUse(workout) {
+    onUse(workout, gymName) {
       if (activeClientEmail !== clientEmail || currentProgram?.id !== programId) {
         throw new Error("Your selected program changed. Close this preview and generate a new workout.");
       }
-      return useGeneratedClientWorkout(workout);
+      return useGeneratedClientWorkout(workout, null, gymName);
     }
   });
   if (opened === false) window.alert("The workout generator could not open. Update your browser and try again.");
@@ -6460,6 +6587,7 @@ function customWorkoutPanelDraft(panel) {
 
   return {
     format: normalizeCustomWorkoutFormat(panel?.dataset.customWorkoutFormat || activeCustomWorkoutFormat),
+    gymName: workoutGymLocationForElement(panel),
     date: panel?.querySelector("[data-workout-date]")?.value || todayDate(),
     workoutTitle: String(panel?.dataset.customWorkoutTitle || currentDraft?.workoutTitle || customWorkoutTitle),
     emptyExercises: !panel?.querySelector("[data-custom-exercise-card]"),
@@ -6602,6 +6730,9 @@ function applyCustomWorkoutDraft(panel) {
   if (!panel || !draft) {
     return;
   }
+
+  const gymInput = panel.querySelector("[data-workout-gym]");
+  if (gymInput) gymInput.value = normalizeWorkoutGymName(draft.gymName || storedWorkoutGymLocation(panel.dataset.customWorkoutTitle, draft.date || todayDate()));
 
   if (draft.format) {
     updateCustomWorkoutFormat(panel, draft.format, { skipDraft: true });
@@ -9319,6 +9450,14 @@ function customWorkoutGroupedRoundCardMarkup(format, exercises, groupIndex = 0, 
           </div>
           <p class="custom-workout-grouped-progress" data-custom-grouped-progress aria-live="polite">0 / 0 complete</p>
         </header>
+        ${format === "superset" || format === "circuit" ? `
+          <label class="custom-workout-grouped-gym">
+            <span>Add gym location</span>
+            <input data-custom-grouped-gym type="text" maxlength="80" autocomplete="off" placeholder="Gym name, Home, or Outdoors" />
+            <small data-custom-grouped-gym-error hidden>Choose a gym location before logging a round.</small>
+            <small data-custom-grouped-gym-locked hidden>This location stays with the workout after a round is saved.</small>
+          </label>
+        ` : ""}
         ${!options.assigned && panelFormat === "single"
           ? customWorkoutInlineGroupOptionsMarkup(format)
           : ""}
@@ -10449,6 +10588,7 @@ async function logCustomWorkoutGroupedWarmUp(button) {
   const logElements = customWorkoutGroupedLogElements(carousel);
   if (!carousel || !section || button.disabled || !logElements.length || carousel.dataset.customGroupedWarmupSaving === "true") return { saved: false };
   const workoutPanel = carousel.closest(".client-workout-panel") || carousel;
+  if (!requireWorkoutGymLocation(workoutPanel, { near: button })) return { saved: false, validation: true };
   if (Array.from(workoutPanel.querySelectorAll("[data-custom-grouped-log-round]")).some((control) => control.disabled)) return { saved: false };
   if (customWorkoutGroupedTimerConflict(carousel)) {
     if (status) status.textContent = "Finish the workout already in progress before logging this warm-up.";
@@ -10543,6 +10683,7 @@ async function logCustomWorkoutGroupedRound(button) {
   const logElements = customWorkoutGroupedLogElements(carousel);
 
   if (!carousel || !section || button.disabled || logElements.length === 0 || carousel.dataset.customGroupedWarmupSaving === "true") return { saved: false };
+  if (!requireWorkoutGymLocation(carousel.closest?.(".client-workout-panel"), { near: button })) return { saved: false, validation: true };
 
   if (customWorkoutGroupedTimerConflict(carousel)) {
     if (status) status.textContent = `Finish the workout already in progress before logging this ${workoutSetUnit(carousel).toLowerCase()}.`;
@@ -11800,6 +11941,7 @@ function syncCustomWorkoutCarousel(panel, options = {}) {
     }
     renderCustomWorkoutCarousel(carousel);
   });
+  syncGroupedWorkoutGymInputs(panel);
 
   const focusCard = options.focusCard;
   const focusCarousel = focusCard?.closest("[data-custom-workout-carousel]");
@@ -11853,6 +11995,7 @@ function syncAssignedWorkoutCarousels(panel = null) {
       bindCustomWorkoutCarousel(carousel);
       renderCustomWorkoutCarousel(carousel);
     });
+    syncGroupedWorkoutGymInputs(assignedPanel);
     syncWorkoutNextExerciseButtons(assignedPanel);
     syncWorkoutExerciseList(assignedPanel);
   });
@@ -12197,6 +12340,7 @@ function customWorkoutPanelMarkup(index) {
         </span>
         <small>This date applies to every exercise in this custom workout.</small>
       </label>
+      ${workoutGymPickerMarkup(activeDraft?.gymName || storedWorkoutGymLocation(workoutStorageTitle), index)}
       <div class="workout-format-pill" data-custom-workout-format-pill>${escapeHtml(formatConfig.label)}</div>
       <div class="custom-workout-builder">
         <div class="custom-workout-header">
@@ -13275,6 +13419,7 @@ function renderClientWorkoutTabs(workouts = []) {
         </span>
         <small>This date applies to every exercise in this workout.</small>
       </label>
+      ${workoutGymPickerMarkup(storedWorkoutGymLocation(title), index)}
       <div class="workout-format-pill">${escapeHtml(formatLabel(workoutFormat))}</div>
       <div class="custom-workout-builder" data-assigned-workout-list role="list" aria-label="${escapeHtml(title)} exercises">
         ${warmupLogFields(title, { showDate: false })}
@@ -13302,11 +13447,11 @@ function logKey(workoutTitle, exerciseCode) {
   return `${workoutTitle}::${exerciseCode}`;
 }
 
-function logsForExercise(workoutTitle, exerciseCode) {
+function logsForExercise(workoutTitle, exerciseCode, gymName = "") {
   const key = logKey(workoutTitle, exerciseCode);
 
   return trainingLogs
-    .filter((log) => logKey(log.workout_title, log.exercise_code) === key)
+    .filter((log) => logKey(log.workout_title, log.exercise_code) === key && sameWorkoutGym(log.gym_name, gymName))
     .sort((a, b) => {
       const dateCompare = String(b.entry_date).localeCompare(String(a.entry_date));
 
@@ -13352,7 +13497,7 @@ function exerciseHistoryLookup() {
 
 function logsForExerciseDisplay(logElement) {
   if (logElement.dataset.warmupLog !== undefined || logElement.dataset.cardioLog !== undefined) {
-    return logsForExercise(logElement.dataset.workoutTitle, logElement.dataset.exerciseCode);
+    return logsForExercise(logElement.dataset.workoutTitle, logElement.dataset.exerciseCode, workoutGymLocationForElement(logElement));
   }
 
   const exerciseName = currentExerciseHistoryName(logElement);
@@ -13361,7 +13506,9 @@ function logsForExerciseDisplay(logElement) {
     return [];
   }
 
-  return exerciseHistoryLookup().get(exerciseName) || [];
+  const gymName = workoutGymLocationForElement(logElement);
+  return (exerciseHistoryLookup().get(exerciseName) || [])
+    .filter((row) => sameWorkoutGym(row.gym_name, gymName));
 }
 
 function parseCardioNotes(notes = "") {
@@ -13668,7 +13815,7 @@ function updateExerciseLogField(logElement) {
     ? logElement.querySelector("[data-set-progress]")
     : card?.querySelector("[data-set-progress]");
   const logs = logsForExerciseDisplay(logElement);
-  const exactSessionLogs = logsForExercise(logElement.dataset.workoutTitle, logElement.dataset.exerciseCode);
+  const exactSessionLogs = logsForExercise(logElement.dataset.workoutTitle, logElement.dataset.exerciseCode, workoutGymLocationForElement(logElement));
   const selectedDate = dateInput?.value || todayDate();
   const selectedLogs = exactSessionLogs.filter((log) => log.entry_date === selectedDate);
 
@@ -13816,6 +13963,7 @@ function populateTrainingLogs(logs) {
 
   document.querySelectorAll(".client-workout-panel").forEach((panel) => {
     syncWorkoutPanelDate(panel, panel.querySelector("[data-workout-date]")?.value || todayDate(), false);
+    syncWorkoutGymLock(panel);
   });
 
   document.querySelectorAll("[data-exercise-log]").forEach((logElement) => {
@@ -13895,13 +14043,73 @@ function upsertLocalTrainingLog(savedLog) {
 }
 
 function handleTrainingDateChange() {
+  document.addEventListener("input", (event) => {
+    const groupedGymInput = event.target.closest("[data-custom-grouped-gym]");
+    if (groupedGymInput) {
+      const panel = groupedGymInput.closest(".client-workout-panel");
+      const source = panel?.querySelector("[data-workout-gym]");
+      if (!source || source.readOnly) { syncGroupedWorkoutGymInputs(panel); return; }
+      source.value = groupedGymInput.value;
+      source.removeAttribute("aria-invalid");
+      const error = panel.querySelector("[data-workout-gym-error]");
+      if (error) error.hidden = true;
+      rememberWorkoutGymLocation(panel);
+      persistCustomWorkoutDraftFromPanel(panel);
+      syncGroupedWorkoutGymInputs(panel, groupedGymInput);
+      return;
+    }
+    const gymInput = event.target.closest("[data-workout-gym]");
+    if (!gymInput) return;
+    const panel = gymInput.closest(".client-workout-panel");
+    gymInput.removeAttribute("aria-invalid");
+    const error = panel?.querySelector("[data-workout-gym-error]");
+    if (error) error.hidden = true;
+    rememberWorkoutGymLocation(panel);
+    persistCustomWorkoutDraftFromPanel(panel);
+    syncGroupedWorkoutGymInputs(panel);
+  });
   document.addEventListener("change", (event) => {
+    const groupedGymInput = event.target.closest("[data-custom-grouped-gym]");
+    if (groupedGymInput) {
+      const panel = groupedGymInput.closest(".client-workout-panel");
+      const source = panel?.querySelector("[data-workout-gym]");
+      if (!source || source.readOnly) { syncGroupedWorkoutGymInputs(panel); return; }
+      source.value = normalizeWorkoutGymName(groupedGymInput.value);
+      source.removeAttribute("aria-invalid");
+      rememberWorkoutGymLocation(panel);
+      persistCustomWorkoutDraftFromPanel(panel);
+      syncGroupedWorkoutGymInputs(panel);
+      panel.querySelectorAll("[data-exercise-log]").forEach((log) => {
+        renderPreviousExerciseWeights(log);
+        renderWorkoutProgression(log);
+      });
+      return;
+    }
+    const gymInput = event.target.closest("[data-workout-gym]");
+    if (gymInput) {
+      const panel = gymInput.closest(".client-workout-panel");
+      gymInput.value = normalizeWorkoutGymName(gymInput.value);
+      rememberWorkoutGymLocation(panel);
+      persistCustomWorkoutDraftFromPanel(panel);
+      syncGroupedWorkoutGymInputs(panel);
+      panel?.querySelectorAll("[data-exercise-log]").forEach((log) => {
+        renderPreviousExerciseWeights(log);
+        renderWorkoutProgression(log);
+      });
+      return;
+    }
     const workoutDate = event.target.closest("[data-workout-date]");
 
     if (workoutDate) {
       const panel = workoutDate.closest(".client-workout-panel");
       syncWorkoutPanelDate(panel, workoutDate.value || todayDate());
+      if (panel?.classList.contains("client-workout-panel-assigned")) {
+        const gymInput = panel.querySelector("[data-workout-gym]");
+        if (gymInput) gymInput.value = storedWorkoutGymLocation(panel.dataset.customWorkoutTitle, workoutDate.value || todayDate());
+      }
+      syncWorkoutGymLock(panel);
       persistCustomWorkoutDraftFromPanel(panel);
+      panel?.querySelectorAll("[data-exercise-log]").forEach(updateExerciseLogField);
       const panelWorkoutTitle = String(
         panel?.querySelector("[data-workout-start]")?.dataset.workoutTitle || ""
       ).trim();
@@ -14307,6 +14515,7 @@ function customWorkoutDraftFromLogs(logs = [], options = {}) {
 
   return {
     format,
+    gymName: "",
     date,
     workoutTitle: String(options.workoutTitle || customWorkoutTitle),
     copiedFrom: {
@@ -14561,6 +14770,7 @@ function renderClientTrainingLogs() {
         history_key: workoutKey,
         entry_date: log.entry_date || "",
         workout_title: log.workout_title || "Workout",
+        gym_name: log.gym_name || "",
         workout_duration_seconds: null,
         workout_difficulty: null,
         completed_at: "",
@@ -14569,6 +14779,7 @@ function renderClientTrainingLogs() {
     }
 
     const workoutGroup = workoutGroups.get(workoutKey);
+    if (!workoutGroup.gym_name && log.gym_name) workoutGroup.gym_name = log.gym_name;
     const hasWorkoutDuration = log.workout_duration_seconds !== null &&
       log.workout_duration_seconds !== undefined &&
       log.workout_duration_seconds !== "";
@@ -14605,6 +14816,7 @@ function renderClientTrainingLogs() {
       supersetGroup.exercises.set(exerciseKey, {
         exercise_code: log.exercise_code || "",
         exercise_name: log.exercise_name || "",
+        gym_name: log.gym_name || "",
         sets: []
       });
     }
@@ -14642,7 +14854,7 @@ function renderClientTrainingLogs() {
     const workoutDuration = workoutHistoryDurationLabel(workout.workout_duration_seconds);
     const workoutDifficulty = workoutHistoryDifficultyLabel(workout.workout_difficulty);
     const displayTitle = workoutDisplayTitle(workout.workout_title);
-    const workoutHeading = [displayTitle, workoutDuration, workoutDifficulty].filter(Boolean).join(" · ");
+    const workoutHeading = [displayTitle, workout.gym_name, workoutDuration, workoutDifficulty].filter(Boolean).join(" · ");
     const mobileWorkoutMeta = [workoutDuration, workoutDifficulty].filter(Boolean).join(" · ") || "Workout saved";
     const workoutStatus = workout.completed_at ? "Completed" : "Saved";
     const metrics = workoutHistorySummaryMetrics(workout);
@@ -14723,6 +14935,7 @@ function renderClientTrainingLogs() {
                             : `${entry.exercise_code} ${entry.exercise_name}`
                         )}</span>
                         <em>${escapeHtml(setSummary || "Sets saved")}</em>
+                        ${entry.gym_name ? `<small class="training-log-gym">At ${escapeHtml(entry.gym_name)}</small>` : ""}
                         ${noteSummary ? `<small class="training-log-notes"><strong>Notes:</strong> ${escapeHtml(noteSummary)}</small>` : ""}
                       </div>
                     </article>
@@ -14775,7 +14988,7 @@ function renderClientTrainingLogs() {
               <span class="training-log-history-state${workout.completed_at ? " is-complete" : ""}">${escapeHtml(workoutStatus)}</span>
               <strong>${escapeHtml(formatLogDate(workout.entry_date))}</strong>
             </div>
-            <h3>${escapeHtml(displayTitle)}</h3>
+            <h3>${escapeHtml([displayTitle, workout.gym_name].filter(Boolean).join(" · "))}</h3>
             <p>${escapeHtml(mobileWorkoutMeta)}</p>
             <dl class="training-log-history-metrics">
               <div><dt>Exercises</dt><dd>${escapeHtml(String(metrics.exerciseCount))}</dd></div>
@@ -15507,6 +15720,7 @@ function workoutHistoryCsv(logs = []) {
   const headers = [
     "Date",
     "Workout",
+    "Gym location",
     "Section",
     "Exercise code",
     "Exercise",
@@ -15528,6 +15742,7 @@ function workoutHistoryCsv(logs = []) {
     return [
       log.entry_date || "",
       workoutDisplayTitle(log.workout_title),
+      log.gym_name || "",
       csvSectionForLog(log),
       log.exercise_code || "",
       log.exercise_name || "",
@@ -16190,13 +16405,14 @@ async function saveClientMoodNote(note) {
   } finally { clientDailyCheckinSaving = false; }
 }
 
-function dailyCustomWorkoutDraft(recommendation) {
+function dailyCustomWorkoutDraft(recommendation, gymName = "") {
   const workout = recommendation.workout;
   const date = recommendation.date;
   const format = normalizeCustomWorkoutFormat(inferWorkoutFormat(workout));
   const groups = new Map();
   return {
     version: customWorkoutDraftVersion, format: "single", date, workoutTitle: workout.title,
+    gymName: String(gymName || "").trim().replace(/\s+/g, " ").slice(0, 80),
     nextExerciseNumber: workout.exercises.length + 1,
     generatedFrom: { id: workout.title, title: `Today: ${recommendation.originalWorkout.title}`, daily: true },
     exercises: workout.exercises.map((exercise, index) => {
@@ -16237,16 +16453,26 @@ function openClientDailyCheckin(stage = "checkin", returnFocus = document.queryS
     }
     if (workoutElapsedTimerState) throw new Error("Finish or cancel your current workout first.");
   };
-  const openAssigned = index => {
+  const openAssigned = (index, gymName = "") => {
     assertCurrent();
     const panelIndex = index + 1;
     if (!Number.isInteger(index) || !program.workouts[index]?.exercises?.length) throw new Error("This workout is no longer available. Reopen your check-in.");
     setClientDashboardTab("workouts");
     activateClientWorkoutPanel(panelIndex, { scroll: false, focus: false });
+    const panel = document.getElementById(`client-workout-panel-${panelIndex}`);
+    const gymInput = panel?.querySelector("[data-workout-gym]");
+    if (gymInput && !gymInput.readOnly && gymName) {
+      gymInput.value = normalizeWorkoutGymName(gymName);
+      rememberWorkoutGymLocation(panel);
+      syncGroupedWorkoutGymInputs(panel);
+      panel.querySelectorAll("[data-exercise-log]").forEach((log) => {
+        renderPreviousExerciseWeights(log);
+        renderWorkoutProgression(log);
+      });
+    }
     window.requestAnimationFrame(() => {
-      const panel = document.getElementById(`client-workout-panel-${panelIndex}`);
       panel?.scrollIntoView({ block: "start", behavior: "auto" });
-      panel?.querySelector("[data-workout-start]")?.focus({ preventScroll: true });
+      panel?.querySelector(gymInput?.value ? "[data-workout-start]" : "[data-workout-gym]")?.focus({ preventScroll: true });
     });
     return true;
   };
@@ -16255,6 +16481,7 @@ function openClientDailyCheckin(stage = "checkin", returnFocus = document.queryS
   const opened = window.FWB_DAILY_CHECKIN_DIALOG?.open({
     stage: stage === "recommendation" && !recommendation ? "checkin" : stage,
     initialCheckIn, recommendation, returnFocus,
+    gymLocations: recentWorkoutGymLocations(),
     onDismiss() { /* Presentation already marked the original account and day. */ },
     async onSave(checkIn) {
       assertCurrent();
@@ -16267,17 +16494,29 @@ function openClientDailyCheckin(stage = "checkin", returnFocus = document.queryS
       assertCurrent();
       return clientDailyWorkoutRecommendation(checkIn);
     },
-    onUse(result) {
+    onUse(result, gymName = "") {
       assertCurrent();
-      if (Number.isInteger(result.workoutIndex)) return openAssigned(result.workoutIndex);
+      if (Number.isInteger(result.workoutIndex)) return openAssigned(result.workoutIndex, gymName);
       if (!result.workout) throw new Error("Choose a recovery option or create a workout first.");
-      const draft = dailyCustomWorkoutDraft(result);
+      const draft = dailyCustomWorkoutDraft(result, gymName);
       if (activeCustomWorkoutDraft()?.workoutTitle === draft.workoutTitle) {
         setClientDashboardTab("workouts");
         activateClientWorkoutPanel(clientCustomWorkoutPanelIndex());
+        const panel = document.querySelector(".client-workout-panel-custom");
+        const gymInput = panel?.querySelector("[data-workout-gym]");
+        if (gymInput && !gymInput.readOnly && gymName) {
+          gymInput.value = normalizeWorkoutGymName(gymName);
+          rememberWorkoutGymLocation(panel);
+          persistCustomWorkoutDraftFromPanel(panel);
+          syncGroupedWorkoutGymInputs(panel);
+          panel.querySelectorAll("[data-exercise-log]").forEach((log) => {
+            renderPreviousExerciseWeights(log);
+            renderWorkoutProgression(log);
+          });
+        }
         return true;
       }
-      return useGeneratedClientWorkout(result.workout, draft);
+      return useGeneratedClientWorkout(result.workout, draft, gymName);
     },
     onKeepOriginal() {
       assertCurrent();
@@ -16287,10 +16526,10 @@ function openClientDailyCheckin(stage = "checkin", returnFocus = document.queryS
       showClientWorkoutPicker({ scroll: true });
       return true;
     },
-    onGenerate(result) {
+    onGenerate(result, gymName = "") {
       assertCurrent();
       window.FWB_DAILY_CHECKIN_DIALOG.close({ restoreFocus: false, dismiss: false });
-      openClientWorkoutGenerator(returnFocus, result.generatorPreferences);
+      openClientWorkoutGenerator(returnFocus, result.generatorPreferences, gymName);
       return true;
     },
     gymCheckedIn: window.FWB_WEEKLY_ACTIVITY?.isCheckedIn?.() || false,
@@ -17681,6 +17920,7 @@ function handleWorkoutInteractions() {
     if (workoutStartButton) {
       const workoutTitle = String(workoutStartButton.dataset.workoutTitle || activeWorkoutElapsedTitle()).trim();
       const workoutPanel = workoutStartButton.closest(".client-workout-panel");
+      if (!requireWorkoutGymLocation(workoutPanel)) return;
       const workoutPanels = Array.from(document.querySelectorAll(".client-workout-panel"));
       const workoutDate = workoutPanel?.querySelector("[data-workout-date]")?.value || todayDate();
       const panelIndex = workoutPanels.indexOf(workoutPanel);
@@ -17735,6 +17975,7 @@ function handleWorkoutInteractions() {
 
     if (setRestButton) {
       const logElement = setRestButton.closest("[data-exercise-log]");
+      if (!requireWorkoutGymLocation(logElement?.closest(".client-workout-panel"))) return;
       if (!workoutElapsedTimerState) {
         startWorkoutElapsedTimer(logElement?.dataset.workoutTitle || activeWorkoutElapsedTitle());
       }
@@ -17747,6 +17988,7 @@ function handleWorkoutInteractions() {
     if (completeSetButton) {
       const setRow = completeSetButton.closest("[data-set-row]");
       const logElement = completeSetButton.closest("[data-exercise-log]");
+      if (!requireWorkoutGymLocation(logElement?.closest(".client-workout-panel"))) return;
       const wasComplete = setRow?.classList.contains("is-complete");
 
       if (!workoutElapsedTimerState) {
@@ -19114,6 +19356,7 @@ function rowsForTrainingLog(logElement) {
   }
 
   const notes = logElement.querySelector("[data-log-notes]")?.value || "";
+  const gymName = workoutGymLocationForElement(logElement);
   const exerciseName = exerciseNameInputForLog(logElement)?.value?.trim() || logElement.dataset.exerciseName;
 
   if (logElement.dataset.cardioLog !== undefined) {
@@ -19129,6 +19372,7 @@ function rowsForTrainingLog(logElement) {
       client_email: activeClientEmail,
       entry_date: dateInput.value || todayDate(),
       workout_title: logElement.dataset.workoutTitle,
+      gym_name: gymName || null,
       exercise_code: cardioExerciseCode,
       exercise_name: exerciseName || "Cardio",
       set_number: 1,
@@ -19149,6 +19393,7 @@ function rowsForTrainingLog(logElement) {
       client_email: activeClientEmail,
       entry_date: dateInput.value || todayDate(),
       workout_title: logElement.dataset.workoutTitle,
+      gym_name: gymName || null,
       exercise_code: warmupExerciseCode,
       exercise_name: exerciseName || "Warm up",
       set_number: 1,
@@ -19169,6 +19414,7 @@ function rowsForTrainingLog(logElement) {
           client_email: activeClientEmail,
           entry_date: dateInput.value || todayDate(),
           workout_title: logElement.dataset.workoutTitle,
+          gym_name: gymName || null,
           exercise_code: logElement.dataset.exerciseCode,
           exercise_name: exerciseName,
           set_number: Number(setRow.dataset.setNumber || 1),
@@ -19499,6 +19745,12 @@ async function saveTrainingLogRows(button, logElements, status, options = {}) {
     return { saved: false };
   }
 
+  const panel = logElements[0]?.closest?.(".client-workout-panel");
+  if (panel?.querySelector("[data-workout-gym]") && !requireWorkoutGymLocation(panel, { focus: Boolean(button) })) {
+    if (status) status.textContent = "Choose a gym location before logging a set.";
+    return { saved: false };
+  }
+
   if (button) {
     button.disabled = true;
   }
@@ -19605,6 +19857,7 @@ async function saveTrainingLogRows(button, logElements, status, options = {}) {
   }
 
   (data || persistedRows).forEach((row) => upsertLocalTrainingLog(row));
+  syncWorkoutGymLock(panel);
   if (!options.skipLogRefresh) {
     logElements.forEach(updateExerciseLogField);
   } else {
@@ -19651,6 +19904,7 @@ async function handleTrainingLogSave() {
 
       const difficultyTrigger = section?.querySelector("[data-custom-grouped-finish-workout]") || finishWorkoutButton;
       if (!section || section.dataset.workoutFinishing === "true") return;
+      if (!requireWorkoutGymLocation(section, { near: finishWorkoutButton })) return;
       const issues = workoutFinishIssues(section, { allowUnstarted: allowIncompleteWorkoutFinish });
       if (!showWorkoutFinishIssues(difficultyTrigger, issues)) return;
       if (logElements.some((log) => log.dataset.autosaveInFlight === "true") ||
