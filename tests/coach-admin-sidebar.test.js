@@ -48,7 +48,7 @@ test("collapsed sidebar controls retain accessible names and navigation state se
   assert.doesNotMatch(navMarkup, /aria-selected=/);
   assert.match(navMarkup, /data-admin-tab="home"[^>]*aria-label="Home"[^>]*aria-current="page"/);
   assert.match(navMarkup, /data-admin-tab="clients"[^>]*aria-label="Clients"/);
-  assert.match(navMarkup, /data-admin-tab="notifications"[^>]*aria-label="Settings"/);
+  assert.match(navMarkup, /data-admin-tab="notifications"[^>]*aria-label="Recent activity"/);
   assert.doesNotMatch(navMarkup, /data-admin-tab="(?:profile|program|workouts|nutrition|progress|notes|logs|sessions)"/);
   assert.match(adminSource, /button\.setAttribute\("aria-current", "page"\)/);
   assert.match(adminSource, /button\.removeAttribute\("aria-current"\)/);
@@ -109,12 +109,13 @@ test("desktop navigation stays light and keeps client tools only in the selected
   assert.match(adminSource, /button\.dataset\.clientMobileDestination === nextTab/);
 });
 
-test("mobile coach navigation keeps five stable destinations and moves secondary tools into More", () => {
+test("mobile coach navigation keeps six stable destinations and moves secondary tools into More", () => {
   assert.match(adminHtml, /data-admin-tab="home"[\s\S]*?href="coach-workout-log\.html"[\s\S]*?data-admin-tab="clients"[\s\S]*?data-admin-tab="inbox"[\s\S]*?data-coach-mobile-more-open/);
   assert.match(styleSource, /@media \(max-width: 900px\)[\s\S]*?\.coach-admin-page \.admin-tabs\s*\{[^}]*overflow-x:\s*hidden[^}]*touch-action:\s*manipulation/s);
   assert.match(styleSource, /@media \(max-width: 900px\)[\s\S]*?\.coach-admin-page \.admin-tab-mobile-more\s*\{[^}]*display:\s*flex !important/s);
-  assert.match(styleSource, /\.coach-admin-page \.admin-tabs :is\(\.admin-tab-exercise-library, \.admin-tab\[data-admin-tab="notifications"\]\)\s*\{[^}]*display:\s*none !important/s);
+  assert.match(styleSource, /\.coach-admin-page \.admin-tabs \.admin-tab-exercise-library\s*\{[^}]*display:\s*none !important/s);
   assert.match(styleSource, /flex:\s*1 1 0 !important[^}]*min-width:\s*0 !important/s);
+  assert.match(adminHtml, /data-admin-tab="notifications"[^>]*aria-label="Recent activity"[\s\S]*?<span class="admin-nav-label">Activity<\/span>/);
   assert.match(adminHtml, /data-coach-mobile-more-destination="notifications"/);
 });
 

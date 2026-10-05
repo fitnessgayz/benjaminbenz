@@ -23,7 +23,7 @@ const coachPreferenceKeys = [
   "client_inactivity"
 ];
 
-test("keeps Home first and adds a coach Settings destination", () => {
+test("keeps Home first and adds a coach Recent Activity destination", () => {
   const navigationStart = adminHtml.indexOf('id="coach-admin-sidebar-nav"');
   const navigationEnd = adminHtml.indexOf("</nav>", navigationStart);
   const navigation = adminHtml.slice(navigationStart, navigationEnd);
@@ -37,9 +37,9 @@ test("keeps Home first and adds a coach Settings destination", () => {
   assert.ok(home < sessionLogger);
   assert.ok(settingsTab > inboxTab);
   assert.equal(settingsTab, navigation.lastIndexOf("data-admin-tab="));
-  assert.match(navigation, /data-admin-tab="notifications"[^>]*aria-label="Settings"/);
-  assert.match(navigation, /admin-nav-settings-icon/);
-  assert.match(navigation, /<span class="admin-nav-label">Settings<\/span>/);
+  assert.match(navigation, /data-admin-tab="notifications"[^>]*aria-label="Recent activity"/);
+  assert.match(navigation, /admin-nav-activity-icon/);
+  assert.match(navigation, /<span class="admin-nav-label">Activity<\/span>/);
   assert.doesNotMatch(navigation, /data-web-notification-unread/);
   assert.match(adminHtml, /data-coach-home-settings[\s\S]*?data-web-notification-unread/);
 });

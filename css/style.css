@@ -17352,7 +17352,7 @@ body.client-dashboard-page.is-loading > :is(.client-dashboard-tabs,
     display: flex !important;
   }
 
-  .coach-admin-page .admin-tabs :is(.admin-tab-exercise-library, .admin-tab[data-admin-tab="notifications"]) {
+  .coach-admin-page .admin-tabs .admin-tab-exercise-library {
     display: none !important;
   }
 
