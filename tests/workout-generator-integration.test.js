@@ -24,6 +24,7 @@ function evaluate(names, values = {}) {
     warmUpSetType: "warm_up",
     workingSetType: "working",
     todayDate: () => "2026-09-25",
+    autoRestTimerEnabled: () => true,
     ...values
   });
   vm.runInContext(names.map(declaration).join("\n"), context);

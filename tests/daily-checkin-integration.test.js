@@ -10,7 +10,7 @@ const plain = value => JSON.parse(JSON.stringify(value));
 const email = "client@example.com";
 const ready = { mood: 4, energy: 4, sleep: 4, soreness: 2, note: "Ready today." };
 const fullNote = "Mood: 4/5 · Energy: 4/5 · Sleep: 4/5 · Body: 4/5";
-const promptFunctions = ["clientHomeCheckinPromptStorageKey", "todayClientMoodEntry", "clientHomeCheckinPromptSeen", "rememberClientHomeCheckinPromptSeen"];
+const promptFunctions = ["clientTrainingPreferenceEnabled", "dailyCheckinPromptEnabled", "clientHomeCheckinPromptStorageKey", "todayClientMoodEntry", "clientHomeCheckinPromptSeen", "rememberClientHomeCheckinPromptSeen"];
 
 function declaration(name) {
   const match = new RegExp(`(?:async\\s+)?function\\s+${name}\\s*\\(`).exec(source);
@@ -40,6 +40,7 @@ function fixture(options = {}) {
   const context = evaluate([...promptFunctions, "clientDailyWorkoutRecommendation", "saveClientMoodNote", "openClientDailyCheckin", "maybeShowClientHomeCheckinPrompt"], {
     console, Date, Map, Set,
     clientHomeCheckinPromptStoragePrefix: "fwb_daily_checkin_prompt_v2",
+    dailyCheckinPromptStorageKey: "fwb_daily_checkin_prompt_enabled_v1", dailyCheckinPromptFallback: true,
     clientDailyPromptMemory: new Set(), clientDailyCheckinReady: true, clientDailyCheckinSaving: false,
     activeDashboardUser: { id: "client-id", email }, activeClientEmail: email,
     activeClientDashboardTab: "home", isCoachDashboardPreview: false,
@@ -131,6 +132,15 @@ test("first ready client visit opens welcome once without creating a workout or 
   assert.deepEqual(state.calls, [["open", "welcome"]]);
   assert.equal(state.dialog.initialCheckIn, null);
   assert.equal(state.dialog.recommendation, null);
+});
+
+test("daily check-in preference suppresses only the automatic prompt", () => {
+  const { context, state } = fixture();
+  state.storage.set("fwb_daily_checkin_prompt_enabled_v1", "false");
+  context.maybeShowClientHomeCheckinPrompt();
+  assert.equal(state.dialog, null);
+  assert.equal(context.openClientDailyCheckin("welcome"), true);
+  assert.equal(state.dialog.stage, "welcome");
 });
 
 test("dismissing yesterday's or another account's open dialog does not consume a new daily prompt", () => {

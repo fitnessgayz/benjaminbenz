@@ -1,0 +1,382 @@
+/* Client portal Appearance control. Dark remains the default. */
+:root[data-client-theme="light"] { background-color: #f4f5ef; color-scheme: light; }
+:root[data-client-theme="light"] body.fwb-client-document-page {
+  color-scheme: light;
+  --ink: #1b291f;
+  --ink-deep: #18221b;
+  --canvas: #f4f5ef;
+  --surface: #fff;
+  --surface-soft: #edf2e8;
+  --text-muted: #5f6d61;
+  --border: #d6ded2;
+  --focus: #548811;
+  --secondary-accent: #604596;
+  --paper: var(--surface);
+  --muted: var(--text-muted);
+  --line: var(--border);
+  background: var(--canvas);
+  color: var(--ink);
+}
+.client-theme-setting {
+  width: min(100%, 760px);
+  margin: 0 auto 22px;
+  padding: 0;
+  border: 0;
+}
+.client-theme-setting legend {
+  margin-bottom: 10px;
+  color: var(--muted);
+  font-size: .78rem;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.client-theme-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  padding: 5px;
+  border: 1px solid var(--line);
+  border-radius: 15px;
+  background: var(--surface);
+}
+.client-theme-options label { position: relative; min-width: 0; cursor: pointer; }
+.client-theme-options input {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.client-theme-options span {
+  display: grid;
+  min-height: 44px;
+  place-items: center;
+  border-radius: 10px;
+  color: var(--muted);
+  font-size: .9rem;
+  font-weight: 700;
+}
+.client-theme-options input:checked + span {
+  color: var(--brand-primary-ink);
+  background: var(--brand-primary);
+}
+.client-theme-options input:focus-visible + span { outline: 3px solid var(--focus); outline-offset: -3px; }
+
+.client-auto-rest-setting {
+  width: min(100%, 760px);
+  margin: 0 auto 22px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--surface);
+}
+:root body.client-dashboard-page .client-training-weekly-link {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 18px !important;
+}
+.client-auto-rest-setting label { display: flex; align-items: center; justify-content: space-between; gap: 16px; cursor: pointer; }
+.client-auto-rest-setting label span { display: grid; gap: 4px; min-width: 0; }
+.client-auto-rest-setting strong { color: var(--ink); font-size: .95rem; }
+.client-auto-rest-setting small { color: var(--muted); font-size: .78rem; line-height: 1.4; }
+:root body.client-dashboard-page .client-auto-rest-setting input {
+  appearance: none;
+  flex: 0 0 52px;
+  width: 52px;
+  height: 32px;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--control-border);
+  border-radius: 999px;
+  background: var(--surface-soft);
+  cursor: pointer;
+}
+:root body.client-dashboard-page .client-auto-rest-setting input::before {
+  content: "";
+  display: block;
+  width: 24px;
+  height: 24px;
+  margin: 3px;
+  border-radius: 50%;
+  background: var(--ink);
+  transition: transform .15s ease;
+}
+:root body.client-dashboard-page .client-auto-rest-setting input:checked {
+  background: var(--brand-primary);
+  border-color: var(--brand-primary);
+}
+:root body.client-dashboard-page .client-auto-rest-setting input:checked::before {
+  background: var(--brand-primary-ink);
+  transform: translateX(20px);
+}
+:root body.client-dashboard-page .client-auto-rest-setting input:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+
+:root[data-client-theme="light"] body.client-dashboard-page {
+  color-scheme: light;
+  --brand-primary: #a3f43b;
+  --brand-primary-hover: #91df2d;
+  --brand-primary-ink: #19250e;
+  --ink: #1b291f;
+  --ink-deep: #18221b;
+  --canvas: #f4f5ef;
+  --surface: #fff;
+  --surface-soft: #edf2e8;
+  --text-muted: #5f6d61;
+  --border: #d6ded2;
+  --control-border: #aab9a9;
+  --focus: #548811;
+  --danger: #a34434;
+  --warning: #9a5a12;
+  --success: #366d19;
+  --secondary-accent: #604596;
+  --secondary-surface: #f4effb;
+  --secondary-border: #d9cde9;
+  --reminder-surface: #fff4ec;
+  --reminder-border: #e8d3c2;
+  --selected-surface: #e9f5d9;
+  --card: var(--surface);
+  --paper: var(--surface);
+  --black: var(--ink-deep);
+  --white: #fff;
+  --muted: var(--text-muted);
+  --line: var(--border);
+  --lime: var(--brand-primary);
+  --nav-surface: #f9fbf6;
+  --client-settings-accent: #4c7e14;
+  --client-settings-surface: var(--surface);
+  --client-settings-line: var(--border);
+  --fwb-surface: var(--surface);
+  --fwb-text: var(--ink);
+  --fwb-line: var(--line);
+  --shadow-soft: 0 8px 26px rgb(26 43 27 / 7%);
+  background: var(--canvas);
+  background-image: none;
+  color: var(--ink);
+}
+
+:root[data-client-theme="light"] body.client-dashboard-page :is(h1, h2, .panel-heading h2) { color: var(--ink); }
+:root[data-client-theme="light"] body.client-dashboard-page .client-settings-panel {
+  --client-settings-accent: #4c7e14;
+  --client-settings-surface: var(--surface);
+  --client-settings-line: var(--line);
+}
+:root[data-client-theme="light"] body.client-dashboard-page .client-dashboard-tabs {
+  color: var(--ink);
+  background: rgb(249 251 246 / 95%);
+  border-color: var(--line);
+  box-shadow: 0 -8px 24px rgb(26 43 27 / 8%);
+}
+:root[data-client-theme="light"] body.client-dashboard-page :is(.client-dashboard-tab, .client-dashboard-tab-icon) { color: var(--muted); }
+:root[data-client-theme="light"] body.client-dashboard-page .client-dashboard-tab.is-active,
+:root[data-client-theme="light"] body.client-dashboard-page .client-dashboard-tab.is-active .client-dashboard-tab-label { color: var(--ink); }
+:root[data-client-theme="light"] body.client-dashboard-page .client-dashboard-tab.is-active .client-dashboard-tab-icon {
+  color: var(--brand-primary-ink);
+  background: var(--brand-primary);
+}
+:root[data-client-theme="light"] body.client-dashboard-page :is(
+  .dashboard-loading, .dashboard-card, .progress-panel, .notes-panel,
+  .client-home-card, .client-weekly-summary, .client-home-snapshot-card,
+  .client-workouts-panel, .client-workout-picker-card, .custom-workout-card,
+  .workout-exercise-card, .workout-preview-card, .training-log-history-card,
+  .saved-log-card, .nutrition-card, .nutrition-macro-card, .session-card,
+  .session-package-card, .client-settings-shortcuts, .client-settings-shortcut,
+  .client-settings-detail-card, .client-account-card, .client-account-settings
+) {
+  color: var(--ink);
+  background-color: var(--surface);
+  border-color: var(--line);
+}
+:root[data-client-theme="light"] body.client-dashboard-page :is(
+  .client-home-card-primary, .client-workout-resume-card, .client-workout-picker-card,
+  .workout-preview-card, .custom-workout-grouped-card-heading
+) { background-image: none; }
+:root[data-client-theme="light"] body.client-dashboard-page :is(
+  .client-settings-shortcut, a.client-settings-shortcut,
+  .client-settings-detail-header > button
+) { color: var(--ink); background: var(--surface); border-color: var(--line); }
+:root[data-client-theme="light"] body.client-dashboard-page .client-settings-shortcut:hover { background: var(--surface-soft); }
+:root[data-client-theme="light"] body.client-dashboard-page :is(.client-settings-shortcut svg, .client-settings-shortcut-arrow) { color: var(--client-settings-accent); }
+:root[data-client-theme="light"] body.client-dashboard-page :is(input, select, textarea):not([type="checkbox"]):not([type="radio"]) {
+  color: var(--ink);
+  background-color: var(--surface);
+  border-color: var(--control-border);
+}
+:root[data-client-theme="light"] body.client-dashboard-page :is(input, textarea)::placeholder { color: #778678; }
+:root[data-client-theme="light"] body.client-dashboard-page :is(.client-home-card-note, .client-home-coach-note) {
+  color: var(--ink);
+  background-color: var(--secondary-surface);
+  border-color: var(--secondary-border);
+}
+:root[data-client-theme="light"] body.client-dashboard-page .client-home-workout-button {
+  color: var(--brand-primary-ink);
+  background: var(--brand-primary);
+  border-color: var(--brand-primary);
+}
+:root[data-client-theme="light"] body.client-dashboard-page .client-workout-program-links {
+  color: var(--ink);
+  background: var(--surface);
+  border-color: var(--line);
+}
+:root[data-client-theme="light"] body.client-dashboard-page .client-workout-program-links button {
+  color: var(--ink);
+  border-color: var(--line);
+}
+:root[data-client-theme="light"] body.client-dashboard-page .client-workout-program-links button:hover {
+  background: var(--surface-soft);
+}
+:root[data-client-theme="light"] body.client-dashboard-page :is(.client-quarter-goals, .client-quarter-badges, .quarter-badge) {
+  color: var(--ink);
+  background: var(--surface);
+  border-color: var(--line);
+}
+:root[data-client-theme="light"] body.client-dashboard-page .quarter-badge :is(p, small),
+:root[data-client-theme="light"] body.client-dashboard-page .progress-exercise-muscles { color: var(--muted); }
+:root[data-client-theme="light"] body.client-dashboard-page :is(#client-quarter-goals-dialog, #client-program-info-dialog) {
+  color: var(--ink);
+  background: var(--surface);
+  border-color: var(--line);
+}
+:root[data-client-theme="light"] body.client-dashboard-page .quarter-goal-form :is(label, p) { color: var(--ink); }
+:root[data-client-theme="light"] body.client-dashboard-page .quarter-goal-form fieldset { border-color: var(--line); }
+@media (max-width: 600px) {
+  :root[data-client-theme="light"] body.client-dashboard-page .client-settings-panel { background: var(--canvas); }
+  :root[data-client-theme="light"] body.client-dashboard-page .client-settings-detail-header { background: rgb(244 245 239 / 94%); }
+}
+
+/* Keep the newer Home, Community, and Workout layouts in the light palette. */
+:root[data-client-theme="light"] body.client-dashboard-page {
+  --client-neon: #4c7e14;
+  --client-muted: var(--muted);
+}
+:root[data-client-theme="light"] body.client-dashboard-page :is(.client-home-panel, .client-community-panel) {
+  color: var(--ink);
+  background: var(--canvas);
+}
+:root[data-client-theme="light"] body.client-dashboard-page :is(
+  .client-home-topbar h2, .client-home-intro h3, #client-community-title,
+  .client-gym-hero h3, .client-weekly-header h4, .client-home-coach-note h3,
+  .client-community-hero h3, .client-community-feature h3,
+  .client-community-consent h3, .client-community-consent label,
+  .client-workouts-topbar h2
+) { color: var(--ink); }
+:root[data-client-theme="light"] body.client-dashboard-page :is(
+  .client-weekly-activity, .client-home-glance-list button,
+  .client-home-coach-note, .client-community-badges,
+  .client-community-tabs, .client-community-feature,
+  .client-community-consent, .client-workouts-message-button,
+  .client-home-settings-button, .client-home-bell
+) {
+  color: var(--ink);
+  background: var(--surface);
+  border-color: var(--line);
+}
+:root[data-client-theme="light"] body.client-dashboard-page .client-weekly-summary {
+  color: var(--ink);
+  background: transparent;
+}
+:root[data-client-theme="light"] body.client-dashboard-page .client-month-day { color: var(--ink); }
+:root[data-client-theme="light"] body.client-dashboard-page .client-weekly-mark:not(.has-workout):not(.has-checkin) { border-color: var(--control-border); }
+:root[data-client-theme="light"] body.client-dashboard-page :is(
+  .client-gym-hero-icon, .client-weekly-mark.has-workout,
+  .client-weekly-mark.has-checkin, .client-community-tabs button[aria-selected="true"],
+  .client-community-save, .client-gym-checkin, #client-workouts-count
+) {
+  color: var(--brand-primary-ink);
+  background: var(--brand-primary);
+  border-color: var(--brand-primary);
+}
+:root[data-client-theme="light"] body.client-dashboard-page .client-community-hero-icon {
+  color: var(--client-neon);
+  background: var(--surface-soft);
+}
+:root[data-client-theme="light"] body.client-dashboard-page .client-community-coming {
+  color: var(--muted);
+  background: var(--surface-soft);
+}
+:root[data-client-theme="light"] body.client-dashboard-page #client-workouts-panel.is-choosing-workout {
+  color: var(--ink);
+  background: var(--canvas);
+  border-color: var(--line);
+}
+:root[data-client-theme="light"] body.client-dashboard-page #client-workouts-panel.is-choosing-workout .workout-choice-card {
+  color: var(--ink);
+  background: var(--surface);
+  border-color: var(--line);
+}
+:root[data-client-theme="light"] body.client-dashboard-page #client-workouts-panel.is-choosing-workout .workout-choice-card:hover {
+  background: var(--surface-soft);
+  border-color: var(--client-neon);
+}
+:root[data-client-theme="light"] body.client-dashboard-page #client-workouts-panel.is-choosing-workout :is(
+  .workout-choice-title, .workout-choice-arrow, .client-workout-hub-heading h3
+) { color: var(--client-neon); }
+:root[data-client-theme="light"] body.client-dashboard-page #client-workouts-panel.is-choosing-workout .workout-choice-description { color: var(--muted); }
+:root[data-client-theme="light"] body.client-dashboard-page #client-workouts-panel.is-choosing-workout .workout-choice-icon {
+  color: var(--client-neon);
+  background: var(--surface-soft);
+}
+:root[data-client-theme="light"] body.client-dashboard-page .client-workout-plan-dialog {
+  color: var(--ink);
+  background: var(--surface);
+  border-color: var(--line);
+}
+:root[data-client-theme="light"] body.client-dashboard-page .client-workout-plan-dialog :is(
+  h2, h4, [data-plan-form] > label, legend, .saved-plan-day li
+) { color: var(--ink); }
+:root[data-client-theme="light"] body.client-dashboard-page .client-workout-plan-dialog :is(
+  .plan-kicker, [data-plan-status], .saved-plan-detail > p,
+  .saved-plan-day p, .saved-plan-day li span, .plan-empty
+) { color: var(--muted); }
+:root[data-client-theme="light"] body.client-dashboard-page .client-workout-plan-dialog :is(
+  [data-plan-close], nav button, select, .saved-plan-day, .saved-plan-list button
+) {
+  color: var(--ink);
+  background: var(--surface-soft);
+  border-color: var(--line);
+}
+:root[data-client-theme="light"] body.client-dashboard-page .client-workout-plan-dialog :is(
+  nav button.is-active, .saved-plan-day button
+) {
+  color: var(--brand-primary-ink);
+  background: var(--brand-primary);
+  border-color: var(--brand-primary);
+}
+:root[data-client-theme="light"] body.client-dashboard-page .client-workout-plan-dialog .saved-plan-list strong,
+:root[data-client-theme="light"] body.client-dashboard-page .client-workout-plan-dialog .saved-plan-detail h3 { color: var(--client-neon); }
+:root[data-client-theme="light"] body.client-dashboard-page .workout-preview-program-switcher button {
+  color: var(--ink);
+  background: var(--surface-soft);
+  border-color: var(--line);
+}
+:root[data-client-theme="light"] body.client-dashboard-page .workout-preview-program-switcher button[aria-current="true"] {
+  color: var(--client-neon);
+  border-color: var(--client-neon);
+}
+@media (max-width: 900px) {
+  :root[data-client-theme="light"] body.client-dashboard-page:has(#client-workouts-panel.is-choosing-workout:not([hidden])) {
+    background: var(--canvas);
+  }
+  :root[data-client-theme="light"] body.client-dashboard-page [data-client-dashboard-panel="home"] {
+    background-color: var(--canvas) !important;
+    background-image:
+      linear-gradient(rgb(244 245 239 / 88%), rgb(244 245 239 / 88%)),
+      var(--client-fascia-image, none) !important;
+  }
+  :root[data-client-theme="light"] body.client-dashboard-page #client-workouts-panel :is(
+    .workout-choice-card, .workout-exercise-card, .client-workout-picker-card,
+    .client-workout-picker-card-top, .client-workout-picker-card-body
+  ) { background-color: var(--surface) !important; }
+  :root[data-client-theme="light"] body.client-dashboard-page .client-dashboard-tabs,
+  :root[data-client-theme="light"] body.client-dashboard-page:has(#client-workouts-panel.is-choosing-workout:not([hidden])) .client-dashboard-tabs {
+    color: var(--ink);
+    background: rgb(249 251 246 / 95%);
+    border-color: var(--line);
+    box-shadow: 0 6px 25px rgb(26 43 27 / 8%);
+  }
+  :root[data-client-theme="light"] body.client-dashboard-page .client-dashboard-tab.is-active .client-dashboard-tab-label,
+  :root[data-client-theme="light"] body.client-dashboard-page:has(#client-workouts-panel.is-choosing-workout:not([hidden])) .client-dashboard-tab.is-active .client-dashboard-tab-label {
+    color: var(--client-neon);
+  }
+}

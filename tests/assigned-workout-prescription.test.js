@@ -50,7 +50,7 @@ function rowsFromMarkup(html) {
 
 function api(extra = {}) {
   const context = vm.createContext({
-    WorkoutLayout, escapeHtml, console,
+    WorkoutLayout, escapeHtml, console, autoRestTimerEnabled: () => true,
     warmUpSetType: "warm_up", workingSetType: "working", warmUpSetNumberBase: 1000,
     warmupExerciseCode: "WU", cardioExerciseCode: "CARDIO",
     customWorkoutDefaultWorkingSetCount: 3, activeCustomWorkoutFormat: "single",

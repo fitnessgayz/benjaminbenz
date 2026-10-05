@@ -73,6 +73,52 @@ test("set completion checkmark sits after RIR and starts the rest timer", () => 
   assert.match(styleSource, /prefers-reduced-motion:\s*reduce[\s\S]*\.set-row\.is-completion-animating::after/);
 });
 
+test("automatic rest can be turned off without removing manual timer controls", () => {
+  const readPreference = Function(
+    "window", "autoRestTimerPreferenceStorageKey", "autoRestTimerPreferenceFallback",
+    `${sourceForFunction("autoRestTimerEnabled")}; return autoRestTimerEnabled;`
+  );
+  let stored = null;
+  const enabled = readPreference({ localStorage: { getItem: () => stored } }, "test-auto-rest", true);
+  assert.equal(enabled(), true);
+  stored = "false";
+  assert.equal(enabled(), false);
+  stored = "true";
+  assert.equal(enabled(), true);
+
+  assert.match(dashboardSource, /data-auto-rest-timer checked/);
+  assert.match(sourceForFunction("logCustomWorkoutGroupedWarmUp"), /if \(autoRestTimerEnabled\(\)\)/);
+  assert.match(sourceForFunction("logCustomWorkoutGroupedRound"), /if \(autoRestTimerEnabled\(\)\)/);
+  assert.match(sourceForFunction("logCurrentWorkoutCarouselSet"), /completedRound && !nextProgress\.isComplete && autoRestTimerEnabled\(\)/);
+  assert.match(sourceForFunction("handleWorkoutInteractions"), /if \(autoRestTimerEnabled\(\)\) \{\s*resetRestTimer\(\);\s*openRestTimer\(completeSetButton\)/);
+  assert.match(sourceForFunction("handleWorkoutInteractions"), /if \(setRestButton\) \{[\s\S]*?openRestTimer\(setRestButton\)/);
+});
+
+test("automatic rest preference saves immediately when the Settings switch changes", () => {
+  const listeners = {};
+  const writes = [];
+  let synchronizations = 0;
+  const input = {
+    checked: true,
+    addEventListener: (name, callback) => { listeners[name] = callback; }
+  };
+  const document = { querySelector: () => input };
+  const window = {
+    localStorage: { setItem: (key, value) => writes.push([key, value]) },
+    addEventListener: (name, callback) => { listeners[name] = callback; }
+  };
+  const fixture = Function(
+    "document", "window", "autoRestTimerPreferenceStorageKey", "syncAutoRestTimerPreference",
+    `let autoRestTimerPreferenceFallback = true; ${sourceForFunction("configureAutoRestTimerPreference")}; configureAutoRestTimerPreference(); return () => autoRestTimerPreferenceFallback;`
+  )(document, window, "test-auto-rest", () => { synchronizations += 1; });
+
+  input.checked = false;
+  listeners.change();
+  assert.deepEqual(writes, [["test-auto-rest", "false"]]);
+  assert.equal(fixture(), false);
+  assert.equal(synchronizations, 2);
+});
+
 test("orphaned and day-old timer state expires by wall-clock age", () => {
   const source = sourceForFunction("workoutElapsedTimerIsStale");
   const maximumAge = 24 * 60 * 60 * 1000;

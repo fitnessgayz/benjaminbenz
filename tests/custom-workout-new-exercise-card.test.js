@@ -30,8 +30,9 @@ test("starts every custom exercise with one warm-up and three working sets", () 
     "warmUpSetNumberBase",
     "escapeHtml",
     "WorkoutLayout",
+    "autoRestTimerEnabled",
     `${helpers}; return setRows;`
-  )("warm_up", "working", 1000, (value) => String(value || ""), require("../js/workout-layout.js"));
+  )("warm_up", "working", 1000, (value) => String(value || ""), require("../js/workout-layout.js"), () => true);
   const markup = setRows({ prescription: "Custom sets" }, 3);
   const cardMarkup = sourceForFunction("customWorkoutCardMarkup");
   const groupMarkup = sourceForFunction("customWorkoutCarouselGroupMarkup");

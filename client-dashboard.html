@@ -6,6 +6,7 @@
   <title>FWB Training | Fitness with Benjamin</title>
   <meta name="description" content="Your private FWB Training workspace for workouts, progress, and coaching." />
   <meta name="referrer" content="no-referrer" />
+  <script src="js/client-theme.js?v=1"></script>
   <script>
     window.dataLayer = window.dataLayer || [];
     function gtag(){dataLayer.push(arguments);}
@@ -70,6 +71,7 @@
   <link rel="stylesheet" href="css/client-home-community.css?v=2" />
   <link rel="stylesheet" href="css/client-fascia-backgrounds.css?v=2" />
   <link rel="stylesheet" href="css/client-settings-navigation.css?v=2" />
+  <link rel="stylesheet" href="css/client-light-theme.css?v=3" />
 </head>
 <body class="dashboard-page client-dashboard-page is-loading">
   <nav class="coach-preview-toolbar" id="coach-preview-toolbar" aria-label="Coach navigation" hidden>
@@ -896,6 +898,14 @@
               <h2 id="client-notification-settings-title">Settings</h2>
             </div>
           </div>
+          <fieldset class="client-theme-setting" aria-label="Appearance">
+            <legend>Appearance</legend>
+            <div class="client-theme-options">
+              <label><input type="radio" name="client-theme" value="light" /><span>Light</span></label>
+              <label><input type="radio" name="client-theme" value="dark" /><span>Dark</span></label>
+              <label><input type="radio" name="client-theme" value="system" /><span>System</span></label>
+            </div>
+          </fieldset>
           <nav class="client-settings-shortcuts" aria-label="Settings categories">
             <button class="client-settings-shortcut" type="button" data-client-settings-destination="stats">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/></svg>
@@ -921,6 +931,11 @@
             <button class="client-settings-shortcut" type="button" data-client-settings-destination="sessions">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></svg>
               <span class="client-settings-shortcut-copy"><strong>Sessions</strong><small>View session dates and package history</small></span>
+              <span class="client-settings-shortcut-arrow" aria-hidden="true">›</span>
+            </button>
+            <button class="client-settings-shortcut" type="button" data-client-settings-open="training-preferences" aria-controls="client-settings-training-preferences">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2M5 4l2 2M19 4l-2 2"/></svg>
+              <span class="client-settings-shortcut-copy"><strong>Timers &amp; check-ins</strong><small>Workout timing and daily or weekly check-ins</small></span>
               <span class="client-settings-shortcut-arrow" aria-hidden="true">›</span>
             </button>
             <button class="client-settings-shortcut" type="button" data-client-settings-open="security" aria-controls="client-settings-security">
@@ -1000,6 +1015,35 @@
             </dialog>
           </article>
           </div>
+          <section class="client-settings-view client-settings-detail client-training-preferences" id="client-settings-training-preferences" data-client-settings-view="training-preferences" hidden aria-labelledby="client-settings-training-preferences-title">
+            <header class="client-settings-detail-header">
+              <button type="button" data-client-settings-back aria-label="Back to Settings">‹</button>
+              <div><p class="kicker">Settings</p><h3 id="client-settings-training-preferences-title">Timers &amp; check-ins</h3></div>
+            </header>
+            <div class="client-auto-rest-setting">
+              <label for="client-auto-rest-timer">
+                <span><strong>Automatic rest timer</strong><small>Start a rest timer after logging a set, round, or warm-up. You can still start one manually.</small></span>
+                <input id="client-auto-rest-timer" type="checkbox" role="switch" data-auto-rest-timer checked />
+              </label>
+            </div>
+            <div class="client-auto-rest-setting">
+              <label for="client-workout-timer-auto-show">
+                <span><strong>Show workout timer when training starts</strong><small>Workout time keeps tracking if hidden. Show the timer anytime from Workouts.</small></span>
+                <input id="client-workout-timer-auto-show" type="checkbox" role="switch" data-workout-timer-auto-show checked />
+              </label>
+            </div>
+            <div class="client-auto-rest-setting">
+              <label for="client-daily-checkin-prompt">
+                <span><strong>Daily check-in prompt</strong><small>Offer a check-in when you open Home. You can still check in manually.</small></span>
+                <input id="client-daily-checkin-prompt" type="checkbox" role="switch" data-daily-checkin-prompt checked />
+              </label>
+            </div>
+            <button class="client-settings-shortcut client-training-weekly-link" type="button" data-client-settings-open="notifications" aria-controls="client-settings-notifications">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 10h18M8 16l2 2 4-4"/></svg>
+              <span class="client-settings-shortcut-copy"><strong>Weekly check-in reminders</strong><small>Manage weekly check-in alerts in Notifications.</small></span>
+              <span class="client-settings-shortcut-arrow" aria-hidden="true">›</span>
+            </button>
+          </section>
           <section class="client-settings-view client-settings-detail" id="client-settings-security" data-client-settings-view="security" hidden aria-labelledby="client-settings-security-title">
             <header class="client-settings-detail-header">
               <button type="button" data-client-settings-back aria-label="Back to Settings">‹</button>
@@ -1197,7 +1241,7 @@
   <script src="js/client-achievements-ui.js?v=2"></script>
   <script src="js/workout-progression.js?v=1"></script>
   <script src="js/workout-progression-ui.js?v=1"></script>
-  <script src="js/client-portal.js?v=workout-preview-1&amp;custom-workout-history-1&amp;cancel-workout=1&amp;energy-feedback=1&amp;mood-redesign=1&amp;visible-group-controls=1&amp;exercise-videos=1&amp;remember-login=1&amp;visible-demos=1&amp;personal-bests=1&amp;copy-last-weights=1&amp;demo-icons=1&amp;keyboard-entry=1&amp;copy-set-pr=3&amp;return-coach=1&amp;apple-workout=2&amp;apple-share=1&amp;rir-help=1&amp;viewport-dock=6&amp;home-actions=1&amp;compact-copy=1&amp;exercise-pr-notes=1&amp;pr-info=1&amp;finish-workout=2&amp;prescribed-targets=1&amp;exercise-controls=1&amp;session-alerts=1&amp;exercise-labels=1&amp;exercise-list=2&amp;grouped-add=1&amp;google-health=1&amp;exercise-defaults=2&amp;workout-generator=4&amp;profile-photo=1&amp;account-settings=1&amp;workout-delete=1&amp;apple-health=1&amp;daily-checkin=1&amp;recovery-catalog=1&amp;messages=2&amp;cardio-shortcut=1&amp;achievements=1&amp;progression=1&amp;exercise-images=5&amp;exercise-motion=2&amp;exercise-guide=3&amp;settings-tabs=2&amp;workout-feedback-actions=3&amp;set-motion=1&amp;next-exercise=1&amp;warmup-actions=1&amp;photo-crop=2&amp;navigation=2&amp;demo-svg=1&amp;timer-alert-recovery=2&amp;finish-later=1&amp;suggestions-prefix=1&amp;quarter-goals=1&amp;progress-cards=1&amp;program-windows=1&amp;activity-likes=1&amp;workout-hub=2&amp;home-community=1&amp;remove-home-more=1"></script>
+  <script src="js/client-portal.js?v=workout-preview-1&amp;custom-workout-history-1&amp;cancel-workout=1&amp;energy-feedback=1&amp;mood-redesign=1&amp;visible-group-controls=1&amp;exercise-videos=1&amp;remember-login=1&amp;visible-demos=1&amp;personal-bests=1&amp;copy-last-weights=1&amp;demo-icons=1&amp;keyboard-entry=1&amp;copy-set-pr=3&amp;return-coach=1&amp;apple-workout=2&amp;apple-share=1&amp;rir-help=1&amp;viewport-dock=6&amp;home-actions=1&amp;compact-copy=1&amp;exercise-pr-notes=1&amp;pr-info=1&amp;finish-workout=2&amp;prescribed-targets=1&amp;exercise-controls=1&amp;session-alerts=1&amp;exercise-labels=1&amp;exercise-list=2&amp;grouped-add=1&amp;google-health=1&amp;exercise-defaults=2&amp;workout-generator=4&amp;profile-photo=1&amp;account-settings=1&amp;workout-delete=1&amp;apple-health=1&amp;daily-checkin=1&amp;recovery-catalog=1&amp;messages=2&amp;cardio-shortcut=1&amp;achievements=1&amp;progression=1&amp;exercise-images=5&amp;exercise-motion=2&amp;exercise-guide=3&amp;settings-tabs=2&amp;workout-feedback-actions=3&amp;set-motion=1&amp;next-exercise=1&amp;warmup-actions=1&amp;photo-crop=2&amp;navigation=2&amp;demo-svg=1&amp;timer-alert-recovery=2&amp;finish-later=1&amp;suggestions-prefix=1&amp;quarter-goals=1&amp;progress-cards=1&amp;program-windows=1&amp;activity-likes=1&amp;workout-hub=2&amp;home-community=1&amp;remove-home-more=1&amp;client-light=1&amp;training-preferences=1"></script>
   <script src="js/client-fascia-backgrounds.js?v=2"></script>
   <script src="js/workout-exercise-dock.js?v=2"></script>
 </body>

@@ -199,6 +199,9 @@ const workoutElapsedTimerCompactStorageKey = "fwb_workout_elapsed_timer_compact_
 const workoutElapsedTimerPositionStorageKey = "fwb_workout_elapsed_timer_position_v3";
 const workoutElapsedTimerMaximumMilliseconds = 24 * 60 * 60 * 1000;
 const restTimerNotificationPreferenceStorageKey = "fwb_rest_timer_notifications_v1";
+const autoRestTimerPreferenceStorageKey = "fwb_auto_rest_timer_v1";
+const workoutTimerAutoShowStorageKey = "fwb_workout_timer_auto_show_v1";
+const dailyCheckinPromptStorageKey = "fwb_daily_checkin_prompt_enabled_v1";
 const restTimerNotificationServiceWorkerUrl = "/timer-notifications-sw.js?v=web-push-notifications-1";
 let exerciseLibraryEntries = [];
 let activeCustomWorkoutFormat = "single";
@@ -213,6 +216,9 @@ let restTimerLastNotifiedRunId = 0;
 let customWorkoutGroupedRestAction = null;
 let restTimerNotificationRegistrationPromise = null;
 let restTimerNotificationPreferenceFallback = null;
+let autoRestTimerPreferenceFallback = true;
+let workoutTimerAutoShowFallback = true;
+let dailyCheckinPromptFallback = true;
 let workoutElapsedTimerState = null;
 let workoutElapsedTimerIntervalId = null;
 let workoutElapsedTimerIsCompact = null;
@@ -5196,7 +5202,7 @@ function setRowMarkup(setNumber, repPlaceholder = "", setType = workingSetType, 
         <strong data-set-rir-value>—</strong>
       </button>
       ${options.showComplete === false ? "" : `
-        <button class="set-complete-button" type="button" data-complete-set aria-label="Complete ${normalizedType === warmUpSetType ? `warm-up set ${ordinal}` : `set ${Number(setNumber) || 1}`} and start rest timer" aria-pressed="false">
+        <button class="set-complete-button" type="button" data-complete-set aria-label="Complete ${normalizedType === warmUpSetType ? `warm-up set ${ordinal}` : `set ${Number(setNumber) || 1}`}${autoRestTimerEnabled() ? " and start rest timer" : ""}" aria-pressed="false">
           <span aria-hidden="true">✓</span>
         </button>
       `}
@@ -6877,6 +6883,88 @@ function restTimerTimeLabel(seconds) {
   const remainingSeconds = safeSeconds % 60;
 
   return `${String(minutes).padStart(2, "0")}:${String(remainingSeconds).padStart(2, "0")}`;
+}
+
+function autoRestTimerEnabled() {
+  try {
+    const stored = window.localStorage.getItem(autoRestTimerPreferenceStorageKey);
+    return stored === null ? autoRestTimerPreferenceFallback : stored !== "false";
+  } catch (_) {
+    return autoRestTimerPreferenceFallback;
+  }
+}
+
+function syncAutoRestTimerPreference() {
+  const enabled = autoRestTimerEnabled();
+  const input = document.querySelector("[data-auto-rest-timer]");
+  if (input) input.checked = enabled;
+  document.querySelectorAll("[data-complete-set]").forEach((button) => {
+    const label = (button.getAttribute("aria-label") || "").replace(/ and start rest timer$/, "");
+    if (label) button.setAttribute("aria-label", `${label}${enabled ? " and start rest timer" : ""}`);
+  });
+}
+
+function configureAutoRestTimerPreference() {
+  const input = document.querySelector("[data-auto-rest-timer]");
+  if (!input) return;
+  syncAutoRestTimerPreference();
+  input.addEventListener("change", () => {
+    autoRestTimerPreferenceFallback = input.checked;
+    try { window.localStorage.setItem(autoRestTimerPreferenceStorageKey, String(input.checked)); }
+    catch (_) { /* Keep the choice for this visit when storage is unavailable. */ }
+    syncAutoRestTimerPreference();
+  });
+  window.addEventListener("storage", (event) => {
+    if (event.key === autoRestTimerPreferenceStorageKey) syncAutoRestTimerPreference();
+  });
+}
+
+function clientTrainingPreferenceEnabled(key, fallback) {
+  try {
+    const stored = window.localStorage.getItem(key);
+    return stored === null ? fallback : stored !== "false";
+  } catch (_) {
+    return fallback;
+  }
+}
+
+function workoutTimerAutoShowEnabled() {
+  return clientTrainingPreferenceEnabled(workoutTimerAutoShowStorageKey, workoutTimerAutoShowFallback);
+}
+
+function dailyCheckinPromptEnabled() {
+  return clientTrainingPreferenceEnabled(dailyCheckinPromptStorageKey, dailyCheckinPromptFallback);
+}
+
+function configureClientTrainingPreferences() {
+  const preferences = [
+    {
+      selector: "[data-workout-timer-auto-show]",
+      key: workoutTimerAutoShowStorageKey,
+      enabled: workoutTimerAutoShowEnabled,
+      remember(value) { workoutTimerAutoShowFallback = value; }
+    },
+    {
+      selector: "[data-daily-checkin-prompt]",
+      key: dailyCheckinPromptStorageKey,
+      enabled: dailyCheckinPromptEnabled,
+      remember(value) { dailyCheckinPromptFallback = value; }
+    }
+  ];
+  preferences.forEach((preference) => {
+    const input = document.querySelector(preference.selector);
+    if (!input) return;
+    const sync = () => { input.checked = preference.enabled(); };
+    sync();
+    input.addEventListener("change", () => {
+      preference.remember(input.checked);
+      try { window.localStorage.setItem(preference.key, String(input.checked)); }
+      catch (_) { /* Keep the choice for this visit when storage is unavailable. */ }
+    });
+    window.addEventListener("storage", (event) => {
+      if (event.key === preference.key) sync();
+    });
+  });
 }
 
 function isIosDevice() {
@@ -8603,7 +8691,7 @@ function startWorkoutElapsedTimer(workoutTitle = "", context = {}) {
     0,
     Number(workoutElapsedTimerState.startedAfterRound) || Number(context.startedAfterRound) || 0
   );
-  workoutElapsedTimerState.dismissed = false;
+  workoutElapsedTimerState.dismissed = !workoutTimerAutoShowEnabled();
 
   if (!workoutElapsedTimerState.running) {
     workoutElapsedTimerState.startedAt = Date.now();
@@ -10376,12 +10464,16 @@ async function logCustomWorkoutGroupedWarmUp(button) {
   customWorkoutGroupedRestAction = carousel.querySelector(
     '[data-kind="warmup"] [data-custom-grouped-round-action]'
   );
-  const generatedRestDurations = logElements
-    .filter(logElement => logElement.dataset?.generatedExercise === "true" && logElement.dataset.exerciseRest)
-    .map(logElement => workoutCarouselRestSeconds(logElement.dataset.exerciseRest));
-  if (generatedRestDurations.length) setRestTimerDuration(Math.max(...generatedRestDurations));
-  resetRestTimer();
-  startOrPauseRestTimer();
+  if (autoRestTimerEnabled()) {
+    const generatedRestDurations = logElements
+      .filter(logElement => logElement.dataset?.generatedExercise === "true" && logElement.dataset.exerciseRest)
+      .map(logElement => workoutCarouselRestSeconds(logElement.dataset.exerciseRest));
+    if (generatedRestDurations.length) setRestTimerDuration(Math.max(...generatedRestDurations));
+    resetRestTimer();
+    startOrPauseRestTimer();
+  } else {
+    renderCustomWorkoutGroupedRestControls();
+  }
   carousel.querySelector('[data-custom-grouped-round="1"]')
     ?.scrollIntoView?.({ block: "nearest", behavior: "smooth" });
   return result;
@@ -10466,12 +10558,16 @@ async function logCustomWorkoutGroupedRound(button) {
   customWorkoutGroupedRestAction = carousel.querySelector(
     `[data-custom-grouped-round="${roundNumber}"] [data-custom-grouped-round-action]`
   );
-  const generatedRestDurations = logElements
-    .filter(logElement => logElement.dataset?.generatedExercise === "true" && logElement.dataset.exerciseRest)
-    .map(logElement => workoutCarouselRestSeconds(logElement.dataset.exerciseRest));
-  if (generatedRestDurations.length) setRestTimerDuration(Math.max(...generatedRestDurations));
-  resetRestTimer();
-  startOrPauseRestTimer();
+  if (autoRestTimerEnabled()) {
+    const generatedRestDurations = logElements
+      .filter(logElement => logElement.dataset?.generatedExercise === "true" && logElement.dataset.exerciseRest)
+      .map(logElement => workoutCarouselRestSeconds(logElement.dataset.exerciseRest));
+    if (generatedRestDurations.length) setRestTimerDuration(Math.max(...generatedRestDurations));
+    resetRestTimer();
+    startOrPauseRestTimer();
+  } else {
+    renderCustomWorkoutGroupedRestControls();
+  }
   const nextButton = carousel.querySelector(`[data-custom-grouped-log-round="${roundNumber + 1}"]`);
   nextButton?.scrollIntoView?.({ block: "nearest", behavior: "smooth" });
   return result;
@@ -11296,7 +11392,7 @@ async function logCurrentWorkoutCarouselSet(button) {
   const completedRound = current.index === cards.length - 1 &&
     (nextProgress.isComplete || (nextProgress.current?.round || current.round) > current.round);
 
-  if (completedRound && !nextProgress.isComplete) {
+  if (completedRound && !nextProgress.isComplete && autoRestTimerEnabled()) {
     const restValue = current.exercise.logElement?.dataset.exerciseRest || "";
     setRestTimerDuration(workoutCarouselRestSeconds(restValue));
     openRestTimer(button);
@@ -15551,7 +15647,7 @@ function renumberSetRows(logElement) {
     const friendlyName = isWarmUp ? `warm-up set ${warmUpIndex}` : `set ${workingIndex}`;
     row.querySelector("[data-set-rir]")?.setAttribute("aria-label", `Choose reps in reserve for ${friendlyName}`);
     row.querySelector("[data-set-rest]")?.setAttribute("aria-label", `Start rest timer after ${friendlyName}`);
-    row.querySelector("[data-complete-set]")?.setAttribute("aria-label", `Complete ${friendlyName} and start rest timer`);
+    row.querySelector("[data-complete-set]")?.setAttribute("aria-label", `Complete ${friendlyName}${autoRestTimerEnabled() ? " and start rest timer" : ""}`);
     renderSetRirValue(row);
   });
 }
@@ -16195,7 +16291,7 @@ function dismissClientHomeCheckinPrompt(restoreFocus = true) {
 }
 
 function maybeShowClientHomeCheckinPrompt() {
-  if (!clientDailyCheckinReady || !activeDashboardUser || activeClientDashboardTab !== "home"
+  if (!dailyCheckinPromptEnabled() || !clientDailyCheckinReady || !activeDashboardUser || activeClientDashboardTab !== "home"
       || isCoachDashboardPreview || isCoachPortalEmail(activeDashboardUser.email)
       || workoutElapsedTimerState || document.querySelector("dialog[open]") || clientHomeCheckinPromptSeen()) return;
   openClientDailyCheckin("welcome");
@@ -17602,9 +17698,11 @@ function handleWorkoutInteractions() {
         persistCustomWorkoutDraftForElement(logElement);
         scheduleTrainingLogAutosave(logElement);
       }
-      resetRestTimer();
-      openRestTimer(completeSetButton);
-      startOrPauseRestTimer();
+      if (autoRestTimerEnabled()) {
+        resetRestTimer();
+        openRestTimer(completeSetButton);
+        startOrPauseRestTimer();
+      }
       return;
     }
 
@@ -19635,6 +19733,8 @@ function disableClientDashboardZoom() {
 
 disableClientDashboardZoom();
 initializeRestTimerNotifications();
+configureAutoRestTimerPreference();
+configureClientTrainingPreferences();
 handleClientDashboardSidebar();
 handleClientDashboardMobileNavigation();
 handleLogin();
