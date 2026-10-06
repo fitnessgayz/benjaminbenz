@@ -178,6 +178,73 @@ private struct WorkoutHistoryCopyPromptRequest: Identifiable {
     }
 }
 
+private struct WorkoutPRHistoryRequest: Identifiable {
+    let id = UUID()
+    let group: WorkoutParityGroup
+    let round: Int
+    let history: [(exercise: Exercise, records: [WorkoutHistoryRecord])]
+    let editableExerciseCodes: Set<String>
+}
+
+private struct WorkoutPRHistorySheet: View {
+    @Environment(\.dismiss) private var dismiss
+    let request: WorkoutPRHistoryRequest
+    let onUse: (Exercise, WorkoutHistoryRecord) -> Void
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    Text(request.editableExerciseCodes.isEmpty
+                        ? "Review previous working sets and personal records. Reopen this \(request.group.format == .single ? "set" : "round") before using past values."
+                        : "Review previous working sets before choosing a weight. Tap Use to apply the selected weight and reps in this \(request.group.format == .single ? "set" : "round"); you can edit them before logging.")
+                        .font(FWBFont.sized(14))
+                        .foregroundStyle(Color.fwbTextMuted)
+                    ForEach(Array(request.history.enumerated()), id: \.offset) { _, item in
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text(item.exercise.name.isEmpty ? "Exercise" : item.exercise.name)
+                                .font(FWBFont.sized(19).weight(.bold))
+                            if item.records.isEmpty {
+                                Text("No logged working sets yet.")
+                                    .font(FWBFont.sized(14))
+                                    .foregroundStyle(Color.fwbTextMuted)
+                            } else {
+                                ForEach(Array(item.records.enumerated()), id: \.offset) { _, record in
+                                    HStack(alignment: .center, spacing: 10) {
+                                        VStack(alignment: .leading, spacing: 3) {
+                                            Text(WorkoutParityModel.historySummary(record))
+                                                .font(FWBFont.sized(14).weight(.semibold))
+                                            Text("\(record.workoutTitle) · Set \(record.setNumber)")
+                                                .font(FWBFont.sized(12))
+                                                .foregroundStyle(Color.fwbTextMuted)
+                                        }
+                                        Spacer(minLength: 4)
+                                        if request.editableExerciseCodes.contains(item.exercise.code) {
+                                            Button("Use") { onUse(item.exercise, record) }
+                                                .font(FWBFont.sized(13).weight(.bold))
+                                                .buttonStyle(.borderedProminent)
+                                                .tint(Color.fwbBrandPrimary)
+                                        }
+                                    }
+                                    .padding(10)
+                                    .background(Color.fwbSurfaceRaised, in: RoundedRectangle(cornerRadius: 12))
+                                }
+                            }
+                        }
+                    }
+                }
+                .padding(18)
+            }
+            .background(Color.fwbCanvas)
+            .foregroundStyle(Color.fwbInk)
+            .navigationTitle("PR & history")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar { ToolbarItem(placement: .topBarTrailing) { Button("Done") { dismiss() } } }
+        }
+        .presentationDetents([.large])
+    }
+}
+
 /// Generated targets initialize empty sets; saved entries and edits remain authoritative.
 enum GeneratedWorkoutLoggerPreparation {
     static func initialSetType(for exercise: Exercise) -> WorkoutSetType {
@@ -242,7 +309,9 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
     @StateObject private var logStore = WorkoutLogStore()
     @StateObject private var suggestionStore = ExerciseSuggestionStore()
     @StateObject private var exerciseLibraryStore = ExerciseLibraryStore()
-    @StateObject private var restTimerStore = RestTimerStore()
+    // Only the compact rest action observes second-by-second ticks. Rebuilding
+    // the entire workout logger for each timer tick makes set entry sluggish.
+    @State private var restTimerStore = RestTimerStore()
     @StateObject private var achievementHistoryStore = WorkoutHistoryStore()
     @StateObject private var commentStore = WorkoutCommentStore()
     @ObservedObject private var offlineSyncStore: WorkoutOfflineSyncStore
@@ -296,6 +365,7 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
     @State private var parityRestGroup: String?
     @State private var parityRestRound: Int?
     @State private var parityMessage: String?
+    @State private var parityPRHistory: WorkoutPRHistoryRequest?
     @State private var parityExercise: Exercise?
     @State private var parityMediaRequest: ExerciseMediaViewerRequest?
     @State private var progressionExercise: Exercise?
@@ -340,7 +410,7 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
         _offlineSyncStore = ObservedObject(wrappedValue: previewMode ? WorkoutOfflineSyncStore.previewStore()
             : coachAccountID.map { WorkoutOfflineSyncStore.coachStore(accountID: $0) } ?? .shared)
 #if DEBUG
-        if previewMode { _restTimerStore = StateObject(wrappedValue: RestTimerStore(notificationScheduler: WorkoutParityPreviewNotifications())) }
+        if previewMode { _restTimerStore = State(initialValue: RestTimerStore(notificationScheduler: WorkoutParityPreviewNotifications())) }
 #endif
         _exercises = State(initialValue: workout.exercises)
         _drafts = State(initialValue: Self.makeDrafts(for: workout.exercises, isGeneratedWorkout: isGeneratedWorkout))
@@ -720,6 +790,11 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
             .presentationDetents([.large])
             .presentationDragIndicator(.hidden)
         }
+        .sheet(item: $parityPRHistory) { request in
+            WorkoutPRHistorySheet(request: request) { exercise, record in
+                parityUseHistory(record, for: exercise, group: request.group, round: request.round)
+            }
+        }
         .sheet(item: $parityExercise) { exercise in parityExerciseDetails(exercise) }
         .sheet(item: $parityMediaRequest) { request in
             ExerciseMediaViewer(request: request)
@@ -927,7 +1002,7 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
             labels: Dictionary(group.exercises.map { ($0.code, displayExerciseLabel($0)) }, uniquingKeysWith: { first, _ in first }),
             mediaByCode: Dictionary(group.exercises.map { ($0.code, media(for: $0)) }, uniquingKeysWith: { first, _ in first }),
             isCustom: isCustomWorkout, suggestions: suggestionNames,
-            isSaving: isWorkoutEntryLocked, isSyncing: isSyncing,
+            isSaving: isWorkoutEntryLocked,
             validationMessage: parityValidation[group.id],
             restTimer: restTimerStore,
             restingRound: parityRestGroup == group.id ? parityRestRound : nil,
@@ -938,15 +1013,13 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
                 addRound: { group.exercises.forEach { addSet(to: $0) } },
                 removeRound: { parityRemoveRound(group) },
                 logRound: { parityLogRound(group, round: $0) },
-                copyPR: { parityCopy(group, round: $0, previous: false) },
                 estimateOneRepMax: { round, usePR in parityOpenOneRepMax(group, round: round, usePR: usePR) },
-                copyPrevious: { parityCopy(group, round: $0, previous: true) },
                 undoCopy: { round in
                     if let copy = parityCopies.removeValue(forKey: "\(group.id)|\(round)") {
                         drafts = WorkoutParityModel.undoCopy(copy, in: drafts)
                     }
                 },
-                showPR: { _ in parityShowPR(group) },
+                showPR: { parityShowPR(group, round: $0) },
                 editDraft: { parityEditingSet = $0 },
                 reopenDraft: { id in
                     if let index = drafts.firstIndex(where: { $0.id == id }) {
@@ -979,6 +1052,9 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
                     ? "\(Self.numberString(record.durationSeconds ?? 0)) sec"
                     : "\(Self.numberString(record.weightUsed)) lb × \(Self.numberString(record.reps ?? 0))"
                 return (exercise.code, "\(metrics) · \(record.entryDate)")
+            }, uniquingKeysWith: { first, _ in first }),
+            previousRecords: Dictionary(group.exercises.map { exercise in
+                (exercise.code, entryReferenceData.previousRecords(for: exercise))
             }, uniquingKeysWith: { first, _ in first })
         )
     }
@@ -1043,27 +1119,44 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
         parityValidation[group.id] = nil
     }
 
-    private func parityCopy(_ group: WorkoutParityGroup, round: Int, previous: Bool) {
-        let result = previous
-            ? WorkoutParityModel.copyPreviousRound(group: group, round: round, drafts: drafts)
-            : WorkoutParityModel.copyPersonalRecords(group: group, round: round, drafts: drafts, history: parityHistory.flatMap(\.records))
-        guard !result.changes.isEmpty else { return }
-        drafts = result.drafts
-        parityCopies["\(group.id)|\(round)"] = result
-        parityValidation[group.id] = nil
-    }
-
     private func parityRecord(for exercise: Exercise) -> WorkoutHistoryRecord? {
         let type = drafts.first { $0.exerciseCode == exercise.code && !$0.isWarmUp }?.setType ?? .working
         return entryReferenceData.personalRecord(for: exercise, setType: type)
     }
 
-    private func parityShowPR(_ group: WorkoutParityGroup) {
-        let summaries = group.exercises.compactMap { exercise -> String? in
-            guard let record = parityRecord(for: exercise) else { return nil }
-            return "\(exercise.name): \(Self.numberString(record.weightUsed)) lb × \(Self.numberString(record.reps ?? 0)) reps (\(record.entryDate))"
+    private func parityShowPR(_ group: WorkoutParityGroup, round: Int) {
+        parityPRHistory = WorkoutPRHistoryRequest(group: group, round: round,
+            history: group.exercises.map { exercise in
+                (exercise, WorkoutParityModel.recentHistory(for: exercise, sessions: parityHistory,
+                    through: dateString, excluding: sessionID))
+            }, editableExerciseCodes: Set(WorkoutParityModel.roundDrafts(group: group, round: round, drafts: drafts)
+                .filter { !$0.isCompleted }.map(\.exerciseCode)))
+    }
+
+    private func parityUseHistory(_ record: WorkoutHistoryRecord, for exercise: Exercise,
+                                  group: WorkoutParityGroup, round: Int) {
+        guard let target = WorkoutParityModel.roundDrafts(group: group, round: round, drafts: drafts)
+            .first(where: { $0.exerciseCode == exercise.code && $0.exerciseName == exercise.name }) else { return }
+        let result = WorkoutParityModel.copyHistoryRecord(record, to: target.id, drafts: drafts)
+        guard !result.changes.isEmpty else { return }
+        drafts = result.drafts
+        rememberCopiedChanges(result, groupID: group.id, round: round)
+        parityValidation[group.id] = nil
+    }
+
+    private func rememberCopiedChanges(_ result: WorkoutParityCopyResult, groupID: String, round: Int) {
+        let key = "\(groupID)|\(round)"
+        let previous = parityCopies[key]?.changes ?? []
+        var changes = previous
+        for change in result.changes {
+            if let index = changes.firstIndex(where: { $0.draftID == change.draftID && $0.field == change.field }) {
+                changes[index] = WorkoutParityCopyChange(draftID: change.draftID, field: change.field,
+                    previousValue: changes[index].previousValue, copiedValue: change.copiedValue)
+            } else {
+                changes.append(change)
+            }
         }
-        parityMessage = summaries.isEmpty ? "No working-set PR is available for these exercises yet." : summaries.joined(separator: "\n")
+        parityCopies[key] = WorkoutParityCopyResult(drafts: result.drafts, changes: changes)
     }
 
     private func parityOpenOneRepMax(_ group: WorkoutParityGroup, round: Int, usePR: Bool) {
@@ -1120,7 +1213,7 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
     }
 
     private func parityLogRound(_ group: WorkoutParityGroup, round: Int) {
-        guard didLoadSession, paritySavingGroup == nil, !isSyncing else { return }
+        guard didLoadSession, paritySavingGroup == nil else { return }
         let rows = WorkoutParityModel.rowsToLog(group: group, round: round, drafts: drafts)
         guard !rows.isEmpty else {
             parityValidation[group.id] = round == 0 ? "Enter a warm-up weight and reps, or continue to your working sets." : nil
@@ -1156,7 +1249,8 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
                     email: clientEmail, sessionID: savedSessionID, workoutTemplateID: workout.id,
                     workoutTitle: workout.title, entryDate: savedDate, exercises: savedExercises,
                     drafts: savedDrafts, groupAssignments: savedAssignments,
-                    baseRemoteUpdatedAt: baseRemoteUpdatedAt, isFinished: false, loggedSetsOnly: true
+                    baseRemoteUpdatedAt: baseRemoteUpdatedAt, isFinished: false,
+                    loggedSetsOnly: true, deferNetworkSync: true
                 )
             }
             paritySavingGroup = nil
@@ -1169,6 +1263,13 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
             lastSuccessfulSave = .progress
             parityCopies.removeValue(forKey: "\(group.id)|\(round)")
             lastAutosavedPersistenceToken = savedToken
+            if round > 0 {
+                let nextRound = WorkoutParityModel.copyPreviousRound(group: group, round: round + 1, drafts: drafts)
+                if !nextRound.changes.isEmpty {
+                    drafts = nextRound.drafts
+                    rememberCopiedChanges(nextRound, groupID: group.id, round: round + 1)
+                }
+            }
             parityMessage = previewMode ? "Preview: round saved locally for this test." : nil
             parityRestGroup = group.id
             parityRestRound = round
@@ -1395,7 +1496,8 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
             suggestedExercises: suggestedExercises,
             approvedExercises: exerciseLibraryStore.exercises,
             historyNames: suggestionStore.historyNames,
-            history: parityHistory
+            history: parityHistory,
+            before: dateString, excluding: sessionID
         )
     }
 

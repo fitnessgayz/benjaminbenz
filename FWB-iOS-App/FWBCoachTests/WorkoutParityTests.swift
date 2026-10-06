@@ -166,6 +166,47 @@ final class WorkoutParityTests: XCTestCase {
         XCTAssertTrue(WorkoutParityModel.copyPreviousRound(group: pairedGroup(), round: 1, drafts: drafts).changes.isEmpty)
     }
 
+    func testNextRoundCopiesLoggedValuesWithoutReplacingClientEdits() {
+        var logged = draft(press, set: 1, weight: "70", reps: "8")
+        logged.isCompleted = true
+        let planned = draft(press, set: 2, weight: "75")
+        let group = WorkoutParityModel.groups(exercises: [press], assignments: [:])[0]
+        let copied = WorkoutParityModel.copyPreviousRound(group: group, round: 2,
+            drafts: [logged, planned])
+        XCTAssertEqual(copied.drafts[1].weight, "75")
+        XCTAssertEqual(copied.drafts[1].reps, "8")
+        XCTAssertEqual(copied.changes.map(\.field), [.reps])
+    }
+
+    func testRecentHistoryIncludesSameDayWorkoutAndExcludesActiveSession() {
+        let activeID = UUID()
+        let active = WorkoutHistoryRecord(sessionID: activeID, entryDate: "2026-10-06", workoutTitle: "Today",
+            exerciseCode: press.code, exerciseName: press.name, setNumber: 1,
+            weightUsed: 90, reps: 8, notes: nil)
+        let prior = record(press, weight: 80, reps: 10, date: "2026-10-06")
+        let warmup = record(press, weight: 100, reps: 10, type: .warmUp, date: "2026-10-06")
+        let history = [
+            WorkoutHistorySession(entryDate: "2026-10-06", workoutTitle: "Today", records: [active]),
+            WorkoutHistorySession(entryDate: "2026-10-06", workoutTitle: "Prior", records: [prior, warmup])
+        ]
+        let recent = WorkoutParityModel.recentHistory(for: press, sessions: history,
+            through: "2026-10-06", excluding: activeID)
+        XCTAssertEqual(recent, [prior])
+        let reference = WorkoutEntryReferenceData.make(exercises: [press], suggestedExercises: [],
+            approvedExercises: [], historyNames: [], history: history,
+            before: "2026-10-06", excluding: activeID)
+        XCTAssertEqual(reference.previousRecord(for: press, setNumber: 1), prior)
+    }
+
+    func testChoosingHistoryReplacesAutoCopiedValuesAndUndoRestoresThem() {
+        let target = draft(press, set: 2, weight: "70", reps: "8")
+        let selected = record(press, weight: 80, reps: 6)
+        let result = WorkoutParityModel.copyHistoryRecord(selected, to: target.id, drafts: [target])
+        XCTAssertEqual(result.drafts[0].weight, "80")
+        XCTAssertEqual(result.drafts[0].reps, "6")
+        XCTAssertEqual(WorkoutParityModel.undoCopy(result, in: result.drafts), [target])
+    }
+
     func testTimedPersonalRecordCopiesOnlyDurationFromTimedHistory() {
         let group = WorkoutParityModel.groups(exercises: [press], assignments: [:])[0]
         let target = WorkoutSetDraft(exercise: press, setNumber: 1, weight: "10", setType: .timed)
