@@ -30,12 +30,14 @@
     const status = panel.querySelector('[data-community-connection-status]');
     const feedList = document.querySelector('[data-community-feed-list]');
     const feedStatus = document.querySelector('[data-community-feed-status]');
+    const wallList = document.querySelector('[data-community-wall-list]');
+    const wallStatus = document.querySelector('[data-community-wall-status]');
     const challengeList = document.querySelector('[data-community-challenge-list]');
     const challengeStatus = document.querySelector('[data-community-challenge-status]');
     const moreAvatars = panel.querySelector('[data-community-avatar-more]');
     const extraAvatars = Array.from(panel.querySelectorAll('[data-community-avatar-extra]'));
     let client = null, userId = '', preview = false, generation = 0;
-    let profile = null, preferences = null, snapshot = null, published = '', busy = false;
+    let profile = null, preferences = null, snapshot = null, published = '', busy = false, wallBusy = false;
     let selectedAvatar = 'strength';
 
     const current = (id, version) => id === userId && version === generation;
@@ -84,6 +86,50 @@
         feedList.append(card);
       }
       feedStatus.textContent = entries.length ? '' : 'No clients have chosen to share progress yet.';
+    }
+
+    async function refreshWall(id, version) {
+      if (!wallList || !wallStatus) return;
+      wallStatus.textContent = 'Loading the FWB Wall…';
+      const { data, error } = await client.rpc('community_wall_feed');
+      if (!current(id, version)) return;
+      wallList.replaceChildren();
+      if (error) { wallStatus.textContent = 'The FWB Wall could not load. Try opening Community again.'; return; }
+      for (const event of data || []) {
+        const card = field('article', '', 'client-community-wall-card');
+        const heading = field('div', '', 'client-community-wall-heading');
+        heading.append(field('span', avatars[event.avatar_id] || avatars.strength, 'client-community-avatar'));
+        heading.append(field('strong', event.nickname));
+        const date = new Date(event.occurred_at);
+        if (!Number.isNaN(date.getTime())) heading.append(field('time', date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })));
+        card.append(heading, field('p', event.headline));
+        const actions = field('div', '', 'client-community-wall-actions');
+        const button = field('button', event.is_own ? 'Your win' : event.gave_props ? 'Props given' : 'Give props 👏');
+        button.type = 'button';
+        button.disabled = !event.can_give_props || event.gave_props;
+        if (!event.can_give_props && !event.gave_props && !event.is_own) button.title = 'Join Community to give props to another client.';
+        button.addEventListener('click', () => void giveWallProps(event.event_id));
+        actions.append(button, field('small', `${event.props_count || 0} props`));
+        card.append(actions);
+        wallList.append(card);
+      }
+      wallStatus.textContent = data?.length ? '' : 'No shared wins yet. Your next check-in, workout, or challenge could be the first.';
+    }
+
+    async function giveWallProps(eventId) {
+      if (wallBusy || !client || !userId || preview) return;
+      wallBusy = true;
+      const id = userId;
+      wallStatus.textContent = 'Sending props…';
+      try {
+        const { data, error } = await client.rpc('community_give_wall_props', { p_event_id: eventId });
+        if (error) throw error;
+        if (id !== userId) return;
+        await refreshWall(id, generation);
+        wallStatus.textContent = data ? 'Props sent!' : 'Props were already sent for this win.';
+      } catch (_) {
+        if (id === userId) wallStatus.textContent = 'Could not send props. Please try again.';
+      } finally { wallBusy = false; }
     }
 
     function renderChallenges(rows) {
@@ -217,6 +263,7 @@
       const id = userId, version = ++generation;
       message('Loading Community…');
       void refreshPublic(id, version);
+      void refreshWall(id, version);
       try {
         const [profileResult, preferenceResult] = await Promise.all([
           client.from('client_community_profiles').select('user_id,display_name,avatar_id,invite_code').eq('user_id', id).maybeSingle(),
@@ -336,13 +383,16 @@
       await perform(async () => {
         const choice = await client.from('client_community_preferences')
           .update({ xp_opt_in: false, badges_opt_in: false, workout_count_opt_in: false,
-            gym_visits_opt_in: false, progress_opt_in: false, public_progress_opt_in: false }).eq('user_id', userId);
+            gym_visits_opt_in: false, progress_opt_in: false, public_progress_opt_in: false,
+            wall_activity_opt_in: false, daily_challenge_opt_in: false,
+            weekly_challenge_opt_in: false }).eq('user_id', userId);
         if (choice.error) return choice;
         return client.from('client_community_profiles').delete().eq('user_id', userId);
       }, 'You left Community.');
       if (!profile) {
         for (const selector of ['#client-community-share-xp', '#client-community-share-badges',
-          '#client-community-share-workouts', '#client-community-share-gym-visits', '#client-community-share-public']) {
+          '#client-community-share-workouts', '#client-community-share-gym-visits', '#client-community-share-public',
+          '#client-community-share-wall-activity', '#client-community-share-daily', '#client-community-share-weekly']) {
           document.querySelector(selector).checked = false;
         }
       }
@@ -352,11 +402,17 @@
       configure(nextClient, nextUserId, isPreview) {
         generation++;
         client = nextClient; userId = String(nextUserId || ''); preview = Boolean(isPreview);
-        profile = null; preferences = null; snapshot = null; published = '';
+        profile = null; preferences = null; snapshot = null; published = ''; wallBusy = false;
         profileEditor.hidden = true; join.hidden = true; member.hidden = true; list.replaceChildren();
-        feedList?.replaceChildren(); challengeList?.replaceChildren();
-        if (preview) { message('Connections are available only when the client signs in.'); return; }
-        if (!client || !userId) { message('Sign in to join Community.'); return; }
+        feedList?.replaceChildren(); wallList?.replaceChildren(); challengeList?.replaceChildren();
+        if (preview) {
+          if (wallStatus) wallStatus.textContent = 'The FWB Wall is available when the client signs in.';
+          message('Connections are available only when the client signs in.'); return;
+        }
+        if (!client || !userId) {
+          if (wallStatus) wallStatus.textContent = 'Sign in to see the FWB Wall.';
+          message('Sign in to join Community.'); return;
+        }
         void refresh();
       },
       refresh,

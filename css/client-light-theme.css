@@ -446,7 +446,9 @@
   .client-community-hero h3, .client-community-feature h3,
   .client-community-consent h3, .client-community-consent label,
   .client-community-connections h3, .client-community-connections label,
-  .client-community-feed h3, .client-community-challenges h3,
+  .client-community-feed h3, .client-community-feed h4,
+  .client-community-wall h3, .client-community-wall-card p,
+  .client-community-challenges h3,
   .client-workouts-topbar h2
 ) { color: var(--ink); }
 :root[data-client-theme="light"] body.client-dashboard-page :is(
@@ -454,6 +456,7 @@
   .client-home-coach-note, .client-community-badges,
   .client-community-tabs, .client-community-feature,
   .client-community-consent, .client-community-connections, .client-community-feed,
+  .client-community-wall,
   .client-community-challenges, .client-workouts-message-button,
   .client-home-settings-button, .client-home-bell
 ) {
@@ -461,6 +464,9 @@
   background: var(--surface);
   border-color: var(--line);
 }
+:root[data-client-theme="light"] body.client-dashboard-page .client-community-wall .client-community-feed { background: var(--surface-soft); }
+:root[data-client-theme="light"] body.client-dashboard-page .client-community-wall-card { border-color: var(--line); }
+:root[data-client-theme="light"] body.client-dashboard-page .client-community-wall-actions button { color: #000; background: var(--brand-primary); }
 :root[data-client-theme="light"] body.client-dashboard-page .client-weekly-summary {
   color: var(--ink);
   background: transparent;

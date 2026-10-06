@@ -6,6 +6,10 @@
 }(typeof window !== 'undefined' ? window : globalThis, function createClientCommunity(root) {
   'use strict';
   const views = {
+    wall: {
+      title: 'FWB Wall',
+      body: 'Celebrate the progress your community chooses to share.'
+    },
     leaderboard: {
       title: 'Celebrate Your Consistency',
       body: 'Compare XP, levels, and badges with other clients who choose to join. Weekly rankings give everyone a fresh start.'
@@ -29,19 +33,18 @@
       workouts: panel.querySelector('#client-community-share-workouts'),
       gymVisits: panel.querySelector('#client-community-share-gym-visits'),
       publicProgress: panel.querySelector('#client-community-share-public'),
-      daily: panel.querySelector('#client-community-share-daily')
+      wallActivity: panel.querySelector('#client-community-share-wall-activity'),
+      daily: panel.querySelector('#client-community-share-daily'),
+      weekly: panel.querySelector('#client-community-share-weekly')
     };
     const save = panel.querySelector('[data-community-save]');
     const status = panel.querySelector('#client-community-consent-status');
     let client = null, userId = '', preview = false, generation = 0, busy = false;
-    let savedChoices = { xp: false, badges: false, workouts: false, gymVisits: false, publicProgress: false, daily: false };
+    let savedChoices = { xp: false, badges: false, workouts: false, gymVisits: false,
+      publicProgress: false, wallActivity: false, daily: false, weekly: false };
     const dailyCard = panel.querySelector('[data-daily-card]');
     const dailyPicker = panel.querySelector('[data-daily-picker]');
     const dailyStatus = panel.querySelector('[data-daily-status]');
-    const dailyWins = panel.querySelector('[data-daily-wins]');
-    const dailyAvatars = { strength: '💪', runner: '🏃', cycling: '🚴', boxing: '🥊', yoga: '🧘',
-      swimming: '🏊', martial: '🥋', star: '⭐', lifting: '🏋️', walking: '🚶', hiking: '🥾',
-      basketball: '🏀', soccer: '⚽', tennis: '🎾', rowing: '🚣', climbing: '🧗' };
     let dailyAssignment = null, dailyBusy = false, dailyVersion = 0;
     const localDay = () => {
       const date = new Date();
@@ -63,21 +66,6 @@
       panel.querySelector('[data-daily-refresh]').hidden = row.completion_kind === 'self_report' || row.completed;
       dailyStatus.textContent = row.completed ? 'Completed today. Nice work!' : row.completion_kind === 'self_report'
         ? 'Mark this complete when you finish.' : 'Your logged workout or gym check-in will complete this automatically.';
-    }
-
-    async function loadDailyWins() {
-      if (!dailyWins || !client || preview) return;
-      const version = dailyVersion;
-      const { data, error } = await client.rpc('community_daily_wins');
-      if (version !== dailyVersion) return;
-      dailyWins.replaceChildren();
-      if (error) { dailyWins.textContent = 'Shared wins could not load.'; return; }
-      for (const win of data || []) {
-        const item = document.createElement('p');
-        item.textContent = `${dailyAvatars[win.avatar_id] || dailyAvatars.strength} ${win.nickname} · ${win.title}`;
-        dailyWins.append(item);
-      }
-      if (!data?.length) dailyWins.textContent = 'No daily wins shared yet.';
     }
 
     async function dailyAction(action, trainingDay = false) {
@@ -118,13 +106,15 @@
         workouts: values.workout_count_opt_in === true,
         gymVisits: values.gym_visits_opt_in === true,
         publicProgress: values.public_progress_opt_in === true,
-        daily: values.daily_challenge_opt_in === true
+        wallActivity: values.wall_activity_opt_in === true,
+        daily: values.daily_challenge_opt_in === true,
+        weekly: values.weekly_challenge_opt_in === true
       };
       Object.entries(savedChoices).forEach(([key, enabled]) => { if (choices[key]) choices[key].checked = enabled; });
     }
 
     function showView(name) {
-      const view = views[name] || views.leaderboard;
+      const view = views[name] || views.wall;
       panel.querySelectorAll('[data-community-view]').forEach((button) => {
         const active = button.dataset.communityView === name;
         button.setAttribute('aria-selected', String(active));
@@ -134,13 +124,14 @@
       panel.querySelector('#client-community-feature-body').textContent = view.body;
       const connections = panel.querySelector('[data-community-connections]');
       const challenges = panel.querySelector('[data-community-challenges]');
+      const wall = panel.querySelector('[data-community-wall]');
       const feature = panel.querySelector('.client-community-feature');
       if (connections && feature) {
+        if (wall) wall.hidden = name !== 'wall';
         connections.hidden = name !== 'connections';
         if (challenges) challenges.hidden = name !== 'challenges';
         feature.hidden = name !== 'leaderboard';
-        if (name === 'connections' || name === 'challenges') void root.FWB_COMMUNITY_CONNECTIONS?.refresh();
-        if (name === 'challenges') void loadDailyWins();
+        if (name === 'wall' || name === 'connections' || name === 'challenges') void root.FWB_COMMUNITY_CONNECTIONS?.refresh();
       }
     }
 
@@ -172,13 +163,13 @@
     async function loadChoices(request) {
       try {
         const { data, error } = await request.client.from('client_community_preferences')
-          .select('xp_opt_in,badges_opt_in,workout_count_opt_in,gym_visits_opt_in,public_progress_opt_in,daily_challenge_opt_in')
+          .select('xp_opt_in,badges_opt_in,workout_count_opt_in,gym_visits_opt_in,public_progress_opt_in,wall_activity_opt_in,daily_challenge_opt_in,weekly_challenge_opt_in')
           .eq('user_id', request.userId).maybeSingle();
         if (error) throw error;
         if (request.generation !== generation || userId !== request.userId) return;
         applyChoices(data || {});
         status.textContent = data
-          ? 'Your sharing choices are saved. Public visibility is controlled separately.'
+          ? 'Your sharing choices are saved. The FWB Wall follows the choices below.'
           : 'Your milestones are private. All sharing choices are off.';
         setControls(false);
       } catch (_) {
@@ -196,16 +187,20 @@
         workout_count_opt_in: choices.workouts.checked,
         gym_visits_opt_in: choices.gymVisits.checked,
         public_progress_opt_in: choices.publicProgress.checked,
-        daily_challenge_opt_in: choices.daily?.checked === true };
+        wall_activity_opt_in: choices.wallActivity?.checked === true,
+        daily_challenge_opt_in: choices.daily?.checked === true,
+        weekly_challenge_opt_in: choices.weekly?.checked === true };
       busy = true; setControls(true); status.textContent = 'Saving your sharing choices…';
       try {
         const { data, error } = await client.from('client_community_preferences')
           .upsert(values, { onConflict: 'user_id' })
-          .select('user_id,xp_opt_in,badges_opt_in,workout_count_opt_in,gym_visits_opt_in,public_progress_opt_in,daily_challenge_opt_in').single();
+          .select('user_id,xp_opt_in,badges_opt_in,workout_count_opt_in,gym_visits_opt_in,public_progress_opt_in,wall_activity_opt_in,daily_challenge_opt_in,weekly_challenge_opt_in').single();
         if (error || !data || data.user_id !== owner) throw error || new Error('No choices were saved.');
         if (request !== generation || owner !== userId) return;
         applyChoices(data);
-        status.textContent = 'Saved. You can change these choices any time.';
+        status.textContent = values.wall_activity_opt_in && !values.public_progress_opt_in
+          ? 'Saved. Turn on public progress and a workout or gym visit choice to post those activities.'
+          : 'Saved. You can change these choices any time.';
         void root.FWB_COMMUNITY_CONNECTIONS?.refresh();
       } catch (_) {
         if (request === generation && owner === userId) {
@@ -218,7 +213,7 @@
       }
     }
 
-    showView('connections');
+    showView('wall');
     setControls(true);
     return { configure(nextClient, nextUserId, isPreview) {
       const id = String(nextUserId || '').trim();

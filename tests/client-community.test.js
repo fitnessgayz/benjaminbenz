@@ -9,12 +9,14 @@ function fixture() {
   const workouts = { checked: false, disabled: false };
   const gymVisits = { checked: false, disabled: false };
   const publicProgress = { checked: false, disabled: false };
+  const wallActivity = { checked: false, disabled: false };
   const daily = { checked: false, disabled: false };
+  const weekly = { checked: false, disabled: false };
   const save = { disabled: false, closest: selector => selector === '[data-community-save]' ? save : null };
   const status = { textContent: '' };
   const title = { textContent: '' };
   const body = { textContent: '' };
-  const buttons = ['leaderboard', 'connections', 'challenges'].map(name => ({
+  const buttons = ['wall', 'leaderboard', 'connections', 'challenges'].map(name => ({
     dataset: { communityView: name },
     setAttribute(key, value) { this[key] = value; },
     focus() {}
@@ -25,19 +27,39 @@ function fixture() {
     '#client-community-share-workouts': workouts,
     '#client-community-share-gym-visits': gymVisits,
     '#client-community-share-public': publicProgress,
+    '#client-community-share-wall-activity': wallActivity,
     '#client-community-share-daily': daily,
+    '#client-community-share-weekly': weekly,
     '[data-community-save]': save,
     '#client-community-consent-status': status,
     '#client-community-feature-title': title,
     '#client-community-feature-body': body
   };
+  const wall = { hidden: true };
+  const connections = { hidden: true };
+  const challenges = { hidden: true };
+  const feature = { hidden: true };
+  nodes['[data-community-wall]'] = wall;
+  nodes['[data-community-connections]'] = connections;
+  nodes['[data-community-challenges]'] = challenges;
+  nodes['.client-community-feature'] = feature;
   const panel = {
     querySelector: key => nodes[key],
     querySelectorAll: key => key === '[data-community-view]' ? buttons : [],
     addEventListener: (event, fn) => { handlers[event] = fn; }
   };
-  return { controller: mount({ querySelector: () => panel }), handlers, xp, badge, workouts, gymVisits, publicProgress, daily, save, status, title, body, buttons };
+  return { controller: mount({ querySelector: () => panel }), handlers, xp, badge, workouts, gymVisits,
+    publicProgress, wallActivity, daily, weekly, save, status, title, body, buttons, wall, connections, challenges, feature };
 }
+
+test('FWB Wall is the default Community view and progress is hidden on other tabs', () => {
+  const ui = fixture();
+  assert.equal(ui.buttons[0]['aria-selected'], 'true');
+  assert.equal(ui.wall.hidden, false);
+  ui.handlers.click({ target: { closest: () => ui.buttons[2] } });
+  assert.equal(ui.wall.hidden, true);
+  assert.equal(ui.connections.hidden, false);
+});
 
 test('sharing choices default off, load only for the signed-in owner, and save separately', async () => {
   const ui = fixture();
@@ -63,7 +85,9 @@ test('sharing choices default off, load only for the signed-in owner, and save s
   assert.equal(ui.workouts.checked, false);
   assert.equal(ui.gymVisits.checked, false);
   assert.equal(ui.publicProgress.checked, false);
+  assert.equal(ui.wallActivity.checked, false);
   assert.equal(ui.daily.checked, false);
+  assert.equal(ui.weekly.checked, false);
   assert.equal(ui.save.disabled, false);
   ui.badge.checked = true;
   ui.daily.checked = true;
@@ -71,7 +95,7 @@ test('sharing choices default off, load only for the signed-in owner, and save s
   await new Promise(resolve => setImmediate(resolve));
   assert.deepEqual(saved, { user_id: 'user-1', xp_opt_in: false, badges_opt_in: true,
     workout_count_opt_in: false, gym_visits_opt_in: false, public_progress_opt_in: false,
-    daily_challenge_opt_in: true });
+    wall_activity_opt_in: false, daily_challenge_opt_in: true, weekly_challenge_opt_in: false });
   assert.match(ui.status.textContent, /Saved/);
 });
 
@@ -83,7 +107,9 @@ test('coach preview cannot alter a client’s sharing choices', () => {
   assert.equal(ui.workouts.disabled, true);
   assert.equal(ui.gymVisits.disabled, true);
   assert.equal(ui.publicProgress.disabled, true);
+  assert.equal(ui.wallActivity.disabled, true);
   assert.equal(ui.daily.disabled, true);
+  assert.equal(ui.weekly.disabled, true);
   assert.equal(ui.save.disabled, true);
   assert.match(ui.status.textContent, /client signs in/);
 });
@@ -106,12 +132,16 @@ test('failed consent save restores the previously saved privacy choices', async 
   ui.xp.checked = false;
   ui.gymVisits.checked = true;
   ui.publicProgress.checked = true;
+  ui.wallActivity.checked = true;
   ui.daily.checked = true;
+  ui.weekly.checked = true;
   ui.handlers.click({ target: ui.save });
   await new Promise(resolve => setImmediate(resolve));
   assert.equal(ui.xp.checked, true);
   assert.equal(ui.gymVisits.checked, false);
   assert.equal(ui.publicProgress.checked, false);
+  assert.equal(ui.wallActivity.checked, false);
   assert.equal(ui.daily.checked, false);
+  assert.equal(ui.weekly.checked, false);
   assert.match(ui.status.textContent, /Previous choices restored/);
 });

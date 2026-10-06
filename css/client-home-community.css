@@ -234,7 +234,7 @@
 :root body.client-dashboard-page .client-community-badges strong { display: block; font-size: 17px; font-weight: 650; }
 :root body.client-dashboard-page .client-community-badges small { display: block; margin-top: 3px; color: var(--client-muted); font-size: 13px; }
 :root body.client-dashboard-page .client-community-badges > span:last-child { color: var(--client-neon); font-size: 29px; }
-:root body.client-dashboard-page .client-community-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; margin: 20px 0; padding: 4px; border: 1px solid #45484b; border-radius: 17px; background: #27292c; }
+:root body.client-dashboard-page .client-community-tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; margin: 20px 0; padding: 4px; border: 1px solid #45484b; border-radius: 17px; background: #27292c; }
 :root body.client-dashboard-page .client-community-tabs button { min-width: 0; min-height: 47px; padding: 8px 3px; border: 0; border-radius: 13px; background: transparent; color: var(--client-muted); font: inherit; font-size: 13px; font-weight: 700; }
 :root body.client-dashboard-page .client-community-tabs button[aria-selected="true"] { background: var(--client-neon); color: #182316; }
 :root body.client-dashboard-page .client-community-feature { position: relative; min-height: 190px; padding: 19px 17px; border: 1px solid #45484b; border-radius: 18px; background: #27292c; }
@@ -279,8 +279,23 @@
 :root body.client-dashboard-page .client-community-connection-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 :root body.client-dashboard-page .client-community-connections .client-community-leave { margin-top: 18px; background: transparent; color: var(--client-muted); border: 1px solid #5e6463; }
 :root body.client-dashboard-page .client-community-feed,
+:root body.client-dashboard-page .client-community-wall,
 :root body.client-dashboard-page .client-community-challenges { margin: 18px 0; padding: 18px; border: 1px solid #45484b; border-radius: 18px; background: #27292c; color: #f4f5f3; }
+:root body.client-dashboard-page .client-community-wall[hidden] { display: none; }
+:root body.client-dashboard-page .client-community-wall h3 { margin: 0 0 7px; font-size: 23px; }
+:root body.client-dashboard-page .client-community-wall > p { color: var(--client-muted); font-size: 14px; line-height: 1.45; }
+:root body.client-dashboard-page .client-community-wall-card { padding: 16px 0; border-top: 1px solid #45484b; }
+:root body.client-dashboard-page .client-community-wall-heading { display: flex; align-items: center; gap: 9px; }
+:root body.client-dashboard-page .client-community-wall-heading strong { flex: 1; }
+:root body.client-dashboard-page .client-community-wall-heading time { color: var(--client-muted); font-size: 12px; }
+:root body.client-dashboard-page .client-community-wall-card p { margin: 10px 0; color: #f4f5f3; font-size: 17px; font-weight: 700; }
+:root body.client-dashboard-page .client-community-wall-actions { display: flex; align-items: center; gap: 12px; }
+:root body.client-dashboard-page .client-community-wall-actions button { min-height: 40px; border: 0; border-radius: 10px; padding: 7px 12px; background: var(--brand-primary); color: #000; font: inherit; font-weight: 800; }
+:root body.client-dashboard-page .client-community-wall-actions button:disabled { opacity: .58; }
+:root body.client-dashboard-page .client-community-wall-actions small { color: var(--client-muted); }
+:root body.client-dashboard-page .client-community-wall .client-community-feed { margin: 22px 0 0; background: #202427; }
 :root body.client-dashboard-page .client-community-challenges[hidden] { display: none; }
+:root body.client-dashboard-page .client-community-feed h4 { margin: 0 0 7px; font-size: 18px; }
 :root body.client-dashboard-page .client-community-feed h3,
 :root body.client-dashboard-page .client-community-challenges h3 { margin: 0 0 7px; font-size: 20px; }
 :root body.client-dashboard-page .client-community-feed p,
@@ -325,6 +340,9 @@
   :root body.client-dashboard-page .client-dashboard-tab.is-active::after { background: var(--client-neon); }
   :root body.client-dashboard-page .client-dashboard-tab-label { font-size: 9px; }
   :root body.client-dashboard-page .client-community-panel { padding: 18px 15px 28px; }
+}
+@media (max-width: 520px) {
+  :root body.client-dashboard-page .client-community-tabs button { font-size: 11px; }
 }
 @media (max-width: 390px) {
   :root body.client-dashboard-page .client-dashboard-tab-label { font-size: 8px; }

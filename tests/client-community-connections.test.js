@@ -44,6 +44,7 @@ test('accepted connection shows shared achievements without reading workout reco
     querySelectorAll: selector => selector === '[data-community-avatar]' ? avatarButtons : []
   };
   const publicElements = Object.fromEntries(['[data-community-feed-list]', '[data-community-feed-status]',
+    '[data-community-wall-list]', '[data-community-wall-status]',
     '[data-community-challenge-list]', '[data-community-challenge-status]'].map(selector => [selector, node()]));
   const document = {
     querySelector: selector => selector === '[data-community-connections]' ? panel : publicElements[selector],
@@ -65,12 +66,16 @@ test('accepted connection shows shared achievements without reading workout reco
     rpc(name, params) {
       calls.push(name);
       assert.ok(['community_shared_progress', 'community_props_summary', 'community_give_props',
-        'community_public_progress', 'community_challenge_summary', 'community_create_challenge'].includes(name));
+        'community_public_progress', 'community_wall_feed', 'community_give_wall_props',
+        'community_challenge_summary', 'community_create_challenge'].includes(name));
       if (name === 'community_create_challenge') createdChallenge = params;
       return Promise.resolve({ data: name === 'community_shared_progress' ? rows.shared
         : name === 'community_props_summary' ? rows.props
           : name === 'community_public_progress' ? [{ nickname: 'Sam', avatar_id: 'star',
             xp: null, badge_ids: null, workout_count: 3, gym_visit_count: null }]
+            : name === 'community_wall_feed' ? [{ event_id: 'workout:one', nickname: 'Sam', avatar_id: 'star',
+              headline: 'Completed a workout', occurred_at: '2026-10-05T12:00:00Z', props_count: 2,
+              gave_props: false, can_give_props: true, is_own: false }]
             : name === 'community_challenge_summary' ? [] : true, error: null });
     },
     from(table) {
@@ -111,7 +116,14 @@ test('accepted connection shows shared achievements without reading workout reco
   assert.ok(calls.includes('community_shared_progress'));
   assert.ok(calls.includes('community_props_summary'));
   assert.ok(calls.includes('community_public_progress'));
+  assert.ok(calls.includes('community_wall_feed'));
   assert.equal(publicElements['[data-community-feed-list]'].children[0].children[1].textContent, 'Sam');
+  const wallCard = publicElements['[data-community-wall-list]'].children[0];
+  assert.equal(wallCard.children[1].textContent, 'Completed a workout');
+  assert.equal(wallCard.children[2].children[1].textContent, '2 props');
+  wallCard.children[2].children[0].listeners.click();
+  await new Promise(resolve => setImmediate(resolve));
+  assert.ok(calls.includes('community_give_wall_props'));
   assert.equal(calls.includes('client_community_achievements'), false);
   const actions = connection.children.find(child => child.className === 'client-community-connection-actions');
   actions.children[0].listeners.click();
