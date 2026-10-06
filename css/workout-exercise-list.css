@@ -126,7 +126,7 @@
   display: none !important;
 }
 
-.client-dashboard-page :is(.client-workout-panel, .workout-exercise-dock) .workout-exercise-list-add {
+:root body.client-dashboard-page :is(.client-workout-panel, .workout-exercise-dock) .workout-exercise-list-add {
   display: flex;
   width: 100%;
   min-height: 48px;
@@ -138,7 +138,7 @@
   border: 1px solid var(--lime, #ffd400);
   border-radius: 12px;
   background: var(--lime, #ffd400);
-  color: #111;
+  color: #000;
   font: inherit;
   font-weight: 800;
   cursor: pointer;

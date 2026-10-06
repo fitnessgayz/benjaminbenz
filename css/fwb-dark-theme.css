@@ -741,7 +741,7 @@
 :root body.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-section:is(
   .is-warmup, .is-warm-up, [data-section="warmup"], [data-kind="warmup"],
   [data-custom-grouped-section="warmup"], [data-custom-workout-grouped-section="warmup"]) {
-  color: var(--ink); background: var(--surface-soft); border-left-color: var(--secondary-accent);
+  color: var(--ink); background: var(--surface-soft);
 }
 :root body.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-section:is(
   .is-warmup, .is-warm-up, [data-section="warmup"], [data-kind="warmup"],

@@ -2071,9 +2071,8 @@
   position: relative;
   display: grid;
   min-width: 0;
-  padding: 0 0 6px;
+  padding: 0 0 6px 5px;
   border-top: 1px solid var(--grouped-line);
-  border-left: 5px solid #3f8d29;
   background: var(--grouped-paper);
 }
 
@@ -2082,7 +2081,6 @@
 }
 
 .dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-section:is(.is-warmup, .is-warm-up, [data-section="warmup"], [data-kind="warmup"], [data-custom-grouped-section="warmup"], [data-custom-workout-grouped-section="warmup"]) {
-  border-left-color: var(--grouped-gold);
   background: #fffcf1;
 }
 
