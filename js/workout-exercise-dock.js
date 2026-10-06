@@ -83,6 +83,12 @@
       closeButton.setAttribute("aria-label", "Close exercise list");
       closeButton.textContent = "×";
       sheet.prepend(closeButton);
+      const finishButton = document.createElement("button");
+      finishButton.type = "button";
+      finishButton.className = "workout-exercise-list-finish";
+      finishButton.setAttribute("data-workout-exercise-finish", "");
+      finishButton.textContent = "Finish workout";
+      sheet.append(finishButton);
       overlay = document.createElement("div");
       overlay.className = "workout-exercise-dock";
       const backdrop = document.createElement("div");
@@ -104,6 +110,13 @@
             ? panel.querySelector("[data-pick-custom-exercise], [data-add-assigned-exercise]") : null;
           close({ restoreFocus: !add });
           add?.click();
+          return;
+        }
+        if (event.target.closest("[data-workout-exercise-finish]")) {
+          const finish = panel.isConnected && currentPanel() === panel
+            ? panel.querySelector("[data-custom-grouped-finish-workout], [data-workout-finish]") : null;
+          close({ restoreFocus: !finish });
+          finish?.click();
           return;
         }
         const choice = event.target.closest("[data-workout-exercise-jump]");

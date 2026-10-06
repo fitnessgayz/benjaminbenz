@@ -2,7 +2,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const { createController } = require("../js/workout-exercise-dock.js");
 
-function fixture({ mobile = true, selected = true, count = 2 } = {}) {
+function fixture({ mobile = true, selected = true, count = 2, grouped = false } = {}) {
   let document;
   function node(classes = "", attributes = {}) {
     const classNames = new Set(classes.split(" ").filter(Boolean));
@@ -83,12 +83,15 @@ function fixture({ mobile = true, selected = true, count = 2 } = {}) {
   const list = node("workout-exercise-list", { "data-workout-exercise-list": "" });
   const add = node("", { "data-workout-exercise-add": "" });
   const assignedAdd = node("", { "data-add-assigned-exercise": "" });
+  const finish = node("", { "data-workout-finish": "" });
+  const groupedFinish = grouped ? node("", { "data-custom-grouped-finish-workout": "" }) : null;
   const logs = Array.from({ length: count }, (_, i) => {
     const log = node(); log.value = `${17.5 + i}`; return log;
   });
   panel.logs = logs;
   body.append(content, navigation); content.append(section); section.append(panel);
-  panel.append(list, assignedAdd, ...logs); list.append(add); navigation.append(tab);
+  panel.append(list, assignedAdd, finish, ...(groupedFinish ? [groupedFinish] : []), ...logs);
+  list.append(add); navigation.append(tab);
   document = node();
   document.body = body;
   document.querySelector = selector => body.querySelector(selector);
@@ -112,7 +115,7 @@ function fixture({ mobile = true, selected = true, count = 2 } = {}) {
     getLogs: source => source.logs, syncList,
     jump(button) { jumps.push(panel.logs[Number(button.dataset.workoutExerciseJump)]); jumps.at(-1).focus(); }
   });
-  return { body, content, section, panel, tab, list, add, assignedAdd, logs, document, window, jumps, controller,
+  return { body, content, section, panel, tab, list, add, assignedAdd, finish, groupedFinish, logs, document, window, jumps, controller,
     setMobile(value) { mobile = value; },
     overlay: () => body.querySelector(".workout-exercise-dock") };
 }
@@ -167,6 +170,20 @@ test("selection closes the sheet and jumps through the original list without tou
   assert.deepEqual(h.jumps, [h.logs[1]]);
   assert.equal(h.document.activeElement, h.logs[1]);
   assert.deepEqual(h.logs.map(log => log.value), ["17.5", "18.5"]);
+});
+
+test("Finish workout closes the list and uses the active workout's existing finish flow", () => {
+  for (const grouped of [false, true]) {
+    const h = fixture({ grouped });
+    h.controller.toggle();
+    const button = h.overlay().querySelector("[data-workout-exercise-finish]");
+    assert.ok(button);
+    const event = h.overlay().fire("click", { target: button });
+    assert.equal(event.stopped, true);
+    assert.equal(h.overlay(), null);
+    assert.equal(h.finish.clickCount, grouped ? 0 : 1);
+    assert.equal(h.groupedFinish?.clickCount ?? 0, grouped ? 1 : 0);
+  }
 });
 
 test("Add exercise in the mobile sheet closes it and invokes the active workout editor", () => {
