@@ -124,6 +124,22 @@ test("generation previews without applying, and preference changes invalidate th
   assert.match(h.status.textContent, /Preferences changed/);
 });
 
+test("gym location scopes generator history and follows a selected workout", async () => {
+  const h = fixture();
+  let usedGym;
+  h.open({
+    gymLocation: "Gym A", gymLocations: ["Gym A", "Gym B"],
+    history: [{ gym_name: "Gym A", weight_used: 100 }, { gym_name: "Gym B", weight_used: 150 }],
+    onUse(_workout, gymName) { usedGym = gymName; return true; }
+  });
+  assert.equal(h.dialog.querySelector(".workout-generator-gym").querySelector("input").value, "Gym A");
+  assert.equal(h.dialog.querySelector("datalist").children.length, 2);
+  await h.form.emit("submit");
+  assert.deepEqual(Array.from(h.calls[0].history, (row) => row.weight_used), [100]);
+  await h.use.emit("click");
+  assert.equal(usedGym, "Gym A");
+});
+
 test("equipment choices are exclusive with full gym and always include bodyweight", async () => {
   const h = fixture();
   h.open();

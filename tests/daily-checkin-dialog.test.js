@@ -53,6 +53,7 @@ function fixture() {
   function open(options = {}) { return api.open({ returnFocus: trigger, ...options }); }
   function select(values = { mood: 3, energy: 2, sleep: 4, soreness: 2 }) {
     for (const input of document.body.querySelectorAll("input")) {
+      if (!input.name?.startsWith("daily_")) continue;
       input.checked = Number(input.value) === values[input.name.replace("daily_", "")];
     }
   }
@@ -105,7 +106,7 @@ test("native dialog has named regions and required unselected rating groups with
   assert.equal(h.dialog.getAttribute("aria-labelledby"), "daily-checkin-title");
   assert.equal(h.dialog.getAttribute("aria-describedby"), "daily-checkin-description");
   assert.equal(h.status.getAttribute("role"), "status");
-  const inputs = h.dialog.querySelectorAll("input");
+  const inputs = h.dialog.querySelectorAll("input").filter((input) => input.name?.startsWith("daily_"));
   assert.equal(inputs.length, 20);
   assert.ok(inputs.every((input) => input.required && !input.checked));
   assert.equal(inputs.find((input) => input.name === "daily_soreness" && input.value === "1").getAttribute("aria-label"), "1 — Fresh");
@@ -139,6 +140,18 @@ test("a confirmed save passes all answers and shows the adapted prescription and
   assert.equal(h.original.hidden, false);
   assert.equal(h.use.hidden, false);
   assert.equal(h.generate.hidden, true);
+});
+
+test("today's plan passes the chosen gym location to workout navigation", async () => {
+  const h = fixture();
+  let selectedGym;
+  h.open({ stage: "recommendation", recommendation: recommendation(), gymLocations: ["Gym A"],
+    onUse(_result, gymName) { selectedGym = gymName; return true; } });
+  const location = h.dialog.querySelector(".daily-checkin-location").querySelector("input");
+  assert.equal(h.dialog.querySelector("datalist").children.length, 1);
+  location.value = "  Gym A  ";
+  await h.use.emit("click");
+  assert.equal(selectedGym, "Gym A");
 });
 
 test("a pending save blocks duplicate submission and user cancellation; failure retains answers for retry", async () => {

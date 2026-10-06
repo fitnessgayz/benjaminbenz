@@ -16411,7 +16411,7 @@ function dailyCustomWorkoutDraft(recommendation, gymName = "") {
   const format = normalizeCustomWorkoutFormat(inferWorkoutFormat(workout));
   const groups = new Map();
   return {
-    version: customWorkoutDraftVersion, format: "single", date, workoutTitle: workout.title,
+    version: customWorkoutDraftVersion, format, date, workoutTitle: workout.title,
     gymName: String(gymName || "").trim().replace(/\s+/g, " ").slice(0, 80),
     nextExerciseNumber: workout.exercises.length + 1,
     generatedFrom: { id: workout.title, title: `Today: ${recommendation.originalWorkout.title}`, daily: true },

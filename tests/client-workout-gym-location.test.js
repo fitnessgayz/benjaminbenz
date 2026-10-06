@@ -100,3 +100,18 @@ test("a superset card lets the client choose the workout's gym without leaving t
   assert.ok(calls.includes("weights") && calls.includes("progression"));
   assert.equal(api.requireWorkoutGymLocation(panel), true);
 });
+
+test("superset and circuit round cards both expose the gym location picker", () => {
+  const render = Function("normalizeCustomWorkoutFormat", "workoutCarouselExerciseCode", "setCountFromPrescription",
+    "customWorkoutGroupNameEditorMarkup", "escapeHtml", "customWorkoutCardMarkup", "customWorkoutInlineGroupOptionsMarkup",
+    `${sourceForFunction("customWorkoutGroupedRoundCardMarkup")}; return customWorkoutGroupedRoundCardMarkup;`)(
+      value => value, (_format, _group, index) => `A${index + 1}`, () => 3,
+      () => "", value => String(value), () => "", () => ""
+    );
+  for (const format of ["superset", "circuit"]) {
+    const markup = render(format, [{ name: "Squat" }, { name: "Row" }], 0, 0, "Custom workout", { panelFormat: format });
+    assert.match(markup, /data-custom-grouped-gym/);
+    assert.match(markup, /Choose a gym location before logging a round/);
+    assert.match(markup, /data-custom-workout-format="(?:superset|circuit)"/);
+  }
+});

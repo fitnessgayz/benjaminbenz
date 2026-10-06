@@ -80,6 +80,10 @@ body.daily-checkin-open { overflow: hidden; }
 :root body .daily-checkin-rating-scale > span:last-child { text-align: right; }
 :root body .daily-checkin-note { display: grid; min-width: 0; gap: 10px; margin: 0; color: var(--daily-ink); font-size: .95rem; font-weight: 700; text-transform: none; letter-spacing: normal; }
 :root body .daily-checkin-note textarea { display: block; width: 100%; min-width: 0; min-height: 96px; margin: 0; padding: 14px; border: 1px solid var(--daily-line); border-radius: 14px; background: #f7f8f4; color: var(--daily-ink); font: inherit; font-size: 1rem; font-weight: 400; line-height: 1.5; resize: vertical; }
+:root body .daily-checkin-location { display: grid; gap: 8px; margin-top: 22px; color: var(--daily-ink); font-size: .95rem; font-weight: 750; }
+:root body .daily-checkin-location input { display: block; width: 100%; min-width: 0; min-height: 48px; margin: 0; padding: 10px 12px; border: 1px solid var(--daily-line); border-radius: 12px; background: var(--surface-soft, #f7f8f4); color: var(--daily-ink); font: inherit; font-size: 1rem; font-weight: 400; }
+:root body .daily-checkin-location input:focus-visible { outline: 3px solid var(--focus, #718a18); outline-offset: 2px; }
+:root body .daily-checkin-location .daily-checkin-muted { margin: 0; font-weight: 400; }
 :root body .daily-checkin-status { margin: 16px 0 0; color: var(--daily-muted); font-size: .85rem; line-height: 1.5; }
 :root body .daily-checkin-status:empty { margin: 0; }
 :root body .daily-checkin-status.is-error { color: #9b2929; }
