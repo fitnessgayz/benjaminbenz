@@ -5,6 +5,8 @@ on:
     paths:
       - 'scripts/supabase/**'
       - 'supabase/migrations/**'
+      - 'supabase/functions/gym-search/**'
+      - 'supabase/config.toml'
       - 'supabase/storage-assets/**'
       - '.github/workflows/supabase-production.yml'
   push:
@@ -12,6 +14,8 @@ on:
     paths:
       - 'scripts/supabase/**'
       - 'supabase/migrations/**'
+      - 'supabase/functions/gym-search/**'
+      - 'supabase/config.toml'
       - 'supabase/storage-assets/**'
       - '.github/workflows/supabase-production.yml'
   workflow_dispatch:
@@ -71,3 +75,8 @@ jobs:
         run: node scripts/supabase/deploy-migrations.mjs apply
       - name: Verify uploaded bytes and exercise mappings
         run: node scripts/supabase/deploy-media.mjs verify
+      - uses: supabase/setup-cli@3c2f5e2ae34c34e428e8e206e2c4d21fa2d20fbf # v2.1.1
+        with:
+          version: 2.116.0
+      - name: Deploy authenticated gym search function
+        run: supabase functions deploy gym-search --use-api --project-ref "$SUPABASE_PROJECT_ID"

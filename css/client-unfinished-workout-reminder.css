@@ -1,0 +1,55 @@
+.client-unfinished-workout-reminder {
+  position: fixed;
+  z-index: 1150;
+  right: max(16px, env(safe-area-inset-right));
+  bottom: max(20px, env(safe-area-inset-bottom));
+  width: min(390px, calc(100vw - 32px));
+  padding: 20px;
+  border: 1px solid var(--reminder-border, #644039);
+  border-radius: 18px;
+  background: var(--reminder-surface, #281b18);
+  box-shadow: 0 18px 46px rgb(0 0 0 / 28%);
+  color: var(--ink, #fff);
+  font: inherit;
+}
+
+.client-unfinished-workout-reminder strong { display: block; padding-right: 32px; font-size: 1.13rem; }
+.client-unfinished-workout-reminder p { margin: 7px 0 16px; color: var(--ink, #fff); }
+.client-unfinished-workout-reminder-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.client-unfinished-workout-reminder-actions button,
+.client-unfinished-workout-reminder-close {
+  min-height: 44px;
+  border-radius: 10px;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+.client-unfinished-workout-reminder-actions button:first-child {
+  border: 0;
+  padding: 9px 13px;
+  background: var(--brand-primary, #a3ff12);
+  color: var(--brand-primary-ink, #101900);
+}
+.client-unfinished-workout-reminder-actions button:last-child {
+  border: 1px solid var(--border, #607466);
+  padding: 9px 13px;
+  background: transparent;
+  color: var(--ink, #fff);
+}
+.client-unfinished-workout-reminder-close {
+  position: absolute;
+  top: 7px;
+  right: 8px;
+  width: 44px;
+  border: 0;
+  background: transparent;
+  color: var(--ink, #fff);
+  font-size: 1.5rem;
+}
+@media (max-width: 900px) {
+  .client-unfinished-workout-reminder {
+    right: 12px;
+    bottom: calc(96px + env(safe-area-inset-bottom));
+    width: calc(100vw - 24px);
+  }
+}

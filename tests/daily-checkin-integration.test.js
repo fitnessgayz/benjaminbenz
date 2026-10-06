@@ -73,6 +73,7 @@ function fixture(options = {}) {
         close(settings) { state.calls.push(["close", plain(settings)]); }
       },
       FWB_WEEKLY_ACTIVITY: { checkIn() { state.calls.push(["gym"]); return Promise.resolve("Checked in"); } },
+      FWB_GYM_CHECKIN_PROMPT: { maybeShow(settings) { state.calls.push(["gym-prompt", settings.day, settings.email]); return Promise.resolve(true); } },
       localStorage: {
         getItem(key) { if (options.blockedStorage) throw new Error("Storage blocked"); return state.storage.get(key) || null; },
         setItem(key, value) { if (options.blockedStorage) throw new Error("Storage blocked"); state.storage.set(key, value); }
@@ -127,20 +128,18 @@ test("an already saved daily check-in suppresses the popup but arbitrary progres
   assert.equal(context.clientHomeCheckinPromptSeen(), true);
 });
 
-test("first ready client visit opens welcome once without creating a workout or checking into the gym", () => {
+test("first ready client visit offers gym check-in without starting a workout or recording a visit", () => {
   const { context, state } = fixture();
   context.maybeShowClientHomeCheckinPrompt();
-  context.maybeShowClientHomeCheckinPrompt();
-  assert.deepEqual(state.calls, [["open", "welcome"]]);
-  assert.equal(state.dialog.initialCheckIn, null);
-  assert.equal(state.dialog.recommendation, null);
+  assert.deepEqual(state.calls, [["gym-prompt", state.day, email]]);
+  assert.equal(state.dialog, null);
 });
 
-test("daily check-in preference suppresses only the automatic prompt", () => {
+test("gym check-in preference suppresses only the automatic prompt", () => {
   const { context, state } = fixture();
   state.storage.set("fwb_daily_checkin_prompt_enabled_v1", "false");
   context.maybeShowClientHomeCheckinPrompt();
-  assert.equal(state.dialog, null);
+  assert.equal(state.calls.some(([name]) => name === "gym-prompt"), false);
   assert.equal(context.openClientDailyCheckin("welcome"), true);
   assert.equal(state.dialog.stage, "welcome");
 });
@@ -158,20 +157,22 @@ test("dismissing yesterday's or another account's open dialog does not consume a
   }
 });
 
-test("automatic prompt excludes coach, preview, active workout, another modal and unloaded data", () => {
+test("automatic gym prompt excludes coach, preview, active workout and another modal", () => {
   for (const values of [
     { activeDashboardUser: null }, { activeDashboardUser: { id: "coach", email: "coach@example.com" } },
-    { isCoachDashboardPreview: true }, { clientDailyCheckinReady: false },
+    { isCoachDashboardPreview: true },
     { workoutElapsedTimerState: { startedAt: 1 } }, { activeClientDashboardTab: "workouts" }
   ]) {
     const { context, state } = fixture();
     Object.assign(context, values);
     context.maybeShowClientHomeCheckinPrompt();
     assert.equal(state.dialog, null, JSON.stringify(values));
+    assert.equal(state.calls.some(([name]) => name === "gym-prompt"), false, JSON.stringify(values));
   }
   const { context, state } = fixture({ state: { anotherDialog: true } });
   context.maybeShowClientHomeCheckinPrompt();
   assert.equal(state.dialog, null);
+  assert.equal(state.calls.some(([name]) => name === "gym-prompt"), false);
 });
 
 test("manual check-in guards unavailable data and active workouts with a visible message", () => {

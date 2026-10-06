@@ -48,7 +48,8 @@
     "20261006131914_index_community_wall_props_sender.sql",
     "20261006144209_update_decline_cable_chest_press_underhand_media.sql",
     "20261006144838_restore_daily_challenge_and_match_effort.sql",
-    "20261006145803_separate_standing_and_kneeling_cable_crunches.sql"
+    "20261006145803_separate_standing_and_kneeling_cable_crunches.sql",
+    "20261006174523_gym_discovery_reviews.sql"
   ],
   "nasmExerciseCatalogMigration": "20261001032427_add_complete_nasm_exercise_library.sql",
   "nasmExerciseCatalogCount": 75,

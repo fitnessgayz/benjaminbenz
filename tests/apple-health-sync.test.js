@@ -29,4 +29,11 @@ test('backend schema not installed is a recoverable state',async()=>{assert.equa
 test('network failures are not misreported as opt-out',async()=>{await assert.rejects(fixture({error:{code:'NETWORK'}}).load(),e=>e.code==='NETWORK');});
 test('workout names and sources are escaped and null metrics omitted',async()=>{const f=fixture();const s=await f.load();s.workouts[0].activity_type='<img src=x onerror=alert(1)>';const html=f.api.renderSnapshot(s);assert.doesNotMatch(html,/<img/);assert.match(html,/&lt;img/);assert.match(html,/0 active kcal/);assert.doesNotMatch(html,/null|NaN|undefined/);});
 test('daily weight chart preserves actual dates and does not invent missing days',async()=>{const f=fixture();const s=await f.load();s.daily.push({date:'2026-09-22',body_weight_kg:81});const html=f.api.renderSnapshot(s);assert.match(html,/<svg/);assert.match(html,/2 shared weigh-ins/);assert.match(html,/Missing days are not estimated/);});
+test('Logs places Apple workouts after saved workouts and shows only workout readings',async()=>{
+ const dashboard=fs.readFileSync('client-dashboard.html','utf8');
+ assert.ok(dashboard.indexOf('id="client-training-log-history"')<dashboard.indexOf('data-apple-health-workouts'));
+ assert.ok(dashboard.indexOf('data-apple-health-workouts')<dashboard.indexOf('data-google-health-activities'));
+ const f=fixture();const snapshot=await f.load();const markup=f.api.renderSnapshot(snapshot,{workoutOnly:true});
+ assert.match(markup,/Imported workouts/);assert.match(markup,/Run/);assert.doesNotMatch(markup,/Body weight|Daily history|Shared:/);
+});
 test('client and coach integration load the module before their controller',()=>{for(const [html,script] of [['client-dashboard.html','client-portal'],['coach-admin.html','coach-admin']]){const s=fs.readFileSync(html,'utf8');assert.ok(s.indexOf('js/apple-health-sync.js')<s.indexOf('js/'+script+'.js'));assert.match(s,/data-apple-health-view/);}assert.match(fs.readFileSync('js/client-portal.js','utf8'),/configureClientAppleHealth\(\);/);assert.match(fs.readFileSync('js/coach-admin.js','utf8'),/coachAppleHealthController\?\.destroy\(\)/);});

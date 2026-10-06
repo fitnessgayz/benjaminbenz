@@ -6136,6 +6136,7 @@ function workoutGymPickerMarkup(value = "", index = 0) {
       list="${listId}" placeholder="Gym name, Home, or Outdoors" value="${escapeHtml(value)}"
       aria-describedby="${instructionsId}" />
     <datalist id="${listId}">${recentGyms.map((gym) => `<option value="${escapeHtml(gym)}"></option>`).join("")}</datalist>
+    <button class="button button-ghost workout-gym-find" data-find-nearby-gym type="button">Find nearby gyms</button>
     <small id="${instructionsId}">Choose once before you start. Use the gym’s name if you train at different gyms, or enter Home or Outdoors. Your previous weights will match this location.</small>
     <span class="workout-gym-error" data-workout-gym-error role="status" hidden></span>
   </div>`;
@@ -6954,11 +6955,22 @@ function renderCustomExerciseSuggestions(input) {
         ${match.muscleLabel ? `<span class="custom-workout-suggestion-muscles">${escapeHtml(match.muscleLabel)}</span>` : ""}
       `}
     </button>
-  `).join("");
-  menu.hidden = matches.length === 0;
-  input.setAttribute("aria-expanded", matches.length > 0 ? "true" : "false");
-  editor.closest("[data-custom-exercise-card]")?.classList.toggle("is-showing-suggestions", matches.length > 0);
+  `).join("") + '<button type="button" data-custom-exercise-more>More exercises →</button>';
+  menu.hidden = false;
+  input.setAttribute("aria-expanded", "true");
+  editor.closest("[data-custom-exercise-card]")?.classList.toggle("is-showing-suggestions", true);
   closeCustomExerciseSuggestions(editor);
+}
+
+function openClientExerciseLibrary(input, onSelect) {
+  if (!window.FWB_CLIENT_EXERCISE_LIBRARY?.open || !input) return false;
+  closeCustomExerciseSuggestions();
+  window.FWB_CLIENT_EXERCISE_LIBRARY.open({
+    records: exerciseSuggestionRecords(),
+    initialQuery: input.value,
+    onSelect
+  });
+  return true;
 }
 
 function refreshExerciseSuggestionsDatalist() {
@@ -7513,8 +7525,12 @@ function renderCustomWorkoutGroupedRestControls() {
 }
 
 function tickRestTimer() {
+  const previousSeconds = restTimerRemainingSeconds;
+  const wasRunning = restTimerEndsAt > 0;
   syncRestTimerRemaining();
-  renderRestTimer();
+  if (restTimerRemainingSeconds !== previousSeconds || (restTimerEndsAt > 0) !== wasRunning) {
+    renderRestTimer();
+  }
 }
 
 function startOrPauseRestTimer() {
@@ -9638,7 +9654,7 @@ function customWorkoutGroupedSetRowMarkup(row, code, exerciseIndex, setType, rou
         aria-label="${escapeHtml(complete ? `Reopen ${context}` : `${context} not logged`)}"
         aria-pressed="${complete}"
         ${pendingRow ? "disabled" : ""}
-      >${escapeHtml(code)}</button>
+      ><span aria-hidden="true">${escapeHtml(code)}${complete ? " ✓" : ""}</span></button>
       ${customWorkoutGroupedFieldMarkup("weight", values.weightRaw, context, row?.querySelector("[data-set-weight]")?.placeholder || "", row?.querySelector("[data-set-weight]")?.dataset.historyHint || "")}
       ${customWorkoutGroupedFieldMarkup("reps", values.repsRaw, context, row?.querySelector("[data-set-reps]")?.placeholder || "")}
       ${customWorkoutGroupedFieldMarkup("rir", rir, context)}
@@ -9847,6 +9863,85 @@ function previousCustomWorkoutGroupedWeight(logElement, roundNumber) {
   return previousCustomWorkoutGroupedValue(logElement, roundNumber, "weight");
 }
 
+function autoCopyCustomWorkoutGroupedNextRound(carousel, completedRound) {
+  let changed = 0;
+  customWorkoutGroupedLogElements(carousel).forEach((logElement) => {
+    const rows = customWorkoutGroupedRows(logElement, workingSetType);
+    const previous = rows[completedRound - 1];
+    const next = rows[completedRound];
+    if (!previous?.classList.contains("is-complete") || !next || next.classList.contains("is-complete")) return;
+    for (const field of ["weight", "reps"]) {
+      const source = previous.querySelector(`[data-set-${field}]`);
+      const destination = next.querySelector(`[data-set-${field}]`);
+      const value = customWorkoutGroupedCopyValue(source?.value, field);
+      if (!destination || String(destination.value).trim() || value === null) continue;
+      destination.value = value;
+      changed += 1;
+    }
+  });
+  if (changed) persistCustomWorkoutDraftForElement(carousel);
+  return changed;
+}
+
+function customWorkoutGroupedNextSetAdvice(previous, next, config) {
+  if (!previous?.completed || next?.completed || !next || !Number.isFinite(previous.rir) ||
+      previous.rir < 0 || previous.rir > 5 || !Number.isFinite(previous.weight) || previous.weight <= 0 ||
+      !Number.isInteger(previous.reps) || previous.reps <= 0) return null;
+  const effort = `RIR ${previous.rir}`;
+  if (previous.rir <= 1) return { message: `${effort} · No increase; lower the load if form slips.` };
+  if (!config) return { message: `${effort} · No increase; add a rep target for guidance.` };
+  if (!config.enabled) return null;
+  const repMin = Number(config.rep_min);
+  const increment = Number(config.increment);
+  const targetRir = Number(config.target_rir);
+  if (config.unit !== "lb" || !Number.isFinite(repMin) || repMin <= 0 ||
+      !Number.isFinite(increment) || increment <= 0 || !Number.isFinite(targetRir)) {
+    return { message: `${effort} · Review this exercise’s weight targets with your coach.` };
+  }
+  if (previous.reps < repMin) return { message: `${effort} · No increase until you reach the target reps.` };
+  if (previous.rir < Math.max(4, targetRir + 2)) return { message: `${effort} · Keep the load for the next set.` };
+  if (increment > previous.weight * 0.1) return { message: `${effort} · Ask your coach for a smaller weight jump.` };
+  const weight = previous.weight + increment;
+  if (String(next.weight || "").trim() && Number(next.weight) >= weight) return null;
+  return { message: `${effort} · Try ${weight} lb next set`, weight };
+}
+
+function customWorkoutGroupedRoundAdvice(logElement, roundNumber) {
+  if (roundNumber < 2) return null;
+  const rows = customWorkoutGroupedRows(logElement, workingSetType);
+  const previous = rows[roundNumber - 2];
+  const next = rows[roundNumber - 1];
+  if (!previous || !next) return null;
+  const rirRaw = String(previous.dataset.repsInReserve || "").trim();
+  if (!rirRaw) return null;
+  const config = window.FWB_WORKOUT_PROGRESSION_UI?.configFor(logElement, workoutProgressionContext(logElement));
+  return customWorkoutGroupedNextSetAdvice({
+    completed: previous.classList.contains("is-complete"),
+    rir: Number(rirRaw),
+    weight: Number(previous.querySelector("[data-set-weight]")?.value),
+    reps: Number(previous.querySelector("[data-set-reps]")?.value)
+  }, {
+    completed: next.classList.contains("is-complete"),
+    weight: next.querySelector("[data-set-weight]")?.value
+  }, config);
+}
+
+function useCustomWorkoutGroupedNextWeight(button) {
+  const carousel = button?.closest("[data-custom-workout-grouped='true']");
+  const roundNumber = Number(button?.dataset.customGroupedUseNextWeight);
+  const exerciseIndex = Number(button?.dataset.customGroupedExerciseIndex);
+  const weight = Number(button?.dataset.customGroupedSuggestedWeight);
+  const logElement = customWorkoutGroupedLogElements(carousel)[exerciseIndex];
+  const row = customWorkoutGroupedRows(logElement, workingSetType)[roundNumber - 1];
+  const canonical = row?.querySelector("[data-set-weight]");
+  const visible = carousel?.querySelector(`[data-custom-grouped-round="${roundNumber}"] .custom-workout-grouped-row[data-custom-grouped-exercise-index="${exerciseIndex}"] [data-custom-grouped-field="weight"]`);
+  if (!row || row.classList.contains("is-complete") || !canonical || !visible || !Number.isFinite(weight) || weight <= 0) return;
+  canonical.value = String(weight);
+  visible.value = String(weight);
+  persistCustomWorkoutDraftForElement(carousel);
+  renderCustomWorkoutGroupedCard(carousel);
+}
+
 function customWorkoutGroupedPersonalBestLabel(logElement, best, includeExerciseName = true) {
   if (!best) return "";
   const reps = Number(best.reps);
@@ -9891,7 +9986,7 @@ function customWorkoutGroupedCopyVisibleInput(section, exerciseIndex, field = "w
 function refreshCustomWorkoutGroupedCopyWeights(carousel) {
   const personalBests = new Map();
   const logElements = customWorkoutGroupedLogElements(carousel);
-  if (carousel?.querySelector('[data-custom-grouped-copy-source="pr"]')) {
+  if (carousel?.querySelector('[data-custom-grouped-history]')) {
     logElements.forEach((logElement) => {
       personalBests.set(logElement, personalBestWeightLog(logsForExerciseDisplay(logElement)));
     });
@@ -10009,6 +10104,70 @@ function copyCustomWorkoutGroupedWeights(button) {
   }
 }
 
+function openCustomWorkoutGroupedHistory(button) {
+  const carousel = button?.closest("[data-custom-workout-grouped='true']");
+  const roundNumber = Number(button?.dataset.customGroupedHistory);
+  if (!carousel || !Number.isInteger(roundNumber) || roundNumber < 1) return;
+  const logElements = customWorkoutGroupedLogElements(carousel);
+  const choices = [];
+  const sections = logElements.map((logElement, exerciseIndex) => {
+    const selectedDate = logElement.querySelector("[data-log-date]")?.value || todayDate();
+    const history = logsForExerciseDisplay(logElement).filter((record) => (
+      String(record.entry_date || "") < selectedDate &&
+      normalizedSetType(record.set_type, record.set_number) === workingSetType &&
+      customWorkoutGroupedCopyValue(record.weight_used) !== null &&
+      customWorkoutGroupedCopyValue(record.reps, "reps") !== null
+    ));
+    const best = personalBestWeightLog(history);
+    const recent = [...history].sort((a, b) =>
+      String(b.entry_date).localeCompare(String(a.entry_date)) ||
+      Number(b.set_number || 1) - Number(a.set_number || 1));
+    const records = [best, ...recent].filter((record, index, all) => record && all.indexOf(record) === index).slice(0, 9);
+    const rows = records.map((record) => {
+      const choiceIndex = choices.push({ exerciseIndex, record }) - 1;
+      return `<button type="button" data-custom-grouped-history-choice="${choiceIndex}">
+        ${record === best ? "<strong>PR · </strong>" : ""}${escapeHtml(record.weight_used)} lb × ${escapeHtml(record.reps)} reps
+        <small>${escapeHtml(formatLogDate(record.entry_date))} · Set ${escapeHtml(record.set_number || 1)}</small>
+      </button>`;
+    }).join("");
+    return `<section><h3>${escapeHtml(currentExerciseLabel(logElement) || `Exercise ${exerciseIndex + 1}`)}</h3>
+      ${rows || "<p>No previous working sets yet.</p>"}</section>`;
+  }).join("");
+  const dialog = document.createElement("dialog");
+  dialog.className = "client-workout-pr-dialog";
+  dialog.innerHTML = `<header><h2>Exercise history</h2><button type="button" data-custom-grouped-history-close aria-label="Close exercise history">×</button></header>
+    <p>Choose a previous set to use its weight and reps in ${workoutSetUnit(carousel).toLowerCase()} ${roundNumber}. Your choice replaces that round’s current numbers.</p>
+    <div class="client-workout-pr-list">${sections}</div>`;
+  dialog.addEventListener("click", (event) => {
+    if (event.target === dialog || event.target.closest("[data-custom-grouped-history-close]")) {
+      dialog.close();
+      return;
+    }
+    const choice = choices[Number(event.target.closest("[data-custom-grouped-history-choice]")?.dataset.customGroupedHistoryChoice)];
+    if (!choice) return;
+    const logElement = logElements[choice.exerciseIndex];
+    const row = customWorkoutGroupedRows(logElement, workingSetType)[roundNumber - 1];
+    const visible = carousel.querySelector(`[data-custom-grouped-round="${roundNumber}"] .custom-workout-grouped-row[data-custom-grouped-exercise-index="${choice.exerciseIndex}"]`);
+    if (!row || row.classList.contains("is-complete")) return;
+    let changed = false;
+    for (const [field, recordField] of [["weight", "weight_used"], ["reps", "reps"]]) {
+      const canonicalInput = row.querySelector(`[data-set-${field}]`);
+      const visibleInput = visible?.querySelector(`[data-custom-grouped-field="${field}"]`);
+      const value = customWorkoutGroupedCopyValue(choice.record[recordField], field);
+      if (!canonicalInput || !visibleInput || value === null) continue;
+      canonicalInput.value = value;
+      visibleInput.value = value;
+      changed = true;
+    }
+    if (changed) persistCustomWorkoutDraftForElement(carousel);
+    refreshCustomWorkoutGroupedCompletion(carousel);
+    dialog.close();
+  });
+  dialog.addEventListener("close", () => { dialog.remove(); button.focus({ preventScroll: true }); }, { once: true });
+  document.body.append(dialog);
+  dialog.showModal();
+}
+
 function undoCustomWorkoutGroupedWeights(button) {
   const carousel = button?.closest("[data-custom-workout-grouped='true']");
   const section = button?.closest("[data-custom-grouped-round]");
@@ -10088,7 +10247,8 @@ function customWorkoutGroupedSectionsMarkup(carousel) {
     const rows = logElements.map((logElement, exerciseIndex) => ({
       row: customWorkoutGroupedRows(logElement, workingSetType)[roundIndex],
       exerciseIndex,
-      exerciseName: currentExerciseLabel(logElement) || `Exercise ${exerciseIndex + 1}`
+      exerciseName: currentExerciseLabel(logElement) || `Exercise ${exerciseIndex + 1}`,
+      advice: customWorkoutGroupedRoundAdvice(logElement, roundNumber)
     })).filter((item) => item.row);
     const logged = customWorkoutGroupedRoundIsLogged(carousel, roundNumber);
     const exerciseTitle = rows.map((item, exerciseIndex) => (
@@ -10101,14 +10261,9 @@ function customWorkoutGroupedSectionsMarkup(carousel) {
           <p class="custom-workout-grouped-round-exercise-title">${escapeHtml(exerciseTitle)}</p>
           <h4>${workoutSetUnit(carousel)} ${roundNumber}</h4>
           <div class="custom-workout-grouped-copy-actions">
-          ${roundNumber > 1 ? `<button class="custom-workout-grouped-copy-weights" type="button" data-custom-grouped-copy-weights="${roundNumber}" ${logged ? "disabled" : ""}
-            aria-label="Copy weights and reps from ${workoutSetUnit(carousel).toLowerCase()} ${roundNumber - 1} into empty fields in ${workoutSetUnit(carousel).toLowerCase()} ${roundNumber}">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h4"/></svg>
-            Copy last ${workoutSetUnit(carousel).toLowerCase()}
-          </button>` : ""}
           <div class="custom-workout-grouped-pr-action">
-            <button class="custom-workout-grouped-copy-weights" type="button" data-custom-grouped-copy-weights="${roundNumber}" data-custom-grouped-copy-source="pr" ${logged ? "disabled" : ""}
-              aria-label="Copy personal record weights and reps into empty fields in ${workoutSetUnit(carousel).toLowerCase()} ${roundNumber}">Copy PR</button>
+            <button class="custom-workout-grouped-copy-weights" type="button" data-custom-grouped-history="${roundNumber}" ${logged ? "disabled" : ""}
+              aria-label="Review exercise history for ${workoutSetUnit(carousel).toLowerCase()} ${roundNumber}">PR</button>
             <button class="custom-workout-grouped-pr-info" type="button" data-pr-help aria-label="What does PR mean?" aria-expanded="false">
               <svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="8"/><path d="M10 9v5M10 5.5v1"/></svg>
             </button>
@@ -10132,6 +10287,11 @@ function customWorkoutGroupedSectionsMarkup(carousel) {
           roundNumber,
           item.exerciseName
         )).join("")}
+        ${rows.filter((item) => item.advice).map((item) => `<div class="custom-workout-next-set-advice">
+          <span>${escapeHtml(item.exerciseName)}: ${escapeHtml(item.advice.message)}</span>
+          ${item.advice.weight ? `<button type="button" data-custom-grouped-use-next-weight="${roundNumber}" data-custom-grouped-exercise-index="${item.exerciseIndex}" data-custom-grouped-suggested-weight="${item.advice.weight}"
+            aria-label="Use ${item.advice.weight} pounds for ${escapeHtml(item.exerciseName)} in ${workoutSetUnit(carousel).toLowerCase()} ${roundNumber}">Use weight</button>` : ""}
+        </div>`).join("")}
         <div class="custom-workout-grouped-round-action" data-custom-grouped-round-action>
           <button
             class="custom-workout-grouped-log-round"
@@ -10616,7 +10776,8 @@ async function logCustomWorkoutGroupedWarmUp(button) {
       successMessage: "Warm-up logged and autosaved.",
       setType: warmUpSetType,
       skipRemovedSetDelete: true,
-      skipLogRefresh: true
+      skipLogRefresh: true,
+      deferHistoryRender: true
     });
   } catch (error) {
     if (status) status.textContent = "Could not save the warm-up. Your entries are still here. Please try again.";
@@ -10718,7 +10879,8 @@ async function logCustomWorkoutGroupedRound(button) {
     savingMessage: `Logging ${workoutSetUnit(carousel).toLowerCase()} ${roundNumber}...`,
     successMessage: `${workoutSetUnit(carousel)} ${roundNumber} logged and autosaved.`,
     skipRemovedSetDelete: true,
-    skipLogRefresh: true
+    skipLogRefresh: true,
+    deferHistoryRender: true
   });
 
   if (!result.saved) {
@@ -10727,6 +10889,8 @@ async function logCustomWorkoutGroupedRound(button) {
     refreshCustomWorkoutGroupedCompletion(carousel);
     return result;
   }
+
+  autoCopyCustomWorkoutGroupedNextRound(carousel, roundNumber);
 
   if (!workoutElapsedTimerState) {
     const panel = carousel.closest(".client-workout-panel-custom, .client-workout-panel-assigned");
@@ -12181,9 +12345,9 @@ function renderCustomWorkoutPickerResults(dialog) {
   menu.innerHTML = matches.map((match) => `<button type="button" role="option" data-custom-exercise-suggestion="${escapeHtml(match.name)}">
     <strong>${escapeHtml(match.name)}</strong>
     ${match.muscleLabel ? `<span class="custom-workout-suggestion-muscles">${escapeHtml(match.muscleLabel)}</span>` : ""}
-  </button>`).join("");
-  menu.hidden = matches.length === 0;
-  input.setAttribute("aria-expanded", String(matches.length > 0));
+  </button>`).join("") + '<button type="button" data-custom-exercise-more>More exercises →</button>';
+  menu.hidden = false;
+  input.setAttribute("aria-expanded", "true");
   dialog.querySelector("[data-workout-picker-empty]")?.toggleAttribute("hidden", matches.length > 0);
 }
 
@@ -12319,6 +12483,15 @@ function openCustomWorkoutExerciseDialog(trigger, mode = "add") {
   dialog.addEventListener("click", (event) => {
     event.stopPropagation();
     if (event.target.closest("[data-close-exercise-dialog]")) return dialog.close();
+    if (event.target.closest("[data-custom-exercise-more]")) {
+      const input = dialog.querySelector("#custom-workout-picker-search");
+      openClientExerciseLibrary(input, (name) => {
+        if (!dialog.isConnected) return;
+        input.value = name;
+        add();
+      });
+      return;
+    }
     const choice = event.target.closest("[data-remove-exercise-choice]");
     if (choice) {
       const card = cards[Number(choice.dataset.removeExerciseChoice)];
@@ -12995,23 +13168,18 @@ function clientWorkoutListMarkup(workouts) {
         description: "Open a saved workout plan or log your own exercises, sets, reps, and weights.",
         action: 'data-client-workout-picker-choose="0" data-client-workout-picker-card="0" data-client-workout-selection-target="Custom workout"',
         titleId: "client-workout-card-title-0", descriptionId: "workout-custom-description" },
-      { icon: "plan", title: "Generate Workout Plan",
-        description: "Build a weekly program around your schedule, goals, focus, and equipment.",
-        action: "data-client-generate-workout-plan", titleId: "workout-plan-title", descriptionId: "workout-plan-description" },
-      { icon: "sparkles", title: "Generate Today’s Workout",
-        description: "Need help planning today’s session? Create a workout for your focus, time, and equipment.",
-        action: 'data-generate-workout data-generator-preset="today"',
-        titleId: "workout-generate-title", descriptionId: "workout-generate-description" },
-      { markup: clientCardioWorkoutChoiceMarkup(workouts) },
-      { icon: "mobility", title: "Mobility", description: "Stretching, joint mobility, and foam rolling.",
-        action: 'data-generate-workout data-generator-preset="mobility"',
-        titleId: "workout-mobility-title", descriptionId: "workout-mobility-description" }
+      { icon: "sparkles", title: "Generate Workout",
+        description: "Choose a plan for today or build a week around your goals and schedule.",
+        action: 'data-client-workout-choice-menu="generate"', titleId: "workout-generate-title", descriptionId: "workout-generate-description" },
+      { icon: "run", title: "Cardio & Mobility",
+        description: "Log cardio or create a mobility, stretching, and recovery session.",
+        action: 'data-client-workout-choice-menu="cardio-mobility"', titleId: "workout-cardio-mobility-title", descriptionId: "workout-cardio-mobility-description" }
     ];
     return `<div class="workout-program-picker"><div class="workout-choice-list">${cards.map((card) => card.markup || `
       <button type="button" class="workout-choice-card" ${card.action}
         aria-labelledby="${card.titleId}" aria-describedby="${card.descriptionId}">
         ${clientWorkoutChoiceContent(card)}
-      </button>`).join("")}</div></div>`;
+      </button>`).join("")}</div></div>${clientWorkoutChoiceDialogMarkup(workouts)}`;
   }
   const assigned = workouts.filter(workout => !workout.isCustom && !workout.isCardio);
   const locked = clientWorkoutLayoutSaving || Boolean(workoutElapsedTimerState);
@@ -13064,18 +13232,39 @@ function clientWorkoutListMarkup(workouts) {
   }).join("")}</div>
   ${assigned.length ? "" : '<p>No workouts in this plan. Restore the assigned plan or return to Programs to build a custom workout.</p>'}
   <div class="workout-preview-footer">
-    <button type="button" class="workout-choice-card" data-generate-workout
+    <button type="button" class="workout-choice-card" data-client-workout-choice-menu="generate"
       aria-labelledby="workout-generate-title" aria-describedby="workout-generate-description">
       ${clientWorkoutChoiceContent({
-        icon: "sparkles", title: "Generate today’s workout",
-        description: "Get a workout based on your focus, equipment, time, and intensity.",
+        icon: "sparkles", title: "Generate Workout",
+        description: "Choose a weekly plan or a workout for today.",
         titleId: "workout-generate-title", descriptionId: "workout-generate-description"
       })}
     </button>
-    ${clientCardioWorkoutChoiceMarkup(workouts)}
+    <button type="button" class="workout-choice-card" data-client-workout-choice-menu="cardio-mobility"
+      aria-labelledby="workout-cardio-mobility-title" aria-describedby="workout-cardio-mobility-description">
+      ${clientWorkoutChoiceContent({ icon: "run", title: "Cardio & Mobility",
+        description: "Log cardio or create a recovery session.",
+        titleId: "workout-cardio-mobility-title", descriptionId: "workout-cardio-mobility-description" })}
+    </button>
     <button type="button" class="workout-text-button" data-client-workout-copy-history>Copy previous</button>
     <button type="button" class="workout-text-button" data-preview-restore ${locked ? "disabled" : ""}>Restore assigned exercises</button>
-  </div>`;
+  </div>${clientWorkoutChoiceDialogMarkup(workouts)}`;
+}
+
+function clientWorkoutChoiceDialogMarkup(workouts) {
+  const cardio = workouts.find(workout => workout.isCardio);
+  return `<dialog class="client-workout-choice-dialog" data-client-workout-choice-dialog aria-labelledby="client-workout-choice-title">
+    <div class="client-workout-choice-dialog-heading"><h3 id="client-workout-choice-title" data-client-workout-choice-title>Choose a workout</h3>
+      <button type="button" class="button button-ghost" data-client-workout-choice-close aria-label="Close workout choices">✕</button></div>
+    <div class="workout-choice-list" data-client-workout-choice-options="generate" hidden>
+      <button type="button" class="workout-choice-card" data-client-generate-workout-plan>${clientWorkoutChoiceContent({ icon: "plan", title: "Weekly plan", description: "Build a plan for 2–5 days and save it for later.", titleId: "workout-weekly-title", descriptionId: "workout-weekly-description" })}</button>
+      <button type="button" class="workout-choice-card" data-generate-workout data-generator-preset="today">${clientWorkoutChoiceContent({ icon: "sparkles", title: "Today’s workout", description: "Build one session for your time, focus, and equipment.", titleId: "workout-today-title", descriptionId: "workout-today-description" })}</button>
+    </div>
+    <div class="workout-choice-list" data-client-workout-choice-options="cardio-mobility" hidden>
+      ${cardio ? `<button type="button" class="workout-choice-card" data-log-cardio data-client-workout-picker-choose="${cardio.panelIndex}" data-client-workout-picker-card="${cardio.panelIndex}" data-client-workout-selection-target="Cardio">${clientWorkoutChoiceContent({ icon: "run", title: "Log cardio", description: "Record a walk, run, ride, swim, or other cardio session.", titleId: "workout-dialog-cardio-title", descriptionId: "workout-dialog-cardio-description" })}</button>` : ""}
+      <button type="button" class="workout-choice-card" data-generate-workout data-generator-preset="mobility">${clientWorkoutChoiceContent({ icon: "mobility", title: "Mobility & recovery", description: "Create a stretching, joint mobility, or foam rolling session.", titleId: "workout-dialog-mobility-title", descriptionId: "workout-dialog-mobility-description" })}</button>
+    </div>
+  </dialog>`;
 }
 
 function clientCardioWorkoutChoiceMarkup(workouts) {
@@ -13784,6 +13973,12 @@ function historyPlaceholder(value, fallback = "") {
   return value === null || value === undefined || value === "" ? fallback : String(value);
 }
 
+function previousHistorySet(previousLogs, setNumber) {
+  return previousLogs.find((log) => Number(log.set_number || 1) === setNumber) ||
+    previousLogs.filter((log) => Number(log.set_number || 1) < setNumber).at(-1) ||
+    previousLogs[0];
+}
+
 function syncExerciseFinishedState(logElement) {
   if (!logElement || logElement.dataset.warmupLog !== undefined || logElement.dataset.cardioLog !== undefined) {
     return false;
@@ -13818,7 +14013,11 @@ function updateSetHistoryPlaceholders(logElement, logs = logsForExerciseDisplay(
   const previousByType = new Map([warmUpSetType, workingSetType].map((setType) => [
     setType,
     latestPreviousSetLogs(
-      logs.filter((log) => normalizedSetType(log.set_type, log.set_number) === setType),
+      logs.filter((log) => normalizedSetType(log.set_type, log.set_number) === setType &&
+        customWorkoutGroupedCopyValue(log.weight_used) !== null &&
+        (setType === warmUpSetType
+          ? Number.isFinite(Number(log.reps)) && Number(log.reps) >= 0
+          : customWorkoutGroupedCopyValue(log.reps, "reps") !== null)),
       selectedDate
     )
   ]));
@@ -13827,15 +14026,13 @@ function updateSetHistoryPlaceholders(logElement, logs = logsForExerciseDisplay(
     const setNumber = Number(row.dataset.setNumber || index + 1);
     const setType = setTypeForRow(row);
     const previousLogs = previousByType.get(setType) || [];
-    const previousLog =
-      previousLogs.find((log) => Number(log.set_number || 1) === setNumber) ||
-      previousLogs[Math.min(index, Math.max(previousLogs.length - 1, 0))];
+    const previousLog = previousHistorySet(previousLogs, setNumber);
     const weightInput = row.querySelector("[data-set-weight]");
     const repsInput = row.querySelector("[data-set-reps]");
 
     if (weightInput) {
       weightInput.placeholder = historyPlaceholder(
-        (setType === warmUpSetType ? previousLog : best || previousLog)?.weight_used,
+        previousLog?.weight_used,
         weightInput.dataset.defaultPlaceholder || "0"
       );
       const hint = setType !== warmUpSetType && best
@@ -13851,9 +14048,8 @@ function updateSetHistoryPlaceholders(logElement, logs = logsForExerciseDisplay(
       const prescribedReps = setType === workingSetType
         ? String(repsInput.dataset.defaultPlaceholder || "").trim()
         : "";
-      repsInput.placeholder = prescribedReps && prescribedReps !== "0"
-        ? prescribedReps
-        : historyPlaceholder(previousLog?.reps, repsInput.dataset.defaultPlaceholder || "");
+      repsInput.placeholder = historyPlaceholder(previousLog?.reps,
+        prescribedReps && prescribedReps !== "0" ? prescribedReps : repsInput.dataset.defaultPlaceholder || "");
     }
   });
   syncCustomWorkoutGroupedHistoryPlaceholders(logElement);
@@ -14774,6 +14970,7 @@ async function recordClientAchievementEvents(events = []) {
 }
 
 function renderClientTrainingLogs() {
+  cancelScheduledClientTrainingLogsRender();
   renderClientAchievements();
   renderClientExerciseProgress(trainingLogs);
   const history = document.getElementById("client-training-log-history");
@@ -15867,6 +16064,111 @@ function handleClientWorkoutHistoryDownload() {
   });
 }
 
+function handleClientWorkoutHistoryImport() {
+  const input = document.getElementById("client-workout-history-import-file");
+  const preview = document.getElementById("client-workout-import-preview");
+  const summary = document.getElementById("client-workout-import-summary");
+  const status = document.getElementById("client-workout-import-status");
+  const confirm = document.getElementById("client-workout-import-confirm");
+  const cancel = document.getElementById("client-workout-import-cancel");
+  if (!input || !preview || !summary || !status || !confirm || !cancel || !window.FWBWorkoutCSVImport) return;
+
+  let pending = null;
+  const logKey = (row) => [row.client_email?.toLowerCase(), row.entry_date, row.workout_title,
+    row.exercise_code, Number(row.set_number)].join("|");
+  const rowsNotAlreadySaved = (workouts, saved) => {
+    const existing = new Set(saved.map(logKey));
+    const seen = new Set();
+    return workouts.flatMap((workout) => workout.rows.map((row) => ({ ...row,
+      client_email: activeClientEmail, workout_title: workout.workout_title,
+      source: workout.source || "import", _workout: workout
+    }))).filter((row) => {
+      const key = logKey(row);
+      if (existing.has(key) || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  };
+  const reset = () => {
+    pending = null;
+    input.value = "";
+    preview.hidden = true;
+    confirm.disabled = false;
+  };
+
+  input.addEventListener("change", async () => {
+    const file = input.files?.[0];
+    pending = null;
+    preview.hidden = true;
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      status.textContent = "Choose a CSV smaller than 5 MB.";
+      input.value = "";
+      return;
+    }
+    try {
+      pending = window.FWBWorkoutCSVImport.parse(await file.text());
+      const newRows = rowsNotAlreadySaved(pending.workouts.map((workout) => ({ ...workout, source: pending.source })), trainingLogs);
+      const duplicates = pending.setCount - newRows.length;
+      summary.textContent = `${pending.workouts.length} ${pending.source === "hevy" ? "Hevy" : "Fitbod"} workouts, ${newRows.length} new sets, ${duplicates} already saved, ${pending.skipped} unsupported rows skipped.`;
+      confirm.disabled = newRows.length === 0;
+      preview.hidden = false;
+      status.textContent = newRows.length ? "Review the count, then import when ready." : "No new sets to import.";
+    } catch (error) {
+      status.textContent = error?.message || "Could not read the CSV.";
+      input.value = "";
+    }
+  });
+
+  cancel.addEventListener("click", () => { reset(); status.textContent = "Import canceled."; });
+  confirm.addEventListener("click", async () => {
+    if (!pending || !activeClientEmail) return;
+    confirm.disabled = true;
+    status.textContent = "Checking existing workout history…";
+    const accountEmail = activeClientEmail;
+    const fresh = await loadClientWorkoutLogHistory(accountEmail);
+    if (fresh.error || !fresh.data || activeClientEmail !== accountEmail) {
+      status.textContent = "Could not check your current history. Nothing was imported.";
+      confirm.disabled = false;
+      return;
+    }
+    const newRows = rowsNotAlreadySaved(pending.workouts.map((workout) => ({ ...workout, source: pending.source })), fresh.data);
+    if (!newRows.length) { reset(); status.textContent = "All sets are already saved."; return; }
+    const sessionIds = new Map(fresh.data.filter((row) => row.session_id)
+      .map((row) => [`${row.entry_date}|${row.workout_title}`, row.session_id]));
+    const rows = newRows.map(({ _workout, ...row }) => {
+      const sessionKey = `${row.entry_date}|${row.workout_title}`;
+      if (!sessionIds.has(sessionKey)) sessionIds.set(sessionKey, crypto.randomUUID());
+      return { ...row, gym_name: normalizeWorkoutGymName(document.getElementById("client-workout-import-gym")?.value) || null,
+        session_id: sessionIds.get(sessionKey), set_id: crypto.randomUUID() };
+    });
+    let imported = 0;
+    for (let offset = 0; offset < rows.length; offset += 100) {
+      if (activeClientEmail !== accountEmail) {
+        status.textContent = `Account changed. ${imported} sets were saved before import stopped.`;
+        reset();
+        return;
+      }
+      const { data, error } = await supabaseClient.from("client_workout_logs")
+        .upsert(rows.slice(offset, offset + 100), {
+          onConflict: "client_email,entry_date,workout_title,exercise_code,set_number",
+          ignoreDuplicates: true
+        }).select();
+      if (error) {
+        status.textContent = `Import stopped after ${imported} sets: ${error.message}`;
+        confirm.disabled = false;
+        return;
+      }
+      imported += data?.length || 0;
+      status.textContent = `Imported ${imported} sets…`;
+    }
+    const refreshed = await loadClientWorkoutLogHistory(accountEmail);
+    if (!refreshed.error && activeClientEmail === accountEmail) populateTrainingLogs(refreshed.data);
+    reset();
+    status.textContent = `Imported ${imported} new sets. Existing workout logs were preserved.`;
+  });
+}
+
 function handleClientTrainingLogDateFilter() {
   const input = document.getElementById("client-training-log-date-filter");
   const searchInput = document.getElementById("client-training-log-search-filter");
@@ -16367,6 +16669,8 @@ function setClientDashboardTab(tabName) {
     panel.hidden = !isActive;
   });
 
+  if (nextTab === "logs") flushScheduledClientTrainingLogsRender();
+
   if (nextTab === "notifications" && typeof setClientSettingsView === "function") {
     setClientSettingsView("menu", { scroll: false });
   }
@@ -16380,7 +16684,7 @@ function setClientDashboardTab(tabName) {
     void clientProfilePhotoController?.refresh();
   }
   if (nextTab === "community") { void window.FWB_COMMUNITY_CONNECTIONS?.refresh(); }
-  if (nextTab === "stats" || nextTab === "notifications") { void clientAppleHealthController?.refresh(); }
+  if (nextTab === "stats" || nextTab === "notifications" || nextTab === "logs") { void clientAppleHealthController?.refresh(); }
   if ((nextTab === "notifications" || nextTab === "logs") && clientGoogleHealthController) {
     void clientGoogleHealthController.refresh().catch(() => {
       // Settings and Saved Logs display their own connection errors.
@@ -16650,10 +16954,20 @@ function dismissClientHomeCheckinPrompt(restoreFocus = true) {
 }
 
 function maybeShowClientHomeCheckinPrompt() {
-  if (!dailyCheckinPromptEnabled() || !clientDailyCheckinReady || !activeDashboardUser || activeClientDashboardTab !== "home"
+  if (!dailyCheckinPromptEnabled() || !activeDashboardUser || activeClientDashboardTab !== "home"
       || isCoachDashboardPreview || isCoachPortalEmail(activeDashboardUser.email)
-      || workoutElapsedTimerState || document.querySelector("dialog[open]") || clientHomeCheckinPromptSeen()) return;
-  openClientDailyCheckin("welcome");
+      || workoutElapsedTimerState || document.querySelector("dialog[open]")) return;
+  const email = activeClientEmail;
+  const userId = activeDashboardUser.id;
+  const day = todayDate();
+  void window.FWB_GYM_CHECKIN_PROMPT?.maybeShow({
+    client: supabaseClient,
+    email,
+    user: activeDashboardUser,
+    day,
+    returnFocus: document.getElementById("client-gym-checkin"),
+    isCurrent: () => activeClientEmail === email && activeDashboardUser?.id === userId && todayDate() === day
+  });
 }
 
 function handleClientHomeCheckin() {
@@ -17687,6 +18001,25 @@ function handleWorkoutInteractions() {
   }, true);
 
   document.addEventListener("click", async (event) => {
+    const workoutChoiceDialog = event.target.closest("[data-client-workout-choice-dialog]");
+    const workoutChoiceMenu = event.target.closest("[data-client-workout-choice-menu]");
+    if (workoutChoiceMenu) {
+      const dialog = document.querySelector("[data-client-workout-choice-dialog]");
+      const choice = workoutChoiceMenu.dataset.clientWorkoutChoiceMenu;
+      if (dialog && ["generate", "cardio-mobility"].includes(choice)) {
+        dialog.querySelector("[data-client-workout-choice-title]").textContent = choice === "generate" ? "Generate Workout" : "Cardio & Mobility";
+        dialog.querySelectorAll("[data-client-workout-choice-options]").forEach(group => { group.hidden = group.dataset.clientWorkoutChoiceOptions !== choice; });
+        dialog.showModal();
+      }
+      return;
+    }
+    if (event.target.closest("[data-client-workout-choice-close]") || (workoutChoiceDialog && event.target === workoutChoiceDialog)) {
+      workoutChoiceDialog?.close();
+      return;
+    }
+    if (workoutChoiceDialog && event.target.closest("[data-client-generate-workout-plan], [data-generate-workout], [data-log-cardio]")) {
+      workoutChoiceDialog.close();
+    }
     const exerciseMediaOpen = event.target.closest("[data-exercise-media-open]");
     const exerciseMediaClose = event.target.closest("[data-exercise-media-close]");
     const exerciseMediaDialog = event.target.closest("[data-exercise-media-dialog]");
@@ -17769,12 +18102,15 @@ function handleWorkoutInteractions() {
       return;
     }
     const exerciseSuggestionButton = event.target.closest("[data-custom-exercise-suggestion]");
+    const exerciseMoreButton = event.target.closest("[data-custom-exercise-more]");
     const customWorkoutGroupNameToggle = event.target.closest("[data-custom-workout-group-name-toggle]");
     const customWorkoutGroupDelete = event.target.closest("[data-custom-workout-group-delete]");
     const customGroupedLogRoundButton = event.target.closest("[data-custom-grouped-log-round]");
     const customGroupedLogWarmUpButton = event.target.closest("[data-custom-grouped-log-warmup]");
     const customGroupedSkipWarmUpButton = event.target.closest("[data-custom-grouped-skip-warmup]");
     const customGroupedCopyWeightsButton = event.target.closest("[data-custom-grouped-copy-weights]");
+    const customGroupedHistoryButton = event.target.closest("[data-custom-grouped-history]");
+    const customGroupedNextWeightButton = event.target.closest("[data-custom-grouped-use-next-weight]");
     const customGroupedUndoWeightsButton = event.target.closest("[data-custom-grouped-undo-weights]");
     const customGroupedAddRoundButton = event.target.closest("[data-custom-grouped-add-round]");
     const customGroupedRemoveRoundButton = event.target.closest("[data-custom-grouped-remove-round]");
@@ -17857,6 +18193,16 @@ function handleWorkoutInteractions() {
     if (customGroupedCopyWeightsButton || customGroupedUndoWeightsButton) {
       if (customGroupedCopyWeightsButton) copyCustomWorkoutGroupedWeights(customGroupedCopyWeightsButton);
       else undoCustomWorkoutGroupedWeights(customGroupedUndoWeightsButton);
+      return;
+    }
+
+    if (customGroupedHistoryButton) {
+      openCustomWorkoutGroupedHistory(customGroupedHistoryButton);
+      return;
+    }
+
+    if (customGroupedNextWeightButton) {
+      useCustomWorkoutGroupedNextWeight(customGroupedNextWeightButton);
       return;
     }
 
@@ -18033,6 +18379,19 @@ function handleWorkoutInteractions() {
     if (exerciseSuggestionButton) {
       event.preventDefault();
       selectCustomExerciseSuggestion(exerciseSuggestionButton);
+      return;
+    }
+
+    if (exerciseMoreButton) {
+      event.preventDefault();
+      const input = exerciseMoreButton.closest(".custom-workout-name-editor")?.querySelector("[data-exercise-title-name]");
+      openClientExerciseLibrary(input, (name) => {
+        if (!input?.isConnected) return;
+        input.value = name;
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+        input.blur();
+        closeCustomExerciseSuggestions();
+      });
       return;
     }
 
@@ -19698,6 +20057,44 @@ function workoutSectionForButton(button) {
 
 const trainingLogAutosaveTimers = new WeakMap();
 const trainingLogAutosaveDelayMs = 10000;
+let clientTrainingLogsRenderPending = false;
+let clientTrainingLogsRenderHandle = null;
+let clientTrainingLogsRenderHandleKind = "";
+
+function cancelScheduledClientTrainingLogsRender() {
+  if (clientTrainingLogsRenderHandle !== null) {
+    if (clientTrainingLogsRenderHandleKind === "idle") window.cancelIdleCallback?.(clientTrainingLogsRenderHandle);
+    else window.clearTimeout(clientTrainingLogsRenderHandle);
+  }
+  clientTrainingLogsRenderHandle = null;
+  clientTrainingLogsRenderHandleKind = "";
+  clientTrainingLogsRenderPending = false;
+}
+
+function scheduleClientTrainingLogsRender() {
+  clientTrainingLogsRenderPending = true;
+  if (activeClientDashboardTab === "logs") {
+    renderClientTrainingLogs();
+    return;
+  }
+  if (clientTrainingLogsRenderHandle !== null) return;
+  const flush = () => {
+    clientTrainingLogsRenderHandle = null;
+    clientTrainingLogsRenderHandleKind = "";
+    if (clientTrainingLogsRenderPending) renderClientTrainingLogs();
+  };
+  if (typeof window.requestIdleCallback === "function") {
+    clientTrainingLogsRenderHandleKind = "idle";
+    clientTrainingLogsRenderHandle = window.requestIdleCallback(flush, { timeout: 2000 });
+  } else {
+    clientTrainingLogsRenderHandleKind = "timeout";
+    clientTrainingLogsRenderHandle = window.setTimeout(flush, 1000);
+  }
+}
+
+function flushScheduledClientTrainingLogsRender() {
+  if (clientTrainingLogsRenderPending) renderClientTrainingLogs();
+}
 
 function cancelTrainingLogAutosaves(container) {
   container?.querySelectorAll("[data-exercise-log]").forEach((logElement) => {
@@ -19772,7 +20169,8 @@ function scheduleTrainingLogAutosave(logElement) {
         successMessage: "Autosaved.",
         ...(logElement.closest("[data-custom-workout-grouped='true']") ? {
           skipLogRefresh: true,
-          skipRemovedSetDelete: true
+          skipRemovedSetDelete: true,
+          deferHistoryRender: true
         } : {})
       });
       setWorkoutCarouselAutosaveState(logElement, result.saved ? "saved" : "issue");
@@ -19855,7 +20253,8 @@ async function saveTrainingLogRows(button, logElements, status, options = {}) {
       } else {
         logElements.forEach(updateVisibleSetProgress);
       }
-      renderClientTrainingLogs();
+      if (options.deferHistoryRender) scheduleClientTrainingLogsRender();
+      else renderClientTrainingLogs();
 
       if (status) {
         status.textContent = successMessage;
@@ -19927,7 +20326,8 @@ async function saveTrainingLogRows(button, logElements, status, options = {}) {
   } else {
     logElements.forEach(updateVisibleSetProgress);
   }
-  renderClientTrainingLogs();
+  if (options.deferHistoryRender) scheduleClientTrainingLogsRender();
+  else renderClientTrainingLogs();
 
   if (status) {
     status.textContent = successMessage;
@@ -20141,6 +20541,7 @@ handleSignOut();
 handleTrainingDateChange();
 handleClientTrainingLogDateFilter();
 handleClientWorkoutHistoryDownload();
+handleClientWorkoutHistoryImport();
 handleCopyWorkoutToCustom();
 handleClientWorkoutHistoryDelete();
 handleClientWorkoutHistoryDeck();

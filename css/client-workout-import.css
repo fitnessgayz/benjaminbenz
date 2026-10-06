@@ -1,0 +1,32 @@
+.client-workout-import-picker {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.client-workout-import-picker input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  overflow: hidden;
+}
+
+.client-workout-import-picker:focus-within {
+  outline: 2px solid var(--electric-gold, #ffd400);
+  outline-offset: 3px;
+}
+
+.client-workout-import-preview {
+  margin-block: 12px;
+  padding: 16px;
+  border: 1px solid var(--border-color, #48494d);
+  border-radius: 14px;
+  background: var(--card-bg, #24262b);
+}
+
+.client-workout-import-preview[hidden] { display: none; }
+.client-workout-import-preview p { margin: 0 0 12px; }
+.client-workout-import-preview button { margin: 4px 8px 4px 0; }
+#client-workout-import-status { min-height: 1.5em; }

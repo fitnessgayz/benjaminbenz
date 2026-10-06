@@ -48,7 +48,7 @@ test("the compact picker explains gym, home, and outdoor sessions", () => {
   assert.match(markup, /train at different gyms/);
   assert.match(markup, /Home or Outdoors/);
   assert.match(markup, /option value="Gym A"/);
-  assert.doesNotMatch(markup, /<button/);
+  assert.match(markup, /<button[^>]*data-find-nearby-gym[^>]*>Find nearby gyms<\/button>/);
 });
 
 test("a superset card lets the client choose the workout's gym without leaving the round", () => {
