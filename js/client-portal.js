@@ -10264,7 +10264,23 @@ function refreshCustomWorkoutGroupedCompletion(carousel) {
   if (progress) progress.textContent = `${completeCount} / ${workingCount} complete`;
   refreshCustomWorkoutGroupedWarmUp(carousel);
   refreshCustomWorkoutGroupedCopyWeights(carousel);
+  refreshCustomWorkoutGroupedFocus(carousel?.closest(".client-workout-panel"));
   syncWorkoutExerciseList(carousel?.closest(".client-workout-panel"));
+}
+
+function refreshCustomWorkoutGroupedFocus(panel) {
+  if (!panel) return;
+  const carousels = Array.from(panel.querySelectorAll('[data-custom-workout-grouped="true"]'));
+  const sections = carousels.flatMap((carousel) =>
+    Array.from(carousel.querySelectorAll('[data-custom-grouped-round]'))
+  );
+  const active = sections.find((section) => section.dataset.customGroupedRoundLogged !== "true");
+  sections.forEach((section) => {
+    const current = section === active;
+    section.classList.toggle("is-current-step", current);
+    if (current) section.setAttribute("aria-current", "step");
+    else section.removeAttribute("aria-current");
+  });
 }
 
 function renderCustomWorkoutGroupedNotes(carousel) {
@@ -12042,6 +12058,7 @@ function workoutExerciseListMarkup() {
       <p>Tap an exercise to jump to its card.</p>
       <ol data-workout-exercise-list-items></ol>
       <p data-workout-exercise-list-empty hidden>No exercises yet. Add an exercise to get started.</p>
+      <button type="button" class="workout-exercise-list-add" data-workout-exercise-add>Add exercise <span aria-hidden="true">＋</span></button>
     </section>
   `;
 }
@@ -12141,6 +12158,48 @@ function customWorkoutExerciseAddConfig(format) {
     case "circuit": return { count: 3, label: "Add circuit", hint: "Choose the first exercise. Two blank exercises will be added too." };
     default: return { count: 1, label: "Add exercise", hint: "" };
   }
+}
+
+function customWorkoutPickerMatches(query, category = "all") {
+  const text = String(query || "").trim();
+  const records = exerciseSuggestionRecords();
+  const normalized = exerciseNameMatcher?.normalizeName(text) || text.toLowerCase();
+  const programAndHistory = category === "history" ? new Set([
+    ...(currentProgram?.workouts || []).flatMap((workout) => (workout.exercises || []).map((exercise) => String(exercise.name || "").toLowerCase())),
+    ...(currentProgram?.assignedWorkouts || []).flatMap((workout) => (workout.exercises || []).map((exercise) => String(exercise.name || "").toLowerCase())),
+    ...trainingLogs.map((log) => String(log.exercise_name || "").toLowerCase())
+  ]) : null;
+  const byName = new Map(records.map((record) => [record.name, record]));
+  const matches = normalized
+    ? customExerciseSuggestionMatches(text)
+    : records.map((record) => ({ name: record.name, muscleLabel: exerciseSuggestionMuscleLabel(record.libraryEntry), libraryEntry: record.libraryEntry }));
+  return matches.filter((match) => {
+    if (category === "all") return true;
+    const record = byName.get(match.name);
+    const exercise = record?.libraryEntry;
+    const muscles = [exercise?.primary_muscle, ...(Array.isArray(exercise?.secondary_muscles) ? exercise.secondary_muscles : [])]
+      .join(" ").toLowerCase();
+    if (category === "history") return programAndHistory.has(match.name.toLowerCase());
+    if (category === "upper") return /chest|back|shoulder|arm|bicep|tricep|forearm|lat|trap/.test(muscles);
+    if (category === "lower") return /quad|hamstring|glute|calf|leg|hip|adductor|abductor/.test(muscles);
+    if (category === "core") return /core|abdom|oblique/.test(muscles);
+    return true;
+  }).slice(0, 30);
+}
+
+function renderCustomWorkoutPickerResults(dialog) {
+  const input = dialog?.querySelector("#custom-workout-picker-search");
+  const filter = dialog?.querySelector("[data-workout-picker-filter]");
+  const menu = dialog?.querySelector("[data-custom-exercise-suggestions]");
+  if (!input || !menu) return;
+  const matches = customWorkoutPickerMatches(input.value, filter?.value || "all");
+  menu.innerHTML = matches.map((match) => `<button type="button" role="option" data-custom-exercise-suggestion="${escapeHtml(match.name)}">
+    <strong>${escapeHtml(match.name)}</strong>
+    ${match.muscleLabel ? `<span class="custom-workout-suggestion-muscles">${escapeHtml(match.muscleLabel)}</span>` : ""}
+  </button>`).join("");
+  menu.hidden = matches.length === 0;
+  input.setAttribute("aria-expanded", String(matches.length > 0));
+  dialog.querySelector("[data-workout-picker-empty]")?.toggleAttribute("hidden", matches.length > 0);
 }
 
 function customWorkoutExerciseControlMarkup(count, format = "single") {
@@ -12244,9 +12303,16 @@ function openCustomWorkoutExerciseDialog(trigger, mode = "add") {
         ${addConfig.hint ? `<p>${addConfig.hint}</p>` : ""}
         <div class="custom-workout-name-editor">
           <label for="custom-workout-picker-search">Search exercises</label>
+          <div class="custom-workout-picker-search-row">
+            <input id="custom-workout-picker-search" type="text" maxlength="160" autocomplete="off" autofocus required
+              placeholder="Type or search any exercise name" data-exercise-title-name aria-autocomplete="list" aria-expanded="false" aria-controls="custom-workout-picker-options" />
+            <select data-workout-picker-filter aria-label="Filter exercise list">
+              <option value="all">All</option><option value="history">Program & history</option>
+              <option value="upper">Upper body</option><option value="lower">Lower body</option><option value="core">Core</option>
+            </select>
+          </div>
           <div class="custom-workout-exercise-options custom-workout-suggestion-menu" id="custom-workout-picker-options" role="listbox" aria-label="Exercise suggestions" data-custom-exercise-suggestions hidden></div>
-          <input id="custom-workout-picker-search" type="text" maxlength="160" autocomplete="off" autofocus required
-            data-exercise-title-name aria-autocomplete="list" aria-expanded="false" aria-controls="custom-workout-picker-options" />
+          <p data-workout-picker-empty hidden>No matching exercises. You can still add the name you typed.</p>
         </div>
         <button class="button button-dark" type="submit">${addConfig.label}${addConfig.count > 1 ? ` · ${addConfig.count} exercises` : ""}</button>
       </form>`}
@@ -12282,7 +12348,10 @@ function openCustomWorkoutExerciseDialog(trigger, mode = "add") {
   });
   dialog.addEventListener("input", (event) => {
     event.stopPropagation();
-    if (event.target.matches("input")) renderCustomExerciseSuggestions(event.target);
+    if (event.target.matches("#custom-workout-picker-search")) renderCustomWorkoutPickerResults(dialog);
+  });
+  dialog.addEventListener("change", (event) => {
+    if (event.target.matches("[data-workout-picker-filter]")) renderCustomWorkoutPickerResults(dialog);
   });
   dialog.addEventListener("submit", (event) => { event.preventDefault(); event.stopPropagation(); add(); });
   dialog.addEventListener("keydown", (event) => {
@@ -12297,7 +12366,7 @@ function openCustomWorkoutExerciseDialog(trigger, mode = "add") {
     options[next].focus();
   });
   dialog.showModal();
-  if (!removing) renderCustomExerciseSuggestions(dialog.querySelector("input"));
+  if (!removing) renderCustomWorkoutPickerResults(dialog);
 }
 
 function customWorkoutPanelMarkup(index) {
@@ -17687,6 +17756,12 @@ function handleWorkoutInteractions() {
     const exerciseJump = event.target.closest("[data-workout-exercise-jump]");
     if (exerciseJump) {
       jumpToWorkoutExercise(exerciseJump);
+      return;
+    }
+    const exerciseListAdd = event.target.closest("[data-workout-exercise-add]");
+    if (exerciseListAdd) {
+      const panel = exerciseListAdd.closest(".client-workout-panel");
+      panel?.querySelector("[data-pick-custom-exercise], [data-add-assigned-exercise]")?.click();
       return;
     }
     const nextExerciseButton = event.target.closest("[data-workout-next-exercise]");

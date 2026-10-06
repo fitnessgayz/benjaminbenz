@@ -99,6 +99,13 @@
           close();
           return;
         }
+        if (event.target.closest("[data-workout-exercise-add]")) {
+          const add = panel.isConnected && currentPanel() === panel
+            ? panel.querySelector("[data-pick-custom-exercise], [data-add-assigned-exercise]") : null;
+          close({ restoreFocus: !add });
+          add?.click();
+          return;
+        }
         const choice = event.target.closest("[data-workout-exercise-jump]");
         if (!choice) return;
         const log = logs[Number(choice.dataset.workoutExerciseJump)];

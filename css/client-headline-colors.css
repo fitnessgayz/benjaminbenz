@@ -1,0 +1,28 @@
+/* Gold is reserved for the six main client page headlines; blue remains an accent. */
+:root body.client-dashboard-page {
+  --client-page-headline: #ffd400;
+}
+
+:root[data-client-theme="light"] body.client-dashboard-page {
+  /* Electric gold needs a darker shade to remain readable on the light canvas. */
+  --client-page-headline: #806000;
+}
+
+:root body.client-dashboard-page .client-home-intro h3,
+:root body.client-dashboard-page .client-workout-hub-heading h3,
+:root body.client-dashboard-page #client-logs-title,
+:root body.client-dashboard-page #progress-title,
+:root body.client-dashboard-page .client-community-hero h3,
+:root body.client-dashboard-page #client-notification-settings-title {
+  color: var(--client-page-headline);
+}
+
+/* These light-theme rules carry extra specificity in the existing palette. */
+:root[data-client-theme="light"] body.client-dashboard-page .client-home-intro h3,
+:root[data-client-theme="light"] body.client-dashboard-page #client-logs-title,
+:root[data-client-theme="light"] body.client-dashboard-page #progress-title,
+:root[data-client-theme="light"] body.client-dashboard-page .client-community-hero h3,
+:root[data-client-theme="light"] body.client-dashboard-page #client-notification-settings-title,
+:root[data-client-theme="light"] body.client-dashboard-page #client-workouts-panel.is-choosing-workout .client-workout-hub-heading h3 {
+  color: var(--client-page-headline);
+}

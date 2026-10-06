@@ -126,6 +126,29 @@
   display: none !important;
 }
 
+.client-dashboard-page :is(.client-workout-panel, .workout-exercise-dock) .workout-exercise-list-add {
+  display: flex;
+  width: 100%;
+  min-height: 48px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 14px;
+  padding: 10px 16px;
+  border: 1px solid var(--lime, #ffd400);
+  border-radius: 12px;
+  background: var(--lime, #ffd400);
+  color: #111;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.client-dashboard-page :is(.client-workout-panel, .workout-exercise-dock) .workout-exercise-list-add:focus-visible {
+  outline: 3px solid var(--secondary-accent, #52a9ee);
+  outline-offset: 3px;
+}
+
 @media (hover: hover) {
   .client-dashboard-page :is(.client-workout-panel, .workout-exercise-dock) .workout-exercise-list [data-workout-exercise-jump]:hover {
     border-color: #b8c49d;
