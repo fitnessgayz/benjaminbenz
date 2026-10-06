@@ -1,0 +1,11 @@
+# Client Community: invite-only first release
+
+Community is available to signed-in clients on iOS and mobile web. Joining creates a nickname, selected fitness avatar, and rotatable 16-character invite code. Clients can change their nickname and avatar later. A code sends a pending request; the recipient accepts or declines it. Either participant can remove an accepted connection. Leaving Community removes the profile, invitations, connections, shared achievement summary, and props tied to those connections.
+
+Sharing XP, earned badges, completed workout count, and gym visit count are separate choices and start off. Only accepted connections can read each enabled field. Accepted connections can give one prop per recipient per UTC day and see the total props received. Props have no text field and are removed with the connection. This feature does not expose workout logs, body measurements, health data, email addresses, or progress photos. Unconnected clients cannot list profiles or achievements. The `progress_opt_in` setting from the earlier preview remains stored but has no sharing behavior and is hidden in the web UI.
+
+The shared summary is calculated from each client's complete workout history and uploaded from the iOS or web app when Community is opened or achievements refresh. It is a client-supplied display projection; it must not be used as the authoritative source for future rankings or awards. A future leaderboard needs server-calculated scores from the underlying records.
+
+The database contract is in the three `client_community_connections`, `community_selective_progress_sharing`, and `community_avatar_nickname_props` migrations. It uses row-level policies for profiles, accepted connections, sharing preferences, and achievement summaries. Connection and props mutations run through authenticated RPCs backed by narrow functions in the unexposed `community_private` schema. All three migrations were applied to the FWB project on 2026-10-05. Rolled-back two-account checks verified sharing visibility and that props require an accepted connection, can be given only once per day, and disappear when the connection is removed.
+
+Leaderboard and challenges remain marked Coming Soon. They are outside this first release.

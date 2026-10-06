@@ -12,7 +12,7 @@
     },
     connections: {
       title: 'Train With Your People',
-      body: 'Connect with other clients by mutual invitation. Shared progress will require an accepted connection and each person’s permission.'
+      body: 'Exchange invite codes, accept connections, and choose which milestones to share.'
     },
     challenges: {
       title: 'Move Together',
@@ -23,11 +23,26 @@
   function mount(document) {
     const panel = document.querySelector('[data-client-dashboard-panel="community"]');
     if (!panel) return { configure() {} };
-    const badges = panel.querySelector('#client-community-share-badges');
-    const progress = panel.querySelector('#client-community-share-progress');
+    const choices = {
+      xp: panel.querySelector('#client-community-share-xp'),
+      badges: panel.querySelector('#client-community-share-badges'),
+      workouts: panel.querySelector('#client-community-share-workouts'),
+      gymVisits: panel.querySelector('#client-community-share-gym-visits')
+    };
     const save = panel.querySelector('[data-community-save]');
     const status = panel.querySelector('#client-community-consent-status');
     let client = null, userId = '', preview = false, generation = 0, busy = false;
+    let savedChoices = { xp: false, badges: false, workouts: false, gymVisits: false };
+
+    function applyChoices(values) {
+      savedChoices = {
+        xp: values.xp_opt_in === true,
+        badges: values.badges_opt_in === true,
+        workouts: values.workout_count_opt_in === true,
+        gymVisits: values.gym_visits_opt_in === true
+      };
+      Object.entries(savedChoices).forEach(([key, enabled]) => { choices[key].checked = enabled; });
+    }
 
     function showView(name) {
       const view = views[name] || views.leaderboard;
@@ -38,11 +53,17 @@
       });
       panel.querySelector('#client-community-feature-title').textContent = view.title;
       panel.querySelector('#client-community-feature-body').textContent = view.body;
+      const connections = panel.querySelector('[data-community-connections]');
+      const feature = panel.querySelector('.client-community-feature');
+      if (connections && feature) {
+        connections.hidden = name !== 'connections';
+        feature.hidden = name === 'connections';
+        if (name === 'connections') void root.FWB_COMMUNITY_CONNECTIONS?.refresh();
+      }
     }
 
     function setControls(disabled) {
-      badges.disabled = disabled;
-      progress.disabled = disabled;
+      Object.values(choices).forEach(control => { control.disabled = disabled; });
       save.disabled = disabled;
     }
 
@@ -63,20 +84,20 @@
       buttons[next].focus();
     });
     panel.addEventListener('change', (event) => {
-      if (event.target === badges || event.target === progress) status.textContent = 'You have unsaved sharing choices.';
+      if (Object.values(choices).includes(event.target)) status.textContent = 'You have unsaved sharing choices.';
     });
 
     async function loadChoices(request) {
       try {
         const { data, error } = await request.client.from('client_community_preferences')
-          .select('badges_opt_in,progress_opt_in').eq('user_id', request.userId).maybeSingle();
+          .select('xp_opt_in,badges_opt_in,workout_count_opt_in,gym_visits_opt_in')
+          .eq('user_id', request.userId).maybeSingle();
         if (error) throw error;
         if (request.generation !== generation || userId !== request.userId) return;
-        badges.checked = data?.badges_opt_in === true;
-        progress.checked = data?.progress_opt_in === true;
+        applyChoices(data || {});
         status.textContent = data
-          ? 'Your sharing choices are saved. Community rankings and connections are coming soon.'
-          : 'Your activity is private. Both sharing choices are off.';
+          ? 'Your sharing choices are saved. Accepted connections can see only what you enable.'
+          : 'Your milestones are private. All sharing choices are off.';
         setControls(false);
       } catch (_) {
         if (request.generation !== generation) return;
@@ -88,33 +109,39 @@
     async function saveChoices() {
       if (busy || preview || !client || !userId) return;
       const owner = userId, request = ++generation;
-      const values = { user_id: owner, badges_opt_in: badges.checked, progress_opt_in: progress.checked };
+      const values = { user_id: owner, xp_opt_in: choices.xp.checked,
+        badges_opt_in: choices.badges.checked,
+        workout_count_opt_in: choices.workouts.checked,
+        gym_visits_opt_in: choices.gymVisits.checked };
       busy = true; setControls(true); status.textContent = 'Saving your sharing choices…';
       try {
         const { data, error } = await client.from('client_community_preferences')
           .upsert(values, { onConflict: 'user_id' })
-          .select('user_id,badges_opt_in,progress_opt_in').single();
+          .select('user_id,xp_opt_in,badges_opt_in,workout_count_opt_in,gym_visits_opt_in').single();
         if (error || !data || data.user_id !== owner) throw error || new Error('No choices were saved.');
         if (request !== generation || owner !== userId) return;
-        badges.checked = data.badges_opt_in === true;
-        progress.checked = data.progress_opt_in === true;
-        status.textContent = 'Saved. You can change either choice any time. Community sharing is coming soon.';
+        applyChoices(data);
+        status.textContent = 'Saved. You can change these choices any time.';
+        void root.FWB_COMMUNITY_CONNECTIONS?.refresh();
       } catch (_) {
-        if (request === generation && owner === userId) status.textContent = 'Could not save your sharing choices. Please try again.';
+        if (request === generation && owner === userId) {
+          Object.entries(savedChoices).forEach(([key, enabled]) => { choices[key].checked = enabled; });
+          status.textContent = 'Could not save your sharing choices. Previous choices restored.';
+        }
       } finally {
         busy = false;
         if (request === generation && owner === userId) setControls(false);
       }
     }
 
-    showView('leaderboard');
+    showView('connections');
     setControls(true);
     return { configure(nextClient, nextUserId, isPreview) {
       const id = String(nextUserId || '').trim();
       if (id === userId && client === nextClient && preview === Boolean(isPreview)) return;
       generation++;
       client = nextClient; userId = id; preview = Boolean(isPreview);
-      badges.checked = false; progress.checked = false;
+      applyChoices({});
       setControls(true);
       if (preview) { status.textContent = 'Sharing choices are available only when the client signs in.'; return; }
       if (!client || !userId) { status.textContent = 'Sign in to manage sharing choices.'; return; }

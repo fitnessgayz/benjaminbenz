@@ -14643,7 +14643,9 @@ function clientAchievementSnapshot() {
 function renderClientAchievements() {
   if (!window.FWB_ACHIEVEMENTS_UI) return;
   clientAchievementController ||= window.FWB_ACHIEVEMENTS_UI.createController(document, retryClientAchievements);
-  clientAchievementController.render(clientAchievementSnapshot(), clientAchievementHistoryStatus);
+  const snapshot = clientAchievementSnapshot();
+  clientAchievementController.render(snapshot, clientAchievementHistoryStatus);
+  window.FWB_COMMUNITY_CONNECTIONS?.syncAchievements(snapshot);
   clientQuarterGoalController?.render();
 }
 
@@ -16323,6 +16325,7 @@ function setClientDashboardTab(tabName) {
   if (nextTab === "notifications") {
     void clientProfilePhotoController?.refresh();
   }
+  if (nextTab === "community") { void window.FWB_COMMUNITY_CONNECTIONS?.refresh(); }
   if (nextTab === "stats" || nextTab === "notifications") { void clientAppleHealthController?.refresh(); }
   if ((nextTab === "notifications" || nextTab === "logs") && clientGoogleHealthController) {
     void clientGoogleHealthController.refresh().catch(() => {
@@ -19171,6 +19174,7 @@ async function loadDashboard() {
 
     activeClientEmail = data.client_email || targetClientEmail;
     window.FWB_CLIENT_COMMUNITY?.configure(supabaseClient, user.id, isCoachDashboardPreview);
+    window.FWB_COMMUNITY_CONNECTIONS?.configure(supabaseClient, user.id, isCoachDashboardPreview);
     configureClientAppleWorkouts();
     clientAvailablePrograms = Array.isArray(programRows) ? programRows : [];
     renderProgram(data);
