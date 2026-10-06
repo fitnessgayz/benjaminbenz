@@ -24,14 +24,15 @@ test('workout chooser routes saved plans through Log Custom Workout', () => {
     escapeHtml: (value) => String(value ?? '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;')
   });
   vm.runInContext([
-    'clientWorkoutChoiceContent', 'clientCardioWorkoutChoiceMarkup', 'clientWorkoutListMarkup'
+    'clientWorkoutChoiceContent', 'clientCardioWorkoutChoiceMarkup', 'clientWorkoutChoiceDialogMarkup', 'clientWorkoutListMarkup'
   ].map(declaration).join('\n'), context);
   const markup = context.clientWorkoutListMarkup([{ isCardio: true, panelIndex: 8 }]);
-  assert.equal((markup.match(/class="workout-choice-card"/g) || []).length, 6);
+  assert.equal((markup.match(/class="workout-choice-card"/g) || []).length, 8);
   for (const title of ['Trainer Prescribed Workouts', 'Log Custom Workout',
-    'Generate Workout Plan', 'Generate Today’s Workout', 'Cardio', 'Mobility']) {
+    'Generate Workout', 'Cardio &amp; Mobility', 'Weekly plan', 'Today’s workout', 'Log cardio', 'Mobility &amp; recovery']) {
     assert.ok(markup.includes(title), `${title} is shown`);
   }
+  assert.equal((markup.split('data-client-workout-choice-dialog')[0].match(/class="workout-choice-card"/g) || []).length, 4);
   assert.doesNotMatch(markup, /Form Checks/);
   assert.match(markup, /data-preview-program="0"/);
   assert.doesNotMatch(markup, /data-client-saved-workout-plans/);
@@ -41,7 +42,7 @@ test('workout chooser routes saved plans through Log Custom Workout', () => {
   assert.match(markup, /data-generate-workout data-generator-preset="today"/);
   assert.match(markup, /data-generate-workout data-generator-preset="mobility"/);
   assert.match(markup, /data-log-cardio/);
-  assert.match(html, /client-workout-hub\.css\?v=4/);
+  assert.match(html, /client-workout-hub\.css\?v=5/);
   assert.match(html, /Choose Your Workout/);
 });
 
@@ -55,8 +56,25 @@ test('multiple trainer programs stay under one choice', () => {
     currentProgram: { id: 'a', program_title: 'Strength', workouts: [{}, {}] },
     escapeHtml: (value) => String(value ?? '')
   });
-  vm.runInContext(['clientWorkoutChoiceContent', 'clientCardioWorkoutChoiceMarkup', 'clientWorkoutListMarkup'].map(declaration).join('\n'), context);
+  vm.runInContext(['clientWorkoutChoiceContent', 'clientCardioWorkoutChoiceMarkup', 'clientWorkoutChoiceDialogMarkup', 'clientWorkoutListMarkup'].map(declaration).join('\n'), context);
   const markup = context.clientWorkoutListMarkup([{ isCardio: true, panelIndex: 4 }]);
-  assert.equal((markup.match(/class="workout-choice-card"/g) || []).length, 6);
+  assert.equal((markup.split('data-client-workout-choice-dialog')[0].match(/class="workout-choice-card"/g) || []).length, 4);
   assert.match(markup, /2 plans/);
+});
+
+test('assigned workout preview keeps the combined choices in its footer', () => {
+  const context = vm.createContext({
+    clientPreviewProgramSelected: true,
+    clientAvailablePrograms: [],
+    currentProgram: { program_title: 'Strength', workouts: [] },
+    clientWorkoutLayoutSaving: false,
+    workoutElapsedTimerState: null,
+    escapeHtml: (value) => String(value ?? '')
+  });
+  vm.runInContext(['clientWorkoutChoiceContent', 'clientWorkoutChoiceDialogMarkup', 'clientWorkoutListMarkup'].map(declaration).join('\n'), context);
+  const markup = context.clientWorkoutListMarkup([{ isCardio: true, panelIndex: 2 }]);
+  assert.match(markup, /data-client-workout-choice-menu="generate"/);
+  assert.match(markup, /data-client-workout-choice-menu="cardio-mobility"/);
+  assert.match(markup, /data-client-workout-choice-dialog/);
+  assert.match(markup, /data-client-workout-picker-choose="2"/);
 });

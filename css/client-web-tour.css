@@ -1,0 +1,35 @@
+.client-workout-choice-dialog,
+.client-web-tour {
+  width: min(92vw, 540px);
+  max-height: min(86dvh, 740px);
+  overflow: auto;
+  margin: auto;
+  border: 1px solid var(--line, #48504a);
+  border-radius: 22px;
+  background: var(--surface, #222723);
+  color: var(--text, #f5f5ef);
+  padding: clamp(20px, 5vw, 32px);
+  box-shadow: 0 20px 70px #0008;
+}
+.client-workout-choice-dialog::backdrop,
+.client-web-tour::backdrop { background: #070a08b9; }
+.client-workout-choice-dialog-heading,
+.client-web-tour-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.client-workout-choice-dialog-heading h3 { margin: 0 0 18px; }
+.client-workout-choice-dialog-heading button,
+.client-web-tour-header button { flex: none; min-width: 44px; min-height: 44px; border-radius: 50%; cursor: pointer; }
+.client-workout-choice-dialog .workout-choice-list { display: grid; gap: 12px; }
+.client-workout-choice-dialog .workout-choice-list[hidden] { display: none; }
+.client-web-tour-kicker { font-size: .77rem; font-weight: 800; letter-spacing: .1em; color: var(--accent, #a5f20d); }
+.client-web-tour-count { margin: 28px 0 8px; font-size: .9rem; opacity: .7; }
+.client-web-tour h2 { margin: 0 0 16px; font-size: clamp(1.6rem, 5vw, 2.2rem); }
+.client-web-tour [data-client-web-tour-body] { margin: 0 0 28px; line-height: 1.55; }
+.client-web-tour-actions { display: flex; gap: 12px; justify-content: flex-end; }
+.client-web-tour-actions button { min-width: 92px; min-height: 44px; border-radius: 12px; padding: 8px 16px; font-weight: 700; cursor: pointer; }
+.client-web-tour-actions [data-client-web-tour-next] { background: #a5f20d; color: #111; border: 0; }
+.client-web-tour-actions [data-client-web-tour-back] { background: transparent; color: inherit; border: 1px solid currentColor; }
+.client-web-tour-actions button:disabled { opacity: .4; cursor: default; }
+html[data-client-theme="light"] .client-workout-choice-dialog,
+html[data-client-theme="light"] .client-web-tour,
+body[data-client-theme="light"] .client-workout-choice-dialog,
+body[data-client-theme="light"] .client-web-tour { background: #f8f8f4; color: #1b211e; border-color: #bec8bf; }

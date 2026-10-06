@@ -69,6 +69,7 @@
   <link rel="stylesheet" href="/css/fwb-dark-theme.css?v=deep-forest-10" />
   <link rel="stylesheet" href="css/client-quarterly-goals.css?v=1" />
   <link rel="stylesheet" href="css/client-workout-hub.css?v=5" />
+  <link rel="stylesheet" href="css/client-web-tour.css?v=1" />
   <link rel="stylesheet" href="css/client-home-community.css?v=9" />
   <link rel="stylesheet" href="css/client-fascia-backgrounds.css?v=2" />
   <link rel="stylesheet" href="css/client-settings-navigation.css?v=2" />
@@ -972,6 +973,12 @@
           <div class="training-log-history" id="client-training-log-history">
             <p class="empty-state">No workout or nutrition logs yet.</p>
           </div>
+          <section class="apple-health-card" data-apple-health-workouts aria-label="Apple Health workout history">
+            <div class="apple-health-heading"><h3>Apple Health workouts</h3><button type="button" data-apple-health-refresh>Refresh</button></div>
+            <p class="apple-health-help">Workouts shared from the FWB iPhone app appear here after your saved workout logs.</p>
+            <p class="apple-health-status" data-apple-health-status role="status"></p>
+            <div data-apple-health-content></div>
+          </section>
           <section class="google-health-history" aria-labelledby="client-google-health-history-title">
             <p class="kicker">Connected health</p>
             <h3 id="client-google-health-history-title">Fitbit &amp; Pixel Watch workouts</h3>
@@ -1000,6 +1007,11 @@
             </div>
           </fieldset>
           <nav class="client-settings-shortcuts" aria-label="Settings categories">
+            <button class="client-settings-shortcut" type="button" data-client-web-tour-open>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 1.5-2.5 2-2.5 4M12 17h.01"/></svg>
+              <span class="client-settings-shortcut-copy"><strong>App tour</strong><small>See how workouts, logs, progress, and community work</small></span>
+              <span class="client-settings-shortcut-arrow" aria-hidden="true">›</span>
+            </button>
             <button class="client-settings-shortcut" type="button" data-client-settings-destination="stats">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/></svg>
               <span class="client-settings-shortcut-copy"><strong>Stats &amp; measurements</strong><small>Measurements, progress photos, and DEXA reports</small></span>
@@ -1337,7 +1349,8 @@
   <script src="js/workout-progression.js?v=1"></script>
   <script src="js/workout-progression-ui.js?v=1"></script>
   <script src="js/client-exercise-library.js?v=1"></script>
-  <script src="js/client-portal.js?v=workout-preview-1&amp;custom-workout-history-1&amp;cancel-workout=1&amp;energy-feedback=1&amp;mood-redesign=1&amp;visible-group-controls=1&amp;exercise-videos=1&amp;remember-login=1&amp;visible-demos=1&amp;personal-bests=1&amp;copy-last-weights=1&amp;demo-icons=1&amp;keyboard-entry=1&amp;copy-set-pr=3&amp;return-coach=1&amp;apple-workout=2&amp;apple-share=1&amp;rir-help=1&amp;viewport-dock=6&amp;home-actions=1&amp;compact-copy=1&amp;exercise-pr-notes=1&amp;pr-info=1&amp;finish-workout=2&amp;prescribed-targets=1&amp;exercise-controls=1&amp;session-alerts=1&amp;exercise-labels=1&amp;exercise-list=2&amp;grouped-add=1&amp;google-health=1&amp;exercise-defaults=2&amp;workout-generator=4&amp;profile-photo=1&amp;account-settings=1&amp;workout-delete=1&amp;apple-health=1&amp;daily-checkin=1&amp;recovery-catalog=1&amp;messages=2&amp;cardio-shortcut=1&amp;achievements=1&amp;progression=1&amp;exercise-images=5&amp;exercise-motion=2&amp;exercise-guide=3&amp;settings-tabs=2&amp;workout-feedback-actions=3&amp;set-motion=1&amp;next-exercise=1&amp;warmup-actions=1&amp;photo-crop=2&amp;navigation=2&amp;demo-svg=1&amp;timer-alert-recovery=2&amp;finish-later=1&amp;suggestions-prefix=1&amp;quarter-goals=1&amp;progress-cards=1&amp;program-windows=1&amp;activity-likes=1&amp;workout-hub=3&amp;home-community=1&amp;remove-home-more=1&amp;client-light=1&amp;training-preferences=1&amp;exercise-name-performance=1&amp;rep-weight-hints=1&amp;gym-location=2&amp;round-focus=1&amp;exercise-picker-list=2&amp;web-parity=1"></script>
+  <script src="js/client-portal.js?v=workout-preview-1&amp;custom-workout-history-1&amp;cancel-workout=1&amp;energy-feedback=1&amp;mood-redesign=1&amp;visible-group-controls=1&amp;exercise-videos=1&amp;remember-login=1&amp;visible-demos=1&amp;personal-bests=1&amp;copy-last-weights=1&amp;demo-icons=1&amp;keyboard-entry=1&amp;copy-set-pr=3&amp;return-coach=1&amp;apple-workout=2&amp;apple-share=1&amp;rir-help=1&amp;viewport-dock=6&amp;home-actions=1&amp;compact-copy=1&amp;exercise-pr-notes=1&amp;pr-info=1&amp;finish-workout=2&amp;prescribed-targets=1&amp;exercise-controls=1&amp;session-alerts=1&amp;exercise-labels=1&amp;exercise-list=2&amp;grouped-add=1&amp;google-health=1&amp;exercise-defaults=2&amp;workout-generator=4&amp;profile-photo=1&amp;account-settings=1&amp;workout-delete=1&amp;apple-health=1&amp;daily-checkin=1&amp;recovery-catalog=1&amp;messages=2&amp;cardio-shortcut=1&amp;achievements=1&amp;progression=1&amp;exercise-images=5&amp;exercise-motion=2&amp;exercise-guide=3&amp;settings-tabs=2&amp;workout-feedback-actions=3&amp;set-motion=1&amp;next-exercise=1&amp;warmup-actions=1&amp;photo-crop=2&amp;navigation=2&amp;demo-svg=1&amp;timer-alert-recovery=2&amp;finish-later=1&amp;suggestions-prefix=1&amp;quarter-goals=1&amp;progress-cards=1&amp;program-windows=1&amp;activity-likes=1&amp;workout-hub=3&amp;home-community=1&amp;remove-home-more=1&amp;client-light=1&amp;training-preferences=1&amp;exercise-name-performance=1&amp;rep-weight-hints=1&amp;gym-location=2&amp;round-focus=1&amp;exercise-picker-list=2&amp;web-parity=2"></script>
+  <script src="js/client-web-tour.js?v=1"></script>
   <script src="js/client-unfinished-workout-reminder.js?v=1"></script>
   <script src="js/client-fascia-backgrounds.js?v=2"></script>
   <script src="js/workout-exercise-dock.js?v=4"></script>

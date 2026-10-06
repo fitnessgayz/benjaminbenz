@@ -128,7 +128,7 @@
     return `<section class="apple-health-weight"><h4>Body weight · last 30 days</h4>${chart}<p class="apple-health-help">${points.length} shared weigh-in${points.length === 1 ? "" : "s"}${points.length > 1 ? ` · ${change > 0 ? "+" : ""}${escape(formatNumber(change))} kg from first to latest` : ""}. Missing days are not estimated.</p></section>`;
   }
 
-  function renderSnapshot(snapshot, { compact = false, workoutLimit = 20 } = {}) {
+  function renderSnapshot(snapshot, { compact = false, workoutOnly = false, workoutLimit = 20 } = {}) {
     if (snapshot.state !== "ready") return "";
     const shared = `<p class="apple-health-shared">Shared: ${snapshot.categories.map((key) => escape(categoryLabels[key])).join(" · ")}</p>`;
     if (compact) return shared;
@@ -145,12 +145,12 @@
       if (row.average_heart_rate !== null) readings.push(`${formatNumber(row.average_heart_rate, 0)} bpm average`);
       return `<article><h5>${escape(row.activity_type.replace(/_/g, " "))}</h5><time datetime="${escape(row.started_at)}">${escape(timeLabel(row.started_at))}</time><p>${readings.map(escape).join(" · ")}</p><small>Source: ${escape(row.source_name)}</small></article>`;
     }).join("")}</div>${snapshot.workouts.length > workoutLimit ? `<button type="button" data-apple-health-more>Show more workouts (${Math.min(workoutLimit, snapshot.workouts.length)} of ${snapshot.workouts.length})</button>` : ""}` : '<p class="apple-health-help">No shared workouts in the last 30 days.</p>'}</section>` : "";
-    return `${shared}${latest}${snapshot.categories.includes("bodyWeight") ? weightTrend(snapshot.daily) : ""}${history}${workouts}`;
+    return workoutOnly ? workouts : `${shared}${latest}${snapshot.categories.includes("bodyWeight") ? weightTrend(snapshot.daily) : ""}${history}${workouts}`;
   }
 
   function createController(options) {
     const document = global.document;
-    const roots = options.roots ? Array.from(options.roots) : Array.from(document.querySelectorAll("[data-apple-health-view], [data-apple-health-summary]"));
+    const roots = options.roots ? Array.from(options.roots) : Array.from(document.querySelectorAll("[data-apple-health-view], [data-apple-health-summary], [data-apple-health-workouts]"));
     const client = options.supabaseClient;
     let destroyed = false, generation = 0, activeRequest = null, abort = null, requestTimeout = null;
     let actorId = options.expectedUserId || null, snapshot = null, workoutLimit = 20;
@@ -173,7 +173,7 @@
       roots.forEach((root) => {
         const content = root.querySelector("[data-apple-health-content]");
         const status = root.querySelector("[data-apple-health-status]");
-        if (content) content.innerHTML = renderSnapshot(snapshot, { compact: root.hasAttribute("data-apple-health-summary"), workoutLimit });
+        if (content) content.innerHTML = renderSnapshot(snapshot, { compact: root.hasAttribute("data-apple-health-summary"), workoutOnly: root.hasAttribute("data-apple-health-workouts"), workoutLimit });
         if (status) status.textContent = messages[snapshot.state] || "Shared Apple Health information is unavailable.";
       });
     }
