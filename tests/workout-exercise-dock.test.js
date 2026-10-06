@@ -8,6 +8,7 @@ function fixture({ mobile = true, selected = true, count = 2 } = {}) {
     const classNames = new Set(classes.split(" ").filter(Boolean));
     const attrs = new Map(Object.entries(attributes));
     const listeners = new Map();
+    let clickCount = 0;
     const element = {
       children: [], parentNode: null, hidden: false, dataset: {}, value: "",
       classList: {
@@ -40,6 +41,9 @@ function fixture({ mobile = true, selected = true, count = 2 } = {}) {
         return Boolean(match && attrs.has(match[1]) && (match[2] === undefined || attrs.get(match[1]) === match[2]));
       },
       querySelector(selector) {
+        if (selector.includes(",")) {
+          return selector.split(",").map((part) => element.querySelector(part.trim())).find(Boolean) || null;
+        }
         for (const child of element.children) {
           if (child.matches(selector)) return child;
           const nested = child.querySelector(selector);
@@ -55,6 +59,8 @@ function fixture({ mobile = true, selected = true, count = 2 } = {}) {
         return copy;
       },
       focus() { document.activeElement = element; },
+      click() { clickCount++; },
+      get clickCount() { return clickCount; },
       getBoundingClientRect: () => ({ top: 700 }),
       addEventListener(type, listener) { listeners.set(type, listener); },
       removeEventListener(type) { listeners.delete(type); },
@@ -75,12 +81,14 @@ function fixture({ mobile = true, selected = true, count = 2 } = {}) {
   const navigation = node("client-dashboard-tabs is-mobile-expanded");
   const tab = node("client-dashboard-tab is-active", { "data-client-dashboard-tab": "workouts", "aria-label": "Workouts" });
   const list = node("workout-exercise-list", { "data-workout-exercise-list": "" });
+  const add = node("", { "data-workout-exercise-add": "" });
+  const assignedAdd = node("", { "data-add-assigned-exercise": "" });
   const logs = Array.from({ length: count }, (_, i) => {
     const log = node(); log.value = `${17.5 + i}`; return log;
   });
   panel.logs = logs;
   body.append(content, navigation); content.append(section); section.append(panel);
-  panel.append(list, ...logs); navigation.append(tab);
+  panel.append(list, assignedAdd, ...logs); list.append(add); navigation.append(tab);
   document = node();
   document.body = body;
   document.querySelector = selector => body.querySelector(selector);
@@ -92,7 +100,7 @@ function fixture({ mobile = true, selected = true, count = 2 } = {}) {
   window.MutationObserver = class { observe() {} disconnect() {} };
   const jumps = [];
   const syncList = () => {
-    [...list.children].forEach(child => child.remove());
+    [...list.children].filter(child => child !== add).forEach(child => child.remove());
     list.append(...panel.logs.map((_, i) => {
       const button = node("", { "data-workout-exercise-jump": String(i) });
       button.dataset.workoutExerciseJump = String(i);
@@ -104,7 +112,7 @@ function fixture({ mobile = true, selected = true, count = 2 } = {}) {
     getLogs: source => source.logs, syncList,
     jump(button) { jumps.push(panel.logs[Number(button.dataset.workoutExerciseJump)]); jumps.at(-1).focus(); }
   });
-  return { body, content, section, panel, tab, list, logs, document, window, jumps, controller,
+  return { body, content, section, panel, tab, list, add, assignedAdd, logs, document, window, jumps, controller,
     setMobile(value) { mobile = value; },
     overlay: () => body.querySelector(".workout-exercise-dock") };
 }
@@ -159,6 +167,15 @@ test("selection closes the sheet and jumps through the original list without tou
   assert.deepEqual(h.jumps, [h.logs[1]]);
   assert.equal(h.document.activeElement, h.logs[1]);
   assert.deepEqual(h.logs.map(log => log.value), ["17.5", "18.5"]);
+});
+
+test("Add exercise in the mobile sheet closes it and invokes the active workout editor", () => {
+  const h = fixture(); h.controller.toggle();
+  const choice = h.overlay().querySelector("[data-workout-exercise-add]");
+  const event = h.overlay().fire("click", { target: choice });
+  assert.equal(event.stopped, true);
+  assert.equal(h.overlay(), null);
+  assert.equal(h.assignedAdd.clickCount, 1);
 });
 
 test("selection follows the same exercise after reordering, and ignores a deleted exercise", () => {

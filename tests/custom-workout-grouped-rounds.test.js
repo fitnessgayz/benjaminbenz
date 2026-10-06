@@ -378,6 +378,38 @@ test("shows the grouped session timer and finish action on the last group only",
   );
 });
 
+test("moves one gold round outline into the next exercise group after its last round", () => {
+  const focus = Function(`${sourceForFunction("refreshCustomWorkoutGroupedFocus")}; return refreshCustomWorkoutGroupedFocus;`)();
+  const section = (logged) => {
+    const classes = new Set();
+    const attributes = {};
+    return {
+      dataset: { customGroupedRoundLogged: String(logged) },
+      classList: { toggle: (name, enabled) => enabled ? classes.add(name) : classes.delete(name), contains: (name) => classes.has(name) },
+      setAttribute: (name, value) => { attributes[name] = value; },
+      removeAttribute: (name) => { delete attributes[name]; },
+      getAttribute: (name) => attributes[name]
+    };
+  };
+  const rounds = [section(false), section(false), section(false)];
+  const carousels = [
+    { querySelectorAll: () => rounds.slice(0, 2) },
+    { querySelectorAll: () => rounds.slice(2) }
+  ];
+  const panel = { querySelectorAll: () => carousels };
+
+  focus(panel);
+  assert.equal(rounds[0].getAttribute("aria-current"), "step");
+  rounds[0].dataset.customGroupedRoundLogged = "true";
+  focus(panel);
+  assert.equal(rounds[1].getAttribute("aria-current"), "step");
+  rounds[1].dataset.customGroupedRoundLogged = "true";
+  focus(panel);
+  assert.equal(rounds[2].getAttribute("aria-current"), "step");
+  assert.equal(rounds[1].classList.contains("is-current-step"), false);
+  assert.match(mobileStyles, /\.custom-workout-grouped-section\.is-current-step\s*\{[\s\S]*?box-shadow:\s*inset 0 0 0 3px var\(--grouped-focus\)/);
+});
+
 test("pending working rows include entries and reopened sets while optional warm-ups never block finishing", () => {
   const pendingRows = sourceForFunction("customWorkoutGroupedPendingRows");
   const canonicalRows = [];

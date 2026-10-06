@@ -725,6 +725,32 @@
   line-height: 1.4;
 }
 
+.dashboard-page .custom-workout-exercise-dialog .custom-workout-picker-search-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+}
+
+.dashboard-page .custom-workout-exercise-dialog [data-workout-picker-filter] {
+  max-width: 132px;
+  min-height: 48px;
+  padding: 8px;
+  border: 1px solid var(--line, #d7d9d2);
+  border-radius: 11px;
+  background: var(--surface, #fff);
+  color: var(--ink, #111411);
+  font: inherit;
+  font-size: .8rem;
+}
+
+.dashboard-page .custom-workout-exercise-dialog [data-workout-picker-empty] {
+  padding: 10px 0;
+  color: var(--muted, #676b65);
+  font-size: .85rem;
+}
+
 .dashboard-page .custom-workout-exercise-dialog form > button[type="submit"] {
   display: flex;
   flex: 0 0 auto;
@@ -748,8 +774,8 @@
   max-width: 100%;
   height: auto;
   min-height: 0;
-  max-height: min(220px, 32vh) !important;
-  max-height: min(220px, 32dvh) !important;
+  max-height: min(340px, 46vh) !important;
+  max-height: min(340px, 46dvh) !important;
   margin: 0 !important;
   padding: 4px;
   overflow-y: auto;
@@ -1670,6 +1696,7 @@
   --grouped-lime: var(--lime, #d7ff3f);
   --grouped-blue: var(--blue, #2878ff);
   --grouped-gold: #d5a239;
+  --grouped-focus: #ffd400;
   width: 100%;
   max-width: 100%;
   min-width: 0;
@@ -2033,6 +2060,10 @@
   border-top: 1px solid var(--grouped-line);
   border-left: 5px solid #3f8d29;
   background: var(--grouped-paper);
+}
+
+.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-section.is-current-step {
+  box-shadow: inset 0 0 0 3px var(--grouped-focus);
 }
 
 .dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-section:is(.is-warmup, .is-warm-up, [data-section="warmup"], [data-kind="warmup"], [data-custom-grouped-section="warmup"], [data-custom-workout-grouped-section="warmup"]) {

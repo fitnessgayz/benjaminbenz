@@ -37,6 +37,35 @@ test("exercise list preserves canonical panel order and excludes warm-up/cardio 
   assert.deepEqual(Array.from(context().workoutExerciseListLogs(null)), []);
 });
 
+test("the exercise list offers Add exercise and picker starts with results below search", () => {
+  const scope = vm.createContext({});
+  vm.runInContext([declaration("workoutExerciseListMarkup"), declaration("openCustomWorkoutExerciseDialog")].join("\n"), scope);
+  assert.match(scope.workoutExerciseListMarkup(), /data-workout-exercise-add/);
+  const dialogSource = declaration("openCustomWorkoutExerciseDialog");
+  assert.ok(dialogSource.indexOf('id="custom-workout-picker-search"') < dialogSource.indexOf('id="custom-workout-picker-options"'));
+  assert.match(dialogSource, /data-workout-picker-filter/);
+  assert.match(dialogSource, /renderCustomWorkoutPickerResults\(dialog\)/);
+});
+
+test("picker can browse without a query and filter results by muscle group", () => {
+  const records = [
+    { name: "Bicep curl", libraryEntry: { primary_muscle: "biceps" } },
+    { name: "Leg press", libraryEntry: { primary_muscle: "quadriceps" } },
+    { name: "Plank", libraryEntry: { primary_muscle: "abdominals" } }
+  ];
+  const scope = vm.createContext({
+    currentProgram: { workouts: [] }, trainingLogs: [], exerciseNameMatcher: null,
+    exerciseSuggestionRecords: () => records,
+    exerciseSuggestionMuscleLabel: (entry) => entry?.primary_muscle || "",
+    customExerciseSuggestionMatches: (query) => records.filter((record) => record.name.toLowerCase().includes(query.toLowerCase()))
+      .map((record) => ({ name: record.name, muscleLabel: record.libraryEntry.primary_muscle }))
+  });
+  vm.runInContext(declaration("customWorkoutPickerMatches"), scope);
+  assert.deepEqual(Array.from(scope.customWorkoutPickerMatches("")).map((item) => item.name), records.map((item) => item.name));
+  assert.deepEqual(Array.from(scope.customWorkoutPickerMatches("", "lower")).map((item) => item.name), ["Leg press"]);
+  assert.deepEqual(Array.from(scope.customWorkoutPickerMatches("curl", "upper")).map((item) => item.name), ["Bicep curl"]);
+});
+
 test("metadata uses actual working sets and entered reps, including uniform zero and ranges", () => {
   const api = context();
   for (const [reps, expected] of [
