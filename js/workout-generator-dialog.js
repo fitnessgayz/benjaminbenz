@@ -95,6 +95,17 @@
     };
   }
 
+  function gymLocation() {
+    return String(ui.gymLocation.value || "").trim().replace(/\s+/g, " ").slice(0, 80);
+  }
+
+  function historyForGym() {
+    const location = gymLocation().toLocaleLowerCase();
+    return location ? context.history.filter((row) =>
+      String(row.gym_name || "").trim().replace(/\s+/g, " ").toLocaleLowerCase() === location
+    ) : context.history;
+  }
+
   function invalidatePreview() {
     if (!preview) return;
     preview = null;
@@ -116,7 +127,7 @@
       const engine = window.FWB_WORKOUT_GENERATOR;
       const alternatives = engine.alternatives({
         library: context.library,
-        history: context.history,
+        history: historyForGym(),
         exercise,
         workout: preview,
         ...preferences()
@@ -226,7 +237,7 @@
       if (!engine || typeof engine.generate !== "function") throw new Error("Workout generation is unavailable. Reload the app and try again.");
       const result = engine.generate({
         library: context.library,
-        history: context.history,
+        history: historyForGym(),
         ...preferences(),
         seed: `${Date.now()}-${++generation}-${Math.random()}`
       });
@@ -251,7 +262,7 @@
     setBusy(true);
     setStatus("Adding your workout…");
     try {
-      const accepted = await context.onUse(preview);
+      const accepted = await context.onUse(preview, gymLocation());
       if (accepted === true) {
         restoreFocus = false;
         setBusy(false);
@@ -320,7 +331,19 @@
     equipment.append(element("legend", "workout-generator-label", "Available equipment"));
     const equipmentChoices = element("div", "workout-generator-equipment-choices");
     equipment.append(equipmentChoices, element("p", "workout-generator-muted", "Bodyweight exercises are always included."));
-    fields.append(focus.label, recoveryHint, muscles, format.label, split, equipment);
+    const gymField = element("label", "workout-generator-field workout-generator-gym");
+    gymField.append(element("span", "workout-generator-label", "Add gym location"));
+    const gymInput = element("input");
+    gymInput.type = "text";
+    gymInput.name = "gymLocation";
+    gymInput.maxLength = 80;
+    gymInput.autocomplete = "off";
+    gymInput.placeholder = "Gym name, Home, or Outdoors";
+    gymInput.setAttribute("list", "workout-generator-gym-options");
+    const gymOptions = element("datalist");
+    gymOptions.id = "workout-generator-gym-options";
+    gymField.append(gymInput, element("small", "workout-generator-muted", "Choose here or before starting. Previous weights match this location."), gymOptions);
+    fields.append(focus.label, recoveryHint, muscles, format.label, split, equipment, gymField);
     const generateButton = element("button", "workout-generator-button workout-generator-generate", "Generate workout");
     generateButton.type = "submit";
     form.append(fields, generateButton);
@@ -361,7 +384,7 @@
       close: closeButton, form, formFields: fields, focus: focus.select,
       muscleChoices,
       format: format.select, minutes: minutes.select, intensity: intensity.select, equipment,
-      equipmentChoices, generate: generateButton, status, review, use: useButton,
+      equipmentChoices, gymLocation: gymInput, gymOptions, generate: generateButton, status, review, use: useButton,
       recoveryHint, recoveryMode: false, strengthIntensity: "moderate"
     };
     document.body.append(dialog);
@@ -380,6 +403,13 @@
       onUse: options.onUse,
       returnFocus: options.returnFocus || document.activeElement
     };
+    ui.gymLocation.value = String(options.gymLocation || "").trim().replace(/\s+/g, " ").slice(0, 80);
+    ui.gymOptions.replaceChildren();
+    for (const name of options.gymLocations || []) {
+      const option = element("option");
+      option.value = String(name || "").trim().slice(0, 80);
+      if (option.value) ui.gymOptions.append(option);
+    }
     restoreFocus = true;
     preview = null;
     ui.focus.replaceChildren();

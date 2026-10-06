@@ -17,11 +17,11 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=client-view-shortcut-1&amp;coach-copy-weights=1" />
+  <link rel="stylesheet" href="css/style.css?v=client-view-shortcut-1&amp;coach-copy-weights=1&amp;gym-location=1" />
   <link rel="stylesheet" href="/css/fwb-design-system.css?v=web-app-brand-1&amp;theme=deep-forest-2" />
   <link rel="stylesheet" href="css/one-rep-max.css?v=2" />
-  <meta name="theme-color" content="#050806" />
-  <link rel="stylesheet" href="/css/fwb-dark-theme.css?v=deep-forest-9" />
+  <meta name="theme-color" content="#030D1C" />
+  <link rel="stylesheet" href="/css/fwb-dark-theme.css?v=coach-blue-gold-1" />
 </head>
 <body class="dashboard-page coach-workout-log-page">
   <header class="site-header dashboard-header">
@@ -73,6 +73,12 @@
           <label>
             Workout date
             <input type="date" id="coach-workout-date" required />
+          </label>
+          <label class="coach-workout-gym-control">
+            Add gym location
+            <input type="text" id="coach-workout-gym" list="coach-workout-gym-suggestions" maxlength="80" placeholder="Gym name, Home, or Outdoors" autocomplete="off" />
+            <datalist id="coach-workout-gym-suggestions"><option value="Home"></option><option value="Outdoors"></option></datalist>
+            <small>Choose a location for this session. It will be saved with every set.</small>
           </label>
         </div>
         <fieldset class="coach-workout-format-fieldset">
@@ -146,6 +152,6 @@
   </aside>
   <script src="js/coach-rest-timer.js?v=inline-rest-1"></script>
   <script src="js/one-rep-max.js?v=2"></script>
-  <script src="js/coach-workout-log.js?v=client-view-shortcut-1&amp;remember-login=1&amp;coach-copy-weights=1&amp;blank-zero=1&amp;recovery-catalog=1"></script>
+  <script src="js/coach-workout-log.js?v=client-view-shortcut-1&amp;remember-login=1&amp;coach-copy-weights=1&amp;blank-zero=1&amp;recovery-catalog=1&amp;gym-location=1"></script>
 </body>
 </html>

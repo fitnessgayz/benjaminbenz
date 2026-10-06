@@ -150,6 +150,7 @@ function fixture(specs = [{ name: "Press" }, { name: "Row" }], options = {}) {
     coachWorkoutPreviousHistoryStatus: options.historyStatus || "ready",
     coachWorkoutPersonalBests: new Map(options.prs || []),
     coachWorkoutExerciseElements: () => rows.map(item => item.exercise),
+    coachWorkoutGymValue: () => "",
     scheduleCoachWorkoutAutosave: (options = {}) => { saves += 1; if (options.recordChange !== false) context.coachWorkoutChangeRevision += 1; },
     refreshCoachWorkoutGroupedProgress: () => {},
     saveCoachWorkout: () => {}, setCoachWorkoutStatus: () => {},

@@ -5,6 +5,44 @@
 :root { background-color: var(--canvas); }
 :root body { color-scheme: dark; }
 
+/* Coach identity: electric blue actions, gold milestones, and dark-blue depth. */
+:root body:is(
+  .coach-admin-page,
+  .coach-workout-log-page,
+  .coach-exercise-library-page,
+  .coach-login-page,
+  .fwb-coach-document-page
+) {
+  --brand-primary: #168bff;
+  --brand-primary-hover: #43a2ff;
+  --brand-primary-ink: #041426;
+  --ink: #f7faff;
+  --ink-deep: #020a15;
+  --canvas: #030d1c;
+  --surface: #071a31;
+  --surface-soft: #0d2747;
+  --text-muted: #b7c9dc;
+  --border: #2d4f73;
+  --focus: #e7b955;
+  --success: #168bff;
+  --control-border: #668caf;
+  --secondary-accent: #e7b955;
+  --secondary-surface: #2a2316;
+  --secondary-border: #80672f;
+  --selected-surface: #102e52;
+  --nav-surface: #020a15;
+}
+
+:root body:is(
+  .coach-admin-page,
+  .coach-workout-log-page,
+  .coach-exercise-library-page,
+  .coach-login-page,
+  .fwb-coach-document-page
+) :is(.kicker, .eyebrow) {
+  color: var(--secondary-accent);
+}
+
 /* Legacy cards use a mixture of semantic variables and literal white fills. */
 :root body:is(.dashboard-page, .login-page, .public-page, .questionnaire-page, .fwb-document-page) :is(
   .site-header, .dashboard-loading, .access-panel, .access-card, .access-demo,
@@ -384,10 +422,11 @@
 
 /* Legacy carousel and coach dock use important color declarations. */
 :root body.coach-admin-page .coach-admin-sidebar {
-  background: rgb(11 24 17 / 94%) !important;
+  background: rgb(3 13 28 / 94%) !important;
   border-top-color: var(--line) !important;
   box-shadow: 0 -8px 24px rgb(0 0 0 / 24%) !important;
 }
+:root body.coach-admin-page .admin-tabs { background: transparent; }
 :root body.dashboard-page .custom-workout-carousel:is([data-carousel-enabled], [data-custom-workout-deck], [data-group-workout-deck]) .custom-workout-card {
   background: var(--surface) !important; border-color: var(--line) !important;
 }
@@ -1048,6 +1087,33 @@
 :root body.dashboard-page .web-notification-item :is(span, time) { color: var(--muted); }
 :root body.dashboard-page .web-notification-inbox-heading button { color: var(--secondary-accent); }
 :root body.dashboard-page .web-notification-status[data-state="success"] { color: var(--lime); }
+
+/* Props must stay readable in every loading and selected state. */
+:root body.coach-admin-page .web-notification-like {
+  color: #041426;
+  background: #168bff;
+  border-color: #43a2ff;
+  opacity: 1;
+}
+:root body.coach-admin-page .web-notification-like[aria-pressed="true"] {
+  color: #071a31;
+  background: #e7b955;
+  border-color: #f5d27c;
+}
+:root body.coach-admin-page .web-notification-like:is(:hover, :focus-visible) {
+  color: #041426;
+  background: #43a2ff;
+  border-color: #e7b955;
+  box-shadow: 0 0 0 3px rgb(231 185 85 / 28%);
+}
+:root body.coach-admin-page .web-notification-like[aria-pressed="true"]:is(:hover, :focus-visible) {
+  color: #071a31;
+  background: #f5d27c;
+}
+:root body.coach-admin-page .web-notification-like:disabled {
+  color: #071a31;
+  opacity: .88;
+}
 
 /* The coach logger defines an isolated palette inside each workout group. */
 :root body.coach-workout-log-page .coach-workout-group-shell {

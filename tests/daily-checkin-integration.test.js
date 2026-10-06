@@ -48,6 +48,8 @@ function fixture(options = {}) {
     currentProgram: program(), progressEntries: [], trainingLogs: [],
     todayDate: () => state.day,
     normalizeClientEmail: value => String(value || "").trim().toLowerCase(),
+    normalizeWorkoutGymName: value => String(value || "").trim().replace(/\s+/g, " ").slice(0, 80),
+    recentWorkoutGymLocations: () => ["Gym A"],
     isCoachPortalEmail: value => value === "coach@example.com",
     setText: (...args) => state.calls.push(["text", ...args]),
     setClientHomeCheckinExpanded: value => state.calls.push(["expand", value]),
@@ -308,7 +310,7 @@ test("gym attendance requires its explicit action and recovery generator receive
   const preferences = { focus: "recovery_full", minutes: 20, intensity: "easy" };
   state.calls.length = 0;
   assert.equal(state.dialog.onGenerate({ generatorPreferences: preferences }), true);
-  assert.deepEqual(state.calls, [["close", { restoreFocus: false, dismiss: false }], ["generator", null, preferences]]);
+  assert.deepEqual(state.calls, [["close", { restoreFocus: false, dismiss: false }], ["generator", null, preferences, ""]]);
 });
 
 test("shorter custom drafts retain reduced targets, groups, cues and demos with blank performance entries", () => {
@@ -323,6 +325,8 @@ test("shorter custom drafts retain reduced targets, groups, cues and demos with 
   assert.equal(draft.workoutTitle, recommendation.workout.title);
   assert.equal(draft.generatedFrom.daily, true);
   assert.equal(draft.date, "2026-09-25");
+  assert.equal(draft.format, "superset");
+  assert.equal(context.dailyCustomWorkoutDraft(recommendation, "  Gym A  ").gymName, "Gym A");
   assert.deepEqual(draft.exercises.map(exercise => exercise.group), [0, 0, 1]);
   assert.deepEqual(draft.exercises.map(exercise => exercise.groupType), ["superset", "superset", "superset"]);
   assert.deepEqual(draft.exercises.map(exercise => exercise.sets.length), [3, 3, 2]);
@@ -339,4 +343,5 @@ test("shorter custom drafts retain reduced targets, groups, cues and demos with 
   assigned.workouts[0].format = "circuit";
   const circuit = engine.recommend({ program: assigned, history: [], checkIn: { ...ready, mood: 2 }, date: "2026-09-25", clientEmail: email });
   assert.deepEqual(plain(context.dailyCustomWorkoutDraft(circuit)).exercises.map(exercise => exercise.group), [0, 0, 0]);
+  assert.equal(context.dailyCustomWorkoutDraft(circuit).format, "circuit");
 });

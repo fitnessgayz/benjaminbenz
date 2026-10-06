@@ -13770,6 +13770,9 @@ textarea,
   min-width: 0;
 }
 
+.coach-workout-gym-control { grid-column: 1 / -1; }
+.coach-workout-gym-control small { display: block; margin-top: 6px; color: var(--muted); font-weight: 500; }
+
 #coach-workout-date {
   display: block;
   min-width: 0;

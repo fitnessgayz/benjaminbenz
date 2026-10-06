@@ -43,6 +43,7 @@
     busy = value;
     dialog.setAttribute("aria-busy", String(value));
     ui.fields.disabled = value;
+    ui.gymLocation.disabled = value;
     for (const control of dialog.querySelectorAll("button")) control.disabled = value;
     if (context?.gymCheckedIn) ui.gym.disabled = true;
     ui.save.textContent = value ? "Saving…" : "Save & see today’s workout";
@@ -221,6 +222,7 @@
     ui.use.hidden = !workout || typeof context.onUse !== "function";
     ui.original.hidden = !current.originalWorkout || typeof context.onKeepOriginal !== "function";
     ui.generate.hidden = Boolean(workout) || typeof context.onGenerate !== "function";
+    ui.locationField.hidden = !workout && typeof context.onGenerate !== "function";
     ui.generate.textContent = current.generatorPreferences?.intensity === "easy" || current.level !== "planned"
       ? "Create an easy workout" : "Create today’s workout";
     ui.update.hidden = typeof context.onSave !== "function";
@@ -238,7 +240,7 @@
     setBusy(true);
     setStatus(name === "onGym" ? "Checking in at the gym…" : "Opening your workout…");
     try {
-      const accepted = await action(current);
+      const accepted = await action(current, String(ui.gymLocation.value || "").trim().replace(/\s+/g, " ").slice(0, 80));
       if (token !== generation || !context) return;
       if (name === "onGym") {
         if (accepted === false) setStatus("Gym check-in wasn’t completed. Please try again.", true);
@@ -308,6 +310,17 @@
     form.addEventListener("submit", save);
     const review = element("section", "daily-checkin-review");
     const result = element("div", "daily-checkin-result");
+    const locationField = element("label", "daily-checkin-location");
+    locationField.append(element("span", "", "Add gym location"));
+    const gymLocation = element("input");
+    gymLocation.type = "text";
+    gymLocation.maxLength = 80;
+    gymLocation.autocomplete = "off";
+    gymLocation.placeholder = "Gym name, Home, or Outdoors";
+    gymLocation.setAttribute("list", "daily-checkin-gym-options");
+    const gymOptions = element("datalist");
+    gymOptions.id = "daily-checkin-gym-options";
+    locationField.append(gymLocation, element("small", "daily-checkin-muted", "Choose here or before starting. Previous weights match this location."), gymOptions);
     const actions = element("div", "daily-checkin-actions");
     const use = button("Open today’s workout", "daily-checkin-use");
     const original = button("Keep my planned workout", "daily-checkin-secondary daily-checkin-original");
@@ -320,7 +333,7 @@
     update.addEventListener("click", () => { if (!busy && context) showStage("checkin"); });
     gym.addEventListener("click", () => act("onGym"));
     actions.append(use, original, generate, update, gym);
-    review.append(result, actions);
+    review.append(result, locationField, actions);
     const status = element("p", "daily-checkin-status");
     status.setAttribute("role", "status");
     status.setAttribute("aria-live", "polite");
@@ -333,7 +346,7 @@
       const bounds = dialog.getBoundingClientRect();
       if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) dismiss();
     });
-    ui = { heading, description, welcome, form, fields, ratings: ratingInputs, note, save: saveButton, review, result, use, original, generate, update, gym, status };
+    ui = { heading, description, welcome, form, fields, ratings: ratingInputs, note, save: saveButton, review, result, locationField, gymLocation, gymOptions, use, original, generate, update, gym, status };
     document.body.append(dialog);
     return dialog;
   }
@@ -346,6 +359,13 @@
     generation++;
     context = { ...options, returnFocus: options.returnFocus || document.activeElement };
     recommendation = options.recommendation || null;
+    ui.gymLocation.value = String(options.gymLocation || "").trim().replace(/\s+/g, " ").slice(0, 80);
+    ui.gymOptions.replaceChildren();
+    for (const name of options.gymLocations || []) {
+      const option = element("option");
+      option.value = String(name || "").trim().slice(0, 80);
+      if (option.value) ui.gymOptions.append(option);
+    }
     for (const rating of ratings) {
       const initial = Number(options.initialCheckIn?.[rating.name]);
       for (const input of ui.ratings[rating.name]) input.checked = Number(input.value) === initial;

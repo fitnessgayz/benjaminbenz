@@ -206,6 +206,7 @@ function useFixture(options = {}) {
     }
   };
   const context = evaluate(["customExerciseCode", "generatedCustomWorkoutDraft", "useGeneratedClientWorkout"], {
+    normalizeWorkoutGymName: value => String(value || "").trim(),
     activeCustomWorkoutFormat: "superset",
     workoutElapsedTimerState: options.timer || null,
     trainingLogs: state.logs,
@@ -311,6 +312,12 @@ test("using a generated preview opens a ready draft without starting a timer or 
   assert.deepEqual(fixture.state.calls.find(([name]) => name === "tab"), ["tab", "workouts"]);
 });
 
+test("a generated workout retains the selected gym in its draft", () => {
+  const fixture = useFixture();
+  assert.equal(fixture.context.useGeneratedClientWorkout(workout(), null, "  Gym A  "), true);
+  assert.equal(fixture.state.draft.gymName, "Gym A");
+});
+
 function exerciseLogFixture({ generated = true, name = "Goblet squat", code = "CW01" } = {}) {
   const fields = { "[data-log-date]": { value: "2026-09-25" }, "[data-log-notes]": { value: "Use comfortable range" } };
   const rowFields = {
@@ -341,7 +348,8 @@ test("generated targets and provenance survive serialization and restoration whi
   };
   let stored = current;
   const context = evaluate([
-    "customExerciseCode", "serializeSetRowDraft", "serializeCustomExerciseDraft", "customWorkoutPanelDraft",
+    "customExerciseCode", "normalizeWorkoutGymName", "workoutGymLocationForElement",
+    "serializeSetRowDraft", "serializeCustomExerciseDraft", "customWorkoutPanelDraft",
     "customWorkoutDraftExercises", "customWorkoutExercises"
   ], {
     activeCustomWorkoutFormat: "single", activeCustomWorkoutDraft: () => stored,
@@ -384,6 +392,8 @@ test("launcher supplies only the selected client's history and rejects previews 
     activeClientEmail: "athlete@example.com", currentProgram: { id: "program-a" },
     exerciseLibraryEntries: library, trainingLogs: history,
     normalizeClientEmail: (value) => String(value || "").trim().toLowerCase(),
+    normalizeWorkoutGymName: (value) => String(value || "").trim(),
+    recentWorkoutGymLocations: () => ["Gym A"],
     useGeneratedClientWorkout: (value) => { uses.push(value); return true; },
     window: { FWB_WORKOUT_GENERATOR: {}, FWB_WORKOUT_GENERATOR_DIALOG: { open(options) { dialogOptions = options; } } }
   });
@@ -467,6 +477,7 @@ test("logging a generated set uses its prescribed rest and mixed groups use the 
       closest: (selector) => selector.includes("data-custom-workout-grouped") ? carousel : section
     };
     const context = evaluate(["setCustomWorkoutGroupedRowComplete", "workoutCarouselRestSeconds", "logCustomWorkoutGroupedRound"], {
+      requireWorkoutGymLocation: () => true,
       customWorkoutGroupedStatus: () => ({}),
       customWorkoutGroupedLogElements: () => logs,
       customWorkoutGroupedRows: (log) => log.rows,

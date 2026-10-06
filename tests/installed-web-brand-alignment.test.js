@@ -15,9 +15,9 @@ test("installed apps keep distinct product identities and useful launch shortcut
   assert.notEqual(client.id, coach.id);
   assert.notEqual(client.start_url, coach.start_url);
   assert.equal(client.background_color, "#050806");
-  assert.equal(coach.background_color, "#050806");
+  assert.equal(coach.background_color, "#030D1C");
   assert.equal(client.theme_color, "#050806");
-  assert.equal(coach.theme_color, "#050806");
+  assert.equal(coach.theme_color, "#030D1C");
   assert.ok(client.shortcuts.length >= 3);
   assert.ok(coach.shortcuts.length >= 3);
 });
@@ -73,10 +73,33 @@ test("shared app styles use the approved palette beneath the color bridges", () 
   }
   assert.match(css, /:focus-visible[\s\S]*?var\(--focus\)/);
 
-  for (const file of ["client-dashboard.html", "coach-admin.html"]) {
-    const links = [...read(file).matchAll(/<link[^>]+rel="stylesheet"[^>]+href="([^"]+)"[^>]*>/g)];
-    assert.ok(links.some((link) => /fwb-design-system\.css\?v=web-app-brand-1/.test(link[1])));
-    assert.match(links.at(-1)[1], /fwb-dark-theme\.css\?v=deep-forest-9/);
+  const clientLinks = [...read("client-dashboard.html").matchAll(/<link[^>]+rel="stylesheet"[^>]+href="([^"]+)"[^>]*>/g)];
+  assert.ok(clientLinks.some((link) => /fwb-design-system\.css\?v=web-app-brand-1/.test(link[1])));
+  assert.ok(clientLinks.some((link) => /fwb-dark-theme\.css\?v=deep-forest-9/.test(link[1])));
+
+  const coachLinks = [...read("coach-admin.html").matchAll(/<link[^>]+rel="stylesheet"[^>]+href="([^"]+)"[^>]*>/g)];
+  assert.ok(coachLinks.some((link) => /fwb-design-system\.css\?v=web-app-brand-1/.test(link[1])));
+  assert.ok(coachLinks.some((link) => /fwb-dark-theme\.css\?v=coach-blue-gold-1/.test(link[1])));
+});
+
+test("coach surfaces use a high-contrast electric-blue, gold, and navy identity", () => {
+  const css = read("css/fwb-dark-theme.css");
+  assert.match(css, /body:is\([\s\S]*?\.coach-admin-page[\s\S]*?--brand-primary:\s*#168bff/);
+  assert.match(css, /--secondary-accent:\s*#e7b955/);
+  assert.match(css, /--canvas:\s*#030d1c/);
+  assert.match(css, /--surface:\s*#071a31/);
+  assert.match(css, /body\.coach-admin-page \.web-notification-like\s*\{[^}]*color:\s*#041426[^}]*background:\s*#168bff/s);
+  assert.match(css, /\.web-notification-like\[aria-pressed="true"\]\s*\{[^}]*color:\s*#071a31[^}]*background:\s*#e7b955/s);
+
+  for (const file of [
+    "coach-login.html",
+    "coach-admin.html",
+    "coach-workout-log.html",
+    "coach-exercise-library.html",
+    "fwb-coach-support.html",
+    "fwb-coach-privacy.html",
+  ]) {
+    assert.match(read(file), /fwb-dark-theme\.css\?v=coach-blue-gold-1/);
   }
 });
 
@@ -92,7 +115,7 @@ test("user-facing application copy uses product names instead of admin labels", 
   ]) {
     assert.doesNotMatch(scripts, new RegExp(retiredCopy, "i"));
   }
-  assert.match(read("client-dashboard.html"), /Get FWB Training support/);
+  assert.match(read("client-dashboard.html"), /Help &amp; support[\s\S]*Contact Fitness with Benjamin/);
   assert.match(read("coach-admin.html"), /FWB Coach help and policies/);
 });
 

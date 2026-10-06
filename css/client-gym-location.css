@@ -1,0 +1,85 @@
+.client-dashboard-page .workout-gym-picker {
+  display: grid;
+  gap: 7px;
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  border: 1px solid #484c4d;
+  border-radius: 16px;
+  background: #242628;
+  color: #fff;
+}
+
+.client-dashboard-page .workout-gym-picker label {
+  color: #a3f43b;
+  font-size: .95rem;
+  font-weight: 800;
+}
+
+.client-dashboard-page .workout-gym-picker input,
+.client-dashboard-page .custom-workout-grouped-gym input {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 9px 12px;
+  border: 1px solid #697071;
+  border-radius: 11px;
+  background: #2c2f31;
+  color: #fff;
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 400;
+}
+
+.client-dashboard-page .workout-gym-picker :is(small, .workout-gym-error) {
+  color: #b5bdb7;
+  font-size: .78rem;
+  line-height: 1.35;
+}
+
+.client-dashboard-page .workout-gym-picker .workout-gym-error,
+.client-dashboard-page .custom-workout-grouped-gym [data-custom-grouped-gym-error] {
+  color: #ffad9c;
+}
+
+.client-dashboard-page .workout-gym-picker [aria-invalid="true"],
+.client-dashboard-page .custom-workout-grouped-gym input[aria-invalid="true"] {
+  border-color: #ffad9c;
+}
+
+.client-dashboard-page .custom-workout-grouped-gym {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--grouped-line, #484c4d);
+  background: var(--grouped-paper, #242628);
+  color: var(--grouped-ink, #fff);
+  font-size: .9rem;
+  font-weight: 800;
+}
+
+.client-dashboard-page .custom-workout-grouped-gym input[readonly] { opacity: .75; }
+.client-dashboard-page .custom-workout-grouped-gym small { font-size: .8rem; font-weight: 600; }
+.client-dashboard-page .custom-workout-grouped-gym [data-custom-grouped-gym-locked] { color: #b5bdb7; }
+.client-dashboard-page .training-log-gym { display: block; color: #a3f43b; }
+
+:root[data-client-theme="light"] body.client-dashboard-page .workout-gym-picker,
+:root[data-client-theme="light"] body.client-dashboard-page .custom-workout-grouped-gym {
+  border-color: #d6ded2;
+  background: #fff;
+  color: #1b291f;
+}
+
+:root[data-client-theme="light"] body.client-dashboard-page .workout-gym-picker label,
+:root[data-client-theme="light"] body.client-dashboard-page .training-log-gym { color: #102b50; }
+
+:root[data-client-theme="light"] body.client-dashboard-page :is(.workout-gym-picker, .custom-workout-grouped-gym) input {
+  border-color: #b7c9bd;
+  background: #f4f5ef;
+  color: #1b291f;
+}
+
+:root[data-client-theme="light"] body.client-dashboard-page :is(.workout-gym-picker, .custom-workout-grouped-gym) small { color: #5f6d61; }
+:root[data-client-theme="light"] body.client-dashboard-page :is(.workout-gym-picker, .custom-workout-grouped-gym) [aria-invalid="true"] { border-color: #b12635; }
+:root[data-client-theme="light"] body.client-dashboard-page :is(.workout-gym-error, [data-custom-grouped-gym-error]) { color: #b12635; }
