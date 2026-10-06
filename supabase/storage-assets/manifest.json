@@ -44,7 +44,10 @@
     "20261006010055_community_challenge_indexes.sql",
     "20261006033553_community_daily_challenges.sql",
     "20261006033650_fix_daily_challenge_reroll.sql",
-    "20261006144209_update_decline_cable_chest_press_underhand_media.sql"
+    "20261006131812_community_wall_activity_props.sql",
+    "20261006131914_index_community_wall_props_sender.sql",
+    "20261006144209_update_decline_cable_chest_press_underhand_media.sql",
+    "20261006144838_restore_daily_challenge_and_match_effort.sql"
   ],
   "nasmExerciseCatalogMigration": "20261001032427_add_complete_nasm_exercise_library.sql",
   "nasmExerciseCatalogCount": 75,

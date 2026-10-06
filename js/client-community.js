@@ -56,7 +56,7 @@
       dailyAssignment = row;
       dailyCard.hidden = !row;
       dailyPicker.hidden = Boolean(row);
-      if (!row) return;
+      if (!row) { dailyStatus.textContent = ''; return; }
       panel.querySelector('[data-daily-category]').textContent = row.category;
       panel.querySelector('[data-daily-title]').textContent = row.title;
       panel.querySelector('[data-daily-instruction]').textContent = row.instruction;
@@ -85,7 +85,7 @@
         if (error) throw error;
         if (version !== dailyVersion) return;
         renderDaily(data?.[0] || null);
-        void loadDailyWins();
+        void root.FWB_COMMUNITY_CONNECTIONS?.refresh();
       } catch (_) {
         if (version === dailyVersion) dailyStatus.textContent = 'Could not load the challenge. Join Community, then try again.';
       } finally { dailyBusy = false; }
@@ -98,6 +98,21 @@
     panel.querySelector('[data-daily-complete]')?.addEventListener('click', () => void dailyAction('complete'));
     panel.querySelector('[data-daily-refresh]')?.addEventListener('click',
       () => void dailyAction('draw', dailyAssignment?.training_day === true));
+
+    async function restoreDaily(request) {
+      if (!dailyCard) return;
+      const version = ++dailyVersion;
+      try {
+        const { data, error } = await request.client.rpc('community_daily_challenge', {
+          p_local_day: localDay(), p_action: 'peek', p_training_day: false
+        });
+        if (error) throw error;
+        if (version === dailyVersion && userId === request.userId) renderDaily(data?.[0] || null);
+      } catch (_) {
+        if (version === dailyVersion && userId === request.userId)
+          dailyStatus.textContent = 'Join Community in Connections to start a daily challenge.';
+      }
+    }
 
     function applyChoices(values) {
       savedChoices = {
@@ -227,6 +242,7 @@
       if (!client || !userId) { status.textContent = 'Sign in to manage sharing choices.'; return; }
       status.textContent = 'Loading your sharing choices…';
       void loadChoices({ client, userId, generation });
+      void restoreDaily({ client, userId });
     } };
   }
 

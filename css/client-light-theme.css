@@ -513,6 +513,9 @@
   background: var(--surface-soft);
   border-color: var(--line);
 }
+:root[data-client-theme="light"] body.client-dashboard-page .client-community-panel > .client-daily-challenge { border-color: var(--line); }
+:root[data-client-theme="light"] body.client-dashboard-page .client-daily-challenge :is(h3, .client-daily-benefit) { color: var(--ink); }
+:root[data-client-theme="light"] body.client-dashboard-page .client-daily-challenge :is(.client-daily-how, [data-daily-status]) { color: var(--muted); }
 :root[data-client-theme="light"] body.client-dashboard-page .client-daily-challenge h4 { color: var(--ink); }
 :root[data-client-theme="light"] body.client-dashboard-page #client-workouts-panel.is-choosing-workout {
   color: var(--ink);

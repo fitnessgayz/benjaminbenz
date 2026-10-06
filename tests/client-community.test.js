@@ -2,7 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { mount } = require('../js/client-community.js');
 
-function fixture() {
+function fixture({ withDaily = false } = {}) {
   const handlers = {};
   const xp = { checked: false, disabled: false };
   const badge = { checked: false, disabled: false };
@@ -43,13 +43,19 @@ function fixture() {
   nodes['[data-community-connections]'] = connections;
   nodes['[data-community-challenges]'] = challenges;
   nodes['.client-community-feature'] = feature;
+  const dailyNodes = withDaily ? Object.fromEntries([
+    '[data-daily-card]', '[data-daily-picker]', '[data-daily-status]', '[data-daily-category]',
+    '[data-daily-title]', '[data-daily-instruction]', '[data-daily-complete]',
+    '[data-daily-reroll]', '[data-daily-refresh]'
+  ].map(key => [key, { hidden: false, textContent: '', addEventListener() {} }])) : {};
+  Object.assign(nodes, dailyNodes);
   const panel = {
     querySelector: key => nodes[key],
     querySelectorAll: key => key === '[data-community-view]' ? buttons : [],
     addEventListener: (event, fn) => { handlers[event] = fn; }
   };
   return { controller: mount({ querySelector: () => panel }), handlers, xp, badge, workouts, gymVisits,
-    publicProgress, wallActivity, daily, weekly, save, status, title, body, buttons, wall, connections, challenges, feature };
+    publicProgress, wallActivity, daily, weekly, save, status, title, body, buttons, wall, connections, challenges, feature, dailyNodes };
 }
 
 test('FWB Wall is the default Community view and progress is hidden on other tabs', () => {
@@ -59,6 +65,26 @@ test('FWB Wall is the default Community view and progress is hidden on other tab
   ui.handlers.click({ target: { closest: () => ui.buttons[2] } });
   assert.equal(ui.wall.hidden, true);
   assert.equal(ui.connections.hidden, false);
+});
+
+test('returning clients see their existing daily challenge without drawing a new one', async () => {
+  const ui = fixture({ withDaily: true });
+  const calls = [];
+  const client = {
+    from() { return { select() { return this; }, eq() { return this; }, async maybeSingle() { return { data: null, error: null }; } }; },
+    async rpc(name, args) {
+      calls.push({ name, args });
+      return { data: [{ category: 'training', title: 'Follow your plan', instruction: 'Log your workout.',
+        completion_kind: 'workout', completed: false, rerolls_used: 0, training_day: true }], error: null };
+    }
+  };
+  ui.controller.configure(client, 'user-1', false);
+  await new Promise(resolve => setImmediate(resolve));
+  assert.deepEqual(calls.map(call => call.args.p_action), ['peek']);
+  assert.equal(ui.dailyNodes['[data-daily-card]'].hidden, false);
+  assert.equal(ui.dailyNodes['[data-daily-picker]'].hidden, true);
+  assert.equal(ui.dailyNodes['[data-daily-title]'].textContent, 'Follow your plan');
+  assert.equal(ui.dailyNodes['[data-daily-complete]'].hidden, true);
 });
 
 test('sharing choices default off, load only for the signed-in owner, and save separately', async () => {
