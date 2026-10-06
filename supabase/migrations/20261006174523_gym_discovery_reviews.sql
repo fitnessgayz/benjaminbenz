@@ -15,6 +15,9 @@ create table public.gym_places (
   created_at timestamptz not null default now(),
   check ((source = 'osm' and osm_type is not null and osm_id is not null and created_by is null)
     or (source = 'client' and osm_type is null and osm_id is null and created_by is not null)),
+  -- Client suggestions use an approximate grid, even when called outside the apps.
+  check (source <> 'client' or (latitude = round(latitude::numeric, 2)::double precision
+    and longitude = round(longitude::numeric, 2)::double precision)),
   unique (osm_type, osm_id)
 );
 create index gym_places_coords_idx on public.gym_places (latitude, longitude);
@@ -68,9 +71,14 @@ grant select, insert, delete on public.gym_review_photos to authenticated;
 create policy "Clients see own gym photo rows" on public.gym_review_photos for select to authenticated
   using (user_id = (select auth.uid()));
 
+-- Keep privileged storage lookups outside the exposed public schema.
+create schema if not exists gym_private;
+revoke all on schema gym_private from public, anon, authenticated;
+grant usage on schema gym_private to authenticated;
+
 -- Check uploaded object ownership without exposing storage owner ids or relying
 -- on the photo row being present before it is inserted.
-create function public.gym_review_photo_owned(p_path text) returns boolean
+create function gym_private.gym_review_photo_owned(p_path text) returns boolean
 language sql stable security definer set search_path = '' as $$
   select (select auth.uid()) is not null and exists (
     select 1 from storage.objects object
@@ -78,19 +86,19 @@ language sql stable security definer set search_path = '' as $$
       and object.owner_id = (select auth.uid())::text
   );
 $$;
-revoke all on function public.gym_review_photo_owned(text) from public, anon;
-grant execute on function public.gym_review_photo_owned(text) to authenticated;
+revoke all on function gym_private.gym_review_photo_owned(text) from public, anon;
+grant execute on function gym_private.gym_review_photo_owned(text) to authenticated;
 
-create function public.gym_review_photo_exists(p_path text) returns boolean
+create function gym_private.gym_review_photo_exists(p_path text) returns boolean
 language sql stable security definer set search_path = '' as $$
   select (select auth.uid()) is not null and exists (
     select 1 from public.gym_review_photos photo where photo.storage_path = p_path
   );
 $$;
-revoke all on function public.gym_review_photo_exists(text) from public, anon;
-grant execute on function public.gym_review_photo_exists(text) to authenticated;
+revoke all on function gym_private.gym_review_photo_exists(text) from public, anon;
+grant execute on function gym_private.gym_review_photo_exists(text) to authenticated;
 create policy "Clients attach photos to own review" on public.gym_review_photos for insert to authenticated
-  with check (user_id = (select auth.uid()) and public.gym_review_photo_owned(storage_path) and exists (
+  with check (user_id = (select auth.uid()) and gym_private.gym_review_photo_owned(storage_path) and exists (
     select 1 from public.gym_reviews review
     where review.gym_id = gym_review_photos.gym_id and review.user_id = (select auth.uid())
   ));
@@ -135,7 +143,7 @@ values ('gym-review-photos', 'gym-review-photos', false, 5242880,
   array['image/jpeg', 'image/png', 'image/webp'])
 on conflict (id) do nothing;
 create policy "Signed-in clients view gym review images" on storage.objects for select to authenticated
-  using (bucket_id = 'gym-review-photos' and public.gym_review_photo_exists(name));
+  using (bucket_id = 'gym-review-photos' and gym_private.gym_review_photo_exists(name));
 create policy "Clients upload gym review images" on storage.objects for insert to authenticated
   with check (bucket_id = 'gym-review-photos' and owner_id = (select auth.uid())::text);
 create policy "Clients remove own gym review images" on storage.objects for delete to authenticated

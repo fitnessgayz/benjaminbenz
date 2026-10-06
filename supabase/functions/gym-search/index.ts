@@ -41,7 +41,11 @@ serve(async (request) => {
   if (authError || !auth.user) return reply(request, { error: "Sign in to search nearby gyms" }, 401);
 
   let payload: Record<string, unknown>;
-  try { payload = await request.json(); } catch { return reply(request, { error: "Invalid request" }, 400); }
+  try {
+    const parsed = await request.json();
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("Invalid request");
+    payload = parsed;
+  } catch { return reply(request, { error: "Invalid request" }, 400); }
   const latitude = Number(payload.latitude);
   const longitude = Number(payload.longitude);
   if (!Number.isFinite(latitude) || !Number.isFinite(longitude) || Math.abs(latitude) > 90 || Math.abs(longitude) > 180) {

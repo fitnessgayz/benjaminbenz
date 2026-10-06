@@ -203,9 +203,11 @@
     const { data: auth } = await supabaseClient.auth.getUser();
     if (!auth.user) { status.textContent = "Sign in to add a gym."; return; }
     const name = $("#gym-directory-add-name").value.trim();
+    const latitude = Math.round(location.latitude * 100) / 100;
+    const longitude = Math.round(location.longitude * 100) / 100;
     const { data, error } = await supabaseClient.from("gym_places").insert({
       source: "client", kind: $("#gym-directory-add-kind").value, name,
-      latitude: location.latitude, longitude: location.longitude, created_by: auth.user.id
+      latitude, longitude, created_by: auth.user.id
     }).select("id,source,kind,name,latitude,longitude,address,website").single();
     if (error) { status.textContent = `Could not add gym: ${error.message}`; return; }
     places.unshift({ ...data, distance_km: 0 });
