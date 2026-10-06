@@ -149,6 +149,28 @@
   outline-offset: 3px;
 }
 
+:root body.client-dashboard-page .workout-exercise-dock .workout-exercise-list-finish {
+  display: flex;
+  width: 100%;
+  min-height: 48px;
+  align-items: center;
+  justify-content: center;
+  margin-top: 8px;
+  padding: 10px 16px;
+  border: 1px solid var(--line, #dcded7);
+  border-radius: 12px;
+  background: var(--surface, #24262a);
+  color: var(--ink, #fff);
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.client-dashboard-page .workout-exercise-dock .workout-exercise-list-finish:focus-visible {
+  outline: 3px solid var(--secondary-accent, #52a9ee);
+  outline-offset: 3px;
+}
+
 @media (hover: hover) {
   .client-dashboard-page :is(.client-workout-panel, .workout-exercise-dock) .workout-exercise-list [data-workout-exercise-jump]:hover {
     border-color: #b8c49d;
