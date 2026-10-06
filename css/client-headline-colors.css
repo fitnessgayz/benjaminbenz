@@ -1,28 +1,29 @@
-/* Gold is reserved for the six main client page headlines; blue remains an accent. */
+/* Client headings use electric blue. Gold stays with interactive controls. */
 :root body.client-dashboard-page {
-  --client-page-headline: #ffd400;
+  --client-page-headline: #57a8ff;
 }
 
 :root[data-client-theme="light"] body.client-dashboard-page {
-  /* Electric gold needs a darker shade to remain readable on the light canvas. */
-  --client-page-headline: #806000;
+  --client-page-headline: #0059c9;
 }
 
+:root body.client-dashboard-page :is(h1, h2, h3, h4, h5, h6),
 :root body.client-dashboard-page .client-home-intro h3,
 :root body.client-dashboard-page .client-workout-hub-heading h3,
 :root body.client-dashboard-page #client-logs-title,
 :root body.client-dashboard-page #progress-title,
 :root body.client-dashboard-page .client-community-hero h3,
 :root body.client-dashboard-page #client-notification-settings-title {
-  color: var(--client-page-headline);
+  color: var(--client-page-headline) !important;
 }
 
 /* These light-theme rules carry extra specificity in the existing palette. */
+:root[data-client-theme="light"] body.client-dashboard-page :is(h1, h2, h3, h4, h5, h6),
 :root[data-client-theme="light"] body.client-dashboard-page .client-home-intro h3,
 :root[data-client-theme="light"] body.client-dashboard-page #client-logs-title,
 :root[data-client-theme="light"] body.client-dashboard-page #progress-title,
 :root[data-client-theme="light"] body.client-dashboard-page .client-community-hero h3,
 :root[data-client-theme="light"] body.client-dashboard-page #client-notification-settings-title,
 :root[data-client-theme="light"] body.client-dashboard-page #client-workouts-panel.is-choosing-workout .client-workout-hub-heading h3 {
-  color: var(--client-page-headline);
+  color: var(--client-page-headline) !important;
 }
