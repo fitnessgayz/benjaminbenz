@@ -1,8 +1,10 @@
-/* Invite-only Community connections. Raw training and health records are never queried here. */
+/* Client Community: public summaries and private connections. Raw activity stays server-side. */
 (function attachCommunityConnections(root) {
   'use strict';
   const avatars = { strength: '💪', runner: '🏃', cycling: '🚴', boxing: '🥊',
-    yoga: '🧘', swimming: '🏊', martial: '🥋', star: '⭐' };
+    yoga: '🧘', swimming: '🏊', martial: '🥋', star: '⭐', lifting: '🏋️',
+    walking: '🚶', hiking: '🥾', basketball: '🏀', soccer: '⚽', tennis: '🎾',
+    rowing: '🚣', climbing: '🧗' };
 
   function achievementProjection(snapshot) {
     if (!snapshot || !Number.isFinite(snapshot.xp) || !Array.isArray(snapshot.badges)) return null;
@@ -26,6 +28,12 @@
     const codeInput = panel.querySelector('#client-community-invite-code');
     const list = panel.querySelector('[data-community-connection-list]');
     const status = panel.querySelector('[data-community-connection-status]');
+    const feedList = document.querySelector('[data-community-feed-list]');
+    const feedStatus = document.querySelector('[data-community-feed-status]');
+    const challengeList = document.querySelector('[data-community-challenge-list]');
+    const challengeStatus = document.querySelector('[data-community-challenge-status]');
+    const moreAvatars = panel.querySelector('[data-community-avatar-more]');
+    const extraAvatars = Array.from(panel.querySelectorAll('[data-community-avatar-extra]'));
     let client = null, userId = '', preview = false, generation = 0;
     let profile = null, preferences = null, snapshot = null, published = '', busy = false;
     let selectedAvatar = 'strength';
@@ -41,8 +49,78 @@
     function chooseAvatar(id) {
       selectedAvatar = Object.hasOwn(avatars, id) ? id : 'strength';
       avatarButtons.forEach(button => button.setAttribute('aria-pressed', String(button.dataset.communityAvatar === selectedAvatar)));
+      if (extraAvatars.some(button => button.dataset.communityAvatar === selectedAvatar)) setMoreAvatars(true);
     }
+    function setMoreAvatars(open) {
+      extraAvatars.forEach(button => { button.hidden = !open; });
+      moreAvatars.setAttribute('aria-expanded', String(open));
+      moreAvatars.textContent = open ? 'Show fewer avatars' : 'Choose more avatars';
+    }
+    moreAvatars.addEventListener('click', () => setMoreAvatars(moreAvatars.getAttribute('aria-expanded') !== 'true'));
     avatarButtons.forEach(button => button.addEventListener('click', () => chooseAvatar(button.dataset.communityAvatar)));
+
+    async function refreshPublic(id, version) {
+      if (!feedList || !feedStatus) return;
+      feedStatus.textContent = 'Loading shared progress…';
+      const { data, error } = await client.rpc('community_public_progress');
+      if (!current(id, version)) return;
+      feedList.replaceChildren();
+      if (error) { feedStatus.textContent = 'Shared progress could not load. Try opening Community again.'; return; }
+      const entries = data || [];
+      for (const entry of entries) {
+        const card = field('article', '', 'client-community-feed-card');
+        card.append(field('span', avatars[entry.avatar_id] || avatars.strength, 'client-community-avatar'));
+        card.append(field('strong', entry.nickname));
+        const metrics = [];
+        if (entry.xp != null) metrics.push(`${entry.xp} XP`);
+        if (Array.isArray(entry.badge_ids)) metrics.push(`${entry.badge_ids.length} badges`);
+        if (entry.workout_count != null) metrics.push(`${entry.workout_count} workouts`);
+        if (entry.gym_visit_count != null) metrics.push(`${entry.gym_visit_count} gym visits`);
+        card.append(field('small', metrics.join(' · ')));
+        if (Array.isArray(entry.badge_ids) && entry.badge_ids.length) {
+          const titles = entry.badge_ids.map(badge => snapshot?.badges?.find(item => item.id === badge)?.title || badge.replace(/-/g, ' '));
+          card.append(field('p', titles.join(' · ')));
+        }
+        feedList.append(card);
+      }
+      feedStatus.textContent = entries.length ? '' : 'No clients have chosen to share progress yet.';
+    }
+
+    function renderChallenges(rows) {
+      if (!challengeList) return;
+      challengeList.replaceChildren();
+      if (!rows.length) {
+        challengeList.append(field('p', 'No challenges yet. Challenge a connection from the Connections tab.'));
+        return;
+      }
+      for (const challenge of rows) {
+        const card = field('article', '', 'client-community-challenge-card');
+        card.append(field('strong', `${avatars[challenge.peer_avatar_id] || avatars.strength} ${challenge.peer_nickname}`));
+        const label = challenge.metric === 'workouts' ? 'workouts' : 'gym visits';
+        card.append(field('p', `${challenge.target_count} ${label} each in seven days`));
+        if (challenge.status === 'pending') {
+          card.append(field('small', challenge.incoming ? 'Waiting for you to accept' : 'Waiting for your friend to accept'));
+          if (challenge.incoming) {
+            const accept = field('button', 'Accept challenge');
+            accept.type = 'button';
+            accept.addEventListener('click', () => void challengeAction('community_accept_challenge', challenge.id));
+            card.append(accept);
+          }
+        } else {
+          card.append(field('p', `You: ${challenge.my_count ?? 0}/${challenge.target_count} · ${challenge.peer_nickname}: ${challenge.peer_count ?? 0}/${challenge.target_count}`));
+          card.append(field('small', `Ends ${String(challenge.ends_at).slice(0, 10)}`));
+        }
+        const cancel = field('button', 'Cancel challenge');
+        cancel.type = 'button';
+        cancel.addEventListener('click', () => void challengeAction('community_cancel_challenge', challenge.id));
+        card.append(cancel);
+        challengeList.append(card);
+      }
+    }
+
+    function challengeAction(rpc, challengeId) {
+      void perform(() => client.rpc(rpc, { p_challenge_id: challengeId }), 'Challenge updated.');
+    }
 
     async function publish() {
       const projection = achievementProjection(snapshot);
@@ -53,7 +131,7 @@
       const id = userId, version = generation;
       const { error } = await client.from('client_community_achievements')
         .upsert({ user_id: id, ...projection, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
-      if (!error && current(id, version)) published = fingerprint;
+      if (!error && current(id, version)) { published = fingerprint; void refreshPublic(id, version); }
       if (error && current(id, version)) message('Your achievements could not be shared yet. Try opening Community again.');
     }
 
@@ -101,6 +179,23 @@
           give.disabled = Boolean(summary?.sent_today);
           give.addEventListener('click', () => void giveProps(peer));
           actions.append(give);
+          const form = field('div', '', 'client-community-challenge-form');
+          const metric = document.createElement('select');
+          for (const [value, label] of [['workouts', 'Workouts'], ['gym_visits', 'Gym visits']]) {
+            const option = document.createElement('option'); option.value = value; option.textContent = label; metric.append(option);
+          }
+          metric.value = 'workouts';
+          metric.setAttribute('aria-label', `Challenge ${name} on`);
+          const target = document.createElement('select');
+          for (let value = 1; value <= 7; value++) {
+            const option = document.createElement('option'); option.value = String(value); option.textContent = `${value} per week`; target.append(option);
+          }
+          target.value = '3'; target.setAttribute('aria-label', 'Weekly target');
+          const send = field('button', 'Send challenge'); send.type = 'button';
+          send.addEventListener('click', () => void perform(() => client.rpc('community_create_challenge',
+            { p_connection_id: connection.id, p_metric: metric.value, p_target_count: Number(target.value) }), 'Challenge sent.'));
+          form.append(metric, target, send);
+          card.append(form);
         }
         if (incoming) {
           const accept = field('button', 'Accept');
@@ -121,11 +216,12 @@
       if (!client || !userId || preview) return;
       const id = userId, version = ++generation;
       message('Loading Community…');
+      void refreshPublic(id, version);
       try {
         const [profileResult, preferenceResult] = await Promise.all([
-          client.from('client_community_profiles').select('user_id,display_name,invite_code').eq('user_id', id).maybeSingle(),
+          client.from('client_community_profiles').select('user_id,display_name,avatar_id,invite_code').eq('user_id', id).maybeSingle(),
           client.from('client_community_preferences')
-            .select('xp_opt_in,badges_opt_in,workout_count_opt_in,gym_visits_opt_in')
+            .select('xp_opt_in,badges_opt_in,workout_count_opt_in,gym_visits_opt_in,public_progress_opt_in')
             .eq('user_id', id).maybeSingle()
         ]);
         if (profileResult.error) throw profileResult.error;
@@ -138,6 +234,7 @@
         member.hidden = !profile;
         if (!profile) {
           list.replaceChildren(); chooseAvatar('strength');
+          renderChallenges([]);
           message('Choose a nickname and avatar to join Community.'); return;
         }
         codeOutput.textContent = profile.invite_code;
@@ -150,10 +247,11 @@
         const peerIds = connections.map(row => row.user_a === id ? row.user_b : row.user_a);
         const acceptedIds = connections.filter(row => row.status === 'accepted')
           .map(row => row.user_a === id ? row.user_b : row.user_a);
-        const [profilePeers, shared, propsResult] = await Promise.all([
+        const [profilePeers, shared, propsResult, challengeResult] = await Promise.all([
           peerIds.length ? client.from('client_community_profiles').select('user_id,display_name,avatar_id').in('user_id', peerIds) : { data: [], error: null },
           acceptedIds.length ? client.rpc('community_shared_progress') : { data: [], error: null },
-          client.rpc('community_props_summary')
+          client.rpc('community_props_summary'),
+          client.rpc('community_challenge_summary')
         ]);
         if (profilePeers.error || shared.error || propsResult.error) throw profilePeers.error || shared.error || propsResult.error;
         if (!current(id, version)) return;
@@ -161,6 +259,8 @@
         ownProps.textContent = String(props.get(id)?.received_count || 0);
         renderConnections(connections, new Map((profilePeers.data || []).map(row => [row.user_id, row])),
           new Map((shared.data || []).map(row => [row.user_id, row])), props);
+        if (challengeResult.error) challengeStatus.textContent = 'Challenges could not load. Try opening Community again.';
+        else { renderChallenges(challengeResult.data || []); challengeStatus.textContent = ''; }
         message('Only accepted connections can see milestones you choose to share.');
         void publish();
       } catch (_) {
@@ -236,13 +336,13 @@
       await perform(async () => {
         const choice = await client.from('client_community_preferences')
           .update({ xp_opt_in: false, badges_opt_in: false, workout_count_opt_in: false,
-            gym_visits_opt_in: false, progress_opt_in: false }).eq('user_id', userId);
+            gym_visits_opt_in: false, progress_opt_in: false, public_progress_opt_in: false }).eq('user_id', userId);
         if (choice.error) return choice;
         return client.from('client_community_profiles').delete().eq('user_id', userId);
       }, 'You left Community.');
       if (!profile) {
         for (const selector of ['#client-community-share-xp', '#client-community-share-badges',
-          '#client-community-share-workouts', '#client-community-share-gym-visits']) {
+          '#client-community-share-workouts', '#client-community-share-gym-visits', '#client-community-share-public']) {
           document.querySelector(selector).checked = false;
         }
       }
@@ -254,6 +354,7 @@
         client = nextClient; userId = String(nextUserId || ''); preview = Boolean(isPreview);
         profile = null; preferences = null; snapshot = null; published = '';
         profileEditor.hidden = true; join.hidden = true; member.hidden = true; list.replaceChildren();
+        feedList?.replaceChildren(); challengeList?.replaceChildren();
         if (preview) { message('Connections are available only when the client signs in.'); return; }
         if (!client || !userId) { message('Sign in to join Community.'); return; }
         void refresh();

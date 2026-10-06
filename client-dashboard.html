@@ -68,7 +68,7 @@
   <link rel="stylesheet" href="/css/fwb-dark-theme.css?v=deep-forest-9" />
   <link rel="stylesheet" href="css/client-quarterly-goals.css?v=1" />
   <link rel="stylesheet" href="css/client-workout-hub.css?v=4" />
-  <link rel="stylesheet" href="css/client-home-community.css?v=4" />
+  <link rel="stylesheet" href="css/client-home-community.css?v=5" />
   <link rel="stylesheet" href="css/client-fascia-backgrounds.css?v=2" />
   <link rel="stylesheet" href="css/client-settings-navigation.css?v=2" />
   <link rel="stylesheet" href="css/client-light-theme.css?v=5" />
@@ -286,12 +286,24 @@
           <h2 id="client-community-title">Community</h2>
           <div class="client-community-hero"><span class="client-community-hero-icon" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="8" r="3"/><circle cx="22" cy="8" r="3"/><path d="M3 27v-4a7 7 0 0 1 14 0v4H3Zm12 0v-4a7 7 0 0 1 14 0v4H15Z"/><path d="m11 17 5 5 5-5"/></svg></span><div><h3>Better Together</h3><p>Your community. Your connections. Your wins.</p></div></div>
           <button class="client-community-badges" type="button" data-achievements-dialog-open aria-haspopup="dialog" aria-controls="client-achievements-dialog"><span aria-hidden="true"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"><path d="M5 3h22l-5 10H10L5 3Zm6 10 5 7 5-7"/><circle cx="16" cy="24" r="6"/><path d="m16 20 1.2 2.7 2.8.3-2.1 2 .6 2.8-2.5-1.4-2.5 1.4.6-2.8-2.1-2 2.8-.3L16 20Z"/></svg></span><span><strong>Your XP &amp; Badges</strong><small>View your level and earned achievements.</small></span><span aria-hidden="true">›</span></button>
+          <section class="client-community-feed" aria-labelledby="client-community-feed-title">
+            <h3 id="client-community-feed-title">Shared progress</h3>
+            <p>Clients who opt in appear here by nickname and avatar. Invite codes are only for private connections.</p>
+            <div data-community-feed-list></div>
+            <p data-community-feed-status role="status"></p>
+          </section>
           <div class="client-community-tabs" role="tablist" aria-label="Community sections">
             <button type="button" role="tab" data-community-view="leaderboard" aria-selected="false">Leaderboard</button>
             <button type="button" role="tab" data-community-view="connections" aria-selected="true">Connections</button>
             <button type="button" role="tab" data-community-view="challenges" aria-selected="false">Challenges</button>
           </div>
           <article class="client-community-feature"><span class="client-community-feature-icon" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"><path d="M9 4h14v8c0 5-3 8-7 8s-7-3-7-8V4ZM9 7H4v3c0 5 3 7 7 7m12-10h5v3c0 5-3 7-7 7M16 20v5m-6 3h12m-10-3h8"/></svg></span><span class="client-community-coming">Coming Soon</span><h3 id="client-community-feature-title">Celebrate Your Consistency</h3><p id="client-community-feature-body">Compare XP, levels, and badges with other clients who choose to join. Weekly rankings give everyone a fresh start.</p></article>
+          <section class="client-community-challenges" data-community-challenges hidden>
+            <h3>Private challenges</h3>
+            <p>Challenge an accepted connection to complete weekly workouts or gym visits. Your friend must accept before the seven-day challenge starts.</p>
+            <div data-community-challenge-list></div>
+            <p data-community-challenge-status role="status"></p>
+          </section>
           <section class="client-community-connections" data-community-connections hidden aria-labelledby="client-community-connections-title">
             <h3 id="client-community-connections-title">Your connections</h3>
             <p>Connect by invitation. Both people must accept before your selected milestones are visible.</p>
@@ -307,7 +319,16 @@
                 <button type="button" data-community-avatar="swimming" aria-label="Swimming avatar" aria-pressed="false">🏊</button>
                 <button type="button" data-community-avatar="martial" aria-label="Martial arts avatar" aria-pressed="false">🥋</button>
                 <button type="button" data-community-avatar="star" aria-label="Star avatar" aria-pressed="false">⭐</button>
+                <button type="button" data-community-avatar="lifting" data-community-avatar-extra hidden aria-label="Weightlifting avatar" aria-pressed="false">🏋️</button>
+                <button type="button" data-community-avatar="walking" data-community-avatar-extra hidden aria-label="Walking avatar" aria-pressed="false">🚶</button>
+                <button type="button" data-community-avatar="hiking" data-community-avatar-extra hidden aria-label="Hiking avatar" aria-pressed="false">🥾</button>
+                <button type="button" data-community-avatar="basketball" data-community-avatar-extra hidden aria-label="Basketball avatar" aria-pressed="false">🏀</button>
+                <button type="button" data-community-avatar="soccer" data-community-avatar-extra hidden aria-label="Soccer avatar" aria-pressed="false">⚽</button>
+                <button type="button" data-community-avatar="tennis" data-community-avatar-extra hidden aria-label="Tennis avatar" aria-pressed="false">🎾</button>
+                <button type="button" data-community-avatar="rowing" data-community-avatar-extra hidden aria-label="Rowing avatar" aria-pressed="false">🚣</button>
+                <button type="button" data-community-avatar="climbing" data-community-avatar-extra hidden aria-label="Climbing avatar" aria-pressed="false">🧗</button>
               </fieldset>
+              <button type="button" data-community-avatar-more aria-expanded="false">Choose more avatars</button>
             </div>
             <div data-community-join hidden>
               <button type="button" data-community-join-button>Join Community</button>
@@ -324,10 +345,11 @@
             </div>
             <p data-community-connection-status role="status"></p>
           </section>
-          <p class="client-community-privacy"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M10 2 17 5v5c0 4-3 6.5-7 8-4-1.5-7-4-7-8V5l7-3Z"/><rect x="7" y="9" width="6" height="5" rx="1"/><path d="M8 9V7a2 2 0 0 1 4 0v2"/></svg> Only accepted connections can see the milestones you choose. Workout logs and health records remain private.</p>
+          <p class="client-community-privacy"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M10 2 17 5v5c0 4-3 6.5-7 8-4-1.5-7-4-7-8V5l7-3Z"/><rect x="7" y="9" width="6" height="5" rx="1"/><path d="M8 9V7a2 2 0 0 1 4 0v2"/></svg> Public progress shows only your nickname, avatar, and selected counts. Workout logs and health records remain private.</p>
           <section class="client-community-consent" aria-labelledby="client-community-consent-title">
             <h3 id="client-community-consent-title">Your sharing choices</h3>
-            <p>Choose what accepted connections may see. Sharing starts off.</p>
+            <p>Choose which milestones to share, then decide whether to show them to all signed-in clients. Sharing starts off.</p>
+            <label><input type="checkbox" id="client-community-share-public" /><span><strong>Show my progress to all signed-in clients</strong><small>Only your nickname, avatar, and selected milestones appear in Community. Your invite code stays private.</small></span></label>
             <label><input type="checkbox" id="client-community-share-xp" /><span><strong>Training XP</strong><small>Show your training XP. Your workout details stay private.</small></span></label>
             <label><input type="checkbox" id="client-community-share-badges" /><span><strong>Earned badges</strong><small>Show the badges you have earned.</small></span></label>
             <label><input type="checkbox" id="client-community-share-workouts" /><span><strong>Completed workouts</strong><small>Show your total completed workout count.</small></span></label>
@@ -1261,8 +1283,8 @@
   <script src="js/workout-generator.js?v=4"></script>
   <script src="js/workout-generator-dialog.js?v=5"></script>
   <script src="js/client-workout-plans.js?v=2"></script>
-  <script src="js/client-community.js?v=2"></script>
-  <script src="js/client-community-connections.js?v=2"></script>
+  <script src="js/client-community.js?v=3"></script>
+  <script src="js/client-community-connections.js?v=3"></script>
   <script src="js/apple-health-sync.js?v=1"></script>
   <dialog id="client-quarter-goals-dialog" aria-labelledby="quarter-goal-dialog-title"></dialog>
   <dialog id="client-program-info-dialog" aria-labelledby="client-program-info-title">

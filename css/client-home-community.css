@@ -275,6 +275,21 @@
 :root body.client-dashboard-page .client-community-connection small { display: block; margin: 3px 0 8px; color: var(--client-muted); }
 :root body.client-dashboard-page .client-community-connection-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 :root body.client-dashboard-page .client-community-connections .client-community-leave { margin-top: 18px; background: transparent; color: var(--client-muted); border: 1px solid #5e6463; }
+:root body.client-dashboard-page .client-community-feed,
+:root body.client-dashboard-page .client-community-challenges { margin: 18px 0; padding: 18px; border: 1px solid #45484b; border-radius: 18px; background: #27292c; color: #f4f5f3; }
+:root body.client-dashboard-page .client-community-challenges[hidden] { display: none; }
+:root body.client-dashboard-page .client-community-feed h3,
+:root body.client-dashboard-page .client-community-challenges h3 { margin: 0 0 7px; font-size: 20px; }
+:root body.client-dashboard-page .client-community-feed p,
+:root body.client-dashboard-page .client-community-challenges p { color: var(--client-muted); font-size: 13px; line-height: 1.45; }
+:root body.client-dashboard-page .client-community-feed-card,
+:root body.client-dashboard-page .client-community-challenge-card { padding: 12px 0; border-top: 1px solid #45484b; }
+:root body.client-dashboard-page .client-community-feed-card strong,
+:root body.client-dashboard-page .client-community-feed-card small { display: inline-block; margin-right: 10px; }
+:root body.client-dashboard-page .client-community-feed-card small { color: var(--client-muted); }
+:root body.client-dashboard-page .client-community-challenge-card button { min-height: 40px; margin: 4px 8px 4px 0; padding: 6px 12px; border: 0; border-radius: 10px; background: var(--client-neon); color: #182316; font: inherit; font-weight: 800; }
+:root body.client-dashboard-page .client-community-challenge-form { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 12px 0; }
+:root body.client-dashboard-page .client-community-challenge-form select { min-height: 44px; min-width: 110px; border: 1px solid #5e6463; border-radius: 10px; background: #171c1b; color: #fff; padding: 6px; font: inherit; }
 @media (max-width: 900px) {
   :root body.client-dashboard-page { background: #101113; }
   :root body.client-dashboard-page .client-home-panel { padding: 16px 15px 28px; }
