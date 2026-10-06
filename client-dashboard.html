@@ -76,7 +76,7 @@
   <link rel="stylesheet" href="css/client-light-theme.css?v=9" />
   <link rel="stylesheet" href="css/client-gym-location.css?v=1" />
   <link rel="stylesheet" href="css/client-workout-import.css?v=1" />
-  <link rel="stylesheet" href="css/client-gym-directory.css?v=1" />
+  <link rel="stylesheet" href="css/client-gym-directory.css?v=2" />
   <link rel="stylesheet" href="css/client-headline-colors.css?v=2" />
   <link rel="stylesheet" href="css/client-unfinished-workout-reminder.css?v=1" />
   <link rel="stylesheet" href="css/client-exercise-library.css?v=1" />
@@ -130,6 +130,10 @@
           <button class="client-dashboard-tab" type="button" data-client-dashboard-tab="community" aria-label="Community">
             <svg class="client-dashboard-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="7" r="2.2"/><circle cx="16" cy="7" r="2.2"/><path d="M3.5 19v-2.5a4.5 4.5 0 0 1 9 0V19H3.5Zm8 0v-2.5a4.5 4.5 0 0 1 9 0V19h-9Z"/><path d="m9 12 3 3 3-3"/></svg>
             <span class="client-dashboard-tab-label">Community</span>
+          </button>
+          <button class="client-dashboard-tab" type="button" data-client-dashboard-tab="gyms" aria-label="Gyms">
+            <svg class="client-dashboard-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 21V6l8-3 8 3v15M3 21h18M8 9h2m4 0h2M8 13h2m4 0h2M9 21v-4h6v4"/></svg>
+            <span class="client-dashboard-tab-label">Gyms</span>
           </button>
           <button class="client-dashboard-tab" type="button" data-client-dashboard-tab="questionnaire" aria-label="PAR-Q">
             <svg class="client-dashboard-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-3"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="m8 13 2 2 5-5"/><path d="M8 19h8"/></svg>
@@ -291,6 +295,11 @@
           <div class="client-workout-panels" id="client-workout-panels"></div>
         </section>
 
+        <section class="progress-panel client-gyms-panel" data-client-dashboard-panel="gyms" aria-labelledby="client-gyms-title" hidden>
+          <p class="kicker">Find your place</p><h2 id="client-gyms-title">Gyms</h2>
+          <p>Explore nearby gyms and hotels with gyms. Add a place, equipment, amenities, photos, a rating, or a tip for other signed-in clients.</p>
+          <div id="gym-directory-panel-host"></div>
+        </section>
         <section class="client-community-panel" data-client-dashboard-panel="community" aria-labelledby="client-community-title" hidden>
           <h2 id="client-community-title">Community</h2>
           <div class="client-community-hero"><span class="client-community-hero-icon" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="8" r="3"/><circle cx="22" cy="8" r="3"/><path d="M3 27v-4a7 7 0 0 1 14 0v4H3Zm12 0v-4a7 7 0 0 1 14 0v4H15Z"/><path d="m11 17 5 5 5-5"/></svg></span><div><h3>Better Together</h3><p>Your community. Your connections. Your wins.</p></div></div>
@@ -1364,18 +1373,31 @@
       <label><input type="checkbox" id="gym-directory-hotels" /> Hotels with gyms only</label>
     </div>
     <p id="gym-directory-status" role="status" aria-live="polite"></p>
-    <div id="gym-directory-results" class="gym-directory-results"></div>
+      <div id="gym-directory-results" class="gym-directory-results"></div>
+      <h3>Client-added gyms</h3>
+      <div id="gym-directory-client-results" class="gym-directory-results"></div>
     <section id="gym-directory-detail" class="gym-directory-detail" hidden>
       <h3 id="gym-directory-place-name"></h3>
       <button class="button button-dark" type="button" id="gym-directory-use">Use this gym for workout</button>
+      <div id="gym-directory-features"></div>
+      <form id="gym-directory-features-form">
+        <h4>Add equipment and amenities you’ve seen</h4>
+        <fieldset><legend>Equipment (optional)</legend><div class="gym-directory-options" data-gym-equipment></div></fieldset>
+        <fieldset><legend>Amenities (optional)</legend><div class="gym-directory-options" data-gym-amenities></div></fieldset>
+        <button class="button button-dark" type="submit">Save equipment &amp; amenities</button>
+      </form>
+      <h4>Client photos</h4><div id="gym-directory-gallery" class="gym-directory-gallery"></div>
+      <form id="gym-directory-photo-form">
+        <label>Add photos (optional, up to 3 per gym) <input id="gym-directory-photos" type="file" accept="image/jpeg,image/png,image/webp" multiple /></label>
+        <button class="button button-dark" type="submit">Upload photos</button>
+      </form>
       <div id="gym-directory-reviews"></div>
       <form id="gym-directory-review-form">
-        <h4>Leave a review</h4>
+        <h4>Rating &amp; tip</h4>
         <label>Rating <select id="gym-directory-rating" required><option value="">Choose stars</option><option value="5">5 stars</option><option value="4">4 stars</option><option value="3">3 stars</option><option value="2">2 stars</option><option value="1">1 star</option></select></label>
-        <label>Your review <textarea id="gym-directory-review" minlength="5" maxlength="1200" required placeholder="What should other clients know about this gym?"></textarea></label>
-        <label>Photos (up to 3, 5 MB each) <input id="gym-directory-photos" type="file" accept="image/jpeg,image/png,image/webp" multiple /></label>
-        <button class="button button-primary" type="submit">Save review</button>
-        <button class="button button-ghost" type="button" id="gym-directory-delete-review" hidden>Delete my review &amp; photos</button>
+        <label>Tip (optional) <textarea id="gym-directory-review" maxlength="1200" placeholder="What should other clients know about this gym?"></textarea></label>
+        <button class="button button-primary" type="submit">Save rating &amp; tip</button>
+        <button class="button button-ghost" type="button" id="gym-directory-delete-review" hidden>Delete my rating &amp; tip</button>
       </form>
     </section>
     <details class="gym-directory-add">
@@ -1384,6 +1406,11 @@
       <form id="gym-directory-add-form">
         <label>Gym or hotel name <input id="gym-directory-add-name" maxlength="180" minlength="2" required /></label>
         <label>Place type <select id="gym-directory-add-kind"><option value="gym">Gym</option><option value="hotel_gym">Hotel with gym</option></select></label>
+        <fieldset><legend>Equipment (optional)</legend><div class="gym-directory-options" data-gym-add-equipment></div></fieldset>
+        <fieldset><legend>Amenities (optional)</legend><div class="gym-directory-options" data-gym-add-amenities></div></fieldset>
+        <label>Rating (optional) <select id="gym-directory-add-rating"><option value="">Skip rating</option><option value="5">5 stars</option><option value="4">4 stars</option><option value="3">3 stars</option><option value="2">2 stars</option><option value="1">1 star</option></select></label>
+        <label>Tip (optional) <textarea id="gym-directory-add-tip" maxlength="1200" placeholder="Share a useful tip"></textarea></label>
+        <label>Photos (optional, up to 3) <input id="gym-directory-add-photos" type="file" accept="image/jpeg,image/png,image/webp" multiple /></label>
         <button class="button button-dark" type="submit">Add at my location</button>
       </form>
     </details>
@@ -1406,7 +1433,7 @@
   <script src="js/client-portal.js?v=workout-preview-1&amp;custom-workout-history-1&amp;cancel-workout=1&amp;energy-feedback=1&amp;mood-redesign=1&amp;visible-group-controls=1&amp;exercise-videos=1&amp;remember-login=1&amp;visible-demos=1&amp;personal-bests=1&amp;copy-last-weights=1&amp;demo-icons=1&amp;keyboard-entry=1&amp;copy-set-pr=3&amp;return-coach=1&amp;apple-workout=2&amp;apple-share=1&amp;rir-help=1&amp;viewport-dock=6&amp;home-actions=1&amp;compact-copy=1&amp;exercise-pr-notes=1&amp;pr-info=1&amp;finish-workout=2&amp;prescribed-targets=1&amp;exercise-controls=1&amp;session-alerts=1&amp;exercise-labels=1&amp;exercise-list=2&amp;grouped-add=1&amp;google-health=1&amp;exercise-defaults=2&amp;workout-generator=4&amp;profile-photo=1&amp;account-settings=1&amp;workout-delete=1&amp;apple-health=1&amp;daily-checkin=1&amp;recovery-catalog=1&amp;messages=2&amp;cardio-shortcut=1&amp;achievements=1&amp;progression=1&amp;exercise-images=5&amp;exercise-motion=2&amp;exercise-guide=3&amp;settings-tabs=2&amp;workout-feedback-actions=3&amp;set-motion=1&amp;next-exercise=1&amp;warmup-actions=1&amp;photo-crop=2&amp;navigation=2&amp;demo-svg=1&amp;timer-alert-recovery=2&amp;finish-later=1&amp;suggestions-prefix=1&amp;quarter-goals=1&amp;progress-cards=1&amp;program-windows=1&amp;activity-likes=1&amp;workout-hub=3&amp;home-community=1&amp;remove-home-more=1&amp;client-light=1&amp;training-preferences=1&amp;exercise-name-performance=1&amp;rep-weight-hints=1&amp;gym-location=2&amp;round-focus=1&amp;exercise-picker-list=2&amp;web-parity=2"></script>
   <script src="js/client-web-tour.js?v=1"></script>
   <script src="js/client-unfinished-workout-reminder.js?v=1"></script>
-  <script src="js/client-gym-directory.js?v=1"></script>
+  <script src="js/client-gym-directory.js?v=2"></script>
   <script src="js/client-fascia-backgrounds.js?v=2"></script>
   <script src="js/workout-exercise-dock.js?v=4"></script>
 </body>

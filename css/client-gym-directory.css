@@ -10,6 +10,21 @@
   border-radius: 20px;
 }
 .gym-directory-dialog::backdrop { background: rgb(0 0 0 / 74%); }
+.gym-directory-dialog.in-tab {
+  position: static; display: block; width: 100%; max-height: none; margin: 0;
+  overflow: visible; box-shadow: none;
+}
+.gym-directory-dialog.in-tab #gym-directory-close { display: none; }
+.client-gyms-panel { max-width: 900px; }
+.gym-directory-options { display: flex; flex-wrap: wrap; gap: 8px 14px; }
+.gym-directory-options label { display: inline-flex !important; align-items: center; gap: 5px; width: auto; }
+.gym-directory-options input { width: auto !important; }
+.gym-directory-detail fieldset, .gym-directory-add fieldset { min-width: 0; border: 1px solid var(--border-color, #53565b); border-radius: 10px; }
+.gym-directory-gallery { display: flex; flex-wrap: wrap; gap: 8px; }
+.gym-directory-gallery figure { margin: 0; }
+.gym-directory-gallery img { width: 110px; height: 110px; object-fit: cover; border-radius: 8px; }
+.gym-directory-gallery figcaption { font-size: 12px; }
+.gym-directory-add textarea { min-height: 75px; }
 .gym-directory-dialog[hidden], .gym-directory-detail[hidden] { display: none; }
 .gym-directory-header, .gym-directory-actions, .gym-directory-place {
   display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
@@ -37,4 +52,8 @@
 @media (max-width: 520px) {
   .gym-directory-dialog { padding: 16px; }
   .gym-directory-place { display: block; }
+}
+@media (max-width: 900px) {
+  :root body.client-dashboard-page .client-dashboard-tabs { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+  :root body.client-dashboard-page .client-dashboard-tab-label { font-size: clamp(8px, 2vw, 11px); }
 }

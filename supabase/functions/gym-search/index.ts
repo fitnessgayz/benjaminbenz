@@ -59,17 +59,28 @@ serve(async (request) => {
   const { data: cached } = await admin.from("gym_search_cache").select("place_ids,expires_at").eq("cache_key", key).maybeSingle();
   let ids: string[] = cached?.place_ids || [];
   let fromCache = Boolean(cached && Date.parse(cached.expires_at) > Date.now());
+  let partial = false;
 
   if (!fromCache) {
     const query = `[out:json][timeout:12];(nwr(around:5000,${lat},${lon})["leisure"="fitness_centre"];nwr(around:5000,${lat},${lon})["leisure"="sports_centre"]["sport"~"(^|;)fitness(;|$)"];nwr(around:5000,${lat},${lon})["tourism"="hotel"]["fitness_centre"="yes"];nwr(around:5000,${lat},${lon})["tourism"="hotel"]["gym"="yes"];);out center 100;`;
     try {
-      const response = await fetch("https://overpass-api.de/api/interpreter", {
-        method: "POST", body: new URLSearchParams({ data: query }),
-        headers: { "User-Agent": "FitnessWithBenjamin-GymFinder/1.0 (fwb@benjaminbenz.com)" },
-        signal: AbortSignal.timeout(15000)
-      });
-      if (!response.ok) throw new Error("OpenStreetMap search is busy");
-      const data = await response.json();
+      // The public Overpass instances can be busy. Cache successful lookups
+      // and keep client-added places available if the map source times out.
+      const providers = ["https://overpass.private.coffee/api/interpreter", "https://overpass-api.de/api/interpreter"];
+      let data: Record<string, unknown> | null = null;
+      for (const provider of providers) {
+        try {
+          const response = await fetch(provider, {
+            method: "POST", body: new URLSearchParams({ data: query }),
+            headers: { "User-Agent": "FitnessWithBenjamin-GymFinder/1.0 (fwb@benjaminbenz.com)" },
+            signal: AbortSignal.timeout(7000)
+          });
+          if (!response.ok) continue;
+          const result = await response.json();
+          if (Array.isArray(result?.elements)) { data = result; break; }
+        } catch { /* Try the alternate public endpoint. */ }
+      }
+      if (!data) throw new Error("OpenStreetMap search is busy");
       const places = (Array.isArray(data.elements) ? data.elements : []).flatMap((element: Record<string, unknown>) => {
         const tags = (element.tags || {}) as Record<string, string>;
         const placeLat = Number(element.lat ?? (element.center as Record<string, unknown> | undefined)?.lat);
@@ -89,7 +100,7 @@ serve(async (request) => {
       await admin.from("gym_search_cache").upsert({ cache_key: key, place_ids: ids,
         expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() });
     } catch {
-      if (!cached) return reply(request, { error: "Nearby gym search is temporarily unavailable. Try again shortly." }, 503);
+      partial = true;
       fromCache = true;
     }
   }
@@ -105,6 +116,6 @@ serve(async (request) => {
     .map((place) => ({ ...place, distance_km: distanceKm(latitude, longitude, place.latitude, place.longitude) }))
     .filter((place) => place.distance_km <= 6)
     .sort((a, b) => a.distance_km - b.distance_km).slice(0, 80);
-  return reply(request, { places, stale: fromCache && Date.parse(cached?.expires_at || "") <= Date.now(),
+  return reply(request, { places, partial, stale: fromCache && Date.parse(cached?.expires_at || "") <= Date.now(),
     attribution: "© OpenStreetMap contributors" });
 });
