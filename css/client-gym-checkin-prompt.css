@@ -1,0 +1,67 @@
+.client-gym-checkin-prompt {
+  width: min(440px, calc(100vw - 24px));
+  max-height: calc(100dvh - 32px);
+  margin: auto;
+  padding: 26px;
+  overflow-y: auto;
+  border: 1px solid var(--border, #263c2e);
+  border-radius: 22px;
+  background: var(--surface, #0b1811);
+  color: var(--ink, #f2f0e8);
+  box-shadow: 0 20px 70px rgb(0 0 0 / 40%);
+  font: inherit;
+}
+.client-gym-checkin-prompt::backdrop { background: rgb(0 0 0 / 65%); backdrop-filter: blur(4px); }
+.client-gym-checkin-prompt h2 { margin: 0 42px 10px 0; font-size: clamp(1.6rem, 6vw, 2rem); line-height: 1.15; }
+.client-gym-checkin-prompt p { margin: 0 0 17px; }
+.client-gym-checkin-prompt-kicker { color: var(--brand-primary, #a3ff12); font-size: .78rem; font-weight: 800; letter-spacing: .12em; }
+.client-gym-checkin-prompt-status { min-height: 1.4em; color: var(--text-muted, #a8b9ac); }
+.client-gym-checkin-prompt-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ink, #f2f0e8);
+  font: inherit;
+  font-size: 1.6rem;
+  cursor: pointer;
+}
+.client-gym-checkin-prompt-actions { display: grid; gap: 10px; }
+.client-gym-checkin-prompt-actions button {
+  min-height: 48px;
+  border-radius: 12px;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+.client-gym-checkin-prompt-actions button:first-child {
+  border: 0;
+  background: var(--brand-primary, #a3ff12);
+  color: var(--brand-primary-ink, #101900);
+}
+.client-gym-checkin-prompt-actions button:last-child {
+  border: 1px solid var(--border, #263c2e);
+  background: transparent;
+  color: var(--ink, #f2f0e8);
+}
+.client-gym-checkin-prompt-actions button:disabled { opacity: .65; cursor: wait; }
+@media (max-width: 600px) {
+  .client-gym-checkin-prompt { padding: 23px 20px calc(23px + env(safe-area-inset-bottom)); }
+}
+.client-weekly-activity .client-manual-daily-checkin {
+  display: block;
+  min-height: 44px;
+  width: 100%;
+  margin-top: 8px;
+  border: 1px solid var(--border, #263c2e);
+  border-radius: 11px;
+  background: var(--surface, #0b1811);
+  color: var(--ink, #f2f0e8);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
