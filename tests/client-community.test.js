@@ -9,6 +9,7 @@ function fixture() {
   const workouts = { checked: false, disabled: false };
   const gymVisits = { checked: false, disabled: false };
   const publicProgress = { checked: false, disabled: false };
+  const daily = { checked: false, disabled: false };
   const save = { disabled: false, closest: selector => selector === '[data-community-save]' ? save : null };
   const status = { textContent: '' };
   const title = { textContent: '' };
@@ -24,6 +25,7 @@ function fixture() {
     '#client-community-share-workouts': workouts,
     '#client-community-share-gym-visits': gymVisits,
     '#client-community-share-public': publicProgress,
+    '#client-community-share-daily': daily,
     '[data-community-save]': save,
     '#client-community-consent-status': status,
     '#client-community-feature-title': title,
@@ -34,7 +36,7 @@ function fixture() {
     querySelectorAll: key => key === '[data-community-view]' ? buttons : [],
     addEventListener: (event, fn) => { handlers[event] = fn; }
   };
-  return { controller: mount({ querySelector: () => panel }), handlers, xp, badge, workouts, gymVisits, publicProgress, save, status, title, body, buttons };
+  return { controller: mount({ querySelector: () => panel }), handlers, xp, badge, workouts, gymVisits, publicProgress, daily, save, status, title, body, buttons };
 }
 
 test('sharing choices default off, load only for the signed-in owner, and save separately', async () => {
@@ -61,12 +63,15 @@ test('sharing choices default off, load only for the signed-in owner, and save s
   assert.equal(ui.workouts.checked, false);
   assert.equal(ui.gymVisits.checked, false);
   assert.equal(ui.publicProgress.checked, false);
+  assert.equal(ui.daily.checked, false);
   assert.equal(ui.save.disabled, false);
   ui.badge.checked = true;
+  ui.daily.checked = true;
   ui.handlers.click({ target: ui.save });
   await new Promise(resolve => setImmediate(resolve));
   assert.deepEqual(saved, { user_id: 'user-1', xp_opt_in: false, badges_opt_in: true,
-    workout_count_opt_in: false, gym_visits_opt_in: false, public_progress_opt_in: false });
+    workout_count_opt_in: false, gym_visits_opt_in: false, public_progress_opt_in: false,
+    daily_challenge_opt_in: true });
   assert.match(ui.status.textContent, /Saved/);
 });
 
@@ -78,6 +83,7 @@ test('coach preview cannot alter a client’s sharing choices', () => {
   assert.equal(ui.workouts.disabled, true);
   assert.equal(ui.gymVisits.disabled, true);
   assert.equal(ui.publicProgress.disabled, true);
+  assert.equal(ui.daily.disabled, true);
   assert.equal(ui.save.disabled, true);
   assert.match(ui.status.textContent, /client signs in/);
 });
@@ -100,10 +106,12 @@ test('failed consent save restores the previously saved privacy choices', async 
   ui.xp.checked = false;
   ui.gymVisits.checked = true;
   ui.publicProgress.checked = true;
+  ui.daily.checked = true;
   ui.handlers.click({ target: ui.save });
   await new Promise(resolve => setImmediate(resolve));
   assert.equal(ui.xp.checked, true);
   assert.equal(ui.gymVisits.checked, false);
   assert.equal(ui.publicProgress.checked, false);
+  assert.equal(ui.daily.checked, false);
   assert.match(ui.status.textContent, /Previous choices restored/);
 });

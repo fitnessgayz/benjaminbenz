@@ -41,7 +41,9 @@
     "20261005233809_community_avatar_nickname_props.sql",
     "20261006005906_community_public_progress.sql",
     "20261006005920_private_community_challenges.sql",
-    "20261006010055_community_challenge_indexes.sql"
+    "20261006010055_community_challenge_indexes.sql",
+    "20261006033553_community_daily_challenges.sql",
+    "20261006033650_fix_daily_challenge_reroll.sql"
   ],
   "nasmExerciseCatalogMigration": "20261001032427_add_complete_nasm_exercise_library.sql",
   "nasmExerciseCatalogCount": 75,
