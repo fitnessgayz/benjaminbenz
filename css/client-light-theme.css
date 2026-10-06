@@ -115,8 +115,8 @@
 
 :root[data-client-theme="light"] body.client-dashboard-page {
   color-scheme: light;
-  --brand-primary: #a7fa16;
-  --brand-primary-hover: #a7fa16;
+  --brand-primary: #ffd400;
+  --brand-primary-hover: #ffe066;
   --brand-primary-ink: #000;
   --ink: #1b291f;
   --ink-deep: #18221b;
