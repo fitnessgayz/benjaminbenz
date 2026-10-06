@@ -282,7 +282,7 @@
       } catch (error) {
         if (id === userId) {
           const detail = String(error?.message || '');
-          message(/^(Invite code not found|A connection or invitation already exists|Join Community before sending an invitation)/.test(detail)
+          message(/^(Invite code not found|A connection or invitation already exists|Join Community before sending an invitation|An active challenge already exists for this goal)/.test(detail)
             ? detail : 'Could not save. Please try again.');
         }
       } finally { busy = false; }
