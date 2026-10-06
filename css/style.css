@@ -15843,6 +15843,7 @@ textarea,
 }
 
 .coach-notification-panel {
+  position: relative;
   display: grid;
   gap: 22px;
 }
@@ -17569,9 +17570,16 @@ body.client-dashboard-page.is-loading > :is(.client-dashboard-tabs,
     box-shadow: 0 24px 70px rgba(5, 8, 5, .28);
   }
 
+  .coach-notification-heading {
+    padding-right: 56px;
+  }
+
   .coach-notification-close {
+    position: absolute;
+    z-index: 2;
+    top: 16px;
+    right: 16px;
     display: grid !important;
-    order: -1;
   }
 }
 

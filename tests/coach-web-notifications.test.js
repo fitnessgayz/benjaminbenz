@@ -60,9 +60,14 @@ test("Settings panel keeps every notification feature together", () => {
   assert.match(settingsPanel, /data-web-notification-empty/);
   assert.match(settingsPanel, /data-web-notification-mark-all[^>]*hidden/);
   assert.ok(
-    settingsPanel.indexOf('id="coach-notification-inbox-title"') < settingsPanel.indexOf('id="coach-notification-settings-title"'),
-    "Recent alerts should appear before notification preferences"
+    settingsPanel.indexOf('id="coach-notification-inbox-title"') < settingsPanel.indexOf("data-web-notification-enable"),
+    "Alert controls should appear below recent activity"
   );
+  assert.ok(
+    settingsPanel.indexOf("data-web-notification-test") < settingsPanel.indexOf('id="coach-notification-settings-title"'),
+    "Alert controls should appear before notification preferences"
+  );
+  assert.ok(settingsPanel.indexOf("data-coach-notification-close") < settingsPanel.indexOf("coach-notification-heading"));
   assert.match(adminHtml, /src="js\/web-notifications\.js\?v=coach-activity-likes-5"[\s\S]*src="js\/coach-admin\.js\?[^"\s]+"/);
 });
 
@@ -116,6 +121,7 @@ test("coach notification settings stay compact and stack on narrow screens", () 
   assert.match(styleSource, /\.coach-notification-preference-grid\s*\{[^}]*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/s);
   assert.match(styleSource, /@media \(max-width: 780px\)[\s\S]*?\.coach-notification-preference-grid\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\)/s);
   assert.match(styleSource, /\.admin-nav-unread-count\s*\{[^}]*position:\s*absolute/s);
+  assert.match(styleSource, /@media \(max-width: 900px\)[\s\S]*?\.coach-notification-close\s*\{[^}]*position:\s*absolute[^}]*top:\s*16px[^}]*right:\s*16px/s);
 });
 
 test("mobile Home exposes Settings and recent activity in a dismissible overlay", () => {
