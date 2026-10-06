@@ -6136,6 +6136,7 @@ function workoutGymPickerMarkup(value = "", index = 0) {
       list="${listId}" placeholder="Gym name, Home, or Outdoors" value="${escapeHtml(value)}"
       aria-describedby="${instructionsId}" />
     <datalist id="${listId}">${recentGyms.map((gym) => `<option value="${escapeHtml(gym)}"></option>`).join("")}</datalist>
+    <button class="button button-ghost workout-gym-find" data-find-nearby-gym type="button">Find nearby gyms</button>
     <small id="${instructionsId}">Choose once before you start. Use the gym’s name if you train at different gyms, or enter Home or Outdoors. Your previous weights will match this location.</small>
     <span class="workout-gym-error" data-workout-gym-error role="status" hidden></span>
   </div>`;
@@ -16063,6 +16064,111 @@ function handleClientWorkoutHistoryDownload() {
   });
 }
 
+function handleClientWorkoutHistoryImport() {
+  const input = document.getElementById("client-workout-history-import-file");
+  const preview = document.getElementById("client-workout-import-preview");
+  const summary = document.getElementById("client-workout-import-summary");
+  const status = document.getElementById("client-workout-import-status");
+  const confirm = document.getElementById("client-workout-import-confirm");
+  const cancel = document.getElementById("client-workout-import-cancel");
+  if (!input || !preview || !summary || !status || !confirm || !cancel || !window.FWBWorkoutCSVImport) return;
+
+  let pending = null;
+  const logKey = (row) => [row.client_email?.toLowerCase(), row.entry_date, row.workout_title,
+    row.exercise_code, Number(row.set_number)].join("|");
+  const rowsNotAlreadySaved = (workouts, saved) => {
+    const existing = new Set(saved.map(logKey));
+    const seen = new Set();
+    return workouts.flatMap((workout) => workout.rows.map((row) => ({ ...row,
+      client_email: activeClientEmail, workout_title: workout.workout_title,
+      source: workout.source || "import", _workout: workout
+    }))).filter((row) => {
+      const key = logKey(row);
+      if (existing.has(key) || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  };
+  const reset = () => {
+    pending = null;
+    input.value = "";
+    preview.hidden = true;
+    confirm.disabled = false;
+  };
+
+  input.addEventListener("change", async () => {
+    const file = input.files?.[0];
+    pending = null;
+    preview.hidden = true;
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      status.textContent = "Choose a CSV smaller than 5 MB.";
+      input.value = "";
+      return;
+    }
+    try {
+      pending = window.FWBWorkoutCSVImport.parse(await file.text());
+      const newRows = rowsNotAlreadySaved(pending.workouts.map((workout) => ({ ...workout, source: pending.source })), trainingLogs);
+      const duplicates = pending.setCount - newRows.length;
+      summary.textContent = `${pending.workouts.length} ${pending.source === "hevy" ? "Hevy" : "Fitbod"} workouts, ${newRows.length} new sets, ${duplicates} already saved, ${pending.skipped} unsupported rows skipped.`;
+      confirm.disabled = newRows.length === 0;
+      preview.hidden = false;
+      status.textContent = newRows.length ? "Review the count, then import when ready." : "No new sets to import.";
+    } catch (error) {
+      status.textContent = error?.message || "Could not read the CSV.";
+      input.value = "";
+    }
+  });
+
+  cancel.addEventListener("click", () => { reset(); status.textContent = "Import canceled."; });
+  confirm.addEventListener("click", async () => {
+    if (!pending || !activeClientEmail) return;
+    confirm.disabled = true;
+    status.textContent = "Checking existing workout history…";
+    const accountEmail = activeClientEmail;
+    const fresh = await loadClientWorkoutLogHistory(accountEmail);
+    if (fresh.error || !fresh.data || activeClientEmail !== accountEmail) {
+      status.textContent = "Could not check your current history. Nothing was imported.";
+      confirm.disabled = false;
+      return;
+    }
+    const newRows = rowsNotAlreadySaved(pending.workouts.map((workout) => ({ ...workout, source: pending.source })), fresh.data);
+    if (!newRows.length) { reset(); status.textContent = "All sets are already saved."; return; }
+    const sessionIds = new Map(fresh.data.filter((row) => row.session_id)
+      .map((row) => [`${row.entry_date}|${row.workout_title}`, row.session_id]));
+    const rows = newRows.map(({ _workout, ...row }) => {
+      const sessionKey = `${row.entry_date}|${row.workout_title}`;
+      if (!sessionIds.has(sessionKey)) sessionIds.set(sessionKey, crypto.randomUUID());
+      return { ...row, gym_name: normalizeWorkoutGymName(document.getElementById("client-workout-import-gym")?.value) || null,
+        session_id: sessionIds.get(sessionKey), set_id: crypto.randomUUID() };
+    });
+    let imported = 0;
+    for (let offset = 0; offset < rows.length; offset += 100) {
+      if (activeClientEmail !== accountEmail) {
+        status.textContent = `Account changed. ${imported} sets were saved before import stopped.`;
+        reset();
+        return;
+      }
+      const { data, error } = await supabaseClient.from("client_workout_logs")
+        .upsert(rows.slice(offset, offset + 100), {
+          onConflict: "client_email,entry_date,workout_title,exercise_code,set_number",
+          ignoreDuplicates: true
+        }).select();
+      if (error) {
+        status.textContent = `Import stopped after ${imported} sets: ${error.message}`;
+        confirm.disabled = false;
+        return;
+      }
+      imported += data?.length || 0;
+      status.textContent = `Imported ${imported} sets…`;
+    }
+    const refreshed = await loadClientWorkoutLogHistory(accountEmail);
+    if (!refreshed.error && activeClientEmail === accountEmail) populateTrainingLogs(refreshed.data);
+    reset();
+    status.textContent = `Imported ${imported} new sets. Existing workout logs were preserved.`;
+  });
+}
+
 function handleClientTrainingLogDateFilter() {
   const input = document.getElementById("client-training-log-date-filter");
   const searchInput = document.getElementById("client-training-log-search-filter");
@@ -20435,6 +20541,7 @@ handleSignOut();
 handleTrainingDateChange();
 handleClientTrainingLogDateFilter();
 handleClientWorkoutHistoryDownload();
+handleClientWorkoutHistoryImport();
 handleCopyWorkoutToCustom();
 handleClientWorkoutHistoryDelete();
 handleClientWorkoutHistoryDeck();

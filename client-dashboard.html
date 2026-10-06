@@ -75,6 +75,8 @@
   <link rel="stylesheet" href="css/client-settings-navigation.css?v=2" />
   <link rel="stylesheet" href="css/client-light-theme.css?v=9" />
   <link rel="stylesheet" href="css/client-gym-location.css?v=1" />
+  <link rel="stylesheet" href="css/client-workout-import.css?v=1" />
+  <link rel="stylesheet" href="css/client-gym-directory.css?v=1" />
   <link rel="stylesheet" href="css/client-headline-colors.css?v=2" />
   <link rel="stylesheet" href="css/client-unfinished-workout-reminder.css?v=1" />
   <link rel="stylesheet" href="css/client-exercise-library.css?v=1" />
@@ -213,6 +215,7 @@
               </button>
               <p class="client-weekly-caption" id="client-gym-checkin-status" role="status">At the gym? Check in for today.</p>
               <button class="client-manual-daily-checkin" type="button" data-client-daily-checkin>Daily check-in</button>
+              <button class="button button-ghost" data-find-nearby-gym type="button">Explore nearby gyms &amp; reviews</button>
             </section>
             <section class="client-home-glance" aria-labelledby="client-home-glance-title">
               <p>Your dashboard</p><h3 id="client-home-glance-title">Today at a glance</h3>
@@ -967,8 +970,22 @@
             </label>
             <button class="button button-ghost" type="button" id="clear-client-training-log-date-filter">Clear</button>
             <button class="button button-dark" type="button" id="download-client-workout-history">Download CSV</button>
+            <label class="button button-ghost client-workout-import-picker">Import Fitbod or Hevy CSV
+              <input type="file" id="client-workout-history-import-file" accept=".csv,text/csv" />
+            </label>
           </div>
           <p class="training-log-download-status" id="client-workout-history-download-status" aria-live="polite"></p>
+          <div class="client-workout-import-preview" id="client-workout-import-preview" hidden>
+            <p id="client-workout-import-summary" role="status"></p>
+            <label>Gym location for these workouts (optional)
+              <input type="text" id="client-workout-import-gym" maxlength="80" placeholder="Gym name, Home, or Outdoors" />
+            </label>
+            <p>Use a single location only if it applies to the whole file. Previous weights are matched by gym location.</p>
+            <p>Imported workouts appear in Logs and exercise history. Importing does not add gym visits or post to Community.</p>
+            <button class="button button-primary" type="button" id="client-workout-import-confirm">Import workouts</button>
+            <button class="button button-ghost" type="button" id="client-workout-import-cancel">Cancel</button>
+          </div>
+          <p id="client-workout-import-status" role="status" aria-live="polite"></p>
           <p class="training-log-copy-status" id="client-workout-copy-status" role="status" aria-live="polite"></p>
           <div class="training-log-history" id="client-training-log-history">
             <p class="empty-state">No workout or nutrition logs yet.</p>
@@ -1336,6 +1353,42 @@
   <script src="js/client-community-connections.js?v=4"></script>
   <script src="js/apple-health-sync.js?v=1"></script>
   <dialog id="client-quarter-goals-dialog" aria-labelledby="quarter-goal-dialog-title"></dialog>
+  <dialog id="gym-directory-dialog" class="gym-directory-dialog" aria-labelledby="gym-directory-title">
+    <div class="gym-directory-header">
+      <div><p class="kicker">Gym directory</p><h2 id="gym-directory-title">Gyms near you</h2></div>
+      <button class="button button-ghost" type="button" id="gym-directory-close" aria-label="Close gym directory">Done</button>
+    </div>
+    <p>Find gyms and hotels with mapped gyms. Your location is used for this search and is not saved.</p>
+    <div class="gym-directory-actions">
+      <button class="button button-primary" type="button" id="gym-directory-search">Search near me</button>
+      <label><input type="checkbox" id="gym-directory-hotels" /> Hotels with gyms only</label>
+    </div>
+    <p id="gym-directory-status" role="status" aria-live="polite"></p>
+    <div id="gym-directory-results" class="gym-directory-results"></div>
+    <section id="gym-directory-detail" class="gym-directory-detail" hidden>
+      <h3 id="gym-directory-place-name"></h3>
+      <button class="button button-dark" type="button" id="gym-directory-use">Use this gym for workout</button>
+      <div id="gym-directory-reviews"></div>
+      <form id="gym-directory-review-form">
+        <h4>Leave a review</h4>
+        <label>Rating <select id="gym-directory-rating" required><option value="">Choose stars</option><option value="5">5 stars</option><option value="4">4 stars</option><option value="3">3 stars</option><option value="2">2 stars</option><option value="1">1 star</option></select></label>
+        <label>Your review <textarea id="gym-directory-review" minlength="5" maxlength="1200" required placeholder="What should other clients know about this gym?"></textarea></label>
+        <label>Photos (up to 3, 5 MB each) <input id="gym-directory-photos" type="file" accept="image/jpeg,image/png,image/webp" multiple /></label>
+        <button class="button button-primary" type="submit">Save review</button>
+        <button class="button button-ghost" type="button" id="gym-directory-delete-review" hidden>Delete my review &amp; photos</button>
+      </form>
+    </section>
+    <details class="gym-directory-add">
+      <summary>Can’t find a gym? Add it here</summary>
+      <p>Add a place only while you are at a public gym or hotel. The submitted map location is visible to other signed-in clients.</p>
+      <form id="gym-directory-add-form">
+        <label>Gym or hotel name <input id="gym-directory-add-name" maxlength="180" minlength="2" required /></label>
+        <label>Place type <select id="gym-directory-add-kind"><option value="gym">Gym</option><option value="hotel_gym">Hotel with gym</option></select></label>
+        <button class="button button-dark" type="submit">Add at my location</button>
+      </form>
+    </details>
+    <small>Place data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a>. Reviews and photos are shared with signed-in FWB clients by nickname and avatar.</small>
+  </dialog>
   <dialog id="client-program-info-dialog" aria-labelledby="client-program-info-title">
     <article class="client-home-card client-home-program-card" hidden>
       <p class="kicker">Program overview</p>
@@ -1349,9 +1402,11 @@
   <script src="js/workout-progression.js?v=1"></script>
   <script src="js/workout-progression-ui.js?v=1"></script>
   <script src="js/client-exercise-library.js?v=1"></script>
+  <script src="js/workout-csv-import.js?v=1"></script>
   <script src="js/client-portal.js?v=workout-preview-1&amp;custom-workout-history-1&amp;cancel-workout=1&amp;energy-feedback=1&amp;mood-redesign=1&amp;visible-group-controls=1&amp;exercise-videos=1&amp;remember-login=1&amp;visible-demos=1&amp;personal-bests=1&amp;copy-last-weights=1&amp;demo-icons=1&amp;keyboard-entry=1&amp;copy-set-pr=3&amp;return-coach=1&amp;apple-workout=2&amp;apple-share=1&amp;rir-help=1&amp;viewport-dock=6&amp;home-actions=1&amp;compact-copy=1&amp;exercise-pr-notes=1&amp;pr-info=1&amp;finish-workout=2&amp;prescribed-targets=1&amp;exercise-controls=1&amp;session-alerts=1&amp;exercise-labels=1&amp;exercise-list=2&amp;grouped-add=1&amp;google-health=1&amp;exercise-defaults=2&amp;workout-generator=4&amp;profile-photo=1&amp;account-settings=1&amp;workout-delete=1&amp;apple-health=1&amp;daily-checkin=1&amp;recovery-catalog=1&amp;messages=2&amp;cardio-shortcut=1&amp;achievements=1&amp;progression=1&amp;exercise-images=5&amp;exercise-motion=2&amp;exercise-guide=3&amp;settings-tabs=2&amp;workout-feedback-actions=3&amp;set-motion=1&amp;next-exercise=1&amp;warmup-actions=1&amp;photo-crop=2&amp;navigation=2&amp;demo-svg=1&amp;timer-alert-recovery=2&amp;finish-later=1&amp;suggestions-prefix=1&amp;quarter-goals=1&amp;progress-cards=1&amp;program-windows=1&amp;activity-likes=1&amp;workout-hub=3&amp;home-community=1&amp;remove-home-more=1&amp;client-light=1&amp;training-preferences=1&amp;exercise-name-performance=1&amp;rep-weight-hints=1&amp;gym-location=2&amp;round-focus=1&amp;exercise-picker-list=2&amp;web-parity=2"></script>
   <script src="js/client-web-tour.js?v=1"></script>
   <script src="js/client-unfinished-workout-reminder.js?v=1"></script>
+  <script src="js/client-gym-directory.js?v=1"></script>
   <script src="js/client-fascia-backgrounds.js?v=2"></script>
   <script src="js/workout-exercise-dock.js?v=4"></script>
 </body>
