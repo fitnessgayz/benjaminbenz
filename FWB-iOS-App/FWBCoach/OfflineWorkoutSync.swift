@@ -628,6 +628,7 @@ final class WorkoutOfflineSyncStore: ObservableObject {
     private let monitorQueue = DispatchQueue(label: "com.benjaminbenz.fwbcoach.workout-network")
     private var isNetworkAvailable = true
     private var isSynchronizing = false
+    private var needsFollowUpSync = false
 
     private init(
         client: SupabaseClient = AppConfiguration.supabase,
@@ -783,7 +784,8 @@ final class WorkoutOfflineSyncStore: ObservableObject {
         difficultyRating: Int? = nil,
         energyBefore: Int? = nil,
         energyAfter: Int? = nil,
-        loggedSetsOnly: Bool = false
+        loggedSetsOnly: Bool = false,
+        deferNetworkSync: Bool = false
     ) async -> OfflineWorkoutSaveResult {
         let session = OfflineWorkoutSession(
             clientEmail: email,
@@ -827,6 +829,15 @@ final class WorkoutOfflineSyncStore: ObservableObject {
             return .queued
         }
 
+        if deferNetworkSync {
+            state = .queued(pendingCount)
+            Task { [weak self] in
+                guard let self else { return }
+                _ = await self.synchronize(preferredSessionID: session.stableSessionID)
+            }
+            return .queued
+        }
+
         let didSync = await synchronize(preferredSessionID: session.stableSessionID)
         if await repository.isDeleted(sessionID: session.stableSessionID, email: email) {
             let message = "This workout was deleted from your logs. Start a new workout to save new sets."
@@ -853,10 +864,19 @@ final class WorkoutOfflineSyncStore: ObservableObject {
     }
 
     private func synchronize(preferredSessionID: UUID?) async -> Bool {
-        guard !isSynchronizing else { return false }
+        guard !isSynchronizing else {
+            needsFollowUpSync = true
+            return false
+        }
         isSynchronizing = true
         state = .syncing
-        defer { isSynchronizing = false }
+        defer {
+            isSynchronizing = false
+            if needsFollowUpSync {
+                needsFollowUpSync = false
+                Task { await retryPending() }
+            }
+        }
 
         var queued = await repository.queuedSessions()
         if let preferredSessionID,

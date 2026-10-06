@@ -6,9 +6,10 @@ struct WorkoutEntryReferenceData {
     let suggestionNames: [String]
     private let workingRecords: [ExerciseKey: WorkoutHistoryRecord]
     private let timedRecords: [ExerciseKey: WorkoutHistoryRecord]
+    private let previousRecords: [ExerciseKey: [Int: WorkoutHistoryRecord]]
 
     static let empty = WorkoutEntryReferenceData(
-        suggestionNames: [], workingRecords: [:], timedRecords: [:]
+        suggestionNames: [], workingRecords: [:], timedRecords: [:], previousRecords: [:]
     )
 
     static func make(
@@ -16,7 +17,9 @@ struct WorkoutEntryReferenceData {
         suggestedExercises: [Exercise],
         approvedExercises: [ApprovedExercise],
         historyNames: [String],
-        history: [WorkoutHistorySession]
+        history: [WorkoutHistorySession],
+        before entryDate: String = "9999-12-31",
+        excluding sessionID: UUID? = nil
     ) -> Self {
         // Match canonicalName's precedence: the first approved name or alias,
         // then the first bundled name. Normalize each catalog entry only once.
@@ -50,21 +53,40 @@ struct WorkoutEntryReferenceData {
         let records = history.flatMap(\.records)
         var workingRecords: [ExerciseKey: WorkoutHistoryRecord] = [:]
         var timedRecords: [ExerciseKey: WorkoutHistoryRecord] = [:]
+        var previousRecords: [ExerciseKey: [Int: WorkoutHistoryRecord]] = [:]
         for exercise in exercises {
             let key = ExerciseKey(exercise)
             workingRecords[key] = WorkoutParityModel.personalRecord(for: exercise, history: records, setType: .working)
             timedRecords[key] = WorkoutParityModel.personalRecord(for: exercise, history: records, setType: .timed)
+            let recent = WorkoutParityModel.recentHistory(for: exercise, sessions: history,
+                through: entryDate, excluding: sessionID, limit: 24)
+            if let latestSessionID = recent.first?.sessionID {
+                previousRecords[key] = Dictionary(recent.filter { $0.sessionID == latestSessionID }
+                    .map { ($0.setNumber, $0) }, uniquingKeysWith: { first, _ in first })
+            } else if let latestDate = recent.first?.entryDate {
+                previousRecords[key] = Dictionary(recent.filter { $0.entryDate == latestDate }
+                    .map { ($0.setNumber, $0) }, uniquingKeysWith: { first, _ in first })
+            }
         }
         return Self(
             suggestionNames: ExerciseSuggestionLibrary.merged([rawNames]),
             workingRecords: workingRecords,
-            timedRecords: timedRecords
+            timedRecords: timedRecords,
+            previousRecords: previousRecords
         )
     }
 
     func personalRecord(for exercise: Exercise, setType: WorkoutSetType) -> WorkoutHistoryRecord? {
         let key = ExerciseKey(exercise)
         return setType == .timed ? timedRecords[key] : workingRecords[key]
+    }
+
+    func previousRecord(for exercise: Exercise, setNumber: Int) -> WorkoutHistoryRecord? {
+        previousRecords[ExerciseKey(exercise)]?[setNumber]
+    }
+
+    func previousRecords(for exercise: Exercise) -> [Int: WorkoutHistoryRecord] {
+        previousRecords[ExerciseKey(exercise)] ?? [:]
     }
 
     // An exercise can be renamed while retaining its code. Include both so an
@@ -109,6 +131,51 @@ struct WorkoutParityCopyResult: Equatable {
 }
 
 enum WorkoutParityModel {
+    static func numberStringForDisplay(_ value: Double) -> String { numberString(value) }
+
+    static func historySummary(_ record: WorkoutHistoryRecord) -> String {
+        if record.resolvedSetType == .timed, let duration = record.durationSeconds {
+            return "\(numberString(duration)) sec · \(record.entryDate)"
+        }
+        return "\(numberString(record.weightUsed)) lb × \(numberString(record.reps ?? 0)) reps · \(record.entryDate)"
+    }
+
+    static func recentHistory(
+        for exercise: Exercise,
+        sessions: [WorkoutHistorySession],
+        through entryDate: String,
+        excluding sessionID: UUID?,
+        limit: Int = 12
+    ) -> [WorkoutHistoryRecord] {
+        guard limit > 0 else { return [] }
+        let eligible = sessions.filter { $0.entryDate <= entryDate && $0.sessionID != sessionID }
+            .map { session in
+                (session: session, updatedAt: session.records.compactMap(\.updatedAt).max() ?? .distantPast)
+            }
+            .sorted { left, right in
+                if left.session.entryDate != right.session.entryDate {
+                    return left.session.entryDate > right.session.entryDate
+                }
+                if left.updatedAt != right.updatedAt { return left.updatedAt > right.updatedAt }
+                return left.session.workoutTitle.localizedCaseInsensitiveCompare(right.session.workoutTitle) == .orderedAscending
+            }
+        var result: [WorkoutHistoryRecord] = []
+        for (session, _) in eligible {
+            for record in session.records.sorted(by: { $0.setNumber < $1.setNumber }) {
+                guard matches(record, exercise), !record.isWarmUp, !record.isCardio else { continue }
+                if record.resolvedSetType == .timed {
+                    guard let seconds = record.durationSeconds, seconds.isFinite, seconds > 0 else { continue }
+                } else {
+                    guard record.countsTowardWorkingMetrics, record.weightUsed.isFinite,
+                          record.weightUsed >= 0, let reps = record.reps, reps.isFinite, reps > 0 else { continue }
+                }
+                result.append(record)
+                if result.count == limit { return result }
+            }
+        }
+        return result
+    }
+
     static func groups(
         exercises: [Exercise],
         assignments: [String: WorkoutGroupAssignment]
@@ -331,6 +398,29 @@ enum WorkoutParityModel {
         return WorkoutParityCopyResult(drafts: updated, changes: changes)
     }
 
+    static func copyHistoryRecord(
+        _ record: WorkoutHistoryRecord,
+        to targetID: UUID,
+        drafts: [WorkoutSetDraft]
+    ) -> WorkoutParityCopyResult {
+        var updated = drafts
+        var changes: [WorkoutParityCopyChange] = []
+        guard let index = updated.firstIndex(where: { $0.id == targetID }),
+              !updated[index].isWarmUp,
+              ExerciseNameIdentity.key(for: updated[index].exerciseName) == ExerciseNameIdentity.key(for: record.exerciseName)
+        else { return WorkoutParityCopyResult(drafts: drafts, changes: []) }
+        guard !updated[index].isCompleted else { return WorkoutParityCopyResult(drafts: drafts, changes: []) }
+        if updated[index].setType == .timed {
+            if let duration = record.durationSeconds, duration.isFinite, duration > 0 {
+                replace(.duration, value: numberString(duration), draft: &updated[index], changes: &changes)
+            }
+        } else if record.resolvedSetType != .timed, let reps = record.reps {
+            replace(.weight, value: numberString(record.weightUsed), draft: &updated[index], changes: &changes)
+            replace(.reps, value: numberString(reps), draft: &updated[index], changes: &changes)
+        }
+        return WorkoutParityCopyResult(drafts: updated, changes: changes)
+    }
+
     /// Undo is field-specific and cannot erase a subsequent edit or logged set.
     static func undoCopy(_ copy: WorkoutParityCopyResult, in drafts: [WorkoutSetDraft]) -> [WorkoutSetDraft] {
         var updated = drafts
@@ -358,6 +448,18 @@ enum WorkoutParityModel {
         set(field, value: copied, draft: &draft)
         changes.append(WorkoutParityCopyChange(
             draftID: draft.id, field: field, previousValue: previous, copiedValue: copied
+        ))
+    }
+
+    private static func replace(
+        _ field: WorkoutParityMetric, value selected: String,
+        draft: inout WorkoutSetDraft, changes: inout [WorkoutParityCopyChange]
+    ) {
+        let previous = value(field, in: draft)
+        guard previous != selected else { return }
+        set(field, value: selected, draft: &draft)
+        changes.append(WorkoutParityCopyChange(
+            draftID: draft.id, field: field, previousValue: previous, copiedValue: selected
         ))
     }
 

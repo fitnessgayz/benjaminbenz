@@ -9,9 +9,7 @@ struct WorkoutParityActions {
     var addRound: () -> Void
     var removeRound: () -> Void
     var logRound: (Int) -> Void
-    var copyPR: (Int) -> Void
     var estimateOneRepMax: (Int, Bool) -> Void
-    var copyPrevious: (Int) -> Void
     var undoCopy: (Int) -> Void
     var showPR: (Int) -> Void
     var editDraft: (UUID) -> Void
@@ -122,9 +120,8 @@ struct WorkoutParityGroupView: View {
     let isCustom: Bool
     let suggestions: [String]
     let isSaving: Bool
-    let isSyncing: Bool
     let validationMessage: String?
-    @ObservedObject var restTimer: RestTimerStore
+    let restTimer: RestTimerStore
     let restingRound: Int?
     let actions: WorkoutParityActions
     var canCopyPR = false
@@ -135,6 +132,7 @@ struct WorkoutParityGroupView: View {
     var canEditProgression = false
     var editProgression: (Exercise) -> Void = { _ in }
     var personalRecordSummaries: [String: String] = [:]
+    var previousRecords: [String: [Int: WorkoutHistoryRecord]] = [:]
 
     @State private var namesExpanded = true
     @State private var notesExpanded = false
@@ -333,10 +331,16 @@ struct WorkoutParityGroupView: View {
                     }
                     Button { actions.showExercise(exercise) } label: {
                         VStack(alignment: .leading, spacing: 6) {
-                            Text(exercise.name.isEmpty ? "EXERCISE \(labels[exercise.code] ?? "1")" : exercise.name.uppercased())
-                                .font(WorkoutParityStyle.heading(16).italic())
+                            Text("EXERCISE \(labels[exercise.code] ?? "1")")
+                                .font(WorkoutParityStyle.heading(13).italic())
                                 .fixedSize(horizontal: false, vertical: true)
                                 .frame(maxWidth: .infinity, alignment: .leading)
+                            if let previous = previousRecords[exercise.code]?.values.sorted(by: { $0.setNumber < $1.setNumber }).first {
+                                Text("Last logged: \(WorkoutParityModel.historySummary(previous))")
+                                    .font(FWBFont.sized(12).weight(.semibold))
+                                    .foregroundStyle(WorkoutParityStyle.green)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
                             if !isCustom && !exercise.prescription.isEmpty {
                                 Text("Target: \(exercise.prescription)")
                                     .font(FWBFont.sized(12).weight(.semibold))
@@ -378,6 +382,10 @@ struct WorkoutParityGroupView: View {
                     }
                 }
                 .padding(.vertical, 7)
+                if let recommendation = progressionRecommendations[exercise.code],
+                   !recommendation.targets.isEmpty {
+                    progressionCard(recommendation, exercise: exercise)
+                }
                 if canEditProgression && !exercise.name.isEmpty {
                     Button("Progression settings") { editProgression(exercise) }
                         .font(FWBFont.sized(12).weight(.semibold))
@@ -445,6 +453,7 @@ struct WorkoutParityGroupView: View {
                     WorkoutParitySetRow(
                         draft: binding(for: draft),
                         code: warmUp ? "W\(index + 1)" : labels[draft.exerciseCode] ?? "\(index + 1)",
+                        previous: warmUp ? nil : previousRecords[draft.exerciseCode]?[draft.setNumber],
                         focus: $focusedField,
                         onReopen: { actions.reopenDraft(draft.id) },
                         onEdit: { actions.editDraft(draft.id) }
@@ -463,26 +472,12 @@ struct WorkoutParityGroupView: View {
                     .padding(.bottom, 9)
                     .accessibilityIdentifier("workout.parity.validation.\(group.id).\(round)")
             }
-            if restingRound == round && restTimer.isVisible {
-                restControls
-            } else {
-                Button {
-                    focusedField = nil
-                    actions.logRound(round)
-                } label: {
-                    HStack(spacing: 5) {
-                        if isSaving { ProgressView().tint(WorkoutParityStyle.buttonInk) }
-                        else if completed { Image(systemName: "checkmark") }
-                        Text(logTitle(round: round, completed: completed))
-                            .font(WorkoutParityStyle.heading(15))
-                    }
-                    .frame(maxWidth: .infinity, minHeight: 44)
-                }
-                .buttonStyle(WorkoutParityControlStyle(accented: true))
-                .disabled(isSaving || isSyncing || completed)
-                .accessibilityIdentifier("workout.parity.log.\(group.id).\(round)")
-                .padding(.horizontal, 11)
-                .padding(.bottom, 9)
+            WorkoutParityRoundAction(restTimer: restTimer, isResting: restingRound == round,
+                isSaving: isSaving, completed: completed,
+                logTitle: logTitle(round: round, completed: completed),
+                identifier: "workout.parity.log.\(group.id).\(round)") {
+                focusedField = nil
+                actions.logRound(round)
             }
         }
         .background(warmUp ? WorkoutParityStyle.warmUp : WorkoutParityStyle.paper)
@@ -527,20 +522,8 @@ struct WorkoutParityGroupView: View {
                 .fixedSize(horizontal: false, vertical: true)
         } else {
             HStack(spacing: 5) {
-                if round > 1 {
-                    Button { actions.copyPrevious(round) } label: {
-                        Text("Copy last \(unit.lowercased())")
-                            .font(FWBFont.sized(10).weight(.semibold))
-                            .multilineTextAlignment(.center)
-                            .fixedSize(horizontal: false, vertical: true)
-                            .padding(.horizontal, 7)
-                            .frame(minHeight: 44)
-                    }
-                    .buttonStyle(WorkoutParitySmallStyle())
-                    .disabled(completed)
-                }
-                Button { actions.copyPR(round) } label: {
-                    Text("Copy PR")
+                Button { actions.showPR(round) } label: {
+                    Text("PR")
                         .font(FWBFont.sized(11).weight(.semibold))
                         .multilineTextAlignment(.center)
                         .fixedSize(horizontal: false, vertical: true)
@@ -548,7 +531,7 @@ struct WorkoutParityGroupView: View {
                         .frame(minHeight: 44)
                 }
                 .buttonStyle(WorkoutParitySmallStyle())
-                .disabled(completed || !canCopyPR)
+                .accessibilityLabel("View exercise history and personal records")
                 Button { actions.estimateOneRepMax(round, true) } label: {
                     Image(systemName: "gauge.with.dots.needle.67percent")
                         .font(FWBFont.sized(15).weight(.semibold))
@@ -604,31 +587,6 @@ struct WorkoutParityGroupView: View {
         .padding(.bottom, 3)
     }
 
-    private var restControls: some View {
-        HStack(spacing: 6) {
-            Button { restTimer.adjust(seconds: -15) } label: {
-                Text("−15").frame(width: 47, height: 44)
-            }
-            .accessibilityLabel("Remove 15 seconds from rest timer")
-            Button {
-                if restTimer.phase == .complete { restTimer.dismiss() }
-                else { restTimer.togglePause() }
-            } label: {
-                Text(restTimer.phase == .complete ? "Rest complete" : "Rest \(restTimer.timeLabel) · \(restTimer.phase == .paused ? "Resume" : "Pause")")
-                    .frame(maxWidth: .infinity, minHeight: 44)
-                    .monospacedDigit()
-            }
-            Button { restTimer.adjust(seconds: 15) } label: {
-                Text("+15").frame(width: 47, height: 44)
-            }
-            .accessibilityLabel("Add 15 seconds to rest timer")
-        }
-        .font(WorkoutParityStyle.heading(11))
-        .buttonStyle(WorkoutParityControlStyle(accented: false))
-        .padding(.horizontal, 11)
-        .padding(.bottom, 9)
-    }
-
     private var notesSection: some View {
         VStack(alignment: .leading, spacing: 0) {
             separator
@@ -679,7 +637,7 @@ struct WorkoutParityGroupView: View {
             let name = exercise.name.isEmpty ? "Exercise \(labels[exercise.code] ?? "1")" : exercise.name
             return "\(name): \(summary)"
         }
-        let explanation = "PR means personal record. Copy PR fills empty fields with values from your best logged set. Your entered values stay unchanged."
+        let explanation = "PR means personal record. Tap PR to review past working sets and choose values for this round. You can edit them before logging."
         return explanation + "\n\n" + (records.isEmpty
             ? "No personal records are available for these exercises yet."
             : records.joined(separator: "\n\n"))
@@ -722,9 +680,12 @@ private struct WorkoutParityNameEditor: View {
     let rename: (String) -> Void
     let delete: () -> Void
     @FocusState private var isFocused: Bool
+    @State private var selectedSuggestion: String?
 
     private var matchingSuggestions: [String] {
-        guard isFocused, !exercise.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return [] }
+        guard isFocused,
+              selectedSuggestion != exercise.name,
+              !exercise.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return [] }
         return Array(suggestions.filter {
             $0.localizedCaseInsensitiveContains(exercise.name) && $0.caseInsensitiveCompare(exercise.name) != .orderedSame
         }.prefix(5))
@@ -736,7 +697,10 @@ private struct WorkoutParityNameEditor: View {
                 .font(FWBFont.sized(13).weight(.semibold))
                 .foregroundStyle(WorkoutParityStyle.muted)
             HStack(alignment: .top, spacing: 8) {
-                TextField("Input exercise name here", text: Binding(get: { exercise.name }, set: rename), axis: .vertical)
+                TextField("Input exercise name here", text: Binding(
+                    get: { exercise.name },
+                    set: { value in selectedSuggestion = nil; rename(value) }
+                ), axis: .vertical)
                     .font(WorkoutParityStyle.heading(16))
                     .textInputAutocapitalization(.words)
                     .autocorrectionDisabled()
@@ -763,6 +727,7 @@ private struct WorkoutParityNameEditor: View {
                 VStack(spacing: 0) {
                     ForEach(matchingSuggestions, id: \.self) { suggestion in
                         Button {
+                            selectedSuggestion = suggestion
                             rename(suggestion)
                             isFocused = false
                         } label: {
@@ -770,8 +735,10 @@ private struct WorkoutParityNameEditor: View {
                                 .font(FWBFont.sized(14))
                                 .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
                                 .padding(.horizontal, 10)
+                                .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
+                        .accessibilityLabel("Use \(suggestion)")
                     }
                 }
                 .background(WorkoutParityStyle.cream, in: RoundedRectangle(cornerRadius: 10))
@@ -787,6 +754,7 @@ private enum WorkoutParityField: Hashable {
 private struct WorkoutParitySetRow: View {
     @Binding var draft: WorkoutSetDraft
     let code: String
+    let previous: WorkoutHistoryRecord?
     @FocusState.Binding var focus: WorkoutParityField?
     let onReopen: () -> Void
     let onEdit: () -> Void
@@ -815,11 +783,14 @@ private struct WorkoutParitySetRow: View {
                 }
             }
             .accessibilityAction(named: "Set options", onEdit)
-            numericField("Weight", text: $draft.weight, field: .weight(draft.id), decimal: true)
+            numericField("Weight", text: $draft.weight, field: .weight(draft.id), decimal: true,
+                placeholder: previous.map { WorkoutParityModel.numberStringForDisplay($0.weightUsed) } ?? "0")
             if draft.setType == .timed {
-                numericField("Seconds", text: $draft.duration, field: .duration(draft.id), decimal: false)
+                numericField("Seconds", text: $draft.duration, field: .duration(draft.id), decimal: false,
+                    placeholder: previous?.durationSeconds.map(WorkoutParityModel.numberStringForDisplay) ?? "0")
             } else {
-                numericField("Reps", text: $draft.reps, field: .reps(draft.id), decimal: false)
+                numericField("Reps", text: $draft.reps, field: .reps(draft.id), decimal: false,
+                    placeholder: previous?.reps.map(WorkoutParityModel.numberStringForDisplay) ?? "0")
             }
             numericField(draft.effortScale == .rpe ? "RPE" : "RIR", text: effortBinding, field: .rir(draft.id), decimal: draft.effortScale == .rpe, placeholder: "")
         }
@@ -846,7 +817,8 @@ private struct WorkoutParitySetRow: View {
                 }
             }
             .accessibilityLabel("\(label), \(draft.exerciseName), \(code)")
-            .accessibilityHint(draft.isCompleted ? "Edits keep this set logged and save automatically" : "")
+            .accessibilityHint(draft.isCompleted ? "Edits keep this set logged and save automatically" :
+                previous.map { "Last logged \(WorkoutParityModel.historySummary($0)). This is a reference, not an entered value." } ?? "")
             .accessibilityIdentifier("workout.parity.\(label.lowercased()).\(draft.id)")
     }
 
@@ -858,6 +830,55 @@ private struct WorkoutParitySetRow: View {
                 draft.effort = value
             }
         )
+    }
+}
+
+private struct WorkoutParityRoundAction: View {
+    @ObservedObject var restTimer: RestTimerStore
+    let isResting: Bool
+    let isSaving: Bool
+    let completed: Bool
+    let logTitle: String
+    let identifier: String
+    let onLog: () -> Void
+
+    var body: some View {
+        Group {
+            if isResting && restTimer.isVisible {
+                HStack(spacing: 6) {
+                    Button("−15") { restTimer.adjust(seconds: -15) }
+                        .frame(width: 47, height: 44)
+                        .accessibilityLabel("Remove 15 seconds from rest timer")
+                    Button {
+                        if restTimer.phase == .complete { restTimer.dismiss() }
+                        else { restTimer.togglePause() }
+                    } label: {
+                        Text(restTimer.phase == .complete ? "Rest complete" : "Rest \(restTimer.timeLabel) · \(restTimer.phase == .paused ? "Resume" : "Pause")")
+                            .frame(maxWidth: .infinity, minHeight: 44)
+                            .monospacedDigit()
+                    }
+                    Button("+15") { restTimer.adjust(seconds: 15) }
+                        .frame(width: 47, height: 44)
+                        .accessibilityLabel("Add 15 seconds to rest timer")
+                }
+                .font(WorkoutParityStyle.heading(11))
+                .buttonStyle(WorkoutParityControlStyle(accented: false))
+            } else {
+                Button(action: onLog) {
+                    HStack(spacing: 5) {
+                        if isSaving { ProgressView().tint(WorkoutParityStyle.buttonInk) }
+                        else if completed { Image(systemName: "checkmark") }
+                        Text(logTitle).font(WorkoutParityStyle.heading(15))
+                    }
+                    .frame(maxWidth: .infinity, minHeight: 44)
+                }
+                .buttonStyle(WorkoutParityControlStyle(accented: true))
+                .disabled(isSaving || completed)
+                .accessibilityIdentifier(identifier)
+            }
+        }
+        .padding(.horizontal, 11)
+        .padding(.bottom, 9)
     }
 }
 

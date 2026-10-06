@@ -180,6 +180,21 @@ final class FeedbackParityTests: XCTestCase {
         XCTAssertNil(unrelated)
     }
 
+    @MainActor
+    func testDeferredSetSaveReturnsQueuedAfterLocalPersistence() async {
+        let store = WorkoutOfflineSyncStore.previewStore()
+        let draft = WorkoutSetDraft(exercise: exercise, setNumber: 1,
+            weight: "55", reps: "8", isCompleted: true)
+        let result = await store.save(
+            email: "preview.client@example.com", sessionID: UUID(), workoutTemplateID: nil,
+            workoutTitle: "Preview", entryDate: "2026-10-06", exercises: [exercise], drafts: [draft],
+            baseRemoteUpdatedAt: nil, isFinished: false,
+            loggedSetsOnly: true, deferNetworkSync: true
+        )
+        XCTAssertEqual(result, .queued)
+        XCTAssertEqual(store.pendingCount, 1)
+    }
+
     func testTwoSameDaySessionsRemainQueuedAndFinishingOlderPreservesNewDraft() async throws {
         let repository = OfflineWorkoutRepository(inMemory: true)
         let first = makeSession(updatedAt: Date(timeIntervalSince1970: 1_800_000_000))
