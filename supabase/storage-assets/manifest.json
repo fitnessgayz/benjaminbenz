@@ -43,7 +43,8 @@
     "20261006005920_private_community_challenges.sql",
     "20261006010055_community_challenge_indexes.sql",
     "20261006033553_community_daily_challenges.sql",
-    "20261006033650_fix_daily_challenge_reroll.sql"
+    "20261006033650_fix_daily_challenge_reroll.sql",
+    "20261006144209_update_decline_cable_chest_press_underhand_media.sql"
   ],
   "nasmExerciseCatalogMigration": "20261001032427_add_complete_nasm_exercise_library.sql",
   "nasmExerciseCatalogCount": 75,
@@ -3148,6 +3149,34 @@
       "objectPath": "generated/2026-10-05/standing-cable-crunch-star-trac.mp4",
       "contentType": "video/mp4",
       "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-10-06/png/decline-cable-chest-press-underhand.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-10-06/png/decline-cable-chest-press-underhand.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-10-06/webp-480/decline-cable-chest-press-underhand.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-10-06/webp-480/decline-cable-chest-press-underhand.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-10-06/webp-768/decline-cable-chest-press-underhand.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-10-06/webp-768/decline-cable-chest-press-underhand.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-videos/generated/2026-10-06/decline-cable-chest-press-underhand.mp4",
+      "bucket": "exercise-videos",
+      "objectPath": "generated/2026-10-06/decline-cable-chest-press-underhand.mp4",
+      "contentType": "video/mp4",
+      "cacheControl": 31536000
     }
   ],
   "exerciseMedia": [
@@ -3952,6 +3981,11 @@
       "name": "Cable Crunch",
       "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-10-05/webp-768/standing-cable-crunch-star-trac.webp",
       "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-videos/generated/2026-10-05/standing-cable-crunch-star-trac.mp4"
+    },
+    {
+      "name": "Decline Chest Press",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-10-06/webp-768/decline-cable-chest-press-underhand.webp",
+      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-videos/generated/2026-10-06/decline-cable-chest-press-underhand.mp4"
     }
   ]
 }
