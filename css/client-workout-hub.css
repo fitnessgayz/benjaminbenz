@@ -39,7 +39,7 @@
   border: 1px solid #353a3c;
   border-radius: 50%;
   background: #1d2022;
-  color: #9cf932;
+  color: var(--client-neon);
   box-shadow: 0 3px 8px #0005;
 }
 
@@ -77,7 +77,7 @@
 
 :root body.client-dashboard-page .client-workout-hub-heading h3 {
   margin: 0;
-  color: #9cf932;
+  color: var(--client-neon);
   font-size: clamp(21px, 5.5vw, 27px);
   font-weight: 800;
   letter-spacing: -.04em;
@@ -89,7 +89,7 @@
   min-height: 29px;
   padding: 6px 10px;
   border-radius: 9px;
-  background: #9cf932;
+  background: var(--brand-primary);
   color: #111510;
   font-size: 11px;
   font-weight: 850;
@@ -132,8 +132,8 @@
   width: 38px;
   height: 38px;
   border-radius: 10px;
-  background: #34442b;
-  color: #9cf932;
+  background: #102e52;
+  color: var(--client-neon);
 }
 
 :root body.client-dashboard-page #client-workouts-panel.is-choosing-workout .workout-choice-icon svg {
@@ -147,7 +147,7 @@
 }
 
 :root body.client-dashboard-page #client-workouts-panel.is-choosing-workout .workout-choice-title {
-  color: #9cf932;
+  color: var(--client-neon);
   font-size: 15px;
   font-weight: 800;
   line-height: 1.18;
@@ -193,8 +193,8 @@
   width: 38px;
   height: 38px;
   border-radius: 10px;
-  background: #34442b;
-  color: #9cf932;
+  background: #102e52;
+  color: var(--client-neon);
 }
 
 :root body.client-dashboard-page .custom-workout-saved-plan .workout-choice-icon svg {
@@ -208,7 +208,7 @@
 }
 
 :root body.client-dashboard-page .custom-workout-saved-plan .workout-choice-title {
-  color: #9cf932;
+  color: var(--client-neon);
   font-size: 15px;
   font-weight: 800;
   line-height: 1.18;
@@ -254,12 +254,12 @@
     flex-basis: 38px;
     padding: 8px;
     border-radius: 50%;
-    background: #9cf932;
+    background: var(--client-neon);
     color: #172011;
   }
 
   :root body.client-dashboard-page:has(#client-workouts-panel.is-choosing-workout:not([hidden])) .client-dashboard-tab.is-active .client-dashboard-tab-label {
-    color: #9cf932;
+    color: var(--client-neon);
   }
 }
 
@@ -289,7 +289,7 @@
 .client-workout-plan-dialog [data-plan-close] { width: 34px; height: 34px; border: 1px solid #464b4c; border-radius: 50%; background: #292d2f; color: #fff; font-size: 25px; line-height: 1; }
 .client-workout-plan-dialog nav { display: flex; gap: 7px; margin: 18px 0 12px; }
 .client-workout-plan-dialog nav button { flex: 1; padding: 10px 8px; border: 1px solid #4a4e50; border-radius: 10px; background: #272b2d; color: #d9e4d6; font-weight: 700; }
-.client-workout-plan-dialog nav button.is-active { border-color: #9cf932; background: #34442b; color: #9cf932; }
+.client-workout-plan-dialog nav button.is-active { border-color: var(--client-neon); background: #102e52; color: var(--client-neon); }
 .client-workout-plan-dialog [data-plan-status] { min-height: 19px; margin: 0 0 12px; color: #b4c7b5; font-size: 13px; }
 .client-workout-plan-dialog [data-plan-status].is-error { color: #ffaaa0; }
 .client-workout-plan-dialog [data-plan-form] { display: grid; gap: 12px; }
@@ -298,9 +298,9 @@
 .client-workout-plan-dialog fieldset { display: flex; flex-wrap: wrap; gap: 8px 12px; margin: 0; padding: 12px; border: 1px solid #454b49; border-radius: 12px; }
 .client-workout-plan-dialog legend { padding: 0 4px; color: #d9e4d6; font-size: 13px; font-weight: 700; }
 .client-workout-plan-dialog .plan-equipment { display: flex; align-items: center; gap: 5px; font-size: 13px; }
-.client-workout-plan-dialog input[type="checkbox"] { accent-color: #9cf932; }
+.client-workout-plan-dialog input[type="checkbox"] { accent-color: var(--brand-primary); }
 .client-workout-plan-dialog .plan-primary,
-.client-workout-plan-dialog .saved-plan-day button { min-height: 42px; padding: 10px 15px; border: 0; border-radius: 11px; background: #9cf932; font-weight: 800; }
+.client-workout-plan-dialog .saved-plan-day button { min-height: 42px; padding: 10px 15px; border: 0; border-radius: 11px; background: var(--brand-primary); font-weight: 800; }
 :root body.client-dashboard-page .client-workout-plan-dialog :is(.plan-primary, .saved-plan-day button) {
   color: #000 !important;
   -webkit-text-fill-color: #000 !important;
@@ -308,7 +308,7 @@
 .client-workout-plan-dialog .plan-primary { width: 100%; }
 .client-workout-plan-dialog button:disabled { opacity: .65; cursor: wait; }
 .client-workout-plan-dialog .saved-plan-detail { margin-top: 18px; }
-.client-workout-plan-dialog .saved-plan-detail h3 { margin: 0 0 4px; color: #9cf932; font-size: 20px; }
+.client-workout-plan-dialog .saved-plan-detail h3 { margin: 0 0 4px; color: var(--client-neon); font-size: 20px; }
 .client-workout-plan-dialog .saved-plan-detail > p { margin: 0 0 15px; color: #b4c7b5; font-size: 13px; }
 .client-workout-plan-dialog .saved-plan-days { display: grid; gap: 10px; margin-bottom: 16px; }
 .client-workout-plan-dialog .saved-plan-day { padding: 14px; border: 1px solid #45494b; border-radius: 15px; background: #27292c; }
@@ -319,7 +319,7 @@
 .client-workout-plan-dialog .saved-plan-day li span { color: #a9bcaf; }
 .client-workout-plan-dialog .saved-plan-list { display: grid; gap: 8px; }
 .client-workout-plan-dialog .saved-plan-list button { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; width: 100%; padding: 14px; border: 1px solid #45494b; border-radius: 13px; background: #27292c; color: #dce7db; text-align: left; }
-.client-workout-plan-dialog .saved-plan-list strong { color: #9cf932; }
+.client-workout-plan-dialog .saved-plan-list strong { color: var(--client-neon); }
 .client-workout-plan-dialog .saved-plan-list span:nth-child(2) { font-size: 12px; }
 .client-workout-plan-dialog .saved-plan-list span:last-child { grid-column: 2; grid-row: 1 / 3; align-self: center; }
 .client-workout-plan-dialog .plan-empty { color: #b4c7b5; }
@@ -327,4 +327,4 @@
 @media (max-width: 600px) { .client-workout-plan-dialog { padding: 16px; border-radius: 18px; } }
 .workout-preview-program-switcher { display: flex; flex-wrap: wrap; gap: 7px; margin: 9px 0 13px; }
 .workout-preview-program-switcher button { padding: 7px 11px; border: 1px solid #657068; border-radius: 999px; background: #282c2a; color: #e4eee0; }
-.workout-preview-program-switcher button[aria-current="true"] { border-color: #9cf932; color: #9cf932; }
+.workout-preview-program-switcher button[aria-current="true"] { border-color: var(--client-neon); color: var(--client-neon); }

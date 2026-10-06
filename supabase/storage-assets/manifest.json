@@ -35,7 +35,13 @@
     "20261005014515_update_belt_squat_media.sql",
     "20261005145002_update_45_degree_glute_hip_drive_media.sql",
     "20261005151552_update_neutral_grip_lat_pulldown_media.sql",
-    "20261005154213_update_standing_cable_crunch_star_trac_media.sql"
+    "20261005154213_update_standing_cable_crunch_star_trac_media.sql",
+    "20261005203404_client_community_connections.sql",
+    "20261005211705_community_selective_progress_sharing.sql",
+    "20261005233809_community_avatar_nickname_props.sql",
+    "20261006005906_community_public_progress.sql",
+    "20261006005920_private_community_challenges.sql",
+    "20261006010055_community_challenge_indexes.sql"
   ],
   "nasmExerciseCatalogMigration": "20261001032427_add_complete_nasm_exercise_library.sql",
   "nasmExerciseCatalogCount": 75,

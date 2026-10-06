@@ -1,4 +1,4 @@
-/* Private, opt-in sharing choices for the client Community preview. */
+/* Opt-in sharing choices for client Community. */
 (function attachClientCommunity(root, factory) {
   const api = factory(root);
   if (typeof module === 'object' && module.exports) module.exports = api;
@@ -27,19 +27,21 @@
       xp: panel.querySelector('#client-community-share-xp'),
       badges: panel.querySelector('#client-community-share-badges'),
       workouts: panel.querySelector('#client-community-share-workouts'),
-      gymVisits: panel.querySelector('#client-community-share-gym-visits')
+      gymVisits: panel.querySelector('#client-community-share-gym-visits'),
+      publicProgress: panel.querySelector('#client-community-share-public')
     };
     const save = panel.querySelector('[data-community-save]');
     const status = panel.querySelector('#client-community-consent-status');
     let client = null, userId = '', preview = false, generation = 0, busy = false;
-    let savedChoices = { xp: false, badges: false, workouts: false, gymVisits: false };
+    let savedChoices = { xp: false, badges: false, workouts: false, gymVisits: false, publicProgress: false };
 
     function applyChoices(values) {
       savedChoices = {
         xp: values.xp_opt_in === true,
         badges: values.badges_opt_in === true,
         workouts: values.workout_count_opt_in === true,
-        gymVisits: values.gym_visits_opt_in === true
+        gymVisits: values.gym_visits_opt_in === true,
+        publicProgress: values.public_progress_opt_in === true
       };
       Object.entries(savedChoices).forEach(([key, enabled]) => { choices[key].checked = enabled; });
     }
@@ -54,11 +56,13 @@
       panel.querySelector('#client-community-feature-title').textContent = view.title;
       panel.querySelector('#client-community-feature-body').textContent = view.body;
       const connections = panel.querySelector('[data-community-connections]');
+      const challenges = panel.querySelector('[data-community-challenges]');
       const feature = panel.querySelector('.client-community-feature');
       if (connections && feature) {
         connections.hidden = name !== 'connections';
-        feature.hidden = name === 'connections';
-        if (name === 'connections') void root.FWB_COMMUNITY_CONNECTIONS?.refresh();
+        if (challenges) challenges.hidden = name !== 'challenges';
+        feature.hidden = name !== 'leaderboard';
+        if (name === 'connections' || name === 'challenges') void root.FWB_COMMUNITY_CONNECTIONS?.refresh();
       }
     }
 
@@ -90,13 +94,13 @@
     async function loadChoices(request) {
       try {
         const { data, error } = await request.client.from('client_community_preferences')
-          .select('xp_opt_in,badges_opt_in,workout_count_opt_in,gym_visits_opt_in')
+          .select('xp_opt_in,badges_opt_in,workout_count_opt_in,gym_visits_opt_in,public_progress_opt_in')
           .eq('user_id', request.userId).maybeSingle();
         if (error) throw error;
         if (request.generation !== generation || userId !== request.userId) return;
         applyChoices(data || {});
         status.textContent = data
-          ? 'Your sharing choices are saved. Accepted connections can see only what you enable.'
+          ? 'Your sharing choices are saved. Public visibility is controlled separately.'
           : 'Your milestones are private. All sharing choices are off.';
         setControls(false);
       } catch (_) {
@@ -112,12 +116,13 @@
       const values = { user_id: owner, xp_opt_in: choices.xp.checked,
         badges_opt_in: choices.badges.checked,
         workout_count_opt_in: choices.workouts.checked,
-        gym_visits_opt_in: choices.gymVisits.checked };
+        gym_visits_opt_in: choices.gymVisits.checked,
+        public_progress_opt_in: choices.publicProgress.checked };
       busy = true; setControls(true); status.textContent = 'Saving your sharing choices…';
       try {
         const { data, error } = await client.from('client_community_preferences')
           .upsert(values, { onConflict: 'user_id' })
-          .select('user_id,xp_opt_in,badges_opt_in,workout_count_opt_in,gym_visits_opt_in').single();
+          .select('user_id,xp_opt_in,badges_opt_in,workout_count_opt_in,gym_visits_opt_in,public_progress_opt_in').single();
         if (error || !data || data.user_id !== owner) throw error || new Error('No choices were saved.');
         if (request !== generation || owner !== userId) return;
         applyChoices(data);

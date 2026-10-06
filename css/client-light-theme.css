@@ -115,8 +115,8 @@
 
 :root[data-client-theme="light"] body.client-dashboard-page {
   color-scheme: light;
-  --brand-primary: #a7fa16;
-  --brand-primary-hover: #a7fa16;
+  --brand-primary: #ffd400;
+  --brand-primary-hover: #ffe066;
   --brand-primary-ink: #000;
   --ink: #1b291f;
   --ink-deep: #18221b;
@@ -446,13 +446,15 @@
   .client-community-hero h3, .client-community-feature h3,
   .client-community-consent h3, .client-community-consent label,
   .client-community-connections h3, .client-community-connections label,
+  .client-community-feed h3, .client-community-challenges h3,
   .client-workouts-topbar h2
 ) { color: var(--ink); }
 :root[data-client-theme="light"] body.client-dashboard-page :is(
   .client-weekly-activity, .client-home-glance-list button,
   .client-home-coach-note, .client-community-badges,
   .client-community-tabs, .client-community-feature,
-  .client-community-consent, .client-community-connections, .client-workouts-message-button,
+  .client-community-consent, .client-community-connections, .client-community-feed,
+  .client-community-challenges, .client-workouts-message-button,
   .client-home-settings-button, .client-home-bell
 ) {
   color: var(--ink);
@@ -490,6 +492,15 @@
 :root[data-client-theme="light"] body.client-dashboard-page .client-community-connections button:not(.client-community-leave) {
   color: #000;
   background: var(--brand-primary);
+}
+:root[data-client-theme="light"] body.client-dashboard-page :is(.client-community-challenge-card button, .client-community-challenge-form button) {
+  color: #000;
+  background: var(--brand-primary);
+}
+:root[data-client-theme="light"] body.client-dashboard-page .client-community-challenge-form select {
+  color: var(--ink);
+  background: var(--surface-soft);
+  border-color: var(--line);
 }
 :root[data-client-theme="light"] body.client-dashboard-page #client-workouts-panel.is-choosing-workout {
   color: var(--ink);

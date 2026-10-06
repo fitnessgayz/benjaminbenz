@@ -20,6 +20,7 @@ test('community upload includes earned badge IDs and XP, never workout or health
 test('accepted connection shows shared achievements without reading workout records', async () => {
   const owner = 'owner-id', peer = 'peer-id';
   const calls = [];
+  let createdChallenge;
   function node() {
     return {
       hidden: false, value: '', textContent: '', children: [], listeners: {}, dataset: {},
@@ -34,7 +35,7 @@ test('accepted connection shows shared achievements without reading workout reco
     '#client-community-own-code', '#client-community-invite-code', '[data-community-connection-list]',
     '[data-community-connection-status]', '[data-community-join-button]', '[data-community-invite]',
     '[data-community-copy]', '[data-community-rotate]', '[data-community-leave]',
-    '[data-community-profile-save]', '[data-community-own-props]'
+    '[data-community-profile-save]', '[data-community-own-props]', '[data-community-avatar-more]'
   ].map(selector => [selector, node()]));
   const avatarButtons = ['strength', 'runner', 'cycling', 'boxing', 'yoga', 'swimming', 'martial', 'star']
     .map(id => Object.assign(node(), { dataset: { communityAvatar: id } }));
@@ -42,8 +43,10 @@ test('accepted connection shows shared achievements without reading workout reco
     querySelector: selector => elements[selector],
     querySelectorAll: selector => selector === '[data-community-avatar]' ? avatarButtons : []
   };
+  const publicElements = Object.fromEntries(['[data-community-feed-list]', '[data-community-feed-status]',
+    '[data-community-challenge-list]', '[data-community-challenge-status]'].map(selector => [selector, node()]));
   const document = {
-    querySelector: selector => selector === '[data-community-connections]' ? panel : null,
+    querySelector: selector => selector === '[data-community-connections]' ? panel : publicElements[selector],
     createElement: () => node()
   };
   const rows = {
@@ -59,11 +62,16 @@ test('accepted connection shows shared achievements without reading workout reco
       { user_id: peer, received_count: 4, sent_today: false }]
   };
   const client = {
-    rpc(name) {
+    rpc(name, params) {
       calls.push(name);
-      assert.ok(['community_shared_progress', 'community_props_summary', 'community_give_props'].includes(name));
+      assert.ok(['community_shared_progress', 'community_props_summary', 'community_give_props',
+        'community_public_progress', 'community_challenge_summary', 'community_create_challenge'].includes(name));
+      if (name === 'community_create_challenge') createdChallenge = params;
       return Promise.resolve({ data: name === 'community_shared_progress' ? rows.shared
-        : name === 'community_props_summary' ? rows.props : true, error: null });
+        : name === 'community_props_summary' ? rows.props
+          : name === 'community_public_progress' ? [{ nickname: 'Sam', avatar_id: 'star',
+            xp: null, badge_ids: null, workout_count: 3, gym_visit_count: null }]
+            : name === 'community_challenge_summary' ? [] : true, error: null });
     },
     from(table) {
       calls.push(table);
@@ -102,12 +110,18 @@ test('accepted connection shows shared achievements without reading workout reco
   assert.equal(connection.children.some(child => /XP/.test(child.textContent)), false);
   assert.ok(calls.includes('community_shared_progress'));
   assert.ok(calls.includes('community_props_summary'));
+  assert.ok(calls.includes('community_public_progress'));
+  assert.equal(publicElements['[data-community-feed-list]'].children[0].children[1].textContent, 'Sam');
   assert.equal(calls.includes('client_community_achievements'), false);
   const actions = connection.children.find(child => child.className === 'client-community-connection-actions');
   actions.children[0].listeners.click();
   await new Promise(resolve => setImmediate(resolve));
   await new Promise(resolve => setImmediate(resolve));
   assert.ok(calls.includes('community_give_props'));
+  const challengeForm = connection.children.find(child => child.className === 'client-community-challenge-form');
+  challengeForm.children[2].listeners.click();
+  await new Promise(resolve => setImmediate(resolve));
+  assert.deepEqual(createdChallenge, { p_connection_id: 'connection-id', p_metric: 'workouts', p_target_count: 3 });
   elements['#client-community-display-name'].value = 'Alex Fit';
   avatarButtons.find(button => button.dataset.communityAvatar === 'yoga').listeners.click();
   elements['[data-community-profile-save]'].listeners.click();
