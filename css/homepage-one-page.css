@@ -32,7 +32,7 @@ body.homepage-v2 :is(a, button, input):focus-visible { outline: 3px solid #64930
 .home-art img { display: block; position: absolute; top: -9%; left: 27%; height: 115%; width: auto; max-width: none; filter: sepia(.72) saturate(1.2); }
 .home-header { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
 .home-brand { display: inline-flex; align-items: center; gap: 11px; width: max-content; text-decoration: none; font-size: 15px; font-weight: 850; letter-spacing: -.04em; }
-.home-brand img { width: 43px; height: 43px; border-radius: 11px; object-fit: cover; }
+.home-brand img { width: 54px; height: 28px; object-fit: contain; }
 .home-header-login { display: none; border: 1px solid #a3ff1270; border-radius: 999px; padding: 9px 12px; color: var(--home-lime) !important; font-size: 11px; font-weight: 800; text-decoration: none; }
 .home-eyebrow { margin: 0; color: var(--home-lime); font-size: 11px; font-weight: 800; letter-spacing: .15em; text-transform: uppercase; }
 .home-intro { max-width: 100%; margin-top: clamp(72px, 9vh, 126px); }
@@ -98,7 +98,7 @@ body.homepage-v2 :is(a, button, input):focus-visible { outline: 3px solid #64930
   .home-main, .home-access { padding-right: 23px; padding-left: 23px; }
   .home-brand { gap: 9px; font-size: 12px; line-height: 1.1; }
   .home-brand span { max-width: 120px; }
-  .home-brand img { width: 37px; height: 37px; border-radius: 9px; }
+  .home-brand img { width: 48px; height: 25px; }
   .home-intro h1 { font-size: clamp(27px, 8.2vw, 42px); }
   .home-services { margin-top: 69px; }
   .home-service { grid-template-columns: 26px 1fr; gap: 10px; padding: 13px 0; }
