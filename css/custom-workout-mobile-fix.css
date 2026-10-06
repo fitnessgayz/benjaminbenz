@@ -1,6 +1,21 @@
-/* Loaded after style.css so older portal containment rules cannot reposition
-   the editable custom-workout header or layer suggestions over the form. */
-.dashboard-page .custom-workout-suggestion-menu,
+/* Keep library matches in the form flow, immediately after the search field. */
+.dashboard-page .custom-workout-suggestion-menu {
+  display: block;
+  position: static !important;
+  inset: auto !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  margin-top: 6px !important;
+  margin-bottom: 0 !important;
+  overflow-y: auto !important;
+  box-shadow: none !important;
+}
+
+.dashboard-page .custom-workout-suggestion-menu[hidden] {
+  display: none !important;
+}
+
 .coach-admin-page .custom-workout-suggestion-menu {
   position: static !important;
   inset: auto !important;
@@ -13,7 +28,7 @@
   box-shadow: none !important;
 }
 
-/* Suggestions live above the field, with a dedicated second line for muscles. */
+/* Keep a dedicated second line for muscles. */
 .dashboard-page .custom-workout-suggestion-menu button {
   display: grid !important;
   justify-items: start;
