@@ -20,7 +20,9 @@ create table public.gym_places (
 create index gym_places_coords_idx on public.gym_places (latitude, longitude);
 alter table public.gym_places enable row level security;
 revoke all on public.gym_places from public, anon, authenticated;
-grant select, insert on public.gym_places to authenticated;
+-- Do not expose the submitting client's user id in directory reads.
+grant select (id, source, osm_type, osm_id, kind, name, latitude, longitude,
+  address, website, created_at), insert on public.gym_places to authenticated;
 grant select, insert, update on public.gym_places to service_role;
 create policy "Clients see gym places" on public.gym_places for select to authenticated
   using ((select auth.uid()) is not null);
@@ -41,8 +43,10 @@ create index gym_reviews_gym_created_idx on public.gym_reviews (gym_id, created_
 alter table public.gym_reviews enable row level security;
 revoke all on public.gym_reviews from public, anon, authenticated;
 grant select, insert, update, delete on public.gym_reviews to authenticated;
-create policy "Signed-in clients see reviews" on public.gym_reviews for select to authenticated
-  using ((select auth.uid()) is not null);
+-- The public feed is returned through gym_reviews_for_place, without user ids.
+-- Direct table reads are limited to the client's own rows.
+create policy "Clients see own review rows" on public.gym_reviews for select to authenticated
+  using (user_id = (select auth.uid()));
 create policy "Clients write own reviews" on public.gym_reviews for insert to authenticated
   with check (user_id = (select auth.uid()));
 create policy "Clients edit own reviews" on public.gym_reviews for update to authenticated
@@ -61,10 +65,32 @@ create index gym_review_photos_gym_idx on public.gym_review_photos (gym_id, crea
 alter table public.gym_review_photos enable row level security;
 revoke all on public.gym_review_photos from public, anon, authenticated;
 grant select, insert, delete on public.gym_review_photos to authenticated;
-create policy "Signed-in clients see gym photos" on public.gym_review_photos for select to authenticated
-  using ((select auth.uid()) is not null);
+create policy "Clients see own gym photo rows" on public.gym_review_photos for select to authenticated
+  using (user_id = (select auth.uid()));
+
+-- Check uploaded object ownership without exposing storage owner ids or relying
+-- on the photo row being present before it is inserted.
+create function public.gym_review_photo_owned(p_path text) returns boolean
+language sql stable security definer set search_path = '' as $$
+  select (select auth.uid()) is not null and exists (
+    select 1 from storage.objects object
+    where object.bucket_id = 'gym-review-photos' and object.name = p_path
+      and object.owner_id = (select auth.uid())::text
+  );
+$$;
+revoke all on function public.gym_review_photo_owned(text) from public, anon;
+grant execute on function public.gym_review_photo_owned(text) to authenticated;
+
+create function public.gym_review_photo_exists(p_path text) returns boolean
+language sql stable security definer set search_path = '' as $$
+  select (select auth.uid()) is not null and exists (
+    select 1 from public.gym_review_photos photo where photo.storage_path = p_path
+  );
+$$;
+revoke all on function public.gym_review_photo_exists(text) from public, anon;
+grant execute on function public.gym_review_photo_exists(text) to authenticated;
 create policy "Clients attach photos to own review" on public.gym_review_photos for insert to authenticated
-  with check (user_id = (select auth.uid()) and split_part(storage_path, '/', 1) = user_id::text and exists (
+  with check (user_id = (select auth.uid()) and public.gym_review_photo_owned(storage_path) and exists (
     select 1 from public.gym_reviews review
     where review.gym_id = gym_review_photos.gym_id and review.user_id = (select auth.uid())
   ));
@@ -109,12 +135,9 @@ values ('gym-review-photos', 'gym-review-photos', false, 5242880,
   array['image/jpeg', 'image/png', 'image/webp'])
 on conflict (id) do nothing;
 create policy "Signed-in clients view gym review images" on storage.objects for select to authenticated
-  using (bucket_id = 'gym-review-photos' and exists (
-    select 1 from public.gym_review_photos photo where photo.storage_path = name
-  ));
+  using (bucket_id = 'gym-review-photos' and public.gym_review_photo_exists(name));
 create policy "Clients upload gym review images" on storage.objects for insert to authenticated
-  with check (bucket_id = 'gym-review-photos' and owner_id = (select auth.uid())::text
-    and (storage.foldername(name))[1] = (select auth.uid())::text);
+  with check (bucket_id = 'gym-review-photos' and owner_id = (select auth.uid())::text);
 create policy "Clients remove own gym review images" on storage.objects for delete to authenticated
   using (bucket_id = 'gym-review-photos' and owner_id = (select auth.uid())::text);
 

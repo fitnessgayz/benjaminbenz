@@ -158,7 +158,7 @@
       if (error) throw error;
       for (const file of files) {
         const image = await photoWithoutMetadata(file);
-        const path = `${auth.user.id}/${crypto.randomUUID()}.jpg`;
+        const path = `${crypto.randomUUID()}.jpg`;
         const { error: uploadError } = await supabaseClient.storage.from("gym-review-photos").upload(path, image, { contentType: "image/jpeg", upsert: false });
         if (uploadError) throw uploadError;
         const { error: rowError } = await supabaseClient.from("gym_review_photos").insert({ gym_id: place.id, user_id: auth.user.id, storage_path: path });

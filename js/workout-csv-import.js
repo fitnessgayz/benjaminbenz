@@ -100,16 +100,15 @@
       const title = source === "hevy" ? (record.title || "Workout").slice(0, 100) : "Workout";
       const stamp = String(rawDate || "").trim();
       const key = `${source}|${date}|${stamp}|${title}`;
-      if (!groups.has(key)) groups.set(key, { date, title, stamp, exercises: new Map(), rows: [] });
+      if (!groups.has(key)) groups.set(key, { date, title, stamp, exercises: new Map(), usedNumbers: new Map(), rows: [] });
       const group = groups.get(key);
       if (!group.exercises.has(exercise)) group.exercises.set(exercise, group.exercises.size + 1);
       const exerciseOrder = group.exercises.get(exercise);
-      const sameExercise = group.rows.filter((row) => row.exercise_code === String(exerciseOrder));
+      if (!group.usedNumbers.has(exerciseOrder)) group.usedNumbers.set(exerciseOrder, { numbers: new Set(), next: 1 });
+      const used = group.usedNumbers.get(exerciseOrder);
       let setNumber = source === "hevy" && Number.isInteger(Number(record.set_index)) && record.set_index !== ""
-        ? Number(record.set_index) + 1 : sameExercise.length + 1;
-      if (sameExercise.some((row) => row.set_number === setNumber)) {
-        setNumber = Math.max(...sameExercise.map((row) => row.set_number)) + 1;
-      }
+        ? Number(record.set_index) + 1 : used.next;
+      if (used.numbers.has(setNumber)) setNumber = used.next;
       if (setNumber < 1 || setNumber > 200) { skipped += 1; continue; }
       const setType = weight === null && reps === null && duration ? "timed" :
         normalizedSetType(source === "hevy" ? record.set_type : "", source === "fitbod" && /^(true|1|yes)$/i.test(record.iswarmup), duration);
@@ -128,9 +127,11 @@
         reps, duration_seconds: duration || null, notes: notes || null,
         effort_scale: rpe !== null && rpe >= 1 && rpe <= 10 ? "rpe" : null,
         effort_value: rpe !== null && rpe >= 1 && rpe <= 10 ? rpe : null });
+      used.numbers.add(setNumber);
+      used.next = Math.max(used.next, setNumber + 1);
     }
     const workouts = [...groups.values()].map((group) => ({
-      ...group,
+      date: group.date, title: group.title, stamp: group.stamp, rows: group.rows,
       // The source and start time make repeated imports stable and avoid replacing manually logged sets.
       workout_title: `${source === "hevy" ? "Hevy" : "Fitbod"} import · ${group.title} · ${group.stamp}`.slice(0, 240)
     }));
