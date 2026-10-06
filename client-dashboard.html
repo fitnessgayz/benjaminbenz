@@ -68,10 +68,10 @@
   <link rel="stylesheet" href="/css/fwb-dark-theme.css?v=deep-forest-9" />
   <link rel="stylesheet" href="css/client-quarterly-goals.css?v=1" />
   <link rel="stylesheet" href="css/client-workout-hub.css?v=5" />
-  <link rel="stylesheet" href="css/client-home-community.css?v=6" />
+  <link rel="stylesheet" href="css/client-home-community.css?v=7" />
   <link rel="stylesheet" href="css/client-fascia-backgrounds.css?v=2" />
   <link rel="stylesheet" href="css/client-settings-navigation.css?v=2" />
-  <link rel="stylesheet" href="css/client-light-theme.css?v=6" />
+  <link rel="stylesheet" href="css/client-light-theme.css?v=7" />
   <link rel="stylesheet" href="css/client-gym-location.css?v=1" />
 </head>
 <body class="dashboard-page client-dashboard-page is-loading">
@@ -299,6 +299,30 @@
           </div>
           <article class="client-community-feature"><span class="client-community-feature-icon" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"><path d="M9 4h14v8c0 5-3 8-7 8s-7-3-7-8V4ZM9 7H4v3c0 5 3 7 7 7m12-10h5v3c0 5-3 7-7 7M16 20v5m-6 3h12m-10-3h8"/></svg></span><span class="client-community-coming">Coming Soon</span><h3 id="client-community-feature-title">Celebrate Your Consistency</h3><p id="client-community-feature-body">Compare XP, levels, and badges with other clients who choose to join. Weekly rankings give everyone a fresh start.</p></article>
           <section class="client-community-challenges" data-community-challenges hidden>
+            <div class="client-daily-challenge" data-daily-challenge>
+              <h3>Today's challenge</h3>
+              <p>Pick an easy day or workout day. One random challenge stays yours for today; you can reroll once. Gentle activities are self-reported. Logged workouts and gym check-ins count automatically.</p>
+              <div class="client-daily-actions" data-daily-picker>
+                <button type="button" data-daily-draw="false">Easy day</button>
+                <button type="button" data-daily-draw="true">Workout day</button>
+              </div>
+              <div data-daily-card hidden>
+                <small data-daily-category></small>
+                <h4 data-daily-title></h4>
+                <p data-daily-instruction></p>
+                <div class="client-daily-actions">
+                  <button type="button" data-daily-complete>Mark complete</button>
+                  <button type="button" data-daily-reroll>Try another (1 left)</button>
+                  <button type="button" data-daily-refresh>Refresh status</button>
+                </div>
+              </div>
+              <p data-daily-status role="status"></p>
+            </div>
+            <div class="client-daily-wins">
+              <h3>Shared daily wins</h3>
+              <p>Only clients who turn on daily challenge sharing appear here by nickname and avatar.</p>
+              <div data-daily-wins></div>
+            </div>
             <h3>Private challenges</h3>
             <p>Challenge an accepted connection to complete weekly workouts or gym visits. Your friend must accept before the seven-day challenge starts.</p>
             <div data-community-challenge-list></div>
@@ -354,6 +378,7 @@
             <label><input type="checkbox" id="client-community-share-badges" /><span><strong>Earned badges</strong><small>Show the badges you have earned.</small></span></label>
             <label><input type="checkbox" id="client-community-share-workouts" /><span><strong>Completed workouts</strong><small>Show your total completed workout count.</small></span></label>
             <label><input type="checkbox" id="client-community-share-gym-visits" /><span><strong>Gym visit count</strong><small>Show how many days you checked in. Your gym location stays private.</small></span></label>
+            <label><input type="checkbox" id="client-community-share-daily" /><span><strong>Daily challenge wins</strong><small>Show a completed challenge by nickname and avatar to all signed-in clients. Off by default.</small></span></label>
             <button class="client-community-save" type="button" data-community-save>Save sharing choices</button>
             <p id="client-community-consent-status" role="status">Your activity is private.</p>
           </section>
@@ -1283,7 +1308,7 @@
   <script src="js/workout-generator.js?v=4"></script>
   <script src="js/workout-generator-dialog.js?v=5"></script>
   <script src="js/client-workout-plans.js?v=2"></script>
-  <script src="js/client-community.js?v=3"></script>
+  <script src="js/client-community.js?v=4"></script>
   <script src="js/client-community-connections.js?v=3"></script>
   <script src="js/apple-health-sync.js?v=1"></script>
   <dialog id="client-quarter-goals-dialog" aria-labelledby="quarter-goal-dialog-title"></dialog>

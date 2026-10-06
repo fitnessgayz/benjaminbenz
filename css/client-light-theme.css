@@ -502,6 +502,12 @@
   background: var(--surface-soft);
   border-color: var(--line);
 }
+:root[data-client-theme="light"] body.client-dashboard-page :is(.client-daily-challenge, .client-daily-wins) {
+  color: var(--ink);
+  background: var(--surface-soft);
+  border-color: var(--line);
+}
+:root[data-client-theme="light"] body.client-dashboard-page .client-daily-challenge h4 { color: var(--ink); }
 :root[data-client-theme="light"] body.client-dashboard-page #client-workouts-panel.is-choosing-workout {
   color: var(--ink);
   background: var(--canvas);
