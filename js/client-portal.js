@@ -5631,13 +5631,6 @@ function exerciseCard(exercise, workoutTitle, isOpen = false, workoutFocus = "",
           <strong class="custom-workout-collapsed-name" data-exercise-collapsed-name>${escapeHtml(exerciseName || "Exercise name")}</strong>
           <strong class="custom-workout-editable-title" data-exercise-title>
             <span class="custom-workout-name-editor">
-              <span
-                class="custom-workout-suggestion-menu"
-                id="${suggestionMenuId}"
-                role="listbox"
-                data-custom-exercise-suggestions
-                hidden
-              ></span>
               <input
                 type="text"
                 value="${escapeHtml(exerciseName)}"
@@ -5650,6 +5643,8 @@ function exerciseCard(exercise, workoutTitle, isOpen = false, workoutFocus = "",
                 data-exercise-title-name
                 data-exercise-name-input
               />
+              <span class="custom-workout-suggestion-menu" id="${suggestionMenuId}"
+                role="listbox" data-custom-exercise-suggestions hidden></span>
             </span>
           </strong>
           <small data-set-progress>0 / ${setCount} working sets completed</small>
@@ -9252,13 +9247,6 @@ function customWorkoutGroupNameRowMarkup(exercise, format, groupIndex, index, na
     <div class="custom-workout-group-name-row">
       <span class="custom-workout-name-editor">
         <label class="custom-workout-group-name-label" for="custom-group-exercise-name-${groupKey}-${index}">${escapeHtml(position)}</label>
-        <span
-          class="custom-workout-suggestion-menu"
-          id="${suggestionMenuId}"
-          role="listbox"
-          data-custom-exercise-suggestions
-          hidden
-        ></span>
         <input
           id="custom-group-exercise-name-${groupKey}-${index}"
           type="text"
@@ -9273,6 +9261,8 @@ function customWorkoutGroupNameRowMarkup(exercise, format, groupIndex, index, na
           data-exercise-title-name
           data-exercise-name-input
         />
+        <span class="custom-workout-suggestion-menu" id="${suggestionMenuId}"
+          role="listbox" data-custom-exercise-suggestions hidden></span>
       </span>
       <button
         class="custom-workout-group-name-delete"
@@ -9340,13 +9330,6 @@ function customWorkoutCardMarkup(exercise, workoutTitle, index = 0, options = {}
           <strong class="custom-workout-collapsed-name" data-exercise-collapsed-name>${escapeHtml(exerciseName || "Exercise name")}</strong>
           <strong class="custom-workout-editable-title" data-exercise-title>
             <span class="custom-workout-name-editor">
-              <span
-                class="custom-workout-suggestion-menu"
-                id="${suggestionMenuId}"
-                role="listbox"
-                data-custom-exercise-suggestions
-                hidden
-              ></span>
               <input
                 type="text"
                 value="${escapeHtml(exerciseName)}"
@@ -9359,6 +9342,8 @@ function customWorkoutCardMarkup(exercise, workoutTitle, index = 0, options = {}
                 data-exercise-title-name
                 data-exercise-name-input
               />
+              <span class="custom-workout-suggestion-menu" id="${suggestionMenuId}"
+                role="listbox" data-custom-exercise-suggestions hidden></span>
             </span>
           </strong>
           <small data-set-progress>0 / ${customWorkoutDefaultWorkingSetCount} working sets completed</small>

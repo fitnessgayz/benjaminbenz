@@ -45,6 +45,10 @@ test("the exercise list offers Add exercise and picker starts with results below
   assert.ok(dialogSource.indexOf('id="custom-workout-picker-search"') < dialogSource.indexOf('id="custom-workout-picker-options"'));
   assert.match(dialogSource, /data-workout-picker-filter/);
   assert.match(dialogSource, /renderCustomWorkoutPickerResults\(dialog\)/);
+  for (const name of ["exerciseCard", "customWorkoutGroupNameRowMarkup", "customWorkoutCardMarkup"]) {
+    const markup = declaration(name);
+    assert.ok(markup.indexOf("data-exercise-title-name") < markup.indexOf("data-custom-exercise-suggestions"), `${name} shows inline matches below the name field`);
+  }
 });
 
 test("picker can browse without a query and filter results by muscle group", () => {
