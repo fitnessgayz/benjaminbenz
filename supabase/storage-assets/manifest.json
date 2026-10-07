@@ -3215,30 +3215,30 @@
       "cacheControl": 31536000
     },
     {
-      "source": "supabase/storage-assets/exercise-images/approved/2026-10-07/png/single-arm-machine-row-straddle.png",
+      "source": "supabase/storage-assets/exercise-images/approved/2026-10-07/png/single-arm-machine-row.png",
       "bucket": "exercise-images",
-      "objectPath": "approved/2026-10-07/png/single-arm-machine-row-straddle.png",
+      "objectPath": "approved/2026-10-07/png/single-arm-machine-row.png",
       "contentType": "image/png",
       "cacheControl": 31536000
     },
     {
-      "source": "supabase/storage-assets/exercise-images/approved/2026-10-07/webp-480/single-arm-machine-row-straddle.webp",
+      "source": "supabase/storage-assets/exercise-images/approved/2026-10-07/webp-480/single-arm-machine-row.webp",
       "bucket": "exercise-images",
-      "objectPath": "approved/2026-10-07/webp-480/single-arm-machine-row-straddle.webp",
+      "objectPath": "approved/2026-10-07/webp-480/single-arm-machine-row.webp",
       "contentType": "image/webp",
       "cacheControl": 31536000
     },
     {
-      "source": "supabase/storage-assets/exercise-images/approved/2026-10-07/webp-768/single-arm-machine-row-straddle.webp",
+      "source": "supabase/storage-assets/exercise-images/approved/2026-10-07/webp-768/single-arm-machine-row.webp",
       "bucket": "exercise-images",
-      "objectPath": "approved/2026-10-07/webp-768/single-arm-machine-row-straddle.webp",
+      "objectPath": "approved/2026-10-07/webp-768/single-arm-machine-row.webp",
       "contentType": "image/webp",
       "cacheControl": 31536000
     },
     {
-      "source": "supabase/storage-assets/exercise-videos/generated/2026-10-07/single-arm-machine-row-straddle.mp4",
+      "source": "supabase/storage-assets/exercise-videos/generated/2026-10-07/single-arm-machine-row.mp4",
       "bucket": "exercise-videos",
-      "objectPath": "generated/2026-10-07/single-arm-machine-row-straddle.mp4",
+      "objectPath": "generated/2026-10-07/single-arm-machine-row.mp4",
       "contentType": "video/mp4",
       "cacheControl": 31536000
     }
@@ -4057,9 +4057,9 @@
       "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-videos/generated/2026-10-06/decline-cable-chest-press-underhand.mp4"
     },
     {
-      "name": "Single-Arm Machine Row (Straddle)",
-      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-10-07/webp-768/single-arm-machine-row-straddle.webp",
-      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-videos/generated/2026-10-07/single-arm-machine-row-straddle.mp4"
+      "name": "Single-Arm Machine Row",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-10-07/webp-768/single-arm-machine-row.webp",
+      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-videos/generated/2026-10-07/single-arm-machine-row.mp4"
     }
   ]
 }
