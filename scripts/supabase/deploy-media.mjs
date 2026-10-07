@@ -173,7 +173,19 @@ async function verifyAssets(baseUrl) {
   for (const asset of manifest.assets) {
     const { bytes } = await loadAsset(asset);
     const expectedHash = sha256(bytes);
-    const response = await fetch(`${publicObjectUrl(baseUrl, asset)}?sha256=${expectedHash}`);
+    const url = `${publicObjectUrl(baseUrl, asset)}?sha256=${expectedHash}`;
+    let response;
+    let lastError;
+    for (let attempt = 1; attempt <= 3; attempt += 1) {
+      try {
+        response = await fetch(url);
+        if (response.ok || (response.status < 500 && response.status !== 429)) break;
+      } catch (error) {
+        lastError = error;
+      }
+      if (attempt < 3) await new Promise((resolve) => setTimeout(resolve, attempt * 500));
+    }
+    if (!response) throw lastError;
     assert(response.ok, `Public URL failed for ${asset.bucket}/${asset.objectPath}: HTTP ${response.status}`);
     const remoteBytes = Buffer.from(await response.arrayBuffer());
     assert(sha256(remoteBytes) === expectedHash, `Checksum mismatch for ${asset.bucket}/${asset.objectPath}`);
