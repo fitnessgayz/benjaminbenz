@@ -1,0 +1,174 @@
+/* Saved Logs follows the approved iPhone calendar, with round logged dates. */
+body.client-dashboard-page {
+  --saved-log-surface: #24262b;
+  --saved-log-line: #464950;
+  --saved-log-text: #f6f7f8;
+  --saved-log-muted: #b7bac1;
+  --saved-log-gold: #ffd500;
+  --saved-log-blue: #68b7f5;
+}
+
+:root[data-client-theme="light"] body.client-dashboard-page {
+  --saved-log-surface: #fff;
+  --saved-log-line: #c9d3df;
+  --saved-log-text: #15253b;
+  --saved-log-muted: #526176;
+  --saved-log-gold: #ffd500;
+  --saved-log-blue: #116bc6;
+}
+
+.client-saved-log-calendar {
+  max-width: 560px;
+  margin: 0 0 16px;
+  padding: 14px;
+  background: var(--saved-log-surface);
+  border: 1px solid var(--saved-log-line);
+  border-radius: 22px;
+  color: var(--saved-log-text);
+}
+
+.client-saved-log-month-row {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) 36px;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 9px;
+  text-align: center;
+}
+
+.client-saved-log-month-row strong { font-size: 1.08rem; }
+
+.dashboard-page .client-saved-log-month-row button {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid var(--saved-log-line);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--saved-log-blue);
+  font-size: 1.7rem;
+  line-height: 1;
+}
+
+.client-saved-log-weekdays,
+.client-saved-log-days {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  justify-items: center;
+  gap: 3px;
+}
+
+.client-saved-log-weekdays {
+  color: var(--saved-log-muted);
+  font-size: .72rem;
+  text-align: center;
+}
+
+.client-saved-log-weekdays span { padding: 5px 0; }
+.client-saved-log-days > span { width: 100%; }
+
+.dashboard-page .client-saved-log-day {
+  display: grid;
+  place-items: center;
+  width: min(100%, 42px);
+  aspect-ratio: 1;
+  min-height: 36px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--saved-log-text);
+  font-size: .96rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.dashboard-page .client-saved-log-day[data-has-log="true"] {
+  background: var(--saved-log-gold);
+  color: #111215;
+}
+
+.dashboard-page .client-saved-log-day[aria-pressed="true"] {
+  outline: 2px solid var(--saved-log-blue);
+  outline-offset: 2px;
+}
+
+.dashboard-page .client-saved-log-day:focus-visible,
+.dashboard-page .client-saved-log-month-row button:focus-visible {
+  outline: 3px solid var(--saved-log-blue);
+  outline-offset: 2px;
+}
+
+.client-saved-log-key {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 2px 0;
+  color: var(--saved-log-muted);
+  font-size: .78rem;
+}
+
+.client-saved-log-key span {
+  width: 12px;
+  height: 12px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--saved-log-gold);
+}
+
+.client-saved-log-selected {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 12px;
+}
+
+.client-saved-log-selected > div > span,
+.client-saved-log-selected > strong {
+  color: var(--saved-log-blue);
+  font-size: .72rem;
+  font-weight: 800;
+  letter-spacing: .08em;
+}
+
+body.client-dashboard-page .client-saved-log-selected h3 {
+  margin: 3px 0 0;
+  color: var(--saved-log-text) !important;
+  font-size: 1.15rem;
+}
+
+.client-saved-set-list { display: grid; gap: 6px; margin-top: 8px; }
+.client-saved-set-locked { margin: 0 0 8px; color: var(--saved-log-muted); font-size: .85rem; }
+.client-saved-set-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.client-saved-set-row > span { color: var(--saved-log-muted); font-size: .85rem; }
+.dashboard-page .client-saved-set-row button { padding: 5px 9px; border: 1px solid var(--saved-log-line); border-radius: 8px; color: var(--saved-log-blue); background: transparent; font-size: .76rem; }
+
+.client-saved-set-dialog {
+  width: min(94vw, 430px);
+  max-height: min(88vh, 700px);
+  overflow: auto;
+  padding: 20px;
+  border: 1px solid var(--saved-log-line);
+  border-radius: 20px;
+  background: var(--saved-log-surface);
+  color: var(--saved-log-text);
+}
+
+.client-saved-set-dialog::backdrop { background: rgb(0 0 0 / 68%); }
+.client-saved-set-dialog-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.client-saved-set-dialog-heading h3 { margin: 0; }
+.dashboard-page .client-saved-set-dialog-heading button { border: 0; background: transparent; color: var(--saved-log-blue); font-size: 1.8rem; }
+.client-saved-set-dialog p { color: var(--saved-log-muted); }
+.client-saved-set-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.client-saved-set-dialog label { display: grid; gap: 6px; font-weight: 700; }
+.client-saved-set-dialog :is(input, textarea) { width: 100%; padding: 10px; border: 1px solid var(--saved-log-line); border-radius: 9px; background: transparent; color: var(--saved-log-text); font: inherit; }
+.client-saved-set-notes { margin-top: 12px; }
+.client-saved-set-actions { display: flex; justify-content: end; gap: 8px; margin-top: 16px; }
+.dashboard-page .client-saved-set-actions .button-primary { color: #111215; background: var(--saved-log-gold); }
+
+@media (max-width: 500px) {
+  .client-saved-log-calendar { padding: 12px 8px; }
+  .client-saved-log-selected { align-items: center; }
+  .client-saved-set-row { align-items: start; }
+}
