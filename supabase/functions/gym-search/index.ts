@@ -63,8 +63,9 @@ async function geoapifyPlaces(lat: number, lon: number, apiKey: string): Promise
   });
 }
 
-async function overpassPlaces(lat: number, lon: number): Promise<ProviderPlace[]> {
-  const query = `[out:json][timeout:12];(nwr(around:5000,${lat},${lon})["leisure"="fitness_centre"];nwr(around:5000,${lat},${lon})["leisure"="sports_centre"]["sport"~"(^|;)fitness(;|$)"];nwr(around:5000,${lat},${lon})["tourism"="hotel"]["fitness_centre"="yes"];nwr(around:5000,${lat},${lon})["tourism"="hotel"]["gym"="yes"];);out center 100;`;
+async function overpassPlaces(lat: number, lon: number, hotelOnly = false): Promise<ProviderPlace[]> {
+  const gyms = hotelOnly ? "" : `nwr(around:5000,${lat},${lon})["leisure"="fitness_centre"];nwr(around:5000,${lat},${lon})["leisure"="sports_centre"]["sport"~"(^|;)fitness(;|$)"];`;
+  const query = `[out:json][timeout:12];(${gyms}nwr(around:5000,${lat},${lon})["tourism"="hotel"]["fitness_centre"="yes"];nwr(around:5000,${lat},${lon})["tourism"="hotel"]["gym"="yes"];);out center 100;`;
   const providers = ["https://overpass.private.coffee/api/interpreter", "https://overpass-api.de/api/interpreter"];
   let data: Record<string, unknown> | null = null;
   for (const provider of providers) {
@@ -72,7 +73,7 @@ async function overpassPlaces(lat: number, lon: number): Promise<ProviderPlace[]
       const response = await fetch(provider, {
         method: "POST", body: new URLSearchParams({ data: query }),
         headers: { "User-Agent": "FitnessWithBenjamin-GymFinder/1.0 (fwb@benjaminbenz.com)" },
-        signal: AbortSignal.timeout(7000)
+        signal: AbortSignal.timeout(hotelOnly ? 4000 : 7000)
       });
       if (!response.ok) continue;
       const result = await response.json();
@@ -119,34 +120,44 @@ serve(async (request) => {
   // Round to a shared ~1 km grid before querying/caching; never store exact device location.
   const lat = Math.round(latitude * 100) / 100;
   const lon = Math.round(longitude * 100) / 100;
-  const key = `${lat.toFixed(2)}:${lon.toFixed(2)}`;
+  // Version the cache when adding hotel gyms so older gym-only results refresh.
+  const key = `v3:${lat.toFixed(2)}:${lon.toFixed(2)}`;
   const admin = createClient(url, serviceKey);
-  const { data: cached } = await admin.from("gym_search_cache").select("place_ids,expires_at").eq("cache_key", key).maybeSingle();
+  const { data: cached } = await admin.from("gym_search_cache").select("place_ids,expires_at,partial").eq("cache_key", key).maybeSingle();
   let ids: string[] = cached?.place_ids || [];
   let fromCache = Boolean(cached && Date.parse(cached.expires_at) > Date.now());
-  let partial = false;
+  let partial = fromCache && Boolean(cached?.partial);
 
   if (!fromCache) {
     try {
-      // Geoapify is a reliable keyed source. Keep Overpass as a no-key and
-      // provider-outage fallback; never expose the API key to clients.
+      // Geoapify supplies gyms. OSM explicitly tagged hotel gyms supplement it;
+      // an ordinary hotel must never be presented as having a gym.
       const geoapifyKey = Deno.env.get("GEOAPIFY_API_KEY") || "";
-      let places: ProviderPlace[] = [];
+      let geoapify: ProviderPlace[] = [];
       if (geoapifyKey) {
-        try { places = await geoapifyPlaces(lat, lon, geoapifyKey); }
+        try { geoapify = await geoapifyPlaces(lat, lon, geoapifyKey); }
         catch { /* Fall through to OSM. */ }
       }
-      const source = places.length ? "geoapify" : "osm";
-      if (!places.length) places = await overpassPlaces(lat, lon);
-      const { data: saved, error } = places.length
-        ? await admin.from("gym_places").upsert(places, {
-          onConflict: source === "geoapify" ? "provider_place_id" : "osm_type,osm_id"
-        }).select("id")
-        : { data: [], error: null };
-      if (error) throw error;
-      ids = (saved || []).map((place: { id: string }) => place.id);
-      await admin.from("gym_search_cache").upsert({ cache_key: key, place_ids: ids,
-        expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() });
+      let osm: ProviderPlace[] = [];
+      if (geoapify.length) {
+        try { osm = await overpassPlaces(lat, lon, true); }
+        catch { partial = true; }
+      } else {
+        osm = await overpassPlaces(lat, lon);
+      }
+      const save = async (places: ProviderPlace[], onConflict: string) => {
+        if (!places.length) return [];
+        const { data, error } = await admin.from("gym_places")
+          .upsert(places, { onConflict }).select("id");
+        if (error) throw error;
+        return (data || []).map((place: { id: string }) => place.id);
+      };
+      ids = [
+        ...await save(geoapify, "provider_place_id"),
+        ...await save(osm, "osm_type,osm_id")
+      ];
+      await admin.from("gym_search_cache").upsert({ cache_key: key, place_ids: ids, partial,
+        expires_at: new Date(Date.now() + (partial ? 15 : 24 * 60) * 60 * 1000).toISOString() });
     } catch {
       partial = true;
       fromCache = true;

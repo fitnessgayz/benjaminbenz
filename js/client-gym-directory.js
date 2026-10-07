@@ -9,6 +9,15 @@
   const details = $("#gym-directory-detail");
   const reviews = $("#gym-directory-reviews");
   const gallery = $("#gym-directory-gallery");
+  const providerPhotoSection = $("#gym-directory-provider-photo-section");
+  const providerPhoto = $("#gym-directory-provider-photo");
+  const providerPhotoEmpty = $("#gym-directory-provider-photo-empty");
+  const providerPhotoCache = new Map();
+  providerPhoto.querySelector("img").addEventListener("error", () => {
+    providerPhoto.hidden = true;
+    providerPhotoEmpty.textContent = "This gym's Geoapify image could not load. Clients can add a photo below.";
+    providerPhotoEmpty.hidden = false;
+  });
   const host = document.getElementById("gym-directory-panel-host");
   const equipment = {
     free_weights: "Free weights", dumbbells: "Dumbbells", barbells: "Barbells",
@@ -29,6 +38,7 @@
   let clientPlaces = [];
   let selected = null;
   let photos = [];
+  let searchPartial = false;
 
   function optionLabels(selector, choices) {
     $(selector).innerHTML = Object.entries(choices).map(([id, label]) =>
@@ -61,7 +71,9 @@
   function renderPlaces() {
     const nearby = visible(places);
     results.innerHTML = nearby.length ? nearby.map(placeHTML).join("")
-      : '<p class="empty-state">Search near you for mapped gyms.</p>';
+      : $("#gym-directory-hotels").checked
+        ? `<p class="empty-state">${searchPartial ? "Hotel gym search is busy. Try again later or add a hotel below." : "No mapped hotels with a confirmed gym nearby yet. You can add one below."}</p>`
+        : '<p class="empty-state">Search near you for mapped gyms.</p>';
     const added = visible(clientPlaces);
     clientResults.innerHTML = added.length ? added.map(placeHTML).join("")
       : '<p class="empty-state">No client-added gyms yet.</p>';
@@ -139,6 +151,33 @@
       gallery.append(figure);
     });
   }
+  async function loadProviderPhoto(place) {
+    providerPhotoSection.hidden = place.source !== "geoapify";
+    providerPhoto.hidden = true;
+    providerPhotoEmpty.hidden = true;
+    providerPhoto.querySelector("img").removeAttribute("src");
+    if (place.source !== "geoapify") return;
+    let result = providerPhotoCache.get(place.id);
+    if (!result) {
+      const { data, error } = await supabaseClient.functions.invoke("gym-place-photo", {
+        body: { gym_id: place.id }
+      });
+      result = error ? { error: true } : data;
+      if (!error) providerPhotoCache.set(place.id, result);
+    }
+    if (selected?.id !== place.id) return;
+    if (result?.image_url && result?.source_url) {
+      providerPhoto.querySelector("img").src = result.image_url;
+      providerPhoto.querySelector("img").alt = `Photo associated with ${place.name}`;
+      providerPhoto.querySelector("a").href = result.source_url;
+      providerPhoto.hidden = false;
+    } else {
+      providerPhotoEmpty.textContent = result?.error
+        ? "Could not check Geoapify for a photo right now."
+        : "Geoapify has no photo for this gym. Clients can add one below.";
+      providerPhotoEmpty.hidden = false;
+    }
+  }
   async function loadFeatures(place) {
     const [combined, user, own] = await Promise.all([
       supabaseClient.rpc("gym_features_for_place", { p_gym_id: place.id }),
@@ -176,7 +215,7 @@
     details.hidden = false;
     $("#gym-directory-place-name").textContent = place.name;
     $("#gym-directory-use").hidden = !targetInput;
-    await Promise.all([loadReviews(place), loadPhotos(place), loadFeatures(place)]);
+    await Promise.all([loadReviews(place), loadPhotos(place), loadFeatures(place), loadProviderPhoto(place)]);
     details.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
@@ -193,12 +232,13 @@
       const { data, error } = await supabaseClient.functions.invoke("gym-search", { body: location });
       if (error || !Array.isArray(data?.places)) throw new Error(data?.error || "Gym search is unavailable right now.");
       places = data.places;
+      searchPartial = Boolean(data.partial);
       $("#gym-directory-geoapify-credit").hidden = !places.some((place) => place.source === "geoapify");
       selected = null;
       details.hidden = true;
       renderPlaces();
       status.textContent = data.partial
-        ? "Map search is busy. Showing saved and client-added gyms."
+        ? `${places.length} nearby gyms found. Hotel gym results may be incomplete while the map service is busy.`
         : `${places.length} nearby gyms found${data.stale ? " (cached results)" : ""}.`;
     } catch (error) {
       status.textContent = error?.code === 1 ? "Allow location access to search nearby gyms. Client-added gyms are shown below."

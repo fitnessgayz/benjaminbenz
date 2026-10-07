@@ -24,6 +24,9 @@
 .gym-directory-gallery figure { margin: 0; }
 .gym-directory-gallery img { width: 110px; height: 110px; object-fit: cover; border-radius: 8px; }
 .gym-directory-gallery figcaption { font-size: 12px; }
+#gym-directory-provider-photo { margin: 0; }
+#gym-directory-provider-photo img { display: block; width: min(100%, 420px); max-height: 250px; object-fit: cover; border-radius: 10px; }
+#gym-directory-provider-photo figcaption { font-size: 12px; margin-top: 5px; }
 .gym-directory-add textarea { min-height: 75px; }
 .gym-directory-dialog[hidden], .gym-directory-detail[hidden] { display: none; }
 .gym-directory-header, .gym-directory-actions, .gym-directory-place {

@@ -23,8 +23,9 @@ function handlerWith({ fetchProvider, cached = null, clients = [], apiKey = "" }
       limit: async () => ({ data: clients }),
       upsert: (places, options) => {
         upserts.push({ places, options });
-        savedPlaces = places.map((place, index) => ({ ...place, id: `provider-${index}` }));
-        return { select: async () => ({ data: savedPlaces.map(({ id }) => ({ id })), error: null }) };
+        const added = places.map((place, index) => ({ ...place, id: `provider-${upserts.length}-${index}` }));
+        savedPlaces.push(...added);
+        return { select: async () => ({ data: added.map(({ id }) => ({ id })), error: null }) };
       }
     }
   };
@@ -77,27 +78,53 @@ test("map provider outage still returns signed-in client-added gyms", async () =
   assert.equal(h.attempts(), 2);
 });
 
-test("Geoapify gyms use server-side key and stable provider ids", async () => {
-  let request;
+test("Geoapify gyms use server-side key and supplement OSM-tagged hotel gyms", async () => {
+  let geoapifyRequest;
+  let hotelQuery;
   const h = handlerWith({
     apiKey: "private-key",
     fetchProvider: async (url, options) => {
-      request = { url, options };
-      return { ok: true, json: async () => ({ features: [{ properties: {
-        place_id: "place-123", name: "City Gym", lat: 37.77, lon: -122.42,
-        formatted: "123 Main St"
-      } }] }) };
+      if (url.includes("geoapify")) {
+        geoapifyRequest = { url, options };
+        return { ok: true, json: async () => ({ features: [{ properties: {
+          place_id: "place-123", name: "City Gym", lat: 37.77, lon: -122.42,
+          formatted: "123 Main St"
+        } }] }) };
+      }
+      hotelQuery = options.body.get("data");
+      return { ok: true, json: async () => ({ elements: [{
+        type: "node", id: 92, lat: 37.775, lon: -122.42,
+        tags: { name: "Hotel Fitness", tourism: "hotel", gym: "yes" }
+      }] }) };
     }
   });
   const body = await (await h.handle({ latitude: 37.77, longitude: -122.42 })).json();
-  assert.equal(h.attempts(), 1);
-  assert.equal(request.url, "https://api.geoapify.com/v2/places");
-  assert.equal(request.options.headers["x-api-key"], "private-key");
-  assert.equal(JSON.stringify(request.options.body).includes("private-key"), false);
+  assert.equal(h.attempts(), 2);
+  assert.equal(geoapifyRequest.url, "https://api.geoapify.com/v2/places");
+  assert.equal(geoapifyRequest.options.headers["x-api-key"], "private-key");
+  assert.equal(JSON.stringify(geoapifyRequest.options.body).includes("private-key"), false);
+  assert.match(hotelQuery, /\["tourism"="hotel"\]/);
+  assert.doesNotMatch(hotelQuery, /\["leisure"="fitness_centre"\]/);
   assert.equal(h.upserts()[0].options.onConflict, "provider_place_id");
   assert.equal(h.upserts()[0].places[0].provider_place_id, "place-123");
+  assert.equal(h.upserts()[1].options.onConflict, "osm_type,osm_id");
   assert.equal(body.places[0].source, "geoapify");
+  assert.equal(body.places[1].kind, "hotel_gym");
   assert.match(body.attribution, /Geoapify/);
+});
+
+test("hotel search outage keeps Geoapify gyms available", async () => {
+  const h = handlerWith({
+    apiKey: "private-key",
+    fetchProvider: async (url) => url.includes("geoapify")
+      ? { ok: true, json: async () => ({ features: [{ properties: {
+        place_id: "place-123", name: "City Gym", lat: 37.77, lon: -122.42
+      } }] }) }
+      : (() => { throw new Error("OSM busy"); })()
+  });
+  const body = await (await h.handle({ latitude: 37.77, longitude: -122.42 })).json();
+  assert.equal(body.partial, true);
+  assert.equal(body.places[0].name, "City Gym");
 });
 
 test("Geoapify outage falls back to public OpenStreetMap search", async () => {
@@ -120,12 +147,12 @@ test("Geoapify outage falls back to public OpenStreetMap search", async () => {
 test("fresh map cache avoids provider calls", async () => {
   const h = handlerWith({
     fetchProvider: async () => { throw new Error("should not fetch"); },
-    cached: { place_ids: [], expires_at: new Date(Date.now() + 3600000).toISOString() }
+    cached: { place_ids: [], partial: true, expires_at: new Date(Date.now() + 3600000).toISOString() }
   });
   const response = await h.handle({ latitude: 37.77, longitude: -122.42 });
   const body = await response.json();
   assert.equal(response.status, 200);
-  assert.equal(body.partial, false);
+  assert.equal(body.partial, true);
   assert.equal(body.stale, false);
   assert.equal(h.attempts(), 0);
 });
