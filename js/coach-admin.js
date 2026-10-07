@@ -110,6 +110,7 @@ let coachCalendarLoaded = false;
 let coachCalendarLoading = false;
 let coachCalendarError = "";
 let coachCalendarSyncedAt = "";
+let clientWorkoutScheduleLoadToken = 0;
 const coachCalendarTimeZone = "America/Los_Angeles";
 
 function adminStatus(message) {
@@ -2784,6 +2785,54 @@ function renderClientOnboardingSummary(program = {}) {
   `).join("");
 }
 
+function clientWorkoutScheduleRowsMarkup(rows) {
+  if (!rows.length) return '<p class="empty-state">No workouts planned in the last 30 days or ahead.</p>';
+  return rows.map((row) => {
+    let completed = false;
+    try { completed = Boolean(JSON.parse(row.snapshot_json || "{}").completedAt); } catch (_) { /* Keep the date and title visible. */ }
+    const source = row.source_type === "generated" ? "Generated plan" : "Coach assigned";
+    const date = /^\d{4}-\d{2}-\d{2}$/.test(row.planned_date || "")
+      ? new Date(`${row.planned_date}T12:00:00`).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric", year: "numeric" })
+      : row.planned_date;
+    return `<article class="client-workout-schedule-row">
+      <div><strong>${escapeHtml(row.title)}</strong><small>${escapeHtml(date)} · ${source}</small></div>
+      <span class="client-workout-schedule-status${completed ? " is-complete" : ""}">${completed ? "Completed" : "Planned"}</span>
+    </article>`;
+  }).join("");
+}
+
+async function loadClientWorkoutScheduleForEmail(email) {
+  const list = document.getElementById("client-workout-schedule-list");
+  if (!list) return;
+  const normalized = normalizeEmail(email);
+  const token = ++clientWorkoutScheduleLoadToken;
+  if (!normalized) {
+    list.innerHTML = '<p class="empty-state">Choose a client to see their workout schedule.</p>';
+    return;
+  }
+  list.textContent = "Loading planned workouts…";
+  const since = new Date();
+  since.setDate(since.getDate() - 30);
+  const startDate = `${since.getFullYear()}-${String(since.getMonth() + 1).padStart(2, "0")}-${String(since.getDate()).padStart(2, "0")}`;
+  const { data, error } = await coachSupabase.from("client_workout_schedule")
+    .select("id,planned_date,source_type,title,snapshot_json")
+    .eq("client_email", normalized)
+    .eq("is_deleted", false)
+    .gte("planned_date", startDate)
+    .order("planned_date", { ascending: true })
+    .limit(150);
+  if (token !== clientWorkoutScheduleLoadToken || normalizeEmail(selectedProgram()?.client_email) !== normalized) return;
+  list.innerHTML = error
+    ? '<p class="empty-state">The workout schedule could not be loaded. Try Refresh.</p>'
+    : clientWorkoutScheduleRowsMarkup(data || []);
+}
+
+function handleClientWorkoutSchedule() {
+  document.getElementById("refresh-client-workout-schedule")?.addEventListener("click", () => {
+    loadClientWorkoutScheduleForEmail(selectedProgram()?.client_email);
+  });
+}
+
 function fillForm(program = {}) {
   const form = document.getElementById("program-editor");
   const workouts = Array.isArray(program.workouts) ? program.workouts : [];
@@ -2838,11 +2887,13 @@ function fillForm(program = {}) {
   updateWorkoutSummaries();
 
   if (program.client_email) {
+    loadClientWorkoutScheduleForEmail(program.client_email);
     renderProgramHistory(program.client_email);
     loadProgressForEmail(program.client_email);
     loadTrainingLogsForEmail(program.client_email);
     loadFoodLogsForEmail(program.client_email);
   } else {
+    loadClientWorkoutScheduleForEmail("");
     renderProgramHistory("");
     coachTrainingLogLoadVersion += 1;
     configureCoachAppleWorkouts("");
@@ -7972,6 +8023,7 @@ async function bootCoachAdmin() {
   handleSessionManualEditor();
   handleAdminLiveUpdates();
   handleWorkoutCards();
+  handleClientWorkoutSchedule();
   handleWorkoutExerciseRows();
   handleSaveProfileChanges();
   handleProfileClientManagement();
