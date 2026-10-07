@@ -68,10 +68,20 @@ module FWBRelease
       return_spaceship_testflight_build: false, select_latest: false,
       wait_for_build_beta_detail_processing: true
     )
-    unless build && build.app_version == version && build.version == build_number && build.ready_for_internal_testing?
+    unless build && build.app_version == version && build.version == build_number && available_for_internal_testing?(build)
       raise "The exact uploaded coach build is not ready for internal TestFlight testing."
     end
     build
+  end
+
+  def self.available_for_internal_testing?(build)
+    return true if build.ready_for_internal_testing?
+
+    # Automatic internal distribution can advance a processed build directly
+    # from READY_FOR_BETA_TESTING to IN_BETA_TESTING before this read-only
+    # watcher evaluates it. Both states mean internal testers can install it.
+    detail = build.respond_to?(:build_beta_detail) ? build.build_beta_detail : nil
+    detail&.internal_build_state == "IN_BETA_TESTING"
   end
 
   def self.validate_configuration!(env = ENV)

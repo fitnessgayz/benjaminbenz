@@ -60,6 +60,19 @@ class ReleaseSupportTest < Minitest::Test
     end
   end
 
+  def test_automatic_distribution_state_is_available_for_internal_testing
+    detail_type = Struct.new(:internal_build_state)
+    build_type = Struct.new(:ready, :build_beta_detail) do
+      def ready_for_internal_testing?
+        ready
+      end
+    end
+
+    assert FWBRelease.available_for_internal_testing?(build_type.new(true, nil))
+    assert FWBRelease.available_for_internal_testing?(build_type.new(false, detail_type.new("IN_BETA_TESTING")))
+    refute FWBRelease.available_for_internal_testing?(build_type.new(false, detail_type.new("MISSING_EXPORT_COMPLIANCE")))
+  end
+
   def test_internal_group_must_have_automatic_distribution
     group = Struct.new(:name, :is_internal_group, :has_access_to_all_builds)
     valid = group.new(FWBRelease::TESTFLIGHT_GROUP, true, true)
