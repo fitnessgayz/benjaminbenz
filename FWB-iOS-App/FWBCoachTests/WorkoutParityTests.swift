@@ -11,7 +11,7 @@ final class WorkoutParityTests: XCTestCase {
         let exercises = [press, row, squat]
         let groups = WorkoutParityModel.groups(exercises: exercises, assignments: [:])
         XCTAssertEqual(groups.map(\.format), [.single, .single, .single])
-        XCTAssertEqual(groups.map(\.title), ["Straight sets 1", "Straight sets 2", "Straight sets 3"])
+        XCTAssertEqual(groups.map(\.title), ["Dumbbell Press", "Dumbbell Row", "Goblet Squat"])
         XCTAssertEqual(groups.flatMap(\.exercises), exercises)
         let reordered = WorkoutParityModel.groups(exercises: [squat, press, row], assignments: [:])
         XCTAssertEqual(reordered[1].id, groups[0].id)

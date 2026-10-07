@@ -134,11 +134,14 @@ enum WorkoutParityModel {
                 ? (assignment!.kind == .superset ? .superset : .circuit)
                 : .single
             let number = result.count + 1
-            let prefix = format == .single ? "Straight sets" : format.title
+            let trimmedName = exercise.name.trimmingCharacters(in: .whitespacesAndNewlines)
+            let title = format == .single
+                ? (trimmedName.isEmpty ? "Exercise \(number)" : trimmedName)
+                : "\(format.title) \(number)"
             result.append(WorkoutParityGroup(
                 id: id, number: number, format: format,
                 exercises: grouped ? members : [exercise],
-                title: "\(prefix) \(number)"
+                title: title
             ))
         }
         return result

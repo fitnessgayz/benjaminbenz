@@ -442,9 +442,19 @@ struct WorkoutParityGroupView: View {
             columnHeadings(rows: rows)
             VStack(spacing: 7) {
                 ForEach(Array(rows.enumerated()), id: \.element.id) { index, draft in
+                    let exercise = group.exercises.first { $0.code == draft.exerciseCode }
+                    let target = progressionRecommendations[draft.exerciseCode]?.targets.first {
+                        $0.setNumber == draft.setNumber
+                    }
                     WorkoutParitySetRow(
                         draft: binding(for: draft),
                         code: warmUp ? "W\(index + 1)" : labels[draft.exerciseCode] ?? "\(index + 1)",
+                        recommendedWeightPlaceholder: draft.setType == .working && !warmUp
+                            ? target.map { WorkoutProgressionIntegration.number($0.weight) }
+                            : nil,
+                        recommendedRepsPlaceholder: draft.setType == .working && !warmUp
+                            ? exercise.flatMap { WorkoutProgressionIntegration.recommendedRepsPlaceholder(for: $0, drafts: drafts) }
+                            : nil,
                         focus: $focusedField,
                         onReopen: { actions.reopenDraft(draft.id) },
                         onEdit: { actions.editDraft(draft.id) }
@@ -787,6 +797,8 @@ private enum WorkoutParityField: Hashable {
 private struct WorkoutParitySetRow: View {
     @Binding var draft: WorkoutSetDraft
     let code: String
+    let recommendedWeightPlaceholder: String?
+    let recommendedRepsPlaceholder: String?
     @FocusState.Binding var focus: WorkoutParityField?
     let onReopen: () -> Void
     let onEdit: () -> Void
@@ -815,11 +827,17 @@ private struct WorkoutParitySetRow: View {
                 }
             }
             .accessibilityAction(named: "Set options", onEdit)
-            numericField("Weight", text: $draft.weight, field: .weight(draft.id), decimal: true)
+            numericField(
+                "Weight", text: $draft.weight, field: .weight(draft.id), decimal: true,
+                placeholder: recommendedWeightPlaceholder ?? "0"
+            )
             if draft.setType == .timed {
                 numericField("Seconds", text: $draft.duration, field: .duration(draft.id), decimal: false)
             } else {
-                numericField("Reps", text: $draft.reps, field: .reps(draft.id), decimal: false)
+                numericField(
+                    "Reps", text: $draft.reps, field: .reps(draft.id), decimal: false,
+                    placeholder: recommendedRepsPlaceholder ?? "0"
+                )
             }
             numericField(draft.effortScale == .rpe ? "RPE" : "RIR", text: effortBinding, field: .rir(draft.id), decimal: draft.effortScale == .rpe, placeholder: "")
         }
@@ -828,7 +846,11 @@ private struct WorkoutParitySetRow: View {
     }
 
     private func numericField(_ label: String, text: Binding<String>, field: WorkoutParityField, decimal: Bool, placeholder: String = "0") -> some View {
-        TextField(placeholder, text: text)
+        TextField(
+            "",
+            text: text,
+            prompt: Text(placeholder).foregroundStyle(WorkoutParityStyle.muted.opacity(0.52))
+        )
             .font(WorkoutParityStyle.heading(16))
             .keyboardType(decimal ? .decimalPad : .numberPad)
             .multilineTextAlignment(.center)
