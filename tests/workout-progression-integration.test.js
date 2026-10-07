@@ -54,6 +54,16 @@ test('applying a recommendation fills only empty normal working fields, never en
   assert.equal(f.log.rows[1].classList.contains('is-complete'), false);
 });
 
+test('rendering shows recommended weight and rep range as placeholders without entering values', () => {
+  const f = fixture();
+  ui.render(f.log, f.context);
+  assert.equal(f.log.rows[1].fields.weight.placeholder, '42.5');
+  assert.equal(f.log.rows[1].fields.reps.placeholder, '8–12');
+  assert.equal(f.log.rows[1].fields.weight.value, '');
+  assert.equal(f.log.rows[1].fields.reps.value, '');
+  assert.equal(f.log.rows[0].fields.weight.placeholder, undefined);
+});
+
 test('Start/apply snapshot preserves original set count after an unfinished set is removed and across reloads', () => {
   const f = fixture();
   ui.freeze(f.log, f.context);

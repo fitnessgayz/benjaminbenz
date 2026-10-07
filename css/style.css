@@ -5048,7 +5048,7 @@ body.is-client-checkin-prompt-open {
 }
 
 .set-row input::placeholder {
-  color: #92928c;
+  color: rgba(103, 110, 106, .52);
   opacity: 1;
 }
 

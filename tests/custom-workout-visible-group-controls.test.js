@@ -34,6 +34,12 @@ test('visible grouped card exposes conversion controls outside hidden source car
     assert.doesNotMatch(markup,/data-custom-workout-inline-group-options/);
   }
 });
+test('straight-set group title follows the exercise name',()=>{
+  const ctx=context({customWorkoutGroupNameEditorMarkup:()=>'',customWorkoutCardMarkup:()=>'<article>Source card</article>',exerciseCardRows:()=>'<article>Assigned source</article>'});
+  const markup=ctx.customWorkoutGroupedRoundCardMarkup('single',[{name:'One-Arm Dumbbell Row'}],1,0,'Workout',{panelFormat:'single'});
+  assert.match(markup,/<h3>One-Arm Dumbbell Row<\/h3>/);
+  assert.doesNotMatch(markup,/Straight sets 2/);
+});
 function fixture(count=4) {
   const cards=Array.from({length:count},(_,i)=>({dataset:{customWorkoutGroupType:'single',customWorkoutGroup:'0'},
     values:{name:`Exercise ${i}`,weight:50+i,reps:8,rir:2,complete:i===0},closest:()=>panel}));

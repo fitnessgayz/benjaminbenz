@@ -79,9 +79,41 @@
       </details>` : ""}
     </section>`;
   }
+  function applyRecommendationPlaceholders(log, context) {
+    const { config, result } = recommendation(log, context);
+    if (!config?.enabled || config.unit !== "lb") return;
+    const repRange = config.rep_min === config.rep_max
+      ? String(config.rep_min)
+      : `${config.rep_min}–${config.rep_max}`;
+    const carousel = log.closest?.("[data-custom-workout-grouped='true']");
+    const exerciseIndex = carousel
+      ? [...carousel.querySelectorAll("[data-exercise-log]")].indexOf(log)
+      : -1;
+    for (const row of workingRows(log)) {
+      if (row.classList.contains("is-complete")) continue;
+      const target = result.targets?.find((item) => item.setNumber === Number(row.dataset.setNumber));
+      const placeholders = {
+        weight: Number(target?.weight) > 0 ? String(target.weight) : "",
+        reps: repRange
+      };
+      for (const [field, placeholder] of Object.entries(placeholders)) {
+        if (!placeholder) continue;
+        const input = row.querySelector(`[data-set-${field}]`);
+        if (input && String(input.value).trim() === "") input.placeholder = placeholder;
+        if (carousel && exerciseIndex >= 0) {
+          const visible = carousel.querySelector(
+            `.custom-workout-grouped-row[data-custom-grouped-exercise-index="${exerciseIndex}"]` +
+            `[data-custom-grouped-set-number="${row.dataset.setNumber}"] [data-custom-grouped-field="${field}"]`
+          );
+          if (visible && String(visible.value).trim() === "") visible.placeholder = placeholder;
+        }
+      }
+    }
+  }
   function render(log, context) {
     if (!engine || !log) return;
     restorePending(log, context);
+    applyRecommendationPlaceholders(log, context);
     const html = markup(log, context);
     const direct = log.querySelector("[data-workout-progression]");
     if (direct) direct.innerHTML = html;
@@ -169,5 +201,5 @@
     return Boolean(error && ["PGRST204", "42703"].includes(error.code) &&
       /progression_target/i.test(String(error.message || "")) && /column|schema cache/i.test(String(error.message || "")));
   }
-  return { configFor, freeze, recommendation, markup, render, apply, configure, serialize, restore, persistPending, restorePending, isPending, isMissingTargetColumn };
+  return { configFor, freeze, recommendation, markup, render, applyRecommendationPlaceholders, apply, configure, serialize, restore, persistPending, restorePending, isPending, isMissingTargetColumn };
 }));

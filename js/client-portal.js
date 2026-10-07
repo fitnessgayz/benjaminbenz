@@ -9420,9 +9420,12 @@ function customWorkoutListMarkup(workoutTitle = customWorkoutTitle) {
 function customWorkoutGroupedRoundCardMarkup(format, exercises, groupIndex = 0, startIndex = 0, workoutTitle = customWorkoutTitle, options = {}) {
   const panelFormat = normalizeCustomWorkoutFormat(options.panelFormat || format);
   const showSessionControls = format !== "single" && options.isLastGroup !== false;
+  const singleExerciseName = String(exercises?.[0]?.name || "").trim();
   const groupTitle = format === "circuit"
     ? `Circuit ${groupIndex + 1}`
-    : format === "single" ? `Straight sets ${groupIndex + 1}` : `Superset ${groupIndex + 1}`;
+    : format === "single"
+      ? (singleExerciseName || `Exercise ${groupIndex + 1}`)
+      : `Superset ${groupIndex + 1}`;
   const exerciseMarkers = (exercises || []).map((exercise, index) => (
     workoutCarouselExerciseCode(format, groupIndex, index)
   ));

@@ -2176,6 +2176,11 @@
   appearance: none;
 }
 
+.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-field > input::placeholder {
+  color: rgba(103, 110, 106, .52);
+  opacity: 1;
+}
+
 .dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-field > input::-webkit-inner-spin-button,
 .dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-field > input::-webkit-outer-spin-button {
   margin: 0;
