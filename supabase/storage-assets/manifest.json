@@ -53,7 +53,8 @@
     "20261006235729_coach_wall_props.sql",
     "20261007135416_update_chest_supported_dumbbell_wide_row_media.sql",
     "20261007141212_add_single_arm_machine_row_straddle_media.sql",
-    "20261007150000_remove_straddle_from_single_arm_machine_row.sql"
+    "20261007150000_remove_straddle_from_single_arm_machine_row.sql",
+    "20261007184504_attach_single_arm_dumbbell_row_search_aliases.sql"
   ],
   "nasmExerciseCatalogMigration": "20261001032427_add_complete_nasm_exercise_library.sql",
   "nasmExerciseCatalogCount": 75,
