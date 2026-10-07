@@ -8,6 +8,7 @@ const dashboardHtml = fs.readFileSync(path.join(projectRoot, "client-dashboard.h
 const portalSource = fs.readFileSync(path.join(projectRoot, "js/client-portal.js"), "utf8");
 const styleSource = fs.readFileSync(path.join(projectRoot, "css/style.css"), "utf8");
 const designSystemSource = fs.readFileSync(path.join(projectRoot, "css/fwb-design-system.css"), "utf8");
+const gymDirectoryStyle = fs.readFileSync(path.join(projectRoot, "css/client-gym-directory.css"), "utf8");
 
 function sourceForFunction(name) {
   const start = portalSource.indexOf(`function ${name}(`);
@@ -35,19 +36,21 @@ test("scopes the client navigation styles and cache-busts dashboard assets", () 
   assert.match(dashboardHtml, /js\/client-portal\.js\?[^"\s]*viewport-dock=\d+/);
 });
 
-test("renders seven labeled client destinations in order with current-page semantics", () => {
+test("renders nine labeled client destinations in order with current-page semantics", () => {
   const navStart = dashboardHtml.indexOf('<nav class="client-dashboard-tabs"');
   const navEnd = dashboardHtml.indexOf("</nav>", navStart);
   const navMarkup = dashboardHtml.slice(navStart, navEnd);
   const buttons = [...navMarkup.matchAll(/<button\b([^>]*data-client-dashboard-tab="([^"]+)"[^>]*)>([\s\S]*?)<\/button>/g)];
 
   assert.ok(navStart >= 0);
-  assert.equal(buttons.length, 7);
+  assert.equal(buttons.length, 9);
   assert.deepEqual(buttons.map((match) => match[2]), [
     "home",
     "workouts",
     "logs",
     "progress",
+    "community",
+    "gyms",
     "questionnaire",
     "sessions",
     "notifications"
@@ -57,6 +60,8 @@ test("renders seven labeled client destinations in order with current-page seman
     "Workouts",
     "Logs",
     "Progress",
+    "Community",
+    "Gyms",
     "PAR-Q",
     "Sessions",
     "Settings"
@@ -66,6 +71,8 @@ test("renders seven labeled client destinations in order with current-page seman
     "Workouts",
     "Logs",
     "Progress",
+    "Community",
+    "Gyms",
     "PAR-Q",
     "Sessions",
     "Settings"
@@ -93,7 +100,7 @@ test("uses a sticky 240px desktop sidebar with a persistent 78px icon rail", () 
   assert.match(dashboardHtml, /client-dashboard-sidebar-toggle-label">Minimize</);
 });
 
-test("uses a permanent five-destination frosted safe-area dock on mobile", () => {
+test("uses a frosted safe-area dock with seven visible destinations on mobile", () => {
   const mobileStyles = sourceBetween("@media (max-width: 900px)", "@media (max-width: 420px)");
 
   assert.match(mobileStyles, /body\.client-dashboard-page\s*\{[^}]*--client-mobile-dock-height:\s*90px[^}]*min-height:\s*100dvh[^}]*padding-bottom:\s*calc\(var\(--client-bottom-dock-clearance\) \+ 24px\)/s);
@@ -105,6 +112,7 @@ test("uses a permanent five-destination frosted safe-area dock on mobile", () =>
   assert.match(mobileStyles, /-webkit-backdrop-filter:\s*blur\(20px\) saturate\(175%\)/);
   assert.match(mobileStyles, /padding:[^;]*env\(safe-area-inset-right\)[^;]*env\(safe-area-inset-bottom\)[^;]*env\(safe-area-inset-left\)/);
   assert.match(mobileStyles, /data-client-dashboard-tab="questionnaire"[\s\S]*?data-client-dashboard-tab="sessions"[\s\S]*?display:\s*none !important/);
+  assert.match(gymDirectoryStyle, /client-dashboard-tabs\s*\{\s*grid-template-columns:\s*repeat\(7, minmax\(0, 1fr\)\)/);
   assert.doesNotMatch(mobileStyles, /data-client-dashboard-tab="nutrition"[^}]*display:\s*none/);
   assert.match(dashboardHtml, /class="client-workouts-message-button"[\s\S]*?data-message-coach[\s\S]*?data-client-message-unread/);
   assert.match(mobileStyles, /\.client-dashboard-tab\.is-active \.client-dashboard-tab-icon\s*\{[^}]*color:\s*var\(--black\)[^}]*background:\s*var\(--lime\)[^}]*border-radius:\s*13px[^}]*box-shadow:\s*none/s);
@@ -169,7 +177,7 @@ test("uses large, flat, evenly sized icons and legible labels in the mobile dock
 test("keeps PAR-Q and Sessions available from Settings", () => {
   const tabHandlerSource = sourceForFunction("handleClientDashboardTabs");
 
-  assert.match(dashboardHtml, /class="client-settings-shortcuts"[\s\S]*?data-client-settings-destination="questionnaire"[\s\S]*?<strong>PAR-Q<\/strong>/);
+  assert.match(dashboardHtml, /class="client-settings-shortcuts"[\s\S]*?data-client-settings-destination="questionnaire"[\s\S]*?<strong>Fitness questionnaire<\/strong><small>Quarterly goals and PAR-Q<\/small>/);
   assert.match(dashboardHtml, /data-client-settings-destination="sessions"[\s\S]*?<strong>Sessions<\/strong>/);
   assert.match(dashboardHtml, /class="client-settings-shortcut"[^>]*data-message-coach disabled[\s\S]*?<strong>Messages<\/strong>/);
   assert.match(tabHandlerSource, /settingsDestination\.dataset\.clientSettingsDestination/);
@@ -254,7 +262,7 @@ test("Stats and Nutrition preserve Settings as the selected navigation parent", 
     syncClientDashboardMobileNavigationIcon() {}, activeClientDashboardTab: "home",
     clientWebNotificationController: null, clientProfilePhotoController: null,
     clientAppleHealthController: null, clientGoogleHealthController: null,
-    setClientSettingsView() {}
+    setClientSettingsView() {}, flushScheduledClientTrainingLogsRender() {}
   });
   vm.runInContext(sourceForFunction("setClientDashboardTab"), context);
   for (const destination of ["stats", "nutrition", "logs", "notifications"]) {

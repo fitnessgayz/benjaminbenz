@@ -50,7 +50,10 @@
     "20261006144838_restore_daily_challenge_and_match_effort.sql",
     "20261006145803_separate_standing_and_kneeling_cable_crunches.sql",
     "20261006174523_gym_discovery_reviews.sql",
-    "20261006235729_coach_wall_props.sql"
+    "20261006232647_gym_photos_without_reviews.sql",
+    "20261006235531_geoapify_gym_places.sql",
+    "20261006235729_coach_wall_props.sql",
+    "20261007020000_gym_search_partial_cache.sql"
   ],
   "nasmExerciseCatalogMigration": "20261001032427_add_complete_nasm_exercise_library.sql",
   "nasmExerciseCatalogCount": 75,

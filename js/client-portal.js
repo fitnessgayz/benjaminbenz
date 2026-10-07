@@ -16668,6 +16668,8 @@ function setClientDashboardTab(tabName) {
 
     panel.hidden = !isActive;
   });
+  if (nextTab === "gyms") void globalThis.FWBGymDirectory?.openTab();
+  else globalThis.FWBGymDirectory?.leaveTab();
 
   if (nextTab === "logs") flushScheduledClientTrainingLogsRender();
 

@@ -6,6 +6,7 @@ on:
       - 'scripts/supabase/**'
       - 'supabase/migrations/**'
       - 'supabase/functions/gym-search/**'
+      - 'supabase/functions/gym-place-photo/**'
       - 'supabase/config.toml'
       - 'supabase/storage-assets/**'
       - '.github/workflows/supabase-production.yml'
@@ -15,6 +16,7 @@ on:
       - 'scripts/supabase/**'
       - 'supabase/migrations/**'
       - 'supabase/functions/gym-search/**'
+      - 'supabase/functions/gym-place-photo/**'
       - 'supabase/config.toml'
       - 'supabase/storage-assets/**'
       - '.github/workflows/supabase-production.yml'
@@ -80,3 +82,5 @@ jobs:
           version: 2.116.0
       - name: Deploy authenticated gym search function
         run: supabase functions deploy gym-search --use-api --project-ref "$SUPABASE_PROJECT_ID"
+      - name: Deploy authenticated gym photo function
+        run: supabase functions deploy gym-place-photo --use-api --project-ref "$SUPABASE_PROJECT_ID"

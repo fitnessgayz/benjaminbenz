@@ -28,6 +28,72 @@ function distanceKm(a: number, b: number, c: number, d: number) {
   return 6371 * 2 * Math.asin(Math.min(1, Math.sqrt(hav)));
 }
 
+type ProviderPlace = Record<string, unknown>;
+
+async function geoapifyPlaces(lat: number, lon: number, apiKey: string): Promise<ProviderPlace[]> {
+  const response = await fetch("https://api.geoapify.com/v2/places", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "x-api-key": apiKey },
+    body: JSON.stringify({
+      categories: ["sport.fitness.gym", "sport.fitness.fitness_centre"],
+      filter: { type: "circle", lon, lat, radius: 5000 },
+      bias: { type: "proximity", lon, lat },
+      limit: 60
+    }),
+    signal: AbortSignal.timeout(7000)
+  });
+  if (!response.ok) throw new Error("Geoapify search unavailable");
+  const data = await response.json();
+  if (!Array.isArray(data?.features)) throw new Error("Unexpected Geoapify response");
+  return data.features.flatMap((feature: Record<string, unknown>) => {
+    const properties = (feature.properties || {}) as Record<string, unknown>;
+    const geometry = (feature.geometry || {}) as Record<string, unknown>;
+    const coordinates = Array.isArray(geometry.coordinates) ? geometry.coordinates : [];
+    const name = typeof properties.name === "string" ? properties.name.trim() : "";
+    const placeID = typeof properties.place_id === "string" ? properties.place_id : "";
+    const placeLat = Number(properties.lat ?? coordinates[1]);
+    const placeLon = Number(properties.lon ?? coordinates[0]);
+    if (name.length < 2 || !placeID || placeID.length > 180 ||
+        !Number.isFinite(placeLat) || !Number.isFinite(placeLon) ||
+        Math.abs(placeLat) > 90 || Math.abs(placeLon) > 180) return [];
+    const address = typeof properties.formatted === "string" ? properties.formatted.slice(0, 300) : null;
+    return [{ source: "geoapify", provider_place_id: placeID, kind: "gym",
+      name: name.slice(0, 180), latitude: placeLat, longitude: placeLon,
+      address, website: null }];
+  });
+}
+
+async function overpassPlaces(lat: number, lon: number, hotelOnly = false): Promise<ProviderPlace[]> {
+  const gyms = hotelOnly ? "" : `nwr(around:5000,${lat},${lon})["leisure"="fitness_centre"];nwr(around:5000,${lat},${lon})["leisure"="sports_centre"]["sport"~"(^|;)fitness(;|$)"];`;
+  const query = `[out:json][timeout:12];(${gyms}nwr(around:5000,${lat},${lon})["tourism"="hotel"]["fitness_centre"="yes"];nwr(around:5000,${lat},${lon})["tourism"="hotel"]["gym"="yes"];);out center 100;`;
+  const providers = ["https://overpass.private.coffee/api/interpreter", "https://overpass-api.de/api/interpreter"];
+  let data: Record<string, unknown> | null = null;
+  for (const provider of providers) {
+    try {
+      const response = await fetch(provider, {
+        method: "POST", body: new URLSearchParams({ data: query }),
+        headers: { "User-Agent": "FitnessWithBenjamin-GymFinder/1.0 (fwb@benjaminbenz.com)" },
+        signal: AbortSignal.timeout(hotelOnly ? 4000 : 7000)
+      });
+      if (!response.ok) continue;
+      const result = await response.json();
+      if (Array.isArray(result?.elements)) { data = result; break; }
+    } catch { /* Try the alternate public endpoint. */ }
+  }
+  if (!data) throw new Error("OpenStreetMap search is busy");
+  return (Array.isArray(data.elements) ? data.elements : []).flatMap((element: Record<string, unknown>) => {
+    const tags = (element.tags || {}) as Record<string, string>;
+    const placeLat = Number(element.lat ?? (element.center as Record<string, unknown> | undefined)?.lat);
+    const placeLon = Number(element.lon ?? (element.center as Record<string, unknown> | undefined)?.lon);
+    if (!Number.isFinite(placeLat) || !Number.isFinite(placeLon) || !tags.name || tags.name.trim().length < 2) return [];
+    return [{ source: "osm", osm_type: element.type, osm_id: element.id,
+      kind: tags.tourism === "hotel" ? "hotel_gym" : "gym", name: tags.name.slice(0, 180),
+      latitude: placeLat, longitude: placeLon,
+      address: [tags["addr:housenumber"], tags["addr:street"], tags["addr:city"]].filter(Boolean).join(" ").slice(0, 300) || null,
+      website: /^https?:\/\//.test(tags.website || "") ? tags.website.slice(0, 500) : null }];
+  });
+}
+
 serve(async (request) => {
   if (request.method === "OPTIONS") return new Response(null, { headers: headers(request) });
   if (request.method !== "POST") return reply(request, { error: "POST required" }, 405);
@@ -54,46 +120,50 @@ serve(async (request) => {
   // Round to a shared ~1 km grid before querying/caching; never store exact device location.
   const lat = Math.round(latitude * 100) / 100;
   const lon = Math.round(longitude * 100) / 100;
-  const key = `${lat.toFixed(2)}:${lon.toFixed(2)}`;
+  // Version the cache when adding hotel gyms so older gym-only results refresh.
+  const key = `v3:${lat.toFixed(2)}:${lon.toFixed(2)}`;
   const admin = createClient(url, serviceKey);
-  const { data: cached } = await admin.from("gym_search_cache").select("place_ids,expires_at").eq("cache_key", key).maybeSingle();
+  const { data: cached } = await admin.from("gym_search_cache").select("place_ids,expires_at,partial").eq("cache_key", key).maybeSingle();
   let ids: string[] = cached?.place_ids || [];
   let fromCache = Boolean(cached && Date.parse(cached.expires_at) > Date.now());
+  let partial = fromCache && Boolean(cached?.partial);
 
   if (!fromCache) {
-    const query = `[out:json][timeout:12];(nwr(around:5000,${lat},${lon})["leisure"="fitness_centre"];nwr(around:5000,${lat},${lon})["leisure"="sports_centre"]["sport"~"(^|;)fitness(;|$)"];nwr(around:5000,${lat},${lon})["tourism"="hotel"]["fitness_centre"="yes"];nwr(around:5000,${lat},${lon})["tourism"="hotel"]["gym"="yes"];);out center 100;`;
     try {
-      const response = await fetch("https://overpass-api.de/api/interpreter", {
-        method: "POST", body: new URLSearchParams({ data: query }),
-        headers: { "User-Agent": "FitnessWithBenjamin-GymFinder/1.0 (fwb@benjaminbenz.com)" },
-        signal: AbortSignal.timeout(15000)
-      });
-      if (!response.ok) throw new Error("OpenStreetMap search is busy");
-      const data = await response.json();
-      const places = (Array.isArray(data.elements) ? data.elements : []).flatMap((element: Record<string, unknown>) => {
-        const tags = (element.tags || {}) as Record<string, string>;
-        const placeLat = Number(element.lat ?? (element.center as Record<string, unknown> | undefined)?.lat);
-        const placeLon = Number(element.lon ?? (element.center as Record<string, unknown> | undefined)?.lon);
-        if (!Number.isFinite(placeLat) || !Number.isFinite(placeLon) || !tags.name || tags.name.trim().length < 2) return [];
-        return [{ source: "osm", osm_type: element.type, osm_id: element.id,
-          kind: tags.tourism === "hotel" ? "hotel_gym" : "gym", name: tags.name.slice(0, 180),
-          latitude: placeLat, longitude: placeLon,
-          address: [tags["addr:housenumber"], tags["addr:street"], tags["addr:city"]].filter(Boolean).join(" ").slice(0, 300) || null,
-          website: /^https?:\/\//.test(tags.website || "") ? tags.website.slice(0, 500) : null }];
-      });
-      const { data: saved, error } = places.length
-        ? await admin.from("gym_places").upsert(places, { onConflict: "osm_type,osm_id" }).select("id")
-        : { data: [], error: null };
-      if (error) throw error;
-      ids = (saved || []).map((place: { id: string }) => place.id);
-      await admin.from("gym_search_cache").upsert({ cache_key: key, place_ids: ids,
-        expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() });
+      // Geoapify supplies gyms. OSM explicitly tagged hotel gyms supplement it;
+      // an ordinary hotel must never be presented as having a gym.
+      const geoapifyKey = Deno.env.get("GEOAPIFY_API_KEY") || "";
+      let geoapify: ProviderPlace[] = [];
+      if (geoapifyKey) {
+        try { geoapify = await geoapifyPlaces(lat, lon, geoapifyKey); }
+        catch { /* Fall through to OSM. */ }
+      }
+      let osm: ProviderPlace[] = [];
+      if (geoapify.length) {
+        try { osm = await overpassPlaces(lat, lon, true); }
+        catch { partial = true; }
+      } else {
+        osm = await overpassPlaces(lat, lon);
+      }
+      const save = async (places: ProviderPlace[], onConflict: string) => {
+        if (!places.length) return [];
+        const { data, error } = await admin.from("gym_places")
+          .upsert(places, { onConflict }).select("id");
+        if (error) throw error;
+        return (data || []).map((place: { id: string }) => place.id);
+      };
+      ids = [
+        ...await save(geoapify, "provider_place_id"),
+        ...await save(osm, "osm_type,osm_id")
+      ];
+      await admin.from("gym_search_cache").upsert({ cache_key: key, place_ids: ids, partial,
+        expires_at: new Date(Date.now() + (partial ? 15 : 24 * 60) * 60 * 1000).toISOString() });
     } catch {
-      if (!cached) return reply(request, { error: "Nearby gym search is temporarily unavailable. Try again shortly." }, 503);
+      partial = true;
       fromCache = true;
     }
   }
-  const { data: osmPlaces, error: placeError } = ids.length
+  const { data: providerPlaces, error: placeError } = ids.length
     ? await admin.from("gym_places").select("id,source,osm_type,osm_id,kind,name,latitude,longitude,address,website").in("id", ids)
     : { data: [], error: null };
   if (placeError) return reply(request, { error: "Could not load gym places" }, 503);
@@ -101,10 +171,11 @@ serve(async (request) => {
     .select("id,source,osm_type,osm_id,kind,name,latitude,longitude,address,website").eq("source", "client")
     .gte("latitude", lat - 0.07).lte("latitude", lat + 0.07)
     .gte("longitude", lon - 0.1).lte("longitude", lon + 0.1).limit(100);
-  const places = [...(osmPlaces || []), ...(clientPlaces || [])]
+  const places = [...(providerPlaces || []), ...(clientPlaces || [])]
     .map((place) => ({ ...place, distance_km: distanceKm(latitude, longitude, place.latitude, place.longitude) }))
     .filter((place) => place.distance_km <= 6)
     .sort((a, b) => a.distance_km - b.distance_km).slice(0, 80);
-  return reply(request, { places, stale: fromCache && Date.parse(cached?.expires_at || "") <= Date.now(),
-    attribution: "© OpenStreetMap contributors" });
+  return reply(request, { places, partial, stale: fromCache && Date.parse(cached?.expires_at || "") <= Date.now(),
+    attribution: places.some((place) => place.source === "geoapify")
+      ? "Powered by Geoapify · © OpenStreetMap contributors" : "© OpenStreetMap contributors" });
 });
