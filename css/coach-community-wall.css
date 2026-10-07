@@ -1,0 +1,32 @@
+:root { color-scheme: dark; font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #0c0d10; color: #f4f5f6; }
+* { box-sizing: border-box; }
+body { margin: 0; min-height: 100vh; }
+button, a { font: inherit; }
+button { cursor: pointer; }
+button:disabled { cursor: default; opacity: .55; }
+.wall-header { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 68px; padding: 12px max(20px, env(safe-area-inset-right)) 12px max(20px, env(safe-area-inset-left)); border-bottom: 1px solid #343941; background: rgba(12, 13, 16, .94); }
+.wall-header strong { font-size: 1rem; }
+.wall-back { color: #65b7ff; text-decoration: none; font-weight: 700; }
+.wall-header button, .wall-panel-heading button { border: 1px solid #455268; border-radius: 999px; color: #b9dfff; background: #1b232e; padding: 9px 14px; }
+.wall-shell { max-width: 800px; margin: 0 auto; padding: 26px 20px 70px; }
+.wall-heading { margin-bottom: 24px; }
+.wall-heading h1 { margin: 5px 0 9px; font-size: clamp(2.1rem, 6vw, 3.4rem); letter-spacing: -.04em; }
+.wall-heading > p:last-child, .wall-note { color: #abb3bf; line-height: 1.5; }
+.eyebrow { margin: 0; color: #61b7ff; font-weight: 800; text-transform: uppercase; letter-spacing: .11em; font-size: .8rem; }
+.wall-panel { padding: 22px; border: 1px solid #3b424c; border-radius: 22px; background: #22262c; }
+.wall-panel-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.wall-panel-heading h2 { margin: 0; font-size: 1.35rem; }
+#wall-status { color: #c1c8cf; line-height: 1.45; }
+#wall-status:empty { display: none; }
+#wall-posts { display: grid; gap: 12px; }
+.wall-post { padding: 18px; border: 1px solid #3c4652; border-radius: 17px; background: #171b20; }
+.wall-post-head { display: flex; align-items: center; gap: 11px; }
+.wall-avatar { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 12px; background: #273442; font-size: 1.2rem; }
+.wall-post-head strong { flex: 1; overflow-wrap: anywhere; }
+.wall-post-head time { color: #aab5bf; font-size: .8rem; }
+.wall-post p { margin: 14px 0; font-size: 1.05rem; }
+.wall-post-actions { display: flex; align-items: center; gap: 14px; }
+.wall-post-actions button { border: 1px solid #ffd321; border-radius: 11px; padding: 10px 14px; background: #ffd321; color: #111; font-weight: 800; }
+.wall-post-actions span { color: #c3ccd6; font-size: .88rem; }
+.wall-note { padding: 0 4px; font-size: .9rem; }
+@media (max-width: 540px) { .wall-header { min-height: 60px; } .wall-back span { display: none; } .wall-shell { padding: 22px 14px 60px; } .wall-panel { padding: 15px; } .wall-post { padding: 14px; } }
