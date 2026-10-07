@@ -1,0 +1,73 @@
+name: Expire mistaken coach TestFlight build
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  expire:
+    name: Expire FWB Training 100.35.1 (2014.1.0)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - uses: ruby/setup-ruby@14594264cd68ce8a2345dd349bc3d138a4ef85c8 # v1.327.0
+        with:
+          ruby-version: '3.3.11'
+          bundler: '2.5.22'
+          bundler-cache: true
+          working-directory: FWB-iOS-App
+      - name: Expire exact mistaken coach build
+        working-directory: FWB-iOS-App
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_PRIVATE_KEY_P8_BASE64: ${{ secrets.ASC_PRIVATE_KEY_P8_BASE64 }}
+        run: |
+          set -euo pipefail
+          key_path="${RUNNER_TEMP}/AuthKey.p8"
+          ruby -rbase64 -e 'File.binwrite(ARGV.fetch(0), Base64.strict_decode64(ENV.fetch("ASC_PRIVATE_KEY_P8_BASE64")))' "${key_path}"
+          chmod 600 "${key_path}"
+          ASC_KEY_PATH="${key_path}" bundle exec ruby <<'RUBY'
+          require "spaceship"
+
+          bundle_id = "com.benjaminbenz.fwbcoach"
+          expected_app_id = "6804362327"
+          version = "100.35.1"
+          build_number = "2014.1.0"
+
+          Spaceship::ConnectAPI.token = Spaceship::ConnectAPI::Token.create(
+            key_id: ENV.fetch("ASC_KEY_ID"),
+            issuer_id: ENV.fetch("ASC_ISSUER_ID"),
+            filepath: ENV.fetch("ASC_KEY_PATH"),
+            duration: 1_200
+          )
+
+          app = Spaceship::ConnectAPI::App.find(bundle_id)
+          raise "Refusing to continue: coach app was not found." unless app
+          raise "Refusing to continue: unexpected App Store Connect app ID." unless app.id.to_s == expected_app_id
+
+          builds = Spaceship::ConnectAPI::Build.all(
+            app_id: app.id,
+            version: version,
+            build_number: build_number,
+            platform: "IOS"
+          )
+          raise "Refusing to continue: expected exactly one matching build, found #{builds.length}." unless builds.length == 1
+
+          build = builds.first
+          raise "Refusing to continue: build belongs to the wrong app." unless build.bundle_id == bundle_id
+          raise "Refusing to continue: version mismatch." unless build.app_version == version
+          raise "Refusing to continue: build number mismatch." unless build.version == build_number
+
+          build.expire! unless build.expired
+          verified = Spaceship::ConnectAPI::Build.get(build_id: build.id)
+          raise "Apple did not confirm the build as expired." unless verified.expired
+
+          puts "Verified expired: FWB Training #{verified.app_version} (#{verified.version})"
+          RUBY
+          rm -f "${key_path}"
