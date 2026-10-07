@@ -193,6 +193,7 @@
       const { data, error } = await supabaseClient.functions.invoke("gym-search", { body: location });
       if (error || !Array.isArray(data?.places)) throw new Error(data?.error || "Gym search is unavailable right now.");
       places = data.places;
+      $("#gym-directory-geoapify-credit").hidden = !places.some((place) => place.source === "geoapify");
       selected = null;
       details.hidden = true;
       renderPlaces();
