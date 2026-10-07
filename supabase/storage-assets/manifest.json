@@ -50,7 +50,8 @@
     "20261006144838_restore_daily_challenge_and_match_effort.sql",
     "20261006145803_separate_standing_and_kneeling_cable_crunches.sql",
     "20261006174523_gym_discovery_reviews.sql",
-    "20261006235729_coach_wall_props.sql"
+    "20261006235729_coach_wall_props.sql",
+    "20261007135416_update_chest_supported_dumbbell_wide_row_media.sql"
   ],
   "nasmExerciseCatalogMigration": "20261001032427_add_complete_nasm_exercise_library.sql",
   "nasmExerciseCatalogCount": 75,
@@ -3183,6 +3184,34 @@
       "objectPath": "generated/2026-10-06/decline-cable-chest-press-underhand.mp4",
       "contentType": "video/mp4",
       "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-10-07/png/chest-supported-dumbbell-wide-row.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-10-07/png/chest-supported-dumbbell-wide-row.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-10-07/webp-480/chest-supported-dumbbell-wide-row.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-10-07/webp-480/chest-supported-dumbbell-wide-row.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-10-07/webp-768/chest-supported-dumbbell-wide-row.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-10-07/webp-768/chest-supported-dumbbell-wide-row.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-videos/generated/2026-10-07/chest-supported-dumbbell-wide-row.mp4",
+      "bucket": "exercise-videos",
+      "objectPath": "generated/2026-10-07/chest-supported-dumbbell-wide-row.mp4",
+      "contentType": "video/mp4",
+      "cacheControl": 31536000
     }
   ],
   "exerciseMedia": [
@@ -3226,7 +3255,8 @@
     },
     {
       "name": "Chest-Supported Dumbbell Wide Row",
-      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/chest-supported-dumbbell-wide-row.webp"
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-10-07/webp-768/chest-supported-dumbbell-wide-row.webp",
+      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-videos/generated/2026-10-07/chest-supported-dumbbell-wide-row.mp4"
     },
     {
       "name": "Overhead Rope Triceps Extension",
