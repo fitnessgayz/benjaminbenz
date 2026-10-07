@@ -46,6 +46,9 @@ let activeDashboardUser = null;
 let activeProgressMetric = "bodyweight";
 let clientTrainingLogDateFilter = "";
 let clientTrainingLogSearchFilter = "";
+let clientLogCalendarMonth = "";
+let clientLogCalendarInitialized = false;
+let clientSavedSetEditingId = "";
 let activeClientDashboardTab = "home";
 let latestMonthlyProgressReport = null;
 let monthlyReportReturnTab = "progress";
@@ -13422,7 +13425,7 @@ function handleClientWorkoutPreview() {
       dialog.close();
       await saveClientWorkoutLayout(exercises);
     });
-    dialog.showModal();
+    if (!dialog.open) dialog.showModal();
   });
 }
 
@@ -14205,6 +14208,12 @@ function updateExerciseLogField(logElement) {
 
 function populateTrainingLogs(logs) {
   trainingLogs = Array.isArray(logs) ? logs : [];
+  if (!clientLogCalendarInitialized) {
+    clientTrainingLogDateFilter = trainingLogs.map((log) => String(log.entry_date || ""))
+      .filter((date) => /^\d{4}-\d{2}-\d{2}$/.test(date)).sort().at(-1) || todayDate();
+    clientLogCalendarMonth = clientTrainingLogDateFilter.slice(0, 7);
+    clientLogCalendarInitialized = true;
+  }
   if (typeof invalidateExerciseSearchCaches === "function") invalidateExerciseSearchCaches();
 
   if (currentProgram) {
@@ -14885,6 +14894,62 @@ function filteredClientWorkoutHistoryLogs(logs = [], dateFilter = "", searchFilt
   ));
 }
 
+function clientSavedSetCanEdit(row, logs = trainingLogs) {
+  if (!row?.id) return false;
+  // Imported workouts have no live FWB autosave draft. A completed session is
+  // also stable; a set in an unfinished session must be corrected in its logger.
+  if (["fitbod", "hevy", "client_log_correction"].includes(String(row.source || "").toLowerCase())) return true;
+  const sessionKey = clientWorkoutHistorySessionKey(row);
+  return (Array.isArray(logs) ? logs : []).some((log) => (
+    clientWorkoutHistorySessionKey(log) === sessionKey && Boolean(log.completed_at)
+  ));
+}
+
+function renderClientWorkoutCalendar(logs = trainingLogs) {
+  const days = document.getElementById("client-saved-log-days");
+  const monthLabel = document.getElementById("client-saved-log-month-label");
+  const selectedLabel = document.getElementById("client-saved-log-selected-date");
+  const selectedCount = document.getElementById("client-saved-log-selected-count");
+  if (!days || !monthLabel || !selectedLabel || !selectedCount) return;
+
+  const monthKey = /^\d{4}-\d{2}$/.test(clientLogCalendarMonth)
+    ? clientLogCalendarMonth : (clientTrainingLogDateFilter || todayDate()).slice(0, 7);
+  clientLogCalendarMonth = monthKey;
+  const [year, month] = monthKey.split("-").map(Number);
+  const monthDate = new Date(year, month - 1, 1);
+  const dateFormatter = new Intl.DateTimeFormat("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
+  monthLabel.textContent = new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric" }).format(monthDate);
+
+  const sessionsByDate = new Map();
+  (Array.isArray(logs) ? logs : []).forEach((log) => {
+    const date = String(log.entry_date || "");
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return;
+    if (!sessionsByDate.has(date)) sessionsByDate.set(date, new Set());
+    sessionsByDate.get(date).add(clientWorkoutHistorySessionKey(log));
+  });
+
+  const offset = (monthDate.getDay() + 6) % 7;
+  const length = new Date(year, month, 0).getDate();
+  days.innerHTML = `${Array.from({ length: offset }, () => '<span aria-hidden="true"></span>').join("")}${Array.from({ length }, (_, index) => {
+    const day = index + 1;
+    const date = `${monthKey}-${String(day).padStart(2, "0")}`;
+    const count = sessionsByDate.get(date)?.size || 0;
+    const ariaLabel = `${dateFormatter.format(new Date(year, month - 1, day))}${count ? `, ${count} saved ${count === 1 ? "workout" : "workouts"}` : ""}`;
+    return `<button class="client-saved-log-day" type="button" data-client-log-date="${date}" data-has-log="${count > 0}" aria-label="${escapeHtml(ariaLabel)}" aria-pressed="${date === clientTrainingLogDateFilter}">${day}</button>`;
+  }).join("")}`;
+
+  if (clientTrainingLogDateFilter) {
+    const [selectedYear, selectedMonth, selectedDay] = clientTrainingLogDateFilter.split("-").map(Number);
+    selectedLabel.textContent = dateFormatter.format(new Date(selectedYear, selectedMonth - 1, selectedDay));
+    const count = sessionsByDate.get(clientTrainingLogDateFilter)?.size || 0;
+    selectedCount.textContent = `${count} ${count === 1 ? "LOG" : "LOGS"}`;
+  } else {
+    selectedLabel.textContent = "All saved dates";
+    const count = [...sessionsByDate.values()].reduce((total, sessions) => total + sessions.size, 0);
+    selectedCount.textContent = `${count} ${count === 1 ? "LOG" : "LOGS"}`;
+  }
+}
+
 function clientAchievementSnapshot() {
   if (clientAchievementHistoryStatus !== "ready" || !window.FWB_ACHIEVEMENTS) return null;
   return window.FWB_ACHIEVEMENTS.evaluate(trainingLogs, { today: todayDate(), clientEmail: activeClientEmail });
@@ -14973,6 +15038,7 @@ function renderClientTrainingLogs() {
   cancelScheduledClientTrainingLogsRender();
   renderClientAchievements();
   renderClientExerciseProgress(trainingLogs);
+  renderClientWorkoutCalendar(trainingLogs);
   const history = document.getElementById("client-training-log-history");
   const count = document.getElementById("client-logs-count");
 
@@ -15075,6 +15141,11 @@ function renderClientTrainingLogs() {
     }
 
     supersetGroup.exercises.get(exerciseKey).sets.push({
+      id: log.id,
+      source: log.source,
+      completed_at: log.completed_at,
+      session_id: log.session_id,
+      workout_session_id: log.workout_session_id,
       set_number: log.set_number,
       set_type: log.set_type,
       weight_used: log.weight_used,
@@ -15111,12 +15182,17 @@ function renderClientTrainingLogs() {
     const mobileWorkoutMeta = [workoutDuration, workoutDifficulty].filter(Boolean).join(" · ") || "Workout saved";
     const workoutStatus = workout.completed_at ? "Completed" : "Saved";
     const metrics = workoutHistorySummaryMetrics(workout);
+    const canCorrectSavedWorkout = Boolean(workout.completed_at) || Array.from(workout.supersets.values())
+      .some((superset) => Array.from(superset.exercises.values()).some((exercise) => exercise.sets.some((set) => (
+        ["fitbod", "hevy", "client_log_correction"].includes(String(set.source || "").toLowerCase())
+      ))));
     const canCopyToCustom = workoutHistoryLogsForCopy(workout.history_key).length > 0;
     const shareButtonMarkup = !isCoachDashboardPreview ? `<button class="training-log-share-button" type="button" data-share-workout-history="${escapeHtml(workout.history_key)}" aria-label="${escapeHtml(`Share ${displayTitle} from ${formatLogDate(workout.entry_date)}`)}">Share workout</button>` : "";
     const deleteButtonMarkup = !isCoachDashboardPreview ? `<button class="training-log-delete-button" type="button" data-delete-workout-history="${escapeHtml(workout.history_key)}" aria-label="${escapeHtml(`Delete ${displayTitle} from ${formatLogDate(workout.entry_date)}`)}" ${clientWorkoutHistoryDeleteInFlight ? "disabled" : ""}>Delete workout</button>` : "";
     const copyButtonLabel = `Copy ${displayTitle} from ${formatLogDate(workout.entry_date)} to Custom workout`;
     const detailsId = `client-workout-history-details-${workoutIndex}`;
     const detailsHtml = `
+      ${canCorrectSavedWorkout ? "" : '<p class="client-saved-set-locked">Finish this workout to correct saved sets here.</p>'}
       <div class="training-log-superset-list">
         ${supersets.map((superset) => {
           const exercises = Array.from(superset.exercises.values()).sort((a, b) => {
@@ -15178,6 +15254,17 @@ function renderClientTrainingLogs() {
                     })
                     .filter(Boolean)
                     .join("  |  ");
+                  const editableSetRows = [warmupExerciseCode, cardioExerciseCode].includes(entry.exercise_code)
+                    ? ""
+                    : `<div class="client-saved-set-list">${entry.sets.map((set) => {
+                      const setName = normalizedSetType(set.set_type, set.set_number) === warmUpSetType
+                        ? `Warm-up ${setNumberLabel(set.set_number, set.set_type)}`
+                        : `Set ${setNumberLabel(set.set_number, set.set_type)}`;
+                      const weight = set.weight_used === null || set.weight_used === undefined ? "—" : `${set.weight_used} lb`;
+                      const reps = set.reps === null || set.reps === undefined ? "—" : `${set.reps} reps`;
+                      return `<div class="client-saved-set-row"><span>${escapeHtml(`${setName} · ${weight} · ${reps}`)}</span>${clientSavedSetCanEdit({ ...set, entry_date: workout.entry_date, workout_title: workout.workout_title }, trainingLogs) && !isCoachDashboardPreview
+                        ? `<button type="button" data-client-edit-saved-set="${escapeHtml(String(set.id))}" aria-label="Correct ${escapeHtml(`${entry.exercise_name}, ${setName}`)}">Edit</button>` : ""}</div>`;
+                    }).join("")}</div>`;
 
                   return `
                     <article class="training-log-row training-log-row-compact training-log-row-nested">
@@ -15188,6 +15275,7 @@ function renderClientTrainingLogs() {
                             : `${entry.exercise_code} ${entry.exercise_name}`
                         )}</span>
                         <em>${escapeHtml(setSummary || "Sets saved")}</em>
+                        ${editableSetRows}
                         ${entry.gym_name ? `<small class="training-log-gym">At ${escapeHtml(entry.gym_name)}</small>` : ""}
                         ${noteSummary ? `<small class="training-log-notes"><strong>Notes:</strong> ${escapeHtml(noteSummary)}</small>` : ""}
                       </div>
@@ -16170,16 +16258,29 @@ function handleClientWorkoutHistoryImport() {
 }
 
 function handleClientTrainingLogDateFilter() {
-  const input = document.getElementById("client-training-log-date-filter");
   const searchInput = document.getElementById("client-training-log-search-filter");
   const clearButton = document.getElementById("clear-client-training-log-date-filter");
 
-  if (!input || !searchInput || !clearButton) {
+  if (!searchInput || !clearButton) {
     return;
   }
 
-  input.addEventListener("input", () => {
-    clientTrainingLogDateFilter = input.value || "";
+  document.addEventListener("click", (event) => {
+    const day = event.target.closest("[data-client-log-date]");
+    if (day) {
+      clientTrainingLogDateFilter = day.dataset.clientLogDate;
+      clientLogCalendarMonth = clientTrainingLogDateFilter.slice(0, 7);
+      renderClientTrainingLogs();
+      return;
+    }
+    const monthButton = event.target.closest("[data-client-log-month]");
+    if (!monthButton) return;
+    const [year, month] = (clientLogCalendarMonth || todayDate().slice(0, 7)).split("-").map(Number);
+    const target = new Date(year, month - 1 + (monthButton.dataset.clientLogMonth === "previous" ? -1 : 1), 1);
+    clientLogCalendarMonth = `${target.getFullYear()}-${String(target.getMonth() + 1).padStart(2, "0")}`;
+    clientTrainingLogDateFilter = trainingLogs.map((log) => String(log.entry_date || ""))
+      .filter((date) => date.startsWith(`${clientLogCalendarMonth}-`)).sort().at(-1)
+      || `${clientLogCalendarMonth}-01`;
     renderClientTrainingLogs();
   });
 
@@ -16191,9 +16292,151 @@ function handleClientTrainingLogDateFilter() {
   clearButton.addEventListener("click", () => {
     clientTrainingLogDateFilter = "";
     clientTrainingLogSearchFilter = "";
-    input.value = "";
     searchInput.value = "";
     renderClientTrainingLogs();
+  });
+}
+
+function clientSavedSetCorrectionValues(form) {
+  const weightText = String(form.elements.weight.value || "").trim();
+  const repsText = String(form.elements.reps.value || "").trim();
+  const weight = weightText === "" ? null : Number(weightText);
+  const reps = repsText === "" ? null : Number(repsText);
+  if (weight !== null && (!Number.isFinite(weight) || weight < 0 || weight > 99999)) {
+    throw new Error("Enter a weight from 0 to 99,999 lb, or leave it blank.");
+  }
+  if (reps !== null && (!Number.isInteger(reps) || reps < 0 || reps > 1000)) {
+    throw new Error("Enter whole reps from 0 to 1,000, or leave them blank.");
+  }
+  if (!(weight > 0 || reps > 0)) {
+    throw new Error("Enter a weight or rep count so the saved set is not empty.");
+  }
+  return { weight_used: weight, reps, notes: String(form.elements.notes.value || "").trim() };
+}
+
+function clientSavedSetCorrectionTimestamp(row, now = Date.now()) {
+  const previous = Date.parse(String(row?.updated_at || ""));
+  return new Date(Math.max(now, Number.isFinite(previous) ? previous + 1000 : now)).toISOString();
+}
+
+async function saveClientSavedSetCorrection(row, values, accountEmail = activeClientEmail) {
+  const email = normalizeClientEmail(accountEmail);
+  if (!supabaseClient || isCoachDashboardPreview || !row?.id ||
+      !email || email !== normalizeClientEmail(activeDashboardUser?.email) ||
+      email !== normalizeClientEmail(row.client_email)) {
+    throw new Error("Sign in to correct your saved workout set.");
+  }
+  if (!clientSavedSetCanEdit(row, trainingLogs)) throw new Error("Finish this workout before correcting its saved sets.");
+  let query = supabaseClient.from("client_workout_logs")
+    .update({ ...values, source: "client_log_correction", updated_at: clientSavedSetCorrectionTimestamp(row) })
+    .eq("id", row.id)
+    .ilike("client_email", email);
+  // These comparisons prevent an older browser tab from replacing a newer correction.
+  query = row.weight_used === null || row.weight_used === undefined
+    ? query.is("weight_used", null) : query.eq("weight_used", row.weight_used);
+  query = row.reps === null || row.reps === undefined
+    ? query.is("reps", null) : query.eq("reps", row.reps);
+  query = row.notes === null || row.notes === undefined
+    ? query.is("notes", null) : query.eq("notes", row.notes);
+  if (row.source !== null && row.source !== undefined) query = query.eq("source", row.source);
+  if (row.updated_at) query = query.eq("updated_at", row.updated_at);
+  const { data, error } = await withTimeout(query.select("*"), "Saved set correction timed out.");
+  if (error) throw error;
+  if (normalizeClientEmail(activeClientEmail) !== email) throw new Error("Account changed. Refresh your logs.");
+  if (!Array.isArray(data) || data.length !== 1) {
+    throw new Error("This set changed on another device. Refresh your logs before correcting it.");
+  }
+  return data[0];
+}
+
+function syncCorrectedSetInWorkoutEditor(previous, corrected) {
+  document.querySelectorAll("[data-exercise-log]").forEach((logElement) => {
+    if (String(logElement.dataset.exerciseCode || "") !== String(previous.exercise_code || "") ||
+        String(logElement.dataset.workoutTitle || "") !== String(previous.workout_title || "") ||
+        String(logElement.querySelector("[data-log-date]")?.value || "") !== String(previous.entry_date || "")) return;
+    const setRow = [...logElement.querySelectorAll("[data-set-row]")].find((element) => (
+      Number(element.dataset.setNumber) === Number(previous.set_number) &&
+      setTypeForRow(element) === normalizedSetType(previous.set_type, previous.set_number)
+    ));
+    if (!setRow) return;
+    const weightInput = setRow.querySelector("[data-set-weight]");
+    const repsInput = setRow.querySelector("[data-set-reps]");
+    const notesInput = logElement.querySelector("[data-log-notes]");
+    if (weightInput && Number(weightInput.value || 0) === Number(previous.weight_used || 0)) {
+      weightInput.value = corrected.weight_used ?? "";
+    }
+    if (repsInput && Number(repsInput.value || 0) === Number(previous.reps || 0)) {
+      repsInput.value = corrected.reps ?? "";
+    }
+    if (notesInput && notesInput.value === (previous.notes || "")) {
+      notesInput.value = corrected.notes || "";
+    }
+  });
+}
+
+function handleClientSavedSetEdit() {
+  const dialog = document.getElementById("client-saved-set-dialog");
+  const form = document.getElementById("client-saved-set-form");
+  const status = document.getElementById("client-saved-set-status");
+  if (!dialog || !form || !status) return;
+
+  document.addEventListener("click", (event) => {
+    if (event.target.closest("[data-client-saved-set-close]")) {
+      if (!form.dataset.saving) dialog.close();
+      return;
+    }
+    const button = event.target.closest("[data-client-edit-saved-set]");
+    if (!button) return;
+    const row = trainingLogs.find((log) => String(log.id || "") === button.dataset.clientEditSavedSet);
+    if (!row || !clientSavedSetCanEdit(row, trainingLogs) || isCoachDashboardPreview) return;
+    clientSavedSetEditingId = String(row.id);
+    form.elements.weight.value = row.weight_used ?? "";
+    form.elements.reps.value = row.reps ?? "";
+    form.elements.notes.value = row.notes || "";
+    document.getElementById("client-saved-set-description").textContent = `${row.exercise_name || "Exercise"} · ${formatLogDate(row.entry_date)} · ${normalizedSetType(row.set_type, row.set_number) === warmUpSetType ? "Warm-up" : "Set"} ${setNumberLabel(row.set_number, row.set_type)}`;
+    status.textContent = "Update this set, then save. Your Progress and personal bests will recalculate.";
+    dialog.showModal();
+    form.elements.weight.focus();
+  });
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (form.dataset.saving) return;
+    const row = trainingLogs.find((log) => String(log.id || "") === clientSavedSetEditingId);
+    if (!row) { status.textContent = "This set is no longer available. Refresh your logs."; return; }
+    let values;
+    try { values = clientSavedSetCorrectionValues(form); }
+    catch (error) { status.textContent = error.message; return; }
+    const submitButton = form.querySelector('[type="submit"]');
+    const historyKey = clientWorkoutHistorySessionKey(row);
+    const accountEmail = activeClientEmail;
+    form.dataset.saving = "true";
+    submitButton.disabled = true;
+    status.textContent = "Saving correction…";
+    try {
+      const corrected = await saveClientSavedSetCorrection(row, values, accountEmail);
+      syncCorrectedSetInWorkoutEditor(row, corrected);
+      const index = trainingLogs.findIndex((log) => String(log.id || "") === String(corrected.id));
+      if (index >= 0) trainingLogs[index] = corrected;
+      if (typeof invalidateExerciseSearchCaches === "function") invalidateExerciseSearchCaches();
+      renderClientTrainingLogs();
+      renderMonthlyProgressReport(trainingLogs);
+      renderClientHomeSummary();
+      document.querySelectorAll("[data-exercise-log]").forEach(renderPreviousExerciseWeights);
+      const cards = [...document.querySelectorAll("[data-client-workout-history-card]")];
+      const cardIndex = cards.findIndex((card) => card.dataset.clientWorkoutHistoryKey === historyKey);
+      if (cardIndex >= 0) {
+        syncClientWorkoutHistoryDeck(cardIndex);
+        setClientWorkoutHistoryCardExpanded(cards[cardIndex], true);
+      }
+      setClientWorkoutCopyStatus("Saved set corrected. Progress and personal bests were recalculated.");
+      dialog.close();
+    } catch (error) {
+      status.textContent = error?.message || "Could not save this correction. Try again.";
+    } finally {
+      delete form.dataset.saving;
+      submitButton.disabled = false;
+    }
   });
 }
 
@@ -16364,7 +16607,7 @@ function removeLocalTrainingLog(row) {
   }
 }
 
-async function deleteRemovedTrainingLogRows(logElements) {
+async function deleteRemovedTrainingLogRows(logElements, options = {}) {
   let deletedCount = 0;
 
   for (const logElement of logElements) {
@@ -16389,6 +16632,7 @@ async function deleteRemovedTrainingLogRows(logElements) {
     ));
 
     const missingSetNumbers = existingRows
+      .filter((row) => !options.preserveCorrections || row.source !== "client_log_correction")
       .map((log) => Number(log.set_number || 1))
       .filter((setNumber) => !currentSetNumbers.has(setNumber));
 
@@ -20107,13 +20351,23 @@ function cancelTrainingLogAutosaves(container) {
   });
 }
 
+function isPreviouslyCorrectedWorkoutSet(row, logs = trainingLogs) {
+  return (Array.isArray(logs) ? logs : []).some((saved) => (
+    saved.source === "client_log_correction" &&
+    normalizeClientEmail(saved.client_email) === normalizeClientEmail(row.client_email) &&
+    saved.entry_date === row.entry_date && saved.workout_title === row.workout_title &&
+    saved.exercise_code === row.exercise_code &&
+    Number(saved.set_number || 1) === Number(row.set_number || 1)
+  ));
+}
+
 function trainingLogHasAutosavePayload(logElement) {
   if (!logElement) {
     return false;
   }
   if (logElement.closest?.(".client-workout-panel-cardio") && cardioLogIssues(logElement).length) return false;
 
-  if (rowsForTrainingLog(logElement).length > 0) {
+  if (rowsForTrainingLog(logElement).some((row) => !isPreviouslyCorrectedWorkoutSet(row))) {
     return true;
   }
 
@@ -20127,6 +20381,7 @@ function trainingLogHasAutosavePayload(logElement) {
   }
 
   return trainingLogs.some((log) => (
+    log.source !== "client_log_correction" &&
     String(log.client_email || "").toLowerCase() === String(activeClientEmail).toLowerCase() &&
     log.entry_date === entryDate &&
     log.workout_title === workoutTitle &&
@@ -20165,6 +20420,7 @@ function scheduleTrainingLogAutosave(logElement) {
 
     try {
       const result = await saveTrainingLogRows(null, [logElement], status, {
+        autosave: true,
         savingMessage: "Autosaving...",
         successMessage: "Autosaved.",
         ...(logElement.closest("[data-custom-workout-grouped='true']") ? {
@@ -20222,7 +20478,7 @@ async function saveTrainingLogRows(button, logElements, status, options = {}) {
 
   const { deletedCount, error: deleteError } = options.skipRemovedSetDelete
     ? { deletedCount: 0, error: null }
-    : await deleteRemovedTrainingLogRows(logElements);
+    : await deleteRemovedTrainingLogRows(logElements, { preserveCorrections: options.autosave });
 
   if (normalizeClientEmail(activeClientEmail) !== requestClientEmail) {
     if (button) button.disabled = false;
@@ -20242,6 +20498,7 @@ async function saveTrainingLogRows(button, logElements, status, options = {}) {
   const rows = workoutLogRowsWithSessionIdentity(logElements
     .flatMap(rowsForTrainingLog)
     .filter((row) => !options.setType || row.set_type === options.setType)
+    .filter((row) => !options.autosave || !isPreviouslyCorrectedWorkoutSet(row))
     .map((row) => options.workoutCompletion
       ? { ...row, ...options.workoutCompletion }
       : row));
@@ -20540,6 +20797,7 @@ loadDashboard();
 handleSignOut();
 handleTrainingDateChange();
 handleClientTrainingLogDateFilter();
+handleClientSavedSetEdit();
 handleClientWorkoutHistoryDownload();
 handleClientWorkoutHistoryImport();
 handleCopyWorkoutToCustom();
