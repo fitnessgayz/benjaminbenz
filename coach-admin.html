@@ -39,6 +39,7 @@
   <meta name="theme-color" content="#030D1C" />
   <link rel="stylesheet" href="/css/fwb-dark-theme.css?v=coach-blue-gold-1" />
   <link rel="stylesheet" href="css/coach-workout-corrections.css?v=weight-corrections-1" />
+  <link rel="stylesheet" href="css/coach-workout-schedule.css?v=1" />
 </head>
 <body class="dashboard-page coach-admin-page">
   <header class="site-header dashboard-header">
@@ -1065,6 +1066,19 @@
         </section>
 
         <section class="workout-tab-panel" data-admin-panel="workouts" hidden>
+          <section class="admin-card coach-client-workout-schedule" aria-labelledby="coach-client-workout-schedule-title">
+            <div class="admin-section-heading compact-heading">
+              <div>
+                <p class="kicker">Client planning</p>
+                <h2 id="coach-client-workout-schedule-title">Workout calendar</h2>
+              </div>
+              <button class="button button-ghost" type="button" id="refresh-client-workout-schedule">Refresh</button>
+            </div>
+            <p>Planned sessions from the client’s workout calendar, including coach assigned and generated plans.</p>
+            <div id="client-workout-schedule-list" class="client-workout-schedule-list" role="status" aria-live="polite">
+              <p class="empty-state">Choose a client to see their workout schedule.</p>
+            </div>
+          </section>
           <div class="admin-card workout-tab-heading">
             <div class="admin-section-heading">
               <div>
@@ -1163,6 +1177,6 @@
   <script src="js/apple-health-sync.js?v=1"></script>
   <script src="js/workout-progression.js?v=1"></script>
   <script src="js/coach-workout-corrections.js?v=weight-corrections-1"></script>
-  <script src="js/coach-admin.js?v=client-view-shortcut-1&amp;remember-login=1&amp;home-shortcuts=1&amp;mobile-client-hub=2&amp;home-settings=1&amp;apple-workout=1&amp;viewport-dock=2&amp;apple-health=1&amp;recovery-catalog=1&amp;messages=2&amp;progression=1&amp;invitations=2&amp;exercise-images=1&amp;exercise-cards=1&amp;videos-tab=3&amp;client-added=1&amp;client-name-list=2&amp;weight-corrections=1&amp;password-reset=1&amp;invite-dialog=1"></script>
+  <script src="js/coach-admin.js?v=client-view-shortcut-1&amp;remember-login=1&amp;home-shortcuts=1&amp;mobile-client-hub=2&amp;home-settings=1&amp;apple-workout=1&amp;viewport-dock=2&amp;apple-health=1&amp;recovery-catalog=1&amp;messages=2&amp;progression=1&amp;invitations=2&amp;exercise-images=1&amp;exercise-cards=1&amp;videos-tab=3&amp;client-added=1&amp;client-name-list=2&amp;weight-corrections=1&amp;password-reset=1&amp;invite-dialog=1&amp;workout-schedule=1"></script>
 </body>
 </html>
