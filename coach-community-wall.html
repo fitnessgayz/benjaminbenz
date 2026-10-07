@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow, noarchive" />
+  <meta name="theme-color" content="#030D1C" />
+  <title>FWB Wall | FWB Coach</title>
+  <link rel="icon" href="/favicon.ico" />
+  <link rel="manifest" href="/coach.webmanifest" />
+  <link rel="stylesheet" href="css/coach-community-wall.css?v=1" />
+</head>
+<body>
+  <header class="wall-header">
+    <a class="wall-back" href="coach-admin.html" aria-label="Back to FWB Coach">← <span>FWB Coach</span></a>
+    <strong>FWB Wall</strong>
+    <button type="button" id="wall-sign-out" hidden>Sign out</button>
+  </header>
+  <main class="wall-shell">
+    <div class="wall-heading">
+      <p class="eyebrow">Community</p>
+      <h1>FWB Wall</h1>
+      <p>Celebrate the workouts, gym visits, and challenge wins clients choose to share.</p>
+    </div>
+    <section class="wall-panel" aria-labelledby="wall-posts-title">
+      <div class="wall-panel-heading">
+        <h2 id="wall-posts-title">Shared wins</h2>
+        <button type="button" id="wall-refresh">Refresh</button>
+      </div>
+      <p id="wall-status" role="status" aria-live="polite">Loading shared wins…</p>
+      <div id="wall-posts"></div>
+    </section>
+    <p class="wall-note">A client’s progress sharing choice does not automatically post individual activity. They can enable Wall posts in Community → FWB Wall → Sharing choices.</p>
+  </main>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase-config.js"></script>
+  <script src="js/auth-session.js"></script>
+  <script src="js/coach-community-wall.js?v=1"></script>
+</body>
+</html>
