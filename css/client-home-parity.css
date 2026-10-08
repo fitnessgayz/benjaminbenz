@@ -19,12 +19,18 @@
 :root body.client-dashboard-page .client-home-rewards > button:disabled { opacity: .22; }
 :root body.client-dashboard-page .client-home-reward-track { display: flex; min-width: 0; flex: 1; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
 :root body.client-dashboard-page .client-home-reward-track::-webkit-scrollbar { display: none; }
-:root body.client-dashboard-page .client-home-reward-card { box-sizing: border-box; display: flex; flex: 0 0 100%; min-height: 146px; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 13px; border: 2px solid #6b5b18; border-radius: 20px; background: #393117; box-shadow: inset 0 -5px 0 #0003; text-align: center; scroll-snap-align: start; }
+:root body.client-dashboard-page .client-home-reward-card { box-sizing: border-box; display: flex; flex: 0 0 100%; min-height: 186px; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 13px; border: 2px solid #6b5b18; border-radius: 20px; background: #393117; box-shadow: inset 0 -5px 0 #0003; text-align: center; scroll-snap-align: start; }
 :root body.client-dashboard-page .client-home-reward-card.is-challenge { border-color: #366746; background: #1c382a; }
 :root body.client-dashboard-page .client-home-reward-card.is-gym { border-color: #315d7e; background: #1c3144; }
-:root body.client-dashboard-page .client-home-reward-icon { display: grid; width: 43px; height: 43px; place-items: center; border-radius: 14px; background: #ffd400; font-size: 23px; }
-:root body.client-dashboard-page .is-challenge .client-home-reward-icon { background: #8ee763; }
-:root body.client-dashboard-page .is-gym .client-home-reward-icon { background: #75bff4; }
+:root body.client-dashboard-page .client-home-reward-mascot { position: relative; display: block; flex: 0 0 auto; width: 88px; height: 92px; overflow: hidden; }
+:root body.client-dashboard-page .client-home-reward-mascot img { position: absolute; display: block; width: 200%; height: 200%; max-width: none; object-fit: fill; pointer-events: none; }
+:root body.client-dashboard-page .client-home-reward-mascot.is-greeting img { left: 0; top: 0; }
+:root body.client-dashboard-page .client-home-reward-mascot.is-celebrating img { left: -100%; top: 0; }
+:root body.client-dashboard-page .client-home-reward-mascot.is-encouraging img { left: 0; top: -100%; }
+:root body.client-dashboard-page .workout-completion-atari { position: relative; width: 76px; height: 80px; margin: 4px auto 8px; overflow: hidden; }
+:root body.client-dashboard-page .workout-completion-atari img { position: absolute; display: block; width: 200%; height: 200%; max-width: none; object-fit: fill; pointer-events: none; }
+:root body.client-dashboard-page .workout-completion-atari.is-celebrating img { left: -100%; top: 0; }
+:root body.client-dashboard-page .workout-completion-atari.is-encouraging img { left: 0; top: -100%; }
 :root body.client-dashboard-page .client-home-reward-card strong { color: #fff; font-size: clamp(20px, 5vw, 27px); line-height: 1.12; }
 :root body.client-dashboard-page .client-home-reward-card small { color: #d2d8dc; font-size: 12px; }
 :root body.client-dashboard-page .client-home-reward-dots { display: flex; justify-content: center; gap: 6px; margin-top: 9px; }
