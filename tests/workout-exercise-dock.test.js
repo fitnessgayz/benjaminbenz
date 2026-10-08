@@ -4,13 +4,14 @@ const { createController } = require("../js/workout-exercise-dock.js");
 
 function fixture({ mobile = true, selected = true, count = 2, grouped = false } = {}) {
   let document;
-  function node(classes = "", attributes = {}) {
+  function node(classes = "", attributes = {}, tag = "div") {
     const classNames = new Set(classes.split(" ").filter(Boolean));
     const attrs = new Map(Object.entries(attributes));
     const listeners = new Map();
     let clickCount = 0;
     const element = {
       children: [], parentNode: null, hidden: false, dataset: {}, value: "",
+      tagName: tag.toUpperCase(), dispatched: [],
       classList: {
         add: (...values) => values.forEach(value => classNames.add(value)),
         remove: (...values) => values.forEach(value => classNames.delete(value)),
@@ -37,8 +38,10 @@ function fixture({ mobile = true, selected = true, count = 2, grouped = false } 
         if (selector.includes(":not([hidden])") && element.hidden) return false;
         selector = selector.replace(":not([hidden])", "");
         if (selector.startsWith(".")) return selector.slice(1).split(".").every(name => classNames.has(name));
-        const match = selector.match(/^\[([^=\]]+)(?:="([^"]*)")?\]$/);
-        return Boolean(match && attrs.has(match[1]) && (match[2] === undefined || attrs.get(match[1]) === match[2]));
+        if (/^[a-z]+$/.test(selector)) return selector === tag;
+        const parts = [...selector.matchAll(/\[([^=\]]+)(?:="([^"]*)")?\]/g)];
+        return Boolean(parts.length && parts.map(part => part[0]).join("") === selector && parts.every(part =>
+          attrs.has(part[1]) && (part[2] === undefined || attrs.get(part[1]) === part[2])));
       },
       querySelector(selector) {
         if (selector.includes(",")) {
@@ -53,13 +56,14 @@ function fixture({ mobile = true, selected = true, count = 2, grouped = false } 
       },
       closest(selector) { return element.matches(selector) ? element : element.parentNode?.closest(selector) || null; },
       cloneNode(deep) {
-        const copy = node(element.className, Object.fromEntries(attrs));
+        const copy = node(element.className, Object.fromEntries(attrs), tag);
         copy.dataset = { ...element.dataset }; copy.hidden = element.hidden;
         if (deep) copy.append(...element.children.map(child => child.cloneNode(true)));
         return copy;
       },
       focus() { document.activeElement = element; },
       click() { clickCount++; },
+      dispatchEvent(event) { element.dispatched.push(event.type); },
       get clickCount() { return clickCount; },
       getBoundingClientRect: () => ({ top: 700 }),
       addEventListener(type, listener) { listeners.set(type, listener); },
@@ -86,7 +90,11 @@ function fixture({ mobile = true, selected = true, count = 2, grouped = false } 
   const finish = node("", { "data-workout-finish": "" });
   const groupedFinish = grouped ? node("", { "data-custom-grouped-finish-workout": "" }) : null;
   const logs = Array.from({ length: count }, (_, i) => {
-    const log = node(); log.value = `${17.5 + i}`; return log;
+    const log = node(); log.value = `${17.5 + i}`;
+    const name = node("", { "data-exercise-name-input": "" }, "input");
+    name.value = `Exercise ${i + 1}`;
+    log.append(name);
+    return log;
   });
   panel.logs = logs;
   body.append(content, navigation); content.append(section); section.append(panel);
@@ -96,17 +104,32 @@ function fixture({ mobile = true, selected = true, count = 2, grouped = false } 
   document.body = body;
   document.querySelector = selector => body.querySelector(selector);
   document.getElementById = id => id === "dashboard-content" ? content : null;
-  document.createElement = () => node();
+  document.createElement = tag => node("", {}, tag);
   const window = node();
   window.innerHeight = 800;
   window.matchMedia = () => ({ matches: mobile });
   window.MutationObserver = class { observe() {} disconnect() {} };
+  window.Event = class { constructor(type) { this.type = type; } };
+  window.setTimeout = callback => callback();
   const jumps = [];
   const syncList = () => {
     [...list.children].filter(child => child !== add).forEach(child => child.remove());
     list.append(...panel.logs.map((_, i) => {
       const button = node("", { "data-workout-exercise-jump": String(i) });
       button.dataset.workoutExerciseJump = String(i);
+      const move = node("", { "data-custom-exercise-move": "down", "data-custom-exercise-index": String(i) }, "button");
+      move.dataset.customExerciseIndex = String(i);
+      const rename = node("", { "data-workout-exercise-rename": String(i) }, "button");
+      rename.dataset.workoutExerciseRename = String(i);
+      const editor = node("", { "data-workout-exercise-rename-editor": String(i) });
+      editor.hidden = true;
+      const input = node("", {}, "input");
+      const save = node("", { "data-workout-exercise-rename-save": String(i) }, "button");
+      save.dataset.workoutExerciseRenameSave = String(i);
+      const cancel = node("", { "data-workout-exercise-rename-cancel": String(i) }, "button");
+      cancel.dataset.workoutExerciseRenameCancel = String(i);
+      editor.append(input, save, cancel);
+      list.append(move, rename, editor);
       return button;
     }));
   };
@@ -193,6 +216,31 @@ test("Add exercise in the mobile sheet closes it and invokes the active workout 
   assert.equal(event.stopped, true);
   assert.equal(h.overlay(), null);
   assert.equal(h.assignedAdd.clickCount, 1);
+});
+
+test("organization controls in the sheet operate on the live workout", () => {
+  const h = fixture(); h.controller.toggle();
+  const original = h.list.querySelector('[data-custom-exercise-move="down"][data-custom-exercise-index="0"]');
+  const copied = h.overlay().querySelector('[data-custom-exercise-move="down"][data-custom-exercise-index="0"]');
+  h.overlay().fire("click", { target: copied });
+  assert.equal(original.clickCount, 1);
+  assert.equal(h.controller.isOpen(), true);
+});
+
+test("editing a name in the sheet updates the live exercise input", () => {
+  const h = fixture(); h.controller.toggle();
+  const overlay = h.overlay();
+  overlay.fire("click", { target: overlay.querySelector('[data-workout-exercise-rename="0"]') });
+  const editor = overlay.querySelector('[data-workout-exercise-rename-editor="0"]');
+  const input = editor.querySelector("input");
+  assert.equal(editor.hidden, false);
+  assert.equal(input.value, "Exercise 1");
+  input.value = "Barbell Bench Press";
+  overlay.fire("click", { target: editor.querySelector('[data-workout-exercise-rename-save="0"]') });
+  const liveInput = h.logs[0].querySelector("[data-exercise-name-input]");
+  assert.equal(liveInput.value, "Barbell Bench Press");
+  assert.deepEqual(liveInput.dispatched, ["input", "change"]);
+  assert.equal(h.controller.isOpen(), true);
 });
 
 test("selection follows the same exercise after reordering, and ignores a deleted exercise", () => {

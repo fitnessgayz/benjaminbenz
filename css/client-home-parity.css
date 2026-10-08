@@ -91,11 +91,11 @@
 }
 :root body.client-dashboard-page .workout-exercise-organize-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 0 8px 12px; }
 :root body.client-dashboard-page .workout-exercise-organize-actions button,
-:root body.client-dashboard-page .workout-exercise-organize-actions select { min-width: 40px; min-height: 40px; border: 1px solid #65747d; border-radius: 9px; background: #303b43; color: #fff; font: inherit; }
+:root body.client-dashboard-page .workout-exercise-organize-actions select { min-width: 40px; min-height: 40px; border: 1px solid #387aa8; border-radius: 9px; background: #27333e; color: #5aa9e8; font: inherit; }
 :root body.client-dashboard-page .workout-exercise-organize-actions button:disabled { opacity: .4; }
-:root body.client-dashboard-page .workout-exercise-organize-actions label { color: #eef3f4; font-size: 13px; font-weight: 700; }
-:root[data-client-theme="light"] body.client-dashboard-page .workout-exercise-organize-actions :is(button, select) { background: #eef4f7; color: #172834; }
-:root[data-client-theme="light"] body.client-dashboard-page .workout-exercise-organize-actions label { color: #172834; }
+:root body.client-dashboard-page .workout-exercise-organize-actions label { color: #5aa9e8; font-size: 13px; font-weight: 700; }
+:root[data-client-theme="light"] body.client-dashboard-page .workout-exercise-organize-actions :is(button, select) { background: #e9f4fb; color: #176a9e; }
+:root[data-client-theme="light"] body.client-dashboard-page .workout-exercise-organize-actions label { color: #176a9e; }
 
 :root[data-client-theme="light"] body.client-dashboard-page .client-home-reward-card.is-week { background: #fff5c1; }
 :root[data-client-theme="light"] body.client-dashboard-page .client-home-reward-card.is-challenge { background: #e6f8dc; }

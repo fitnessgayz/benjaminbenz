@@ -37,6 +37,37 @@
   list-style: none;
 }
 
+.client-dashboard-page :is(.client-workout-panel, .workout-exercise-dock) .workout-exercise-organize-actions,
+.client-dashboard-page :is(.client-workout-panel, .workout-exercise-dock) .workout-exercise-rename-editor {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 3px 10px;
+}
+
+.client-dashboard-page :is(.client-workout-panel, .workout-exercise-dock) .workout-exercise-organize-actions button,
+.client-dashboard-page :is(.client-workout-panel, .workout-exercise-dock) .workout-exercise-organize-actions select,
+.client-dashboard-page :is(.client-workout-panel, .workout-exercise-dock) .workout-exercise-rename-editor button {
+  min-width: 42px;
+  min-height: 40px;
+  padding: 6px 10px;
+  border: 1px solid #387aa8;
+  border-radius: 10px;
+  background: #27333e;
+  color: #5aa9e8;
+  font: inherit;
+  font-weight: 700;
+}
+
+.client-dashboard-page :is(.client-workout-panel, .workout-exercise-dock) .workout-exercise-organize-actions button:disabled { opacity: .38; }
+.client-dashboard-page :is(.client-workout-panel, .workout-exercise-dock) .workout-exercise-organize-actions label { color: #5aa9e8; font-weight: 700; }
+.client-dashboard-page :is(.client-workout-panel, .workout-exercise-dock) .workout-exercise-rename-editor input { flex: 1 1 130px; min-width: 0; min-height: 40px; padding: 8px; border: 1px solid #5aa9e8; border-radius: 9px; background: #202a33; color: #fff; font: inherit; }
+.client-dashboard-page :is(.client-workout-panel, .workout-exercise-dock) .workout-exercise-rename-editor[hidden] { display: none; }
+:root[data-client-theme="light"] .client-dashboard-page :is(.client-workout-panel, .workout-exercise-dock) .workout-exercise-organize-actions :is(button, select),
+:root[data-client-theme="light"] .client-dashboard-page :is(.client-workout-panel, .workout-exercise-dock) .workout-exercise-rename-editor button { background: #e9f4fb; color: #176a9e; }
+:root[data-client-theme="light"] .client-dashboard-page :is(.client-workout-panel, .workout-exercise-dock) .workout-exercise-rename-editor input { background: #fff; color: #172834; }
+
 .client-dashboard-page :is(.client-workout-panel, .workout-exercise-dock) .workout-exercise-list [data-workout-exercise-jump] {
   display: grid !important;
   grid-template-columns: 36px minmax(0, 1fr) 20px;
@@ -231,6 +262,7 @@
 .client-dashboard-page .workout-exercise-dock-sheet > p {
   padding-right: 44px;
 }
+.client-dashboard-page .workout-exercise-dock-sheet > h3 { color: #5aa9e8 !important; }
 
 .client-dashboard-page .workout-exercise-dock-close {
   position: absolute;
