@@ -87,25 +87,26 @@ function inferredMuscle(name) {
   const text = normalize(name);
   const has = (pattern) => pattern.test(text);
 
+  if (has(/\b(planks?|plank shoulder tap)\b/)) return "core";
   if (has(/\b(rear delt|reverse pec|reverse fly|reverse dumbbell fly|rear delt fly)\b/)) return "shoulders";
   if (has(/\b(chest supported rear delt row)\b/)) return "shoulders";
-  if (has(/\b(chest supported row|incline (dumbbell )?row|row machine|machine row|cable row|seated row|single arm row|bent over row|high row|trx .*row|overhand row)\b/)) return "back";
+  if (has(/\b(tricep|triceps|tricept|pressdowns?|pushdowns?|skull crushers?|dip machine|assisted dip|weighted dip|body weight tricep dip)\b/)) return "triceps";
+  if (has(/\b(chest supported row|incline (dumbbell )?row|row machine|machine row|cable row|seated row|single arm row|bent over row|high row|trx .*row|overhand row|rows?|back)\b/) && !has(/\b(rower)\b/)) return "back";
   if (has(/\b(lat|pull down|pulldown|pull up|assisted pull|chin up|straight arm pull)\b/)) return "lats";
-  if (has(/\b(tricep|triceps|pressdown|pushdown|skull crusher|dip machine|assisted dip|weighted dip|body weight tricep dip)\b/)) return "triceps";
-  if (has(/\b(bicep|biceps|curl|arm blaster)\b/) && !has(/\b(leg curl|hamstring curl)\b/)) return "biceps";
+  if (has(/\b(bicep|biceps|curls?|arm blaster)\b/) && !has(/\b(leg curl|hamstring curl)\b/)) return "biceps";
   if (has(/\b(adductor|adduction|inner thigh)\b/)) return "adductors";
-  if (has(/\b(hamstring|leg curl|nordic|romanian deadlift|\brdl\b|good morning|stiff leg)\b/)) return "hamstrings";
+  if (has(/\b(hamstrings?|leg curls?|nordic|romanian deadlift|rdl|good mornings?|stiff leg)\b/)) return "hamstrings";
   if (has(/\b(glute|hip thrust|hip extension|hip drive|kickback|abduction|outer thigh|lateral walk|clamshell|bridge)\b/)) return "glutes";
-  if (has(/\b(quad|quadricep|squat|leg press|leg extension|lunge|step up)\b/)) return "quads";
+  if (has(/\b(quads?|quadriceps?|squats?|leg press|leg extension|lunges?|step ups?)\b/)) return "quads";
   if (has(/\b(calf|calves|ankle rock|ankle knee to wall|ankle mobil)\b/)) return "calves";
-  if (has(/\b(chest|pectoral|\bpec\b|bench press|push up|cable fly|dumbbell fly|machine fly|decline press)\b/)) return "chest";
-  if (has(/\b(shoulder|delt|lateral raise|front raise|frontal raise|upright row|shrug|wall slide)\b/)) return "shoulders";
-  if (has(/\b(core|\babs?\b|abdominal|crunch|plank|dead bug|pallof|wood chop|woodchop|sit up|knee raise|leg lower|jack knife|russian twist|torso twist|torso rotation|side bend|body saw|bicycle kick|hanging leg)\b/)) return "core";
+  if (has(/\b(chest|pectoral|pecs?|pex|bench press|push ups?|cable fly|dumbbell fly|machine fly|decline.*press|ches press)\b/)) return "chest";
+  if (has(/\b(shoulders?|delts?|lateral raise|front raise|frontal raise|upright row|shrug|wall slide|push press)\b/)) return "shoulders";
+  if (has(/\b(core|abs?|abdominal|crunch|crunches|crunchies|abcoaster|dead bug|pallof|wood chop|woodchop|sit ups?|knee raise|leg lower|hollow hold|jack knife|russian twist|oblique twist|cable twist|torso twist|torso rotation|side bend|body saw|bicycle kick|hanging leg|supine breathing)\b/)) return "core";
   if (has(/\b(forearm|wrist|pronation|supination)\b/)) return "forearms";
   if (has(/\b(90 90|hip flexor|hip mobility|hip transition|hip airplane|couch stretch|leg swings)\b/)) return "hips";
   if (has(/\b(thoracic|open book|child s pose|back extension)\b/)) return "back";
   if (has(/\b(neck|cervical)\b/)) return "neck";
-  if (has(/\b(world s greatest stretch|pogo hop|lateral shuffle|split step|bike|biking|treadmill|walk|run|elliptical|rower|stairs)\b/)) return "full_body";
+  if (has(/\b(world s greatest stretch|pogo hops?|lateral shuffle|split step|bike|biking|treadmill|walk|run|elliptical|rower|stairs)\b/)) return "full_body";
   return "";
 }
 
@@ -175,6 +176,19 @@ for (const [key, usage] of [...usedNames.entries()].sort((left, right) => left[1
 
 const applied = [];
 if (String(process.env.EXERCISE_AUDIT_APPLY || "").toLowerCase() === "true") {
+  const corrections = [
+    { name: "Tricep Pulldown", primary_muscle: "triceps" },
+    { name: "Plank Shoulder Tap", primary_muscle: "core" },
+    { name: "V squat machine - hip hinge", primary_muscle: "glutes" },
+  ];
+  for (const correction of corrections) {
+    await restWrite(secretKey, "exercise_library", {
+      method: "PATCH",
+      query: `?name=eq.${encodeURIComponent(correction.name)}`,
+      body: { primary_muscle: correction.primary_muscle },
+    });
+  }
+
   const existingAliasAdds = new Map();
   const planned = [];
 
