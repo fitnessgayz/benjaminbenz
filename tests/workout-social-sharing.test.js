@@ -121,6 +121,7 @@ function shareSheetFixture(image) {
     querySelector: (selector) => {
       if (!nodes.has(selector)) nodes.set(selector, {
         disabled: false,
+        classList: { toggle() {} },
         focus: () => focused.push(selector),
         closest: () => overlay
       });
@@ -159,6 +160,7 @@ test("native sharing waits for the image and sends the prepared file on the next
   const { context, nodes, shares, overlay, focused } = shareSheetFixture(() => preparing.promise);
   context.openWorkoutCompletionSharePrompt(summary());
   const button = nodes.get("[data-workout-share]");
+  assert.match(nodes.get("[data-workout-share-atari-message]").textContent, /happy dance/);
   assert.equal(button.disabled, true);
   assert.equal(button.textContent, "Preparing image…");
   assert.deepEqual(focused, ["[data-workout-share-dismiss]"], "A disabled Share action must not receive initial focus");
@@ -200,6 +202,7 @@ test("image failures explicitly fall back to text and sharing an unfinished work
   context.openWorkoutCompletionSharePrompt(summary({ isComplete: false }));
   await flush();
   assert.equal(nodes.get("[data-workout-share-state]").textContent, "Workout saved");
+  assert.match(nodes.get("[data-workout-share-atari-message]").textContent, /when you’re ready/);
   assert.match(nodes.get("[data-workout-share-status]").textContent, /share the workout details as text/);
   const button = nodes.get("[data-workout-share]");
   assert.equal(button.disabled, false);

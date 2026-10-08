@@ -33,6 +33,10 @@
 :root body.client-dashboard-page .workout-completion-atari.is-encouraging img { left: 0; top: -100%; }
 :root body.client-dashboard-page .client-home-reward-card strong { color: #fff; font-size: clamp(20px, 5vw, 27px); line-height: 1.12; }
 :root body.client-dashboard-page .client-home-reward-card small { color: #d2d8dc; font-size: 12px; }
+:root body.client-dashboard-page .client-home-reward-encouragement { max-width: 270px; margin: 7px 0 0; padding: 8px 11px; border: 1px solid #ffffff36; border-radius: 12px; background: #ffffff12; color: #f5f7f7; font-size: 12px; font-weight: 650; line-height: 1.35; }
+:root body.client-dashboard-page .client-home-reward-encouragement span { margin-right: 3px; color: #ffe47a; font-weight: 850; }
+:root body.client-dashboard-page .workout-completion-atari-message { max-width: 340px; margin: -10px auto 2px; color: var(--ink, #f2f0e8); font-size: 13px; font-weight: 650; line-height: 1.4; text-align: center; }
+:root body.client-dashboard-page .workout-completion-atari-message span:first-child { color: #ffe47a; font-weight: 850; }
 :root body.client-dashboard-page .client-home-reward-dots { display: flex; justify-content: center; gap: 6px; margin-top: 9px; }
 :root body.client-dashboard-page .client-home-reward-dots span { width: 7px; height: 7px; border-radius: 50%; background: #65717b; }
 :root body.client-dashboard-page .client-home-reward-dots .is-active { width: 17px; border-radius: 8px; background: #ffd400; }
@@ -108,6 +112,9 @@
 :root[data-client-theme="light"] body.client-dashboard-page .client-home-reward-card.is-gym { background: #e2f2fe; }
 :root[data-client-theme="light"] body.client-dashboard-page .client-home-reward-card strong { color: #172834; }
 :root[data-client-theme="light"] body.client-dashboard-page .client-home-reward-card small { color: #41515b; }
+:root[data-client-theme="light"] body.client-dashboard-page .client-home-reward-encouragement { border-color: #bcc8c8; background: #ffffffb8; color: #172834; }
+:root[data-client-theme="light"] body.client-dashboard-page .client-home-reward-encouragement span,
+:root[data-client-theme="light"] body.client-dashboard-page .workout-completion-atari-message span:first-child { color: #8b5600; }
 :root[data-client-theme="light"] body.client-dashboard-page :is(.client-home-checkin-links button, .client-home-plan-link, .client-home-community-heading button, .client-home-planner .kicker, .client-home-community .kicker) { color: #185f92; }
 :root body.client-dashboard-page .client-home-grid .client-home-today-workout { order: 0; }
 :root body.client-dashboard-page .client-home-planner { order: 1; }
