@@ -85,6 +85,7 @@
         if (error) throw error;
         if (version !== dailyVersion) return;
         renderDaily(data?.[0] || null);
+        document.dispatchEvent?.(new CustomEvent('fwb:daily-challenge-updated'));
         void root.FWB_COMMUNITY_CONNECTIONS?.refresh();
       } catch (_) {
         if (version === dailyVersion) dailyStatus.textContent = 'Could not load the challenge. Join Community, then try again.';
