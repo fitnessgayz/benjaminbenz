@@ -36,6 +36,7 @@ jobs:
           cp -R CNAME .nojekyll *.html *.png *.ico site.webmanifest client.webmanifest coach.webmanifest timer-notifications-sw.js css images js _site/
           mkdir -p _site/assets/mockups/fascia
           cp -R assets/mockups/fascia/client-web _site/assets/mockups/fascia/
+          cp -R assets/mascots _site/assets/
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v4
