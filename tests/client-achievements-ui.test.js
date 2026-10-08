@@ -244,7 +244,7 @@ test("retry uses full history, rejects account changes, and leaves failure visib
 test("completion adds wins to the existing sheet and historic share clears them", () => {
   const nodes = new Map();
   const overlay = { querySelector: selector => {
-    if (!nodes.has(selector)) nodes.set(selector, { focus() {} });
+    if (!nodes.has(selector)) nodes.set(selector, { focus() {}, classList: { toggle() {} } });
     return nodes.get(selector);
   } };
   const context = vm.createContext({
