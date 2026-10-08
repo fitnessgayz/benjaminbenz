@@ -99,7 +99,7 @@ function inferredMuscle(name) {
   if (has(/\b(glute|hip thrust|hip extension|hip drive|kickbacks?|abduction|outer thigh|lateral walk|clamshell|bridge)\b/)) return "glutes";
   if (has(/\b(quads?|quadriceps?|squats?|leg press|leg extension|lunges?|step ups?)\b/)) return "quads";
   if (has(/\b(calf|calves|ankle rocks?|ankle knee to wall|ankle mobil)\b/)) return "calves";
-  if (has(/\b(chest|pectoral|pecs?|pex|bench press|push ups?|cable fly|dumbbell flys?|incline dumbbell press|machine fly|decline.*press|ches press)\b/)) return "chest";
+  if (has(/\b(chest|pectoral|pecs?|pex|bench press|push ups?|cable fly|dumbbell flys?|incline dumbbell press|incline dumbell press|incline press|machine fly|decline.*press|ches press)\b/)) return "chest";
   if (has(/\b(shoulders?|delts?|lateral raise|front raise|frontal raise|upright row|shrug|wall slide|push press)\b/)) return "shoulders";
   if (has(/\b(core|abs?|abdominal|crunch|crunches|crunchies|abcoaster|dead bug|pallof|wood chop|woodchop|sit ups?|situps|knee raise|leg lowers?|hollow hold|jack knife|russian twist|oblique twist|cable twist|torso twists?|torso rotation|side bend|body saw|bicycle kick|hanging leg|supine breathing)\b/)) return "core";
   if (has(/\b(forearm|wrist|pronation|supination)\b/)) return "forearms";
