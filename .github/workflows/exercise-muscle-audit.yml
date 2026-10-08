@@ -24,5 +24,9 @@ jobs:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           persist-credentials: false
+          filter: blob:none
+          sparse-checkout: |
+            scripts/admin/audit-exercise-muscles.mjs
+          sparse-checkout-cone-mode: false
       - name: Audit exercise muscle-group coverage
         run: node scripts/admin/audit-exercise-muscles.mjs
