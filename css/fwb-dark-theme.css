@@ -1016,6 +1016,12 @@
   .coach-workout-set-progress, .coach-workout-set-row.is-warm-up,
   .coach-notification-status, .builder-progression, .builder-settings
 ) { color: var(--ink); background: var(--surface); border-color: var(--line); }
+:root body.coach-admin-page .training-log-card .training-log-row-main > span,
+:root body.coach-admin-page .training-log-card .training-log-summary-body > span,
+:root body.coach-admin-page .training-log-card .training-log-notes strong { color: var(--ink); }
+:root body.coach-admin-page .training-log-card .training-log-superset-heading {
+  color: var(--secondary-accent);
+}
 :root body:is(.coach-admin-page, .coach-workout-log-page, .coach-exercise-library-page) :is(
   .coach-admin-sidebar-toggle, .coach-notification-close, .coach-mobile-more-heading > button,
   .client-added-exercise-review-heading > button, .client-added-exercises-link,
