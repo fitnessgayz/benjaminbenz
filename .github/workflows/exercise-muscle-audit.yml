@@ -1,0 +1,23 @@
+name: Exercise muscle-group audit
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: production
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_DEPLOY_TOKEN }}
+      SUPABASE_PROJECT_ID: qukdfjeupjhpthfbaonv
+      SUPABASE_URL: https://qukdfjeupjhpthfbaonv.supabase.co
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - name: Audit exercise muscle-group coverage
+        run: node scripts/admin/audit-exercise-muscles.mjs
