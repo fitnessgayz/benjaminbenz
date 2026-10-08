@@ -55,7 +55,8 @@
     "20261007141212_add_single_arm_machine_row_straddle_media.sql",
     "20261007150000_remove_straddle_from_single_arm_machine_row.sql",
     "20261007184504_attach_single_arm_dumbbell_row_search_aliases.sql",
-    "20261008110000_allow_client_portal_weekly_checkins.sql"
+    "20261008110000_allow_client_portal_weekly_checkins.sql",
+    "20261008181200_client_home_activity_totals.sql"
   ],
   "nasmExerciseCatalogMigration": "20261001032427_add_complete_nasm_exercise_library.sql",
   "nasmExerciseCatalogCount": 75,
