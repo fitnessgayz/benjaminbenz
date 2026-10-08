@@ -5871,14 +5871,20 @@ function normalizeCustomWorkoutFormat(value) {
   return Object.hasOwn(customWorkoutFormats, value) ? value : "single";
 }
 
-function customWorkoutDefaultExerciseCount() {
-  return 0;
+function customWorkoutDefaultExerciseCount(format) {
+  switch (normalizeCustomWorkoutFormat(format)) {
+    case "superset": return 10;
+    case "circuit": return 12;
+    default: return 6;
+  }
 }
 
 function customWorkoutDefaultExerciseGroup(format, index) {
-  return normalizeCustomWorkoutFormat(format) === "single"
-    ? 0
-    : Math.floor(index / customWorkoutExerciseAddConfig(format).count);
+  switch (normalizeCustomWorkoutFormat(format)) {
+    case "superset": return Math.floor(index / 2);
+    case "circuit": return Math.floor(index / 3);
+    default: return 0;
+  }
 }
 
 function customWorkoutPanelHasEnteredExerciseContent(panel) {
@@ -6510,8 +6516,6 @@ function customWorkoutExercises(format = activeCustomWorkoutFormat) {
   if (exercises.length > 0) {
     return exercises;
   }
-
-  if (activeCustomWorkoutDraft()?.emptyExercises) return [];
 
   const defaultExerciseCount = customWorkoutDefaultExerciseCount(format);
 
@@ -12371,6 +12375,21 @@ function openCustomWorkoutExerciseEditor(card) {
 function addCustomWorkoutPickedExercise(panel, name) {
   const stack = panel?.querySelector("[data-custom-workout-carousel-stack]");
   if (!stack || !String(name).trim()) return null;
+  const blankCard = Array.from(panel.querySelectorAll("[data-custom-exercise-card]")).find((card) => {
+    const log = card.querySelector("[data-exercise-log]");
+    const input = card.querySelector("[data-exercise-name-input]");
+    return !String(input?.value || log?.dataset.exerciseName || "").trim();
+  });
+  if (blankCard) {
+    const input = customWorkoutEditableNameInput(blankCard);
+    if (input) {
+      input.value = String(name).trim();
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      input.blur();
+      persistCustomWorkoutDraftFromPanel(panel);
+      return blankCard;
+    }
+  }
   const format = normalizeCustomWorkoutFormat(panel.dataset.customWorkoutFormat);
   const add = customWorkoutExerciseAddConfig(format);
   const carousels = customWorkoutCarousels(panel);

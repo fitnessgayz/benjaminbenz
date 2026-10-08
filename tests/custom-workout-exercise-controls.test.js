@@ -30,19 +30,39 @@ function exerciseContext(draft = null) {
   });
 }
 
-test("new custom workouts start without blank exercises in every format", () => {
+test("new custom workouts start with format-specific blank exercises", () => {
   const context = exerciseContext();
-  assert.deepEqual(plain(context.customWorkoutExercises()), []);
-  assert.equal(context.customWorkoutExercises("superset").length, 0);
-  assert.equal(context.customWorkoutExercises("circuit").length, 0);
+  assert.equal(context.customWorkoutExercises().length, 6);
+  assert.equal(context.customWorkoutExercises("superset").length, 10);
+  assert.equal(context.customWorkoutExercises("circuit").length, 12);
 });
 
-test("empty drafts stay empty and saved exercises are retained", () => {
-  assert.deepEqual(plain(exerciseContext({ emptyExercises: true, exercises: [] }).customWorkoutExercises()), []);
-  assert.equal(exerciseContext({ exercises: [] }).customWorkoutExercises().length, 0);
+test("empty drafts gain starter slots and saved exercises are retained", () => {
+  assert.equal(exerciseContext({ emptyExercises: true, exercises: [] }).customWorkoutExercises().length, 6);
+  assert.equal(exerciseContext({ exercises: [] }).customWorkoutExercises().length, 6);
   const saved = [{ code: "CW03", name: "Cable Row", group: 1, groupType: "superset" }];
   assert.equal(exerciseContext({ exercises: saved }).customWorkoutExercises().length, 1);
   assert.equal(exerciseContext({ exercises: saved }).customWorkoutExercises()[0].name, "Cable Row");
+});
+
+test("exercise picker fills the next blank slot before appending", () => {
+  const input = { value: "", blurred: false, dispatchEvent() {}, blur() { this.blurred = true; } };
+  const log = { dataset: { exerciseName: "" } };
+  const card = { querySelector: (selector) => selector === "[data-exercise-log]" ? log : input };
+  let persisted = 0;
+  const panel = {
+    querySelector: () => ({}),
+    querySelectorAll: () => [card]
+  };
+  const context = evaluate(["addCustomWorkoutPickedExercise"], {
+    customWorkoutEditableNameInput: () => input,
+    persistCustomWorkoutDraftFromPanel: () => { persisted += 1; },
+    Event: class {}
+  });
+  assert.equal(context.addCustomWorkoutPickedExercise(panel, "  Cable Row  "), card);
+  assert.equal(input.value, "Cable Row");
+  assert.equal(input.blurred, true);
+  assert.equal(persisted, 1);
 });
 
 test("draft serialization records intentional zero without dropping title, date or copy provenance", () => {
@@ -101,7 +121,7 @@ for (const [format, sizes, addedCount] of [
     const calls = [];
     function card(exercise, options = {}) {
       const date = { value: "" };
-      const log = { dataset: { exerciseCode: exercise.code }, date, querySelector: () => date };
+      const log = { dataset: { exerciseCode: exercise.code, exerciseName: exercise.name }, date, querySelector: () => date };
       return { exercise, options, log, dataset: { customWorkoutGroup: String(exercise.group) }, querySelector: () => log };
     }
     function carousel(group) {
