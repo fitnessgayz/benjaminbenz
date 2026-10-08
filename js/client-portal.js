@@ -8043,6 +8043,7 @@ function workoutCompletionSharePromptMarkup() {
           </div>
           <button type="button" data-workout-share-dismiss aria-label="Close workout sharing prompt">×</button>
         </header>
+        <div class="workout-completion-atari is-celebrating" data-workout-share-atari aria-hidden="true"><img src="assets/mascots/atari-expressions.png" alt="" /></div>
         <section class="achievement-celebration" data-workout-achievements aria-label="New workout achievements" hidden></section>
         <article class="workout-completion-share-card" aria-label="Workout completion share preview">
           <span class="workout-completion-share-brand">FWB</span>
@@ -8099,6 +8100,9 @@ function openWorkoutCompletionSharePrompt(summary, returnFocus = null, achieveme
   };
 
   pendingWorkoutCompletionShare = summary;
+  const atari = overlay.querySelector("[data-workout-share-atari]");
+  atari?.classList.toggle("is-celebrating", summary.isComplete !== false);
+  atari?.classList.toggle("is-encouraging", summary.isComplete === false);
   const celebration = overlay.querySelector("[data-workout-achievements]");
   if (celebration) {
     celebration.innerHTML = window.FWB_ACHIEVEMENTS_UI?.celebrationMarkup(achievements) || "";

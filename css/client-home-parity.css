@@ -27,6 +27,10 @@
 :root body.client-dashboard-page .client-home-reward-mascot.is-greeting img { left: 0; top: 0; }
 :root body.client-dashboard-page .client-home-reward-mascot.is-celebrating img { left: -100%; top: 0; }
 :root body.client-dashboard-page .client-home-reward-mascot.is-encouraging img { left: 0; top: -100%; }
+:root body.client-dashboard-page .workout-completion-atari { position: relative; width: 76px; height: 80px; margin: 4px auto 8px; overflow: hidden; }
+:root body.client-dashboard-page .workout-completion-atari img { position: absolute; display: block; width: 200%; height: 200%; max-width: none; object-fit: fill; pointer-events: none; }
+:root body.client-dashboard-page .workout-completion-atari.is-celebrating img { left: -100%; top: 0; }
+:root body.client-dashboard-page .workout-completion-atari.is-encouraging img { left: 0; top: -100%; }
 :root body.client-dashboard-page .client-home-reward-card strong { color: #fff; font-size: clamp(20px, 5vw, 27px); line-height: 1.12; }
 :root body.client-dashboard-page .client-home-reward-card small { color: #d2d8dc; font-size: 12px; }
 :root body.client-dashboard-page .client-home-reward-dots { display: flex; justify-content: center; gap: 6px; margin-top: 9px; }
