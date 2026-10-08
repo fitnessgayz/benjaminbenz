@@ -30,21 +30,16 @@ function exerciseContext(draft = null) {
   });
 }
 
-test("fresh straight sets start with six blank exercises and grouped workouts start with five groups", () => {
+test("new custom workouts start without blank exercises in every format", () => {
   const context = exerciseContext();
-  const exercises = plain(context.customWorkoutExercises());
-  assert.deepEqual(exercises.map(({ code, name }) => ({ code, name })), [
-    { code: "CW01", name: "" }, { code: "CW02", name: "" },
-    { code: "CW03", name: "" }, { code: "CW04", name: "" },
-    { code: "CW05", name: "" }, { code: "CW06", name: "" }
-  ]);
-  assert.equal(context.customWorkoutExercises("superset").length, 10);
-  assert.equal(context.customWorkoutExercises("circuit").length, 15);
+  assert.deepEqual(plain(context.customWorkoutExercises()), []);
+  assert.equal(context.customWorkoutExercises("superset").length, 0);
+  assert.equal(context.customWorkoutExercises("circuit").length, 0);
 });
 
-test("explicitly removing every exercise stays empty on restore, while older empty drafts keep defaults", () => {
+test("empty drafts stay empty and saved exercises are retained", () => {
   assert.deepEqual(plain(exerciseContext({ emptyExercises: true, exercises: [] }).customWorkoutExercises()), []);
-  assert.equal(exerciseContext({ exercises: [] }).customWorkoutExercises().length, 6);
+  assert.equal(exerciseContext({ exercises: [] }).customWorkoutExercises().length, 0);
   const saved = [{ code: "CW03", name: "Cable Row", group: 1, groupType: "superset" }];
   assert.equal(exerciseContext({ exercises: saved }).customWorkoutExercises().length, 1);
   assert.equal(exerciseContext({ exercises: saved }).customWorkoutExercises()[0].name, "Cable Row");
@@ -61,10 +56,11 @@ test("draft serialization records intentional zero without dropping title, date 
     activeCustomWorkoutDraft: () => previous,
     activeCustomWorkoutFormat: "single", customWorkoutTitle: "Custom workout",
     normalizeCustomWorkoutFormat: (value) => value, todayDate: () => "2026-09-22",
-    serializeCustomExerciseDraft: () => { throw new Error("No exercise should be serialized"); }
+    serializeCustomExerciseDraft: () => { throw new Error("No exercise should be serialized"); },
+    workoutGymLocationForElement: () => ""
   });
   assert.deepEqual(plain(context.customWorkoutPanelDraft(panel)), {
-    format: "single", date: "2026-09-23", workoutTitle: "Current workout", emptyExercises: true, nextExerciseNumber: 1,
+    format: "single", gymName: "", date: "2026-09-23", workoutTitle: "Current workout", emptyExercises: true, nextExerciseNumber: 1,
     copiedFrom: previous.copiedFrom, exercises: []
   });
 });
@@ -84,7 +80,7 @@ test("both exercise counters and remove controls follow canonical cards, includi
   });
   context.syncCustomWorkoutExerciseControls(panel);
   assert.deepEqual(counters.map((counter) => counter.textContent), ["3", "3"]);
-  assert.deepEqual(adders.map((button) => button.label), ["Add superset (2 exercises)", "Add superset (2 exercises)"]);
+  assert.deepEqual(adders.map((button) => button.label), ["Add exercise", "Add exercise"]);
   cards = [];
   context.syncCustomWorkoutExerciseControls(panel);
   assert.deepEqual(counters.map((counter) => counter.textContent), ["0", "0"]);
@@ -93,12 +89,12 @@ test("both exercise counters and remove controls follow canonical cards, includi
   panel.dataset.customWorkoutFormat = "circuit";
   context.syncCustomWorkoutExerciseControls(panel);
   assert.deepEqual(removers.map((button) => button.disabled), [false, false]);
-  assert.deepEqual(adders.map((button) => button.label), ["Add circuit (3 exercises)", "Add circuit (3 exercises)"]);
+  assert.deepEqual(adders.map((button) => button.label), ["Add exercise", "Add exercise"]);
 });
 
 for (const [format, sizes, addedCount] of [
-  ["single", [1, 1, 1, 1], 1], ["superset", [2, 2], 2], ["circuit", [3], 3],
-  ["superset", [2, 1], 2], ["circuit", [2], 3], ["superset", [], 2], ["circuit", [], 3]
+  ["single", [1, 1, 1, 1], 1], ["superset", [2, 2], 1], ["circuit", [3], 1],
+  ["superset", [2, 1], 1], ["circuit", [2], 1], ["superset", [], 1], ["circuit", [], 1]
 ]) {
   test(`${format} picker adds ${addedCount} fresh exercises after groups [${sizes}], preserving existing entries`, () => {
     let sequence = 0;
@@ -246,7 +242,7 @@ function dialogFixture(format = "single") {
     customWorkoutFormats: { single: {}, superset: {}, circuit: {} },
     document: { querySelector: () => null, createElement: () => dialog, body: { append() {} } },
     escapeHtml: String, currentExerciseLabel: (log) => `Exercise ${log.index + 1}`,
-    renderCustomExerciseSuggestions() {},
+    renderCustomExerciseSuggestions() {}, renderCustomWorkoutPickerResults() {},
     removeExerciseLog: (log) => calls.remove.push(log.index),
     addCustomWorkoutPickedExercise: (_panel, name) => { calls.add.push(name); return null; }
   });
@@ -254,12 +250,12 @@ function dialogFixture(format = "single") {
   return { context, handlers, calls, trigger, input, click, dialog };
 }
 
-test("grouped pickers explain their blank companions and full group count before adding", () => {
-  for (const [format, label, count] of [["superset", "Add superset", 2], ["circuit", "Add circuit", 3]]) {
+test("all picker formats add one selected exercise without blank companions", () => {
+  for (const format of ["single", "superset", "circuit"]) {
     const fixture = dialogFixture(format);
     fixture.context.openCustomWorkoutExerciseDialog(fixture.trigger);
-    assert(fixture.dialog.innerHTML.includes(`${label} · ${count} exercises`));
-    assert(fixture.dialog.innerHTML.includes("Choose the first exercise."));
+    assert(fixture.dialog.innerHTML.includes("Add exercise"));
+    assert(!fixture.dialog.innerHTML.includes("blank partner"));
     assert.deepEqual(fixture.calls.add, []);
   }
 });
@@ -389,7 +385,7 @@ test("custom builder renders muscles directly below the exercise name", () => {
   const menu = { innerHTML: "", hidden: true };
   const card = { classList: { toggle() {} } };
   const editor = { querySelector: () => menu, closest: () => card };
-  const input = { value: "back", closest: () => editor, setAttribute() {} };
+  const input = { value: "back", dataset: {}, closest: () => editor, setAttribute() {} };
   const context = evaluate(["renderCustomExerciseSuggestions"], {
     customExerciseSuggestionMatches: () => [{
       name: "45-Degree Back Extension",
@@ -403,6 +399,25 @@ test("custom builder renders muscles directly below the exercise name", () => {
   context.renderCustomExerciseSuggestions(input);
   assert.match(menu.innerHTML, /<strong>45-Degree Back Extension<\/strong>\s*<span class="custom-workout-suggestion-muscles">Glutes · Hamstrings<\/span>/);
   assert.equal(menu.hidden, false);
+});
+
+test("selected exercise suggestions stay closed until the name is edited again", () => {
+  const menu = { innerHTML: "", hidden: true };
+  const card = { classList: { toggle() {} } };
+  const editor = { querySelector: () => menu, closest: () => card };
+  const input = { value: "Cable Row", dataset: { exerciseSuggestionSelected: "Cable Row" }, closest: () => editor, setAttribute() {} };
+  let closes = 0;
+  const context = evaluate(["renderCustomExerciseSuggestions"], {
+    customExerciseSuggestionMatches: () => [{ name: "Cable Row", recommended: false, muscleLabel: "Back" }],
+    escapeHtml: String, closeCustomExerciseSuggestions: () => { closes++; }
+  });
+  context.renderCustomExerciseSuggestions(input);
+  assert.equal(closes, 1);
+  assert.equal(menu.hidden, true);
+  input.value = "Cable";
+  context.renderCustomExerciseSuggestions(input);
+  assert.equal(menu.hidden, false);
+  assert.match(menu.innerHTML, /Cable Row/);
 });
 
 test("exercise key opens its matching editor while a nested demo link keeps its own behavior", async () => {

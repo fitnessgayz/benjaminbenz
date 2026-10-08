@@ -11,8 +11,9 @@ const home = dashboard.match(/data-client-dashboard-panel="home"[\s\S]*?data-cli
 
 test("Home keeps the primary actions and removes the More disclosure", () => {
   assert.match(home, /id="client-weekly-activity"/);
-  assert.match(home, /id="client-home-glance-title"/);
-  assert.match(home, /id="client-home-note-title"/);
+  assert.match(home, /id="client-home-planner-title"/);
+  assert.match(home, /id="client-home-community-title"/);
+  assert.doesNotMatch(home, /client-home-glance-title|client-home-note-title/);
   assert.match(home, /data-client-summary-go-tab="workouts">Start workout/);
   assert.doesNotMatch(home, /More from your dashboard|client-home-more|client-home-snapshot-deck/);
   assert.doesNotMatch(home, /data-client-achievements-home|client-home-mood-form/);
@@ -25,9 +26,9 @@ test("Home keeps the avatar and notifications in its compact header", () => {
 
 test("Workouts still opens its program overview and coach notes", () => {
   assert.match(dashboard, /id="client-program-info-dialog"[\s\S]*?id="dashboard-program-title"/);
-  assert.match(home, /id="client-home-note-title"[\s\S]*?id="client-home-note-body"/);
+  assert.doesNotMatch(home, /id="client-home-note-title"/);
   assert.match(portal, /const noteCard = document\.createElement\("article"\)/);
-  assert.match(portal, /noteTitle\.textContent = document\.getElementById\("client-home-note-title"\)/);
+  assert.match(portal, /noteTitle\.textContent = String\(currentProgram\?\.coach_note_title/);
 });
 
 test("Home remains a single column on mobile", () => {
