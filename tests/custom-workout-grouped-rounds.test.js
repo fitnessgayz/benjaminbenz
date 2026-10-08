@@ -325,7 +325,7 @@ test("starts a fresh custom session with a unique storage title after completion
   assert.match(freshTitle, /getMilliseconds/);
   assert.match(restart, /storeCustomWorkoutDraft/);
   assert.match(restart, /workoutTitle: freshCustomWorkoutStorageTitle\(\)/);
-  assert.match(restart, /complete: false/);
+  assert.match(restart, /emptyExercises: true/);
   assert.match(finishSave, /startFreshGroupedCustomWorkout\(groupedRestart\)/);
 
   const supersetConfig = restartApi.groupedCustomWorkoutRestartConfig(panel);
@@ -333,17 +333,16 @@ test("starts a fresh custom session with a unique storage title after completion
   restartApi.startFreshGroupedCustomWorkout({ ...supersetConfig, exerciseCount: 8 });
   assert.equal(storedDrafts[0].format, "superset");
   assert.equal(storedDrafts[0].date, "2026-09-17");
-  assert.deepEqual(storedDrafts[0].exercises.map((exercise) => exercise.code), Array.from({ length: 10 }, (_, index) => `CW${String(index + 1).padStart(2, "0")}`));
-  assert.deepEqual(storedDrafts[0].exercises.map((exercise) => exercise.group), [0, 0, 1, 1, 2, 2, 3, 3, 4, 4]);
-  assert.ok(storedDrafts[0].exercises.every((exercise) => exercise.name === "" && exercise.groupType === "superset"));
+  assert.deepEqual(storedDrafts[0].exercises, []);
+  assert.equal(storedDrafts[0].emptyExercises, true);
 
   panel.dataset.customWorkoutFormat = "circuit";
   const circuitConfig = restartApi.groupedCustomWorkoutRestartConfig(panel);
   restartApi.startFreshGroupedCustomWorkout({ ...circuitConfig, exerciseCount: 8 });
   assert.equal(storedDrafts[1].format, "circuit");
-  assert.deepEqual(storedDrafts[1].exercises.map((exercise) => exercise.code), Array.from({ length: 15 }, (_, index) => `CW${String(index + 1).padStart(2, "0")}`));
-  assert.deepEqual(storedDrafts[1].exercises.map((exercise) => exercise.group), [0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4]);
-  assert.ok(storedDrafts[1].exercises.every((exercise) => exercise.name === "" && exercise.groupType === "circuit"));
+  assert.deepEqual(storedDrafts[1].exercises, []);
+  assert.equal(storedDrafts[1].emptyExercises, true);
+
 });
 
 test("shares the grouped round renderer with assigned workouts", () => {

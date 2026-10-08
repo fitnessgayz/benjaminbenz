@@ -101,13 +101,10 @@ test("fresh workouts start with six straight exercises, five supersets, or five 
     () => null
   );
 
-  assert.equal(defaults.customWorkoutDefaultExerciseCount("single"), 6);
-  assert.equal(defaults.customWorkoutDefaultExerciseCount("superset"), 10);
-  assert.equal(defaults.customWorkoutDefaultExerciseCount("circuit"), 15);
-  assert.equal(defaults.customWorkoutDefaultExerciseCount("unknown"), 6);
-  assert.deepEqual(defaults.customWorkoutExercises("superset").map((exercise) => exercise.group), [0, 0, 1, 1, 2, 2, 3, 3, 4, 4]);
-  assert.deepEqual(defaults.customWorkoutExercises("circuit").map((exercise) => exercise.group), [0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4]);
-  assert.equal(defaults.customWorkoutExercises("single").length, 6);
+  for (const format of ["single", "superset", "circuit", "unknown"]) {
+    assert.equal(defaults.customWorkoutDefaultExerciseCount(format), 0);
+    assert.deepEqual(defaults.customWorkoutExercises(format), []);
+  }
 
   const renderedGroups = [];
   const renderCarousel = Function(
@@ -118,13 +115,10 @@ test("fresh workouts start with six straight exercises, five supersets, or five 
     renderedGroups.push({ format, count: exercises.length, group, startIndex });
     return "";
   });
-  for (const [format, size] of [["superset", 2], ["circuit", 3]]) {
+  for (const format of ["superset", "circuit"]) {
     renderedGroups.length = 0;
     renderCarousel(format, "Custom workout");
-    assert.equal(renderedGroups.length, 5);
-    assert.deepEqual(renderedGroups.map((group) => group.count), [size, size, size, size, size]);
-    assert.deepEqual(renderedGroups.map((group) => group.group), [0, 1, 2, 3, 4]);
-    assert.deepEqual(renderedGroups.map((group) => group.startIndex), [0, size, size * 2, size * 3, size * 4]);
+    assert.equal(renderedGroups.length, 0);
   }
 
   draftExercises = [{ code: "CW01", name: "Existing exercise", group: 0, groupType: "single" }];
@@ -141,73 +135,14 @@ test("fresh workouts start with six straight exercises, five supersets, or five 
     () => ({ id: `generated-${generatedCard += 1}`, dataset: {}, remove() {} })
   );
   const circuitCards = resizeDefaults({}, "circuit", [{ id: "existing", dataset: {}, remove() {} }]);
-  assert.equal(circuitCards.length, 15);
-  assert.deepEqual(circuitCards.map((card) => card.dataset.customWorkoutGroup), ["0", "0", "0", "1", "1", "1", "2", "2", "2", "3", "3", "3", "4", "4", "4"]);
-  assert.ok(circuitCards.every((card) => card.dataset.customWorkoutGroupType === "circuit"));
-  const removableCards = Array.from({ length: 15 }, (_, index) => ({
-    id: `card-${index + 1}`,
-    dataset: {},
-    removed: false,
-    remove() { this.removed = true; }
+  assert.equal(circuitCards.length, 0);
+  const removableCards = Array.from({ length: 3 }, (_, index) => ({
+    id: `card-${index + 1}`, dataset: {}, removed: false, remove() { this.removed = true; }
   }));
   const supersetCards = resizeDefaults({}, "superset", removableCards);
-  assert.equal(supersetCards.length, 10);
-  assert.deepEqual(supersetCards.map((card) => card.dataset.customWorkoutGroup), ["0", "0", "1", "1", "2", "2", "3", "3", "4", "4"]);
-  assert.equal(removableCards[10].removed, true);
-  const straightCards = resizeDefaults({}, "single", removableCards.slice(0, 2));
-  assert.equal(straightCards.length, 6);
-  assert.ok(straightCards.every((card) => card.dataset.customWorkoutGroup === "0" && card.dataset.customWorkoutGroupType === "single"));
-  assert.equal(removableCards[1].removed, false);
+  assert.equal(supersetCards.length, 0);
+  assert.ok(removableCards.every((card) => card.removed));
 
-  const hasEnteredContent = Function(
-    "exerciseNameInputForLog",
-    `${enteredContentSource}; return customWorkoutPanelHasEnteredExerciseContent;`
-  )((logElement) => logElement.nameInput);
-  const exercisePanel = (logElement, auxiliaryLogs = []) => ({
-    querySelectorAll(selector) {
-      if (selector === "[data-custom-exercise-card] [data-exercise-log]") return [logElement];
-      if (selector === "[data-exercise-log]") return [logElement, ...auxiliaryLogs];
-      return [];
-    }
-  });
-  const exerciseLog = (name = "", weight = "") => ({
-    nameInput: { value: name },
-    dataset: {},
-    querySelector(selector) {
-      return selector === "[data-log-notes]" ? { value: "" } : null;
-    },
-    querySelectorAll(selector) {
-      if (selector !== "[data-set-row]") return [];
-      return [{
-        dataset: {},
-        classList: { contains: () => false },
-        querySelector(field) {
-          if (field === "[data-set-weight]") return { value: weight };
-          if (field === "[data-set-reps]") return { value: "" };
-          if (field === "[data-complete-set]") return { getAttribute: () => "false" };
-          return null;
-        }
-      }];
-    }
-  });
-  const defaultWarmUp = exerciseLog("Warm up", "");
-  const defaultCardio = exerciseLog("Cardio", "");
-  assert.match(enteredContentSource, /querySelectorAll\("\[data-custom-exercise-card\] \[data-exercise-log\]"\)/);
-  assert.equal(hasEnteredContent(exercisePanel(exerciseLog(), [defaultWarmUp, defaultCardio])), false);
-  assert.equal(hasEnteredContent(exercisePanel(exerciseLog("Saved row"))), true);
-  assert.equal(hasEnteredContent(exercisePanel(exerciseLog("", "135"))), true);
-
-  assert.match(panelMarkup, /const exercises = customWorkoutExercises\(format\)/);
-  assert.match(carouselMarkup, /const exercises = customWorkoutExercises\(format\)/);
-  assert.match(
-    updateFormat,
-    /format !== previousFormat &&[\s\S]*?!options\.skipDraft &&[\s\S]*?!customWorkoutPanelHasEnteredExerciseContent\(panel\)[\s\S]*?setUntouchedCustomWorkoutDefaultExercises\(panel, format, currentCards\)/
-  );
-  assert.ok(
-    updateFormat.indexOf("setUntouchedCustomWorkoutDefaultExercises(panel, format, currentCards)") <
-      updateFormat.indexOf("syncCustomWorkoutCarousel(panel"),
-    "Expected fresh default cards to be sized before the deck is regrouped"
-  );
 });
 
 test("the exercise-finished prompt offers two direct workout choices", () => {
