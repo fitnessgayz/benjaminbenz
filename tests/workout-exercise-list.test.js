@@ -122,7 +122,7 @@ test("name and rep updates retain existing list buttons and focused workout inpu
   const name = { textContent: "Row" }, detail = { textContent: "3 sets · 8 reps" }, attrs = {};
   const button = { querySelector: selector => selector === "[data-workout-exercise-list-name]" ? name : detail,
     setAttribute: (key, value) => { attrs[key] = value; } };
-  h.list.querySelector = () => button;
+  h.list.querySelector = selector => !selector || selector.startsWith("[data-workout-exercise-jump=") ? button : null;
   const activeInput = { value: "17.5" }; h.document.activeElement = activeInput;
   exercise.input.value = "Edited Row"; exercise.working[1].reps.value = "12";
   h.api.syncWorkoutExerciseList(h.panel);
@@ -141,6 +141,36 @@ test("addition, deletion and ordering update indices; an empty workout exposes i
   assert.match(h.list.innerHTML, /Go to Exercise 1: Press/);
   logs.length = 0; h.api.syncWorkoutExerciseList(h.panel);
   assert.equal(h.empty.hidden, false); assert.equal(h.list.hidden, true); assert.equal(h.list.innerHTML, "");
+});
+
+test("moving assigned exercises swaps live cards without replacing set inputs", () => {
+  const first = { id: "first" }, second = { id: "second" };
+  const parent = {
+    children: [first, second],
+    replaceChild(next, previous) {
+      const index = this.children.indexOf(previous);
+      this.children[index] = next;
+      next.parentNode = this;
+      previous.parentNode = null;
+    }
+  };
+  first.parentNode = parent; second.parentNode = parent;
+  const logs = [first, second].map(card => ({ closest: () => card, value: "entered set" }));
+  const list = { removeAttribute(name) { assert.equal(name, "data-exercise-order"); } };
+  const panel = { querySelector: () => list };
+  let markers = 0, carousels = 0;
+  const scope = vm.createContext({
+    workoutExerciseListLogs: () => logs,
+    document: { createComment: () => ({}) },
+    syncAssignedWorkoutMarkers: () => { markers++; },
+    syncAssignedWorkoutCarousels: () => { carousels++; }
+  });
+  vm.runInContext(declaration("moveAssignedWorkoutExercise"), scope);
+  assert.equal(scope.moveAssignedWorkoutExercise(panel, 0, 1), true);
+  assert.deepEqual(parent.children, [second, first]);
+  assert.equal(logs[0].value, "entered set");
+  assert.equal(markers, 1); assert.equal(carousels, 1);
+  assert.equal(scope.moveAssignedWorkoutExercise(panel, 0, -1), false);
 });
 
 test("jump targets the indexed visible exercise within the clicked panel without rebuilding inputs", () => {

@@ -8,6 +8,11 @@
   const label = planner.querySelector('[data-client-home-week-label]');
   const detail = planner.querySelector('[data-client-home-week-detail]');
   const streak = planner.querySelector('[data-client-home-streak]');
+  const rewardTrack = planner.querySelector('[data-client-reward-track]');
+  const rewardCards = [...rewardTrack.querySelectorAll('.client-home-reward-card')];
+  const rewardDots = [...planner.querySelectorAll('.client-home-reward-dots span')];
+  const rewardPrevious = planner.querySelector('[data-client-reward-prev]');
+  const rewardNext = planner.querySelector('[data-client-reward-next]');
   const weekLink = document.querySelector('[data-client-weekly-checkin]');
   let logs = [];
   let weekOffset = 0;
@@ -18,6 +23,20 @@
   let weeklyRecord = null;
   let scheduled = [];
   let scheduleCache = new Map();
+  let activityVersion = 0;
+  const rewardIndex = () => Math.min(rewardCards.length - 1,
+    Math.max(0, Math.round(rewardTrack.scrollLeft / Math.max(1, rewardTrack.clientWidth))));
+  const updateRewardControls = () => {
+    const index = rewardIndex();
+    rewardPrevious.disabled = index === 0;
+    rewardNext.disabled = index === rewardCards.length - 1;
+    rewardDots.forEach((dot, position) => dot.classList.toggle('is-active', position === index));
+  };
+  rewardPrevious.addEventListener('click', () => rewardCards[Math.max(0, rewardIndex() - 1)].scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' }));
+  rewardNext.addEventListener('click', () => rewardCards[Math.min(rewardCards.length - 1, rewardIndex() + 1)].scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' }));
+  rewardTrack.addEventListener('scroll', updateRewardControls, { passive: true });
+  root.addEventListener('resize', updateRewardControls);
+  updateRewardControls();
   const dateKey = date => [date.getFullYear(), String(date.getMonth() + 1).padStart(2, '0'), String(date.getDate()).padStart(2, '0')].join('-');
   const monday = value => {
     const date = new Date(value.getFullYear(), value.getMonth(), value.getDate());
@@ -33,6 +52,23 @@
   const completed = () => new Set(logs.filter(row => row.completed_at && /^\d{4}-\d{2}-\d{2}$/.test(row.entry_date || '')).map(row => row.entry_date));
   const workoutsOn = key => [...new Set(logs.filter(row => row.entry_date === key && row.completed_at).map(row => String(row.workout_title || 'Workout').split(' · ')[0]))];
   const plannedOn = key => scheduled.filter(row => row.planned_date === key).map(row => row.title);
+  async function refreshActivityTotals() {
+    const version = ++activityVersion;
+    const challenge = planner.querySelector('[data-client-challenge-streak]');
+    const visits = planner.querySelector('[data-client-gym-visits]');
+    if (!client || !email || preview) { challenge.textContent = '—'; visits.textContent = '—'; return; }
+    try {
+      const { data, error } = await client.rpc('client_home_activity_totals', { p_local_day: dateKey(new Date()) });
+      if (error) throw error;
+      if (version !== activityVersion) return;
+      challenge.textContent = String(data?.[0]?.challenge_streak ?? '—');
+      visits.textContent = String(data?.[0]?.gym_visits ?? '—');
+    } catch (_) {
+      if (version === activityVersion) { challenge.textContent = '—'; visits.textContent = '—'; }
+    }
+  }
+  document.addEventListener('fwb:gym-checkin-saved', () => void refreshActivityTotals());
+  document.addEventListener('fwb:daily-challenge-updated', () => void refreshActivityTotals());
   function renderPlanner() {
     const start = addDays(monday(new Date()), weekOffset * 7);
     const end = addDays(start, 6);
@@ -218,17 +254,19 @@
     button.disabled = false;
   });
   root.FWB_CLIENT_HOME_PARITY = {
-    render(nextLogs) { logs = Array.isArray(nextLogs) ? nextLogs : []; renderPlanner(); void refreshSchedule(); },
+    render(nextLogs) { logs = Array.isArray(nextLogs) ? nextLogs : []; renderPlanner(); void refreshSchedule(); void refreshActivityTotals(); },
     configure(nextClient, nextEmail, isPreview) {
       const normalizedEmail = String(nextEmail || '').trim().toLowerCase();
       if (client !== nextClient || email !== normalizedEmail || preview !== Boolean(isPreview)) {
         weeklyRecord = null;
         scheduleCache = new Map();
+        activityVersion++;
       }
       client = nextClient;
       email = normalizedEmail;
       preview = Boolean(isPreview);
       if (weekLink) weekLink.hidden = preview;
+      void refreshActivityTotals();
     }
   };
 })(window);

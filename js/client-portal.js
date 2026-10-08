@@ -5871,14 +5871,20 @@ function normalizeCustomWorkoutFormat(value) {
   return Object.hasOwn(customWorkoutFormats, value) ? value : "single";
 }
 
-function customWorkoutDefaultExerciseCount() {
-  return 0;
+function customWorkoutDefaultExerciseCount(format) {
+  switch (normalizeCustomWorkoutFormat(format)) {
+    case "superset": return 10;
+    case "circuit": return 12;
+    default: return 6;
+  }
 }
 
 function customWorkoutDefaultExerciseGroup(format, index) {
-  return normalizeCustomWorkoutFormat(format) === "single"
-    ? 0
-    : Math.floor(index / customWorkoutExerciseAddConfig(format).count);
+  switch (normalizeCustomWorkoutFormat(format)) {
+    case "superset": return Math.floor(index / 2);
+    case "circuit": return Math.floor(index / 3);
+    default: return 0;
+  }
 }
 
 function customWorkoutPanelHasEnteredExerciseContent(panel) {
@@ -6510,8 +6516,6 @@ function customWorkoutExercises(format = activeCustomWorkoutFormat) {
   if (exercises.length > 0) {
     return exercises;
   }
-
-  if (activeCustomWorkoutDraft()?.emptyExercises) return [];
 
   const defaultExerciseCount = customWorkoutDefaultExerciseCount(format);
 
@@ -8043,6 +8047,7 @@ function workoutCompletionSharePromptMarkup() {
           </div>
           <button type="button" data-workout-share-dismiss aria-label="Close workout sharing prompt">×</button>
         </header>
+        <div class="workout-completion-atari is-celebrating" data-workout-share-atari aria-hidden="true"><img src="assets/mascots/atari-expressions.png" alt="" /></div>
         <section class="achievement-celebration" data-workout-achievements aria-label="New workout achievements" hidden></section>
         <article class="workout-completion-share-card" aria-label="Workout completion share preview">
           <span class="workout-completion-share-brand">FWB</span>
@@ -8099,6 +8104,9 @@ function openWorkoutCompletionSharePrompt(summary, returnFocus = null, achieveme
   };
 
   pendingWorkoutCompletionShare = summary;
+  const atari = overlay.querySelector("[data-workout-share-atari]");
+  atari?.classList.toggle("is-celebrating", summary.isComplete !== false);
+  atari?.classList.toggle("is-encouraging", summary.isComplete === false);
   const celebration = overlay.querySelector("[data-workout-achievements]");
   if (celebration) {
     celebration.innerHTML = window.FWB_ACHIEVEMENTS_UI?.celebrationMarkup(achievements) || "";
@@ -12191,8 +12199,8 @@ function goToNextWorkoutExercise(button) {
 
 function workoutExerciseListMarkup(organize = false) {
   return `
-    <section class="workout-exercise-list" data-workout-exercise-list aria-label="${organize ? "Organize exercises" : "Workout exercises"}">
-      <h3>${organize ? "Organize exercises" : "Workout exercises"}</h3>
+    <section class="workout-exercise-list" data-workout-exercise-list aria-label="${organize ? "Organize and add exercise" : "Workout exercises"}">
+      <h3>${organize ? "Organize and add exercise" : "Workout exercises"}</h3>
       <p>${organize ? "Set the sequence and group for each exercise. Tap a name to open its card." : "Tap an exercise to jump to its card."}</p>
       <ol data-workout-exercise-list-items></ol>
       <p data-workout-exercise-list-empty hidden>No exercises yet. Add an exercise to get started.</p>
@@ -12246,10 +12254,15 @@ function syncWorkoutExerciseList(panel) {
         <span class="workout-exercise-list-number" aria-hidden="true">${index + 1}</span>
         <span class="workout-exercise-list-copy"><strong data-workout-exercise-list-name>${escapeHtml(entry.name)}</strong><small data-workout-exercise-list-detail>${escapeHtml(entry.detail)}</small></span>
         <span class="workout-exercise-list-arrow" aria-hidden="true">›</span>
-      </button>${panel.classList?.contains("client-workout-panel-custom") ? `<div class="workout-exercise-organize-actions">
-        <button type="button" data-custom-exercise-move="up" data-custom-exercise-index="${index}" aria-label="Move ${escapeHtml(entry.name)} up" ${index === 0 ? "disabled" : ""}>↑</button>
-        <button type="button" data-custom-exercise-move="down" data-custom-exercise-index="${index}" aria-label="Move ${escapeHtml(entry.name)} down" ${index === entries.length - 1 ? "disabled" : ""}>↓</button>
-        ${panel.dataset?.customWorkoutFormat !== "single" ? `<label>Group <select data-custom-exercise-group="${index}" aria-label="Group for ${escapeHtml(entry.name)}">${Array.from({ length: Math.max(entries.length, 1) }, (_, group) => `<option value="${group}" ${Number(logs[index].closest("[data-custom-exercise-card]")?.dataset.customWorkoutGroup || 0) === group ? "selected" : ""}>${group + 1}</option>`).join("")}</select></label>` : ""}
+      </button>${panel.classList?.contains("client-workout-panel-custom") || panel.classList?.contains("client-workout-panel-assigned") ? `<div class="workout-exercise-organize-actions">
+        <button type="button" ${panel.classList.contains("client-workout-panel-custom") ? "data-custom-exercise-move" : "data-workout-exercise-move"}="up" data-custom-exercise-index="${index}" aria-label="Move ${escapeHtml(entry.name)} up" ${index === 0 ? "disabled" : ""}>↑</button>
+        <button type="button" ${panel.classList.contains("client-workout-panel-custom") ? "data-custom-exercise-move" : "data-workout-exercise-move"}="down" data-custom-exercise-index="${index}" aria-label="Move ${escapeHtml(entry.name)} down" ${index === entries.length - 1 ? "disabled" : ""}>↓</button>
+        <button type="button" data-workout-exercise-rename="${index}" aria-label="Edit ${escapeHtml(entry.name)} name">Edit name</button>
+        ${panel.classList.contains("client-workout-panel-custom") && panel.dataset?.customWorkoutFormat !== "single" ? `<label>Group <select data-custom-exercise-group="${index}" aria-label="Group for ${escapeHtml(entry.name)}">${Array.from({ length: Math.max(entries.length, 1) }, (_, group) => `<option value="${group}" ${Number(logs[index].closest("[data-custom-exercise-card]")?.dataset.customWorkoutGroup || 0) === group ? "selected" : ""}>${group + 1}</option>`).join("")}</select></label>` : ""}
+      </div><div class="workout-exercise-rename-editor" data-workout-exercise-rename-editor="${index}" hidden>
+        <input type="text" maxlength="160" aria-label="Exercise ${index + 1} name" />
+        <button type="button" data-workout-exercise-rename-save="${index}">Save</button>
+        <button type="button" data-workout-exercise-rename-cancel="${index}">Cancel</button>
       </div>` : ""}</li>
     `).join("");
     list.dataset.exerciseOrder = order;
@@ -12264,6 +12277,11 @@ function syncWorkoutExerciseList(panel) {
       if (name.textContent !== entry.name) name.textContent = entry.name;
       if (detail.textContent !== entry.detail) detail.textContent = entry.detail;
       button.setAttribute("aria-label", `Go to Exercise ${index + 1}: ${entry.name}`);
+      list.querySelector(`[data-workout-exercise-rename="${index}"]`)?.setAttribute("aria-label", `Edit ${entry.name} name`);
+      for (const direction of ["up", "down"]) {
+        list.querySelector(`[data-custom-exercise-move="${direction}"][data-custom-exercise-index="${index}"], [data-workout-exercise-move="${direction}"][data-custom-exercise-index="${index}"]`)
+          ?.setAttribute("aria-label", `Move ${entry.name} ${direction}`);
+      }
     });
   }
   const empty = section.querySelector("[data-workout-exercise-list-empty]");
@@ -12292,6 +12310,24 @@ function jumpToWorkoutExercise(button) {
   target.setAttribute("tabindex", "-1");
   target.focus({ preventScroll: true });
   target.scrollIntoView({ block: "start", behavior: "auto" });
+}
+
+function moveAssignedWorkoutExercise(panel, index, direction) {
+  const logs = workoutExerciseListLogs(panel);
+  const target = index + direction;
+  const first = logs[index]?.closest("[data-assigned-exercise-card]");
+  const second = logs[target]?.closest("[data-assigned-exercise-card]");
+  if (!first || !second) return false;
+  const firstParent = first.parentNode;
+  const secondParent = second.parentNode;
+  const placeholder = document.createComment("exercise position");
+  firstParent.replaceChild(placeholder, first);
+  secondParent.replaceChild(first, second);
+  firstParent.replaceChild(second, placeholder);
+  panel.querySelector("[data-workout-exercise-list-items]")?.removeAttribute("data-exercise-order");
+  syncAssignedWorkoutMarkers(panel);
+  syncAssignedWorkoutCarousels(panel);
+  return true;
 }
 
 function customWorkoutExerciseAddConfig() {
@@ -12371,6 +12407,21 @@ function openCustomWorkoutExerciseEditor(card) {
 function addCustomWorkoutPickedExercise(panel, name) {
   const stack = panel?.querySelector("[data-custom-workout-carousel-stack]");
   if (!stack || !String(name).trim()) return null;
+  const blankCard = Array.from(panel.querySelectorAll("[data-custom-exercise-card]")).find((card) => {
+    const log = card.querySelector("[data-exercise-log]");
+    const input = card.querySelector("[data-exercise-name-input]");
+    return !String(input?.value || log?.dataset.exerciseName || "").trim();
+  });
+  if (blankCard) {
+    const input = customWorkoutEditableNameInput(blankCard);
+    if (input) {
+      input.value = String(name).trim();
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      input.blur();
+      persistCustomWorkoutDraftFromPanel(panel);
+      return blankCard;
+    }
+  }
   const format = normalizeCustomWorkoutFormat(panel.dataset.customWorkoutFormat);
   const add = customWorkoutExerciseAddConfig(format);
   const carousels = customWorkoutCarousels(panel);
@@ -18292,6 +18343,17 @@ function handleWorkoutInteractions() {
       jumpToWorkoutExercise(exerciseJump);
       return;
     }
+    const exerciseRename = event.target.closest("[data-workout-exercise-rename]");
+    if (exerciseRename) {
+      const panel = exerciseRename.closest(".client-workout-panel");
+      const log = workoutExerciseListLogs(panel)[Number(exerciseRename.dataset.workoutExerciseRename)];
+      const input = exerciseNameInputForLog(log);
+      if (input) {
+        jumpToWorkoutExercise(panel.querySelector(`[data-workout-exercise-jump="${exerciseRename.dataset.workoutExerciseRename}"]`));
+        input.focus({ preventScroll: true });
+      }
+      return;
+    }
     const exerciseListAdd = event.target.closest("[data-workout-exercise-add]");
     if (exerciseListAdd) {
       const panel = exerciseListAdd.closest(".client-workout-panel");
@@ -18324,6 +18386,16 @@ function handleWorkoutInteractions() {
         syncCustomWorkoutCarousel(panel);
         persistCustomWorkoutDraftFromPanel(panel);
         panel.querySelector(`[data-custom-exercise-move][data-custom-exercise-index="${target}"][data-custom-exercise-move="${organizeMove.dataset.customExerciseMove}"]`)?.focus();
+      }
+      return;
+    }
+    const assignedMove = event.target.closest("[data-workout-exercise-move]");
+    if (assignedMove) {
+      const panel = assignedMove.closest(".client-workout-panel-assigned");
+      const index = Number(assignedMove.dataset.customExerciseIndex);
+      const direction = assignedMove.dataset.workoutExerciseMove === "up" ? -1 : 1;
+      if (panel && moveAssignedWorkoutExercise(panel, index, direction)) {
+        panel.querySelector(`[data-workout-exercise-move="${assignedMove.dataset.workoutExerciseMove}"][data-custom-exercise-index="${index + direction}"]`)?.focus({ preventScroll: true });
       }
       return;
     }
