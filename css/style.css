@@ -16607,7 +16607,7 @@ body.client-dashboard-page.is-loading > :is(.client-dashboard-tabs,
     z-index: 1000;
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
-    align-items: end;
+    align-items: stretch;
     width: 100%;
     max-width: none;
     min-height: var(--client-mobile-dock-height);
@@ -16684,14 +16684,7 @@ body.client-dashboard-page.is-loading > :is(.client-dashboard-tabs,
   }
 
   .dashboard-page .client-dashboard-tab::after {
-    content: "";
-    position: absolute;
-    right: 26%;
-    bottom: 1px;
-    left: 26%;
-    height: 3px;
-    background: transparent;
-    border-radius: 3px 3px 0 0;
+    display: none;
   }
 
   .dashboard-page .client-dashboard-tab.is-active {
@@ -16701,15 +16694,15 @@ body.client-dashboard-page.is-loading > :is(.client-dashboard-tabs,
   }
 
   .dashboard-page .client-dashboard-tab.is-active::after {
-    background: var(--lime);
+    display: none;
   }
 
   .dashboard-page .client-dashboard-tab-icon {
     display: block;
-    width: 32px;
-    height: 32px;
-    flex: 0 0 32px;
-    padding: 3px;
+    width: 42px;
+    height: 42px;
+    flex: 0 0 42px;
+    padding: 8px;
     color: #424842;
     background: transparent;
     border: 0;
@@ -16763,6 +16756,53 @@ body.client-dashboard-page.is-loading > :is(.client-dashboard-tabs,
   }
 }
 
+.client-progress-snapshot {
+  width: min(92vw, 420px);
+  padding: 20px;
+  color: #f7f7f2;
+  background: #24262d;
+  border: 1px solid #696b70;
+  border-radius: 20px;
+  box-shadow: 0 20px 55px rgba(0, 0, 0, .4);
+}
+
+.client-progress-snapshot::backdrop {
+  background: rgba(0, 0, 0, .65);
+}
+
+.client-progress-snapshot h2 {
+  margin: 0 0 12px;
+  font-size: 1.2rem;
+}
+
+.client-progress-snapshot [data-client-progress-snapshot-values] p {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0;
+  padding: 9px 0;
+  border-bottom: 1px solid #4b4d52;
+}
+
+.client-progress-snapshot-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.client-progress-snapshot-actions button {
+  padding: 10px 12px;
+  border-radius: 10px;
+}
+
+.client-progress-snapshot-view {
+  color: #101010;
+  background: #ffd600;
+  border-color: #ffd600;
+}
+
 @media (max-width: 420px) {
   body.client-dashboard-page {
     --client-mobile-dock-height: 88px;
@@ -16779,17 +16819,17 @@ body.client-dashboard-page.is-loading > :is(.client-dashboard-tabs,
   }
 
   .dashboard-page .client-dashboard-tab-icon {
-    width: 30px;
-    height: 30px;
-    flex-basis: 30px;
-    padding: 2px;
+    width: 42px;
+    height: 42px;
+    flex-basis: 42px;
+    padding: 8px;
   }
 
   .dashboard-page .client-dashboard-tab.is-active .client-dashboard-tab-icon {
-    width: 40px;
-    height: 40px;
-    flex-basis: 40px;
-    padding: 7px;
+    width: 42px;
+    height: 42px;
+    flex-basis: 42px;
+    padding: 8px;
   }
 
   .dashboard-page .client-dashboard-tab::after {

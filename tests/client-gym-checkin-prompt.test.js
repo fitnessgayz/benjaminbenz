@@ -10,6 +10,7 @@ function setup({ visits = [], checked = false, failRead = false } = {}) {
   let reads = 0;
   let saves = 0;
   let focused = 0;
+  let selectedGym = '';
   const page = {
     visibilityState: "visible",
     body: { children: [], append(element) { this.children.push(element); } },
@@ -22,6 +23,7 @@ function setup({ visits = [], checked = false, failRead = false } = {}) {
       assert.equal(tag, "dialog");
       const elements = new Map([
         ["[data-gym-prompt-status]", { textContent: "" }],
+        ["[data-gym-prompt-name]", { value: '' }],
         ["[data-gym-prompt-checkin]", { disabled: false, focus() { focused++; } }]
       ]);
       return {
@@ -46,7 +48,7 @@ function setup({ visits = [], checked = false, failRead = false } = {}) {
       if (failRead) throw new Error("offline");
       return visits;
     },
-    async checkIn() { saves++; checked = true; return "Gym check-in saved for today."; }
+    async checkIn(gym) { saves++; selectedGym = gym; checked = true; return "Gym check-in saved for today."; }
   };
   const prompt = createGymCheckinPrompt({
     window: { localStorage: { getItem: key => storage.get(key) ?? null, setItem: (key, value) => storage.set(key, value) } },
@@ -59,7 +61,8 @@ function setup({ visits = [], checked = false, failRead = false } = {}) {
   };
   return {
     prompt, page, context, storage, listeners,
-    reads: () => reads, saves: () => saves, focused: () => focused,
+    reads: () => reads, saves: () => saves, focused: () => focused, selectedGym: () => selectedGym,
+    setGymName(value) { page.body.children.at(-1).querySelector('[data-gym-prompt-name]').value = value; },
     setVisits(value) { visits = value; }, setChecked(value) { checked = value; }, setFailRead(value) { failRead = value; },
     click(attribute) {
       const dialog = page.body.children.at(-1);
@@ -105,10 +108,12 @@ test("a check-in on another device and a failed read do not produce a false prom
 test("check-in action uses the existing gym flow and closes after save", async () => {
   const h = setup();
   await h.prompt.maybeShow(h.context);
+  h.setGymName('Alex Fitness');
   h.click("data-gym-prompt-checkin");
   await Promise.resolve();
   await Promise.resolve();
   assert.equal(h.saves(), 1);
+  assert.equal(h.selectedGym(), 'Alex Fitness');
   assert.equal(h.page.body.children.length, 0);
   assert.equal(h.focused(), 2);
 });

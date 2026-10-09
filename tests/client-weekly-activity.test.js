@@ -2,7 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
-const { weekRange, summarize, readRows, saveVisit, celebrateCheckIn, weeklyMarkText } = require('../js/client-weekly-activity.js');
+const { weekRange, summarize, readRows, saveVisit, celebrateCheckIn, weeklyMarkText, gymName } = require('../js/client-weekly-activity.js');
 
 test('weekly activity uses one checkmark while retaining combined workout and gym state', () => {
   assert.equal(weeklyMarkText(true, true), '✓');
@@ -70,6 +70,10 @@ test('check-in retries use an idempotent date key and propagate database failure
   assert.deepEqual(payload,{client_email:'client@example.com',entry_date:'2026-09-18'});
   assert.equal(options.ignoreDuplicates,true);
   assert.equal(options.onConflict,'client_email,entry_date');
+  await saveVisit(client,'client@example.com','2026-09-18','  Fitness with Benjamin  ');
+  assert.equal(payload.gym_name, 'Fitness with Benjamin');
+  assert.equal(gymName('   '), '');
+  assert.equal(gymName('A'.repeat(125)).length, 120);
   await assert.rejects(()=>saveVisit({from:()=>({upsert:()=>({abortSignal:async()=>({error:new Error('offline')})})})},'a','2026-09-18'),/offline/);
 });
 

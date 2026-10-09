@@ -99,7 +99,15 @@
     }
     const format = input.format === undefined ? "single" : input.format;
     if (!FORMATS.has(format)) throw new Error("Choose straight set, superset, or circuit format.");
-    return { focus, selectedMuscles, equipment: new Set(["bodyweight", ...input.equipment]), intensity: focus.recovery ? "easy" : input.intensity, format };
+    const warmUpCount = input.warmUpCount === undefined ? undefined : Number(input.warmUpCount);
+    const workingSetCount = input.workingSetCount === undefined ? undefined : Number(input.workingSetCount);
+    if (warmUpCount !== undefined && (!Number.isInteger(warmUpCount) || warmUpCount < 0 || warmUpCount > 3)) {
+      throw new Error("Choose 0 to 3 warm-up sets.");
+    }
+    if (workingSetCount !== undefined && (!Number.isInteger(workingSetCount) || workingSetCount < 1 || workingSetCount > 10)) {
+      throw new Error("Choose 1 to 10 working sets.");
+    }
+    return { focus, selectedMuscles, equipment: new Set(["bodyweight", ...input.equipment]), intensity: focus.recovery ? "easy" : input.intensity, format, warmUpCount, workingSetCount };
   }
 
   function isRecoveryMovement(entry) {
@@ -282,7 +290,9 @@
   }
 
   function finalize(workout) {
-    const result = { ...workout, estimatedMinutes: Math.ceil(totalSeconds(workout.exercises) / 60) };
+    const estimateExercises = workout.workingSetCount === undefined ? workout.exercises
+      : workout.exercises.map((exercise) => withSets(exercise, workout.workingSetCount));
+    const result = { ...workout, estimatedMinutes: Math.ceil(totalSeconds(estimateExercises) / 60) };
     result.notes = notesFor(result);
     return result;
   }
@@ -343,6 +353,8 @@
       title: selection.focus.recovery ? selection.focus.label : `${selection.focus.label} workout`, focus: input.focus,
       selectedMuscles: selection.selectedMuscles,
       minutes: input.minutes, intensity: selection.intensity, format: selection.format, equipment: [...selection.equipment],
+      ...(selection.warmUpCount !== undefined ? { warmUpCount: selection.warmUpCount } : {}),
+      ...(selection.workingSetCount !== undefined ? { workingSetCount: selection.workingSetCount } : {}),
       exercises: groupedExercises, recentHistoryUsed: pool.some((entry) => historyPenalty(entry, recent) > 0)
     });
   }

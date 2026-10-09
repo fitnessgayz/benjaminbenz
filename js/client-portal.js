@@ -675,6 +675,69 @@ function latestClientProgressValue(entries = progressEntries, valueForEntry = ()
   return null;
 }
 
+function clientProgressSnapshotItems(entries = progressEntries) {
+  const fields = [
+    ["Bodyweight", (entry) => entry?.bodyweight, " lb"],
+    ["Body fat", (entry) => entry?.bodyfat, "%"],
+    ["Lean mass", (entry) => entry?.lean_mass, " lb"],
+    ["Waist", (entry) => progressMeasurements(entry).waist, " in"]
+  ];
+  return fields.flatMap(([label, read, suffix]) => {
+    const value = latestClientProgressValue(entries, read);
+    return value === null ? [] : [{ label, value: clientHomeSnapshotValue(value, suffix) }];
+  });
+}
+
+function showClientProgressSnapshot() {
+  let dialog = document.querySelector("[data-client-progress-snapshot]");
+  if (!dialog) {
+    dialog = document.createElement("dialog");
+    dialog.className = "client-progress-snapshot";
+    dialog.dataset.clientProgressSnapshot = "";
+    const heading = document.createElement("h2");
+    heading.textContent = "Stats & measurements";
+    const summary = document.createElement("div");
+    summary.dataset.clientProgressSnapshotValues = "";
+    const actions = document.createElement("div");
+    actions.className = "client-progress-snapshot-actions";
+    const close = document.createElement("button");
+    close.type = "button";
+    close.textContent = "Close";
+    close.addEventListener("click", () => dialog.close());
+    const view = document.createElement("button");
+    view.type = "button";
+    view.textContent = "View stats & measurements";
+    view.className = "client-progress-snapshot-view";
+    view.addEventListener("click", () => {
+      dialog.close();
+      setClientDashboardTab("stats");
+      document.querySelector('[data-client-dashboard-panel="stats"]')?.scrollIntoView({ block: "start" });
+    });
+    actions.append(close, view);
+    dialog.append(heading, summary, actions);
+    document.body.append(dialog);
+  }
+  const summary = dialog.querySelector("[data-client-progress-snapshot-values]");
+  const items = clientProgressSnapshotItems();
+  summary.replaceChildren();
+  if (!items.length) {
+    const empty = document.createElement("p");
+    empty.textContent = "No measurements saved yet.";
+    summary.append(empty);
+  } else {
+    items.forEach(({ label, value }) => {
+      const row = document.createElement("p");
+      const name = document.createElement("span");
+      const amount = document.createElement("strong");
+      name.textContent = label;
+      amount.textContent = value;
+      row.append(name, amount);
+      summary.append(row);
+    });
+  }
+  dialog.showModal();
+}
+
 function localDateKey(date) {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -6354,7 +6417,12 @@ function freshCustomWorkoutDraft(createdAt = new Date()) {
 
 function generatedCustomWorkoutDraft(workout, createdAt = new Date()) {
   if (!workout?.exercises?.length) throw new Error("Generate a workout before continuing.");
-  const omitWarmup = ["recovery_upper", "recovery_lower", "recovery_full"].includes(workout.focus);
+  const defaultWarmUpCount = ["recovery_upper", "recovery_lower", "recovery_full"].includes(workout.focus) ? 0 : 1;
+  const warmUpCount = Number.isInteger(workout.warmUpCount) && workout.warmUpCount >= 0 && workout.warmUpCount <= 3
+    ? workout.warmUpCount : defaultWarmUpCount;
+  const workingSetCount = Number.isInteger(workout.workingSetCount) && workout.workingSetCount >= 1 && workout.workingSetCount <= 10
+    ? workout.workingSetCount : null;
+  const omitWarmup = warmUpCount === 0;
   const date = todayDate();
   const title = String(workout.title || "Today’s workout").slice(0, 80);
   const requestedFormat = String(workout.format || "single").toLowerCase();
@@ -6371,7 +6439,9 @@ function generatedCustomWorkoutDraft(workout, createdAt = new Date()) {
     generatedFrom: {
       id, title, focus: workout.focus, minutes: workout.minutes,
       ...(Array.isArray(workout.selectedMuscles) ? { selectedMuscles: [...workout.selectedMuscles] } : {}),
-      intensity: workout.intensity, format, estimatedMinutes: workout.estimatedMinutes
+      intensity: workout.intensity, format, estimatedMinutes: workout.estimatedMinutes,
+      ...(workout.warmUpCount === undefined ? {} : { warmUpCount }),
+      ...(workingSetCount === null ? {} : { workingSetCount })
     },
     exercises: workout.exercises.map((exercise, index) => ({
       code: customExerciseCode(index),
@@ -6382,15 +6452,18 @@ function generatedCustomWorkoutDraft(workout, createdAt = new Date()) {
       date,
       generated: true,
       ...(omitWarmup ? { omitWarmup: true } : {}),
-      prescription: exercise.prescription,
+      prescription: workingSetCount === null ? exercise.prescription
+        : String(exercise.prescription || "").replace(/ x \d+ sets$/i, ` x ${workingSetCount} sets`),
       rest: exercise.rest,
       ...(exercise.instructions ? { instructions: exercise.instructions } : {}),
       ...(exercise.demo_url || exercise.video ? { video: exercise.demo_url || exercise.video } : {}),
       notes: "",
       skipped: false,
       sets: [
-        ...(omitWarmup ? [] : [{ label: "W", weight: "", reps: "", setType: warmUpSetType, rir: "", complete: false }]),
-        ...Array.from({ length: Math.max(1, Math.min(6, Number(exercise.sets) || 3)) }, (_, setIndex) => ({
+        ...Array.from({ length: warmUpCount }, (_, setIndex) => ({
+          label: warmUpCount === 1 ? "W" : `W${setIndex + 1}`, weight: "", reps: "", setType: warmUpSetType, rir: "", complete: false
+        })),
+        ...Array.from({ length: workingSetCount ?? Math.max(1, Math.min(6, Number(exercise.sets) || 3)) }, (_, setIndex) => ({
           label: String(setIndex + 1), weight: "", reps: "", setType: workingSetType, rir: "", complete: false
         }))
       ]
@@ -9448,7 +9521,7 @@ function customWorkoutGroupedRoundCardMarkup(format, exercises, groupIndex = 0, 
   const groupCue = format === "single"
     ? "Complete each working set"
     : `Complete ${exerciseMarkers.join(" → ")}, rest 60–90s, repeat ${groupRepeatCount}×`;
-  const setCountControls = format === "single" && !options.assigned ? `
+  const setCountControls = !options.assigned ? `
     <div class="custom-workout-grouped-set-selectors" role="group" aria-label="Warm-up and working set counts">
       <label class="custom-workout-grouped-count-field">
         <span>Warm-up</span>
@@ -10576,13 +10649,13 @@ function syncCustomWorkoutGroupedRoundStepper(carousel) {
   const count = customWorkoutGroupedRoundCount(carousel);
   const output = carousel?.querySelector("[data-custom-grouped-round-count]");
   const removeButton = carousel?.querySelector("[data-custom-grouped-remove-round]");
-  const logElement = customWorkoutGroupedLogElements(carousel)[0];
+  const logElements = customWorkoutGroupedLogElements(carousel);
 
   [["[data-custom-grouped-warmup-count]", warmUpSetType], ["[data-custom-grouped-working-count]", workingSetType]]
     .forEach(([selector, setType]) => {
       const select = carousel?.querySelector(selector);
-      if (!select || !logElement) return;
-      const rowCount = customWorkoutGroupedRows(logElement, setType).length;
+      if (!select || !logElements.length) return;
+      const rowCount = Math.max(...logElements.map((logElement) => customWorkoutGroupedRows(logElement, setType).length));
       select.querySelector("option[data-existing-count]")?.remove();
       if (!Array.from(select.options).some((option) => Number(option.value) === rowCount)) {
         const existing = document.createElement("option");
@@ -10600,21 +10673,20 @@ function syncCustomWorkoutGroupedRoundStepper(carousel) {
 
 function changeCustomWorkoutGroupedSetCount(select) {
   const carousel = select?.closest("[data-custom-workout-grouped='true']");
-  const logElement = customWorkoutGroupedLogElements(carousel)[0];
+  const logElements = customWorkoutGroupedLogElements(carousel);
   const setType = select?.matches("[data-custom-grouped-warmup-count]") ? warmUpSetType : workingSetType;
   const maximum = setType === warmUpSetType ? 3 : 10;
   const minimum = setType === warmUpSetType ? 0 : 1;
   const target = Number(select?.value);
-  if (!carousel || carousel.dataset.customWorkoutFormat !== "single" || !carousel.closest(".client-workout-panel-custom") || !logElement) return false;
-  const currentRows = customWorkoutGroupedRows(logElement, setType);
-  const current = currentRows.length;
+  if (!carousel || !carousel.closest(".client-workout-panel-custom") || !logElements.length) return false;
+  const current = Math.max(...logElements.map((logElement) => customWorkoutGroupedRows(logElement, setType).length));
   if (!Number.isInteger(target) || target < minimum || target > maximum) {
     select.value = String(current);
     return false;
   }
-  if (target === current) return true;
+  if (logElements.every((logElement) => customWorkoutGroupedRows(logElement, setType).length === target)) return true;
 
-  const rowsToRemove = currentRows.slice(target);
+  const rowsToRemove = logElements.flatMap((logElement) => customWorkoutGroupedRows(logElement, setType).slice(target));
   const hasEnteredRows = rowsToRemove.some((row) => {
     const values = setRowInputValues(row);
     return row.classList.contains("is-complete") || row.dataset.customGroupedReopened === "true" ||
@@ -10627,21 +10699,24 @@ function changeCustomWorkoutGroupedSetCount(select) {
     return false;
   }
 
-  rowsToRemove.forEach((row) => row.remove());
-  const rows = logElement.querySelector("[data-set-rows]");
-  const defaultReps = rows?.querySelector("[data-set-reps]")?.dataset.defaultPlaceholder || "0";
-  for (let index = current; rows && index < target; index += 1) {
-    const number = setType === warmUpSetType ? warmUpSetNumberBase + index + 1 : index + 1;
-    rows.insertAdjacentHTML("beforeend", setRowMarkup(number, defaultReps, setType));
-  }
-  if (setType === warmUpSetType) {
-    if (target === 0) logElement.dataset.omitWarmup = "true";
-    else delete logElement.dataset.omitWarmup;
-  }
-  renumberSetRows(logElement);
-  updateSetHistoryPlaceholders(logElement);
-  syncVisibleSetTarget(logElement);
-  updateVisibleSetProgress(logElement);
+  logElements.forEach((logElement) => {
+    const currentRows = customWorkoutGroupedRows(logElement, setType);
+    currentRows.slice(target).forEach((row) => row.remove());
+    const rows = logElement.querySelector("[data-set-rows]");
+    const defaultReps = rows?.querySelector("[data-set-reps]")?.dataset.defaultPlaceholder || "0";
+    for (let index = currentRows.length; rows && index < target; index += 1) {
+      const number = setType === warmUpSetType ? warmUpSetNumberBase + index + 1 : index + 1;
+      rows.insertAdjacentHTML("beforeend", setRowMarkup(number, defaultReps, setType));
+    }
+    if (setType === warmUpSetType) {
+      if (target === 0) logElement.dataset.omitWarmup = "true";
+      else delete logElement.dataset.omitWarmup;
+    }
+    renumberSetRows(logElement);
+    updateSetHistoryPlaceholders(logElement);
+    syncVisibleSetTarget(logElement);
+    updateVisibleSetProgress(logElement);
+  });
   persistCustomWorkoutDraftForElement(carousel);
   renderCustomWorkoutGroupedCard(carousel);
   if (status) status.textContent = `${setType === warmUpSetType ? "Warm-up" : "Working"} sets: ${target}.`;
@@ -18015,6 +18090,11 @@ function handleClientDashboardTabs() {
     const tabName = tab.dataset.clientDashboardTab;
     const navigation = tab.closest(".client-dashboard-tabs");
     const mobileNavigation = window.matchMedia?.("(max-width: 900px)")?.matches ?? false;
+    if (mobileNavigation && tabName === "progress" && activeClientDashboardTab === "progress") {
+      showClientProgressSnapshot();
+      lastClientDashboardMobileTabPress = "";
+      return;
+    }
     if (mobileNavigation && tabName === "workouts" && activeClientDashboardTab === "workouts" &&
         window.WorkoutExerciseDock?.toggle()) {
       lastClientDashboardMobileTabPress = "";

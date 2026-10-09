@@ -140,14 +140,14 @@ test("renders the exercise key, compact round stepper, round rows, and grouped a
   assert.match(mobileStyles, /custom-workout-grouped-copy-weights, \.custom-workout-grouped-undo-weights\)[\s\S]*?min-height: 34px/);
 });
 
-test("custom straight sets use the approved compact warm-up and sets selectors", () => {
+test("custom straight sets, supersets, and circuits use compact warm-up and sets selectors", () => {
   const groupedMarkup = sourceForFunction("customWorkoutGroupedRoundCardMarkup");
   const cardMarkup = sourceForFunction("customWorkoutCardMarkup");
   const logFields = sourceForFunction("exerciseLogFields");
   const rowMarkup = sourceForFunction("setRows");
   const interactions = sourceForFunction("handleWorkoutInteractions");
 
-  assert.match(groupedMarkup, /format === "single" && !options\.assigned/);
+  assert.match(groupedMarkup, /setCountControls = !options\.assigned/);
   assert.match(groupedMarkup, /data-custom-grouped-warmup-count/);
   assert.match(groupedMarkup, /Array\.from\(\{ length: 4 \}/);
   assert.match(groupedMarkup, /data-custom-grouped-working-count/);
@@ -158,6 +158,52 @@ test("custom straight sets use the approved compact warm-up and sets selectors",
   assert.match(interactions, /changeCustomWorkoutGroupedSetCount\(groupedSetCount\)/);
   assert.match(mobileStyles, /\.custom-workout-grouped-set-selectors \{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\);[\s\S]*?gap: 6px;/);
   assert.match(mobileStyles, /\.custom-workout-grouped-count-field\.is-working select \{[\s\S]*?background: #ffd400 !important;/);
+});
+
+test("grouped set count changes apply to every exercise without deleting entered rows", () => {
+  const change = sourceForFunction("changeCustomWorkoutGroupedSetCount");
+  const makeLog = () => {
+    const log = { dataset: {}, rows: [] };
+    log.querySelector = () => ({
+      querySelector: () => ({ dataset: { defaultPlaceholder: "0" } }),
+      insertAdjacentHTML(_position, markup) {
+        log.rows.push(makeRow(log, markup.split("|")[0]));
+      }
+    });
+    return log;
+  };
+  const makeRow = (log, type, values = {}) => ({
+    dataset: { setType: type },
+    values: { weightRaw: "", repsRaw: "", ...values },
+    classList: { contains: () => false },
+    remove() { log.rows.splice(log.rows.indexOf(this), 1); }
+  });
+  const logs = [makeLog(), makeLog()];
+  logs.forEach((log) => log.rows.push(makeRow(log, "working"), makeRow(log, "working"), makeRow(log, "working")));
+  const carousel = { dataset: { customWorkoutFormat: "superset" }, closest: () => ({}) };
+  const select = { value: "4", closest: () => carousel, matches: () => false };
+  const status = { textContent: "" };
+  const changeCount = Function(
+    "customWorkoutGroupedLogElements", "warmUpSetType", "workingSetType", "customWorkoutGroupedRows",
+    "setRowInputValues", "customWorkoutGroupedStatus", "warmUpSetNumberBase", "setRowMarkup",
+    "renumberSetRows", "updateSetHistoryPlaceholders", "syncVisibleSetTarget", "updateVisibleSetProgress",
+    "persistCustomWorkoutDraftForElement", "renderCustomWorkoutGroupedCard",
+    `${change}; return changeCustomWorkoutGroupedSetCount;`
+  )(
+    () => logs, "warm_up", "working", (log, type) => log.rows.filter((row) => row.dataset.setType === type),
+    (row) => row.values, () => status, 1000, (number, reps, type) => `${type}|${number}|${reps}`,
+    () => {}, () => {}, () => {}, () => {}, () => {}, () => {}
+  );
+  assert.equal(changeCount(select), true);
+  assert.deepEqual(logs.map((log) => log.rows.length), [4, 4]);
+  logs[1].rows[3].values.weightRaw = "45";
+  select.value = "3";
+  assert.equal(changeCount(select), false);
+  assert.deepEqual(logs.map((log) => log.rows.length), [4, 4]);
+  assert.equal(select.value, "4");
+  logs[1].rows[3].values.weightRaw = "";
+  assert.equal(changeCount({ ...select, value: "3" }), true);
+  assert.deepEqual(logs.map((log) => log.rows.length), [3, 3]);
 });
 
 test("changing set counts preserves entered rows and blocks destructive reductions", () => {

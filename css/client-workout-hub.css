@@ -249,17 +249,17 @@
   }
 
   :root body.client-dashboard-page:has(#client-workouts-panel.is-choosing-workout:not([hidden])) .client-dashboard-tab.is-active .client-dashboard-tab-icon {
-    width: 38px;
-    height: 38px;
-    flex-basis: 38px;
+    width: 42px;
+    height: 42px;
+    flex-basis: 42px;
     padding: 8px;
     border-radius: 50%;
-    background: var(--client-neon);
-    color: #172011;
+    background: #ffd600;
+    color: #17130a;
   }
 
   :root body.client-dashboard-page:has(#client-workouts-panel.is-choosing-workout:not([hidden])) .client-dashboard-tab.is-active .client-dashboard-tab-label {
-    color: var(--client-neon);
+    color: #ffd600;
   }
 }
 
@@ -294,6 +294,8 @@
 .client-workout-plan-dialog [data-plan-status].is-error { color: #ffaaa0; }
 .client-workout-plan-dialog [data-plan-form] { display: grid; gap: 12px; }
 .client-workout-plan-dialog [data-plan-form] > label { display: grid; gap: 5px; color: #d9e4d6; font-size: 13px; font-weight: 700; }
+.client-workout-plan-dialog .plan-set-counts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.client-workout-plan-dialog .plan-set-counts label { display: grid; gap: 5px; color: #d9e4d6; font-size: 13px; font-weight: 700; }
 .client-workout-plan-dialog select { width: 100%; min-height: 43px; padding: 8px 10px; border: 1px solid #555d5b; border-radius: 9px; background: #272b2d; color: #fff; font: inherit; }
 .client-workout-plan-dialog fieldset { display: flex; flex-wrap: wrap; gap: 8px 12px; margin: 0; padding: 12px; border: 1px solid #454b49; border-radius: 12px; }
 .client-workout-plan-dialog legend { padding: 0 4px; color: #d9e4d6; font-size: 13px; font-weight: 700; }
