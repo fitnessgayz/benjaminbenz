@@ -1,0 +1,119 @@
+/* Public questionnaire palette, matched to the current homepage. */
+:root body.questionnaire-page {
+  color-scheme: light;
+  --brand-primary: #ffd526;
+  --brand-primary-hover: #ffe052;
+  --brand-primary-ink: #17335f;
+  --ink: #17335f;
+  --ink-deep: #17335f;
+  --canvas: #faf9f4;
+  --surface: #fff;
+  --surface-soft: #edf3ff;
+  --text-muted: #586986;
+  --border: #cbd9ef;
+  --focus: #ffd526;
+  --control-border: #bbcee9;
+  --secondary-accent: #1263e9;
+  --paper: #fff;
+  --muted: #586986;
+  --line: #cbd9ef;
+  --lime: #ffd526;
+  --black: #17335f;
+  --white: #fff;
+  --shadow-soft: 0 8px 28px rgb(23 51 95 / 7%);
+  background: var(--canvas);
+}
+
+:root body.questionnaire-page .site-header {
+  background: #2878ff;
+  border-color: rgb(255 255 255 / 24%);
+  box-shadow: 0 5px 24px rgb(18 99 233 / 15%);
+}
+:root body.questionnaire-page .brand img {
+  display: block;
+  width: 78px;
+  height: 48px;
+  object-fit: contain;
+}
+:root body.questionnaire-page .site-header :is(.brand strong, .nav-links a, .login-link, .login-link:visited) {
+  color: #fff;
+}
+:root body.questionnaire-page .site-header .login-link {
+  padding: 10px 14px;
+  border: 1px solid rgb(255 255 255 / 65%);
+  border-radius: 999px;
+  text-decoration: none;
+}
+:root body.questionnaire-page .site-header .login-link:hover { background: rgb(255 255 255 / 16%); }
+
+:root body.questionnaire-page .questionnaire-hero {
+  position: relative;
+  overflow: hidden;
+  padding: clamp(30px, 5vw, 56px);
+  border-radius: 18px;
+  background: linear-gradient(135deg, #3989ff 0%, #2878ff 42%, #1263e9 100%);
+  box-shadow: 0 18px 42px rgb(18 99 233 / 16%);
+}
+:root body.questionnaire-page .questionnaire-hero::after {
+  content: "";
+  position: absolute;
+  top: -35%;
+  right: -16%;
+  width: 55%;
+  aspect-ratio: 1;
+  border: 1px solid rgb(255 255 255 / 23%);
+  border-radius: 50%;
+  box-shadow: 0 0 0 60px rgb(255 255 255 / 4%), 0 0 0 120px rgb(255 255 255 / 3%);
+  pointer-events: none;
+}
+:root body.questionnaire-page .questionnaire-hero .kicker {
+  color: #ffd526 !important;
+  letter-spacing: .15em;
+}
+:root body.questionnaire-page .questionnaire-hero h1 { color: #fff; }
+:root body.questionnaire-page .questionnaire-hero p:not(.kicker) { color: rgb(255 255 255 / 88%); }
+:root body.questionnaire-page .questionnaire-hero .public-promise { color: #ffd526 !important; }
+
+:root body.questionnaire-page .public-form-intro,
+:root body.questionnaire-page :is(.form-section, .form-submit-panel) {
+  background: #fff;
+  border-color: #cbd9ef;
+}
+:root body.questionnaire-page .public-form-intro > div { border-color: #cbd9ef; }
+:root body.questionnaire-page .public-form-intro span,
+:root body.questionnaire-page .form-section h2 { color: #1263e9; }
+:root body.questionnaire-page .public-privacy-note {
+  background: #edf3ff;
+  border-left-color: #2878ff;
+}
+:root body.questionnaire-page :is(.public-privacy-note a, .form-submit-panel a) { color: #1263e9; }
+:root body.questionnaire-page .form-section :is(input, select, textarea) {
+  color-scheme: light;
+  color: #17335f;
+  background: #fff;
+  border-color: #bbcee9;
+}
+:root body.questionnaire-page .form-section :is(input[type="radio"], input[type="checkbox"]) {
+  accent-color: #2878ff;
+}
+:root body.questionnaire-page .form-section fieldset { border-color: #cbd9ef; }
+:root body.questionnaire-page .form-section fieldset label { color: #586986; }
+:root body.questionnaire-page .form-submit-panel { border-top-color: #ffd526; }
+:root body.questionnaire-page .form-submit-panel .button-dark,
+:root body.questionnaire-page .form-submit-panel .button-dark:hover {
+  color: #17335f !important;
+  background: #ffd526 !important;
+  border-color: #ffd526 !important;
+}
+:root body.questionnaire-page .form-submit-panel .button-dark:hover { background: #ffe052 !important; }
+:root body.questionnaire-page .public-footer {
+  color: rgb(255 255 255 / 80%);
+  background: #17335f;
+}
+:root body.questionnaire-page .public-footer :is(strong, a) { color: #fff; }
+
+@media (max-width: 600px) {
+  :root body.questionnaire-page .brand img { width: 58px; height: 40px; }
+  :root body.questionnaire-page .brand strong { font-size: .78rem; }
+  :root body.questionnaire-page .questionnaire-hero { padding: 28px 24px; }
+}
