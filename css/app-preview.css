@@ -71,4 +71,64 @@ footer a { color: #fff; text-underline-offset: 3px; }
 @media (max-width: 930px) { .tour-layout { grid-template-columns: 1fr; } .tour-nav { display: flex; gap: 7px; overflow-x: auto; padding-bottom: 8px; } .tour-nav button { flex: 0 0 auto; width: auto; white-space: nowrap; } .tour-controls, .preview-note { margin-left: 0; } }
 @media (max-width: 700px) { .intro-inner { padding: 56px 23px 62px; } .intro h1 { font-size: clamp(44px, 11vw, 66px); } .tour-section { padding: 58px 20px 40px; } .tour-heading { display: block; } .tour-heading > p { margin-top: 14px; } .tour-step { grid-template-columns: 1fr; min-height: 0; padding: 24px; } .phone { width: min(100%, 260px); max-height: 480px; } .tour-copy { order: -1; } .tour-copy h3 { margin-bottom: 18px; } .atari-note { margin-bottom: 8px; } .closing { display: block; margin: 10px 20px 55px; } .closing a { margin-top: 23px; } }
 @media (max-width: 480px) { .site-header { min-height: 64px; padding: 9px 18px; } .brand img { width: 72px; height: 42px; } .brand span { display: none; } .header-back { padding: 9px 11px; font-size: 11px; } .intro-atari { margin-top: 37px; } .tour-controls { align-items: stretch; flex-direction: column; } .tour-controls > div { display: grid; grid-template-columns: 1fr 1fr; } .closing a { width: 100%; } footer { flex-direction: column; } }
+@media (max-width: 700px) {
+  html { scroll-behavior: auto; }
+  .tour-section.is-enhanced {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    height: 100svh;
+    height: 100dvh;
+    min-height: 0;
+    padding: 10px 12px max(10px, env(safe-area-inset-bottom));
+    overflow-x: hidden;
+    overflow-y: auto;
+    scroll-margin-top: 0;
+  }
+  .tour-section.is-enhanced .tour-heading { flex: 0 0 auto; margin: 0; }
+  .tour-section.is-enhanced .tour-heading h2 { margin-top: 3px; font-size: clamp(24px, 6vw, 30px); line-height: 1.05; }
+  .tour-section.is-enhanced .tour-heading > p { display: none; }
+  .tour-section.is-enhanced .tour-layout { display: flex; flex: 1 1 auto; flex-direction: column; gap: 7px; min-height: 0; }
+  .tour-section.is-enhanced .tour-nav { flex: 0 0 auto; gap: 5px; padding-bottom: 2px; scrollbar-width: none; }
+  .tour-section.is-enhanced .tour-nav::-webkit-scrollbar { display: none; }
+  .tour-section.is-enhanced .tour-nav button { min-height: 40px; padding: 7px 10px; border-radius: 8px; font-size: 11px; }
+  .tour-section.is-enhanced .tour-stage { flex: 1 1 auto; min-height: 0; }
+  .tour-section.is-enhanced .tour-step {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) auto;
+    gap: 7px;
+    height: 100%;
+    min-height: 0;
+    padding: 8px;
+    overflow: hidden;
+    border-radius: 16px;
+  }
+  .tour-section.is-enhanced .phone {
+    grid-row: 1;
+    align-self: center;
+    width: auto;
+    max-width: 100%;
+    height: 100%;
+    max-height: 100%;
+    aspect-ratio: 1206 / 2622;
+    margin: 0 auto;
+    border-width: 4px;
+    border-radius: 22px;
+    box-shadow: 0 9px 20px #17335f27;
+  }
+  .tour-section.is-enhanced .phone img { width: 100%; height: 100%; object-fit: contain; }
+  .tour-section.is-enhanced .tour-copy { grid-row: 2; align-self: auto; order: 0; }
+  .tour-section.is-enhanced .step-count { display: none; }
+  .tour-section.is-enhanced .tour-copy h3 { margin: 0 0 4px; font-size: clamp(17px, 5vw, 21px); line-height: 1.1; }
+  .tour-section.is-enhanced .atari-note { gap: 8px; max-width: none; margin: 0; padding: 4px 8px 4px 3px; border-radius: 10px; }
+  .tour-section.is-enhanced .atari-note .atari { width: 44px; height: 46px; }
+  .tour-section.is-enhanced .atari-note p { font-size: 11px; line-height: 1.24; }
+  .tour-section.is-enhanced .atari-note strong { margin-bottom: 1px; font-size: 8px; }
+  .tour-section.is-enhanced .tour-controls { flex: 0 0 auto; flex-direction: row; align-items: center; gap: 8px; margin: 0; }
+  .tour-section.is-enhanced .tour-status { font-size: 11px; white-space: nowrap; }
+  .tour-section.is-enhanced .tour-controls > div { display: flex; flex: 1; justify-content: flex-end; gap: 5px; }
+  .tour-section.is-enhanced .tour-controls button { min-height: 44px; padding: 6px 9px; font-size: 11px; white-space: nowrap; }
+  .tour-section.is-enhanced .preview-note { flex: 0 0 auto; margin: 0; font-size: 9px; line-height: 1.2; }
+}
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }

@@ -20,12 +20,26 @@
     next.textContent = current === steps.length - 1 ? 'Start again ↺' : 'Next screen →';
   }
 
-  tabs.forEach((tab, index) => tab.addEventListener('click', () => show(index)));
-  back.addEventListener('click', () => show(current - 1));
-  next.addEventListener('click', () => show(current === steps.length - 1 ? 0 : current + 1));
+  function navigate(index) {
+    show(index);
+    if (window.matchMedia('(max-width: 700px)').matches) {
+      const nav = tour.querySelector('.tour-nav');
+      const navBox = nav.getBoundingClientRect();
+      const tabBox = tabs[current].getBoundingClientRect();
+      nav.scrollTo({
+        left: nav.scrollLeft + tabBox.left - navBox.left - (navBox.width - tabBox.width) / 2,
+        behavior: 'auto'
+      });
+      tour.scrollIntoView({ block: 'start', behavior: 'auto' });
+    }
+  }
+
+  tabs.forEach((tab, index) => tab.addEventListener('click', () => navigate(index)));
+  back.addEventListener('click', () => navigate(current - 1));
+  next.addEventListener('click', () => navigate(current === steps.length - 1 ? 0 : current + 1));
   tour.addEventListener('keydown', event => {
-    if (event.key === 'ArrowRight') { event.preventDefault(); show((current + 1) % steps.length); }
-    if (event.key === 'ArrowLeft') { event.preventDefault(); show((current - 1 + steps.length) % steps.length); }
+    if (event.key === 'ArrowRight') { event.preventDefault(); navigate((current + 1) % steps.length); }
+    if (event.key === 'ArrowLeft') { event.preventDefault(); navigate((current - 1 + steps.length) % steps.length); }
   });
   tour.classList.add('is-enhanced');
   show(0);
