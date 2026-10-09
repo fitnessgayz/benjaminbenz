@@ -43,3 +43,23 @@ test('rejects unsupported schedules and reports which day cannot be generated', 
     return { title: 'Workout', estimatedMinutes: 20, exercises: [{ name: 'Squat' }] };
   } }), /Day 2: No exercises available/);
 });
+
+test('weekly formats and selected set counts reach every generated day', () => {
+  const calls = [];
+  const engine = { generate(input) {
+    calls.push(input);
+    return { title: 'Workout', format: input.format, warmUpCount: input.warmUpCount,
+      workingSetCount: input.workingSetCount, exercises: [{ name: 'Squat', sets: 3 }] };
+  } };
+  for (const format of ['superset', 'circuit']) {
+    const plan = plans.build({ days: 2, split: 'balanced', minutes: 30, intensity: 'moderate',
+      equipment: ['full_gym'], format, warmUpCount: 3, workingSetCount: 10 }, engine);
+    assert.equal(plan.format, format);
+    assert.equal(plan.warmUpCount, 3);
+    assert.equal(plan.workingSetCount, 10);
+    assert.ok(plan.workouts.every((day) => day.format === format && day.warmUpCount === 3 && day.workingSetCount === 10));
+  }
+  assert.equal(calls.length, 4);
+  assert.ok(calls.every((input) => input.warmUpCount === 3 && input.workingSetCount === 10));
+  assert.deepEqual(calls.map((input) => input.format), ['superset', 'superset', 'circuit', 'circuit']);
+});

@@ -89,6 +89,8 @@
       focus: ui.focus.value === "custom_muscles" ? (selectedMuscles.length === 1 ? selectedMuscles[0] : "full_body") : ui.focus.value,
       selectedMuscles,
       format: ui.format.value,
+      warmUpCount: Number(ui.warmUpCount.value),
+      workingSetCount: Number(ui.workingSetCount.value),
       minutes: Number(ui.minutes.value),
       intensity: ui.intensity.value,
       equipment: Array.from(ui.equipment.querySelectorAll("input:checked"), (input) => input.value)
@@ -172,7 +174,7 @@
     const minutes = Number(preview.estimatedMinutes);
     const duration = Number.isFinite(minutes) && minutes > 0 ? ` · About ${Math.round(minutes)} min` : "";
     const formatLabel = window.FWB_WORKOUT_GENERATOR?.FORMAT_OPTIONS?.find((option) => option.value === preview.format)?.label || "Straight set";
-    heading.append(title, element("p", "workout-generator-muted", `${formatLabel} · ${preview.exercises.length} exercises${duration}`));
+    heading.append(title, element("p", "workout-generator-muted", `${formatLabel} · ${preview.exercises.length} exercises · ${preview.warmUpCount ?? 1} warm-up sets · ${preview.workingSetCount ?? 3} working sets${duration}`));
     ui.review.append(heading);
     const list = element("ol", "workout-generator-exercises");
     preview.exercises.forEach((exercise, index) => {
@@ -197,7 +199,10 @@
         const groupName = preview.format === "circuit" ? "Circuit" : "Superset";
         row.append(element("p", "workout-generator-group-label", `${groupName} ${Math.floor(index / groupSize) + 1} · Exercise ${(index % groupSize) + 1} of ${groupSize}`));
       }
-      const prescription = element("p", "workout-generator-prescription", exercise.prescription || `${exercise.sets} sets · ${exercise.reps}`);
+      const target = exercise.prescription || `${exercise.sets} sets · ${exercise.reps}`;
+      const prescriptionText = preview.workingSetCount === undefined ? target
+        : target.replace(/ x \d+ sets$/i, ` x ${preview.workingSetCount} sets`);
+      const prescription = element("p", "workout-generator-prescription", prescriptionText);
       const rest = exercise.rest || (Number.isFinite(Number(exercise.restSeconds)) ? `${exercise.restSeconds} sec` : "");
       if (rest) prescription.append(element("span", "", `Rest ${rest}`));
       row.append(prescription);
@@ -235,14 +240,15 @@
     try {
       const engine = window.FWB_WORKOUT_GENERATOR;
       if (!engine || typeof engine.generate !== "function") throw new Error("Workout generation is unavailable. Reload the app and try again.");
+      const selected = preferences();
       const result = engine.generate({
         library: context.library,
         history: historyForGym(),
-        ...preferences(),
+        ...selected,
         seed: `${Date.now()}-${++generation}-${Math.random()}`
       });
       if (!result || !Array.isArray(result.exercises) || result.exercises.length === 0) throw new Error("No exercises match these preferences. Try another focus or equipment selection.");
-      preview = result;
+      preview = { ...result, warmUpCount: selected.warmUpCount, workingSetCount: selected.workingSetCount };
       renderPreview();
       setStatus("Your workout is ready. Review the exercises or swap one before using it.");
       ui.review.querySelector("h3")?.focus({ preventScroll: true });
@@ -320,6 +326,10 @@
       { value: "superset", label: "Superset · 2 exercises" },
       { value: "circuit", label: "Circuit · 3 exercises" }
     ]);
+    const warmUpCount = field("Warm-up", "warmUpCount", Array.from({ length: 4 }, (_, value) => ({ value, label: String(value) })));
+    const workingSetCount = field("Sets", "workingSetCount", Array.from({ length: 10 }, (_, index) => ({ value: index + 1, label: String(index + 1) })));
+    const countRow = element("div", "workout-generator-preferences-row workout-generator-set-counts");
+    countRow.append(warmUpCount.label, workingSetCount.label);
     const minutes = field("How much time?", "minutes", [20, 30, 45, 60].map((value) => ({ value, label: `${value} minutes` })));
     const intensity = field("How hard today?", "intensity", [
       { value: "easy", label: "Easy" },
@@ -343,7 +353,7 @@
     const gymOptions = element("datalist");
     gymOptions.id = "workout-generator-gym-options";
     gymField.append(gymInput, element("small", "workout-generator-muted", "Choose here or before starting. Previous weights match this location."), gymOptions);
-    fields.append(focus.label, recoveryHint, muscles, format.label, split, equipment, gymField);
+    fields.append(focus.label, recoveryHint, muscles, format.label, countRow, split, equipment, gymField);
     const generateButton = element("button", "workout-generator-button workout-generator-generate", "Generate workout");
     generateButton.type = "submit";
     form.append(fields, generateButton);
@@ -383,7 +393,8 @@
     ui = {
       close: closeButton, form, formFields: fields, focus: focus.select,
       muscleChoices,
-      format: format.select, minutes: minutes.select, intensity: intensity.select, equipment,
+      format: format.select, warmUpCount: warmUpCount.select, workingSetCount: workingSetCount.select,
+      minutes: minutes.select, intensity: intensity.select, equipment,
       equipmentChoices, gymLocation: gymInput, gymOptions, generate: generateButton, status, review, use: useButton,
       recoveryHint, recoveryMode: false, strengthIntensity: "moderate"
     };
@@ -433,6 +444,8 @@
     ui.minutes.value = "30";
     ui.intensity.value = "moderate";
     ui.format.value = "single";
+    ui.warmUpCount.value = "1";
+    ui.workingSetCount.value = "3";
     ui.recoveryMode = false;
     ui.strengthIntensity = "moderate";
     const initial = options.initialPreferences && typeof options.initialPreferences === "object" ? options.initialPreferences : {};
@@ -440,6 +453,8 @@
     if ([20, 30, 45, 60].includes(initial.minutes)) ui.minutes.value = String(initial.minutes);
     if (["easy", "moderate", "challenging"].includes(initial.intensity)) ui.intensity.value = initial.intensity;
     if (["single", "superset", "circuit"].includes(initial.format)) ui.format.value = initial.format;
+    if (Number.isInteger(initial.warmUpCount) && initial.warmUpCount >= 0 && initial.warmUpCount <= 3) ui.warmUpCount.value = String(initial.warmUpCount);
+    if (Number.isInteger(initial.workingSetCount) && initial.workingSetCount >= 1 && initial.workingSetCount <= 10) ui.workingSetCount.value = String(initial.workingSetCount);
     const muscleOptions = engine?.MUSCLE_OPTIONS || [];
     const recovery = Boolean(engine?.FOCUS_OPTIONS?.find((option) => option.value === initial.focus)?.recovery);
     const initialMuscles = recovery ? [] : Array.isArray(initial.selectedMuscles)

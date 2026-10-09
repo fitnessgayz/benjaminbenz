@@ -2,6 +2,7 @@
   'use strict';
   const dateKey = date => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
   const weeklyMarkText = (workout, visit) => workout || visit ? '✓' : '·';
+  const gymName = value => Array.from(String(value || '').trim()).slice(0, 120).join('').trim();
   function weekRange(now = new Date(), offset = 0) {
     const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12);
     start.setDate(start.getDate() - (start.getDay() + 6) % 7 + offset * 7);
@@ -43,9 +44,11 @@
     timer?.unref?.();
     return controller.signal;
   }
-  async function saveVisit(client, email, date) {
+  async function saveVisit(client, email, date, place = '') {
     // ON CONFLICT DO NOTHING makes retries and simultaneous tabs idempotent.
-    const save = () => client.from('client_gym_checkins').upsert({ client_email: email, entry_date: date }, {
+    const selectedGym = gymName(place);
+    const visit = { client_email: email, entry_date: date, ...(selectedGym ? { gym_name: selectedGym } : {}) };
+    const save = () => client.from('client_gym_checkins').upsert(visit, {
       onConflict: 'client_email,entry_date', ignoreDuplicates: true
     }).abortSignal(requestSignal());
     const result = root.FWB_AUTH_SESSION?.withAccount
@@ -67,7 +70,7 @@
     const panel = document.getElementById('client-weekly-activity');
     if (!panel) return { configure() {} };
     const find = id => document.getElementById(id);
-    let client, email = '', preview = false, offset = 0, monthOffset = 0, busy = false, checkedDate = '', generation = 0, monthGeneration = 0, timer;
+    let client, email = '', preview = false, offset = 0, monthOffset = 0, busy = false, checkedDate = '', checkedGymName = '', generation = 0, monthGeneration = 0, timer;
     const text = (id, value) => { const node = find(id); if (node) node.textContent = value; };
     const shortDate = key => new Date(`${key}T12:00:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
     function buttonState() {
@@ -76,6 +79,8 @@
       text('client-gym-hero-title', done ? 'You showed up today' : 'Show up for yourself today');
       const button = find('client-gym-checkin');
       const label = button.querySelector('[data-client-gym-checkin-label]') || button;
+      const nameField = find('client-gym-name')?.closest('.client-gym-name-field');
+      if (nameField) nameField.hidden = done || preview;
       button.disabled = !email || preview || busy || done;
       label.textContent = busy ? 'Saving check-in…' : done ? 'Checked in today' : 'Gym check-in';
     }
@@ -96,11 +101,14 @@
         const [logs, visits, todayVisits] = await Promise.all([
           readRows(client, 'client_workout_logs', 'id,entry_date,workout_title,workout_session_id,session_id', requestEmail, range),
           readRows(client, 'client_gym_checkins', 'entry_date', requestEmail, range),
-          readRows(client, 'client_gym_checkins', 'entry_date', requestEmail, { start: today, end: today })
+          readRows(client, 'client_gym_checkins', 'entry_date,gym_name', requestEmail, { start: today, end: today })
         ]);
         if (request !== generation) return;
         checkedDate = todayVisits.length ? today : '';
+        checkedGymName = gymName(todayVisits[0]?.gym_name);
         buttonState();
+        if (checkedDate && !busy) text('client-gym-checkin-status', checkedGymName
+          ? `Checked in at ${checkedGymName}.` : 'You showed up. Check-in complete.');
         const summary = summarize(logs, visits, range);
         text('client-weekly-workouts', summary.workouts); text('client-weekly-checkins', summary.checkins);
         text('client-weekly-checkins-summary', summary.checkins);
@@ -173,19 +181,20 @@
     find('client-week-prev').onclick = () => { offset--; void refresh(); };
     find('client-week-next').onclick = () => { offset = Math.min(0, offset + 1); void refresh(); };
     find('client-weekly-retry').onclick = () => { void refresh(); };
-    async function checkIn() {
+    async function checkIn(place = '') {
       if (!client || !email || preview) throw new Error('Sign in as a client to check in at the gym.');
       if (checkedDate === dateKey(new Date())) return 'You’re already checked in at the gym today.';
       if (busy) throw new Error('Your gym check-in is already saving.');
       const targetEmail = email, today = dateKey(new Date());
       busy = true; buttonState(); text('client-gym-checkin-status', 'Saving gym check-in…');
       try {
-        await saveVisit(client, targetEmail, today);
+        await saveVisit(client, targetEmail, today, place);
         if (email !== targetEmail) throw new Error('Your account changed. Reopen your check-in.');
         checkedDate = today; offset = 0;
         await refresh();
         if (find('client-month-details')?.open) void renderMonth();
-        text('client-gym-checkin-status', 'You showed up. Check-in complete.');
+        text('client-gym-checkin-status', checkedGymName
+          ? `Checked in at ${checkedGymName}.` : 'You showed up. Check-in complete.');
         root.document?.dispatchEvent(new CustomEvent("fwb:gym-checkin-saved"));
         celebrateCheckIn(panel, today);
         return today === dateKey(new Date()) ? 'Gym check-in saved for today.' : 'Gym check-in saved for yesterday. Check in again for today.';
@@ -196,17 +205,17 @@
         throw error;
       } finally { busy = false; buttonState(); }
     };
-    find('client-gym-checkin').onclick = () => checkIn().catch(() => {});
+    find('client-gym-checkin').onclick = () => checkIn(find('client-gym-name')?.value).catch(() => {});
     return { checkIn, isCheckedIn: () => checkedDate === dateKey(new Date()), configure(nextClient, nextEmail, isPreview) {
       if (!nextClient || !nextEmail) return;
       const normalized = nextEmail.trim().toLowerCase();
-      if (email !== normalized) { offset = 0; monthOffset = 0; checkedDate = ''; generation++; monthGeneration++; }
+      if (email !== normalized) { offset = 0; monthOffset = 0; checkedDate = ''; checkedGymName = ''; generation++; monthGeneration++; }
       client = nextClient; email = normalized; preview = Boolean(isPreview); buttonState();
       if (preview) text('client-gym-checkin-status', 'Viewing client activity. Gym check-in is available to the client.');
       clearTimeout(timer); timer = setTimeout(() => void refresh(), 150);
     } };
   }
-  const api = { dateKey, weekRange, summarize, readRows, saveVisit, celebrateCheckIn, weeklyMarkText, mount };
+  const api = { dateKey, weekRange, summarize, readRows, saveVisit, celebrateCheckIn, weeklyMarkText, gymName, mount };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   if (root.document) root.FWB_WEEKLY_ACTIVITY = mount(root.document);
 })(typeof window !== 'undefined' ? window : globalThis);

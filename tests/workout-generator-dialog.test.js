@@ -124,6 +124,24 @@ test("generation previews without applying, and preference changes invalidate th
   assert.match(h.status.textContent, /Preferences changed/);
 });
 
+test("daily generator passes selected superset counts into the applied workout", async () => {
+  const h = fixture();
+  let accepted;
+  h.open({ onUse(workout) { accepted = workout; return true; } });
+  const selects = h.dialog.querySelectorAll("select");
+  selects.find((node) => node.name === "format").value = "superset";
+  selects.find((node) => node.name === "warmUpCount").value = "3";
+  selects.find((node) => node.name === "workingSetCount").value = "10";
+  await h.form.emit("submit");
+  assert.equal(h.calls[0].format, "superset");
+  assert.equal(h.calls[0].warmUpCount, 3);
+  assert.equal(h.calls[0].workingSetCount, 10);
+  await h.use.emit("click");
+  assert.equal(accepted.format, "superset");
+  assert.equal(accepted.warmUpCount, 3);
+  assert.equal(accepted.workingSetCount, 10);
+});
+
 test("gym location scopes generator history and follows a selected workout", async () => {
   const h = fixture();
   let usedGym;

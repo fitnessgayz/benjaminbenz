@@ -62,6 +62,9 @@
         <p class="client-gym-checkin-prompt-kicker">TODAY AT A GLANCE</p>
         <h2 id="client-gym-checkin-prompt-title">At the gym today?</h2>
         <p id="client-gym-checkin-prompt-description">Check in to track your gym visits. You can also check in from Home anytime.</p>
+        <label class="client-gym-checkin-prompt-name" for="client-gym-prompt-name">Gym name <small>(optional)</small>
+          <input id="client-gym-prompt-name" data-gym-prompt-name type="text" maxlength="120" autocomplete="off" placeholder="Where are you training?" />
+        </label>
         <p class="client-gym-checkin-prompt-status" role="status" aria-live="polite" data-gym-prompt-status></p>
         <div class="client-gym-checkin-prompt-actions">
           <button type="button" data-gym-prompt-checkin>Check in at the gym</button>
@@ -78,7 +81,7 @@
         checkin.disabled = true;
         status.textContent = "Saving gym check-in…";
         try {
-          const message = await activity.checkIn();
+          const message = await activity.checkIn(popup.querySelector('[data-gym-prompt-name]')?.value || '');
           if (context.isCurrent?.() === false) {
             if (popup.open) popup.close();
             return;

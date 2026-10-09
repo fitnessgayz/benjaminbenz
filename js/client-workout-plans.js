@@ -44,15 +44,23 @@
   function build(input, generator) {
     const days = Number(input.days);
     const schedule = focusSchedules[input.split]?.[days];
+    const format = input.format || "single";
+    const warmUpCount = input.warmUpCount === undefined ? 1 : Number(input.warmUpCount);
+    const workingSetCount = input.workingSetCount === undefined ? 3 : Number(input.workingSetCount);
     if (!schedule || ![20, 30, 45, 60].includes(Number(input.minutes))
       || !["easy", "moderate", "challenging"].includes(input.intensity)
+      || !["single", "superset", "circuit"].includes(format)
+      || !Number.isInteger(warmUpCount) || warmUpCount < 0 || warmUpCount > 3
+      || !Number.isInteger(workingSetCount) || workingSetCount < 1 || workingSetCount > 10
       || !Array.isArray(input.equipment) || !generator?.generate) {
-      throw new Error("Choose your schedule, training focus, time, and equipment.");
+      throw new Error("Choose your schedule, format, set counts, time, and equipment.");
     }
     const workouts = schedule.map((focus, index) => {
       try {
         const workout = generator.generate({ ...input, focus, minutes: Number(input.minutes),
-          format: "single", seed: `${input.seed || Date.now()}:${index}` });
+          format, ...(input.warmUpCount === undefined ? {} : { warmUpCount }),
+          ...(input.workingSetCount === undefined ? {} : { workingSetCount }),
+          seed: `${input.seed || Date.now()}:${index}` });
         return { ...workout, day: index + 1, title: `${focusLabels[focus]} · Day ${index + 1}` };
       } catch (error) {
         throw new Error(`Day ${index + 1}: ${error?.message || "This workout could not be generated."}`);
@@ -60,7 +68,9 @@
     });
     return { version: 1, title: `${days}-day ${input.split === "upper_lower" ? "Upper / Lower" : input.split === "full_body" ? "Full Body" : "Balanced Strength"} Plan`,
       days, split: input.split, minutes: Number(input.minutes), intensity: input.intensity,
-      equipment: [...input.equipment], workouts };
+      equipment: [...input.equipment], format,
+      ...(input.warmUpCount === undefined ? {} : { warmUpCount }),
+      ...(input.workingSetCount === undefined ? {} : { workingSetCount }), workouts };
   }
 
   function validPlan(plan) {
@@ -89,6 +99,9 @@
       <label>Training focus<select name="split"><option value="balanced">Balanced strength</option><option value="full_body">Full body</option><option value="upper_lower">Upper / lower</option></select></label>
       <label>Time per workout<select name="minutes"><option value="20">20 minutes</option><option value="30" selected>30 minutes</option><option value="45">45 minutes</option><option value="60">60 minutes</option></select></label>
       <label>Intensity<select name="intensity"><option value="easy">Easy</option><option value="moderate" selected>Moderate</option><option value="challenging">Challenging</option></select></label>
+      <label>Workout format<select name="format"><option value="single">Straight Sets</option><option value="superset">Superset</option><option value="circuit">Circuit</option></select></label>
+      <div class="plan-set-counts"><label>Warm-up<select name="warmUpCount">${Array.from({ length: 4 }, (_, count) => `<option value="${count}" ${count === 1 ? "selected" : ""}>${count}</option>`).join("")}</select></label>
+      <label>Sets<select name="workingSetCount">${Array.from({ length: 10 }, (_, index) => `<option value="${index + 1}" ${index === 2 ? "selected" : ""}>${index + 1}</option>`).join("")}</select></label></div>
       <fieldset><legend>Equipment available</legend>${(root.FWB_WORKOUT_GENERATOR?.EQUIPMENT_OPTIONS || [])
         .map((item) => `<label class="plan-equipment"><input type="checkbox" name="equipment" value="${escape(item.value)}" ${item.value === "full_gym" ? "checked" : ""}>${escape(item.label)}</label>`).join("")}</fieldset>
       <button class="plan-primary" type="submit">Generate weekly plan</button>
@@ -96,10 +109,10 @@
   }
 
   function planMarkup(plan, savedId = "") {
-    return `<article class="saved-plan-detail"><h3>${escape(plan.title)}</h3><p>${plan.days} workouts per week · About ${plan.minutes} minutes each</p>
+    return `<article class="saved-plan-detail"><h3>${escape(plan.title)}</h3><p>${plan.days} workouts per week · ${escape(({ single: "Straight Sets", superset: "Superset", circuit: "Circuit" })[plan.format] || "Straight Sets")}${plan.workingSetCount === undefined ? "" : ` · ${escape(plan.warmUpCount ?? 1)} warm-up sets · ${escape(plan.workingSetCount)} working sets`}</p>
       <div class="saved-plan-days">${plan.workouts.map((workout, index) => `<section class="saved-plan-day"><h4>Day ${index + 1}: ${escape(workout.title.replace(/ · Day \d+$/, ""))}</h4>
         <p>${workout.exercises.length} exercises · About ${Math.round(Number(workout.estimatedMinutes) || plan.minutes)} minutes</p>
-        <ul>${workout.exercises.map((exercise) => `<li>${escape(exercise.name)} <span>${escape(exercise.prescription || `${exercise.sets} sets`)}</span></li>`).join("")}</ul>
+        <ul>${workout.exercises.map((exercise) => `<li>${escape(exercise.name)} <span>${escape(workout.workingSetCount === undefined ? (exercise.prescription || `${exercise.sets} sets`) : String(exercise.prescription || `${exercise.sets} sets`).replace(/ x \d+ sets$/i, ` x ${workout.workingSetCount} sets`))}</span></li>`).join("")}</ul>
         ${savedId ? `<button type="button" data-plan-start="${escape(savedId)}" data-plan-day="${index}">Start this workout</button>` : ""}</section>`).join("")}</div>
       ${savedId ? `<button type="button" class="plan-delete" data-plan-delete="${escape(savedId)}">Delete this plan</button>` : '<button type="button" class="plan-primary" data-plan-save>Save plan to Log Custom Workout</button>'}</article>`;
   }
@@ -176,7 +189,8 @@
   function readForm(form) {
     const data = new FormData(form);
     return { days: Number(data.get("days")), split: data.get("split"), minutes: Number(data.get("minutes")),
-      intensity: data.get("intensity"), equipment: data.getAll("equipment"),
+      intensity: data.get("intensity"), format: data.get("format"), warmUpCount: Number(data.get("warmUpCount")),
+      workingSetCount: Number(data.get("workingSetCount")), equipment: data.getAll("equipment"),
       library: context.library, history: context.history, seed: `${Date.now()}-${Math.random()}` };
   }
 

@@ -16,6 +16,9 @@
 .client-gym-checkin-prompt p { margin: 0 0 17px; }
 .client-gym-checkin-prompt-kicker { color: var(--brand-primary, #a3ff12); font-size: .78rem; font-weight: 800; letter-spacing: .12em; }
 .client-gym-checkin-prompt-status { min-height: 1.4em; color: var(--text-muted, #a8b9ac); }
+.client-gym-checkin-prompt-name { display: grid; gap: 6px; margin-bottom: 14px; font-weight: 800; }
+.client-gym-checkin-prompt-name small { font-weight: 500; color: var(--text-muted, #a8b9ac); }
+.client-gym-checkin-prompt-name input { width: 100%; min-height: 48px; padding: 10px 12px; border: 1px solid var(--border, #263c2e); border-radius: 11px; background: var(--surface, #0b1811); color: var(--ink, #f2f0e8); font: inherit; }
 .client-gym-checkin-prompt-close {
   position: absolute;
   top: 12px;

@@ -100,6 +100,23 @@ test("generated formats survive handoff with pairs for supersets and exactly thr
   }
 });
 
+test("selected warm-up and working set counts populate grouped generated drafts", () => {
+  const context = evaluate(["customExerciseCode", "generatedCustomWorkoutDraft"]);
+  for (const format of ["superset", "circuit"]) {
+    const draft = plain(context.generatedCustomWorkoutDraft({ ...workout(), format,
+      warmUpCount: 3, workingSetCount: 10,
+      exercises: Array.from({ length: format === "circuit" ? 3 : 2 }, (_, index) => ({
+        name: `Exercise ${index + 1}`, sets: 3, prescription: "8-12 reps x 3 sets", rest: "60 sec"
+      })) }));
+    assert.equal(draft.generatedFrom.warmUpCount, 3);
+    assert.equal(draft.generatedFrom.workingSetCount, 10);
+    assert.ok(draft.exercises.every((exercise) => exercise.sets.length === 13));
+    assert.ok(draft.exercises.every((exercise) => exercise.sets.slice(0, 3).every((set) => set.setType === "warm_up")));
+    assert.ok(draft.exercises.every((exercise) => exercise.sets.slice(3).every((set) => set.setType === "working")));
+    assert.ok(draft.exercises.every((exercise) => exercise.prescription === "8-12 reps x 10 sets"));
+  }
+});
+
 test("recovery draft handoff keeps timed targets and creates only the prescribed blank working sets", () => {
   const context = evaluate(["customExerciseCode", "generatedCustomWorkoutDraft"]);
   for (const focus of ["recovery_upper", "recovery_lower", "recovery_full"]) {
@@ -486,6 +503,7 @@ test("logging a generated set uses its prescribed rest and mixed groups use the 
       validateCustomWorkoutGroupedSection: () => ({ valid: true }),
       completeEnteredCustomWorkoutWarmUps: () => ({ valid: true, rows: [], previousStates: [] }),
       clearCustomWorkoutGroupedWeightCopy: () => {},
+      autoCopyCustomWorkoutGroupedNextRound: () => {},
       persistCustomWorkoutDraftForElement: () => {},
       refreshCustomWorkoutGroupedCompletion: () => {},
       workoutSetUnit: () => "Set",
