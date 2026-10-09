@@ -140,6 +140,96 @@ test("renders the exercise key, compact round stepper, round rows, and grouped a
   assert.match(mobileStyles, /custom-workout-grouped-copy-weights, \.custom-workout-grouped-undo-weights\)[\s\S]*?min-height: 34px/);
 });
 
+test("custom straight sets use the approved compact warm-up and sets selectors", () => {
+  const groupedMarkup = sourceForFunction("customWorkoutGroupedRoundCardMarkup");
+  const cardMarkup = sourceForFunction("customWorkoutCardMarkup");
+  const logFields = sourceForFunction("exerciseLogFields");
+  const rowMarkup = sourceForFunction("setRows");
+  const interactions = sourceForFunction("handleWorkoutInteractions");
+
+  assert.match(groupedMarkup, /format === "single" && !options\.assigned/);
+  assert.match(groupedMarkup, /data-custom-grouped-warmup-count/);
+  assert.match(groupedMarkup, /Array\.from\(\{ length: 4 \}/);
+  assert.match(groupedMarkup, /data-custom-grouped-working-count/);
+  assert.match(groupedMarkup, /Array\.from\(\{ length: 10 \}/);
+  assert.match(cardMarkup, /includeWarmUp: cardFormat !== "single"/);
+  assert.match(logFields, /data-omit-warmup="true"/);
+  assert.match(rowMarkup, /options\.includeWarmUp === false \? \[\]/);
+  assert.match(interactions, /changeCustomWorkoutGroupedSetCount\(groupedSetCount\)/);
+  assert.match(mobileStyles, /\.custom-workout-grouped-set-selectors \{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\);[\s\S]*?gap: 6px;/);
+  assert.match(mobileStyles, /\.custom-workout-grouped-count-field\.is-working select \{[\s\S]*?background: #ffd400 !important;/);
+});
+
+test("changing set counts preserves entered rows and blocks destructive reductions", () => {
+  const change = sourceForFunction("changeCustomWorkoutGroupedSetCount");
+  const row = (type, values = {}) => ({
+    dataset: { setType: type },
+    values: { weightRaw: "", repsRaw: "", ...values },
+    classList: { contains: () => false },
+    remove() { log.rows.splice(log.rows.indexOf(this), 1); }
+  });
+  const log = { dataset: { omitWarmup: "true" }, rows: [], querySelector: () => rows };
+  const rows = {
+    querySelector: () => ({ dataset: { defaultPlaceholder: "0" } }),
+    insertAdjacentHTML(_position, markup) {
+      const [type] = markup.split("|");
+      log.rows.push(row(type));
+    }
+  };
+  const first = row("working", { weightRaw: "20", repsRaw: "10" });
+  const second = row("working");
+  const third = row("working", { weightRaw: "35", repsRaw: "" });
+  log.rows.push(first, second, third);
+  const status = { textContent: "" };
+  const carousel = { dataset: { customWorkoutFormat: "single" }, closest: () => ({}) };
+  const selects = {
+    warm: { value: "1", closest: () => carousel, matches: () => true },
+    working: { value: "2", closest: () => carousel, matches: () => false }
+  };
+  const saved = [];
+  const changeCount = Function(
+    "customWorkoutGroupedLogElements", "warmUpSetType", "workingSetType", "customWorkoutGroupedRows",
+    "setRowInputValues", "customWorkoutGroupedStatus", "warmUpSetNumberBase", "setRowMarkup",
+    "renumberSetRows", "updateSetHistoryPlaceholders", "syncVisibleSetTarget", "updateVisibleSetProgress",
+    "persistCustomWorkoutDraftForElement", "renderCustomWorkoutGroupedCard",
+    `${change}; return changeCustomWorkoutGroupedSetCount;`
+  )(
+    () => [log], "warm_up", "working", (element, type) => element.rows.filter((item) => item.dataset.setType === type),
+    (item) => item.values, () => status, 1000, (number, reps, type) => `${type}|${number}|${reps}`,
+    () => {}, () => {}, () => {}, () => {},
+    () => saved.push(log.rows.map((item) => item.dataset.setType)), () => {}
+  );
+
+  assert.equal(changeCount(selects.warm), true);
+  assert.equal(log.rows.filter((item) => item.dataset.setType === "warm_up").length, 1);
+  assert.equal(log.dataset.omitWarmup, undefined);
+
+  assert.equal(changeCount(selects.working), false);
+  assert.equal(selects.working.value, "3");
+  assert.equal(log.rows.includes(third), true);
+  assert.match(status.textContent, /Clear or reopen/);
+
+  third.values.weightRaw = "";
+  selects.working.value = "2";
+  assert.equal(changeCount(selects.working), true);
+  selects.warm.value = "2";
+  assert.equal(changeCount(selects.warm), true);
+  assert.equal(log.rows.length, 4, "same-total warm-up/sets redistribution keeps four rows");
+  assert.equal(log.rows.includes(first), true, "entered working row is preserved");
+  assert.equal(log.rows.includes(second), true);
+
+  const warmRows = log.rows.filter((item) => item.dataset.setType === "warm_up");
+  warmRows[1].values.repsRaw = "5";
+  selects.warm.value = "0";
+  assert.equal(changeCount(selects.warm), false);
+  assert.equal(selects.warm.value, "2");
+  assert.equal(log.rows.includes(warmRows[1]), true);
+  warmRows[1].values.repsRaw = "";
+  assert.equal(changeCount({ ...selects.warm, value: "0" }), true);
+  assert.equal(log.dataset.omitWarmup, "true");
+  assert.deepEqual(saved.at(-1), ["working", "working"]);
+});
+
 test("accepts skipped warm-ups and optional RIR while validating working reps", () => {
   const fieldMarkup = sourceForFunction("customWorkoutGroupedFieldMarkup");
   const validate = sourceForFunction("validateCustomWorkoutGroupedSection");
