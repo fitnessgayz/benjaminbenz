@@ -1,0 +1,74 @@
+:root { color-scheme: light; --blue: #2878ff; --blue-deep: #1263e9; --gold: #ffd526; --cream: #faf9f4; --ink: #17335f; --muted: #586986; }
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; color: var(--ink); background: var(--cream); font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; -webkit-font-smoothing: antialiased; }
+a { color: inherit; }
+button { font: inherit; }
+:is(a, button):focus-visible { outline: 3px solid var(--gold); outline-offset: 4px; }
+.site-header { position: relative; z-index: 2; display: flex; align-items: center; justify-content: space-between; gap: 24px; min-height: 76px; padding: 12px clamp(22px, 5vw, 76px); color: #fff; background: var(--blue); border-bottom: 1px solid #ffffff45; }
+.brand { display: inline-flex; align-items: center; gap: 9px; font-size: 14px; font-weight: 850; line-height: 1.06; letter-spacing: -.04em; text-decoration: none; }
+.brand img { display: block; width: 96px; height: 50px; object-fit: contain; }
+.header-back { padding: 10px 14px; border: 1px solid #ffffffa8; border-radius: 999px; font-size: 12px; font-weight: 800; text-decoration: none; white-space: nowrap; }
+.header-back:hover { background: #ffffff20; }
+.intro { position: relative; isolation: isolate; overflow: hidden; color: #fff; background: linear-gradient(135deg, #3989ff, var(--blue) 48%, var(--blue-deep)); }
+.intro::after { content: ""; position: absolute; z-index: -1; width: min(58vw, 700px); aspect-ratio: 1; right: -13%; top: -40%; border: 1px solid #ffffff37; border-radius: 50%; box-shadow: 0 0 0 75px #ffffff09, 0 0 0 150px #ffffff06; }
+.intro-inner { max-width: 1160px; margin: auto; padding: clamp(60px, 9vw, 112px) 28px 72px; }
+.eyebrow { margin: 0; color: var(--blue-deep); font-size: 11px; font-weight: 850; letter-spacing: .16em; text-transform: uppercase; }
+.intro .eyebrow { color: var(--gold); }
+.intro h1 { max-width: 920px; margin: 18px 0 22px; font-size: clamp(49px, 7vw, 92px); line-height: .99; letter-spacing: -.075em; }
+.intro h1 em { color: var(--gold); font-style: normal; }
+.intro-copy { max-width: 660px; margin: 0; color: #ffffffe6; font-size: clamp(16px, 2vw, 21px); line-height: 1.55; }
+.intro-cta { display: inline-flex; align-items: center; justify-content: space-between; gap: 40px; min-width: 200px; margin-top: 29px; padding: 15px 18px; border-radius: 9px; color: var(--ink); background: var(--gold); font-size: 14px; font-weight: 850; text-decoration: none; }
+.intro-cta:hover { background: #ffe052; }
+.intro-atari { display: flex; align-items: center; gap: 10px; width: fit-content; max-width: 530px; margin-top: 44px; padding: 11px 18px 11px 8px; border: 1px solid #ffffff69; border-radius: 17px; background: #ffffff1d; }
+.intro-atari p { margin: 0; color: #ffffffe8; font-size: 13px; line-height: 1.5; }
+.intro-atari strong { display: block; color: var(--gold); font-size: 10px; letter-spacing: .09em; text-transform: uppercase; }
+.atari { position: relative; display: block; flex: 0 0 auto; width: 74px; height: 78px; overflow: hidden; }
+.atari img { position: absolute; display: block; width: 200%; height: 200%; max-width: none; object-fit: fill; pointer-events: none; }
+.atari.is-greeting img { left: 0; top: 0; }
+.atari.is-celebrating img { left: -100%; top: 0; }
+.atari.is-encouraging img { left: 0; top: -100%; }
+.atari.is-resting img { left: -100%; top: -100%; }
+.tour-section { max-width: 1160px; margin: 0 auto; padding: 76px 28px 60px; scroll-margin-top: 20px; }
+.tour-heading { display: flex; align-items: end; justify-content: space-between; gap: 25px; margin-bottom: 29px; }
+.tour-heading h2 { margin: 10px 0 0; font-size: clamp(38px, 4.5vw, 60px); line-height: 1; letter-spacing: -.065em; }
+.tour-heading > p { max-width: 270px; margin: 0; color: var(--muted); font-size: 14px; line-height: 1.5; }
+.tour-layout { display: grid; grid-template-columns: 210px minmax(0, 1fr); gap: 18px; }
+.tour-nav { display: grid; align-content: start; gap: 8px; }
+.tour-nav button { display: flex; align-items: center; gap: 13px; width: 100%; min-height: 50px; padding: 13px 14px; border: 1px solid #d3e0f4; border-radius: 10px; color: var(--ink); background: #fff; font-size: 13px; font-weight: 750; text-align: left; cursor: pointer; }
+.tour-nav button span { color: var(--blue-deep); font-size: 10px; font-weight: 900; }
+.tour-nav button:hover { border-color: var(--blue); }
+.tour-nav button[aria-current="step"] { color: #fff; background: var(--blue); border-color: var(--blue); box-shadow: 0 8px 22px #2878ff33; }
+.tour-nav button[aria-current="step"] span { color: var(--gold); }
+.tour-stage { min-width: 0; }
+.tour-step { display: grid; grid-template-columns: minmax(200px, 300px) minmax(0, 1fr); align-items: center; gap: clamp(25px, 4vw, 54px); min-height: 625px; padding: clamp(22px, 3.5vw, 42px); border: 1px solid #d3e0f4; border-radius: 23px; background: #fff; box-shadow: 0 12px 36px #17335f0d; }
+.tour-step + .tour-step { margin-top: 18px; }
+.tour-section.is-enhanced .tour-step[hidden] { display: none; }
+.phone { width: min(100%, 300px); max-height: 590px; margin: auto; overflow: hidden; border: 8px solid #17253d; border-radius: 33px; background: #17253d; box-shadow: 0 22px 46px #17335f3b; }
+.phone img { display: block; width: 100%; height: auto; }
+.tour-copy { align-self: center; }
+.step-count { margin: 0 0 16px; color: var(--blue-deep); font-size: 11px; font-weight: 850; letter-spacing: .13em; text-transform: uppercase; }
+.tour-copy h3 { max-width: 390px; margin: 0 0 28px; font-size: clamp(33px, 3.3vw, 49px); line-height: 1.05; letter-spacing: -.06em; }
+.atari-note { display: flex; align-items: center; gap: 16px; max-width: 470px; padding: 16px 18px 16px 8px; border: 1px solid #d0dffa; border-radius: 16px; background: #edf3ff; }
+.atari-note .atari { width: 76px; height: 80px; }
+.atari-note p { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.55; }
+.atari-note strong { display: block; margin-bottom: 3px; color: var(--blue-deep); font-size: 11px; font-weight: 850; letter-spacing: .08em; text-transform: uppercase; }
+.tour-controls { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: 18px 0 0 228px; }
+.tour-status { margin: 0; color: var(--muted); font-size: 13px; font-weight: 700; }
+.tour-controls > div { display: flex; gap: 9px; }
+.tour-controls button { min-height: 44px; padding: 10px 16px; border: 1px solid #c9d9f0; border-radius: 9px; color: var(--ink); background: #fff; font-size: 12px; font-weight: 800; cursor: pointer; }
+.tour-controls [data-tour-next] { color: var(--ink); background: var(--gold); border-color: var(--gold); }
+.tour-controls button:hover:not(:disabled) { border-color: var(--blue); }
+.tour-controls button:disabled { opacity: .46; cursor: default; }
+.preview-note { margin: 18px 0 0 228px; color: var(--muted); font-size: 11px; line-height: 1.5; }
+.closing { display: flex; align-items: center; justify-content: space-between; gap: 32px; max-width: 1104px; margin: 18px auto 78px; padding: clamp(29px, 4vw, 48px); border-radius: 22px; background: radial-gradient(circle at 100% 0, #e8f0ff, transparent 50%), #edf3ff; }
+.closing h2 { max-width: 660px; margin: 10px 0 12px; font-size: clamp(32px, 4vw, 52px); line-height: 1.07; letter-spacing: -.06em; }
+.closing p:last-child { max-width: 510px; margin: 0; color: var(--muted); font-size: 14px; line-height: 1.55; }
+.closing a { display: inline-flex; align-items: center; justify-content: space-between; gap: 22px; min-width: 235px; padding: 15px 16px; border-radius: 9px; color: var(--ink); background: var(--gold); font-size: 13px; font-weight: 850; text-decoration: none; white-space: nowrap; }
+.closing a:hover { background: #ffe052; }
+footer { display: flex; justify-content: space-between; gap: 20px; padding: 26px clamp(22px, 5vw, 76px); color: #ffffffc9; background: var(--ink); font-size: 12px; }
+footer a { color: #fff; text-underline-offset: 3px; }
+@media (max-width: 930px) { .tour-layout { grid-template-columns: 1fr; } .tour-nav { display: flex; gap: 7px; overflow-x: auto; padding-bottom: 8px; } .tour-nav button { flex: 0 0 auto; width: auto; white-space: nowrap; } .tour-controls, .preview-note { margin-left: 0; } }
+@media (max-width: 700px) { .intro-inner { padding: 56px 23px 62px; } .intro h1 { font-size: clamp(44px, 11vw, 66px); } .tour-section { padding: 58px 20px 40px; } .tour-heading { display: block; } .tour-heading > p { margin-top: 14px; } .tour-step { grid-template-columns: 1fr; min-height: 0; padding: 24px; } .phone { width: min(100%, 260px); max-height: 480px; } .tour-copy { order: -1; } .tour-copy h3 { margin-bottom: 18px; } .atari-note { margin-bottom: 8px; } .closing { display: block; margin: 10px 20px 55px; } .closing a { margin-top: 23px; } }
+@media (max-width: 480px) { .site-header { min-height: 64px; padding: 9px 18px; } .brand img { width: 72px; height: 42px; } .brand span { display: none; } .header-back { padding: 9px 11px; font-size: 11px; } .intro-atari { margin-top: 37px; } .tour-controls { align-items: stretch; flex-direction: column; } .tour-controls > div { display: grid; grid-template-columns: 1fr 1fr; } .closing a { width: 100%; } footer { flex-direction: column; } }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }

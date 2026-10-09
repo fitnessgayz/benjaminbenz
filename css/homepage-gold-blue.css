@@ -86,4 +86,7 @@ footer a { text-underline-offset: 2px; }
 .home-app { position: relative; z-index: 1; max-width: 570px; margin-top: 22px; padding: 17px 19px; border: 1px solid #ffffff66; border-radius: 11px; background: #ffffff17; }
 .home-app .eyebrow { color: var(--gold); font-size: 10px; }
 .home-app h2 { margin: 7px 0; font-size: 20px; line-height: 1.2; letter-spacing: -.04em; }
-.home-app > p:last-child { margin: 0; color: #ffffffdb; font-size: 12px; line-height: 1.5; }
+.home-app > p:not(.eyebrow) { margin: 0; color: #ffffffdb; font-size: 12px; line-height: 1.5; }
+
+.home-app-preview { display: inline-flex; align-items: center; gap: 12px; margin-top: 14px; padding: 9px 12px; border: 1px solid #ffffffa8; border-radius: 8px; color: #fff; font-size: 11px; font-weight: 850; text-decoration: none; }
+.home-app-preview:hover { background: #ffffff22; }
