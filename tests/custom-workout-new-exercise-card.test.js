@@ -15,7 +15,7 @@ function sourceForFunction(name) {
   return portal.slice(start, end >= 0 ? end : undefined);
 }
 
-test("starts every custom exercise with one warm-up and three working sets", () => {
+test("starts straight custom exercises with zero warm-ups and three working sets", () => {
   const helpers = [
     "repTargetsFromPrescription",
     "normalizedSetType",
@@ -33,18 +33,18 @@ test("starts every custom exercise with one warm-up and three working sets", () 
     "autoRestTimerEnabled",
     `${helpers}; return setRows;`
   )("warm_up", "working", 1000, (value) => String(value || ""), require("../js/workout-layout.js"), () => true);
-  const markup = setRows({ prescription: "Custom sets" }, 3);
+  const markup = setRows({ prescription: "Custom sets" }, 3, { includeWarmUp: false });
+  const assignedMarkup = setRows({ prescription: "Custom sets" }, 3);
   const cardMarkup = sourceForFunction("customWorkoutCardMarkup");
-  const groupMarkup = sourceForFunction("customWorkoutCarouselGroupMarkup");
 
-  assert.equal((markup.match(/data-set-row/g) || []).length, 4);
-  assert.equal((markup.match(/data-set-type="warm_up"/g) || []).length, 1);
+  assert.equal((markup.match(/data-set-row/g) || []).length, 3);
+  assert.equal((markup.match(/data-set-type="warm_up"/g) || []).length, 0);
   assert.equal((markup.match(/data-set-type="working"/g) || []).length, 3);
-  assert.match(markup, /data-set-number="1001"[\s\S]*?value="W"/);
+  assert.equal((assignedMarkup.match(/data-set-type="warm_up"/g) || []).length, 1);
   assert.match(markup, /data-set-number="1"[\s\S]*data-set-number="2"[\s\S]*data-set-number="3"/);
   assert.match(cardMarkup, /0 \/ \$\{customWorkoutDefaultWorkingSetCount\} working sets completed/);
   assert.match(cardMarkup, /setCount: customWorkoutDefaultWorkingSetCount/);
-  assert.match(groupMarkup, /customWorkoutCardMarkup\([\s\S]*?\{ groupPosition: index, format, panelFormat \}/);
+  assert.match(cardMarkup, /includeWarmUp: cardFormat !== "single"/);
 });
 
 test("upgrades an untouched legacy draft without overwriting entered sets", () => {

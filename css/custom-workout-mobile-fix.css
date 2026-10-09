@@ -2029,6 +2029,77 @@
   font-size: 1.05rem;
 }
 
+/* Approved compact warm-up / working-set picker for custom straight sets. */
+.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-set-selectors {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  padding: 7px 9px 8px;
+  border-top: 1px solid var(--grouped-line);
+  background: var(--grouped-cream);
+}
+
+.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-count-field {
+  display: block;
+  position: relative;
+  min-width: 0;
+}
+
+.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-count-field span {
+  display: block;
+  padding: 0 0 3px 2px;
+  color: var(--grouped-muted);
+  font-size: .69rem;
+  font-weight: 900;
+  letter-spacing: .075em;
+  text-transform: uppercase;
+}
+
+.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-count-field select {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  min-height: 48px;
+  padding: 0 32px 0 11px;
+  border: 2px solid var(--grouped-ink) !important;
+  border-radius: 10px;
+  background: var(--grouped-paper) !important;
+  color: var(--grouped-ink) !important;
+  font: inherit;
+  font-size: 1.3rem !important;
+  font-weight: 900;
+  touch-action: manipulation;
+}
+
+.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-count-field.is-working select {
+  background: #ffd400 !important;
+  color: #111411 !important;
+  border-color: #111411 !important;
+  color-scheme: light !important;
+}
+
+.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-count-field::after {
+  content: "";
+  position: absolute;
+  right: 14px;
+  bottom: 20px;
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid var(--grouped-ink);
+  border-bottom: 2px solid var(--grouped-ink);
+  transform: rotate(45deg);
+  pointer-events: none;
+}
+
+.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-count-field.is-working::after {
+  border-color: #111411;
+}
+
+.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-count-field select:focus-visible {
+  outline: 3px solid #ffd400;
+  outline-offset: 2px;
+}
+
 .dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-exercise-key-item:last-child {
   border-bottom: 0;
 }
