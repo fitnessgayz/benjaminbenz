@@ -59,7 +59,8 @@
     "20261008181200_client_home_activity_totals.sql",
     "20261009070000_add_inner_chest_press_media.sql",
     "20261009140514_approve_all_branded_exercises.sql",
-    "20261009145217_add_cross_body_dumbbell_curl_media.sql"
+    "20261009145217_add_cross_body_dumbbell_curl_media.sql",
+    "20261009152456_correct_dumbbell_wolverine_classification.sql"
   ],
   "nasmExerciseCatalogMigration": "20261001032427_add_complete_nasm_exercise_library.sql",
   "nasmExerciseCatalogCount": 75,
@@ -3278,30 +3279,30 @@
       "cacheControl": 31536000
     },
     {
-      "source": "supabase/storage-assets/exercise-images/approved/2026-10-09/png/cross-body-dumbbell-curl.png",
+      "source": "supabase/storage-assets/exercise-images/approved/2026-10-09/png/dumbbell-wolverine.png",
       "bucket": "exercise-images",
-      "objectPath": "approved/2026-10-09/png/cross-body-dumbbell-curl.png",
+      "objectPath": "approved/2026-10-09/png/dumbbell-wolverine.png",
       "contentType": "image/png",
       "cacheControl": 31536000
     },
     {
-      "source": "supabase/storage-assets/exercise-images/approved/2026-10-09/webp-480/cross-body-dumbbell-curl.webp",
+      "source": "supabase/storage-assets/exercise-images/approved/2026-10-09/webp-480/dumbbell-wolverine.webp",
       "bucket": "exercise-images",
-      "objectPath": "approved/2026-10-09/webp-480/cross-body-dumbbell-curl.webp",
+      "objectPath": "approved/2026-10-09/webp-480/dumbbell-wolverine.webp",
       "contentType": "image/webp",
       "cacheControl": 31536000
     },
     {
-      "source": "supabase/storage-assets/exercise-images/approved/2026-10-09/webp-768/cross-body-dumbbell-curl.webp",
+      "source": "supabase/storage-assets/exercise-images/approved/2026-10-09/webp-768/dumbbell-wolverine.webp",
       "bucket": "exercise-images",
-      "objectPath": "approved/2026-10-09/webp-768/cross-body-dumbbell-curl.webp",
+      "objectPath": "approved/2026-10-09/webp-768/dumbbell-wolverine.webp",
       "contentType": "image/webp",
       "cacheControl": 31536000
     },
     {
-      "source": "supabase/storage-assets/exercise-videos/generated/2026-10-09/cross-body-dumbbell-curl.mp4",
+      "source": "supabase/storage-assets/exercise-videos/generated/2026-10-09/dumbbell-wolverine.mp4",
       "bucket": "exercise-videos",
-      "objectPath": "generated/2026-10-09/cross-body-dumbbell-curl.mp4",
+      "objectPath": "generated/2026-10-09/dumbbell-wolverine.mp4",
       "contentType": "video/mp4",
       "cacheControl": 31536000
     }
@@ -4130,9 +4131,9 @@
       "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-videos/generated/2026-10-09/inner-chest-press.mp4"
     },
     {
-      "name": "Cross-Body Dumbbell Curl",
-      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-10-09/webp-768/cross-body-dumbbell-curl.webp",
-      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-videos/generated/2026-10-09/cross-body-dumbbell-curl.mp4"
+      "name": "Dumbbell Wolverine",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-10-09/webp-768/dumbbell-wolverine.webp",
+      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-videos/generated/2026-10-09/dumbbell-wolverine.mp4"
     }
   ]
 }
