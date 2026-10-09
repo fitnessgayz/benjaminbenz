@@ -5235,7 +5235,7 @@ function setRows(exercise, setCount = setCountFromPrescription(exercise.prescrip
   ));
 
   return [
-    setRowMarkup(warmUpSetNumberBase + 1, repTargets[0] || "", warmUpSetType, "0", options),
+    ...(options.includeWarmUp === false ? [] : [setRowMarkup(warmUpSetNumberBase + 1, repTargets[0] || "", warmUpSetType, "0", options)]),
     ...workingRows
   ].join("");
 }
@@ -5448,6 +5448,7 @@ function exerciseLogFields(exercise, workoutTitle, options = {}) {
       ${exercise.generated ? 'data-generated-exercise="true"' : ""}
       data-prescribed-sets="${setCount}"
       data-set-target-mode="${options.userManagedSets ? "visible" : "prescribed"}"
+      ${options.includeWarmUp === false ? 'data-omit-warmup="true"' : ""}
     >
       ${showInlineHeader ? `
         <div class="superset-exercise-heading">
@@ -5475,7 +5476,7 @@ function exerciseLogFields(exercise, workoutTitle, options = {}) {
         <button class="rir-help-trigger" type="button" data-rir-help aria-label="What does RIR mean?" aria-haspopup="dialog"><span>RIR</span><svg viewBox="0 0 20 20" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="8"/><path d="M10 9v5M10 5.5v1"/></svg></button>
       </div>
         <div data-set-rows>
-          ${setRows(exercise, setCount, { showComplete: options.showSetComplete !== false })}
+          ${setRows(exercise, setCount, { showComplete: options.showSetComplete !== false, includeWarmUp: options.includeWarmUp !== false })}
         </div>
         <div class="set-table-actions${addsSupersetExercise ? " has-add-superset-action" : ""}">
           <button class="add-set-button" type="button" data-add-set>+ Add Set</button>
@@ -9412,6 +9413,7 @@ function customWorkoutCardMarkup(exercise, workoutTitle, index = 0, options = {}
           // card keeps a dormant slot ready for Superset or Circuit mode.
           groupActionSlot: true,
           showSetComplete: cardFormat === "single",
+          includeWarmUp: cardFormat !== "single",
           finishButtonLabel: isFirstSupersetExercise
             ? "Add Superset"
             : (isSecondSupersetExercise ? "Superset Completed" : "Set Finished"),
@@ -9446,6 +9448,28 @@ function customWorkoutGroupedRoundCardMarkup(format, exercises, groupIndex = 0, 
   const groupCue = format === "single"
     ? "Complete each working set"
     : `Complete ${exerciseMarkers.join(" → ")}, rest 60–90s, repeat ${groupRepeatCount}×`;
+  const setCountControls = format === "single" && !options.assigned ? `
+    <div class="custom-workout-grouped-set-selectors" role="group" aria-label="Warm-up and working set counts">
+      <label class="custom-workout-grouped-count-field">
+        <span>Warm-up</span>
+        <select data-custom-grouped-warmup-count aria-label="Number of warm-up sets">
+          ${Array.from({ length: 4 }, (_, count) => `<option value="${count}">${count}</option>`).join("")}
+        </select>
+      </label>
+      <label class="custom-workout-grouped-count-field is-working">
+        <span>Sets</span>
+        <select data-custom-grouped-working-count aria-label="Number of working sets">
+          ${Array.from({ length: 10 }, (_, index) => `<option value="${index + 1}">${index + 1}</option>`).join("")}
+        </select>
+      </label>
+    </div>
+  ` : `
+    <div class="custom-workout-grouped-round-stepper" role="group" aria-label="Number of ${format === "single" ? "sets" : "rounds"}">
+      <button type="button" data-custom-grouped-remove-round aria-label="Remove last ${format === "single" ? "set" : "round"}">−</button>
+      <output aria-live="polite"><span>${format === "single" ? "Sets" : "Rounds"}</span> <strong data-custom-grouped-round-count>1</strong></output>
+      <button type="button" data-custom-grouped-add-round aria-label="Add ${format === "single" ? "set" : "round"}">+</button>
+    </div>
+  `;
 
   return `
     <section
@@ -9480,11 +9504,7 @@ function customWorkoutGroupedRoundCardMarkup(format, exercises, groupIndex = 0, 
           ? customWorkoutInlineGroupOptionsMarkup(format)
           : ""}
         <div class="custom-workout-grouped-exercise-key" data-custom-grouped-exercise-key role="list" aria-label="Exercises in this group"></div>
-        <div class="custom-workout-grouped-round-stepper" role="group" aria-label="Number of ${format === "single" ? "sets" : "rounds"}">
-          <button type="button" data-custom-grouped-remove-round aria-label="Remove last ${format === "single" ? "set" : "round"}">−</button>
-          <output aria-live="polite"><span>${format === "single" ? "Sets" : "Rounds"}</span> <strong data-custom-grouped-round-count>1</strong></output>
-          <button type="button" data-custom-grouped-add-round aria-label="Add ${format === "single" ? "set" : "round"}">+</button>
-        </div>
+        ${setCountControls}
         <div data-custom-grouped-sections></div>
         <div class="custom-workout-grouped-notes" data-custom-grouped-notes></div>
         ${showSessionControls ? `
@@ -10556,9 +10576,76 @@ function syncCustomWorkoutGroupedRoundStepper(carousel) {
   const count = customWorkoutGroupedRoundCount(carousel);
   const output = carousel?.querySelector("[data-custom-grouped-round-count]");
   const removeButton = carousel?.querySelector("[data-custom-grouped-remove-round]");
+  const logElement = customWorkoutGroupedLogElements(carousel)[0];
+
+  [["[data-custom-grouped-warmup-count]", warmUpSetType], ["[data-custom-grouped-working-count]", workingSetType]]
+    .forEach(([selector, setType]) => {
+      const select = carousel?.querySelector(selector);
+      if (!select || !logElement) return;
+      const rowCount = customWorkoutGroupedRows(logElement, setType).length;
+      select.querySelector("option[data-existing-count]")?.remove();
+      if (!Array.from(select.options).some((option) => Number(option.value) === rowCount)) {
+        const existing = document.createElement("option");
+        existing.value = String(rowCount);
+        existing.textContent = `${rowCount} saved`;
+        existing.dataset.existingCount = "true";
+        select.append(existing);
+      }
+      select.value = String(rowCount);
+    });
 
   if (output) output.textContent = String(count);
   if (removeButton) removeButton.disabled = count <= 1;
+}
+
+function changeCustomWorkoutGroupedSetCount(select) {
+  const carousel = select?.closest("[data-custom-workout-grouped='true']");
+  const logElement = customWorkoutGroupedLogElements(carousel)[0];
+  const setType = select?.matches("[data-custom-grouped-warmup-count]") ? warmUpSetType : workingSetType;
+  const maximum = setType === warmUpSetType ? 3 : 10;
+  const minimum = setType === warmUpSetType ? 0 : 1;
+  const target = Number(select?.value);
+  if (!carousel || carousel.dataset.customWorkoutFormat !== "single" || !carousel.closest(".client-workout-panel-custom") || !logElement) return false;
+  const currentRows = customWorkoutGroupedRows(logElement, setType);
+  const current = currentRows.length;
+  if (!Number.isInteger(target) || target < minimum || target > maximum) {
+    select.value = String(current);
+    return false;
+  }
+  if (target === current) return true;
+
+  const rowsToRemove = currentRows.slice(target);
+  const hasEnteredRows = rowsToRemove.some((row) => {
+    const values = setRowInputValues(row);
+    return row.classList.contains("is-complete") || row.dataset.customGroupedReopened === "true" ||
+      values.weightRaw !== "" || values.repsRaw !== "" || String(row.dataset.repsInReserve || "").trim() !== "";
+  });
+  const status = customWorkoutGroupedStatus(carousel);
+  if (hasEnteredRows) {
+    select.value = String(current);
+    if (status) status.textContent = `Clear or reopen the last ${setType === warmUpSetType ? "warm-up" : "working"} set before reducing the count.`;
+    return false;
+  }
+
+  rowsToRemove.forEach((row) => row.remove());
+  const rows = logElement.querySelector("[data-set-rows]");
+  const defaultReps = rows?.querySelector("[data-set-reps]")?.dataset.defaultPlaceholder || "0";
+  for (let index = current; rows && index < target; index += 1) {
+    const number = setType === warmUpSetType ? warmUpSetNumberBase + index + 1 : index + 1;
+    rows.insertAdjacentHTML("beforeend", setRowMarkup(number, defaultReps, setType));
+  }
+  if (setType === warmUpSetType) {
+    if (target === 0) logElement.dataset.omitWarmup = "true";
+    else delete logElement.dataset.omitWarmup;
+  }
+  renumberSetRows(logElement);
+  updateSetHistoryPlaceholders(logElement);
+  syncVisibleSetTarget(logElement);
+  updateVisibleSetProgress(logElement);
+  persistCustomWorkoutDraftForElement(carousel);
+  renderCustomWorkoutGroupedCard(carousel);
+  if (status) status.textContent = `${setType === warmUpSetType ? "Warm-up" : "Working"} sets: ${target}.`;
+  return true;
 }
 
 function customWorkoutGroupedStatus(carousel) {
@@ -13214,7 +13301,7 @@ function clientWorkoutListMarkup(workouts) {
   const assigned = workouts.filter(workout => !workout.isCustom && !workout.isCardio);
   const locked = clientWorkoutLayoutSaving || Boolean(workoutElapsedTimerState);
   return `<div class="workout-preview-heading">
-    <button type="button" class="workout-text-button" data-preview-programs>← Programs</button>
+    <button type="button" class="workout-text-button workout-preview-back" data-preview-programs aria-label="Back to workout choices"><span class="workout-preview-back-arrow" aria-hidden="true">←</span><span>Back to workout choices</span></button>
     <h3>${escapeHtml(currentProgram?.program_title || "Your workouts")}</h3>
     ${clientAvailablePrograms.length > 1 ? `<div class="workout-preview-program-switcher" aria-label="Trainer programs">${clientAvailablePrograms.map((program, index) => `<button type="button" data-preview-program="${index}" ${program.id === currentProgram?.id ? 'aria-current="true"' : ""}>${escapeHtml(program.program_title || `Program ${index + 1}`)}</button>`).join("")}</div>` : ""}
     <p>Drag exercises to reorder them. Use each exercise’s menu to edit, substitute, or delete.</p>
@@ -19266,6 +19353,11 @@ function handleWorkoutInteractions() {
   });
 
   document.addEventListener("change", (event) => {
+    const groupedSetCount = event.target.closest("[data-custom-grouped-warmup-count], [data-custom-grouped-working-count]");
+    if (groupedSetCount) {
+      changeCustomWorkoutGroupedSetCount(groupedSetCount);
+      return;
+    }
     const select = event.target.closest("[data-custom-exercise-group]");
     if (!select) return;
     const panel = select.closest(".client-workout-panel-custom");

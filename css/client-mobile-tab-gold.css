@@ -1,0 +1,12 @@
+/* Client mobile dock: gold identifies the selected section without a second marker. */
+@media (max-width: 900px) {
+  :root body.client-dashboard-page .client-dashboard-tabs .client-dashboard-tab.is-active .client-dashboard-tab-icon {
+    color: #101900 !important;
+    background: #ffd400 !important;
+  }
+
+  :root body.client-dashboard-page .client-dashboard-tabs .client-dashboard-tab.is-active::after {
+    display: none !important;
+    content: none;
+  }
+}
