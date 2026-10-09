@@ -56,7 +56,8 @@
     "20261007150000_remove_straddle_from_single_arm_machine_row.sql",
     "20261007184504_attach_single_arm_dumbbell_row_search_aliases.sql",
     "20261008110000_allow_client_portal_weekly_checkins.sql",
-    "20261008181200_client_home_activity_totals.sql"
+    "20261008181200_client_home_activity_totals.sql",
+    "20261009070000_add_inner_chest_press_media.sql"
   ],
   "nasmExerciseCatalogMigration": "20261001032427_add_complete_nasm_exercise_library.sql",
   "nasmExerciseCatalogCount": 75,
@@ -3245,6 +3246,34 @@
       "objectPath": "generated/2026-10-07/single-arm-machine-row.mp4",
       "contentType": "video/mp4",
       "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-10-09/png/inner-chest-press.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-10-09/png/inner-chest-press.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-10-09/webp-480/inner-chest-press.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-10-09/webp-480/inner-chest-press.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-10-09/webp-768/inner-chest-press.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-10-09/webp-768/inner-chest-press.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-videos/generated/2026-10-09/inner-chest-press.mp4",
+      "bucket": "exercise-videos",
+      "objectPath": "generated/2026-10-09/inner-chest-press.mp4",
+      "contentType": "video/mp4",
+      "cacheControl": 31536000
     }
   ],
   "exerciseMedia": [
@@ -4064,6 +4093,11 @@
       "name": "Single-Arm Machine Row",
       "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-10-07/webp-768/single-arm-machine-row.webp",
       "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-videos/generated/2026-10-07/single-arm-machine-row.mp4"
+    },
+    {
+      "name": "Inner Chest Press",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-10-09/webp-768/inner-chest-press.webp",
+      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-videos/generated/2026-10-09/inner-chest-press.mp4"
     }
   ]
 }
