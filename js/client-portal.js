@@ -228,7 +228,6 @@ let workoutElapsedTimerState = null;
 let workoutElapsedTimerIntervalId = null;
 let workoutElapsedTimerIsCompact = null;
 let workoutElapsedTimerPosition = null;
-let lastClientDashboardMobileTabPress = "";
 let activeRirButton = null;
 let pendingRirValue = null;
 let workoutDifficultyPromptResolve = null;
@@ -16884,12 +16883,10 @@ function handleClientDashboardMobileNavigation() {
   setClientDashboardMobileNavigationExpanded(true);
 
   toggle.addEventListener("click", () => {
-    lastClientDashboardMobileTabPress = "";
     setClientDashboardMobileNavigationExpanded(true, { focusNavigation: true });
   });
 
   const handleMobileChange = () => {
-    lastClientDashboardMobileTabPress = "";
     syncClientDashboardMobileNavigationMount();
     setClientDashboardMobileNavigationExpanded(mobileQuery.matches);
   };
@@ -16900,20 +16897,6 @@ function handleClientDashboardMobileNavigation() {
     mobileQuery.addListener(handleMobileChange);
   }
 
-}
-
-function clientDashboardMobileTabPressAction(tabName, activeTab, previousTabPress, expanded) {
-  const targetTab = String(tabName || "home");
-  const shouldCollapse = Boolean(
-    expanded &&
-    targetTab === String(activeTab || "") &&
-    targetTab === String(previousTabPress || "")
-  );
-
-  return {
-    shouldCollapse,
-    nextTabPress: shouldCollapse ? "" : targetTab
-  };
 }
 
 function setClientDashboardTab(tabName) {
@@ -17926,26 +17909,15 @@ function handleClientDashboardTabs() {
     }
 
     const tabName = tab.dataset.clientDashboardTab;
-    const navigation = tab.closest(".client-dashboard-tabs");
     const mobileNavigation = window.matchMedia?.("(max-width: 900px)")?.matches ?? false;
     if (mobileNavigation && tabName === "workouts" && activeClientDashboardTab === "workouts" &&
         window.WorkoutExerciseDock?.toggle()) {
-      lastClientDashboardMobileTabPress = "";
       return;
     }
-    const action = clientDashboardMobileTabPressAction(
-      tabName,
-      activeClientDashboardTab,
-      lastClientDashboardMobileTabPress,
-      navigation?.classList.contains("is-mobile-expanded")
-    );
 
     setClientDashboardTab(tabName);
     if (mobileNavigation && tabName === "workouts") {
       window.requestAnimationFrame?.(() => window.WorkoutExerciseDock?.open?.());
-    }
-    if (mobileNavigation) {
-      lastClientDashboardMobileTabPress = action.nextTabPress;
     }
     if (tabName === "home") {
       window.requestAnimationFrame?.(() => maybeShowClientHomeCheckinPrompt());

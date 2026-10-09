@@ -18,9 +18,11 @@
     dialog.className = "client-web-tour";
     dialog.setAttribute("aria-labelledby", "client-web-tour-title");
     dialog.innerHTML = `<div class="client-web-tour-header"><span class="client-web-tour-kicker">FWB TRAINING · TOUR WITH ATARI</span><button type="button" data-client-web-tour-close aria-label="Close app tour">✕</button></div>
-      <p class="client-web-tour-count" data-client-web-tour-count></p>
-      <h2 id="client-web-tour-title" data-client-web-tour-title tabindex="-1"></h2>
-      <div class="client-web-tour-guide"><span class="client-web-tour-atari is-greeting" data-client-web-tour-atari aria-hidden="true"><img src="assets/mascots/atari-expressions.png" alt="" /></span><div class="client-web-tour-speech"><strong>Atari says</strong><p data-client-web-tour-body aria-live="polite"></p></div></div>
+      <div class="client-web-tour-content">
+        <p class="client-web-tour-count" data-client-web-tour-count></p>
+        <h2 id="client-web-tour-title" data-client-web-tour-title tabindex="-1"></h2>
+        <div class="client-web-tour-guide"><span class="client-web-tour-atari is-greeting" data-client-web-tour-atari aria-hidden="true"><img src="assets/mascots/atari-expressions.png" alt="" /></span><div class="client-web-tour-speech"><strong>Atari says</strong><p data-client-web-tour-body aria-live="polite"></p></div></div>
+      </div>
       <div class="client-web-tour-actions"><button type="button" data-client-web-tour-back>Back</button><button type="button" data-client-web-tour-next>Next</button></div>`;
     document.body.append(dialog);
     let index = 0;
@@ -32,6 +34,7 @@
       dialog.querySelector("[data-client-web-tour-atari]").className = `client-web-tour-atari is-${steps[index].pose}`;
       dialog.querySelector("[data-client-web-tour-back]").disabled = index === 0;
       dialog.querySelector("[data-client-web-tour-next]").textContent = index === steps.length - 1 ? "Done" : "Next";
+      dialog.querySelector(".client-web-tour-content").scrollTop = 0;
       if (dialog.open) title.focus({ preventScroll: true });
     };
     trigger.addEventListener("click", () => { index = 0; render(); dialog.showModal(); dialog.querySelector("[data-client-web-tour-title]").focus({ preventScroll: true }); });
