@@ -16819,17 +16819,17 @@ body.client-dashboard-page.is-loading > :is(.client-dashboard-tabs,
   }
 
   .dashboard-page .client-dashboard-tab-icon {
-    width: 40px;
-    height: 40px;
-    flex-basis: 40px;
-    padding: 7px;
+    width: 42px;
+    height: 42px;
+    flex-basis: 42px;
+    padding: 8px;
   }
 
   .dashboard-page .client-dashboard-tab.is-active .client-dashboard-tab-icon {
-    width: 40px;
-    height: 40px;
-    flex-basis: 40px;
-    padding: 7px;
+    width: 42px;
+    height: 42px;
+    flex-basis: 42px;
+    padding: 8px;
   }
 
   .dashboard-page .client-dashboard-tab::after {

@@ -341,11 +341,11 @@
     box-shadow: 0 6px 25px #0008;
   }
   :root body.client-dashboard-page .client-dashboard-tab[data-client-dashboard-tab] { color: var(--client-muted); }
-  :root body.client-dashboard-page .client-dashboard-tab.is-active { color: var(--client-neon); }
+  :root body.client-dashboard-page .client-dashboard-tab.is-active { color: #ffd600; }
   :root body.client-dashboard-page .client-dashboard-tab-icon { color: var(--client-muted); }
-  :root body.client-dashboard-page .client-dashboard-tab.is-active .client-dashboard-tab-icon { background: var(--client-neon); color: #192318; border-radius: 50%; }
-  :root body.client-dashboard-page .client-dashboard-tab.is-active .client-dashboard-tab-label { color: var(--client-neon); }
-  :root body.client-dashboard-page .client-dashboard-tab.is-active::after { background: var(--client-neon); }
+  :root body.client-dashboard-page .client-dashboard-tab.is-active .client-dashboard-tab-icon { background: #ffd600; color: #17130a; border-radius: 50%; }
+  :root body.client-dashboard-page .client-dashboard-tab.is-active .client-dashboard-tab-label { color: #ffd600; }
+  :root body.client-dashboard-page .client-dashboard-tab.is-active::after { display: none; }
   :root body.client-dashboard-page .client-dashboard-tab-label { font-size: 9px; }
   :root body.client-dashboard-page .client-community-panel { padding: 18px 15px 28px; }
 }
