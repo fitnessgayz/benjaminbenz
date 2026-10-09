@@ -70,7 +70,7 @@
   <link rel="stylesheet" href="css/client-quarterly-goals.css?v=1" />
   <link rel="stylesheet" href="css/client-workout-hub.css?v=6" />
   <link rel="stylesheet" href="css/client-web-tour.css?v=3" />
-  <link rel="stylesheet" href="css/client-home-community.css?v=10" />
+  <link rel="stylesheet" href="css/client-home-community.css?v=11" />
   <link rel="stylesheet" href="css/client-fascia-backgrounds.css?v=2" />
   <link rel="stylesheet" href="css/client-settings-navigation.css?v=2" />
   <link rel="stylesheet" href="css/client-light-theme.css?v=9" />
@@ -397,6 +397,14 @@
                 <button type="button" data-community-avatar="climbing" data-community-avatar-extra hidden aria-label="Climbing avatar" aria-pressed="false">🧗</button>
               </fieldset>
               <button type="button" data-community-avatar-more aria-expanded="false">Choose more avatars</button>
+              <div class="client-community-custom-avatar">
+                <label for="client-community-custom-emoji">Or use your own emoji</label>
+                <div class="client-community-custom-avatar-row">
+                  <input id="client-community-custom-emoji" data-community-custom-emoji type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Type or paste one emoji" aria-describedby="client-community-custom-emoji-help" />
+                  <button type="button" data-community-avatar-custom aria-pressed="false">Use this emoji</button>
+                </div>
+                <small id="client-community-custom-emoji-help">Choose one emoji, then save your Community profile.</small>
+              </div>
             </div>
             <div data-community-join hidden>
               <button type="button" data-community-join-button>Join Community</button>
@@ -1389,7 +1397,7 @@
   <script src="js/workout-generator-dialog.js?v=6"></script>
   <script src="js/client-workout-plans.js?v=3"></script>
   <script src="js/client-community.js?v=7"></script>
-  <script src="js/client-community-connections.js?v=4"></script>
+  <script src="js/client-community-connections.js?v=5"></script>
   <script src="js/apple-health-sync.js?v=1"></script>
   <dialog id="client-quarter-goals-dialog" aria-labelledby="quarter-goal-dialog-title"></dialog>
   <dialog id="gym-directory-dialog" class="gym-directory-dialog" aria-labelledby="gym-directory-title">
@@ -1446,7 +1454,7 @@
   <script src="js/client-home-parity.js?v=2"></script>
   <script src="js/client-web-tour.js?v=3"></script>
   <script src="js/client-unfinished-workout-reminder.js?v=1"></script>
-  <script src="js/client-gym-directory.js?v=1"></script>
+  <script src="js/client-gym-directory.js?v=2"></script>
   <script src="js/client-fascia-backgrounds.js?v=2"></script>
   <script src="js/workout-exercise-dock.js?v=5"></script>
 </body>
