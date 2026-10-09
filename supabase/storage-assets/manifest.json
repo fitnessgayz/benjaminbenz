@@ -61,7 +61,8 @@
     "20261009140514_approve_all_branded_exercises.sql",
     "20261009145217_add_cross_body_dumbbell_curl_media.sql",
     "20261009152456_correct_dumbbell_wolverine_classification.sql",
-    "20261009171732_allow_custom_and_logged_calendar_workouts.sql"
+    "20261009171732_allow_custom_and_logged_calendar_workouts.sql",
+    "20261009182015_optional_gym_checkin_name.sql"
   ],
   "nasmExerciseCatalogMigration": "20261001032427_add_complete_nasm_exercise_library.sql",
   "nasmExerciseCatalogCount": 75,
