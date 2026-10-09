@@ -2790,7 +2790,12 @@ function clientWorkoutScheduleRowsMarkup(rows) {
   return rows.map((row) => {
     let completed = false;
     try { completed = Boolean(JSON.parse(row.snapshot_json || "{}").completedAt); } catch (_) { /* Keep the date and title visible. */ }
-    const source = row.source_type === "generated" ? "Generated plan" : "Coach assigned";
+    const source = ({
+      assigned: "Coach assigned",
+      generated: "Generated plan",
+      history: "From workout log",
+      custom: "Custom workout",
+    })[row.source_type] || "Workout plan";
     const date = /^\d{4}-\d{2}-\d{2}$/.test(row.planned_date || "")
       ? new Date(`${row.planned_date}T12:00:00`).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric", year: "numeric" })
       : row.planned_date;

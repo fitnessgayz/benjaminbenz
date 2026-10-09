@@ -23,12 +23,16 @@ vm.runInContext(["escapeHtml", "clientWorkoutScheduleRowsMarkup"].map(functionSo
 test("coach schedule shows source and completion without rendering client markup", () => {
   const html = context.clientWorkoutScheduleRowsMarkup([
     { title: "<img src=x>", planned_date: "2026-10-07", source_type: "generated", snapshot_json: '{"completedAt":null}' },
-    { title: "Leg day", planned_date: "2026-10-08", source_type: "assigned", snapshot_json: '{"completedAt":123}' }
+    { title: "Leg day", planned_date: "2026-10-08", source_type: "assigned", snapshot_json: '{"completedAt":123}' },
+    { title: "Repeat upper body", planned_date: "2026-10-09", source_type: "history", snapshot_json: '{}' },
+    { title: "My own workout", planned_date: "2026-10-10", source_type: "custom", snapshot_json: '{}' }
   ]);
   assert.match(html, /&lt;img src=x&gt;/);
   assert.doesNotMatch(html, /<img/);
   assert.match(html, /Generated plan/);
   assert.match(html, /Coach assigned/);
+  assert.match(html, /From workout log/);
+  assert.match(html, /Custom workout/);
   assert.match(html, /Completed/);
 });
 
