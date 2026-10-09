@@ -6,6 +6,24 @@
     walking: '🚶', hiking: '🥾', basketball: '🏀', soccer: '⚽', tennis: '🎾',
     rowing: '🚣', climbing: '🧗' };
 
+  function customAvatarID(value) {
+    const emoji = String(value || '').trim().normalize('NFC');
+    const graphemes = typeof Intl.Segmenter === 'function'
+      ? Array.from(new Intl.Segmenter(undefined, { granularity: 'grapheme' }).segment(emoji))
+      : Array.from(emoji);
+    if (graphemes.length !== 1 || Array.from(emoji).length > 16
+        || new TextEncoder().encode(emoji).length > 64
+        || /[\s\x00-\x1f\x7f]/u.test(emoji)
+        || !/[\p{Extended_Pictographic}\p{Regional_Indicator}\p{Emoji_Presentation}\u20e3]/u.test(emoji)) return '';
+    return `emoji:${emoji}`;
+  }
+
+  function avatarEmoji(id) {
+    if (Object.hasOwn(avatars, id)) return avatars[id];
+    const emoji = typeof id === 'string' && id.startsWith('emoji:') ? id.slice(6) : '';
+    return customAvatarID(emoji) === id ? emoji : avatars.strength;
+  }
+
   function achievementProjection(snapshot) {
     if (!snapshot || !Number.isFinite(snapshot.xp) || !Array.isArray(snapshot.badges)) return null;
     return {
@@ -23,6 +41,8 @@
     const profileEditor = panel.querySelector('[data-community-profile]');
     const nameInput = panel.querySelector('#client-community-display-name');
     const avatarButtons = Array.from(panel.querySelectorAll('[data-community-avatar]'));
+    const customEmojiInput = panel.querySelector('[data-community-custom-emoji]');
+    const customEmojiButton = panel.querySelector('[data-community-avatar-custom]');
     const ownProps = panel.querySelector('[data-community-own-props]');
     const codeOutput = panel.querySelector('#client-community-own-code');
     const codeInput = panel.querySelector('#client-community-invite-code');
@@ -49,8 +69,13 @@
       return node;
     };
     function chooseAvatar(id) {
-      selectedAvatar = Object.hasOwn(avatars, id) ? id : 'strength';
+      selectedAvatar = Object.hasOwn(avatars, id) ||
+        (typeof id === 'string' && id.startsWith('emoji:') && customAvatarID(id.slice(6)) === id) ? id : 'strength';
       avatarButtons.forEach(button => button.setAttribute('aria-pressed', String(button.dataset.communityAvatar === selectedAvatar)));
+      if (selectedAvatar.startsWith('emoji:')) customEmojiInput.value = selectedAvatar.slice(6);
+      customEmojiButton.setAttribute('aria-pressed', String(selectedAvatar.startsWith('emoji:')));
+      customEmojiButton.textContent = customAvatarID(customEmojiInput.value)
+        ? `Use ${customEmojiInput.value.trim()}` : 'Use this emoji';
       if (extraAvatars.some(button => button.dataset.communityAvatar === selectedAvatar)) setMoreAvatars(true);
     }
     function setMoreAvatars(open) {
@@ -60,6 +85,18 @@
     }
     moreAvatars.addEventListener('click', () => setMoreAvatars(moreAvatars.getAttribute('aria-expanded') !== 'true'));
     avatarButtons.forEach(button => button.addEventListener('click', () => chooseAvatar(button.dataset.communityAvatar)));
+    customEmojiInput.addEventListener('input', () => {
+      if (selectedAvatar.startsWith('emoji:')) selectedAvatar = '';
+      customEmojiButton.setAttribute('aria-pressed', 'false');
+      customEmojiButton.textContent = customAvatarID(customEmojiInput.value)
+        ? `Use ${customEmojiInput.value.trim()}` : 'Use this emoji';
+    });
+    customEmojiButton.addEventListener('click', () => {
+      const id = customAvatarID(customEmojiInput.value);
+      if (!id) { message('Type or paste one emoji for your avatar.'); return; }
+      chooseAvatar(id);
+      message('Emoji selected. Save your Community profile to use it.');
+    });
 
     async function refreshPublic(id, version) {
       if (!feedList || !feedStatus) return;
@@ -71,7 +108,7 @@
       const entries = data || [];
       for (const entry of entries) {
         const card = field('article', '', 'client-community-feed-card');
-        card.append(field('span', avatars[entry.avatar_id] || avatars.strength, 'client-community-avatar'));
+        card.append(field('span', avatarEmoji(entry.avatar_id), 'client-community-avatar'));
         card.append(field('strong', entry.nickname));
         const metrics = [];
         if (entry.xp != null) metrics.push(`${entry.xp} XP`);
@@ -98,7 +135,7 @@
       for (const event of data || []) {
         const card = field('article', '', 'client-community-wall-card');
         const heading = field('div', '', 'client-community-wall-heading');
-        heading.append(field('span', avatars[event.avatar_id] || avatars.strength, 'client-community-avatar'));
+        heading.append(field('span', avatarEmoji(event.avatar_id), 'client-community-avatar'));
         heading.append(field('strong', event.nickname));
         const date = new Date(event.occurred_at);
         if (!Number.isNaN(date.getTime())) heading.append(field('time', date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })));
@@ -141,7 +178,7 @@
       }
       for (const challenge of rows) {
         const card = field('article', '', 'client-community-challenge-card');
-        card.append(field('strong', `${avatars[challenge.peer_avatar_id] || avatars.strength} ${challenge.peer_nickname}`));
+        card.append(field('strong', `${avatarEmoji(challenge.peer_avatar_id)} ${challenge.peer_nickname}`));
         const label = challenge.metric === 'workouts' ? 'workouts' : 'gym visits';
         card.append(field('p', `${challenge.target_count} ${label} each in seven days`));
         if (challenge.status === 'pending') {
@@ -192,7 +229,7 @@
         const peerProfile = profiles.get(peer);
         const name = peerProfile?.display_name || 'Community member';
         const card = field('article', '', 'client-community-connection');
-        card.append(field('span', avatars[peerProfile?.avatar_id] || avatars.strength, 'client-community-avatar'));
+        card.append(field('span', avatarEmoji(peerProfile?.avatar_id), 'client-community-avatar'));
         card.append(field('strong', name));
         const incoming = connection.status === 'pending' && connection.requested_by !== userId;
         const statusLabel = connection.status === 'accepted' ? 'Connected' : incoming ? 'Invitation received' : 'Invitation sent';
@@ -355,13 +392,13 @@
 
     panel.querySelector('[data-community-join-button]').addEventListener('click', () => {
       const name = nameInput.value.trim();
-      if (name.length < 2 || name.length > 40) { message('Use a nickname between 2 and 40 characters.'); return; }
+      if (name.length < 2 || name.length > 40 || !selectedAvatar) { message('Use a nickname between 2 and 40 characters and choose an avatar.'); return; }
       void perform(() => client.from('client_community_profiles')
         .insert({ user_id: userId, display_name: name, avatar_id: selectedAvatar }), 'Welcome to Community.');
     });
     panel.querySelector('[data-community-profile-save]').addEventListener('click', () => {
       const name = nameInput.value.trim();
-      if (name.length < 2 || name.length > 40) { message('Use a nickname between 2 and 40 characters.'); return; }
+      if (name.length < 2 || name.length > 40 || !selectedAvatar) { message('Use a nickname between 2 and 40 characters and choose an avatar.'); return; }
       void perform(() => client.from('client_community_profiles')
         .update({ display_name: name, avatar_id: selectedAvatar }).eq('user_id', userId), 'Profile updated.');
     });
@@ -420,7 +457,8 @@
     };
   }
 
-  const api = { achievementProjection, mount };
+  const api = { achievementProjection, customAvatarID, avatarEmoji, mount };
   if (typeof module === 'object' && module.exports) module.exports = api;
+  root.FWB_COMMUNITY_AVATAR = { customAvatarID, emojiFor: avatarEmoji };
   if (root.document) root.FWB_COMMUNITY_CONNECTIONS = mount(root.document);
 })(typeof window !== 'undefined' ? window : globalThis);
