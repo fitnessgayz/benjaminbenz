@@ -13214,7 +13214,7 @@ function clientWorkoutListMarkup(workouts) {
   const assigned = workouts.filter(workout => !workout.isCustom && !workout.isCardio);
   const locked = clientWorkoutLayoutSaving || Boolean(workoutElapsedTimerState);
   return `<div class="workout-preview-heading">
-    <button type="button" class="workout-text-button" data-preview-programs>← Programs</button>
+    <button type="button" class="workout-text-button workout-preview-back" data-preview-programs aria-label="Back to workout choices"><span class="workout-preview-back-arrow" aria-hidden="true">←</span><span>Back to workout choices</span></button>
     <h3>${escapeHtml(currentProgram?.program_title || "Your workouts")}</h3>
     ${clientAvailablePrograms.length > 1 ? `<div class="workout-preview-program-switcher" aria-label="Trainer programs">${clientAvailablePrograms.map((program, index) => `<button type="button" data-preview-program="${index}" ${program.id === currentProgram?.id ? 'aria-current="true"' : ""}>${escapeHtml(program.program_title || `Program ${index + 1}`)}</button>`).join("")}</div>` : ""}
     <p>Drag exercises to reorder them. Use each exercise’s menu to edit, substitute, or delete.</p>

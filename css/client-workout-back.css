@@ -1,0 +1,116 @@
+/* A compact, unmistakable way back from an open workout on mobile web. */
+:root body.client-dashboard-page .workout-preview-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 46px;
+  padding: 5px 12px 5px 6px;
+  color: #ffd000;
+  background: #171a16;
+  border: 1.5px solid #ffd000;
+  border-radius: 11px;
+  font-size: .84rem;
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+:root body.client-dashboard-page .workout-preview-back-arrow {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
+  color: #171a16;
+  background: #ffd000;
+  border-radius: 8px;
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+:root body.client-dashboard-page .workout-preview-back:focus-visible {
+  outline: 3px solid #ffd000;
+  outline-offset: 3px;
+}
+
+:root[data-client-theme="light"] body.client-dashboard-page .workout-preview-back {
+  color: #684b00;
+  background: #fffdf5;
+  border-color: #ab8000;
+}
+
+:root body.client-dashboard-page .client-workout-selection-summary {
+  display: inline-grid;
+  width: min(100%, 330px) !important;
+  inline-size: min(100%, 330px) !important;
+  max-width: 330px !important;
+  min-height: 48px !important;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 8px;
+  padding: 5px 9px !important;
+  color: #f7f7f2;
+  background: #171a16;
+  border: 1.5px solid #ffd000;
+  border-radius: 12px !important;
+  box-shadow: none;
+}
+
+:root body.client-dashboard-page .client-workout-selection-summary[hidden] {
+  display: none !important;
+}
+
+:root body.client-dashboard-page .client-workout-selection-summary .client-workout-selection-arrow {
+  width: 34px;
+  height: 34px;
+  color: #171a16;
+  background: #ffd000;
+  font-size: 1.3rem;
+}
+
+:root body.client-dashboard-page .client-workout-selection-summary .client-workout-selection-copy {
+  min-width: 0;
+  gap: 1px;
+}
+
+:root body.client-dashboard-page .client-workout-selection-action {
+  overflow: hidden;
+  color: #ffd000;
+  font-size: .83rem;
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+:root body.client-dashboard-page .client-workout-selection-summary .client-workout-selection-title {
+  overflow: hidden;
+  color: #f7f7f2;
+  font-size: .7rem;
+  font-weight: 600;
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  text-transform: none;
+  white-space: nowrap;
+}
+
+:root body.client-dashboard-page .client-workout-selection-summary:focus-visible {
+  outline: 3px solid #ffd000;
+  outline-offset: 3px;
+}
+
+:root[data-client-theme="light"] body.client-dashboard-page .client-workout-selection-summary {
+  color: #1d281e;
+  background: #fffdf5;
+  border-color: #ab8000;
+}
+
+:root[data-client-theme="light"] body.client-dashboard-page .client-workout-selection-action {
+  color: #684b00;
+}
+
+:root[data-client-theme="light"] body.client-dashboard-page .client-workout-selection-summary .client-workout-selection-arrow {
+  color: #171a16;
+  background: #ffd000;
+}
+
+:root[data-client-theme="light"] body.client-dashboard-page .client-workout-selection-summary .client-workout-selection-title {
+  color: #445047;
+}
