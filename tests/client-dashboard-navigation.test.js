@@ -150,7 +150,8 @@ test("keeps mobile navigation permanently expanded while preserving selected-tab
   assert.match(setMobileSource, /navigation\.inert = false/);
   assert.match(setMobileSource, /navigation\.removeAttribute\("aria-hidden"\)/);
   assert.match(handlerSource, /setClientDashboardMobileNavigationExpanded\(true\);/);
-  assert.match(tabHandlerSource, /clientDashboardMobileTabPressAction\(/);
+  assert.doesNotMatch(portalSource, /clientDashboardMobileTabPressAction|lastClientDashboardMobileTabPress/);
+  assert.match(tabHandlerSource, /setClientDashboardTab\(tabName\)/);
   assert.doesNotMatch(tabHandlerSource, /setClientDashboardMobileNavigationExpanded\(false/);
   assert.match(portalSource, /handleClientDashboardMobileNavigation\(\);/);
 });
