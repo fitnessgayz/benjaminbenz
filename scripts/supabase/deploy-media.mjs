@@ -195,7 +195,7 @@ async function verifyAssets(baseUrl) {
 
 async function fetchExercise(baseUrl, secretKey, name) {
   const query = new URL(`${baseUrl}/rest/v1/exercise_library`);
-  query.searchParams.set("select", "name,image_url,motion_url,demo_url");
+  query.searchParams.set("select", "name,image_url,motion_url,demo_url,is_approved,is_active");
   query.searchParams.set("name", `eq.${name}`);
   const response = await fetch(query, {
     headers: apiHeaders(secretKey, { Accept: "application/json" }),
@@ -217,6 +217,8 @@ async function verifyExerciseMedia(baseUrl, secretKey, nasmExerciseCatalog) {
 
   for (const expected of manifest.exerciseMedia) {
     const row = await fetchExercise(baseUrl, secretKey, expected.name);
+    assert(row.is_approved === true, `${expected.name} is not approved for the shared exercise library.`);
+    assert(row.is_active === true, `${expected.name} is not active in the shared exercise library.`);
     if (expected.imageUrl) assert(row.image_url === expected.imageUrl, `${expected.name} image_url mismatch.`);
     if (expected.motionUrl) assert(row.motion_url === expected.motionUrl, `${expected.name} motion_url mismatch.`);
     if (expected.demoUrl) assert(row.demo_url === expected.demoUrl, `${expected.name} demo_url mismatch.`);
