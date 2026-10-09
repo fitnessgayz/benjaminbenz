@@ -36,56 +36,61 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <meta name="theme-color" content="#0d0a08" />
+  <meta name="theme-color" content="#2878ff" />
   <link rel="preload" href="images/home/anatomy/curl.png" as="image" />
-  <link rel="stylesheet" href="css/homepage-one-page.css?v=5" />
+  <link rel="stylesheet" href="css/homepage-gold-blue.css?v=1" />
 </head>
 <body class="homepage-v2 public-page">
-  <main id="top" class="home-layout">
-    <div class="home-art" aria-hidden="true"><img id="home-art-image" src="images/home/anatomy/curl.png" alt="" fetchpriority="high"></div>
-    <section id="training" class="home-main" aria-label="Fitness with Benjamin coaching services">
-      <header class="home-header">
-        <a class="home-brand" href="#top"><img src="images/home/fwb-logo-transparent.svg" alt=""><span>Fitness with Benjamin</span></a>
-        <a class="home-header-login" href="#client-login">Client login ↗</a>
+  <main id="top" class="page-shell">
+    <section id="training" class="hero" aria-label="Fitness with Benjamin coaching services">
+      <div class="hero-art" aria-hidden="true"><img id="home-art-image" src="images/home/anatomy/curl.png" alt="" fetchpriority="high"></div>
+      <header class="hero-header">
+        <a class="brand" href="#top" aria-label="Fitness with Benjamin home"><img src="images/home/fwb-logo-transparent.svg" alt=""><span>Fitness with<br>Benjamin</span></a>
+        <a class="header-login" href="#client-login">Client login <span aria-hidden="true">↗</span></a>
       </header>
-      <div class="home-intro">
+      <div class="hero-copy">
+        <p class="eyebrow"><span class="eyebrow-line"></span> San Francisco + online coaching</p>
         <h1>Train with intention.<br><em>Feel your progress.</em></h1>
-        <p>Personal coaching built around how you move, what you want to achieve, and the life you’re living.</p>
-        <a class="home-intro-link" href="#start">Interested in training? ↓</a>
+        <p class="hero-lede">Personal coaching built around how you move, what you want to achieve, and the life you’re living.</p>
+        <a class="hero-cta" href="#start">Interested in training? <span aria-hidden="true">↗</span></a>
       </div>
-      <div id="results" class="home-services">
-        <p class="home-eyebrow">How we can work together</p>
-        <div class="home-service"><span>01</span><div><h2>Personal Training</h2><p>One-on-one sessions in San Francisco with hands-on guidance and feedback.</p></div></div>
-        <div class="home-service"><span>02</span><div><h2>Online Coaching</h2><p>A personalized plan, weekly check-ins, and support wherever you train.</p></div></div>
-        <div class="home-service"><span>03</span><div><h2>Hybrid Coaching</h2><p>Online structure with in-person sessions for extra attention when it counts.</p></div></div>
+      <div id="results" class="services">
+        <p class="services-heading">How we can work together</p>
+        <div class="service"><span class="service-number">01</span><div><h2>Personal Training</h2><p>One-on-one sessions in San Francisco with hands-on guidance and feedback.</p></div></div>
+        <div class="service"><span class="service-number">02</span><div><h2>Online Coaching</h2><p>A personalized plan, weekly check-ins, and support wherever you train.</p></div></div>
+        <div class="service"><span class="service-number">03</span><div><h2>Hybrid Coaching</h2><p>Online structure with in-person sessions for extra attention when it counts.</p></div></div>
       </div>
       <section class="home-app" aria-labelledby="home-app-title">
-        <p class="home-eyebrow">Included with your coaching</p>
+        <p class="eyebrow">Included with your coaching</p>
         <h2 id="home-app-title">Coaching that goes with you.</h2>
         <p>Benjamin built <strong>FWB Training</strong> to keep your workouts, progress, and feedback in one place between sessions.</p>
       </section>
+      <div class="hero-foot"><span>FITNESS WITH BENJAMIN</span><span>TRAIN WITH INTENTION / 2026</span></div>
     </section>
-    <section class="home-access" aria-label="Training inquiry and client sign in">
-      <div id="start" class="home-inquiry">
-        <p class="home-eyebrow">Start here</p>
-        <h2>Interested in training?</h2>
+    <section class="access" aria-label="Training inquiry and client sign in">
+      <div class="access-topline"><span class="gold-disc"></span><span>YOUR NEXT CHAPTER STARTS HERE</span></div>
+      <div id="start" class="inquiry">
+        <p class="eyebrow">Start here</p>
+        <h2>Let’s build a plan<br><em>that fits you.</em></h2>
         <p>Tell Benjamin what you’re working toward. He’ll review your answers and get in touch about the right coaching fit.</p>
-        <a class="home-action" href="questionnaire.html">Fitness questionnaire <span aria-hidden="true">↗</span></a>
-        <p class="home-email">Questions? <a href="mailto:fwb@benjaminbenz.com">Email Benjamin</a></p>
+        <a class="questionnaire-button" href="questionnaire.html">Fitness questionnaire <span aria-hidden="true">↗</span></a>
+        <p class="email-line">Questions? <a href="mailto:fwb@benjaminbenz.com">Email Benjamin</a></p>
       </div>
-      <div class="home-divider" aria-hidden="true"></div>
-      <div id="client-login" class="home-login-heading"><h2>Client login</h2><span>FWB Training</span></div>
-      <p class="home-login-intro">Pick up where you left off with your plan.</p>
-      <form id="home-login-form" class="home-login-form">
-        <label class="home-field">Email <input type="email" name="email" autocomplete="email" placeholder="you@example.com" required></label>
-        <label class="home-field">Password <input type="password" name="password" autocomplete="current-password" placeholder="Password" required></label>
-        <label class="home-remember"><input type="checkbox" name="remember_me" value="true" checked><span>Keep me signed in</span></label>
-        <button class="home-action" type="submit">Sign in to FWB Training <span aria-hidden="true">→</span></button>
-        <p id="home-login-status" class="home-status" role="status" aria-live="polite">Use the email Benjamin has on file and your password.</p>
-        <div class="home-links"><button id="home-reset-password" type="button">Forgot password?</button><a href="client-signup.html">Need a setup link?</a></div>
-      </form>
-      <a class="home-coach-link" href="coach-login.html">Are you a coach? <strong>Coach login →</strong></a>
-      <footer class="home-legal"><span>© <span id="home-year"></span> Fitness with Benjamin</span><span>·</span><a href="fwb-training-support.html">Support</a><span>·</span><a href="fwb-training-privacy.html">Privacy</a></footer>
+      <div class="section-rule"><span></span><strong>FWB TRAINING</strong><span></span></div>
+      <div id="client-login" class="login">
+        <div class="login-heading"><h2>Client login</h2><span>YOUR TRAINING SPACE</span></div>
+        <p>Pick up where you left off with your plan.</p>
+        <form id="home-login-form">
+          <label>Email <input type="email" name="email" autocomplete="email" placeholder="you@example.com" required></label>
+          <label>Password <input type="password" name="password" autocomplete="current-password" placeholder="Password" required></label>
+          <label class="remember"><input type="checkbox" name="remember_me" value="true" checked> Keep me signed in</label>
+          <button type="submit">Sign in to FWB Training <span aria-hidden="true">→</span></button>
+          <p id="home-login-status" class="login-status" role="status" aria-live="polite">Use the email Benjamin has on file and your password.</p>
+          <div class="login-links"><button id="home-reset-password" type="button">Forgot password?</button><a href="client-signup.html">Need a setup link?</a></div>
+        </form>
+      </div>
+      <a class="coach-link" href="coach-login.html">Are you a coach? <strong>Coach login →</strong></a>
+      <footer>© <span id="home-year"></span> Fitness with Benjamin <span>·</span> <a href="fwb-training-support.html">Support</a> <span>·</span> <a href="fwb-training-privacy.html">Privacy</a></footer>
     </section>
   </main>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>

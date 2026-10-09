@@ -22,6 +22,6 @@ test("sends a coaching inquiry without asking for message text", () => {
 });
 
 test("cache-busts the updated homepage assets", () => {
-  assert.match(homepage, /css\/homepage-one-page\.css\?v=4/);
+  assert.match(homepage, /css\/homepage-gold-blue\.css\?v=1/);
   assert.match(homepage, /js\/homepage-one-page\.js\?v=1/);
 });

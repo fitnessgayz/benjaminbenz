@@ -6,18 +6,26 @@ const vm = require("node:vm");
 
 const root = path.resolve(__dirname, "..");
 const homepage = fs.readFileSync(path.join(root, "index.html"), "utf8");
-const styles = fs.readFileSync(path.join(root, "css/homepage-one-page.css"), "utf8");
+const styles = fs.readFileSync(path.join(root, "css/homepage-gold-blue.css"), "utf8");
 const script = fs.readFileSync(path.join(root, "js/homepage-one-page.js"), "utf8");
 
 test("keeps the one-page layout usable on a phone", () => {
-  assert.match(homepage, /class="home-layout"/);
+  assert.match(homepage, /class="page-shell"/);
   assert.match(homepage, /id="training"[\s\S]*?id="start"[\s\S]*?id="client-login"/);
-  assert.match(styles, /@media \(max-width: 900px\)[\s\S]*?\.home-layout \{ display: block; \}/);
-  assert.match(homepage, /<main id="top" class="home-layout">\s*<div class="home-art"[\s\S]*?<section id="training"/);
-  assert.match(styles, /\.home-access \{[^}]*background: linear-gradient\(90deg/);
+  assert.match(styles, /@media \(max-width: 850px\)[\s\S]*?\.page-shell \{ display: block; \}/);
+  assert.match(homepage, /<main id="top" class="page-shell">\s*<section id="training" class="hero"/);
+  assert.match(styles, /\.hero \{[^}]*background: linear-gradient\(135deg/);
   assert.match(homepage, /href="questionnaire\.html"/);
   assert.match(homepage, /href="coach-login\.html"/);
   assert.match(homepage, /href="fwb-training-privacy\.html"/);
+});
+
+test("uses blue and gold without a dark homepage background", () => {
+  assert.match(styles, /--blue: #2878ff;/);
+  assert.match(styles, /--gold: #ffd526;/);
+  assert.match(styles, /--cream: #faf9f4;/);
+  assert.match(homepage, /images\/home\/fwb-logo-transparent\.svg/);
+  assert.match(homepage, /theme-color" content="#2878ff"/);
 });
 
 test("ships every rotating anatomy image referenced by the homepage", () => {
