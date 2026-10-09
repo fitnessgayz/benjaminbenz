@@ -29,7 +29,7 @@
 .client-web-tour-atari img { position: absolute; display: block; width: 200%; height: 200%; max-width: none; object-fit: fill; pointer-events: none; }
 .client-web-tour-atari.is-greeting img { left: 0; top: 0; }
 .client-web-tour-atari.is-celebrating img { left: -100%; top: 0; }
-.client-web-tour-atari.is-encouraging img { left: 0; top: -100%; }
+.client-web-tour-atari.is-encouraging img { left: 0; top: 0; width: 100%; height: 100%; object-fit: contain; }
 .client-web-tour-atari.is-resting img { left: -100%; top: -100%; }
 .client-web-tour-speech { min-width: 0; padding: 14px; border: 1px solid #476278; border-radius: 16px; background: #27333e; }
 .client-web-tour-speech strong { color: #5aa9e8; font-size: .78rem; font-weight: 850; letter-spacing: .04em; text-transform: uppercase; }

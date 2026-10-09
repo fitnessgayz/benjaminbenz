@@ -29,7 +29,11 @@
       const title = dialog.querySelector("[data-client-web-tour-title]");
       title.textContent = steps[index].title;
       dialog.querySelector("[data-client-web-tour-body]").textContent = steps[index].body;
-      dialog.querySelector("[data-client-web-tour-atari]").className = `client-web-tour-atari is-${steps[index].pose}`;
+      const atari = dialog.querySelector("[data-client-web-tour-atari]");
+      atari.className = `client-web-tour-atari is-${steps[index].pose}`;
+      atari.querySelector("img").src = steps[index].pose === "encouraging"
+        ? "assets/mascots/atari-encouraging.png"
+        : "assets/mascots/atari-expressions.png";
       dialog.querySelector("[data-client-web-tour-back]").disabled = index === 0;
       dialog.querySelector("[data-client-web-tour-next]").textContent = index === steps.length - 1 ? "Done" : "Next";
       if (dialog.open) title.focus({ preventScroll: true });
