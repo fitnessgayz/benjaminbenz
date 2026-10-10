@@ -10,6 +10,7 @@ const sharedSource = fs.readFileSync(path.join(projectRoot, "js/web-notification
 const styleSource = fs.readFileSync(path.join(projectRoot, "css/style.css"), "utf8");
 
 const coachPreferenceKeys = [
+  "client_logins",
   "client_workout_completed",
   "client_check_ins",
   "client_workout_comments",
@@ -68,7 +69,7 @@ test("Settings panel keeps every notification feature together", () => {
     "Alert controls should appear before notification preferences"
   );
   assert.ok(settingsPanel.indexOf("data-coach-notification-close") < settingsPanel.indexOf("coach-notification-heading"));
-  assert.match(adminHtml, /src="js\/web-notifications\.js\?v=coach-activity-likes-5"[\s\S]*src="js\/coach-admin\.js\?[^"\s]+"/);
+  assert.match(adminHtml, /src="js\/web-notifications\.js\?v=coach-activity-likes-5(?:&amp;[^"]*)?"[\s\S]*src="js\/coach-admin\.js\?[^"\s]+"/);
 });
 
 test("all feasible coach notification categories start enabled", () => {

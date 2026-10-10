@@ -29,7 +29,8 @@
     "client_questionnaires",
     "client_coach_requests",
     "client_session_balance",
-    "client_inactivity"
+    "client_inactivity",
+    "client_logins"
   ]);
   const deployedPreferenceCategories = Object.freeze({
     coach_replies: "coach_reply",
@@ -53,7 +54,8 @@
     client_questionnaires: "questionnaire_submitted",
     client_coach_requests: "client_message",
     client_session_balance: "low_sessions",
-    client_inactivity: "inactivity"
+    client_inactivity: "inactivity",
+    client_logins: "client_login"
   });
   const deployedSchemaErrorCodes = new Set(["42703", "42P01", "PGRST204", "PGRST205"]);
 

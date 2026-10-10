@@ -209,7 +209,8 @@ function preferenceColumn(notification: NotificationRow) {
     form_check_submitted: "client_form_checks",
     nutrition_activity: "client_nutrition_activity",
     session_balance: "client_session_balance",
-    client_inactive: "client_inactivity"
+    client_inactive: "client_inactivity",
+    client_login: "client_logins"
   };
 
   return notification.recipient_role === "coach"
@@ -305,6 +306,10 @@ function pushCopy(notification: NotificationRow) {
     "coach:workout_completed": {
       title: "Client workout completed",
       body: "Open Coach Admin to review the workout log."
+    },
+    "coach:client_login": {
+      title: "Client signed in",
+      body: "Open Coach Admin to see which client signed in."
     },
     "coach:achievement": {
       title: "Client badge earned",

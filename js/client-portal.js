@@ -20211,6 +20211,14 @@ async function handleLogin() {
         if (status) status.textContent = "That email or password did not work. Please try again.";
         return;
       }
+      if (!isCoachPortalEmail(data.user?.email)) {
+        // Only a deliberate password sign-in records a login; restored sessions do not.
+        try {
+          await withTimeout(supabaseClient.rpc("record_client_login_notification"), "Login alert timed out.", 3000);
+        } catch {
+          // A notification outage must never stop a client from signing in.
+        }
+      }
       window.location.href = portalLoginDestination(data.user);
     } catch (error) {
       if (status) {
