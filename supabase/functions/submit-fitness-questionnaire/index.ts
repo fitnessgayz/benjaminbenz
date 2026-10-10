@@ -26,6 +26,8 @@ const answerLimits = new Map<string, number>([
   ["address_zip", 32],
   ["preferred_communication", 40],
   ["service_interest", 120],
+  ["request_type", 40],
+  ["membership_requested_type", 40],
   ["heart_condition", 20],
   ["chest_pain_activity", 20],
   ["chest_pain_rest", 20],
@@ -51,7 +53,25 @@ const answerLimits = new Map<string, number>([
   ["home_equipment", 3000],
   ["availability_days", 120],
   ["availability_times", 3000],
-  ["additional_notes", 4000]
+  ["additional_notes", 4000],
+  ["training_frequency", 2],
+  ["training_experience", 40],
+  ["training_minutes", 3],
+  ["training_equipment", 40],
+  ["avoid_movements", 2000],
+  ["strengthen_weaknesses", 2000],
+  ["macro_calories", 5],
+  ["macro_protein", 4],
+  ["macro_carbs", 4],
+  ["macro_fat", 4],
+  ["nutrition_goal", 30],
+  ["nutrition_age", 3],
+  ["nutrition_sex", 10],
+  ["nutrition_height", 30],
+  ["nutrition_weight", 20],
+  ["nutrition_workouts", 2],
+  ["nutrition_movement", 30],
+  ["nutrition_intensity", 20]
 ]);
 const weekdayValues = new Set([
   "Monday",
@@ -125,6 +145,19 @@ function canFillProfileValue(value: unknown, field: string) {
   return field === "client_name" && normalized === "client";
 }
 
+function sameAnswers(left: Record<string, unknown>, right: Record<string, unknown>) {
+  const entries = (value: Record<string, unknown>) => Object.entries(value).sort(([a], [b]) => a.localeCompare(b));
+  return JSON.stringify(entries(left)) === JSON.stringify(entries(right));
+}
+
+async function syncClientIntakeCompletion(adminClient: ReturnType<typeof createClient>, clientEmail: string, completedAt: string) {
+  const { error } = await adminClient.from("client_programs")
+    .update({ first_login_questionnaire_completed_at: completedAt })
+    .eq("client_email", clientEmail)
+    .is("first_login_questionnaire_completed_at", null);
+  return error;
+}
+
 function sanitizeAnswers(value: unknown) {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return { error: "Questionnaire answers are missing." };
@@ -169,6 +202,21 @@ function sanitizeAnswers(value: unknown) {
     if (key === "commitment_level" && answer && !/^[1-5]$/.test(answer)) {
       return { error: "Choose a commitment level from 1 to 5." };
     }
+
+    if (key === "training_frequency" && answer && !/^[2-6]$/.test(answer)) return { error: "Choose 2 to 6 training days." };
+    if (key === "training_experience" && answer && !["beginner", "intermediate", "advanced"].includes(answer)) return { error: "Choose a valid experience level." };
+    if (key === "training_minutes" && answer && !["20", "30", "45", "60"].includes(answer)) return { error: "Choose a valid workout length." };
+    if (key === "training_equipment" && answer && !["full_gym", "dumbbell", "bodyweight"].includes(answer)) return { error: "Choose valid equipment." };
+    if (key === "request_type" && !["workout_plan_review", "first_login_intake"].includes(answer)) return { error: "Choose a valid request type." };
+    if (key === "membership_requested_type" && !["personal_training", "online_training", "app_access_only"].includes(answer)) return { error: "Choose a valid membership." };
+    if (key === "nutrition_goal" && answer && !["fat_loss", "muscle_gain", "recomposition", "maintenance"].includes(answer)) return { error: "Choose a valid nutrition goal." };
+    if (key === "nutrition_sex" && answer && !["male", "female"].includes(answer)) return { error: "Choose a valid sex option." };
+    if (key === "nutrition_movement" && answer && !["mostly_sitting", "mixed", "active_job"].includes(answer)) return { error: "Choose valid daily movement." };
+    if (key === "nutrition_intensity" && answer && !["light", "moderate", "hard"].includes(answer)) return { error: "Choose valid training intensity." };
+    if (key === "nutrition_age" && answer && (!/^\d{1,3}$/.test(answer) || Number(answer) < 13 || Number(answer) > 100)) return { error: "Enter a valid age." };
+    if (key === "nutrition_weight" && answer && (!/^\d+(?:\.\d)?$/.test(answer) || Number(answer) < 60 || Number(answer) > 700)) return { error: "Enter a valid current weight." };
+    if (key === "nutrition_workouts" && answer && !/^[2-6]$/.test(answer)) return { error: "Choose 2 to 6 workouts per week." };
+    if (key.startsWith("macro_") && answer && (!/^\d{1,5}$/.test(answer) || Number(answer) > (key === "macro_calories" ? 10000 : 1000))) return { error: "Enter valid macro targets." };
 
     totalLength += answer.length;
     if (answer) {
@@ -262,14 +310,49 @@ serve(async (request) => {
   });
   const { data: candidatePrograms, error: programLookupError } = await adminClient
     .from("client_programs")
-    .select("id,client_email,client_name,client_phone,fitness_goal,equipment_note,updated_at")
+    .select("id,client_email,client_name,client_phone,fitness_goal,equipment_note,updated_at,active,account_type,membership_type,membership_requested_type,first_login_questionnaire_completed_at")
     .eq("client_archived", false)
     .ilike("client_email", signedInEmail)
     .order("updated_at", { ascending: false });
 
-  const program = (candidatePrograms || []).find(
+  const matchingPrograms = (candidatePrograms || []).filter(
     (candidate) => normalizeEmail(candidate.client_email) === signedInEmail
   );
+  const program = matchingPrograms.find((candidate) => candidate.active) || matchingPrograms[0];
+
+  const firstLoginIntake = sanitized.answers.request_type === "first_login_intake";
+  const requestedMembership = stringValue(sanitized.answers.membership_requested_type);
+  const heightMatch = /^([4-8])'(\d{1,2})"$/.exec(stringValue(sanitized.answers.nutrition_height));
+  const heightInches = heightMatch ? Number(heightMatch[1]) * 12 + Number(heightMatch[2]) : 0;
+  if (firstLoginIntake && (
+    programLookupError || !program?.active || !requestedMembership ||
+    !sanitized.answers.fitness_goals || !sanitized.answers.training_frequency ||
+    !sanitized.answers.training_experience || !sanitized.answers.training_minutes ||
+    !sanitized.answers.training_equipment || !sanitized.answers.nutrition_goal ||
+    !sanitized.answers.nutrition_age || !sanitized.answers.nutrition_sex ||
+    !heightMatch || Number(heightMatch[2]) > 11 || heightInches < 48 || heightInches > 96 ||
+    !sanitized.answers.nutrition_weight ||
+    !sanitized.answers.nutrition_movement || !sanitized.answers.nutrition_intensity
+  )) {
+    return jsonResponse(request, { error: "Complete the first login questionnaire for an active client profile." }, 400);
+  }
+  if (firstLoginIntake && program?.account_type === "beta_tester" && requestedMembership !== "app_access_only") {
+    return jsonResponse(request, { error: "Beta testers have app access only." }, 403);
+  }
+  if (firstLoginIntake && program?.first_login_questionnaire_completed_at) {
+    const syncError = await syncClientIntakeCompletion(adminClient, program.client_email, program.first_login_questionnaire_completed_at);
+    if (syncError) return jsonResponse(request, { error: "Your profile could not be synchronized. Please try again." }, 500);
+    return jsonResponse(request, { message: "Your first login questionnaire is already saved.", membership_type: program.membership_type,
+      membership_requested_type: program.membership_requested_type, first_login_questionnaire_completed_at: program.first_login_questionnaire_completed_at });
+  }
+  const isWorkoutPlanRequest = !firstLoginIntake && (sanitized.answers.request_type === "workout_plan_review" ||
+    Boolean(sanitized.answers.nutrition_goal && sanitized.answers.training_frequency));
+  if (isWorkoutPlanRequest && (
+    programLookupError || !program?.active || program.account_type !== "client" ||
+    !["personal_training", "online_training"].includes(program.membership_type)
+  )) {
+    return jsonResponse(request, { error: "Coach review requires an active Personal training or Online training membership." }, 403);
+  }
 
   const submittedAt = new Date().toISOString();
   const questionnaireRecord = {
@@ -296,7 +379,7 @@ serve(async (request) => {
 
     const { data: existingRecord } = await adminClient
       .from("client_fitness_questionnaires")
-      .select("id,linked_user_id")
+      .select("id,linked_user_id,answers")
       .eq("source", "client_portal")
       .eq("source_submission_id", submissionId)
       .maybeSingle();
@@ -304,11 +387,38 @@ serve(async (request) => {
     if (!existingRecord || existingRecord.linked_user_id !== user.id) {
       return jsonResponse(request, { error: "Questionnaire submission ID is already in use." }, 409);
     }
+    if (firstLoginIntake && !sameAnswers(existingRecord.answers || {}, sanitized.answers)) {
+      return jsonResponse(request, { error: "This questionnaire retry does not match the saved answers." }, 409);
+    }
 
-    return jsonResponse(request, {
-      message: "Questionnaire is already linked to your client profile.",
-      profile_fields_updated: []
-    });
+    if (!firstLoginIntake) {
+      return jsonResponse(request, { message: "Questionnaire is already linked to your client profile.", profile_fields_updated: [] });
+    }
+  }
+
+  let membershipResult: Record<string, string | null> = {};
+  if (firstLoginIntake && program) {
+    const completedAt = new Date().toISOString();
+    const confirmedMembership = requestedMembership === "app_access_only" ? "app_access_only" :
+      (["personal_training", "online_training"].includes(program.membership_type) && program.membership_type === requestedMembership
+        ? program.membership_type : "app_access_only");
+    const { data: updatedMembership, error: membershipError } = await adminClient
+      .from("client_programs")
+      .update({
+        membership_type: confirmedMembership,
+        membership_requested_type: requestedMembership,
+        membership_requested_at: completedAt,
+        membership_confirmed_at: confirmedMembership === requestedMembership ? completedAt : null,
+        first_login_questionnaire_completed_at: completedAt
+      })
+      .eq("id", program.id).is("first_login_questionnaire_completed_at", null)
+      .select("membership_type,membership_requested_type,first_login_questionnaire_completed_at")
+      .maybeSingle();
+    if (membershipError) return jsonResponse(request, { error: "Your membership choice could not be saved. Please try again." }, 500);
+    if (!updatedMembership) return jsonResponse(request, { error: "Your profile changed. Refresh and try again." }, 409);
+    membershipResult = updatedMembership;
+    const syncError = await syncClientIntakeCompletion(adminClient, program.client_email, completedAt);
+    if (syncError) return jsonResponse(request, { error: "Your profile could not be synchronized. Please try again." }, 500);
   }
 
   const profileUpdates: Record<string, string> = {};
@@ -367,6 +477,7 @@ serve(async (request) => {
   return jsonResponse(request, {
     message: "Questionnaire linked to your client profile.",
     profile_fields_updated: profileUpdateApplied ? Object.keys(profileUpdates) : [],
-    profile_import_warning: profileImportWarning
+    profile_import_warning: profileImportWarning,
+    ...membershipResult
   });
 });

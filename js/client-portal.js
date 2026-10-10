@@ -6549,6 +6549,367 @@ function openClientWorkoutGenerator(button, initialPreferences, initialGymLocati
   if (opened === false) window.alert("The workout generator could not open. Update your browser and try again.");
 }
 
+let clientFitnessPlan = null;
+
+function firstLoginFitnessQuestionnaireRequired(program = currentProgram) {
+  return !isCoachDashboardPreview && Boolean(program?.id && program?.active && !program?.first_login_questionnaire_completed_at);
+}
+
+function clientMembershipLabel(program) {
+  const type = program?.account_type === "beta_tester" ? "app_access_only" : program?.membership_type;
+  const label = ({ personal_training: "Personal training", online_training: "Online training", app_access_only: "App access only" })[type] || "Client account";
+  const requested = program?.membership_requested_type;
+  if (type === "app_access_only" && program?.account_type !== "beta_tester" && ["personal_training", "online_training"].includes(requested)) {
+    return `${label} · ${requested === "personal_training" ? "Personal training" : "Online training"} pending`;
+  }
+  return label;
+}
+
+function fitnessPlanFormAnswers(form) {
+  const data = new FormData(form);
+  const answers = {};
+  for (const key of ["fitness_goals", "training_frequency", "training_experience", "training_minutes", "training_equipment", "pain_or_injuries", "avoid_movements", "strengthen_weaknesses", "nutrition_goal", "nutrition_age", "nutrition_sex", "nutrition_weight", "nutrition_movement", "nutrition_intensity"]) {
+    const value = String(data.get(key) || "").trim();
+    if (value) answers[key] = value;
+  }
+  answers.nutrition_height = `${data.get("nutrition_height_feet") || ""}'${data.get("nutrition_height_inches") || ""}\"`;
+  answers.nutrition_workouts = answers.training_frequency || "";
+  return answers;
+}
+
+function canSubmitFitnessPlanForCoach(program = currentProgram) {
+  return window.FWB_FITNESS_PLAN_BUILDER.canRequestCoachReview(program);
+}
+
+function fitnessPlanNutritionTarget(answers) {
+  const feet = Number.parseInt(answers.nutrition_height?.split("'")[0], 10);
+  const inches = Number.parseInt(answers.nutrition_height?.split("'")[1], 10);
+  const age = Number(answers.nutrition_age);
+  const weight = Number(answers.nutrition_weight);
+  if (!Number.isInteger(feet) || !Number.isInteger(inches) || inches < 0 || inches > 11 ||
+      (feet * 12) + inches < 48 || (feet * 12) + inches > 96 ||
+      !Number.isInteger(age) || age < 13 || age > 100 || weight < 60 || weight > 700 ||
+      !["male", "female"].includes(answers.nutrition_sex) ||
+      !["fat_loss", "muscle_gain", "recomposition", "maintenance"].includes(answers.nutrition_goal) ||
+      !["mostly_sitting", "mixed", "active_job"].includes(answers.nutrition_movement) ||
+      !["light", "moderate", "hard"].includes(answers.nutrition_intensity)) {
+    throw new Error("Complete the macro target questions with valid values.");
+  }
+  const { plan, error } = calculateNutritionPlan({
+    goal: answers.nutrition_goal, age: answers.nutrition_age, sex: answers.nutrition_sex,
+    height: answers.nutrition_height, current_weight: answers.nutrition_weight,
+    workouts_per_week: answers.nutrition_workouts, daily_movement: answers.nutrition_movement,
+    training_intensity: answers.nutrition_intensity
+  });
+  if (error) throw error;
+  return plan;
+}
+
+function fitnessPlanAnswersWithMacros(answers, macros) {
+  return {
+    ...answers,
+    macro_calories: String(Number.parseInt(macros.calories, 10)),
+    macro_protein: String(Number.parseInt(macros.protein, 10)),
+    macro_carbs: String(Number.parseInt(macros.carbs, 10)),
+    macro_fat: String(Number.parseInt(macros.fat, 10))
+  };
+}
+
+function renderClientFitnessPlanNotice(message) {
+  const host = document.getElementById("workout-plan-result");
+  if (!host) return;
+  host.replaceChildren();
+  const note = document.createElement("p");
+  note.textContent = message;
+  host.append(note);
+  host.hidden = false;
+}
+
+function fitnessPlanStatus(message, error = false) {
+  const status = document.getElementById("workout-plan-form-status");
+  if (!status) return;
+  status.textContent = message;
+  status.dataset.error = error ? "true" : "false";
+}
+
+function renderClientFitnessPlan(plan) {
+  const host = document.getElementById("workout-plan-result");
+  if (!host) return;
+  host.replaceChildren();
+  clientFitnessPlan = plan;
+  host.hidden = !plan?.workouts?.length;
+  if (host.hidden) return;
+  const heading = document.createElement("div");
+  heading.className = "workout-plan-result-heading";
+  const title = document.createElement("h3");
+  title.textContent = plan.title || "Your app workout plan";
+  const intro = document.createElement("p");
+  intro.textContent = `${plan.daysPerWeek} workouts this week. Review each session before starting.`;
+  heading.append(title, intro);
+  if (plan.nutritionPlan) {
+    const macros = document.createElement("p");
+    macros.textContent = `Starting daily target: ${plan.nutritionPlan.calories} · ${plan.nutritionPlan.protein} protein · ${plan.nutritionPlan.carbs} carbs · ${plan.nutritionPlan.fat} fat`;
+    heading.append(macros);
+  }
+  const list = document.createElement("div");
+  list.className = "workout-plan-result-days";
+  plan.workouts.forEach((item, index) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.dataset.fitnessPlanDay = String(index);
+    const date = new Date(`${item.date}T12:00:00`);
+    const day = Number.isNaN(date.getTime()) ? `Day ${index + 1}` : new Intl.DateTimeFormat(undefined, { weekday: "short", month: "short", day: "numeric" }).format(date);
+    button.textContent = `${day} · ${item.workout.title} · ${item.workout.minutes} min`;
+    list.append(button);
+  });
+  host.append(heading, list);
+}
+
+async function loadClientFitnessPlan(userId = activeDashboardUser?.id) {
+  if (!supabaseClient || !userId || isCoachDashboardPreview) return;
+  const { data, error } = await supabaseClient.from("client_saved_workout_plans")
+    .select("snapshot_json")
+    .eq("user_id", userId).eq("plan_kind", "program").eq("is_deleted", false)
+    .order("created_at", { ascending: false }).limit(10);
+  if (error || !Array.isArray(data)) return;
+  for (const row of data) {
+    try {
+      const snapshot = JSON.parse(row.snapshot_json || "{}");
+      if (snapshot.source === "fitness-plan" && Array.isArray(snapshot.workouts)) {
+        renderClientFitnessPlan(snapshot);
+        return;
+      }
+    } catch { /* Ignore an older plan format. */ }
+  }
+}
+
+async function submitClientFitnessPlan(form, path) {
+  if (!supabaseClient || !activeDashboardUser?.id || isCoachDashboardPreview) throw new Error("Sign in as a client to request a workout plan.");
+  if (path === "coach" && !canSubmitFitnessPlanForCoach()) {
+    throw new Error("Coach review requires Personal training or Online training membership.");
+  }
+  const macros = fitnessPlanNutritionTarget(fitnessPlanFormAnswers(form));
+  const answers = fitnessPlanAnswersWithMacros(fitnessPlanFormAnswers(form), macros);
+  if (path === "app" && answers.pain_or_injuries) {
+    throw new Error("A current injury or pain needs individual review before following an app generated plan.");
+  }
+  const plan = path === "app" ? window.FWB_FITNESS_PLAN_BUILDER.build(answers, exerciseLibraryEntries, window.FWB_WORKOUT_GENERATOR) : null;
+  if (path === "coach") {
+    const submission = {
+      submission_id: crypto.randomUUID(), email: activeClientEmail,
+      name: String(currentProgram?.client_name || activeClientEmail.split("@")[0] || "Client").trim(),
+      answers: { ...answers, service_interest: "Online coaching", request_type: "workout_plan_review" }
+    };
+    const { data, error } = await supabaseClient.functions.invoke("submit-fitness-questionnaire", { body: submission });
+    if (error || data?.error) throw new Error(data?.error || "Your answers could not be saved. Please try again.");
+    return { path };
+  }
+  const snapshot = { ...plan, questionnaire: answers, nutritionPlan: macros, source: "fitness-plan", version: 2 };
+  const saved = await supabaseClient.from("client_saved_workout_plans").insert({
+    id: crypto.randomUUID(), user_id: activeDashboardUser.id, title: plan.title,
+    plan: snapshot, snapshot_json: JSON.stringify(snapshot), plan_kind: "program"
+  });
+  if (saved.error) throw new Error("Your plan could not be saved. Please try generating it again.");
+  const nutritionSave = await supabaseClient.from("client_programs")
+    .update({ nutrition_plan: macros }).eq("id", currentProgram.id).select("*").single();
+  if (nutritionSave.error) throw new Error("Your workout plan was saved, but macros could not be saved. Try again from Nutrition.");
+  const updatedProgram = nutritionSave.data;
+  const assignedWorkouts = Array.isArray(updatedProgram.workouts) ? updatedProgram.workouts : [];
+  currentProgram = { ...updatedProgram, assignedWorkouts, workouts: WorkoutLayout.apply(assignedWorkouts, updatedProgram.client_workout_layout) };
+  renderClientNutrition(currentProgram);
+  renderClientFitnessPlan(snapshot);
+  return { path, plan, macros };
+}
+
+async function submitFirstLoginFitnessQuestionnaire(form, path) {
+  if (!supabaseClient || !activeDashboardUser?.id || !currentProgram?.id || isCoachDashboardPreview) {
+    throw new Error("Sign in as a client to save your questionnaire.");
+  }
+  const membership = form.elements.membership_requested_type.value;
+  if (!["personal_training", "online_training", "app_access_only"].includes(membership)) {
+    throw new Error("Choose your membership first.");
+  }
+  if (currentProgram.account_type === "beta_tester" && membership !== "app_access_only") {
+    throw new Error("Beta testers have app access only.");
+  }
+  if (path === "coach" && membership === "app_access_only") {
+    throw new Error("Choose personal or online training to request Benjamin's confirmation.");
+  }
+  const answers = fitnessPlanFormAnswers(form);
+  const macros = fitnessPlanNutritionTarget(answers);
+  const submission = {
+    submission_id: crypto.randomUUID(), email: activeClientEmail,
+    name: String(currentProgram.client_name || activeClientEmail.split("@")[0] || "Client").trim(),
+    answers: {
+      ...fitnessPlanAnswersWithMacros(answers, macros),
+      membership_requested_type: membership,
+      request_type: "first_login_intake",
+      service_interest: membership === "app_access_only" ? "App access only" : "Training membership confirmation"
+    }
+  };
+  const { data, error } = await supabaseClient.functions.invoke("submit-fitness-questionnaire", { body: submission });
+  if (error || data?.error || !data?.first_login_questionnaire_completed_at) {
+    throw new Error(data?.error || "Your questionnaire could not be saved. Please try again.");
+  }
+  currentProgram = {
+    ...currentProgram,
+    membership_type: data.membership_type,
+    membership_requested_type: data.membership_requested_type,
+    first_login_questionnaire_completed_at: data.first_login_questionnaire_completed_at
+  };
+  const membershipLabel = document.querySelector("[data-client-membership]");
+  if (membershipLabel) membershipLabel.textContent = clientMembershipLabel(currentProgram);
+  if (path === "coach") {
+    const message = data.membership_type === membership
+      ? "Your answers were sent to Benjamin for review."
+      : "Your answers were sent to Benjamin. Coaching access is pending his confirmation.";
+    renderClientFitnessPlanNotice(message);
+    return { message };
+  }
+  if (answers.pain_or_injuries) {
+    const nutritionSave = await supabaseClient.from("client_programs")
+      .update({ nutrition_plan: macros }).eq("id", currentProgram.id).select("*").single();
+    if (!nutritionSave.error) {
+      currentProgram = { ...currentProgram, nutrition_plan: nutritionSave.data.nutrition_plan };
+      renderClientNutrition(currentProgram);
+    }
+    renderClientFitnessPlanNotice("Your answers and macro estimate were saved. Because you reported current pain or an injury, ask Benjamin before following an app generated workout.");
+    return { message: nutritionSave.error
+      ? "Your answers were saved. Your macro target could not be saved; retry from Nutrition. Ask Benjamin to review your injury before generating a workout."
+      : "Your answers and macros were saved. Ask Benjamin to review your injury before generating a workout." };
+  }
+  try {
+    await submitClientFitnessPlan(form, "app");
+    return { message: "Your workout plan and macros are ready below." };
+  } catch (generationError) {
+    renderClientFitnessPlanNotice("Your questionnaire was saved. Open Need Help With a Workout Plan? to retry generating your workout and macro targets.");
+    return { message: `Your questionnaire was saved, but the plan could not be generated: ${generationError?.message || "Please try again."}` };
+  }
+}
+
+function initializeClientFitnessPlanHelp() {
+  const dialog = document.getElementById("workout-plan-dialog");
+  const form = document.getElementById("workout-plan-form");
+  if (!dialog || !form) return;
+  const coachButton = form.querySelector('[data-plan-path="coach"]');
+  const coachNote = document.getElementById("workout-plan-coach-access-note");
+  const membershipNote = document.getElementById("workout-plan-membership-note");
+  const membershipSelect = form.elements.membership_requested_type;
+  const refreshCoachAccess = () => {
+    const firstLogin = dialog.dataset.firstLogin === "true";
+    const selectedMembership = membershipSelect.value;
+    const allowed = firstLogin
+      ? currentProgram?.account_type !== "beta_tester" && ["personal_training", "online_training"].includes(selectedMembership)
+      : canSubmitFitnessPlanForCoach();
+    if (coachButton) coachButton.disabled = !allowed;
+    if (coachButton) coachButton.textContent = firstLogin
+      ? canSubmitFitnessPlanForCoach() && selectedMembership === currentProgram?.membership_type
+        ? "Personal or online training: submit for Benjamin to review"
+        : "Personal or online training: send to Benjamin for confirmation"
+      : "1:1 and online training clients only: submit for Benjamin to review";
+    if (coachNote) coachNote.hidden = allowed;
+    if (membershipNote) membershipNote.textContent = currentProgram?.account_type === "beta_tester"
+      ? "Beta testers have app access only."
+      : firstLogin && selectedMembership !== "app_access_only"
+        ? "Benjamin will confirm a personal or online training membership before coach review is unlocked."
+        : "Personal and online training selections require Benjamin’s confirmation before coach review is available.";
+  };
+  const updateMacroPreview = () => {
+    const preview = document.getElementById("workout-plan-macro-preview");
+    if (!preview) return;
+    form.elements.nutrition_workouts.value = form.elements.training_frequency.value;
+    try {
+      const macros = fitnessPlanNutritionTarget(fitnessPlanFormAnswers(form));
+      preview.textContent = `Starting target: ${macros.calories} · ${macros.protein} protein · ${macros.carbs} carbs · ${macros.fat} fat`;
+    } catch {
+      preview.textContent = "Complete the questions to see your starting target.";
+    }
+  };
+  form.addEventListener("input", updateMacroPreview);
+  form.addEventListener("change", () => { updateMacroPreview(); refreshCoachAccess(); });
+  document.querySelector("[data-workout-plan-help-open]")?.addEventListener("click", () => {
+    dialog.dataset.firstLogin = "false";
+    document.getElementById("workout-plan-dialog-title").textContent = "Your fitness goals";
+    form.querySelector(".workout-plan-dialog-heading + p").textContent = "Answer these questions once, then choose coach review or an app generated plan.";
+    const closeButton = dialog.querySelector("[data-workout-plan-close]");
+    if (closeButton) closeButton.hidden = false;
+    for (const option of membershipSelect.options) option.disabled = false;
+    membershipSelect.value = currentProgram?.account_type === "beta_tester" ? "app_access_only" : currentProgram?.membership_type || "app_access_only";
+    membershipSelect.disabled = true;
+    fitnessPlanStatus("");
+    refreshCoachAccess();
+    updateMacroPreview();
+    if (!dialog.open) dialog.showModal();
+  });
+  dialog.querySelector("[data-workout-plan-close]")?.addEventListener("click", () => { if (dialog.dataset.firstLogin !== "true") dialog.close(); });
+  dialog.addEventListener("cancel", (event) => { if (dialog.dataset.firstLogin === "true") event.preventDefault(); });
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const path = event.submitter?.dataset.planPath;
+    if (!path || !["coach", "app"].includes(path)) return;
+    const buttons = form.querySelectorAll("button[type=submit]");
+    buttons.forEach((button) => { button.disabled = true; });
+    fitnessPlanStatus(path === "coach" ? "Sending your answers to Benjamin…" : "Building and saving your plan…");
+    try {
+      const firstLogin = dialog.dataset.firstLogin === "true";
+      const result = firstLogin
+        ? await submitFirstLoginFitnessQuestionnaire(form, path)
+        : await submitClientFitnessPlan(form, path);
+      fitnessPlanStatus(firstLogin ? result.message : path === "coach" ? "Your answers were sent to Benjamin for review." : "Your workout plan and macros are ready below.");
+      if (firstLogin) {
+        const notice = document.getElementById("first-login-questionnaire-result");
+        if (notice) { notice.textContent = result.message; notice.hidden = false; }
+      }
+      if (firstLogin || path === "app") {
+        dialog.dataset.firstLogin = "false";
+        dialog.close();
+        window.requestAnimationFrame?.(() => {
+          if (firstLogin) document.querySelector("[data-client-web-tour-open]")?.click();
+          else maybeShowClientHomeCheckinPrompt();
+        });
+      }
+      form.reset();
+      updateMacroPreview();
+    } catch (error) {
+      fitnessPlanStatus(error?.message || "Please try again.", true);
+    } finally {
+      buttons.forEach((button) => { button.disabled = false; });
+      refreshCoachAccess();
+    }
+  });
+  document.getElementById("workout-plan-result")?.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-fitness-plan-day]");
+    const item = clientFitnessPlan?.workouts?.[Number(button?.dataset.fitnessPlanDay)];
+    if (!button || !item) return;
+    try { useGeneratedClientWorkout(item.workout); } catch (error) { window.alert(error.message); }
+  });
+}
+
+function maybeShowFirstLoginFitnessQuestionnaire() {
+  if (!firstLoginFitnessQuestionnaireRequired()) return;
+  const dialog = document.getElementById("workout-plan-dialog");
+  const form = document.getElementById("workout-plan-form");
+  if (!dialog || !form || dialog.open) return;
+  form.reset();
+  const membershipSelect = form.elements.membership_requested_type;
+  membershipSelect.disabled = false;
+  const betaTester = currentProgram.account_type === "beta_tester";
+  for (const option of membershipSelect.options) {
+    option.disabled = betaTester && option.value && option.value !== "app_access_only";
+  }
+  membershipSelect.value = betaTester ? "app_access_only" : "";
+  dialog.dataset.firstLogin = "true";
+  document.getElementById("workout-plan-dialog-title").textContent = "Let’s set up your training profile";
+  form.querySelector(".workout-plan-dialog-heading + p").textContent = "Before you explore the app, tell us about your membership, training goals, and starting macro target.";
+  fitnessPlanStatus("");
+  const closeButton = dialog.querySelector("[data-workout-plan-close]");
+  if (closeButton) closeButton.hidden = true;
+  dialog.showModal();
+  form.querySelector('textarea[name="fitness_goals"]')?.focus();
+  membershipSelect.focus();
+  membershipSelect.dispatchEvent(new Event("change", { bubbles: true }));
+}
+
 function customWorkoutDraftExercises() {
   const exercises = activeCustomWorkoutDraft()?.exercises;
   return Array.isArray(exercises) ? exercises : [];
@@ -17388,6 +17749,7 @@ function dismissClientHomeCheckinPrompt(restoreFocus = true) {
 
 function maybeShowClientHomeCheckinPrompt() {
   if (!dailyCheckinPromptEnabled() || !activeDashboardUser || activeClientDashboardTab !== "home"
+      || firstLoginFitnessQuestionnaireRequired()
       || isCoachDashboardPreview || isCoachPortalEmail(activeDashboardUser.email)
       || workoutElapsedTimerState || document.querySelector("dialog[open]")) return;
   const email = activeClientEmail;
@@ -19762,6 +20124,7 @@ function renderProgram(program) {
   document.title = `${programTitle} | Fitness with Benjamin`;
   setText("#dashboard-program-title", programTitle);
   setText("#dashboard-program-summary", displayProgram.program_summary || "Your current training block is ready.");
+  setText("[data-client-membership]", clientMembershipLabel(program));
   renderClientNutrition(program);
   renderWorkoutInsights(program);
   renderClientSessionManualState(program);
@@ -20105,6 +20468,8 @@ async function loadDashboard() {
     configureClientAppleWorkouts();
     clientAvailablePrograms = Array.isArray(programRows) ? programRows : [];
     renderProgram(data);
+    void loadClientFitnessPlan(user.id);
+    maybeShowFirstLoginFitnessQuestionnaire();
     configureClientSessionBalance();
     configureClientGoogleHealth();
     configureClientAppleHealth();
@@ -21078,6 +21443,7 @@ handleClientSummaryActions();
 handleClientWorkoutTabs();
 handleClientWorkoutPreview();
 handleWorkoutInteractions();
+initializeClientFitnessPlanHelp();
 handleCustomWorkoutInlineGrouping();
 handleSkipToggle();
 handleTrainingLogSave();

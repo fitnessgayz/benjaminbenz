@@ -156,7 +156,7 @@ async function findAuthUserByEmail(adminClient: ReturnType<typeof createClient>,
 async function rowsForEmail(adminClient: ReturnType<typeof createClient>, tableName: string, email: string) {
   const { data, error } = await adminClient
     .from(tableName)
-    .select("id, client_email")
+    .select(tableName === "client_programs" ? "id, client_email, membership_type, membership_requested_type, membership_confirmed_at, account_type" : "id, client_email")
     .ilike("client_email", email);
 
   if (error) {
@@ -230,6 +230,7 @@ serve(async (request) => {
   const oldEmail = normalizeEmail(oldEmailExact);
   const nextEmail = normalizeEmail(safeBody.client_email);
   const clientName = stringValue(safeBody.client_name);
+  let membershipType = stringValue(safeBody.membership_type);
   const clientPhone = stringValue(safeBody.client_phone);
   const initials = stringValue(safeBody.initials).slice(0, 4).toUpperCase();
   const height = stringValue(safeBody.height) || "Not set";
@@ -265,6 +266,16 @@ serve(async (request) => {
 
   if (!programIds.includes(programId)) {
     return jsonResponse(request, { error: "Could not find the selected client program." }, 404);
+  }
+
+  if (!membershipType) {
+    membershipType = stringValue((programs || []).find((program) => program.id === programId)?.membership_type);
+  }
+  if (!["personal_training", "online_training", "app_access_only"].includes(membershipType)) {
+    return jsonResponse(request, { error: "Choose a valid membership type." }, 400);
+  }
+  if ((programs || []).find((program) => program.id === programId)?.account_type === "beta_tester" && membershipType !== "app_access_only") {
+    return jsonResponse(request, { error: "Beta testers have app access only." }, 403);
   }
 
   let progressIds: string[] = [];
@@ -351,6 +362,18 @@ serve(async (request) => {
 
   if (programError) {
     return jsonResponse(request, { error: programError.message }, 400);
+  }
+
+  const selectedProgram = (programs || []).find((program) => program.id === programId);
+  const membershipUpdate: Record<string, string> = { membership_type: membershipType };
+  if (selectedProgram?.membership_requested_type === membershipType && membershipType !== "app_access_only" &&
+      (selectedProgram.membership_type !== membershipType || !selectedProgram.membership_confirmed_at)) {
+    membershipUpdate.membership_confirmed_at = new Date().toISOString();
+  }
+  const { error: membershipError } = await adminClient.from("client_programs")
+    .update(membershipUpdate).eq("id", programId);
+  if (membershipError) {
+    return jsonResponse(request, { error: membershipError.message }, 400);
   }
 
   if (emailChanged) {

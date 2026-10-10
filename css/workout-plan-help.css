@@ -1,0 +1,144 @@
+.workout-plan-help {
+  margin: 0 0 20px;
+  padding: 18px;
+  border: 1px solid rgba(255, 212, 0, .5);
+  border-radius: 16px;
+  background: linear-gradient(135deg, #202619, #111710);
+  color: #f7f6ed;
+}
+.first-login-questionnaire-result { margin: 12px 0; padding: 12px 16px; border: 1px solid #ffd400; border-radius: 12px; background: #202619; color: #f7f6ed; font-weight: 650; }
+.first-login-questionnaire-result[hidden] { display: none; }
+:root[data-client-theme="light"] body.client-dashboard-page .first-login-questionnaire-result { background: #f4f8ff; border-color: #075ce8; color: #075ce8; }
+.workout-plan-help-open {
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #ffd400;
+  font: inherit;
+  font-size: clamp(1.1rem, 3vw, 1.4rem);
+  font-weight: 800;
+  text-align: left;
+  cursor: pointer;
+}
+.workout-plan-help-open:hover,
+.workout-plan-help-open:focus-visible { color: #ffd400; }
+.workout-plan-help > p { margin: 8px 0 0; line-height: 1.5; }
+.workout-plan-dialog {
+  width: min(680px, calc(100vw - 24px));
+  max-height: min(90vh, 850px);
+  padding: 0;
+  border: 1px solid rgba(255, 212, 0, .45);
+  border-radius: 18px;
+  background: #111710;
+  color: #f7f6ed;
+  box-shadow: 0 30px 100px rgba(0, 0, 0, .55);
+}
+.workout-plan-dialog::backdrop { background: rgba(0, 0, 0, .72); }
+.workout-plan-form { display: grid; gap: 16px; padding: clamp(18px, 4vw, 32px); }
+.workout-plan-dialog-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.workout-plan-dialog-heading h2 { margin: 3px 0 0; }
+.workout-plan-dialog-heading button { border: 0; background: transparent; color: #ffd400; font-size: 2rem; cursor: pointer; }
+.workout-plan-dialog-heading button[hidden] { display: none; }
+.workout-plan-form > p { margin: 0; }
+.workout-plan-form label { display: grid; gap: 7px; font-weight: 650; }
+.workout-plan-form input,
+.workout-plan-form select,
+.workout-plan-form textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  padding: 11px 12px;
+  border: 1px solid #495348;
+  border-radius: 9px;
+  background: #1c241b;
+  color: #fff;
+  font: inherit;
+}
+.workout-plan-form textarea { min-height: 78px; resize: vertical; }
+.workout-plan-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.workout-plan-macros { margin: 0; padding: 16px; border: 1px solid #495348; border-radius: 10px; }
+.workout-plan-macros legend { padding: 0 5px; font-weight: 700; }
+.workout-plan-macros small { font-weight: 400; }
+.workout-plan-macros > .workout-plan-form-note { margin: 0 0 14px; }
+.workout-plan-height-fields { display: flex; gap: 8px; }
+.workout-plan-height-fields input { flex: 1 1 0; }
+.workout-plan-macro-preview { margin: 14px 0 0; color: #ffd400; font-weight: 700; }
+.workout-plan-form-actions .button:disabled { opacity: .45; cursor: not-allowed; }
+.workout-plan-form-note { color: #c3c9bc; font-size: .9rem; line-height: 1.5; }
+.workout-plan-form-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.workout-plan-form-actions .button { flex: 1 1 225px; min-height: 48px; background: #ffd400; color: #151515; font-weight: 800; }
+.workout-plan-form-actions .button:first-child { background: transparent; border: 1px solid #ffd400; color: #ffd400; }
+.workout-plan-form-status { min-height: 1.5em; color: #ffd400; }
+.workout-plan-form-status[data-error="true"] { color: #ff8f89; }
+.workout-plan-result { margin: 0 0 20px; padding: 18px; border: 1px solid rgba(255, 212, 0, .45); border-radius: 16px; }
+.workout-plan-result[hidden] { display: none; }
+.workout-plan-result-heading h3 { margin: 0 0 4px; }
+.workout-plan-result-heading p { margin: 0 0 14px; }
+.workout-plan-result-days { display: grid; gap: 8px; }
+.workout-plan-result-days button { padding: 12px; border: 1px solid #c9a900; border-radius: 9px; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.workout-plan-result-days button:hover,
+.workout-plan-result-days button:focus-visible { border-color: #ffd400; outline: 2px solid #ffd400; }
+:root body.dashboard-page .workout-choice-card .workout-choice-icon {
+  background: #202936;
+  color: #ffd400;
+}
+:root body.dashboard-page .client-workout-program-links button svg,
+:root body.dashboard-page .client-workouts-message-button svg {
+  color: #ffd400;
+  stroke: currentColor;
+}
+@media (max-width: 520px) {
+  .workout-plan-form-grid { grid-template-columns: 1fr; }
+  .workout-plan-dialog { max-height: 95vh; }
+}
+
+/* Workout guidance uses electric blue against light surfaces. Dark mode keeps gold. */
+:root[data-client-theme="light"] body.client-dashboard-page .workout-plan-help {
+  color: var(--ink);
+  background: #f4f8ff;
+  border-color: #b9d3ff;
+}
+:root[data-client-theme="light"] body.client-dashboard-page :is(
+  .workout-plan-help-open, .workout-plan-help-open:hover,
+  .workout-plan-help-open:focus-visible, .workout-plan-form-status,
+  .workout-plan-dialog-heading button
+) { color: #075ce8; }
+:root[data-client-theme="light"] body.client-dashboard-page .workout-plan-dialog {
+  color: var(--ink);
+  background: var(--surface);
+  border-color: #b9d3ff;
+}
+:root[data-client-theme="light"] body.client-dashboard-page .workout-plan-macros { border-color: var(--line); }
+:root[data-client-theme="light"] body.client-dashboard-page .workout-plan-form-note { color: var(--muted); }
+:root[data-client-theme="light"] body.client-dashboard-page .workout-plan-form-actions .button {
+  color: #fff;
+  background: #075ce8;
+  border-color: #075ce8;
+}
+:root[data-client-theme="light"] body.client-dashboard-page .workout-plan-form-actions .button:first-child {
+  color: #075ce8;
+  background: transparent;
+}
+:root[data-client-theme="light"] body.client-dashboard-page .workout-plan-form-status[data-error="true"] { color: var(--danger); }
+:root[data-client-theme="light"] body.client-dashboard-page .workout-plan-result {
+  color: var(--ink);
+  background: var(--surface);
+  border-color: #b9d3ff;
+}
+:root[data-client-theme="light"] body.client-dashboard-page .workout-plan-result-days button { border-color: #8bb7ff; }
+:root[data-client-theme="light"] body.client-dashboard-page .workout-plan-result-days button:is(:hover, :focus-visible) {
+  border-color: #075ce8;
+  outline-color: #075ce8;
+}
+:root[data-client-theme="light"] body.client-dashboard-page .workout-choice-card .workout-choice-icon {
+  color: #075ce8;
+  background: #e8f1ff;
+}
+:root[data-client-theme="light"] body.client-dashboard-page :is(
+  .client-workout-program-links button svg, .client-workouts-message-button svg
+) { color: #075ce8; stroke: currentColor; }

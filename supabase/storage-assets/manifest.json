@@ -63,7 +63,8 @@
     "20261009152456_correct_dumbbell_wolverine_classification.sql",
     "20261009171732_allow_custom_and_logged_calendar_workouts.sql",
     "20261009182015_optional_gym_checkin_name.sql",
-    "20261009203406_community_custom_emoji_avatars.sql"
+    "20261009203406_community_custom_emoji_avatars.sql",
+    "20261010105000_client_membership_type.sql"
   ],
   "nasmExerciseCatalogMigration": "20261001032427_add_complete_nasm_exercise_library.sql",
   "nasmExerciseCatalogCount": 75,

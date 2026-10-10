@@ -258,6 +258,18 @@
               </div>
             </section>
 
+            <section class="coach-home-module" aria-labelledby="coach-home-membership-title">
+              <div class="coach-home-module-heading">
+                <div>
+                  <p class="kicker">Client intake</p>
+                  <h3 id="coach-home-membership-title" tabindex="-1">Membership requests</h3>
+                </div>
+              </div>
+              <div class="coach-home-list" id="coach-home-membership-requests">
+                <p class="empty-state">No membership requests are waiting.</p>
+              </div>
+            </section>
+
             <section class="coach-home-module" aria-labelledby="coach-home-session-alert-title">
               <div class="coach-home-module-heading">
                 <div>
@@ -463,6 +475,15 @@
             <label>
               Client name
               <input type="text" name="client_name" placeholder="Client name" autocomplete="name" required />
+            </label>
+            <label>
+              Membership
+              <select name="membership_type" required>
+                <option value="personal_training">Personal training</option>
+                <option value="online_training">Online training</option>
+                <option value="app_access_only">App access only</option>
+              </select>
+              <small id="client-membership-request-status" role="status"></small>
             </label>
             <label>
               Client phone number
@@ -1177,6 +1198,6 @@
   <script src="js/apple-health-sync.js?v=1"></script>
   <script src="js/workout-progression.js?v=1"></script>
   <script src="js/coach-workout-corrections.js?v=weight-corrections-1"></script>
-  <script src="js/coach-admin.js?v=client-view-shortcut-1&amp;remember-login=1&amp;home-shortcuts=1&amp;mobile-client-hub=2&amp;home-settings=1&amp;apple-workout=1&amp;viewport-dock=2&amp;apple-health=1&amp;recovery-catalog=1&amp;messages=2&amp;progression=1&amp;invitations=2&amp;exercise-images=1&amp;exercise-cards=1&amp;videos-tab=3&amp;client-added=1&amp;client-name-list=2&amp;weight-corrections=1&amp;password-reset=1&amp;invite-dialog=1&amp;workout-schedule=1"></script>
+  <script src="js/coach-admin.js?v=client-view-shortcut-1&amp;remember-login=1&amp;home-shortcuts=1&amp;mobile-client-hub=2&amp;home-settings=1&amp;apple-workout=1&amp;viewport-dock=2&amp;apple-health=1&amp;recovery-catalog=1&amp;messages=2&amp;progression=1&amp;invitations=2&amp;exercise-images=1&amp;exercise-cards=1&amp;videos-tab=3&amp;client-added=1&amp;client-name-list=2&amp;weight-corrections=1&amp;password-reset=1&amp;invite-dialog=1&amp;workout-schedule=1&amp;membership-intake=1"></script>
 </body>
 </html>

@@ -134,10 +134,12 @@ function cleanProgramPayload(value: unknown) {
   const source = objectValue(value);
   const clientEmail = normalizeEmail(source.client_email);
   const clientName = stringValue(source.client_name);
+  const membershipType = stringValue(source.membership_type);
 
   return {
     client_email: clientEmail,
     client_name: clientName || (clientEmail ? clientEmail.split("@")[0] : "Client"),
+    membership_type: membershipType,
     client_phone: stringValue(source.client_phone),
     initials: stringValue(source.initials),
     program_title: stringValue(source.program_title) || "Client Program",
@@ -210,6 +212,25 @@ serve(async (request) => {
   const adminClient = createClient(supabaseUrl, serviceRoleKey, {
     auth: { persistSession: false }
   });
+
+  let existingProgram: { membership_type: string; membership_requested_type: string | null; membership_confirmed_at: string | null; account_type: string } | null = null;
+  if (programId) {
+    const { data, error: membershipLookupError } = await adminClient
+      .from("client_programs").select("membership_type,membership_requested_type,membership_confirmed_at,account_type").eq("id", programId).maybeSingle();
+    if (membershipLookupError || !data) return jsonResponse(request, { error: "Client membership could not be verified." }, 400);
+    existingProgram = data;
+  }
+  if (!payload.membership_type) payload.membership_type = existingProgram?.membership_type || "app_access_only";
+  if (!["personal_training", "online_training", "app_access_only"].includes(payload.membership_type)) {
+    return jsonResponse(request, { error: "Choose a valid membership type." }, 400);
+  }
+  if (existingProgram?.account_type === "beta_tester" && payload.membership_type !== "app_access_only") {
+    return jsonResponse(request, { error: "Beta testers have app access only." }, 403);
+  }
+  if (existingProgram?.membership_requested_type === payload.membership_type && payload.membership_type !== "app_access_only" &&
+      (existingProgram.membership_type !== payload.membership_type || !existingProgram.membership_confirmed_at)) {
+    (payload as Record<string, unknown>).membership_confirmed_at = new Date().toISOString();
+  }
 
   if (payload.active) {
     let archiveQuery = adminClient

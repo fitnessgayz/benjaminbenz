@@ -8,6 +8,10 @@ const migration = fs.readFileSync(
   path.join(root, "supabase/migrations/20260930183302_beta_tester_profiles.sql"),
   "utf8"
 );
+const membershipMigration = fs.readFileSync(
+  path.join(root, "supabase/migrations/20261010105000_client_membership_type.sql"),
+  "utf8"
+);
 
 const testerEmails = [
   "kenny.t.walter@gmail.com",
@@ -39,4 +43,10 @@ test("keeps client-only notifications away from beta tester rows", () => {
   assert.match(migration, /trigger_row\.tgfoid::regprocedure/);
   assert.match(migration, /create trigger fwb_program_notifications[\s\S]*new\.account_type = ''client''/);
   assert.match(migration, /create trigger fwb_client_session_balance_notifications[\s\S]*new\.account_type = ''client''/);
+});
+
+test("assigns beta testers app access only and prevents coaching membership on beta rows", () => {
+  assert.match(membershipMigration, /when account_type = 'beta_tester' then 'app_access_only'/);
+  assert.match(membershipMigration, /account_type <> 'beta_tester' or membership_type = 'app_access_only'/);
+  assert.match(membershipMigration, /'personal_training', 'online_training', 'app_access_only'/);
 });

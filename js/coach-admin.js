@@ -2271,6 +2271,7 @@ function programFromForm(form) {
     client_email: clientEmail,
     client_name: clientName || fallbackClientName || "Client",
     client_phone: formValue(form, "client_phone"),
+    membership_type: formValue(form, "membership_type") || "app_access_only",
     initials: formValue(form, "initials") || initialsFromName(clientName || fallbackClientName),
     program_title: formValue(form, "program_title") || "Client Program",
     program_summary: formValue(form, "program_summary"),
@@ -2302,6 +2303,7 @@ function newClientProgramFromInvite(form) {
     client_email: clientEmail,
     client_name: clientName || fallbackClientName || "Client",
     client_phone: formValue(form, "invite_client_phone"),
+    membership_type: "app_access_only",
     initials: initialsFromName(clientName || fallbackClientName),
     program_title: "Client Program",
     program_summary: "",
@@ -2344,6 +2346,7 @@ function profileFromForm(form) {
     client_email: clientEmail,
     client_name: clientName || fallbackClientName || "Client",
     client_phone: formValue(form, "client_phone"),
+    membership_type: formValue(form, "membership_type") || "app_access_only",
     initials: (formValue(form, "initials") || initialsFromName(clientName || fallbackClientName)).slice(0, 4).toUpperCase(),
     height: formValue(form, "height") || "Not set",
     starting_weight: formValue(form, "starting_weight") || "Not set",
@@ -2498,6 +2501,7 @@ function profileChanged(program, profile) {
   return normalizeEmail(program.client_email) !== profile.client_email ||
     String(program.client_name || "") !== profile.client_name ||
     String(program.client_phone || "") !== profile.client_phone ||
+    String(program.membership_type || "app_access_only") !== profile.membership_type ||
     String(program.initials || "") !== profile.initials ||
     String(program.height || "") !== profile.height ||
     String(program.starting_weight || "") !== profile.starting_weight ||
@@ -2767,11 +2771,14 @@ function renderClientOnboardingSummary(program = {}) {
   const questionnaire = clientFitnessQuestionnaires.find((item) => normalizeEmail(item.linked_client_email) === email);
   const profile = questionnaire?.answers && typeof questionnaire.answers === "object" ? questionnaire.answers : {};
   const rows = [
-    ["Primary goal", profile.fitness_goal || program.fitness_goal],
-    ["Training days", profile.training_days_per_week ? `${profile.training_days_per_week} per week` : ""],
+    ["Primary goal", profile.fitness_goals || profile.fitness_goal || program.fitness_goal],
+    ["Training days", (profile.training_frequency || profile.training_days_per_week) ? `${profile.training_frequency || profile.training_days_per_week} per week` : ""],
     ["Experience", profile.training_experience],
-    ["Equipment", profile.available_equipment],
-    ["Injuries / limitations", profile.limitations]
+    ["Equipment", profile.training_equipment || profile.available_equipment],
+    ["Injuries / limitations", profile.pain_or_injuries || profile.limitations],
+    ["Movements to avoid", profile.avoid_movements],
+    ["Weak areas", profile.strengthen_weaknesses],
+    ["Nutrition macros", [profile.macro_calories && `${profile.macro_calories} kcal`, profile.macro_protein && `${profile.macro_protein}g protein`, profile.macro_carbs && `${profile.macro_carbs}g carbs`, profile.macro_fat && `${profile.macro_fat}g fat`].filter(Boolean).join(" · ")]
   ].filter(([, value]) => String(value || "").trim());
 
   if (!summary || !list) return;
@@ -2850,6 +2857,16 @@ function fillForm(program = {}) {
   form.elements.id.value = program.id || "";
   form.elements.client_email.value = program.client_email || "";
   form.elements.client_name.value = program.client_name || "";
+  form.elements.membership_type.value = program.account_type === "beta_tester"
+    ? "app_access_only" : program.membership_type || "app_access_only";
+  form.elements.membership_type.disabled = program.account_type === "beta_tester";
+  const membershipRequestStatus = document.getElementById("client-membership-request-status");
+  if (membershipRequestStatus) {
+    const requested = ({ personal_training: "Personal training", online_training: "Online training", app_access_only: "App access only" })[program.membership_requested_type];
+    membershipRequestStatus.textContent = requested && program.membership_requested_type !== program.membership_type
+      ? `Client requested ${requested}. Select it and save this profile to confirm membership.`
+      : requested ? `Client selected ${requested}; membership confirmed.` : "No first login membership request yet.";
+  }
   form.elements.client_phone.value = program.client_phone || "";
   form.elements.initials.value = program.initials || "";
   form.elements.height.value = program.height || "";
@@ -4103,6 +4120,10 @@ function renderCoachHomeCalendar(entries = coachHomeScheduleEntries()) {
 
 function renderCoachHome() {
   const activeClients = activeClientPrograms();
+  const pendingMembershipRequests = activeClients.filter((program) =>
+    program.account_type !== "beta_tester" &&
+    ["personal_training", "online_training"].includes(program.membership_requested_type) &&
+    program.membership_requested_type !== program.membership_type);
   const latestByEmail = latestWorkoutByClient();
   const recentWorkouts = Array.from(latestByEmail.values())
     .sort((a, b) => String(b.completed_at || b.last_updated || b.entry_date || "").localeCompare(String(a.completed_at || a.last_updated || a.entry_date || "")));
@@ -4120,7 +4141,8 @@ function renderCoachHome() {
     }).length;
   const attentionEmails = new Set([
     ...sessionAlerts.map((entry) => normalizeEmail(entry.program.client_email)),
-    ...inactiveClients.map((entry) => normalizeEmail(entry.program.client_email))
+    ...inactiveClients.map((entry) => normalizeEmail(entry.program.client_email)),
+    ...pendingMembershipRequests.map((program) => normalizeEmail(program.client_email))
   ]);
   const setText = (id, value) => {
     const node = document.getElementById(id);
@@ -4154,6 +4176,21 @@ function renderCoachHome() {
           </article>
         `).join("")
       : '<p class="empty-state">No client workouts have been saved yet.</p>';
+  }
+
+  const membershipList = document.getElementById("coach-home-membership-requests");
+  if (membershipList) {
+    membershipList.innerHTML = pendingMembershipRequests.length
+      ? pendingMembershipRequests.map((program) => `
+          <article class="coach-home-list-row">
+            <div class="coach-home-row-copy">
+              <strong>${escapeHtml(program.client_name || program.client_email)}</strong>
+              <span>Requests ${program.membership_requested_type === "personal_training" ? "Personal training" : "Online training"}</span>
+            </div>
+            <button class="coach-home-row-action" type="button" data-coach-home-open-membership="${escapeHtml(normalizeEmail(program.client_email))}">Review</button>
+          </article>
+        `).join("")
+      : '<p class="empty-state">No membership requests are waiting.</p>';
   }
 
   renderCoachHomeCalendar(scheduledSessions);
@@ -6212,7 +6249,7 @@ function openCoachHomeShortcut(destination) {
   const targetIds = {
     workouts: "coach-home-recent-title",
     sessions: "coach-home-sheets-title",
-    attention: "coach-home-session-alert-title"
+    attention: document.querySelector?.("#coach-home-membership-requests .coach-home-list-row") ? "coach-home-membership-title" : "coach-home-session-alert-title"
   };
   const target = document.getElementById(targetIds[destination]);
   if (!target) return;
@@ -6238,6 +6275,7 @@ function handleCoachHomeActions() {
     }
     const logsButton = event.target.closest("[data-coach-home-open-logs]");
     const sessionsButton = event.target.closest("[data-coach-home-open-sessions]");
+    const membershipButton = event.target.closest("[data-coach-home-open-membership]");
     const tabButton = event.target.closest("[data-coach-home-tab]");
     const refreshCalendarButton = event.target.closest("[data-coach-home-refresh-calendar]");
 
@@ -6256,6 +6294,10 @@ function handleCoachHomeActions() {
 
     if (sessionsButton) {
       openCoachHomeClientSection(sessionsButton.dataset.coachHomeOpenSessions, "sessions");
+      return;
+    }
+    if (membershipButton) {
+      openCoachHomeClientSection(membershipButton.dataset.coachHomeOpenMembership, "profile");
       return;
     }
 
