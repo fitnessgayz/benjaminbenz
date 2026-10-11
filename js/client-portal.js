@@ -6788,6 +6788,12 @@ async function submitFirstLoginFitnessQuestionnaire(form, path) {
 }
 
 function initializeClientFitnessPlanHelp() {
+  document.getElementById("workout-plan-result")?.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-fitness-plan-day]");
+    const item = clientFitnessPlan?.workouts?.[Number(button?.dataset.fitnessPlanDay)];
+    if (!button || !item) return;
+    try { useGeneratedClientWorkout(item.workout); } catch (error) { window.alert(error.message); }
+  });
   const dialog = document.getElementById("workout-plan-dialog");
   const form = document.getElementById("workout-plan-form");
   if (!dialog || !form) return;
@@ -6876,12 +6882,6 @@ function initializeClientFitnessPlanHelp() {
       buttons.forEach((button) => { button.disabled = false; });
       refreshCoachAccess();
     }
-  });
-  document.getElementById("workout-plan-result")?.addEventListener("click", (event) => {
-    const button = event.target.closest("[data-fitness-plan-day]");
-    const item = clientFitnessPlan?.workouts?.[Number(button?.dataset.fitnessPlanDay)];
-    if (!button || !item) return;
-    try { useGeneratedClientWorkout(item.workout); } catch (error) { window.alert(error.message); }
   });
 }
 
@@ -17749,7 +17749,6 @@ function dismissClientHomeCheckinPrompt(restoreFocus = true) {
 
 function maybeShowClientHomeCheckinPrompt() {
   if (!dailyCheckinPromptEnabled() || !activeDashboardUser || activeClientDashboardTab !== "home"
-      || firstLoginFitnessQuestionnaireRequired()
       || isCoachDashboardPreview || isCoachPortalEmail(activeDashboardUser.email)
       || workoutElapsedTimerState || document.querySelector("dialog[open]")) return;
   const email = activeClientEmail;
@@ -20477,7 +20476,6 @@ async function loadDashboard() {
     clientAvailablePrograms = Array.isArray(programRows) ? programRows : [];
     renderProgram(data);
     void loadClientFitnessPlan(user.id);
-    maybeShowFirstLoginFitnessQuestionnaire();
     configureClientSessionBalance();
     configureClientGoogleHealth();
     configureClientAppleHealth();
