@@ -6,13 +6,13 @@ const test = require("node:test");
 const root = path.resolve(__dirname, "..");
 const read = (file) => fs.readFileSync(path.join(root, file), "utf8");
 
-test("first login questionnaire loads before the app tour and prevents other prompts", () => {
+test("workout plan help is paused without blocking the app tour or other prompts", () => {
   const html = read("client-dashboard.html");
   const portal = read("js/client-portal.js");
-  assert.ok(html.indexOf('id="workout-plan-dialog"') < html.indexOf('src="js/client-web-tour.js'));
-  assert.match(portal, /renderProgram\(data\);\s*void loadClientFitnessPlan\(user\.id\);\s*maybeShowFirstLoginFitnessQuestionnaire\(\)/);
-  assert.match(portal, /dialog\.close\(\);\s*window\.requestAnimationFrame\?\.\(\(\) => \{\s*if \(firstLogin\) document\.querySelector\("\[data-client-web-tour-open\]"\)\?\.click\(\)/);
-  assert.match(portal, /function maybeShowClientHomeCheckinPrompt\(\) \{[\s\S]*?firstLoginFitnessQuestionnaireRequired\(\)/);
+  assert.doesNotMatch(html, /id="workout-plan-dialog"|data-workout-plan-help-open/);
+  assert.doesNotMatch(portal, /\s+maybeShowFirstLoginFitnessQuestionnaire\(\);/);
+  assert.doesNotMatch(portal.match(/function maybeShowClientHomeCheckinPrompt\(\) \{[\s\S]*?\n\}/)?.[0] || "", /firstLoginFitnessQuestionnaireRequired\(\)/);
+  assert.match(html, /src="js\/client-web-tour\.js/);
 });
 
 test("membership confirmation and beta access are enforced at the server", () => {
