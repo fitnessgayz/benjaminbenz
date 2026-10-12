@@ -13,6 +13,8 @@
   let selected = null;
   let myPhotoCount = 0;
   const avatars = { strength: '💪', runner: '🏃', cycling: '🚴', boxing: '🥊', yoga: '🧘', swimming: '🏊', martial: '🥋', star: '⭐', lifting: '🏋️', walking: '🚶', hiking: '🥾', basketball: '🏀', soccer: '⚽', tennis: '🎾', rowing: '🚣', climbing: '🧗' };
+  const avatarEmoji = id => window.FWB_COMMUNITY_AVATAR?.emojiFor(id) ||
+    (Object.hasOwn(avatars, id) ? avatars[id] : avatars.strength);
 
   function visiblePlaces() {
     return places.filter((place) => !$("#gym-directory-hotels").checked || place.kind === "hotel_gym");
@@ -59,7 +61,7 @@
     reviews.innerHTML = items.length ? items.map((review) => {
       const safeName = escapeHtml(review.nickname || "Client");
       const stars = "★".repeat(Number(review.rating));
-      return `<article class="gym-directory-review"><strong>${avatars[review.avatar_id] || avatars.strength} ${safeName}</strong> <span aria-label="${review.rating} out of 5 stars">${stars}</span>
+      return `<article class="gym-directory-review"><strong>${escapeHtml(avatarEmoji(review.avatar_id))} ${safeName}</strong> <span aria-label="${review.rating} out of 5 stars">${stars}</span>
         <p>${escapeHtml(review.body)}</p><div class="gym-directory-review-photos" data-review-photos="${escapeHtml(review.id)}"></div></article>`;
     }).join("") : '<p class="empty-state">No reviews yet. Be the first to share your experience.</p>';
     for (const review of items) {

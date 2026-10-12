@@ -1,6 +1,16 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { achievementProjection, mount } = require('../js/client-community-connections.js');
+const { achievementProjection, customAvatarID, avatarEmoji, mount } = require('../js/client-community-connections.js');
+
+test('one custom emoji round trips while text and multiple emoji are rejected', () => {
+  for (const emoji of ['🔥', '👩🏽‍💻', '🇺🇸', '❤️', '1️⃣']) {
+    assert.equal(customAvatarID(emoji), `emoji:${emoji}`);
+    assert.equal(avatarEmoji(`emoji:${emoji}`), emoji);
+  }
+  for (const value of ['', 'hello', 'A', '🔥🔥', '🔥 text']) assert.equal(customAvatarID(value), '');
+  assert.equal(avatarEmoji('emoji:<script>'), '💪');
+  assert.equal(avatarEmoji('runner'), '🏃');
+});
 
 test('community upload includes earned badge IDs and XP, never workout or health details', () => {
   const snapshot = {
@@ -35,7 +45,8 @@ test('accepted connection shows shared achievements without reading workout reco
     '#client-community-own-code', '#client-community-invite-code', '[data-community-connection-list]',
     '[data-community-connection-status]', '[data-community-join-button]', '[data-community-invite]',
     '[data-community-copy]', '[data-community-rotate]', '[data-community-leave]',
-    '[data-community-profile-save]', '[data-community-own-props]', '[data-community-avatar-more]'
+    '[data-community-profile-save]', '[data-community-own-props]', '[data-community-avatar-more]',
+    '[data-community-custom-emoji]', '[data-community-avatar-custom]'
   ].map(selector => [selector, node()]));
   const avatarButtons = ['strength', 'runner', 'cycling', 'boxing', 'yoga', 'swimming', 'martial', 'star']
     .map(id => Object.assign(node(), { dataset: { communityAvatar: id } }));
@@ -53,7 +64,7 @@ test('accepted connection shows shared achievements without reading workout reco
   const rows = {
     client_community_profiles: [
       { user_id: owner, display_name: 'Alex', avatar_id: 'strength', invite_code: 'AAAAAAAAAAAAAAAA' },
-      { user_id: peer, display_name: 'Jordan', avatar_id: 'runner' }
+      { user_id: peer, display_name: 'Jordan', avatar_id: 'emoji:🔥' }
     ],
     client_community_preferences: [{ user_id: owner, badges_opt_in: true, xp_opt_in: false,
       workout_count_opt_in: false, gym_visits_opt_in: false }],
@@ -73,7 +84,7 @@ test('accepted connection shows shared achievements without reading workout reco
         : name === 'community_props_summary' ? rows.props
           : name === 'community_public_progress' ? [{ nickname: 'Sam', avatar_id: 'star',
             xp: null, badge_ids: null, workout_count: 3, gym_visit_count: null }]
-            : name === 'community_wall_feed' ? [{ event_id: 'workout:one', nickname: 'Sam', avatar_id: 'star',
+            : name === 'community_wall_feed' ? [{ event_id: 'workout:one', nickname: 'Sam', avatar_id: 'emoji:🎉',
               headline: 'Completed a workout', occurred_at: '2026-10-05T12:00:00Z', props_count: 2,
               gave_props: false, can_give_props: true, is_own: false }]
             : name === 'community_challenge_summary' ? [] : true, error: null });
@@ -107,7 +118,7 @@ test('accepted connection shows shared achievements without reading workout reco
   assert.equal(elements['#client-community-own-code'].textContent, 'AAAAAAAAAAAAAAAA');
   assert.equal(elements['[data-community-own-props]'].textContent, '2');
   const connection = elements['[data-community-connection-list]'].children[0];
-  assert.equal(connection.children[0].textContent, '🏃');
+  assert.equal(connection.children[0].textContent, '🔥');
   assert.equal(connection.children[1].textContent, 'Jordan');
   assert.ok(connection.children.some(child => /First Spark|workout 1/i.test(child.textContent)));
   assert.ok(connection.children.some(child => /8 gym visits/.test(child.textContent)));
@@ -119,6 +130,7 @@ test('accepted connection shows shared achievements without reading workout reco
   assert.ok(calls.includes('community_wall_feed'));
   assert.equal(publicElements['[data-community-feed-list]'].children[0].children[1].textContent, 'Sam');
   const wallCard = publicElements['[data-community-wall-list]'].children[0];
+  assert.equal(wallCard.children[0].children[0].textContent, '🎉');
   assert.equal(wallCard.children[1].textContent, 'Completed a workout');
   assert.equal(wallCard.children[2].children[1].textContent, '2 props');
   wallCard.children[2].children[0].listeners.click();
@@ -140,4 +152,11 @@ test('accepted connection shows shared achievements without reading workout reco
   await new Promise(resolve => setImmediate(resolve));
   await new Promise(resolve => setImmediate(resolve));
   assert.ok(calls.some(call => call.profileUpdate?.display_name === 'Alex Fit' && call.profileUpdate.avatar_id === 'yoga'));
+  elements['[data-community-custom-emoji]'].value = '👩🏽‍💻';
+  elements['[data-community-custom-emoji]'].listeners.input();
+  elements['[data-community-avatar-custom]'].listeners.click();
+  elements['[data-community-profile-save]'].listeners.click();
+  await new Promise(resolve => setImmediate(resolve));
+  await new Promise(resolve => setImmediate(resolve));
+  assert.ok(calls.some(call => call.profileUpdate?.avatar_id === 'emoji:👩🏽‍💻'));
 });
