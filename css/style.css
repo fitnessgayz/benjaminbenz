@@ -16014,7 +16014,13 @@ textarea,
 
 .coach-notification-inbox .web-notification-like {
   align-self: center;
+  justify-self: start;
+  width: auto !important;
+  inline-size: auto !important;
+  max-width: calc(100% - 10px) !important;
+  max-inline-size: calc(100% - 10px) !important;
   min-width: 0;
+  min-inline-size: 0 !important;
   min-height: 36px;
   margin: 10px 10px 10px 0;
   padding: 7px 12px;
@@ -16123,6 +16129,10 @@ textarea,
 
   .coach-notification-inbox .web-notification-like {
     justify-self: start;
+    width: auto !important;
+    inline-size: auto !important;
+    max-width: calc(100% - 82px) !important;
+    max-inline-size: calc(100% - 82px) !important;
     margin: 0 14px 13px 68px;
     border: 1px solid color-mix(in srgb, var(--line) 72%, transparent);
   }
@@ -17754,6 +17764,8 @@ body.client-dashboard-page.is-loading > :is(.client-dashboard-tabs,
   }
 
   .coach-notification-heading {
+    min-width: 0;
+    padding-top: 6px;
     padding-right: 56px;
   }
 
@@ -17775,6 +17787,18 @@ body.client-dashboard-page.is-loading > :is(.client-dashboard-tabs,
     top: 16px;
     right: 16px;
     display: grid !important;
+    width: 44px !important;
+    inline-size: 44px !important;
+    max-width: 44px !important;
+    max-inline-size: 44px !important;
+    min-width: 44px !important;
+    min-inline-size: 44px !important;
+    height: 44px !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    border-radius: 50% !important;
+    font-size: 1.7rem !important;
+    text-overflow: clip !important;
   }
 }
 
