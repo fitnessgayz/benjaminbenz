@@ -544,12 +544,19 @@
       if (likeableCoachActivity(row)) {
         const liked = likedNotificationIds.has(row.id);
         const likeButton = global.document.createElement("button");
+        const likeIcon = global.document.createElement("span");
+        const likeLabel = global.document.createElement("span");
         likeButton.type = "button";
         likeButton.className = "web-notification-like";
         likeButton.dataset.webNotificationLike = row.id;
         likeButton.setAttribute("aria-pressed", liked ? "true" : "false");
         likeButton.setAttribute("aria-label", liked ? "Remove props from this client update" : "Give props for this client update");
-        likeButton.textContent = liked ? "💪🏽 Props sent" : "💪🏽 Give props";
+        likeIcon.className = "web-notification-like-icon";
+        likeIcon.setAttribute("aria-hidden", "true");
+        likeIcon.textContent = "💪🏽";
+        likeLabel.className = "web-notification-like-label";
+        likeLabel.textContent = liked ? "Props sent" : "Give props";
+        likeButton.append(likeIcon, likeLabel);
         item.append(likeButton);
       }
       return item;

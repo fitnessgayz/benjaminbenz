@@ -16076,6 +16076,7 @@ textarea,
 }
 
 .coach-notification-inbox .web-notification-like {
+  display: inline-flex !important;
   align-self: center;
   justify-self: start;
   width: auto !important;
@@ -16085,11 +16086,35 @@ textarea,
   min-width: 0;
   min-inline-size: 0 !important;
   min-height: 36px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   margin: 10px 10px 10px 0;
   padding: 7px 12px;
   border: 1px solid color-mix(in srgb, var(--line) 72%, transparent);
   border-radius: 999px;
-  font-size: .72rem;
+  overflow: visible !important;
+  font-size: .7rem !important;
+  text-overflow: clip !important;
+  white-space: nowrap;
+}
+
+.coach-notification-inbox .web-notification-like-icon {
+  display: inline-block;
+  flex: 0 0 auto;
+  color: inherit;
+  font-size: .82rem !important;
+  line-height: 1;
+}
+
+.coach-notification-inbox .web-notification-like-label {
+  display: inline-block;
+  min-width: 0;
+  overflow: visible;
+  color: inherit;
+  font-size: inherit;
+  line-height: 1;
+  text-overflow: clip;
   white-space: nowrap;
 }
 
@@ -16239,11 +16264,15 @@ textarea,
   }
 
   .coach-notification-inbox .web-notification-like {
-    max-width: 105px !important;
-    max-inline-size: 105px !important;
+    max-width: 112px !important;
+    max-inline-size: 112px !important;
     margin-right: 8px;
     padding: 7px 9px;
     font-size: .66rem !important;
+  }
+
+  .coach-notification-inbox .web-notification-like-icon {
+    font-size: .76rem !important;
   }
 
   .coach-notification-actions {

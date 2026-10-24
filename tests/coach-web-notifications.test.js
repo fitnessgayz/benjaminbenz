@@ -132,6 +132,7 @@ test("coach notification settings stay compact and stack on narrow screens", () 
   assert.match(styleSource, /\.coach-notification-inbox \.web-notification-item\s*\{[^}]*border-radius:\s*16px/s);
   assert.match(styleSource, /\.coach-notification-inbox \.web-notification-like\s*\{[^}]*border-radius:\s*999px/s);
   assert.match(styleSource, /\.coach-notification-inbox \.web-notification-like\s*\{[^}]*width:\s*auto\s*!important/s);
+  assert.match(styleSource, /\.coach-notification-inbox \.web-notification-like-icon\s*\{[^}]*font-size:\s*\.82rem\s*!important/s);
   assert.match(styleSource, /\.coach-notification-inbox \.coach-notification-mark-all\s*\{[^}]*display:\s*inline-flex\s*!important[^}]*border-radius:\s*12px/s);
   assert.match(styleSource, /\.coach-notification-summary\s*\{[^}]*grid-template-columns:\s*repeat\(3, minmax\(0, 1fr\)\)/s);
   assert.match(darkStyleSource, /body\.coach-admin-page \.coach-notification-inbox \.web-notification-item\.is-unread\s*\{[^}]*background:\s*var\(--surface-soft\)/s);

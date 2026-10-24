@@ -161,6 +161,9 @@ test("coach inbox presents an accessible like control and persists the toggle", 
   assert.equal(harness.workoutSummary.textContent, "1");
   assert.equal(harness.checkInSummary.textContent, "0");
   assert.ok(likeButton);
+  assert.equal(likeButton.children[0].className, "web-notification-like-icon");
+  assert.equal(likeButton.children[0].textContent, "💪🏽");
+  assert.equal(likeButton.children[1].textContent, "Give props");
   assert.equal(likeButton["aria-pressed"], "false");
   assert.equal(likeButton["aria-label"], "Give props for this client update");
 
@@ -174,6 +177,7 @@ test("coach inbox presents an accessible like control and persists the toggle", 
   assert.equal(harness.rpcCalls[0].args.p_notification_id, "notice-1");
   const updatedButton = harness.list.children[0].children.find((child) => child.dataset.webNotificationLike);
   assert.equal(updatedButton["aria-pressed"], "true");
+  assert.equal(updatedButton.children[1].textContent, "Props sent");
   assert.match(harness.status.textContent, /Client notified/);
 });
 
@@ -187,7 +191,8 @@ test("deployed notification fallback keeps activity metadata and like controls",
   const firstItem = harness.list.children[0];
   const likeButton = firstItem.children.find((child) => child.dataset.webNotificationLike);
   assert.ok(likeButton);
-  assert.equal(likeButton.textContent, "💪🏽 Give props");
+  assert.equal(likeButton.children[0].textContent, "💪🏽");
+  assert.equal(likeButton.children[1].textContent, "Give props");
 });
 
 test("production compatibility feed resolves legacy activity without exposing arbitrary recipients", () => {
@@ -205,7 +210,8 @@ test("production compatibility feed resolves legacy activity without exposing ar
 test("customer-facing reaction copy uses props without renaming stable database identifiers", () => {
   assert.match(propsMigration, /Benjamin gave you props for your workout/);
   assert.match(notificationsSource, /Give props for this client update/);
-  assert.match(notificationsSource, /💪🏽 Props sent/);
+  assert.match(notificationsSource, /likeIcon\.textContent = "💪🏽"/);
+  assert.match(notificationsSource, /likeLabel\.textContent = liked \? "Props sent" : "Give props"/);
   assert.doesNotMatch(notificationsSource, /Like this client update|♥ Liked|Client notified that you liked/);
   assert.match(client, /Coach replies, props \+ form reviews/);
 });

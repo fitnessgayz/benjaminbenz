@@ -1120,6 +1120,9 @@
   color: #071a31;
   opacity: .88;
 }
+:root body.coach-admin-page .web-notification-like :is(.web-notification-like-icon, .web-notification-like-label) {
+  color: inherit;
+}
 
 /* Compact coach activity cards stay within the coach blue and gold palette. */
 :root body.coach-admin-page .coach-notification-inbox .web-notification-item {
