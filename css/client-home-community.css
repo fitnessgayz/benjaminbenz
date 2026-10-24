@@ -264,6 +264,11 @@
 :root body.client-dashboard-page .client-community-connections input { width: 100%; min-height: 44px; min-width: 0; box-sizing: border-box; border: 1px solid #5e6463; border-radius: 10px; background: #171c1b; color: #fff; padding: 9px 12px; font: inherit; }
 :root body.client-dashboard-page .client-community-avatar-picker { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin: 14px 0; padding: 12px; border: 1px solid #5e6463; border-radius: 12px; }
 :root body.client-dashboard-page .client-community-avatar-picker legend { padding: 0 5px; font-size: 13px; font-weight: 700; }
+:root body.client-dashboard-page .client-community-custom-avatar { display: grid; gap: 7px; margin: 12px 0; }
+:root body.client-dashboard-page .client-community-custom-avatar-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+:root body.client-dashboard-page .client-community-custom-avatar input { min-width: 0; font-size: 20px; }
+:root body.client-dashboard-page .client-community-custom-avatar small { color: var(--client-muted); }
+:root body.client-dashboard-page .client-community-custom-avatar button[aria-pressed="true"] { border-color: #ffd600; color: #ffd600; }
 :root body.client-dashboard-page .client-community-connections .client-community-avatar-picker button { min-width: 0; min-height: 58px; padding: 4px; border: 2px solid transparent; background: #171c1b; font-size: 29px; }
 :root body.client-dashboard-page .client-community-connections .client-community-avatar-picker button[aria-pressed="true"] { border-color: var(--client-neon); background: #102e52; }
 :root body.client-dashboard-page .client-community-avatar { display: inline-grid; place-items: center; width: 42px; height: 42px; margin-right: 10px; border-radius: 50%; background: #26364a; font-size: 24px; vertical-align: middle; }
