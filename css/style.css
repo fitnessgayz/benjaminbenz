@@ -15902,6 +15902,128 @@ textarea,
   margin-bottom: 0;
 }
 
+.coach-notification-inbox-title,
+.coach-notification-inbox-title-row {
+  min-width: 0;
+}
+
+.coach-notification-inbox-title-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.coach-notification-inbox-count {
+  display: inline-grid;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 7px;
+  place-items: center;
+  border-radius: 999px;
+  color: #071006;
+  background: var(--lime);
+  font-size: .72rem;
+  font-weight: 950;
+  line-height: 1;
+}
+
+.coach-notification-inbox-count[hidden] {
+  display: none;
+}
+
+.coach-notification-inbox .coach-notification-mark-all {
+  min-height: 44px;
+  padding: 6px 2px;
+  border: 0;
+  color: #546b00;
+  background: transparent;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.coach-notification-inbox .web-notification-list {
+  gap: 10px;
+}
+
+.coach-notification-inbox .web-notification-item {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-left: 4px solid transparent;
+  border-radius: 16px;
+  background: #fff;
+}
+
+.coach-notification-inbox .web-notification-item.is-unread {
+  border-left-color: var(--lime);
+  background: #fbfff0;
+}
+
+.coach-notification-inbox .web-notification-item a,
+.coach-notification-inbox .web-notification-item.is-unread a {
+  grid-template-columns: 42px minmax(0, 1fr);
+  column-gap: 12px;
+  row-gap: 3px;
+  padding: 13px 14px;
+  border: 0;
+  background: transparent;
+}
+
+.coach-notification-inbox .web-notification-item a:hover,
+.coach-notification-inbox .web-notification-item a:focus-visible {
+  border: 0;
+  background: rgba(215, 255, 63, .11);
+  box-shadow: inset 0 0 0 2px rgba(112, 137, 10, .42);
+}
+
+.coach-notification-inbox .web-notification-type-icon {
+  grid-column: 1;
+  grid-row: 1 / span 3;
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  align-self: start;
+  border: 1px solid rgba(97, 117, 19, .35);
+  border-radius: 12px;
+  color: #273400;
+  background: color-mix(in srgb, var(--lime) 24%, white);
+  font-size: 1.05rem;
+  font-weight: 950;
+}
+
+.coach-notification-inbox .web-notification-item strong,
+.coach-notification-inbox .web-notification-item a > span:not(.web-notification-type-icon),
+.coach-notification-inbox .web-notification-item time {
+  grid-column: 2;
+}
+
+.coach-notification-inbox .web-notification-item strong {
+  font-size: .94rem;
+  line-height: 1.25;
+}
+
+.coach-notification-inbox .web-notification-item a > span:not(.web-notification-type-icon) {
+  font-size: .78rem;
+  line-height: 1.35;
+}
+
+.coach-notification-inbox .web-notification-item time {
+  margin-top: 2px;
+  font-size: .64rem;
+}
+
+.coach-notification-inbox .web-notification-like {
+  align-self: center;
+  min-width: 0;
+  min-height: 36px;
+  margin: 10px 10px 10px 0;
+  padding: 7px 12px;
+  border: 1px solid color-mix(in srgb, var(--line) 72%, transparent);
+  border-radius: 999px;
+  font-size: .72rem;
+  white-space: nowrap;
+}
+
 .coach-notification-section-heading > p {
   max-width: 34rem;
   color: #70746c;
@@ -15976,12 +16098,33 @@ textarea,
     width: 100%;
   }
 
+  .coach-notification-inbox .coach-notification-section-heading {
+    align-items: end;
+    flex-direction: row;
+  }
+
+  .coach-notification-inbox .coach-notification-mark-all {
+    width: auto;
+  }
+
   .coach-notification-section-heading > p {
     text-align: left;
   }
 
   .coach-notification-preference-grid {
     grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .coach-notification-inbox .web-notification-item {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .coach-notification-inbox .web-notification-like {
+    justify-self: start;
+    margin: 0 14px 13px 68px;
+    border: 1px solid color-mix(in srgb, var(--line) 72%, transparent);
   }
 }
 
@@ -17614,12 +17757,30 @@ body.client-dashboard-page.is-loading > :is(.client-dashboard-tabs,
     padding-right: 56px;
   }
 
+  .coach-notification-heading h2 {
+    margin: 4px 0 10px;
+    font-size: clamp(2.5rem, 11vw, 4.25rem);
+    line-height: .94;
+    letter-spacing: -.055em;
+  }
+
+  .coach-notification-heading p:last-child {
+    font-size: .98rem;
+    line-height: 1.5;
+  }
+
   .coach-notification-close {
     position: absolute;
     z-index: 2;
     top: 16px;
     right: 16px;
     display: grid !important;
+  }
+}
+
+@media (max-width: 420px) {
+  .coach-notification-heading h2 {
+    font-size: clamp(2.35rem, 11.5vw, 3.2rem);
   }
 }
 

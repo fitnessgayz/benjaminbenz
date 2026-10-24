@@ -8,6 +8,7 @@ const adminHtml = fs.readFileSync(path.join(projectRoot, "coach-admin.html"), "u
 const adminSource = fs.readFileSync(path.join(projectRoot, "js/coach-admin.js"), "utf8");
 const sharedSource = fs.readFileSync(path.join(projectRoot, "js/web-notifications.js"), "utf8");
 const styleSource = fs.readFileSync(path.join(projectRoot, "css/style.css"), "utf8");
+const darkStyleSource = fs.readFileSync(path.join(projectRoot, "css/fwb-dark-theme.css"), "utf8");
 
 const coachPreferenceKeys = [
   "client_logins",
@@ -54,6 +55,7 @@ test("Settings panel keeps every notification feature together", () => {
   assert.match(settingsPanel, /<p class="kicker">Settings<\/p>/);
   assert.match(settingsPanel, /<h2 id="coach-notification-title">Coach settings<\/h2>/);
   assert.match(settingsPanel, /<h3 id="coach-notification-inbox-title">Recent activity<\/h3>/);
+  assert.match(settingsPanel, /coach-notification-inbox-count[^>]*data-web-notification-unread[^>]*hidden/);
   assert.match(settingsPanel, /data-web-notification-enable/);
   assert.match(settingsPanel, /data-web-notification-test[^>]*disabled/);
   assert.match(settingsPanel, /data-web-notification-status[^>]*role="status"[^>]*aria-live="polite"/);
@@ -123,6 +125,11 @@ test("coach notification settings stay compact and stack on narrow screens", () 
   assert.match(styleSource, /@media \(max-width: 780px\)[\s\S]*?\.coach-notification-preference-grid\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\)/s);
   assert.match(styleSource, /\.admin-nav-unread-count\s*\{[^}]*position:\s*absolute/s);
   assert.match(styleSource, /@media \(max-width: 900px\)[\s\S]*?\.coach-notification-close\s*\{[^}]*position:\s*absolute[^}]*top:\s*16px[^}]*right:\s*16px/s);
+  assert.match(styleSource, /\.coach-notification-inbox \.web-notification-item\s*\{[^}]*border-radius:\s*16px/s);
+  assert.match(styleSource, /\.coach-notification-inbox \.web-notification-like\s*\{[^}]*border-radius:\s*999px/s);
+  assert.match(styleSource, /\.coach-notification-inbox \.coach-notification-mark-all\s*\{[^}]*background:\s*transparent/s);
+  assert.match(darkStyleSource, /body\.coach-admin-page \.coach-notification-inbox \.web-notification-item\.is-unread\s*\{[^}]*background:\s*var\(--surface-soft\)/s);
+  assert.match(darkStyleSource, /body\.coach-admin-page \.coach-notification-inbox \.web-notification-type-icon\s*\{[^}]*color:\s*var\(--lime\)/s);
 });
 
 test("mobile Home exposes Settings and recent activity in a dismissible overlay", () => {

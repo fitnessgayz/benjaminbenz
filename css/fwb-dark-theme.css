@@ -1121,6 +1121,36 @@
   opacity: .88;
 }
 
+/* Compact coach activity cards stay within the coach blue and gold palette. */
+:root body.coach-admin-page .coach-notification-inbox .web-notification-item {
+  color: var(--ink);
+  background: var(--surface);
+  border-color: var(--line);
+}
+:root body.coach-admin-page .coach-notification-inbox .web-notification-item.is-unread {
+  background: var(--surface-soft);
+  border-left-color: var(--lime);
+}
+:root body.coach-admin-page .coach-notification-inbox .web-notification-item a,
+:root body.coach-admin-page .coach-notification-inbox .web-notification-item.is-unread a {
+  color: var(--ink);
+  background: transparent;
+}
+:root body.coach-admin-page .coach-notification-inbox .web-notification-item a:is(:hover, :focus-visible) {
+  color: var(--ink);
+  background: var(--selected-surface);
+  border-color: transparent;
+}
+:root body.coach-admin-page .coach-notification-inbox .web-notification-type-icon {
+  color: var(--lime);
+  background: var(--selected-surface);
+  border-color: var(--line);
+}
+:root body.coach-admin-page .coach-notification-inbox .coach-notification-mark-all {
+  color: var(--secondary-accent);
+  background: transparent;
+}
+
 /* The coach logger defines an isolated palette inside each workout group. */
 :root body.coach-workout-log-page .coach-workout-group-shell {
   --coach-grouped-ink: var(--ink); --coach-grouped-muted: var(--muted);

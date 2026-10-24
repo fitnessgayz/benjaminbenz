@@ -507,10 +507,21 @@
     function notificationItem(row) {
       const item = global.document.createElement("li");
       const link = global.document.createElement("a");
+      const typeIcon = global.document.createElement("span");
       const title = global.document.createElement("strong");
       const body = global.document.createElement("span");
       const date = global.document.createElement("time");
       const actionUrl = safeActionUrl(row.action_url, role);
+      const notificationKind = String(row.kind || "general").toLowerCase();
+      const activityType = String(row?.metadata?.activity_type || "").toLowerCase();
+      const iconKind = activityType || notificationKind;
+      const notificationIcons = {
+        achievement: "★",
+        check_in_submitted: "↗",
+        client_login: "↗",
+        gym_checkin: "↗",
+        workout_completed: "✓"
+      };
 
       item.className = "web-notification-item";
       item.classList.toggle("is-unread", !row.read_at);
@@ -520,7 +531,15 @@
       body.textContent = String(row.body || "Open FWB for the latest update.");
       date.dateTime = String(row.created_at || "");
       date.textContent = formatNotificationDate(row.created_at);
-      link.append(title, body, date);
+      if (role === "coach") {
+        item.dataset.webNotificationKind = notificationKind;
+        typeIcon.className = "web-notification-type-icon";
+        typeIcon.setAttribute("aria-hidden", "true");
+        typeIcon.textContent = notificationIcons[iconKind] || "•";
+        link.append(typeIcon, title, body, date);
+      } else {
+        link.append(title, body, date);
+      }
       item.append(link);
       if (likeableCoachActivity(row)) {
         const liked = likedNotificationIds.has(row.id);

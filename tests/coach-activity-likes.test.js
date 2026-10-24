@@ -145,7 +145,12 @@ test("coach inbox presents an accessible like control and persists the toggle", 
   const harness = coachHarness();
   assert.equal(await harness.controller.init(), true);
   const firstItem = harness.list.children[0];
+  const notificationLink = firstItem.children[0];
+  const typeIcon = notificationLink.children.find((child) => child.className === "web-notification-type-icon");
   const likeButton = firstItem.children.find((child) => child.dataset.webNotificationLike);
+  assert.equal(firstItem.dataset.webNotificationKind, "workout_completed");
+  assert.equal(typeIcon.textContent, "✓");
+  assert.equal(typeIcon["aria-hidden"], "true");
   assert.ok(likeButton);
   assert.equal(likeButton["aria-pressed"], "false");
   assert.equal(likeButton["aria-label"], "Give props for this client update");
