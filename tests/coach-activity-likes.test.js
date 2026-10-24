@@ -39,12 +39,18 @@ function coachHarness({ deployedBackend = false } = {}) {
   const badge = element("span");
   const markAll = element("button");
   const status = element("p");
+  const unreadSummary = element("strong");
+  const workoutSummary = element("strong");
+  const checkInSummary = element("strong");
   const selectors = new Map([
     ["[data-web-notification-list]", list],
     ["[data-web-notification-empty]", empty],
     ["[data-web-notification-unread]", badge],
     ["[data-web-notification-mark-all]", markAll],
-    ["[data-web-notification-status]", status]
+    ["[data-web-notification-status]", status],
+    ['[data-web-notification-summary="unread"]', unreadSummary],
+    ['[data-web-notification-summary="workouts"]', workoutSummary],
+    ['[data-web-notification-summary="checkins"]', checkInSummary]
   ]);
   const listeners = new Map();
   const rootElement = element("section");
@@ -115,7 +121,7 @@ function coachHarness({ deployedBackend = false } = {}) {
   const controller = sandbox.window.FWBWebNotifications.createController({
     supabaseClient, user: { id: "coach-1" }, role: "coach", root: rootElement
   });
-  return { controller, list, status, listeners, rpcCalls, selectCalls };
+  return { controller, list, status, listeners, rpcCalls, selectCalls, unreadSummary, workoutSummary, checkInSummary };
 }
 
 test("coach activity likes are source-bound, account-scoped, and notify the client", () => {
@@ -151,6 +157,9 @@ test("coach inbox presents an accessible like control and persists the toggle", 
   assert.equal(firstItem.dataset.webNotificationKind, "workout_completed");
   assert.equal(typeIcon.textContent, "✓");
   assert.equal(typeIcon["aria-hidden"], "true");
+  assert.equal(harness.unreadSummary.textContent, "1");
+  assert.equal(harness.workoutSummary.textContent, "1");
+  assert.equal(harness.checkInSummary.textContent, "0");
   assert.ok(likeButton);
   assert.equal(likeButton["aria-pressed"], "false");
   assert.equal(likeButton["aria-label"], "Give props for this client update");

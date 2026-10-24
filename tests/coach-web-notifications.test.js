@@ -52,8 +52,11 @@ test("Settings panel keeps every notification feature together", () => {
   const settingsPanel = adminHtml.slice(panelStart, panelEnd);
 
   assert.ok(panelStart >= 0);
-  assert.match(settingsPanel, /<p class="kicker">Settings<\/p>/);
   assert.match(settingsPanel, /<h2 id="coach-notification-title">Coach settings<\/h2>/);
+  assert.match(settingsPanel, /<p>Alerts and client activity<\/p>/);
+  assert.match(settingsPanel, /data-web-notification-summary="unread"/);
+  assert.match(settingsPanel, /data-web-notification-summary="workouts"/);
+  assert.match(settingsPanel, /data-web-notification-summary="checkins"/);
   assert.match(settingsPanel, /<h3 id="coach-notification-inbox-title">Recent activity<\/h3>/);
   assert.match(settingsPanel, /coach-notification-inbox-count[^>]*data-web-notification-unread[^>]*hidden/);
   assert.match(settingsPanel, /data-web-notification-enable/);
@@ -62,6 +65,7 @@ test("Settings panel keeps every notification feature together", () => {
   assert.match(settingsPanel, /data-web-notification-list[^>]*aria-live="polite"/);
   assert.match(settingsPanel, /data-web-notification-empty/);
   assert.match(settingsPanel, /data-web-notification-mark-all[^>]*hidden/);
+  assert.match(settingsPanel, /data-web-notification-mark-all[\s\S]*?<span>Mark read<\/span>/);
   assert.ok(
     settingsPanel.indexOf('id="coach-notification-inbox-title"') < settingsPanel.indexOf("data-web-notification-enable"),
     "Alert controls should appear below recent activity"
@@ -128,7 +132,8 @@ test("coach notification settings stay compact and stack on narrow screens", () 
   assert.match(styleSource, /\.coach-notification-inbox \.web-notification-item\s*\{[^}]*border-radius:\s*16px/s);
   assert.match(styleSource, /\.coach-notification-inbox \.web-notification-like\s*\{[^}]*border-radius:\s*999px/s);
   assert.match(styleSource, /\.coach-notification-inbox \.web-notification-like\s*\{[^}]*width:\s*auto\s*!important/s);
-  assert.match(styleSource, /\.coach-notification-inbox \.coach-notification-mark-all\s*\{[^}]*background:\s*transparent/s);
+  assert.match(styleSource, /\.coach-notification-inbox \.coach-notification-mark-all\s*\{[^}]*display:\s*inline-flex\s*!important[^}]*border-radius:\s*12px/s);
+  assert.match(styleSource, /\.coach-notification-summary\s*\{[^}]*grid-template-columns:\s*repeat\(3, minmax\(0, 1fr\)\)/s);
   assert.match(darkStyleSource, /body\.coach-admin-page \.coach-notification-inbox \.web-notification-item\.is-unread\s*\{[^}]*background:\s*var\(--surface-soft\)/s);
   assert.match(darkStyleSource, /body\.coach-admin-page \.coach-notification-inbox \.web-notification-type-icon\s*\{[^}]*color:\s*var\(--lime\)/s);
 });

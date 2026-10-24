@@ -564,7 +564,22 @@
       ].filter(Boolean)));
       const markAllButton = element("[data-web-notification-mark-all]");
       const unreadCount = rows.filter((row) => !row.read_at).length;
+      const workoutCount = rows.filter((row) => String(row?.kind || "").toLowerCase() === "workout_completed").length;
+      const checkInCount = rows.filter((row) => {
+        const kind = String(row?.kind || "").toLowerCase();
+        const activityType = String(row?.metadata?.activity_type || "").toLowerCase();
+        return kind === "check_in_submitted" || activityType === "gym_checkin";
+      }).length;
       const unreadLabel = `${unreadCount} unread notification${unreadCount === 1 ? "" : "s"}`;
+
+      [
+        ["unread", unreadCount],
+        ["workouts", workoutCount],
+        ["checkins", checkInCount]
+      ].forEach(([key, value]) => {
+        const summaryValue = element(`[data-web-notification-summary="${key}"]`);
+        if (summaryValue) summaryValue.textContent = String(value);
+      });
 
       if (list) {
         list.replaceChildren(...rows.map(notificationItem));

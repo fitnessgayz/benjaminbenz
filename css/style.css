@@ -15862,6 +15862,55 @@ textarea,
   margin-bottom: 0;
 }
 
+.coach-notification-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.coach-notification-summary-card {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  min-width: 0;
+  gap: 0 10px;
+  align-items: center;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #fff;
+}
+
+.coach-notification-summary-card.is-new {
+  border: 2px solid var(--lime);
+}
+
+.coach-notification-summary-card svg {
+  grid-row: 1 / span 2;
+  width: 30px;
+  height: 30px;
+  color: #627b00;
+}
+
+.coach-notification-summary-card strong,
+.coach-notification-summary-card span {
+  min-width: 0;
+}
+
+.coach-notification-summary-card strong {
+  align-self: end;
+  font-size: 1.45rem;
+  line-height: 1;
+}
+
+.coach-notification-summary-card span {
+  align-self: start;
+  color: var(--muted);
+  font-size: .72rem;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
 .coach-notification-actions {
   display: flex;
   flex-wrap: wrap;
@@ -15932,13 +15981,27 @@ textarea,
 }
 
 .coach-notification-inbox .coach-notification-mark-all {
+  display: inline-flex !important;
+  width: auto !important;
+  inline-size: auto !important;
+  max-width: 100% !important;
+  max-inline-size: 100% !important;
   min-height: 44px;
-  padding: 6px 2px;
-  border: 0;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
   color: #546b00;
-  background: transparent;
-  text-decoration: underline;
-  text-underline-offset: 4px;
+  background: #fff;
+  text-decoration: none;
+}
+
+.coach-notification-inbox .coach-notification-mark-all svg {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
 }
 
 .coach-notification-inbox .web-notification-list {
@@ -16124,21 +16187,65 @@ textarea,
 
 @media (max-width: 600px) {
   .coach-notification-inbox .web-notification-item {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) auto;
   }
 
   .coach-notification-inbox .web-notification-like {
-    justify-self: start;
+    justify-self: end;
     width: auto !important;
     inline-size: auto !important;
-    max-width: calc(100% - 82px) !important;
-    max-inline-size: calc(100% - 82px) !important;
-    margin: 0 14px 13px 68px;
+    max-width: 118px !important;
+    max-inline-size: 118px !important;
+    margin: 10px 10px 10px 0;
     border: 1px solid color-mix(in srgb, var(--line) 72%, transparent);
   }
 }
 
 @media (max-width: 419px) {
+  .coach-notification-summary {
+    gap: 7px;
+  }
+
+  .coach-notification-summary-card {
+    grid-template-columns: 28px minmax(0, 1fr);
+    gap: 0 6px;
+    padding: 11px 8px;
+    border-radius: 13px;
+  }
+
+  .coach-notification-summary-card svg {
+    width: 25px;
+    height: 25px;
+  }
+
+  .coach-notification-summary-card strong {
+    font-size: 1.2rem;
+  }
+
+  .coach-notification-summary-card span {
+    font-size: .62rem;
+  }
+
+  .coach-notification-inbox .web-notification-item a,
+  .coach-notification-inbox .web-notification-item.is-unread a {
+    grid-template-columns: 36px minmax(0, 1fr);
+    column-gap: 9px;
+    padding: 12px 10px;
+  }
+
+  .coach-notification-inbox .web-notification-type-icon {
+    width: 36px;
+    height: 36px;
+  }
+
+  .coach-notification-inbox .web-notification-like {
+    max-width: 105px !important;
+    max-inline-size: 105px !important;
+    margin-right: 8px;
+    padding: 7px 9px;
+    font-size: .66rem !important;
+  }
+
   .coach-notification-actions {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -17770,15 +17877,15 @@ body.client-dashboard-page.is-loading > :is(.client-dashboard-tabs,
   }
 
   .coach-notification-heading h2 {
-    margin: 4px 0 10px;
+    margin: 4px 0 6px;
     font-size: clamp(2.5rem, 11vw, 4.25rem);
     line-height: .94;
     letter-spacing: -.055em;
   }
 
   .coach-notification-heading p:last-child {
-    font-size: .98rem;
-    line-height: 1.5;
+    font-size: .92rem;
+    line-height: 1.35;
   }
 
   .coach-notification-close {
