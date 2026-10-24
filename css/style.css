@@ -16054,6 +16054,11 @@ textarea,
   font-weight: 950;
 }
 
+.coach-notification-inbox .web-notification-type-icon svg {
+  width: 22px;
+  height: 22px;
+}
+
 .coach-notification-inbox .web-notification-item strong,
 .coach-notification-inbox .web-notification-item a > span:not(.web-notification-type-icon),
 .coach-notification-inbox .web-notification-item time {
@@ -16261,6 +16266,11 @@ textarea,
   .coach-notification-inbox .web-notification-type-icon {
     width: 36px;
     height: 36px;
+  }
+
+  .coach-notification-inbox .web-notification-type-icon svg {
+    width: 20px;
+    height: 20px;
   }
 
   .coach-notification-inbox .web-notification-like {

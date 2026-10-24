@@ -514,13 +514,22 @@
       const actionUrl = safeActionUrl(row.action_url, role);
       const notificationKind = String(row.kind || "general").toLowerCase();
       const activityType = String(row?.metadata?.activity_type || "").toLowerCase();
-      const iconKind = activityType || notificationKind;
-      const notificationIcons = {
-        achievement: "★",
-        check_in_submitted: "↗",
-        client_login: "↗",
-        gym_checkin: "↗",
-        workout_completed: "✓"
+      const activityDescriptor = `${notificationKind} ${activityType} ${String(row.title || "")} ${String(row.body || "")}`.toLowerCase();
+      const iconKind = activityDescriptor.includes("challenge")
+        ? "challenge"
+        : (activityType === "gym_checkin" || notificationKind === "check_in_submitted")
+          ? "checkin"
+          : notificationKind === "workout_completed"
+            ? "workout"
+            : notificationKind === "achievement"
+              ? "achievement"
+              : "general";
+      const notificationIconMarkup = {
+        achievement: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4h8v4a4 4 0 0 1-8 0V4Z"/><path d="M6 5H4v2a4 4 0 0 0 4 4M18 5h2v2a4 4 0 0 1-4 4M12 12v5M8 21h8M9 17h6"/></svg>',
+        challenge: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4h8v4a4 4 0 0 1-8 0V4Z"/><path d="M6 5H4v2a4 4 0 0 0 4 4M18 5h2v2a4 4 0 0 1-4 4M12 12v5M8 21h8M9 17h6"/></svg>',
+        checkin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 7v10M3.5 9v6M18 7v10M20.5 9v6M6 12h12"/></svg>',
+        general: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg>',
+        workout: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 4V2h6v2M9 10h6M9 14h6M9 18h4"/></svg>'
       };
 
       item.className = "web-notification-item";
@@ -534,8 +543,9 @@
       if (role === "coach") {
         item.dataset.webNotificationKind = notificationKind;
         typeIcon.className = "web-notification-type-icon";
+        typeIcon.dataset.webNotificationIcon = iconKind;
         typeIcon.setAttribute("aria-hidden", "true");
-        typeIcon.textContent = notificationIcons[iconKind] || "•";
+        typeIcon.innerHTML = notificationIconMarkup[iconKind] || notificationIconMarkup.general;
         link.append(typeIcon, title, body, date);
       } else {
         link.append(title, body, date);

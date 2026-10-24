@@ -33,7 +33,7 @@ function element(tag = "div") {
   };
 }
 
-function coachHarness({ deployedBackend = false } = {}) {
+function coachHarness({ deployedBackend = false, noticeOverrides = {} } = {}) {
   const list = element("ul");
   const empty = element("p");
   const badge = element("span");
@@ -67,7 +67,9 @@ function coachHarness({ deployedBackend = false } = {}) {
     action_url: "/coach-admin.html?tab=logs",
     metadata: { client_email: "client@example.com" },
     created_at: "2026-10-03T12:00:00Z",
-    read_at: null
+    read_at: null,
+    ...noticeOverrides,
+    metadata: { client_email: "client@example.com", ...(noticeOverrides.metadata || {}) }
   };
   const rpcCalls = [];
   const selectCalls = [];
@@ -155,7 +157,8 @@ test("coach inbox presents an accessible like control and persists the toggle", 
   const typeIcon = notificationLink.children.find((child) => child.className === "web-notification-type-icon");
   const likeButton = firstItem.children.find((child) => child.dataset.webNotificationLike);
   assert.equal(firstItem.dataset.webNotificationKind, "workout_completed");
-  assert.equal(typeIcon.textContent, "✓");
+  assert.equal(typeIcon.dataset.webNotificationIcon, "workout");
+  assert.match(typeIcon.innerHTML, /<rect x="6" y="4"/);
   assert.equal(typeIcon["aria-hidden"], "true");
   assert.equal(harness.unreadSummary.textContent, "1");
   assert.equal(harness.workoutSummary.textContent, "1");
@@ -193,6 +196,32 @@ test("deployed notification fallback keeps activity metadata and like controls",
   assert.ok(likeButton);
   assert.equal(likeButton.children[0].textContent, "💪🏽");
   assert.equal(likeButton.children[1].textContent, "Give props");
+});
+
+test("coach activity cards distinguish challenges from workouts and check-ins", async () => {
+  const challengeHarness = coachHarness({
+    noticeOverrides: {
+      kind: "achievement",
+      title: "A client completed a daily challenge",
+      body: "Mobility challenge complete."
+    }
+  });
+  assert.equal(await challengeHarness.controller.init(), true);
+  const challengeIcon = challengeHarness.list.children[0].children[0].children[0];
+  assert.equal(challengeIcon.dataset.webNotificationIcon, "challenge");
+  assert.match(challengeIcon.innerHTML, /M8 4h8/);
+
+  const checkInHarness = coachHarness({
+    noticeOverrides: {
+      kind: "check_in_submitted",
+      title: "A client checked in at the gym",
+      metadata: { activity_type: "gym_checkin" }
+    }
+  });
+  assert.equal(await checkInHarness.controller.init(), true);
+  const checkInIcon = checkInHarness.list.children[0].children[0].children[0];
+  assert.equal(checkInIcon.dataset.webNotificationIcon, "checkin");
+  assert.match(checkInIcon.innerHTML, /M6 7v10/);
 });
 
 test("production compatibility feed resolves legacy activity without exposing arbitrary recipients", () => {
