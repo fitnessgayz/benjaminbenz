@@ -10,6 +10,15 @@
     { title: "Community", pose: "celebrating", body: "Let’s celebrate your wins. Try the daily challenge, earn XP and badges, and visit the FWB Wall. If you opt in to sharing, other clients can give props to your wins." },
     { title: "Settings", pose: "resting", body: "Need a breather or a refresher? In Settings, choose light or dark mode, adjust timers and check-ins, review health app sharing, and return to this tour any time. I’ll be here when you need me." }
   ];
+  let currentUserId = "";
+  let controller = null;
+  const seenKey = () => `fwb_client_web_tour_seen_v1:${currentUserId}`;
+
+  function markSeen() {
+    if (!currentUserId) return;
+    try { global.localStorage?.setItem(seenKey(), "1"); }
+    catch (_) { /* The tour remains available in Settings. */ }
+  }
 
   function createTour(document) {
     const trigger = document.querySelector("[data-client-web-tour-open]");
@@ -38,7 +47,8 @@
       dialog.querySelector("[data-client-web-tour-next]").textContent = index === steps.length - 1 ? "Done" : "Next";
       if (dialog.open) title.focus({ preventScroll: true });
     };
-    trigger.addEventListener("click", () => { index = 0; render(); dialog.showModal(); dialog.querySelector("[data-client-web-tour-title]").focus({ preventScroll: true }); });
+    const open = () => { index = 0; render(); dialog.showModal(); dialog.querySelector("[data-client-web-tour-title]").focus({ preventScroll: true }); };
+    trigger.addEventListener("click", open);
     dialog.addEventListener("click", (event) => {
       if (event.target.closest("[data-client-web-tour-close]") || event.target === dialog) { dialog.close(); return; }
       if (event.target.closest("[data-client-web-tour-back]")) { index = Math.max(0, index - 1); render(); }
@@ -47,10 +57,24 @@
         else { index++; render(); }
       }
     });
-    dialog.addEventListener("close", () => trigger.focus());
-    return dialog;
+    dialog.addEventListener("close", () => { markSeen(); trigger.focus(); });
+    return { dialog, open };
   }
 
-  global.FWB_CLIENT_WEB_TOUR = Object.freeze({ createTour, steps });
-  if (global.document) createTour(global.document);
+  function configureUser(userId) { currentUserId = String(userId || "").trim(); }
+  function maybeOpenForFirstTime() {
+    if (!controller || !currentUserId || !global.matchMedia?.("(max-width: 900px)")?.matches) return false;
+    try { if (global.localStorage?.getItem(seenKey()) === "1") return false; }
+    catch (_) { return false; }
+    const otherDialog = global.document.querySelector("dialog[open]:not(.client-web-tour)");
+    if (otherDialog) {
+      otherDialog.addEventListener("close", () => global.requestAnimationFrame?.(() => maybeOpenForFirstTime()), { once: true });
+      return false;
+    }
+    controller.open();
+    return true;
+  }
+
+  global.FWB_CLIENT_WEB_TOUR = Object.freeze({ createTour, steps, configureUser, maybeOpenForFirstTime });
+  if (global.document) controller = createTour(global.document);
 })(typeof window === "undefined" ? globalThis : window);

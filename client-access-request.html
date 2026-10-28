@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#050806" />
+  <title>Sign up for FWB Training</title>
+  <meta name="description" content="Request client access to FWB Training. Benjamin reviews each request." />
+  <link rel="manifest" href="/client.webmanifest" />
+  <link rel="stylesheet" href="css/style.css?v=client-account-setup-1" />
+  <link rel="stylesheet" href="css/login-layout-fix.css?v=mobile-fit-audit-2" />
+  <link rel="stylesheet" href="/css/fwb-design-system.css?v=web-app-brand-1&amp;theme=deep-forest-2" />
+  <link rel="stylesheet" href="/css/fwb-dark-theme.css?v=deep-forest-9" />
+  <link rel="stylesheet" href="css/client-mobile-feature-parity.css?v=1" />
+</head>
+<body class="login-page password-access-page">
+  <header class="site-header"><a class="brand" href="index.html#top" aria-label="FWB Training"><span>FWB</span><strong>Training</strong></a></header>
+  <main class="client-access">
+    <section class="access-intro" aria-labelledby="access-request-title">
+      <p class="kicker">FWB Training</p><h1 id="access-request-title">Sign up</h1>
+      <p>Tell Benjamin a little about yourself. He’ll review your request before you get access to the app.</p>
+    </section>
+    <section class="access-panel account-setup-panel" aria-label="Request client access">
+      <div class="access-panel-heading"><p class="kicker">Client access</p><h2>Request an account</h2></div>
+      <form class="login-form" id="client-access-request-form">
+        <label>Name <input name="name" type="text" autocomplete="name" maxlength="120" required /></label>
+        <label>Email <input name="email" type="email" autocomplete="email" maxlength="180" required /></label>
+        <label>Phone (optional) <input name="phone" type="tel" autocomplete="tel" maxlength="60" /></label>
+        <label>What are your goals? (optional) <textarea name="goals" maxlength="2000" rows="4"></textarea></label>
+        <label class="access-request-trap" aria-hidden="true">Website <input name="website" type="text" tabindex="-1" autocomplete="off" /></label>
+        <button class="button button-dark" type="submit">Send sign-up request</button>
+        <p class="login-status" id="client-access-request-status" role="status" aria-live="polite">Approval is required before you can sign in.</p>
+      </form>
+      <a class="account-setup-back" href="client-login.html">Already have an account? Sign in</a>
+    </section>
+  </main>
+  <script src="js/supabase-config.js?v=manual-sessions-1"></script>
+  <script src="js/client-access-request.js?v=1"></script>
+</body>
+</html>

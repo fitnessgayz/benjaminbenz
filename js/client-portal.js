@@ -22,6 +22,7 @@ let activeClientEmail = "";
 let signedInDashboardEmail = "";
 let isCoachDashboardPreview = false;
 let trainingLogs = [];
+const gymHistoryRecommendationsByLog = new WeakMap();
 let clientAchievementHistoryStatus = "loading";
 let clientAchievementController = null;
 let clientQuarterGoalController = null;
@@ -7317,7 +7318,8 @@ function customExerciseSuggestionMatches(value) {
     .map((record) => ({
       name: record.name,
       recommended: false,
-      muscleLabel: exerciseSuggestionMuscleLabel(record.libraryEntry)
+      muscleLabel: exerciseSuggestionMuscleLabel(record.libraryEntry),
+      primaryMuscle: record.libraryEntry?.primary_muscle || ""
     }));
 
   if (recommendation) {
@@ -7326,7 +7328,8 @@ function customExerciseSuggestionMatches(value) {
       recommended: true,
       matchedLabel: recommendation.matchedLabel,
       score: recommendation.score,
-      muscleLabel: exerciseSuggestionMuscleLabel(recommendation.exercise)
+      muscleLabel: exerciseSuggestionMuscleLabel(recommendation.exercise),
+      primaryMuscle: recommendation.exercise?.primary_muscle || ""
     });
   }
 
@@ -7386,6 +7389,8 @@ function renderCustomExerciseSuggestions(input) {
       role="option"
       data-custom-exercise-suggestion="${escapeHtml(match.name)}"
     >
+      <span class="client-muscle-icon" aria-hidden="true">${window.FWB_CLIENT_EXERCISE_LIBRARY?.muscleIconSvg(match.primaryMuscle) || ""}</span>
+      <span class="client-suggestion-copy">
       ${match.recommended ? `
         <small>Did you mean?</small>
         <strong>${escapeHtml(match.name)}</strong>
@@ -7395,6 +7400,7 @@ function renderCustomExerciseSuggestions(input) {
         <strong>${escapeHtml(match.name)}</strong>
         ${match.muscleLabel ? `<span class="custom-workout-suggestion-muscles">${escapeHtml(match.muscleLabel)}</span>` : ""}
       `}
+      </span>
     </button>
   `).join("") + '<button type="button" data-custom-exercise-more>More exercises →</button>';
   menu.hidden = false;
@@ -12873,7 +12879,7 @@ function customWorkoutPickerMatches(query, category = "all") {
   const byName = new Map(records.map((record) => [record.name, record]));
   const matches = normalized
     ? customExerciseSuggestionMatches(text)
-    : records.map((record) => ({ name: record.name, muscleLabel: exerciseSuggestionMuscleLabel(record.libraryEntry), libraryEntry: record.libraryEntry }));
+    : records.map((record) => ({ name: record.name, muscleLabel: exerciseSuggestionMuscleLabel(record.libraryEntry), primaryMuscle: record.libraryEntry?.primary_muscle || "", libraryEntry: record.libraryEntry }));
   return matches.filter((match) => {
     if (category === "all") return true;
     const record = byName.get(match.name);
@@ -12895,8 +12901,9 @@ function renderCustomWorkoutPickerResults(dialog) {
   if (!input || !menu) return;
   const matches = customWorkoutPickerMatches(input.value, filter?.value || "all");
   menu.innerHTML = matches.map((match) => `<button type="button" role="option" data-custom-exercise-suggestion="${escapeHtml(match.name)}">
-    <strong>${escapeHtml(match.name)}</strong>
-    ${match.muscleLabel ? `<span class="custom-workout-suggestion-muscles">${escapeHtml(match.muscleLabel)}</span>` : ""}
+    <span class="client-muscle-icon" aria-hidden="true">${window.FWB_CLIENT_EXERCISE_LIBRARY?.muscleIconSvg(match.primaryMuscle) || ""}</span>
+    <span class="client-suggestion-copy"><strong>${escapeHtml(match.name)}</strong>
+    ${match.muscleLabel ? `<span class="custom-workout-suggestion-muscles">${escapeHtml(match.muscleLabel)}</span>` : ""}</span>
   </button>`).join("") + '<button type="button" data-custom-exercise-more>More exercises →</button>';
   menu.hidden = false;
   input.setAttribute("aria-expanded", "true");
@@ -14414,15 +14421,55 @@ function renderPreviousExerciseWeights(logElement, logs = logsForExerciseDisplay
   }
 
   const best = personalBestWeightLog(logs);
-  if (!best) {
-    previous.textContent = "Personal best: none yet";
-    return;
-  }
+  const exerciseName = currentExerciseHistoryName(logElement);
+  const history = exerciseName ? exerciseHistoryLookup().get(exerciseName) || [] : [];
+  const selectedDate = logElement.querySelector("[data-log-date]")?.value || todayDate();
+  const selectedGym = workoutGymLocationForElement(logElement);
+  const suggestions = window.FWB_GYM_HISTORY?.recommendations(history, selectedDate, selectedGym) || [];
+  gymHistoryRecommendationsByLog.set(logElement, suggestions);
+  previous.innerHTML = `${best
+    ? `<strong>Personal best at this gym</strong><span>${escapeHtml(best.weight_used)} lb${best.reps ? ` × ${escapeHtml(best.reps)}` : ""} · ${escapeHtml(formatLogDate(best.entry_date))}</span>`
+    : "<strong>Personal best at this gym: none yet</strong>"}
+    ${suggestions.length ? `<div class="exercise-gym-history" aria-label="Recent exercise history by gym">
+      <strong>Recent at gyms</strong>
+      ${suggestions.map((group, index) => `<div class="exercise-gym-history-choice">
+        <span><b>${escapeHtml(group.gym)}</b> · ${escapeHtml(formatLogDate(group.date))}${selectedGym && sameWorkoutGym(group.gym, selectedGym) ? " · Current gym" : ""}</span>
+        <small>${group.sets.map((set) => `${escapeHtml(set.weight_used ?? "—")} lb × ${escapeHtml(set.reps)} reps`).join(" · ")}</small>
+        <button type="button" data-gym-history-copy="${index}">Use these sets</button>
+      </div>`).join("")}
+    </div>` : ""}`;
+}
 
-  previous.innerHTML = `
-    <strong>Personal best</strong>
-    <span>${escapeHtml(best.weight_used)} lb${best.reps ? ` × ${escapeHtml(best.reps)}` : ""} · ${escapeHtml(formatLogDate(best.entry_date))}</span>
-  `;
+function handleGymHistoryCopy() {
+  document.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-gym-history-copy]");
+    const logElement = button?.closest("[data-exercise-log]");
+    const group = logElement && gymHistoryRecommendationsByLog.get(logElement)?.[Number(button.dataset.gymHistoryCopy)];
+    if (!group) return;
+    if (!logElement.querySelector("[data-set-rows]")) return;
+    let rows = Array.from(logElement.querySelectorAll("[data-set-row]"))
+      .filter((row) => normalizedSetType(row.dataset.setType, row.dataset.setNumber) === workingSetType);
+    while (rows.length < group.sets.length) {
+      addSetRow(logElement, { skipDraft: true });
+      rows = Array.from(logElement.querySelectorAll("[data-set-row]"))
+        .filter((row) => normalizedSetType(row.dataset.setType, row.dataset.setNumber) === workingSetType);
+    }
+    let copied = 0;
+    group.sets.forEach((set, index) => {
+      const row = rows[index];
+      if (!row || row.classList.contains("is-complete")) return;
+      const weight = row.querySelector("[data-set-weight]");
+      const reps = row.querySelector("[data-set-reps]");
+      if (weight && set.weight_used !== null && set.weight_used !== undefined) weight.value = String(set.weight_used);
+      if (reps && set.reps !== null && set.reps !== undefined) reps.value = String(set.reps);
+      copied++;
+    });
+    if (copied) {
+      persistCustomWorkoutDraftForElement(logElement);
+      const status = logElement.querySelector("[data-log-status]");
+      if (status) status.textContent = `Copied ${copied} set${copied === 1 ? "" : "s"} from ${group.gym}. Review before logging.`;
+    }
+  });
 }
 
 function savedStrengthSetSpecs(selectedLogs, workingMinimum = 1) {
@@ -20412,6 +20459,8 @@ async function loadDashboard() {
     }
 
     activeDashboardUser = user;
+    window.FWB_CLIENT_MOBILE_TABS?.mount({ userId: user.id, onHiddenActive: setClientDashboardTab });
+    window.FWB_CLIENT_WEB_TOUR?.configureUser(user.id);
     renderCoachPreviewReturn();
     const requestedTab = new URLSearchParams(window.location.search).get("tab");
     const availableTabs = new Set(Array.from(document.querySelectorAll("[data-client-dashboard-panel]"))
@@ -20637,6 +20686,7 @@ async function loadDashboard() {
       getWorkoutDates: () => window.FWB_ACHIEVEMENTS.completedWorkoutDates(trainingLogs, { today: todayDate(), clientEmail: activeClientEmail })
     });
     void clientQuarterGoalController?.load();
+    if (!isCoachDashboardPreview) window.requestAnimationFrame?.(() => window.FWB_CLIENT_WEB_TOUR?.maybeOpenForFirstTime());
     window.requestAnimationFrame?.(() => maybeShowClientHomeCheckinPrompt());
   } catch (error) {
     setDashboardMessage(
@@ -21435,6 +21485,7 @@ handleClientTrainingLogDateFilter();
 handleClientSavedSetEdit();
 handleClientWorkoutHistoryDownload();
 handleClientWorkoutHistoryImport();
+handleGymHistoryCopy();
 handleCopyWorkoutToCustom();
 handleClientWorkoutHistoryDelete();
 handleClientWorkoutHistoryDeck();
