@@ -34,6 +34,9 @@ verify_jwt = false
 [functions.send-contact-message]
 verify_jwt = false
 
+[functions.request-client-access]
+verify_jwt = false
+
 [functions.food-search]
 verify_jwt = false
 
