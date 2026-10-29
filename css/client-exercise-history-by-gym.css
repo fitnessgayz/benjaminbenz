@@ -1,0 +1,33 @@
+.dashboard-page .exercise-history-by-gym {
+  display: grid;
+  gap: 8px;
+  flex-basis: 100%;
+  margin-top: 8px;
+}
+
+.dashboard-page .exercise-history-by-gym > strong {
+  color: #55b5f1;
+  font-size: .72rem;
+  letter-spacing: .06em;
+}
+
+.dashboard-page .exercise-history-by-gym-session {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border: 1px solid rgba(85, 181, 241, .38);
+  border-radius: 10px;
+  background: rgba(85, 181, 241, .08);
+}
+
+.dashboard-page .exercise-history-by-gym-session > span {
+  color: var(--ink, #f5f5f5);
+  font-size: .72rem;
+  font-weight: 700;
+}
+
+.dashboard-page .exercise-history-by-gym-session > small {
+  color: var(--muted, #b5b5b5);
+  font-size: .68rem;
+  line-height: 1.4;
+}

@@ -50,6 +50,7 @@ let clientLogCalendarMonth = "";
 let clientLogCalendarInitialized = false;
 let clientSavedSetEditingId = "";
 let activeClientDashboardTab = "home";
+let savedWorkoutScrollY = null;
 let latestMonthlyProgressReport = null;
 let monthlyReportReturnTab = "progress";
 let monthlyReportReturnFocus = null;
@@ -10559,9 +10560,7 @@ function openCustomWorkoutGroupedHistory(button) {
   const logElements = customWorkoutGroupedLogElements(carousel);
   const choices = [];
   const sections = logElements.map((logElement, exerciseIndex) => {
-    const selectedDate = logElement.querySelector("[data-log-date]")?.value || todayDate();
-    const history = logsForExerciseDisplay(logElement).filter((record) => (
-      String(record.entry_date || "") < selectedDate &&
+    const history = recentExerciseHistoryByGym(logElement).flatMap((session) => session.rows).filter((record) => (
       normalizedSetType(record.set_type, record.set_number) === workingSetType &&
       customWorkoutGroupedCopyValue(record.weight_used) !== null &&
       customWorkoutGroupedCopyValue(record.reps, "reps") !== null
@@ -10575,7 +10574,7 @@ function openCustomWorkoutGroupedHistory(button) {
       const choiceIndex = choices.push({ exerciseIndex, record }) - 1;
       return `<button type="button" data-custom-grouped-history-choice="${choiceIndex}">
         ${record === best ? "<strong>PR · </strong>" : ""}${escapeHtml(record.weight_used)} lb × ${escapeHtml(record.reps)} reps
-        <small>${escapeHtml(formatLogDate(record.entry_date))} · Set ${escapeHtml(record.set_number || 1)}</small>
+        <small>${escapeHtml(normalizeWorkoutGymName(record.gym_name) || "Gym not recorded")} · ${escapeHtml(formatLogDate(record.entry_date))} · Set ${escapeHtml(record.set_number || 1)}</small>
       </button>`;
     }).join("");
     return `<section><h3>${escapeHtml(currentExerciseLabel(logElement) || `Exercise ${exerciseIndex + 1}`)}</h3>
@@ -12335,7 +12334,7 @@ function bindCustomWorkoutCarousel(carousel) {
     if (
       carousel.dataset.carouselEnabled !== "true" ||
       list.classList.contains("is-deck-settling") ||
-      event.target.closest("input, select, textarea, button, a")
+      event.target.closest("input, select, textarea, button, a, [data-exercise-log], .custom-workout-grouped-round-card")
     ) {
       touchSwipe = null;
       return;
@@ -14284,6 +14283,48 @@ function logsForExerciseDisplay(logElement) {
     .filter((row) => sameWorkoutGym(row.gym_name, gymName));
 }
 
+function recentExerciseHistoryByGym(logElement, limit = 3) {
+  const exerciseName = currentExerciseHistoryName(logElement);
+  if (!exerciseName || logElement?.dataset.warmupLog !== undefined || logElement?.dataset.cardioLog !== undefined) return [];
+  const selectedDate = logElement.querySelector("[data-log-date]")?.value || todayDate();
+  const currentGym = normalizeWorkoutGymName(workoutGymLocationForElement(logElement));
+  const sessions = new Map();
+
+  (exerciseHistoryLookup().get(exerciseName) || []).forEach((row) => {
+    if (!row.entry_date || row.entry_date >= selectedDate) return;
+    const gym = normalizeWorkoutGymName(row.gym_name);
+    const session = String(row.session_id || `${row.entry_date}|${row.workout_title || ""}`);
+    const key = `${gym.toLowerCase()}|${session}`;
+    if (!sessions.has(key)) sessions.set(key, { gym, date: row.entry_date, rows: [] });
+    sessions.get(key).rows.push(row);
+  });
+
+  return Array.from(sessions.values())
+    .filter((session) => session.rows.some((row) => normalizedSetType(row.set_type, row.set_number) === workingSetType))
+    .sort((a, b) => {
+      const aCurrent = Boolean(currentGym) && a.gym.toLowerCase() === currentGym.toLowerCase();
+      const bCurrent = Boolean(currentGym) && b.gym.toLowerCase() === currentGym.toLowerCase();
+      return Number(bCurrent) - Number(aCurrent) || b.date.localeCompare(a.date);
+    })
+    .slice(0, Math.max(0, limit))
+    .map((session) => ({
+      ...session,
+      rows: session.rows.sort((a, b) => Number(a.set_number || 0) - Number(b.set_number || 0))
+    }));
+}
+
+function exerciseHistoryByGymMarkup(logElement) {
+  const sessions = recentExerciseHistoryByGym(logElement);
+  if (!sessions.length) return "";
+  return `<div class="exercise-history-by-gym" aria-label="Recent exercise history by gym">
+    <strong>Recent by gym</strong>
+    ${sessions.map((session) => `<div class="exercise-history-by-gym-session">
+      <span>${escapeHtml(session.gym || "Gym not recorded")} · ${escapeHtml(formatLogDate(session.date))}</span>
+      <small>${session.rows.map((row) => `${normalizedSetType(row.set_type, row.set_number) === warmUpSetType ? "W" : escapeHtml(row.set_number || 1)}: ${escapeHtml(row.weight_used ?? "—")} lb × ${escapeHtml(row.reps ?? "—")}`).join(" · ")}</small>
+    </div>`).join("")}
+  </div>`;
+}
+
 function parseCardioNotes(notes = "") {
   const text = String(notes || "");
   const caloriesMatch = text.match(/(?:^|\n)Calories:\s*(\d+(?:\.\d+)?)/i);
@@ -14391,14 +14432,16 @@ function renderPreviousExerciseWeights(logElement, logs = logsForExerciseDisplay
   }
 
   const best = personalBestWeightLog(logs);
+  const gymHistory = exerciseHistoryByGymMarkup(logElement);
   if (!best) {
-    previous.textContent = "Personal best: none yet";
+    previous.innerHTML = `Personal best: none yet${gymHistory}`;
     return;
   }
 
   previous.innerHTML = `
     <strong>Personal best</strong>
     <span>${escapeHtml(best.weight_used)} lb${best.reps ? ` × ${escapeHtml(best.reps)}` : ""} · ${escapeHtml(formatLogDate(best.entry_date))}</span>
+    ${gymHistory}
   `;
 }
 
@@ -17418,6 +17461,11 @@ function clientDashboardMobileTabPressAction(tabName, activeTab, previousTabPres
 
 function setClientDashboardTab(tabName) {
   const nextTab = tabName || "home";
+  const previousTab = activeClientDashboardTab;
+  if (previousTab === "workouts" && nextTab !== "workouts" && !clientWorkoutPickerIsOpen &&
+      document.querySelector(".client-workout-panel.is-active")) {
+    savedWorkoutScrollY = window.scrollY;
+  }
   const navigationTab = nextTab === "community" ? "home" : ["stats", "nutrition"].includes(nextTab) ? "notifications" : nextTab;
   const tabs = document.querySelectorAll("[data-client-dashboard-tab]");
   const panels = document.querySelectorAll("[data-client-dashboard-panel]");
@@ -17439,6 +17487,10 @@ function setClientDashboardTab(tabName) {
 
     panel.hidden = !isActive;
   });
+  if (nextTab === "workouts" && previousTab !== nextTab && savedWorkoutScrollY !== null &&
+      !clientWorkoutPickerIsOpen) {
+    window.requestAnimationFrame(() => window.scrollTo({ top: savedWorkoutScrollY, behavior: "auto" }));
+  }
 
   if (nextTab === "logs") flushScheduledClientTrainingLogsRender();
 
