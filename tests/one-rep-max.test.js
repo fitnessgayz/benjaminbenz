@@ -94,17 +94,20 @@ test("calculator reads the assigned exercise rep range from workout metadata", (
   assert.equal(program.planned_sets, 3);
 });
 
-test("client and coach workout loggers expose Weight and PR calculator entry points", () => {
-  for (const source of [clientSource, coachSource]) {
-    assert.match(source, /class="one-rm-trigger"[^>]*data-one-rm-open/);
-    assert.match(source, /class="one-rm-pr-trigger"[^>]*data-one-rm-open[^>]*data-one-rm-source="pr"/);
-    assert.match(source, /dataset\.oneRmSources = JSON\.stringify/);
-  }
+test("client calculator sits in exercise actions while PR access remains available", () => {
+  assert.match(clientSource, /class="exercise-one-rm-button"[^>]*data-one-rm-open/);
+  assert.doesNotMatch(clientSource, /class="one-rm-trigger"[^>]*data-one-rm-open/);
+  assert.match(clientSource, /class="one-rm-pr-trigger"[^>]*data-one-rm-open[^>]*data-one-rm-source="pr"/);
+  assert.doesNotMatch(clientSource, /class="one-rm-pr-trigger"[^>]*disabled/);
+  assert.match(clientSource, /dataset\.oneRmSources = JSON\.stringify/);
+  assert.match(coachSource, /class="one-rm-trigger"[^>]*data-one-rm-open/);
+  assert.match(coachSource, /class="one-rm-pr-trigger"[^>]*data-one-rm-open[^>]*data-one-rm-source="pr"/);
 });
 
 test("client web, installed mobile web app, and coach iOS web workspace load the shared calculator", () => {
+  assert.match(clientHTML, /css\/one-rep-max\.css\?v=3/);
+  assert.match(coachHTML, /css\/one-rep-max\.css\?v=2/);
   for (const html of [clientHTML, coachHTML]) {
-    assert.match(html, /css\/one-rep-max\.css\?v=2/);
     assert.match(html, /js\/one-rep-max\.js\?v=2/);
   }
   assert.match(clientHTML, /apple-mobile-web-app-capable/);

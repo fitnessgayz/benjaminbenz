@@ -1,4 +1,8 @@
 /* Shared estimated 1RM calculator and compact workout-header triggers. */
+.exercise-log-actions .exercise-one-rm-button {
+  grid-column: 1 / -1;
+}
+
 .one-rm-trigger {
   display: inline-flex;
   width: 100%;

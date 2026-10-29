@@ -5535,7 +5535,7 @@ function exerciseLogFields(exercise, workoutTitle, options = {}) {
       <div class="set-table" aria-label="${escapeHtml(exercise.name)} set tracker">
       <div class="set-header">
         <span>Set</span>
-        <button class="one-rm-trigger" type="button" data-one-rm-open aria-label="Open estimated 1RM calculator from this set">Weight <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="5" y="2.5" width="14" height="19" rx="2"/><path d="M8 6.5h8M8.5 11h1M12 11h1M15.5 11h1M8.5 14.5h1M12 14.5h1M15.5 14.5h1M8.5 18h1M12 18h1M15.5 18h1"/></svg></button>
+        <span>Weight</span>
         <span>Reps</span>
         <button class="rir-help-trigger" type="button" data-rir-help aria-label="What does RIR mean?" aria-haspopup="dialog"><span>RIR</span><svg viewBox="0 0 20 20" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="8"/><path d="M10 9v5M10 5.5v1"/></svg></button>
       </div>
@@ -7500,6 +7500,7 @@ function exerciseLogActions(options = {}) {
     <div class="exercise-log-actions${showSkip ? "" : " exercise-log-actions-single"}">
       ${showSkip ? '<button class="exercise-skip-button" type="button" data-skip-exercise aria-pressed="false">Skip</button>' : ""}
       <button class="exercise-delete-button" type="button" data-delete-exercise>Delete</button>
+      <button class="exercise-one-rm-button" type="button" data-one-rm-open aria-label="Open estimated one rep max calculator for this exercise">1RM calculator</button>
     </div>
   `;
 }
@@ -10484,7 +10485,6 @@ function refreshCustomWorkoutGroupedCopyWeights(carousel) {
   }).filter((source) => Number(source.weight) > 0 && Number.isInteger(Number(source.reps)) && Number(source.reps) >= 1 && Number(source.reps) <= 30);
   carousel?.querySelectorAll('[data-one-rm-source="pr"]').forEach((button) => {
     button.dataset.oneRmSources = JSON.stringify(oneRepMaxSources);
-    button.disabled = oneRepMaxSources.length === 0;
   });
   carousel?.querySelectorAll("[data-custom-grouped-pr-preview]").forEach((preview) => {
     const logElement = logElements[Number(preview.dataset.customGroupedPrPreview)];
@@ -10678,7 +10678,7 @@ function customWorkoutGroupedSectionsMarkup(carousel) {
   const warmUps = [];
   const columnLabelsMarkup = `
     <div class="custom-workout-grouped-columns">
-      <span>Set</span><button class="one-rm-trigger" type="button" data-one-rm-open aria-label="Open estimated 1RM calculator from this set">Weight <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="5" y="2.5" width="14" height="19" rx="2"/><path d="M8 6.5h8M8.5 11h1M12 11h1M15.5 11h1M8.5 14.5h1M12 14.5h1M15.5 14.5h1M8.5 18h1M12 18h1M15.5 18h1"/></svg></button><span>Reps</span>
+      <span>Set</span><span>Weight</span><span>Reps</span>
       <button class="rir-help-trigger" type="button" data-rir-help aria-label="What does RIR mean?" aria-haspopup="dialog"><span>RIR</span><svg viewBox="0 0 20 20" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="8"/><path d="M10 9v5M10 5.5v1"/></svg></button>
     </div>
   `;
@@ -10744,7 +10744,7 @@ function customWorkoutGroupedSectionsMarkup(carousel) {
             <button class="custom-workout-grouped-pr-info" type="button" data-pr-help aria-label="What does PR mean?" aria-expanded="false">
               <svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="8"/><path d="M10 9v5M10 5.5v1"/></svg>
             </button>
-            <button class="one-rm-pr-trigger" type="button" data-one-rm-open data-one-rm-source="pr" aria-label="Estimate 1RM from personal record" disabled>
+            <button class="one-rm-pr-trigger" type="button" data-one-rm-open data-one-rm-source="pr" aria-label="Open estimated one rep max calculator for this round">
               <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="5" y="2.5" width="14" height="19" rx="2"/><path d="M8 6.5h8M8.5 11h1M12 11h1M15.5 11h1M8.5 14.5h1M12 14.5h1M15.5 14.5h1M8.5 18h1M12 18h1M15.5 18h1"/></svg>
               <span>Estimate 1RM</span>
             </button>
