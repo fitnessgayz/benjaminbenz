@@ -107,3 +107,24 @@
   }
   .dashboard-page .client-dashboard-tab[data-mobile-tab-hidden] { display: none !important; }
 }
+
+/* The client log has Set, Weight, Reps, and Complete columns. */
+:root body.client-dashboard-page .set-header,
+:root body.client-dashboard-page .set-row,
+:root body.client-dashboard-page .custom-workout-carousel[data-carousel-enabled="true"] .custom-workout-card .set-header,
+:root body.client-dashboard-page .custom-workout-carousel[data-carousel-enabled="true"] .custom-workout-card .set-row {
+  grid-template-columns: 44px minmax(0, 1fr) minmax(0, 1fr) 44px !important;
+}
+:root body.client-dashboard-page .custom-workout-carousel:is([data-custom-workout-format="superset"], [data-custom-workout-format="circuit"]) .custom-workout-card .set-header,
+:root body.client-dashboard-page .custom-workout-carousel:is([data-custom-workout-format="superset"], [data-custom-workout-format="circuit"]) .custom-workout-card .set-row {
+  grid-template-columns: 44px minmax(0, 1fr) minmax(0, 1fr) !important;
+}
+:root body.client-dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-columns,
+:root body.client-dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-row {
+  grid-template-columns: 44px repeat(2, minmax(0, 1fr)) !important;
+}
+@media (max-width: 760px) {
+  :root body.client-dashboard-page .set-row > .set-complete-button {
+    grid-column: 4 !important;
+  }
+}

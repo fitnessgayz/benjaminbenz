@@ -5279,10 +5279,6 @@ function setRowMarkup(setNumber, repPlaceholder = "", setType = workingSetType, 
         <em>Reps</em>
         <input type="number" min="0" step="1" placeholder="${escapeHtml(repPlaceholder)}" data-default-placeholder="${escapeHtml(repPlaceholder)}" data-set-reps />
       </label>
-      <button class="set-rir-button" type="button" data-set-rir aria-label="Choose reps in reserve for ${normalizedType === warmUpSetType ? `warm-up set ${ordinal}` : `set ${Number(setNumber) || 1}`}">
-        <span>RIR</span>
-        <strong data-set-rir-value>—</strong>
-      </button>
       ${options.showComplete === false ? "" : `
         <button class="set-complete-button" type="button" data-complete-set aria-label="Complete ${normalizedType === warmUpSetType ? `warm-up set ${ordinal}` : `set ${Number(setNumber) || 1}`}${autoRestTimerEnabled() ? " and start rest timer" : ""}" aria-pressed="false">
           <span aria-hidden="true">✓</span>
@@ -5537,7 +5533,6 @@ function exerciseLogFields(exercise, workoutTitle, options = {}) {
         <span>Set</span>
         <span>Weight</span>
         <span>Reps</span>
-        <button class="rir-help-trigger" type="button" data-rir-help aria-label="What does RIR mean?" aria-haspopup="dialog"><span>RIR</span><svg viewBox="0 0 20 20" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="8"/><path d="M10 9v5M10 5.5v1"/></svg></button>
       </div>
         <div data-set-rows>
           ${setRows(exercise, setCount, { showComplete: options.showSetComplete !== false, includeWarmUp: options.includeWarmUp !== false })}
@@ -10110,7 +10105,6 @@ function customWorkoutGroupedFieldMarkup(field, value, context, placeholder = ""
 
 function customWorkoutGroupedSetRowMarkup(row, code, exerciseIndex, setType, roundNumber, exerciseName) {
   const values = setRowInputValues(row);
-  const rir = String(row?.dataset.repsInReserve || "");
   const isWarmUp = setType === warmUpSetType;
   const context = isWarmUp
     ? `${code} warm-up, ${exerciseName}`
@@ -10135,7 +10129,6 @@ function customWorkoutGroupedSetRowMarkup(row, code, exerciseIndex, setType, rou
       ><span aria-hidden="true">${escapeHtml(code)}${complete ? " ✓" : ""}</span></button>
       ${customWorkoutGroupedFieldMarkup("weight", values.weightRaw, context, row?.querySelector("[data-set-weight]")?.placeholder || "", row?.querySelector("[data-set-weight]")?.dataset.historyHint || "")}
       ${customWorkoutGroupedFieldMarkup("reps", values.repsRaw, context, row?.querySelector("[data-set-reps]")?.placeholder || "")}
-      ${customWorkoutGroupedFieldMarkup("rir", rir, context)}
     </div>
   `;
 }
@@ -10365,23 +10358,22 @@ function customWorkoutGroupedNextSetAdvice(previous, next, config) {
   if (!previous?.completed || next?.completed || !next || !Number.isFinite(previous.rir) ||
       previous.rir < 0 || previous.rir > 5 || !Number.isFinite(previous.weight) || previous.weight <= 0 ||
       !Number.isInteger(previous.reps) || previous.reps <= 0) return null;
-  const effort = `RIR ${previous.rir}`;
-  if (previous.rir <= 1) return { message: `${effort} · No increase; lower the load if form slips.` };
-  if (!config) return { message: `${effort} · No increase; add a rep target for guidance.` };
+  if (previous.rir <= 1) return { message: "No increase; lower the load if form slips." };
+  if (!config) return { message: "No increase; add a rep target for guidance." };
   if (!config.enabled) return null;
   const repMin = Number(config.rep_min);
   const increment = Number(config.increment);
   const targetRir = Number(config.target_rir);
   if (config.unit !== "lb" || !Number.isFinite(repMin) || repMin <= 0 ||
       !Number.isFinite(increment) || increment <= 0 || !Number.isFinite(targetRir)) {
-    return { message: `${effort} · Review this exercise’s weight targets with your coach.` };
+    return { message: "Review this exercise’s weight targets with your coach." };
   }
-  if (previous.reps < repMin) return { message: `${effort} · No increase until you reach the target reps.` };
-  if (previous.rir < Math.max(4, targetRir + 2)) return { message: `${effort} · Keep the load for the next set.` };
-  if (increment > previous.weight * 0.1) return { message: `${effort} · Ask your coach for a smaller weight jump.` };
+  if (previous.reps < repMin) return { message: "No increase until you reach the target reps." };
+  if (previous.rir < Math.max(4, targetRir + 2)) return { message: "Keep the load for the next set." };
+  if (increment > previous.weight * 0.1) return { message: "Ask your coach for a smaller weight jump." };
   const weight = previous.weight + increment;
   if (String(next.weight || "").trim() && Number(next.weight) >= weight) return null;
-  return { message: `${effort} · Try ${weight} lb next set`, weight };
+  return { message: `Try ${weight} lb next set`, weight };
 }
 
 function customWorkoutGroupedRoundAdvice(logElement, roundNumber) {
@@ -10679,7 +10671,6 @@ function customWorkoutGroupedSectionsMarkup(carousel) {
   const columnLabelsMarkup = `
     <div class="custom-workout-grouped-columns">
       <span>Set</span><span>Weight</span><span>Reps</span>
-      <button class="rir-help-trigger" type="button" data-rir-help aria-label="What does RIR mean?" aria-haspopup="dialog"><span>RIR</span><svg viewBox="0 0 20 20" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="8"/><path d="M10 9v5M10 5.5v1"/></svg></button>
     </div>
   `;
 
@@ -11215,22 +11206,17 @@ function validateCustomWorkoutGroupedSection(section, options = {}) {
   rows.forEach((row) => {
     const weight = row.querySelector('[data-custom-grouped-field="weight"]');
     const reps = row.querySelector('[data-custom-grouped-field="reps"]');
-    const rir = row.querySelector('[data-custom-grouped-field="rir"]');
     const isWarmUp = row.dataset.customGroupedSetType === warmUpSetType;
     const weightRaw = String(weight?.value || "").trim();
     const repsRaw = String(reps?.value || "").trim();
-    const rirRaw = String(rir?.value || "").trim();
     const weightValue = Number(weight?.value);
     const repsValue = Number(reps?.value);
-    const rirValue = Number(rir?.value);
     const weightInvalid = weightRaw === "" || !Number.isFinite(weightValue) || weightValue < 0;
     const repsInvalid = repsRaw === "" || !Number.isFinite(repsValue) || (isWarmUp ? repsValue < 0 : repsValue <= 0);
-    const rirInvalid = rirRaw !== "" && (!Number.isFinite(rirValue) || rirValue < 0 || rirValue > 5);
     const weightValid = !weightInvalid;
     const repsValid = !repsInvalid;
-    const rirValid = !rirInvalid;
 
-    [[weight, weightValid], [reps, repsValid], [rir, rirValid]].forEach(([input, valid]) => {
+    [[weight, weightValid], [reps, repsValid]].forEach(([input, valid]) => {
       if (!input) return;
       if (valid) {
         input.removeAttribute("aria-invalid");
@@ -11242,7 +11228,7 @@ function validateCustomWorkoutGroupedSection(section, options = {}) {
   });
 
   if (firstInvalid && status) {
-    status.textContent = "Enter weight (0 is allowed) and reps (0 is allowed for warm-ups). Working reps must be above 0. RIR is optional and must be 0 to 5 when entered.";
+    status.textContent = "Enter weight (0 is allowed) and reps (0 is allowed for warm-ups). Working reps must be above 0.";
   }
   if (firstInvalid && options.focus !== false) firstInvalid.focus();
 
@@ -11260,10 +11246,9 @@ function completeEnteredCustomWorkoutWarmUps(carousel, options = {}) {
   if (options.optional) {
     enteredRows = enteredRows.filter((row) => {
       const value = (field) => String(row.querySelector(`[data-custom-grouped-field="${field}"]`)?.value || "").trim();
-      const weight = value("weight"), reps = value("reps"), rir = value("rir");
+      const weight = value("weight"), reps = value("reps");
       return weight !== "" && reps !== "" && Number.isFinite(Number(weight)) && Number(weight) >= 0 &&
-        Number.isFinite(Number(reps)) && Number(reps) >= 0 &&
-        (rir === "" || (Number.isFinite(Number(rir)) && Number(rir) >= 0 && Number(rir) <= 5));
+        Number.isFinite(Number(reps)) && Number(reps) >= 0;
     });
   }
   if (enteredRows.length === 0) return { valid: true, rows: [], previousStates: [] };
@@ -13576,7 +13561,7 @@ function clientWorkoutPickerPreviewMarkup(workout) {
     return [
       "Choose from the exercise library",
       "Add warm-up and working sets",
-      "Track weight, reps, and RIR"
+      "Track weight and reps"
     ].map((item, index) => `
       <li><span>${index + 1}</span><strong>${escapeHtml(item)}</strong></li>
     `).join("");
@@ -15933,7 +15918,6 @@ function renderClientTrainingLogs() {
               <div><dt>Exercises</dt><dd>${escapeHtml(String(metrics.exerciseCount))}</dd></div>
               <div><dt>Volume</dt><dd>${escapeHtml(metrics.volumeLabel)}</dd></div>
               <div><dt>Working sets</dt><dd>${escapeHtml(String(metrics.workingSetCount))}</dd></div>
-              <div><dt>Average RIR</dt><dd>${escapeHtml(metrics.averageRirLabel)}</dd></div>
             </dl>
             ${appleWorkoutMarkup}
             <div class="training-log-history-card-actions">
@@ -20927,21 +20911,20 @@ function workoutFinishIssues(section, options = {}) {
     const hasWorkingEntry = workingRows.some((row) => {
       const values = setRowInputValues(row);
       return row.classList.contains("is-complete") || row.dataset.customGroupedReopened === "true" ||
-        values.weightRaw !== "" || values.repsRaw !== "" || String(row.dataset.repsInReserve ?? "").trim() !== "";
+        values.weightRaw !== "" || values.repsRaw !== "";
     });
     if (!hasWorkingEntry) return;
     workingRows.forEach((row) => {
       const values = setRowInputValues(row);
-      const rir = String(row.dataset.repsInReserve ?? "").trim();
       const complete = row.classList.contains("is-complete");
       if (options.allowUnstarted && !complete && row.dataset.customGroupedReopened !== "true" &&
-          values.weightRaw === "" && values.repsRaw === "" && rir === "") return;
+          values.weightRaw === "" && values.repsRaw === "") return;
       const number = Number(row.dataset.setNumber) || 1;
       const visibleRow = carousel?.querySelector(`.custom-workout-grouped-row[data-custom-grouped-exercise-index="${groupIndex}"][data-custom-grouped-set-type="${workingSetType}"][data-custom-grouped-set-number="${number}"]`);
       const unit = carousel ? workoutSetUnit(carousel) : "Set";
       const label = `${name} · ${unit} ${number}`;
       const target = (field) => visibleRow?.querySelector(`[data-custom-grouped-field="${field}"]`) ||
-        row.querySelector(field === "rir" ? "[data-set-rir]" : `[data-set-${field}]`);
+        row.querySelector(`[data-set-${field}]`);
       const missing = [];
       if (!enteredName && !nameReported) {
         issues.push({ message: `${name}: enter the exercise name.`, target: nameField });
@@ -20952,9 +20935,6 @@ function workoutFinishIssues(section, options = {}) {
       }
       if (values.repsRaw === "" || !Number.isFinite(values.repsValue) || values.repsValue <= 0) {
         missing.push(["reps", "enter reps above 0"]);
-      }
-      if (rir !== "" && (!Number.isFinite(Number(rir)) || Number(rir) < 0 || Number(rir) > 5)) {
-        missing.push(["rir", "enter RIR from 0 to 5, or leave it blank"]);
       }
       missing.forEach(([field, message]) => issues.push({ message: `${label}: ${message}.`, target: target(field) }));
       if (!missing.length && (carousel || row.dataset.groupedRoundRequired === "true" || row.dataset.progressionSuggested === "true") && !complete) {
@@ -21007,7 +20987,7 @@ function showWorkoutFinishIssues(button, issues) {
   const help = document.createElement("p");
   help.textContent = section?.classList.contains("client-workout-panel-cardio")
     ? "Duration is required. Distance, calories, and notes are optional."
-    : "Warm-ups and RIR are optional. You can leave warm-up fields blank or at 0; Log warm-up is not required.";
+    : "Warm-ups are optional. You can leave warm-up fields blank or at 0; Log warm-up is not required.";
   summary.appendChild(help);
   (button.closest("footer") || button).insertAdjacentElement("afterend", summary);
   summary.scrollIntoView?.({ block: "center", behavior: "smooth" });
