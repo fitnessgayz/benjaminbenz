@@ -675,7 +675,7 @@ function latestClientProgressValue(entries = progressEntries, valueForEntry = ()
   return null;
 }
 
-function clientProgressSnapshotItems(entries = progressEntries) {
+function clientProgressPreviewItems(entries = progressEntries) {
   const fields = [
     ["Bodyweight", (entry) => entry?.bodyweight, " lb"],
     ["Body fat", (entry) => entry?.bodyfat, "%"],
@@ -688,54 +688,30 @@ function clientProgressSnapshotItems(entries = progressEntries) {
   });
 }
 
-function showClientProgressSnapshot() {
-  let dialog = document.querySelector("[data-client-progress-snapshot]");
-  if (!dialog) {
-    dialog = document.createElement("dialog");
-    dialog.className = "client-progress-snapshot";
-    dialog.dataset.clientProgressSnapshot = "";
-    const heading = document.createElement("h2");
-    heading.textContent = "Stats & measurements";
-    const summary = document.createElement("div");
-    summary.dataset.clientProgressSnapshotValues = "";
-    const actions = document.createElement("div");
-    actions.className = "client-progress-snapshot-actions";
-    const close = document.createElement("button");
-    close.type = "button";
-    close.textContent = "Close";
-    close.addEventListener("click", () => dialog.close());
-    const view = document.createElement("button");
-    view.type = "button";
-    view.textContent = "View stats & measurements";
-    view.className = "client-progress-snapshot-view";
-    view.addEventListener("click", () => {
-      dialog.close();
-      setClientDashboardTab("stats");
-      document.querySelector('[data-client-dashboard-panel="stats"]')?.scrollIntoView({ block: "start" });
-    });
-    actions.append(close, view);
-    dialog.append(heading, summary, actions);
-    document.body.append(dialog);
-  }
-  const summary = dialog.querySelector("[data-client-progress-snapshot-values]");
-  const items = clientProgressSnapshotItems();
-  summary.replaceChildren();
+function renderClientProgressPreview(entries = progressEntries) {
+  const preview = document.getElementById("client-progress-preview-values");
+  if (!preview) return;
+
+  const items = clientProgressPreviewItems(entries);
   if (!items.length) {
     const empty = document.createElement("p");
-    empty.textContent = "No measurements saved yet.";
-    summary.append(empty);
-  } else {
-    items.forEach(({ label, value }) => {
-      const row = document.createElement("p");
-      const name = document.createElement("span");
-      const amount = document.createElement("strong");
-      name.textContent = label;
-      amount.textContent = value;
-      row.append(name, amount);
-      summary.append(row);
-    });
+    empty.className = "client-progress-preview-empty";
+    empty.textContent = "No measurements saved yet. Add your first entry to see it here.";
+    preview.replaceChildren(empty);
+    return;
   }
-  dialog.showModal();
+
+  const list = document.createElement("dl");
+  items.forEach(({ label, value }) => {
+    const item = document.createElement("div");
+    const name = document.createElement("dt");
+    const amount = document.createElement("dd");
+    name.textContent = label;
+    amount.textContent = value;
+    item.append(name, amount);
+    list.append(item);
+  });
+  preview.replaceChildren(list);
 }
 
 function localDateKey(date) {
@@ -4287,6 +4263,7 @@ function clearClientQuestionnaire() {
 function renderProgress(entries) {
   const safeEntries = Array.isArray(entries) ? entries : [];
   progressEntries = safeEntries;
+  renderClientProgressPreview(safeEntries);
   clientQuarterGoalController?.refresh();
   const latest = safeEntries[safeEntries.length - 1];
 
@@ -18420,6 +18397,13 @@ function setClientSettingsView(viewName = "menu", options = {}) {
 
 function handleClientDashboardTabs() {
   document.addEventListener("click", (event) => {
+    if (event.target.closest("[data-client-progress-stats-open]")) {
+      setClientDashboardTab("stats");
+      const panel = document.querySelector('[data-client-dashboard-panel="stats"]');
+      panel?.scrollIntoView({ block: "start" });
+      panel?.querySelector('h2[tabindex="-1"]')?.focus({ preventScroll: true });
+      return;
+    }
     if (event.target.closest("[data-client-home-notifications]")) {
       setClientDashboardTab("notifications");
       setClientSettingsView("notifications", { focus: true });
@@ -18451,11 +18435,6 @@ function handleClientDashboardTabs() {
     const tabName = tab.dataset.clientDashboardTab;
     const navigation = tab.closest(".client-dashboard-tabs");
     const mobileNavigation = window.matchMedia?.("(max-width: 900px)")?.matches ?? false;
-    if (mobileNavigation && tabName === "progress" && activeClientDashboardTab === "progress") {
-      showClientProgressSnapshot();
-      lastClientDashboardMobileTabPress = "";
-      return;
-    }
     if (mobileNavigation && tabName === "workouts" && activeClientDashboardTab === "workouts" &&
         window.WorkoutExerciseDock?.toggle()) {
       lastClientDashboardMobileTabPress = "";
