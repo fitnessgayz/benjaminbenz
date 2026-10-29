@@ -15428,19 +15428,10 @@ function workoutHistorySummaryMetrics(workout = {}) {
       ? sum + (weight * reps)
       : sum;
   }, 0);
-  const rirValues = workingSets
-    .filter((set) => String(set.effort_scale || "").trim().toLowerCase() === "rir")
-    .map((set) => Number(set.effort_value))
-    .filter((value) => Number.isFinite(value) && value >= 0 && value <= 5);
-  const averageRir = rirValues.length > 0
-    ? rirValues.reduce((sum, value) => sum + value, 0) / rirValues.length
-    : null;
-
   return {
     exerciseCount: exercises.length,
     workingSetCount: workingSets.length,
-    volumeLabel: totalVolume > 0 ? `${Math.round(totalVolume).toLocaleString("en-US")} lb` : "—",
-    averageRirLabel: averageRir === null ? "—" : averageRir.toFixed(1)
+    volumeLabel: totalVolume > 0 ? `${Math.round(totalVolume).toLocaleString("en-US")} lb` : "—"
   };
 }
 
@@ -15607,6 +15598,8 @@ async function recordClientAchievementEvents(events = []) {
 
 function renderClientTrainingLogs() {
   cancelScheduledClientTrainingLogsRender();
+  window.FWB_CLIENT_EXERCISE_HISTORY_LOGS = trainingLogs;
+  window.FWB_CLIENT_EXERCISE_HISTORY_DETAIL?.setLogs(trainingLogs);
   renderClientAchievements();
   renderClientExerciseProgress(trainingLogs);
   renderClientWorkoutCalendar(trainingLogs);
@@ -15846,6 +15839,9 @@ function renderClientTrainingLogs() {
                             : `${entry.exercise_code} ${entry.exercise_name}`
                         )}</span>
                         <em>${escapeHtml(setSummary || "Sets saved")}</em>
+                        ${![warmupExerciseCode, cardioExerciseCode].includes(entry.exercise_code)
+                          ? `<button class="training-log-exercise-history-button" type="button" data-client-exercise-history-open="${escapeHtml(entry.exercise_name)}" aria-label="View all history for ${escapeHtml(entry.exercise_name)}">Exercise history</button>`
+                          : ""}
                         ${editableSetRows}
                         ${entry.gym_name ? `<small class="training-log-gym">At ${escapeHtml(entry.gym_name)}</small>` : ""}
                         ${noteSummary ? `<small class="training-log-notes"><strong>Notes:</strong> ${escapeHtml(noteSummary)}</small>` : ""}
@@ -15906,7 +15902,6 @@ function renderClientTrainingLogs() {
               <div><dt>Exercises</dt><dd>${escapeHtml(String(metrics.exerciseCount))}</dd></div>
               <div><dt>Volume</dt><dd>${escapeHtml(metrics.volumeLabel)}</dd></div>
               <div><dt>Working sets</dt><dd>${escapeHtml(String(metrics.workingSetCount))}</dd></div>
-              <div><dt>Average RIR</dt><dd>${escapeHtml(metrics.averageRirLabel)}</dd></div>
             </dl>
             ${appleWorkoutMarkup}
             <div class="training-log-history-card-actions">
