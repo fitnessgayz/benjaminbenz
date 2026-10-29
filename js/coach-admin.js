@@ -105,6 +105,7 @@ let coachNotificationsController = null;
 let coachMessagesController = null;
 let inviteClientReturnFocus = null;
 let inviteClientSavedProgram = null;
+let pendingSignupApproval = null;
 let coachCalendarEvents = [];
 let coachCalendarLoaded = false;
 let coachCalendarLoading = false;
@@ -171,7 +172,7 @@ function setClientInviteBusy(isBusy) {
   const closeButtons = document.querySelectorAll("[data-close-invite-client]");
 
   if (saveButton) {
-    saveButton.disabled = isBusy;
+    saveButton.disabled = isBusy || Boolean(pendingSignupApproval);
   }
 
   if (inviteButton) {
@@ -179,7 +180,7 @@ function setClientInviteBusy(isBusy) {
   }
 
   if (textButton) {
-    textButton.disabled = isBusy;
+    textButton.disabled = isBusy || Boolean(pendingSignupApproval);
   }
 
   const form = document.getElementById("program-editor");
@@ -6121,6 +6122,107 @@ function handleExerciseLibraryEditor() {
   });
 }
 
+async function loadClientAccessRequests() {
+  const list = document.getElementById("coach-access-request-list");
+  if (!list || !coachSupabase) return;
+  list.textContent = "Loading requests…";
+  const { data, error } = await coachSupabase
+    .from("client_access_requests")
+    .select("id,name,email,phone,goals,created_at")
+    .eq("status", "pending")
+    .order("created_at", { ascending: false });
+  if (error) {
+    list.textContent = "Sign-up requests are unavailable. Please refresh or try again later.";
+    return;
+  }
+  list.replaceChildren();
+  if (!data?.length) {
+    const empty = document.createElement("p");
+    empty.className = "empty-state";
+    empty.textContent = "No requests need review.";
+    list.append(empty);
+    return;
+  }
+  data.forEach((request) => {
+    const row = document.createElement("article");
+    row.className = "coach-access-request";
+    const name = document.createElement("strong");
+    name.textContent = request.name;
+    const details = document.createElement("span");
+    details.textContent = [request.email, request.phone, new Date(request.created_at).toLocaleDateString()]
+      .filter(Boolean).join(" · ");
+    row.append(name, details);
+    if (request.goals) {
+      const goals = document.createElement("p");
+      goals.textContent = request.goals;
+      row.append(goals);
+    }
+    const actions = document.createElement("div");
+    actions.className = "coach-access-request-actions";
+    const approve = document.createElement("button");
+    approve.type = "button";
+    approve.className = "button button-dark";
+    approve.textContent = "Review & invite";
+    approve.addEventListener("click", () => {
+      pendingSignupApproval = request;
+      openInviteClientModal(approve);
+      const form = document.getElementById("program-editor");
+      form.elements.invite_client_email.value = request.email;
+      form.elements.invite_client_name.value = request.name;
+      form.elements.invite_client_phone.value = request.phone || "";
+      setClientInviteBusy(false);
+      inviteStatus("Review the details, then send the email invitation to approve access.");
+    });
+    const decline = document.createElement("button");
+    decline.type = "button";
+    decline.className = "button button-ghost";
+    decline.textContent = "Decline";
+    decline.addEventListener("click", async () => {
+      if (!window.confirm(`Decline ${request.name}'s sign-up request?`)) return;
+      approve.disabled = true;
+      decline.disabled = true;
+      const { data: userData } = await coachSupabase.auth.getUser();
+      const { data: updated, error: updateError } = await coachSupabase
+        .from("client_access_requests")
+        .update({ status: "declined", decided_at: new Date().toISOString(), decided_by: userData.user?.id })
+        .eq("id", request.id).eq("status", "pending").select("id").maybeSingle();
+      if (updateError || !updated) {
+        adminStatus("Could not decline the request. Refresh and try again.");
+        approve.disabled = false;
+        decline.disabled = false;
+        return;
+      }
+      adminStatus(`Declined ${request.name}'s request.`);
+      await loadClientAccessRequests();
+    });
+    actions.append(approve, decline);
+    row.append(actions);
+    list.append(row);
+  });
+}
+
+async function markSignupRequestApproved() {
+  if (!pendingSignupApproval) return true;
+  const request = pendingSignupApproval;
+  const form = document.getElementById("program-editor");
+  if (normalizeEmail(form.elements.invite_client_email.value) !== normalizeEmail(request.email)) {
+    inviteStatus("The invite email changed. Use the original request email to approve this request.");
+    return false;
+  }
+  const { data: userData } = await coachSupabase.auth.getUser();
+  const { data, error } = await coachSupabase.from("client_access_requests")
+    .update({ status: "approved", decided_at: new Date().toISOString(), decided_by: userData.user?.id })
+    .eq("id", request.id).eq("status", "pending").select("id").maybeSingle();
+  if (error || !data) {
+    inviteStatus("Invite sent, but the request could not be marked approved. Refresh the queue before retrying.");
+    adminStatus("Invite sent, but the sign-up request still needs a status update.");
+    return false;
+  }
+  pendingSignupApproval = null;
+  await loadClientAccessRequests();
+  return true;
+}
+
 async function showAdminWorkspace(user) {
   const workspace = document.getElementById("coach-admin-workspace");
   const signOutButton = document.querySelector("[data-coach-sign-out]");
@@ -6147,6 +6249,7 @@ async function showAdminWorkspace(user) {
 
   await Promise.all([
     loadPrograms(),
+    loadClientAccessRequests(),
     loadExerciseLibrary(),
     loadCoachCalendarEvents(),
     initializeCoachNotifications(user)
@@ -7683,6 +7786,11 @@ async function handleSendInvite() {
       return;
     }
 
+    if (pendingSignupApproval && requestedEmail !== normalizeEmail(pendingSignupApproval.email)) {
+      inviteStatus("Use the original request email to approve this sign-up.");
+      return;
+    }
+
     if (isText && !requestedPhone) {
       inviteStatus("Add a valid client phone number to prepare a text invite.");
       form.elements.invite_client_phone?.focus();
@@ -7789,6 +7897,11 @@ async function handleSendInvite() {
 
       inviteStatus(successMessage);
       adminStatus(successMessage);
+      if (!await markSignupRequestApproved()) {
+        pendingSignupApproval = null;
+        closeInviteClientModal({ completed: true });
+        return;
+      }
       closeInviteClientModal({ completed: true });
     } catch (error) {
       const message = error.name === "AbortError"
@@ -7915,7 +8028,7 @@ function closeInviteClientModal(options = {}) {
     return;
   }
 
-  if (!options.completed && document.getElementById("save-client-button")?.disabled) {
+  if (!options.completed && document.getElementById("send-invite-button")?.disabled) {
     return;
   }
 
@@ -7925,6 +8038,9 @@ function closeInviteClientModal(options = {}) {
   if (!options.completed) {
     adminStatus(inviteClientSavedProgram ? "Client saved." : "Invite canceled.");
   }
+
+  pendingSignupApproval = null;
+  setClientInviteBusy(false);
 
   const returnFocus = inviteClientReturnFocus;
 
@@ -7964,7 +8080,11 @@ function handleNewClient() {
     return;
   }
 
-  button.addEventListener("click", () => openInviteClientModal(button));
+  button.addEventListener("click", () => {
+    pendingSignupApproval = null;
+    openInviteClientModal(button);
+    setClientInviteBusy(false);
+  });
   closeButtons.forEach((closeButton) => {
     closeButton.addEventListener("click", () => closeInviteClientModal());
   });
@@ -8093,6 +8213,7 @@ async function bootCoachAdmin() {
   handleWorkoutAnalysis();
   handleCoachSignOut();
   handleNewClient();
+  document.getElementById("refresh-access-requests")?.addEventListener("click", loadClientAccessRequests);
   handleStartNewProgram();
 
   if (!coachSupabase) {

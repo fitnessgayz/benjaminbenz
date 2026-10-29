@@ -66,7 +66,7 @@ test("opening and canceling an invite leaves the selected client intact", () => 
 
 test("successful save or invite closes the modal without reverting the new client", () => {
   assert.match(adminSource, /adminStatus\("Client saved\."\);\s*closeInviteClientModal\(\{ completed: true \}\)/);
-  assert.match(adminSource, /adminStatus\(successMessage\);\s*closeInviteClientModal\(\{ completed: true \}\)/);
+  assert.match(adminSource, /adminStatus\(successMessage\);[\s\S]*?markSignupRequestApproved\(\)[\s\S]*?closeInviteClientModal\(\{ completed: true \}\)/);
   assert.match(adminSource, /document\.querySelectorAll\("\[data-close-invite-client\]"\)[\s\S]*?button\.disabled = isBusy/);
 });
 

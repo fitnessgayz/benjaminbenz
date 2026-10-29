@@ -1,0 +1,8 @@
+.coach-access-requests .coach-home-module-heading { align-items: flex-start; gap: 1rem; }
+.coach-access-requests .coach-home-module-heading button { flex: none; }
+.coach-access-request { padding: 1rem 0; border-top: 1px solid rgba(255,255,255,.15); }
+.coach-access-request:first-child { border-top: 0; }
+.coach-access-request strong, .coach-access-request span { display: block; }
+.coach-access-request span, .coach-access-request p { color: var(--fwb-muted, #aab5c5); overflow-wrap: anywhere; }
+.coach-access-request p { margin: .45rem 0; white-space: pre-wrap; }
+.coach-access-request-actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .75rem; }

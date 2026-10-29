@@ -40,6 +40,7 @@
   <link rel="stylesheet" href="/css/fwb-dark-theme.css?v=coach-blue-gold-1&amp;training-log-contrast=1&amp;compact-activity-inbox=3" />
   <link rel="stylesheet" href="css/coach-workout-corrections.css?v=weight-corrections-1" />
   <link rel="stylesheet" href="css/coach-workout-schedule.css?v=1" />
+  <link rel="stylesheet" href="css/client-access-requests.css?v=1" />
 </head>
 <body class="dashboard-page coach-admin-page">
   <header class="site-header dashboard-header">
@@ -292,6 +293,20 @@
               <p class="coach-home-module-copy">Clients appear here after 14 days without a saved workout.</p>
               <div class="coach-home-list" id="coach-home-inactive-list">
                 <p class="empty-state">Everyone has trained recently.</p>
+              </div>
+            </section>
+
+            <section class="coach-home-module coach-access-requests" aria-labelledby="coach-access-requests-title">
+              <div class="coach-home-module-heading">
+                <div>
+                  <p class="kicker">New clients</p>
+                  <h3 id="coach-access-requests-title">Sign-up requests</h3>
+                </div>
+                <button class="button button-ghost" type="button" id="refresh-access-requests">Refresh</button>
+              </div>
+              <p class="coach-home-module-copy">Review each request before sending an invitation.</p>
+              <div class="coach-home-list" id="coach-access-request-list" aria-live="polite">
+                <p class="empty-state">Loading requests…</p>
               </div>
             </section>
           </div>
