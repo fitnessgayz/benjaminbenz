@@ -5257,7 +5257,7 @@ function setRowMarkup(setNumber, repPlaceholder = "", setType = workingSetType, 
         <input type="number" min="0" step="1" placeholder="${escapeHtml(repPlaceholder)}" data-default-placeholder="${escapeHtml(repPlaceholder)}" data-set-reps />
       </label>
       ${options.showComplete === false ? "" : `
-        <button class="set-complete-button" type="button" data-complete-set aria-label="Log ${normalizedType === warmUpSetType ? `warm-up set ${ordinal}` : `set ${Number(setNumber) || 1}`}${autoRestTimerEnabled() ? " and start rest timer" : ""}" aria-pressed="false">
+        <button class="set-complete-button" type="button" data-complete-set aria-label="Log ${normalizedType === warmUpSetType ? `warm-up set ${ordinal}` : `set ${Number(setNumber) || 1}`}${normalizedType !== warmUpSetType && autoRestTimerEnabled() ? " and start rest timer" : ""}" aria-pressed="false">
           <span aria-hidden="true">✓</span>
         </button>
       `}
@@ -20933,7 +20933,7 @@ function workoutFinishIssues(section, options = {}) {
         missing.push(["reps", "enter reps above 0"]);
       }
       missing.forEach(([field, message]) => issues.push({ message: `${label}: ${message}.`, target: target(field) }));
-      if (!missing.length && (carousel || row.dataset.groupedRoundRequired === "true" || row.dataset.progressionSuggested === "true") && !complete) {
+      if (!missing.length && !complete) {
         issues.push({
           message: `${label}: tap Log to save these entries.`,
           target: visibleRow?.querySelector("[data-custom-grouped-set-toggle]") || row.querySelector("[data-complete-set]")

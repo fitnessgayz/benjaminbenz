@@ -94,9 +94,10 @@ test("calculator reads the assigned exercise rep range from workout metadata", (
   assert.equal(program.planned_sets, 3);
 });
 
-test("client and coach workout loggers expose Weight and PR calculator entry points", () => {
+test("client workout logger keeps the PR calculator while removing it from Weight entry", () => {
+  assert.doesNotMatch(clientSource, /<button class="one-rm-trigger"[^>]*data-one-rm-open aria-label="Open estimated 1RM calculator from this set"/);
+  assert.match(coachSource, /class="one-rm-trigger"[^>]*data-one-rm-open/);
   for (const source of [clientSource, coachSource]) {
-    assert.match(source, /class="one-rm-trigger"[^>]*data-one-rm-open/);
     assert.match(source, /class="one-rm-pr-trigger"[^>]*data-one-rm-open[^>]*data-one-rm-source="pr"/);
     assert.match(source, /dataset\.oneRmSources = JSON\.stringify/);
   }
