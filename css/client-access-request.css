@@ -1,0 +1,24 @@
+.client-access-request-page .client-access { max-width: 1080px; margin-inline: auto; }
+.client-access-request-page .access-intro p:last-child { max-width: 58ch; line-height: 1.5; }
+.client-access-request-page .client-access-request-panel { width: min(100%, 600px); }
+.client-access-request-page .client-access-request-panel textarea,
+.client-access-request-page .client-access-request-panel input {
+  width: 100%;
+  min-height: 48px;
+  padding: 11px 13px;
+  border: 1px solid var(--control-border);
+  border-radius: 12px;
+  color: var(--ink);
+  background: var(--surface-soft);
+  font: inherit;
+}
+.client-access-request-page .client-access-request-panel textarea { min-height: 100px; resize: vertical; }
+.client-access-request-page .client-access-request-panel input:focus-visible,
+.client-access-request-page .client-access-request-panel textarea:focus-visible,
+.client-access-request-page :is(button, a):focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.client-access-request-page .client-access-request-optional { color: var(--muted); font-size: .8rem; font-weight: 500; }
+.client-access-request-page .client-access-request-trap { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
+.client-access-request-page .client-access-request-signin { min-height: 44px; padding: 10px 14px; color: var(--ink); font-weight: 800; }
+.client-access-request-page .client-access-request-return { margin: 15px 0 0; color: var(--muted); }
+.client-access-request-page .client-access-request-return a { color: var(--secondary-accent); }
+.client-access-request-page button:disabled { opacity: .65; cursor: wait; }

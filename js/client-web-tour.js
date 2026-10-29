@@ -4,7 +4,7 @@
   const steps = [
     { title: "Home", pose: "greeting", body: "Hi, I’m Atari! I’ll show you around. Your daily check-in, gym visits, and dashboard shortcuts start here. Open Workouts when you are ready to train." },
     { title: "Choose a workout", pose: "encouraging", body: "Let’s find a workout for you. In Workouts, open a trainer-assigned workout, log a custom session, or tap Generate Workout. Choose a weekly plan to save several days, or Today’s workout for one session. Cardio & Mobility lets you log cardio or create a recovery session." },
-    { title: "Warm up and log", pose: "encouraging", body: "I’ll help you keep track as you train. Start the timer, then log or skip the warm-up. Add exercises through the library. Enter weight, reps, and effort, then log each set or round. Gray values are suggestions; they do not count until you log them. Finish and save when you are done." },
+    { title: "Warm up and log", pose: "encouraging", body: "I’ll help you keep track as you train. Add exercises through the library, enter weight and reps, then tap the Log box to save each set. Warm-ups are optional. Gray values are suggestions until you log them. Finish and save when you are done." },
     { title: "Logs", pose: "greeting", body: "Your Logs keep saved workouts first, followed by Apple Health and connected health workouts. Search your history, download a CSV, or import a workout history CSV from another app after reviewing its preview and units." },
     { title: "Progress", pose: "celebrating", body: "Come see how far you’ve come! Track measurements, exercise progress, personal records, and photos. Your workout history helps you choose weights for future sessions." },
     { title: "Community", pose: "celebrating", body: "Let’s celebrate your wins. Try the daily challenge, earn XP and badges, and visit the FWB Wall. If you opt in to sharing, other clients can give props to your wins." },
@@ -51,6 +51,23 @@
     return dialog;
   }
 
-  global.FWB_CLIENT_WEB_TOUR = Object.freeze({ createTour, steps });
-  if (global.document) createTour(global.document);
+  const dialog = global.document ? createTour(global.document) : null;
+  function showFirstVisit(accountId) {
+    const id = String(accountId || "").trim();
+    if (!id || !dialog || dialog.open) return false;
+    const key = `fwb_client_web_tour_seen_v1:${id}`;
+    try {
+      if (global.localStorage?.getItem(key) === "true") return false;
+    } catch (_error) {
+      // The tour can still appear when browser storage is unavailable.
+    }
+    const trigger = global.document.querySelector("[data-client-web-tour-open]");
+    if (!trigger) return false;
+    trigger.click();
+    if (!dialog.open) return false;
+    try { global.localStorage?.setItem(key, "true"); } catch (_error) { /* Keep this visit usable. */ }
+    return true;
+  }
+
+  global.FWB_CLIENT_WEB_TOUR = Object.freeze({ createTour, showFirstVisit, steps });
 })(typeof window === "undefined" ? globalThis : window);

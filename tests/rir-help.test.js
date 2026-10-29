@@ -349,7 +349,7 @@ function portalFunctions(names, globals = {}) {
   return vm.runInNewContext(`${functions.join("\n")}\n({${names.join(",")}})`, globals);
 }
 
-test("each grouped warm-up and working section has a keyboard-accessible RIR help label in every format", () => {
+test("grouped warm-up and working sections omit RIR help in every format", () => {
   const h = fixture();
   const logs = [{ name: "Squat", warmups: [{}], working: [{}, {}] }];
   const renderer = portalFunctions(["workoutSetUnit", "customWorkoutGroupedSectionsMarkup"], {
@@ -360,26 +360,19 @@ test("each grouped warm-up and working section has a keyboard-accessible RIR hel
     customWorkoutGroupedRoundCount: () => 2,
     customWorkoutGroupedRoundIsLogged: () => false,
     customWorkoutGroupedSetRowMarkup: () => "",
-    customWorkoutGroupedRoundCode: () => "A1"
+    customWorkoutGroupedRoundCode: () => "A1",
+    escapeHtml: (value) => String(value ?? "")
   });
   for (const format of ["single", "superset", "circuit"]) {
     const group = h.element("div", { "data-custom-workout-grouped": "true", "data-custom-workout-format": format });
     group.innerHTML = renderer.customWorkoutGroupedSectionsMarkup(group);
     const buttons = group.querySelectorAll("[data-rir-help]");
-    assert.equal(buttons.length, 3, "Warm-up and both working sections provide help");
-    for (const button of buttons) {
-      assert.equal(button.tagName, "BUTTON");
-      assert.equal(button.getAttribute("type"), "button");
-      assert.equal(button.getAttribute("aria-haspopup"), "dialog");
-      assert.match(button.getAttribute("aria-label"), /RIR/);
-      assert.equal(button.closest('[aria-hidden="true"]'), null);
-    }
-    assert.equal(h.api.helpContext(buttons[0]).action, "Log warm-up");
-    assert.equal(h.api.helpContext(buttons[1]).action, format === "single" ? "Log set" : "Log round");
+    assert.equal(buttons.length, 0);
+    assert.match(group.innerHTML, /<span>Set<\/span><span>Weight<\/span><span>Reps<\/span><span>Log<\/span>/);
   }
 });
 
-test("legacy set headers also expose help while numeric grouped RIR fields remain editable", () => {
+test("client set headers expose Log and omit RIR entry and help", () => {
   const h = fixture();
   const renderer = portalFunctions(["exerciseLogFields", "customWorkoutGroupedFieldMarkup"], {
     escapeHtml: (value) => String(value ?? ""),
@@ -388,20 +381,18 @@ test("legacy set headers also expose help while numeric grouped RIR fields remai
   const legacy = h.element("div");
   legacy.innerHTML = renderer.exerciseLogFields({ code: "A1", name: "Squat" }, "Strength", { setCount: 2, showActions: false, showDemo: false });
   const header = legacy.querySelector(".set-header");
-  const button = header.querySelector("[data-rir-help]");
-  assert.ok(button);
-  assert.equal(button.closest('[aria-hidden="true"]'), null);
-  assert.equal(h.api.helpContext(button).usesPicker, true);
+  assert.match(legacy.innerHTML, /<span>Log<\/span>/);
+  assert.equal(header.querySelector("[data-rir-help]"), null);
   const groupedField = h.element("div");
-  groupedField.innerHTML = renderer.customWorkoutGroupedFieldMarkup("rir", "2", "Round 1, squat");
+  groupedField.innerHTML = renderer.customWorkoutGroupedFieldMarkup("reps", "8", "Round 1, squat");
   const input = groupedField.querySelector("input");
   assert.equal(input.getAttribute("type"), "number");
   assert.equal(input.getAttribute("min"), "0");
-  assert.equal(input.getAttribute("max"), "5");
-  assert.equal(input.getAttribute("value"), "2");
+  assert.equal(input.getAttribute("max"), null);
+  assert.equal(input.getAttribute("value"), "8");
   assert.equal(input.hasAttribute("readonly"), false);
   assert.equal(input.hasAttribute("disabled"), false);
   assert.equal(input.hasAttribute("data-rir-help"), false);
   const dashboard = fs.readFileSync(path.join(root, "client-dashboard.html"), "utf8");
-  assert.match(dashboard, /<script src="js\/rir-help\.js\?[^\"]*"><\/script>/);
+  assert.doesNotMatch(dashboard, /<script src="js\/rir-help\.js/);
 });

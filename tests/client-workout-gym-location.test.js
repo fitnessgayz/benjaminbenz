@@ -39,6 +39,32 @@ test("previous exercise weights stay with the selected gym", () => {
   assert.deepEqual(api.logsForExerciseDisplay(log), []);
 });
 
+test("recent exercise recommendations keep each gym's own sets and skip unrelated exercises", () => {
+  const history = [
+    { exercise_name: "Bench Press", gym_name: "Gym A", entry_date: "2026-10-01", session_id: "a", set_type: "working", set_number: 1, weight_used: 100, reps: 10 },
+    { exercise_name: "Bench Press", gym_name: "Gym A", entry_date: "2026-10-01", session_id: "a", set_type: "working", set_number: 2, weight_used: 105, reps: 8 },
+    { exercise_name: "Bench Press", gym_name: "Gym B", entry_date: "2026-10-03", session_id: "b", set_type: "working", set_number: 1, weight_used: 150, reps: 6 },
+    { exercise_name: "Bench Press", gym_name: null, entry_date: "2026-09-30", session_id: "old", set_type: "working", set_number: 1, weight_used: 85, reps: 12 },
+    { exercise_name: "Archer Push-Up", gym_name: "Gym A", entry_date: "2026-10-05", session_id: "other", set_type: "working", set_number: 1, weight_used: 205, reps: 15 }
+  ];
+  const names = ["normalizeWorkoutGymName", "workoutGymLocationForElement", "normalizeExerciseHistoryName",
+    "currentExerciseHistoryName", "exerciseHistoryLookup", "recentExerciseHistoryByGym"];
+  const api = Function("trainingLogs", "exerciseNameInputForLog", "warmupExerciseCode", "cardioExerciseCode",
+    "normalizedSetType", "workingSetType", "todayDate",
+    `${names.map(sourceForFunction).join("\n")}; return { recentExerciseHistoryByGym };`)(
+      history, (log) => log.nameInput, "WU", "CARDIO", (type) => type, "working", () => "2026-10-29"
+    );
+  const panel = { querySelector: () => ({ value: "Gym A" }) };
+  const log = { dataset: { exerciseName: "Bench Press" }, nameInput: { value: "Bench Press" },
+    querySelector: () => ({ value: "2026-10-29" }), closest: () => panel };
+  const results = api.recentExerciseHistoryByGym(log);
+  assert.deepEqual(results.map((item) => item.gym), ["Gym A", "Gym B", ""]);
+  assert.deepEqual(results[0].rows.map((row) => row.weight_used), [100, 105]);
+  assert.deepEqual(results[1].rows.map((row) => row.weight_used), [150]);
+  log.nameInput.value = "Never Done";
+  assert.deepEqual(api.recentExerciseHistoryByGym(log), []);
+});
+
 test("the compact picker explains gym, home, and outdoor sessions", () => {
   const markup = Function("trainingLogs", "escapeHtml",
     `${sourceForFunction("normalizeWorkoutGymName")}\n${sourceForFunction("recentWorkoutGymLocations")}\n${sourceForFunction("workoutGymPickerMarkup")}; return workoutGymPickerMarkup("", 2);`)(

@@ -12,7 +12,7 @@ function declaration(name) {
   return source.slice(match.index, next < 0 ? undefined : match.index + match[0].length + next);
 }
 const context = vm.createContext({ progressMeasurements: (entry) => entry.measurements || {} });
-vm.runInContext(['clientHomeSnapshotValue', 'latestClientProgressValue', 'clientProgressSnapshotItems']
+vm.runInContext(['clientHomeSnapshotValue', 'latestClientProgressValue', 'clientProgressPreviewItems']
   .map(declaration).join('\n'), context);
 
 test('progress snapshot shows latest available measurement for each field', () => {
@@ -21,11 +21,11 @@ test('progress snapshot shows latest available measurement for each field', () =
     { bodyweight: 178, lean_mass: 142 },
     { bodyfat: 18, measurements: { waist: 33 } }
   ];
-  assert.deepEqual(JSON.parse(JSON.stringify(context.clientProgressSnapshotItems(rows))), [
+  assert.deepEqual(JSON.parse(JSON.stringify(context.clientProgressPreviewItems(rows))), [
     { label: 'Bodyweight', value: '178 lb' },
     { label: 'Body fat', value: '18%' },
     { label: 'Lean mass', value: '142 lb' },
     { label: 'Waist', value: '33 in' }
   ]);
-  assert.deepEqual(JSON.parse(JSON.stringify(context.clientProgressSnapshotItems([]))), []);
+  assert.deepEqual(JSON.parse(JSON.stringify(context.clientProgressPreviewItems([]))), []);
 });

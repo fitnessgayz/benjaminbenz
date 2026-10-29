@@ -161,8 +161,8 @@ function fixture({ format = "single", assigned = false, grouped = true } = {}) {
       const round = new Element("section", { kind: type === "warm_up" ? "warmup" : "round", ...(type === "working" ? { customGroupedRound: String(number) } : {}) });
       const visibleRow = new Element("div", { customGroupedExerciseIndex: String(index), customGroupedSetType: type, customGroupedSetNumber: String(number) }, ["custom-workout-grouped-row"]);
       const visibleFields = Object.fromEntries(["weight", "reps", "rir"].map((field) => [field, input({ customGroupedField: field }, spec[field])]));
-      const button = new Element("button", type === "working" ? { customGroupedLogRound: String(number) } : { customGroupedLogWarmup: "" });
-      visibleRow.append(...Object.values(visibleFields)); round.append(visibleRow, button); visibleHost.append(round);
+      const button = new Element("button", { customGroupedSetToggle: "" });
+      visibleRow.append(...Object.values(visibleFields), button); round.append(visibleRow); visibleHost.append(round);
       return { row, fields, visibleRow, visibleFields, button, rirButton };
     });
     return { log, card, rows, nameInput, visibleNameInput };
@@ -213,8 +213,8 @@ test("missing weight is reported separately from valid reps and valid completed 
   assert.equal(issues[0].target, exercise.rows[0].fields.weight);
 });
 
-test("working fields reject negative/nonfinite weight, zero/nonfinite reps, and invalid optional RIR", () => {
-  for (const [field, value] of [["weight", "-1"], ["weight", "Infinity"], ["weight", "NaN"], ["reps", "0"], ["reps", "-1"], ["reps", "Infinity"], ["rir", "-1"], ["rir", "6"], ["rir", "NaN"]]) {
+test("working fields reject negative/nonfinite weight and zero/nonfinite reps", () => {
+  for (const [field, value] of [["weight", "-1"], ["weight", "Infinity"], ["weight", "NaN"], ["reps", "0"], ["reps", "-1"], ["reps", "Infinity"]]) {
     const h = fixture();
     const exercise = h.addExercise("Press", [{ weight: "20", reps: "8", complete: true, [field]: value }]);
     const issues = h.issues();
@@ -222,20 +222,18 @@ test("working fields reject negative/nonfinite weight, zero/nonfinite reps, and 
     assert.match(issues[0].message, new RegExp(field, "i"));
     assert.equal(issues[0].target, exercise.rows[0].visibleFields[field]);
   }
-  for (const rir of [undefined, "", "0", "5"]) {
-    const h = fixture(); h.addExercise("Press", [{ weight: "20", reps: "8", complete: true, rir }]);
-    assert.equal(h.issues().length, 0);
-  }
+  const h = fixture(); h.addExercise("Press", [{ weight: "20", reps: "8", complete: true }]);
+  assert.equal(h.issues().length, 0);
 });
 
-test("valid but unlogged grouped values explain which Log set or Log round action is needed", () => {
+test("valid but unlogged grouped values explain which Log box is needed", () => {
   for (const format of ["single", "superset", "circuit"]) {
     const h = fixture({ format });
     const exercise = h.addExercise("Split squat", [{ weight: "20", reps: "8", number: 2 }]);
     const issues = h.issues();
     assert.ok(issues.length > 0);
     assert.match(issues[0].message, /Split squat/);
-    assert.match(issues[0].message, format === "single" ? /log set/i : /log round/i);
+    assert.match(issues[0].message, /tap Log/i);
     assert.equal(issues[0].target, exercise.rows[0].button);
     assert.equal(exercise.rows[0].row.classList.contains("is-complete"), false, "Validation never logs a set");
   }
@@ -259,7 +257,7 @@ test("allowUnstarted skips only untouched blank working rows, preserving edited 
   assert.equal(blank.issues({ allowUnstarted: true }).length, 0);
   for (const spec of [
     { weight: "0", reps: "" }, { weight: "", reps: "8" },
-    { weight: "", reps: "", rir: "1" }, { weight: "", reps: "", reopened: true }
+    { weight: "", reps: "", reopened: true }
   ]) {
     const h = fixture(); h.addExercise("Row", [spec]);
     assert.ok(h.issues({ allowUnstarted: true }).length > 0, JSON.stringify(spec));
@@ -304,7 +302,7 @@ test("a missing name on a later grouped card is reported once and its action rev
   assert.equal(h.context.showWorkoutFinishIssues(finish, issues), false);
   const summary = h.panel.querySelector("[data-workout-finish-issues]");
   assert.equal(summary.getAttribute("role"), "alert");
-  assert.match(summary.querySelector("p").textContent, /Warm-ups.*optional.*Log warm-up is not required/);
+  assert.match(summary.querySelector("p").textContent, /Warm-ups are optional.*Log box/);
   summary.querySelector("button").click();
   assert.equal(later.nameFields.hidden, false);
   assert.equal(later.nameToggle.getAttribute("aria-expanded"), "true");

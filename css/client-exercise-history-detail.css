@@ -1,0 +1,98 @@
+.training-log-exercise-history-button {
+  width: fit-content;
+  min-height: 36px;
+  margin-top: 6px;
+  padding: 5px 10px;
+  border: 1px solid var(--client-settings-line, #506050);
+  border-radius: 10px;
+  color: var(--client-settings-accent, #61aaff);
+  background: var(--surface-soft, #18211c);
+  font: inherit;
+  font-size: .79rem;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.client-exercise-history-dialog {
+  width: min(660px, calc(100vw - 20px));
+  max-width: none;
+  max-height: min(90dvh, 980px);
+  margin: auto;
+  padding: 0;
+  overflow: auto;
+  border: 1px solid var(--client-settings-line, #506050);
+  border-radius: 22px;
+  color: var(--ink, #f6f8f5);
+  background: var(--client-settings-surface, #19201b);
+  box-shadow: 0 24px 70px #0009;
+}
+.client-exercise-history-dialog::backdrop { background: #000b; }
+.client-exercise-history-dialog :is(button, select):focus-visible,
+.training-log-exercise-history-button:focus-visible { outline: 3px solid var(--client-settings-accent, #61aaff); outline-offset: 2px; }
+.client-exercise-history-header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 19px 20px;
+  border-bottom: 1px solid var(--client-settings-line, #506050);
+  background: var(--client-settings-surface, #19201b);
+}
+.client-exercise-history-header p { margin: 0 0 4px; color: var(--client-settings-accent, #61aaff); font-size: .75rem; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+.client-exercise-history-header h2 { margin: 0; font-size: clamp(1.25rem, 5vw, 1.8rem); line-height: 1.15; overflow-wrap: anywhere; }
+.client-exercise-history-header button {
+  flex: none;
+  width: 42px;
+  height: 42px;
+  border: 1px solid var(--client-settings-line, #506050);
+  border-radius: 12px;
+  color: inherit;
+  background: var(--surface-soft, #18211c);
+  font-size: 1.7rem;
+  cursor: pointer;
+}
+.client-exercise-history-body { display: grid; gap: 18px; padding: 20px; }
+.client-exercise-history-filter { display: grid; gap: 6px; font-weight: 850; }
+.client-exercise-history-filter select { width: 100%; min-height: 46px; padding: 9px 12px; border: 1px solid var(--client-settings-line, #506050); border-radius: 12px; color: inherit; background: var(--surface-soft, #18211c); font: inherit; }
+.client-exercise-history-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.client-exercise-history-metrics div { display: grid; gap: 6px; min-width: 0; padding: 12px; border: 1px solid var(--client-settings-line, #506050); border-radius: 12px; background: var(--surface-soft, #18211c); }
+.client-exercise-history-metrics span { color: var(--muted, #bbc3bb); font-size: .72rem; font-weight: 750; }
+.client-exercise-history-metrics strong { font-size: 1rem; overflow-wrap: anywhere; }
+.client-exercise-history-latest { margin: 0; color: var(--muted, #bbc3bb); font-size: .85rem; }
+.client-exercise-history-latest strong { color: var(--ink, #f6f8f5); }
+.client-exercise-history-section { display: grid; gap: 10px; }
+.client-exercise-history-section h3 { margin: 0; font-size: 1.08rem; }
+.client-exercise-history-section p { margin: 0; color: var(--muted, #bbc3bb); font-size: .82rem; }
+.client-exercise-history-trend { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.client-exercise-history-trend li { display: grid; grid-template-columns: 72px minmax(0, 1fr) 90px; align-items: center; gap: 8px; font-size: .72rem; }
+.client-exercise-history-trend li strong { font-size: .72rem; text-align: right; }
+.client-exercise-history-trend-track { height: 10px; border-radius: 20px; background: var(--surface-soft, #18211c); overflow: hidden; }
+.client-exercise-history-trend-track > span { display: block; height: 100%; border-radius: inherit; background: var(--client-settings-accent, #61aaff); }
+.client-exercise-history-gym-list { display: grid; gap: 8px; }
+.client-exercise-history-gym-list > div { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; padding: 12px; border: 1px solid var(--client-settings-line, #506050); border-radius: 12px; }
+.client-exercise-history-gym-list strong { overflow-wrap: anywhere; }
+.client-exercise-history-gym-list span { color: var(--muted, #bbc3bb); font-size: .77rem; }
+.client-exercise-history-gym-list span:nth-child(n+3) { grid-column: 1 / -1; }
+.client-exercise-history-session { overflow: hidden; border: 1px solid var(--client-settings-line, #506050); border-radius: 13px; }
+.client-exercise-history-session-heading { display: flex; justify-content: space-between; gap: 10px; padding: 12px; background: var(--surface-soft, #18211c); }
+.client-exercise-history-session-heading div { display: grid; gap: 4px; }
+.client-exercise-history-session-heading span, .client-exercise-history-session-heading small { color: var(--muted, #bbc3bb); font-size: .76rem; }
+.client-exercise-history-session-heading small { white-space: nowrap; }
+.client-exercise-history-table-wrap { overflow-x: auto; }
+.client-exercise-history-session table { width: 100%; border-collapse: collapse; text-align: left; font-size: .83rem; }
+.client-exercise-history-session :is(th, td) { padding: 9px 12px; border-top: 1px solid var(--client-settings-line, #506050); }
+.client-exercise-history-session thead th { color: var(--muted, #bbc3bb); font-size: .7rem; text-transform: uppercase; }
+.client-exercise-history-session tr.is-warmup { color: var(--muted, #bbc3bb); }
+.client-exercise-history-more { min-height: 44px; padding: 9px 14px; border: 1px solid var(--client-settings-accent, #61aaff); border-radius: 10px; color: var(--client-settings-accent, #61aaff); background: transparent; font: inherit; font-weight: 850; cursor: pointer; }
+
+@media (max-width: 520px) {
+  .client-exercise-history-dialog { max-height: calc(100dvh - 22px); }
+  .client-exercise-history-body { padding: 15px; }
+  .client-exercise-history-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .client-exercise-history-trend li { grid-template-columns: 64px minmax(0, 1fr) 78px; gap: 5px; font-size: .66rem; }
+  .client-exercise-history-trend li strong { font-size: .66rem; }
+  .client-exercise-history-session-heading { flex-wrap: wrap; }
+}

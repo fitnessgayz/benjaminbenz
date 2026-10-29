@@ -30,7 +30,7 @@ test("shares the set and round card renderer for custom and assigned workouts", 
   assert.doesNotMatch(nextCardMarkup, /aria-hidden="true" hidden/);
 });
 
-test("renders the group log action inside each grouped exercise card", () => {
+test("grouped exercise cards keep a cue and use row Log boxes", () => {
   const logFields = sourceForFunction("exerciseLogFields");
   const customCard = sourceForFunction("customWorkoutCardMarkup");
   const assignedCard = sourceForFunction("exerciseCard");
@@ -39,15 +39,16 @@ test("renders the group log action inside each grouped exercise card", () => {
 
   assert.match(
     logFields,
-    /<\/div>\s*\$\{options\.groupActionSlot \? `[\s\S]*?data-workout-group-primary-action[\s\S]*?data-workout-group-log-set[\s\S]*?` : ""\}\s*<div class="exercise-notes/,
+    /<\/div>\s*\$\{options\.groupActionSlot \? `[\s\S]*?data-workout-group-primary-action[\s\S]*?data-custom-workout-carousel-cue[\s\S]*?` : ""\}\s*<div class="exercise-notes/,
   );
+  assert.doesNotMatch(logFields, /<button[^>]*data-workout-group-log-set/);
   assert.match(customCard, /groupActionSlot: true/);
   assert.match(assignedCard, /groupActionSlot: format !== "single"/);
   assert.doesNotMatch(customCarousel, /data-workout-group-primary-action/);
   assert.doesNotMatch(assignedCarousel, /data-workout-group-primary-action/);
 });
 
-test("removes per-row completion buttons from superset and circuit cards", () => {
+test("keeps per-row Log boxes when straight cards become supersets or circuits", () => {
   const rowMarkup = sourceForFunction("setRowMarkup");
   const rowsMarkup = sourceForFunction("setRows");
   const logFields = sourceForFunction("exerciseLogFields");
@@ -57,16 +58,14 @@ test("removes per-row completion buttons from superset and circuit cards", () =>
   assert.match(rowMarkup, /options\.showComplete === false \? ""/);
   assert.match(rowsMarkup, /setRowMarkup\([\s\S]*?options\)/);
   assert.match(logFields, /showComplete: options\.showSetComplete !== false/);
-  assert.match(customCard, /showSetComplete: cardFormat === "single"/);
-  assert.match(assignedCard, /showSetComplete: format === "single"/);
+  assert.match(customCard, /showSetComplete: true/);
+  assert.match(assignedCard, /showSetComplete: true/);
   assert.match(
     mobileStyles,
     /data-custom-workout-format="superset"[\s\S]*?data-custom-workout-format="circuit"[\s\S]*?\.set-row \{[\s\S]*?grid-template-columns: 40px minmax\(0, 1fr\) minmax\(0, 1fr\) 50px !important;/
   );
-  assert.match(
-    mobileStyles,
-    /data-custom-workout-format="superset"[\s\S]*?data-custom-workout-format="circuit"[\s\S]*?\.set-complete-button \{[\s\S]*?display: none !important;/
-  );
+  const compactStyles = fs.readFileSync(path.join(__dirname, "../css/client-workout-compact-log.css"), "utf8");
+  assert.match(compactStyles, /\.set-table \.set-complete-button,[\s\S]*?display: grid !important;/);
 });
 
 test("keeps a dormant log-action slot when a straight custom card is regrouped", () => {

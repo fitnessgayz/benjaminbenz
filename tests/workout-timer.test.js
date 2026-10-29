@@ -54,19 +54,20 @@ test("expanded workout timer uses compact icon controls without overflow", () =>
   assert.match(styleSource, /\.workout-elapsed-timer button svg/);
 });
 
-test("set completion checkmark sits after RIR and starts the rest timer", () => {
+test("set Log box follows reps and starts the rest timer after a saved working set", () => {
   const rowMarkupSource = sourceForFunction("setRowMarkup");
   const interactionsSource = sourceForFunction("handleWorkoutInteractions");
-  const rirPosition = rowMarkupSource.indexOf("data-set-rir");
+  const repsPosition = rowMarkupSource.indexOf("data-set-reps");
   const completePosition = rowMarkupSource.indexOf("data-complete-set");
 
-  assert.ok(rirPosition >= 0);
-  assert.ok(completePosition > rirPosition);
+  assert.ok(repsPosition >= 0);
+  assert.ok(completePosition > repsPosition);
+  assert.doesNotMatch(rowMarkupSource, /data-set-rir/);
   assert.match(rowMarkupSource, /set-complete-button/);
   assert.match(rowMarkupSource, /aria-pressed="false"/);
   assert.match(interactionsSource, /completeSetButton[\s\S]*classList\.add\("is-complete"\)/);
   assert.match(interactionsSource, /completeSetButton[\s\S]*animateCompletedSet\(setRow\)/);
-  assert.match(interactionsSource, /completeSetButton[\s\S]*scheduleTrainingLogAutosave\(logElement\)[\s\S]*resetRestTimer\(\)[\s\S]*openRestTimer\(completeSetButton\)[\s\S]*startOrPauseRestTimer\(\)/);
+  assert.match(interactionsSource, /completeSetButton[\s\S]*await saveTrainingLogRows\(completeSetButton[\s\S]*if \(!isWarmUp && autoRestTimerEnabled\(\)[\s\S]*resetRestTimer\(\)[\s\S]*openRestTimer\(completeSetButton\)[\s\S]*startOrPauseRestTimer\(\)/);
   assert.match(styleSource, /grid-template-columns:\s*52px minmax\(0, 1fr\) minmax\(0, 1fr\) 60px 48px/);
   assert.match(styleSource, /\.set-complete-button\s*\{[^}]*width:\s*48px;[^}]*height:\s*48px;/s);
   assert.match(styleSource, /fwb-set-completion-sweep/);
@@ -90,7 +91,7 @@ test("automatic rest can be turned off without removing manual timer controls", 
   assert.match(sourceForFunction("logCustomWorkoutGroupedWarmUp"), /if \(autoRestTimerEnabled\(\)\)/);
   assert.match(sourceForFunction("logCustomWorkoutGroupedRound"), /if \(autoRestTimerEnabled\(\)\)/);
   assert.match(sourceForFunction("logCurrentWorkoutCarouselSet"), /completedRound && !nextProgress\.isComplete && autoRestTimerEnabled\(\)/);
-  assert.match(sourceForFunction("handleWorkoutInteractions"), /if \(autoRestTimerEnabled\(\)\) \{\s*resetRestTimer\(\);\s*openRestTimer\(completeSetButton\)/);
+  assert.match(sourceForFunction("handleWorkoutInteractions"), /if \(!isWarmUp && autoRestTimerEnabled\(\) && [^\n]+\) \{\s*resetRestTimer\(\);\s*openRestTimer\(completeSetButton\)/);
   assert.match(sourceForFunction("handleWorkoutInteractions"), /if \(setRestButton\) \{[\s\S]*?openRestTimer\(setRestButton\)/);
 });
 

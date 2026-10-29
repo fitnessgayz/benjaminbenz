@@ -3,7 +3,7 @@ const test = require("node:test");
 const fs = require("node:fs");
 const path = require("node:path");
 const {
-  muscleFor, prepareRecords, matchingRecords, groupedRecords
+  muscleFor, prepareRecords, matchingRecords, groupedRecords, muscleArtwork
 } = require("../js/client-exercise-library.js");
 
 test("normalizes common muscle names into useful browse filters", () => {
@@ -36,6 +36,18 @@ test("searches aliases and filters by primary or secondary muscle", () => {
   assert.deepEqual(matchingRecords(prepared, "bench press", "Triceps").map((record) => record.name), ["Bench Press"]);
   assert.equal(matchingRecords(prepared, "bench", "Hamstrings").length, 0);
   assert.deepEqual(groupedRecords(matchingRecords(prepared, "", "All"), "All").map(([muscle]) => muscle), ["Chest", "Hamstrings"]);
+});
+
+test("illustrates every browse muscle with a distinct highlighted region", () => {
+  const muscles = ["Chest", "Back", "Shoulders", "Biceps", "Triceps", "Forearms", "Core", "Glutes", "Quads", "Hamstrings", "Calves", "Full Body", "Cardio", "Mobility"];
+  const artwork = muscles.map(muscleArtwork);
+  assert.equal(new Set(artwork).size, muscles.length);
+  artwork.forEach((svg) => {
+    assert.match(svg, /<svg viewBox="0 0 96 112" aria-hidden="true"/);
+    assert.match(svg, /fill="#29a9ff"/);
+    assert.match(svg, /<path d=/);
+  });
+  assert.equal(muscleArtwork("Other"), muscleArtwork("Full Body"));
 });
 
 test("both exercise search menus offer More and connect it to the full library", () => {

@@ -54,8 +54,7 @@ test("calculates honest workout-card metrics from working strength sets", () => 
   assert.deepEqual(summarize(workout), {
     exerciseCount: 3,
     workingSetCount: 2,
-    volumeLabel: "940 lb",
-    averageRirLabel: "1.5"
+    volumeLabel: "940 lb"
   });
 });
 
@@ -98,6 +97,8 @@ test("renders a mobile-only past-workout deck with expandable exercise details",
   assert.match(renderSource, /Exercises completed/);
   assert.match(renderSource, /workout\.completed_at \? "Completed" : "Saved"/);
   assert.match(renderSource, /data-copy-workout-to-custom/);
+  assert.match(renderSource, /data-client-exercise-history-open/);
+  assert.doesNotMatch(renderSource, /Average RIR/);
   assert.match(renderSource, />Copy Workout<\/button>/);
   assert.ok(
     renderSource.indexOf("activeWorkoutHistoryDeckIndex = 0") <
@@ -168,7 +169,7 @@ test("mobile deck styles layer cards without clipping long workout content", () 
 });
 
 test("cache-busts the live dashboard assets after the Session Log release", () => {
-  assert.match(dashboard, /css\/style\.css\?v=workout-preview-1/);
+  assert.match(dashboard, /css\/style\.css\?v=[^\"]*workout-preview-1/);
   assert.match(dashboard, /js\/client-portal\.js\?v=workout-preview-1/);
   assert.match(portal, /handleClientWorkoutHistoryDeck\(\);/);
 });
