@@ -1,0 +1,126 @@
+/* The same four-column set grid is used by prescribed, generated, and custom logs. */
+:root body.dashboard-page .set-table {
+  overflow: hidden;
+  border: 1px solid #393d45;
+  border-radius: 16px;
+  background: #24272d;
+}
+
+:root body.dashboard-page .set-table .set-header,
+:root body.dashboard-page .set-table .set-row {
+  display: grid !important;
+  grid-template-columns: 48px minmax(0, 1fr) minmax(0, .78fr) 44px !important;
+  align-items: center;
+  gap: 6px !important;
+  padding: 6px 8px !important;
+}
+
+:root body.dashboard-page .set-table .set-header {
+  color: #aeb5bf !important;
+  font-size: .67rem !important;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+:root body.dashboard-page .set-table .set-row {
+  border-top: 1px solid #393d45;
+  background: #24272d;
+}
+
+:root body.dashboard-page .set-table .set-row > * {
+  grid-row: 1 !important;
+  min-width: 0;
+}
+
+:root body.dashboard-page .set-table .set-row > .set-label-field { grid-column: 1 !important; }
+:root body.dashboard-page .set-table .set-row > .set-input-field:nth-of-type(2) { grid-column: 2 !important; }
+:root body.dashboard-page .set-table .set-row > .set-input-field:nth-of-type(3) { grid-column: 3 !important; }
+:root body.dashboard-page .set-table .set-row > .set-complete-button { grid-column: 4 !important; }
+
+:root body.dashboard-page .set-table .set-row :is(input[data-set-weight], input[data-set-reps]) {
+  min-height: 44px !important;
+  height: 44px !important;
+  border: 1px solid #454c56 !important;
+  border-radius: 10px !important;
+  background: #111316 !important;
+  color: #f7f8fa !important;
+  font-size: 16px !important;
+  text-align: center;
+}
+
+:root body.dashboard-page .set-table .set-row :is(input[data-set-weight], input[data-set-reps]):focus {
+  border-color: #2c9cff !important;
+  outline: 1px solid #2c9cff !important;
+}
+
+:root body.dashboard-page .set-table .set-complete-button,
+:root body.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-log-check {
+  display: grid !important;
+  width: 34px !important;
+  min-width: 34px !important;
+  height: 34px !important;
+  min-height: 34px !important;
+  margin-inline: auto !important;
+  padding: 0 !important;
+  place-items: center;
+  border: 2px solid #abb3bd !important;
+  border-radius: 7px !important;
+  background: #15171a !important;
+  color: transparent !important;
+  font-size: 1rem !important;
+  cursor: pointer;
+}
+
+:root body.dashboard-page .set-table .set-complete-button[aria-pressed="true"],
+:root body.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-log-check[aria-pressed="true"] {
+  border-color: #2c9cff !important;
+  background: #2c9cff !important;
+  color: #101820 !important;
+}
+
+:root body.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-columns,
+:root body.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-row {
+  grid-template-columns: minmax(46px, .48fr) minmax(0, 1.45fr) minmax(0, 1fr) 44px !important;
+  align-items: center !important;
+  gap: 6px !important;
+}
+
+:root body.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-columns > :first-child {
+  color: #aeb5bf !important;
+}
+
+:root body.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-code {
+  min-height: 38px !important;
+  border-color: #434a54 !important;
+  border-radius: 8px !important;
+  background: #111316 !important;
+  color: #39a4ff !important;
+  font-size: .75rem !important;
+}
+
+:root body.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-field {
+  border-color: #454c56 !important;
+  background: #111316 !important;
+  color: #f7f8fa !important;
+}
+
+:root body.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-field > input {
+  color: #f7f8fa !important;
+}
+
+:root body.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-row.is-complete {
+  background: #1e2d38 !important;
+}
+
+:root body.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-round-action:has(.custom-workout-grouped-rest-controls[hidden]) {
+  display: none !important;
+}
+
+@media (max-width: 380px) {
+  :root body.dashboard-page .set-table .set-header,
+  :root body.dashboard-page .set-table .set-row {
+    grid-template-columns: 42px minmax(0, 1fr) minmax(0, .72fr) 38px !important;
+    gap: 4px !important;
+    padding-inline: 5px !important;
+  }
+}

@@ -82,15 +82,9 @@ test("logging a round copies valid weight and reps only into blank next-round fi
   assert.equal(copy({}, 1), 0);
 });
 
-test("RIR advice offers a bounded optional increase and respects effort, reps, and current weight", () => {
-  const advice = Function(`${functionSource("customWorkoutGroupedNextSetAdvice")}; return customWorkoutGroupedNextSetAdvice;`)();
-  const previous = { completed: true, rir: 4, weight: 100, reps: 10 };
-  const next = { completed: false, weight: "100" };
-  const config = { enabled: true, unit: "lb", rep_min: 8, target_rir: 2, increment: 5 };
-  assert.equal(advice(previous, next, config).weight, 105);
-  assert.equal(advice({ ...previous, rir: 1 }, next, config).weight, undefined);
-  assert.equal(advice({ ...previous, rir: 3 }, next, config).weight, undefined);
-  assert.equal(advice({ ...previous, reps: 7 }, next, config).weight, undefined);
-  assert.equal(advice(previous, next, { ...config, increment: 11 }).weight, undefined);
-  assert.equal(advice(previous, { ...next, weight: "110" }, config), null);
+test("saved workout rows no longer include RIR and history does not display it", () => {
+  const saveRows = functionSource("rowsForTrainingLog");
+  const history = functionSource("renderClientTrainingLogs");
+  assert.doesNotMatch(saveRows, /effort_scale|effort_value|repsInReserve/);
+  assert.doesNotMatch(history, /Average RIR/);
 });

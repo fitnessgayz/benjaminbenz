@@ -109,20 +109,18 @@ test("renders the exercise key, compact round stepper, round rows, and grouped a
   assert.match(exerciseKey, /data-custom-grouped-exercise-name/);
   assert.match(sections, /<h4>Warm-up<\/h4>/);
   assert.match(sections, /Optional · excluded from working volume/);
-  assert.match(sections, /data-custom-grouped-skip-warmup>Skip warm-up<\/button>/);
-  assert.match(sections, /data-custom-grouped-log-warmup[^>]*>Log warm-up<\/button>/);
+  assert.doesNotMatch(sections, /data-custom-grouped-skip-warmup|data-custom-grouped-log-warmup/);
   assert.match(sections, /custom-workout-grouped-round-exercise-title/);
   assert.match(sections, /`A\$\{exerciseIndex \+ 1\} \$\{item\.exerciseName\}`/);
   assert.match(sections, /<h4>\$\{workoutSetUnit\(carousel\)\} \$\{roundNumber\}<\/h4>/);
-  assert.match(sections, /const columnLabelsMarkup = `[\s\S]*?<button[^>]*data-one-rm-open[^>]*>Weight[\s\S]*?<\/button><span>Reps<\/span>[\s\S]*?<button[^>]*data-rir-help[^>]*><span>RIR<\/span>/);
+  assert.match(sections, /const columnLabelsMarkup = `[\s\S]*?<span>Set<\/span><span>Weight<\/span><span>Reps<\/span><span>Log<\/span>/);
   assert.equal(
     (sections.match(/\$\{columnLabelsMarkup\}/g) || []).length,
     2,
     "Column labels should render in the warm-up and every generated round",
   );
   assert.doesNotMatch(groupedMarkup, /custom-workout-grouped-columns/);
-  assert.match(sections, /data-custom-grouped-log-round="\$\{roundNumber\}"/);
-  assert.match(sections, /logged \? `✓ \$\{workoutSetUnit\(carousel\)\}/);
+  assert.doesNotMatch(sections, /data-custom-grouped-log-round=/);
   assert.match(sections, /data-custom-grouped-rest-adjust="-15"/);
   assert.match(sections, /data-custom-grouped-rest-toggle/);
   assert.match(sections, /data-custom-grouped-rest-adjust="15"/);
@@ -276,7 +274,7 @@ test("changing set counts preserves entered rows and blocks destructive reductio
   assert.deepEqual(saved.at(-1), ["working", "working"]);
 });
 
-test("accepts skipped warm-ups and optional RIR while validating working reps", () => {
+test("accepts optional warm-ups while validating working reps", () => {
   const fieldMarkup = sourceForFunction("customWorkoutGroupedFieldMarkup");
   const validate = sourceForFunction("validateCustomWorkoutGroupedSection");
   const validateSection = Function(
@@ -307,21 +305,18 @@ test("accepts skipped warm-ups and optional RIR while validating working reps", 
   });
 
   assert.match(fieldMarkup, /min="0"/);
-  assert.match(fieldMarkup, /field === "rir" \? ' max="5"'/);
+  assert.doesNotMatch(fieldMarkup, /RIR|rir/);
   assert.match(validate, /data-custom-grouped-field/);
   assert.match(validate, /aria-invalid/);
   assert.match(validate, /weight/);
   assert.match(validate, /reps/);
-  assert.match(validate, /rir/);
+  assert.doesNotMatch(validate, /RIR|rir/);
   assert.match(validate, /< 0/);
   assert.match(validate, /<= 0/);
-  assert.match(validate, /> 5/);
-  assert.match(validate, /rirRaw !== ""/);
   assert.doesNotMatch(validate, /field === "weight"[^\n]*<= 0/);
 
   const skippedWarmUp = row("warm_up", "0", "0", "");
   assert.equal(validateSection(section([skippedWarmUp]), { focus: false }).valid, true);
-  assert.equal(skippedWarmUp.fields.rir.invalid, false);
 
   const workingSet = row("working", "0", "1", "");
   assert.equal(validateSection(section([workingSet]), { focus: false }).valid, true);
@@ -330,9 +325,6 @@ test("accepts skipped warm-ups and optional RIR while validating working reps", 
   assert.equal(validateSection(section([zeroRepWorkingSet]), { focus: false }).valid, false);
   assert.equal(zeroRepWorkingSet.fields.reps.invalid, true);
 
-  const invalidRir = row("working", "0", "1", "6");
-  assert.equal(validateSection(section([invalidRir]), { focus: false }).valid, false);
-  assert.equal(invalidRir.fields.rir.invalid, true);
 });
 
 test("starts the persistent workout timer and rest timer after a successful round log", () => {
@@ -640,15 +632,14 @@ test("rolls warm-up completion back to its prior state when a grouped save fails
   );
 });
 
-test("makes pending warm-up and round chips accessible and non-interactive until logged", () => {
+test("makes grouped Log boxes accessible and disables them only during a save", () => {
   const rowMarkup = sourceForFunction("customWorkoutGroupedSetRowMarkup");
   const refresh = sourceForFunction("refreshCustomWorkoutGroupedCompletion");
 
-  assert.match(rowMarkup, /const pendingRow = !complete/);
-  assert.match(rowMarkup, /aria-label="\$\{escapeHtml\(complete \? `Reopen \$\{context\}` : `\$\{context\} not logged`\)\}"/);
-  assert.match(rowMarkup, /\$\{pendingRow \? "disabled" : ""\}/);
-  assert.match(refresh, /code\.disabled = !complete \|\| carousel\.dataset\.customGroupedWarmupSaving === "true"/);
-  assert.match(refresh, /`\$\{context\} not logged`/);
+  assert.match(rowMarkup, /aria-label="\$\{escapeHtml\(complete \? `Edit \$\{context\}` : `Log \$\{context\}`\)\}"/);
+  assert.match(rowMarkup, /data-custom-grouped-set-toggle/);
+  assert.match(refresh, /code\.disabled = carousel\.dataset\.customGroupedRowSaving === "true"/);
+  assert.match(refresh, /`Log \$\{context\}`/);
 });
 
 test("rebuilds a grouped custom panel from its draft when switching back to Straight", () => {

@@ -5256,12 +5256,8 @@ function setRowMarkup(setNumber, repPlaceholder = "", setType = workingSetType, 
         <em>Reps</em>
         <input type="number" min="0" step="1" placeholder="${escapeHtml(repPlaceholder)}" data-default-placeholder="${escapeHtml(repPlaceholder)}" data-set-reps />
       </label>
-      <button class="set-rir-button" type="button" data-set-rir aria-label="Choose reps in reserve for ${normalizedType === warmUpSetType ? `warm-up set ${ordinal}` : `set ${Number(setNumber) || 1}`}">
-        <span>RIR</span>
-        <strong data-set-rir-value>—</strong>
-      </button>
       ${options.showComplete === false ? "" : `
-        <button class="set-complete-button" type="button" data-complete-set aria-label="Complete ${normalizedType === warmUpSetType ? `warm-up set ${ordinal}` : `set ${Number(setNumber) || 1}`}${autoRestTimerEnabled() ? " and start rest timer" : ""}" aria-pressed="false">
+        <button class="set-complete-button" type="button" data-complete-set aria-label="Log ${normalizedType === warmUpSetType ? `warm-up set ${ordinal}` : `set ${Number(setNumber) || 1}`}${autoRestTimerEnabled() ? " and start rest timer" : ""}" aria-pressed="false">
           <span aria-hidden="true">✓</span>
         </button>
       `}
@@ -5279,6 +5275,25 @@ function setRows(exercise, setCount = setCountFromPrescription(exercise.prescrip
     ...(options.includeWarmUp === false ? [] : [setRowMarkup(warmUpSetNumberBase + 1, repTargets[0] || "", warmUpSetType, "0", options)]),
     ...workingRows
   ].join("");
+}
+
+function prefillNextWorkingSet(logElement, completedRow) {
+  if (!logElement || !completedRow || setTypeForRow(completedRow) === warmUpSetType) return 0;
+  const rows = Array.from(logElement.querySelectorAll("[data-set-row]"))
+    .filter((row) => setTypeForRow(row) === workingSetType);
+  const next = rows[rows.indexOf(completedRow) + 1];
+  if (!next || next.classList.contains("is-complete")) return 0;
+  let changed = 0;
+  for (const field of ["weight", "reps"]) {
+    const value = customWorkoutGroupedCopyValue(completedRow.querySelector(`[data-set-${field}]`)?.value, field);
+    const input = next.querySelector(`[data-set-${field}]`);
+    if (input && !String(input.value || "").trim() && value !== null) {
+      input.value = value;
+      changed += 1;
+    }
+  }
+  if (changed) persistCustomWorkoutDraftForElement(logElement);
+  return changed;
 }
 
 function animateCompletedSet(setRow) {
@@ -5512,9 +5527,9 @@ function exerciseLogFields(exercise, workoutTitle, options = {}) {
       <div class="set-table" aria-label="${escapeHtml(exercise.name)} set tracker">
       <div class="set-header">
         <span>Set</span>
-        <button class="one-rm-trigger" type="button" data-one-rm-open aria-label="Open estimated 1RM calculator from this set">Weight <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="5" y="2.5" width="14" height="19" rx="2"/><path d="M8 6.5h8M8.5 11h1M12 11h1M15.5 11h1M8.5 14.5h1M12 14.5h1M15.5 14.5h1M8.5 18h1M12 18h1M15.5 18h1"/></svg></button>
+        <span>Weight</span>
         <span>Reps</span>
-        <button class="rir-help-trigger" type="button" data-rir-help aria-label="What does RIR mean?" aria-haspopup="dialog"><span>RIR</span><svg viewBox="0 0 20 20" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="8"/><path d="M10 9v5M10 5.5v1"/></svg></button>
+        <span>Log</span>
       </div>
         <div data-set-rows>
           ${setRows(exercise, setCount, { showComplete: options.showSetComplete !== false, includeWarmUp: options.includeWarmUp !== false })}
@@ -5522,12 +5537,11 @@ function exerciseLogFields(exercise, workoutTitle, options = {}) {
         <div class="set-table-actions${addsSupersetExercise ? " has-add-superset-action" : ""}">
           <button class="add-set-button" type="button" data-add-set>+ Add Set</button>
           <button class="set-delete-last-button" type="button" data-delete-last-set>Delete Set</button>
-          <button class="set-finished-button" type="button" data-finish-set${addsSupersetExercise ? " data-add-superset" : ""}>${escapeHtml(finishButtonLabel)}</button>
+          ${addsSupersetExercise ? `<button class="set-finished-button" type="button" data-finish-set data-add-superset>${escapeHtml(finishButtonLabel)}</button>` : ""}
         </div>
       </div>
       ${options.groupActionSlot ? `
         <div class="workout-group-primary-action" data-workout-group-primary-action hidden>
-          <button type="button" data-workout-group-log-set></button>
           <p class="custom-workout-carousel-cue" data-custom-workout-carousel-cue></p>
         </div>
       ` : ""}
@@ -5712,7 +5726,7 @@ function exerciseCard(exercise, workoutTitle, isOpen = false, workoutFocus = "",
           setCount,
           userManagedSets: clientAdded,
           groupActionSlot: format !== "single",
-          showSetComplete: format === "single"
+          showSetComplete: true
         })}
       </div>
     </article>
@@ -9825,7 +9839,7 @@ function customWorkoutCardMarkup(exercise, workoutTitle, index = 0, options = {}
           // Custom cards can be regrouped in place after they render, so every
           // card keeps a dormant slot ready for Superset or Circuit mode.
           groupActionSlot: true,
-          showSetComplete: cardFormat === "single",
+          showSetComplete: true,
           includeWarmUp: cardFormat !== "single",
           finishButtonLabel: isFirstSupersetExercise
             ? "Add Superset"
@@ -10058,8 +10072,7 @@ function setCustomWorkoutGroupedRowComplete(row, complete) {
 }
 
 function customWorkoutGroupedFieldMarkup(field, value, context, placeholder = "", historyHint = "") {
-  const fieldLabel = field === "weight" ? "Weight" : field === "reps" ? "Reps" : "RIR";
-  const max = field === "rir" ? ' max="5"' : "";
+  const fieldLabel = field === "weight" ? "Weight" : "Reps";
   const step = field === "weight" ? "0.5" : "1";
 
   return `
@@ -10067,7 +10080,7 @@ function customWorkoutGroupedFieldMarkup(field, value, context, placeholder = ""
       <span>${fieldLabel}</span>
       <input
         type="number"
-        min="0"${max}
+        min="0"
         step="${step}"
         inputmode="decimal"
         value="${escapeHtml(value)}"
@@ -10082,13 +10095,11 @@ function customWorkoutGroupedFieldMarkup(field, value, context, placeholder = ""
 
 function customWorkoutGroupedSetRowMarkup(row, code, exerciseIndex, setType, roundNumber, exerciseName) {
   const values = setRowInputValues(row);
-  const rir = String(row?.dataset.repsInReserve || "");
   const isWarmUp = setType === warmUpSetType;
   const context = isWarmUp
     ? `${code} warm-up, ${exerciseName}`
     : `round ${roundNumber}, ${code}, ${exerciseName}`;
   const complete = row?.classList.contains("is-complete") || false;
-  const pendingRow = !complete;
 
   return `
     <div
@@ -10097,17 +10108,13 @@ function customWorkoutGroupedSetRowMarkup(row, code, exerciseIndex, setType, rou
       data-custom-grouped-set-type="${escapeHtml(setType)}"
       data-custom-grouped-set-number="${escapeHtml(row?.dataset.setNumber || roundNumber)}"
     >
-      <button
-        class="custom-workout-grouped-code"
-        type="button"
-        data-custom-grouped-set-toggle
-        aria-label="${escapeHtml(complete ? `Reopen ${context}` : `${context} not logged`)}"
-        aria-pressed="${complete}"
-        ${pendingRow ? "disabled" : ""}
-      ><span aria-hidden="true">${escapeHtml(code)}${complete ? " ✓" : ""}</span></button>
+      <span class="custom-workout-grouped-code" aria-hidden="true">${escapeHtml(code)}</span>
       ${customWorkoutGroupedFieldMarkup("weight", values.weightRaw, context, row?.querySelector("[data-set-weight]")?.placeholder || "", row?.querySelector("[data-set-weight]")?.dataset.historyHint || "")}
       ${customWorkoutGroupedFieldMarkup("reps", values.repsRaw, context, row?.querySelector("[data-set-reps]")?.placeholder || "")}
-      ${customWorkoutGroupedFieldMarkup("rir", rir, context)}
+      <button class="custom-workout-grouped-log-check" type="button" data-custom-grouped-set-toggle
+        aria-label="${escapeHtml(complete ? `Edit ${context}` : `Log ${context}`)}" aria-pressed="${complete}">
+        <span aria-hidden="true">${complete ? "✓" : ""}</span>
+      </button>
     </div>
   `;
 }
@@ -10240,7 +10247,7 @@ function syncCustomWorkoutGroupedAccessibleNames(carousel, exerciseIndex, exerci
   carousel?.querySelectorAll(
     `.custom-workout-grouped-row[data-custom-grouped-exercise-index="${Number(exerciseIndex)}"]`
   ).forEach((row) => {
-    const code = String(row.querySelector("[data-custom-grouped-set-toggle]")?.textContent || "").trim();
+    const code = String(row.querySelector(".custom-workout-grouped-code")?.textContent || "").trim();
     const setType = row.dataset.customGroupedSetType;
     const roundNumber = Number(row.closest("[data-custom-grouped-round]")?.dataset.customGroupedRound) || 0;
     const context = setType === warmUpSetType
@@ -10248,12 +10255,10 @@ function syncCustomWorkoutGroupedAccessibleNames(carousel, exerciseIndex, exerci
       : `round ${roundNumber}, ${code}, ${safeName}`;
     const toggle = row.querySelector("[data-custom-grouped-set-toggle]");
     const complete = toggle?.getAttribute("aria-pressed") === "true";
-    const action = complete ? "Reopen" : "";
-
-    toggle?.setAttribute("aria-label", action ? `${action} ${context}` : `${context} not logged`);
+    toggle?.setAttribute("aria-label", `${complete ? "Edit" : "Log"} ${context}`);
     row.querySelectorAll("[data-custom-grouped-field]").forEach((input) => {
       const field = input.dataset.customGroupedField;
-      const fieldLabel = field === "weight" ? "Weight" : field === "reps" ? "Reps" : "RIR";
+      const fieldLabel = field === "weight" ? "Weight" : "Reps";
       input.setAttribute("aria-label", `${fieldLabel}, ${context}`);
     });
   });
@@ -10331,49 +10336,6 @@ function autoCopyCustomWorkoutGroupedNextRound(carousel, completedRound) {
   });
   if (changed) persistCustomWorkoutDraftForElement(carousel);
   return changed;
-}
-
-function customWorkoutGroupedNextSetAdvice(previous, next, config) {
-  if (!previous?.completed || next?.completed || !next || !Number.isFinite(previous.rir) ||
-      previous.rir < 0 || previous.rir > 5 || !Number.isFinite(previous.weight) || previous.weight <= 0 ||
-      !Number.isInteger(previous.reps) || previous.reps <= 0) return null;
-  const effort = `RIR ${previous.rir}`;
-  if (previous.rir <= 1) return { message: `${effort} · No increase; lower the load if form slips.` };
-  if (!config) return { message: `${effort} · No increase; add a rep target for guidance.` };
-  if (!config.enabled) return null;
-  const repMin = Number(config.rep_min);
-  const increment = Number(config.increment);
-  const targetRir = Number(config.target_rir);
-  if (config.unit !== "lb" || !Number.isFinite(repMin) || repMin <= 0 ||
-      !Number.isFinite(increment) || increment <= 0 || !Number.isFinite(targetRir)) {
-    return { message: `${effort} · Review this exercise’s weight targets with your coach.` };
-  }
-  if (previous.reps < repMin) return { message: `${effort} · No increase until you reach the target reps.` };
-  if (previous.rir < Math.max(4, targetRir + 2)) return { message: `${effort} · Keep the load for the next set.` };
-  if (increment > previous.weight * 0.1) return { message: `${effort} · Ask your coach for a smaller weight jump.` };
-  const weight = previous.weight + increment;
-  if (String(next.weight || "").trim() && Number(next.weight) >= weight) return null;
-  return { message: `${effort} · Try ${weight} lb next set`, weight };
-}
-
-function customWorkoutGroupedRoundAdvice(logElement, roundNumber) {
-  if (roundNumber < 2) return null;
-  const rows = customWorkoutGroupedRows(logElement, workingSetType);
-  const previous = rows[roundNumber - 2];
-  const next = rows[roundNumber - 1];
-  if (!previous || !next) return null;
-  const rirRaw = String(previous.dataset.repsInReserve || "").trim();
-  if (!rirRaw) return null;
-  const config = window.FWB_WORKOUT_PROGRESSION_UI?.configFor(logElement, workoutProgressionContext(logElement));
-  return customWorkoutGroupedNextSetAdvice({
-    completed: previous.classList.contains("is-complete"),
-    rir: Number(rirRaw),
-    weight: Number(previous.querySelector("[data-set-weight]")?.value),
-    reps: Number(previous.querySelector("[data-set-reps]")?.value)
-  }, {
-    completed: next.classList.contains("is-complete"),
-    weight: next.querySelector("[data-set-weight]")?.value
-  }, config);
 }
 
 function useCustomWorkoutGroupedNextWeight(button) {
@@ -10649,8 +10611,7 @@ function customWorkoutGroupedSectionsMarkup(carousel) {
   const warmUps = [];
   const columnLabelsMarkup = `
     <div class="custom-workout-grouped-columns">
-      <span>Set</span><button class="one-rm-trigger" type="button" data-one-rm-open aria-label="Open estimated 1RM calculator from this set">Weight <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="5" y="2.5" width="14" height="19" rx="2"/><path d="M8 6.5h8M8.5 11h1M12 11h1M15.5 11h1M8.5 14.5h1M12 14.5h1M15.5 14.5h1M8.5 18h1M12 18h1M15.5 18h1"/></svg></button><span>Reps</span>
-      <button class="rir-help-trigger" type="button" data-rir-help aria-label="What does RIR mean?" aria-haspopup="dialog"><span>RIR</span><svg viewBox="0 0 20 20" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="8"/><path d="M10 9v5M10 5.5v1"/></svg></button>
+      <span>Set</span><span>Weight</span><span>Reps</span><span>Log</span>
     </div>
   `;
 
@@ -10677,10 +10638,6 @@ function customWorkoutGroupedSectionsMarkup(carousel) {
         item.exerciseName
       )).join("")}
       <div class="custom-workout-grouped-round-action custom-workout-grouped-warmup-action" data-custom-grouped-round-action>
-        <div class="custom-workout-grouped-warmup-actions" data-custom-grouped-warmup-actions>
-          <button class="custom-workout-grouped-skip-warmup" type="button" data-custom-grouped-skip-warmup>Skip warm-up</button>
-          <button class="custom-workout-grouped-log-round" type="button" data-custom-grouped-log-warmup aria-pressed="false">Log warm-up</button>
-        </div>
         <div class="custom-workout-grouped-rest-controls" data-custom-grouped-rest-controls hidden>
           <button type="button" data-custom-grouped-rest-adjust="-15" aria-label="Remove 15 seconds from rest timer">−15</button>
           <button type="button" data-custom-grouped-rest-toggle>Rest 01:00 · Pause</button>
@@ -10695,8 +10652,7 @@ function customWorkoutGroupedSectionsMarkup(carousel) {
     const rows = logElements.map((logElement, exerciseIndex) => ({
       row: customWorkoutGroupedRows(logElement, workingSetType)[roundIndex],
       exerciseIndex,
-      exerciseName: currentExerciseLabel(logElement) || `Exercise ${exerciseIndex + 1}`,
-      advice: customWorkoutGroupedRoundAdvice(logElement, roundNumber)
+      exerciseName: currentExerciseLabel(logElement) || `Exercise ${exerciseIndex + 1}`
     })).filter((item) => item.row);
     const logged = customWorkoutGroupedRoundIsLogged(carousel, roundNumber);
     const exerciseTitle = rows.map((item, exerciseIndex) => (
@@ -10735,18 +10691,7 @@ function customWorkoutGroupedSectionsMarkup(carousel) {
           roundNumber,
           item.exerciseName
         )).join("")}
-        ${rows.filter((item) => item.advice).map((item) => `<div class="custom-workout-next-set-advice">
-          <span>${escapeHtml(item.exerciseName)}: ${escapeHtml(item.advice.message)}</span>
-          ${item.advice.weight ? `<button type="button" data-custom-grouped-use-next-weight="${roundNumber}" data-custom-grouped-exercise-index="${item.exerciseIndex}" data-custom-grouped-suggested-weight="${item.advice.weight}"
-            aria-label="Use ${item.advice.weight} pounds for ${escapeHtml(item.exerciseName)} in ${workoutSetUnit(carousel).toLowerCase()} ${roundNumber}">Use weight</button>` : ""}
-        </div>`).join("")}
         <div class="custom-workout-grouped-round-action" data-custom-grouped-round-action>
-          <button
-            class="custom-workout-grouped-log-round"
-            type="button"
-            data-custom-grouped-log-round="${roundNumber}"
-            aria-pressed="${logged}"
-          >${logged ? `✓ ${workoutSetUnit(carousel)} ${roundNumber} logged` : `Log ${workoutSetUnit(carousel).toLowerCase()}`}</button>
           <div class="custom-workout-grouped-rest-controls" data-custom-grouped-rest-controls hidden>
             <button type="button" data-custom-grouped-rest-adjust="-15" aria-label="Remove 15 seconds from rest timer">−15</button>
             <button type="button" data-custom-grouped-rest-toggle>Rest 01:00 · Pause</button>
@@ -10830,12 +10775,14 @@ function refreshCustomWorkoutGroupedCompletion(carousel) {
     if (code) {
       code.setAttribute("aria-pressed", String(complete));
       const context = (code.getAttribute("aria-label") || "")
-        .replace(/^(Reopen|Mark)\s+/, "")
+        .replace(/^(Log|Edit|Reopen|Mark)\s+/, "")
         .replace(/\s+not logged$/, "");
-      code.disabled = !complete || carousel.dataset.customGroupedWarmupSaving === "true";
+      code.disabled = carousel.dataset.customGroupedRowSaving === "true";
       code.setAttribute("aria-label", complete
-        ? `Reopen ${context}`
-        : `${context} not logged`);
+        ? `Edit ${context}`
+        : `Log ${context}`);
+      const check = code.querySelector("span");
+      if (check) check.textContent = complete ? "✓" : "";
     }
     if (complete && visibleRow.dataset.customGroupedSetType !== warmUpSetType) completeCount += 1;
   });
@@ -10843,13 +10790,7 @@ function refreshCustomWorkoutGroupedCompletion(carousel) {
   carousel?.querySelectorAll("[data-custom-grouped-round]").forEach((section) => {
     const roundNumber = Number(section.dataset.customGroupedRound) || 1;
     const logged = customWorkoutGroupedRoundIsLogged(carousel, roundNumber);
-    const button = section.querySelector("[data-custom-grouped-log-round]");
-
     section.dataset.customGroupedRoundLogged = String(logged);
-    if (button) {
-      button.setAttribute("aria-pressed", String(logged));
-      button.textContent = logged ? `✓ ${workoutSetUnit(carousel)} ${roundNumber} logged` : `Log ${workoutSetUnit(carousel).toLowerCase()}`;
-    }
   });
 
   const progress = carousel?.querySelector("[data-custom-grouped-progress]");
@@ -11143,19 +11084,10 @@ function syncCustomWorkoutGroupedField(input) {
   if (!canonicalRow || !field) return;
 
   if (field === "weight" || field === "reps") clearCustomWorkoutGroupedWeightCopy(canonicalRow.querySelector(`[data-set-${field}]`));
-  if (field === "rir") {
-    const value = String(input.value || "").trim();
-    if (value === "") {
-      delete canonicalRow.dataset.repsInReserve;
-    } else {
-      canonicalRow.dataset.repsInReserve = value;
-    }
-  } else {
-    const canonicalInput = canonicalRow.querySelector(
-      field === "weight" ? "[data-set-weight]" : "[data-set-reps]"
-    );
-    if (canonicalInput) canonicalInput.value = input.value;
-  }
+  const canonicalInput = canonicalRow.querySelector(
+    field === "weight" ? "[data-set-weight]" : "[data-set-reps]"
+  );
+  if (canonicalInput) canonicalInput.value = input.value;
 
   const wasComplete = canonicalRow.classList.contains("is-complete");
   if (wasComplete) {
@@ -11165,9 +11097,9 @@ function syncCustomWorkoutGroupedField(input) {
     const roundNumber = Number(section?.dataset.customGroupedRound) || 0;
     const status = customWorkoutGroupedStatus(carousel);
     if (status && roundNumber > 0) {
-      status.textContent = `${workoutSetUnit(carousel)} ${roundNumber} reopened. Tap Log ${workoutSetUnit(carousel).toLowerCase()} when the edits are ready.`;
+      status.textContent = `${workoutSetUnit(carousel)} ${roundNumber} reopened. Tap Log on the edited set when it is ready.`;
     } else if (status && visibleRow.dataset.customGroupedSetType === warmUpSetType) {
-      status.textContent = "Warm-up reopened. Tap Log warm-up when the edits are ready.";
+      status.textContent = "Warm-up reopened. Tap Log on the edited set when it is ready.";
     }
   }
 
@@ -11186,22 +11118,16 @@ function validateCustomWorkoutGroupedSection(section, options = {}) {
   rows.forEach((row) => {
     const weight = row.querySelector('[data-custom-grouped-field="weight"]');
     const reps = row.querySelector('[data-custom-grouped-field="reps"]');
-    const rir = row.querySelector('[data-custom-grouped-field="rir"]');
     const isWarmUp = row.dataset.customGroupedSetType === warmUpSetType;
     const weightRaw = String(weight?.value || "").trim();
     const repsRaw = String(reps?.value || "").trim();
-    const rirRaw = String(rir?.value || "").trim();
     const weightValue = Number(weight?.value);
     const repsValue = Number(reps?.value);
-    const rirValue = Number(rir?.value);
     const weightInvalid = weightRaw === "" || !Number.isFinite(weightValue) || weightValue < 0;
     const repsInvalid = repsRaw === "" || !Number.isFinite(repsValue) || (isWarmUp ? repsValue < 0 : repsValue <= 0);
-    const rirInvalid = rirRaw !== "" && (!Number.isFinite(rirValue) || rirValue < 0 || rirValue > 5);
     const weightValid = !weightInvalid;
     const repsValid = !repsInvalid;
-    const rirValid = !rirInvalid;
-
-    [[weight, weightValid], [reps, repsValid], [rir, rirValid]].forEach(([input, valid]) => {
+    [[weight, weightValid], [reps, repsValid]].forEach(([input, valid]) => {
       if (!input) return;
       if (valid) {
         input.removeAttribute("aria-invalid");
@@ -11213,7 +11139,7 @@ function validateCustomWorkoutGroupedSection(section, options = {}) {
   });
 
   if (firstInvalid && status) {
-    status.textContent = "Enter weight (0 is allowed) and reps (0 is allowed for warm-ups). Working reps must be above 0. RIR is optional and must be 0 to 5 when entered.";
+    status.textContent = "Enter weight (0 is allowed) and reps (0 is allowed for warm-ups). Working reps must be above 0.";
   }
   if (firstInvalid && options.focus !== false) firstInvalid.focus();
 
@@ -11231,10 +11157,9 @@ function completeEnteredCustomWorkoutWarmUps(carousel, options = {}) {
   if (options.optional) {
     enteredRows = enteredRows.filter((row) => {
       const value = (field) => String(row.querySelector(`[data-custom-grouped-field="${field}"]`)?.value || "").trim();
-      const weight = value("weight"), reps = value("reps"), rir = value("rir");
+      const weight = value("weight"), reps = value("reps");
       return weight !== "" && reps !== "" && Number.isFinite(Number(weight)) && Number(weight) >= 0 &&
-        Number.isFinite(Number(reps)) && Number(reps) >= 0 &&
-        (rir === "" || (Number.isFinite(Number(rir)) && Number(rir) >= 0 && Number(rir) <= 5));
+        Number.isFinite(Number(reps)) && Number(reps) >= 0;
     });
   }
   if (enteredRows.length === 0) return { valid: true, rows: [], previousStates: [] };
@@ -11501,7 +11426,7 @@ function addCustomWorkoutGroupedRound(button) {
   firstField?.scrollIntoView?.({ block: "nearest", behavior: "smooth" });
 }
 
-function toggleCustomWorkoutGroupedSet(button) {
+async function toggleCustomWorkoutGroupedSet(button) {
   const visibleRow = button?.closest(".custom-workout-grouped-row");
   const carousel = button?.closest("[data-custom-workout-grouped='true']");
   const canonicalRow = customWorkoutGroupedCanonicalRow(
@@ -11512,24 +11437,88 @@ function toggleCustomWorkoutGroupedSet(button) {
   );
   const status = customWorkoutGroupedStatus(carousel);
 
-  if (!visibleRow || !canonicalRow || !carousel) return;
+  if (!visibleRow || !canonicalRow || !carousel || button.disabled || carousel.dataset.customGroupedRowSaving === "true") return { saved: false };
 
   if (canonicalRow.classList.contains("is-complete")) {
     canonicalRow.dataset.customGroupedReopened = "true";
     setCustomWorkoutGroupedRowComplete(canonicalRow, false);
     if (status) status.textContent = visibleRow.dataset.customGroupedSetType === warmUpSetType
-      ? "Warm-up set reopened."
-      : `Round ${Number(visibleRow.closest("[data-custom-grouped-round]")?.dataset.customGroupedRound) || 1} reopened.`;
-  } else if (visibleRow.dataset.customGroupedSetType === warmUpSetType) {
-    if (status) status.textContent = "Enter weight and reps, then tap Log warm-up.";
-    return;
-  } else if (status) {
-    status.textContent = `Complete every exercise, then tap Log ${workoutSetUnit(carousel).toLowerCase()}.`;
-    return;
+      ? "Warm-up reopened. Edit the values, then tap Log."
+      : "Set reopened. Edit the values, then tap Log.";
+    persistCustomWorkoutDraftForElement(carousel);
+    refreshCustomWorkoutGroupedCompletion(carousel);
+    return { saved: false, reopened: true };
   }
 
+  const panel = carousel.closest(".client-workout-panel-custom, .client-workout-panel-assigned");
+  if (!requireWorkoutGymLocation(panel, { near: button })) return { saved: false, validation: true };
+  if (customWorkoutGroupedTimerConflict(carousel)) {
+    if (status) status.textContent = "Finish the workout already in progress before logging this set.";
+    return { saved: false, timerConflict: true };
+  }
+  const isWarmUp = visibleRow.dataset.customGroupedSetType === warmUpSetType;
+  if (!validateCustomWorkoutGroupedExerciseNames(carousel, isWarmUp ? "warm-up" : "set")) return { saved: false, validation: true };
+  const validation = validateCustomWorkoutGroupedSection(visibleRow.closest("[data-kind]"), {
+    rows: [visibleRow], status
+  });
+  if (!validation.valid) return { saved: false, validation: true };
+
+  const roundNumber = Number(visibleRow.closest("[data-custom-grouped-round]")?.dataset.customGroupedRound) || 0;
+  setCustomWorkoutGroupedRowComplete(canonicalRow, true);
   persistCustomWorkoutDraftForElement(carousel);
   refreshCustomWorkoutGroupedCompletion(carousel);
+  carousel.dataset.customGroupedRowSaving = "true";
+  let result = { saved: false };
+  try {
+    result = await saveTrainingLogRows(button, customWorkoutGroupedLogElements(carousel), status, {
+      savingMessage: isWarmUp ? "Logging warm-up..." : `Logging set ${roundNumber}...`,
+      successMessage: isWarmUp ? "Warm-up logged and saved." : `Set ${roundNumber} logged and saved.`,
+      ...(isWarmUp ? { setType: warmUpSetType } : {}),
+      skipRemovedSetDelete: true,
+      skipLogRefresh: true,
+      deferHistoryRender: true
+    });
+  } catch (error) {
+    if (status) status.textContent = "Could not save the set. Your entries are still here. Please try again.";
+    result = { saved: false, error };
+  } finally {
+    delete carousel.dataset.customGroupedRowSaving;
+    button.disabled = false;
+  }
+  if (!result.saved) {
+    setCustomWorkoutGroupedRowComplete(canonicalRow, false);
+    persistCustomWorkoutDraftForElement(carousel);
+    refreshCustomWorkoutGroupedCompletion(carousel);
+    return result;
+  }
+
+  if (!isWarmUp) autoCopyCustomWorkoutGroupedNextRound(carousel, roundNumber);
+  if (!workoutElapsedTimerState) {
+    const panels = Array.from(document.querySelectorAll(".client-workout-panel"));
+    startWorkoutElapsedTimer(panel?.dataset.customWorkoutTitle || customWorkoutTitle, {
+      workoutDate: panel?.querySelector("[data-workout-date]")?.value || todayDate(),
+      panelIndex: panels.indexOf(panel),
+      startedAfterRound: isWarmUp ? 0 : roundNumber
+    });
+  }
+  const roundComplete = !isWarmUp && customWorkoutGroupedRoundIsLogged(carousel, roundNumber);
+  renderCustomWorkoutGroupedCard(carousel);
+  if (roundComplete) {
+    customWorkoutGroupedRestAction = carousel.querySelector(
+      `[data-custom-grouped-round="${roundNumber}"] [data-custom-grouped-round-action]`
+    );
+    if (autoRestTimerEnabled()) {
+      const generatedRestDurations = customWorkoutGroupedLogElements(carousel)
+        .filter((logElement) => logElement.dataset?.generatedExercise === "true" && logElement.dataset.exerciseRest)
+        .map((logElement) => workoutCarouselRestSeconds(logElement.dataset.exerciseRest));
+      if (generatedRestDurations.length) setRestTimerDuration(Math.max(...generatedRestDurations));
+      resetRestTimer();
+      startOrPauseRestTimer();
+    } else {
+      renderCustomWorkoutGroupedRestControls();
+    }
+  }
+  return result;
 }
 
 function ensureCustomWorkoutGroupedFinishPanel() {
@@ -13546,7 +13535,7 @@ function clientWorkoutPickerPreviewMarkup(workout) {
     return [
       "Choose from the exercise library",
       "Add warm-up and working sets",
-      "Track weight, reps, and RIR"
+      "Track weight and reps for each set"
     ].map((item, index) => `
       <li><span>${index + 1}</span><strong>${escapeHtml(item)}</strong></li>
     `).join("");
@@ -19123,7 +19112,7 @@ function handleWorkoutInteractions() {
     }
 
     if (customGroupedSetToggle) {
-      toggleCustomWorkoutGroupedSet(customGroupedSetToggle);
+      await toggleCustomWorkoutGroupedSet(customGroupedSetToggle);
       return;
     }
 
@@ -19287,22 +19276,68 @@ function handleWorkoutInteractions() {
       const setRow = completeSetButton.closest("[data-set-row]");
       const logElement = completeSetButton.closest("[data-exercise-log]");
       if (!requireWorkoutGymLocation(logElement?.closest(".client-workout-panel"))) return;
-      const wasComplete = setRow?.classList.contains("is-complete");
-
-      if (!workoutElapsedTimerState) {
-        startWorkoutElapsedTimer(logElement?.dataset.workoutTitle || activeWorkoutElapsedTitle());
+      if (!setRow || !logElement || completeSetButton.disabled) return;
+      if (setRow.classList.contains("is-complete")) {
+        setRow.classList.remove("is-complete");
+        completeSetButton.setAttribute("aria-pressed", "false");
+        const status = logElement.querySelector("[data-log-status]");
+        if (status) status.textContent = "Set reopened. Edit the values, then tap Log.";
+        updateVisibleSetProgress(logElement);
+        persistCustomWorkoutDraftForElement(logElement);
+        return;
+      }
+      const weight = setRow.querySelector("[data-set-weight]");
+      const reps = setRow.querySelector("[data-set-reps]");
+      const weightValue = customWorkoutGroupedCopyValue(weight?.value);
+      const isWarmUp = setTypeForRow(setRow) === warmUpSetType;
+      const repsValue = isWarmUp ? customWorkoutGroupedCopyValue(reps?.value) : customWorkoutGroupedCopyValue(reps?.value, "reps");
+      if (weightValue === null || repsValue === null) {
+        const status = logElement.querySelector("[data-log-status]");
+        if (status) status.textContent = isWarmUp
+          ? "Enter weight and reps (0 is allowed for a warm-up), then tap Log."
+          : "Enter weight (0 is allowed) and reps above 0, then tap Log.";
+        (weightValue === null ? weight : reps)?.focus();
+        return;
       }
       setRow?.classList.add("is-complete");
       completeSetButton.setAttribute("aria-pressed", "true");
-      if (!wasComplete) {
-        animateCompletedSet(setRow);
+      updateVisibleSetProgress(logElement);
+      persistCustomWorkoutDraftForElement(logElement);
+      const status = logElement.querySelector("[data-log-status]");
+      let result;
+      try {
+        result = await saveTrainingLogRows(completeSetButton, [logElement], status, {
+          savingMessage: "Logging set...", successMessage: "Set logged and saved.",
+          skipRemovedSetDelete: true, skipLogRefresh: true, deferHistoryRender: true
+        });
+      } catch (error) {
+        result = { saved: false, error };
+        if (status) status.textContent = "Could not save this set. Your entries are still here. Try again.";
+      } finally {
+        completeSetButton.disabled = false;
       }
-      if (logElement) {
+      if (!result?.saved) {
+        setRow.classList.remove("is-complete");
+        completeSetButton.setAttribute("aria-pressed", "false");
         updateVisibleSetProgress(logElement);
         persistCustomWorkoutDraftForElement(logElement);
-        scheduleTrainingLogAutosave(logElement);
+        return;
       }
-      if (autoRestTimerEnabled()) {
+      animateCompletedSet(setRow);
+      prefillNextWorkingSet(logElement, setRow);
+      if (!workoutElapsedTimerState) startWorkoutElapsedTimer(logElement.dataset.workoutTitle || activeWorkoutElapsedTitle());
+      const groupCarousel = logElement.closest('[data-custom-workout-carousel]:not([data-custom-workout-grouped="true"])');
+      const groupFormat = groupCarousel && normalizeCustomWorkoutFormat(groupCarousel.dataset.customWorkoutFormat);
+      let completedGroupRound = false;
+      if (!isWarmUp && groupCarousel && groupFormat !== "single") {
+        const cards = customWorkoutCarouselCards(groupCarousel);
+        const groupIndex = Number(groupCarousel.dataset.customWorkoutGroup) || 0;
+        logElement.dataset.groupLoggedSets = String(filledSetCount(logElement));
+        const progress = workoutCarouselProgress(groupCarousel, cards, groupFormat, groupIndex);
+        completedGroupRound = progress.isComplete || Boolean(progress.current && progress.current.round > Number(setRow.dataset.setNumber));
+        renderCustomWorkoutCarousel(groupCarousel);
+      }
+      if (!isWarmUp && autoRestTimerEnabled() && (!groupCarousel || groupFormat === "single" || completedGroupRound)) {
         resetRestTimer();
         openRestTimer(completeSetButton);
         startOrPauseRestTimer();
@@ -20757,10 +20792,6 @@ function rowsForTrainingLog(logElement) {
           ...(isSetRowLogged(setRow) && typeof workoutProgressionLogTarget === "function" ? workoutProgressionLogTarget(logElement) : {}),
           weight_used: values.weightRaw === "" ? 0 : values.weightValue,
           reps: values.repsRaw === "" ? null : values.repsValue,
-          ...(setRow.dataset.repsInReserve === undefined ? {} : {
-            effort_scale: "rir",
-            effort_value: Number(setRow.dataset.repsInReserve)
-          }),
           notes
         }
       };
@@ -20779,6 +20810,7 @@ function setRowInputValues(setRow) {
 }
 
 function isSetRowLogged(setRow) {
+  if (!setRow?.classList.contains("is-complete")) return false;
   if (setRow?.dataset.progressionSuggested === "true" && !setRow.classList.contains("is-complete")) return false;
   if (
     (
@@ -20875,21 +20907,20 @@ function workoutFinishIssues(section, options = {}) {
     const hasWorkingEntry = workingRows.some((row) => {
       const values = setRowInputValues(row);
       return row.classList.contains("is-complete") || row.dataset.customGroupedReopened === "true" ||
-        values.weightRaw !== "" || values.repsRaw !== "" || String(row.dataset.repsInReserve ?? "").trim() !== "";
+        values.weightRaw !== "" || values.repsRaw !== "";
     });
     if (!hasWorkingEntry) return;
     workingRows.forEach((row) => {
       const values = setRowInputValues(row);
-      const rir = String(row.dataset.repsInReserve ?? "").trim();
       const complete = row.classList.contains("is-complete");
       if (options.allowUnstarted && !complete && row.dataset.customGroupedReopened !== "true" &&
-          values.weightRaw === "" && values.repsRaw === "" && rir === "") return;
+          values.weightRaw === "" && values.repsRaw === "") return;
       const number = Number(row.dataset.setNumber) || 1;
       const visibleRow = carousel?.querySelector(`.custom-workout-grouped-row[data-custom-grouped-exercise-index="${groupIndex}"][data-custom-grouped-set-type="${workingSetType}"][data-custom-grouped-set-number="${number}"]`);
       const unit = carousel ? workoutSetUnit(carousel) : "Set";
       const label = `${name} · ${unit} ${number}`;
       const target = (field) => visibleRow?.querySelector(`[data-custom-grouped-field="${field}"]`) ||
-        row.querySelector(field === "rir" ? "[data-set-rir]" : `[data-set-${field}]`);
+        row.querySelector(`[data-set-${field}]`);
       const missing = [];
       if (!enteredName && !nameReported) {
         issues.push({ message: `${name}: enter the exercise name.`, target: nameField });
@@ -20901,14 +20932,11 @@ function workoutFinishIssues(section, options = {}) {
       if (values.repsRaw === "" || !Number.isFinite(values.repsValue) || values.repsValue <= 0) {
         missing.push(["reps", "enter reps above 0"]);
       }
-      if (rir !== "" && (!Number.isFinite(Number(rir)) || Number(rir) < 0 || Number(rir) > 5)) {
-        missing.push(["rir", "enter RIR from 0 to 5, or leave it blank"]);
-      }
       missing.forEach(([field, message]) => issues.push({ message: `${label}: ${message}.`, target: target(field) }));
       if (!missing.length && (carousel || row.dataset.groupedRoundRequired === "true" || row.dataset.progressionSuggested === "true") && !complete) {
         issues.push({
-          message: `${label}: tap Log ${unit.toLowerCase()} to save these entries.`,
-          target: visibleRow?.closest("[data-custom-grouped-round]")?.querySelector("[data-custom-grouped-log-round]") || row.querySelector("[data-complete-set]")
+          message: `${label}: tap Log to save these entries.`,
+          target: visibleRow?.querySelector("[data-custom-grouped-set-toggle]") || row.querySelector("[data-complete-set]")
         });
       }
     });
@@ -20955,7 +20983,7 @@ function showWorkoutFinishIssues(button, issues) {
   const help = document.createElement("p");
   help.textContent = section?.classList.contains("client-workout-panel-cardio")
     ? "Duration is required. Distance, calories, and notes are optional."
-    : "Warm-ups and RIR are optional. You can leave warm-up fields blank or at 0; Log warm-up is not required.";
+    : "Warm-ups are optional. Enter weight and reps, then tap the Log box to save each set.";
   summary.appendChild(help);
   (button.closest("footer") || button).insertAdjacentElement("afterend", summary);
   summary.scrollIntoView?.({ block: "center", behavior: "smooth" });
@@ -21298,7 +21326,7 @@ async function handleTrainingLogSave() {
       if (!showWorkoutFinishIssues(difficultyTrigger, issues)) return;
       if (logElements.some((log) => log.dataset.autosaveInFlight === "true") ||
           section.querySelector('[data-custom-grouped-warmup-saving="true"]') ||
-          Array.from(section.querySelectorAll("[data-custom-grouped-log-round]")).some((control) => control.disabled)) {
+          section.querySelector('[data-custom-workout-grouped="true"][data-custom-grouped-row-saving="true"]')) {
         showWorkoutFinishIssues(difficultyTrigger, [{ message: `Your latest entries are still saving. Wait a moment, then tap ${finishLabel} again.`, target: difficultyTrigger }]);
         return;
       }
