@@ -22,6 +22,50 @@
     mobility: "Mobility", stretching: "Mobility", flexibility: "Mobility", "foam rolling": "Mobility"
   };
 
+  // A compact anatomical guide for each primary muscle. Keeping this artwork local
+  // makes the full catalog quick to browse, even when exercise media is unavailable.
+  const FRONT_BODY = `
+    <ellipse cx="48" cy="12" rx="8" ry="10"/><path d="M43 21h10l2 7H41z"/>
+    <path d="M39 27 28 30 31 47 38 58 42 65h12l4-7 7-11 3-17-11-3-9 4z"/>
+    <path d="M28 30 21 34 16 51 12 66l5 3 8-16 8-13zM68 30l7 4 5 17 4 15-5 3-8-16-8-13z"/>
+    <path d="M42 63 35 66 34 84l-3 22 8 1 8-23 2-13zM54 63l7 3 1 18 3 22-8 1-8-23-2-13z"/>`;
+  const BACK_BODY = `
+    <ellipse cx="48" cy="12" rx="8" ry="10"/><path d="M43 21h10l2 7H41z"/>
+    <path d="M39 27 27 31l5 18 7 13 4 4h10l4-4 7-13 5-18-12-4-9 4z"/>
+    <path d="M27 31 20 35l-5 18-3 13 5 3 8-16 8-12zM69 31l7 4 5 18 3 13-5 3-8-16-8-12z"/>
+    <path d="M43 64 35 66 34 84l-3 22 8 1 8-23 1-13zM53 64l8 2 1 18 3 22-8 1-8-23-1-13z"/>`;
+  const MUSCLE_ART = {
+    Chest: { view: "front", regions: `<path d="M32 32q8-5 15 0v14q-7 6-14-1zM49 32q7-5 15 0l-1 13q-7 7-14 1z"/>` },
+    Back: { view: "back", regions: `<path d="M34 32 47 36v24L37 53zM62 32 49 36v24l10-7z"/>` },
+    Shoulders: { view: "front", regions: `<path d="M29 30q5-4 10-2l-5 13-8-3zM67 30q-5-4-10-2l5 13 8-3z"/>` },
+    Biceps: { view: "front", regions: `<path d="M23 39 30 42l-5 13-7-2zM73 39l-7 3 5 13 7-2z"/>` },
+    Triceps: { view: "back", regions: `<path d="M22 39 30 42l-5 14-7-3zM74 39l-8 3 5 14 7-3z"/>` },
+    Forearms: { view: "front", regions: `<path d="m17 52 7 3-7 12-5-2zM79 52l-7 3 7 12 5-2z"/>` },
+    Core: { view: "front", regions: `<path d="M40 46h16l-3 16H43z"/>` },
+    Glutes: { view: "back", regions: `<path d="M37 62q6-3 10 3v10q-8 5-12-4zM59 62q-6-3-10 3v10q8 5 12-4z"/>` },
+    Quads: { view: "front", regions: `<path d="M37 69 46 72l-2 14-6 9-4-2zM59 69l-9 3 2 14 6 9 4-2z"/>` },
+    Hamstrings: { view: "back", regions: `<path d="M36 74 46 76l-4 18-7-2zM60 74l-10 2 4 18 7-2z"/>` },
+    Calves: { view: "back", regions: `<path d="M35 88 42 91l-3 14-7-1zM61 88l-7 3 3 14 7-1z"/>` },
+    "Full Body": { view: "front", regions: `<path d="M33 33h30l-4 14-6 15H43l-6-15zM21 40l8 3-5 13-7-3zM75 40l-8 3 5 13 7-3zM37 70l9 3-4 20-8-2zM59 70l-9 3 4 20 8-2z"/>` },
+    Cardio: { view: "front", regions: `<path d="M37 69 46 72l-4 21-8-2zM59 69l-9 3 4 21 8-2z"/>` },
+    Mobility: { view: "front", regions: `<path d="M33 34h30l-5 12H38zM37 72l9 3-3 16-8-2zM59 72l-9 3 3 16 8-2z"/>` }
+  };
+
+  function muscleArtwork(primary) {
+    const art = MUSCLE_ART[primary] || MUSCLE_ART["Full Body"];
+    return `<svg viewBox="0 0 96 112" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+      <g fill="#11151b" stroke="#41464c" stroke-width=".6" stroke-linejoin="round">${art.view === "back" ? BACK_BODY : FRONT_BODY}</g>
+      <g fill="#29a9ff" stroke="#087bc6" stroke-width=".7" stroke-linejoin="round">${art.regions}</g>
+    </svg>`;
+  }
+  const artworkUrls = new Map();
+  function muscleArtworkUrl(primary) {
+    if (!artworkUrls.has(primary)) {
+      artworkUrls.set(primary, `data:image/svg+xml,${encodeURIComponent(muscleArtwork(primary))}`);
+    }
+    return artworkUrls.get(primary);
+  }
+
   function normalize(value) {
     return String(value || "").normalize("NFKD").replace(/[\u0300-\u036f]/g, "")
       .replace(/[_-]+/g, " ").trim().toLocaleLowerCase();
@@ -189,11 +233,24 @@
         const item = element("li", "client-exercise-library-item");
         const button = element("button", "client-exercise-library-item-button");
         button.type = "button";
+        button.setAttribute("aria-label", `Add ${record.name}, ${[record.primary, ...record.secondary].join(", ")}`);
+        const artwork = element("span", "client-exercise-library-item-artwork");
+        const image = element("img", "");
+        image.src = muscleArtworkUrl(record.primary);
+        image.alt = "";
+        image.loading = "lazy";
+        image.decoding = "async";
+        artwork.append(image);
         const text = element("span", "client-exercise-library-item-copy");
         text.append(element("strong", "", record.name));
-        const muscleText = [record.primary, ...record.secondary].join(" · ");
-        text.append(element("small", "", muscleText));
-        button.append(text, element("span", "client-exercise-library-item-plus", "+"));
+        const muscles = element("span", "client-exercise-library-item-muscles");
+        [record.primary, ...record.secondary].forEach((muscle) => {
+          muscles.append(element("small", "client-exercise-library-item-muscle", muscle));
+        });
+        text.append(muscles);
+        const add = element("span", "client-exercise-library-item-plus", "+");
+        add.setAttribute("aria-hidden", "true");
+        button.append(artwork, text, add);
         button.addEventListener("click", () => {
           const onSelect = selection;
           close();
@@ -228,6 +285,6 @@
 
   root.FWB_CLIENT_EXERCISE_LIBRARY = { open, close };
   if (typeof module !== "undefined" && module.exports) {
-    module.exports = { muscleFor, prepareRecords, matchingRecords, groupedRecords };
+    module.exports = { muscleFor, prepareRecords, matchingRecords, groupedRecords, muscleArtwork };
   }
 })(typeof window !== "undefined" ? window : globalThis);
