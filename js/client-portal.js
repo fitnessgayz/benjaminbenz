@@ -14010,7 +14010,8 @@ function syncClientWorkoutSelectionSummary(tab) {
   }
   if (divider) divider.hidden = !day;
   if (titleElement) titleElement.textContent = target;
-  summary.setAttribute("aria-label", `Back to workout choices. Currently viewing ${target}`);
+  summary.querySelector("[data-client-workout-picker-back]")
+    ?.setAttribute("aria-label", `Back to workout choices from ${target}`);
 }
 
 function syncClientWorkoutPicker(nextIndex = activeWorkoutTabIndex) {
@@ -18498,6 +18499,11 @@ function handleClientDashboardTabs() {
     const tabName = tab.dataset.clientDashboardTab;
     const navigation = tab.closest(".client-dashboard-tabs");
     const mobileNavigation = window.matchMedia?.("(max-width: 900px)")?.matches ?? false;
+    if (mobileNavigation && activeClientDashboardTab === "workouts" && tabName !== "workouts" &&
+        !clientWorkoutPickerIsOpen && workoutElapsedTimerState) {
+      if (!window.confirm("Leave your workout screen? Your progress stays saved. Use Resume workout to return.")) return;
+      persistCustomWorkoutDraftFromPanel(document.querySelector(".client-workout-panel.is-active"));
+    }
     if (mobileNavigation && tabName === "progress" && activeClientDashboardTab === "progress") {
       showClientProgressSnapshot();
       lastClientDashboardMobileTabPress = "";
@@ -19976,6 +19982,12 @@ function handleClientWorkoutTabs() {
     const backButton = event.target.closest("[data-client-workout-picker-back]");
 
     if (backButton) {
+      const message = workoutElapsedTimerState
+        ? "Back to workout choices? Your workout stays saved. Use Resume workout to return."
+        : "Back to workout choices? Your entered sets will stay in this workout.";
+      if (!window.confirm(message)) return;
+      const activePanel = document.querySelector(".client-workout-panel.is-active");
+      persistCustomWorkoutDraftFromPanel(activePanel);
       showClientWorkoutPicker();
       return;
     }
@@ -20093,6 +20105,29 @@ function handleClientWorkoutTabs() {
   document.addEventListener("pointercancel", () => {
     releasePhysicalDeckDrag(gesture?.deck);
     gesture = null;
+  });
+}
+
+function handleClientWorkoutPositionReturn() {
+  const returnButton = document.querySelector("[data-client-workout-return-to-set]");
+  if (!returnButton) return;
+  let lastSet = null;
+  const rememberSet = (event) => {
+    const set = event.target.closest?.("[data-exercise-log]");
+    if (set?.closest(".client-workout-panel.is-active")) lastSet = set;
+  };
+  const update = () => {
+    const active = lastSet?.isConnected && lastSet.closest(".client-workout-panel.is-active");
+    returnButton.hidden = !active || window.innerWidth > 900 || window.scrollY > 180 ||
+      lastSet.getBoundingClientRect().top < window.innerHeight * .8;
+  };
+  document.addEventListener("focusin", rememberSet);
+  document.addEventListener("pointerdown", rememberSet);
+  window.addEventListener("scroll", update, { passive: true });
+  window.addEventListener("resize", update);
+  returnButton.addEventListener("click", () => {
+    lastSet?.scrollIntoView({ block: "center", behavior: "smooth" });
+    returnButton.hidden = true;
   });
 }
 
@@ -21498,6 +21533,7 @@ handleClientHomeSnapshotDeck();
 handleClientHomeCheckin();
 handleClientSummaryActions();
 handleClientWorkoutTabs();
+handleClientWorkoutPositionReturn();
 handleClientWorkoutPreview();
 handleWorkoutInteractions();
 initializeClientFitnessPlanHelp();

@@ -20,6 +20,36 @@
 .dashboard-page [data-custom-exercise-suggestion] .client-muscle-icon svg { width: 29px; height: 39px; }
 .client-suggestion-copy { display: grid; gap: 2px; min-width: 0; }
 
+/* The workout heading is informational; only its small back control navigates. */
+:root body.client-dashboard-page .client-workout-selection-summary { cursor: default; grid-template-columns: 44px minmax(0, 1fr); }
+:root body.client-dashboard-page .client-workout-selection-summary .client-workout-selection-arrow {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  font: inherit;
+  font-size: 1.3rem;
+  cursor: pointer;
+}
+:root body.client-dashboard-page .client-workout-selection-summary .client-workout-selection-arrow:focus-visible { outline: 3px solid #5aa9e8; outline-offset: 3px; }
+:root body.client-dashboard-page .client-workout-return-position {
+  grid-column: 1 / -1;
+  justify-self: start;
+  min-height: 42px;
+  padding: 7px 10px;
+  border: 1px solid #5aa9e8;
+  border-radius: 9px;
+  color: #5aa9e8;
+  background: transparent;
+  font: inherit;
+  font-size: .83rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+:root body.client-dashboard-page .client-workout-return-position[hidden] { display: none; }
+
 .exercise-gym-history { display: grid; gap: 8px; margin-top: 12px; }
 .exercise-gym-history > strong { color: var(--ink, #f2f0e8); }
 .exercise-gym-history-choice {
@@ -70,6 +100,7 @@
 .access-request-confirmation { padding: 18px; border: 1px solid var(--line, #a8b9ac); border-radius: 14px; font-weight: 700; }
 
 @media (max-width: 900px) {
+  html:has(> body.client-dashboard-page), body.client-dashboard-page { overscroll-behavior-x: none; }
   :root body.client-dashboard-page .client-dashboard-tabs {
     display: grid;
     grid-template-columns: repeat(var(--client-mobile-tab-count, 5), minmax(0, 1fr));

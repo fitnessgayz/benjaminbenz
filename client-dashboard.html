@@ -299,13 +299,14 @@
             </div>
           </article>
           <div class="client-workout-picker" id="client-workout-tabs" aria-label="Choose a workout"></div>
-          <button class="client-workout-selection-summary" id="client-workout-selection-summary" type="button" data-client-workout-picker-back aria-label="Back to workout choices" hidden>
-            <span class="client-workout-selection-arrow" aria-hidden="true">←</span>
+          <div class="client-workout-selection-summary" id="client-workout-selection-summary" tabindex="-1" hidden>
+            <button class="client-workout-selection-arrow" type="button" data-client-workout-picker-back aria-label="Back to workout choices">←</button>
             <span class="client-workout-selection-copy">
-              <strong class="client-workout-selection-action">Back to workout choices</strong>
+              <strong class="client-workout-selection-action">Current workout</strong>
               <strong class="client-workout-selection-title" data-client-workout-selection-title></strong>
             </span>
-          </button>
+            <button class="client-workout-return-position" type="button" data-client-workout-return-to-set hidden>Return to last set ↓</button>
+          </div>
           <div class="client-workout-panels" id="client-workout-panels"></div>
           <section class="workout-plan-result" id="workout-plan-result" aria-live="polite" hidden></section>
           <button class="button button-ghost client-workouts-find-gym" data-find-nearby-gym type="button">Find a Gym</button>
