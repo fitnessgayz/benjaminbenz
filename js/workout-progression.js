@@ -120,7 +120,10 @@
       const comparable = complete && rows.every((row) => sameConfig(row.progression_target, config));
       const legacy = complete && config.unit === "lb" && rows.every((row) => row.progression_target == null);
       const fresh = nowTime - session.time <= MAX_AGE_MS;
-      const effortMet = rows.every((row) => rir(row) !== null && rir(row) >= config.target_rir);
+      const effortMet = rows.every((row) => {
+        const recordedEffort = rir(row);
+        return recordedEffort === null || recordedEffort >= config.target_rir;
+      });
       const upper = comparable && fresh && effortMet && rows.every((row) => row.reps >= config.rep_max);
       const below = comparable && fresh && rows.some((row) => row.reps < config.rep_min);
       const targets = complete ? rows.map((row) => ({ setNumber: row.set_number, weight: row.weight_used, reps: Math.max(config.rep_min, Math.min(config.rep_max, row.reps)) })) : [];
@@ -134,21 +137,21 @@
     if (recent.length === config.required_sessions && recent.every((session) => session.below)) {
       return result("review", "Recent sessions missed the lower rep target. Keep the load and review the plan with your coach.", latest.targets);
     }
-    if (!latest.effortMet) return result("hold", "Keep the same weight and record enough reps in reserve before progressing.", latest.targets);
+    if (!latest.effortMet) return result("hold", "Keep the same weight until your recorded effort meets the planned target.", latest.targets);
     const uniformWeight = latest.rows[0].weight_used;
     const canIncrease = recent.length === config.required_sessions && recent.every((session) => session.upper
       && session.rows.every((row) => row.weight_used === uniformWeight));
     if (canIncrease) {
       if (config.increment > uniformWeight * 0.10 + 1e-9) return result("hold", "Your configured weight jump is over 10%. Choose a smaller equipment increment or review it with your coach.", latest.targets);
-      return result("increase", `You reached the upper rep target with the planned effort in your last ${config.required_sessions} sessions.`,
+      return result("increase", `You reached the upper rep target in your last ${config.required_sessions} sessions.`,
         latest.targets.map((target) => ({ ...target, weight: Math.round((target.weight + config.increment) * 10000) / 10000, reps: config.rep_min })));
     }
     if (latest.rows.every((row) => row.reps >= config.rep_min && row.reps <= config.rep_max)) {
       const index = latest.targets.findIndex((target) => target.reps < config.rep_max);
-      if (index >= 0) return result("reps", "Keep the same weight and aim for one additional total rep with the planned effort.",
+      if (index >= 0) return result("reps", "Keep the same weight and aim for one additional total rep.",
         latest.targets.map((target, i) => ({ ...target, reps: target.reps + (i === index ? 1 : 0) })));
     }
-    return result("hold", "Repeat these targets until you consistently reach the upper rep target with the planned effort.", latest.targets);
+    return result("hold", "Repeat these targets until you consistently reach the upper rep target.", latest.targets);
   }
   return { exerciseKey, normalizeConfig, deriveConfig, defaultConfig: deriveConfig, recommend };
 }));

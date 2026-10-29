@@ -1,0 +1,142 @@
+.client-muscle-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 46px;
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  color: #111;
+  background: #ffda00;
+}
+.client-muscle-icon svg { display: block; width: 31px; height: 41px; }
+.dashboard-page .custom-workout-suggestion-menu [data-custom-exercise-suggestion],
+.dashboard-page .custom-workout-exercise-options [data-custom-exercise-suggestion] {
+  display: grid !important;
+  grid-template-columns: 46px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+}
+.dashboard-page [data-custom-exercise-suggestion] .client-muscle-icon { width: 42px; height: 42px; flex-basis: 42px; }
+.dashboard-page [data-custom-exercise-suggestion] .client-muscle-icon svg { width: 29px; height: 39px; }
+.client-suggestion-copy { display: grid; gap: 2px; min-width: 0; }
+
+/* The workout heading is informational; only its small back control navigates. */
+:root body.client-dashboard-page .client-workout-selection-summary { cursor: default; grid-template-columns: 44px minmax(0, 1fr); }
+:root body.client-dashboard-page .client-workout-selection-summary .client-workout-selection-arrow {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  font: inherit;
+  font-size: 1.3rem;
+  cursor: pointer;
+}
+:root body.client-dashboard-page .client-workout-selection-summary .client-workout-selection-arrow:focus-visible { outline: 3px solid #5aa9e8; outline-offset: 3px; }
+:root body.client-dashboard-page .client-workout-return-position {
+  grid-column: 1 / -1;
+  justify-self: start;
+  min-height: 42px;
+  padding: 7px 10px;
+  border: 1px solid #5aa9e8;
+  border-radius: 9px;
+  color: #5aa9e8;
+  background: transparent;
+  font: inherit;
+  font-size: .83rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+:root body.client-dashboard-page .client-workout-return-position[hidden] { display: none; }
+
+.exercise-gym-history { display: grid; gap: 8px; margin-top: 12px; }
+.exercise-gym-history > strong { color: var(--ink, #f2f0e8); }
+.exercise-gym-history-choice {
+  display: grid;
+  gap: 4px;
+  padding: 10px;
+  border: 1px solid var(--line, #355344);
+  border-radius: 11px;
+  color: var(--ink, #f2f0e8);
+  background: var(--surface-soft, #112219);
+}
+.exercise-gym-history-choice small { color: var(--muted, #a8b9ac); }
+.exercise-gym-history-choice button {
+  justify-self: start;
+  min-height: 40px;
+  padding: 7px 12px;
+  border: 1px solid var(--client-accent, #a3ff12);
+  border-radius: 9px;
+  color: var(--client-accent, #a3ff12);
+  background: transparent;
+  font: inherit;
+  font-size: .85rem;
+  font-weight: 800;
+}
+
+.mobile-tab-settings { margin: 15px 0; padding: 14px; border: 1px solid var(--line, #355344); border-radius: 14px; background: var(--surface-soft, #112219); }
+.mobile-tab-settings h4 { margin: 0 0 10px; }
+.mobile-tab-settings ol { display: grid; gap: 7px; padding: 0; margin: 0; list-style: none; }
+.mobile-tab-settings-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 48px; padding: 8px 10px; border: 1px solid var(--line, #355344); border-radius: 10px; background: var(--surface, #0b1811); }
+.mobile-tab-settings-row > .client-dashboard-tab-icon { flex: 0 0 24px; width: 24px; height: 24px; color: #5aa9e8; }
+.mobile-tab-settings-row > span:first-child { font-weight: 800; }
+.mobile-tab-settings-row > span:nth-child(2) { flex: 1; font-weight: 800; }
+.mobile-tab-settings-row small { color: var(--muted, #a8b9ac); }
+.mobile-tab-settings-controls { display: flex; gap: 5px; }
+.mobile-tab-settings-controls button { min-width: 38px; min-height: 38px; padding: 6px; border: 1px solid var(--line, #355344); border-radius: 8px; color: var(--ink, #f2f0e8); background: transparent; font: inherit; }
+.mobile-tab-settings-controls button:disabled { opacity: .4; }
+.mobile-tab-settings-preview { display: grid; grid-template-columns: repeat(var(--client-mobile-tab-count, 5), minmax(0, 1fr)); gap: 4px; padding: 8px; border-radius: 20px; background: #2a2e30f2; text-align: center; font-size: .75rem; }
+.mobile-tab-settings-preview-item { display: grid; justify-items: center; gap: 3px; min-width: 0; overflow-wrap: anywhere; }
+.mobile-tab-settings-preview-item .client-dashboard-tab-icon { width: 23px; height: 23px; color: #d6dcda; }
+.mobile-tab-settings-reset { min-height: 44px; border: 0; color: var(--client-accent, #a3ff12); background: transparent; font: inherit; font-weight: 800; }
+
+.access-welcome-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+.access-welcome-actions a { display: inline-grid; place-items: center; min-width: 110px; min-height: 44px; padding: 9px 16px; border: 1px solid #5aa9e8; border-radius: 999px; color: #5aa9e8; font-weight: 800; text-decoration: none; }
+.access-welcome-actions a:last-child { color: #111; background: #ffd600; border-color: #ffd600; }
+.home-signup-link { display: inline-block; margin-top: 15px; font-weight: 800; }
+.access-request-trap { position: absolute !important; width: 1px !important; height: 1px !important; padding: 0 !important; margin: -1px !important; overflow: hidden !important; clip: rect(0, 0, 0, 0) !important; white-space: nowrap !important; border: 0 !important; }
+.login-form textarea { width: 100%; min-height: 110px; padding: 14px; border: 1px solid var(--line, #a8b9ac); border-radius: 14px; background: #fbfbf8; color: var(--black, #111); font: inherit; resize: vertical; }
+.access-request-confirmation { padding: 18px; border: 1px solid var(--line, #a8b9ac); border-radius: 14px; font-weight: 700; }
+
+@media (max-width: 900px) {
+  html:has(> body.client-dashboard-page), body.client-dashboard-page { overscroll-behavior-x: none; }
+  :root body.client-dashboard-page .client-dashboard-tabs {
+    display: grid;
+    grid-template-columns: repeat(var(--client-mobile-tab-count, 5), minmax(0, 1fr));
+  }
+  .dashboard-page .client-dashboard-tab[data-mobile-tab-hidden] { display: none !important; }
+}
+
+/* Set rows keep the previous result visible beside the editable values. */
+:root body.client-dashboard-page .set-header,
+:root body.client-dashboard-page .set-row,
+:root body.client-dashboard-page .custom-workout-carousel[data-carousel-enabled="true"] .custom-workout-card .set-header,
+:root body.client-dashboard-page .custom-workout-carousel[data-carousel-enabled="true"] .custom-workout-card .set-row {
+  grid-template-columns: 40px 72px minmax(0, 1fr) minmax(0, 1fr) 44px !important;
+}
+:root body.client-dashboard-page .custom-workout-carousel:is([data-custom-workout-format="superset"], [data-custom-workout-format="circuit"]) .custom-workout-card .set-header,
+:root body.client-dashboard-page .custom-workout-carousel:is([data-custom-workout-format="superset"], [data-custom-workout-format="circuit"]) .custom-workout-card .set-row {
+  grid-template-columns: 40px 72px minmax(0, 1fr) minmax(0, 1fr) !important;
+}
+:root body.client-dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-columns,
+:root body.client-dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-row {
+  grid-template-columns: 40px 72px repeat(2, minmax(0, 1fr)) !important;
+}
+.client-dashboard-page .set-previous,
+.client-dashboard-page .custom-workout-grouped-previous {
+  align-self: center;
+  color: #aab1be;
+  font-size: .78rem;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  white-space: nowrap;
+}
+@media (max-width: 760px) {
+  :root body.client-dashboard-page .set-row > .set-previous { grid-column: 2 !important; grid-row: 1 !important; }
+  :root body.client-dashboard-page .set-row > .set-input-field:nth-of-type(2) { grid-column: 3 !important; }
+  :root body.client-dashboard-page .set-row > .set-input-field:nth-of-type(3) { grid-column: 4 !important; }
+  :root body.client-dashboard-page .set-row > .set-complete-button {
+    grid-column: 5 !important;
+  }
+}
