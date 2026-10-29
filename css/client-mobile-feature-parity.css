@@ -108,23 +108,35 @@
   .dashboard-page .client-dashboard-tab[data-mobile-tab-hidden] { display: none !important; }
 }
 
-/* The client log has Set, Weight, Reps, and Complete columns. */
+/* Set rows keep the previous result visible beside the editable values. */
 :root body.client-dashboard-page .set-header,
 :root body.client-dashboard-page .set-row,
 :root body.client-dashboard-page .custom-workout-carousel[data-carousel-enabled="true"] .custom-workout-card .set-header,
 :root body.client-dashboard-page .custom-workout-carousel[data-carousel-enabled="true"] .custom-workout-card .set-row {
-  grid-template-columns: 44px minmax(0, 1fr) minmax(0, 1fr) 44px !important;
+  grid-template-columns: 40px 72px minmax(0, 1fr) minmax(0, 1fr) 44px !important;
 }
 :root body.client-dashboard-page .custom-workout-carousel:is([data-custom-workout-format="superset"], [data-custom-workout-format="circuit"]) .custom-workout-card .set-header,
 :root body.client-dashboard-page .custom-workout-carousel:is([data-custom-workout-format="superset"], [data-custom-workout-format="circuit"]) .custom-workout-card .set-row {
-  grid-template-columns: 44px minmax(0, 1fr) minmax(0, 1fr) !important;
+  grid-template-columns: 40px 72px minmax(0, 1fr) minmax(0, 1fr) !important;
 }
 :root body.client-dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-columns,
 :root body.client-dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-row {
-  grid-template-columns: 44px repeat(2, minmax(0, 1fr)) !important;
+  grid-template-columns: 40px 72px repeat(2, minmax(0, 1fr)) !important;
+}
+.client-dashboard-page .set-previous,
+.client-dashboard-page .custom-workout-grouped-previous {
+  align-self: center;
+  color: #aab1be;
+  font-size: .78rem;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  white-space: nowrap;
 }
 @media (max-width: 760px) {
+  :root body.client-dashboard-page .set-row > .set-previous { grid-column: 2 !important; grid-row: 1 !important; }
+  :root body.client-dashboard-page .set-row > .set-input-field:nth-of-type(2) { grid-column: 3 !important; }
+  :root body.client-dashboard-page .set-row > .set-input-field:nth-of-type(3) { grid-column: 4 !important; }
   :root body.client-dashboard-page .set-row > .set-complete-button {
-    grid-column: 4 !important;
+    grid-column: 5 !important;
   }
 }

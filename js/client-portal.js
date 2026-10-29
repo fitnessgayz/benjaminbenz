@@ -5271,6 +5271,7 @@ function setRowMarkup(setNumber, repPlaceholder = "", setType = workingSetType, 
         <em>Set</em>
         <input type="text" value="${label}" maxlength="3" inputmode="text" autocomplete="off" data-set-label aria-label="${labelAria}" />
       </label>
+      <span class="set-previous" data-set-previous aria-label="Previous set">—</span>
       <label class="set-input-field">
         <em>Weight</em>
         <input type="number" min="0" step="0.5" placeholder="${escapeHtml(weightPlaceholder)}" data-default-placeholder="${escapeHtml(weightPlaceholder)}" data-set-weight />
@@ -5531,6 +5532,7 @@ function exerciseLogFields(exercise, workoutTitle, options = {}) {
       <div class="set-table" aria-label="${escapeHtml(exercise.name)} set tracker">
       <div class="set-header">
         <span>Set</span>
+        <span>Previous</span>
         <span>Weight</span>
         <span>Reps</span>
       </div>
@@ -7496,6 +7498,7 @@ function exerciseLogActions(options = {}) {
       ${showSkip ? '<button class="exercise-skip-button" type="button" data-skip-exercise aria-pressed="false">Skip</button>' : ""}
       <button class="exercise-delete-button" type="button" data-delete-exercise>Delete</button>
       <button class="exercise-one-rm-button" type="button" data-one-rm-open aria-label="Open estimated one rep max calculator for this exercise">1RM calculator</button>
+      <button class="exercise-history-button" type="button" data-exercise-history-open>Exercise history</button>
     </div>
   `;
 }
@@ -10127,6 +10130,7 @@ function customWorkoutGroupedSetRowMarkup(row, code, exerciseIndex, setType, rou
         aria-pressed="${complete}"
         ${pendingRow ? "disabled" : ""}
       ><span aria-hidden="true">${escapeHtml(code)}${complete ? " ✓" : ""}</span></button>
+      <span class="custom-workout-grouped-previous" data-custom-grouped-previous>${escapeHtml(row?.querySelector("[data-set-previous]")?.textContent || "—")}</span>
       ${customWorkoutGroupedFieldMarkup("weight", values.weightRaw, context, row?.querySelector("[data-set-weight]")?.placeholder || "", row?.querySelector("[data-set-weight]")?.dataset.historyHint || "")}
       ${customWorkoutGroupedFieldMarkup("reps", values.repsRaw, context, row?.querySelector("[data-set-reps]")?.placeholder || "")}
     </div>
@@ -10233,6 +10237,7 @@ function customWorkoutGroupedExerciseKeyMarkup(carousel) {
           ${isCustom ? `<button type="button" data-open-custom-exercise="${index}" aria-label="Edit ${escapeHtml(name)}: sets, reps and weight"><strong data-custom-grouped-exercise-name="${index}">${escapeHtml(name)}</strong></button>` : `<strong data-custom-grouped-exercise-name="${index}">${escapeHtml(name)}</strong>`}
           ${target ? `<p class="custom-workout-grouped-target" data-custom-grouped-target="${index}">${escapeHtml(target)}</p>` : ""}
           ${meta ? `<p class="custom-workout-grouped-meta">${escapeHtml(meta)}</p>` : ""}
+          <button class="custom-workout-grouped-history-button" type="button" data-exercise-history-index="${index}" aria-label="View history for ${escapeHtml(name)}">History</button>
         </span>
         ${media ? "" : demo}
         <span class="custom-workout-grouped-chevron" aria-hidden="true">›</span>
@@ -10670,7 +10675,7 @@ function customWorkoutGroupedSectionsMarkup(carousel) {
   const warmUps = [];
   const columnLabelsMarkup = `
     <div class="custom-workout-grouped-columns">
-      <span>Set</span><span>Weight</span><span>Reps</span>
+      <span>Set</span><span>Previous</span><span>Weight</span><span>Reps</span>
     </div>
   `;
 
@@ -14458,6 +14463,21 @@ function handleGymHistoryCopy() {
   });
 }
 
+function handleClientExerciseHistoryOpen() {
+  document.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-exercise-history-open], [data-exercise-history-index], [data-exercise-history-name]");
+    if (!button) return;
+    const carousel = button.closest("[data-custom-workout-grouped='true']");
+    const index = Number(button.dataset.exerciseHistoryIndex);
+    const logElement = button.dataset.exerciseHistoryIndex !== undefined
+      ? customWorkoutGroupedLogElements(carousel)[index]
+      : button.closest("[data-exercise-log]");
+    const name = button.dataset.exerciseHistoryName || exerciseNameInputForLog(logElement)?.value || logElement?.dataset.exerciseName;
+    if (!name) return;
+    window.FWB_CLIENT_EXERCISE_HISTORY?.open({ name, logs: trainingLogs, returnFocus: button });
+  });
+}
+
 function savedStrengthSetSpecs(selectedLogs, workingMinimum = 1) {
   const warmUps = selectedLogs
     .filter((log) => normalizedSetType(log.set_type, log.set_number) === warmUpSetType)
@@ -14615,6 +14635,16 @@ function updateSetHistoryPlaceholders(logElement, logs = logsForExerciseDisplay(
     const previousLog = previousHistorySet(previousLogs, setNumber);
     const weightInput = row.querySelector("[data-set-weight]");
     const repsInput = row.querySelector("[data-set-reps]");
+    const previousDisplay = row.querySelector("[data-set-previous]");
+
+    if (previousDisplay) {
+      previousDisplay.textContent = previousLog
+        ? `${previousLog.weight_used} × ${previousLog.reps ?? "—"}`
+        : "—";
+      previousDisplay.setAttribute("aria-label", previousLog
+        ? `Previous set ${previousLog.weight_used} pounds for ${previousLog.reps ?? "unknown"} reps`
+        : "No previous set");
+    }
 
     if (weightInput) {
       weightInput.placeholder = historyPlaceholder(
@@ -15861,6 +15891,7 @@ function renderClientTrainingLogs() {
                         ${editableSetRows}
                         ${entry.gym_name ? `<small class="training-log-gym">At ${escapeHtml(entry.gym_name)}</small>` : ""}
                         ${noteSummary ? `<small class="training-log-notes"><strong>Notes:</strong> ${escapeHtml(noteSummary)}</small>` : ""}
+                        ${![warmupExerciseCode, cardioExerciseCode].includes(entry.exercise_code) ? `<button class="training-log-exercise-history-button" type="button" data-exercise-history-name="${escapeHtml(entry.exercise_name)}" aria-label="View history for ${escapeHtml(entry.exercise_name)}">Exercise history</button>` : ""}
                       </div>
                     </article>
                   `;
@@ -21501,6 +21532,7 @@ handleClientSavedSetEdit();
 handleClientWorkoutHistoryDownload();
 handleClientWorkoutHistoryImport();
 handleGymHistoryCopy();
+handleClientExerciseHistoryOpen();
 handleCopyWorkoutToCustom();
 handleClientWorkoutHistoryDelete();
 handleClientWorkoutHistoryDeck();
