@@ -6848,8 +6848,9 @@ function initializeClientFitnessPlanHelp() {
         dialog.dataset.firstLogin = "false";
         dialog.close();
         window.requestAnimationFrame?.(() => {
-          if (firstLogin) document.querySelector("[data-client-web-tour-open]")?.click();
-          else maybeShowClientHomeCheckinPrompt();
+          if (!firstLogin || !window.FWB_CLIENT_WEB_TOUR?.showFirstVisit(activeDashboardUser?.id)) {
+            maybeShowClientHomeCheckinPrompt();
+          }
         });
       }
       form.reset();
@@ -20443,6 +20444,8 @@ async function loadDashboard() {
     }
 
     activeDashboardUser = user;
+    window.FWB_CLIENT_BOTTOM_TABS_USER_ID = user.id;
+    window.FWB_CLIENT_BOTTOM_TABS?.setAccount(user.id);
     renderCoachPreviewReturn();
     const requestedTab = new URLSearchParams(window.location.search).get("tab");
     const availableTabs = new Set(Array.from(document.querySelectorAll("[data-client-dashboard-panel]"))
@@ -20668,7 +20671,11 @@ async function loadDashboard() {
       getWorkoutDates: () => window.FWB_ACHIEVEMENTS.completedWorkoutDates(trainingLogs, { today: todayDate(), clientEmail: activeClientEmail })
     });
     void clientQuarterGoalController?.load();
-    window.requestAnimationFrame?.(() => maybeShowClientHomeCheckinPrompt());
+    window.requestAnimationFrame?.(() => {
+      if (!window.FWB_CLIENT_WEB_TOUR?.showFirstVisit(user.id)) {
+        maybeShowClientHomeCheckinPrompt();
+      }
+    });
   } catch (error) {
     setDashboardMessage(
       "Could not load dashboard",

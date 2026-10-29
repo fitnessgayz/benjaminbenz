@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sign up for FWB Training | Fitness with Benjamin</title>
+  <meta name="description" content="Request access to FWB Training. Benjamin reviews every request before sending an invitation." />
+  <link rel="icon" href="/favicon.ico" sizes="any" />
+  <link rel="apple-touch-icon" href="/fwb-brand-icon-gold-180-v5.png" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css?v=client-access-request-1" />
+  <link rel="stylesheet" href="css/login-layout-fix.css?v=mobile-fit-audit-2" />
+  <link rel="stylesheet" href="/css/fwb-design-system.css?v=web-app-brand-1&amp;theme=deep-forest-2" />
+  <link rel="stylesheet" href="/css/fwb-dark-theme.css?v=deep-forest-10" />
+  <link rel="stylesheet" href="css/client-access-request.css?v=1" />
+  <meta name="theme-color" content="#050806" />
+</head>
+<body class="login-page client-access-request-page">
+  <header class="site-header">
+    <a class="brand" href="index.html#top" aria-label="FWB Training"><span>FWB</span><strong>Training</strong></a>
+    <a class="client-access-request-signin" href="client-login.html">Sign in</a>
+  </header>
+  <main class="client-access">
+    <section class="access-intro" aria-labelledby="client-access-request-title">
+      <p class="kicker">FWB Training</p>
+      <h1 id="client-access-request-title">Request access</h1>
+      <p>Tell Benjamin a little about yourself. He reviews each request before sending an invitation to create your account.</p>
+    </section>
+    <section class="access-panel client-access-request-panel" aria-labelledby="client-access-request-form-title">
+      <div class="access-panel-heading"><p class="kicker">Sign up</p><h2 id="client-access-request-form-title">Join FWB Training</h2></div>
+      <form class="login-form" id="client-access-request-form">
+        <label>Full name <input name="name" autocomplete="name" maxlength="120" required /></label>
+        <label>Email <input name="email" type="email" autocomplete="email" maxlength="180" required /></label>
+        <label><span>Phone <small class="client-access-request-optional">Optional</small></span><input name="phone" type="tel" autocomplete="tel" maxlength="60" /></label>
+        <label><span>What are you working toward? <small class="client-access-request-optional">Optional</small></span><textarea name="goals" rows="4" maxlength="2000" placeholder="Share your training goals"></textarea></label>
+        <label class="client-access-request-trap" aria-hidden="true">Website <input name="website" autocomplete="off" tabindex="-1" /></label>
+        <button class="button button-dark" type="submit">Send sign-up request</button>
+        <p class="login-status" id="client-access-request-status" role="status" aria-live="polite">Submitting a request does not create an account. Benjamin will review it first.</p>
+      </form>
+      <p class="client-access-request-return">Already have access? <a href="client-login.html">Sign in</a>.</p>
+    </section>
+  </main>
+  <script src="js/supabase-config.js?v=manual-sessions-1"></script>
+  <script src="js/client-access-request.js?v=1"></script>
+</body>
+</html>

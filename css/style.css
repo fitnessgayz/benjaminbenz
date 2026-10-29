@@ -2920,6 +2920,9 @@ footer {
   font-weight: 900;
 }
 
+.client-request-link { margin: 0; color: var(--muted); font-size: .9rem; line-height: 1.45; }
+.client-request-link a { color: var(--secondary-accent); font-weight: 900; text-underline-offset: 3px; }
+
 .access-demo {
   display: grid;
   gap: 4px;
