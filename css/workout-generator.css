@@ -6,7 +6,7 @@ body.workout-generator-open { overflow: hidden; }
   padding: 10px 12px;
   border: 1px solid #cedbb0;
   border-radius: 10px;
-  background: #eef5d9;
+  background: #fff7dc;
   color: #35451c;
   font-size: .85rem;
   font-weight: 700;
@@ -18,8 +18,8 @@ body.workout-generator-open { overflow: hidden; }
 :root body .custom-workout-reset-control { flex-wrap: wrap; align-items: center; gap: 10px; }
 :root body .custom-workout-reset-control [data-generate-workout],
 :root body .workout-generator-launch { min-height: 48px; white-space: normal; overflow-wrap: anywhere; }
-:root body .workout-generator-launch { background: #d6ff35; color: #171a17; border-color: #171a17; }
-:root body [data-generate-workout]:focus-visible { outline: 3px solid #718a18; outline-offset: 3px; }
+:root body .workout-generator-launch { background: #ffd400; color: #171a17; border-color: #171a17; }
+:root body [data-generate-workout]:focus-visible { outline: 3px solid #a47700; outline-offset: 3px; }
 :root body [data-generate-workout][hidden] { display: none !important; }
 
 :root body .workout-program-picker > h3 { margin: 0 0 16px; font-size: 1.3rem; line-height: 1.3; }
@@ -55,7 +55,7 @@ body.workout-generator-open { overflow: hidden; }
   width: 44px;
   height: 44px;
   border-radius: 11px;
-  background: var(--lime, #d6ff35);
+  background: var(--lime, #ffd400);
   color: #10150d;
 }
 :root body .workout-choice-icon svg { width: 26px; height: 26px; }
@@ -72,7 +72,7 @@ body.workout-generator-open { overflow: hidden; }
   overflow-wrap: anywhere;
 }
 :root body .workout-choice-arrow { width: 20px; height: 20px; color: var(--muted, #666b62); }
-:root body .workout-choice-card:focus-visible { outline: 3px solid #718a18; outline-offset: 3px; }
+:root body .workout-choice-card:focus-visible { outline: 3px solid #a47700; outline-offset: 3px; }
 :root body .workout-preview-footer > .workout-choice-card { flex: 1 1 100%; }
 @media (hover: hover) {
   :root body .workout-choice-card:hover { border-color: #879466; background: #fafcf5; }
@@ -169,7 +169,7 @@ body.workout-generator-open { overflow: hidden; }
   font: inherit;
   font-size: 1rem;
 }
-:root body .workout-generator-gym input:focus-visible { outline: 3px solid var(--focus, #718a18); outline-offset: 2px; }
+:root body .workout-generator-gym input:focus-visible { outline: 3px solid var(--focus, #a47700); outline-offset: 2px; }
 :root body .workout-generator-gym .workout-generator-muted { margin: 0; }
 :root body .workout-generator-equipment { display: block; min-width: 0; margin: 0; padding: 0; border: 0; }
 :root body .workout-generator-equipment legend { margin: 0 0 10px; padding: 0; }
@@ -193,7 +193,7 @@ body.workout-generator-open { overflow: hidden; }
   letter-spacing: 0;
   cursor: pointer;
 }
-:root body .workout-generator-equipment-choice:has(input:checked) { border-color: #9caa72; background: #eef5d9; }
+:root body .workout-generator-equipment-choice:has(input:checked) { border-color: #9caa72; background: #fff7dc; }
 :root body .workout-generator-equipment-choice input { flex: 0 0 17px; width: 17px; height: 17px; margin: 0; accent-color: #425121; }
 :root body .workout-generator-equipment-choice:has(input:disabled) { cursor: default; }
 :root body .workout-generator-muted { margin: 8px 0 0; color: var(--generator-muted); font-size: .8rem; line-height: 1.5; }
@@ -221,7 +221,7 @@ body.workout-generator-open { overflow: hidden; }
   letter-spacing: 0;
   cursor: pointer;
 }
-:root body .workout-generator-muscle-choice:has(input:checked) { border-color: #718a18; background: #eef5d9; }
+:root body .workout-generator-muscle-choice:has(input:checked) { border-color: #a47700; background: #fff7dc; }
 :root body .workout-generator-muscle-choice input { flex: 0 0 17px; width: 17px; height: 17px; margin: 0; accent-color: #425121; }
 
 :root body .workout-generator-dialog .workout-generator-button,
@@ -238,7 +238,7 @@ body.workout-generator-open { overflow: hidden; }
   gap: 8px;
   border: 1px solid var(--generator-ink);
   border-radius: 12px !important;
-  background: #d6ff35;
+  background: #ffd400;
   color: var(--generator-ink);
   font-family: inherit;
   font-size: .95rem !important;
@@ -258,7 +258,7 @@ body.workout-generator-open { overflow: hidden; }
 :root body .workout-generator-dialog .workout-generator-generate { width: 100% !important; inline-size: 100% !important; }
 :root body .workout-generator-dialog .workout-generator-button:disabled,
 :root body .workout-generator-dialog .workout-generator-close:disabled { opacity: .5; cursor: default; }
-:root body .workout-generator-dialog :is(button, select, input, a, summary):focus-visible { outline: 3px solid #718a18; outline-offset: 3px; }
+:root body .workout-generator-dialog :is(button, select, input, a, summary):focus-visible { outline: 3px solid #a47700; outline-offset: 3px; }
 
 :root body .workout-generator-status { min-height: 0; margin: 16px 0 0; color: var(--generator-muted); font-size: .9rem; line-height: 1.5; }
 :root body .workout-generator-status:empty { display: none; }
@@ -271,7 +271,7 @@ body.workout-generator-open { overflow: hidden; }
 :root body .workout-generator-exercise { min-width: 0; margin: 0; padding: 16px; border: 1px solid var(--generator-line); border-radius: 18px; background: #f7f8f4; }
 :root body .workout-generator-exercise-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
 :root body .workout-generator-exercise-identity { display: flex; min-width: 0; align-items: baseline; gap: 10px; }
-:root body .workout-generator-number { flex: 0 0 auto; color: #71803f; font-size: .75rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+:root body .workout-generator-number { flex: 0 0 auto; color: #795500; font-size: .75rem; font-weight: 800; font-variant-numeric: tabular-nums; }
 :root body .workout-generator-exercise-heading h4 { margin: 0; color: var(--generator-ink); font-size: 1rem; overflow-wrap: anywhere; }
 :root body .workout-generator-dialog .workout-generator-swap-trigger { flex: 0 0 auto; min-height: 44px; margin-top: -4px; padding: 8px 12px; }
 :root body .workout-generator-prescription { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin: 10px 0 0; color: var(--generator-ink); font-size: .85rem; font-weight: 650; line-height: 1.5; }

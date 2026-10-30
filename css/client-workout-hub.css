@@ -269,7 +269,7 @@
   }
 }
 
-/* Saved weekly plans share the workout hub's dark, lime-accented language. */
+/* Saved weekly plans share the workout hub's dark, gold-accented language. */
 .client-workout-plan-dialog {
   width: min(650px, calc(100vw - 24px));
   max-height: min(90dvh, 850px);

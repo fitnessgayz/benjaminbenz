@@ -7,7 +7,7 @@
   --apple-line: #dcded7;
   --apple-paper: #fff;
   --apple-soft: #f7f8f4;
-  --apple-lime: #d6ff35;
+  --apple-lime: #ffd400;
   color: var(--apple-ink);
   font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   color-scheme: light;
@@ -78,7 +78,7 @@
 .apple-workout-dialog input[type="file"]::file-selector-button { min-height: 44px; margin-right: 8px; padding: 8px 10px; border: 1px solid var(--apple-line); border-radius: 8px; background: var(--apple-paper); color: var(--apple-ink); font: inherit; font-weight: 700; cursor: pointer; }
 .apple-workout-review-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 12px; }
 .apple-workout-confirm { display: flex; min-height: 44px; align-items: start; gap: 10px; padding: 12px; border: 1px solid var(--apple-line); border-radius: 12px; background: var(--apple-soft); color: var(--apple-ink); font-size: .8rem; font-weight: 650; line-height: 1.45; }
-.apple-workout-dialog .apple-workout-confirm input { flex: 0 0 20px; width: 20px !important; inline-size: 20px !important; height: 20px; min-height: 20px; margin: 0; accent-color: #678000; }
+.apple-workout-dialog .apple-workout-confirm input { flex: 0 0 20px; width: 20px !important; inline-size: 20px !important; height: 20px; min-height: 20px; margin: 0; accent-color: #a47700; }
 .apple-workout-warning { padding: 12px; margin: 0; border-left: 3px solid #c7932b; background: #fffcf1; color: #695012; font-size: .8rem; line-height: 1.45; }
 .apple-workout-warning[hidden] { display: none !important; }
 .apple-workout-dialog [hidden] { display: none !important; }
@@ -91,7 +91,7 @@
 .apple-workout-dialog .apple-workout-save { border-color: var(--apple-ink); background: var(--apple-lime); font-size: .9rem !important; }
 .apple-workout-summary :is(button, summary, a):focus-visible,
 .apple-workout-empty button:focus-visible,
-.apple-workout-dialog :is(button, input, select):focus-visible { outline: 3px solid #718a18; outline-offset: 2px; }
+.apple-workout-dialog :is(button, input, select):focus-visible { outline: 3px solid #a47700; outline-offset: 2px; }
 @media (max-width: 390px) {
   .apple-workout-form { padding: 16px; gap: 14px; }
   .apple-workout-review-grid { grid-template-columns: minmax(0, 1fr); }

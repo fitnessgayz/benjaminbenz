@@ -9,7 +9,7 @@ const read = (file) => fs.readFileSync(path.join(root, file), "utf8");
 test("publishes the approved web palette with migration aliases", () => {
   const css = read("css/fwb-design-system.css");
   const values = {
-    "brand-primary": "#A3FF12",
+    "brand-primary": "#ffd400",
     "brand-primary-ink": "#101900",
     ink: "#F2F0E8",
     "ink-deep": "#050806",
@@ -18,7 +18,7 @@ test("publishes the approved web palette with migration aliases", () => {
     surface: "#0B1811",
     "text-muted": "#A8B9AC",
     border: "#263C2E",
-    focus: "#A3FF12",
+    focus: "#ffd400",
   };
 
   for (const [name, value] of Object.entries(values)) {

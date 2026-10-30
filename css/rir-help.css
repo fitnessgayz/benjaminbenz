@@ -65,7 +65,7 @@
   --rir-help-line: #dcded7;
   --rir-help-paper: #fff;
   --rir-help-soft: #f7f8f4;
-  --rir-help-lime: #d6ff35;
+  --rir-help-lime: #ffd400;
   box-sizing: border-box;
   width: min(400px, calc(100vw - 24px));
   max-width: calc(100vw - 24px);
@@ -286,7 +286,7 @@
 
 .dashboard-page .rir-help-trigger:focus-visible,
 .rir-help-dialog :is(.rir-help-close, .rir-help-done):focus-visible {
-  outline: 3px solid #718a18;
+  outline: 3px solid #a47700;
   outline-offset: 2px;
 }
 
@@ -298,6 +298,6 @@
   }
 
   .rir-help-dialog .rir-help-done:hover {
-    background: #caef31;
+    background: #ffe066;
   }
 }

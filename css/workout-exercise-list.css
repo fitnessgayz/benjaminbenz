@@ -139,7 +139,7 @@
 }
 
 .client-dashboard-page :is(.client-workout-panel, .workout-exercise-dock) .workout-exercise-list [data-workout-exercise-jump]:focus-visible {
-  outline: 3px solid #718a18;
+  outline: 3px solid #a47700;
   outline-offset: 3px;
 }
 
@@ -149,7 +149,7 @@
 }
 
 .client-dashboard-page .client-workout-panel .workout-exercise-jump-target:focus {
-  outline: 3px solid #718a18 !important;
+  outline: 3px solid #a47700 !important;
   outline-offset: 4px;
 }
 
@@ -311,7 +311,7 @@
     height: 14px;
     margin: 0;
     padding: 0;
-    color: var(--lime, #d3ff35);
+    color: var(--lime, #ffd400);
     pointer-events: auto;
     transition: transform .16s ease;
   }

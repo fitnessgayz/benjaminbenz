@@ -104,7 +104,7 @@
 .client-account-form input:focus-visible,
 .client-account-form button:focus-visible,
 .client-account-secondary-actions button:focus-visible {
-  outline: 3px solid rgba(184, 255, 0, 0.58);
+  outline: 3px solid rgba(255, 212, 0, 0.58);
   outline-offset: 2px;
 }
 

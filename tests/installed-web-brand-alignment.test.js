@@ -59,7 +59,7 @@ test("auth, support, and privacy surfaces preserve install-to-launch identity", 
 test("shared app styles use the approved palette beneath the color bridges", () => {
   const css = read("css/fwb-design-system.css");
   for (const [token, value] of Object.entries({
-    "brand-primary": "#A3FF12",
+    "brand-primary": "#ffd400",
     ink: "#F2F0E8",
     "ink-deep": "#050806",
     canvas: "#050806",
@@ -67,7 +67,7 @@ test("shared app styles use the approved palette beneath the color bridges", () 
     surface: "#0B1811",
     "text-muted": "#A8B9AC",
     border: "#263C2E",
-    focus: "#A3FF12",
+    focus: "#ffd400",
   })) {
     assert.match(css, new RegExp(`--${token}: ${value};`, "i"));
   }
@@ -75,7 +75,7 @@ test("shared app styles use the approved palette beneath the color bridges", () 
 
   const clientLinks = [...read("client-dashboard.html").matchAll(/<link[^>]+rel="stylesheet"[^>]+href="([^"]+)"[^>]*>/g)];
   assert.ok(clientLinks.some((link) => /fwb-design-system\.css\?v=web-app-brand-1/.test(link[1])));
-  assert.ok(clientLinks.some((link) => /fwb-dark-theme\.css\?v=deep-forest-9/.test(link[1])));
+  assert.ok(clientLinks.some((link) => /fwb-dark-theme\.css\?v=deep-forest-10/.test(link[1])));
 
   const coachLinks = [...read("coach-admin.html").matchAll(/<link[^>]+rel="stylesheet"[^>]+href="([^"]+)"[^>]*>/g)];
   assert.ok(coachLinks.some((link) => /fwb-design-system\.css\?v=web-app-brand-1/.test(link[1])));

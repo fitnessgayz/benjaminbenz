@@ -14,7 +14,7 @@
 .client-gym-checkin-prompt::backdrop { background: rgb(0 0 0 / 65%); backdrop-filter: blur(4px); }
 .client-gym-checkin-prompt h2 { margin: 0 42px 10px 0; font-size: clamp(1.6rem, 6vw, 2rem); line-height: 1.15; }
 .client-gym-checkin-prompt p { margin: 0 0 17px; }
-.client-gym-checkin-prompt-kicker { color: var(--brand-primary, #a3ff12); font-size: .78rem; font-weight: 800; letter-spacing: .12em; }
+.client-gym-checkin-prompt-kicker { color: var(--brand-primary, #ffd400); font-size: .78rem; font-weight: 800; letter-spacing: .12em; }
 .client-gym-checkin-prompt-status { min-height: 1.4em; color: var(--text-muted, #a8b9ac); }
 .client-gym-checkin-prompt-name { display: grid; gap: 6px; margin-bottom: 14px; font-weight: 800; }
 .client-gym-checkin-prompt-name small { font-weight: 500; color: var(--text-muted, #a8b9ac); }
@@ -43,7 +43,7 @@
 }
 .client-gym-checkin-prompt-actions button:first-child {
   border: 0;
-  background: var(--brand-primary, #a3ff12);
+  background: var(--brand-primary, #ffd400);
   color: var(--brand-primary-ink, #101900);
 }
 .client-gym-checkin-prompt-actions button:last-child {

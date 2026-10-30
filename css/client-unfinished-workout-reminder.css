@@ -27,7 +27,7 @@
 .client-unfinished-workout-reminder-actions button:first-child {
   border: 0;
   padding: 9px 13px;
-  background: var(--brand-primary, #a3ff12);
+  background: var(--brand-primary, #ffd400);
   color: var(--brand-primary-ink, #101900);
 }
 .client-unfinished-workout-reminder-actions button:last-child {
