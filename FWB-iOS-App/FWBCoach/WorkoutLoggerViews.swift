@@ -396,7 +396,7 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
                         WorkoutParityCountStepper(
                             label: "Exercises", count: exercises.count,
                             onMinus: { parityRemovePicker = true },
-                            onPlus: { exerciseEditorRequest = ExerciseEditorRequest(mode: .add(.newCircuit)) }
+                            onPlus: { exerciseEditorRequest = ExerciseEditorRequest(mode: .add(.currentGroup)) }
                         )
                         .clipShape(RoundedRectangle(cornerRadius: 20))
                     } else {
@@ -985,7 +985,7 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
 
     private func prepareParitySession() {
         if isCustomWorkout && exercises.isEmpty {
-            let count = customWorkoutFormat == .single ? 6 : customWorkoutFormat == .superset ? 10 : 15
+            let count = customWorkoutFormat == .single ? 6 : WorkoutSequencePlanner.requiredCustomGroupSize(for: customWorkoutFormat)
             for _ in 0..<count { _ = parityAppendBlank() }
         }
         if isCustomWorkout && groupAssignments.isEmpty {
@@ -1173,7 +1173,13 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
             parityRestGroup = group.id
             parityRestRound = round
             let remaining = drafts.contains { !$0.isWarmUp && !$0.isCompleted && !$0.exerciseName.isEmpty }
-            if remaining && round > 0 {
+            let groupIsReady = !isCustomWorkout || group.exercises.allSatisfy { exercise in
+                guard let assignment = groupAssignments[exercise.id] else { return true }
+                return WorkoutSequencePlanner.customGroupIsComplete(
+                    assignment, exercises: exercises, assignments: groupAssignments
+                )
+            }
+            if remaining && round > 0 && groupIsReady {
                 restTimerStore.start(seconds: group.exercises.map { RestDurationParser.seconds(from: $0.rest) }.max() ?? 60, exerciseName: group.title, hapticsEnabled: restTimerHapticsEnabled)
             } else { restTimerStore.dismiss() }
         }
@@ -2348,17 +2354,23 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
         let exerciseDrafts = drafts.filter { matches($0, exercise) && !$0.isWarmUp }
         let exerciseIsComplete = !exerciseDrafts.isEmpty && exerciseDrafts.allSatisfy(\.isCompleted)
 
-        if !draft.isWarmUp,
-           let assignment = groupAssignments[exercise.id],
-           let section = sequenceSections.first(where: { $0.assignment?.id == assignment.id }),
-           section.isGroup {
-            handleGroupedSetCompletion(
-                exercise: exercise,
-                setNumber: draft.setNumber,
-                section: section,
-                exerciseIsComplete: exerciseIsComplete
-            )
-            return
+        if !draft.isWarmUp, let assignment = groupAssignments[exercise.id] {
+            if isCustomWorkout && !WorkoutSequencePlanner.customGroupIsComplete(
+                assignment, exercises: exercises, assignments: groupAssignments
+            ) {
+                restTimerStore.dismiss()
+                return
+            }
+            if let section = sequenceSections.first(where: { $0.assignment?.id == assignment.id }),
+               section.isGroup {
+                handleGroupedSetCompletion(
+                    exercise: exercise,
+                    setNumber: draft.setNumber,
+                    section: section,
+                    exerciseIsComplete: exerciseIsComplete
+                )
+                return
+            }
         }
 
         showPraise(
@@ -2547,25 +2559,13 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
     private func applyExerciseEdit(_ request: ExerciseEditorRequest, exerciseName: String) {
         switch request.mode {
         case .add(let placement):
-            let priorAssignments = groupAssignments
             let exercise = insertCustomExercise(
                 code: nextAddedExerciseCode(),
                 name: exerciseName,
-                placement: placement
+                placement: placement,
+                preferredAssignment: pendingSlotAssignment
             )
-            if let assignment = pendingSlotAssignment {
-                groupAssignments = priorAssignments
-                groupAssignments[exercise.id] = assignment
-                pendingSlotAssignment = nil
-            }
-            if isCustomWorkout && customWorkoutFormat != .single && pendingSlotAssignment == nil {
-                let assignment = groupAssignments[exercise.id]
-                let required = customWorkoutFormat == .superset ? 2 : 3
-                let existing = exercises.filter { groupAssignments[$0.id] == assignment }.count
-                if let assignment, existing < required {
-                    for _ in existing..<required { _ = parityAppendBlank(assignment: assignment) }
-                }
-            }
+            pendingSlotAssignment = nil
             offerHistoryCopy(for: exercise)
         case .substitute(let exercise):
             substituteExercise(exercise, with: exerciseName)
@@ -2587,7 +2587,8 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
     private func insertCustomExercise(
         code: String,
         name: String,
-        placement: CustomExercisePlacement
+        placement: CustomExercisePlacement,
+        preferredAssignment: WorkoutGroupAssignment? = nil
     ) -> Exercise {
         let approvedExercise = approvedExercise(matching: name)
         let resolvedName = (approvedExercise?.name ?? name).fwbTitleCased
@@ -2595,8 +2596,15 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
             $0.name.caseInsensitiveCompare(resolvedName) == .orderedSame
                 || $0.name.caseInsensitiveCompare(name) == .orderedSame
         } ?? libraryTemplate(from: approvedExercise) ?? ExerciseLibrary.exercise(named: resolvedName)
+        let blankSlot = isCustomWorkout ? WorkoutSequencePlanner.nextCustomBlankSlot(
+            exercises: exercises,
+            assignments: groupAssignments,
+            format: customWorkoutFormat,
+            preferredAssignment: preferredAssignment,
+            startNewGroup: placement == .newCircuit && preferredAssignment == nil
+        ) : nil
         let exercise = Exercise(
-            code: code,
+            code: blankSlot?.code ?? code,
             name: resolvedName,
             prescription: template?.prescription ?? "Custom sets",
             rest: template?.rest ?? "",
@@ -2605,6 +2613,13 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
             progression: template?.progression,
             hasInvalidProgression: template?.hasInvalidProgression ?? false
         )
+        if let blankSlot, let index = exercises.firstIndex(where: { $0.id == blankSlot.id }) {
+            exercises[index] = exercise
+            for draftIndex in drafts.indices where drafts[draftIndex].exerciseCode == blankSlot.code {
+                drafts[draftIndex].exerciseName = exercise.name
+            }
+            return exercise
+        }
         exercises.append(exercise)
         drafts.append(contentsOf: (1...3).map { WorkoutSetDraft(exercise: exercise, setNumber: $0) })
         drafts.append(WorkoutSetDraft(exercise: exercise, setNumber: WorkoutSetNumber.warmUp(1), setType: .warmUp))
@@ -2614,34 +2629,25 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
         case .single:
             groupAssignments.removeValue(forKey: exercise.id)
         case .superset:
-            let existing = exercises.dropLast().compactMap { groupAssignments[$0.id] }.filter { $0.kind == .superset }
-            if let openGroup = existing.last(where: { assignment in
-                exercises.dropLast().filter { groupAssignments[$0.id]?.id == assignment.id }.count < 2
-            }) {
-                groupAssignments[exercise.id] = openGroup
-            } else {
-                let nextNumber = (existing.compactMap { Int($0.label.split(separator: " ").last ?? "") }.max() ?? 0) + 1
-                groupAssignments[exercise.id] = WorkoutGroupAssignment(id: "CUSTOM_SUPERSET_\(nextNumber)", kind: .superset, label: "Superset \(nextNumber)")
+            let existing = groupAssignments.values.filter { $0.kind == .superset }
+            let nextNumber = (existing.compactMap { Int($0.label.split(separator: " ").last ?? "") }.max() ?? 0) + 1
+            let assignment = preferredAssignment ?? WorkoutGroupAssignment(
+                id: "CUSTOM_SUPERSET_\(nextNumber)", kind: .superset, label: "Superset \(nextNumber)"
+            )
+            groupAssignments[exercise.id] = assignment
+            let count = exercises.filter { groupAssignments[$0.id] == assignment }.count
+            for _ in count..<WorkoutSequencePlanner.requiredCustomGroupSize(for: .superset) {
+                _ = parityAppendBlank(assignment: assignment)
             }
         case .circuit:
-            let assignment: WorkoutGroupAssignment
-            if placement == .newCircuit {
-                assignment = WorkoutSequencePlanner.nextCustomCircuitAssignment(
-                    assignments: groupAssignments
-                )
-            } else if let lastExercise = exercises.dropLast().last,
-                      let currentAssignment = groupAssignments[lastExercise.id],
-                      currentAssignment.kind == .circuit {
-                assignment = currentAssignment
-            } else {
-                assignment = WorkoutSequencePlanner.nextCustomCircuitAssignment(
-                    assignments: groupAssignments
-                )
-                if let lastExercise = exercises.dropLast().last {
-                    groupAssignments[lastExercise.id] = assignment
-                }
-            }
+            let assignment = preferredAssignment ?? WorkoutSequencePlanner.nextCustomCircuitAssignment(
+                assignments: groupAssignments
+            )
             groupAssignments[exercise.id] = assignment
+            let count = exercises.filter { groupAssignments[$0.id] == assignment }.count
+            for _ in count..<WorkoutSequencePlanner.requiredCustomGroupSize(for: .circuit) {
+                _ = parityAppendBlank(assignment: assignment)
+            }
         }
         return exercise
     }

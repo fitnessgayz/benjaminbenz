@@ -76,6 +76,42 @@ struct GuidedWorkoutStep: Equatable {
 enum WorkoutSequencePlanner {
     static let editableGroupIDs = ["A", "B", "C", "D", "E", "F"]
 
+    static func requiredCustomGroupSize(for format: CustomWorkoutFormat) -> Int {
+        switch format {
+        case .single: 1
+        case .superset: 2
+        case .circuit: 3
+        }
+    }
+
+    static func nextCustomBlankSlot(
+        exercises: [Exercise],
+        assignments: [String: WorkoutGroupAssignment],
+        format: CustomWorkoutFormat,
+        preferredAssignment: WorkoutGroupAssignment? = nil,
+        startNewGroup: Bool = false
+    ) -> Exercise? {
+        guard !startNewGroup, format != .single else { return nil }
+        let kind: WorkoutGroupKind = format == .superset ? .superset : .circuit
+        return exercises.first { exercise in
+            guard exercise.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                  let assignment = assignments[exercise.id], assignment.kind == kind else { return false }
+            return preferredAssignment == nil || assignment.id == preferredAssignment?.id
+        }
+    }
+
+    static func customGroupIsComplete(
+        _ assignment: WorkoutGroupAssignment,
+        exercises: [Exercise],
+        assignments: [String: WorkoutGroupAssignment]
+    ) -> Bool {
+        let minimum = assignment.kind == .superset ? 2 : 3
+        let members = exercises.filter { assignments[$0.id] == assignment }
+        return members.count >= minimum && members.allSatisfy {
+            !$0.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        }
+    }
+
     static func customAssignments(
         for format: CustomWorkoutFormat,
         exercises: [Exercise]

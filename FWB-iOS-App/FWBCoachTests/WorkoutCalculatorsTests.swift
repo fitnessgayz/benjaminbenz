@@ -441,6 +441,48 @@ final class WorkoutCalculatorsTests: XCTestCase {
         XCTAssertEqual(next.id, "CUSTOM_CIRCUIT_4")
         XCTAssertEqual(next.label, "Circuit 4")
     }
+
+    func testAddingToSupersetFillsItsBlankPartnerBeforeOpeningAnotherPair() {
+        let first = Exercise(code: "ADD01", name: "Bench Press")
+        let blank = Exercise(code: "ADD02", name: "")
+        let assignment = WorkoutGroupAssignment(id: "CUSTOM_SUPERSET_1", kind: .superset, label: "Superset 1")
+        let exercises = [first, blank]
+        let assignments = [first.id: assignment, blank.id: assignment]
+
+        XCTAssertEqual(WorkoutSequencePlanner.nextCustomBlankSlot(
+            exercises: exercises, assignments: assignments, format: .superset
+        )?.id, blank.id)
+        XCTAssertFalse(WorkoutSequencePlanner.customGroupIsComplete(
+            assignment, exercises: exercises, assignments: assignments
+        ))
+        XCTAssertNil(WorkoutSequencePlanner.nextCustomBlankSlot(
+            exercises: [first, Exercise(code: blank.code, name: "Row")],
+            assignments: assignments, format: .superset
+        ))
+    }
+
+    func testCircuitNeedsThreeNamedExercisesBeforeRoundCanRest() {
+        let named = (1...2).map { Exercise(code: "ADD0\($0)", name: "Exercise \($0)") }
+        let blank = Exercise(code: "ADD03", name: "")
+        let assignment = WorkoutGroupAssignment(id: "CUSTOM_CIRCUIT_1", kind: .circuit, label: "Circuit 1")
+        let exercises = named + [blank]
+        let assignments = Dictionary(uniqueKeysWithValues: exercises.map { ($0.id, assignment) })
+
+        XCTAssertFalse(WorkoutSequencePlanner.customGroupIsComplete(
+            assignment, exercises: exercises, assignments: assignments
+        ))
+        XCTAssertEqual(WorkoutSequencePlanner.nextCustomBlankSlot(
+            exercises: exercises, assignments: assignments, format: .circuit
+        )?.id, blank.id)
+        XCTAssertNil(WorkoutSequencePlanner.nextCustomBlankSlot(
+            exercises: exercises, assignments: assignments, format: .circuit,
+            startNewGroup: true
+        ))
+        let filled = named + [Exercise(code: blank.code, name: "Exercise 3")]
+        XCTAssertTrue(WorkoutSequencePlanner.customGroupIsComplete(
+            assignment, exercises: filled, assignments: assignments
+        ))
+    }
 }
 
 final class WorkoutRoundLayoutTests: XCTestCase {
