@@ -15,6 +15,7 @@
   --client-accent-ink: #171a17;
   --client-settings-accent: #ffd400;
   --client-page-headline: #ffd400;
+  --client-action-link: #54baff;
 }
 
 :root[data-client-theme="light"] body.client-dashboard-page {
@@ -28,6 +29,7 @@
   --client-accent-ink: #171a17;
   --client-settings-accent: #936800;
   --client-page-headline: #795500;
+  --client-action-link: #075da3;
 }
 
 :root[data-client-theme="light"] body.client-dashboard-page .exercise-history-by-gym > strong {
@@ -93,6 +95,15 @@
 
 :root body.client-dashboard-page .client-workout-panel-custom .custom-workout-launcher-heading h2 {
   color: var(--client-page-headline);
+}
+
+/* Text-only actions use blue so they read as links beside gold headings. */
+:root body.client-dashboard-page .client-workout-selection-action,
+:root body.client-dashboard-page .client-workout-panel-custom .custom-workout-copy-past-link,
+:root body.client-dashboard-page .client-workout-panel-custom .custom-workout-launcher-add strong,
+:root body.client-dashboard-page .client-workout-panel-custom .custom-workout-footer-add strong,
+:root body.client-dashboard-page .client-workout-panel-custom .custom-workout-manage-exercises > summary {
+  color: var(--client-action-link);
 }
 
 :root body.client-dashboard-page :is(.workout-gym-picker label, .training-log-gym) {
