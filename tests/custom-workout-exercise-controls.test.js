@@ -30,19 +30,26 @@ function exerciseContext(draft = null) {
   });
 }
 
-test("new custom workouts start with format-specific blank exercises", () => {
+test("new custom workouts start empty or with one grouped exercise block", () => {
   const context = exerciseContext();
-  assert.equal(context.customWorkoutExercises().length, 6);
-  assert.equal(context.customWorkoutExercises("superset").length, 10);
-  assert.equal(context.customWorkoutExercises("circuit").length, 12);
+  assert.equal(context.customWorkoutExercises().length, 0);
+  assert.equal(context.customWorkoutExercises("superset").length, 2);
+  assert.equal(context.customWorkoutExercises("circuit").length, 3);
 });
 
 test("empty drafts gain starter slots and saved exercises are retained", () => {
-  assert.equal(exerciseContext({ emptyExercises: true, exercises: [] }).customWorkoutExercises().length, 6);
-  assert.equal(exerciseContext({ exercises: [] }).customWorkoutExercises().length, 6);
+  assert.equal(exerciseContext({ emptyExercises: true, exercises: [] }).customWorkoutExercises().length, 0);
+  assert.equal(exerciseContext({ exercises: [] }).customWorkoutExercises().length, 0);
   const saved = [{ code: "CW03", name: "Cable Row", group: 1, groupType: "superset" }];
   assert.equal(exerciseContext({ exercises: saved }).customWorkoutExercises().length, 1);
   assert.equal(exerciseContext({ exercises: saved }).customWorkoutExercises()[0].name, "Cable Row");
+});
+
+test("legacy blank placeholders disappear but entered set values remain", () => {
+  const blanks = Array.from({ length: 6 }, (_, index) => ({ code: `CW0${index + 1}`, name: "", sets: [{ weight: "", reps: "", complete: false }] }));
+  assert.equal(exerciseContext({ exercises: blanks }).customWorkoutExercises().length, 0);
+  blanks[2].sets[0].weight = "45";
+  assert.equal(exerciseContext({ exercises: blanks }).customWorkoutExercises().length, 6);
 });
 
 test("exercise picker fills the next blank slot before appending", () => {
@@ -174,9 +181,13 @@ for (const [format, sizes, addedCount] of [
     assert.deepEqual(allCards().slice(0, before.length).map((item) => item.exercise), before);
     assert.deepEqual(calls.slice(-2), [selected, "persist"], "Render once after inserting the entire group, then persist");
     if (format !== "single") {
-      assert.deepEqual(carousels.map((item) => item.list.children.length), [...sizes, addedCount]);
+      const expectedSizes = format === "circuit" && sizes.length
+        ? [...sizes.slice(0, -1), sizes.at(-1) + addedCount]
+        : [...sizes, addedCount];
+      assert.deepEqual(carousels.map((item) => item.list.children.length), expectedSizes);
       carousels.forEach((item, group) => assert(item.list.children.every((entry) => entry.dataset.customWorkoutGroup === String(group))));
-      assert.deepEqual(added.map((item) => item.options.groupPosition), Array.from({ length: addedCount }, (_, i) => i));
+      const firstPosition = format === "circuit" && sizes.length ? sizes.at(-1) : 0;
+      assert.deepEqual(added.map((item) => item.options.groupPosition), Array.from({ length: addedCount }, (_, i) => firstPosition + i));
     }
   });
 }

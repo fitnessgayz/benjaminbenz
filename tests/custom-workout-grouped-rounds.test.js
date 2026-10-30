@@ -2,6 +2,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 const test = require("node:test");
+const vm = require("node:vm");
 
 const root = path.resolve(__dirname, "..");
 const portal = fs.readFileSync(path.join(root, "js/client-portal.js"), "utf8");
@@ -66,7 +67,7 @@ test("renders grouped custom workouts as one full-width card instead of a swipe 
 
   assert.match(groupedMarkup, /data-custom-workout-grouped="true"/);
   assert.equal((groupedMarkup.match(/class="custom-workout-grouped-card"/g) || []).length, 1);
-  assert.match(groupedMarkup, /data-workout-next-exercise/);
+  assert.doesNotMatch(groupedMarkup, /data-workout-next-exercise/);
   assert.match(groupedMarkup, /data-custom-workout-grouped-source hidden aria-hidden="true"/);
   assert.doesNotMatch(groupedMarkup, /data-custom-workout-exercise-deck|data-workout-group-next-card/);
   assert.match(
@@ -81,6 +82,25 @@ test("renders grouped custom workouts as one full-width card instead of a swipe 
     mobileStyles,
     /\[data-custom-workout-grouped="true"\] \.custom-workout-grouped-source \{[\s\S]*?display: none !important;/,
   );
+});
+
+test("Make straight set reverses a grouped exercise through its saved source control", () => {
+  const option = { checked: true };
+  const card = { dataset: { customWorkoutGroupType: "superset" }, querySelector: (selector) =>
+    selector === '[data-custom-workout-inline-group-option="superset"]' ? option : null };
+  const panel = { dataset: { customWorkoutFormat: "single" } };
+  const carousel = { closest: () => panel };
+  const block = { querySelector: () => ({ removeAttribute() {} }) };
+  let reversed = false;
+  const context = vm.createContext({
+    iosLogExerciseContext: () => ({ block, carousel, logElement: {}, card }),
+    normalizeCustomWorkoutFormat: (value) => value,
+    normalizeCustomWorkoutInlineGroupType: (value) => value,
+    updateCustomWorkoutInlineGrouping: (input) => { reversed = input === option && !input.checked; },
+  });
+  vm.runInContext(sourceForFunction("handleIosLogExerciseAction"), context);
+  context.handleIosLogExerciseAction({ dataset: { iosLogAction: "straight" } });
+  assert.equal(reversed, true);
 });
 
 test("uses a compact collapsible EXERCISES editor with per-exercise delete controls", () => {
@@ -108,6 +128,8 @@ test("renders exercise-first cards with previous values, Log boxes, and grouped 
   assert.match(sections, /class="ios-log-exercise-card"/);
   assert.match(sections, /class="ios-log-exercise-header"/);
   assert.match(sections, /class="ios-log-exercise-menu"/);
+  assert.match(sections, /data-ios-log-action="straight"/);
+  assert.match(sections, /hideInfo: true/);
   assert.match(sections, /data-ios-log-action="add-warmup"/);
   assert.match(sections, /data-ios-log-action="remove-set"/);
   assert.match(sections, /warmUpRows\.map\(\(row, index\) => rowMarkup\(row, warmUpSetType, index\)\)/);
