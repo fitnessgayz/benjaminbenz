@@ -46,7 +46,7 @@ body.daily-checkin-open { overflow: hidden; }
   justify-content: center;
   border: 1px solid var(--daily-ink);
   border-radius: 12px;
-  background: #d6ff35;
+  background: #ffd400;
   color: var(--daily-ink);
   font: inherit;
   font-size: .95rem;
@@ -62,7 +62,7 @@ body.daily-checkin-open { overflow: hidden; }
 }
 :root body .daily-checkin-dialog .daily-checkin-secondary { background: #fff; border-color: var(--daily-line); }
 :root body .daily-checkin-dialog .daily-checkin-close { flex: 0 0 44px; width: 44px; min-height: 44px; padding: 4px; border-color: var(--daily-line); background: #f7f8f4; font-size: 1.5rem; font-weight: 400; }
-:root body .daily-checkin-button:focus-visible, :root body .daily-checkin-note textarea:focus-visible, :root body .daily-checkin-notes summary:focus-visible { outline: 3px solid #718a18; outline-offset: 3px; }
+:root body .daily-checkin-button:focus-visible, :root body .daily-checkin-note textarea:focus-visible, :root body .daily-checkin-notes summary:focus-visible { outline: 3px solid #a47700; outline-offset: 3px; }
 :root body .daily-checkin-button:disabled { opacity: .55; cursor: default; }
 :root body .daily-checkin-actions { display: grid; gap: 10px; margin-top: 24px; }
 :root body .daily-checkin-form { display: grid; gap: 24px; margin: 0; }
@@ -73,8 +73,8 @@ body.daily-checkin-open { overflow: hidden; }
 :root body .daily-checkin-rating-choice { position: relative; display: block; min-width: 0; margin: 0; cursor: pointer; }
 :root body .daily-checkin-rating-choice input { position: absolute; width: 1px; height: 1px; margin: 0; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 :root body .daily-checkin-rating-choice > span { display: grid; place-items: center; min-height: 52px; border: 1px solid var(--daily-line); border-radius: 12px; background: #f7f8f4; color: var(--daily-ink); font-size: 1.2rem; font-weight: 800; line-height: 1; }
-:root body .daily-checkin-rating-choice input:checked + span { background: #d6ff35; border: 2px solid var(--daily-ink); }
-:root body .daily-checkin-rating-choice input:focus-visible + span { outline: 3px solid #718a18; outline-offset: 3px; }
+:root body .daily-checkin-rating-choice input:checked + span { background: #ffd400; border: 2px solid var(--daily-ink); }
+:root body .daily-checkin-rating-choice input:focus-visible + span { outline: 3px solid #a47700; outline-offset: 3px; }
 :root body .daily-checkin-rating-choice input:disabled + span { opacity: .6; cursor: default; }
 :root body .daily-checkin-rating-scale { display: flex; justify-content: space-between; gap: 12px; margin-top: 8px; color: var(--daily-muted); font-size: .78rem; }
 :root body .daily-checkin-rating-scale > span:last-child { text-align: right; }
@@ -82,12 +82,12 @@ body.daily-checkin-open { overflow: hidden; }
 :root body .daily-checkin-note textarea { display: block; width: 100%; min-width: 0; min-height: 96px; margin: 0; padding: 14px; border: 1px solid var(--daily-line); border-radius: 14px; background: #f7f8f4; color: var(--daily-ink); font: inherit; font-size: 1rem; font-weight: 400; line-height: 1.5; resize: vertical; }
 :root body .daily-checkin-location { display: grid; gap: 8px; margin-top: 22px; color: var(--daily-ink); font-size: .95rem; font-weight: 750; }
 :root body .daily-checkin-location input { display: block; width: 100%; min-width: 0; min-height: 48px; margin: 0; padding: 10px 12px; border: 1px solid var(--daily-line); border-radius: 12px; background: var(--surface-soft, #f7f8f4); color: var(--daily-ink); font: inherit; font-size: 1rem; font-weight: 400; }
-:root body .daily-checkin-location input:focus-visible { outline: 3px solid var(--focus, #718a18); outline-offset: 2px; }
+:root body .daily-checkin-location input:focus-visible { outline: 3px solid var(--focus, #a47700); outline-offset: 2px; }
 :root body .daily-checkin-location .daily-checkin-muted { margin: 0; font-weight: 400; }
 :root body .daily-checkin-status { margin: 16px 0 0; color: var(--daily-muted); font-size: .85rem; line-height: 1.5; }
 :root body .daily-checkin-status:empty { margin: 0; }
 :root body .daily-checkin-status.is-error { color: #9b2929; }
-:root body .daily-checkin-result-label { display: inline-block; margin: 0 0 12px; padding: 7px 12px; border-radius: 10px; background: #d6ff35; color: var(--daily-ink); font-size: .8rem; font-weight: 800; }
+:root body .daily-checkin-result-label { display: inline-block; margin: 0 0 12px; padding: 7px 12px; border-radius: 10px; background: #ffd400; color: var(--daily-ink); font-size: .8rem; font-weight: 800; }
 :root body .daily-checkin-result-title { margin: 0 0 12px; color: var(--daily-ink); font-size: 1.4rem; line-height: 1.25; letter-spacing: -.025em; }
 :root body .daily-checkin-reasons, :root body .daily-checkin-changes { margin: 12px 0 20px; padding-left: 22px; color: var(--daily-muted); font-size: .92rem; line-height: 1.55; }
 :root body .daily-checkin-reasons li + li, :root body .daily-checkin-changes li + li { margin-top: 6px; }
@@ -106,7 +106,7 @@ body.daily-checkin-open { overflow: hidden; }
 :root body .daily-checkin-notes p { margin: 4px 0 0; white-space: pre-wrap; }
 :root body .daily-checkin-fallback { margin: 20px 0 0; padding: 16px; border-radius: 12px; background: #f7f8f4; color: var(--daily-muted); font-size: .95rem; }
 @media (hover: hover) {
-  :root body .daily-checkin-button:not(:disabled):hover, :root body .daily-checkin-rating-choice:hover > span { border-color: #718a18; }
+  :root body .daily-checkin-button:not(:disabled):hover, :root body .daily-checkin-rating-choice:hover > span { border-color: #a47700; }
 }
 @media (max-width: 520px) {
   :root body .daily-checkin-dialog { width: calc(100vw - 24px); max-width: calc(100vw - 24px); max-height: calc(100dvh - max(12px, env(safe-area-inset-top)) - max(12px, env(safe-area-inset-bottom))); padding: 22px 18px; border-radius: 22px; }

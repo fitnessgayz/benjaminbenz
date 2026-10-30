@@ -59,7 +59,7 @@
   border: 2px solid var(--ink);
 }
 :root body .client-home-card-mood .mood-rating-choice input:focus-visible + span {
-  outline: 3px solid #718a18;
+  outline: 3px solid #a47700;
   outline-offset: 3px;
 }
 @media (hover: hover) {

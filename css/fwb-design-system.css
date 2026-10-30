@@ -6,8 +6,8 @@
   color-scheme: dark;
   --font-ui: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
   /* Shared web palette for the public website and client/coach apps. */
-  --brand-primary: #A3FF12;
-  --brand-primary-hover: #95EB10;
+  --brand-primary: #ffd400;
+  --brand-primary-hover: #ffe066;
   --brand-primary-ink: #101900;
   --ink: #F2F0E8;
   --ink-deep: #050806;
@@ -16,10 +16,10 @@
   --surface: #0B1811;
   --text-muted: #A8B9AC;
   --border: #263C2E;
-  --focus: #A3FF12;
+  --focus: #ffd400;
   --danger: #FF8A75;
   --warning: #FF8A75;
-  --success: #A3FF12;
+  --success: #ffd400;
   --control-border: #607466;
   --secondary-accent: #B8A1FF;
   --secondary-surface: #191727;
@@ -183,7 +183,7 @@
 :root body .client-workout-resume-card::before { background: var(--lime); }
 :root body .client-workout-resume-card .kicker { color: var(--lime); }
 
-/* Primary actions share the reference's flat lime fill. */
+/* Primary actions share the reference's flat gold fill. */
 :root body .button {
   min-height: 48px;
   padding: 12px 20px;

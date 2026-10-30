@@ -1,6 +1,6 @@
 :root {
   color-scheme: dark;
-  --home-lime: #a3ff12;
+  --home-lime: #ffd400;
   --home-black: #0d0a08;
   --home-cream: #f2f0e8;
   --home-ink: #171a17;
@@ -18,7 +18,7 @@ body.homepage-v2 {
 }
 body.homepage-v2 button, body.homepage-v2 input { font: inherit; }
 body.homepage-v2 a { color: inherit; }
-body.homepage-v2 :is(a, button, input):focus-visible { outline: 3px solid #649300; outline-offset: 3px; }
+body.homepage-v2 :is(a, button, input):focus-visible { outline: 3px solid #795500; outline-offset: 3px; }
 
 .home-layout { position: relative; isolation: isolate; display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(385px, .8fr); min-height: 100svh; overflow: hidden; background: radial-gradient(ellipse at 54% 38%, #292017 0%, #17110d 38%, var(--home-black) 80%); }
 .home-layout::before { content: ""; position: absolute; z-index: 1; inset: 0; pointer-events: none; background: linear-gradient(90deg, #0d0a08f2 0%, #0d0a08c9 26%, #0d0a083d 49%, #0d0a0899 70%, #0d0a08 100%), linear-gradient(0deg, #0d0a08e8 0%, transparent 43%); }
@@ -33,7 +33,7 @@ body.homepage-v2 :is(a, button, input):focus-visible { outline: 3px solid #64930
 .home-header { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
 .home-brand { display: inline-flex; align-items: center; gap: 11px; width: max-content; text-decoration: none; font-size: 15px; font-weight: 850; letter-spacing: -.04em; }
 .home-brand img { width: 54px; height: 28px; object-fit: contain; }
-.home-header-login { display: none; border: 1px solid #a3ff1270; border-radius: 999px; padding: 9px 12px; color: var(--home-lime) !important; font-size: 11px; font-weight: 800; text-decoration: none; }
+.home-header-login { display: none; border: 1px solid #ffd40070; border-radius: 999px; padding: 9px 12px; color: var(--home-lime) !important; font-size: 11px; font-weight: 800; text-decoration: none; }
 .home-eyebrow { margin: 0; color: var(--home-lime); font-size: 11px; font-weight: 800; letter-spacing: .15em; text-transform: uppercase; }
 .home-intro { max-width: 100%; margin-top: clamp(72px, 9vh, 126px); }
 .home-intro h1 { margin: 0 0 18px; font-size: clamp(40px, 4.35vw, 68px); font-weight: 850; letter-spacing: -.063em; line-height: 1.06; white-space: nowrap; }
@@ -47,7 +47,7 @@ body.homepage-v2 :is(a, button, input):focus-visible { outline: 3px solid #64930
 .home-service > span { padding-top: 3px; color: var(--home-lime); font-size: 11px; font-weight: 800; }
 .home-service h2 { margin: 0; font-size: 18px; letter-spacing: -.035em; line-height: 1.2; }
 .home-service p { max-width: 480px; margin: 5px 0 0; color: #cdc3b8; font-size: 12px; line-height: 1.52; }
-.home-app { max-width: 580px; margin-top: 22px; padding: 18px 20px; border: 1px solid #a3ff1238; border-radius: 12px; background: #a3ff120a; }
+.home-app { max-width: 580px; margin-top: 22px; padding: 18px 20px; border: 1px solid #ffd40038; border-radius: 12px; background: #ffd4000a; }
 .home-app .home-eyebrow { font-size: 10px; }
 .home-app h2 { margin: 8px 0 7px; font-size: 21px; letter-spacing: -.045em; line-height: 1.2; }
 .home-app > p:last-child { margin: 0; color: #d0c8bd; font-size: 12px; line-height: 1.55; }
@@ -58,7 +58,7 @@ body.homepage-v2 :is(a, button, input):focus-visible { outline: 3px solid #64930
 .home-inquiry h2 { margin: 13px 0 11px; font-size: clamp(31px, 3vw, 43px); letter-spacing: -.052em; line-height: 1.07; }
 .home-inquiry > p:not(.home-eyebrow):not(.home-email) { max-width: 410px; margin: 0; color: #d0c8bd; font-size: 14px; line-height: 1.6; }
 .home-action { display: inline-flex; align-items: center; justify-content: space-between; gap: 18px; min-height: 49px; padding: 13px 18px; border: 1px solid var(--home-lime); border-radius: 10px; background: var(--home-lime); color: #101900 !important; font-size: 13px; font-weight: 850; text-decoration: none; cursor: pointer; }
-.home-action:hover { background: #b9ff55; }
+.home-action:hover { background: #ffe066; }
 .home-inquiry .home-action { margin-top: 16px; }
 .home-email { margin: 12px 0 0; font-size: 13px; }
 .home-email a, .home-links a, .home-coach-link strong { font-weight: 750; text-underline-offset: 3px; }

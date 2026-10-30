@@ -5,7 +5,7 @@
   --paper: #fff;
   --muted: #6f6f68;
   --line: #d9d9d2;
-  --lime: #d7ff3f;
+  --lime: #ffd400;
   --red: #ff3b30;
   --blue: #2878ff;
   --max: 1320px;
@@ -2721,7 +2721,7 @@ footer {
 .login-page {
   min-height: 100svh;
   background:
-    linear-gradient(135deg, rgba(215, 255, 63, .26), transparent 36%),
+    linear-gradient(135deg, rgba(255, 212, 0, .26), transparent 36%),
     linear-gradient(315deg, rgba(40, 120, 255, .10), transparent 42%),
     var(--paper);
 }
@@ -5012,7 +5012,7 @@ body.is-client-checkin-prompt-open {
   left: 0;
   width: 42%;
   border-radius: 14px;
-  background: linear-gradient(90deg, transparent, rgba(202, 255, 38, .3), transparent);
+  background: linear-gradient(90deg, transparent, rgba(255, 212, 0, .3), transparent);
   pointer-events: none;
   transform: translateX(-135%);
   animation: fwb-set-completion-sweep .62s cubic-bezier(.2, .75, .25, 1) forwards;
@@ -5140,9 +5140,9 @@ body.is-client-checkin-prompt-open {
 }
 
 @keyframes fwb-set-completion-pop {
-  0% { transform: scale(.86); box-shadow: 0 0 0 0 rgba(202, 255, 38, .5); }
-  52% { transform: scale(1.1); box-shadow: 0 0 0 8px rgba(202, 255, 38, .16); }
-  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(202, 255, 38, 0); }
+  0% { transform: scale(.86); box-shadow: 0 0 0 0 rgba(255, 212, 0, .5); }
+  52% { transform: scale(1.1); box-shadow: 0 0 0 8px rgba(255, 212, 0, .16); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 212, 0, 0); }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -8778,7 +8778,7 @@ body.is-invite-client-modal-open {
   left: 10%;
   height: 2px;
   background: var(--lime);
-  box-shadow: 0 0 10px rgba(200, 255, 46, .8);
+  box-shadow: 0 0 10px rgba(255, 212, 0, .8);
   animation: food-barcode-scan 1.8s ease-in-out infinite alternate;
 }
 
@@ -9511,7 +9511,7 @@ textarea {
 input:focus,
 select:focus,
 textarea:focus {
-  outline: 3px solid rgba(215, 255, 63, .7);
+  outline: 3px solid rgba(255, 212, 0, .7);
   border-color: var(--black);
 }
 
@@ -11196,7 +11196,7 @@ textarea:focus {
 
 .client-added-exercises-link:hover,
 .client-added-exercises-link[aria-expanded="true"] {
-  border-color: #9cc80e;
+  border-color: #a47700;
   background: #f7fce9;
 }
 
@@ -11548,11 +11548,11 @@ textarea:focus {
   justify-content: center;
   gap: 7px;
   padding: 8px 13px;
-  border: 1px solid #9fcf0b;
+  border: 1px solid #a47700;
   border-radius: 9px;
   color: #0a0d09;
   background: var(--lime);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .7), 0 5px 12px rgba(92, 118, 8, .14);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .7), 0 5px 12px rgba(164, 119, 0, .14);
   font-size: .78rem;
   font-weight: 900;
   white-space: nowrap;
@@ -11560,7 +11560,7 @@ textarea:focus {
 }
 
 .exercise-library-upload-video-button:hover {
-  background: #d5ff58;
+  background: #ffe066;
 }
 
 .exercise-library-upload-video-button:focus-visible {
@@ -11657,7 +11657,7 @@ textarea:focus {
   overflow: hidden;
   color: #fff;
   background:
-    radial-gradient(circle at 82% 18%, rgba(202, 255, 44, .3), transparent 23%),
+    radial-gradient(circle at 82% 18%, rgba(255, 212, 0, .3), transparent 23%),
     linear-gradient(145deg, #232923 0%, #090b09 70%);
 }
 
@@ -11704,7 +11704,7 @@ textarea:focus {
   gap: 4px;
   padding: 24px 20px;
   background:
-    linear-gradient(118deg, transparent 0 54%, rgba(202, 255, 44, .09) 54% 56%, transparent 56%),
+    linear-gradient(118deg, transparent 0 54%, rgba(255, 212, 0, .09) 54% 56%, transparent 56%),
     repeating-linear-gradient(90deg, transparent 0 38px, rgba(255, 255, 255, .035) 38px 39px);
 }
 
@@ -13332,7 +13332,7 @@ textarea,
 }
 
 .custom-workout-inline-group-options label:has(input:checked) {
-  color: #507000;
+  color: #795500;
 }
 
 .custom-workout-card-marker-row {
@@ -13671,7 +13671,7 @@ textarea,
 
 .coach-workout-log-page .coach-workout-inline-rest .coach-workout-inline-rest-toggle {
   background: var(--coach-grouped-ink, #111411);
-  color: var(--coach-grouped-lime, #d7ff3f);
+  color: var(--coach-grouped-lime, #ffd400);
   font-variant-numeric: tabular-nums;
 }
 
@@ -14281,7 +14281,7 @@ textarea,
   --coach-grouped-line: #d7d9d2;
   --coach-grouped-paper: #fff;
   --coach-grouped-cream: #f8f8f3;
-  --coach-grouped-lime: var(--lime, #d7ff3f);
+  --coach-grouped-lime: var(--lime, #ffd400);
   --coach-grouped-blue: var(--blue, #2878ff);
   --coach-grouped-gold: #d5a239;
   display: grid;
@@ -14486,7 +14486,7 @@ textarea,
 .coach-workout-grouped-card-heading p {
   flex: 0 0 auto;
   margin: 0;
-  color: #497000;
+  color: #795500;
   font-size: .75rem;
   font-weight: 900;
   letter-spacing: .04em;
@@ -14811,7 +14811,7 @@ textarea,
 }
 
 .coach-workout-grouped-code {
-  border-color: #9dbd24;
+  border-color: #a47700;
   background: #fbffe9;
   color: #486000;
   font-size: .86rem;
@@ -15349,7 +15349,7 @@ textarea,
 .coach-home-metrics :is(article, .coach-home-shortcut):first-child {
   color: var(--black);
   background: var(--lime);
-  border-color: #a8c826;
+  border-color: #a47700;
 }
 
 .coach-home-metrics :is(article, .coach-home-shortcut).coach-home-attention-metric {
@@ -15442,7 +15442,7 @@ textarea,
   height: 8px;
   margin-right: 7px;
   border-radius: 50%;
-  background: #60a800;
+  background: #ffd400;
 }
 
 .coach-home-calendar-status.is-error {
@@ -15892,7 +15892,7 @@ textarea,
   grid-row: 1 / span 2;
   width: 30px;
   height: 30px;
-  color: #627b00;
+  color: #795500;
 }
 
 .coach-notification-summary-card strong,
@@ -15996,7 +15996,7 @@ textarea,
   padding: 8px 12px;
   border: 1px solid var(--line);
   border-radius: 12px;
-  color: #546b00;
+  color: #795500;
   background: #fff;
   text-decoration: none;
 }
@@ -16037,8 +16037,8 @@ textarea,
 .coach-notification-inbox .web-notification-item a:hover,
 .coach-notification-inbox .web-notification-item a:focus-visible {
   border: 0;
-  background: rgba(215, 255, 63, .11);
-  box-shadow: inset 0 0 0 2px rgba(112, 137, 10, .42);
+  background: rgba(255, 212, 0, .11);
+  box-shadow: inset 0 0 0 2px rgba(164, 119, 0, .42);
 }
 
 .coach-notification-inbox .web-notification-type-icon {
@@ -16049,7 +16049,7 @@ textarea,
   height: 42px;
   place-items: center;
   align-self: start;
-  border: 1px solid rgba(97, 117, 19, .35);
+  border: 1px solid rgba(164, 119, 0, .35);
   border-radius: 12px;
   color: #273400;
   background: color-mix(in srgb, var(--lime) 24%, white);
@@ -17413,8 +17413,8 @@ body.client-dashboard-page .client-progress-preview-empty { margin: 14px 0 0; co
 .coach-admin-page .admin-tab-session-logger {
   margin-bottom: 6px;
   color: #344000;
-  background: rgba(215, 255, 63, .2);
-  border-color: rgba(137, 173, 0, .42);
+  background: rgba(255, 212, 0, .2);
+  border-color: rgba(164, 119, 0, .42);
 }
 
 .coach-admin-page .admin-tab-session-logger .admin-nav-icon {
@@ -17487,8 +17487,8 @@ body.client-dashboard-page .client-progress-preview-empty { margin: 14px 0 0; co
 }
 
 .selected-client-mobile-menu button.is-active {
-  border-color: #93ad22;
-  background: rgba(215, 255, 63, .24);
+  border-color: #a47700;
+  background: rgba(255, 212, 0, .24);
 }
 
 .selected-client-mobile-menu button:disabled {
@@ -18185,7 +18185,7 @@ body.client-dashboard-page .client-progress-preview-empty { margin: 14px 0 0; co
 .dashboard-page .client-workout-picker-dot.is-current::after {
   width: 18px;
   background: var(--lime);
-  border-color: #8fa91a;
+  border-color: #a47700;
 }
 
 .client-workout-picker-deck {
@@ -18205,7 +18205,7 @@ body.client-dashboard-page .client-progress-preview-empty { margin: 14px 0 0; co
 
 .client-workout-picker-deck:focus-visible {
   border-radius: 24px;
-  box-shadow: 0 0 0 3px rgba(151, 180, 27, .55);
+  box-shadow: 0 0 0 3px rgba(164, 119, 0, .55);
 }
 
 .client-workout-picker-card {
@@ -18236,7 +18236,7 @@ body.client-dashboard-page .client-progress-preview-empty { margin: 14px 0 0; co
   z-index: 4;
   opacity: 1;
   pointer-events: auto;
-  border-color: #9dbd24;
+  border-color: #a47700;
   box-shadow: 0 19px 36px rgba(20, 22, 18, .2), 0 3px 0 rgba(255, 255, 255, .9), inset 0 0 0 1px var(--lime);
   transform: translate3d(0, 0, 0);
 }
@@ -18507,7 +18507,7 @@ body.client-dashboard-page .client-progress-preview-empty { margin: 14px 0 0; co
 }
 
 .dashboard-page .client-workout-picker-choose:hover {
-  background: #c9f12e;
+  background: #ffe066;
 }
 
 .dashboard-page .client-workout-picker-arrow:focus-visible,
@@ -18515,7 +18515,7 @@ body.client-dashboard-page .client-progress-preview-empty { margin: 14px 0 0; co
 .dashboard-page .client-workout-picker-choose:focus-visible,
 .dashboard-page .client-workout-picker-copy-link:focus-visible,
 .dashboard-page .client-workout-selection-summary:focus-visible {
-  outline: 3px solid #8aa817;
+  outline: 3px solid #936800;
   outline-offset: 2px;
 }
 
@@ -18724,7 +18724,7 @@ body.client-dashboard-page .client-progress-preview-empty { margin: 14px 0 0; co
 }
 
 .dashboard-page .training-log-copy-button:hover {
-  background: #c9f12e;
+  background: #ffe066;
 }
 
 .dashboard-page .training-log-delete-button {
@@ -18758,7 +18758,7 @@ body.client-dashboard-page .client-progress-preview-empty { margin: 14px 0 0; co
 .dashboard-page .training-log-copy-button:focus-visible,
 #custom-workout-panel-title:focus-visible,
 #client-logs-title:focus-visible {
-  outline: 3px solid #8aa817;
+  outline: 3px solid #936800;
   outline-offset: 3px;
 }
 
@@ -18775,7 +18775,7 @@ body.client-dashboard-page .client-progress-preview-empty { margin: 14px 0 0; co
   padding: 11px 13px;
   color: #28300f;
   background: #f1f9cf;
-  border: 1px solid #b8d44d;
+  border: 1px solid #a47700;
   border-radius: 10px;
   font-size: .82rem;
   font-weight: 800;
@@ -18903,7 +18903,7 @@ body.client-dashboard-page .client-progress-preview-empty { margin: 14px 0 0; co
 
   .training-log-history-deck:focus-visible {
     border-radius: 22px;
-    box-shadow: 0 0 0 3px rgba(151, 180, 27, .55);
+    box-shadow: 0 0 0 3px rgba(164, 119, 0, .55);
   }
 
   .training-log-history-card {
@@ -18935,7 +18935,7 @@ body.client-dashboard-page .client-progress-preview-empty { margin: 14px 0 0; co
     z-index: 4;
     opacity: 1;
     pointer-events: auto;
-    border-color: #9dbd24;
+    border-color: #a47700;
     box-shadow: 0 19px 36px rgba(20, 22, 18, .2), inset 0 0 0 1px var(--lime);
     transform: translate3d(0, 0, 0);
   }
@@ -19021,12 +19021,12 @@ body.client-dashboard-page .client-progress-preview-empty { margin: 14px 0 0; co
 
   .training-log-history-state.is-complete {
     background: var(--lime);
-    border-color: #99b925;
+    border-color: #a47700;
   }
 
   .training-log-history-state.is-nutrition {
     background: var(--lime);
-    border-color: #99b925;
+    border-color: #a47700;
   }
 
   .training-log-history-card-summary > h3 {
@@ -19121,7 +19121,7 @@ body.client-dashboard-page .client-progress-preview-empty { margin: 14px 0 0; co
     line-height: 1.2 !important;
     text-align: left;
     text-decoration: underline;
-    text-decoration-color: #98b523;
+    text-decoration-color: #a47700;
     text-decoration-thickness: 2px;
     text-underline-offset: 4px;
     white-space: normal !important;
@@ -19195,7 +19195,7 @@ body.client-dashboard-page .client-progress-preview-empty { margin: 14px 0 0; co
     font-size: 1rem !important;
     font-weight: 900;
     text-decoration: underline;
-    text-decoration-color: #98b523;
+    text-decoration-color: #a47700;
     text-decoration-thickness: 2px;
     text-underline-offset: 4px;
     cursor: pointer;
@@ -19522,7 +19522,7 @@ body.client-dashboard-page .client-progress-preview-empty { margin: 14px 0 0; co
   border-radius: 4px;
   color: #fff;
   background: #111310;
-  box-shadow: 8px 8px 0 rgba(190, 255, 0, .2);
+  box-shadow: 8px 8px 0 rgba(255, 212, 0, .2);
 }
 
 .client-workout-resume-card[hidden] {
@@ -19605,7 +19605,7 @@ body.client-dashboard-page .client-progress-preview-empty { margin: 14px 0 0; co
     grid-template-columns: minmax(0, 1fr);
     gap: 14px;
     padding: 18px 16px 18px 20px;
-    box-shadow: 5px 5px 0 rgba(190, 255, 0, .2);
+    box-shadow: 5px 5px 0 rgba(255, 212, 0, .2);
   }
 
   .dashboard-page .client-workout-resume-card .button {
@@ -19738,8 +19738,8 @@ body.client-dashboard-page .client-progress-preview-empty { margin: 14px 0 0; co
 }
 
 .client-home-snapshot-card.is-snapshot-active {
-  border-color: #9dbd24;
-  box-shadow: 0 16px 30px rgba(20, 22, 18, .13), inset 0 0 0 1px rgba(202, 255, 40, .62);
+  border-color: #a47700;
+  box-shadow: 0 16px 30px rgba(20, 22, 18, .13), inset 0 0 0 1px rgba(255, 212, 0, .62);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -19766,7 +19766,7 @@ body.client-dashboard-page .client-progress-preview-empty { margin: 14px 0 0; co
 
 .client-home-snapshot-card > header span,
 .client-home-snapshot-card small {
-  color: #547800;
+  color: #795500;
   font-size: .78rem;
   font-style: normal;
   font-weight: 900;
@@ -19982,7 +19982,7 @@ body.client-dashboard-page .client-progress-preview-empty { margin: 14px 0 0; co
 
 .client-home-snapshot-controls button.is-active > span {
   width: 24px;
-  border-color: #8fb600;
+  border-color: #a47700;
   background: var(--lime);
 }
 
@@ -20137,7 +20137,7 @@ body.client-dashboard-page .client-progress-preview-empty { margin: 14px 0 0; co
   min-height:44px; width:44px; padding:0; border:2px solid #171a13;
   border-radius:12px; background:#fff; color:#171a13; font-size:24px; font-weight:900;
 }
-.coach-workout-round-stepper button:last-child { background:#d2ff28; }
+.coach-workout-round-stepper button:last-child { background:#ffd400; }
 .coach-workout-round-stepper button:disabled { opacity:.4; }
 .coach-workout-round-stepper output {
   display:flex; align-items:center; justify-content:center; gap:12px;
@@ -20188,7 +20188,7 @@ body.client-dashboard-page .client-progress-preview-empty { margin: 14px 0 0; co
 .workout-energy-options label { position:relative; cursor:pointer; }
 .workout-energy-options input { position:absolute; opacity:0; width:100%; height:100%; margin:0; }
 .workout-energy-options span { display:grid; place-items:center; min-height:44px; border:1px solid var(--line); border-radius:10px; background:white; color:#171a13; font-weight:800; }
-.workout-energy-options input:checked + span { background:#d2ff28; border-color:#171a13; }
+.workout-energy-options input:checked + span { background:#ffd400; border-color:#171a13; }
 .workout-energy-options input:focus-visible + span { outline:2px solid #171a13; outline-offset:2px; }
 .workout-energy-scale { font-size:12px; line-height:1.5; color:var(--muted); }
 .workout-energy-endpoints { display:flex; justify-content:space-between; gap:12px; color:var(--muted); font-size:11px; margin-top:6px; }
@@ -20225,7 +20225,7 @@ body.client-dashboard-page .client-progress-preview-empty { margin: 14px 0 0; co
 
 /* Client Settings uses the same one-row-at-a-time navigation pattern as iOS. */
 .client-settings-panel {
-  --client-settings-accent: #638000;
+  --client-settings-accent: #795500;
   --client-settings-surface: #fff;
   --client-settings-line: #dde0d7;
 }

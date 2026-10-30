@@ -16,7 +16,7 @@
   gap: 8px;
   color: #171a17;
   background: #ffd400;
-  border: 1px solid #b8dd22;
+  border: 1px solid #a47700;
   border-radius: 14px !important;
   box-shadow: 0 5px 14px rgba(37, 48, 23, .16);
   font: inherit;
@@ -138,7 +138,7 @@
 :root body .achievement-medal-preview { width: 64px; height: 64px; flex: 0 0 64px; padding: 0; border: 0; border-radius: 0; background: transparent; }
 :root body .achievement-badge h4 { margin: 0 0 7px; color: #27321f; font-size: .93rem; line-height: 1.3; letter-spacing: -.02em; font-weight: 800; text-transform: none; }
 :root body .achievement-badge p { flex: 1; margin: 0 0 18px; color: #717967; font-size: .74rem; line-height: 1.55; }
-:root body .achievement-badge-earned { display: flex; gap: 5px; align-items: center; justify-content: center; color: #546b2d; font-size: .65rem; font-weight: 700; line-height: 1.5; }
+:root body .achievement-badge-earned { display: flex; gap: 5px; align-items: center; justify-content: center; color: #795500; font-size: .65rem; font-weight: 700; line-height: 1.5; }
 :root body .achievement-badge-earned svg,
 :root body .achievement-badge-target svg { flex: 0 0 13px; width: 13px; height: 13px; }
 :root body .achievement-badge-target { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 9px; font-size: .62rem; color: #717967; }
@@ -156,7 +156,7 @@
 :root body .achievement-celebration .achievement-mini-icon { background: #ffd400; color: #354819; }
 :root body .achievement-celebration .achievement-medal-preview { background: transparent; }
 :root body .achievement-celebration-confetti { position: absolute; inset: 0; pointer-events: none; }
-:root body .achievement-celebration-confetti i { position: absolute; left: calc(var(--piece) * 10%); top: -12px; width: 5px; height: 9px; border-radius: 1px; background: #99ae3d; opacity: 0; animation: achievement-confetti 1.6s ease-out calc(var(--piece) * 45ms) both; }
+:root body .achievement-celebration-confetti i { position: absolute; left: calc(var(--piece) * 10%); top: -12px; width: 5px; height: 9px; border-radius: 1px; background: #ffd400; opacity: 0; animation: achievement-confetti 1.6s ease-out calc(var(--piece) * 45ms) both; }
 :root body .achievement-celebration-confetti i:nth-child(3n) { background: #c7a353; }
 :root body .achievement-celebration-confetti i:nth-child(3n + 1) { background: #8ab0a6; }
 @keyframes achievement-confetti { 10% { opacity: .7; } 100% { transform: translateY(190px) rotate(220deg); opacity: 0; } }
