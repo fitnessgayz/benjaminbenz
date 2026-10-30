@@ -162,7 +162,8 @@ test("infers older grouped formats and gives each copied session a unique storag
   );
 
   const panelSource = sourceForFunction("customWorkoutPanelMarkup");
-  assert.match(panelSource, /warmupLogFields\(workoutStorageTitle/);
+  assert.doesNotMatch(panelSource, /warmupLogFields\(workoutStorageTitle/);
+  assert.match(sourceForFunction("renderClientWorkoutTabs"), /warmupLogFields\(title/);
   assert.match(panelSource, /workoutStartControlMarkup\(workoutStorageTitle/);
   assert.match(panelSource, /customWorkoutCarouselMarkup\(format, workoutStorageTitle\)/);
   assert.match(panelSource, /cardioLogFields\(workoutStorageTitle/);
@@ -247,7 +248,7 @@ test("opens the copied draft in Custom Workout and restores focus visibly", () =
   assert.match(panelIndexSource, /client-workout-panel-custom/);
   assert.match(previousWeightsSource, /exerciseHistoryLookup\(\)\.get\(exerciseName\)/);
   assert.doesNotMatch(previousWeightsSource, /log\.workout_title === logElement\.dataset\.workoutTitle/);
-  assert.match(portal, /const exactSessionLogs = logsForExercise\(logElement\.dataset\.workoutTitle, logElement\.dataset\.exerciseCode\);/);
+  assert.match(portal, /const exactSessionLogs = logsForExercise\(logElement\.dataset\.workoutTitle, logElement\.dataset\.exerciseCode, workoutGymLocationForElement\(logElement\)\);/);
   assert.match(portal, /const selectedLogs = exactSessionLogs\.filter\(\(log\) => log\.entry_date === selectedDate\);/);
   assert.match(portal, /handleCopyWorkoutToCustom\(\);/);
 });
