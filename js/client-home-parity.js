@@ -133,6 +133,10 @@
       // The activity week remains usable if scheduled plans are unavailable.
     }
   }
+  document.addEventListener('fwb:workout-schedule-changed', () => {
+    scheduleCache.clear();
+    void refreshSchedule();
+  });
   planner.addEventListener('click', event => {
     const previous = event.target.closest('[data-client-home-week-prev]');
     const next = event.target.closest('[data-client-home-week-next]');

@@ -13564,6 +13564,7 @@ function clientWorkoutChoiceContent({ icon, title, description, titleId, descrip
   const icons = {
     run: '<circle cx="13" cy="3.5" r="1.5"/><path d="m10 8 3-2 3 2-1 4 3 2m-8-5-3 3-3 1m8-1-2 4-4 3m6-4 4 4 3 1"/>',
     calendar: '<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M16 3v4M8 3v4M3 11h18"/><path d="M8 15h.01M12 15h.01M16 15h.01M8 18h.01M12 18h.01M16 18h.01"/>',
+    calendarPlus: '<rect x="2" y="4" width="17" height="17" rx="3"/><path d="M6 2v4m9-4v4M2 10h17m-13 4h6m-6 3h3"/><circle cx="18" cy="18" r="4.5" fill="currentColor" stroke="none"/><path d="M18 15.5v5m-2.5-2.5h5" stroke="#101113" stroke-width="1.8"/>',
     saved: '<rect x="3" y="4" width="17" height="17" rx="3"/><path d="M7 2v4m9-4v4M3 10h17m-13 4h5m-5 3h3"/><circle cx="18" cy="18" r="4" fill="currentColor" stroke="none"/><path d="m16.5 18 1 1 2-2" stroke="#1b2117" stroke-width="1.8"/>',
     plan: '<rect x="3" y="4" width="17" height="17" rx="3"/><path d="M7 2v4m9-4v4M3 10h17m-13 4h5m-5 3h3"/><circle cx="18" cy="18" r="4" fill="currentColor" stroke="none"/><path d="M18 15.8v4.4m-2.2-2.2h4.4" stroke="#1b2117" stroke-width="1.8"/>',
     mobility: '<circle cx="8" cy="4" r="1.5"/><path d="m8 7 2.5 3 3.5 1m-4-1-3 4 3 2m0 0-4 5m4-5 5 4h5m-13-6-4 2"/>',
@@ -13582,6 +13583,9 @@ function clientWorkoutListMarkup(workouts) {
   if (!clientPreviewProgramSelected) {
     const programs = clientAvailablePrograms.length ? clientAvailablePrograms : [currentProgram || { workouts: [] }];
     const cards = [
+      { icon: "calendarPlus", title: "Workout calendar",
+        description: "Plan sessions from your coach or saved workouts.",
+        action: 'data-client-workout-calendar-open', titleId: "workout-calendar-title", descriptionId: "workout-calendar-description" },
       { icon: "calendar", title: "Trainer Prescribed Workouts",
         description: `${programs[0].program_title || "Your program"} · ${(programs[0].workouts || []).length} ${(programs[0].workouts || []).length === 1 ? "workout" : "workouts"}${programs.length > 1 ? ` · ${programs.length} plans` : ""}`,
         action: 'data-preview-program="0"', titleId: "workout-program-title-0", descriptionId: "workout-program-description-0" },
@@ -17355,6 +17359,7 @@ function clientDashboardMobileTabPressAction(tabName, activeTab, previousTabPres
 function setClientDashboardTab(tabName) {
   const nextTab = tabName || "home";
   const previousTab = activeClientDashboardTab;
+  if (nextTab !== "workouts") window.FWB_CLIENT_WORKOUT_CALENDAR?.close();
   if (previousTab === "workouts" && nextTab !== "workouts" && !clientWorkoutPickerIsOpen &&
       document.querySelector(".client-workout-panel.is-active")) {
     savedWorkoutScrollY = window.scrollY;
@@ -18874,6 +18879,44 @@ function handleWorkoutInteractions() {
       return;
     }
     const savedPlanButton = event.target.closest("[data-client-saved-workout-plans]");
+    const calendarButton = event.target.closest("[data-client-workout-calendar-open]");
+    if (calendarButton) {
+      event.preventDefault();
+      const calendar = window.FWB_CLIENT_WORKOUT_CALENDAR;
+      if (!calendar) { window.alert("Workout calendar could not load. Refresh and try again."); return; }
+      void calendar.open({
+        client: supabaseClient, userId: isCoachDashboardPreview ? null : activeDashboardUser?.id,
+        email: normalizeClientEmail(activeClientEmail), returnFocus: calendarButton,
+        getAssignedWorkouts() {
+          return clientAvailablePrograms.flatMap(program => (program.workouts || []).map((workout, index) => ({
+            workout, index, programId: program.id, programTitle: program.program_title
+          })));
+        },
+        onOpenWorkout(row, workout) {
+          if (workoutElapsedTimerState) throw new Error("Finish or cancel your current workout before opening another.");
+          if (row.source_type === "assigned") {
+            for (const program of clientAvailablePrograms) {
+              const index = (program.workouts || []).findIndex(item =>
+                (workout.sourceID && item.id && workout.sourceID === item.id) ||
+                (item.title === workout.title && JSON.stringify((item.exercises || []).map(exercise => exercise.name)) ===
+                  JSON.stringify((workout.exercises || []).map(exercise => exercise.name))));
+              if (index < 0) continue;
+              clientPreviewProgramSelected = true;
+              if (currentProgram?.id !== program.id) renderProgram(program);
+              else renderClientWorkoutTabs(currentProgram.workouts);
+              const panel = document.getElementById(`client-workout-panel-${index + 1}`);
+              syncWorkoutPanelDate(panel, row.planned_date);
+              activateClientWorkoutPanel(index + 1);
+              return true;
+            }
+          }
+          const accepted = useGeneratedClientWorkout(workout);
+          if (accepted) syncWorkoutPanelDate(document.querySelector(".client-workout-panel-custom"), row.planned_date);
+          return accepted;
+        }
+      });
+      return;
+    }
     const generatePlanButton = event.target.closest("[data-client-generate-workout-plan]");
     if (savedPlanButton || generatePlanButton) {
       event.preventDefault();
