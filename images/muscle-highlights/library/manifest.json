@@ -1,0 +1,865 @@
+{
+  "source": "Live active and approved public.exercise_library, 2026-10-29",
+  "total_exercises": 626,
+  "combinations": [
+    {
+      "key": "chest",
+      "primary": "chest",
+      "secondary": [],
+      "exercise_count": 68
+    },
+    {
+      "key": "core",
+      "primary": "core",
+      "secondary": [],
+      "exercise_count": 59
+    },
+    {
+      "key": "quads",
+      "primary": "quads",
+      "secondary": [],
+      "exercise_count": 54
+    },
+    {
+      "key": "back",
+      "primary": "back",
+      "secondary": [],
+      "exercise_count": 49
+    },
+    {
+      "key": "shoulders",
+      "primary": "shoulders",
+      "secondary": [],
+      "exercise_count": 40
+    },
+    {
+      "key": "triceps",
+      "primary": "triceps",
+      "secondary": [],
+      "exercise_count": 37
+    },
+    {
+      "key": "glutes",
+      "primary": "glutes",
+      "secondary": [],
+      "exercise_count": 36
+    },
+    {
+      "key": "full_body",
+      "primary": "full_body",
+      "secondary": [],
+      "exercise_count": 31
+    },
+    {
+      "key": "biceps",
+      "primary": "biceps",
+      "secondary": [],
+      "exercise_count": 28
+    },
+    {
+      "key": "hamstrings",
+      "primary": "hamstrings",
+      "secondary": [],
+      "exercise_count": 25
+    },
+    {
+      "key": "lats",
+      "primary": "lats",
+      "secondary": [],
+      "exercise_count": 19
+    },
+    {
+      "key": "calves",
+      "primary": "calves",
+      "secondary": [],
+      "exercise_count": 18
+    },
+    {
+      "key": "hips",
+      "primary": "hips",
+      "secondary": [],
+      "exercise_count": 12
+    },
+    {
+      "key": "adductors",
+      "primary": "adductors",
+      "secondary": [],
+      "exercise_count": 9
+    },
+    {
+      "key": "back--biceps--lats",
+      "primary": "back",
+      "secondary": [
+        "biceps",
+        "lats"
+      ],
+      "exercise_count": 9
+    },
+    {
+      "key": "quads--core--glutes--hamstrings",
+      "primary": "quads",
+      "secondary": [
+        "core",
+        "glutes",
+        "hamstrings"
+      ],
+      "exercise_count": 6
+    },
+    {
+      "key": "chest--shoulders--triceps",
+      "primary": "chest",
+      "secondary": [
+        "shoulders",
+        "triceps"
+      ],
+      "exercise_count": 6
+    },
+    {
+      "key": "chest--core--shoulders--triceps",
+      "primary": "chest",
+      "secondary": [
+        "core",
+        "shoulders",
+        "triceps"
+      ],
+      "exercise_count": 6
+    },
+    {
+      "key": "glutes--hamstrings",
+      "primary": "glutes",
+      "secondary": [
+        "hamstrings"
+      ],
+      "exercise_count": 5
+    },
+    {
+      "key": "lats--back--biceps",
+      "primary": "lats",
+      "secondary": [
+        "back",
+        "biceps"
+      ],
+      "exercise_count": 4
+    },
+    {
+      "key": "shoulders--back",
+      "primary": "shoulders",
+      "secondary": [
+        "back"
+      ],
+      "exercise_count": 4
+    },
+    {
+      "key": "quads--glutes--hamstrings",
+      "primary": "quads",
+      "secondary": [
+        "glutes",
+        "hamstrings"
+      ],
+      "exercise_count": 4
+    },
+    {
+      "key": "quads--glutes",
+      "primary": "quads",
+      "secondary": [
+        "glutes"
+      ],
+      "exercise_count": 3
+    },
+    {
+      "key": "biceps--forearms",
+      "primary": "biceps",
+      "secondary": [
+        "forearms"
+      ],
+      "exercise_count": 3
+    },
+    {
+      "key": "core--glutes--shoulders",
+      "primary": "core",
+      "secondary": [
+        "glutes",
+        "shoulders"
+      ],
+      "exercise_count": 3
+    },
+    {
+      "key": "glutes--core--hamstrings",
+      "primary": "glutes",
+      "secondary": [
+        "core",
+        "hamstrings"
+      ],
+      "exercise_count": 3
+    },
+    {
+      "key": "glutes--back--hamstrings",
+      "primary": "glutes",
+      "secondary": [
+        "back",
+        "hamstrings"
+      ],
+      "exercise_count": 2
+    },
+    {
+      "key": "hips--glutes",
+      "primary": "hips",
+      "secondary": [
+        "glutes"
+      ],
+      "exercise_count": 2
+    },
+    {
+      "key": "full_body--core--forearms--shoulders",
+      "primary": "full_body",
+      "secondary": [
+        "core",
+        "forearms",
+        "shoulders"
+      ],
+      "exercise_count": 2
+    },
+    {
+      "key": "triceps--chest--shoulders",
+      "primary": "triceps",
+      "secondary": [
+        "chest",
+        "shoulders"
+      ],
+      "exercise_count": 2
+    },
+    {
+      "key": "shoulders--core",
+      "primary": "shoulders",
+      "secondary": [
+        "core"
+      ],
+      "exercise_count": 2
+    },
+    {
+      "key": "hamstrings--back--glutes",
+      "primary": "hamstrings",
+      "secondary": [
+        "back",
+        "glutes"
+      ],
+      "exercise_count": 2
+    },
+    {
+      "key": "forearms",
+      "primary": "forearms",
+      "secondary": [],
+      "exercise_count": 2
+    },
+    {
+      "key": "shoulders--triceps",
+      "primary": "shoulders",
+      "secondary": [
+        "triceps"
+      ],
+      "exercise_count": 2
+    },
+    {
+      "key": "core--shoulders",
+      "primary": "core",
+      "secondary": [
+        "shoulders"
+      ],
+      "exercise_count": 2
+    },
+    {
+      "key": "hamstrings--core--glutes",
+      "primary": "hamstrings",
+      "secondary": [
+        "core",
+        "glutes"
+      ],
+      "exercise_count": 2
+    },
+    {
+      "key": "core--lats--shoulders",
+      "primary": "core",
+      "secondary": [
+        "lats",
+        "shoulders"
+      ],
+      "exercise_count": 2
+    },
+    {
+      "key": "quads--calves--core--glutes",
+      "primary": "quads",
+      "secondary": [
+        "calves",
+        "core",
+        "glutes"
+      ],
+      "exercise_count": 2
+    },
+    {
+      "key": "calves--ankles",
+      "primary": "calves",
+      "secondary": [
+        "ankles"
+      ],
+      "exercise_count": 1
+    },
+    {
+      "key": "shoulders--core--triceps",
+      "primary": "shoulders",
+      "secondary": [
+        "core",
+        "triceps"
+      ],
+      "exercise_count": 1
+    },
+    {
+      "key": "back--forearms--shoulders",
+      "primary": "back",
+      "secondary": [
+        "forearms",
+        "shoulders"
+      ],
+      "exercise_count": 1
+    },
+    {
+      "key": "full_body--core--quads--shoulders",
+      "primary": "full_body",
+      "secondary": [
+        "core",
+        "quads",
+        "shoulders"
+      ],
+      "exercise_count": 1
+    },
+    {
+      "key": "adductors--hips",
+      "primary": "adductors",
+      "secondary": [
+        "hips"
+      ],
+      "exercise_count": 1
+    },
+    {
+      "key": "neck",
+      "primary": "neck",
+      "secondary": [],
+      "exercise_count": 1
+    },
+    {
+      "key": "adductors--core",
+      "primary": "adductors",
+      "secondary": [
+        "core"
+      ],
+      "exercise_count": 1
+    },
+    {
+      "key": "adductors--glutes--quads",
+      "primary": "adductors",
+      "secondary": [
+        "glutes",
+        "quads"
+      ],
+      "exercise_count": 1
+    },
+    {
+      "key": "back--forearms--lats--shoulders",
+      "primary": "back",
+      "secondary": [
+        "forearms",
+        "lats",
+        "shoulders"
+      ],
+      "exercise_count": 1
+    },
+    {
+      "key": "hips--adductors--ankles--back",
+      "primary": "hips",
+      "secondary": [
+        "adductors",
+        "ankles",
+        "back"
+      ],
+      "exercise_count": 1
+    },
+    {
+      "key": "lats--chest--triceps",
+      "primary": "lats",
+      "secondary": [
+        "chest",
+        "triceps"
+      ],
+      "exercise_count": 1
+    },
+    {
+      "key": "chest--biceps--shoulders",
+      "primary": "chest",
+      "secondary": [
+        "biceps",
+        "shoulders"
+      ],
+      "exercise_count": 1
+    },
+    {
+      "key": "shoulders--upper_back",
+      "primary": "shoulders",
+      "secondary": [
+        "upper_back"
+      ],
+      "exercise_count": 1
+    },
+    {
+      "key": "back--shoulders",
+      "primary": "back",
+      "secondary": [
+        "shoulders"
+      ],
+      "exercise_count": 1
+    },
+    {
+      "key": "chest--shoulders",
+      "primary": "chest",
+      "secondary": [
+        "shoulders"
+      ],
+      "exercise_count": 1
+    },
+    {
+      "key": "quads--calves--glutes",
+      "primary": "quads",
+      "secondary": [
+        "calves",
+        "glutes"
+      ],
+      "exercise_count": 1
+    },
+    {
+      "key": "back--glutes--hamstrings",
+      "primary": "back",
+      "secondary": [
+        "glutes",
+        "hamstrings"
+      ],
+      "exercise_count": 1
+    },
+    {
+      "key": "glutes--quads",
+      "primary": "glutes",
+      "secondary": [
+        "quads"
+      ],
+      "exercise_count": 1
+    },
+    {
+      "key": "hamstrings--back--calves--glutes",
+      "primary": "hamstrings",
+      "secondary": [
+        "back",
+        "calves",
+        "glutes"
+      ],
+      "exercise_count": 1
+    },
+    {
+      "key": "hips--adductors--ankles--quads",
+      "primary": "hips",
+      "secondary": [
+        "adductors",
+        "ankles",
+        "quads"
+      ],
+      "exercise_count": 1
+    },
+    {
+      "key": "core--hip_flexors",
+      "primary": "core",
+      "secondary": [
+        "hip_flexors"
+      ],
+      "exercise_count": 1
+    },
+    {
+      "key": "core--forearms--hips",
+      "primary": "core",
+      "secondary": [
+        "forearms",
+        "hips"
+      ],
+      "exercise_count": 1
+    },
+    {
+      "key": "hamstrings--calves--glutes",
+      "primary": "hamstrings",
+      "secondary": [
+        "calves",
+        "glutes"
+      ],
+      "exercise_count": 1
+    },
+    {
+      "key": "adductors--quads",
+      "primary": "adductors",
+      "secondary": [
+        "quads"
+      ],
+      "exercise_count": 1
+    },
+    {
+      "key": "glutes--core--hamstrings--hips",
+      "primary": "glutes",
+      "secondary": [
+        "core",
+        "hamstrings",
+        "hips"
+      ],
+      "exercise_count": 1
+    },
+    {
+      "key": "shoulders--chest--core",
+      "primary": "shoulders",
+      "secondary": [
+        "chest",
+        "core"
+      ],
+      "exercise_count": 1
+    },
+    {
+      "key": "glutes--core--hamstrings--shoulders",
+      "primary": "glutes",
+      "secondary": [
+        "core",
+        "hamstrings",
+        "shoulders"
+      ],
+      "exercise_count": 1
+    },
+    {
+      "key": "quads--core--glutes",
+      "primary": "quads",
+      "secondary": [
+        "core",
+        "glutes"
+      ],
+      "exercise_count": 1
+    },
+    {
+      "key": "quads--adductors--glutes",
+      "primary": "quads",
+      "secondary": [
+        "adductors",
+        "glutes"
+      ],
+      "exercise_count": 1
+    },
+    {
+      "key": "hamstrings--glutes",
+      "primary": "hamstrings",
+      "secondary": [
+        "glutes"
+      ],
+      "exercise_count": 1
+    },
+    {
+      "key": "shoulders--core--forearms",
+      "primary": "shoulders",
+      "secondary": [
+        "core",
+        "forearms"
+      ],
+      "exercise_count": 1
+    },
+    {
+      "key": "back--biceps--core--lats",
+      "primary": "back",
+      "secondary": [
+        "biceps",
+        "core",
+        "lats"
+      ],
+      "exercise_count": 1
+    },
+    {
+      "key": "shoulders--core--glutes--quads--triceps",
+      "primary": "shoulders",
+      "secondary": [
+        "core",
+        "glutes",
+        "quads",
+        "triceps"
+      ],
+      "exercise_count": 1
+    },
+    {
+      "key": "quads--core",
+      "primary": "quads",
+      "secondary": [
+        "core"
+      ],
+      "exercise_count": 1
+    },
+    {
+      "key": "shoulders--core--glutes",
+      "primary": "shoulders",
+      "secondary": [
+        "core",
+        "glutes"
+      ],
+      "exercise_count": 1
+    },
+    {
+      "key": "triceps--chest",
+      "primary": "triceps",
+      "secondary": [
+        "chest"
+      ],
+      "exercise_count": 1
+    },
+    {
+      "key": "full_body--calves--glutes--quads--shoulders",
+      "primary": "full_body",
+      "secondary": [
+        "calves",
+        "glutes",
+        "quads",
+        "shoulders"
+      ],
+      "exercise_count": 1
+    },
+    {
+      "key": "core--forearms--shoulders",
+      "primary": "core",
+      "secondary": [
+        "forearms",
+        "shoulders"
+      ],
+      "exercise_count": 1
+    },
+    {
+      "key": "glutes--adductors--hamstrings--quads",
+      "primary": "glutes",
+      "secondary": [
+        "adductors",
+        "hamstrings",
+        "quads"
+      ],
+      "exercise_count": 1
+    },
+    {
+      "key": "glutes--back--hamstrings--quads",
+      "primary": "glutes",
+      "secondary": [
+        "back",
+        "hamstrings",
+        "quads"
+      ],
+      "exercise_count": 1
+    },
+    {
+      "key": "back--biceps--rear_delts",
+      "primary": "back",
+      "secondary": [
+        "biceps",
+        "rear_delts"
+      ],
+      "exercise_count": 1
+    },
+    {
+      "key": "full_body--forearms--glutes--hamstrings--quads",
+      "primary": "full_body",
+      "secondary": [
+        "forearms",
+        "glutes",
+        "hamstrings",
+        "quads"
+      ],
+      "exercise_count": 1
+    },
+    {
+      "key": "chest--core--hips--shoulders--triceps",
+      "primary": "chest",
+      "secondary": [
+        "core",
+        "hips",
+        "shoulders",
+        "triceps"
+      ],
+      "exercise_count": 1
+    },
+    {
+      "key": "biceps--core--forearms",
+      "primary": "biceps",
+      "secondary": [
+        "core",
+        "forearms"
+      ],
+      "exercise_count": 1
+    },
+    {
+      "key": "core--glutes--lats--shoulders",
+      "primary": "core",
+      "secondary": [
+        "glutes",
+        "lats",
+        "shoulders"
+      ],
+      "exercise_count": 1
+    },
+    {
+      "key": "chest--core--shoulders",
+      "primary": "chest",
+      "secondary": [
+        "core",
+        "shoulders"
+      ],
+      "exercise_count": 1
+    },
+    {
+      "key": "quads--adductors--glutes--hamstrings",
+      "primary": "quads",
+      "secondary": [
+        "adductors",
+        "glutes",
+        "hamstrings"
+      ],
+      "exercise_count": 1
+    },
+    {
+      "key": "back--biceps--core--rear_delts",
+      "primary": "back",
+      "secondary": [
+        "biceps",
+        "core",
+        "rear_delts"
+      ],
+      "exercise_count": 1
+    },
+    {
+      "key": "full_body--chest--core--glutes--quads",
+      "primary": "full_body",
+      "secondary": [
+        "chest",
+        "core",
+        "glutes",
+        "quads"
+      ],
+      "exercise_count": 1
+    },
+    {
+      "key": "core--chest--hips--shoulders",
+      "primary": "core",
+      "secondary": [
+        "chest",
+        "hips",
+        "shoulders"
+      ],
+      "exercise_count": 1
+    },
+    {
+      "key": "core--hips--shoulders",
+      "primary": "core",
+      "secondary": [
+        "hips",
+        "shoulders"
+      ],
+      "exercise_count": 1
+    },
+    {
+      "key": "core--chest--glutes--shoulders",
+      "primary": "core",
+      "secondary": [
+        "chest",
+        "glutes",
+        "shoulders"
+      ],
+      "exercise_count": 1
+    },
+    {
+      "key": "back--biceps--core--shoulders",
+      "primary": "back",
+      "secondary": [
+        "biceps",
+        "core",
+        "shoulders"
+      ],
+      "exercise_count": 1
+    },
+    {
+      "key": "back--biceps--lats--shoulders",
+      "primary": "back",
+      "secondary": [
+        "biceps",
+        "lats",
+        "shoulders"
+      ],
+      "exercise_count": 1
+    },
+    {
+      "key": "core--glutes--obliques--shoulders",
+      "primary": "core",
+      "secondary": [
+        "glutes",
+        "obliques",
+        "shoulders"
+      ],
+      "exercise_count": 1
+    },
+    {
+      "key": "back--biceps--core--forearms",
+      "primary": "back",
+      "secondary": [
+        "biceps",
+        "core",
+        "forearms"
+      ],
+      "exercise_count": 1
+    },
+    {
+      "key": "full_body--back--glutes--quads--shoulders",
+      "primary": "full_body",
+      "secondary": [
+        "back",
+        "glutes",
+        "quads",
+        "shoulders"
+      ],
+      "exercise_count": 1
+    },
+    {
+      "key": "triceps--core--forearms",
+      "primary": "triceps",
+      "secondary": [
+        "core",
+        "forearms"
+      ],
+      "exercise_count": 1
+    },
+    {
+      "key": "triceps--core--shoulders",
+      "primary": "triceps",
+      "secondary": [
+        "core",
+        "shoulders"
+      ],
+      "exercise_count": 1
+    },
+    {
+      "key": "full_body--core--glutes--shoulders",
+      "primary": "full_body",
+      "secondary": [
+        "core",
+        "glutes",
+        "shoulders"
+      ],
+      "exercise_count": 1
+    },
+    {
+      "key": "shoulders--back--core",
+      "primary": "shoulders",
+      "secondary": [
+        "back",
+        "core"
+      ],
+      "exercise_count": 1
+    }
+  ]
+}

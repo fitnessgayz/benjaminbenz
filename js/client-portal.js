@@ -7263,6 +7263,24 @@ function exerciseSuggestionMuscleLabel(libraryEntry) {
     .join(" · ");
 }
 
+function exerciseMuscleHighlightKey(libraryEntry) {
+  const primary = String(libraryEntry?.primary_muscle || "").trim().toLowerCase();
+  if (!/^[a-z0-9_]+$/.test(primary)) return "";
+  const secondary = [...new Set((Array.isArray(libraryEntry?.secondary_muscles)
+    ? libraryEntry.secondary_muscles : [])
+    .map((muscle) => String(muscle || "").trim().toLowerCase())
+    .filter((muscle) => muscle !== primary && /^[a-z0-9_]+$/.test(muscle)))].sort();
+  return [primary, ...secondary].join("--");
+}
+
+function exerciseMuscleHighlightMarkup(libraryEntry) {
+  const key = exerciseMuscleHighlightKey(libraryEntry);
+  if (!key) return "";
+  const primary = String(libraryEntry.primary_muscle).trim().toLowerCase();
+  const fallback = `images/muscle-highlights/library/${primary}.png`;
+  return `<img class="custom-workout-suggestion-muscle-image" src="images/muscle-highlights/library/${key}.png" data-muscle-highlight-fallback="${fallback}" alt="" loading="lazy" decoding="async" />`;
+}
+
 function customExerciseSuggestionMatches(value) {
   const query = String(value || "").trim();
   const normalizedQuery = exerciseNameMatcher?.normalizeName(query) || query.toLowerCase();
@@ -7310,7 +7328,8 @@ function customExerciseSuggestionMatches(value) {
     .map((record) => ({
       name: record.name,
       recommended: false,
-      muscleLabel: exerciseSuggestionMuscleLabel(record.libraryEntry)
+      muscleLabel: exerciseSuggestionMuscleLabel(record.libraryEntry),
+      libraryEntry: record.libraryEntry
     }));
 
   if (recommendation) {
@@ -7319,7 +7338,8 @@ function customExerciseSuggestionMatches(value) {
       recommended: true,
       matchedLabel: recommendation.matchedLabel,
       score: recommendation.score,
-      muscleLabel: exerciseSuggestionMuscleLabel(recommendation.exercise)
+      muscleLabel: exerciseSuggestionMuscleLabel(recommendation.exercise),
+      libraryEntry: recommendation.exercise
     });
   }
 
@@ -7374,11 +7394,12 @@ function renderCustomExerciseSuggestions(input) {
 
   menu.innerHTML = matches.map((match) => `
     <button
-      class="${match.recommended ? "is-recommended" : ""}"
+      class="${match.recommended ? "is-recommended" : ""}${match.libraryEntry ? " has-muscle-highlight" : ""}"
       type="button"
       role="option"
       data-custom-exercise-suggestion="${escapeHtml(match.name)}"
     >
+      ${exerciseMuscleHighlightMarkup(match.libraryEntry)}
       ${match.recommended ? `
         <small>Did you mean?</small>
         <strong>${escapeHtml(match.name)}</strong>
@@ -7395,6 +7416,14 @@ function renderCustomExerciseSuggestions(input) {
   editor.closest("[data-custom-exercise-card]")?.classList.toggle("is-showing-suggestions", true);
   closeCustomExerciseSuggestions(editor);
 }
+
+if (typeof document !== "undefined") document.addEventListener("error", (event) => {
+  const image = event.target;
+  if (!(image instanceof HTMLImageElement) || !image.matches("img[data-muscle-highlight-fallback]")) return;
+  const fallback = image.dataset.muscleHighlightFallback;
+  image.removeAttribute("data-muscle-highlight-fallback");
+  if (fallback) image.src = fallback;
+}, true);
 
 function openClientExerciseLibrary(input, onSelect) {
   if (!window.FWB_CLIENT_EXERCISE_LIBRARY?.open || !input) return false;

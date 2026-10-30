@@ -41,6 +41,27 @@
   text-align: left;
 }
 
+.dashboard-page .custom-workout-suggestion-menu button.has-muscle-highlight {
+  grid-template-columns: 64px minmax(0, 1fr);
+  column-gap: 10px;
+  min-height: 58px;
+}
+
+.dashboard-page .custom-workout-suggestion-menu button.has-muscle-highlight > .custom-workout-suggestion-muscle-image {
+  grid-column: 1;
+  grid-row: 1 / span 4;
+  align-self: center;
+  width: 64px;
+  height: 40px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.dashboard-page .custom-workout-suggestion-menu button.has-muscle-highlight > :not(img) {
+  grid-column: 2;
+  min-width: 0;
+}
+
 .dashboard-page .custom-workout-card .custom-workout-card-toggle,
 .coach-admin-page .custom-workout-card .custom-workout-card-toggle {
   top: 12px !important;

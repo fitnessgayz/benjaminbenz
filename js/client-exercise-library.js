@@ -66,6 +66,16 @@
     return artworkUrls.get(primary);
   }
 
+  function muscleHighlightKey(entry) {
+    const primary = String(entry?.primary_muscle || "").trim().toLowerCase();
+    if (!/^[a-z0-9_]+$/.test(primary)) return "";
+    const secondary = [...new Set((Array.isArray(entry?.secondary_muscles)
+      ? entry.secondary_muscles : [])
+      .map((muscle) => String(muscle || "").trim().toLowerCase())
+      .filter((muscle) => muscle !== primary && /^[a-z0-9_]+$/.test(muscle)))].sort();
+    return [primary, ...secondary].join("--");
+  }
+
   function normalize(value) {
     return String(value || "").normalize("NFKD").replace(/[\u0300-\u036f]/g, "")
       .replace(/[_-]+/g, " ").trim().toLocaleLowerCase();
@@ -90,6 +100,8 @@
       const aliases = (Array.isArray(record.aliases) ? record.aliases : entry.aliases || [])
         .filter((alias) => typeof alias === "string");
       return [{ name, primary, secondary: [...new Set(secondary)],
+        highlightKey: muscleHighlightKey(entry),
+        highlightFallback: String(entry.primary_muscle || "").trim().toLowerCase(),
         searchText: normalize([name, ...aliases, primary, ...secondary, entry.equipment || ""].join(" ")) }];
     }).sort((a, b) => a.name.localeCompare(b.name));
   }
@@ -236,10 +248,21 @@
         button.setAttribute("aria-label", `Add ${record.name}, ${[record.primary, ...record.secondary].join(", ")}`);
         const artwork = element("span", "client-exercise-library-item-artwork");
         const image = element("img", "");
-        image.src = muscleArtworkUrl(record.primary);
+        image.src = record.highlightKey
+          ? `images/muscle-highlights/library/${record.highlightKey}.png`
+          : muscleArtworkUrl(record.primary);
         image.alt = "";
         image.loading = "lazy";
         image.decoding = "async";
+        if (record.highlightKey) image.addEventListener("error", () => {
+          const fallback = `images/muscle-highlights/library/${record.highlightFallback}.png`;
+          if (!image.dataset.muscleFallbackUsed && image.src.endsWith(`/${record.highlightKey}.png`)) {
+            image.dataset.muscleFallbackUsed = "true";
+            image.src = fallback;
+          } else {
+            image.src = muscleArtworkUrl(record.primary);
+          }
+        });
         artwork.append(image);
         const text = element("span", "client-exercise-library-item-copy");
         text.append(element("strong", "", record.name));
