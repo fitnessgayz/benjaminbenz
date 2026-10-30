@@ -38,7 +38,7 @@
 }
 .dashboard-page .workout-completion-share-apple[hidden] { display: none !important; }
 .dashboard-page .workout-completion-share-apple > small {
-  color: #d6ff35;
+  color: #ffd400;
   font-size: .68rem;
   font-weight: 800;
   letter-spacing: .06em;
@@ -90,7 +90,7 @@
   gap: 7px;
   border: 1px solid #171a17;
   border-radius: 10px !important;
-  background: #d6ff35;
+  background: #ffd400;
   color: #171a17;
   font-family: inherit;
   font-size: .85rem !important;
@@ -105,7 +105,7 @@
   touch-action: manipulation;
 }
 .dashboard-page [data-share-workout-history]:disabled { opacity: .5; cursor: wait; }
-.dashboard-page [data-share-workout-history]:focus-visible { outline: 3px solid #718a18; outline-offset: 2px; }
+.dashboard-page [data-share-workout-history]:focus-visible { outline: 3px solid #a47700; outline-offset: 2px; }
 .dashboard-page .training-log-workout-actions { display: flex; min-width: 0; gap: 8px; flex-wrap: wrap; align-items: center; }
 @media (max-width: 760px) {
   .dashboard-page .training-log-history-card-actions:has([data-share-workout-history]) {

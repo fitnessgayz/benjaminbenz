@@ -124,7 +124,7 @@
 }
 
 :root body.client-dashboard-page #client-workouts-panel.is-choosing-workout .workout-choice-card:hover {
-  border-color: #80b83e;
+  border-color: #c39a23;
   background: #303332;
 }
 
@@ -183,7 +183,7 @@
 }
 
 :root body.client-dashboard-page .client-workout-panel-custom .custom-workout-saved-plan:hover {
-  border-color: #80b83e;
+  border-color: #c39a23;
   background: #303332;
 }
 

@@ -112,7 +112,7 @@ body.client-dashboard-page .client-workout-panel-custom .custom-workout-launcher
 }
 
 body.client-dashboard-page .client-workout-panel-custom .custom-workout-launcher-gym .workout-gym-picker label {
-  color: #68b9ff;
+  color: #ffd400;
 }
 
 body.client-dashboard-page .client-workout-panel-custom .custom-workout-launcher-gym .workout-gym-picker input {
@@ -213,8 +213,8 @@ body.client-dashboard-page .client-workout-panel-custom .custom-workout-format-b
 }
 
 body.client-dashboard-page .client-workout-panel-custom .custom-workout-format-button.is-active {
-  background: #193f5c;
-  color: #8ed0ff;
+  background: #3b310e;
+  color: #ffe066;
 }
 
 body.client-dashboard-page .client-workout-panel-custom .custom-workout-format-picker > p {
@@ -232,7 +232,7 @@ body.client-dashboard-page .client-workout-panel-custom .custom-workout-launcher
   border: 1px dashed #42515d;
   border-radius: 18px;
   background: #141c20;
-  color: #68b9ff;
+  color: #ffd400;
   font: inherit;
   font-size: 1.04rem;
   cursor: pointer;
@@ -244,7 +244,7 @@ body.client-dashboard-page .client-workout-panel-custom .custom-workout-launcher
   height: 56px;
   place-items: center;
   border-radius: 50%;
-  background: #1684f5;
+  background: #ffd400;
   color: #fff;
   font-size: 2rem;
   line-height: 1;
@@ -272,7 +272,7 @@ body.client-dashboard-page .client-workout-panel-custom .custom-workout-footer-a
   border: 1px solid #3d4d61;
   border-radius: 18px;
   background: #181d23;
-  color: #69bdff;
+  color: #ffd400;
   font: inherit;
   font-size: 1.05rem;
   text-align: left;
@@ -286,7 +286,7 @@ body.client-dashboard-page .client-workout-panel-custom .custom-workout-footer-a
   flex: none;
   place-items: center;
   border-radius: 50%;
-  background: #1684f5;
+  background: #ffd400;
   color: #fff;
   font-size: 1.75rem;
   line-height: 1;
@@ -309,15 +309,15 @@ body.client-dashboard-page .client-workout-panel-custom .workout-start-button {
   min-height: 58px;
   border: 0;
   border-radius: 13px;
-  background: #1684f5;
-  color: #fff;
+  background: #ffd400;
+  color: #171a17;
   font-size: 1rem;
   font-weight: 800;
 }
 
 body.client-dashboard-page .client-workout-panel-custom .custom-workout-manage-exercises > summary {
   padding: 10px 2px;
-  color: #69bdff;
+  color: #ffd400;
   font-weight: 700;
   cursor: pointer;
 }

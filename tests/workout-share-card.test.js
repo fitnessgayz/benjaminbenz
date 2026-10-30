@@ -124,7 +124,7 @@ test("light share artwork uses a light canvas with readable dark text", () => {
   drawCard(h.context, example(), now, "light");
   assert.equal(h.boxes[0].fill, "#f7f8f3");
   assert.ok(h.texts.some((item) => item.value === "Upper-body strength" && item.fill === "#1b291f"));
-  assert.ok(h.texts.some((item) => item.value === "EXERCISES COMPLETED" && item.fill === "#0069dd"));
+  assert.ok(h.texts.some((item) => item.value === "EXERCISES COMPLETED" && item.fill === "#936800"));
 });
 
 test("long titles, names, and metric values stay inside their reserved canvas regions", () => {

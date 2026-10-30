@@ -1,0 +1,104 @@
+/* Client web palette. Keep this after the feature styles so their legacy
+   color aliases resolve to the same gold as the selected mobile tab. */
+:root body.client-dashboard-page {
+  --brand-primary: #ffd400;
+  --brand-primary-hover: #ffe066;
+  --brand-primary-ink: #171a17;
+  --lime: #ffd400;
+  --focus: #ffd400;
+  --success: #ffd400;
+  --blue: #ffd400;
+  --secondary-accent: #ffd400;
+  --client-neon: #ffd400;
+  --client-accent: #ffd400;
+  --client-accent-bright: #ffd400;
+  --client-accent-ink: #171a17;
+  --client-settings-accent: #ffd400;
+  --client-page-headline: #ffd400;
+}
+
+:root[data-client-theme="light"] body.client-dashboard-page {
+  --focus: #936800;
+  --success: #936800;
+  --blue: #936800;
+  --secondary-accent: #936800;
+  --client-neon: #936800;
+  --client-accent: #936800;
+  --client-accent-bright: #ffd400;
+  --client-accent-ink: #171a17;
+  --client-settings-accent: #936800;
+  --client-page-headline: #795500;
+}
+
+:root[data-client-theme="light"] body.client-dashboard-page .exercise-history-by-gym > strong {
+  color: #936800;
+}
+
+:root body.client-dashboard-page .client-settings-panel {
+  --client-settings-accent: var(--client-accent);
+}
+
+:root body.client-dashboard-page [data-custom-workout-grouped="true"] {
+  --grouped-lime: #ffd400;
+  --grouped-blue: #ffd400;
+  --grouped-gold: #ffd400;
+  --grouped-focus: #ffd400;
+}
+
+:root body.client-dashboard-page [data-custom-workout-grouped="true"] :is(
+  .custom-workout-grouped-status,
+  .custom-workout-grouped-progress,
+  .custom-workout-grouped-exercise-status,
+  .custom-workout-grouped-set-status,
+  .custom-workout-grouped-finish-heading small,
+  [data-custom-grouped-notes-state]
+) {
+  color: #e1ad00;
+}
+
+:root[data-client-theme="light"] body.client-dashboard-page [data-custom-workout-grouped="true"] :is(
+  .custom-workout-grouped-status,
+  .custom-workout-grouped-progress,
+  .custom-workout-grouped-exercise-status,
+  .custom-workout-grouped-set-status,
+  .custom-workout-grouped-finish-heading small,
+  [data-custom-grouped-notes-state]
+) {
+  color: #795500;
+}
+
+:root body.client-dashboard-page :is(.workout-elapsed-timer, .custom-workout-grouped-timer) {
+  --lime: #ffd400;
+}
+
+:root body.client-dashboard-page .client-workout-panel-custom .custom-workout-launcher-gym .workout-gym-picker label,
+:root body.client-dashboard-page .client-workout-panel-custom :is(
+  .custom-workout-launcher-add, .custom-workout-footer-add,
+  .custom-workout-manage-exercises > summary
+) {
+  color: var(--client-accent);
+}
+
+:root body.client-dashboard-page .client-workout-panel-custom :is(
+  .custom-workout-launcher-add-icon, .custom-workout-footer-add-icon
+) {
+  background: #ffd400;
+  color: #171a17;
+}
+
+:root body.client-dashboard-page .client-workout-panel-custom .custom-workout-format-button.is-active {
+  background: #3b310e;
+  color: #ffe066;
+}
+
+:root body.client-dashboard-page .client-workout-panel-custom .custom-workout-launcher-heading h2 {
+  color: var(--client-page-headline);
+}
+
+:root body.client-dashboard-page :is(.workout-gym-picker label, .training-log-gym) {
+  color: var(--client-accent);
+}
+
+:root body.client-dashboard-page :is(input[type="checkbox"], input[type="radio"], input[type="range"]) {
+  accent-color: #ffd400;
+}
