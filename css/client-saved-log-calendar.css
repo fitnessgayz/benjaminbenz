@@ -4,8 +4,8 @@ body.client-dashboard-page {
   --saved-log-line: #464950;
   --saved-log-text: #f6f7f8;
   --saved-log-muted: #b7bac1;
-  --saved-log-gold: #ffd500;
   --saved-log-blue: #68b7f5;
+  --saved-log-blue-ink: #0a1c2b;
 }
 
 :root[data-client-theme="light"] body.client-dashboard-page {
@@ -13,8 +13,8 @@ body.client-dashboard-page {
   --saved-log-line: #c9d3df;
   --saved-log-text: #15253b;
   --saved-log-muted: #526176;
-  --saved-log-gold: #ffd500;
   --saved-log-blue: #116bc6;
+  --saved-log-blue-ink: #fff;
 }
 
 .client-saved-log-calendar {
@@ -84,8 +84,8 @@ body.client-dashboard-page {
 }
 
 .dashboard-page .client-saved-log-day[data-has-log="true"] {
-  background: var(--saved-log-gold);
-  color: #111215;
+  background: var(--saved-log-blue);
+  color: var(--saved-log-blue-ink);
 }
 
 .dashboard-page .client-saved-log-day[aria-pressed="true"] {
@@ -113,7 +113,7 @@ body.client-dashboard-page {
   height: 12px;
   flex: none;
   border-radius: 50%;
-  background: var(--saved-log-gold);
+  background: var(--saved-log-blue);
 }
 
 .client-saved-log-selected {
@@ -165,7 +165,7 @@ body.client-dashboard-page .client-saved-log-selected h3 {
 .client-saved-set-dialog :is(input, textarea) { width: 100%; padding: 10px; border: 1px solid var(--saved-log-line); border-radius: 9px; background: transparent; color: var(--saved-log-text); font: inherit; }
 .client-saved-set-notes { margin-top: 12px; }
 .client-saved-set-actions { display: flex; justify-content: end; gap: 8px; margin-top: 16px; }
-.dashboard-page .client-saved-set-actions .button-primary { color: #111215; background: var(--saved-log-gold); }
+.dashboard-page .client-saved-set-actions .button-primary { color: var(--saved-log-blue-ink); background: var(--saved-log-blue); }
 
 @media (max-width: 500px) {
   .client-saved-log-calendar { padding: 12px 8px; }

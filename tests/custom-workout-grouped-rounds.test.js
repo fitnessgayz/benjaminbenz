@@ -99,43 +99,71 @@ test("uses a compact collapsible EXERCISES editor with per-exercise delete contr
   );
 });
 
-test("renders the exercise key, compact round stepper, round rows, and grouped actions", () => {
+test("renders exercise-first cards with previous values, Log boxes, and grouped rest controls", () => {
   const groupedMarkup = sourceForFunction("customWorkoutGroupedRoundCardMarkup");
-  const exerciseKey = sourceForFunction("customWorkoutGroupedExerciseKeyMarkup");
   const sections = sourceForFunction("customWorkoutGroupedSectionsMarkup");
   const rowMarkup = sourceForFunction("customWorkoutGroupedSetRowMarkup");
 
-  assert.match(exerciseKey, /custom-workout-grouped-exercise-number/);
-  assert.match(exerciseKey, /data-custom-grouped-exercise-name/);
-  assert.match(sections, /<h4>Warm-up<\/h4>/);
-  assert.match(sections, /Optional · excluded from working volume/);
+  assert.match(sections, /return logElements\.map\(\(logElement, exerciseIndex\)/);
+  assert.match(sections, /class="ios-log-exercise-card"/);
+  assert.match(sections, /class="ios-log-exercise-header"/);
+  assert.match(sections, /class="ios-log-exercise-menu"/);
+  assert.match(sections, /data-ios-log-action="add-warmup"/);
+  assert.match(sections, /data-ios-log-action="remove-set"/);
+  assert.match(sections, /warmUpRows\.map\(\(row, index\) => rowMarkup\(row, warmUpSetType, index\)\)/);
+  assert.match(sections, /workingRows\.map\(\(row, index\) => rowMarkup\(row, workingSetType, index\)\)/);
   assert.doesNotMatch(sections, /data-custom-grouped-skip-warmup|data-custom-grouped-log-warmup/);
-  assert.match(sections, /custom-workout-grouped-round-exercise-title/);
-  assert.match(sections, /`A\$\{exerciseIndex \+ 1\} \$\{item\.exerciseName\}`/);
-  assert.match(sections, /<h4>\$\{workoutSetUnit\(carousel\)\} \$\{roundNumber\}<\/h4>/);
-  assert.match(sections, /const columnLabelsMarkup = `[\s\S]*?<span>Set<\/span><span>Weight<\/span><span>Reps<\/span><span>Log<\/span>/);
+  assert.match(sections, /<span>Set<\/span><span>Previous<\/span><span>Weight<\/span><span>Reps<\/span><span>Log<\/span>/);
   assert.equal(
     (sections.match(/\$\{columnLabelsMarkup\}/g) || []).length,
-    2,
-    "Column labels should render in the warm-up and every generated round",
+    1,
+    "Column labels should appear once per exercise card, above warm-up and working rows",
   );
   assert.doesNotMatch(groupedMarkup, /custom-workout-grouped-columns/);
   assert.doesNotMatch(sections, /data-custom-grouped-log-round=/);
+  assert.doesNotMatch(sections, /data-one-rm-open|one-rm-pr-trigger|custom-workout-grouped-copy-weights/);
   assert.match(sections, /data-custom-grouped-rest-adjust="-15"/);
   assert.match(sections, /data-custom-grouped-rest-toggle/);
   assert.match(sections, /data-custom-grouped-rest-adjust="15"/);
   assert.match(rowMarkup, /data-custom-grouped-set-toggle/);
+  assert.match(rowMarkup, /class="ios-log-previous"/);
   assert.match(groupedMarkup, /data-custom-grouped-remove-round/);
   assert.match(groupedMarkup, /data-custom-grouped-round-count/);
   assert.match(groupedMarkup, /data-custom-grouped-add-round/);
   assert.match(groupedMarkup, /data-custom-grouped-finish-workout>Finish workout<\/button>/);
-  assert.match(
-    mobileStyles,
-    /\.custom-workout-grouped-exercise-key-item \{[\s\S]*?font-style: italic;[\s\S]*?font-weight: 950;[\s\S]*?text-transform: uppercase;/,
-  );
-  assert.match(mobileStyles, /grid-template-areas:[\s\S]*?"exercise exercise"[\s\S]*?"round actions"/);
-  assert.match(mobileStyles, /custom-workout-grouped-round-exercise-title[\s\S]*?text-overflow: ellipsis/);
-  assert.match(mobileStyles, /custom-workout-grouped-copy-weights, \.custom-workout-grouped-undo-weights\)[\s\S]*?min-height: 34px/);
+});
+
+test("visible grouped markup gives each exercise one card and Previous column without a PR calculator", () => {
+  const render = Function("deps", `
+    const { logElements, customWorkoutGroupedRows } = deps;
+    const warmUpSetType = "warm_up", workingSetType = "working";
+    const customWorkoutGroupedLogElements = () => logElements;
+    const currentExerciseLabel = (log) => log.name;
+    const exerciseMediaButtonMarkup = () => '<img alt="" src="exercise.png">';
+    const exerciseLibraryMetaLabel = () => "Chest | Barbell";
+    const customWorkoutGroupedRoundIsLogged = () => false;
+    const customWorkoutGroupedRoundCode = (round, exercise) => "A" + (exercise + 1) + "-" + round;
+    const customWorkoutGroupedSetRowMarkup = (_row, code) => '<div data-visible-set="' + code + '"></div>';
+    const escapeHtml = (value) => String(value);
+    ${sourceForFunction("customWorkoutGroupedSectionsMarkup")}
+    return customWorkoutGroupedSectionsMarkup;
+  `)({
+    logElements: ["Bench Press", "Dumbbell Row"].map((name) => ({
+      name,
+      querySelector: () => null,
+      warmups: [],
+      working: [{ classList: { contains: () => false } }]
+    })),
+    customWorkoutGroupedRows: (log, type) => type === "warm_up" ? log.warmups : log.working
+  });
+  const markup = render({ dataset: { customWorkoutFormat: "superset", customWorkoutGroup: "0" }, closest: () => null });
+
+  assert.equal((markup.match(/class="ios-log-exercise-card"/g) || []).length, 2);
+  assert.equal((markup.match(/<span>Previous<\/span>/g) || []).length, 2);
+  assert.equal((markup.match(/class="ios-log-exercise-menu"/g) || []).length, 2);
+  assert.match(markup, /A1<\/span> Bench Press/);
+  assert.match(markup, /A2<\/span> Dumbbell Row/);
+  assert.doesNotMatch(markup, /data-one-rm-open|one-rm-pr-trigger|Estimate 1RM|data-custom-grouped-history/);
 });
 
 test("custom straight sets, supersets, and circuits use compact warm-up and sets selectors", () => {
@@ -486,6 +514,22 @@ test("shares the grouped round renderer with assigned workouts", () => {
   assert.match(mobileStyles, /\[data-custom-workout-grouped="true"\]/);
 });
 
+test("trainer prescribed workouts use the same compact exercise-first cards", () => {
+  const assignedMarkup = sourceForFunction("assignedWorkoutCarouselMarkup");
+  const sharedMarkup = sourceForFunction("customWorkoutCarouselGroupMarkup");
+  const groupedMarkup = sourceForFunction("customWorkoutGroupedRoundCardMarkup");
+  const renderer = sourceForFunction("renderCustomWorkoutGroupedCard");
+  const exerciseCards = sourceForFunction("customWorkoutGroupedSectionsMarkup");
+  const compactStyles = fs.readFileSync(path.join(__dirname, "../css/client-workout-compact-log.css"), "utf8");
+  assert.match(assignedMarkup, /customWorkoutCarouselGroupMarkup/);
+  assert.match(assignedMarkup, /assigned: true/);
+  assert.match(sharedMarkup, /customWorkoutGroupedRoundCardMarkup/);
+  assert.match(groupedMarkup, /data-custom-workout-grouped="true"/);
+  assert.match(renderer, /sections\.innerHTML = customWorkoutGroupedSectionsMarkup\(carousel\)/);
+  assert.match(exerciseCards, /class="ios-log-exercise-card"/);
+  assert.match(compactStyles, /#client-workout-panels \[data-custom-workout-grouped="true"\] \.ios-log-exercise-card/);
+});
+
 test("shows the grouped session timer and finish action on the last group only", () => {
   const groupedMarkup = sourceForFunction("customWorkoutGroupedRoundCardMarkup");
   const initialGroups = sourceForFunction("customWorkoutCarouselMarkup");
@@ -505,20 +549,21 @@ test("shows the grouped session timer and finish action on the last group only",
   );
 });
 
-test("moves one gold round outline into the next exercise group after its last round", () => {
+test("moves current round focus across exercise cards in round order", () => {
   const focus = Function(`${sourceForFunction("refreshCustomWorkoutGroupedFocus")}; return refreshCustomWorkoutGroupedFocus;`)();
-  const section = (logged) => {
+  const section = (logged, roundNumber, exerciseIndex) => {
     const classes = new Set();
     const attributes = {};
     return {
-      dataset: { customGroupedRoundLogged: String(logged) },
+      dataset: { customGroupedRoundLogged: String(logged), customGroupedRound: String(roundNumber) },
+      closest: () => ({ dataset: { iosLogExerciseIndex: String(exerciseIndex) } }),
       classList: { toggle: (name, enabled) => enabled ? classes.add(name) : classes.delete(name), contains: (name) => classes.has(name) },
       setAttribute: (name, value) => { attributes[name] = value; },
       removeAttribute: (name) => { delete attributes[name]; },
       getAttribute: (name) => attributes[name]
     };
   };
-  const rounds = [section(false), section(false), section(false)];
+  const rounds = [section(false, 1, 0), section(false, 2, 0), section(false, 1, 1)];
   const carousels = [
     { querySelectorAll: () => rounds.slice(0, 2) },
     { querySelectorAll: () => rounds.slice(2) }
@@ -529,11 +574,11 @@ test("moves one gold round outline into the next exercise group after its last r
   assert.equal(rounds[0].getAttribute("aria-current"), "step");
   rounds[0].dataset.customGroupedRoundLogged = "true";
   focus(panel);
-  assert.equal(rounds[1].getAttribute("aria-current"), "step");
-  rounds[1].dataset.customGroupedRoundLogged = "true";
-  focus(panel);
   assert.equal(rounds[2].getAttribute("aria-current"), "step");
-  assert.equal(rounds[1].classList.contains("is-current-step"), false);
+  rounds[2].dataset.customGroupedRoundLogged = "true";
+  focus(panel);
+  assert.equal(rounds[1].getAttribute("aria-current"), "step");
+  assert.equal(rounds[2].classList.contains("is-current-step"), false);
   assert.match(mobileStyles, /\.custom-workout-grouped-section\.is-current-step\s*\{[\s\S]*?box-shadow:\s*inset 0 0 0 3px var\(--grouped-focus\)/);
 });
 

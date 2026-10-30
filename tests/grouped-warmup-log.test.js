@@ -87,9 +87,11 @@ test("failed grouped warm-up save keeps values available and returns Log box to 
 test("grouped warm-up and round rows use one Log box and retain rest controls", () => {
   const sections = functionSource("customWorkoutGroupedSectionsMarkup");
   const row = functionSource("customWorkoutGroupedSetRowMarkup");
-  assert.match(sections, /<h4>Warm-up<\/h4>/);
-  assert.match(sections, /<span>Set<\/span><span>Weight<\/span><span>Reps<\/span><span>Log<\/span>/);
+  assert.match(sections, /warmUpRows\.map\(\(row, index\) => rowMarkup\(row, warmUpSetType, index\)\)/);
+  assert.match(sections, /workingRows\.map\(\(row, index\) => rowMarkup\(row, workingSetType, index\)\)/);
+  assert.match(sections, /<span>Set<\/span><span>Previous<\/span><span>Weight<\/span><span>Reps<\/span><span>Log<\/span>/);
   assert.match(sections, /data-custom-grouped-rest-toggle/);
   assert.match(row, /data-custom-grouped-set-toggle/);
+  assert.match(row, /class="ios-log-previous"/);
   assert.doesNotMatch(sections, /data-custom-grouped-(?:skip-warmup|log-warmup|log-round)/);
 });
