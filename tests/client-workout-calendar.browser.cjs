@@ -17,10 +17,11 @@ const root = path.resolve(__dirname, '..');
       <body class="dashboard-page client-dashboard-page" style="margin:0;background:#101113;color:#fff;">
       <section id="client-workouts-panel" style="min-height:100vh;padding:12px 18px;"><button id="launch">Workout calendar</button></section>
       </body></html>`);
-    for (const file of ['css/style.css', 'css/fwb-design-system.css', 'css/fwb-dark-theme.css',
-      'css/client-workout-hub.css', 'css/client-light-theme.css', 'css/site-close-buttons.css',
-      'css/client-workout-calendar.css']) {
-      await page.addStyleTag({ content: fs.readFileSync(path.join(root, file), 'utf8') });
+    const dashboardHtml = fs.readFileSync(path.join(root, 'client-dashboard.html'), 'utf8');
+    for (const match of dashboardHtml.matchAll(/<link rel="stylesheet" href="([^"]+)"/g)) {
+      const file = match[1].split('?')[0].replace(/^\//, '');
+      const filePath = path.join(root, file);
+      if (fs.existsSync(filePath)) await page.addStyleTag({ content: fs.readFileSync(filePath, 'utf8') });
     }
     await page.addScriptTag({ path: path.join(root, 'js/client-workout-calendar.js') });
     await page.evaluate(() => {
@@ -71,6 +72,11 @@ const root = path.resolve(__dirname, '..');
     assert.equal(await page.locator('.client-calendar-grid [data-calendar-date]').count(),
       new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate());
     assert.equal(await page.locator('.client-calendar-add').isVisible(), true);
+    assert.deepEqual(await page.locator('[data-calendar-back]').evaluate(node => ({
+      width: Math.round(node.getBoundingClientRect().width),
+      height: Math.round(node.getBoundingClientRect().height),
+      iconWidth: Math.round(node.querySelector('svg').getBoundingClientRect().width)
+    })), { width: 46, height: 46, iconWidth: 23 });
     const horizontalOverflow = await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1);
     assert.equal(horizontalOverflow, false, 'calendar must fit a mobile viewport');
     if (process.env.CALENDAR_SCREENSHOT) await page.screenshot({ path: process.env.CALENDAR_SCREENSHOT, fullPage: true });
@@ -105,6 +111,10 @@ const root = path.resolve(__dirname, '..');
     assert.notEqual(await page.locator('.client-calendar-month h3').textContent(), currentMonth);
     await page.locator('[data-calendar-prev]').click();
     assert.equal(await page.locator('.client-calendar-month h3').textContent(), currentMonth);
+    await page.locator('[data-calendar-back]').click();
+    assert.equal(await page.locator('#client-workouts-panel').evaluate(node => node.classList.contains('is-calendar-open')), false);
+    assert.equal(await page.locator('#launch').isVisible(), true);
+    assert.equal(await page.locator('#launch').evaluate(node => node === document.activeElement), true);
     assert.deepEqual(errors, []);
     console.log('Client workout calendar mobile browser flow passed.');
   } finally {
