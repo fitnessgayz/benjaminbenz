@@ -1,9 +1,9 @@
 /* The custom workout starter keeps setup choices out of the logging area. */
-body.client-dashboard-page .client-workout-panel-custom .custom-workout-launcher-heading {
+body.client-dashboard-page .client-workout-panel-custom .panel-heading.custom-workout-launcher-heading {
   position: relative;
-  display: flex;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) 44px !important;
   align-items: center;
-  justify-content: space-between;
   gap: 12px;
   margin-bottom: 12px;
 }
