@@ -6,6 +6,7 @@ const test = require("node:test");
 const root = path.resolve(__dirname, "..");
 const portal = fs.readFileSync(path.join(root, "js/client-portal.js"), "utf8");
 const styles = fs.readFileSync(path.join(root, "css/style.css"), "utf8");
+const launcherStyles = fs.readFileSync(path.join(root, "css/client-custom-workout-launcher.css"), "utf8");
 const dashboard = fs.readFileSync(path.join(root, "client-dashboard.html"), "utf8");
 
 function sourceForFunction(name) {
@@ -24,7 +25,8 @@ test("renders a compact reset action only inside the Custom Workout builder", ()
   assert.match(customPanel, /data-custom-workout-reset-status role="status" aria-live="polite"/);
   assert.doesNotMatch(assignedPanel, /data-reset-custom-workout/);
   assert.match(customPanel, /class="custom-workout-launcher-menu"/);
-  assert.match(dashboard, /client-custom-workout-launcher\.css\?v=3/);
+  assert.match(dashboard, /client-custom-workout-launcher\.css\?v=4/);
+  assert.match(launcherStyles, /\.panel-heading\.custom-workout-launcher-heading\s*\{[^}]*display: grid !important;[^}]*grid-template-columns: minmax\(0, 1fr\) 44px !important;/);
 });
 
 test("uses the exercise-first launcher without a separate warm-up section", () => {
