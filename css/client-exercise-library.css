@@ -70,7 +70,7 @@
   padding: 0 12px;
   border: 1px solid #3b4049;
   border-radius: 999px;
-  color: #43adff;
+  color: #ffd400;
   background: #25282e;
   font-size: .9rem;
   font-weight: 700;
@@ -126,8 +126,8 @@
 }
 .client-exercise-library-filter[aria-pressed="true"] {
   color: #101923;
-  background: #49adff;
-  border-color: #49adff;
+  background: #ffd400;
+  border-color: #ffd400;
 }
 .client-exercise-library-count {
   flex: 0 0 auto;
@@ -151,7 +151,7 @@
   padding: 12px 14px;
   border: 1px solid #363a43;
   border-radius: 15px;
-  color: #55b4ff;
+  color: #ffd400;
   background: #26292f;
   font-size: .85rem;
   letter-spacing: .055em;
@@ -174,7 +174,7 @@
   text-align: left;
   cursor: pointer;
 }
-.client-exercise-library-item-button:hover { border-color: #4e91c5; background: #2b3038; }
+.client-exercise-library-item-button:hover { border-color: #c49b23; background: #2b3038; }
 .client-exercise-library-item-artwork {
   display: flex;
   width: 96px;
@@ -204,8 +204,8 @@
   height: 44px;
   place-items: center;
   border-radius: 50%;
-  color: white;
-  background: #198ff0;
+  color: #171a17;
+  background: #ffd400;
   font-size: 2rem;
   font-weight: 300;
   line-height: 1;

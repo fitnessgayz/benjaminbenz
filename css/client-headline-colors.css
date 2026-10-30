@@ -1,10 +1,10 @@
 /* Client headings use electric blue. Gold stays with interactive controls. */
 :root body.client-dashboard-page {
-  --client-page-headline: #57a8ff;
+  --client-page-headline: #ffd400;
 }
 
 :root[data-client-theme="light"] body.client-dashboard-page {
-  --client-page-headline: #0059c9;
+  --client-page-headline: #795500;
 }
 
 :root body.client-dashboard-page :is(h1, h2, h3, h4, h5, h6),

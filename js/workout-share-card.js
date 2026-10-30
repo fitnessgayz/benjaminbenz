@@ -2,8 +2,8 @@
 (() => {
   "use strict";
   const palettes = {
-    dark: { background: "#171a17", text: "#f7f7f2", accent: "#d6ff35", line: "#4b5148", muted: "#b8bfb2", tile: "#242923", brand: "#d6ff35", brandText: "#080a08" },
-    light: { background: "#f7f8f3", text: "#1b291f", accent: "#0069dd", line: "#cbd8c5", muted: "#516355", tile: "#edf2e8", brand: "#a3f43b", brandText: "#19250e" }
+    dark: { background: "#171a17", text: "#f7f7f2", accent: "#ffd400", line: "#4b5148", muted: "#b8bfb2", tile: "#242923", brand: "#ffd400", brandText: "#080a08" },
+    light: { background: "#f7f8f3", text: "#1b291f", accent: "#936800", line: "#cbd8c5", muted: "#516355", tile: "#edf2e8", brand: "#ffd400", brandText: "#19250e" }
   };
   const fontFamily = 'Inter, "Arial", sans-serif';
 

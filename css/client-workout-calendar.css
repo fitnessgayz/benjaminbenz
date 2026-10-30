@@ -39,7 +39,7 @@
   -webkit-tap-highlight-color: transparent;
 }
 :root body.client-dashboard-page .client-workout-calendar button:focus-visible {
-  outline: 3px solid #5caef5;
+  outline: 3px solid #ffd400;
   outline-offset: 2px;
 }
 :root body.client-dashboard-page .client-calendar-header {
@@ -177,7 +177,7 @@
 :root body.client-dashboard-page .client-calendar-day [data-calendar-status] {
   min-height: 1.2em;
   margin: 12px 0 0;
-  color: #89c7ff;
+  color: #ffd400;
   font-size: 13px;
 }
 :root body.client-dashboard-page .client-calendar-day [data-calendar-status].is-error { color: #ff7777; }
@@ -197,10 +197,10 @@
 :root body.client-dashboard-page .client-calendar-workout-actions button {
   min-height: 42px;
   padding: 8px 14px;
-  border: 1px solid #5caef5;
+  border: 1px solid #ffd400;
   border-radius: 10px;
   background: #15263a;
-  color: #83c4ff;
+  color: #ffd400;
   font-size: 13px;
   font-weight: 750;
 }
@@ -250,7 +250,7 @@
   font-size: 24px;
 }
 :root body.client-dashboard-page .client-calendar-option-group { display: grid; gap: 8px; margin: 0 0 18px; }
-:root body.client-dashboard-page .client-calendar-option-group h4 { margin: 0 0 2px; color: #89c7ff; font-size: 13px; text-transform: uppercase; }
+:root body.client-dashboard-page .client-calendar-option-group h4 { margin: 0 0 2px; color: #ffd400; font-size: 13px; text-transform: uppercase; }
 :root body.client-dashboard-page .client-calendar-option-group button {
   display: flex;
   align-items: center;
@@ -268,7 +268,7 @@
 :root body.client-dashboard-page .client-calendar-option-group button span:first-child { display: grid; gap: 4px; }
 :root body.client-dashboard-page .client-calendar-option-group button strong { font-size: 14px; }
 :root body.client-dashboard-page .client-calendar-option-group button small { color: #b8bbc2; font-size: 12px; }
-:root body.client-dashboard-page .client-calendar-option-group button span:last-child { color: #5caef5; font-size: 24px; }
+:root body.client-dashboard-page .client-calendar-option-group button span:last-child { color: #ffd400; font-size: 24px; }
 :root body.client-dashboard-page .client-calendar-empty,
 :root body.client-dashboard-page [data-calendar-picker-status] { color: #c4c7cb; font-size: 13px; line-height: 1.4; }
 

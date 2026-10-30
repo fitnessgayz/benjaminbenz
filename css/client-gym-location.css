@@ -10,7 +10,7 @@
 }
 
 .client-dashboard-page .workout-gym-picker label {
-  color: #a3f43b;
+  color: #ffd400;
   font-size: .95rem;
   font-weight: 800;
 }
@@ -62,7 +62,7 @@
 .client-dashboard-page .custom-workout-grouped-gym input[readonly] { opacity: .75; }
 .client-dashboard-page .custom-workout-grouped-gym small { font-size: .8rem; font-weight: 600; }
 .client-dashboard-page .custom-workout-grouped-gym [data-custom-grouped-gym-locked] { color: #b5bdb7; }
-.client-dashboard-page .training-log-gym { display: block; color: #a3f43b; }
+.client-dashboard-page .training-log-gym { display: block; color: #ffd400; }
 
 :root[data-client-theme="light"] body.client-dashboard-page .workout-gym-picker,
 :root[data-client-theme="light"] body.client-dashboard-page .custom-workout-grouped-gym {

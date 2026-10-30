@@ -15,7 +15,7 @@
   justify-content: center;
   gap: 8px;
   color: #171a17;
-  background: #d6ff35;
+  background: #ffd400;
   border: 1px solid #b8dd22;
   border-radius: 14px !important;
   box-shadow: 0 5px 14px rgba(37, 48, 23, .16);
@@ -80,27 +80,27 @@
 :root body .achievement-state { margin: 0 0 20px; color: #666d60; font-size: .9rem; line-height: 1.6; }
 :root body .achievement-level { display: flex; gap: 24px; align-items: center; padding: 28px; border: 1px solid #313b29; border-radius: 18px; color: #fff; background: radial-gradient(ellipse at 0 0, #364128, #182017 70%); }
 :root body .achievement-level.is-compact { gap: 16px; padding: 20px; }
-:root body .achievement-level-medallion { display: grid; flex: 0 0 84px; width: 84px; height: 96px; place-content: center; position: relative; color: #d6ff35; background: #d6ff3512; border: 1px solid #d6ff3566; border-radius: 24px 24px 34px 34px; }
+:root body .achievement-level-medallion { display: grid; flex: 0 0 84px; width: 84px; height: 96px; place-content: center; position: relative; color: #ffd400; background: #ffd40012; border: 1px solid #ffd40066; border-radius: 24px 24px 34px 34px; }
 :root body .achievement-level-medallion svg { width: 38px; height: 38px; }
 :root body .achievement-level-medallion b { margin-top: 3px; text-align: center; font-size: 1.1rem; line-height: 1; }
 :root body .is-compact .achievement-level-medallion { flex-basis: 62px; width: 62px; height: 76px; border-radius: 18px 18px 26px 26px; }
 :root body .is-compact .achievement-level-medallion svg { width: 29px; height: 29px; }
 :root body .achievement-level-copy { flex: 1; min-width: 0; }
-:root body .achievement-eyebrow { display: block; margin: 0 0 6px; color: #d6ff35; font-size: .66rem; font-weight: 850; letter-spacing: .12em; text-transform: uppercase; }
+:root body .achievement-eyebrow { display: block; margin: 0 0 6px; color: #ffd400; font-size: .66rem; font-weight: 850; letter-spacing: .12em; text-transform: uppercase; }
 :root body .achievement-level-copy h3,
 :root body .achievement-level-copy h4 { margin: 0 0 14px; color: #fff; font-size: clamp(1.4rem, 3.6vw, 2rem); font-weight: 850; line-height: 1.15; letter-spacing: -.025em; text-transform: none; }
 :root body .is-compact .achievement-level-copy h4 { font-size: 1.3rem; margin-bottom: 10px; }
 :root body .achievement-xp-label { display: flex; justify-content: space-between; gap: 6px 16px; flex-wrap: wrap; margin-bottom: 9px; font-size: .74rem; line-height: 1.4; }
 :root body .achievement-xp-label strong { color: #f6ffdd; font-weight: 750; font-variant-numeric: tabular-nums; }
 :root body .achievement-xp-label span { color: #b9c4ac; }
-:root body .achievement-progress { display: block; width: 100%; height: 7px; margin: 0; overflow: hidden; appearance: none; border: 0; border-radius: 9px; background: #e4e8df; color: #718a18; }
+:root body .achievement-progress { display: block; width: 100%; height: 7px; margin: 0; overflow: hidden; appearance: none; border: 0; border-radius: 9px; background: #e4e8df; color: #a47700; }
 :root body .achievement-progress::-webkit-progress-bar { border-radius: 9px; background: #e4e8df; }
-:root body .achievement-progress::-webkit-progress-value { border-radius: 9px; background: #718a18; }
-:root body .achievement-progress::-moz-progress-bar { border-radius: 9px; background: #718a18; }
-:root body .achievement-level .achievement-progress { background: #4b5542; color: #d6ff35; }
+:root body .achievement-progress::-webkit-progress-value { border-radius: 9px; background: #a47700; }
+:root body .achievement-progress::-moz-progress-bar { border-radius: 9px; background: #a47700; }
+:root body .achievement-level .achievement-progress { background: #4b5542; color: #ffd400; }
 :root body .achievement-level .achievement-progress::-webkit-progress-bar { background: #4b5542; }
-:root body .achievement-level .achievement-progress::-webkit-progress-value { background: #d6ff35; }
-:root body .achievement-level .achievement-progress::-moz-progress-bar { background: #d6ff35; }
+:root body .achievement-level .achievement-progress::-webkit-progress-value { background: #ffd400; }
+:root body .achievement-level .achievement-progress::-moz-progress-bar { background: #ffd400; }
 :root body .achievement-home-next { display: flex; align-items: center; gap: 12px; padding-top: 18px; min-width: 0; }
 :root body .achievement-mini-icon { display: grid; width: 40px; height: 40px; flex: 0 0 40px; place-items: center; border-radius: 12px; background: #eff4df; color: #536620; }
 :root body .achievement-mini-icon svg { width: 23px; height: 23px; }
@@ -115,7 +115,7 @@
 :root body .achievement-how p { margin: 0 0 12px; font-size: .8rem; }
 :root body .achievement-filters { display: flex; flex-wrap: wrap; gap: 7px; margin: 0 0 18px; }
 :root body .achievement-filters button { min-height: 44px; padding: 9px 14px; border: 1px solid #dce0d6; border-radius: 99px; background: #fff; color: #5c6651; font-family: inherit; font-size: .76rem; font-weight: 750; cursor: pointer; }
-:root body .achievement-filters button[aria-pressed="true"] { background: #d6ff35; border-color: #d6ff35; color: #202719; }
+:root body .achievement-filters button[aria-pressed="true"] { background: #ffd400; border-color: #ffd400; color: #202719; }
 :root body .client-achievements :is(.achievement-filters button, .achievement-link, .achievement-retry) { width: auto !important; inline-size: auto !important; }
 :root body .client-achievements .achievement-filters button { border-radius: 99px !important; }
 :root body .achievement-badge-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(190px, 100%), 1fr)); gap: 14px; margin: 0; padding: 0; list-style: none; }
@@ -144,7 +144,7 @@
 :root body .achievement-badge-target { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 9px; font-size: .62rem; color: #717967; }
 :root body .achievement-badge-target span { display: flex; align-items: center; gap: 5px; }
 :root body .achievement-badge-target strong { font-weight: 700; white-space: nowrap; }
-:root body .achievement-celebration { position: relative; overflow: hidden; padding: 20px; margin: 0 0 14px; border: 1px solid #bfd862; border-radius: 16px; background: #f3fbdc; }
+:root body .achievement-celebration { position: relative; overflow: hidden; padding: 20px; margin: 0 0 14px; border: 1px solid #f6d66d; border-radius: 16px; background: #f3fbdc; }
 :root body .achievement-celebration[hidden] { display: none !important; }
 :root body .achievement-celebration .achievement-eyebrow { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 6px; color: #4c621b; }
 :root body .achievement-celebration h3 { position: relative; margin: 5px 0 16px; color: #263a11; font-size: 1.2rem; font-weight: 850; letter-spacing: -.025em; line-height: 1.3; text-transform: none; }
@@ -153,7 +153,7 @@
 :root body .achievement-celebration li strong,
 :root body .achievement-celebration li div > span { display: block; color: #30471e; font-size: .85rem; line-height: 1.4; }
 :root body .achievement-celebration li div > span { margin-top: 2px; color: #687754; font-size: .73rem; }
-:root body .achievement-celebration .achievement-mini-icon { background: #d6ff35; color: #354819; }
+:root body .achievement-celebration .achievement-mini-icon { background: #ffd400; color: #354819; }
 :root body .achievement-celebration .achievement-medal-preview { background: transparent; }
 :root body .achievement-celebration-confetti { position: absolute; inset: 0; pointer-events: none; }
 :root body .achievement-celebration-confetti i { position: absolute; left: calc(var(--piece) * 10%); top: -12px; width: 5px; height: 9px; border-radius: 1px; background: #99ae3d; opacity: 0; animation: achievement-confetti 1.6s ease-out calc(var(--piece) * 45ms) both; }
@@ -161,7 +161,7 @@
 :root body .achievement-celebration-confetti i:nth-child(3n + 1) { background: #8ab0a6; }
 @keyframes achievement-confetti { 10% { opacity: .7; } 100% { transform: translateY(190px) rotate(220deg); opacity: 0; } }
 :root body .client-achievements button:focus-visible,
-:root body .achievement-how summary:focus-visible { outline: 3px solid #718a18; outline-offset: 3px; }
+:root body .achievement-how summary:focus-visible { outline: 3px solid #a47700; outline-offset: 3px; }
 @media (max-width: 460px) {
   :root body .achievement-level { gap: 14px; padding: 18px; }
   :root body .achievement-level-medallion { flex-basis: 58px; width: 58px; height: 76px; border-radius: 18px 18px 24px 24px; }

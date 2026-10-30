@@ -450,7 +450,7 @@
 
 .dashboard-page :is(.client-workout-panel-custom, .client-workout-panel-assigned) .custom-workout-group-name-row input:focus {
   border-color: #111411;
-  outline: 3px solid var(--lime, #caff2c);
+  outline: 3px solid var(--lime, #ffd400);
   outline-offset: 1px;
 }
 
@@ -474,7 +474,7 @@
   padding: 6px 10px;
   align-items: center;
   border-radius: 8px;
-  background: var(--lime, #caff2c);
+  background: var(--lime, #ffd400);
   color: #111411;
   font-size: 13px;
   font-weight: 900;
@@ -591,7 +591,7 @@
 }
 
 .dashboard-page .client-workout-panel-custom .custom-workout-exercise-control [data-pick-custom-exercise] {
-  background: var(--lime, #d7ff3f);
+  background: var(--lime, #ffd400);
 }
 
 .dashboard-page .client-workout-panel-custom .custom-workout-exercise-control button:disabled {
@@ -622,7 +622,7 @@
 .dashboard-page .client-workout-panel-custom .custom-workout-exercise-control button:focus-visible,
 .dashboard-page .client-workout-panel-custom .custom-workout-card:focus-visible,
 .dashboard-page .custom-workout-exercise-dialog :is(button, input):focus-visible {
-  outline: 3px solid var(--blue, #2878ff);
+  outline: 3px solid var(--blue, #ffd400);
   outline-offset: 3px;
 }
 
@@ -888,13 +888,13 @@
 }
 
 .dashboard-page .custom-workout-exercise-dialog .custom-workout-exercise-options button.is-recommended {
-  background: var(--lime, #d7ff3f);
+  background: var(--lime, #ffd400);
 }
 
 @media (hover: hover) {
   .dashboard-page .client-workout-panel-custom .custom-workout-exercise-control button:not(:disabled):hover,
   .dashboard-page .custom-workout-exercise-options button:not(:disabled):hover {
-    background: var(--lime, #d7ff3f);
+    background: var(--lime, #ffd400);
   }
 }
 
@@ -927,7 +927,7 @@
 
   .dashboard-page .workout-group-progress-heading small {
     padding-right: 120px;
-    color: #287800;
+    color: #8a6400;
     font-size: 14px;
     font-weight: 850;
     letter-spacing: .09em;
@@ -980,12 +980,12 @@
   }
 
   .dashboard-page .workout-group-sequence-item.is-done {
-    border-color: #4fd072;
+    border-color: #c39a23;
     color: #111411;
   }
 
   .dashboard-page .workout-group-sequence-item.is-next {
-    border-color: #caff31;
+    border-color: #ffd400;
     color: #111411;
   }
 
@@ -1069,7 +1069,7 @@
   }
 
   .dashboard-page .custom-workout-carousel[data-carousel-enabled="true"] .custom-workout-list:focus-visible {
-    outline: 3px solid var(--lime, #caff2c);
+    outline: 3px solid var(--lime, #ffd400);
     outline-offset: 3px;
   }
 
@@ -1229,8 +1229,8 @@
   }
 
   .dashboard-page .custom-workout-carousel-arrow:not(:disabled):active {
-    border-color: var(--lime, #caff2c);
-    color: var(--lime, #caff2c);
+    border-color: var(--lime, #ffd400);
+    color: var(--lime, #ffd400);
   }
 
   .dashboard-page .custom-workout-carousel-dots {
@@ -1271,8 +1271,8 @@
   }
 
   .dashboard-page .custom-workout-carousel-dot.is-active::after {
-    border-color: var(--lime, #caff2c);
-    background: var(--lime, #caff2c);
+    border-color: var(--lime, #ffd400);
+    background: var(--lime, #ffd400);
   }
 
   .dashboard-page .custom-workout-carousel[data-carousel-enabled="true"] .custom-workout-carousel-cue {
@@ -1305,7 +1305,7 @@
     padding: 13px 14px;
     border: 2px solid #111411;
     border-radius: 8px;
-    background: #caff31;
+    background: #ffd400;
     box-shadow: 0 5px 0 #111411;
     color: #111411;
     font: inherit;
@@ -1475,9 +1475,9 @@
   }
 
   .dashboard-page :is(.client-workout-panel-custom, .client-workout-panel-assigned) .custom-workout-carousel[data-custom-workout-deck="true"] .custom-workout-card.is-exercise-complete {
-    border-color: #21a637 !important;
-    background: #f5faf4 !important;
-    box-shadow: 0 0 0 2px rgba(33, 166, 55, .14), 0 16px 30px rgba(17, 20, 17, .14) !important;
+    border-color: #b88a00 !important;
+    background: #fff9e9 !important;
+    box-shadow: 0 0 0 2px rgba(184, 138, 0, .14), 0 16px 30px rgba(17, 20, 17, .14) !important;
   }
 
   .dashboard-page :is(.client-workout-panel-custom, .client-workout-panel-assigned) .custom-workout-carousel[data-custom-workout-deck="true"] .custom-workout-card:not(.is-carousel-active) {
@@ -1495,7 +1495,7 @@
 
   .dashboard-page :is(.client-workout-panel-custom, .client-workout-panel-assigned) .custom-workout-carousel[data-group-workout-deck="true"] {
     border-color: rgba(40, 120, 255, .28);
-    border-left: 4px solid var(--blue, #2878ff);
+    border-left: 4px solid var(--blue, #ffd400);
     background: #f5f8ff;
   }
 
@@ -1527,8 +1527,8 @@
     justify-content: space-between;
     gap: 12px;
     overflow: hidden;
-    border: 2px dashed #9dbd24;
-    border-left: 7px solid var(--lime, #caff2c);
+    border: 2px dashed #c39a23;
+    border-left: 7px solid var(--lime, #ffd400);
     border-radius: 20px;
     background: #efffc7;
     box-shadow: 0 14px 30px rgba(17, 20, 17, .15);
@@ -1549,7 +1549,7 @@
   }
 
   .dashboard-page .custom-workout-group-next-card:focus-visible {
-    outline: 3px solid var(--blue, #2878ff);
+    outline: 3px solid var(--blue, #ffd400);
     outline-offset: -5px;
   }
 
@@ -1569,7 +1569,7 @@
   }
 
   .dashboard-page .custom-workout-group-next-card small {
-    color: #287800;
+    color: #8a6400;
     font-size: 13px;
     font-weight: 900;
     letter-spacing: .04em;
@@ -1585,27 +1585,27 @@
   }
 
   .dashboard-page :is(.client-workout-panel-custom, .client-workout-panel-assigned) .custom-workout-carousel[data-group-workout-deck="true"]:is(.is-superset-complete, .is-circuit-complete) {
-    border-color: #21a637;
-    border-left-color: #21a637;
-    background: #f5faf4;
-    box-shadow: 0 0 0 2px rgba(33, 166, 55, .14);
+    border-color: #b88a00;
+    border-left-color: #b88a00;
+    background: #fff9e9;
+    box-shadow: 0 0 0 2px rgba(184, 138, 0, .14);
   }
 
   .dashboard-page :is(.client-workout-panel-custom, .client-workout-panel-assigned) .custom-workout-carousel[data-group-workout-deck="true"]:is(.is-superset-complete, .is-circuit-complete) .custom-workout-deck-layer {
-    border-color: #79c98c;
-    background: #dff5df;
+    border-color: #ddb634;
+    background: #fff2cc;
   }
 
   .dashboard-page :is(.client-workout-panel-custom, .client-workout-panel-assigned) .custom-workout-carousel[data-group-workout-deck="true"]:is(.is-superset-complete, .is-circuit-complete) .custom-workout-card.is-carousel-active {
-    border-color: #21a637 !important;
-    background: #f5faf4 !important;
-    box-shadow: 0 0 0 2px rgba(33, 166, 55, .14), 0 16px 30px rgba(17, 20, 17, .14) !important;
+    border-color: #b88a00 !important;
+    background: #fff9e9 !important;
+    box-shadow: 0 0 0 2px rgba(184, 138, 0, .14), 0 16px 30px rgba(17, 20, 17, .14) !important;
   }
 
   .dashboard-page :is(.client-workout-panel-custom, .client-workout-panel-assigned) .custom-workout-carousel[data-group-workout-deck="true"] .custom-workout-group-next-card.is-complete {
-    border-color: #21a637;
-    border-left-color: #21a637;
-    background: #dff5df;
+    border-color: #b88a00;
+    border-left-color: #b88a00;
+    background: #fff2cc;
   }
 
   .dashboard-page .client-workout-panel-custom .custom-workout-carousel[data-custom-workout-deck="true"] .custom-workout-new-exercise-card {
@@ -1622,8 +1622,8 @@
     justify-content: space-between;
     gap: 12px;
     overflow: hidden;
-    border: 2px dashed #9dbd24;
-    border-left: 7px solid var(--lime, #caff2c);
+    border: 2px dashed #c39a23;
+    border-left: 7px solid var(--lime, #ffd400);
     border-radius: 20px;
     background: #efffc7;
     box-shadow: 0 14px 30px rgba(17, 20, 17, .15);
@@ -1729,8 +1729,8 @@
   --grouped-line: #d7d9d2;
   --grouped-paper: #fff;
   --grouped-cream: #f8f8f3;
-  --grouped-lime: var(--lime, #d7ff3f);
-  --grouped-blue: var(--blue, #2878ff);
+  --grouped-lime: var(--lime, #ffd400);
+  --grouped-blue: var(--blue, #ffd400);
   --grouped-gold: #d5a239;
   --grouped-focus: #ffd400;
   width: 100%;
@@ -1879,7 +1879,7 @@
   flex: 0 0 auto;
   min-width: 0;
   max-width: 100%;
-  color: #497000;
+  color: #a47700;
   font-size: .75rem;
   font-weight: 900;
   letter-spacing: .04em;
@@ -1986,7 +1986,7 @@
 }
 
 .dashboard-page .client-workout-panel-custom .custom-workout-grouped-exercise-key-item [data-open-custom-exercise]:focus-visible {
-  outline: 3px solid var(--blue, #2878ff);
+  outline: 3px solid var(--blue, #ffd400);
   outline-offset: 2px;
 }
 
@@ -2280,9 +2280,9 @@
 }
 
 .dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-code {
-  border-color: #9dbd24;
-  background: #fbffe9;
-  color: #486000;
+  border-color: #c39a23;
+  background: #fff9e6;
+  color: #725500;
   font-size: .86rem;
 }
 
@@ -2304,13 +2304,13 @@
 }
 
 .dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-row:is(.is-complete, .is-logged) {
-  background: #f2faef;
+  background: #fff8e1;
 }
 
 .dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-row:is(.is-complete, .is-logged) .custom-workout-grouped-code {
-  border-color: #21a637;
-  background: #e6f8e4;
-  color: #126f24;
+  border-color: #b88a00;
+  background: #fff2cc;
+  color: #987000;
 }
 
 .dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-round-action {
@@ -2403,9 +2403,9 @@
 
 .dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-log-round:is(.is-logged, [aria-pressed="true"]),
 .dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-log-round[data-custom-grouped-log-warmup][aria-pressed="true"]:disabled {
-  border-color: #16852a;
-  background: #e6f8e4;
-  color: #126f24;
+  border-color: #b88a00;
+  background: #fff2cc;
+  color: #987000;
 }
 
 .dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-log-round:disabled,
@@ -2594,7 +2594,7 @@
 .dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-status {
   min-width: 0;
   padding: 0 14px 14px;
-  color: #126f24;
+  color: #987000;
   font-size: .78rem;
   font-weight: 850;
   line-height: 1.35;
@@ -2668,7 +2668,7 @@
 
 .dashboard-page [data-custom-workout-grouped="true"] [data-custom-grouped-notes-state] {
   margin-left: auto;
-  color: #126f24;
+  color: #987000;
   font-size: .7rem;
   font-weight: 600;
 }
@@ -2803,7 +2803,7 @@ body.dashboard-page.custom-workout-grouped-finish-open {
 }
 
 .dashboard-page .custom-workout-grouped-finish-heading small {
-  color: #497000;
+  color: #a47700;
   font-size: .7rem;
   font-weight: 900;
   letter-spacing: .06em;
@@ -2854,7 +2854,7 @@ body.dashboard-page.custom-workout-grouped-finish-open {
 }
 
 .dashboard-page .custom-workout-grouped-finish-choices button:last-child {
-  background: var(--lime, #d7ff3f);
+  background: var(--lime, #ffd400);
 }
 
 /* The grouped exercise editor is a compact, collapsible card above the logger. */

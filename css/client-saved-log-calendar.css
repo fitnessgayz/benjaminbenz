@@ -4,7 +4,7 @@ body.client-dashboard-page {
   --saved-log-line: #464950;
   --saved-log-text: #f6f7f8;
   --saved-log-muted: #b7bac1;
-  --saved-log-blue: #68b7f5;
+  --saved-log-blue: #ffd400;
   --saved-log-blue-ink: #0a1c2b;
 }
 
@@ -13,7 +13,7 @@ body.client-dashboard-page {
   --saved-log-line: #c9d3df;
   --saved-log-text: #15253b;
   --saved-log-muted: #526176;
-  --saved-log-blue: #116bc6;
+  --saved-log-blue: #936800;
   --saved-log-blue-ink: #fff;
 }
 
