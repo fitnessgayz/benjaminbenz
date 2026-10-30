@@ -33,7 +33,7 @@ jobs:
       - name: Prepare static site
         run: |
           mkdir _site
-          cp -R CNAME .nojekyll *.html *.png *.ico site.webmanifest client.webmanifest coach.webmanifest timer-notifications-sw.js css images js _site/
+          cp -R CNAME .nojekyll .well-known *.html *.png *.ico site.webmanifest client.webmanifest coach.webmanifest timer-notifications-sw.js css images js _site/
           mkdir -p _site/assets/mockups/fascia
           cp -R assets/mockups/fascia/client-web _site/assets/mockups/fascia/
           cp -R assets/mascots _site/assets/

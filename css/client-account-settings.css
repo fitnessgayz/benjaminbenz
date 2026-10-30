@@ -130,6 +130,22 @@
   border-top: 1px solid rgba(28, 34, 31, 0.1);
 }
 
+.client-passkey-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+}
+
+.client-passkey-row + .client-passkey-row {
+  border-top: 1px solid rgba(128, 142, 136, 0.2);
+}
+
+.client-passkey-row button {
+  min-height: 40px;
+}
+
 .client-account-secondary-actions .password-reset-button,
 .client-account-secondary-actions .client-account-signout {
   width: 100%;

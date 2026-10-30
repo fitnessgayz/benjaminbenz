@@ -8,6 +8,7 @@ const isConfigured = Boolean(
 const supabaseClient = isConfigured && window.supabase
   ? window.supabase.createClient(config.url, config.anonKey, {
       auth: {
+        experimental: { passkey: true },
         storage: window.FWB_AUTH_SESSION.storage,
         persistSession: true,
         autoRefreshToken: true,
@@ -20339,12 +20340,43 @@ async function signInToPortal(form) {
 async function handleLogin() {
   const form = document.getElementById("client-login-form");
   const status = document.getElementById("login-status");
+  const passkeyButton = document.getElementById("client-passkey-sign-in");
 
   if (!form) {
     return;
   }
 
   initializeRememberMe(form);
+  if (passkeyButton && window.isSecureContext && window.PublicKeyCredential && supabaseClient?.auth?.signInWithPasskey) {
+    passkeyButton.hidden = false;
+    passkeyButton.addEventListener("click", async () => {
+      if (portalLoginSubmitting) return;
+      portalLoginSubmitting = true;
+      passkeyButton.disabled = true;
+      if (status) status.textContent = "Waiting for your device to confirm your passkey…";
+      try {
+        await supabaseClient.auth.initialize();
+        window.FWB_AUTH_SESSION.setRememberMe(Boolean(form.elements.remember_me?.checked));
+        const { data, error } = await supabaseClient.auth.signInWithPasskey();
+        if (error) throw error;
+        if (!isCoachPortalEmail(data.user?.email)) {
+          try {
+            await withTimeout(supabaseClient.rpc("record_client_login_notification"), "Login alert timed out.", 3000);
+          } catch {
+            // A notification outage must never stop a client from signing in.
+          }
+        }
+        window.location.href = portalLoginDestination(data.user);
+      } catch (error) {
+        if (status) status.textContent = error?.code === "passkey_disabled"
+          ? "Passkey sign-in is not available yet. Use your password for now."
+          : "Passkey sign-in did not finish. You can try again or use your password.";
+      } finally {
+        portalLoginSubmitting = false;
+        passkeyButton.disabled = false;
+      }
+    });
+  }
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
 
@@ -20368,7 +20400,7 @@ async function handleLogin() {
         return;
       }
       if (!isCoachPortalEmail(data.user?.email)) {
-        // Only a deliberate password sign-in records a login; restored sessions do not.
+        // Deliberate sign-ins record a login; restored sessions do not.
         try {
           await withTimeout(supabaseClient.rpc("record_client_login_notification"), "Login alert timed out.", 3000);
         } catch {

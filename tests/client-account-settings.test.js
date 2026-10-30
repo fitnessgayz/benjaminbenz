@@ -26,6 +26,9 @@ class FakeControl {
   addEventListener(name, handler) { this.listeners.set(name, handler); }
   removeEventListener(name) { this.listeners.delete(name); }
   setAttribute(name, value) { this.attributes.set(name, value); }
+  replaceChildren() { this.children = []; }
+  append(...children) { this.children = [...(this.children || []), ...children]; }
+  get childElementCount() { return this.children?.length || 0; }
 }
 
 function fixture() {
@@ -99,6 +102,56 @@ test("controller rejects previews and mismatched passwords without an auth reque
   await h.nodes["[data-client-password-form]"].listeners.get("submit")({ preventDefault() {} });
   assert.equal(h.calls.length, 0);
   assert.match(h.nodes["[data-client-password-status]"].textContent, /do not match/);
+});
+
+test("clients can add and remove a passkey without changing their password", async () => {
+  const previousDocument = global.document;
+  const previousSecureContext = global.isSecureContext;
+  const previousCredential = global.PublicKeyCredential;
+  global.document = { createElement: () => new FakeControl() };
+  global.isSecureContext = true;
+  global.PublicKeyCredential = function PublicKeyCredential() {};
+  try {
+    const h = fixture();
+    h.controller.destroy();
+    for (const selector of ["[data-client-passkeys]", "[data-client-passkey-add]", "[data-client-passkey-list]", "[data-client-passkey-status]"]) {
+      h.nodes[selector] = new FakeControl();
+    }
+    let passkeys = [];
+    const calls = [];
+    const auth = {
+      updateUser: async () => ({ error: null }),
+      registerPasskey: async () => {
+        calls.push("add");
+        passkeys = [{ id: "key-1", friendly_name: "iCloud Keychain" }];
+        return { data: passkeys[0], error: null };
+      },
+      passkey: {
+        list: async () => ({ data: passkeys, error: null }),
+        delete: async ({ passkeyId }) => {
+          calls.push(passkeyId);
+          passkeys = [];
+          return { error: null };
+        }
+      }
+    };
+    const root = { hidden: true, querySelector: (selector) => h.nodes[selector] || null };
+    const controller = createController({ root, supabaseClient: { auth }, user: { id: "user-1", email: "client@example.com" } });
+    controller.initialize();
+    assert.equal(h.nodes["[data-client-passkeys]"].hidden, false);
+    await h.nodes["[data-client-passkey-add]"].listeners.get("click")();
+    assert.deepEqual(calls, ["add"]);
+    const row = h.nodes["[data-client-passkey-list]"].children[0];
+    assert.equal(row.children[0].textContent, "iCloud Keychain");
+    await row.children[1].listeners.get("click")();
+    assert.deepEqual(calls, ["add", "key-1"]);
+    assert.equal(h.nodes["[data-client-passkey-list]"].textContent, "No passkeys added yet.");
+    controller.destroy();
+  } finally {
+    global.document = previousDocument;
+    global.isSecureContext = previousSecureContext;
+    global.PublicKeyCredential = previousCredential;
+  }
 });
 
 test("portal initializes and destroys account settings with the signed-in user", () => {
