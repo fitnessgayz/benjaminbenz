@@ -2,6 +2,14 @@
 site_url = "https://benjaminbenz.com"
 additional_redirect_urls = ["https://benjaminbenz.com/client-invite.html"]
 
+[auth.passkey]
+enabled = true
+
+[auth.webauthn]
+rp_display_name = "FWB Training"
+rp_id = "benjaminbenz.com"
+rp_origins = ["https://benjaminbenz.com", "https://www.benjaminbenz.com"]
+
 [auth.oauth_server]
 enabled = true
 authorization_url_path = "/oauth-consent.html"

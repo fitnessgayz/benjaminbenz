@@ -6,11 +6,12 @@ const test = require("node:test");
 const root = path.resolve(__dirname, "..");
 const read = (file) => fs.readFileSync(path.join(root, file), "utf8");
 
-test("only explicit client password sign-ins request a coach alert", () => {
+test("explicit client password and passkey sign-ins request a coach alert", () => {
   const portal = read("js/client-portal.js");
   const login = portal.slice(portal.indexOf("async function handleLogin()"), portal.indexOf("async function handleCoachPortalLogin()"));
   const restore = portal.slice(portal.indexOf("async function restorePortalLogin()"), portal.indexOf("async function handleLogin()"));
   assert.match(login, /await signInToPortal\(form\)/);
+  assert.match(login, /await supabaseClient\.auth\.signInWithPasskey\(\)/);
   assert.match(login, /!isCoachPortalEmail\(data\.user\?\.email\)/);
   assert.match(login, /supabaseClient\.rpc\("record_client_login_notification"\)/);
   assert.ok(login.indexOf('rpc("record_client_login_notification")') < login.indexOf("window.location.href = portalLoginDestination"));
