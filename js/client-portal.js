@@ -6069,10 +6069,6 @@ function requireWorkoutGymLocation(panel, { focus = true, near = null } = {}) {
   if (focus) {
     const target = near?.closest?.("[data-custom-workout-grouped='true']")?.querySelector("[data-custom-grouped-gym]")
       || panel.querySelector("[data-custom-grouped-gym]") || input;
-    if (target === input) {
-      input.closest(".custom-workout-launcher-more")?.setAttribute("open", "");
-      input.closest(".custom-workout-launcher-menu")?.setAttribute("open", "");
-    }
     target.scrollIntoView({ block: "center" });
     target.focus({ preventScroll: true });
   }
@@ -12968,13 +12964,13 @@ function customWorkoutPanelMarkup(index) {
                   </span>
                   <small>This date applies to every exercise in this custom workout.</small>
                 </label>
-                ${workoutGymPickerMarkup(activeDraft?.gymName || storedWorkoutGymLocation(workoutStorageTitle), index)}
               </div>
             </details>
           </div>
         </details>
       </div>
       <p class="custom-workout-copy-status" data-custom-workout-copy-status role="status" aria-live="polite" ${copyStatusMessage ? "" : "hidden"}>${escapeHtml(copyStatusMessage)}</p>
+      <div class="custom-workout-launcher-gym">${workoutGymPickerMarkup(activeDraft?.gymName || storedWorkoutGymLocation(workoutStorageTitle), index)}</div>
       <div class="custom-workout-builder">
         <div class="custom-workout-launcher-exercise-card">
           <div class="custom-workout-launcher-exercise-heading">

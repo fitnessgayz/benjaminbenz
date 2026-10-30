@@ -95,6 +95,42 @@ body.client-dashboard-page .client-workout-panel-custom .custom-workout-launcher
   padding: 6px;
 }
 
+body.client-dashboard-page .client-workout-panel-custom .custom-workout-launcher-gym .workout-gym-picker {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  margin: 0 0 6px;
+  padding: 12px;
+  border-color: #2b3d41;
+  background: #142124;
+}
+
+body.client-dashboard-page .client-workout-panel-custom .custom-workout-launcher-gym .workout-gym-picker label,
+body.client-dashboard-page .client-workout-panel-custom .custom-workout-launcher-gym .workout-gym-picker small,
+body.client-dashboard-page .client-workout-panel-custom .custom-workout-launcher-gym .workout-gym-error {
+  grid-column: 1 / -1;
+}
+
+body.client-dashboard-page .client-workout-panel-custom .custom-workout-launcher-gym .workout-gym-picker label {
+  color: #68b9ff;
+}
+
+body.client-dashboard-page .client-workout-panel-custom .custom-workout-launcher-gym .workout-gym-picker input {
+  min-width: 0;
+}
+
+body.client-dashboard-page .client-workout-panel-custom .custom-workout-launcher-gym .workout-gym-find {
+  min-height: 44px;
+  padding: 8px 10px;
+  white-space: nowrap;
+}
+
+@media (max-width: 380px) {
+  body.client-dashboard-page .client-workout-panel-custom .custom-workout-launcher-gym .workout-gym-picker {
+    grid-template-columns: 1fr;
+  }
+}
+
 body.client-dashboard-page .client-workout-panel-custom .custom-workout-builder {
   gap: 16px;
 }

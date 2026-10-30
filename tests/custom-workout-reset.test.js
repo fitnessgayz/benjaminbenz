@@ -24,7 +24,7 @@ test("renders a compact reset action only inside the Custom Workout builder", ()
   assert.match(customPanel, /data-custom-workout-reset-status role="status" aria-live="polite"/);
   assert.doesNotMatch(assignedPanel, /data-reset-custom-workout/);
   assert.match(customPanel, /class="custom-workout-launcher-menu"/);
-  assert.match(dashboard, /client-custom-workout-launcher\.css\?v=2/);
+  assert.match(dashboard, /client-custom-workout-launcher\.css\?v=3/);
 });
 
 test("uses the exercise-first launcher without a separate warm-up section", () => {
@@ -38,7 +38,16 @@ test("uses the exercise-first launcher without a separate warm-up section", () =
   assert.match(customPanel, /Choose an exercise to get started/);
   assert.doesNotMatch(customPanel, /warmupLogFields\(/);
   assert.match(exerciseControls, /count > 0 \? "Add another exercise" : "Add first exercise"/);
-  assert.match(dashboard, /web-parity=9/);
+  assert.match(dashboard, /web-parity=10/);
+});
+
+test("keeps gym selection visible on the exercise-first starter", () => {
+  const customPanel = sourceForFunction("customWorkoutPanelMarkup");
+  const gym = sourceForFunction("requireWorkoutGymLocation");
+
+  assert.match(customPanel, /<div class="custom-workout-launcher-gym">\$\{workoutGymPickerMarkup\(/);
+  assert.ok(customPanel.indexOf('class="custom-workout-launcher-gym"') < customPanel.indexOf('class="custom-workout-builder"'));
+  assert.doesNotMatch(gym, /input\.closest\("\.custom-workout-launcher-more"\)/);
 });
 
 test("confirms destructive reset and creates a separate blank workout session", () => {
