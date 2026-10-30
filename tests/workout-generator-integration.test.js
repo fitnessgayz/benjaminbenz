@@ -497,6 +497,7 @@ test("logging a generated set uses its prescribed rest and mixed groups use the 
       requireWorkoutGymLocation: () => true,
       customWorkoutGroupedStatus: () => ({}),
       customWorkoutGroupedLogElements: () => logs,
+      workoutGroupReadyForRest: () => true,
       customWorkoutGroupedRows: (log) => log.rows,
       customWorkoutGroupedTimerConflict: () => false,
       validateCustomWorkoutGroupedExerciseNames: () => true,
