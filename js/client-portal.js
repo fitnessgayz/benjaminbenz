@@ -12946,6 +12946,8 @@ function customWorkoutPanelMarkup(index) {
       <div class="panel-heading custom-workout-launcher-heading">
         <div>
           <h2 id="custom-workout-panel-title" tabindex="-1">${escapeHtml(customWorkoutTitle)}</h2>
+          <button type="button" class="custom-workout-copy-past-link" data-client-workout-copy-history
+            aria-label="Copy past workout from Logs">Copy past workout <span aria-hidden="true">→</span></button>
         </div>
         <details class="custom-workout-launcher-menu">
           <summary aria-label="Custom workout options">⋮</summary>

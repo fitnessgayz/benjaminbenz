@@ -58,6 +58,10 @@
   display: none !important;
 }
 
+:root body.client-dashboard-page #client-workouts-panel > .client-workout-selection-summary:not([hidden]) {
+  margin-bottom: 12px;
+}
+
 :root body.client-dashboard-page .client-workout-selection-summary .client-workout-selection-arrow {
   width: 34px;
   height: 34px;
