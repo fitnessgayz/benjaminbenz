@@ -12740,7 +12740,7 @@ function syncCustomWorkoutExerciseControls(panel) {
   panel.classList.toggle("has-custom-exercises", count > 0);
   panel.querySelector("[data-custom-workout-launcher-add]")?.classList.toggle("has-exercises", count > 0);
   const launcherLabel = panel.querySelector("[data-custom-workout-launcher-add-label]");
-  if (launcherLabel) launcherLabel.textContent = count > 0 ? "Add another exercise" : "Add exercise";
+  if (launcherLabel) launcherLabel.textContent = count > 0 ? "Add another exercise" : "Add first exercise";
   const manage = panel.querySelector(".custom-workout-manage-exercises");
   if (manage) manage.hidden = count === 0;
   panel.querySelectorAll("[data-custom-exercise-count]").forEach((output) => { output.textContent = String(count); });
@@ -12947,7 +12947,7 @@ function customWorkoutPanelMarkup(index) {
           <h2 id="custom-workout-panel-title" tabindex="-1">${escapeHtml(customWorkoutTitle)}</h2>
         </div>
         <details class="custom-workout-launcher-menu">
-          <summary aria-label="Custom workout options">•••</summary>
+          <summary aria-label="Custom workout options">⋮</summary>
           <div class="custom-workout-launcher-menu-content">
             <button type="button" data-generate-workout>Generate today’s workout</button>
             <button type="button" data-reset-custom-workout>Reset workout</button>
@@ -12976,11 +12976,17 @@ function customWorkoutPanelMarkup(index) {
       </div>
       <p class="custom-workout-copy-status" data-custom-workout-copy-status role="status" aria-live="polite" ${copyStatusMessage ? "" : "hidden"}>${escapeHtml(copyStatusMessage)}</p>
       <div class="custom-workout-builder">
-        ${customWorkoutFormatPickerMarkup()}
-        <button type="button" class="custom-workout-launcher-add" data-custom-workout-launcher-add data-pick-custom-exercise>
-          <span class="custom-workout-launcher-add-icon" aria-hidden="true">＋</span>
-          <strong data-custom-workout-launcher-add-label>Add exercise</strong>
-        </button>
+        <div class="custom-workout-launcher-exercise-card">
+          <div class="custom-workout-launcher-exercise-heading">
+            <div><h3>Your exercises</h3><p>Build as you go.</p></div>
+            ${customWorkoutFormatPickerMarkup()}
+          </div>
+          <button type="button" class="custom-workout-launcher-add" data-custom-workout-launcher-add data-pick-custom-exercise>
+            <span class="custom-workout-launcher-add-icon" aria-hidden="true">＋</span>
+            <strong data-custom-workout-launcher-add-label>Add first exercise</strong>
+            <span class="custom-workout-launcher-add-help">Choose an exercise to get started<br />on your custom workout.</span>
+          </button>
+        </div>
         <div data-custom-workout-start-control ${format === "single" ? "" : "hidden"}>
           ${workoutStartControlMarkup(workoutStorageTitle)}
         </div>
