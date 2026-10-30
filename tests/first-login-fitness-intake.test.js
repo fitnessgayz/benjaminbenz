@@ -6,13 +6,13 @@ const test = require("node:test");
 const root = path.resolve(__dirname, "..");
 const read = (file) => fs.readFileSync(path.join(root, file), "utf8");
 
-test("workout plan help is paused without blocking the app tour or other prompts", () => {
+test("workout plan help stays paused and the tutorial is removed", () => {
   const html = read("client-dashboard.html");
   const portal = read("js/client-portal.js");
   assert.doesNotMatch(html, /id="workout-plan-dialog"|data-workout-plan-help-open/);
   assert.doesNotMatch(portal, /\s+maybeShowFirstLoginFitnessQuestionnaire\(\);/);
   assert.doesNotMatch(portal.match(/function maybeShowClientHomeCheckinPrompt\(\) \{[\s\S]*?\n\}/)?.[0] || "", /firstLoginFitnessQuestionnaireRequired\(\)/);
-  assert.match(html, /src="js\/client-web-tour\.js/);
+  assert.doesNotMatch(html, /client-web-tour|data-client-web-tour-open|App tour/);
 });
 
 test("membership confirmation and beta access are enforced at the server", () => {

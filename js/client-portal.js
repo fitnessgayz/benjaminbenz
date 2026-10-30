@@ -54,9 +54,7 @@ let savedWorkoutScrollY = null;
 let latestMonthlyProgressReport = null;
 let monthlyReportReturnTab = "progress";
 let monthlyReportReturnFocus = null;
-let clientExerciseProgressIndex = 0;
 let clientExerciseProgressSearch = "";
-let clientExerciseProgressDirection = 0;
 let activeWorkoutTabIndex = 0;
 let clientWorkoutPickerIsOpen = true;
 let activeWorkoutHistoryDeckIndex = 0;
@@ -197,7 +195,6 @@ const clientHomeCheckinPromptStoragePrefix = "fwb_daily_checkin_prompt_v2";
 const clientDailyPromptMemory = new Set();
 let clientDailyCheckinReady = false;
 let clientDailyCheckinSaving = false;
-const clientExerciseProgressPageSize = 10;
 const workoutElapsedTimerStorageKey = "fwb_workout_elapsed_timer_v1";
 const workoutElapsedTimerCompactStorageKey = "fwb_workout_elapsed_timer_compact_v1";
 const workoutElapsedTimerPositionStorageKey = "fwb_workout_elapsed_timer_position_v3";
@@ -3395,16 +3392,6 @@ function exerciseProgressRecords(logs = []) {
     .sort((left, right) => right.latestDate.localeCompare(left.latestDate));
 }
 
-function paginateClientExerciseProgress(records = [], pageSize = clientExerciseProgressPageSize) {
-  const safeRecords = Array.isArray(records) ? records : [];
-  const safePageSize = Math.max(1, Math.floor(Number(pageSize) || clientExerciseProgressPageSize));
-
-  return Array.from(
-    { length: Math.ceil(safeRecords.length / safePageSize) },
-    (_, pageIndex) => safeRecords.slice(pageIndex * safePageSize, (pageIndex + 1) * safePageSize)
-  );
-}
-
 function clientExerciseProgressCardMarkup(record) {
   const changePrefix = record.change > 0 ? "+" : "";
   const changeClass = record.change > 0 ? " is-positive" : record.change < 0 ? " is-negative" : "";
@@ -3446,167 +3433,30 @@ function clientExerciseProgressCardMarkup(record) {
 function renderClientExerciseProgress(logs = trainingLogs) {
   const container = document.getElementById("client-exercise-progress");
   const count = document.getElementById("client-exercise-progress-count");
-  const previous = document.querySelector("[data-client-exercise-progress-previous]");
-  const next = document.querySelector("[data-client-exercise-progress-next]");
+  if (!container) return;
 
-  if (!container) {
-    return;
-  }
-
-  const allRecords = exerciseProgressRecords(logs);
   const search = normalizeExerciseHistoryName(clientExerciseProgressSearch);
-  const records = allRecords.filter((record) => (
+  const records = exerciseProgressRecords(logs).filter((record) => (
     !search || normalizeExerciseHistoryName(`${record.code} ${record.name}`).includes(search)
   ));
-  const pages = paginateClientExerciseProgress(records);
-
-  if (records.length === 0) {
-    const emptyMessage = search
-      ? `No exercises match “${escapeHtml(clientExerciseProgressSearch)}.”`
-      : "Log a working set to see your exercise personal bests.";
-
-    container.innerHTML = `<p class="empty-state">${emptyMessage}</p>`;
-    if (count) {
-      count.textContent = search ? "No matches" : "No exercises yet";
-    }
-    if (previous) {
-      previous.disabled = true;
-    }
-    if (next) {
-      next.disabled = true;
-    }
-    return;
-  }
-
-  clientExerciseProgressIndex = ((clientExerciseProgressIndex % pages.length) + pages.length) % pages.length;
-  const pageRecords = pages[clientExerciseProgressIndex];
-  const pageStart = clientExerciseProgressIndex * clientExerciseProgressPageSize;
-  const directionClass = clientExerciseProgressDirection > 0
-    ? " is-forward"
-    : clientExerciseProgressDirection < 0
-      ? " is-backward"
-      : "";
-
-  container.innerHTML = `
-    <div class="progress-exercise-deck${directionClass}">
-      <section class="progress-exercise-page" aria-label="Exercise card ${clientExerciseProgressIndex + 1} of ${pages.length}">
-        ${pageRecords.map(clientExerciseProgressCardMarkup).join("")}
-      </section>
-    </div>
-  `;
-  clientExerciseProgressDirection = 0;
-  if (count) {
-    const pageEnd = Math.min(pageStart + pageRecords.length, records.length);
-    count.textContent = pages.length > 1
-      ? `${pageStart + 1}–${pageEnd} of ${records.length} exercises · Card ${clientExerciseProgressIndex + 1} of ${pages.length}`
-      : `${records.length} exercise${records.length === 1 ? "" : "s"}`;
-  }
-  if (previous) {
-    previous.disabled = pages.length < 2;
-  }
-  if (next) {
-    next.disabled = pages.length < 2;
-  }
+  const emptyMessage = search
+    ? `No exercises match “${clientExerciseProgressSearch}.”`
+    : "Log a working set to see your exercise personal bests.";
+  window.FWB_CLIENT_PERSONAL_BESTS_LIST.render({
+    container,
+    count,
+    records,
+    cardMarkup: clientExerciseProgressCardMarkup,
+    emptyMessage,
+    emptyCount: search ? "No matches" : "No exercises yet"
+  });
 }
 
-function moveClientExerciseProgress(step) {
-  const direction = Math.sign(Number(step) || 0);
-
-  if (!direction) {
-    return;
-  }
-
-  clientExerciseProgressDirection = direction;
-  clientExerciseProgressIndex += direction;
-  renderClientExerciseProgress(trainingLogs);
-}
-
-function handleClientExerciseProgressCarousel() {
-  let gesture = null;
-
+function handleClientExerciseProgressSearch() {
   document.addEventListener("input", (event) => {
-    if (event.target.id !== "client-exercise-progress-search") {
-      return;
-    }
-
+    if (event.target.id !== "client-exercise-progress-search") return;
     clientExerciseProgressSearch = event.target.value || "";
-    clientExerciseProgressIndex = 0;
-    clientExerciseProgressDirection = 0;
     renderClientExerciseProgress(trainingLogs);
-  });
-
-  document.addEventListener("click", (event) => {
-    if (event.target.closest("[data-client-exercise-progress-previous]")) {
-      moveClientExerciseProgress(-1);
-    } else if (event.target.closest("[data-client-exercise-progress-next]")) {
-      moveClientExerciseProgress(1);
-    }
-  });
-
-  document.addEventListener("keydown", (event) => {
-    if (!event.target.closest("[data-client-exercise-progress-carousel]") || !["ArrowLeft", "ArrowRight"].includes(event.key)) {
-      return;
-    }
-
-    event.preventDefault();
-    moveClientExerciseProgress(event.key === "ArrowRight" ? 1 : -1);
-  });
-
-  document.addEventListener("pointerdown", (event) => {
-    const carousel = event.target.closest("[data-client-exercise-progress-carousel]");
-
-    if (!carousel || event.target.closest("button, input, a")) {
-      gesture = null;
-      return;
-    }
-
-    gesture = {
-      deck: carousel.querySelector(".progress-exercise-deck"),
-      pointerId: event.pointerId,
-      startX: event.clientX,
-      startY: event.clientY,
-      axis: ""
-    };
-  });
-
-  document.addEventListener("pointermove", (event) => {
-    if (!gesture || event.pointerId !== gesture.pointerId) {
-      return;
-    }
-
-    const deltaX = event.clientX - gesture.startX;
-    const deltaY = event.clientY - gesture.startY;
-    const horizontalDistance = Math.abs(deltaX);
-    const verticalDistance = Math.abs(deltaY);
-
-    if (!gesture.axis && Math.max(horizontalDistance, verticalDistance) >= 8) {
-      gesture.axis = horizontalDistance > verticalDistance * 1.2 ? "horizontal" : "vertical";
-    }
-
-    if (gesture.axis === "horizontal" && gesture.deck) {
-      event.preventDefault();
-      applyPhysicalDeckDrag(gesture.deck, deltaX, gesture.deck.getBoundingClientRect().width);
-    }
-  }, { passive: false });
-
-  document.addEventListener("pointerup", (event) => {
-    if (!gesture || event.pointerId !== gesture.pointerId) {
-      return;
-    }
-
-    const deltaX = event.clientX - gesture.startX;
-    const deltaY = event.clientY - gesture.startY;
-    releasePhysicalDeckDrag(gesture.deck);
-    gesture = null;
-
-    if (Math.abs(deltaX) >= 48 && Math.abs(deltaX) > Math.abs(deltaY) * 1.2) {
-      moveClientExerciseProgress(deltaX < 0 ? 1 : -1);
-    }
-  });
-
-  document.addEventListener("pointercancel", () => {
-    releasePhysicalDeckDrag(gesture?.deck);
-    gesture = null;
   });
 }
 
@@ -5248,6 +5098,7 @@ function setRowMarkup(setNumber, repPlaceholder = "", setType = workingSetType, 
         <em>Set</em>
         <input type="text" value="${label}" maxlength="3" inputmode="text" autocomplete="off" data-set-label aria-label="${labelAria}" />
       </label>
+      <span class="ios-log-previous" data-set-previous aria-label="Previous set">—</span>
       <label class="set-input-field">
         <em>Weight</em>
         <input type="number" min="0" step="0.5" placeholder="${escapeHtml(weightPlaceholder)}" data-default-placeholder="${escapeHtml(weightPlaceholder)}" data-set-weight />
@@ -5527,6 +5378,7 @@ function exerciseLogFields(exercise, workoutTitle, options = {}) {
       <div class="set-table" aria-label="${escapeHtml(exercise.name)} set tracker">
       <div class="set-header">
         <span>Set</span>
+        <span>Previous</span>
         <span>Weight</span>
         <span>Reps</span>
         <span>Log</span>
@@ -6861,11 +6713,7 @@ function initializeClientFitnessPlanHelp() {
       if (firstLogin || path === "app") {
         dialog.dataset.firstLogin = "false";
         dialog.close();
-        window.requestAnimationFrame?.(() => {
-          if (!firstLogin || !window.FWB_CLIENT_WEB_TOUR?.showFirstVisit(activeDashboardUser?.id)) {
-            maybeShowClientHomeCheckinPrompt();
-          }
-        });
+        window.requestAnimationFrame?.(() => maybeShowClientHomeCheckinPrompt());
       }
       form.reset();
       updateMacroPreview();
@@ -7976,6 +7824,7 @@ function renderCustomWorkoutGroupedRestControls() {
 
     if (logButton) logButton.hidden = isActive;
     if (warmUpActions) warmUpActions.hidden = isActive;
+    if (action.classList.contains("ios-log-rest-action")) action.hidden = !isActive;
     if (controls) controls.hidden = !isActive;
     if (!isActive || !toggle) return;
 
@@ -10138,6 +9987,7 @@ function customWorkoutGroupedSetRowMarkup(row, code, exerciseIndex, setType, rou
       data-custom-grouped-set-number="${escapeHtml(row?.dataset.setNumber || roundNumber)}"
     >
       <span class="custom-workout-grouped-code" aria-hidden="true">${escapeHtml(code)}</span>
+      <span class="ios-log-previous" aria-label="Previous set">${escapeHtml(row?.dataset.previousSetLabel || "—")}</span>
       ${customWorkoutGroupedFieldMarkup("weight", values.weightRaw, context, row?.querySelector("[data-set-weight]")?.placeholder || "", row?.querySelector("[data-set-weight]")?.dataset.historyHint || "")}
       ${customWorkoutGroupedFieldMarkup("reps", values.repsRaw, context, row?.querySelector("[data-set-reps]")?.placeholder || "")}
       <button class="custom-workout-grouped-log-check" type="button" data-custom-grouped-set-toggle
@@ -10310,6 +10160,8 @@ function syncCustomWorkoutGroupedHistoryPlaceholders(logElement) {
       visibleRow.dataset.customGroupedSetType,
       visibleRow.dataset.customGroupedSetNumber
     );
+    const previous = visibleRow.querySelector(".ios-log-previous");
+    if (previous) previous.textContent = canonicalRow?.dataset.previousSetLabel || "—";
     ["weight", "reps"].forEach((field) => {
       const input = visibleRow.querySelector(`[data-custom-grouped-field="${field}"]`);
       if (input) {
@@ -10637,101 +10489,85 @@ function undoCustomWorkoutGroupedWeights(button) {
 
 function customWorkoutGroupedSectionsMarkup(carousel) {
   const logElements = customWorkoutGroupedLogElements(carousel);
-  const warmUps = [];
+  const format = carousel?.dataset.customWorkoutFormat || "single";
+  const startIndex = Number(carousel?.dataset.exerciseStartIndex) || 0;
   const columnLabelsMarkup = `
     <div class="custom-workout-grouped-columns">
-      <span>Set</span><span>Weight</span><span>Reps</span><span>Log</span>
+      <span>Set</span><span>Previous</span><span>Weight</span><span>Reps</span><span>Log</span>
     </div>
   `;
 
-  logElements.forEach((logElement, exerciseIndex) => {
-    const exerciseName = currentExerciseLabel(logElement) || `Exercise ${exerciseIndex + 1}`;
-    customWorkoutGroupedRows(logElement, warmUpSetType).forEach((row) => {
-      warmUps.push({ row, exerciseIndex, exerciseName });
-    });
-  });
-
-  const warmUpMarkup = warmUps.length > 0 ? `
-    <section class="custom-workout-grouped-section" data-kind="warmup">
-      <header class="custom-workout-grouped-section-heading">
-        <h4>Warm-up</h4>
-        <p>Optional · excluded from working volume</p>
-      </header>
-      ${columnLabelsMarkup}
-      ${warmUps.map((item, index) => customWorkoutGroupedSetRowMarkup(
-        item.row,
-        `W${index + 1}`,
-        item.exerciseIndex,
-        warmUpSetType,
-        0,
-        item.exerciseName
-      )).join("")}
-      <div class="custom-workout-grouped-round-action custom-workout-grouped-warmup-action" data-custom-grouped-round-action>
-        <div class="custom-workout-grouped-rest-controls" data-custom-grouped-rest-controls hidden>
-          <button type="button" data-custom-grouped-rest-adjust="-15" aria-label="Remove 15 seconds from rest timer">−15</button>
-          <button type="button" data-custom-grouped-rest-toggle>Rest 01:00 · Pause</button>
-          <button type="button" data-custom-grouped-rest-adjust="15" aria-label="Add 15 seconds to rest timer">+15</button>
-        </div>
-      </div>
-    </section>
-  ` : "";
-  const roundCount = customWorkoutGroupedRoundCount(carousel);
-  const roundsMarkup = Array.from({ length: roundCount }, (_, roundIndex) => {
-    const roundNumber = roundIndex + 1;
-    const rows = logElements.map((logElement, exerciseIndex) => ({
-      row: customWorkoutGroupedRows(logElement, workingSetType)[roundIndex],
-      exerciseIndex,
-      exerciseName: currentExerciseLabel(logElement) || `Exercise ${exerciseIndex + 1}`
-    })).filter((item) => item.row);
-    const logged = customWorkoutGroupedRoundIsLogged(carousel, roundNumber);
-    const exerciseTitle = rows.map((item, exerciseIndex) => (
-      `A${exerciseIndex + 1} ${item.exerciseName}`
-    )).join(" · ");
-
-    return `
-      <section class="custom-workout-grouped-section" data-kind="round" data-custom-grouped-round="${roundNumber}" data-custom-grouped-round-logged="${logged}">
-        <header class="custom-workout-grouped-section-heading custom-workout-grouped-round-heading">
-          <p class="custom-workout-grouped-round-exercise-title">${escapeHtml(exerciseTitle)}</p>
-          <h4>${workoutSetUnit(carousel)} ${roundNumber}</h4>
-          <div class="custom-workout-grouped-copy-actions">
-          <div class="custom-workout-grouped-pr-action">
-            <button class="custom-workout-grouped-copy-weights" type="button" data-custom-grouped-history="${roundNumber}" ${logged ? "disabled" : ""}
-              aria-label="Review exercise history for ${workoutSetUnit(carousel).toLowerCase()} ${roundNumber}">PR</button>
-            <button class="custom-workout-grouped-pr-info" type="button" data-pr-help aria-label="What does PR mean?" aria-expanded="false">
-              <svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="8"/><path d="M10 9v5M10 5.5v1"/></svg>
-            </button>
-            <button class="one-rm-pr-trigger" type="button" data-one-rm-open data-one-rm-source="pr" aria-label="Estimate 1RM from personal record" disabled>
-              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="5" y="2.5" width="14" height="19" rx="2"/><path d="M8 6.5h8M8.5 11h1M12 11h1M15.5 11h1M8.5 14.5h1M12 14.5h1M15.5 14.5h1M8.5 18h1M12 18h1M15.5 18h1"/></svg>
-              <span>Estimate 1RM</span>
-            </button>
-          </div>
-          </div>
-        </header>
-        <div class="custom-workout-grouped-copy-status" data-custom-grouped-copy-status role="status" aria-live="polite" hidden>
-          <span data-custom-grouped-copy-message></span>
-          <button class="custom-workout-grouped-undo-weights" type="button" data-custom-grouped-undo-weights="${roundNumber}" aria-label="Undo copied weights and reps in ${workoutSetUnit(carousel).toLowerCase()} ${roundNumber}" hidden>Undo</button>
-        </div>
-        ${columnLabelsMarkup}
-        ${rows.map((item) => customWorkoutGroupedSetRowMarkup(
-          item.row,
-          customWorkoutGroupedRoundCode(roundNumber, item.exerciseIndex),
-          item.exerciseIndex,
-          workingSetType,
-          roundNumber,
-          item.exerciseName
-        )).join("")}
-        <div class="custom-workout-grouped-round-action" data-custom-grouped-round-action>
+  return logElements.map((logElement, exerciseIndex) => {
+    const exerciseName = currentExerciseLabel(logElement) || `Exercise ${startIndex + exerciseIndex + 1}`;
+    const exerciseNumber = startIndex + exerciseIndex + 1;
+    const marker = format === "single"
+      ? String(exerciseNumber)
+      : `${String.fromCharCode(65 + Math.min(Number(carousel.dataset.customWorkoutGroup || 0), 25))}${exerciseIndex + 1}`;
+    const media = exerciseMediaButtonMarkup({ name: exerciseName }, { compact: true });
+    const meta = exerciseLibraryMetaLabel(exerciseName);
+    const warmUpRows = customWorkoutGroupedRows(logElement, warmUpSetType);
+    const workingRows = customWorkoutGroupedRows(logElement, workingSetType);
+    const completeCount = workingRows.filter((row) => row.classList.contains("is-complete")).length;
+    const rowMarkup = (row, setType, index) => {
+      const isWarmUp = setType === warmUpSetType;
+      const roundNumber = isWarmUp ? 0 : index + 1;
+      const code = isWarmUp ? `W${index + 1}` : format === "single" ? String(roundNumber)
+        : customWorkoutGroupedRoundCode(roundNumber, exerciseIndex);
+      const logged = !isWarmUp && customWorkoutGroupedRoundIsLogged(carousel, roundNumber);
+      return `<section class="ios-log-set-section custom-workout-grouped-section"
+        data-kind="${isWarmUp ? "warmup" : "round"}"
+        ${isWarmUp ? "" : `data-custom-grouped-round="${roundNumber}" data-custom-grouped-round-logged="${logged}"`}>
+        ${customWorkoutGroupedSetRowMarkup(row, code, exerciseIndex, setType, roundNumber, exerciseName)}
+        <div class="custom-workout-grouped-round-action ios-log-rest-action" data-custom-grouped-round-action hidden>
           <div class="custom-workout-grouped-rest-controls" data-custom-grouped-rest-controls hidden>
             <button type="button" data-custom-grouped-rest-adjust="-15" aria-label="Remove 15 seconds from rest timer">−15</button>
             <button type="button" data-custom-grouped-rest-toggle>Rest 01:00 · Pause</button>
             <button type="button" data-custom-grouped-rest-adjust="15" aria-label="Add 15 seconds to rest timer">+15</button>
           </div>
         </div>
-      </section>
-    `;
+      </section>`;
+    };
+    const menuMarkup = `<details class="ios-log-exercise-menu">
+      <summary aria-label="Options for ${escapeHtml(exerciseName)}">•••</summary>
+      <div class="ios-log-exercise-menu-list" role="group" aria-label="Exercise options">
+        <button type="button" data-ios-log-action="details">Exercise details</button>
+        <button type="button" data-ios-log-action="history">Exercise history</button>
+        <button type="button" data-ios-log-action="superset">Make superset</button>
+        <button type="button" data-ios-log-action="circuit">Make circuit</button>
+        <button type="button" data-ios-log-action="records">Personal records and history</button>
+        <button type="button" data-ios-log-action="change">Change exercise</button>
+        <button type="button" data-ios-log-action="remove" class="is-destructive">Remove exercise</button>
+        <button type="button" data-ios-log-action="add-warmup">Add warm-up set</button>
+        <button type="button" data-ios-log-action="remove-warmup">Remove last warm-up set</button>
+        <button type="button" data-ios-log-action="remove-set">Delete last set</button>
+        <button type="button" data-ios-log-action="targets">Show suggested targets</button>
+      </div>
+    </details>`;
+    return `<div class="ios-log-exercise-block" data-ios-log-exercise-index="${exerciseIndex}">
+      <article class="ios-log-exercise-card">
+        <header class="ios-log-exercise-header">
+          <span class="ios-log-exercise-image">${media || '<span class="ios-log-exercise-image-placeholder" aria-hidden="true">◼</span>'}</span>
+          <span class="ios-log-exercise-heading-copy">
+            <strong class="ios-log-exercise-title"><span class="ios-log-exercise-marker">${escapeHtml(marker)}</span> ${escapeHtml(exerciseName)}</strong>
+            ${meta ? `<small class="ios-log-exercise-meta">${escapeHtml(meta)}</small>` : ""}
+            <small class="ios-log-exercise-progress" data-ios-log-exercise-progress>${completeCount} / ${workingRows.length} complete</small>
+          </span>
+          ${menuMarkup}
+        </header>
+        <div class="ios-log-exercise-rows">${columnLabelsMarkup}
+          ${warmUpRows.map((row, index) => rowMarkup(row, warmUpSetType, index)).join("")}
+          ${workingRows.map((row, index) => rowMarkup(row, workingSetType, index)).join("")}
+        </div>
+        <footer class="ios-log-exercise-footer">
+          <button type="button" data-ios-log-add-set>⊕ <span>Add set</span></button>
+          <button type="button" data-ios-log-history>◴ <span>History</span></button>
+        </footer>
+      </article>
+      <details class="ios-log-exercise-notes"><summary>Exercise notes</summary>
+        <label><span class="sr-only">Notes for ${escapeHtml(exerciseName)}</span><textarea rows="3" data-ios-log-notes placeholder="Add an exercise note">${escapeHtml(logElement.querySelector('[data-log-notes]')?.value || "")}</textarea></label>
+      </details>
+    </div>`;
   }).join("");
-
-  return `${warmUpMarkup}${roundsMarkup}`;
 }
 
 function renderCustomWorkoutGroupedTimerPanels() {
@@ -10825,6 +10661,13 @@ function refreshCustomWorkoutGroupedCompletion(carousel) {
   const progress = carousel?.querySelector("[data-custom-grouped-progress]");
   const workingCount = visibleRows.filter((row) => row.dataset.customGroupedSetType !== warmUpSetType).length;
   if (progress) progress.textContent = `${completeCount} / ${workingCount} complete`;
+  carousel?.querySelectorAll("[data-ios-log-exercise-index]").forEach((block) => {
+    const logElement = customWorkoutGroupedLogElements(carousel)[Number(block.dataset.iosLogExerciseIndex)];
+    const rows = customWorkoutGroupedRows(logElement, workingSetType);
+    const completed = rows.filter((row) => row.classList.contains("is-complete")).length;
+    const label = block.querySelector("[data-ios-log-exercise-progress]");
+    if (label) label.textContent = `${completed} / ${rows.length} complete`;
+  });
   refreshCustomWorkoutGroupedWarmUp(carousel);
   refreshCustomWorkoutGroupedCopyWeights(carousel);
   refreshCustomWorkoutGroupedFocus(carousel?.closest(".client-workout-panel"));
@@ -10837,7 +10680,11 @@ function refreshCustomWorkoutGroupedFocus(panel) {
   const sections = carousels.flatMap((carousel) =>
     Array.from(carousel.querySelectorAll('[data-custom-grouped-round]'))
   );
-  const active = sections.find((section) => section.dataset.customGroupedRoundLogged !== "true");
+  const active = [...sections]
+    .sort((left, right) => Number(left.dataset.customGroupedRound) - Number(right.dataset.customGroupedRound) ||
+      Number(left.closest("[data-ios-log-exercise-index]")?.dataset.iosLogExerciseIndex || 0) -
+      Number(right.closest("[data-ios-log-exercise-index]")?.dataset.iosLogExerciseIndex || 0))
+    .find((section) => section.dataset.customGroupedRoundLogged !== "true");
   sections.forEach((section) => {
     const current = section === active;
     section.classList.toggle("is-current-step", current);
@@ -10924,6 +10771,13 @@ function renderCustomWorkoutGroupedCard(carousel) {
   const logElements = customWorkoutGroupedLogElements(carousel);
 
   if (!carousel || !sections) return;
+  const focused = typeof document !== "undefined" && sections.contains?.(document.activeElement) ? document.activeElement : null;
+  const focusedRow = focused?.closest?.(".custom-workout-grouped-row");
+  const focusedBlock = focused?.closest?.("[data-ios-log-exercise-index]");
+  const focusField = focused?.dataset?.customGroupedField;
+  const focusWasToggle = Boolean(focused?.matches?.("[data-custom-grouped-set-toggle]"));
+  const focusWasNotes = Boolean(focused?.matches?.("[data-ios-log-notes]"));
+  const scrollY = typeof window !== "undefined" ? window.scrollY : 0;
 
   if (normalizeCustomWorkoutGroupedRoundRows(logElements)) {
     persistCustomWorkoutDraftForElement(carousel);
@@ -10946,6 +10800,15 @@ function renderCustomWorkoutGroupedCard(carousel) {
   carousel.dataset.groupWorkoutDeck = "false";
   renderCustomWorkoutGroupedExerciseKey(carousel);
   sections.innerHTML = customWorkoutGroupedSectionsMarkup(carousel);
+  if (focusedBlock) {
+    const block = sections.querySelector(`[data-ios-log-exercise-index="${focusedBlock.dataset.iosLogExerciseIndex}"]`);
+    const row = focusedRow && block?.querySelector(`.custom-workout-grouped-row[data-custom-grouped-set-type="${focusedRow.dataset.customGroupedSetType}"][data-custom-grouped-set-number="${focusedRow.dataset.customGroupedSetNumber}"]`);
+    const target = focusField ? row?.querySelector(`[data-custom-grouped-field="${focusField}"]`)
+      : focusWasToggle ? row?.querySelector("[data-custom-grouped-set-toggle]")
+        : focusWasNotes ? block?.querySelector("[data-ios-log-notes]") : null;
+    target?.focus({ preventScroll: true });
+    if (typeof window !== "undefined" && window.scrollY !== scrollY) window.scrollTo(0, scrollY);
+  }
   renderCustomWorkoutGroupedNotes(carousel);
   syncCustomWorkoutGroupedRoundStepper(carousel);
   refreshCustomWorkoutGroupedCompletion(carousel);
@@ -12823,7 +12686,8 @@ function jumpToWorkoutExercise(button) {
   let target = card;
   setWorkoutExerciseCardExpanded(card, true);
   if (carousel?.dataset.customWorkoutGrouped === "true") {
-    target = carousel.querySelector("[data-custom-grouped-exercise-key]")?.children[localIndex] || carousel;
+    target = carousel.querySelector(`[data-ios-log-exercise-index="${localIndex}"]`) ||
+      carousel.querySelector("[data-custom-grouped-exercise-key]")?.children[localIndex] || carousel;
   } else if (carousel?.dataset.carouselEnabled === "true") {
     moveCustomWorkoutCarousel(carousel, Math.max(localIndex, 0), { instant: true });
   }
@@ -14621,6 +14485,12 @@ function updateSetHistoryPlaceholders(logElement, logs = logsForExerciseDisplay(
     const previousLog = previousHistorySet(previousLogs, setNumber);
     const weightInput = row.querySelector("[data-set-weight]");
     const repsInput = row.querySelector("[data-set-reps]");
+    const previousLabel = previousLog
+      ? `${previousLog.weight_used ?? "—"} × ${previousLog.reps ?? "—"}`
+      : "—";
+    row.dataset.previousSetLabel = previousLabel;
+    const previousCell = row.querySelector("[data-set-previous]");
+    if (previousCell) previousCell.textContent = previousLabel;
 
     if (weightInput) {
       weightInput.placeholder = historyPlaceholder(
@@ -18832,6 +18702,108 @@ function removeExerciseLog(logElement) {
   syncAssignedWorkoutCarousels(assignedPanel);
 }
 
+function iosLogExerciseContext(button) {
+  const block = button?.closest("[data-ios-log-exercise-index]");
+  const carousel = block?.closest("[data-custom-workout-grouped='true']");
+  const index = Number(block?.dataset.iosLogExerciseIndex);
+  const logElement = Number.isInteger(index) ? customWorkoutGroupedLogElements(carousel)[index] : null;
+  return { block, carousel, index, logElement, card: logElement?.closest("[data-custom-exercise-card]") };
+}
+
+function openIosLogExerciseHistory(button) {
+  const { logElement } = iosLogExerciseContext(button);
+  if (!logElement) return;
+  const name = currentExerciseLabel(logElement);
+  if (name) window.FWB_CLIENT_EXERCISE_HISTORY_DETAIL?.open(name, button);
+}
+
+function changeIosLogExerciseCount(button, setType, delta) {
+  const { carousel, logElement } = iosLogExerciseContext(button);
+  if (!carousel || !logElement) return false;
+  const isWarmUp = setType === warmUpSetType;
+  const select = carousel.querySelector(isWarmUp ? "[data-custom-grouped-warmup-count]" : "[data-custom-grouped-working-count]");
+  if (select) {
+    const current = Number(select.value) || (isWarmUp ? 0 : 1);
+    select.value = String(current + delta);
+    return changeCustomWorkoutGroupedSetCount(select);
+  }
+  const rows = customWorkoutGroupedRows(logElement, setType);
+  if (delta < 0) {
+    if (!rows.length || (!isWarmUp && rows.length <= 1)) return false;
+    const last = rows.at(-1);
+    const values = setRowInputValues(last);
+    if (last.classList.contains("is-complete") || values.weightRaw || values.repsRaw) {
+      const status = customWorkoutGroupedStatus(carousel);
+      if (status) status.textContent = "Reopen or clear the last set before removing it.";
+      return false;
+    }
+    last.remove();
+  } else {
+    const number = isWarmUp ? warmUpSetNumberBase + rows.length + 1 : rows.length + 1;
+    logElement.querySelector("[data-set-rows]")?.insertAdjacentHTML("beforeend", setRowMarkup(number, "", setType));
+  }
+  renumberSetRows(logElement);
+  updateSetHistoryPlaceholders(logElement);
+  persistCustomWorkoutDraftForElement(carousel);
+  renderCustomWorkoutGroupedCard(carousel);
+  return true;
+}
+
+function handleIosLogExerciseAction(button) {
+  const { block, carousel, index, logElement, card } = iosLogExerciseContext(button);
+  if (!block || !carousel || !logElement) return;
+  const action = button.dataset.iosLogAction;
+  block.querySelector(".ios-log-exercise-menu")?.removeAttribute("open");
+  if (action === "history" || action === "records") return openIosLogExerciseHistory(button);
+  if (action === "details") {
+    const media = block.querySelector("[data-exercise-media-open]");
+    if (media) media.click();
+    else block.querySelector(".ios-log-exercise-notes")?.setAttribute("open", "");
+    return;
+  }
+  if (action === "add-warmup") return changeIosLogExerciseCount(button, warmUpSetType, 1);
+  if (action === "remove-warmup") return changeIosLogExerciseCount(button, warmUpSetType, -1);
+  if (action === "remove-set") return changeIosLogExerciseCount(button, workingSetType, -1);
+  if (action === "targets") {
+    const target = assignedWorkoutPrescriptionLabel(logElement) || String(logElement.dataset.exercisePrescription || "").trim();
+    const status = customWorkoutGroupedStatus(carousel);
+    if (status) status.textContent = target && target.toLowerCase() !== "custom sets" ? target : "No suggested target for this exercise yet.";
+    return;
+  }
+  if (action === "change") {
+    const input = card && customWorkoutEditableNameInput(card);
+    if (!input || customWorkoutGroupedRows(logElement, workingSetType).some((row) => row.classList.contains("is-complete"))) {
+      const status = customWorkoutGroupedStatus(carousel);
+      if (status) status.textContent = "Reopen logged sets before changing this exercise.";
+      return;
+    }
+    openClientExerciseLibrary(input, (name) => {
+      input.value = name;
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+      persistCustomWorkoutDraftForElement(carousel);
+      renderCustomWorkoutGroupedCard(carousel);
+    });
+    return;
+  }
+  if (action === "remove") {
+    if (customWorkoutGroupedRows(logElement, workingSetType).some((row) => row.classList.contains("is-complete")) &&
+        !window.confirm("Remove this exercise from the workout? Saved sets will remain in history.")) return;
+    removeExerciseLog(logElement);
+    return;
+  }
+  if (action === "superset" || action === "circuit") {
+    const option = card?.querySelector(`[data-custom-workout-inline-group-option="${action}"]`);
+    if (option) {
+      option.checked = true;
+      updateCustomWorkoutInlineGrouping(option);
+    } else {
+      const status = customWorkoutGroupedStatus(carousel);
+      if (status) status.textContent = "Change grouping from the workout format controls.";
+    }
+  }
+}
+
 function handleWorkoutInteractions() {
   document.addEventListener("error", (event) => {
     const image = event.target?.closest?.("img[data-exercise-media-fallback]");
@@ -18985,6 +18957,21 @@ function handleWorkoutInteractions() {
     const exerciseRemover = event.target.closest("[data-remove-custom-exercise]");
     if (exercisePicker || exerciseRemover) {
       openCustomWorkoutExerciseDialog(exercisePicker || exerciseRemover, exerciseRemover ? "remove" : "add");
+      return;
+    }
+    const iosLogAction = event.target.closest("[data-ios-log-action]");
+    if (iosLogAction) {
+      handleIosLogExerciseAction(iosLogAction);
+      return;
+    }
+    const iosLogAddSet = event.target.closest("[data-ios-log-add-set]");
+    if (iosLogAddSet) {
+      changeIosLogExerciseCount(iosLogAddSet, workingSetType, 1);
+      return;
+    }
+    const iosLogHistory = event.target.closest("[data-ios-log-history]");
+    if (iosLogHistory) {
+      openIosLogExerciseHistory(iosLogHistory);
       return;
     }
     const exerciseKey = event.target.closest(".client-workout-panel-custom .custom-workout-grouped-exercise-key-item");
@@ -19780,6 +19767,7 @@ function handleWorkoutInteractions() {
   });
 
   document.addEventListener("input", (event) => {
+    const iosLogNotesInput = event.target.closest("[data-ios-log-notes]");
     const groupedNotesInput = event.target.closest("[data-custom-grouped-notes-input]");
     const groupedField = event.target.closest("[data-custom-grouped-field]");
     const exerciseNameInput = event.target.closest("[data-exercise-name-input]");
@@ -19790,6 +19778,16 @@ function handleWorkoutInteractions() {
     if (event.target.matches("[data-workout-energy]")) {
       pendingWorkoutEnergy[event.target.dataset.workoutEnergy] = Number(event.target.value);
       renderWorkoutDifficultyPrompt();
+      return;
+    }
+    if (iosLogNotesInput) {
+      const { logElement } = iosLogExerciseContext(iosLogNotesInput);
+      const canonical = logElement?.querySelector("[data-log-notes]");
+      if (canonical) {
+        canonical.value = iosLogNotesInput.value;
+        persistCustomWorkoutDraftForElement(logElement);
+        scheduleTrainingLogAutosave(logElement);
+      }
       return;
     }
     if (groupedNotesInput) {
@@ -20730,11 +20728,7 @@ async function loadDashboard() {
       getWorkoutDates: () => window.FWB_ACHIEVEMENTS.completedWorkoutDates(trainingLogs, { today: todayDate(), clientEmail: activeClientEmail })
     });
     void clientQuarterGoalController?.load();
-    window.requestAnimationFrame?.(() => {
-      if (!window.FWB_CLIENT_WEB_TOUR?.showFirstVisit(user.id)) {
-        maybeShowClientHomeCheckinPrompt();
-      }
-    });
+    window.requestAnimationFrame?.(() => maybeShowClientHomeCheckinPrompt());
   } catch (error) {
     setDashboardMessage(
       "Could not load dashboard",
@@ -21530,7 +21524,7 @@ handleClientWorkoutHistoryDelete();
 handleClientWorkoutHistoryDeck();
 handleClientDashboardTabs();
 handleMonthlyProgressReport();
-handleClientExerciseProgressCarousel();
+handleClientExerciseProgressSearch();
 handleClientPastProgressEntry();
 handleClientHomeCarousel();
 handleClientHomeSnapshotDeck();

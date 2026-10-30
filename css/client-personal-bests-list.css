@@ -1,0 +1,102 @@
+/* Personal bests use the Progress page's normal vertical scroll. */
+:root body.client-dashboard-page .progress-exercise-results { display: grid; gap: 10px; min-width: 0; }
+:root body.client-dashboard-page .progress-exercise-results-count {
+  margin: 0;
+  color: var(--muted);
+  font-size: .76rem;
+  font-weight: 850;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+:root body.client-dashboard-page #client-exercise-progress.client-personal-bests-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  min-width: 0;
+  padding: 0;
+  overflow: visible;
+}
+:root body.client-dashboard-page #client-exercise-progress.client-personal-bests-list > .empty-state {
+  grid-column: 1 / -1;
+}
+:root body.client-dashboard-page #client-exercise-progress.client-personal-bests-list .progress-exercise-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+  gap: 12px;
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 16px !important;
+  color: var(--ink);
+  background: var(--surface);
+  content-visibility: auto;
+  contain-intrinsic-size: auto 150px;
+}
+:root body.client-dashboard-page #client-exercise-progress.client-personal-bests-list .progress-exercise-card-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 8px;
+}
+:root body.client-dashboard-page #client-exercise-progress.client-personal-bests-list .progress-exercise-identity {
+  flex: 1 1 180px;
+  min-width: 0;
+  gap: 10px;
+}
+:root body.client-dashboard-page #client-exercise-progress.client-personal-bests-list .progress-exercise-identity > div:last-child {
+  min-width: 0;
+}
+:root body.client-dashboard-page #client-exercise-progress.client-personal-bests-list .progress-exercise-media {
+  flex: 0 0 62px;
+  width: 62px;
+}
+:root body.client-dashboard-page #client-exercise-progress.client-personal-bests-list .progress-exercise-media .exercise-media-button {
+  width: 62px !important;
+  height: 62px !important;
+  min-width: 62px;
+  min-height: 62px;
+}
+:root body.client-dashboard-page #client-exercise-progress.client-personal-bests-list .progress-exercise-card-heading h4 {
+  margin: 2px 0 0;
+  font-size: clamp(.94rem, 2.6vw, 1.12rem) !important;
+  line-height: 1.22;
+}
+:root body.client-dashboard-page #client-exercise-progress.client-personal-bests-list .progress-exercise-muscles {
+  margin-top: 3px;
+  font-size: .72rem;
+}
+:root body.client-dashboard-page #client-exercise-progress.client-personal-bests-list .progress-exercise-change {
+  margin: 0;
+  padding: 5px 8px;
+  border-radius: 8px;
+  font-size: .72rem;
+}
+:root body.client-dashboard-page #client-exercise-progress.client-personal-bests-list .progress-exercise-comparison {
+  gap: 6px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+:root body.client-dashboard-page #client-exercise-progress.client-personal-bests-list .progress-exercise-comparison strong {
+  font-size: .92rem;
+  line-height: 1.2;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+:root body.client-dashboard-page #client-exercise-progress.client-personal-bests-list .progress-exercise-comparison em {
+  font-size: .68rem;
+}
+@media (max-width: 780px) {
+  :root body.client-dashboard-page #client-exercise-progress.client-personal-bests-list {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+  }
+}
+@media (max-width: 380px) {
+  :root body.client-dashboard-page #client-exercise-progress.client-personal-bests-list .progress-exercise-identity {
+    flex-basis: 100%;
+  }
+  :root body.client-dashboard-page #client-exercise-progress.client-personal-bests-list .progress-exercise-change {
+    margin-left: auto;
+  }
+}
