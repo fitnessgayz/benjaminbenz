@@ -116,7 +116,7 @@
     schedule.forEach(row => counts.set(row.planned_date, (counts.get(row.planned_date) || 0) + 1));
     const dayRows = schedule.filter(row => row.planned_date === selectedDate);
     host.innerHTML = `<div class="client-calendar-header">
-      <button type="button" class="client-calendar-back" data-calendar-back aria-label="Back to workout choices">‹</button>
+      <button type="button" class="client-calendar-back" data-calendar-back aria-label="Back to workout choices"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m15 4-8 8 8 8"/></svg></button>
       <h2>Workout calendar</h2><span aria-hidden="true"></span>
     </div>
     <div class="client-calendar-month">

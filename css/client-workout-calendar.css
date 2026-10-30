@@ -59,15 +59,21 @@
 :root body.client-dashboard-page .client-calendar-back {
   display: grid;
   place-items: center;
-  width: 46px;
-  height: 46px;
-  padding: 0 0 4px;
+  width: 46px !important;
+  min-width: 46px !important;
+  height: 46px !important;
+  min-height: 46px !important;
+  padding: 0 !important;
   border: 1px solid #3a3d42;
   border-radius: 50% !important;
   background: #202227;
   color: #f7f7f7;
-  font-size: 36px !important;
-  line-height: 1;
+}
+:root body.client-dashboard-page .client-calendar-back svg {
+  display: block;
+  width: 23px;
+  height: 23px;
+  flex: none;
 }
 :root body.client-dashboard-page .client-calendar-month {
   display: grid;
