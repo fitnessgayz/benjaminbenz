@@ -5937,11 +5937,8 @@ function customWorkoutFormatPickerMarkup() {
   const config = customWorkoutFormats[format];
 
   return `
-    <section class="custom-workout-format-picker" aria-labelledby="custom-workout-format-title">
-      <div class="custom-workout-format-heading">
-        <strong id="custom-workout-format-title">Choose a format</strong>
-        <span>Applies to this custom workout</span>
-      </div>
+    <details class="custom-workout-format-picker" aria-label="Custom workout format">
+      <summary><span data-custom-workout-format-pill>${escapeHtml(config.label)}</span><span aria-hidden="true">⌄</span></summary>
       <div class="custom-workout-format-options" role="group" aria-label="Custom workout format">
         ${Object.entries(customWorkoutFormats).map(([value, option]) => `
           <button
@@ -5953,7 +5950,7 @@ function customWorkoutFormatPickerMarkup() {
         `).join("")}
       </div>
       <p data-custom-workout-format-guide>${escapeHtml(config.guide)}</p>
-    </section>
+    </details>
   `;
 }
 
@@ -6072,6 +6069,10 @@ function requireWorkoutGymLocation(panel, { focus = true, near = null } = {}) {
   if (focus) {
     const target = near?.closest?.("[data-custom-workout-grouped='true']")?.querySelector("[data-custom-grouped-gym]")
       || panel.querySelector("[data-custom-grouped-gym]") || input;
+    if (target === input) {
+      input.closest(".custom-workout-launcher-more")?.setAttribute("open", "");
+      input.closest(".custom-workout-launcher-menu")?.setAttribute("open", "");
+    }
     target.scrollIntoView({ block: "center" });
     target.focus({ preventScroll: true });
   }
@@ -12736,6 +12737,12 @@ function renderCustomWorkoutPickerResults(dialog) {
 function syncCustomWorkoutExerciseControls(panel) {
   if (!panel?.classList.contains("client-workout-panel-custom")) return;
   const count = panel.querySelectorAll("[data-custom-exercise-card]").length;
+  panel.classList.toggle("has-custom-exercises", count > 0);
+  panel.querySelector("[data-custom-workout-launcher-add]")?.classList.toggle("has-exercises", count > 0);
+  const launcherLabel = panel.querySelector("[data-custom-workout-launcher-add-label]");
+  if (launcherLabel) launcherLabel.textContent = count > 0 ? "Add another exercise" : "Add exercise";
+  const manage = panel.querySelector(".custom-workout-manage-exercises");
+  if (manage) manage.hidden = count === 0;
   panel.querySelectorAll("[data-custom-exercise-count]").forEach((output) => { output.textContent = String(count); });
   panel.querySelectorAll("[data-remove-custom-exercise]").forEach((button) => { button.disabled = count === 0; });
   const add = customWorkoutExerciseAddConfig(panel.dataset.customWorkoutFormat);
@@ -12921,7 +12928,6 @@ function customWorkoutPanelMarkup(index) {
   const activeDraft = activeCustomWorkoutDraft();
   const format = normalizeCustomWorkoutFormat(activeCustomWorkoutFormat);
   const exercises = customWorkoutExercises(format);
-  const formatConfig = customWorkoutFormats[format];
   const copyStatusMessage = customWorkoutCopyStatusMessage(activeDraft);
   const workoutStorageTitle = customWorkoutStorageTitle(activeDraft);
 
@@ -12936,45 +12942,51 @@ function customWorkoutPanelMarkup(index) {
       aria-labelledby="client-workout-card-title-${index}"
       hidden
     >
-      <div class="panel-heading">
+      <div class="panel-heading custom-workout-launcher-heading">
         <div>
           <h2 id="custom-workout-panel-title" tabindex="-1">${escapeHtml(customWorkoutTitle)}</h2>
         </div>
-        <span class="status-pill">Build your own</span>
+        <details class="custom-workout-launcher-menu">
+          <summary aria-label="Custom workout options">•••</summary>
+          <div class="custom-workout-launcher-menu-content">
+            <button type="button" data-generate-workout>Generate today’s workout</button>
+            <button type="button" data-reset-custom-workout>Reset workout</button>
+            <details class="custom-workout-launcher-more">
+              <summary>Workout details</summary>
+              <div>
+                <button type="button" class="workout-choice-card custom-workout-saved-plan" data-client-saved-workout-plans
+                  aria-labelledby="custom-workout-saved-title" aria-describedby="custom-workout-saved-description">
+                  ${clientWorkoutChoiceContent({ icon: "saved", title: "Saved Workout Program",
+                    description: "Open a saved weekly plan and choose your next workout.",
+                    titleId: "custom-workout-saved-title", descriptionId: "custom-workout-saved-description" })}
+                </button>
+                <label class="custom-workout-session-date workout-session-date">
+                  <span>Workout date</span>
+                  <span class="workout-session-date-control">
+                    <span class="workout-session-date-value" data-workout-date-value aria-hidden="true">${escapeHtml(formatLogDate(todayDate()))}</span>
+                    <input type="date" value="${todayDate()}" data-workout-date />
+                  </span>
+                  <small>This date applies to every exercise in this custom workout.</small>
+                </label>
+                ${workoutGymPickerMarkup(activeDraft?.gymName || storedWorkoutGymLocation(workoutStorageTitle), index)}
+              </div>
+            </details>
+          </div>
+        </details>
       </div>
-      <button type="button" class="workout-choice-card custom-workout-saved-plan" data-client-saved-workout-plans
-        aria-labelledby="custom-workout-saved-title" aria-describedby="custom-workout-saved-description">
-        ${clientWorkoutChoiceContent({ icon: "saved", title: "Saved Workout Program",
-          description: "Open a saved weekly plan and choose your next workout.",
-          titleId: "custom-workout-saved-title", descriptionId: "custom-workout-saved-description" })}
-      </button>
       <p class="custom-workout-copy-status" data-custom-workout-copy-status role="status" aria-live="polite" ${copyStatusMessage ? "" : "hidden"}>${escapeHtml(copyStatusMessage)}</p>
-      <label class="custom-workout-session-date workout-session-date">
-        <span>Workout date</span>
-        <span class="workout-session-date-control">
-          <span class="workout-session-date-value" data-workout-date-value aria-hidden="true">${escapeHtml(formatLogDate(todayDate()))}</span>
-          <input type="date" value="${todayDate()}" data-workout-date />
-        </span>
-        <small>This date applies to every exercise in this custom workout.</small>
-      </label>
-      ${workoutGymPickerMarkup(activeDraft?.gymName || storedWorkoutGymLocation(workoutStorageTitle), index)}
-      <div class="workout-format-pill" data-custom-workout-format-pill>${escapeHtml(formatConfig.label)}</div>
       <div class="custom-workout-builder">
-        <div class="custom-workout-header">
-          <p>Add your own exercises here and save them into your workout log.</p>
-        </div>
         ${customWorkoutFormatPickerMarkup()}
-        ${warmupLogFields(workoutStorageTitle, { showDate: false })}
+        <button type="button" class="custom-workout-launcher-add" data-custom-workout-launcher-add data-pick-custom-exercise>
+          <span class="custom-workout-launcher-add-icon" aria-hidden="true">＋</span>
+          <strong data-custom-workout-launcher-add-label>Add exercise</strong>
+        </button>
         <div data-custom-workout-start-control ${format === "single" ? "" : "hidden"}>
           ${workoutStartControlMarkup(workoutStorageTitle)}
         </div>
-        <div class="custom-workout-reset-control">
-          <button class="button button-ghost" type="button" data-generate-workout>Generate today’s workout</button>
-          <button class="button button-ghost custom-workout-reset-button" type="button" data-reset-custom-workout>Reset workout</button>
-        </div>
         <p class="custom-workout-reset-status" data-custom-workout-reset-status role="status" aria-live="polite" hidden></p>
         ${customWorkoutCarouselMarkup(format, workoutStorageTitle)}
-        ${workoutExerciseListMarkup(true)}
+        <details class="custom-workout-manage-exercises"><summary>Manage exercises</summary>${workoutExerciseListMarkup(true)}</details>
         ${cardioLogFields(workoutStorageTitle, { showDate: false })}
         <div data-custom-workout-default-finish ${format === "single" ? "" : "hidden"}>
           ${workoutActionsMarkup({ exercises }, { includeCardio: true })}
@@ -13195,7 +13207,7 @@ function updateCustomWorkoutFormat(panel, value, options = {}) {
       replacement.hidden = wasHidden;
       replacement.classList.toggle("is-active", wasActive);
     }
-    replacement?.querySelector(`[data-custom-workout-format-option="${format}"]`)?.focus();
+    replacement?.querySelector(".custom-workout-format-picker > summary")?.focus({ preventScroll: true });
     return;
   }
   if (format !== previousFormat) {
@@ -13227,7 +13239,7 @@ function updateCustomWorkoutFormat(panel, value, options = {}) {
       replacement.hidden = wasHidden;
       replacement.classList.toggle("is-active", wasActive);
     }
-    replacement?.querySelector('[data-custom-workout-format-option="single"]')?.focus();
+    replacement?.querySelector(".custom-workout-format-picker > summary")?.focus({ preventScroll: true });
     return;
   }
 
@@ -19491,6 +19503,7 @@ function handleWorkoutInteractions() {
     }
 
     if (customWorkoutFormatButton) {
+      customWorkoutFormatButton.closest(".custom-workout-format-picker")?.removeAttribute("open");
       updateCustomWorkoutFormat(
         customWorkoutFormatButton.closest(".client-workout-panel-custom"),
         customWorkoutFormatButton.dataset.customWorkoutFormatOption

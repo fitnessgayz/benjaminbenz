@@ -23,8 +23,8 @@ test("renders a compact reset action only inside the Custom Workout builder", ()
   assert.match(customPanel, /data-reset-custom-workout>Reset workout<\/button>/);
   assert.match(customPanel, /data-custom-workout-reset-status role="status" aria-live="polite"/);
   assert.doesNotMatch(assignedPanel, /data-reset-custom-workout/);
-  assert.match(styles, /\.custom-workout-reset-control \{[\s\S]*?justify-content: flex-end;/);
-  assert.match(styles, /\.custom-workout-reset-button \{[\s\S]*?min-height: 44px;[\s\S]*?color: var\(--red\) !important;/);
+  assert.match(customPanel, /class="custom-workout-launcher-menu"/);
+  assert.match(dashboard, /client-custom-workout-launcher\.css\?v=1/);
 });
 
 test("confirms destructive reset and creates a separate blank workout session", () => {
@@ -64,6 +64,6 @@ test("wires the reset action and cache-busts its assets", () => {
 
   assert.match(interactions, /event\.target\.closest\("\[data-reset-custom-workout\]"\)/);
   assert.match(interactions, /resetCustomWorkout\(resetCustomWorkoutButton\.closest\("\.client-workout-panel-custom"\)\)/);
-  assert.match(dashboard, /css\/style\.css\?v=workout-preview-1/);
-  assert.match(dashboard, /js\/client-portal\.js\?v=workout-preview-1/);
+  assert.match(dashboard, /css\/style\.css\?v=[^"\s]*workout-preview-1/);
+  assert.match(dashboard, /js\/client-portal\.js\?v=[^"\s]*workout-preview-1/);
 });

@@ -723,7 +723,7 @@ test("rebuilds a grouped custom panel from its draft when switching back to Stra
     /persistCustomWorkoutDraftFromPanel\(panel\);[\s\S]*?replaceCustomWorkoutPanelFromDraft\(panelIndex\)/,
   );
   assert.match(updateFormat, /activateClientWorkoutPanel\(panelIndex, \{ focus: false, scroll: false \}\)/);
-  assert.match(updateFormat, /replacement\?\.querySelector\('\[data-custom-workout-format-option="single"\]'\)\?\.focus\(\);[\s\S]*?return/);
+  assert.match(updateFormat, /replacement\?\.querySelector\("\.custom-workout-format-picker > summary"\)\?\.focus\(\{ preventScroll: true \}\);[\s\S]*?return/);
   assert.match(replacePanel, /template\.innerHTML = customWorkoutPanelMarkup\(index\)\.trim\(\)/);
   assert.match(replacePanel, /currentPanel\.replaceWith\(replacement\)/);
   assert.match(replacePanel, /applyCustomWorkoutDraft\(replacement\)/);

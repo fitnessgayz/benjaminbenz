@@ -99,7 +99,8 @@ test("both exercise counters and remove controls follow canonical cards, includi
   let cards = [{}, {}, {}];
   const panel = {
     dataset: { customWorkoutFormat: "superset" },
-    classList: { contains: (value) => value === "client-workout-panel-custom" },
+    classList: { contains: (value) => value === "client-workout-panel-custom", toggle() {} },
+    querySelector: () => null,
     querySelectorAll: (selector) => selector === "[data-custom-exercise-card]" ? cards : selector === "[data-custom-exercise-count]" ? counters : selector === "[data-pick-custom-exercise]" ? adders : removers
   };
   const context = evaluate(["normalizeCustomWorkoutFormat", "customWorkoutExerciseAddConfig", "syncCustomWorkoutExerciseControls"], {
