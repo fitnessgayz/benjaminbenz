@@ -32,6 +32,8 @@ test("searches aliases and filters by primary or secondary muscle", () => {
     { name: "Bench Press", libraryEntry: { primary_muscle: "Chest" } }
   ]);
   assert.equal(prepared.length, 2);
+  assert.equal(prepared[0].highlightKey, "chest--triceps");
+  assert.equal(prepared[1].highlightKey, "hamstrings--glutes");
   assert.deepEqual(matchingRecords(prepared, "rdl", "Glutes").map((record) => record.name), ["Romanian Deadlift"]);
   assert.deepEqual(matchingRecords(prepared, "bench press", "Triceps").map((record) => record.name), ["Bench Press"]);
   assert.equal(matchingRecords(prepared, "bench", "Hamstrings").length, 0);

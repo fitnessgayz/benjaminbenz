@@ -406,17 +406,19 @@ test("custom builder renders muscles directly below the exercise name", () => {
   const card = { classList: { toggle() {} } };
   const editor = { querySelector: () => menu, closest: () => card };
   const input = { value: "back", dataset: {}, closest: () => editor, setAttribute() {} };
-  const context = evaluate(["renderCustomExerciseSuggestions"], {
+  const context = evaluate(["exerciseMuscleHighlightKey", "exerciseMuscleHighlightMarkup", "renderCustomExerciseSuggestions"], {
     customExerciseSuggestionMatches: () => [{
       name: "45-Degree Back Extension",
       recommended: false,
-      muscleLabel: "Glutes · Hamstrings"
+      muscleLabel: "Glutes · Hamstrings",
+      libraryEntry: { primary_muscle: "glutes", secondary_muscles: ["hamstrings"] }
     }],
     escapeHtml: String,
     closeCustomExerciseSuggestions() {}
   });
 
   context.renderCustomExerciseSuggestions(input);
+  assert.match(menu.innerHTML, /images\/muscle-highlights\/library\/glutes--hamstrings\.png/);
   assert.match(menu.innerHTML, /<strong>45-Degree Back Extension<\/strong>\s*<span class="custom-workout-suggestion-muscles">Glutes · Hamstrings<\/span>/);
   assert.equal(menu.hidden, false);
 });
@@ -427,7 +429,7 @@ test("selected exercise suggestions stay closed until the name is edited again",
   const editor = { querySelector: () => menu, closest: () => card };
   const input = { value: "Cable Row", dataset: { exerciseSuggestionSelected: "Cable Row" }, closest: () => editor, setAttribute() {} };
   let closes = 0;
-  const context = evaluate(["renderCustomExerciseSuggestions"], {
+  const context = evaluate(["exerciseMuscleHighlightKey", "exerciseMuscleHighlightMarkup", "renderCustomExerciseSuggestions"], {
     customExerciseSuggestionMatches: () => [{ name: "Cable Row", recommended: false, muscleLabel: "Back" }],
     escapeHtml: String, closeCustomExerciseSuggestions: () => { closes++; }
   });

@@ -185,7 +185,7 @@
   border-radius: 16px;
   background: #ffd600;
 }
-.client-exercise-library-item-artwork img { display: block; width: 86px; height: 92px; }
+.client-exercise-library-item-artwork img { display: block; width: 96px; height: auto; max-height: 96px; object-fit: contain; }
 .client-exercise-library-item-copy { display: grid; min-width: 0; gap: 9px; }
 .client-exercise-library-item-copy strong { overflow-wrap: anywhere; font-size: 1rem; line-height: 1.2; }
 .client-exercise-library-item-muscles { display: flex; flex-wrap: wrap; gap: 5px; }
@@ -240,7 +240,7 @@
     padding: 8px;
   }
   .client-exercise-library-item-artwork { width: 82px; height: 82px; border-radius: 13px; }
-  .client-exercise-library-item-artwork img { width: 76px; height: 80px; }
+  .client-exercise-library-item-artwork img { width: 82px; height: auto; max-height: 82px; }
   .client-exercise-library-item-plus { width: 40px; height: 40px; }
   .client-exercise-library-item-copy strong { font-size: .93rem; }
 }
