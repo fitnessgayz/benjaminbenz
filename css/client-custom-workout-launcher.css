@@ -15,6 +15,27 @@ body.client-dashboard-page .client-workout-panel-custom .custom-workout-launcher
   line-height: 1.15;
 }
 
+body.client-dashboard-page .client-workout-panel-custom .custom-workout-copy-past-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 44px;
+  margin-top: 4px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--client-neon);
+  font: inherit;
+  font-size: .93rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+body.client-dashboard-page .client-workout-panel-custom .custom-workout-copy-past-link:focus-visible {
+  outline: 2px solid var(--client-neon);
+  outline-offset: 3px;
+}
+
 body.client-dashboard-page .client-workout-panel-custom :is(.custom-workout-launcher-menu, .custom-workout-format-picker) > summary {
   display: flex;
   align-items: center;
