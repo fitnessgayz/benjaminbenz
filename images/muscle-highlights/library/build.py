@@ -1,193 +1,176 @@
-"""Render the live exercise library's muscle combinations as reusable PNGs."""
+"""Render detailed anatomy highlights from the approved library's muscle tags.
 
-from copy import deepcopy
+The grayscale anatomy base and biceps reference were made with image generation from
+an image supplied by the site owner. All other highlights are deterministic masks
+on that same anatomy, so the 99 library combinations stay visually consistent.
+"""
+
 import json
 from pathlib import Path
-import re
-import xml.etree.ElementTree as ET
 
-from PIL import Image, ImageDraw, ImageFont
-
+from PIL import Image, ImageChops, ImageDraw, ImageFilter
 
 ROOT = Path(__file__).resolve().parent
-ICON_ROOT = ROOT.parent / "icons"
 MANIFEST = json.loads((ROOT / "manifest.json").read_text())
-NS = "http://www.w3.org/2000/svg"
-ET.register_namespace("", NS)
-TAG = lambda name: f"{{{NS}}}{name}"
-PRIMARY = "#009FE8"
-SUPPORTING = "#73D8FA"
-NEUTRAL = "#39434D"
-INK = "#181D24"
-OUTLINE = "#111820"
-PATH_TOKEN = re.compile(r"[MLQCZ]|-?\d+(?:\.\d+)?")
+BASE = Image.open(ROOT / "anatomy-base.png").convert("RGB")
+BICEPS = Image.open(ROOT / "anatomy-biceps-reference.png").convert("RGB")
+assert BASE.size == BICEPS.size == (1536, 1024)
+SIZE = (1152, 768)
+FRONT_X, BACK_X = 448, 1088
 
 
-def source(view):
-    root = ET.parse(ICON_ROOT / ("chest.svg" if view == "front" else "back.svg")).getroot()
-    body = next(node for node in root if node.tag == TAG("g"))
-    regions = [node.get("d") for node in root if node.tag == TAG("path") and node.get("fill") != "none"]
-    return body, regions
+def mirrored(points, center):
+    return points, [(2 * center - x, y) for x, y in points]
 
 
-FRONT_BODY, front_paths = source("front")
-BACK_BODY, back_paths = source("back")
-assert len(front_paths) == 16 and len(back_paths) == 14
-
-FRONT_REGIONS = [
-    (front_paths[0:2], ("shoulders",)),
-    (front_paths[2:4], ("chest",)),
-    (front_paths[4:6], ("biceps",)),
-    (front_paths[6:8], ("core",)),
-    (front_paths[8:10], ("core", "obliques")),
-    (front_paths[10:12], ("quads",)),
-    (front_paths[12:14], ("adductors",)),
-    (front_paths[14:16], ("calves",)),
-    (["M15.3 33 L18.8 34 L16 39 L13.5 37 Z", "M48.7 33 L45.2 34 L48 39 L50.5 37 Z"], ("forearms",)),
-    (["M24.7 36 L28 38 L27 43 L24 41 Z", "M39.3 36 L36 38 L37 43 L40 41 Z"], ("hips",)),
-    (["M28 38 L31 39 L30 44 L27 42 Z", "M36 38 L33 39 L34 44 L37 42 Z"], ("hip_flexors",)),
-    (["M29 13 L31 14 L31 18 L28 17 Z", "M35 13 L33 14 L33 18 L36 17 Z"], ("neck",)),
-    (["M25 55 L29 55 L29 59 L25 59 Z", "M35 55 L39 55 L39 59 L35 59 Z"], ("ankles",)),
-]
-BACK_REGIONS = [
-    (back_paths[0:2], ("shoulders",)),
-    (back_paths[2:4], ("back", "upper_back")),
-    (back_paths[4:6], ("lats",)),
-    (back_paths[6:8], ("triceps",)),
-    (back_paths[8:10], ("glutes",)),
-    (back_paths[10:12], ("hamstrings",)),
-    (back_paths[12:14], ("calves",)),
-    (["M15.3 33 L18.8 34 L16 39 L13.5 37 Z", "M48.7 33 L45.2 34 L48 39 L50.5 37 Z"], ("forearms",)),
-    (["M24.7 36 L28 38 L27 43 L24 41 Z", "M39.3 36 L36 38 L37 43 L40 41 Z"], ("hips",)),
-    (["M22 19 L25 20 L24 24 L21 23 Z", "M42 19 L39 20 L40 24 L43 23 Z"], ("rear_delts",)),
-    (["M29 13 L31 14 L31 18 L28 17 Z", "M35 13 L33 14 L33 18 L36 17 Z"], ("neck",)),
-    (["M25 55 L29 55 L29 59 L25 59 Z", "M35 55 L39 55 L39 59 L35 59 Z"], ("ankles",)),
-]
+def paired(points, view="front"):
+    return mirrored(points, FRONT_X if view == "front" else BACK_X)
 
 
-def fill_for(tags, primary, supporting):
-    if "full_body" in primary or any(tag in primary for tag in tags):
-        return PRIMARY
-    if "full_body" in supporting or any(tag in supporting for tag in tags):
-        return SUPPORTING
-    return NEUTRAL
+# Boundaries follow the named muscles in the generated front/back atlas.
+# Soft mask edges preserve the fiber shading and avoid a flat sticker appearance.
+REGIONS = {
+    "chest": [
+        *paired([(334, 189), (359, 178), (404, 177), (438, 193), (441, 253), (421, 270), (383, 280), (344, 263), (329, 236)]),
+    ],
+    "shoulders": [
+        *paired([(328, 171), (360, 164), (390, 179), (383, 208), (352, 243), (315, 244), (293, 222), (294, 197)]),
+        *paired([(960, 171), (992, 162), (1017, 178), (1008, 214), (981, 243), (951, 243), (933, 217), (939, 188)], "back"),
+    ],
+    "biceps": [],  # Extracted from the image-generated reference below.
+    "triceps": [
+        *paired([(926, 245), (944, 236), (962, 251), (966, 286), (950, 332), (930, 348), (919, 332), (920, 284)], "back"),
+    ],
+    "forearms": [
+        *paired([(280, 348), (300, 354), (297, 384), (282, 424), (256, 472), (236, 461), (247, 423), (263, 378)]),
+        *paired([(914, 347), (933, 355), (931, 388), (908, 435), (883, 471), (865, 461), (879, 414), (898, 370)], "back"),
+    ],
+    "core": [
+        [(397, 277), (441, 274), (444, 457), (431, 484), (403, 472), (395, 434)],
+        [(455, 274), (498, 277), (502, 434), (494, 472), (466, 484), (452, 457)],
+        *paired([(368, 287), (392, 292), (394, 426), (382, 449), (358, 417)]),
+    ],
+    "obliques": [
+        *paired([(350, 280), (383, 287), (393, 322), (385, 389), (366, 431), (350, 403), (340, 342)]),
+    ],
+    "back": [
+        [(1012, 147), (1068, 181), (1078, 389), (1035, 430), (976, 386), (959, 287), (976, 209)],
+        [(1107, 181), (1164, 147), (1200, 209), (1217, 287), (1200, 386), (1141, 430), (1098, 389)],
+    ],
+    "upper_back": [
+        [(1009, 150), (1068, 178), (1081, 286), (1024, 280), (978, 247), (968, 209)],
+        [(1108, 178), (1167, 150), (1208, 209), (1198, 247), (1152, 280), (1095, 286)],
+    ],
+    "lats": [
+        *paired([(988, 258), (1040, 282), (1075, 329), (1071, 399), (1036, 428), (986, 382), (971, 318)], "back"),
+    ],
+    "rear_delts": [
+        *paired([(957, 198), (1002, 200), (1021, 221), (1009, 258), (970, 244), (946, 224)], "back"),
+    ],
+    "glutes": [
+        *paired([(988, 421), (1035, 405), (1074, 428), (1080, 490), (1068, 546), (1020, 553), (979, 529), (967, 468)], "back"),
+    ],
+    "hamstrings": [
+        *paired([(984, 536), (1027, 552), (1073, 548), (1070, 604), (1047, 671), (1015, 688), (985, 654), (973, 593)], "back"),
+    ],
+    "quads": [
+        *paired([(358, 495), (389, 501), (427, 522), (429, 574), (406, 655), (386, 678), (353, 660), (331, 609), (338, 541)]),
+    ],
+    "adductors": [
+        *paired([(404, 505), (438, 496), (442, 526), (425, 628), (406, 642), (394, 601)]),
+    ],
+    "calves": [
+        *paired([(334, 709), (370, 713), (389, 739), (381, 801), (366, 855), (337, 850), (319, 801), (318, 755)]),
+        *paired([(993, 703), (1027, 711), (1046, 737), (1038, 805), (1019, 856), (988, 849), (973, 800), (974, 751)], "back"),
+    ],
+    "hips": [
+        *paired([(353, 436), (384, 456), (384, 498), (365, 531), (343, 514), (337, 480)]),
+        *paired([(969, 409), (1007, 417), (992, 488), (969, 508), (956, 471)], "back"),
+    ],
+    "hip_flexors": [
+        *paired([(390, 460), (425, 488), (412, 550), (387, 536), (372, 495)]),
+    ],
+    "ankles": [
+        *paired([(345, 849), (377, 849), (375, 906), (347, 908)]),
+        *paired([(988, 846), (1021, 846), (1017, 912), (990, 913)], "back"),
+    ],
+    "neck": [
+        [(415, 107), (448, 111), (479, 107), (482, 153), (463, 177), (431, 177), (412, 153)],
+        [(1059, 84), (1088, 92), (1117, 84), (1123, 144), (1109, 176), (1067, 176), (1053, 144)],
+    ],
+}
 
 
-def figure_parts(view, primary, supporting):
-    body = FRONT_BODY if view == "front" else BACK_BODY
-    regions = FRONT_REGIONS if view == "front" else BACK_REGIONS
-    parts = []
-    for paths, tags in regions:
-        for path in paths:
-            parts.append((path, fill_for(tags, primary, supporting)))
-    return body, parts
+def body_mask():
+    # Body pixels are gray/dark; the atlas backdrop is nearly white.
+    return BASE.convert("L").point(lambda value: 255 if value < 230 else 0)
 
 
-def svg_card(entry):
-    primary, supporting = set([entry["primary"]]), set(entry["secondary"])
-    root = ET.Element(TAG("svg"), {"viewBox": "0 0 160 100", "role": "img",
-        "aria-label": f'Primary {entry["primary"]}; supporting {", ".join(entry["secondary"]) or "none"}'})
-    ET.SubElement(root, TAG("rect"), {"x": "1", "y": "1", "width": "158", "height": "98", "rx": "15", "fill": "#FFD400"})
-    for view, offset in (("front", 0), ("back", 80)):
-        body, parts = figure_parts(view, primary, supporting)
-        group = ET.SubElement(root, TAG("g"), {"transform": f"translate({offset} 8) scale(1.25)"})
-        group.append(deepcopy(body))
-        for path, fill in parts:
-            ET.SubElement(group, TAG("path"), {"d": path, "fill": fill, "stroke": OUTLINE,
-                "stroke-width": ".6", "stroke-linejoin": "round"})
-    ET.SubElement(root, TAG("path"), {"d": "M80 9 V88", "stroke": INK, "stroke-opacity": ".3", "stroke-width": "1"})
-    for x, label in ((40, "FRONT"), (120, "BACK")):
-        node = ET.SubElement(root, TAG("text"), {"x": str(x), "y": "94", "text-anchor": "middle",
-            "font-family": "system-ui, sans-serif", "font-size": "6", "font-weight": "700",
-            "letter-spacing": "1", "fill": INK})
-        node.text = label
-    ET.ElementTree(root).write(ROOT / (entry["key"] + ".svg"), encoding="unicode", xml_declaration=True)
+BODY_MASK = body_mask()
 
 
-def path_points(path):
-    tokens = PATH_TOKEN.findall(path)
-    points = []
-    pos = (0.0, 0.0)
-    start = pos
-    index = 0
-    while index < len(tokens):
-        command = tokens[index]
-        index += 1
-        if command in ("M", "L"):
-            pos = (float(tokens[index]), float(tokens[index + 1]))
-            index += 2
-            points.append(pos)
-            if command == "M":
-                start = pos
-        elif command == "Q":
-            control = (float(tokens[index]), float(tokens[index + 1]))
-            end = (float(tokens[index + 2]), float(tokens[index + 3]))
-            index += 4
-            x0, y0 = pos
-            for step in range(1, 17):
-                t = step / 16
-                u = 1 - t
-                points.append((u * u * x0 + 2 * u * t * control[0] + t * t * end[0],
-                               u * u * y0 + 2 * u * t * control[1] + t * t * end[1]))
-            pos = end
-        elif command == "C":
-            c1 = (float(tokens[index]), float(tokens[index + 1]))
-            c2 = (float(tokens[index + 2]), float(tokens[index + 3]))
-            end = (float(tokens[index + 4]), float(tokens[index + 5]))
-            index += 6
-            x0, y0 = pos
-            for step in range(1, 17):
-                t = step / 16
-                u = 1 - t
-                points.append((u**3*x0 + 3*u*u*t*c1[0] + 3*u*t*t*c2[0] + t**3*end[0],
-                               u**3*y0 + 3*u*u*t*c1[1] + 3*u*t*t*c2[1] + t**3*end[1]))
-            pos = end
-        elif command == "Z":
-            points.append(start)
-            pos = start
-        else:
-            raise ValueError(f"Unsupported SVG path token {command!r} in {path!r}")
-    return points
+def region_mask(tag):
+    if tag == "full_body":
+        return BODY_MASK.copy()
+    if tag == "biceps":
+        red, green, blue = BICEPS.split()
+        mask = Image.new("L", BASE.size)
+        source = BICEPS.load()
+        target = mask.load()
+        for y in range(220, 370):
+            for x in list(range(265, 345)) + list(range(550, 630)):
+                r, g, b = source[x, y]
+                if b - r > 65 and b - g > 10:
+                    target[x, y] = 255
+        return mask.filter(ImageFilter.GaussianBlur(1.5))
+    if tag not in REGIONS:
+        raise ValueError(f"No anatomy mask for {tag}")
+    mask = Image.new("L", BASE.size)
+    draw = ImageDraw.Draw(mask)
+    for points in REGIONS[tag]:
+        draw.polygon(points, fill=255)
+    mask = mask.filter(ImageFilter.GaussianBlur(3))
+    return ImageChops.multiply(mask, BODY_MASK)
 
 
-def draw_path(draw, path, fill, offset, scale):
-    points = [((offset + x * 1.25) * scale, (8 + y * 1.25) * scale) for x, y in path_points(path)]
-    draw.polygon(points, fill=fill)
-    draw.line(points, fill=OUTLINE, width=max(1, round(scale * .6)), joint="curve")
+MASKS = {tag: region_mask(tag) for tag in {entry["primary"] for entry in MANIFEST["combinations"]}
+         | {tag for entry in MANIFEST["combinations"] for tag in entry["secondary"]}}
 
 
-def png_card(entry):
-    scale = 3
-    image = Image.new("RGB", (160 * scale, 100 * scale), "#171B20")
-    draw = ImageDraw.Draw(image)
-    draw.rounded_rectangle((scale, scale, 159 * scale, 99 * scale), radius=15 * scale, fill="#FFD400")
-    primary, supporting = set([entry["primary"]]), set(entry["secondary"])
-    for view, offset in (("front", 0), ("back", 80)):
-        body, parts = figure_parts(view, primary, supporting)
-        for node in body:
-            if node.tag == TAG("circle"):
-                cx, cy, radius = (float(node.get(attr)) for attr in ("cx", "cy", "r"))
-                box = ((offset + (cx-radius)*1.25)*scale, (8+(cy-radius)*1.25)*scale,
-                       (offset + (cx+radius)*1.25)*scale, (8+(cy+radius)*1.25)*scale)
-                draw.ellipse(box, fill=INK, outline=OUTLINE, width=2)
-            elif node.tag == TAG("path"):
-                draw_path(draw, node.get("d"), INK, offset, scale)
-        for path, fill in parts:
-            draw_path(draw, path, fill, offset, scale)
-    draw.line((80*scale, 9*scale, 80*scale, 88*scale), fill="#9B8B18", width=2)
-    try:
-        font = ImageFont.truetype("/System/Library/Fonts/Supplemental/Arial Bold.ttf", 6 * scale)
-    except OSError:
-        font = ImageFont.load_default()
-    for x, label in ((40, "FRONT"), (120, "BACK")):
-        draw.text((x*scale, 94*scale), label, fill=INK, font=font, anchor="mm")
-    image.resize((320, 200), Image.Resampling.LANCZOS).save(ROOT / (entry["key"] + ".png"), optimize=True)
+def tinted(primary):
+    gray = BASE.convert("L")
+    if primary:
+        channels = (
+            gray.point([min(28, max(0, round((n - 80) * .18))) for n in range(256)]),
+            gray.point([min(245, round(40 + n * .95)) for n in range(256)]),
+            gray.point([min(255, round(190 + n * .55)) for n in range(256)]),
+        )
+    else:
+        channels = (
+            gray.point([min(150, round(30 + n * .45)) for n in range(256)]),
+            gray.point([min(250, round(100 + n * .8)) for n in range(256)]),
+            gray.point([min(255, round(200 + n * .45)) for n in range(256)]),
+        )
+    return Image.merge("RGB", channels)
 
 
-for entry in MANIFEST["combinations"]:
-    if not re.fullmatch(r"[a-z0-9_]+(?:--[a-z0-9_]+)*", entry["key"]):
-        raise ValueError(f'Unsafe image key: {entry["key"]}')
-    svg_card(entry)
-    png_card(entry)
+PRIMARY_IMAGE, SECONDARY_IMAGE = tinted(True), tinted(False)
 
-print(f'Built {len(MANIFEST["combinations"])} SVG and PNG pairs')
+
+def render(entry):
+    image = BASE.copy()
+    for tag in entry["secondary"]:
+        image.paste(SECONDARY_IMAGE, mask=MASKS[tag])
+    if entry["primary"] == "biceps":
+        image.paste(BICEPS, mask=MASKS["biceps"])
+    else:
+        image.paste(PRIMARY_IMAGE, mask=MASKS[entry["primary"]])
+    image = image.resize(SIZE, Image.Resampling.LANCZOS)
+    image = image.quantize(colors=256, method=Image.Quantize.MEDIANCUT, dither=Image.Dither.NONE)
+    image.save(ROOT / f'{entry["key"]}.png', optimize=True)
+
+
+if __name__ == "__main__":
+    for entry in MANIFEST["combinations"]:
+        render(entry)
+    print(f'Rendered {len(MANIFEST["combinations"])} anatomy PNGs at {SIZE[0]}×{SIZE[1]}')
