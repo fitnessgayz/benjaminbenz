@@ -1,4 +1,27 @@
 /* Prescribed, generated, and custom logs share the compact five-column grid. */
+.client-workout-panel-custom .workout-exercise-list.is-empty-custom-workout > :not(.workout-exercise-list-add) {
+  display: none !important;
+}
+
+.client-workout-panel-custom .workout-exercise-list.is-empty-custom-workout .workout-exercise-list-add {
+  margin-top: 0;
+}
+
+.client-workout-panel-custom .custom-workout-circuit-add-exercise {
+  display: block;
+  width: calc(100% - 24px);
+  margin: 12px;
+  padding: 11px 14px;
+  border: 1px solid #2c9cff;
+  border-radius: 11px;
+  background: #20252b;
+  color: #58b5ff;
+  font: inherit;
+  font-weight: 800;
+  text-align: left;
+  cursor: pointer;
+}
+
 :root body.dashboard-page .set-table {
   overflow: hidden;
   border: 1px solid #393d45;
@@ -231,10 +254,11 @@
   }
 
   body.client-dashboard-page #client-workout-panels [data-custom-workout-grouped="true"] .ios-log-exercise-header {
+    --ios-log-image-size: clamp(72px, 20vw, 84px);
     display: grid;
-    grid-template-columns: 52px minmax(0, 1fr) 38px;
+    grid-template-columns: var(--ios-log-image-size) minmax(0, 1fr) 38px;
     min-width: 0;
-    min-height: 66px;
+    min-height: calc(var(--ios-log-image-size) + 20px);
     padding: 10px 12px;
     align-items: center;
     gap: 10px;
@@ -246,10 +270,10 @@
 
   body.client-dashboard-page #client-workout-panels [data-custom-workout-grouped="true"] .ios-log-exercise-image {
     display: block;
-    width: 52px !important;
-    min-width: 52px !important;
-    height: 52px !important;
-    min-height: 52px !important;
+    width: var(--ios-log-image-size) !important;
+    min-width: var(--ios-log-image-size) !important;
+    height: var(--ios-log-image-size) !important;
+    min-height: var(--ios-log-image-size) !important;
     overflow: hidden;
     border: 1px solid #4b525e;
     border-radius: 10px;

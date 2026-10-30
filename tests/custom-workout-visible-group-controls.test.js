@@ -19,15 +19,11 @@ function context(extra={}) {
   vm.runInContext(['normalizeCustomWorkoutInlineGroupType','customWorkoutInlineGroupOptionsMarkup','customWorkoutGroupedRoundCardMarkup','clearCustomWorkoutInlineGroup','updateCustomWorkoutInlineGrouping'].map(fn).join('\n'),ctx);
   return ctx;
 }
-test('visible grouped card exposes conversion controls outside hidden source cards',()=>{
+test('grouped card keeps conversion controls in the hidden source and off the visible card',()=>{
   const ctx=context({customWorkoutGroupNameEditorMarkup:()=>'',customWorkoutCardMarkup:()=>'<article>Source card</article>',exerciseCardRows:()=>'<article>Assigned source</article>'});
   for(const format of ['single','superset','circuit']) {
     const markup=ctx.customWorkoutGroupedRoundCardMarkup(format,[{name:'Deadlift'}],2,0,'Custom workout',{panelFormat:'single'});
-    const control=markup.indexOf('data-custom-workout-inline-group-options');
-    assert.ok(control>markup.indexOf('</header>'));
-    assert.ok(control<markup.indexOf('data-custom-workout-grouped-source'));
-    assert.match(markup,/data-custom-workout-inline-group-option="superset"/);
-    assert.match(markup,/data-custom-workout-inline-group-option="circuit"/);
+    assert.doesNotMatch(markup,/data-custom-workout-inline-group-options|data-workout-next-exercise/);
   }
   for(const options of [{assigned:true,panelFormat:'single'},{panelFormat:'superset'},{panelFormat:'circuit'}]) {
     const markup=ctx.customWorkoutGroupedRoundCardMarkup('single',[],0,0,'Workout',options);
