@@ -5,7 +5,7 @@
   padding: 5px 10px;
   border: 1px solid var(--client-settings-line, #506050);
   border-radius: 10px;
-  color: var(--client-settings-accent, #ffd400);
+  color: var(--client-settings-accent, #61aaff);
   background: var(--surface-soft, #18211c);
   font: inherit;
   font-size: .79rem;
@@ -28,7 +28,7 @@
 }
 .client-exercise-history-dialog::backdrop { background: #000b; }
 .client-exercise-history-dialog :is(button, select):focus-visible,
-.training-log-exercise-history-button:focus-visible { outline: 3px solid var(--client-settings-accent, #ffd400); outline-offset: 2px; }
+.training-log-exercise-history-button:focus-visible { outline: 3px solid var(--client-settings-accent, #61aaff); outline-offset: 2px; }
 .client-exercise-history-header {
   position: sticky;
   top: 0;
@@ -41,7 +41,7 @@
   border-bottom: 1px solid var(--client-settings-line, #506050);
   background: var(--client-settings-surface, #19201b);
 }
-.client-exercise-history-header p { margin: 0 0 4px; color: var(--client-settings-accent, #ffd400); font-size: .75rem; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+.client-exercise-history-header p { margin: 0 0 4px; color: var(--client-settings-accent, #61aaff); font-size: .75rem; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
 .client-exercise-history-header h2 { margin: 0; font-size: clamp(1.25rem, 5vw, 1.8rem); line-height: 1.15; overflow-wrap: anywhere; }
 .client-exercise-history-header button {
   flex: none;
@@ -70,7 +70,7 @@
 .client-exercise-history-trend li { display: grid; grid-template-columns: 72px minmax(0, 1fr) 90px; align-items: center; gap: 8px; font-size: .72rem; }
 .client-exercise-history-trend li strong { font-size: .72rem; text-align: right; }
 .client-exercise-history-trend-track { height: 10px; border-radius: 20px; background: var(--surface-soft, #18211c); overflow: hidden; }
-.client-exercise-history-trend-track > span { display: block; height: 100%; border-radius: inherit; background: var(--client-settings-accent, #ffd400); }
+.client-exercise-history-trend-track > span { display: block; height: 100%; border-radius: inherit; background: var(--client-settings-accent, #61aaff); }
 .client-exercise-history-gym-list { display: grid; gap: 8px; }
 .client-exercise-history-gym-list > div { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; padding: 12px; border: 1px solid var(--client-settings-line, #506050); border-radius: 12px; }
 .client-exercise-history-gym-list strong { overflow-wrap: anywhere; }
@@ -86,7 +86,7 @@
 .client-exercise-history-session :is(th, td) { padding: 9px 12px; border-top: 1px solid var(--client-settings-line, #506050); }
 .client-exercise-history-session thead th { color: var(--muted, #bbc3bb); font-size: .7rem; text-transform: uppercase; }
 .client-exercise-history-session tr.is-warmup { color: var(--muted, #bbc3bb); }
-.client-exercise-history-more { min-height: 44px; padding: 9px 14px; border: 1px solid var(--client-settings-accent, #ffd400); border-radius: 10px; color: var(--client-settings-accent, #ffd400); background: transparent; font: inherit; font-weight: 850; cursor: pointer; }
+.client-exercise-history-more { min-height: 44px; padding: 9px 14px; border: 1px solid var(--client-settings-accent, #61aaff); border-radius: 10px; color: var(--client-settings-accent, #61aaff); background: transparent; font: inherit; font-weight: 850; cursor: pointer; }
 
 @media (max-width: 520px) {
   .client-exercise-history-dialog { max-height: calc(100dvh - 22px); }

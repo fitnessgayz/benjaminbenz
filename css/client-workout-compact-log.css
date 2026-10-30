@@ -12,10 +12,10 @@
   width: calc(100% - 24px);
   margin: 12px;
   padding: 11px 14px;
-  border: 1px solid #ffd400;
+  border: 1px solid #2c9cff;
   border-radius: 11px;
   background: #20252b;
-  color: #ffd400;
+  color: #58b5ff;
   font: inherit;
   font-weight: 800;
   text-align: left;
@@ -82,8 +82,8 @@
 }
 
 :root body.dashboard-page .set-table .set-row :is(input[data-set-weight], input[data-set-reps]):focus {
-  border-color: #ffd400 !important;
-  outline: 1px solid #ffd400 !important;
+  border-color: #2c9cff !important;
+  outline: 1px solid #2c9cff !important;
 }
 
 :root body.dashboard-page .set-table .set-complete-button,
@@ -106,8 +106,8 @@
 
 :root body.dashboard-page .set-table .set-complete-button[aria-pressed="true"],
 :root body.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-log-check[aria-pressed="true"] {
-  border-color: #ffd400 !important;
-  background: #ffd400 !important;
+  border-color: #2c9cff !important;
+  background: #2c9cff !important;
   color: #101820 !important;
 }
 
@@ -127,7 +127,7 @@
   border-color: #434a54 !important;
   border-radius: 8px !important;
   background: #111316 !important;
-  color: #ffd400 !important;
+  color: #39a4ff !important;
   font-size: .75rem !important;
 }
 
@@ -168,7 +168,7 @@
     --grouped-line: #363b44;
     --grouped-paper: #22262c;
     --grouped-cream: #1c2026;
-    --grouped-blue: #ffd400;
+    --grouped-blue: #2c9cff;
     color: #f7f8fa;
     color-scheme: dark;
   }
@@ -317,9 +317,9 @@
     min-height: 23px;
     padding: 0 3px;
     place-items: center;
-    border: 1px solid #ffd400;
+    border: 1px solid #40a7ff;
     border-radius: 6px;
-    color: #ffd400;
+    color: #40a7ff;
     font-size: .8rem;
     line-height: 1;
     vertical-align: 1px;
@@ -332,7 +332,7 @@
   }
 
   body.client-dashboard-page #client-workout-panels [data-custom-workout-grouped="true"] .ios-log-exercise-progress {
-    color: #ffd400 !important;
+    color: #40a7ff !important;
     font-size: .72rem;
     line-height: 1.2;
   }
@@ -377,8 +377,8 @@
   }
 
   body.client-dashboard-page #client-workout-panels [data-custom-workout-grouped="true"] .ios-log-set-section .custom-workout-grouped-rest-controls [data-custom-grouped-rest-toggle] {
-    border-color: #ffd400 !important;
-    color: #ffd400 !important;
+    border-color: #40a7ff !important;
+    color: #40a7ff !important;
   }
 
   body.client-dashboard-page #client-workout-panels [data-custom-workout-grouped="true"] .ios-log-exercise-card :is(.custom-workout-grouped-columns, .custom-workout-grouped-row) {
@@ -422,7 +422,7 @@
     border-color: #3e4855 !important;
     border-radius: 8px !important;
     background: #13161a !important;
-    color: #ffd400 !important;
+    color: #44a9ff !important;
     font-size: .7rem !important;
     font-weight: 800 !important;
   }
@@ -460,8 +460,8 @@
   }
 
   body.client-dashboard-page #client-workout-panels [data-custom-workout-grouped="true"] .ios-log-exercise-card .custom-workout-grouped-field:focus-within {
-    border-color: #ffd400 !important;
-    outline: 1px solid #ffd400 !important;
+    border-color: #2c9cff !important;
+    outline: 1px solid #2c9cff !important;
   }
 
   body.client-dashboard-page #client-workout-panels [data-custom-workout-grouped="true"] .ios-log-exercise-card .custom-workout-grouped-log-check {
@@ -475,8 +475,8 @@
   }
 
   body.client-dashboard-page #client-workout-panels [data-custom-workout-grouped="true"] .ios-log-exercise-card .custom-workout-grouped-log-check[aria-pressed="true"] {
-    border-color: #ffd400 !important;
-    background: #ffd400 !important;
+    border-color: #2c9cff !important;
+    background: #2c9cff !important;
     color: #111820 !important;
   }
 
@@ -499,13 +499,13 @@
     padding: 4px 6px;
     border: 0;
     background: transparent;
-    color: #ffd400 !important;
+    color: #40a7ff !important;
     font-size: .82rem;
     font-weight: 800;
   }
 
   body.client-dashboard-page #client-workout-panels [data-custom-workout-grouped="true"] .ios-log-exercise-footer button:focus-visible {
-    outline: 2px solid #ffd400;
+    outline: 2px solid #40a7ff;
     outline-offset: 2px;
   }
 
@@ -536,7 +536,7 @@
   }
 
   body.client-dashboard-page #client-workout-panels [data-custom-workout-grouped="true"] .ios-log-exercise-menu > summary:focus-visible {
-    outline: 2px solid #ffd400;
+    outline: 2px solid #40a7ff;
     outline-offset: 1px;
   }
 
@@ -618,8 +618,8 @@
   }
 
   body.client-dashboard-page #client-workout-panels [data-custom-workout-grouped="true"] .ios-log-exercise-notes textarea:focus-visible {
-    border-color: #ffd400;
-    outline: 1px solid #ffd400;
+    border-color: #40a7ff;
+    outline: 1px solid #40a7ff;
   }
 }
 

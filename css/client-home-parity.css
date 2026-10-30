@@ -11,7 +11,7 @@
 :root body.client-dashboard-page .client-home-community-heading,
 :root body.client-dashboard-page .client-home-week-controls { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 :root body.client-dashboard-page .client-home-planner .kicker,
-:root body.client-dashboard-page .client-home-community .kicker { margin: 0 0 4px; color: #ffd400; font-size: 13px; }
+:root body.client-dashboard-page .client-home-community .kicker { margin: 0 0 4px; color: #72b8ef; font-size: 13px; }
 :root body.client-dashboard-page .client-home-planner h3,
 :root body.client-dashboard-page .client-home-community h3 { margin: 0; color: inherit; font-size: 23px; }
 :root body.client-dashboard-page .client-home-rewards { display: flex; align-items: center; margin-top: 17px; padding: 3px; border: 1px solid #494d55; border-radius: 20px; background: #25272e; }
@@ -29,7 +29,7 @@
 :root body.client-dashboard-page .workout-completion-atari img { position: absolute; display: block; width: 200%; height: 200%; max-width: none; object-fit: fill; pointer-events: none; }
 :root body.client-dashboard-page .workout-completion-atari.is-celebrating img { left: -100%; top: 0; }
 :root body.client-dashboard-page .workout-completion-atari.is-encouraging img { left: 0; top: -100%; }
-:root body.client-dashboard-page .client-home-reward-count { flex: 0 0 auto; color: #ffd400; font-size: clamp(25px, 6vw, 32px); line-height: 1; font-weight: 800; }
+:root body.client-dashboard-page .client-home-reward-count { flex: 0 0 auto; color: #64bdff; font-size: clamp(25px, 6vw, 32px); line-height: 1; font-weight: 800; }
 :root body.client-dashboard-page .client-home-reward-copy { display: grid; min-width: 0; gap: 4px; }
 :root body.client-dashboard-page .client-home-reward-copy b { color: #f7f8fa; font-size: clamp(15px, 3.7vw, 17px); line-height: 1.16; }
 :root body.client-dashboard-page .client-home-reward-copy small { color: #bbc0c9; font-size: 12px; line-height: 1.24; }
@@ -47,18 +47,18 @@
 :root body.client-dashboard-page .client-home-week-controls button { width: 42px; height: 42px; border: 1px solid #56606a; border-radius: 50%; background: #313942; color: #fff; font-size: 28px; }
 :root body.client-dashboard-page .client-home-week-days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; margin-top: 12px; }
 :root body.client-dashboard-page .client-home-week-days button { display: grid; justify-items: center; gap: 5px; min-width: 0; min-height: 75px; padding: 8px 1px; border: 1px solid transparent; border-radius: 12px; background: transparent; color: #d6dce1; }
-:root body.client-dashboard-page .client-home-week-days button.is-selected { border-color: #ffd400; background: #3b310e; }
+:root body.client-dashboard-page .client-home-week-days button.is-selected { border-color: #72b8ef; background: #273f52; }
 :root body.client-dashboard-page .client-home-week-days button.is-today strong { color: #ffd400; }
 :root body.client-dashboard-page .client-home-week-days button span:first-child { font-size: 11px; }
 :root body.client-dashboard-page .client-home-week-days button strong { font-size: 18px; }
 :root body.client-dashboard-page .client-home-day-dot { width: 6px; height: 6px; border-radius: 50%; background: transparent; }
-:root body.client-dashboard-page .client-home-week-days .is-complete .client-home-day-dot { background: #ffd400; }
+:root body.client-dashboard-page .client-home-week-days .is-complete .client-home-day-dot { background: #6db5ed; }
 :root body.client-dashboard-page .client-home-week-detail { min-height: 24px; margin: 13px 0; color: #c8d1d7; font-size: 14px; }
-:root body.client-dashboard-page .client-home-plan-link { padding: 0; border: 0; background: transparent; color: #ffd400; font-size: 15px; font-weight: 700; }
+:root body.client-dashboard-page .client-home-plan-link { padding: 0; border: 0; background: transparent; color: #72b8ef; font-size: 15px; font-weight: 700; }
 :root body.client-dashboard-page .client-home-checkin-links { display: flex; flex-wrap: wrap; gap: 6px 18px; padding: 2px 4px; }
-:root body.client-dashboard-page .client-home-checkin-links button { width: auto; min-height: 44px; padding: 8px 0; border: 0; background: transparent; color: #ffd400; font-size: 15px; font-weight: 700; text-decoration: underline; text-underline-offset: 4px; }
+:root body.client-dashboard-page .client-home-checkin-links button { width: auto; min-height: 44px; padding: 8px 0; border: 0; background: transparent; color: #72b8ef; font-size: 15px; font-weight: 700; text-decoration: underline; text-underline-offset: 4px; }
 :root body.client-dashboard-page .client-home-community > p { color: #c8d1d7; }
-:root body.client-dashboard-page .client-home-community-heading button { border: 0; background: transparent; color: #ffd400; font-weight: 700; }
+:root body.client-dashboard-page .client-home-community-heading button { border: 0; background: transparent; color: #72b8ef; font-weight: 700; }
 :root body.client-dashboard-page .client-home-community-feed { display: grid; gap: 8px; }
 :root body.client-dashboard-page .client-home-community-post { padding: 12px; border: 1px solid #45515b; border-radius: 12px; background: #1d2227; }
 :root body.client-dashboard-page .client-home-community-post p { margin: 4px 0 0; }
@@ -104,18 +104,18 @@
 }
 :root body.client-dashboard-page .workout-exercise-organize-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 0 8px 12px; }
 :root body.client-dashboard-page .workout-exercise-organize-actions button,
-:root body.client-dashboard-page .workout-exercise-organize-actions select { min-width: 40px; min-height: 40px; border: 1px solid #a47700; border-radius: 9px; background: #27333e; color: #ffd400; font: inherit; }
+:root body.client-dashboard-page .workout-exercise-organize-actions select { min-width: 40px; min-height: 40px; border: 1px solid #387aa8; border-radius: 9px; background: #27333e; color: #5aa9e8; font: inherit; }
 :root body.client-dashboard-page .workout-exercise-organize-actions button:disabled { opacity: .4; }
-:root body.client-dashboard-page .workout-exercise-organize-actions label { color: #ffd400; font-size: 13px; font-weight: 700; }
-:root[data-client-theme="light"] body.client-dashboard-page .workout-exercise-organize-actions :is(button, select) { background: #fff5d6; color: #936800; }
-:root[data-client-theme="light"] body.client-dashboard-page .workout-exercise-organize-actions label { color: #936800; }
+:root body.client-dashboard-page .workout-exercise-organize-actions label { color: #5aa9e8; font-size: 13px; font-weight: 700; }
+:root[data-client-theme="light"] body.client-dashboard-page .workout-exercise-organize-actions :is(button, select) { background: #e9f4fb; color: #176a9e; }
+:root[data-client-theme="light"] body.client-dashboard-page .workout-exercise-organize-actions label { color: #176a9e; }
 
 :root[data-client-theme="light"] body.client-dashboard-page .client-home-rewards { background: #f4f7f9; border-color: #bdc8d0; }
-:root[data-client-theme="light"] body.client-dashboard-page .client-home-reward-count { color: #936800; }
+:root[data-client-theme="light"] body.client-dashboard-page .client-home-reward-count { color: #176a9e; }
 :root[data-client-theme="light"] body.client-dashboard-page .client-home-reward-copy b { color: #172834; }
 :root[data-client-theme="light"] body.client-dashboard-page .client-home-reward-copy small { color: #41515b; }
 :root[data-client-theme="light"] body.client-dashboard-page .workout-completion-atari-message span:first-child { color: #8b5600; }
-:root[data-client-theme="light"] body.client-dashboard-page :is(.client-home-checkin-links button, .client-home-plan-link, .client-home-community-heading button, .client-home-planner .kicker, .client-home-community .kicker) { color: #936800; }
+:root[data-client-theme="light"] body.client-dashboard-page :is(.client-home-checkin-links button, .client-home-plan-link, .client-home-community-heading button, .client-home-planner .kicker, .client-home-community .kicker) { color: #185f92; }
 :root body.client-dashboard-page .client-home-grid .client-home-today-workout { order: 0; }
 :root body.client-dashboard-page .client-home-planner { order: 1; }
 :root body.client-dashboard-page .client-home-checkin-links { order: 2; }
