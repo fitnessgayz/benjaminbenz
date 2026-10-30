@@ -11,6 +11,8 @@ struct FWBCoachApp: App {
 #if DEBUG
             if ProcessInfo.processInfo.arguments.contains("--coach-workspace-audit") {
                 CoachWorkspaceAuditRootView()
+            } else if ProcessInfo.processInfo.arguments.contains("--parity-audit") {
+                WorkoutParityAuditRootView()
             } else {
                 CoachAppView()
             }

@@ -302,6 +302,7 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
     @State private var parityEditingSet: UUID?
     @State private var parityRemovePicker = false
     @State private var parityResetPrompt = false
+    @State private var showCustomWorkoutGenerator = false
     @State private var paritySessionStarted = false
     @State private var parityFinishedAt: Date?
     @State private var parityResumeRestAfterFeedback = false
@@ -367,12 +368,16 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
                     workoutSelector
                         .padding(.horizontal, -20)
 
-                    if embedded {
+                    if isCustomWorkout {
+                        customWorkoutHeader
+                    } else if embedded {
                         EmbeddedWorkoutHeader(workout: workout)
                     } else {
                         WorkoutSessionHeader(title: workout.title.fwbWorkoutDisplayTitle)
                     }
-                    workoutDateCard
+                    if !isCustomWorkout || !exercises.isEmpty || paritySessionStarted {
+                        workoutDateCard
+                    }
 
                     if let seedSession {
                         VStack(alignment: .leading, spacing: 4) {
@@ -391,18 +396,17 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
                     }
 
                     if isCustomWorkout {
-                        WorkoutParityFormatPicker(selection: customWorkoutFormatBinding)
-                        paritySessionControls
-                        WorkoutParityCountStepper(
-                            label: "Exercises", count: exercises.count,
-                            onMinus: { parityRemovePicker = true },
-                            onPlus: { exerciseEditorRequest = ExerciseEditorRequest(mode: .add(.newCircuit)) }
-                        )
-                        .clipShape(RoundedRectangle(cornerRadius: 20))
+                        customWorkoutExerciseLauncher
+                        if paritySessionStarted {
+                            paritySessionControls
+                        } else {
+                            customWorkoutStartButton
+                        }
                     } else {
                         paritySessionControls
                     }
 
+                    if !isCustomWorkout || !exercises.isEmpty || paritySessionStarted {
                     HStack(spacing: 6) {
                         if coachAccountID == nil {
                             Button { commentsExpanded.toggle() } label: {
@@ -468,6 +472,7 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
                     .buttonStyle(FWBPrimaryButtonStyle())
                     .disabled(isSyncing || paritySavingGroup != nil || logStore.state == .loading)
                     .accessibilityIdentifier("workout.finish")
+                    }
                 }
                 .disabled(isWorkoutEntryLocked)
                 .padding(FWBLayout.pagePadding)
@@ -510,6 +515,9 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
         }
         .animation(.spring(response: 0.34, dampingFraction: 0.82), value: praiseBanner)
         .toolbarBackground(Color.fwbBackground, for: .navigationBar)
+        .navigationDestination(isPresented: $showCustomWorkoutGenerator) {
+            WorkoutGeneratorView(clientEmail: clientEmail, suggestedExercises: suggestedExercises)
+        }
         .toolbar {
             ToolbarItemGroup(placement: .keyboard) {
                 Spacer()
@@ -899,6 +907,108 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
         return achievementHistoryStore.sessions
     }
 
+    private var customWorkoutHeader: some View {
+        HStack(alignment: .center, spacing: 12) {
+            Text("Custom Workout")
+                .font(FWBFont.sized(26).weight(.bold))
+                .foregroundStyle(Color.fwbWarmWhite)
+                .accessibilityAddTraits(.isHeader)
+            Spacer(minLength: 0)
+            Menu {
+                Button {
+                    showCustomWorkoutGenerator = true
+                } label: {
+                    Label("Generate today’s workout", systemImage: "sparkles")
+                }
+                Button(role: .destructive) {
+                    parityResetPrompt = true
+                } label: {
+                    Label("Reset workout", systemImage: "arrow.counterclockwise")
+                }
+            } label: {
+                Image(systemName: "ellipsis")
+                    .font(FWBFont.headline.weight(.bold))
+                    .foregroundStyle(Color.fwbWarmWhite)
+                    .frame(width: 44, height: 44)
+                    .background(Color.fwbSurface, in: Circle())
+                    .overlay { Circle().stroke(Color.fwbLine, lineWidth: 1) }
+            }
+            .accessibilityLabel("Custom workout options")
+            .accessibilityIdentifier("customWorkout.options")
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var customWorkoutExerciseLauncher: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack(alignment: .top, spacing: 12) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Your exercises")
+                        .font(FWBFont.sized(20).weight(.bold))
+                        .foregroundStyle(Color.fwbWarmWhite)
+                    Text("Build as you go.")
+                        .font(FWBFont.subheadline)
+                        .foregroundStyle(Color.fwbMuted)
+                }
+                Spacer(minLength: 0)
+                WorkoutParityFormatPicker(selection: customWorkoutFormatBinding)
+            }
+
+            Button {
+                exerciseEditorRequest = ExerciseEditorRequest(mode: .add(.currentGroup))
+            } label: {
+                if exercises.isEmpty {
+                    VStack(spacing: 12) {
+                        Image(systemName: "plus")
+                            .font(FWBFont.sized(27).weight(.medium))
+                            .foregroundStyle(.white)
+                            .frame(width: 58, height: 58)
+                            .background(Color(red: 0.07, green: 0.52, blue: 0.98), in: Circle())
+                        Text("Add first exercise")
+                            .font(FWBFont.headline.weight(.bold))
+                            .foregroundStyle(Color(red: 0.42, green: 0.73, blue: 1))
+                        Text("Choose an exercise to get started\non your custom workout.")
+                            .font(FWBFont.footnote)
+                            .multilineTextAlignment(.center)
+                            .foregroundStyle(Color.fwbMuted)
+                    }
+                    .frame(maxWidth: .infinity, minHeight: 220)
+                } else {
+                    Label("Add exercise", systemImage: "plus.circle.fill")
+                        .font(FWBFont.subheadline.weight(.bold))
+                        .foregroundStyle(Color(red: 0.42, green: 0.73, blue: 1))
+                        .frame(maxWidth: .infinity, minHeight: 48, alignment: .leading)
+                        .padding(.horizontal, 14)
+                }
+            }
+            .buttonStyle(.plain)
+            .background(Color.fwbSurface, in: RoundedRectangle(cornerRadius: 17))
+            .overlay {
+                RoundedRectangle(cornerRadius: 17)
+                    .strokeBorder(Color.fwbLine, style: StrokeStyle(lineWidth: 1, dash: [5, 5]))
+            }
+            .accessibilityIdentifier(exercises.isEmpty ? "customWorkout.addFirstExercise" : "customWorkout.addExercise")
+        }
+        .padding(16)
+        .background(Color.fwbCard, in: RoundedRectangle(cornerRadius: 20))
+        .overlay { RoundedRectangle(cornerRadius: 20).stroke(Color.fwbLine, lineWidth: 1) }
+        .accessibilityIdentifier("customWorkout.exerciseLauncher")
+    }
+
+    private var customWorkoutStartButton: some View {
+        Button { parityStart() } label: {
+            Label("Start workout", systemImage: "dumbbell.fill")
+                .font(FWBFont.headline.weight(.bold))
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity, minHeight: 58)
+                .background(Color(red: 0.07, green: 0.52, blue: 0.98), in: RoundedRectangle(cornerRadius: 14))
+        }
+        .buttonStyle(.plain)
+        .disabled(!didLoadSession)
+        .padding(.top, exercises.isEmpty ? 70 : 0)
+        .accessibilityIdentifier("workout.start")
+    }
+
     private var paritySessionControls: some View {
         HStack(spacing: 12) {
             if paritySessionStarted {
@@ -914,9 +1024,11 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
                     .accessibilityIdentifier("workout.start")
             }
             Spacer(minLength: 0)
-            Button("Reset") { parityResetPrompt = true }
-                .font(FWBFont.footnote.weight(.bold))
-                .accessibilityIdentifier("workout.parity.reset")
+            if !isCustomWorkout {
+                Button("Reset") { parityResetPrompt = true }
+                    .font(FWBFont.footnote.weight(.bold))
+                    .accessibilityIdentifier("workout.parity.reset")
+            }
         }
         .foregroundStyle(Color.fwbWarmWhite)
     }
