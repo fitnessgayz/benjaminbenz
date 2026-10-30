@@ -622,7 +622,7 @@
 .dashboard-page .client-workout-panel-custom .custom-workout-exercise-control button:focus-visible,
 .dashboard-page .client-workout-panel-custom .custom-workout-card:focus-visible,
 .dashboard-page .custom-workout-exercise-dialog :is(button, input):focus-visible {
-  outline: 3px solid var(--blue, #ffd400);
+  outline: 3px solid var(--blue, #2878ff);
   outline-offset: 3px;
 }
 
@@ -1495,7 +1495,7 @@
 
   .dashboard-page :is(.client-workout-panel-custom, .client-workout-panel-assigned) .custom-workout-carousel[data-group-workout-deck="true"] {
     border-color: rgba(40, 120, 255, .28);
-    border-left: 4px solid var(--blue, #ffd400);
+    border-left: 4px solid var(--blue, #2878ff);
     background: #f5f8ff;
   }
 
@@ -1549,7 +1549,7 @@
   }
 
   .dashboard-page .custom-workout-group-next-card:focus-visible {
-    outline: 3px solid var(--blue, #ffd400);
+    outline: 3px solid var(--blue, #2878ff);
     outline-offset: -5px;
   }
 
@@ -1730,7 +1730,7 @@
   --grouped-paper: #fff;
   --grouped-cream: #f8f8f3;
   --grouped-lime: var(--lime, #ffd400);
-  --grouped-blue: var(--blue, #ffd400);
+  --grouped-blue: var(--blue, #2878ff);
   --grouped-gold: #d5a239;
   --grouped-focus: #ffd400;
   width: 100%;
@@ -1986,7 +1986,7 @@
 }
 
 .dashboard-page .client-workout-panel-custom .custom-workout-grouped-exercise-key-item [data-open-custom-exercise]:focus-visible {
-  outline: 3px solid var(--blue, #ffd400);
+  outline: 3px solid var(--blue, #2878ff);
   outline-offset: 2px;
 }
 

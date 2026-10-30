@@ -1,5 +1,4 @@
-/* Client web palette. Keep this after the feature styles so their legacy
-   color aliases resolve to the same gold as the selected mobile tab. */
+/* Keep electric gold in place of the former lime without overriding blue roles. */
 :root body.client-dashboard-page {
   --brand-primary: #ffd400;
   --brand-primary-hover: #ffe066;
@@ -7,33 +6,29 @@
   --lime: #ffd400;
   --focus: #ffd400;
   --success: #ffd400;
-  --blue: #ffd400;
-  --secondary-accent: #ffd400;
-  --client-neon: #ffd400;
-  --client-accent: #ffd400;
-  --client-accent-bright: #ffd400;
-  --client-accent-ink: #171a17;
-  --client-settings-accent: #ffd400;
-  --client-page-headline: #ffd400;
+  --blue: #57a8ff;
+  --secondary-accent: #57a8ff;
+  --client-neon: #5aa9e8;
+  --client-accent: #57a8ff;
+  --client-accent-bright: #54baff;
+  --client-accent-ink: #102b50;
+  --client-settings-accent: #57a8ff;
+  --client-page-headline: #57a8ff;
   --client-action-link: #54baff;
 }
 
 :root[data-client-theme="light"] body.client-dashboard-page {
-  --focus: #936800;
+  --focus: #0069dd;
   --success: #936800;
-  --blue: #936800;
-  --secondary-accent: #936800;
-  --client-neon: #936800;
-  --client-accent: #936800;
-  --client-accent-bright: #ffd400;
-  --client-accent-ink: #171a17;
-  --client-settings-accent: #936800;
-  --client-page-headline: #795500;
+  --blue: #0069dd;
+  --secondary-accent: #0069dd;
+  --client-neon: #0069dd;
+  --client-accent: #0069dd;
+  --client-accent-bright: #54baff;
+  --client-accent-ink: #102b50;
+  --client-settings-accent: #0069dd;
+  --client-page-headline: #0059c9;
   --client-action-link: #075da3;
-}
-
-:root[data-client-theme="light"] body.client-dashboard-page .exercise-history-by-gym > strong {
-  color: #936800;
 }
 
 :root body.client-dashboard-page .client-settings-panel {
@@ -42,7 +37,7 @@
 
 :root body.client-dashboard-page [data-custom-workout-grouped="true"] {
   --grouped-lime: #ffd400;
-  --grouped-blue: #ffd400;
+  --grouped-blue: #2c9cff;
   --grouped-gold: #ffd400;
   --grouped-focus: #ffd400;
 }
@@ -73,26 +68,6 @@
   --lime: #ffd400;
 }
 
-:root body.client-dashboard-page .client-workout-panel-custom .custom-workout-launcher-gym .workout-gym-picker label,
-:root body.client-dashboard-page .client-workout-panel-custom :is(
-  .custom-workout-launcher-add, .custom-workout-footer-add,
-  .custom-workout-manage-exercises > summary
-) {
-  color: var(--client-accent);
-}
-
-:root body.client-dashboard-page .client-workout-panel-custom :is(
-  .custom-workout-launcher-add-icon, .custom-workout-footer-add-icon
-) {
-  background: #ffd400;
-  color: #171a17;
-}
-
-:root body.client-dashboard-page .client-workout-panel-custom .custom-workout-format-button.is-active {
-  background: #3b310e;
-  color: #ffe066;
-}
-
 :root body.client-dashboard-page .client-workout-panel-custom .custom-workout-launcher-heading h2 {
   color: var(--client-page-headline);
 }
@@ -106,8 +81,21 @@
   color: var(--client-action-link);
 }
 
-:root body.client-dashboard-page :is(.workout-gym-picker label, .training-log-gym) {
-  color: var(--client-accent);
+:root[data-client-theme="light"] body.client-dashboard-page .client-workout-selection-action {
+  color: var(--client-action-link);
+}
+
+/* The custom exercise cards stay dark in light mode, so their blue must stay bright. */
+:root[data-client-theme="light"] body.client-dashboard-page .client-workout-panel-custom .custom-workout-launcher-exercise-heading h3 {
+  color: #68b9ff !important;
+}
+
+:root[data-client-theme="light"] body.client-dashboard-page .client-workout-panel-custom :is(
+  .custom-workout-launcher-add strong,
+  .custom-workout-footer-add strong,
+  .custom-workout-manage-exercises > summary
+) {
+  color: #68b9ff;
 }
 
 :root body.client-dashboard-page :is(input[type="checkbox"], input[type="radio"], input[type="range"]) {
