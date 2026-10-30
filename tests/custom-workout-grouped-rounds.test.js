@@ -395,16 +395,15 @@ test("starts the persistent workout timer and rest timer after a successful roun
   assert.match(renderTimer, /renderCustomWorkoutGroupedTimerPanels\(\)/);
 });
 
-test("logging a grouped warm-up starts rest while skipping advances without touching the timer", () => {
+test("logging or skipping a grouped warm-up leaves automatic rest stopped", () => {
   const logWarmUp = sourceForFunction("logCustomWorkoutGroupedWarmUp");
   const skipWarmUp = sourceForFunction("skipCustomWorkoutGroupedWarmUp");
   const interactions = sourceForFunction("handleWorkoutInteractions");
 
   assert.match(logWarmUp, /if \(!result\.saved\) return result/);
   assert.match(logWarmUp, /customWorkoutGroupedRestAction = carousel\.querySelector/);
-  assert.match(logWarmUp, /resetRestTimer\(\)/);
-  assert.match(logWarmUp, /startOrPauseRestTimer\(\)/);
-  assert.ok(logWarmUp.indexOf("if (!result.saved) return result") < logWarmUp.indexOf("startOrPauseRestTimer()"));
+  assert.doesNotMatch(logWarmUp, /resetRestTimer\(\)|startOrPauseRestTimer\(\)/);
+  assert.match(logWarmUp, /renderCustomWorkoutGroupedRestControls\(\)/);
   assert.match(skipWarmUp, /Warm-up skipped\. Start the first round when you’re ready\./);
   assert.match(skipWarmUp, /data-custom-grouped-round="1"/);
   assert.doesNotMatch(skipWarmUp, /RestTimer|restTimer|startOrPause/);

@@ -11145,16 +11145,7 @@ async function logCustomWorkoutGroupedWarmUp(button) {
   customWorkoutGroupedRestAction = carousel.querySelector(
     '[data-kind="warmup"] [data-custom-grouped-round-action]'
   );
-  if (autoRestTimerEnabled()) {
-    const generatedRestDurations = logElements
-      .filter(logElement => logElement.dataset?.generatedExercise === "true" && logElement.dataset.exerciseRest)
-      .map(logElement => workoutCarouselRestSeconds(logElement.dataset.exerciseRest));
-    if (generatedRestDurations.length) setRestTimerDuration(Math.max(...generatedRestDurations));
-    resetRestTimer();
-    startOrPauseRestTimer();
-  } else {
-    renderCustomWorkoutGroupedRestControls();
-  }
+  renderCustomWorkoutGroupedRestControls();
   carousel.querySelector('[data-custom-grouped-round="1"]')
     ?.scrollIntoView?.({ block: "nearest", behavior: "smooth" });
   return result;
@@ -11243,7 +11234,7 @@ async function logCustomWorkoutGroupedRound(button) {
   customWorkoutGroupedRestAction = carousel.querySelector(
     `[data-custom-grouped-round="${roundNumber}"] [data-custom-grouped-round-action]`
   );
-  if (autoRestTimerEnabled()) {
+  if (autoRestTimerEnabled() && workoutGroupReadyForRest(carousel.dataset.customWorkoutFormat, logElements.length)) {
     const generatedRestDurations = logElements
       .filter(logElement => logElement.dataset?.generatedExercise === "true" && logElement.dataset.exerciseRest)
       .map(logElement => workoutCarouselRestSeconds(logElement.dataset.exerciseRest));
@@ -11396,7 +11387,9 @@ async function toggleCustomWorkoutGroupedSet(button) {
       startedAfterRound: isWarmUp ? 0 : roundNumber
     });
   }
-  const roundComplete = !isWarmUp && customWorkoutGroupedRoundIsLogged(carousel, roundNumber);
+  const roundComplete = !isWarmUp &&
+    workoutGroupReadyForRest(carousel.dataset.customWorkoutFormat, customWorkoutGroupedLogElements(carousel).length) &&
+    customWorkoutGroupedRoundIsLogged(carousel, roundNumber);
   renderCustomWorkoutGroupedCard(carousel);
   if (roundComplete) {
     customWorkoutGroupedRestAction = carousel.querySelector(
@@ -12125,7 +12118,7 @@ async function logCurrentWorkoutCarouselSet(button) {
   const completedRound = current.index === cards.length - 1 &&
     (nextProgress.isComplete || (nextProgress.current?.round || current.round) > current.round);
 
-  if (completedRound && !nextProgress.isComplete && autoRestTimerEnabled()) {
+  if (completedRound && workoutGroupReadyForRest(format, cards.length) && !nextProgress.isComplete && autoRestTimerEnabled()) {
     const restValue = current.exercise.logElement?.dataset.exerciseRest || "";
     setRestTimerDuration(workoutCarouselRestSeconds(restValue));
     openRestTimer(button);
@@ -12683,8 +12676,16 @@ function moveAssignedWorkoutExercise(panel, index, direction) {
   return true;
 }
 
-function customWorkoutExerciseAddConfig() {
-  return { count: 1, label: "Add exercise", hint: "" };
+function customWorkoutExerciseAddConfig(format) {
+  switch (normalizeCustomWorkoutFormat(format)) {
+    case "superset": return { count: 2, label: "Add exercise", hint: "New supersets have two exercise slots. Add again to fill the partner slot." };
+    case "circuit": return { count: 3, label: "Add exercise", hint: "New circuits have three exercise slots. Add again to fill the remaining slots." };
+    default: return { count: 1, label: "Add exercise", hint: "" };
+  }
+}
+
+function workoutGroupReadyForRest(format, exerciseCount) {
+  return exerciseCount >= customWorkoutExerciseAddConfig(format).count;
 }
 
 function customWorkoutPickerMatches(query, category = "all") {
@@ -12744,7 +12745,7 @@ function syncCustomWorkoutExerciseControls(panel) {
   panel.querySelectorAll("[data-remove-custom-exercise]").forEach((button) => { button.disabled = count === 0; });
   const add = customWorkoutExerciseAddConfig(panel.dataset.customWorkoutFormat);
   panel.querySelectorAll("[data-pick-custom-exercise]").forEach((button) => {
-    button.setAttribute("aria-label", `${add.label}${add.count > 1 ? ` (${add.count} exercises)` : ""}`);
+    button.setAttribute("aria-label", add.label);
   });
 }
 
@@ -12767,6 +12768,8 @@ function openCustomWorkoutExerciseEditor(card) {
 function addCustomWorkoutPickedExercise(panel, name) {
   const stack = panel?.querySelector("[data-custom-workout-carousel-stack]");
   if (!stack || !String(name).trim()) return null;
+  const format = normalizeCustomWorkoutFormat(panel.dataset.customWorkoutFormat);
+  const add = customWorkoutExerciseAddConfig(format);
   const blankCard = Array.from(panel.querySelectorAll("[data-custom-exercise-card]")).find((card) => {
     const log = card.querySelector("[data-exercise-log]");
     const input = card.querySelector("[data-exercise-name-input]");
@@ -12782,8 +12785,6 @@ function addCustomWorkoutPickedExercise(panel, name) {
       return blankCard;
     }
   }
-  const format = normalizeCustomWorkoutFormat(panel.dataset.customWorkoutFormat);
-  const add = customWorkoutExerciseAddConfig(format);
   const carousels = customWorkoutCarousels(panel);
   const last = carousels.at(-1);
   const index = panel.querySelectorAll("[data-custom-exercise-card]").length;
@@ -12794,12 +12795,14 @@ function addCustomWorkoutPickedExercise(panel, name) {
       card.dataset.customWorkoutGroup = carousel.dataset.customWorkoutGroup;
     });
   });
-  const group = format === "circuit" && last
+  const lastGroupSize = grouped ? customWorkoutCarouselCards(last).length : 0;
+  const fillLastGroup = grouped && last && lastGroupSize < add.count;
+  const group = fillLastGroup
     ? Number(last.dataset.customWorkoutGroup) || 0
     : grouped && index > 0
       ? Math.max(...carousels.map((carousel) => Number(carousel.dataset.customWorkoutGroup) || 0)) + 1 : 0;
   const workoutTitle = panel.dataset.customWorkoutTitle || customWorkoutTitle;
-  let list = grouped && format !== "circuit" ? null : last?.querySelector("[data-custom-workout-list]");
+  let list = grouped && !fillLastGroup ? null : last?.querySelector("[data-custom-workout-list]");
   if (!list) {
     stack.insertAdjacentHTML("beforeend", customWorkoutCarouselGroupMarkup(format, [], group, index, workoutTitle,
       { panelFormat: format, isLastGroup: true }));
@@ -12808,7 +12811,8 @@ function addCustomWorkoutPickedExercise(panel, name) {
   const existingGroupSize = list.querySelectorAll?.("[data-custom-exercise-card]")?.length
     ?? list.children?.length ?? 0;
   let firstCard = null;
-  for (let position = 0; position < add.count; position++) {
+  const count = grouped ? add.count - existingGroupSize : 1;
+  for (let position = 0; position < count; position++) {
     const exercise = { code: nextCustomExerciseCode(panel), name: position === 0 ? String(name).trim() : "", group, groupType: format, prescription: "Custom sets", rest: "" };
     list.insertAdjacentHTML("beforeend", customWorkoutCardMarkup(exercise, workoutTitle, index + position,
       { format, panelFormat: format, groupPosition: existingGroupSize + position }));
@@ -12857,7 +12861,7 @@ function openCustomWorkoutExerciseDialog(trigger, mode = "add") {
           <div class="custom-workout-exercise-options custom-workout-suggestion-menu" id="custom-workout-picker-options" role="listbox" aria-label="Exercise suggestions" data-custom-exercise-suggestions hidden></div>
           <p data-workout-picker-empty hidden>No matching exercises. You can still add the name you typed.</p>
         </div>
-        <button class="button button-dark" type="submit">${addConfig.label}${addConfig.count > 1 ? ` · ${addConfig.count} exercises` : ""}</button>
+        <button class="button button-dark" type="submit">${addConfig.label}</button>
       </form>`}
   `;
   let addedCard = null;
@@ -19412,7 +19416,8 @@ function handleWorkoutInteractions() {
         const groupIndex = Number(groupCarousel.dataset.customWorkoutGroup) || 0;
         logElement.dataset.groupLoggedSets = String(filledSetCount(logElement));
         const progress = workoutCarouselProgress(groupCarousel, cards, groupFormat, groupIndex);
-        completedGroupRound = progress.isComplete || Boolean(progress.current && progress.current.round > Number(setRow.dataset.setNumber));
+        completedGroupRound = workoutGroupReadyForRest(groupFormat, cards.length) &&
+          (progress.isComplete || Boolean(progress.current && progress.current.round > Number(setRow.dataset.setNumber)));
         renderCustomWorkoutCarousel(groupCarousel);
       }
       if (!isWarmUp && autoRestTimerEnabled() && (!groupCarousel || groupFormat === "single" || completedGroupRound)) {

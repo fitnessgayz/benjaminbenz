@@ -88,11 +88,24 @@ test("automatic rest can be turned off without removing manual timer controls", 
   assert.equal(enabled(), true);
 
   assert.match(dashboardSource, /data-auto-rest-timer checked/);
-  assert.match(sourceForFunction("logCustomWorkoutGroupedWarmUp"), /if \(autoRestTimerEnabled\(\)\)/);
-  assert.match(sourceForFunction("logCustomWorkoutGroupedRound"), /if \(autoRestTimerEnabled\(\)\)/);
-  assert.match(sourceForFunction("logCurrentWorkoutCarouselSet"), /completedRound && !nextProgress\.isComplete && autoRestTimerEnabled\(\)/);
+  assert.doesNotMatch(sourceForFunction("logCustomWorkoutGroupedWarmUp"), /startOrPauseRestTimer\(\)/);
+  assert.match(sourceForFunction("logCustomWorkoutGroupedRound"), /if \(autoRestTimerEnabled\(\) && workoutGroupReadyForRest\(carousel\.dataset\.customWorkoutFormat, logElements\.length\)\)/);
+  assert.match(sourceForFunction("toggleCustomWorkoutGroupedSet"), /workoutGroupReadyForRest\(carousel\.dataset\.customWorkoutFormat, customWorkoutGroupedLogElements\(carousel\)\.length\)/);
+  assert.match(sourceForFunction("logCurrentWorkoutCarouselSet"), /completedRound && workoutGroupReadyForRest\(format, cards\.length\) && !nextProgress\.isComplete && autoRestTimerEnabled\(\)/);
   assert.match(sourceForFunction("handleWorkoutInteractions"), /if \(!isWarmUp && autoRestTimerEnabled\(\) && [^\n]+\) \{\s*resetRestTimer\(\);\s*openRestTimer\(completeSetButton\)/);
   assert.match(sourceForFunction("handleWorkoutInteractions"), /if \(setRestButton\) \{[\s\S]*?openRestTimer\(setRestButton\)/);
+});
+
+test("grouped rest waits until the superset or circuit has every exercise slot", () => {
+  const ready = Function(
+    "normalizeCustomWorkoutFormat",
+    `${sourceForFunction("customWorkoutExerciseAddConfig")}; ${sourceForFunction("workoutGroupReadyForRest")}; return workoutGroupReadyForRest;`
+  )((value) => ["superset", "circuit"].includes(value) ? value : "single");
+  assert.equal(ready("superset", 1), false);
+  assert.equal(ready("superset", 2), true);
+  assert.equal(ready("circuit", 2), false);
+  assert.equal(ready("circuit", 3), true);
+  assert.equal(ready("circuit", 4), true);
 });
 
 test("automatic rest preference saves immediately when the Settings switch changes", () => {

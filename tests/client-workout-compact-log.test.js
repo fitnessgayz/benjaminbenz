@@ -75,33 +75,34 @@ test("logging a working set copies valid weight and reps into empty next-row fie
 });
 
 test("grouped Log box saves its row, pre-fills the next round, and starts rest only after the full round", async () => {
-  const states = new Set();
-  const canonical = { classList: { contains: (name) => name === "is-complete" && states.has(name) }, dataset: {} };
+  const states = [new Set(), new Set()];
+  const canonical = states.map((state) => ({ classList: { contains: (name) => name === "is-complete" && state.has(name) }, dataset: {} }));
   const panel = { dataset: { customWorkoutTitle: "Custom Workout" }, querySelector: () => ({ value: "2026-10-29" }) };
   const section = { dataset: { customGroupedRound: "1" } };
-  const visible = { dataset: { customGroupedSetType: "working", customGroupedExerciseIndex: "0", customGroupedSetNumber: "1" }, closest: (selector) => selector === "[data-kind]" ? section : section };
-  const carousel = { dataset: {}, closest: () => panel, querySelector: () => ({}), querySelectorAll: () => [] };
-  const button = { disabled: false, closest: (selector) => selector === ".custom-workout-grouped-row" ? visible : carousel };
+  const visible = canonical.map((_, index) => ({ dataset: { customGroupedSetType: "working", customGroupedExerciseIndex: String(index), customGroupedSetNumber: "1" }, closest: () => section }));
+  const carousel = { dataset: { customWorkoutFormat: "superset" }, closest: () => panel, querySelector: () => ({}), querySelectorAll: () => [] };
+  const button = visible.map((row) => ({ disabled: false, closest: (selector) => selector === ".custom-workout-grouped-row" ? row : carousel }));
   const status = { textContent: "" };
   const calls = { saved: 0, copied: 0, rest: 0, started: 0 };
   const toggle = Function("deps", `
     const { canonical, carousel, panel, status, calls } = deps;
     const warmUpSetType = "warm_up", customWorkoutTitle = "Custom Workout";
     const workoutElapsedTimerState = null;
-    const customWorkoutGroupedCanonicalRow = () => canonical;
+    const customWorkoutGroupedCanonicalRow = (_carousel, index) => canonical[Number(index)];
     const customWorkoutGroupedStatus = () => status;
-    const setCustomWorkoutGroupedRowComplete = (_row, complete) => complete ? deps.states.add("is-complete") : deps.states.delete("is-complete");
+    const setCustomWorkoutGroupedRowComplete = (row, complete) => complete ? deps.states[canonical.indexOf(row)].add("is-complete") : deps.states[canonical.indexOf(row)].delete("is-complete");
     const persistCustomWorkoutDraftForElement = () => {};
     const refreshCustomWorkoutGroupedCompletion = () => {};
     const requireWorkoutGymLocation = () => true;
     const customWorkoutGroupedTimerConflict = () => false;
     const validateCustomWorkoutGroupedExerciseNames = () => true;
     const validateCustomWorkoutGroupedSection = () => ({ valid: true });
-    const customWorkoutGroupedLogElements = () => [{}];
+    const customWorkoutGroupedLogElements = () => [{}, {}];
+    const workoutGroupReadyForRest = (_format, count) => count >= 2;
     const saveTrainingLogRows = async () => { calls.saved++; return { saved: true }; };
     const autoCopyCustomWorkoutGroupedNextRound = () => { calls.copied++; };
     const startWorkoutElapsedTimer = () => { calls.started++; };
-    const customWorkoutGroupedRoundIsLogged = () => true;
+    const customWorkoutGroupedRoundIsLogged = () => deps.states.every((state) => state.has("is-complete"));
     const renderCustomWorkoutGroupedCard = () => {};
     const autoRestTimerEnabled = () => true;
     const workoutCarouselRestSeconds = () => 60;
@@ -114,9 +115,12 @@ test("grouped Log box saves its row, pre-fills the next round, and starts rest o
     ${functionSource("toggleCustomWorkoutGroupedSet")}
     return toggleCustomWorkoutGroupedSet;
   `)({ canonical, carousel, panel, status, calls, states });
-  const result = await toggle(button);
-  assert.equal(result.saved, true);
-  assert.deepEqual(calls, { saved: 1, copied: 1, rest: 1, started: 1 });
-  assert.equal(canonical.classList.contains("is-complete"), true);
+  const first = await toggle(button[0]);
+  assert.equal(first.saved, true);
+  assert.equal(calls.rest, 0);
+  const last = await toggle(button[1]);
+  assert.equal(last.saved, true);
+  assert.deepEqual(calls, { saved: 2, copied: 2, rest: 1, started: 2 });
+  assert(canonical.every((row) => row.classList.contains("is-complete")));
   assert.equal(carousel.dataset.customGroupedRowSaving, undefined);
 });
