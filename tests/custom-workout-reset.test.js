@@ -25,7 +25,7 @@ test("renders a compact reset action only inside the Custom Workout builder", ()
   assert.match(customPanel, /data-custom-workout-reset-status role="status" aria-live="polite"/);
   assert.doesNotMatch(assignedPanel, /data-reset-custom-workout/);
   assert.match(customPanel, /class="custom-workout-launcher-menu"/);
-  assert.match(dashboard, /client-custom-workout-launcher\.css\?v=4/);
+  assert.match(dashboard, /client-custom-workout-launcher\.css\?v=5/);
   assert.match(launcherStyles, /\.panel-heading\.custom-workout-launcher-heading\s*\{[^}]*display: grid !important;[^}]*grid-template-columns: minmax\(0, 1fr\) 44px !important;/);
 });
 
@@ -39,8 +39,12 @@ test("uses the exercise-first launcher without a separate warm-up section", () =
   assert.match(customPanel, /data-custom-workout-launcher-add-label>Add first exercise/);
   assert.match(customPanel, /Choose an exercise to get started/);
   assert.doesNotMatch(customPanel, /warmupLogFields\(/);
-  assert.match(exerciseControls, /count > 0 \? "Add another exercise" : "Add first exercise"/);
-  assert.match(dashboard, /web-parity=10/);
+  assert.ok(customPanel.indexOf("data-custom-workout-launcher-add-label") < customPanel.indexOf("customWorkoutCarouselMarkup(format, workoutStorageTitle)"));
+  assert.ok(customPanel.indexOf("data-custom-workout-footer-add") > customPanel.indexOf("customWorkoutCarouselMarkup(format, workoutStorageTitle)"));
+  assert.match(exerciseControls, /firstExerciseButton\.hidden = count > 0/);
+  assert.match(exerciseControls, /anotherExerciseButton\.hidden = count === 0/);
+  assert.match(launcherStyles, /\.custom-workout-footer-add\[hidden\][^\{]*\{\s*display: none/);
+  assert.match(dashboard, /web-parity=11/);
 });
 
 test("keeps gym selection visible on the exercise-first starter", () => {

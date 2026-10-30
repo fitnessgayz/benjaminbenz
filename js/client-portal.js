@@ -12734,9 +12734,10 @@ function syncCustomWorkoutExerciseControls(panel) {
   if (!panel?.classList.contains("client-workout-panel-custom")) return;
   const count = panel.querySelectorAll("[data-custom-exercise-card]").length;
   panel.classList.toggle("has-custom-exercises", count > 0);
-  panel.querySelector("[data-custom-workout-launcher-add]")?.classList.toggle("has-exercises", count > 0);
-  const launcherLabel = panel.querySelector("[data-custom-workout-launcher-add-label]");
-  if (launcherLabel) launcherLabel.textContent = count > 0 ? "Add another exercise" : "Add first exercise";
+  const firstExerciseButton = panel.querySelector("[data-custom-workout-launcher-add]");
+  const anotherExerciseButton = panel.querySelector("[data-custom-workout-footer-add]");
+  if (firstExerciseButton) firstExerciseButton.hidden = count > 0;
+  if (anotherExerciseButton) anotherExerciseButton.hidden = count === 0;
   const manage = panel.querySelector(".custom-workout-manage-exercises");
   if (manage) manage.hidden = count === 0;
   panel.querySelectorAll("[data-custom-exercise-count]").forEach((output) => { output.textContent = String(count); });
@@ -12865,7 +12866,7 @@ function openCustomWorkoutExerciseDialog(trigger, mode = "add") {
     dialog.remove();
     if (addedCard?.isConnected) openCustomWorkoutExerciseEditor(addedCard);
     else if (trigger.isConnected && !trigger.disabled) trigger.focus();
-    else panel.querySelector("[data-pick-custom-exercise]")?.focus();
+    else panel.querySelector("[data-pick-custom-exercise]:not([hidden])")?.focus();
   });
   const add = () => {
     const name = dialog.querySelector("input").value.trim();
@@ -12988,6 +12989,10 @@ function customWorkoutPanelMarkup(index) {
         </div>
         <p class="custom-workout-reset-status" data-custom-workout-reset-status role="status" aria-live="polite" hidden></p>
         ${customWorkoutCarouselMarkup(format, workoutStorageTitle)}
+        <button type="button" class="custom-workout-footer-add" data-custom-workout-footer-add data-pick-custom-exercise hidden>
+          <span class="custom-workout-footer-add-icon" aria-hidden="true">＋</span>
+          <strong>Add another exercise</strong>
+        </button>
         <details class="custom-workout-manage-exercises"><summary>Manage exercises</summary>${workoutExerciseListMarkup(true)}</details>
         ${cardioLogFields(workoutStorageTitle, { showDate: false })}
         <div data-custom-workout-default-finish ${format === "single" ? "" : "hidden"}>
