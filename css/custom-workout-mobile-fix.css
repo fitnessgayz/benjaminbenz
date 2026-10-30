@@ -42,19 +42,19 @@
 }
 
 .dashboard-page .custom-workout-suggestion-menu button.has-muscle-highlight {
-  grid-template-columns: 64px minmax(0, 1fr);
+  grid-template-columns: 80px minmax(0, 1fr);
   column-gap: 10px;
-  min-height: 58px;
+  min-height: 66px;
 }
 
 .dashboard-page .custom-workout-suggestion-menu button.has-muscle-highlight > .custom-workout-suggestion-muscle-image {
   grid-column: 1;
   grid-row: 1 / span 4;
   align-self: center;
-  width: 64px;
-  height: 40px;
+  width: 80px;
+  height: 53px;
   border-radius: 8px;
-  object-fit: cover;
+  object-fit: contain;
 }
 
 .dashboard-page .custom-workout-suggestion-menu button.has-muscle-highlight > :not(img) {

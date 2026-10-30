@@ -249,14 +249,14 @@
         const artwork = element("span", "client-exercise-library-item-artwork");
         const image = element("img", "");
         image.src = record.highlightKey
-          ? `images/muscle-highlights/library/${record.highlightKey}.png`
+          ? `images/muscle-highlights/library/${record.highlightKey}.png?v=2`
           : muscleArtworkUrl(record.primary);
         image.alt = "";
         image.loading = "lazy";
         image.decoding = "async";
         if (record.highlightKey) image.addEventListener("error", () => {
-          const fallback = `images/muscle-highlights/library/${record.highlightFallback}.png`;
-          if (!image.dataset.muscleFallbackUsed && image.src.endsWith(`/${record.highlightKey}.png`)) {
+          const fallback = `images/muscle-highlights/library/${record.highlightFallback}.png?v=2`;
+          if (!image.dataset.muscleFallbackUsed && image.src.includes(`/${record.highlightKey}.png`)) {
             image.dataset.muscleFallbackUsed = "true";
             image.src = fallback;
           } else {

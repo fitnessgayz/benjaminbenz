@@ -7125,8 +7125,8 @@ function exerciseMuscleHighlightMarkup(libraryEntry) {
   const key = exerciseMuscleHighlightKey(libraryEntry);
   if (!key) return "";
   const primary = String(libraryEntry.primary_muscle).trim().toLowerCase();
-  const fallback = `images/muscle-highlights/library/${primary}.png`;
-  return `<img class="custom-workout-suggestion-muscle-image" src="images/muscle-highlights/library/${key}.png" data-muscle-highlight-fallback="${fallback}" alt="" loading="lazy" decoding="async" />`;
+  const fallback = `images/muscle-highlights/library/${primary}.png?v=2`;
+  return `<img class="custom-workout-suggestion-muscle-image" src="images/muscle-highlights/library/${key}.png?v=2" data-muscle-highlight-fallback="${fallback}" alt="" loading="lazy" decoding="async" />`;
 }
 
 function customExerciseSuggestionMatches(value) {

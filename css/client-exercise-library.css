@@ -178,14 +178,14 @@
 .client-exercise-library-item-artwork {
   display: flex;
   width: 96px;
-  height: 96px;
+  height: 80px;
   align-items: center;
   justify-content: center;
   overflow: hidden;
   border-radius: 16px;
-  background: #ffd600;
+  background: #fff;
 }
-.client-exercise-library-item-artwork img { display: block; width: 96px; height: auto; max-height: 96px; object-fit: contain; }
+.client-exercise-library-item-artwork img { display: block; width: 96px; height: auto; max-height: 80px; object-fit: contain; }
 .client-exercise-library-item-copy { display: grid; min-width: 0; gap: 9px; }
 .client-exercise-library-item-copy strong { overflow-wrap: anywhere; font-size: 1rem; line-height: 1.2; }
 .client-exercise-library-item-muscles { display: flex; flex-wrap: wrap; gap: 5px; }
@@ -239,8 +239,8 @@
     min-height: 104px;
     padding: 8px;
   }
-  .client-exercise-library-item-artwork { width: 82px; height: 82px; border-radius: 13px; }
-  .client-exercise-library-item-artwork img { width: 82px; height: auto; max-height: 82px; }
+  .client-exercise-library-item-artwork { width: 82px; height: 70px; border-radius: 13px; }
+  .client-exercise-library-item-artwork img { width: 82px; height: auto; max-height: 70px; }
   .client-exercise-library-item-plus { width: 40px; height: 40px; }
   .client-exercise-library-item-copy strong { font-size: .93rem; }
 }
