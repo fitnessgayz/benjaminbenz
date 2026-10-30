@@ -84,33 +84,36 @@ struct WorkoutParityFormatPicker: View {
     @Binding var selection: CustomWorkoutFormat
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Choose a format")
-                .font(WorkoutParityStyle.heading(18))
-            HStack(spacing: 7) {
-                ForEach(CustomWorkoutFormat.allCases) { format in
-                    Button {
-                        selection = format
-                    } label: {
+        Menu {
+            ForEach(CustomWorkoutFormat.allCases) { format in
+                Button {
+                    selection = format
+                } label: {
+                    if selection == format {
+                        Label(format == .single ? "Straight sets" : format.title, systemImage: "checkmark")
+                    } else {
                         Text(format == .single ? "Straight sets" : format.title)
-                            .font(WorkoutParityStyle.heading(12))
-                            .multilineTextAlignment(.center)
-                            .frame(maxWidth: .infinity, minHeight: 44)
                     }
-                    .buttonStyle(WorkoutParityControlStyle(accented: selection == format))
-                    .accessibilityAddTraits(selection == format ? .isSelected : [])
-                    .accessibilityIdentifier("customWorkout.format.\(format.rawValue)")
                 }
+                .accessibilityIdentifier("customWorkout.format.\(format.rawValue)")
             }
-            Text(selection.guide)
-                .font(FWBFont.sized(12))
-                .foregroundStyle(WorkoutParityStyle.muted)
-                .fixedSize(horizontal: false, vertical: true)
+        } label: {
+            HStack(spacing: 7) {
+                Text(selection == .single ? "Straight sets" : selection.title)
+                    .lineLimit(1)
+                Image(systemName: "chevron.down")
+                    .font(FWBFont.caption.weight(.bold))
+            }
+            .font(FWBFont.footnote.weight(.semibold))
+            .foregroundStyle(Color.fwbWarmWhite)
+            .padding(.horizontal, 12)
+            .frame(minHeight: 38)
+            .background(Color.fwbSurface, in: Capsule())
+            .overlay { Capsule().stroke(Color.fwbLine, lineWidth: 1) }
         }
-        .foregroundStyle(WorkoutParityStyle.ink)
-        .padding(16)
-        .background(WorkoutParityStyle.cream, in: RoundedRectangle(cornerRadius: 20))
-        .overlay { RoundedRectangle(cornerRadius: 20).stroke(WorkoutParityStyle.line, lineWidth: 1) }
+        .accessibilityLabel("Workout format")
+        .accessibilityValue(selection == .single ? "Straight sets" : selection.title)
+        .accessibilityIdentifier("customWorkout.formatPicker")
     }
 }
 
