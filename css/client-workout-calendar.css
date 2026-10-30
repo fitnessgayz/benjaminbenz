@@ -1,0 +1,273 @@
+/* Planned workout calendar, matched to the client's iOS workout calendar. */
+:root body.client-dashboard-page #client-workouts-panel.is-choosing-workout [data-client-workout-calendar-open] {
+  min-height: 92px;
+}
+:root body.client-dashboard-page #client-workouts-panel.is-choosing-workout [data-client-workout-calendar-open] .workout-choice-icon {
+  background: transparent;
+  color: #ffd400;
+}
+:root body.client-dashboard-page #client-workouts-panel.is-choosing-workout [data-client-workout-calendar-open] .workout-choice-title {
+  color: #f7f7f7;
+}
+
+:root body.client-dashboard-page #client-workouts-panel.is-calendar-open {
+  min-height: calc(100dvh - 150px);
+  background: #101113;
+  color: #f7f7f7;
+  border-color: transparent;
+  box-shadow: none;
+}
+:root body.client-dashboard-page #client-workouts-panel.is-calendar-open > :not(.client-workout-calendar) {
+  display: none !important;
+}
+:root body.client-dashboard-page #client-workouts-panel .client-workout-calendar[hidden] {
+  display: none !important;
+}
+:root body.client-dashboard-page .client-workout-calendar {
+  box-sizing: border-box;
+  width: min(100%, 620px);
+  min-height: calc(100dvh - 175px);
+  margin: 0 auto;
+  padding: 8px 8px 28px;
+  color: #f7f7f7;
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+:root body.client-dashboard-page .client-workout-calendar * { box-sizing: border-box; }
+:root body.client-dashboard-page .client-workout-calendar button {
+  font: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+:root body.client-dashboard-page .client-workout-calendar button:focus-visible {
+  outline: 3px solid #5caef5;
+  outline-offset: 2px;
+}
+:root body.client-dashboard-page .client-calendar-header {
+  display: grid;
+  grid-template-columns: 46px 1fr 46px;
+  align-items: center;
+  min-height: 64px;
+  margin-bottom: 22px;
+}
+:root body.client-dashboard-page .client-calendar-header h2 {
+  margin: 0;
+  color: #f7f7f7;
+  font-size: 19px;
+  font-weight: 650;
+  text-align: center;
+}
+:root body.client-dashboard-page .client-calendar-back {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  padding: 0 0 4px;
+  border: 1px solid #3a3d42;
+  border-radius: 50% !important;
+  background: #202227;
+  color: #f7f7f7;
+  font-size: 36px !important;
+  line-height: 1;
+}
+:root body.client-dashboard-page .client-calendar-month {
+  display: grid;
+  grid-template-columns: 44px 1fr 44px;
+  align-items: center;
+  margin: 0 0 8px;
+}
+:root body.client-dashboard-page .client-calendar-month h3 {
+  margin: 0;
+  color: #f7f7f7;
+  font-size: 23px;
+  font-weight: 750;
+  text-align: center;
+}
+:root body.client-dashboard-page .client-calendar-month button {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0 0 4px;
+  border: 0;
+  background: transparent;
+  color: #f7f7f7;
+  font-size: 32px !important;
+  line-height: 1;
+}
+:root body.client-dashboard-page .client-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 7px 3px;
+  width: 100%;
+  margin-bottom: 20px;
+}
+:root body.client-dashboard-page .client-calendar-weekday {
+  display: grid;
+  place-items: center;
+  height: 34px;
+  color: #aeb2b9;
+  font-size: 13px;
+  font-weight: 650;
+}
+:root body.client-dashboard-page .client-calendar-grid [data-calendar-date] {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 2px;
+  width: 100%;
+  min-width: 0;
+  aspect-ratio: 1;
+  max-height: 70px;
+  padding: 0;
+  border: 0;
+  border-radius: 11px;
+  background: transparent;
+  color: #f7f7f7;
+  font-size: 16px;
+  font-weight: 550;
+}
+:root body.client-dashboard-page .client-calendar-grid [data-calendar-date].is-selected {
+  background: #ffd400;
+  color: #101113;
+  font-weight: 800;
+}
+:root body.client-dashboard-page .client-calendar-grid [data-calendar-date] i {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: transparent;
+}
+:root body.client-dashboard-page .client-calendar-grid [data-calendar-date].is-planned i { background: #ffd400; }
+:root body.client-dashboard-page .client-calendar-grid [data-calendar-date].is-selected.is-planned i { background: #101113; }
+:root body.client-dashboard-page .client-calendar-day h3 {
+  margin: 0 0 18px;
+  color: #f7f7f7;
+  font-size: 19px;
+  font-weight: 750;
+  line-height: 1.3;
+}
+:root body.client-dashboard-page .client-calendar-add {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 58px;
+  padding: 12px 16px;
+  border: 0;
+  border-radius: 12px;
+  background: #ffd400;
+  color: #101113;
+  font-size: 17px !important;
+  font-weight: 800 !important;
+}
+:root body.client-dashboard-page .client-calendar-add span { font-size: 24px; line-height: .7; }
+:root body.client-dashboard-page .client-calendar-help {
+  margin: 18px 0 0;
+  color: #aeb2b9;
+  font-size: 14px;
+  line-height: 1.45;
+}
+:root body.client-dashboard-page .client-calendar-day [data-calendar-status] {
+  min-height: 1.2em;
+  margin: 12px 0 0;
+  color: #89c7ff;
+  font-size: 13px;
+}
+:root body.client-dashboard-page .client-calendar-day [data-calendar-status].is-error { color: #ff7777; }
+:root body.client-dashboard-page .client-calendar-workout {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding: 14px;
+  border: 1px solid #45484c;
+  border-radius: 16px;
+  background: #24262a;
+}
+:root body.client-dashboard-page .client-calendar-workout > div:first-child { display: grid; gap: 4px; }
+:root body.client-dashboard-page .client-calendar-workout strong { font-size: 16px; }
+:root body.client-dashboard-page .client-calendar-workout span { color: #b9bec4; font-size: 13px; }
+:root body.client-dashboard-page .client-calendar-workout-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+:root body.client-dashboard-page .client-calendar-workout-actions button {
+  min-height: 42px;
+  padding: 8px 14px;
+  border: 1px solid #5caef5;
+  border-radius: 10px;
+  background: #15263a;
+  color: #83c4ff;
+  font-size: 13px;
+  font-weight: 750;
+}
+:root body.client-dashboard-page .client-calendar-workout-actions [data-calendar-remove] {
+  border-color: #5c4343;
+  background: #302224;
+  color: #ff8f8f;
+}
+:root body.client-dashboard-page .client-calendar-picker {
+  width: min(560px, calc(100vw - 28px));
+  max-height: min(80dvh, 750px);
+  margin: auto;
+  padding: 18px;
+  border: 1px solid #484b50;
+  border-radius: 22px;
+  background: #202227 !important;
+  color: #f7f7f7 !important;
+  overflow-y: auto;
+  box-shadow: 0 24px 80px #000a;
+}
+:root body.client-dashboard-page .client-calendar-picker::backdrop { background: #000a; }
+:root body.client-dashboard-page .client-calendar-picker-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+:root body.client-dashboard-page .client-calendar-picker-heading h3 {
+  margin: 0 0 16px;
+  font-size: 18px;
+  line-height: 1.3;
+}
+:root body.client-dashboard-page .client-calendar-picker-heading button {
+  flex: none;
+  display: grid;
+  place-items: center;
+  flex: 0 0 44px !important;
+  width: 44px !important;
+  min-width: 44px !important;
+  height: 44px !important;
+  min-height: 44px !important;
+  padding: 0 !important;
+  border: 1px solid #50545a;
+  border-radius: 50% !important;
+  background: #303238;
+  color: #f7f7f7;
+  font-size: 24px;
+}
+:root body.client-dashboard-page .client-calendar-option-group { display: grid; gap: 8px; margin: 0 0 18px; }
+:root body.client-dashboard-page .client-calendar-option-group h4 { margin: 0 0 2px; color: #89c7ff; font-size: 13px; text-transform: uppercase; }
+:root body.client-dashboard-page .client-calendar-option-group button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 58px;
+  padding: 10px 14px;
+  border: 1px solid #4a4d52;
+  border-radius: 12px;
+  background: #2a2c31;
+  color: #f7f7f7;
+  text-align: left;
+}
+:root body.client-dashboard-page .client-calendar-option-group button span:first-child { display: grid; gap: 4px; }
+:root body.client-dashboard-page .client-calendar-option-group button strong { font-size: 14px; }
+:root body.client-dashboard-page .client-calendar-option-group button small { color: #b8bbc2; font-size: 12px; }
+:root body.client-dashboard-page .client-calendar-option-group button span:last-child { color: #5caef5; font-size: 24px; }
+:root body.client-dashboard-page .client-calendar-empty,
+:root body.client-dashboard-page [data-calendar-picker-status] { color: #c4c7cb; font-size: 13px; line-height: 1.4; }
+
+@media (max-width: 480px) {
+  :root body.client-dashboard-page .client-workout-calendar { padding-inline: 0; }
+  :root body.client-dashboard-page .client-calendar-grid { gap: 5px 2px; }
+  :root body.client-dashboard-page .client-calendar-grid [data-calendar-date] { font-size: 15px; }
+}

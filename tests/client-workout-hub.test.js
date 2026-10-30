@@ -27,12 +27,13 @@ test('workout chooser routes saved plans through Log Custom Workout', () => {
     'clientWorkoutChoiceContent', 'clientCardioWorkoutChoiceMarkup', 'clientWorkoutChoiceDialogMarkup', 'clientWorkoutListMarkup'
   ].map(declaration).join('\n'), context);
   const markup = context.clientWorkoutListMarkup([{ isCardio: true, panelIndex: 8 }]);
-  assert.equal((markup.match(/class="workout-choice-card"/g) || []).length, 8);
-  for (const title of ['Trainer Prescribed Workouts', 'Log Custom Workout',
+  assert.equal((markup.match(/class="workout-choice-card"/g) || []).length, 9);
+  for (const title of ['Workout calendar', 'Trainer Prescribed Workouts', 'Log Custom Workout',
     'Generate Workout', 'Cardio &amp; Mobility', 'Weekly plan', 'Today’s workout', 'Log cardio', 'Mobility &amp; recovery']) {
     assert.ok(markup.includes(title), `${title} is shown`);
   }
-  assert.equal((markup.split('data-client-workout-choice-dialog')[0].match(/class="workout-choice-card"/g) || []).length, 4);
+  assert.equal((markup.split('data-client-workout-choice-dialog')[0].match(/class="workout-choice-card"/g) || []).length, 5);
+  assert.match(markup, /data-client-workout-calendar-open/);
   assert.doesNotMatch(markup, /Form Checks/);
   assert.match(markup, /data-preview-program="0"/);
   assert.doesNotMatch(markup, /data-client-saved-workout-plans/);
@@ -42,7 +43,7 @@ test('workout chooser routes saved plans through Log Custom Workout', () => {
   assert.match(markup, /data-generate-workout data-generator-preset="today"/);
   assert.match(markup, /data-generate-workout data-generator-preset="mobility"/);
   assert.match(markup, /data-log-cardio/);
-  assert.match(html, /client-workout-hub\.css\?v=5/);
+  assert.match(html, /client-workout-hub\.css\?v=6/);
   assert.match(html, /Choose Your Workout/);
 });
 
@@ -58,7 +59,7 @@ test('multiple trainer programs stay under one choice', () => {
   });
   vm.runInContext(['clientWorkoutChoiceContent', 'clientCardioWorkoutChoiceMarkup', 'clientWorkoutChoiceDialogMarkup', 'clientWorkoutListMarkup'].map(declaration).join('\n'), context);
   const markup = context.clientWorkoutListMarkup([{ isCardio: true, panelIndex: 4 }]);
-  assert.equal((markup.split('data-client-workout-choice-dialog')[0].match(/class="workout-choice-card"/g) || []).length, 4);
+  assert.equal((markup.split('data-client-workout-choice-dialog')[0].match(/class="workout-choice-card"/g) || []).length, 5);
   assert.match(markup, /2 plans/);
 });
 
