@@ -101,3 +101,64 @@
 :root body.client-dashboard-page :is(input[type="checkbox"], input[type="radio"], input[type="range"]) {
   accent-color: #ffd400;
 }
+
+/* Keep these three custom workout actions in the gold role requested for them. */
+:root body.client-dashboard-page .client-workout-panel-custom :is(
+  .custom-workout-copy-past-link,
+  .custom-workout-footer-add strong,
+  .custom-workout-manage-exercises > summary
+) {
+  color: #ffd400;
+}
+
+:root body.client-dashboard-page .client-workout-panel-custom .custom-workout-footer-add-icon {
+  background: #ffd400;
+  color: #171a17;
+}
+
+/* The inbox shortcut is a square control aligned with the Workouts title. */
+:root body.client-dashboard-page .client-workouts-tools {
+  margin-bottom: 0;
+}
+
+:root body.client-dashboard-page .client-workouts-message-button {
+  display: grid;
+  flex: 0 0 48px;
+  place-items: center;
+  width: 48px;
+  min-width: 48px;
+  max-width: 48px;
+  height: 48px;
+  min-height: 48px;
+  max-height: 48px;
+  padding: 0;
+  border-radius: 14px;
+}
+
+:root body.client-dashboard-page .client-workouts-message-button > svg {
+  display: block;
+  width: 25px;
+  height: 25px;
+}
+
+@media (max-width: 700px) {
+  :root body.client-dashboard-page #client-workout-panels [data-custom-workout-grouped="true"] .ios-log-exercise-header {
+    --ios-log-image-size: clamp(96px, 25vw, 112px);
+  }
+
+  :root body.client-dashboard-page #client-workout-panels [data-custom-workout-grouped="true"] .ios-log-exercise-image {
+    border: 0;
+    background: #111;
+  }
+
+  :root body.client-dashboard-page #client-workout-panels [data-custom-workout-grouped="true"] .ios-log-exercise-image .exercise-media-button-branded-crop > img {
+    position: absolute;
+    top: -8%;
+    left: -25%;
+    width: auto;
+    max-width: none;
+    height: 116%;
+    max-height: none;
+    object-fit: fill;
+  }
+}
