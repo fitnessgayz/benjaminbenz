@@ -65,16 +65,15 @@ test("recent exercise recommendations keep each gym's own sets and skip unrelate
   assert.deepEqual(api.recentExerciseHistoryByGym(log), []);
 });
 
-test("the compact picker explains gym, home, and outdoor sessions", () => {
+test("the compact picker keeps a single gym, home, or outdoor input", () => {
   const markup = Function("trainingLogs", "escapeHtml",
     `${sourceForFunction("normalizeWorkoutGymName")}\n${sourceForFunction("recentWorkoutGymLocations")}\n${sourceForFunction("workoutGymPickerMarkup")}; return workoutGymPickerMarkup("", 2);`)(
       [{ gym_name: "Gym A" }], (value) => String(value || "")
     );
   assert.match(markup, /Add gym location/);
-  assert.match(markup, /train at different gyms/);
-  assert.match(markup, /Home or Outdoors/);
+  assert.match(markup, /Gym name, Home, or Outdoors/);
   assert.match(markup, /option value="Gym A"/);
-  assert.match(markup, /<button[^>]*data-find-nearby-gym[^>]*>Find nearby gyms<\/button>/);
+  assert.doesNotMatch(markup, /Find nearby gyms|Choose once before you start/);
 });
 
 test("a superset card lets the client choose the workout's gym without leaving the round", () => {
