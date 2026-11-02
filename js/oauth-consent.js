@@ -2,6 +2,9 @@ const statusElement = document.querySelector("#status");
 const approveButton = document.querySelector("#approve");
 const denyButton = document.querySelector("#deny");
 const clientNameElement = document.querySelector("#client-name");
+const consentTitleElement = document.querySelector("#consent-title");
+const requestedActionsElement = document.querySelector("#requested-actions");
+const consentDisclaimerElement = document.querySelector("#consent-disclaimer");
 const scopesElement = document.querySelector("#requested-scopes");
 const authorizationId = new URLSearchParams(window.location.search).get("authorization_id");
 const config = window.FWB_SUPABASE_CONFIG || {};
@@ -48,6 +51,21 @@ async function initialize() {
 
   if (data.client?.name) {
     clientNameElement.textContent = `${data.client.name} is requesting access to your coaching account.`;
+    if (data.client.name.toLowerCase() === "fwb training client") {
+      document.title = "Connect FWB Training Client";
+      consentTitleElement.textContent = "Connect FWB Training Client?";
+      clientNameElement.textContent = "FWB Training Client is requesting access to your workout account.";
+      requestedActionsElement.replaceChildren();
+      for (const action of [
+        "Confirm which FWB Training Client account is connected.",
+        "Save a completed workout to your Logs only when you ask.",
+      ]) {
+        const item = document.createElement("li");
+        item.textContent = action;
+        requestedActionsElement.append(item);
+      }
+      consentDisclaimerElement.textContent = "FWB Training Client is not Benjamin, medical care, or an emergency service.";
+    }
   }
   if (data.scope?.trim()) {
     scopesElement.hidden = false;
