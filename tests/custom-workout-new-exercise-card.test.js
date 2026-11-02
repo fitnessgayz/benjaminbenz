@@ -76,34 +76,34 @@ test("upgrades an untouched legacy draft without overwriting entered sets", () =
   assert.equal(enteredLegacy.exercises[0].sets.length, 2);
 });
 
-test("renders a distinct bottom add card that stays out of exercise counts", () => {
-  const markup = sourceForFunction("customWorkoutCarouselGroupMarkup");
-  const cards = sourceForFunction("customWorkoutCarouselCards");
+test("empty grouped workouts show no phantom exercise cards", () => {
+  let exercises = [];
+  const markup = Function(
+    "customWorkoutTitle", "customWorkoutExercises", "customWorkoutCarouselGroupMarkup", "customWorkoutMixedGroups",
+    `${sourceForFunction("customWorkoutCarouselMarkup")}; return customWorkoutCarouselMarkup;`
+  )("Custom workout", () => exercises, (_format, members) => `<section data-group>${members.length}</section>`, () => []);
 
-  assert.match(markup, /format === "single"/);
-  assert.match(markup, /data-custom-workout-new-exercise="\$\{nextExerciseNumber\}"/);
-  assert.match(markup, /aria-label="Add new exercise \$\{nextExerciseNumber\}"/);
-  assert.match(markup, /\+ New exercise \$\{nextExerciseNumber\}/);
-  assert.match(markup, /Input exercise name here/);
-  assert.match(markup, /data-custom-workout-exercise-deck[\s\S]*?data-custom-workout-list[\s\S]*?\$\{newExerciseCard\}/);
-  assert.match(cards, /element\.matches\("\[data-custom-exercise-card\]"\)/);
-  assert.doesNotMatch(cards, /data-custom-workout-new-exercise/);
+  assert.doesNotMatch(markup("superset"), /data-group/);
+  assert.doesNotMatch(markup("circuit"), /data-group/);
+  exercises = [{ name: "Squat" }, { name: "Row" }];
+  assert.match(markup("superset"), /<section data-group>2<\/section>/);
 });
 
-test("enables the lifted deck for straight custom and grouped mobile workouts", () => {
-  const render = sourceForFunction("renderCustomWorkoutCarousel");
+test("routes grouped cards to the compact round renderer", () => {
+  let rendered = 0;
+  const render = Function(
+    "customWorkoutCarouselCards", "normalizeCustomWorkoutFormat", "activeCustomWorkoutFormat",
+    "window", "syncCustomWorkoutGroupNameEditor", "renderCustomWorkoutGroupedCard",
+    `${sourceForFunction("renderCustomWorkoutCarousel")}; return renderCustomWorkoutCarousel;`
+  )(() => [{}, {}], (value) => value, "superset", { matchMedia: () => ({ matches: true }) },
+    () => {}, () => { rendered += 1; });
+  const panel = { dataset: { customWorkoutFormat: "superset" }, classList: { contains: () => true } };
+  const carousel = { closest: () => panel, querySelector: () => null,
+    dataset: { customWorkoutGrouped: "true", customWorkoutFormat: "superset", customWorkoutGroup: "0" } };
 
-  assert.match(render, /const straightDeckEnabled = mobile && isCustomPanel && format === "single" && cards\.length > 1/);
-  assert.match(render, /const groupDeckEnabled = mobile && format !== "single" && cards\.length > 1/);
-  assert.match(render, /const deckEnabled = straightDeckEnabled \|\| groupDeckEnabled/);
-  assert.match(render, /const canAddExercise = straightDeckEnabled/);
-  assert.match(render, /carousel\.dataset\.customWorkoutDeck = deckEnabled \? "true" : "false"/);
-  assert.match(render, /carousel\.dataset\.groupWorkoutDeck = groupDeckEnabled \? "true" : "false"/);
-  assert.match(render, /carousel\.dataset\.customWorkoutCanAddExercise = canAddExercise \? "true" : "false"/);
-  assert.match(render, /panel\.dataset\.customWorkoutDeckEnabled = straightDeckEnabled \? "true" : "false"/);
-  assert.match(render, /progressHeader\.hidden = !groupProgressEnabled \|\| groupDeckEnabled/);
-  assert.match(render, /newExerciseCard\.hidden = !canAddExercise/);
-  assert.match(render, /querySelectorAll\("\[data-custom-exercise-card\]"\)\.length \|\| cards\.length\) \+ 1/);
+  render(carousel);
+  assert.equal(rendered, 1);
+  assert.equal(panel.dataset.customWorkoutDeckEnabled, "false");
 });
 
 test("moves normally and treats forward navigation past the last card as add", () => {
@@ -156,7 +156,7 @@ test("keeps only the active real card interactive and clears the mobile dock", (
   assert.match(move, /is-deck-entering-backward/);
   assert.match(mobileStyles, /data-custom-workout-deck-enabled="true"[\s\S]*?\.custom-workout-add-actions \{[\s\S]*?display: none;/);
   assert.match(mobileStyles, /\.custom-workout-card:not\(\.is-carousel-active\) \{[\s\S]*?display: none !important;/);
-  assert.match(mobileStyles, /\.custom-workout-card\.is-exercise-complete \{[\s\S]*?border-color: #21a637 !important;[\s\S]*?background: #f5faf4 !important;/);
+  assert.match(mobileStyles, /\.custom-workout-card\.is-exercise-complete \{[\s\S]*?border-color: #b88a00 !important;[\s\S]*?background: #fff9e9 !important;/);
   assert.match(mobileStyles, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?animation: none !important;/);
 });
 
@@ -227,12 +227,17 @@ test("uses a pronounced physical entrance with an instant and reduced-motion esc
   );
 });
 
-test("rebuilds when switching between grouped cards and the straight-set add card", () => {
-  const regroup = sourceForFunction("regroupCustomWorkoutCarousels");
-  const formatUpdate = sourceForFunction("updateCustomWorkoutFormat");
+test("groups supersets in pairs while preserving existing exercise names", () => {
+  const exercises = ["Squat", "Row", "Press", "Pulldown"].map((name) => ({ name }));
+  const grouped = [];
+  const markup = Function(
+    "customWorkoutTitle", "customWorkoutExercises", "customWorkoutCarouselGroupMarkup", "customWorkoutMixedGroups",
+    `${sourceForFunction("customWorkoutCarouselMarkup")}; return customWorkoutCarouselMarkup;`
+  )("Custom workout", () => exercises, (format, members) => {
+    grouped.push(members.map((member) => member.name));
+    return `<section data-group>${format}</section>`;
+  }, () => []);
 
-  assert.match(regroup, /hasExpectedNewExerciseCards/);
-  assert.match(regroup, /desiredGroups\[index\]\?\.format === "single" && index === desiredGroups\.length - 1/);
-  assert.match(regroup, /const alreadyGrouped = hasExpectedNewExerciseCards &&/);
-  assert.match(formatUpdate, /\[data-custom-workout-add-actions\] \[data-add-custom-exercise\]/);
+  assert.equal((markup("superset").match(/data-group/g) || []).length, 2);
+  assert.deepEqual(grouped, [["Squat", "Row"], ["Press", "Pulldown"]]);
 });

@@ -91,7 +91,7 @@ test("automatic rest can be turned off without removing manual timer controls", 
   assert.doesNotMatch(sourceForFunction("logCustomWorkoutGroupedWarmUp"), /startOrPauseRestTimer\(\)/);
   assert.match(sourceForFunction("logCustomWorkoutGroupedRound"), /if \(autoRestTimerEnabled\(\) && workoutGroupReadyForRest\(carousel\.dataset\.customWorkoutFormat, logElements\.length\)\)/);
   assert.match(sourceForFunction("toggleCustomWorkoutGroupedSet"), /workoutGroupReadyForRest\(carousel\.dataset\.customWorkoutFormat, customWorkoutGroupedLogElements\(carousel\)\.length\)/);
-  assert.match(sourceForFunction("logCurrentWorkoutCarouselSet"), /completedRound && workoutGroupReadyForRest\(format, cards\.length\) && !nextProgress\.isComplete && autoRestTimerEnabled\(\)/);
+  assert.match(sourceForFunction("logCurrentWorkoutCarouselSet"), /completedRound && workoutGroupReadyForRest\(format, cards\.length\) && autoRestTimerEnabled\(\)/);
   assert.match(sourceForFunction("handleWorkoutInteractions"), /if \(!isWarmUp && autoRestTimerEnabled\(\) && [^\n]+\) \{\s*resetRestTimer\(\);\s*openRestTimer\(completeSetButton\)/);
   assert.match(sourceForFunction("handleWorkoutInteractions"), /if \(setRestButton\) \{[\s\S]*?openRestTimer\(setRestButton\)/);
 });

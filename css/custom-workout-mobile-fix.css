@@ -3840,18 +3840,47 @@ body.dashboard-page.custom-workout-grouped-finish-open {
 }
 .dashboard-page .workout-finish-issues p { margin: 8px 0 0; }
 
-/* List rows already render the exercise name, so their compact thumbnails show
-   only the Start/End photos. The detail dialog must show the complete branded
-   card, including the exercise title and full end position. */
+/* Crop inside the compact Start/End photo panels to exclude their pale rims.
+   Keep the full branded card visible in the exercise detail dialog. */
 .exercise-media-button-branded-crop {
-  --exercise-photo-image-width: 218.182%;
-  --exercise-photo-image-height: 142.735%;
-  --exercise-photo-image-left: -9.091%;
-  --exercise-photo-image-top: -21.368%;
+  --exercise-photo-image-width: 240%;
+  --exercise-photo-image-height: 156.808%;
+  --exercise-photo-image-left: -15%;
+  --exercise-photo-image-top: -28.169%;
   position: relative;
   overflow: hidden;
   aspect-ratio: 176 / 117;
 }
+.dashboard-page button.ios-log-exercise-title {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+.dashboard-page button.ios-log-exercise-title:focus-visible,
+.dashboard-page [data-change-custom-exercise]:focus-visible,
+.dashboard-page [data-custom-grouped-set-options]:focus-visible {
+  outline: 2px solid #66b7ff;
+  outline-offset: 3px;
+}
+.custom-workout-set-options { display: grid; gap: 8px; margin-top: 16px; }
+.custom-workout-set-options button {
+  min-height: 50px;
+  padding: 10px 14px;
+  border: 1px solid #444c58;
+  border-radius: 12px;
+  background: #22272d;
+  color: #fff;
+  text-align: left;
+  font: inherit;
+}
+.custom-workout-set-options button:last-child { color: #ff8d95; }
+.custom-workout-set-options button:disabled { opacity: .45; }
 .exercise-media-button-branded-crop > img {
   position: absolute;
   left: var(--exercise-photo-image-left);

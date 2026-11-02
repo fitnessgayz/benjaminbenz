@@ -30,11 +30,11 @@ function exerciseContext(draft = null) {
   });
 }
 
-test("new custom workouts start empty or with one grouped exercise block", () => {
+test("new custom workouts start with no exercises in every format", () => {
   const context = exerciseContext();
   assert.equal(context.customWorkoutExercises().length, 0);
-  assert.equal(context.customWorkoutExercises("superset").length, 2);
-  assert.equal(context.customWorkoutExercises("circuit").length, 3);
+  assert.equal(context.customWorkoutExercises("superset").length, 0);
+  assert.equal(context.customWorkoutExercises("circuit").length, 0);
 });
 
 test("empty drafts gain starter slots and saved exercises are retained", () => {
@@ -509,7 +509,7 @@ test("exercise key opens its matching editor while a nested demo link keeps its 
   const listeners = {};
   const opened = [];
   const cards = [{ code: "CW01" }, { code: "CW02" }];
-  const key = { closest: () => ({}), querySelector: () => ({ dataset: { openCustomExercise: "1" } }) };
+  const key = { closest: () => ({}), querySelector: () => ({ dataset: { changeCustomExercise: "1" } }) };
   const context = evaluate(["handleWorkoutInteractions"], {
     document: { addEventListener: (name, handler) => { listeners[name] = handler; } },
     customWorkoutCarouselCards: () => cards,
