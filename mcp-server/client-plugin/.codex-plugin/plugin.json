@@ -1,6 +1,6 @@
 {
   "name": "fwb-training-client",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Log completed workouts to the FWB Training Client app from ChatGPT.",
   "author": {
     "name": "Benjamin Benz",
@@ -14,7 +14,7 @@
     "shortDescription": "Log workouts to your FWB app.",
     "longDescription": "For Fitness with Benjamin clients. Connect your FWB Training Client account, check which account is connected, and save completed strength workouts you explicitly ask ChatGPT to log. Saved sets appear in your FWB workout history on iOS and the web. This plugin does not create training plans or provide medical advice.",
     "developerName": "Benjamin Benz",
-    "category": "Lifestyle",
+    "category": "Other",
     "capabilities": ["Check connected account", "Log completed workouts"],
     "websiteURL": "https://benjaminbenz.com",
     "supportURL": "https://benjaminbenz.com/fwb-training-support.html",
