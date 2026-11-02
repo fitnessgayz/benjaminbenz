@@ -83,7 +83,7 @@ test("grouped Log box saves its row, pre-fills the next round, and starts rest o
   const carousel = { dataset: { customWorkoutFormat: "superset" }, closest: () => panel, querySelector: () => ({}), querySelectorAll: () => [] };
   const button = visible.map((row) => ({ disabled: false, closest: (selector) => selector === ".custom-workout-grouped-row" ? row : carousel }));
   const status = { textContent: "" };
-  const calls = { saved: 0, copied: 0, rest: 0, started: 0 };
+  const calls = { saved: 0, copied: 0, rest: 0, popup: 0, started: 0 };
   const toggle = Function("deps", `
     const { canonical, carousel, panel, status, calls } = deps;
     const warmUpSetType = "warm_up", customWorkoutTitle = "Custom Workout";
@@ -109,6 +109,7 @@ test("grouped Log box saves its row, pre-fills the next round, and starts rest o
     const setRestTimerDuration = () => {};
     const resetRestTimer = () => {};
     const startOrPauseRestTimer = () => { calls.rest++; };
+    const showRestTimerPopup = () => { calls.popup++; };
     const renderCustomWorkoutGroupedRestControls = () => {};
     const todayDate = () => "2026-10-29";
     const document = { querySelectorAll: () => [panel] };
@@ -120,7 +121,7 @@ test("grouped Log box saves its row, pre-fills the next round, and starts rest o
   assert.equal(calls.rest, 0);
   const last = await toggle(button[1]);
   assert.equal(last.saved, true);
-  assert.deepEqual(calls, { saved: 2, copied: 2, rest: 1, started: 2 });
+  assert.deepEqual(calls, { saved: 2, copied: 2, rest: 1, popup: 1, started: 2 });
   assert(canonical.every((row) => row.classList.contains("is-complete")));
   assert.equal(carousel.dataset.customGroupedRowSaving, undefined);
 });
