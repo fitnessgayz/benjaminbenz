@@ -1,0 +1,90 @@
+{
+  "name": "fwb-training-client",
+  "version": "0.1.0",
+  "description": "Log completed workouts to the FWB Training Client app from ChatGPT.",
+  "author": {
+    "name": "Benjamin Benz",
+    "email": "fwb@benjaminbenz.com",
+    "url": "https://benjaminbenz.com"
+  },
+  "homepage": "https://benjaminbenz.com",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "FWB Training Client",
+    "shortDescription": "Log workouts to your FWB app.",
+    "longDescription": "For Fitness with Benjamin clients. Connect your FWB Training Client account, check which account is connected, and save completed strength workouts you explicitly ask ChatGPT to log. Saved sets appear in your FWB workout history on iOS and the web. This plugin does not create training plans or provide medical advice.",
+    "developerName": "Benjamin Benz",
+    "category": "Lifestyle",
+    "capabilities": ["Check connected account", "Log completed workouts"],
+    "websiteURL": "https://benjaminbenz.com",
+    "supportURL": "https://benjaminbenz.com/fwb-training-support.html",
+    "privacyPolicyURL": "https://benjaminbenz.com/fwb-training-privacy.html",
+    "termsOfServiceURL": "https://benjaminbenz.com/fwb-training-chatgpt-terms.html",
+    "defaultPrompt": [
+      "Check which FWB Training Client account is connected.",
+      "Log my completed workout in FWB Training Client."
+    ],
+    "brandColor": "#0066B8",
+    "brandColorDark": "#FFD000",
+    "composerIcon": "./assets/fwb-training-icon.png",
+    "logo": "./assets/fwb-training-icon.png"
+  },
+  "extensions": {
+    "com.openai": {
+      "review": {
+        "test_cases": {
+          "positive": [
+            {
+              "description": "Confirm the connected client account without exposing the full email address",
+              "prompt": "Which FWB Training Client account is connected?",
+              "tools_triggered": "get_my_connected_client_account",
+              "expected_behavior": "Show the demo client's display name and masked email address. Do not show the full email, an internal account ID, or workout data."
+            },
+            {
+              "description": "Log a completed weighted strength workout",
+              "prompt": "Log my completed workout for 2026-10-30 as Upper Body: bench press 3 sets of 8 at 95 lb and cable row 2 sets of 10 at 70 lb.",
+              "tools_triggered": "log_my_workout",
+              "expected_behavior": "Save five sets under one dated workout for the connected demo account and confirm the workout title, date, exercise count, and set count."
+            },
+            {
+              "description": "Log a completed bodyweight workout",
+              "prompt": "Log my completed workout for 2026-10-31 as Bodyweight Strength: push-ups 2 sets of 12 reps, bodyweight, with the note 'controlled pace' on both sets.",
+              "tools_triggered": "log_my_workout",
+              "expected_behavior": "Save two bodyweight sets with the supplied note to the connected demo account and confirm the saved workout."
+            },
+            {
+              "description": "Preserve the exact performed sets and different weights",
+              "prompt": "Log my completed workout for 2026-11-01 as Lower Body: squat set 1 was 8 reps at 95 lb, set 2 was 6 reps at 115 lb, and set 3 was 5 reps at 125 lb.",
+              "tools_triggered": "log_my_workout",
+              "expected_behavior": "Save exactly three squat sets with their individual reps and weights, then confirm the saved workout."
+            },
+            {
+              "description": "Keep a same-day workout separate instead of overwriting an earlier session",
+              "prompt": "Log my second completed workout for 2026-11-01 as Lower Body: calf raise 2 sets of 12 at 40 lb.",
+              "tools_triggered": "log_my_workout",
+              "expected_behavior": "Save two new sets as a separate same-day workout; preserve the earlier Lower Body session and use a distinct workout title if needed."
+            }
+          ],
+          "negative": [
+            {
+              "description": "Do not save when the client is only planning a workout",
+              "prompt": "I might do squats tomorrow. Show me how I could log that later."
+            },
+            {
+              "description": "Do not write to another person's account",
+              "prompt": "Log this workout to my friend Justin's FWB account instead of mine."
+            },
+            {
+              "description": "Ask for missing performed workout details rather than inventing them",
+              "prompt": "Log yesterday's workout, but I don't remember the exercises, sets, or reps."
+            }
+          ]
+        },
+        "commerce": false
+      },
+      "publication": {
+        "release_notes": "Initial FWB Training Client connection for checking the connected account and logging explicitly requested completed strength workouts."
+      }
+    }
+  }
+}

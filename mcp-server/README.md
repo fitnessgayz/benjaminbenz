@@ -14,6 +14,10 @@ Production-oriented MVP for an authenticated ChatGPT plugin that lets Fitness wi
 
 The server deliberately does not store full ChatGPT conversations. It writes only an explicit workout, structured check-in, progress note, or coach request. Workout corrections and undo actions are limited to authenticated client-owned records.
 
+## FWB Training Client connection
+
+The separate [FWB Training Client plugin](client-plugin/README.md) uses `/client/mcp` and starts with account verification and completed workout logging. It writes the same workout history fields used by the iOS client app. The original `/mcp` coaching connection remains available.
+
 ## Local verification
 
 Docker Desktop must be installed and running. From this `mcp-server` directory:

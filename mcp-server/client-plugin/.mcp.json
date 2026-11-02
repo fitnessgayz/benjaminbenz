@@ -1,0 +1,7 @@
+{
+  "mcpServers": {
+    "fwb-training-client": {
+      "url": "https://mcp.benjaminbenz.com/client/mcp"
+    }
+  }
+}

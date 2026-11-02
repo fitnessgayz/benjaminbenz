@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   availableWorkoutTitle,
+  buildWorkoutLogRows,
   mapBodyProgress,
   mapCheckIns,
   mapLiveProgram,
@@ -22,6 +23,26 @@ describe("live portal mapping", () => {
     expect(availableWorkoutTitle("Strength Day", ["strength day", "Strength Day (2)"])).toBe(
       "Strength Day (3)",
     );
+  });
+
+  it("writes completed workout sets with the continuity fields used by iOS", () => {
+    const rows = buildWorkoutLogRows({
+      occurredOn: "2026-11-02",
+      workoutTitle: "Strength Day",
+      sets: [
+        { exerciseCode: "A", exerciseName: "Squat", setNumber: 1, weightUsed: 135, reps: 8, notes: null },
+        { exerciseCode: "A", exerciseName: "Squat", setNumber: 2, weightUsed: 155, reps: 6, notes: null },
+        { exerciseCode: "B", exerciseName: "Push-up", setNumber: 1, weightUsed: null, reps: 12, notes: "Bodyweight" },
+      ],
+    }, "client@example.com", "Strength Day", "38aa07f5-d0b0-4145-8ab0-231676a1f15e", "2026-11-02T18:00:00.000Z");
+
+    expect(rows).toHaveLength(3);
+    expect(new Set(rows.map((row) => row.set_id)).size).toBe(3);
+    expect(rows.map((row) => row.exercise_order)).toEqual([0, 0, 1]);
+    expect(rows.every((row) => row.session_id === row.workout_session_id)).toBe(true);
+    expect(rows.every((row) => row.completed_at === "2026-11-02T18:00:00.000Z")).toBe(true);
+    expect(rows.every((row) => row.source === "mcp")).toBe(true);
+    expect(rows[2]).toMatchObject({ weight_used: null, reps: 12, notes: "Bodyweight" });
   });
 
   it("maps the active client program into the MCP profile and program shapes", () => {

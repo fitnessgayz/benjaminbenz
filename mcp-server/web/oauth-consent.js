@@ -3,6 +3,7 @@ const approveButton = document.querySelector("#approve");
 const denyButton = document.querySelector("#deny");
 const clientNameElement = document.querySelector("#client-name");
 const scopesElement = document.querySelector("#requested-scopes");
+const requestedActionsElement = document.querySelector("#requested-actions");
 const authorizationId = new URLSearchParams(window.location.search).get("authorization_id");
 const config = window.FWB_SUPABASE_CONFIG || {};
 const supabaseClient = config.url && config.anonKey && window.supabase
@@ -46,6 +47,17 @@ async function initialize() {
 
   if (data.client?.name) {
     clientNameElement.textContent = `${data.client.name} is requesting access to your coaching account.`;
+    if (data.client.name.toLowerCase().includes("fwb training client")) {
+      requestedActionsElement.replaceChildren();
+      for (const text of [
+        "Confirm which FWB Training Client account is connected.",
+        "Save a completed workout to your Logs only when you ask.",
+      ]) {
+        const item = document.createElement("li");
+        item.textContent = text;
+        requestedActionsElement.append(item);
+      }
+    }
   }
   if (data.scope?.trim()) {
     scopesElement.hidden = false;

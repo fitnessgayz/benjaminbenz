@@ -136,6 +136,40 @@ export function availableWorkoutTitle(baseTitle: string, existingTitles: string[
   throw new Error("Too many workouts with this title are already logged for that date.");
 }
 
+export function buildWorkoutLogRows(
+  input: WorkoutInput,
+  clientEmail: string,
+  workoutTitle: string,
+  sessionId: string,
+  completedAt: string,
+) {
+  const exerciseOrder = new Map<string, number>();
+  return input.sets.map((set) => {
+    if (!exerciseOrder.has(set.exerciseCode)) {
+      exerciseOrder.set(set.exerciseCode, exerciseOrder.size);
+    }
+    return {
+      client_email: clientEmail,
+      session_id: sessionId,
+      set_id: crypto.randomUUID(),
+      workout_session_id: sessionId,
+      entry_date: input.occurredOn,
+      workout_title: workoutTitle,
+      exercise_code: set.exerciseCode,
+      exercise_name: set.exerciseName,
+      exercise_order: exerciseOrder.get(set.exerciseCode) ?? 0,
+      set_number: set.setNumber,
+      weight_used: set.weightUsed,
+      reps: set.reps,
+      notes: set.notes,
+      source: "mcp",
+      source_version: 1,
+      client_updated_at: completedAt,
+      completed_at: completedAt,
+    };
+  });
+}
+
 function objectValue(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" && !Array.isArray(value)
     ? (value as Record<string, unknown>)
@@ -440,19 +474,13 @@ export class SupabaseCoachingRepository implements CoachingRepository {
       (existingResult.data ?? []).map((row) => String(row.workout_title ?? "")),
     );
     const workoutSessionId = crypto.randomUUID();
-    const rows = input.sets.map((set) => ({
-      client_email: this.clientEmail,
-      workout_session_id: workoutSessionId,
-      entry_date: input.occurredOn,
-      workout_title: workoutTitle,
-      exercise_code: set.exerciseCode,
-      exercise_name: set.exerciseName,
-      set_number: set.setNumber,
-      weight_used: set.weightUsed,
-      reps: set.reps,
-      notes: set.notes,
-      source: "mcp",
-    }));
+    const rows = buildWorkoutLogRows(
+      input,
+      this.clientEmail,
+      workoutTitle,
+      workoutSessionId,
+      new Date().toISOString(),
+    );
     const { data, error } = await this.client
       .from("client_workout_logs")
       .insert(rows)
