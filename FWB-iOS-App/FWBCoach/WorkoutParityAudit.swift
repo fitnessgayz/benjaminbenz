@@ -31,13 +31,13 @@ struct WorkoutParityAuditRootView: View {
         }
         .frame(maxWidth: ProcessInfo.processInfo.arguments.contains("--parity-narrow") ? 320 : .infinity)
         .background(Color.fwbBackground)
-        .preferredColorScheme(.light)
+        .preferredColorScheme(ProcessInfo.processInfo.arguments.contains("--parity-dark") ? .dark : .light)
         .dynamicTypeSize(ProcessInfo.processInfo.arguments.contains("--parity-large-text") ? .accessibility3 : .large)
     }
 }
 
 private enum WorkoutParityAuditScenario: String, CaseIterable, Identifiable {
-    case straight, superset, circuit, assigned, overflow
+    case straight, superset, circuit, assigned, overflow, empty
 
     var id: String { rawValue }
 
@@ -58,12 +58,13 @@ private enum WorkoutParityAuditScenario: String, CaseIterable, Identifiable {
         case .circuit: "Circuit"
         case .assigned: "Assigned"
         case .overflow: "Long text"
+        case .empty: "New custom"
         }
     }
 
     var format: CustomWorkoutFormat? {
         switch self {
-        case .straight: .single
+        case .straight, .empty: .single
         case .superset: .superset
         case .circuit: .circuit
         case .assigned, .overflow: nil
@@ -72,6 +73,11 @@ private enum WorkoutParityAuditScenario: String, CaseIterable, Identifiable {
 
     var workout: Workout {
         switch self {
+        case .empty:
+            Workout(
+                id: UUID(uuidString: "38DCE5B9-DC5B-4430-AB0B-52531F312106")!,
+                title: "Custom Workout", format: "custom", exercises: []
+            )
         case .straight:
             Workout(
                 id: UUID(uuidString: "38DCE5B9-DC5B-4430-AB0B-52531F312101")!,
