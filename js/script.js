@@ -887,6 +887,45 @@ if (questionnaire) {
     .then((user) => prefillQuestionnaireAccount(user))
     .catch(() => {});
 
+  // Apps Script POST responses are opaque to browsers. A read-only status request
+  // confirms the server accepted this ID before we show success or sync a profile.
+  function questionnaireStatusRequest(submissionId) {
+    return new Promise((resolve) => {
+      const url = new URL(questionnaire.action);
+      url.searchParams.set("submission_id", submissionId);
+      url.searchParams.set("callback", "FWBQuestionnaireStatus");
+      const script = document.createElement("script");
+      let settled = false;
+      const finish = (state) => {
+        if (settled) return;
+        settled = true;
+        window.clearTimeout(timer);
+        script.remove();
+        delete window.FWBQuestionnaireStatus;
+        resolve(state);
+      };
+      window.FWBQuestionnaireStatus = (result) => finish(result?.state || "pending");
+      script.onerror = () => finish("pending");
+      const timer = window.setTimeout(() => finish("pending"), 8000);
+      script.src = url.toString();
+      document.head.appendChild(script);
+    });
+  }
+
+  async function questionnaireDeliveryStatus(submissionId) {
+    for (let attempt = 0; attempt < 4; attempt += 1) {
+      const state = await questionnaireStatusRequest(submissionId);
+      if (state === "accepted" || state === "rejected") return state;
+      if (attempt < 3) {
+        await new Promise((resolve) => window.setTimeout(resolve, 1000));
+      }
+    }
+    return "pending";
+  }
+
+  const openedAtField = questionnaire.elements.opened_at;
+  if (openedAtField) openedAtField.value = String(Date.now());
+
   questionnaire.addEventListener("submit", async (event) => {
     event.preventDefault();
 
@@ -915,6 +954,13 @@ if (questionnaire) {
         mode: "no-cors",
         body: new URLSearchParams(formData)
       });
+
+      const deliveryState = await questionnaireDeliveryStatus(submissionId);
+      if (deliveryState !== "accepted") {
+        throw new Error(deliveryState === "rejected"
+          ? "The questionnaire was not accepted."
+          : "The questionnaire could not be confirmed.");
+      }
 
       const signedInUser = await verifiedQuestionnaireUser().catch(() => null);
       const signedInEmail = normalizeQuestionnaireEmail(signedInUser?.email);
@@ -949,6 +995,7 @@ if (questionnaire) {
       }
 
       questionnaire.reset();
+      if (openedAtField) openedAtField.value = String(Date.now());
       if (signedInUser) {
         await prefillQuestionnaireAccount(signedInUser).catch(() => {});
       }
@@ -957,7 +1004,7 @@ if (questionnaire) {
       }
     } catch (error) {
       if (status) {
-        status.textContent = "Something went wrong. Please email fwb@benjaminbenz.com.";
+        status.textContent = "We couldn't confirm your questionnaire was received. Please try again or email fwb@benjaminbenz.com.";
       }
     } finally {
       if (submitButton) {
