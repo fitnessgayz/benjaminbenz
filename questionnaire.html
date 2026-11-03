@@ -35,6 +35,7 @@
   <meta name="theme-color" content="#2878ff" />
   <link rel="stylesheet" href="/css/fwb-dark-theme.css?v=deep-forest-9" />
   <link rel="stylesheet" href="css/questionnaire-gold-blue.css?v=1" />
+  <style>.form-spam-trap { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }</style>
 </head>
 <body class="questionnaire-page public-page public-conversion-page">
   <header class="site-header">
@@ -72,6 +73,8 @@
     <p class="public-privacy-note" id="questionnaire-privacy-note">This form includes health and readiness questions so Benjamin can understand your training context. Your answers are private. Read the <a href="fwb-training-privacy.html">privacy policy</a> or <a href="fwb-training-support.html">contact support</a> before you begin.</p>
 
     <form class="questionnaire-form" id="training-questionnaire" aria-describedby="questionnaire-privacy-note" action="https://script.google.com/macros/s/AKfycbzEPNFHhQ8gTdg3QbnEOLD2exNajO31dwDy0FXzNvQ-fjWmjwANdzwEc4q6zeXUnqgGiA/exec" method="POST">
+      <div class="form-spam-trap" aria-hidden="true"><label>Website <input type="text" name="website" tabindex="-1" autocomplete="off"></label></div>
+      <input type="hidden" name="opened_at" value="">
       <section class="form-section">
         <h2>Contact</h2>
         <label>Email <input type="email" name="email" required autocomplete="email"></label>
@@ -194,6 +197,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js?v=questionnaire-client-sync-1"></script>
   <script src="js/auth-session.js?v=remember-login-2"></script>
-  <script src="js/script.js?v=questionnaire-client-sync-1&amp;remember-login=1"></script>
+  <script src="js/script.js?v=questionnaire-spam-protection-1&amp;remember-login=1"></script>
 </body>
 </html>
