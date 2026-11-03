@@ -1,7 +1,21 @@
 {
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json",
   "mcpServers": {
     "fwb-training-client": {
-      "url": "https://mcp.benjaminbenz.com/client/mcp"
+      "type": "streamable-http",
+      "url": "https://mcp.benjaminbenz.com/client/mcp",
+      "extensions": {
+        "com.openai": {
+          "auth": {
+            "type": "oauth",
+            "client": {
+              "mode": "provided",
+              "clientId": "d255584a-e437-4743-80de-b2ad377c0739",
+              "tokenEndpointAuthMethod": "none"
+            }
+          }
+        }
+      }
     }
   }
 }

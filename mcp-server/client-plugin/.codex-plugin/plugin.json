@@ -1,6 +1,6 @@
 {
   "name": "fwb-training-client",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Log completed workouts to the FWB Training Client app from ChatGPT.",
   "author": {
     "name": "Benjamin Benz",

@@ -11,3 +11,5 @@ From the parent `mcp-server` directory, run `npm run check` and `npm run build`.
 ## Connection
 
 The plugin manifest points to `https://mcp.benjaminbenz.com/client/mcp`. This host must resolve over HTTPS, serve the parent MCP application, and have Supabase OAuth 2.1 enabled before a ChatGPT connection can be created. Keep this as a private test until authentication and iOS history are verified with synthetic data.
+
+The package uses the dedicated public Supabase OAuth client named `FWB Training Client` for the ChatGPT callback. Its client ID is in `.mcp.json`; the client has no secret and uses PKCE. The website consent page selects the workout logging permissions when Supabase reports this client name, while other OAuth clients retain the coaching permission list.
