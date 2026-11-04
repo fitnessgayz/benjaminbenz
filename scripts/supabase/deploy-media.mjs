@@ -127,50 +127,67 @@ async function validateLocalAssets() {
   }
 }
 
-async function uploadAssets(baseUrl, secretKey) {
-  for (const asset of manifest.assets) {
-    const { bytes } = await loadAsset(asset);
-    const localHash = sha256(bytes);
-    const publicUrl = publicObjectUrl(baseUrl, asset);
-    const existing = await fetch(`${publicUrl}?sha256=${localHash}`);
-
-    if (existing.ok) {
-      const existingBytes = Buffer.from(await existing.arrayBuffer());
-      assert(
-        sha256(existingBytes) === localHash,
-        `Refusing to overwrite ${asset.bucket}/${asset.objectPath} with different bytes. Use a new versioned path.`,
-      );
-      console.log(`unchanged ${asset.bucket}/${asset.objectPath}`);
-      continue;
-    }
-
-    assert(
-      existing.status === 400 || existing.status === 404,
-      `Could not check ${asset.bucket}/${asset.objectPath}: HTTP ${existing.status}`,
-    );
-
-    const objectEndpoint = `${baseUrl}/storage/v1/object/${encodeURIComponent(asset.bucket)}/${encodeObjectPath(asset.objectPath)}`;
-    const response = await fetch(objectEndpoint, {
-      method: "POST",
-      headers: apiHeaders(secretKey, {
-        "Content-Type": asset.contentType,
-        "cache-control": `max-age=${asset.cacheControl}`,
-        "x-upsert": "false",
-      }),
-      body: bytes,
-    });
-
-    if (!response.ok) {
-      const detail = await response.text();
-      throw new Error(`Upload failed for ${asset.bucket}/${asset.objectPath}: ${response.status} ${detail}`);
-    }
-
-    console.log(`uploaded ${asset.bucket}/${asset.objectPath} (sha256 ${localHash.slice(0, 12)})`);
+async function forEachInBatches(items, callback) {
+  const batchSize = 4;
+  for (let index = 0; index < items.length; index += batchSize) {
+    await Promise.all(items.slice(index, index + batchSize).map(callback));
   }
 }
 
+async function uploadAssets(baseUrl, secretKey) {
+  await forEachInBatches(manifest.assets, async (asset) => {
+    const { bytes } = await loadAsset(asset);
+    const localHash = sha256(bytes);
+    const publicUrl = publicObjectUrl(baseUrl, asset);
+    const objectEndpoint = `${baseUrl}/storage/v1/object/${encodeURIComponent(asset.bucket)}/${encodeObjectPath(asset.objectPath)}`;
+    for (let attempt = 1; attempt <= 3; attempt += 1) {
+      try {
+        // Recheck before every POST: a timed-out upload may have succeeded.
+        const existing = await fetch(`${publicUrl}?sha256=${localHash}`);
+        if (existing.ok) {
+          const existingBytes = Buffer.from(await existing.arrayBuffer());
+          assert(
+            sha256(existingBytes) === localHash,
+            `Refusing to overwrite ${asset.bucket}/${asset.objectPath} with different bytes. Use a new versioned path.`,
+          );
+          console.log(`unchanged ${asset.bucket}/${asset.objectPath}`);
+          return;
+        }
+        if (existing.status !== 400 && existing.status !== 404) {
+          if (existing.status < 500 && existing.status !== 429) {
+            throw new Error(`Could not check ${asset.bucket}/${asset.objectPath}: HTTP ${existing.status}`);
+          }
+          throw new Error(`Transient check failure for ${asset.bucket}/${asset.objectPath}: HTTP ${existing.status}`);
+        }
+
+        const response = await fetch(objectEndpoint, {
+          method: "POST",
+          headers: apiHeaders(secretKey, {
+            "Content-Type": asset.contentType,
+            "cache-control": `max-age=${asset.cacheControl}`,
+            "x-upsert": "false",
+          }),
+          body: bytes,
+        });
+        if (response.ok) {
+          console.log(`uploaded ${asset.bucket}/${asset.objectPath} (sha256 ${localHash.slice(0, 12)})`);
+          return;
+        }
+        if (response.status < 500 && response.status !== 429 && response.status !== 409) {
+          throw new Error(`Upload failed for ${asset.bucket}/${asset.objectPath}: ${response.status} ${await response.text()}`);
+        }
+        throw new Error(`Transient upload failure for ${asset.bucket}/${asset.objectPath}: HTTP ${response.status}`);
+      } catch (error) {
+        if (attempt === 3 || /Refusing to overwrite|Upload failed|Could not check/.test(String(error))) throw error;
+        console.warn(`${error}; retrying ${asset.bucket}/${asset.objectPath} (${attempt}/3)`);
+        await new Promise((resolve) => setTimeout(resolve, attempt * 1000));
+      }
+    }
+  });
+}
+
 async function verifyAssets(baseUrl) {
-  for (const asset of manifest.assets) {
+  await forEachInBatches(manifest.assets, async (asset) => {
     const { bytes } = await loadAsset(asset);
     const expectedHash = sha256(bytes);
     const url = `${publicObjectUrl(baseUrl, asset)}?sha256=${expectedHash}`;
@@ -190,7 +207,7 @@ async function verifyAssets(baseUrl) {
     const remoteBytes = Buffer.from(await response.arrayBuffer());
     assert(sha256(remoteBytes) === expectedHash, `Checksum mismatch for ${asset.bucket}/${asset.objectPath}`);
     console.log(`verified ${asset.bucket}/${asset.objectPath} (${remoteBytes.length} bytes)`);
-  }
+  });
 }
 
 async function fetchExercise(baseUrl, secretKey, name) {
@@ -215,7 +232,7 @@ async function verifyExerciseMedia(baseUrl, secretKey, nasmExerciseCatalog) {
       .map((expected) => expected.name.toLocaleLowerCase("en-US")),
   );
 
-  for (const expected of manifest.exerciseMedia) {
+  await forEachInBatches(manifest.exerciseMedia, async (expected) => {
     const row = await fetchExercise(baseUrl, secretKey, expected.name);
     assert(row.is_approved === true, `${expected.name} is not approved for the shared exercise library.`);
     assert(row.is_active === true, `${expected.name} is not active in the shared exercise library.`);
@@ -223,14 +240,14 @@ async function verifyExerciseMedia(baseUrl, secretKey, nasmExerciseCatalog) {
     if (expected.motionUrl) assert(row.motion_url === expected.motionUrl, `${expected.name} motion_url mismatch.`);
     if (expected.demoUrl) assert(row.demo_url === expected.demoUrl, `${expected.name} demo_url mismatch.`);
     console.log(`verified exercise mapping: ${expected.name}`);
-  }
+  });
 
-  for (const expected of nasmExerciseCatalog) {
-    if (explicitDemoOverrides.has(expected.name.toLocaleLowerCase("en-US"))) continue;
+  await forEachInBatches(nasmExerciseCatalog, async (expected) => {
+    if (explicitDemoOverrides.has(expected.name.toLocaleLowerCase("en-US"))) return;
     const row = await fetchExercise(baseUrl, secretKey, expected.name);
     assert(row.demo_url === expected.demoUrl, `${expected.name} NASM demo_url mismatch.`);
     console.log(`verified NASM exercise: ${expected.name}`);
-  }
+  });
 }
 
 async function fetchProjectSecretKey(accessToken, projectId) {
