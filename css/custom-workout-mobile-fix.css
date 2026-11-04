@@ -3206,6 +3206,22 @@ body.dashboard-page.custom-workout-grouped-finish-open {
   aspect-ratio: 16 / 10;
 }
 
+.exercise-muscle-fallback {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.exercise-muscle-fallback img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
 .custom-workout-grouped-chevron {
   color: #3f433f;
   font-size: 2.35rem;
