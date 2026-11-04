@@ -71,7 +71,8 @@
     "20261104191441_add_exercise_image_cards_batch_two.sql",
     "20261104194124_add_exercise_image_cards_batch_three.sql",
     "20261104195430_add_exercise_image_cards_batch_four.sql",
-    "20261104202341_add_exercise_image_cards_batch_five.sql"
+    "20261104202341_add_exercise_image_cards_batch_five.sql",
+    "20261104202946_add_exercise_image_cards_batch_six.sql"
   ],
   "nasmExerciseCatalogMigration": "20261001032427_add_complete_nasm_exercise_library.sql",
   "nasmExerciseCatalogCount": 75,
@@ -4366,6 +4367,216 @@
       "objectPath": "approved/2026-11-04/webp-768/seated-cable-row-neutral-grip.webp",
       "contentType": "image/webp",
       "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/assisted-chest-focused-dip.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/assisted-chest-focused-dip.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/assisted-chest-focused-dip.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/assisted-chest-focused-dip.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/assisted-chest-focused-dip.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/assisted-chest-focused-dip.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/back-extension-glute-focus-machine.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/back-extension-glute-focus-machine.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/back-extension-glute-focus-machine.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/back-extension-glute-focus-machine.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/back-extension-glute-focus-machine.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/back-extension-glute-focus-machine.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/cable-tricep-kickback.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/cable-tricep-kickback.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/cable-tricep-kickback.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/cable-tricep-kickback.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/cable-tricep-kickback.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/cable-tricep-kickback.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/chest-supported-row.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/chest-supported-row.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/chest-supported-row.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/chest-supported-row.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/chest-supported-row.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/chest-supported-row.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/dumbbell-push-press.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/dumbbell-push-press.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/dumbbell-push-press.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/dumbbell-push-press.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/dumbbell-push-press.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/dumbbell-push-press.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/incline-dumbbell-row-overhand-grip.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/incline-dumbbell-row-overhand-grip.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/incline-dumbbell-row-overhand-grip.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/incline-dumbbell-row-overhand-grip.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/incline-dumbbell-row-overhand-grip.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/incline-dumbbell-row-overhand-grip.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/kettlebell-romanian-deadlift.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/kettlebell-romanian-deadlift.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/kettlebell-romanian-deadlift.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/kettlebell-romanian-deadlift.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/kettlebell-romanian-deadlift.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/kettlebell-romanian-deadlift.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/lat-pull-down-wide-neutral-grip.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/lat-pull-down-wide-neutral-grip.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/lat-pull-down-wide-neutral-grip.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/lat-pull-down-wide-neutral-grip.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/lat-pull-down-wide-neutral-grip.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/lat-pull-down-wide-neutral-grip.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/straight-leg-situps.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/straight-leg-situps.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/straight-leg-situps.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/straight-leg-situps.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/straight-leg-situps.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/straight-leg-situps.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/cable-chest-press-with-reach-v4.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/cable-chest-press-with-reach-v4.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/cable-chest-press-with-reach-v4.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/cable-chest-press-with-reach-v4.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/cable-chest-press-with-reach-v4.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/cable-chest-press-with-reach-v4.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
     }
   ],
   "exerciseMedia": [
@@ -5395,6 +5606,50 @@
       "name": "Decline Cable Chest Press — Underhand",
       "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-10-06/webp-768/decline-cable-chest-press-underhand.webp",
       "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-videos/generated/2026-10-06/decline-cable-chest-press-underhand.mp4"
+    },
+    {
+      "name": "Assisted Chest-Focused Dip",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/assisted-chest-focused-dip.webp"
+    },
+    {
+      "name": "Back Extension (Glute Focus) Machine",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/back-extension-glute-focus-machine.webp"
+    },
+    {
+      "name": "Cable Tricep Kickback",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/cable-tricep-kickback.webp"
+    },
+    {
+      "name": "Chest-Supported Row",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/chest-supported-row.webp"
+    },
+    {
+      "name": "Dumbbell Push Press",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/dumbbell-push-press.webp"
+    },
+    {
+      "name": "Incline Dumbbell Row - Overhand Grip",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/incline-dumbbell-row-overhand-grip.webp"
+    },
+    {
+      "name": "Kettlebell Romanian Deadlift",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/kettlebell-romanian-deadlift.webp"
+    },
+    {
+      "name": "Lat pull down wide neutral grip",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/lat-pull-down-wide-neutral-grip.webp"
+    },
+    {
+      "name": "straight leg situps",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/straight-leg-situps.webp"
+    },
+    {
+      "name": "Cable Chest Press with Reach",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/cable-chest-press-with-reach-v4.webp"
+    },
+    {
+      "name": "Incline DB overhand row",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/incline-dumbbell-row-overhand-grip.webp"
     }
   ]
 }
