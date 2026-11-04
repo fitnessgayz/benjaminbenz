@@ -50,6 +50,7 @@
     { value: "circuit", label: "Circuit", groupSize: 3 }
   ];
   const FORMATS = new Set(FORMAT_OPTIONS.map((option) => option.value));
+  const STYLES = new Set(["strength", "hyrox", "crossfit"]);
   const DURATIONS = new Set([20, 30, 45, 60]);
   const WARMUP_SECONDS = 180;
   const RECENT_DAYS = 14;
@@ -97,7 +98,10 @@
     if (!Array.isArray(input.equipment) || input.equipment.some((value) => !EQUIPMENT.has(value))) {
       throw new Error("Choose the equipment you have available.");
     }
-    const format = input.format === undefined ? "single" : input.format;
+    const requestedStyle = input.style === undefined ? "strength" : input.style;
+    if (!STYLES.has(requestedStyle)) throw new Error("Choose regular strength, HYROX-style, or CrossFit-style training.");
+    const style = focus.recovery ? "strength" : requestedStyle;
+    const format = style === "hyrox" ? "single" : style === "crossfit" ? "circuit" : (input.format === undefined ? "single" : input.format);
     if (!FORMATS.has(format)) throw new Error("Choose straight set, superset, or circuit format.");
     const warmUpCount = input.warmUpCount === undefined ? undefined : Number(input.warmUpCount);
     const workingSetCount = input.workingSetCount === undefined ? undefined : Number(input.workingSetCount);
@@ -107,7 +111,7 @@
     if (workingSetCount !== undefined && (!Number.isInteger(workingSetCount) || workingSetCount < 1 || workingSetCount > 10)) {
       throw new Error("Choose 1 to 10 working sets.");
     }
-    return { focus, selectedMuscles, equipment: new Set(["bodyweight", ...input.equipment]), intensity: focus.recovery ? "easy" : input.intensity, format, warmUpCount, workingSetCount };
+    return { focus, selectedMuscles, equipment: new Set(["bodyweight", ...input.equipment]), intensity: focus.recovery ? "easy" : input.intensity, format, style, warmUpCount, workingSetCount };
   }
 
   function isRecoveryMovement(entry) {
@@ -204,6 +208,7 @@
   }
 
   function exerciseSeconds(exercise) {
+    if (exercise.movement_pattern === "hybrid_run") return exercise.name.includes("1 km") ? 360 : 180;
     return exercise.sets * repInfo(exercise.reps).seconds + Math.max(0, exercise.sets - 1) * exercise.restSeconds + 60;
   }
 
@@ -273,12 +278,20 @@
       - historyPenalty(entry, recent) + jitter(seed, entry);
   }
 
+  function styleScore(entry, style) {
+    const name = nameKey(entry.name);
+    if (style === "hyrox" && /\b(ski|sled|row|carry|farmer|lunge|burpee|wall ball)\b/.test(name)) return 80;
+    if (style === "crossfit" && /\b(burpee|squat|press|row|pull up|jump|kettlebell|thruster|lunge)\b/.test(name)) return 50;
+    return 0;
+  }
+
   function notesFor(workout) {
     const recovery = FOCUS_OPTIONS.some((focus) => focus.value === workout.focus && focus.recovery);
     const notes = recovery
       ? ["Gentle mobility, flexibility, and recovery. Move slowly within a comfortable range and breathe naturally.", "Time estimate includes 3 minutes to ease into movement, rests, and transitions."]
       : ["Time estimate includes a 3-minute warm-up, rests between sets, and equipment transitions.", INTENSITY_NOTES[workout.intensity]];
-    if (workout.estimatedMinutes < workout.minutes * 0.8) {
+    if (workout.style === "hyrox") notes.push("Actual duration depends on your run pace and station transitions.");
+    if (workout.style !== "hyrox" && workout.estimatedMinutes < workout.minutes * 0.8) {
       notes.push(recovery
         ? `This selection provides about ${workout.estimatedMinutes} minutes of gentle recovery. There is no need to add extra work to fill the time.`
         : `This library and equipment combination provides about ${workout.estimatedMinutes} minutes of training. Choose more equipment or another focus for a longer session.`);
@@ -286,6 +299,8 @@
     if (workout.recentHistoryUsed) notes.push("Recent exercise history helped vary the selection; it does not determine recovery readiness.");
     if (workout.format === "superset") notes.push("Exercises are grouped in pairs. Alternate both exercises before beginning the next round.");
     if (workout.format === "circuit") notes.push("Each circuit contains exactly 3 exercises. Complete all 3 before beginning the next round.");
+    if (workout.style === "hyrox") notes.unshift("Alternate each run with one station. Adjust distance and station targets to your training level.");
+    if (workout.style === "crossfit") notes.unshift("Complete the movements as a circuit. Log every exercise before starting the next round.");
     return notes;
   }
 
@@ -320,7 +335,9 @@
 
     while (remaining.length && chosen.length < maxExercises) {
       const missing = missingGroups(input.focus, chosen, selection.selectedMuscles);
-      const ranked = [...remaining].sort((a, b) => score(b, chosen, missing, recent, seed) - score(a, chosen, missing, recent, seed));
+      const ranked = [...remaining].sort((a, b) =>
+        score(b, chosen, missing, recent, seed) + styleScore(b, selection.style)
+        - score(a, chosen, missing, recent, seed) - styleScore(a, selection.style));
       let next = null;
       for (const entry of ranked) {
         let exercise = makeExercise(entry, selection.intensity, selection.focus.recovery);
@@ -349,13 +366,30 @@
       }
       throw selection.selectedMuscles.length ? timeError() : unavailable(selection.focus);
     }
+    let styledExercises = groupedExercises;
+    if (selection.style === "crossfit") {
+      const rounds = Math.min(3, ...groupedExercises.map((exercise) => exercise.sets));
+      styledExercises = groupedExercises.map((exercise) => withSets(exercise, rounds));
+    }
+    if (selection.style === "hyrox") {
+      const distance = input.minutes >= 45 ? "1 km" : "500 m";
+      styledExercises = groupedExercises.slice(0, input.minutes >= 45 ? 4 : 3).flatMap((station, index) => [
+        {
+          id: `hybrid-run-${index + 1}`, name: `Run ${index + 1} · ${distance}`, primary_muscle: "full_body",
+          equipment: "bodyweight", difficulty: "beginner", movement_pattern: "hybrid_run", substitution_group: "",
+          sets: 1, reps: "60 sec", restSeconds: 0, prescription: `${distance} x 1 set`, rest: "0 sec",
+          demo_url: "", instructions: `Run ${distance} before the next station.`
+        }, withSets(station, 1)
+      ]);
+    }
     return finalize({
-      title: selection.focus.recovery ? selection.focus.label : `${selection.focus.label} workout`, focus: input.focus,
+      title: selection.style === "hyrox" ? "HYROX-style training" : selection.style === "crossfit" ? "CrossFit-style WOD"
+        : selection.focus.recovery ? selection.focus.label : `${selection.focus.label} workout`, focus: input.focus,
       selectedMuscles: selection.selectedMuscles,
-      minutes: input.minutes, intensity: selection.intensity, format: selection.format, equipment: [...selection.equipment],
+      minutes: input.minutes, intensity: selection.intensity, format: selection.format, style: selection.style, equipment: [...selection.equipment],
       ...(selection.warmUpCount !== undefined ? { warmUpCount: selection.warmUpCount } : {}),
       ...(selection.workingSetCount !== undefined ? { workingSetCount: selection.workingSetCount } : {}),
-      exercises: groupedExercises, recentHistoryUsed: pool.some((entry) => historyPenalty(entry, recent) > 0)
+      exercises: styledExercises, recentHistoryUsed: pool.some((entry) => historyPenalty(entry, recent) > 0)
     });
   }
 

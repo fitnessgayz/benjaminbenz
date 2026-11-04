@@ -142,6 +142,26 @@ test("daily generator passes selected superset counts into the applied workout",
   assert.equal(accepted.workingSetCount, 10);
 });
 
+test("training style choice sets HYROX runs or CrossFit circuit defaults", async () => {
+  const h = fixture();
+  h.open();
+  const selects = h.dialog.querySelectorAll("select");
+  const style = selects.find((node) => node.name === "style");
+  const format = selects.find((node) => node.name === "format");
+  style.value = "hyrox";
+  await style.emit("change");
+  await h.form.emit("submit");
+  assert.equal(h.calls[0].style, "hyrox");
+  assert.equal(h.calls[0].format, "single");
+  assert.equal(h.calls[0].workingSetCount, 1);
+  h.open();
+  style.value = "crossfit";
+  await style.emit("change");
+  await h.form.emit("submit");
+  assert.equal(h.calls[1].style, "crossfit");
+  assert.equal(h.calls[1].format, "circuit");
+});
+
 test("gym location scopes generator history and follows a selected workout", async () => {
   const h = fixture();
   let usedGym;
