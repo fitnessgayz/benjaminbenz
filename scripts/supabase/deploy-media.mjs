@@ -127,8 +127,15 @@ async function validateLocalAssets() {
   }
 }
 
+async function forEachInBatches(items, callback) {
+  const batchSize = 8;
+  for (let index = 0; index < items.length; index += batchSize) {
+    await Promise.all(items.slice(index, index + batchSize).map(callback));
+  }
+}
+
 async function uploadAssets(baseUrl, secretKey) {
-  for (const asset of manifest.assets) {
+  await forEachInBatches(manifest.assets, async (asset) => {
     const { bytes } = await loadAsset(asset);
     const localHash = sha256(bytes);
     const publicUrl = publicObjectUrl(baseUrl, asset);
@@ -141,7 +148,7 @@ async function uploadAssets(baseUrl, secretKey) {
         `Refusing to overwrite ${asset.bucket}/${asset.objectPath} with different bytes. Use a new versioned path.`,
       );
       console.log(`unchanged ${asset.bucket}/${asset.objectPath}`);
-      continue;
+      return;
     }
 
     assert(
@@ -166,11 +173,11 @@ async function uploadAssets(baseUrl, secretKey) {
     }
 
     console.log(`uploaded ${asset.bucket}/${asset.objectPath} (sha256 ${localHash.slice(0, 12)})`);
-  }
+  });
 }
 
 async function verifyAssets(baseUrl) {
-  for (const asset of manifest.assets) {
+  await forEachInBatches(manifest.assets, async (asset) => {
     const { bytes } = await loadAsset(asset);
     const expectedHash = sha256(bytes);
     const url = `${publicObjectUrl(baseUrl, asset)}?sha256=${expectedHash}`;
@@ -190,7 +197,7 @@ async function verifyAssets(baseUrl) {
     const remoteBytes = Buffer.from(await response.arrayBuffer());
     assert(sha256(remoteBytes) === expectedHash, `Checksum mismatch for ${asset.bucket}/${asset.objectPath}`);
     console.log(`verified ${asset.bucket}/${asset.objectPath} (${remoteBytes.length} bytes)`);
-  }
+  });
 }
 
 async function fetchExercise(baseUrl, secretKey, name) {
@@ -215,7 +222,7 @@ async function verifyExerciseMedia(baseUrl, secretKey, nasmExerciseCatalog) {
       .map((expected) => expected.name.toLocaleLowerCase("en-US")),
   );
 
-  for (const expected of manifest.exerciseMedia) {
+  await forEachInBatches(manifest.exerciseMedia, async (expected) => {
     const row = await fetchExercise(baseUrl, secretKey, expected.name);
     assert(row.is_approved === true, `${expected.name} is not approved for the shared exercise library.`);
     assert(row.is_active === true, `${expected.name} is not active in the shared exercise library.`);
@@ -223,14 +230,14 @@ async function verifyExerciseMedia(baseUrl, secretKey, nasmExerciseCatalog) {
     if (expected.motionUrl) assert(row.motion_url === expected.motionUrl, `${expected.name} motion_url mismatch.`);
     if (expected.demoUrl) assert(row.demo_url === expected.demoUrl, `${expected.name} demo_url mismatch.`);
     console.log(`verified exercise mapping: ${expected.name}`);
-  }
+  });
 
-  for (const expected of nasmExerciseCatalog) {
-    if (explicitDemoOverrides.has(expected.name.toLocaleLowerCase("en-US"))) continue;
+  await forEachInBatches(nasmExerciseCatalog, async (expected) => {
+    if (explicitDemoOverrides.has(expected.name.toLocaleLowerCase("en-US"))) return;
     const row = await fetchExercise(baseUrl, secretKey, expected.name);
     assert(row.demo_url === expected.demoUrl, `${expected.name} NASM demo_url mismatch.`);
     console.log(`verified NASM exercise: ${expected.name}`);
-  }
+  });
 }
 
 async function fetchProjectSecretKey(accessToken, projectId) {
