@@ -81,7 +81,8 @@
     "20261104215002_add_exercise_image_cards_batch_twelve.sql",
     "20261104215711_add_exercise_image_cards_batch_thirteen.sql",
     "20261104221111_add_exercise_image_cards_batch_fourteen.sql",
-    "20261104222911_add_exercise_image_cards_batch_fifteen.sql"
+    "20261104222911_add_exercise_image_cards_batch_fifteen.sql",
+    "20261104224511_add_exercise_image_cards_batch_sixteen.sql"
   ],
   "nasmExerciseCatalogMigration": "20261001032427_add_complete_nasm_exercise_library.sql",
   "nasmExerciseCatalogCount": 75,
@@ -6476,6 +6477,216 @@
       "objectPath": "approved/2026-11-04/webp-768/plank-walkup.webp",
       "contentType": "image/webp",
       "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/prisoner-squat.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/prisoner-squat.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/prisoner-squat.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/prisoner-squat.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/prisoner-squat.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/prisoner-squat.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/pull-up-or-assisted-pull-up.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/pull-up-or-assisted-pull-up.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/pull-up-or-assisted-pull-up.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/pull-up-or-assisted-pull-up.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/pull-up-or-assisted-pull-up.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/pull-up-or-assisted-pull-up.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/rear-delt-dumbbell-swings.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/rear-delt-dumbbell-swings.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/rear-delt-dumbbell-swings.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/rear-delt-dumbbell-swings.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/rear-delt-dumbbell-swings.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/rear-delt-dumbbell-swings.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/rkc-plank.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/rkc-plank.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/rkc-plank.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/rkc-plank.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/rkc-plank.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/rkc-plank.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/short-lever-copenhagen-plank.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/short-lever-copenhagen-plank.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/short-lever-copenhagen-plank.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/short-lever-copenhagen-plank.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/short-lever-copenhagen-plank.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/short-lever-copenhagen-plank.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/side-oblique-crunch.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/side-oblique-crunch.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/side-oblique-crunch.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/side-oblique-crunch.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/side-oblique-crunch.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/side-oblique-crunch.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/single-leg-extension.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/single-leg-extension.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/single-leg-extension.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/single-leg-extension.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/single-leg-extension.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/single-leg-extension.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/single-leg-kettlebell-rdl.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/single-leg-kettlebell-rdl.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/single-leg-kettlebell-rdl.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/single-leg-kettlebell-rdl.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/single-leg-kettlebell-rdl.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/single-leg-kettlebell-rdl.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/single-leg-seated-leg-curl.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/single-leg-seated-leg-curl.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/single-leg-seated-leg-curl.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/single-leg-seated-leg-curl.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/single-leg-seated-leg-curl.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/single-leg-seated-leg-curl.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/single-leg-squat.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/single-leg-squat.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/single-leg-squat.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/single-leg-squat.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/single-leg-squat.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/single-leg-squat.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
     }
   ],
   "exerciseMedia": [
@@ -7909,6 +8120,46 @@
     {
       "name": "Plank Walkup",
       "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/plank-walkup.webp"
+    },
+    {
+      "name": "Prisoner Squat",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/prisoner-squat.webp"
+    },
+    {
+      "name": "Pull-Up or Assisted Pull-Up",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/pull-up-or-assisted-pull-up.webp"
+    },
+    {
+      "name": "rear delt dumbbell swings",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/rear-delt-dumbbell-swings.webp"
+    },
+    {
+      "name": "RKC Plank",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/rkc-plank.webp"
+    },
+    {
+      "name": "Short-lever Copenhagen plank",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/short-lever-copenhagen-plank.webp"
+    },
+    {
+      "name": "Side oblique crunch",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/side-oblique-crunch.webp"
+    },
+    {
+      "name": "Single leg extension",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/single-leg-extension.webp"
+    },
+    {
+      "name": "Single Leg Kettlebell RDL",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/single-leg-kettlebell-rdl.webp"
+    },
+    {
+      "name": "Single-Leg Seated Leg Curl",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/single-leg-seated-leg-curl.webp"
+    },
+    {
+      "name": "Single-Leg Squat",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/single-leg-squat.webp"
     }
   ]
 }
