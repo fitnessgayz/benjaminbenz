@@ -7433,10 +7433,19 @@ if (typeof document !== "undefined") document.addEventListener("error", (event) 
 function openClientExerciseLibrary(input, onSelect, { referenceName = "" } = {}) {
   if (!window.FWB_CLIENT_EXERCISE_LIBRARY?.open || !input) return false;
   closeCustomExerciseSuggestions();
+  const seenExerciseSessions = new Set();
   const recentNames = [...trainingLogs]
     .sort((left, right) => `${right.entry_date || ""} ${right.created_at || ""}`
       .localeCompare(`${left.entry_date || ""} ${left.created_at || ""}`))
-    .map((log) => String(log.exercise_name || "").trim())
+    .map((log) => {
+      const name = String(log.exercise_name || "").trim();
+      const session = String(log.session_id || log.workout_session_id
+        || `${log.entry_date || ""}|${log.workout_title || ""}`).trim().toLowerCase();
+      const key = `${session}|${name.toLowerCase()}`;
+      if (!name || seenExerciseSessions.has(key)) return "";
+      seenExerciseSessions.add(key);
+      return name;
+    })
     .filter(Boolean);
   window.FWB_CLIENT_EXERCISE_LIBRARY.open({
     records: exerciseSuggestionRecords(),
