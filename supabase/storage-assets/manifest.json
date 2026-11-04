@@ -79,7 +79,8 @@
     "20261104211406_add_exercise_image_cards_batch_ten.sql",
     "20261104212804_add_exercise_image_cards_batch_eleven.sql",
     "20261104215002_add_exercise_image_cards_batch_twelve.sql",
-    "20261104215711_add_exercise_image_cards_batch_thirteen.sql"
+    "20261104215711_add_exercise_image_cards_batch_thirteen.sql",
+    "20261104221111_add_exercise_image_cards_batch_fourteen.sql"
   ],
   "nasmExerciseCatalogMigration": "20261001032427_add_complete_nasm_exercise_library.sql",
   "nasmExerciseCatalogCount": 75,
@@ -6054,6 +6055,216 @@
       "objectPath": "approved/2026-11-04/webp-768/lateral-pogo-hops.webp",
       "contentType": "image/webp",
       "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/lateral-shuffle-controlled-stop.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/lateral-shuffle-controlled-stop.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/lateral-shuffle-controlled-stop.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/lateral-shuffle-controlled-stop.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/lateral-shuffle-controlled-stop.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/lateral-shuffle-controlled-stop.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/lean-away-lateral-raise.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/lean-away-lateral-raise.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/lean-away-lateral-raise.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/lean-away-lateral-raise.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/lean-away-lateral-raise.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/lean-away-lateral-raise.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/leg-press-high-foot-placement.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/leg-press-high-foot-placement.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/leg-press-high-foot-placement.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/leg-press-high-foot-placement.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/leg-press-high-foot-placement.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/leg-press-high-foot-placement.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/lying-leg-curl.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/lying-leg-curl.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/lying-leg-curl.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/lying-leg-curl.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/lying-leg-curl.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/lying-leg-curl.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/lying-leg-curl-single-leg.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/lying-leg-curl-single-leg.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/lying-leg-curl-single-leg.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/lying-leg-curl-single-leg.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/lying-leg-curl-single-leg.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/lying-leg-curl-single-leg.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/lying-leg-curl-two-leg-concentric-single-leg-eccentric-v2.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/lying-leg-curl-two-leg-concentric-single-leg-eccentric-v2.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/lying-leg-curl-two-leg-concentric-single-leg-eccentric-v2.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/lying-leg-curl-two-leg-concentric-single-leg-eccentric-v2.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/lying-leg-curl-two-leg-concentric-single-leg-eccentric-v2.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/lying-leg-curl-two-leg-concentric-single-leg-eccentric-v2.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/low-pogo-hops.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/low-pogo-hops.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/low-pogo-hops.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/low-pogo-hops.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/low-pogo-hops.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/low-pogo-hops.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/lunge-jump-v3.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/lunge-jump-v3.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/lunge-jump-v3.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/lunge-jump-v3.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/lunge-jump-v3.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/lunge-jump-v3.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/machine-chest-press-one-arm.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/machine-chest-press-one-arm.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/machine-chest-press-one-arm.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/machine-chest-press-one-arm.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/machine-chest-press-one-arm.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/machine-chest-press-one-arm.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/machine-kickbacks.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/machine-kickbacks.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/machine-kickbacks.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/machine-kickbacks.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/machine-kickbacks.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/machine-kickbacks.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
     }
   ],
   "exerciseMedia": [
@@ -7407,6 +7618,46 @@
     {
       "name": "Lateral pogo hops",
       "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/lateral-pogo-hops.webp"
+    },
+    {
+      "name": "Lateral shuffle → controlled stop",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/lateral-shuffle-controlled-stop.webp"
+    },
+    {
+      "name": "Lean-away lateral raise",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/lean-away-lateral-raise.webp"
+    },
+    {
+      "name": "Leg Press - High Foot Placement",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/leg-press-high-foot-placement.webp"
+    },
+    {
+      "name": "Lying Leg Curl",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/lying-leg-curl.webp"
+    },
+    {
+      "name": "Lying Leg Curl: Single-Leg",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/lying-leg-curl-single-leg.webp"
+    },
+    {
+      "name": "Lying Leg Curl: Two-Leg Concentric, Single-Leg Eccentric",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/lying-leg-curl-two-leg-concentric-single-leg-eccentric-v2.webp"
+    },
+    {
+      "name": "Low pogo hops",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/low-pogo-hops.webp"
+    },
+    {
+      "name": "Lunge Jump",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/lunge-jump-v3.webp"
+    },
+    {
+      "name": "Machine Chest Press (one arm)",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/machine-chest-press-one-arm.webp"
+    },
+    {
+      "name": "Machine kickbacks",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/machine-kickbacks.webp"
     }
   ]
 }
