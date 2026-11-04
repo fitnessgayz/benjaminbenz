@@ -82,7 +82,8 @@
     "20261104215711_add_exercise_image_cards_batch_thirteen.sql",
     "20261104221111_add_exercise_image_cards_batch_fourteen.sql",
     "20261104222911_add_exercise_image_cards_batch_fifteen.sql",
-    "20261104224511_add_exercise_image_cards_batch_sixteen.sql"
+    "20261104224511_add_exercise_image_cards_batch_sixteen.sql",
+    "20261104230911_add_exercise_image_cards_batch_seventeen.sql"
   ],
   "nasmExerciseCatalogMigration": "20261001032427_add_complete_nasm_exercise_library.sql",
   "nasmExerciseCatalogCount": 75,
@@ -6687,6 +6688,216 @@
       "objectPath": "approved/2026-11-04/webp-768/single-leg-squat.webp",
       "contentType": "image/webp",
       "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/split-lunge-with-elevated-foot.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/split-lunge-with-elevated-foot.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/split-lunge-with-elevated-foot.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/split-lunge-with-elevated-foot.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/split-lunge-with-elevated-foot.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/split-lunge-with-elevated-foot.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/split-squat-hack-squat-machine.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/split-squat-hack-squat-machine.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/split-squat-hack-squat-machine.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/split-squat-hack-squat-machine.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/split-squat-hack-squat-machine.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/split-squat-hack-squat-machine.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/split-step-two-shuffles-controlled-stop.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/split-step-two-shuffles-controlled-stop.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/split-step-two-shuffles-controlled-stop.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/split-step-two-shuffles-controlled-stop.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/split-step-two-shuffles-controlled-stop.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/split-step-two-shuffles-controlled-stop.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/split-step-lateral-push-off.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/split-step-lateral-push-off.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/split-step-lateral-push-off.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/split-step-lateral-push-off.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/split-step-lateral-push-off.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/split-step-lateral-push-off.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/squat-jump.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/squat-jump.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/squat-jump.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/squat-jump.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/squat-jump.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/squat-jump.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/single-leg-squat-touchdown.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/single-leg-squat-touchdown.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/single-leg-squat-touchdown.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/single-leg-squat-touchdown.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/single-leg-squat-touchdown.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/single-leg-squat-touchdown.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/skull-crushers-dumbbell-v2.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/skull-crushers-dumbbell-v2.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/skull-crushers-dumbbell-v2.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/skull-crushers-dumbbell-v2.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/skull-crushers-dumbbell-v2.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/skull-crushers-dumbbell-v2.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/stability-ball-body-saw.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/stability-ball-body-saw.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/stability-ball-body-saw.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/stability-ball-body-saw.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/stability-ball-body-saw.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/stability-ball-body-saw.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/rower-intervals.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/rower-intervals.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/rower-intervals.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/rower-intervals.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/rower-intervals.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/rower-intervals.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/run-intervals.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/run-intervals.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/run-intervals.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/run-intervals.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/run-intervals.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/run-intervals.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
     }
   ],
   "exerciseMedia": [
@@ -8160,6 +8371,46 @@
     {
       "name": "Single-Leg Squat",
       "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/single-leg-squat.webp"
+    },
+    {
+      "name": "Split lunge with elevated foot",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/split-lunge-with-elevated-foot.webp"
+    },
+    {
+      "name": "Split Squat (hack squat machine)",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/split-squat-hack-squat-machine.webp"
+    },
+    {
+      "name": "Split step → 2 shuffles → controlled stop",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/split-step-two-shuffles-controlled-stop.webp"
+    },
+    {
+      "name": "Split step + lateral push-off",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/split-step-lateral-push-off.webp"
+    },
+    {
+      "name": "Squat Jump",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/squat-jump.webp"
+    },
+    {
+      "name": "Single-Leg Squat Touchdown",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/single-leg-squat-touchdown.webp"
+    },
+    {
+      "name": "Skull Crushers Dumbbell",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/skull-crushers-dumbbell-v2.webp"
+    },
+    {
+      "name": "Stability Ball Body Saw",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/stability-ball-body-saw.webp"
+    },
+    {
+      "name": "Rower Intervals",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/rower-intervals.webp"
+    },
+    {
+      "name": "Run Intervals",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/run-intervals.webp"
     }
   ]
 }
