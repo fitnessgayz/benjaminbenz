@@ -78,7 +78,8 @@
     "20261104210400_add_exercise_image_cards_batch_nine.sql",
     "20261104211406_add_exercise_image_cards_batch_ten.sql",
     "20261104212804_add_exercise_image_cards_batch_eleven.sql",
-    "20261104215002_add_exercise_image_cards_batch_twelve.sql"
+    "20261104215002_add_exercise_image_cards_batch_twelve.sql",
+    "20261104215711_add_exercise_image_cards_batch_thirteen.sql"
   ],
   "nasmExerciseCatalogMigration": "20261001032427_add_complete_nasm_exercise_library.sql",
   "nasmExerciseCatalogCount": 75,
@@ -5843,6 +5844,216 @@
       "objectPath": "approved/2026-11-04/webp-768/glute-squat-machine-rdl.webp",
       "contentType": "image/webp",
       "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/incline-push-up.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/incline-push-up.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/incline-push-up.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/incline-push-up.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/incline-push-up.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/incline-push-up.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/inverted-push-up.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/inverted-push-up.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/inverted-push-up.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/inverted-push-up.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/inverted-push-up.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/inverted-push-up.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/jack-knife.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/jack-knife.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/jack-knife.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/jack-knife.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/jack-knife.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/jack-knife.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/kettlebell-deadlift.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/kettlebell-deadlift.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/kettlebell-deadlift.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/kettlebell-deadlift.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/kettlebell-deadlift.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/kettlebell-deadlift.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/kettlebell-front-squat.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/kettlebell-front-squat.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/kettlebell-front-squat.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/kettlebell-front-squat.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/kettlebell-front-squat.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/kettlebell-front-squat.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/kettlebell-crush-curl-with-squat.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/kettlebell-crush-curl-with-squat.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/kettlebell-crush-curl-with-squat.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/kettlebell-crush-curl-with-squat.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/kettlebell-crush-curl-with-squat.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/kettlebell-crush-curl-with-squat.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/kneeling-lat-stretch.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/kneeling-lat-stretch.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/kneeling-lat-stretch.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/kneeling-lat-stretch.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/kneeling-lat-stretch.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/kneeling-lat-stretch.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/kneeling-wood-chop.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/kneeling-wood-chop.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/kneeling-wood-chop.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/kneeling-wood-chop.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/kneeling-wood-chop.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/kneeling-wood-chop.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/lateral-lunge-with-reach.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/lateral-lunge-with-reach.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/lateral-lunge-with-reach.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/lateral-lunge-with-reach.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/lateral-lunge-with-reach.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/lateral-lunge-with-reach.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/lateral-pogo-hops.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/lateral-pogo-hops.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/lateral-pogo-hops.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/lateral-pogo-hops.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/lateral-pogo-hops.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/lateral-pogo-hops.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
     }
   ],
   "exerciseMedia": [
@@ -7156,6 +7367,46 @@
     {
       "name": "Glute Squat Machine RDL",
       "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/glute-squat-machine-rdl.webp"
+    },
+    {
+      "name": "Incline Push-Up",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/incline-push-up.webp"
+    },
+    {
+      "name": "Inverted Push-Up",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/inverted-push-up.webp"
+    },
+    {
+      "name": "jack knife",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/jack-knife.webp"
+    },
+    {
+      "name": "Kettlebell Deadlift",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/kettlebell-deadlift.webp"
+    },
+    {
+      "name": "Kettlebell Front Squat",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/kettlebell-front-squat.webp"
+    },
+    {
+      "name": "Kettlebell Crush Curl with Squat",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/kettlebell-crush-curl-with-squat.webp"
+    },
+    {
+      "name": "Kneeling Lat Stretch",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/kneeling-lat-stretch.webp"
+    },
+    {
+      "name": "Kneeling wood-chop",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/kneeling-wood-chop.webp"
+    },
+    {
+      "name": "Lateral lunge with reach",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/lateral-lunge-with-reach.webp"
+    },
+    {
+      "name": "Lateral pogo hops",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/lateral-pogo-hops.webp"
     }
   ]
 }
