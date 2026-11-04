@@ -66,7 +66,8 @@
     "20261009203406_community_custom_emoji_avatars.sql",
     "20261010105000_client_membership_type.sql",
     "20261010194000_client_login_alerts.sql",
-    "20261028164056_client_access_requests.sql"
+    "20261028164056_client_access_requests.sql",
+    "20261104190421_add_exercise_image_cards_batch_one.sql"
   ],
   "nasmExerciseCatalogMigration": "20261001032427_add_complete_nasm_exercise_library.sql",
   "nasmExerciseCatalogCount": 75,
@@ -3311,6 +3312,216 @@
       "objectPath": "generated/2026-10-09/dumbbell-wolverine.mp4",
       "contentType": "video/mp4",
       "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/ab-crunch-machine.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/ab-crunch-machine.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/ab-crunch-machine.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/ab-crunch-machine.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/ab-crunch-machine.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/ab-crunch-machine.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/bicycle-crunch-v2.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/bicycle-crunch-v2.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/bicycle-crunch-v2.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/bicycle-crunch-v2.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/bicycle-crunch-v2.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/bicycle-crunch-v2.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/cable-triceps-pushdown.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/cable-triceps-pushdown.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/cable-triceps-pushdown.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/cable-triceps-pushdown.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/cable-triceps-pushdown.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/cable-triceps-pushdown.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/crunches.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/crunches.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/crunches.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/crunches.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/crunches.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/crunches.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/decline-chest-press-machine.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/decline-chest-press-machine.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/decline-chest-press-machine.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/decline-chest-press-machine.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/decline-chest-press-machine.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/decline-chest-press-machine.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/dumbbell-shrug.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/dumbbell-shrug.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/dumbbell-shrug.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/dumbbell-shrug.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/dumbbell-shrug.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/dumbbell-shrug.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/high-row-machine.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/high-row-machine.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/high-row-machine.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/high-row-machine.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/high-row-machine.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/high-row-machine.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/neutral-grip-machine-row.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/neutral-grip-machine-row.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/neutral-grip-machine-row.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/neutral-grip-machine-row.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/neutral-grip-machine-row.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/neutral-grip-machine-row.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/reverse-pec-deck.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/reverse-pec-deck.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/reverse-pec-deck.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/reverse-pec-deck.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/reverse-pec-deck.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/reverse-pec-deck.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/wide-grip-lat-pulldown-v2.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/wide-grip-lat-pulldown-v2.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/wide-grip-lat-pulldown-v2.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/wide-grip-lat-pulldown-v2.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/wide-grip-lat-pulldown-v2.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/wide-grip-lat-pulldown-v2.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
     }
   ],
   "exerciseMedia": [
@@ -4140,6 +4351,46 @@
       "name": "Dumbbell Wolverine",
       "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-10-09/webp-768/dumbbell-wolverine.webp",
       "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-videos/generated/2026-10-09/dumbbell-wolverine.mp4"
+    },
+    {
+      "name": "Ab Crunch Machine",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/ab-crunch-machine.webp"
+    },
+    {
+      "name": "Bicycle Crunch",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/bicycle-crunch-v2.webp"
+    },
+    {
+      "name": "Cable Triceps Pushdown",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/cable-triceps-pushdown.webp"
+    },
+    {
+      "name": "Crunches",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/crunches.webp"
+    },
+    {
+      "name": "Decline Chest Press Machine",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/decline-chest-press-machine.webp"
+    },
+    {
+      "name": "Dumbbell Shrug",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/dumbbell-shrug.webp"
+    },
+    {
+      "name": "High-Row Machine",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/high-row-machine.webp"
+    },
+    {
+      "name": "Neutral-Grip Machine Row",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/neutral-grip-machine-row.webp"
+    },
+    {
+      "name": "Reverse Pec Deck",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/reverse-pec-deck.webp"
+    },
+    {
+      "name": "Wide-Grip Lat Pulldown",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/wide-grip-lat-pulldown-v2.webp"
     }
   ]
 }
