@@ -77,7 +77,8 @@
     "20261104205040_add_exercise_image_cards_batch_eight.sql",
     "20261104210400_add_exercise_image_cards_batch_nine.sql",
     "20261104211406_add_exercise_image_cards_batch_ten.sql",
-    "20261104212804_add_exercise_image_cards_batch_eleven.sql"
+    "20261104212804_add_exercise_image_cards_batch_eleven.sql",
+    "20261104215002_add_exercise_image_cards_batch_twelve.sql"
   ],
   "nasmExerciseCatalogMigration": "20261001032427_add_complete_nasm_exercise_library.sql",
   "nasmExerciseCatalogCount": 75,
@@ -5632,6 +5633,216 @@
       "objectPath": "approved/2026-11-04/webp-768/gentle-forearm-pronation-and-supination.webp",
       "contentType": "image/webp",
       "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/decline-push-up.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/decline-push-up.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/decline-push-up.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/decline-push-up.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/decline-push-up.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/decline-push-up.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/decline-sit-up.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/decline-sit-up.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/decline-sit-up.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/decline-sit-up.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/decline-sit-up.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/decline-sit-up.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/elevated-floor-bridge.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/elevated-floor-bridge.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/elevated-floor-bridge.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/elevated-floor-bridge.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/elevated-floor-bridge.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/elevated-floor-bridge.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/elevated-heel-cable-goblet-squat.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/elevated-heel-cable-goblet-squat.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/elevated-heel-cable-goblet-squat.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/elevated-heel-cable-goblet-squat.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/elevated-heel-cable-goblet-squat.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/elevated-heel-cable-goblet-squat.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/elliptical-intervals.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/elliptical-intervals.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/elliptical-intervals.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/elliptical-intervals.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/elliptical-intervals.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/elliptical-intervals.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/hamstring-stretch.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/hamstring-stretch.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/hamstring-stretch.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/hamstring-stretch.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/hamstring-stretch.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/hamstring-stretch.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/hanging-leg-straight.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/hanging-leg-straight.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/hanging-leg-straight.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/hanging-leg-straight.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/hanging-leg-straight.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/hanging-leg-straight.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/heavy-seated-calf-soleus-raise.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/heavy-seated-calf-soleus-raise.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/heavy-seated-calf-soleus-raise.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/heavy-seated-calf-soleus-raise.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/heavy-seated-calf-soleus-raise.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/heavy-seated-calf-soleus-raise.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/high-and-wide-leg-press.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/high-and-wide-leg-press.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/high-and-wide-leg-press.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/high-and-wide-leg-press.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/high-and-wide-leg-press.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/high-and-wide-leg-press.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/glute-squat-machine-rdl.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/glute-squat-machine-rdl.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/glute-squat-machine-rdl.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/glute-squat-machine-rdl.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/glute-squat-machine-rdl.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/glute-squat-machine-rdl.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
     }
   ],
   "exerciseMedia": [
@@ -6905,6 +7116,46 @@
     {
       "name": "Gentle Forearm Pronation and Supination",
       "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/gentle-forearm-pronation-and-supination.webp"
+    },
+    {
+      "name": "Decline Push-Up",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/decline-push-up.webp"
+    },
+    {
+      "name": "Decline Sit-Up",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/decline-sit-up.webp"
+    },
+    {
+      "name": "Elevated floor bridge",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/elevated-floor-bridge.webp"
+    },
+    {
+      "name": "Elevated Heel Cable Goblet squat",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/elevated-heel-cable-goblet-squat.webp"
+    },
+    {
+      "name": "Elliptical Intervals",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/elliptical-intervals.webp"
+    },
+    {
+      "name": "Hamstring Stretch",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/hamstring-stretch.webp"
+    },
+    {
+      "name": "hanging leg straight",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/hanging-leg-straight.webp"
+    },
+    {
+      "name": "Heavy seated calf / soleus raise",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/heavy-seated-calf-soleus-raise.webp"
+    },
+    {
+      "name": "High-and-Wide Leg Press",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/high-and-wide-leg-press.webp"
+    },
+    {
+      "name": "Glute Squat Machine RDL",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/glute-squat-machine-rdl.webp"
     }
   ]
 }
