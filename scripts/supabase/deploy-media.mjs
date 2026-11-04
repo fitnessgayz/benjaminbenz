@@ -128,7 +128,7 @@ async function validateLocalAssets() {
 }
 
 async function forEachInBatches(items, callback) {
-  const batchSize = 8;
+  const batchSize = 4;
   for (let index = 0; index < items.length; index += batchSize) {
     await Promise.all(items.slice(index, index + batchSize).map(callback));
   }
@@ -139,40 +139,50 @@ async function uploadAssets(baseUrl, secretKey) {
     const { bytes } = await loadAsset(asset);
     const localHash = sha256(bytes);
     const publicUrl = publicObjectUrl(baseUrl, asset);
-    const existing = await fetch(`${publicUrl}?sha256=${localHash}`);
-
-    if (existing.ok) {
-      const existingBytes = Buffer.from(await existing.arrayBuffer());
-      assert(
-        sha256(existingBytes) === localHash,
-        `Refusing to overwrite ${asset.bucket}/${asset.objectPath} with different bytes. Use a new versioned path.`,
-      );
-      console.log(`unchanged ${asset.bucket}/${asset.objectPath}`);
-      return;
-    }
-
-    assert(
-      existing.status === 400 || existing.status === 404,
-      `Could not check ${asset.bucket}/${asset.objectPath}: HTTP ${existing.status}`,
-    );
-
     const objectEndpoint = `${baseUrl}/storage/v1/object/${encodeURIComponent(asset.bucket)}/${encodeObjectPath(asset.objectPath)}`;
-    const response = await fetch(objectEndpoint, {
-      method: "POST",
-      headers: apiHeaders(secretKey, {
-        "Content-Type": asset.contentType,
-        "cache-control": `max-age=${asset.cacheControl}`,
-        "x-upsert": "false",
-      }),
-      body: bytes,
-    });
+    for (let attempt = 1; attempt <= 3; attempt += 1) {
+      try {
+        // Recheck before every POST: a timed-out upload may have succeeded.
+        const existing = await fetch(`${publicUrl}?sha256=${localHash}`);
+        if (existing.ok) {
+          const existingBytes = Buffer.from(await existing.arrayBuffer());
+          assert(
+            sha256(existingBytes) === localHash,
+            `Refusing to overwrite ${asset.bucket}/${asset.objectPath} with different bytes. Use a new versioned path.`,
+          );
+          console.log(`unchanged ${asset.bucket}/${asset.objectPath}`);
+          return;
+        }
+        if (existing.status !== 400 && existing.status !== 404) {
+          if (existing.status < 500 && existing.status !== 429) {
+            throw new Error(`Could not check ${asset.bucket}/${asset.objectPath}: HTTP ${existing.status}`);
+          }
+          throw new Error(`Transient check failure for ${asset.bucket}/${asset.objectPath}: HTTP ${existing.status}`);
+        }
 
-    if (!response.ok) {
-      const detail = await response.text();
-      throw new Error(`Upload failed for ${asset.bucket}/${asset.objectPath}: ${response.status} ${detail}`);
+        const response = await fetch(objectEndpoint, {
+          method: "POST",
+          headers: apiHeaders(secretKey, {
+            "Content-Type": asset.contentType,
+            "cache-control": `max-age=${asset.cacheControl}`,
+            "x-upsert": "false",
+          }),
+          body: bytes,
+        });
+        if (response.ok) {
+          console.log(`uploaded ${asset.bucket}/${asset.objectPath} (sha256 ${localHash.slice(0, 12)})`);
+          return;
+        }
+        if (response.status < 500 && response.status !== 429 && response.status !== 409) {
+          throw new Error(`Upload failed for ${asset.bucket}/${asset.objectPath}: ${response.status} ${await response.text()}`);
+        }
+        throw new Error(`Transient upload failure for ${asset.bucket}/${asset.objectPath}: HTTP ${response.status}`);
+      } catch (error) {
+        if (attempt === 3 || /Refusing to overwrite|Upload failed|Could not check/.test(String(error))) throw error;
+        console.warn(`${error}; retrying ${asset.bucket}/${asset.objectPath} (${attempt}/3)`);
+        await new Promise((resolve) => setTimeout(resolve, attempt * 1000));
+      }
     }
-
-    console.log(`uploaded ${asset.bucket}/${asset.objectPath} (sha256 ${localHash.slice(0, 12)})`);
   });
 }
 
