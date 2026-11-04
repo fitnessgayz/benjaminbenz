@@ -75,7 +75,8 @@
     "20261104202946_add_exercise_image_cards_batch_six.sql",
     "20261104203904_add_exercise_image_cards_batch_seven.sql",
     "20261104205040_add_exercise_image_cards_batch_eight.sql",
-    "20261104210400_add_exercise_image_cards_batch_nine.sql"
+    "20261104210400_add_exercise_image_cards_batch_nine.sql",
+    "20261104211406_add_exercise_image_cards_batch_ten.sql"
   ],
   "nasmExerciseCatalogMigration": "20261001032427_add_complete_nasm_exercise_library.sql",
   "nasmExerciseCatalogCount": 75,
@@ -5210,6 +5211,216 @@
       "objectPath": "approved/2026-11-04/webp-768/ankle-rocks.webp",
       "contentType": "image/webp",
       "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/barbell-deadlift.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/barbell-deadlift.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/barbell-deadlift.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/barbell-deadlift.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/barbell-deadlift.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/barbell-deadlift.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/barbell-hip-thrust.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/barbell-hip-thrust.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/barbell-hip-thrust.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/barbell-hip-thrust.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/barbell-hip-thrust.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/barbell-hip-thrust.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/barbell-romanian-deadlift.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/barbell-romanian-deadlift.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/barbell-romanian-deadlift.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/barbell-romanian-deadlift.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/barbell-romanian-deadlift.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/barbell-romanian-deadlift.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/close-grip-barbell-bench-press.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/close-grip-barbell-bench-press.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/close-grip-barbell-bench-press.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/close-grip-barbell-bench-press.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/close-grip-barbell-bench-press.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/close-grip-barbell-bench-press.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/cable-shoulder-press.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/cable-shoulder-press.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/cable-shoulder-press.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/cable-shoulder-press.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/cable-shoulder-press.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/cable-shoulder-press.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/cable-chest-press.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/cable-chest-press.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/cable-chest-press.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/cable-chest-press.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/cable-chest-press.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/cable-chest-press.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/cable-crossover.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/cable-crossover.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/cable-crossover.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/cable-crossover.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/cable-crossover.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/cable-crossover.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/calf-stretch.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/calf-stretch.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/calf-stretch.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/calf-stretch.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/calf-stretch.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/calf-stretch.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/barbell-curl-arm-blaster.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/barbell-curl-arm-blaster.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/barbell-curl-arm-blaster.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/barbell-curl-arm-blaster.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/barbell-curl-arm-blaster.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/barbell-curl-arm-blaster.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/archer-push-up.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/archer-push-up.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/archer-push-up.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/archer-push-up.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/archer-push-up.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/archer-push-up.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
     }
   ],
   "exerciseMedia": [
@@ -6403,6 +6614,46 @@
     {
       "name": "Ankle Rocks",
       "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/ankle-rocks.webp"
+    },
+    {
+      "name": "Barbell Deadlift",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/barbell-deadlift.webp"
+    },
+    {
+      "name": "Barbell Hip Thrust",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/barbell-hip-thrust.webp"
+    },
+    {
+      "name": "Barbell Romanian Deadlift",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/barbell-romanian-deadlift.webp"
+    },
+    {
+      "name": "Close-Grip Barbell Bench Press",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/close-grip-barbell-bench-press.webp"
+    },
+    {
+      "name": "Cable Shoulder Press",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/cable-shoulder-press.webp"
+    },
+    {
+      "name": "Cable Chest press",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/cable-chest-press.webp"
+    },
+    {
+      "name": "Cable Crossover",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/cable-crossover.webp"
+    },
+    {
+      "name": "Calf Stretch",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/calf-stretch.webp"
+    },
+    {
+      "name": "Barbell Curl — arm blaster",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/barbell-curl-arm-blaster.webp"
+    },
+    {
+      "name": "Archer Push-Up",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/archer-push-up.webp"
     }
   ]
 }
