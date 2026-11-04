@@ -2569,7 +2569,15 @@ function isBrandedExerciseImage(value) {
 
 function exerciseMediaButtonMarkup(exercise, options = {}) {
   const { imageUrl, motionUrl, demoUrl, instructions } = exerciseMedia(exercise);
-  if (!imageUrl) return "";
+  if (!imageUrl) {
+    const name = String(exercise.name || "").trim();
+    const approved = approvedExerciseForName(name);
+    const primary = normalizeMuscle(approved?.primary_muscle)
+      || inferExerciseMuscles({ name })[0];
+    if (!primary || !muscleMeta[primary]) return "";
+    const compact = options.compact ? " exercise-muscle-fallback-compact" : "";
+    return `<span class="exercise-muscle-fallback${compact}"><img src="images/muscle-highlights/library/${primary}.png?v=2" alt="${escapeHtml(name)} highlighted muscles" loading="lazy" decoding="async" /></span>`;
+  }
   const { fullUrl, thumbnailUrl } = responsiveExerciseImageUrls(imageUrl);
   const name = String(exercise.name || "Exercise").trim() || "Exercise";
   const compact = options.compact ? " exercise-media-button-compact" : "";
@@ -5962,9 +5970,94 @@ function sameWorkoutGym(left, right) {
   return normalizeWorkoutGymName(left).toLocaleLowerCase() === normalizeWorkoutGymName(right).toLocaleLowerCase();
 }
 
+function workoutGymPreferenceKey(kind) {
+  const email = String(activeClientEmail || "").trim().toLowerCase();
+  return email ? `fwb.${kind}WorkoutGyms.v1.${email}` : "";
+}
+
+function storedWorkoutGymNames(kind) {
+  const key = workoutGymPreferenceKey(kind);
+  if (!key) return [];
+  try {
+    const names = JSON.parse(window.localStorage.getItem(key) || "[]");
+    return Array.isArray(names) ? names.map(normalizeWorkoutGymName).filter(Boolean) : [];
+  } catch (_) { return []; }
+}
+
+function defaultWorkoutGymName() {
+  const key = workoutGymPreferenceKey("default");
+  if (!key) return "";
+  try { return normalizeWorkoutGymName(window.localStorage.getItem(key)); }
+  catch (_) { return ""; }
+}
+
+function setDefaultWorkoutGymName(name) {
+  const key = workoutGymPreferenceKey("default");
+  if (!key) return;
+  try {
+    const gym = normalizeWorkoutGymName(name);
+    if (gym) window.localStorage.setItem(key, gym);
+    else window.localStorage.removeItem(key);
+  } catch (_) { /* A missing local preference must not block workout logging. */ }
+}
+
+function rememberWorkoutGymHistory(name) {
+  const gym = normalizeWorkoutGymName(name);
+  const recentKey = workoutGymPreferenceKey("recent");
+  const hiddenKey = workoutGymPreferenceKey("hidden");
+  if (!gym || !recentKey) return;
+  try {
+    window.localStorage.setItem(recentKey, JSON.stringify([gym,
+      ...storedWorkoutGymNames("recent").filter((item) => !sameWorkoutGym(item, gym))].slice(0, 12)));
+    window.localStorage.setItem(hiddenKey, JSON.stringify(storedWorkoutGymNames("hidden")
+      .filter((item) => !sameWorkoutGym(item, gym))));
+  } catch (_) { /* History is optional. */ }
+}
+
+function forgetWorkoutGymHistory(name) {
+  const gym = normalizeWorkoutGymName(name);
+  const recentKey = workoutGymPreferenceKey("recent");
+  const hiddenKey = workoutGymPreferenceKey("hidden");
+  if (!gym || !recentKey) return;
+  try {
+    window.localStorage.setItem(recentKey, JSON.stringify(storedWorkoutGymNames("recent")
+      .filter((item) => !sameWorkoutGym(item, gym))));
+    window.localStorage.setItem(hiddenKey, JSON.stringify([gym,
+      ...storedWorkoutGymNames("hidden").filter((item) => !sameWorkoutGym(item, gym))].slice(0, 100)));
+  } catch (_) { /* The current page still allows choosing another gym. */ }
+  if (sameWorkoutGym(defaultWorkoutGymName(), gym)) setDefaultWorkoutGymName("");
+}
+
 function recentWorkoutGymLocations() {
-  return [...new Map(trainingLogs.map((log) => normalizeWorkoutGymName(log.gym_name))
-    .filter(Boolean).map((gym) => [gym.toLocaleLowerCase(), gym])).values()].slice(0, 12);
+  const hidden = storedWorkoutGymNames("hidden");
+  const names = [...storedWorkoutGymNames("recent"),
+    ...trainingLogs.map((log) => normalizeWorkoutGymName(log.gym_name))];
+  return [...new Map(names.filter((gym) => gym && !hidden.some((item) => sameWorkoutGym(item, gym)))
+    .map((gym) => [gym.toLocaleLowerCase(), gym])).values()].slice(0, 12);
+}
+
+function workoutGymHistoryMarkup() {
+  const names = recentWorkoutGymLocations();
+  if (!names.length) return "";
+  const defaultGym = defaultWorkoutGymName();
+  return `<details class="workout-gym-history"><summary>Gym history</summary>
+    <div class="workout-gym-history-list">${names.map((gym) => `<div class="workout-gym-history-row">
+      <button type="button" data-workout-gym-select="${escapeHtml(gym)}">${escapeHtml(gym)}${sameWorkoutGym(gym, defaultGym) ? ' <span aria-label="default gym">★</span>' : ""}</button>
+      <button type="button" data-workout-gym-remove="${escapeHtml(gym)}" aria-label="Remove ${escapeHtml(gym)} from gym history">×</button>
+    </div>`).join("")}</div></details>`;
+}
+
+function refreshWorkoutGymControls(panel) {
+  const input = panel?.querySelector("[data-workout-gym]");
+  const history = panel?.querySelector("[data-workout-gym-history]");
+  const defaultButton = panel?.querySelector("[data-workout-gym-default-toggle]");
+  if (history) history.innerHTML = workoutGymHistoryMarkup();
+  if (defaultButton) {
+    const gym = normalizeWorkoutGymName(input?.value);
+    defaultButton.disabled = !gym;
+    defaultButton.textContent = gym && sameWorkoutGym(gym, defaultWorkoutGymName())
+      ? "★ Default gym · tap to remove" : "☆ Set as default gym";
+  }
 }
 
 function workoutGymStorageKey(title, date) {
@@ -5983,7 +6076,7 @@ function storedWorkoutGymLocation(title, date = todayDate()) {
   }
   return normalizeWorkoutGymName(trainingLogs.find((log) => (
     log.workout_title === title && log.entry_date === date && log.gym_name
-  ))?.gym_name);
+  ))?.gym_name) || defaultWorkoutGymName();
 }
 
 function rememberWorkoutGymLocation(panel) {
@@ -6035,13 +6128,12 @@ function syncWorkoutGymLock(panel) {
 
 function workoutGymPickerMarkup(value = "", index = 0) {
   const fieldId = `workout-gym-location-${index}`;
-  const listId = `workout-gym-locations-${index}`;
-  const recentGyms = recentWorkoutGymLocations();
   return `<div class="workout-gym-picker">
-    <label for="${fieldId}">Add gym location</label>
+    <label for="${fieldId}">Gym location (optional)</label>
     <input id="${fieldId}" data-workout-gym type="text" maxlength="80" autocomplete="off"
-      list="${listId}" placeholder="Gym name, Home, or Outdoors" value="${escapeHtml(value)}" />
-    <datalist id="${listId}">${recentGyms.map((gym) => `<option value="${escapeHtml(gym)}"></option>`).join("")}</datalist>
+      placeholder="Gym name, Home, or Outdoors" value="${escapeHtml(value)}" />
+    <button type="button" class="workout-gym-default" data-workout-gym-default-toggle ${normalizeWorkoutGymName(value) ? "" : "disabled"}>${value && sameWorkoutGym(value, defaultWorkoutGymName()) ? "★ Default gym · tap to remove" : "☆ Set as default gym"}</button>
+    <div data-workout-gym-history>${workoutGymHistoryMarkup()}</div>
     <span class="workout-gym-error" data-workout-gym-error role="status" hidden></span>
   </div>`;
 }
@@ -6051,24 +6143,14 @@ function requireWorkoutGymLocation(panel, { focus = true, near = null } = {}) {
   if (!input) return true;
   const gym = normalizeWorkoutGymName(input.value);
   const error = panel.querySelector("[data-workout-gym-error]");
-  if (gym) {
-    input.value = gym;
-    input.removeAttribute("aria-invalid");
-    if (error) error.hidden = true;
-    rememberWorkoutGymLocation(panel);
-    syncGroupedWorkoutGymInputs(panel);
-    return true;
-  }
-  input.setAttribute("aria-invalid", "true");
+  input.value = gym;
+  input.removeAttribute("aria-invalid");
+  if (error) error.hidden = true;
+  rememberWorkoutGymLocation(panel);
+  if (gym) rememberWorkoutGymHistory(gym);
   syncGroupedWorkoutGymInputs(panel);
-  if (error) { error.textContent = "Choose a gym location before starting or logging a set."; error.hidden = false; }
-  if (focus) {
-    const target = near?.closest?.("[data-custom-workout-grouped='true']")?.querySelector("[data-custom-grouped-gym]")
-      || panel.querySelector("[data-custom-grouped-gym]") || input;
-    target.scrollIntoView({ block: "center" });
-    target.focus({ preventScroll: true });
-  }
-  return false;
+  refreshWorkoutGymControls(panel);
+  return true;
 }
 
 function customExerciseCode(index = 0) {
@@ -9811,9 +9893,9 @@ function customWorkoutGroupedRoundCardMarkup(format, exercises, groupIndex = 0, 
         </header>
         ${format === "superset" || format === "circuit" ? `
           <label class="custom-workout-grouped-gym">
-            <span>Add gym location</span>
+            <span>Gym location (optional)</span>
             <input data-custom-grouped-gym type="text" maxlength="80" autocomplete="off" placeholder="Gym name, Home, or Outdoors" />
-            <small data-custom-grouped-gym-error hidden>Choose a gym location before logging a round.</small>
+            <small data-custom-grouped-gym-error hidden></small>
             <small data-custom-grouped-gym-locked hidden>This location stays with the workout after a round is saved.</small>
           </label>
         ` : ""}
@@ -13028,7 +13110,7 @@ function customWorkoutPanelMarkup(index) {
         <div>
           <h2 id="custom-workout-panel-title" tabindex="-1">${escapeHtml(customWorkoutTitle)}</h2>
           <button type="button" class="custom-workout-copy-past-link" data-client-workout-copy-history
-            aria-label="Copy past workout from Logs">Copy past workout <span aria-hidden="true">→</span></button>
+            aria-label="Copy Past Workout from Logs">Copy Past Workout <span aria-hidden="true">→</span></button>
         </div>
       </div>
       <p class="custom-workout-copy-status" data-custom-workout-copy-status role="status" aria-live="polite" ${copyStatusMessage ? "" : "hidden"}>${escapeHtml(copyStatusMessage)}</p>
@@ -13672,7 +13754,7 @@ function clientWorkoutListMarkup(workouts) {
       { icon: "calendar", title: "Trainer Prescribed Workouts",
         description: `${programs[0].program_title || "Your program"} · ${(programs[0].workouts || []).length} ${(programs[0].workouts || []).length === 1 ? "workout" : "workouts"}${programs.length > 1 ? ` · ${programs.length} plans` : ""}`,
         action: 'data-preview-program="0"', titleId: "workout-program-title-0", descriptionId: "workout-program-description-0" },
-      { icon: "plus", title: "Log Custom Workout",
+      { icon: "plus", title: "Log Workout",
         description: "Open a saved workout plan or log your own exercises, sets, reps, and weights.",
         action: 'data-client-workout-picker-choose="0" data-client-workout-picker-card="0" data-client-workout-selection-target="Custom workout"',
         titleId: "client-workout-card-title-0", descriptionId: "workout-custom-description" },
@@ -14858,6 +14940,36 @@ function upsertLocalTrainingLog(savedLog) {
 }
 
 function handleTrainingDateChange() {
+  document.addEventListener("click", (event) => {
+    const select = event.target.closest("[data-workout-gym-select]");
+    const remove = event.target.closest("[data-workout-gym-remove]");
+    const defaultToggle = event.target.closest("[data-workout-gym-default-toggle]");
+    if (!select && !remove && !defaultToggle) return;
+    const panel = event.target.closest(".client-workout-panel");
+    const input = panel?.querySelector("[data-workout-gym]");
+    if (!input) return;
+    if (select) {
+      if (input.readOnly) return;
+      input.value = normalizeWorkoutGymName(select.dataset.workoutGymSelect);
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+      panel.querySelector(".workout-gym-history")?.removeAttribute("open");
+    } else if (remove) {
+      const name = remove.dataset.workoutGymRemove;
+      forgetWorkoutGymHistory(name);
+      if (!input.readOnly && sameWorkoutGym(input.value, name)) {
+        input.value = "";
+        input.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+      refreshWorkoutGymControls(panel);
+    } else if (defaultToggle) {
+      const gym = normalizeWorkoutGymName(input.value);
+      if (!gym) return;
+      const next = sameWorkoutGym(gym, defaultWorkoutGymName()) ? "" : gym;
+      setDefaultWorkoutGymName(next);
+      if (next) rememberWorkoutGymHistory(gym);
+      refreshWorkoutGymControls(panel);
+    }
+  });
   document.addEventListener("input", (event) => {
     const groupedGymInput = event.target.closest("[data-custom-grouped-gym]");
     if (groupedGymInput) {
@@ -14882,6 +14994,8 @@ function handleTrainingDateChange() {
     rememberWorkoutGymLocation(panel);
     persistCustomWorkoutDraftFromPanel(panel);
     syncGroupedWorkoutGymInputs(panel);
+    const defaultButton = panel?.querySelector("[data-workout-gym-default-toggle]");
+    if (defaultButton) defaultButton.disabled = !normalizeWorkoutGymName(gymInput.value);
   });
   document.addEventListener("change", (event) => {
     const groupedGymInput = event.target.closest("[data-custom-grouped-gym]");
@@ -14892,8 +15006,10 @@ function handleTrainingDateChange() {
       source.value = normalizeWorkoutGymName(groupedGymInput.value);
       source.removeAttribute("aria-invalid");
       rememberWorkoutGymLocation(panel);
+      rememberWorkoutGymHistory(source.value);
       persistCustomWorkoutDraftFromPanel(panel);
       syncGroupedWorkoutGymInputs(panel);
+      refreshWorkoutGymControls(panel);
       panel.querySelectorAll("[data-exercise-log]").forEach((log) => {
         renderPreviousExerciseWeights(log);
         renderWorkoutProgression(log);
@@ -14905,8 +15021,10 @@ function handleTrainingDateChange() {
       const panel = gymInput.closest(".client-workout-panel");
       gymInput.value = normalizeWorkoutGymName(gymInput.value);
       rememberWorkoutGymLocation(panel);
+      rememberWorkoutGymHistory(gymInput.value);
       persistCustomWorkoutDraftFromPanel(panel);
       syncGroupedWorkoutGymInputs(panel);
+      refreshWorkoutGymControls(panel);
       panel?.querySelectorAll("[data-exercise-log]").forEach((log) => {
         renderPreviousExerciseWeights(log);
         renderWorkoutProgression(log);

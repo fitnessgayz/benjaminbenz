@@ -31,6 +31,27 @@
   font-weight: 400;
 }
 
+.client-dashboard-page .workout-gym-default,
+.client-dashboard-page .workout-gym-history summary,
+.client-dashboard-page .workout-gym-history button {
+  min-height: 44px;
+  border: 0;
+  color: #59b5ff;
+  background: transparent;
+  font: inherit;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.client-dashboard-page .workout-gym-default:disabled { opacity: .45; cursor: default; }
+.client-dashboard-page .workout-gym-history summary { display: list-item; padding: 8px 0; }
+.client-dashboard-page .workout-gym-history-list { border-top: 1px solid #484c4d; }
+.client-dashboard-page .workout-gym-history-row { display: flex; align-items: center; gap: 8px; }
+.client-dashboard-page .workout-gym-history-row + .workout-gym-history-row { border-top: 1px solid #484c4d; }
+.client-dashboard-page .workout-gym-history-row [data-workout-gym-select] { flex: 1; min-width: 0; overflow-wrap: anywhere; color: #fff; }
+.client-dashboard-page .workout-gym-history-row [data-workout-gym-remove] { flex: 0 0 44px; text-align: center; color: #ffad9c; font-size: 1.5rem; }
+
 .client-dashboard-page .workout-gym-picker :is(small, .workout-gym-error) {
   color: #b5bdb7;
   font-size: .78rem;
@@ -73,6 +94,9 @@
 
 :root[data-client-theme="light"] body.client-dashboard-page .workout-gym-picker label,
 :root[data-client-theme="light"] body.client-dashboard-page .training-log-gym { color: #102b50; }
+
+:root[data-client-theme="light"] body.client-dashboard-page .workout-gym-history-row [data-workout-gym-select] { color: #1b291f; }
+:root[data-client-theme="light"] body.client-dashboard-page .workout-gym-history-row [data-workout-gym-remove] { color: #b12635; }
 
 :root[data-client-theme="light"] body.client-dashboard-page :is(.workout-gym-picker, .custom-workout-grouped-gym) input {
   border-color: #b7c9bd;

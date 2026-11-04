@@ -65,15 +65,38 @@ test("recent exercise recommendations keep each gym's own sets and skip unrelate
   assert.deepEqual(api.recentExerciseHistoryByGym(log), []);
 });
 
-test("the compact picker keeps a single gym, home, or outdoor input", () => {
-  const markup = Function("trainingLogs", "escapeHtml",
-    `${sourceForFunction("normalizeWorkoutGymName")}\n${sourceForFunction("recentWorkoutGymLocations")}\n${sourceForFunction("workoutGymPickerMarkup")}; return workoutGymPickerMarkup("", 2);`)(
-      [{ gym_name: "Gym A" }], (value) => String(value || "")
+test("the compact gym picker collapses history and lets clients remove gyms", () => {
+  const storage = new Map();
+  const names = ["normalizeWorkoutGymName", "sameWorkoutGym", "workoutGymPreferenceKey",
+    "storedWorkoutGymNames", "defaultWorkoutGymName", "setDefaultWorkoutGymName",
+    "rememberWorkoutGymHistory", "forgetWorkoutGymHistory", "recentWorkoutGymLocations",
+    "workoutGymHistoryMarkup", "workoutGymPickerMarkup"];
+  const api = Function("trainingLogs", "escapeHtml", "activeClientEmail", "window",
+    `${names.map(sourceForFunction).join("\n")}; return { workoutGymPickerMarkup, forgetWorkoutGymHistory, recentWorkoutGymLocations };`)(
+      [{ gym_name: "Gym A" }], (value) => String(value || ""), "client@example.com",
+      { localStorage: { getItem: key => storage.get(key) || null,
+        setItem: (key, value) => storage.set(key, value), removeItem: key => storage.delete(key) } }
     );
-  assert.match(markup, /Add gym location/);
+  const markup = api.workoutGymPickerMarkup("", 2);
+  assert.match(markup, /Gym location \(optional\)/);
   assert.match(markup, /Gym name, Home, or Outdoors/);
-  assert.match(markup, /option value="Gym A"/);
+  assert.match(markup, /<details class="workout-gym-history">/);
+  assert.match(markup, /data-workout-gym-remove="Gym A"/);
   assert.doesNotMatch(markup, /Find nearby gyms|Choose once before you start/);
+  api.forgetWorkoutGymHistory("Gym A");
+  assert.deepEqual(api.recentWorkoutGymLocations(), []);
+});
+
+test("an exercise without a demo photo uses highlighted muscle artwork", () => {
+  const render = Function("exerciseMedia", "approvedExerciseForName", "normalizeMuscle",
+    "inferExerciseMuscles", "muscleMeta", "escapeHtml",
+    `${sourceForFunction("exerciseMediaButtonMarkup")}; return exerciseMediaButtonMarkup;`)(
+      () => ({ imageUrl: "" }), () => null, () => "", () => ["lats"], { lats: { label: "Lats" } },
+      (value) => String(value)
+    );
+  const markup = render({ name: "Iso-Lateral Front Lat Pulldown" }, { compact: true });
+  assert.match(markup, /images\/muscle-highlights\/library\/lats\.png/);
+  assert.match(markup, /Iso-Lateral Front Lat Pulldown highlighted muscles/);
 });
 
 test("a superset card lets the client choose the workout's gym without leaving the round", () => {
@@ -102,18 +125,17 @@ test("a superset card lets the client choose the workout's gym without leaving t
       : selector === "[data-custom-grouped-gym]" ? mirror : source,
     querySelectorAll: selector => selector === "[data-custom-grouped-gym]" ? [mirror] : [{ id: "exercise" }]
   };
-  const api = Function("document", "rememberWorkoutGymLocation", "persistCustomWorkoutDraftFromPanel",
+  const api = Function("document", "rememberWorkoutGymLocation", "rememberWorkoutGymHistory", "refreshWorkoutGymControls", "persistCustomWorkoutDraftFromPanel",
     "renderPreviousExerciseWeights", "renderWorkoutProgression",
     `${["normalizeWorkoutGymName", "syncGroupedWorkoutGymInputs", "requireWorkoutGymLocation", "handleTrainingDateChange"]
       .map(sourceForFunction).join("\n")}; return { requireWorkoutGymLocation, handleTrainingDateChange };`)(
       { addEventListener(name, handler) { events[name] = handler; } },
-      () => calls.push("remember"), () => calls.push("draft"),
+      () => calls.push("remember"), () => calls.push("history"), () => {}, () => calls.push("draft"),
       () => calls.push("weights"), () => calls.push("progression")
     );
   api.handleTrainingDateChange();
-  assert.equal(api.requireWorkoutGymLocation(panel), false);
-  assert.deepEqual(calls.slice(0, 2), ["scroll-mirror", "focus-mirror"]);
-  assert.equal(mirrorError.hidden, false);
+  assert.equal(api.requireWorkoutGymLocation(panel), true);
+  assert.equal(mirrorError.hidden, true);
 
   mirror.value = "  Gym A  ";
   events.input({ target: { closest: selector => selector === "[data-custom-grouped-gym]" ? mirror : null } });
@@ -136,7 +158,7 @@ test("superset and circuit round cards both expose the gym location picker", () 
   for (const format of ["superset", "circuit"]) {
     const markup = render(format, [{ name: "Squat" }, { name: "Row" }], 0, 0, "Custom workout", { panelFormat: format });
     assert.match(markup, /data-custom-grouped-gym/);
-    assert.match(markup, /Choose a gym location before logging a round/);
+    assert.match(markup, /data-custom-grouped-gym/);
     assert.match(markup, /data-custom-workout-format="(?:superset|circuit)"/);
   }
 });
