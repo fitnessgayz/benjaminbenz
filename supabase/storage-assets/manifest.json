@@ -73,7 +73,8 @@
     "20261104195430_add_exercise_image_cards_batch_four.sql",
     "20261104202341_add_exercise_image_cards_batch_five.sql",
     "20261104202946_add_exercise_image_cards_batch_six.sql",
-    "20261104203904_add_exercise_image_cards_batch_seven.sql"
+    "20261104203904_add_exercise_image_cards_batch_seven.sql",
+    "20261104205040_add_exercise_image_cards_batch_eight.sql"
   ],
   "nasmExerciseCatalogMigration": "20261001032427_add_complete_nasm_exercise_library.sql",
   "nasmExerciseCatalogCount": 75,
@@ -4788,6 +4789,216 @@
       "objectPath": "approved/2026-11-04/webp-768/tricep-machine.webp",
       "contentType": "image/webp",
       "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/barbell-bench-press-with-bands.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/barbell-bench-press-with-bands.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/barbell-bench-press-with-bands.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/barbell-bench-press-with-bands.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/barbell-bench-press-with-bands.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/barbell-bench-press-with-bands.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/barbell-bench-press-with-chains.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/barbell-bench-press-with-chains.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/barbell-bench-press-with-chains.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/barbell-bench-press-with-chains.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/barbell-bench-press-with-chains.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/barbell-bench-press-with-chains.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/band-shoulder-pass-through-v2.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/band-shoulder-pass-through-v2.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/band-shoulder-pass-through-v2.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/band-shoulder-pass-through-v2.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/band-shoulder-pass-through-v2.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/band-shoulder-pass-through-v2.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/bosu-dumbbell-chest-press.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/bosu-dumbbell-chest-press.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/bosu-dumbbell-chest-press.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/bosu-dumbbell-chest-press.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/bosu-dumbbell-chest-press.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/bosu-dumbbell-chest-press.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/bird-dog.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/bird-dog.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/bird-dog.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/bird-dog.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/bird-dog.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/bird-dog.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/box-jump.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/box-jump.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/box-jump.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/box-jump.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/box-jump.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/box-jump.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/dumbbell-glute-bridge.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/dumbbell-glute-bridge.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/dumbbell-glute-bridge.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/dumbbell-glute-bridge.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/dumbbell-glute-bridge.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/dumbbell-glute-bridge.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/dumbbell-hip-thrust.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/dumbbell-hip-thrust.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/dumbbell-hip-thrust.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/dumbbell-hip-thrust.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/dumbbell-hip-thrust.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/dumbbell-hip-thrust.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/dumbbell-reverse-lunge.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/dumbbell-reverse-lunge.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/dumbbell-reverse-lunge.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/dumbbell-reverse-lunge.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/dumbbell-reverse-lunge.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/dumbbell-reverse-lunge.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/dumbbell-supinating-curl.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/dumbbell-supinating-curl.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/dumbbell-supinating-curl.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/dumbbell-supinating-curl.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/dumbbell-supinating-curl.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/dumbbell-supinating-curl.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
     }
   ],
   "exerciseMedia": [
@@ -5901,6 +6112,46 @@
     {
       "name": "Tricep machine",
       "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/tricep-machine.webp"
+    },
+    {
+      "name": "Barbell Bench Press with Bands",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/barbell-bench-press-with-bands.webp"
+    },
+    {
+      "name": "Barbell Bench Press with Chains",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/barbell-bench-press-with-chains.webp"
+    },
+    {
+      "name": "Band Shoulder Pass-Through",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/band-shoulder-pass-through-v2.webp"
+    },
+    {
+      "name": "BOSU dumbbell chest press",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/bosu-dumbbell-chest-press.webp"
+    },
+    {
+      "name": "Bird Dog",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/bird-dog.webp"
+    },
+    {
+      "name": "Box Jump",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/box-jump.webp"
+    },
+    {
+      "name": "Dumbbell Glute Bridge",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/dumbbell-glute-bridge.webp"
+    },
+    {
+      "name": "Dumbbell Hip Thrust",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/dumbbell-hip-thrust.webp"
+    },
+    {
+      "name": "Dumbbell Reverse Lunge",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/dumbbell-reverse-lunge.webp"
+    },
+    {
+      "name": "Dumbbell Supinating Curl",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/dumbbell-supinating-curl.webp"
     }
   ]
 }
