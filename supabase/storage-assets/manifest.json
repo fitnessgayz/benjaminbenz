@@ -70,7 +70,8 @@
     "20261104190421_add_exercise_image_cards_batch_one.sql",
     "20261104191441_add_exercise_image_cards_batch_two.sql",
     "20261104194124_add_exercise_image_cards_batch_three.sql",
-    "20261104195430_add_exercise_image_cards_batch_four.sql"
+    "20261104195430_add_exercise_image_cards_batch_four.sql",
+    "20261104202341_add_exercise_image_cards_batch_five.sql"
   ],
   "nasmExerciseCatalogMigration": "20261001032427_add_complete_nasm_exercise_library.sql",
   "nasmExerciseCatalogCount": 75,
@@ -4155,6 +4156,216 @@
       "objectPath": "approved/2026-11-04/webp-768/flat-bench-chest.webp",
       "contentType": "image/webp",
       "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/glute-builder-hip-thrust-v2.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/glute-builder-hip-thrust-v2.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/glute-builder-hip-thrust-v2.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/glute-builder-hip-thrust-v2.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/glute-builder-hip-thrust-v2.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/glute-builder-hip-thrust-v2.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/lat-pull-neutral-grip.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/lat-pull-neutral-grip.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/lat-pull-neutral-grip.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/lat-pull-neutral-grip.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/lat-pull-neutral-grip.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/lat-pull-neutral-grip.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/rear-delt-cable-fly.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/rear-delt-cable-fly.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/rear-delt-cable-fly.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/rear-delt-cable-fly.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/rear-delt-cable-fly.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/rear-delt-cable-fly.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/glute-builder-kickback-v2.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/glute-builder-kickback-v2.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/glute-builder-kickback-v2.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/glute-builder-kickback-v2.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/glute-builder-kickback-v2.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/glute-builder-kickback-v2.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/incline-chest-press-machine-single-arm-side.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/incline-chest-press-machine-single-arm-side.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/incline-chest-press-machine-single-arm-side.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/incline-chest-press-machine-single-arm-side.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/incline-chest-press-machine-single-arm-side.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/incline-chest-press-machine-single-arm-side.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/body-weight-tricep-dip.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/body-weight-tricep-dip.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/body-weight-tricep-dip.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/body-weight-tricep-dip.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/body-weight-tricep-dip.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/body-weight-tricep-dip.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/decline-cable-chest-press.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/decline-cable-chest-press.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/decline-cable-chest-press.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/decline-cable-chest-press.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/decline-cable-chest-press.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/decline-cable-chest-press.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/hip-thrust-machine-resistance-band.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/hip-thrust-machine-resistance-band.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/hip-thrust-machine-resistance-band.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/hip-thrust-machine-resistance-band.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/hip-thrust-machine-resistance-band.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/hip-thrust-machine-resistance-band.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/abduction.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/abduction.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/abduction.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/abduction.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/abduction.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/abduction.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/seated-cable-row-neutral-grip.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/seated-cable-row-neutral-grip.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/seated-cable-row-neutral-grip.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/seated-cable-row-neutral-grip.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/seated-cable-row-neutral-grip.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/seated-cable-row-neutral-grip.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
     }
   ],
   "exerciseMedia": [
@@ -4967,8 +5178,7 @@
     },
     {
       "name": "Decline Chest Press",
-      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-10-06/webp-768/decline-cable-chest-press-underhand.webp",
-      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-videos/generated/2026-10-06/decline-cable-chest-press-underhand.mp4"
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/decline-chest-press-machine.webp"
     },
     {
       "name": "Single-Arm Machine Row",
@@ -5140,6 +5350,51 @@
     {
       "name": "Flat Bench Chest",
       "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/flat-bench-chest.webp"
+    },
+    {
+      "name": "Glute Builder Hip Thrust",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/glute-builder-hip-thrust-v2.webp"
+    },
+    {
+      "name": "lat pull neutral grip",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/lat-pull-neutral-grip.webp"
+    },
+    {
+      "name": "Rear-Delt Cable Fly",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/rear-delt-cable-fly.webp"
+    },
+    {
+      "name": "Glute Builder Kickback",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/glute-builder-kickback-v2.webp"
+    },
+    {
+      "name": "Incline chest press machine — single arm side",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/incline-chest-press-machine-single-arm-side.webp"
+    },
+    {
+      "name": "Body weight tricep dip",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/body-weight-tricep-dip.webp"
+    },
+    {
+      "name": "Decline cable chest press",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/decline-cable-chest-press.webp"
+    },
+    {
+      "name": "Hip Thrust Machine (Resistance Band)",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/hip-thrust-machine-resistance-band.webp"
+    },
+    {
+      "name": "Abduction",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/abduction.webp"
+    },
+    {
+      "name": "Seated Cable Row - neutral grip",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/seated-cable-row-neutral-grip.webp"
+    },
+    {
+      "name": "Decline Cable Chest Press — Underhand",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-10-06/webp-768/decline-cable-chest-press-underhand.webp",
+      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-videos/generated/2026-10-06/decline-cable-chest-press-underhand.mp4"
     }
   ]
 }
