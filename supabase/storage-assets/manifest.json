@@ -80,7 +80,8 @@
     "20261104212804_add_exercise_image_cards_batch_eleven.sql",
     "20261104215002_add_exercise_image_cards_batch_twelve.sql",
     "20261104215711_add_exercise_image_cards_batch_thirteen.sql",
-    "20261104221111_add_exercise_image_cards_batch_fourteen.sql"
+    "20261104221111_add_exercise_image_cards_batch_fourteen.sql",
+    "20261104222911_add_exercise_image_cards_batch_fifteen.sql"
   ],
   "nasmExerciseCatalogMigration": "20261001032427_add_complete_nasm_exercise_library.sql",
   "nasmExerciseCatalogCount": 75,
@@ -6265,6 +6266,216 @@
       "objectPath": "approved/2026-11-04/webp-768/machine-kickbacks.webp",
       "contentType": "image/webp",
       "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/modified-push-up.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/modified-push-up.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/modified-push-up.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/modified-push-up.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/modified-push-up.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/modified-push-up.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/narrow-grip-lat-pull-down.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/narrow-grip-lat-pull-down.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/narrow-grip-lat-pull-down.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/narrow-grip-lat-pull-down.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/narrow-grip-lat-pull-down.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/narrow-grip-lat-pull-down.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/one-arm-cable-curl-cross-body.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/one-arm-cable-curl-cross-body.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/one-arm-cable-curl-cross-body.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/one-arm-cable-curl-cross-body.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/one-arm-cable-curl-cross-body.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/one-arm-cable-curl-cross-body.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/one-arm-incline-cable-curl.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/one-arm-incline-cable-curl.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/one-arm-incline-cable-curl.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/one-arm-incline-cable-curl.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/one-arm-incline-cable-curl.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/one-arm-incline-cable-curl.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/one-arm-incline-chest-machine-side-saddle.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/one-arm-incline-chest-machine-side-saddle.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/one-arm-incline-chest-machine-side-saddle.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/one-arm-incline-chest-machine-side-saddle.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/one-arm-incline-chest-machine-side-saddle.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/one-arm-incline-chest-machine-side-saddle.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/plyometric-push-up.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/plyometric-push-up.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/plyometric-push-up.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/plyometric-push-up.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/plyometric-push-up.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/plyometric-push-up.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/pike-push-up.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/pike-push-up.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/pike-push-up.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/pike-push-up.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/pike-push-up.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/pike-push-up.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/plank-shoulder-tap.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/plank-shoulder-tap.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/plank-shoulder-tap.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/plank-shoulder-tap.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/plank-shoulder-tap.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/plank-shoulder-tap.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/plank-twists.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/plank-twists.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/plank-twists.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/plank-twists.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/plank-twists.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/plank-twists.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/plank-walkup.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/plank-walkup.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/plank-walkup.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/plank-walkup.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/plank-walkup.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/plank-walkup.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
     }
   ],
   "exerciseMedia": [
@@ -7658,6 +7869,46 @@
     {
       "name": "Machine kickbacks",
       "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/machine-kickbacks.webp"
+    },
+    {
+      "name": "Modified Push-Up",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/modified-push-up.webp"
+    },
+    {
+      "name": "Narrow grip lat pull down",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/narrow-grip-lat-pull-down.webp"
+    },
+    {
+      "name": "One Arm Cable curl - cross body",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/one-arm-cable-curl-cross-body.webp"
+    },
+    {
+      "name": "One arm Incline cable curl",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/one-arm-incline-cable-curl.webp"
+    },
+    {
+      "name": "One arm incline chest machine (side saddle)",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/one-arm-incline-chest-machine-side-saddle.webp"
+    },
+    {
+      "name": "Plyometric Push-Up",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/plyometric-push-up.webp"
+    },
+    {
+      "name": "Pike Push-Up",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/pike-push-up.webp"
+    },
+    {
+      "name": "Plank Shoulder Tap",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/plank-shoulder-tap.webp"
+    },
+    {
+      "name": "Plank Twists",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/plank-twists.webp"
+    },
+    {
+      "name": "Plank Walkup",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/plank-walkup.webp"
     }
   ]
 }
