@@ -7278,12 +7278,19 @@ if (typeof document !== "undefined") document.addEventListener("error", (event) 
   if (fallback) image.src = fallback;
 }, true);
 
-function openClientExerciseLibrary(input, onSelect) {
+function openClientExerciseLibrary(input, onSelect, { referenceName = "" } = {}) {
   if (!window.FWB_CLIENT_EXERCISE_LIBRARY?.open || !input) return false;
   closeCustomExerciseSuggestions();
+  const recentNames = [...trainingLogs]
+    .sort((left, right) => `${right.entry_date || ""} ${right.created_at || ""}`
+      .localeCompare(`${left.entry_date || ""} ${left.created_at || ""}`))
+    .map((log) => String(log.exercise_name || "").trim())
+    .filter(Boolean);
   window.FWB_CLIENT_EXERCISE_LIBRARY.open({
     records: exerciseSuggestionRecords(),
-    initialQuery: input.value,
+    recentNames,
+    referenceName,
+    initialQuery: referenceName ? "" : input.value,
     onSelect
   });
   return true;
@@ -12841,6 +12848,7 @@ function openCustomWorkoutExerciseEditor(card) {
 function addCustomWorkoutPickedExercise(panel, name) {
   const stack = panel?.querySelector("[data-custom-workout-carousel-stack]");
   if (!stack || !String(name).trim()) return null;
+  name = (typeof approvedExerciseForName === "function" ? approvedExerciseForName(name)?.name : "") || String(name).trim();
   const format = normalizeCustomWorkoutFormat(panel.dataset.customWorkoutFormat);
   const add = customWorkoutExerciseAddConfig(format);
   const blankCard = Array.from(panel.querySelectorAll("[data-custom-exercise-card]")).find((card) => {
@@ -18873,7 +18881,7 @@ function handleIosLogExerciseAction(button) {
       input.dispatchEvent(new Event("change", { bubbles: true }));
       persistCustomWorkoutDraftForElement(carousel);
       renderCustomWorkoutGroupedCard(carousel);
-    });
+    }, { referenceName: input.value });
     return;
   }
   if (action === "remove") {
