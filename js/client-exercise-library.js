@@ -86,8 +86,13 @@
     return MUSCLE_ALIASES[normalized] || (normalized ? normalized.replace(/\b\w/g, (letter) => letter.toUpperCase()) : "Other");
   }
 
-  function prepareRecords(records) {
+  function prepareRecords(records, recentNames = []) {
     const seen = new Set();
+    const recent = new Map();
+    recentNames.forEach((name, index) => {
+      const key = normalize(name);
+      if (key && !recent.has(key)) recent.set(key, index);
+    });
     return (Array.isArray(records) ? records : []).flatMap((record) => {
       const name = String(record?.name || "").trim();
       const key = normalize(name);
@@ -99,18 +104,24 @@
         .map(muscleFor).filter((part) => part !== primary && part !== "Other");
       const aliases = (Array.isArray(record.aliases) ? record.aliases : entry.aliases || [])
         .filter((alias) => typeof alias === "string");
+      const equipment = String(entry.equipment || "").trim();
+      const substitutionGroup = normalize(entry.substitution_group);
+      const recentRank = Math.min(...[name, ...aliases].map((label) => recent.get(normalize(label)) ?? Infinity));
       return [{ name, primary, secondary: [...new Set(secondary)],
+        equipment, substitutionGroup, recentRank,
         highlightKey: muscleHighlightKey(entry),
         highlightFallback: String(entry.primary_muscle || "").trim().toLowerCase(),
-        searchText: normalize([name, ...aliases, primary, ...secondary, entry.equipment || ""].join(" ")) }];
+        searchText: normalize([name, ...aliases, primary, ...secondary, equipment].join(" ")) }];
     }).sort((a, b) => a.name.localeCompare(b.name));
   }
 
-  function matchingRecords(records, query, muscle) {
+  function matchingRecords(records, query, muscle, equipment = "All", recentOnly = false) {
     const words = normalize(query).split(/\s+/).filter(Boolean);
     return records.filter((record) => {
       const muscles = [record.primary, ...record.secondary];
       return (muscle === "All" || muscles.includes(muscle)) &&
+        (equipment === "All" || normalize(record.equipment) === normalize(equipment)) &&
+        (!recentOnly || Number.isFinite(record.recentRank)) &&
         words.every((word) => record.searchText.includes(word));
     });
   }
@@ -135,6 +146,9 @@
   let selection = null;
   let sourceRecords = [];
   let activeMuscle = "All";
+  let activeEquipment = "All";
+  let recentOnly = false;
+  let referenceName = "";
   let renderFrame = 0;
 
   function element(tag, className, text) {
@@ -180,15 +194,37 @@
     search.autocomplete = "off";
     search.setAttribute("aria-controls", "client-exercise-library-results");
     searchLabel.append(search);
+    const browse = element("div", "client-exercise-library-browse");
+    browse.setAttribute("role", "group");
+    browse.setAttribute("aria-label", "Browse exercises");
+    const allButton = element("button", "client-exercise-library-browse-button", "All exercises");
+    const recentButton = element("button", "client-exercise-library-browse-button", "Recent");
+    [allButton, recentButton].forEach((button, index) => {
+      button.type = "button";
+      button.addEventListener("click", () => {
+        recentOnly = index === 1;
+        renderBrowse();
+        renderResults();
+      });
+      browse.append(button);
+    });
     const filters = element("div", "client-exercise-library-filters");
     filters.setAttribute("role", "group");
     filters.setAttribute("aria-label", "Filter by muscle");
+    const equipmentLabel = element("label", "client-exercise-library-equipment-label", "Equipment");
+    const equipmentSelect = element("select", "client-exercise-library-equipment");
+    equipmentSelect.setAttribute("aria-label", "Filter by equipment");
+    equipmentSelect.addEventListener("change", () => {
+      activeEquipment = equipmentSelect.value;
+      renderResults();
+    });
+    equipmentLabel.append(equipmentSelect);
     const count = element("p", "client-exercise-library-count");
     count.setAttribute("role", "status");
     count.setAttribute("aria-live", "polite");
     const results = element("div", "client-exercise-library-results");
     results.id = "client-exercise-library-results";
-    shell.append(header, help, searchLabel, filters, count, results);
+    shell.append(header, help, searchLabel, browse, filters, equipmentLabel, count, results);
     dialog.append(shell);
     root.document.body.append(dialog);
     dialog.addEventListener("close", () => {
@@ -206,6 +242,26 @@
       renderFrame = root.requestAnimationFrame(() => { renderFrame = 0; renderResults(); });
     });
     return dialog;
+  }
+
+  function renderBrowse() {
+    dialog.querySelectorAll(".client-exercise-library-browse-button").forEach((button, index) => {
+      button.setAttribute("aria-pressed", String(recentOnly === (index === 1)));
+    });
+    dialog.querySelectorAll(".client-exercise-library-browse-button")[1].disabled =
+      !sourceRecords.some((record) => Number.isFinite(record.recentRank));
+  }
+
+  function renderEquipment() {
+    const select = dialog.querySelector(".client-exercise-library-equipment");
+    const choices = [...new Set(sourceRecords.map((record) => record.equipment).filter(Boolean))]
+      .sort((a, b) => a.localeCompare(b));
+    select.replaceChildren(...["All", ...choices].map((value) => {
+      const option = element("option", "", value === "All" ? "All equipment" : value.replace(/[_-]+/g, " "));
+      option.value = value;
+      return option;
+    }));
+    select.value = activeEquipment;
   }
 
   function renderFilters() {
@@ -231,13 +287,28 @@
 
   function renderResults() {
     const query = dialog.querySelector(".client-exercise-library-search").value;
-    const matched = matchingRecords(sourceRecords, query, activeMuscle);
+    const matched = matchingRecords(sourceRecords, query, activeMuscle, activeEquipment, recentOnly);
     const count = dialog.querySelector(".client-exercise-library-count");
     count.textContent = `${matched.length} ${matched.length === 1 ? "exercise" : "exercises"}`;
     const results = dialog.querySelector(".client-exercise-library-results");
     const fragment = document.createDocumentFragment();
     if (!matched.length) fragment.append(element("p", "client-exercise-library-empty", "No exercises found. Try another name or muscle group."));
-    groupedRecords(matched, activeMuscle).forEach(([muscle, records]) => {
+    const showRecentFirst = !recentOnly && !query.trim() && activeMuscle === "All" && activeEquipment === "All";
+    const reference = sourceRecords.find((record) => normalize(record.name) === normalize(referenceName));
+    const alternatives = showRecentFirst && reference?.substitutionGroup
+      ? matched.filter((record) => record.name !== reference.name && record.substitutionGroup === reference.substitutionGroup)
+      : [];
+    const alternativeNames = new Set(alternatives.map((record) => record.name));
+    const recent = showRecentFirst ? matched.filter((record) => Number.isFinite(record.recentRank))
+      .filter((record) => !alternativeNames.has(record.name))
+      .sort((a, b) => a.recentRank - b.recentRank).slice(0, 8) : [];
+    const recentNames = new Set(recent.map((record) => record.name));
+    const groups = recentOnly
+      ? [["Recent", [...matched].sort((a, b) => a.recentRank - b.recentRank)]]
+      : [...(alternatives.length ? [["Suggested alternatives", alternatives]] : []),
+        ...(recent.length ? [["Recently used", recent]] : []),
+        ...groupedRecords(matched.filter((record) => !recentNames.has(record.name) && !alternativeNames.has(record.name)), activeMuscle)];
+    groups.forEach(([muscle, records]) => {
       const group = element("section", "client-exercise-library-group");
       group.append(element("h3", "client-exercise-library-group-title", muscle));
       const list = element("ul", "client-exercise-library-list");
@@ -271,6 +342,7 @@
           muscles.append(element("small", "client-exercise-library-item-muscle", muscle));
         });
         text.append(muscles);
+        if (record.equipment) text.append(element("small", "client-exercise-library-item-equipment", record.equipment.replace(/[_-]+/g, " ")));
         const add = element("span", "client-exercise-library-item-plus", "+");
         add.setAttribute("aria-hidden", "true");
         button.append(artwork, text, add);
@@ -289,16 +361,21 @@
     results.scrollTop = 0;
   }
 
-  function open({ records = [], initialQuery = "", onSelect } = {}) {
+  function open({ records = [], recentNames = [], referenceName: currentName = "", initialQuery = "", onSelect } = {}) {
     ensureDialog();
     if (dialog.open || !dialog.hidden) close();
-    sourceRecords = prepareRecords(records);
+    sourceRecords = prepareRecords(records, recentNames);
     selection = onSelect;
     restoreFocus = root.document.activeElement;
     activeMuscle = "All";
+    activeEquipment = "All";
+    recentOnly = false;
+    referenceName = String(currentName || "");
     const search = dialog.querySelector(".client-exercise-library-search");
     search.value = String(initialQuery || "");
+    renderBrowse();
     renderFilters();
+    renderEquipment();
     renderResults();
     dialog.hidden = false;
     root.document.body.classList.add("client-exercise-library-open");

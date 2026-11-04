@@ -40,6 +40,19 @@ test("searches aliases and filters by primary or secondary muscle", () => {
   assert.deepEqual(groupedRecords(matchingRecords(prepared, "", "All"), "All").map(([muscle]) => muscle), ["Chest", "Hamstrings"]);
 });
 
+test("keeps recent alias searches on the canonical exercise and filters equipment", () => {
+  const prepared = prepareRecords([
+    { name: "Romanian Deadlift", aliases: ["RDL"], libraryEntry: { primary_muscle: "Hamstrings", equipment: "barbell", substitution_group: "hip_hinge" } },
+    { name: "Dumbbell Curl", libraryEntry: { primary_muscle: "Biceps", equipment: "dumbbell" } },
+    { name: "Cable Curl", libraryEntry: { primary_muscle: "Biceps", equipment: "cable" } }
+  ], ["RDL", "Dumbbell Curl", "RDL"]);
+  assert.equal(prepared.find((entry) => entry.name === "Romanian Deadlift").recentRank, 0);
+  assert.equal(prepared.find((entry) => entry.name === "Romanian Deadlift").substitutionGroup, "hip hinge");
+  assert.deepEqual(matchingRecords(prepared, "", "All", "barbell", true).map((entry) => entry.name), ["Romanian Deadlift"]);
+  assert.deepEqual(matchingRecords(prepared, "rdl", "All", "All").map((entry) => entry.name), ["Romanian Deadlift"]);
+  assert.deepEqual(matchingRecords(prepared, "", "All", "cable", true), []);
+});
+
 test("illustrates every browse muscle with a distinct highlighted region", () => {
   const muscles = ["Chest", "Back", "Shoulders", "Biceps", "Triceps", "Forearms", "Core", "Glutes", "Quads", "Hamstrings", "Calves", "Full Body", "Cardio", "Mobility"];
   const artwork = muscles.map(muscleArtwork);
@@ -57,7 +70,7 @@ test("both exercise search menus offer More and connect it to the full library",
   const portal = fs.readFileSync(path.join(root, "js/client-portal.js"), "utf8");
   const dashboard = fs.readFileSync(path.join(root, "client-dashboard.html"), "utf8");
   assert.equal((portal.match(/data-custom-exercise-more>More exercises/g) || []).length, 2);
-  assert.match(portal, /function openClientExerciseLibrary\(input, onSelect\)/);
+  assert.match(portal, /function openClientExerciseLibrary\(input, onSelect,/);
   assert.match(portal, /records: exerciseSuggestionRecords\(\)/);
   assert.match(portal, /openClientExerciseLibrary\(input, \(name\) =>/);
   assert.match(dashboard, /js\/client-exercise-library\.js\?v=/);
