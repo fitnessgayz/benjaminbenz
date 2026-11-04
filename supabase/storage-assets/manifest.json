@@ -68,7 +68,8 @@
     "20261010194000_client_login_alerts.sql",
     "20261028164056_client_access_requests.sql",
     "20261104190421_add_exercise_image_cards_batch_one.sql",
-    "20261104191441_add_exercise_image_cards_batch_two.sql"
+    "20261104191441_add_exercise_image_cards_batch_two.sql",
+    "20261104194124_add_exercise_image_cards_batch_three.sql"
   ],
   "nasmExerciseCatalogMigration": "20261001032427_add_complete_nasm_exercise_library.sql",
   "nasmExerciseCatalogCount": 75,
@@ -3733,6 +3734,216 @@
       "objectPath": "approved/2026-11-04/webp-768/step-ups.webp",
       "contentType": "image/webp",
       "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/tuck-jump.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/tuck-jump.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/tuck-jump.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/tuck-jump.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/tuck-jump.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/tuck-jump.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/chest-dips.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/chest-dips.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/chest-dips.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/chest-dips.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/chest-dips.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/chest-dips.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/cable-curl-single-arm.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/cable-curl-single-arm.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/cable-curl-single-arm.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/cable-curl-single-arm.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/cable-curl-single-arm.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/cable-curl-single-arm.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/high-to-low-cable-row.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/high-to-low-cable-row.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/high-to-low-cable-row.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/high-to-low-cable-row.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/high-to-low-cable-row.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/high-to-low-cable-row.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/lunges.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/lunges.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/lunges.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/lunges.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/lunges.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/lunges.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/incline-cable-curl.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/incline-cable-curl.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/incline-cable-curl.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/incline-cable-curl.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/incline-cable-curl.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/incline-cable-curl.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/two-arm-dumbbell-chest-press-with-band.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/two-arm-dumbbell-chest-press-with-band.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/two-arm-dumbbell-chest-press-with-band.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/two-arm-dumbbell-chest-press-with-band.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/two-arm-dumbbell-chest-press-with-band.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/two-arm-dumbbell-chest-press-with-band.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/hollow-hold-leg-extensions.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/hollow-hold-leg-extensions.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/hollow-hold-leg-extensions.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/hollow-hold-leg-extensions.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/hollow-hold-leg-extensions.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/hollow-hold-leg-extensions.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/banded-lateral-walk.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/banded-lateral-walk.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/banded-lateral-walk.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/banded-lateral-walk.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/banded-lateral-walk.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/banded-lateral-walk.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/cable-chest-fly-single-arm.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/cable-chest-fly-single-arm.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/cable-chest-fly-single-arm.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/cable-chest-fly-single-arm.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/cable-chest-fly-single-arm.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/cable-chest-fly-single-arm.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
     }
   ],
   "exerciseMedia": [
@@ -4638,6 +4849,46 @@
     {
       "name": "Step Ups",
       "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/step-ups.webp"
+    },
+    {
+      "name": "Tuck Jump",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/tuck-jump.webp"
+    },
+    {
+      "name": "Chest dips",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/chest-dips.webp"
+    },
+    {
+      "name": "Cable Curl (single arm)",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/cable-curl-single-arm.webp"
+    },
+    {
+      "name": "High to low cable row",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/high-to-low-cable-row.webp"
+    },
+    {
+      "name": "Lunges",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/lunges.webp"
+    },
+    {
+      "name": "Incline Cable Curl",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/incline-cable-curl.webp"
+    },
+    {
+      "name": "Two-Arm Dumbbell Chest Press with Band",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/two-arm-dumbbell-chest-press-with-band.webp"
+    },
+    {
+      "name": "Hollow Hold Leg Extensions",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/hollow-hold-leg-extensions.webp"
+    },
+    {
+      "name": "Banded Lateral Walk",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/banded-lateral-walk.webp"
+    },
+    {
+      "name": "Cable Chest Fly single arm",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/cable-chest-fly-single-arm.webp"
     }
   ]
 }
