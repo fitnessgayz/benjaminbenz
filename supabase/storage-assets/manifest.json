@@ -76,7 +76,8 @@
     "20261104203904_add_exercise_image_cards_batch_seven.sql",
     "20261104205040_add_exercise_image_cards_batch_eight.sql",
     "20261104210400_add_exercise_image_cards_batch_nine.sql",
-    "20261104211406_add_exercise_image_cards_batch_ten.sql"
+    "20261104211406_add_exercise_image_cards_batch_ten.sql",
+    "20261104212804_add_exercise_image_cards_batch_eleven.sql"
   ],
   "nasmExerciseCatalogMigration": "20261001032427_add_complete_nasm_exercise_library.sql",
   "nasmExerciseCatalogCount": 75,
@@ -5421,6 +5422,216 @@
       "objectPath": "approved/2026-11-04/webp-768/archer-push-up.webp",
       "contentType": "image/webp",
       "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/band-assisted-pull-up.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/band-assisted-pull-up.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/band-assisted-pull-up.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/band-assisted-pull-up.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/band-assisted-pull-up.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/band-assisted-pull-up.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/chest-supported-rear-delt-row.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/chest-supported-rear-delt-row.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/chest-supported-rear-delt-row.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/chest-supported-rear-delt-row.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/chest-supported-rear-delt-row.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/chest-supported-rear-delt-row.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/close-grip-push-up-to-failure.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/close-grip-push-up-to-failure.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/close-grip-push-up-to-failure.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/close-grip-push-up-to-failure.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/close-grip-push-up-to-failure.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/close-grip-push-up-to-failure.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/double-dumbbell-front-squat.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/double-dumbbell-front-squat.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/double-dumbbell-front-squat.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/double-dumbbell-front-squat.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/double-dumbbell-front-squat.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/double-dumbbell-front-squat.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/dumbbell-single-leg-romanian-deadlift.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/dumbbell-single-leg-romanian-deadlift.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/dumbbell-single-leg-romanian-deadlift.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/dumbbell-single-leg-romanian-deadlift.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/dumbbell-single-leg-romanian-deadlift.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/dumbbell-single-leg-romanian-deadlift.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/front-foot-elevated-reverse-lunge.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/front-foot-elevated-reverse-lunge.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/front-foot-elevated-reverse-lunge.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/front-foot-elevated-reverse-lunge.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/front-foot-elevated-reverse-lunge.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/front-foot-elevated-reverse-lunge.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/cable-glute-kickback-gluteus-medius.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/cable-glute-kickback-gluteus-medius.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/cable-glute-kickback-gluteus-medius.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/cable-glute-kickback-gluteus-medius.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/cable-glute-kickback-gluteus-medius.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/cable-glute-kickback-gluteus-medius.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/dynamic-hamstring-sweep.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/dynamic-hamstring-sweep.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/dynamic-hamstring-sweep.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/dynamic-hamstring-sweep.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/dynamic-hamstring-sweep.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/dynamic-hamstring-sweep.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/foam-roller-wall-slide.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/foam-roller-wall-slide.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/foam-roller-wall-slide.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/foam-roller-wall-slide.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/foam-roller-wall-slide.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/foam-roller-wall-slide.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/gentle-forearm-pronation-and-supination.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/gentle-forearm-pronation-and-supination.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/gentle-forearm-pronation-and-supination.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/gentle-forearm-pronation-and-supination.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/gentle-forearm-pronation-and-supination.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/gentle-forearm-pronation-and-supination.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
     }
   ],
   "exerciseMedia": [
@@ -6654,6 +6865,46 @@
     {
       "name": "Archer Push-Up",
       "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/archer-push-up.webp"
+    },
+    {
+      "name": "Band Assisted Pull-Up",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/band-assisted-pull-up.webp"
+    },
+    {
+      "name": "Chest-supported rear-delt row",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/chest-supported-rear-delt-row.webp"
+    },
+    {
+      "name": "Close-Grip Push-Up to Failure",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/close-grip-push-up-to-failure.webp"
+    },
+    {
+      "name": "Double-dumbbell front squat",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/double-dumbbell-front-squat.webp"
+    },
+    {
+      "name": "Dumbbell Single-Leg Romanian Deadlift",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/dumbbell-single-leg-romanian-deadlift.webp"
+    },
+    {
+      "name": "Front-foot-elevated reverse lunge",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/front-foot-elevated-reverse-lunge.webp"
+    },
+    {
+      "name": "Cable Glute Kickback (gluteus Medius)",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/cable-glute-kickback-gluteus-medius.webp"
+    },
+    {
+      "name": "Dynamic Hamstring Sweep",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/dynamic-hamstring-sweep.webp"
+    },
+    {
+      "name": "Foam-Roller Wall Slide",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/foam-roller-wall-slide.webp"
+    },
+    {
+      "name": "Gentle Forearm Pronation and Supination",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/gentle-forearm-pronation-and-supination.webp"
     }
   ]
 }
