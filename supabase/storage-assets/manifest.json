@@ -74,7 +74,8 @@
     "20261104202341_add_exercise_image_cards_batch_five.sql",
     "20261104202946_add_exercise_image_cards_batch_six.sql",
     "20261104203904_add_exercise_image_cards_batch_seven.sql",
-    "20261104205040_add_exercise_image_cards_batch_eight.sql"
+    "20261104205040_add_exercise_image_cards_batch_eight.sql",
+    "20261104210400_add_exercise_image_cards_batch_nine.sql"
   ],
   "nasmExerciseCatalogMigration": "20261001032427_add_complete_nasm_exercise_library.sql",
   "nasmExerciseCatalogCount": 75,
@@ -4999,6 +5000,216 @@
       "objectPath": "approved/2026-11-04/webp-768/dumbbell-supinating-curl.webp",
       "contentType": "image/webp",
       "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/assisted-nordic-ham.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/assisted-nordic-ham.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/assisted-nordic-ham.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/assisted-nordic-ham.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/assisted-nordic-ham.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/assisted-nordic-ham.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/banded-glute-kickback-bench.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/banded-glute-kickback-bench.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/banded-glute-kickback-bench.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/banded-glute-kickback-bench.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/banded-glute-kickback-bench.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/banded-glute-kickback-bench.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/banded-hip-thrust-feet-elevated.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/banded-hip-thrust-feet-elevated.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/banded-hip-thrust-feet-elevated.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/banded-hip-thrust-feet-elevated.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/banded-hip-thrust-feet-elevated.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/banded-hip-thrust-feet-elevated.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/bosu-crunch.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/bosu-crunch.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/bosu-crunch.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/bosu-crunch.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/bosu-crunch.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/bosu-crunch.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/bosu-dumbbell-bicep-curls.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/bosu-dumbbell-bicep-curls.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/bosu-dumbbell-bicep-curls.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/bosu-dumbbell-bicep-curls.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/bosu-dumbbell-bicep-curls.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/bosu-dumbbell-bicep-curls.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/alternating-leg-lowers.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/alternating-leg-lowers.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/alternating-leg-lowers.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/alternating-leg-lowers.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/alternating-leg-lowers.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/alternating-leg-lowers.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/adductor-rock-back.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/adductor-rock-back.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/adductor-rock-back.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/adductor-rock-back.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/adductor-rock-back.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/adductor-rock-back.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/adductor-rock-back-with-rotation.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/adductor-rock-back-with-rotation.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/adductor-rock-back-with-rotation.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/adductor-rock-back-with-rotation.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/adductor-rock-back-with-rotation.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/adductor-rock-back-with-rotation.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/ankle-knee-to-wall-rocks.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/ankle-knee-to-wall-rocks.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/ankle-knee-to-wall-rocks.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/ankle-knee-to-wall-rocks.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/ankle-knee-to-wall-rocks.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/ankle-knee-to-wall-rocks.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/ankle-rocks.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/ankle-rocks.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/ankle-rocks.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/ankle-rocks.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/ankle-rocks.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/ankle-rocks.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
     }
   ],
   "exerciseMedia": [
@@ -6152,6 +6363,46 @@
     {
       "name": "Dumbbell Supinating Curl",
       "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/dumbbell-supinating-curl.webp"
+    },
+    {
+      "name": "Assisted Nordic Ham",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/assisted-nordic-ham.webp"
+    },
+    {
+      "name": "banded glute kickback - bench",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/banded-glute-kickback-bench.webp"
+    },
+    {
+      "name": "banded hip thrust - feet elevated",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/banded-hip-thrust-feet-elevated.webp"
+    },
+    {
+      "name": "BOSU crunch",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/bosu-crunch.webp"
+    },
+    {
+      "name": "BOSU dumbbell bicep curls",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/bosu-dumbbell-bicep-curls.webp"
+    },
+    {
+      "name": "Alternating Leg Lowers",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/alternating-leg-lowers.webp"
+    },
+    {
+      "name": "Adductor Rock-Back",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/adductor-rock-back.webp"
+    },
+    {
+      "name": "Adductor rock-back with rotation",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/adductor-rock-back-with-rotation.webp"
+    },
+    {
+      "name": "Ankle knee-to-wall rocks",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/ankle-knee-to-wall-rocks.webp"
+    },
+    {
+      "name": "Ankle Rocks",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/ankle-rocks.webp"
     }
   ]
 }
