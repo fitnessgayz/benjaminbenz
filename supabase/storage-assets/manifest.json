@@ -72,7 +72,8 @@
     "20261104194124_add_exercise_image_cards_batch_three.sql",
     "20261104195430_add_exercise_image_cards_batch_four.sql",
     "20261104202341_add_exercise_image_cards_batch_five.sql",
-    "20261104202946_add_exercise_image_cards_batch_six.sql"
+    "20261104202946_add_exercise_image_cards_batch_six.sql",
+    "20261104203904_add_exercise_image_cards_batch_seven.sql"
   ],
   "nasmExerciseCatalogMigration": "20261001032427_add_complete_nasm_exercise_library.sql",
   "nasmExerciseCatalogCount": 75,
@@ -4577,6 +4578,216 @@
       "objectPath": "approved/2026-11-04/webp-768/cable-chest-press-with-reach-v4.webp",
       "contentType": "image/webp",
       "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/leg-press-single-leg.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/leg-press-single-leg.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/leg-press-single-leg.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/leg-press-single-leg.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/leg-press-single-leg.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/leg-press-single-leg.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/oblique-crunch.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/oblique-crunch.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/oblique-crunch.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/oblique-crunch.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/oblique-crunch.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/oblique-crunch.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/reverse-delt-flys.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/reverse-delt-flys.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/reverse-delt-flys.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/reverse-delt-flys.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/reverse-delt-flys.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/reverse-delt-flys.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/single-arm-cable-row.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/single-arm-cable-row.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/single-arm-cable-row.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/single-arm-cable-row.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/single-arm-cable-row.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/single-arm-cable-row.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/single-arm-incline-dumbbell-chest-press.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/single-arm-incline-dumbbell-chest-press.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/single-arm-incline-dumbbell-chest-press.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/single-arm-incline-dumbbell-chest-press.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/single-arm-incline-dumbbell-chest-press.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/single-arm-incline-dumbbell-chest-press.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/incline-row.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/incline-row.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/incline-row.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/incline-row.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/incline-row.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/incline-row.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/hip-thrust-hip-band.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/hip-thrust-hip-band.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/hip-thrust-hip-band.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/hip-thrust-hip-band.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/hip-thrust-hip-band.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/hip-thrust-hip-band.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/pallof-press-side-step.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/pallof-press-side-step.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/pallof-press-side-step.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/pallof-press-side-step.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/pallof-press-side-step.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/pallof-press-side-step.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/single-leg-squat-to-row.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/single-leg-squat-to-row.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/single-leg-squat-to-row.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/single-leg-squat-to-row.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/single-leg-squat-to-row.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/single-leg-squat-to-row.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/tricep-machine.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/tricep-machine.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/tricep-machine.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/tricep-machine.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/tricep-machine.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/tricep-machine.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
     }
   ],
   "exerciseMedia": [
@@ -5650,6 +5861,46 @@
     {
       "name": "Incline DB overhand row",
       "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/incline-dumbbell-row-overhand-grip.webp"
+    },
+    {
+      "name": "Leg Press - single leg",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/leg-press-single-leg.webp"
+    },
+    {
+      "name": "Oblique crunch",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/oblique-crunch.webp"
+    },
+    {
+      "name": "Reverse Delt Flys",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/reverse-delt-flys.webp"
+    },
+    {
+      "name": "Single-Arm Cable Row",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/single-arm-cable-row.webp"
+    },
+    {
+      "name": "Single-Arm Incline Dumbbell Chest Press",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/single-arm-incline-dumbbell-chest-press.webp"
+    },
+    {
+      "name": "Incline Row",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/incline-row.webp"
+    },
+    {
+      "name": "Hip Thrust - hip band",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/hip-thrust-hip-band.webp"
+    },
+    {
+      "name": "Pallof Press - Side Step",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/pallof-press-side-step.webp"
+    },
+    {
+      "name": "Single-Leg Squat to Row",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/single-leg-squat-to-row.webp"
+    },
+    {
+      "name": "Tricep machine",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/tricep-machine.webp"
     }
   ]
 }
