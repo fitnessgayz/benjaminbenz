@@ -5423,6 +5423,7 @@ function exerciseLogFields(exercise, workoutTitle, options = {}) {
 }
 
 function cardioLogFields(workoutTitle, options = {}) {
+  const activityOptionsId = `cardio-activity-${String(workoutTitle || "cardio").toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
   const dateMarkup = options.showDate === false
     ? `<input type="hidden" value="${todayDate()}" data-log-date />`
     : '<label class="exercise-date"><span>Date</span><input type="date" data-log-date /></label>';
@@ -5432,7 +5433,7 @@ function cardioLogFields(workoutTitle, options = {}) {
       <button class="exercise-card-summary" type="button" data-exercise-toggle aria-expanded="${Boolean(options.expanded)}">
         <span>
           <strong>Cardio log</strong>
-          <em>Duration, distance, calories, and notes</em>
+          <em>Steady cardio or timed intervals</em>
         </span>
         <i>›</i>
       </button>
@@ -5446,13 +5447,23 @@ function cardioLogFields(workoutTitle, options = {}) {
       >
         <label class="exercise-name-field">
           <span>Cardio type</span>
-          <input type="text" value="Cardio" placeholder="Walk, run, bike, stairs" data-exercise-name-input data-cardio-type />
+          <input type="text" value="Cardio" list="${activityOptionsId}" placeholder="Walk, run, bike, HIIT, CrossFit" data-exercise-name-input data-cardio-type />
+          <datalist id="${activityOptionsId}"><option value="Walk"></option><option value="Run"></option><option value="Bike"></option><option value="HIIT"></option><option value="CrossFit"></option><option value="Hybrid race"></option></datalist>
         </label>
         ${dateMarkup}
+        <label class="cardio-format-field">
+          <span>Format</span>
+          <select data-cardio-mode aria-label="Cardio format">
+            <option value="steady">Steady cardio</option>
+            <option value="intervals">Timed intervals / HIIT</option>
+            <option value="amrap">AMRAP</option>
+            <option value="hybrid">Hybrid race</option>
+          </select>
+        </label>
         <div class="cardio-field-grid">
           <label>
             <span>Duration</span>
-            <input type="number" min="0" step="1" placeholder="Minutes" data-cardio-duration />
+            <input type="number" min="0" step="0.1" placeholder="Minutes" data-cardio-duration />
           </label>
           <label>
             <span>Distance</span>
@@ -5462,6 +5473,62 @@ function cardioLogFields(workoutTitle, options = {}) {
             <span>Calories</span>
             <input type="number" min="0" step="1" placeholder="Optional" data-cardio-calories />
           </label>
+          <label>
+            <span>Average heart rate</span>
+            <input type="number" min="0" step="1" placeholder="bpm · optional" data-cardio-heart-rate />
+          </label>
+          <label>
+            <span>Effort</span>
+            <select data-cardio-effort aria-label="Effort from 1 to 10">
+              <option value="">Optional</option>
+              ${Array.from({ length: 10 }, (_, index) => `<option value="${index + 1}">${index + 1} / 10</option>`).join("")}
+            </select>
+          </label>
+        </div>
+        <output class="cardio-pace" data-cardio-pace aria-live="polite"></output>
+        <div class="cardio-interval-fields" data-cardio-interval-fields hidden>
+          <label class="cardio-stations-field">
+            <span>Movements in each round</span>
+            <textarea data-cardio-stations placeholder="One per line, e.g. Air bike&#10;Burpees&#10;Mountain climbers"></textarea>
+            <small>Optional. Leave blank to time the activity above. Rest starts after the last movement.</small>
+          </label>
+          <div class="cardio-field-grid">
+            <label><span>Work</span><input type="number" min="1" step="1" value="40" placeholder="Seconds" data-cardio-work /></label>
+            <label><span>Rest</span><input type="number" min="0" step="1" value="20" placeholder="Seconds" data-cardio-rest /></label>
+            <label><span>Rounds</span><input type="number" min="1" step="1" value="6" data-cardio-rounds /></label>
+          </div>
+        </div>
+        <div class="cardio-interval-fields" data-cardio-amrap-fields hidden>
+          <div class="cardio-field-grid">
+            <label><span>Time cap</span><input type="number" min="1" max="600" step="1" value="20" placeholder="Minutes" data-cardio-amrap-cap /></label>
+            <label><span>Rounds completed</span><input type="number" min="0" step="1" placeholder="0" data-cardio-amrap-rounds /></label>
+            <label><span>Extra reps</span><input type="number" min="0" step="1" placeholder="Optional" data-cardio-amrap-reps /></label>
+          </div>
+        </div>
+        <div class="cardio-interval-timer" data-cardio-work-timer role="group" aria-label="Cardio countdown" hidden>
+          <strong data-cardio-timer-status role="status" aria-live="polite">Ready</strong>
+          <div>
+            <button type="button" data-cardio-timer-toggle>Start timer</button>
+            <button type="button" data-cardio-timer-reset>Reset</button>
+          </div>
+        </div>
+        <div class="cardio-interval-fields" data-cardio-hybrid-fields hidden>
+          <label class="cardio-stations-field">
+            <span>Run and station sequence</span>
+            <textarea data-cardio-hybrid-segments placeholder="One segment per line"></textarea>
+            <small>Edit the sample sequence for a shorter training session. Tap Complete segment to record each split.</small>
+          </label>
+          <button type="button" class="cardio-preset-button" data-cardio-hybrid-preset>Use 8-run / 8-station sample</button>
+          <div class="cardio-interval-timer" role="group" aria-label="Hybrid race stopwatch">
+            <strong data-cardio-hybrid-status role="status" aria-live="polite">Ready to start</strong>
+            <output data-cardio-hybrid-split-display></output>
+            <input type="hidden" data-cardio-hybrid-splits />
+            <div>
+              <button type="button" data-cardio-hybrid-toggle>Start stopwatch</button>
+              <button type="button" data-cardio-hybrid-next>Complete segment</button>
+              <button type="button" data-cardio-hybrid-reset>Reset</button>
+            </div>
+          </div>
         </div>
         <label class="exercise-notes">
           <span>Notes</span>
@@ -6359,6 +6426,7 @@ function generatedCustomWorkoutDraft(workout, createdAt = new Date()) {
       id, title, focus: workout.focus, minutes: workout.minutes,
       ...(Array.isArray(workout.selectedMuscles) ? { selectedMuscles: [...workout.selectedMuscles] } : {}),
       intensity: workout.intensity, format, estimatedMinutes: workout.estimatedMinutes,
+      ...(workout.style && workout.style !== "strength" ? { style: workout.style } : {}),
       ...(workout.warmUpCount === undefined ? {} : { warmUpCount }),
       ...(workingSetCount === null ? {} : { workingSetCount })
     },
@@ -6383,7 +6451,9 @@ function generatedCustomWorkoutDraft(workout, createdAt = new Date()) {
           label: warmUpCount === 1 ? "W" : `W${setIndex + 1}`, weight: "", reps: "", setType: warmUpSetType, rir: "", complete: false
         })),
         ...Array.from({ length: workingSetCount ?? Math.max(1, Math.min(6, Number(exercise.sets) || 3)) }, (_, setIndex) => ({
-          label: String(setIndex + 1), weight: "", reps: "", setType: workingSetType, rir: "", complete: false
+          label: String(setIndex + 1), weight: "", reps: "",
+          setType: workingSetType, timed: exercise.movement_pattern === "hybrid_run",
+          rir: "", complete: false
         }))
       ]
     }))
@@ -7363,10 +7433,19 @@ if (typeof document !== "undefined") document.addEventListener("error", (event) 
 function openClientExerciseLibrary(input, onSelect, { referenceName = "" } = {}) {
   if (!window.FWB_CLIENT_EXERCISE_LIBRARY?.open || !input) return false;
   closeCustomExerciseSuggestions();
+  const seenExerciseSessions = new Set();
   const recentNames = [...trainingLogs]
     .sort((left, right) => `${right.entry_date || ""} ${right.created_at || ""}`
       .localeCompare(`${left.entry_date || ""} ${left.created_at || ""}`))
-    .map((log) => String(log.exercise_name || "").trim())
+    .map((log) => {
+      const name = String(log.exercise_name || "").trim();
+      const session = String(log.session_id || log.workout_session_id
+        || `${log.entry_date || ""}|${log.workout_title || ""}`).trim().toLowerCase();
+      const key = `${session}|${name.toLowerCase()}`;
+      if (!name || seenExerciseSessions.has(key)) return "";
+      seenExerciseSessions.add(key);
+      return name;
+    })
     .filter(Boolean);
   window.FWB_CLIENT_EXERCISE_LIBRARY.open({
     records: exerciseSuggestionRecords(),
@@ -14388,24 +14467,61 @@ function exerciseHistoryByGymMarkup(logElement) {
 
 function parseCardioNotes(notes = "") {
   const text = String(notes || "");
-  const caloriesMatch = text.match(/(?:^|\n)Calories:\s*(\d+(?:\.\d+)?)/i);
-  const noteText = text
-    .replace(/(?:^|\n)Calories:\s*\d+(?:\.\d+)?\.?/i, "")
-    .trim();
-
-  return {
-    calories: caloriesMatch ? caloriesMatch[1] : "",
-    notes: noteText
+  const fields = {
+    calories: "", heartRate: "", effort: "", mode: "steady",
+    workSeconds: "", restSeconds: "", rounds: "", stations: "",
+    amrapCap: "", amrapRounds: "", amrapReps: "", hybridSegments: "", hybridSplits: ""
   };
+  const patterns = [
+    [/^Calories:\s*(\d+(?:\.\d+)?)\s*$/i, "calories"],
+    [/^Average heart rate:\s*(\d+)\s*bpm\s*$/i, "heartRate"],
+    [/^Effort:\s*(\d+)\s*\/\s*10\s*$/i, "effort"],
+    [/^Cardio format:\s*(intervals|steady|amrap|hybrid)\s*$/i, "mode"],
+    [/^Work:\s*(\d+)\s*seconds?\s*$/i, "workSeconds"],
+    [/^Rest:\s*(\d+)\s*seconds?\s*$/i, "restSeconds"],
+    [/^Rounds:\s*(\d+)\s*$/i, "rounds"],
+    [/^Stations:\s*(.+)\s*$/i, "stations"],
+    [/^AMRAP cap:\s*(\d+)\s*minutes?\s*$/i, "amrapCap"],
+    [/^AMRAP rounds:\s*(\d+)\s*$/i, "amrapRounds"],
+    [/^AMRAP extra reps:\s*(\d+)\s*$/i, "amrapReps"],
+    [/^Hybrid segments:\s*(.+)\s*$/i, "hybridSegments"],
+    [/^Hybrid splits:\s*(.+)\s*$/i, "hybridSplits"]
+  ];
+  const userLines = [];
+  text.split(/\r?\n/).forEach((line) => {
+    const field = patterns.find(([pattern]) => pattern.test(line));
+    if (field) fields[field[1]] = line.match(field[0])[1];
+    else userLines.push(line);
+  });
+  return { ...fields, notes: userLines.join("\n").trim() };
 }
 
-function buildCardioNotes(calories, notes) {
+function buildCardioNotes(calories, notes, options = {}) {
   const parts = [];
   const caloriesText = String(calories || "").trim();
   const notesText = String(notes || "").trim();
 
   if (caloriesText) {
     parts.push(`Calories: ${caloriesText}`);
+  }
+  if (options.heartRate) parts.push(`Average heart rate: ${options.heartRate} bpm`);
+  if (options.effort) parts.push(`Effort: ${options.effort}/10`);
+  if (options.mode === "intervals") {
+    parts.push("Cardio format: intervals");
+    parts.push(`Work: ${options.workSeconds} seconds`);
+    parts.push(`Rest: ${options.restSeconds} seconds`);
+    parts.push(`Rounds: ${options.rounds}`);
+    if (options.stations) parts.push(`Stations: ${String(options.stations).split(/\r?\n/).map((name) => name.trim()).filter(Boolean).join(" | ")}`);
+  }
+  if (options.mode === "amrap") {
+    parts.push("Cardio format: amrap", `AMRAP cap: ${options.amrapCap} minutes`);
+    if (options.amrapRounds !== "") parts.push(`AMRAP rounds: ${options.amrapRounds}`);
+    if (options.amrapReps !== "") parts.push(`AMRAP extra reps: ${options.amrapReps}`);
+  }
+  if (options.mode === "hybrid") {
+    parts.push("Cardio format: hybrid");
+    if (options.hybridSegments) parts.push(`Hybrid segments: ${String(options.hybridSegments).split(/\r?\n/).map((name) => name.trim()).filter(Boolean).join(" | ")}`);
+    if (options.hybridSplits) parts.push(`Hybrid splits: ${options.hybridSplits}`);
   }
 
   if (notesText) {
@@ -14431,8 +14547,268 @@ function cardioDisplay(log) {
   if (parsedNotes.calories) {
     parts.push(`${parsedNotes.calories} cal`);
   }
+  if (parsedNotes.heartRate) parts.push(`${parsedNotes.heartRate} bpm`);
+  if (Number(log.reps) > 0 && Number(log.weight_used) > 0) {
+    parts.push(cardioPaceText(log.weight_used, log.reps).replace(/^Average pace /, ""));
+  }
+  if (parsedNotes.mode === "intervals" && parsedNotes.rounds) parts.push(`${parsedNotes.rounds} rounds`);
+  if (parsedNotes.mode === "amrap" && parsedNotes.amrapRounds) parts.push(`${parsedNotes.amrapRounds} AMRAP rounds`);
+  if (parsedNotes.mode === "hybrid" && parsedNotes.hybridSplits) parts.push(`${parsedNotes.hybridSplits.split(" | ").length} segments`);
+  if (parsedNotes.effort) parts.push(`effort ${parsedNotes.effort}/10`);
 
   return parts.join(" · ") || "Cardio saved";
+}
+
+function cardioIntervalTotalSeconds(workSeconds, restSeconds, rounds, stationCount = 1) {
+  const work = Number(workSeconds);
+  const rest = Number(restSeconds);
+  const count = Number(rounds);
+  const stations = Number(stationCount);
+  if (!Number.isInteger(work) || work < 1 || work > 3600 || !Number.isInteger(rest) || rest < 0 || rest > 3600 ||
+      !Number.isInteger(count) || count < 1 || count > 100 || !Number.isInteger(stations) || stations < 1 || stations > 20) return 0;
+  return work * stations * count + rest * (count - 1);
+}
+
+function cardioStationNames(log) {
+  const names = String(log?.querySelector("[data-cardio-stations]")?.value || "")
+    .split(/\r?\n/).map((name) => name.trim()).filter(Boolean);
+  return names.length ? names : [String(log?.querySelector("[data-cardio-type]")?.value || "Cardio").trim() || "Cardio"];
+}
+
+function cardioPaceText(durationMinutes, distanceMiles) {
+  const duration = Number(durationMinutes);
+  const distance = Number(distanceMiles);
+  if (!(duration > 0) || !(distance > 0)) return "Add distance to see your average pace.";
+  const seconds = Math.round(duration * 60 / distance);
+  return `Average pace ${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")} / mi`;
+}
+
+function syncCardioLogDerivedState(log) {
+  if (!log || log.dataset.cardioLog === undefined) return;
+  const mode = log.querySelector("[data-cardio-mode]")?.value || "steady";
+  for (const [selector, visible] of [
+    ["[data-cardio-interval-fields]", mode === "intervals"],
+    ["[data-cardio-amrap-fields]", mode === "amrap"],
+    ["[data-cardio-hybrid-fields]", mode === "hybrid"],
+    ["[data-cardio-work-timer]", mode === "intervals" || mode === "amrap"]
+  ]) {
+    const section = log.querySelector(selector);
+    if (section) section.hidden = !visible;
+  }
+  const duration = log.querySelector("[data-cardio-duration]");
+  const pace = log.querySelector("[data-cardio-pace]");
+  if (pace) pace.textContent = cardioPaceText(duration?.value, log.querySelector("[data-cardio-distance]")?.value);
+  if (mode === "intervals" || mode === "amrap") cardioIntervalTick(log);
+  if (mode === "hybrid") cardioHybridTick(log);
+}
+
+const cardioIntervalTimers = new WeakMap();
+
+function cardioIntervalTick(log, now = Date.now()) {
+  const status = log?.querySelector("[data-cardio-timer-status]");
+  if (!status) return;
+  const mode = log.querySelector("[data-cardio-mode]")?.value || "intervals";
+  const work = Number(log.querySelector("[data-cardio-work]")?.value);
+  const rest = Number(log.querySelector("[data-cardio-rest]")?.value);
+  const rounds = Number(log.querySelector("[data-cardio-rounds]")?.value);
+  const stations = cardioStationNames(log);
+  const cap = Number(log.querySelector("[data-cardio-amrap-cap]")?.value);
+  const total = mode === "amrap" ? (Number.isInteger(cap) && cap >= 1 && cap <= 600 ? cap * 60 : 0)
+    : cardioIntervalTotalSeconds(work, rest, rounds, stations.length);
+  const state = cardioIntervalTimers.get(log);
+  const elapsed = state ? state.elapsed + (state.running ? (now - state.startedAt) / 1000 : 0) : 0;
+  const toggle = log.querySelector("[data-cardio-timer-toggle]");
+  if (!total) {
+    status.textContent = mode === "amrap" ? "Enter a time cap from 1 to 600 minutes." : "Enter work, rest, and rounds.";
+    return;
+  }
+  if (elapsed >= total) {
+    if (state?.intervalID) clearInterval(state.intervalID);
+    if (state) {
+      state.elapsed = total;
+      state.running = false;
+      state.intervalID = null;
+      state.completed = true;
+    }
+    status.textContent = mode === "amrap" ? "Time cap reached" : "Intervals complete";
+    if (toggle) toggle.textContent = "Restart timer";
+    const duration = log.querySelector("[data-cardio-duration]");
+    if (duration && !String(duration.value || "").trim()) {
+      duration.value = String(Number((total / 60).toFixed(2)));
+      const pace = log.querySelector("[data-cardio-pace]");
+      if (pace) pace.textContent = cardioPaceText(duration.value, log.querySelector("[data-cardio-distance]")?.value);
+      persistCustomWorkoutDraftForElement(log);
+      scheduleTrainingLogAutosave(log);
+    }
+    return;
+  }
+  if (mode === "amrap") {
+    const remaining = Math.ceil(total - elapsed);
+    status.textContent = `AMRAP · ${Math.floor(remaining / 60)}:${String(remaining % 60).padStart(2, "0")} remaining`;
+    if (toggle) toggle.textContent = state?.running ? "Pause timer" : state ? "Resume timer" : "Start timer";
+    return;
+  }
+  const roundWork = work * stations.length;
+  const cycle = roundWork + rest;
+  const round = Math.min(rounds, Math.floor(elapsed / cycle) + 1);
+  const inRound = elapsed - (round - 1) * cycle;
+  const isRest = inRound >= roundWork;
+  const stationIndex = Math.min(stations.length - 1, Math.floor(inRound / work));
+  const remaining = Math.ceil(isRest ? cycle - inRound : work - (inRound % work));
+  status.textContent = `${isRest ? "Rest" : stations[stationIndex]} · round ${round} of ${rounds} · ${Math.floor(remaining / 60)}:${String(remaining % 60).padStart(2, "0")}`;
+  if (toggle) toggle.textContent = state?.running ? "Pause timer" : state ? "Resume timer" : "Start timer";
+  if (state && !log.isConnected && state.intervalID) {
+    clearInterval(state.intervalID);
+    cardioIntervalTimers.delete(log);
+  }
+}
+
+function toggleCardioIntervalTimer(log) {
+  const mode = log?.querySelector("[data-cardio-mode]")?.value;
+  if (!log || !["intervals", "amrap"].includes(mode)) return;
+  const cap = Number(log.querySelector("[data-cardio-amrap-cap]")?.value);
+  const total = mode === "amrap" ? (Number.isInteger(cap) && cap >= 1 && cap <= 600 ? cap * 60 : 0)
+    : cardioIntervalTotalSeconds(
+    log.querySelector("[data-cardio-work]")?.value,
+    log.querySelector("[data-cardio-rest]")?.value,
+    log.querySelector("[data-cardio-rounds]")?.value,
+    cardioStationNames(log).length
+  );
+  if (!total) return cardioIntervalTick(log);
+  const state = cardioIntervalTimers.get(log) || { elapsed: 0, startedAt: 0, running: false, intervalID: null };
+  if (state.completed) {
+    state.elapsed = 0;
+    state.completed = false;
+  }
+  if (state.running) {
+    state.elapsed += (Date.now() - state.startedAt) / 1000;
+    state.running = false;
+    clearInterval(state.intervalID);
+    state.intervalID = null;
+  } else {
+    state.startedAt = Date.now();
+    state.running = true;
+    state.intervalID = setInterval(() => cardioIntervalTick(log), 250);
+  }
+  cardioIntervalTimers.set(log, state);
+  cardioIntervalTick(log);
+}
+
+function resetCardioIntervalTimer(log) {
+  const state = cardioIntervalTimers.get(log);
+  if (state?.intervalID) clearInterval(state.intervalID);
+  cardioIntervalTimers.delete(log);
+  cardioIntervalTick(log);
+}
+
+const cardioHybridPresetSegments = [
+  "SkiErg", "Sled push", "Sled pull", "Burpee broad jumps", "Rowing",
+  "Farmers carry", "Sandbag lunges", "Wall balls"
+].flatMap((station) => ["Run 1 km", station]);
+const cardioHybridTimers = new WeakMap();
+
+function cardioHybridSegmentNames(log) {
+  return String(log?.querySelector("[data-cardio-hybrid-segments]")?.value || "")
+    .split(/\r?\n/).map((name) => name.trim()).filter(Boolean);
+}
+
+function cardioHybridSavedSplits(log) {
+  return String(log?.querySelector("[data-cardio-hybrid-splits]")?.value || "")
+    .split(" | ").map(Number).filter((seconds) => Number.isInteger(seconds) && seconds > 0);
+}
+
+function cardioHybridTick(log, now = Date.now()) {
+  const status = log?.querySelector("[data-cardio-hybrid-status]");
+  if (!status) return;
+  const segments = cardioHybridSegmentNames(log);
+  const state = cardioHybridTimers.get(log);
+  const splits = state?.splits || cardioHybridSavedSplits(log);
+  const elapsed = state ? state.elapsed + (state.running ? (now - state.startedAt) / 1000 : 0) : (splits.at(-1) || 0);
+  const toggle = log.querySelector("[data-cardio-hybrid-toggle]");
+  const next = log.querySelector("[data-cardio-hybrid-next]");
+  const display = log.querySelector("[data-cardio-hybrid-split-display]");
+  if (display) display.textContent = splits.map((end, index) => {
+    const seconds = end - (splits[index - 1] || 0);
+    return `${segments[index] || `Segment ${index + 1}`}: ${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
+  }).join(" · ");
+  if (!segments.length || segments.length > 20) {
+    status.textContent = "Enter 1–20 segments.";
+    if (next) next.disabled = true;
+    return;
+  }
+  if (splits.length >= segments.length) {
+    status.textContent = "All segments complete";
+    if (toggle) toggle.textContent = "Restart stopwatch";
+    if (next) next.disabled = true;
+  } else {
+    status.textContent = `Next: ${segments[splits.length]} · ${Math.floor(elapsed / 60)}:${String(Math.floor(elapsed) % 60).padStart(2, "0")} elapsed`;
+    if (toggle) toggle.textContent = state?.running ? "Pause stopwatch" : state ? "Resume stopwatch" : "Start stopwatch";
+    if (next) next.disabled = !state?.running;
+  }
+  if (state && !log.isConnected && state.intervalID) {
+    clearInterval(state.intervalID);
+    cardioHybridTimers.delete(log);
+  }
+}
+
+function toggleCardioHybridTimer(log) {
+  if (!log || log.querySelector("[data-cardio-mode]")?.value !== "hybrid") return;
+  const segments = cardioHybridSegmentNames(log);
+  if (!segments.length || segments.length > 20) return cardioHybridTick(log);
+  const state = cardioHybridTimers.get(log) || {
+    elapsed: cardioHybridSavedSplits(log).at(-1) || 0, startedAt: 0,
+    splits: cardioHybridSavedSplits(log), running: false, intervalID: null
+  };
+  if (state.splits.length >= segments.length) {
+    resetCardioHybridTimer(log);
+    return toggleCardioHybridTimer(log);
+  }
+  if (state.running) {
+    state.elapsed += (Date.now() - state.startedAt) / 1000;
+    state.running = false;
+    clearInterval(state.intervalID);
+    state.intervalID = null;
+  } else {
+    state.startedAt = Date.now();
+    state.running = true;
+    state.intervalID = setInterval(() => cardioHybridTick(log), 250);
+  }
+  cardioHybridTimers.set(log, state);
+  cardioHybridTick(log);
+}
+
+function completeCardioHybridSegment(log) {
+  const state = cardioHybridTimers.get(log);
+  const segments = cardioHybridSegmentNames(log);
+  if (!state?.running || state.splits.length >= segments.length) return;
+  const elapsed = state.elapsed + (Date.now() - state.startedAt) / 1000;
+  state.splits.push(Math.max((state.splits.at(-1) || 0) + 1, Math.round(elapsed)));
+  const splitsInput = log.querySelector("[data-cardio-hybrid-splits]");
+  if (splitsInput) splitsInput.value = state.splits.join(" | ");
+  if (state.splits.length >= segments.length) {
+    state.elapsed = elapsed;
+    state.running = false;
+    clearInterval(state.intervalID);
+    state.intervalID = null;
+    const duration = log.querySelector("[data-cardio-duration]");
+    if (duration && !String(duration.value || "").trim()) {
+      duration.value = String(Number((elapsed / 60).toFixed(2)));
+      const pace = log.querySelector("[data-cardio-pace]");
+      if (pace) pace.textContent = cardioPaceText(duration.value, log.querySelector("[data-cardio-distance]")?.value);
+    }
+  }
+  persistCustomWorkoutDraftForElement(log);
+  scheduleTrainingLogAutosave(log);
+  cardioHybridTick(log);
+}
+
+function resetCardioHybridTimer(log) {
+  const state = cardioHybridTimers.get(log);
+  if (state?.intervalID) clearInterval(state.intervalID);
+  cardioHybridTimers.delete(log);
+  const splits = log?.querySelector("[data-cardio-hybrid-splits]");
+  if (splits) splits.value = "";
+  cardioHybridTick(log);
 }
 
 function warmupDisplay(log) {
@@ -14769,6 +15145,24 @@ function updateExerciseLogField(logElement) {
     if (caloriesInput) {
       caloriesInput.value = parsedNotes.calories;
     }
+    for (const [selector, value] of [
+      ["[data-cardio-mode]", parsedNotes.mode],
+      ["[data-cardio-heart-rate]", parsedNotes.heartRate],
+      ["[data-cardio-effort]", parsedNotes.effort],
+      ["[data-cardio-work]", parsedNotes.workSeconds || "40"],
+      ["[data-cardio-rest]", parsedNotes.restSeconds || "20"],
+      ["[data-cardio-rounds]", parsedNotes.rounds || "6"],
+      ["[data-cardio-stations]", parsedNotes.stations ? parsedNotes.stations.split(" | ").join("\n") : ""],
+      ["[data-cardio-amrap-cap]", parsedNotes.amrapCap || "20"],
+      ["[data-cardio-amrap-rounds]", parsedNotes.amrapRounds],
+      ["[data-cardio-amrap-reps]", parsedNotes.amrapReps],
+      ["[data-cardio-hybrid-segments]", parsedNotes.hybridSegments ? parsedNotes.hybridSegments.split(" | ").join("\n") : ""],
+      ["[data-cardio-hybrid-splits]", parsedNotes.hybridSplits]
+    ]) {
+      const input = logElement.querySelector(selector);
+      if (input) input.value = value;
+    }
+    syncCardioLogDerivedState(logElement);
 
     if (notesInput) {
       notesInput.value = parsedNotes.notes;
@@ -15420,6 +15814,10 @@ function customWorkoutPanelHasAuxiliaryContent(panel) {
     enteredValue("[data-cardio-duration]") ||
     enteredValue("[data-cardio-distance]") ||
     enteredValue("[data-cardio-calories]") ||
+    enteredValue("[data-cardio-heart-rate]") ||
+    enteredValue("[data-cardio-effort]") ||
+    enteredValue("[data-cardio-mode]") === "intervals" ||
+    enteredValue("[data-cardio-stations]") ||
     enteredValue("[data-cardio-log] [data-log-notes]")
   );
 }
@@ -19048,6 +19446,30 @@ function handleWorkoutInteractions() {
   }, true);
 
   document.addEventListener("click", async (event) => {
+    const hybridPreset = event.target.closest("[data-cardio-hybrid-preset]");
+    const hybridToggle = event.target.closest("[data-cardio-hybrid-toggle]");
+    const hybridNext = event.target.closest("[data-cardio-hybrid-next]");
+    const hybridReset = event.target.closest("[data-cardio-hybrid-reset]");
+    if (hybridPreset || hybridToggle || hybridNext || hybridReset) {
+      const log = (hybridPreset || hybridToggle || hybridNext || hybridReset).closest("[data-cardio-log]");
+      if (hybridPreset) {
+        resetCardioHybridTimer(log);
+        log.querySelector("[data-cardio-hybrid-segments]").value = cardioHybridPresetSegments.join("\n");
+        syncCardioLogDerivedState(log);
+        persistCustomWorkoutDraftForElement(log);
+      } else if (hybridToggle) toggleCardioHybridTimer(log);
+      else if (hybridNext) completeCardioHybridSegment(log);
+      else resetCardioHybridTimer(log);
+      return;
+    }
+    const intervalToggle = event.target.closest("[data-cardio-timer-toggle]");
+    const intervalReset = event.target.closest("[data-cardio-timer-reset]");
+    if (intervalToggle || intervalReset) {
+      const cardioLog = (intervalToggle || intervalReset).closest("[data-cardio-log]");
+      if (intervalToggle) toggleCardioIntervalTimer(cardioLog);
+      else resetCardioIntervalTimer(cardioLog);
+      return;
+    }
     const workoutChoiceDialog = event.target.closest("[data-client-workout-choice-dialog]");
     const workoutChoiceMenu = event.target.closest("[data-client-workout-choice-menu]");
     if (workoutChoiceMenu) {
@@ -20052,7 +20474,7 @@ function handleWorkoutInteractions() {
     const exerciseNameInput = event.target.closest("[data-exercise-name-input]");
     const setInput = event.target.closest("[data-set-label], [data-set-weight], [data-set-reps]");
     const notesInput = event.target.closest("[data-log-notes]");
-    const timedLogInput = event.target.closest("[data-warmup-duration], [data-cardio-duration], [data-cardio-distance], [data-cardio-calories]");
+    const timedLogInput = event.target.closest("[data-warmup-duration], [data-cardio-duration], [data-cardio-distance], [data-cardio-calories], [data-cardio-mode], [data-cardio-heart-rate], [data-cardio-effort], [data-cardio-work], [data-cardio-rest], [data-cardio-rounds], [data-cardio-stations], [data-cardio-amrap-cap], [data-cardio-amrap-rounds], [data-cardio-amrap-reps], [data-cardio-hybrid-segments]");
 
     if (event.target.matches("[data-workout-energy]")) {
       pendingWorkoutEnergy[event.target.dataset.workoutEnergy] = Number(event.target.value);
@@ -20102,6 +20524,12 @@ function handleWorkoutInteractions() {
 
     if (timedLogInput) {
       const logElement = timedLogInput.closest("[data-exercise-log]");
+
+      if (logElement?.dataset.cardioLog !== undefined) {
+        if (timedLogInput.matches("[data-cardio-work], [data-cardio-rest], [data-cardio-rounds], [data-cardio-mode], [data-cardio-stations], [data-cardio-amrap-cap]")) resetCardioIntervalTimer(logElement);
+        if (timedLogInput.matches("[data-cardio-mode], [data-cardio-hybrid-segments]")) resetCardioHybridTimer(logElement);
+        syncCardioLogDerivedState(logElement);
+      }
 
       persistCustomWorkoutDraftForElement(logElement || timedLogInput);
       scheduleTrainingLogAutosave(logElement);
@@ -21035,6 +21463,7 @@ function rowsForTrainingLog(logElement) {
     const duration = Number(logElement.querySelector("[data-cardio-duration]")?.value || 0);
     const distanceInput = logElement.querySelector("[data-cardio-distance]")?.value;
     const calories = logElement.querySelector("[data-cardio-calories]")?.value;
+    const mode = logElement.querySelector("[data-cardio-mode]")?.value || "steady";
 
     if (duration <= 0) {
       return [];
@@ -21050,7 +21479,20 @@ function rowsForTrainingLog(logElement) {
       set_number: 1,
       weight_used: duration,
       reps: distanceInput ? Number(distanceInput) : null,
-      notes: buildCardioNotes(calories, notes)
+      notes: buildCardioNotes(calories, notes, {
+        mode,
+        heartRate: logElement.querySelector("[data-cardio-heart-rate]")?.value,
+        effort: logElement.querySelector("[data-cardio-effort]")?.value,
+        workSeconds: logElement.querySelector("[data-cardio-work]")?.value,
+        restSeconds: logElement.querySelector("[data-cardio-rest]")?.value,
+        rounds: logElement.querySelector("[data-cardio-rounds]")?.value,
+        stations: logElement.querySelector("[data-cardio-stations]")?.value,
+        amrapCap: logElement.querySelector("[data-cardio-amrap-cap]")?.value,
+        amrapRounds: logElement.querySelector("[data-cardio-amrap-rounds]")?.value || "",
+        amrapReps: logElement.querySelector("[data-cardio-amrap-reps]")?.value || "",
+        hybridSegments: logElement.querySelector("[data-cardio-hybrid-segments]")?.value,
+        hybridSplits: logElement.querySelector("[data-cardio-hybrid-splits]")?.value
+      })
     }];
   }
 
@@ -21178,6 +21620,48 @@ function cardioLogIssues(log) {
       issues.push({ message: required ? "Enter a duration in minutes above 0." : `${label} must be 0 or more, or left blank.`, target });
     }
   }
+  const heartRate = log?.querySelector("[data-cardio-heart-rate]");
+  const heartRateValue = String(heartRate?.value || "").trim();
+  if (heartRateValue && (!Number.isInteger(Number(heartRateValue)) || Number(heartRateValue) < 30 || Number(heartRateValue) > 250)) {
+    issues.push({ message: "Average heart rate must be between 30 and 250 bpm.", target: heartRate });
+  }
+  const effort = log?.querySelector("[data-cardio-effort]");
+  const effortValue = String(effort?.value || "").trim();
+  if (effortValue && (!Number.isInteger(Number(effortValue)) || Number(effortValue) < 1 || Number(effortValue) > 10)) {
+    issues.push({ message: "Effort must be between 1 and 10.", target: effort });
+  }
+  if (log?.querySelector("[data-cardio-mode]")?.value === "intervals") {
+    const work = log.querySelector("[data-cardio-work]");
+    const rest = log.querySelector("[data-cardio-rest]");
+    const rounds = log.querySelector("[data-cardio-rounds]");
+    if (!cardioIntervalTotalSeconds(work?.value, rest?.value, rounds?.value, cardioStationNames(log).length)) {
+      issues.push({ message: "Enter whole seconds of work and rest, and 1–100 rounds.", target: work || rounds });
+    }
+  }
+  if (log?.querySelector("[data-cardio-mode]")?.value === "amrap") {
+    const cap = log.querySelector("[data-cardio-amrap-cap]");
+    const capValue = Number(cap?.value);
+    if (!Number.isInteger(capValue) || capValue < 1 || capValue > 600) {
+      issues.push({ message: "AMRAP time cap must be 1–600 minutes.", target: cap });
+    }
+    for (const [selector, label] of [
+      ["[data-cardio-amrap-rounds]", "Rounds completed"],
+      ["[data-cardio-amrap-reps]", "Extra reps"]
+    ]) {
+      const target = log.querySelector(selector);
+      const raw = String(target?.value || "").trim();
+      if (raw && (!Number.isInteger(Number(raw)) || Number(raw) < 0)) {
+        issues.push({ message: `${label} must be a whole number of 0 or more.`, target });
+      }
+    }
+  }
+  if (log?.querySelector("[data-cardio-mode]")?.value === "hybrid") {
+    const target = log.querySelector("[data-cardio-hybrid-segments]");
+    const segments = cardioHybridSegmentNames(log);
+    if (!segments.length || segments.length > 20) {
+      issues.push({ message: "Enter 1–20 run or station segments.", target });
+    }
+  }
   return issues;
 }
 
@@ -21285,7 +21769,7 @@ function showWorkoutFinishIssues(button, issues) {
   summary.appendChild(list);
   const help = document.createElement("p");
   help.textContent = section?.classList.contains("client-workout-panel-cardio")
-    ? "Duration is required. Distance, calories, and notes are optional."
+    ? "Duration is required. For HIIT, enter valid work, rest, and round values. Distance and other metrics are optional."
     : "Warm-ups are optional. Enter weight and reps, then tap the Log box to save each set.";
   summary.appendChild(help);
   (button.closest("footer") || button).insertAdjacentElement("afterend", summary);
@@ -21673,6 +22157,7 @@ async function handleTrainingLogSave() {
 
         // Manual cardio uses its entered duration and leaves any strength timer running.
         workoutSaved = true;
+        if (isCardioOnly) resetCardioIntervalTimer(logElements[0]);
         section.workoutCompletionPendingFeedback = workoutCompletion;
         section.workoutAchievementBeforeFeedback = achievementsBefore;
         if (!isCardioOnly) finishWorkoutElapsedTimer();

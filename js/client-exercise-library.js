@@ -81,6 +81,48 @@
       .replace(/[_-]+/g, " ").trim().toLocaleLowerCase();
   }
 
+  function searchWords(value) {
+    return normalize(value).replace(/\b(one|single)\s+(arm|leg)\b/g, "single $2")
+      .replace(/\bdumbells?\b|\bdbs?\b/g, "dumbbell")
+      .replace(/\bkbs?\b/g, "kettlebell")
+      .replace(/\bpull\s+downs?\b/g, "pulldown").split(/\s+/).filter(Boolean);
+  }
+
+  const FAMILY_MODIFIERS = new Set([
+    "barbell", "dumbbell", "dumbell", "db", "kettlebell", "kb", "cable", "machine", "smith",
+    "band", "banded", "resistance", "plate", "trx", "bodyweight", "weighted", "assisted",
+    "wide", "close", "narrow", "neutral", "reverse", "underhand", "overhand", "pronated",
+    "supinated", "grip", "single", "one", "arm", "leg", "alternating", "unilateral", "bilateral",
+    "seated", "standing", "lying", "incline", "decline", "flat", "supported",
+    "front", "back", "high", "low", "horizontal", "vertical", "iso", "lateral"
+  ]);
+
+  function exerciseFamily(name) {
+    const tokens = searchWords(name.replace(/\bchest[ -]supported\b/gi, "supported"))
+      .filter((word) => !FAMILY_MODIFIERS.has(word));
+    const key = tokens.join(" ") || normalize(name);
+    return { key, title: key.replace(/\b\w/g, (letter) => letter.toUpperCase()) };
+  }
+
+  function exerciseFamilies(records, byUsage = false) {
+    const families = new Map();
+    records.forEach((record) => {
+      const family = exerciseFamily(record.name);
+      const key = `${record.primary}|${family.key}`;
+      if (!families.has(key)) families.set(key, { ...family, entries: [] });
+      families.get(key).entries.push(record);
+    });
+    families.forEach((family) => {
+      family.title = [...family.entries].sort((a, b) => a.name.length - b.name.length || a.name.localeCompare(b.name))[0].name;
+      if (byUsage) family.entries.sort((a, b) => b.useCount - a.useCount || a.recentRank - b.recentRank);
+    });
+    return [...families.values()].sort((a, b) => byUsage
+      ? b.entries.reduce((total, entry) => total + entry.useCount, 0)
+        - a.entries.reduce((total, entry) => total + entry.useCount, 0)
+        || Math.min(...a.entries.map((entry) => entry.recentRank)) - Math.min(...b.entries.map((entry) => entry.recentRank))
+      : a.title.localeCompare(b.title));
+  }
+
   function muscleFor(value) {
     const normalized = normalize(value);
     return MUSCLE_ALIASES[normalized] || (normalized ? normalized.replace(/\b\w/g, (letter) => letter.toUpperCase()) : "Other");
@@ -89,9 +131,11 @@
   function prepareRecords(records, recentNames = []) {
     const seen = new Set();
     const recent = new Map();
+    const useCounts = new Map();
     recentNames.forEach((name, index) => {
       const key = normalize(name);
       if (key && !recent.has(key)) recent.set(key, index);
+      if (key) useCounts.set(key, (useCounts.get(key) || 0) + 1);
     });
     return (Array.isArray(records) ? records : []).flatMap((record) => {
       const name = String(record?.name || "").trim();
@@ -107,16 +151,17 @@
       const equipment = String(entry.equipment || "").trim();
       const substitutionGroup = normalize(entry.substitution_group);
       const recentRank = Math.min(...[name, ...aliases].map((label) => recent.get(normalize(label)) ?? Infinity));
+      const useCount = [name, ...aliases].reduce((total, label) => total + (useCounts.get(normalize(label)) || 0), 0);
       return [{ name, primary, secondary: [...new Set(secondary)],
-        equipment, substitutionGroup, recentRank,
+        equipment, substitutionGroup, recentRank, useCount,
         highlightKey: muscleHighlightKey(entry),
         highlightFallback: String(entry.primary_muscle || "").trim().toLowerCase(),
-        searchText: normalize([name, ...aliases, primary, ...secondary, equipment].join(" ")) }];
+        searchText: searchWords([name, ...aliases, primary, ...secondary, equipment].join(" ")).join(" ") }];
     }).sort((a, b) => a.name.localeCompare(b.name));
   }
 
   function matchingRecords(records, query, muscle, equipment = "All", recentOnly = false) {
-    const words = normalize(query).split(/\s+/).filter(Boolean);
+    const words = searchWords(query);
     return records.filter((record) => {
       const muscles = [record.primary, ...record.secondary];
       return (muscle === "All" || muscles.includes(muscle)) &&
@@ -301,10 +346,10 @@
     const alternativeNames = new Set(alternatives.map((record) => record.name));
     const recent = showRecentFirst ? matched.filter((record) => Number.isFinite(record.recentRank))
       .filter((record) => !alternativeNames.has(record.name))
-      .sort((a, b) => a.recentRank - b.recentRank).slice(0, 8) : [];
+      .sort((a, b) => b.useCount - a.useCount || a.recentRank - b.recentRank).slice(0, 8) : [];
     const recentNames = new Set(recent.map((record) => record.name));
     const groups = recentOnly
-      ? [["Recent", [...matched].sort((a, b) => a.recentRank - b.recentRank)]]
+      ? [["Recent", [...matched].sort((a, b) => b.useCount - a.useCount || a.recentRank - b.recentRank)]]
       : [...(alternatives.length ? [["Suggested alternatives", alternatives]] : []),
         ...(recent.length ? [["Recently used", recent]] : []),
         ...groupedRecords(matched.filter((record) => !recentNames.has(record.name) && !alternativeNames.has(record.name)), activeMuscle)];
@@ -312,7 +357,7 @@
       const group = element("section", "client-exercise-library-group");
       group.append(element("h3", "client-exercise-library-group-title", muscle));
       const list = element("ul", "client-exercise-library-list");
-      records.forEach((record) => {
+      function renderEntry(record, target) {
         const item = element("li", "client-exercise-library-item");
         const button = element("button", "client-exercise-library-item-button");
         button.type = "button";
@@ -352,6 +397,23 @@
           if (typeof onSelect === "function") onSelect(record.name);
         });
         item.append(button);
+        target.append(item);
+      }
+      exerciseFamilies(records, muscle === "Recent" || muscle === "Recently used").forEach((family) => {
+        if (family.entries.length === 1) {
+          renderEntry(family.entries[0], list);
+          return;
+        }
+        const item = element("li", "client-exercise-library-family");
+        const details = element("details", "client-exercise-library-family-details");
+        if (query.trim()) details.open = true;
+        const summary = element("summary", "client-exercise-library-family-summary");
+        summary.append(element("strong", "", family.title),
+          element("span", "", `${family.entries.length} variants`));
+        const variants = element("ul", "client-exercise-library-variants");
+        family.entries.forEach((record) => renderEntry(record, variants));
+        details.append(summary, variants);
+        item.append(details);
         list.append(item);
       });
       group.append(list);
@@ -385,6 +447,6 @@
 
   root.FWB_CLIENT_EXERCISE_LIBRARY = { open, close };
   if (typeof module !== "undefined" && module.exports) {
-    module.exports = { muscleFor, prepareRecords, matchingRecords, groupedRecords, muscleArtwork };
+    module.exports = { muscleFor, prepareRecords, matchingRecords, groupedRecords, exerciseFamilies, muscleArtwork };
   }
 })(typeof window !== "undefined" ? window : globalThis);

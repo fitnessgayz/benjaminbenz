@@ -4494,6 +4494,59 @@ body.is-client-checkin-prompt-open {
   width: 100%;
 }
 
+.cardio-field-grid select,
+.cardio-format-field select {
+  width: 100%;
+  min-height: 44px;
+  font: inherit;
+}
+
+.cardio-format-field {
+  display: grid;
+  gap: 8px;
+  font-weight: 900;
+}
+
+.cardio-format-field span {
+  color: var(--muted);
+  font-size: .8rem;
+  text-transform: uppercase;
+}
+
+.cardio-interval-fields {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface-soft);
+}
+
+.cardio-interval-fields[hidden] { display: none; }
+.cardio-stations-field { display: grid; gap: 7px; }
+.cardio-stations-field span { color: var(--muted); font-size: .8rem; font-weight: 900; text-transform: uppercase; }
+.cardio-stations-field textarea { min-height: 88px; width: 100%; resize: vertical; font: inherit; }
+.cardio-stations-field small { color: var(--muted); line-height: 1.4; }
+.cardio-pace { color: var(--brand-primary); font-size: .9rem; font-weight: 700; }
+.cardio-interval-timer { display: grid; gap: 12px; }
+.cardio-interval-timer[hidden] { display: none; }
+.cardio-interval-timer strong { color: var(--brand-primary); }
+.cardio-interval-timer output { color: var(--muted); line-height: 1.5; }
+.cardio-interval-timer div { display: flex; flex-wrap: wrap; gap: 8px; }
+.cardio-interval-timer button {
+  min-height: 44px;
+  padding: 9px 16px;
+  border: 1px solid var(--brand-primary);
+  border-radius: 10px;
+  color: var(--brand-primary);
+  background: transparent;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+.cardio-interval-timer button:disabled { opacity: .5; cursor: not-allowed; }
+.cardio-preset-button { justify-self: start; border: 0; padding: 6px 0; color: var(--brand-primary); background: none; font: inherit; font-weight: 800; cursor: pointer; }
+
 .warmup-field-grid {
   grid-template-columns: minmax(0, 220px);
 }

@@ -78,8 +78,14 @@
     if (recovery && !ui.recoveryMode) ui.strengthIntensity = ui.intensity.value;
     if (!recovery && ui.recoveryMode) ui.intensity.value = ui.strengthIntensity || "moderate";
     ui.recoveryMode = recovery;
-    if (recovery) ui.intensity.value = "easy";
+    if (recovery) {
+      ui.intensity.value = "easy";
+      ui.style.value = "strength";
+      ui.format.value = "single";
+      ui.format.disabled = false;
+    }
     ui.intensity.disabled = busy || recovery;
+    ui.style.disabled = busy || recovery;
     ui.recoveryHint.hidden = !recovery;
   }
 
@@ -88,6 +94,7 @@
     return {
       focus: ui.focus.value === "custom_muscles" ? (selectedMuscles.length === 1 ? selectedMuscles[0] : "full_body") : ui.focus.value,
       selectedMuscles,
+      style: ui.style.value,
       format: ui.format.value,
       warmUpCount: Number(ui.warmUpCount.value),
       workingSetCount: Number(ui.workingSetCount.value),
@@ -248,6 +255,7 @@
         seed: `${Date.now()}-${++generation}-${Math.random()}`
       });
       if (!result || !Array.isArray(result.exercises) || result.exercises.length === 0) throw new Error("No exercises match these preferences. Try another focus or equipment selection.");
+      if (selected.style === "crossfit") selected.workingSetCount = result.exercises[0].sets;
       preview = { ...result, warmUpCount: selected.warmUpCount, workingSetCount: selected.workingSetCount };
       renderPreview();
       setStatus("Your workout is ready. Review the exercises or swap one before using it.");
@@ -303,6 +311,23 @@
     description.id = "workout-generator-description";
     const form = element("form", "workout-generator-form");
     const fields = element("fieldset", "workout-generator-fields");
+    const style = field("Training style", "style", [
+      { value: "strength", label: "Regular strength" },
+      { value: "hyrox", label: "HYROX-style" },
+      { value: "crossfit", label: "CrossFit-style" }
+    ]);
+    style.select.addEventListener("change", () => {
+      if (style.select.value === "hyrox") {
+        format.select.value = "single";
+        warmUpCount.select.value = "0";
+        workingSetCount.select.value = "1";
+      } else if (style.select.value === "crossfit") {
+        format.select.value = "circuit";
+        workingSetCount.select.value = "3";
+      }
+      format.select.disabled = style.select.value !== "strength";
+      invalidatePreview();
+    });
     const focus = field("Quick focus", "focus", []);
     const recoveryHint = element("p", "workout-generator-muted", "Gentle mobility and stretching for your selected area. Recovery sessions use easy intensity.");
     recoveryHint.id = "workout-generator-recovery-hint";
@@ -353,7 +378,7 @@
     const gymOptions = element("datalist");
     gymOptions.id = "workout-generator-gym-options";
     gymField.append(gymInput, element("small", "workout-generator-muted", "Choose here or before starting. Previous weights match this location."), gymOptions);
-    fields.append(focus.label, recoveryHint, muscles, format.label, countRow, split, equipment, gymField);
+    fields.append(style.label, focus.label, recoveryHint, muscles, format.label, countRow, split, equipment, gymField);
     const generateButton = element("button", "workout-generator-button workout-generator-generate", "Generate workout");
     generateButton.type = "submit";
     form.append(fields, generateButton);
@@ -391,7 +416,7 @@
       if (restoreFocus && target?.isConnected && !target.disabled) target.focus?.({ preventScroll: true });
     });
     ui = {
-      close: closeButton, form, formFields: fields, focus: focus.select,
+      close: closeButton, form, formFields: fields, style: style.select, focus: focus.select,
       muscleChoices,
       format: format.select, warmUpCount: warmUpCount.select, workingSetCount: workingSetCount.select,
       minutes: minutes.select, intensity: intensity.select, equipment,
@@ -444,6 +469,8 @@
     ui.minutes.value = "30";
     ui.intensity.value = "moderate";
     ui.format.value = "single";
+    ui.style.value = "strength";
+    ui.format.disabled = false;
     ui.warmUpCount.value = "1";
     ui.workingSetCount.value = "3";
     ui.recoveryMode = false;
@@ -453,8 +480,15 @@
     if ([20, 30, 45, 60].includes(initial.minutes)) ui.minutes.value = String(initial.minutes);
     if (["easy", "moderate", "challenging"].includes(initial.intensity)) ui.intensity.value = initial.intensity;
     if (["single", "superset", "circuit"].includes(initial.format)) ui.format.value = initial.format;
+    if (["strength", "hyrox", "crossfit"].includes(initial.style)) ui.style.value = initial.style;
     if (Number.isInteger(initial.warmUpCount) && initial.warmUpCount >= 0 && initial.warmUpCount <= 3) ui.warmUpCount.value = String(initial.warmUpCount);
     if (Number.isInteger(initial.workingSetCount) && initial.workingSetCount >= 1 && initial.workingSetCount <= 10) ui.workingSetCount.value = String(initial.workingSetCount);
+    if (ui.style.value !== "strength") {
+      ui.format.value = ui.style.value === "hyrox" ? "single" : "circuit";
+      ui.format.disabled = true;
+      ui.workingSetCount.value = ui.style.value === "hyrox" ? "1" : "3";
+      if (ui.style.value === "hyrox") ui.warmUpCount.value = "0";
+    }
     const muscleOptions = engine?.MUSCLE_OPTIONS || [];
     const recovery = Boolean(engine?.FOCUS_OPTIONS?.find((option) => option.value === initial.focus)?.recovery);
     const initialMuscles = recovery ? [] : Array.isArray(initial.selectedMuscles)

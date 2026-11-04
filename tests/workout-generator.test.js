@@ -70,6 +70,24 @@ test('straight sets stay ungrouped, supersets use pairs, and circuits use exactl
   assert.throws(() => build({ focus: 'chest', equipment: [], format: 'circuit' }), /complete 3-exercise circuit/);
 });
 
+test('HYROX-style alternates run legs and stations; CrossFit-style uses circuits', () => {
+  const hybrid = build({ style: 'hyrox', minutes: 45, format: 'circuit', workingSetCount: 1, warmUpCount: 0 });
+  assert.equal(hybrid.style, 'hyrox');
+  assert.equal(hybrid.format, 'single');
+  assert.match(hybrid.title, /HYROX-style/);
+  assert.ok(hybrid.exercises.length >= 6);
+  assert.ok(hybrid.estimatedMinutes <= 45);
+  hybrid.exercises.forEach((exercise, index) => {
+    if (index % 2 === 0) assert.match(exercise.name, /^Run \d+ · 1 km$/);
+    else assert.ok(library.some((entry) => entry.id === exercise.id));
+  });
+  const crossfit = build({ style: 'crossfit', minutes: 45, format: 'single' });
+  assert.equal(crossfit.style, 'crossfit');
+  assert.equal(crossfit.format, 'circuit');
+  assert.equal(crossfit.exercises.length % 3, 0);
+  assert.match(crossfit.title, /CrossFit-style/);
+});
+
 test('every focus, intensity and duration produces a bounded workout with a full gym', () => {
   for (const { value: focus } of generator.FOCUS_OPTIONS) {
     for (const intensity of ['easy', 'moderate', 'challenging']) {

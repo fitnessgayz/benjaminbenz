@@ -3,7 +3,7 @@ const test = require("node:test");
 const fs = require("node:fs");
 const path = require("node:path");
 const {
-  muscleFor, prepareRecords, matchingRecords, groupedRecords, muscleArtwork
+  muscleFor, prepareRecords, matchingRecords, groupedRecords, exerciseFamilies, muscleArtwork
 } = require("../js/client-exercise-library.js");
 
 test("normalizes common muscle names into useful browse filters", () => {
@@ -51,6 +51,30 @@ test("keeps recent alias searches on the canonical exercise and filters equipmen
   assert.deepEqual(matchingRecords(prepared, "", "All", "barbell", true).map((entry) => entry.name), ["Romanian Deadlift"]);
   assert.deepEqual(matchingRecords(prepared, "rdl", "All", "All").map((entry) => entry.name), ["Romanian Deadlift"]);
   assert.deepEqual(matchingRecords(prepared, "", "All", "cable", true), []);
+});
+
+test("groups movement variants and searches common equipment and laterality aliases", () => {
+  const records = prepareRecords([
+    { name: "Lat Pulldown", libraryEntry: { primary_muscle: "Back" } },
+    { name: "Wide Grip Cable Lat Pulldown", libraryEntry: { primary_muscle: "Back", equipment: "cable" } },
+    { name: "Single Arm Machine Lat Pulldown", libraryEntry: { primary_muscle: "Back", equipment: "machine" } },
+    { name: "Single Leg Dumbbell Romanian Deadlift", libraryEntry: { primary_muscle: "Hamstrings", equipment: "dumbbell" } },
+    { name: "Kettlebell Swing", libraryEntry: { primary_muscle: "Glutes", equipment: "kettlebell" } }
+  ]);
+  const family = exerciseFamilies(records).find((item) => item.title === "Lat Pulldown");
+  assert.equal(family.entries.length, 3);
+  assert.deepEqual(matchingRecords(records, "one arm", "Back").map((item) => item.name), ["Single Arm Machine Lat Pulldown"]);
+  assert.deepEqual(matchingRecords(records, "one leg db", "Hamstrings").map((item) => item.name), ["Single Leg Dumbbell Romanian Deadlift"]);
+  assert.deepEqual(matchingRecords(records, "dumbell", "Hamstrings").map((item) => item.name), ["Single Leg Dumbbell Romanian Deadlift"]);
+  assert.deepEqual(matchingRecords(records, "kb", "Glutes").map((item) => item.name), ["Kettlebell Swing"]);
+});
+
+test("ranks recent exercises by use count, then latest use", () => {
+  const records = prepareRecords([
+    { name: "Cable Curl", libraryEntry: { primary_muscle: "Biceps" } },
+    { name: "Dumbbell Curl", libraryEntry: { primary_muscle: "Biceps" } }
+  ], ["Cable Curl", "Dumbbell Curl", "Dumbbell Curl", "Cable Curl", "Dumbbell Curl"]);
+  assert.deepEqual(exerciseFamilies(records, true)[0].entries.map((entry) => entry.name), ["Dumbbell Curl", "Cable Curl"]);
 });
 
 test("illustrates every browse muscle with a distinct highlighted region", () => {
