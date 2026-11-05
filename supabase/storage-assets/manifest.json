@@ -85,7 +85,8 @@
     "20261104224511_add_exercise_image_cards_batch_sixteen.sql",
     "20261104230911_add_exercise_image_cards_batch_seventeen.sql",
     "20261104234111_add_exercise_image_cards_batch_eighteen.sql",
-    "20261105001211_add_exercise_image_cards_batch_nineteen.sql"
+    "20261105001211_add_exercise_image_cards_batch_nineteen.sql",
+    "20261105004411_add_exercise_image_cards_batch_twenty.sql"
   ],
   "nasmExerciseCatalogMigration": "20261001032427_add_complete_nasm_exercise_library.sql",
   "nasmExerciseCatalogCount": 75,
@@ -7320,6 +7321,216 @@
       "objectPath": "approved/2026-11-04/webp-768/couch-stretch.webp",
       "contentType": "image/webp",
       "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/figure-four-glute-stretch.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/figure-four-glute-stretch.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/figure-four-glute-stretch.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/figure-four-glute-stretch.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/figure-four-glute-stretch.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/figure-four-glute-stretch.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/floor-bridge.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/floor-bridge.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/floor-bridge.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/floor-bridge.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/floor-bridge.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/floor-bridge.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/floor-prone-cobra.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/floor-prone-cobra.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/floor-prone-cobra.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/floor-prone-cobra.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/floor-prone-cobra.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/floor-prone-cobra.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/glute-and-hamstring-foam-roll.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/glute-and-hamstring-foam-roll.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/glute-and-hamstring-foam-roll.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/glute-and-hamstring-foam-roll.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/glute-and-hamstring-foam-roll.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/glute-and-hamstring-foam-roll.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/glute-bridge-with-pause.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/glute-bridge-with-pause.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/glute-bridge-with-pause.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/glute-bridge-with-pause.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/glute-bridge-with-pause.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/glute-bridge-with-pause.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/good-mornings.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/good-mornings.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/good-mornings.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/good-mornings.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/good-mornings.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/good-mornings.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/assisted-or-weighted-dip.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/assisted-or-weighted-dip.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/assisted-or-weighted-dip.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/assisted-or-weighted-dip.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/assisted-or-weighted-dip.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/assisted-or-weighted-dip.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/hip-adduction.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/hip-adduction.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/hip-adduction.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/hip-adduction.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/hip-adduction.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/hip-adduction.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/leg-swings.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/leg-swings.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/leg-swings.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/leg-swings.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/leg-swings.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/leg-swings.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/supine-breathing-feet-elevated.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/supine-breathing-feet-elevated.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/supine-breathing-feet-elevated.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/supine-breathing-feet-elevated.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/supine-breathing-feet-elevated.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/supine-breathing-feet-elevated.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
     }
   ],
   "exerciseMedia": [
@@ -8909,6 +9120,46 @@
     {
       "name": "Couch Stretch",
       "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/couch-stretch.webp"
+    },
+    {
+      "name": "Figure-Four Glute Stretch",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/figure-four-glute-stretch.webp"
+    },
+    {
+      "name": "Floor Bridge",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/floor-bridge.webp"
+    },
+    {
+      "name": "Floor Prone Cobra",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/floor-prone-cobra.webp"
+    },
+    {
+      "name": "Glute and Hamstring Foam Roll",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/glute-and-hamstring-foam-roll.webp"
+    },
+    {
+      "name": "Glute Bridge with Pause",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/glute-bridge-with-pause.webp"
+    },
+    {
+      "name": "Good Mornings",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/good-mornings.webp"
+    },
+    {
+      "name": "Assisted or Weighted Dip",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/assisted-or-weighted-dip.webp"
+    },
+    {
+      "name": "Hip Adduction",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/hip-adduction.webp"
+    },
+    {
+      "name": "Leg Swings",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/leg-swings.webp"
+    },
+    {
+      "name": "Supine Breathing with Feet Elevated",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/supine-breathing-feet-elevated.webp"
     }
   ]
 }
