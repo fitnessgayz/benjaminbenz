@@ -152,12 +152,13 @@ test("orphaned and day-old timer state expires by wall-clock age", () => {
   assert.match(sourceForFunction("persistWorkoutElapsedTimerState"), /workoutElapsedTimerState\.updatedAt = Date\.now\(\)/);
 });
 
-test("active workouts expose resume actions on Home and Workouts", () => {
-  assert.equal((dashboardSource.match(/data-workout-resume-card/g) || []).length, 2);
-  assert.equal((dashboardSource.match(/data-resume-active-workout/g) || []).length, 2);
-  assert.match(dashboardSource, /client-home-resume-card/);
+test("Home workout action sits below the greeting and Workouts retains recovery controls", () => {
+  assert.equal((dashboardSource.match(/data-workout-resume-card/g) || []).length, 1);
+  assert.equal((dashboardSource.match(/data-resume-active-workout/g) || []).length, 1);
+  assert.ok(dashboardSource.indexOf('id="client-home-welcome"') < dashboardSource.indexOf('data-home-workout-action'));
+  assert.ok(dashboardSource.indexOf('data-home-workout-action') < dashboardSource.indexOf('id="client-home-grid"'));
+  assert.match(dashboardSource, /data-home-workout-active-note/);
   assert.match(dashboardSource, /client-workouts-resume-card/);
-  assert.match(styleSource, /\.client-home-resume-card\s*\{[^}]*grid-column:\s*1 \/ -1/s);
   assert.match(styleSource, /\.client-workout-resume-card\[hidden\]\s*\{[^}]*display:\s*none !important/s);
   assert.match(styleSource, /@media \(max-width: 620px\)[\s\S]*\.client-workout-resume-card\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\)/);
 });
@@ -210,4 +211,46 @@ test("resume cards mirror running, paused, title, and elapsed timer state", () =
   assert.match(renderSource, /workoutElapsedTimerState\.workoutTitle/);
   assert.match(renderSource, /workoutElapsedTimeLabel\(workoutElapsedMilliseconds\(\)\)/);
   assert.match(portalSource, /resumeActiveWorkoutButton[\s\S]*resumeActiveWorkout\(\)/);
+});
+
+test("Home action switches between Start and Resume from the saved workout state", () => {
+  const label = { textContent: "Start workout" };
+  const note = { hidden: true, textContent: "" };
+  const status = { textContent: "" };
+  const title = { textContent: "" };
+  const time = { textContent: "" };
+  const card = {
+    hidden: true,
+    querySelector(selector) {
+      return ({
+        "[data-workout-resume-status]": status,
+        "[data-workout-resume-title]": title,
+        "[data-workout-resume-time]": time
+      })[selector];
+    }
+  };
+  const document = {
+    querySelector(selector) {
+      return ({
+        "[data-home-workout-action-label]": label,
+        "[data-home-workout-active-note]": note
+      })[selector];
+    },
+    querySelectorAll: () => [card]
+  };
+  const render = Function("document", "workoutElapsedTimerState", "workoutElapsedTimeLabel",
+    "workoutElapsedMilliseconds", `${sourceForFunction("renderWorkoutResumeActions")}; return renderWorkoutResumeActions;`);
+
+  render(document, null, () => "02:00", () => 120000)();
+  assert.equal(label.textContent, "Start workout");
+  assert.equal(note.hidden, true);
+  assert.equal(card.hidden, true);
+
+  render(document, { workoutTitle: "Custom Workout", running: false }, () => "02:00", () => 120000)();
+  assert.equal(label.textContent, "Resume workout");
+  assert.equal(note.hidden, false);
+  assert.match(note.textContent, /Custom Workout/);
+  assert.equal(card.hidden, false);
+  assert.equal(status.textContent, "Workout paused");
+  assert.equal(time.textContent, "02:00");
 });
