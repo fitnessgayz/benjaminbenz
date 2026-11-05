@@ -283,6 +283,10 @@
       if (event.key === "Escape" && typeof dialog.showModal !== "function") close();
     });
     search.addEventListener("input", () => {
+      if (recentOnly && search.value.trim()) {
+        recentOnly = false;
+        renderBrowse();
+      }
       if (renderFrame) root.cancelAnimationFrame(renderFrame);
       renderFrame = root.requestAnimationFrame(() => { renderFrame = 0; renderResults(); });
     });
@@ -357,11 +361,13 @@
       const group = element("section", "client-exercise-library-group");
       group.append(element("h3", "client-exercise-library-group-title", muscle));
       const list = element("ul", "client-exercise-library-list");
+      const showsUseCount = muscle === "Recent" || muscle === "Recently used";
+      const usageLabel = (count) => `Used ${count} ${count === 1 ? "time" : "times"}`;
       function renderEntry(record, target) {
         const item = element("li", "client-exercise-library-item");
         const button = element("button", "client-exercise-library-item-button");
         button.type = "button";
-        button.setAttribute("aria-label", `Add ${record.name}, ${[record.primary, ...record.secondary].join(", ")}`);
+        button.setAttribute("aria-label", `Add ${record.name}, ${[record.primary, ...record.secondary].join(", ")}${showsUseCount ? `, ${usageLabel(record.useCount)}` : ""}`);
         const artwork = element("span", "client-exercise-library-item-artwork");
         const image = element("img", "");
         image.src = record.highlightKey
@@ -388,6 +394,7 @@
         });
         text.append(muscles);
         if (record.equipment) text.append(element("small", "client-exercise-library-item-equipment", record.equipment.replace(/[_-]+/g, " ")));
+        if (showsUseCount) text.append(element("small", "client-exercise-library-item-use-count", usageLabel(record.useCount)));
         const add = element("span", "client-exercise-library-item-plus", "+");
         add.setAttribute("aria-hidden", "true");
         button.append(artwork, text, add);
@@ -408,8 +415,11 @@
         const details = element("details", "client-exercise-library-family-details");
         if (query.trim()) details.open = true;
         const summary = element("summary", "client-exercise-library-family-summary");
-        summary.append(element("strong", "", family.title),
-          element("span", "", `${family.entries.length} variants`));
+        const summaryCopy = element("div", "client-exercise-library-family-copy");
+        summaryCopy.append(element("strong", "", family.title));
+        if (showsUseCount) summaryCopy.append(element("small", "client-exercise-library-item-use-count",
+          usageLabel(family.entries.reduce((total, entry) => total + entry.useCount, 0))));
+        summary.append(summaryCopy, element("span", "", `${family.entries.length} variants`));
         const variants = element("ul", "client-exercise-library-variants");
         family.entries.forEach((record) => renderEntry(record, variants));
         details.append(summary, variants);
@@ -431,7 +441,8 @@
     restoreFocus = root.document.activeElement;
     activeMuscle = "All";
     activeEquipment = "All";
-    recentOnly = false;
+    recentOnly = !String(currentName || "").trim() && !String(initialQuery || "").trim()
+      && sourceRecords.some((record) => Number.isFinite(record.recentRank));
     referenceName = String(currentName || "");
     const search = dialog.querySelector(".client-exercise-library-search");
     search.value = String(initialQuery || "");
