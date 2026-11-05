@@ -87,7 +87,8 @@
     "20261104234111_add_exercise_image_cards_batch_eighteen.sql",
     "20261105001211_add_exercise_image_cards_batch_nineteen.sql",
     "20261105004411_add_exercise_image_cards_batch_twenty.sql",
-    "20261105011811_add_exercise_image_cards_batch_twenty_one.sql"
+    "20261105011811_add_exercise_image_cards_batch_twenty_one.sql",
+    "20261105015311_add_exercise_image_cards_batch_twenty_two.sql"
   ],
   "nasmExerciseCatalogMigration": "20261001032427_add_complete_nasm_exercise_library.sql",
   "nasmExerciseCatalogCount": 75,
@@ -7742,6 +7743,216 @@
       "objectPath": "approved/2026-11-04/webp-768/reverse-crunch-to-knee-up-with-rotation-v3.webp",
       "contentType": "image/webp",
       "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/single-arm-cable-chest-press-side-v3.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/single-arm-cable-chest-press-side-v3.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/single-arm-cable-chest-press-side-v3.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/single-arm-cable-chest-press-side-v3.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/single-arm-cable-chest-press-side-v3.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/single-arm-cable-chest-press-side-v3.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/single-arm-row-machine-overhand.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/single-arm-row-machine-overhand.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/single-arm-row-machine-overhand.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/single-arm-row-machine-overhand.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/single-arm-row-machine-overhand.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/single-arm-row-machine-overhand.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/straight-arm-plank.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/straight-arm-plank.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/straight-arm-plank.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/straight-arm-plank.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/straight-arm-plank.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/straight-arm-plank.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/sumo-squats-kettlebell.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/sumo-squats-kettlebell.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/sumo-squats-kettlebell.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/sumo-squats-kettlebell.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/sumo-squats-kettlebell.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/sumo-squats-kettlebell.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/trx-overhand-row.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/trx-overhand-row.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/trx-overhand-row.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/trx-overhand-row.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/trx-overhand-row.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/trx-overhand-row.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/iron-cross.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/iron-cross.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/iron-cross.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/iron-cross.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/iron-cross.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/iron-cross.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/supported-hip-airplane.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/supported-hip-airplane.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/supported-hip-airplane.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/supported-hip-airplane.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/supported-hip-airplane.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/supported-hip-airplane.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/thoracic-spine-foam-roll.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/thoracic-spine-foam-roll.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/thoracic-spine-foam-roll.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/thoracic-spine-foam-roll.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/thoracic-spine-foam-roll.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/thoracic-spine-foam-roll.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/table-top-crunches.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/table-top-crunches.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/table-top-crunches.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/table-top-crunches.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/table-top-crunches.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/table-top-crunches.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/medicine-ball-russian-twist.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/medicine-ball-russian-twist.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/medicine-ball-russian-twist.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/medicine-ball-russian-twist.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/medicine-ball-russian-twist.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/medicine-ball-russian-twist.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
     }
   ],
   "exerciseMedia": [
@@ -9411,6 +9622,46 @@
     {
       "name": "Reverse Crunch to Knee-Up with Rotation",
       "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/reverse-crunch-to-knee-up-with-rotation-v3.webp"
+    },
+    {
+      "name": "Single arm cable chest press (side)",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/single-arm-cable-chest-press-side-v3.webp"
+    },
+    {
+      "name": "Single arm row machine — overhand",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/single-arm-row-machine-overhand.webp"
+    },
+    {
+      "name": "Straight-Arm Plank",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/straight-arm-plank.webp"
+    },
+    {
+      "name": "Sumo squats (kettlebell)",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/sumo-squats-kettlebell.webp"
+    },
+    {
+      "name": "Trx overhand row",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/trx-overhand-row.webp"
+    },
+    {
+      "name": "Iron Cross",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/iron-cross.webp"
+    },
+    {
+      "name": "Supported hip airplane",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/supported-hip-airplane.webp"
+    },
+    {
+      "name": "Thoracic Spine Foam Roll",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/thoracic-spine-foam-roll.webp"
+    },
+    {
+      "name": "Table top crunches",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/table-top-crunches.webp"
+    },
+    {
+      "name": "medicine ball Russian twist",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/medicine-ball-russian-twist.webp"
     }
   ]
 }
