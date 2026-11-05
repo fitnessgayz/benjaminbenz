@@ -57,7 +57,6 @@
   function renderNextWorkout() {
     const card = document.querySelector('.client-home-last-workout');
     const suggestion = document.querySelector('[data-client-home-suggestion]');
-    const start = document.querySelector('[data-client-home-start-next]');
     if (!card || !suggestion || !start) return;
     const sessions = new Map();
     for (const row of logs) {
@@ -94,7 +93,6 @@
         : rows[0].session_id || rows[0].workout_session_id ? `session:${key}` : `legacy:${key}`;
     }
     const workouts = (Array.isArray(program?.workouts) ? program.workouts : [])
-      .map((row, index) => ({ ...row, homePanelIndex: index + 1 }))
       .filter(row => Array.isArray(row.exercises) && row.exercises.length);
     const planned = scheduled.filter(row => row.planned_date >= dateKey(new Date())).sort((a, b) => a.planned_date.localeCompare(b.planned_date))[0];
     const plannedIndex = planned ? workouts.findIndex(row => String(row.title || '').toLowerCase() === String(planned.title || '').toLowerCase()) : -1;
@@ -103,8 +101,6 @@
     const nextIndex = plannedIndex >= 0 ? plannedIndex : lastIndex >= 0 ? (lastIndex + 1) % workouts.length : 0;
     const next = workouts[nextIndex];
     suggestion.textContent = next ? `Suggested next · ${next.title}` : 'Suggested next · Choose a workout';
-    if (next) start.dataset.clientHomeWorkoutIndex = String(next.homePanelIndex);
-    else delete start.dataset.clientHomeWorkoutIndex;
   }
   async function refreshActivityTotals() {
     const version = ++activityVersion;
@@ -283,7 +279,8 @@
     const { data, error } = await client.from('client_check_ins').select('id,occurred_on,win,challenge,recovery_summary,pain_limitations,coach_question,weekly_submitted_at').eq('client_email', email).eq('occurred_on', weekStart()).limit(10);
     if (error) throw error;
     weeklyRecord = data?.find(row => row.weekly_submitted_at) || data?.[0] || null;
-    weekLink.textContent = weeklyRecord?.weekly_submitted_at ? 'View weekly coach check-in' : 'Weekly coach check-in';
+    const weeklyLabel = weekLink.querySelector('[data-client-weekly-checkin-label]') || weekLink;
+    weeklyLabel.textContent = weeklyRecord?.weekly_submitted_at ? 'View weekly coach check-in' : 'Weekly coach check-in';
     setFields(weeklyRecord);
   }
   weekLink?.addEventListener('click', async () => {
