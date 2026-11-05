@@ -148,3 +148,56 @@
 
 :root body.client-dashboard-page .client-home-week-days .is-planned:not(.is-complete) .client-home-day-dot { background: #ffd400; }
 :root[data-client-theme="light"] body.client-dashboard-page .client-home-week-days .is-planned:not(.is-complete) .client-home-day-dot { background: #9d6a00; }
+
+/* Home sequence selected for the client app: reward, last workout, next workout, week. */
+:root body.client-dashboard-page .client-home-streak { order: 1; width: 100%; }
+:root body.client-dashboard-page .client-home-next { order: 2; width: 100%; display: grid; gap: 10px; }
+:root body.client-dashboard-page .client-home-planner { order: 3; }
+:root body.client-dashboard-page .client-home-community { order: 4; }
+:root body.client-dashboard-page .client-home-checkin-links { order: 5; }
+:root body.client-dashboard-page .client-weekly-activity { order: 6; }
+:root body.client-dashboard-page .client-home-streak .client-home-rewards { margin-top: 0; }
+:root body.client-dashboard-page .client-home-streak .client-home-reward-dots { margin: 8px 0 0; }
+:root body.client-dashboard-page .client-home-last-workout {
+  display: flex; width: 100%; min-height: 92px; align-items: center; gap: 12px;
+  padding: 12px 18px; border: 1px solid #45494d; border-radius: 20px;
+  background: #24282d; color: #f5f7f7; font: inherit; text-align: left;
+}
+:root body.client-dashboard-page .client-home-last-workout[hidden],
+:root body.client-dashboard-page .client-home-workout-action[hidden] { display: none !important; }
+:root body.client-dashboard-page .client-home-last-icon {
+  display: grid; flex: 0 0 52px; width: 52px; height: 52px; place-items: center;
+  border-radius: 12px; background: #2d3238; color: #e6e8e9; font-size: 17px; letter-spacing: 3px;
+}
+:root body.client-dashboard-page .client-home-last-copy { display: grid; flex: 1; min-width: 0; gap: 2px; }
+:root body.client-dashboard-page .client-home-last-copy strong { overflow: hidden; color: #fff; font-size: 17px; line-height: 1.2; text-overflow: ellipsis; white-space: nowrap; }
+:root body.client-dashboard-page .client-home-last-copy small { overflow: hidden; color: #c8cbd0; font-size: 13px; line-height: 1.25; text-overflow: ellipsis; white-space: nowrap; }
+:root body.client-dashboard-page .client-home-last-arrow { color: #5aa9e8; font-size: 28px; }
+:root body.client-dashboard-page .client-home-suggestion { margin: 0 2px; color: #5aa9e8; font-size: 14px; font-weight: 700; line-height: 1.35; }
+:root body.dashboard-page.client-dashboard-page .client-home-next-button {
+  display: block; width: 100%; min-height: 52px; padding: 10px 16px;
+  border: 0; border-radius: 14px; background: #ffd400; color: #111;
+  font: 800 17px/1.2 var(--font-ui, Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif);
+  text-align: center;
+}
+:root body.client-dashboard-page .client-home-week-title { display: none; }
+:root body.client-dashboard-page .client-home-planner .client-home-week-controls { margin-top: 0; }
+:root body.client-dashboard-page .client-home-planner .client-home-week-controls::before {
+  content: "This week"; flex: 1; color: #5aa9e8; font-size: 22px; font-weight: 800;
+}
+:root body.client-dashboard-page .client-home-planner .client-home-week-controls strong {
+  flex: 0 0 auto; color: #c8cbd0; font-size: 12px; font-weight: 500;
+}
+:root body.client-dashboard-page .client-home-planner .client-home-week-controls button {
+  width: 28px !important; min-width: 28px !important; max-width: 28px !important; height: 28px !important;
+  flex-basis: 28px; border: 0; background: transparent; font-size: 18px;
+}
+:root body.client-dashboard-page .client-home-week-detail {
+  min-height: 52px; margin: 12px 0 0; padding: 12px; border-radius: 10px; background: #2d3238;
+}
+:root[data-client-theme="light"] body.client-dashboard-page .client-home-last-workout { background: #fff; color: #18232e; border-color: #cdd5d9; }
+:root[data-client-theme="light"] body.client-dashboard-page .client-home-last-copy strong { color: #18232e; }
+:root[data-client-theme="light"] body.client-dashboard-page .client-home-last-copy small { color: #41515b; }
+:root[data-client-theme="light"] body.client-dashboard-page .client-home-last-icon,
+:root[data-client-theme="light"] body.client-dashboard-page .client-home-week-detail { background: #e8edf1; color: #18232e; }
+:root body.client-dashboard-page :is(.client-home-last-workout, .client-home-next-button):focus-visible { outline: 3px solid #5aa9e8; outline-offset: 3px; }

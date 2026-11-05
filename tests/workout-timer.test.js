@@ -213,8 +213,10 @@ test("resume cards mirror running, paused, title, and elapsed timer state", () =
   assert.match(portalSource, /resumeActiveWorkoutButton[\s\S]*resumeActiveWorkout\(\)/);
 });
 
-test("Home action switches between Start and Resume from the saved workout state", () => {
-  const label = { textContent: "Start workout" };
+test("Home greeting only shows Resume for an unfinished workout", () => {
+  const label = { textContent: "Resume Workout" };
+  const action = { hidden: false };
+  const startNext = { hidden: false };
   const note = { hidden: true, textContent: "" };
   const status = { textContent: "" };
   const title = { textContent: "" };
@@ -232,6 +234,8 @@ test("Home action switches between Start and Resume from the saved workout state
   const document = {
     querySelector(selector) {
       return ({
+        ".client-home-workout-action": action,
+        "[data-client-home-start-next]": startNext,
         "[data-home-workout-action-label]": label,
         "[data-home-workout-active-note]": note
       })[selector];
@@ -242,12 +246,16 @@ test("Home action switches between Start and Resume from the saved workout state
     "workoutElapsedMilliseconds", `${sourceForFunction("renderWorkoutResumeActions")}; return renderWorkoutResumeActions;`);
 
   render(document, null, () => "02:00", () => 120000)();
-  assert.equal(label.textContent, "Start workout");
+  assert.equal(action.hidden, true);
+  assert.equal(startNext.hidden, false);
+  assert.equal(label.textContent, "Resume Workout");
   assert.equal(note.hidden, true);
   assert.equal(card.hidden, true);
 
   render(document, { workoutTitle: "Custom Workout", running: false }, () => "02:00", () => 120000)();
-  assert.equal(label.textContent, "Resume workout");
+  assert.equal(action.hidden, false);
+  assert.equal(startNext.hidden, true);
+  assert.equal(label.textContent, "Resume Workout");
   assert.equal(note.hidden, false);
   assert.match(note.textContent, /Custom Workout/);
   assert.equal(card.hidden, false);
