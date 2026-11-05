@@ -79,7 +79,7 @@ test("the compact gym picker collapses history and lets clients remove gyms", ()
     );
   const markup = api.workoutGymPickerMarkup("", 2);
   assert.match(markup, /Gym location \(optional\)/);
-  assert.match(markup, /Gym name, Home, or Outdoors/);
+  assert.match(markup, /Gym, Home, or Outdoors/);
   assert.match(markup, /<details class="workout-gym-history">/);
   assert.match(markup, /data-workout-gym-remove="Gym A"/);
   assert.doesNotMatch(markup, /Find nearby gyms|Choose once before you start/);

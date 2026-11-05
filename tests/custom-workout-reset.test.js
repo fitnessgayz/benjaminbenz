@@ -21,7 +21,7 @@ test("renders a compact reset action only inside the Custom Workout builder", ()
   const customPanel = sourceForFunction("customWorkoutPanelMarkup");
   const assignedPanel = sourceForFunction("renderClientWorkoutTabs");
 
-  assert.match(customPanel, /data-reset-custom-workout>Reset workout<\/button>/);
+  assert.match(customPanel, /data-reset-custom-workout>Reset<\/button>/);
   assert.match(customPanel, /data-custom-workout-reset-status role="status" aria-live="polite"/);
   assert.doesNotMatch(assignedPanel, /data-reset-custom-workout/);
   assert.match(customPanel, /class="custom-workout-primary-actions"[\s\S]*data-custom-workout-start-control[\s\S]*data-reset-custom-workout/);
