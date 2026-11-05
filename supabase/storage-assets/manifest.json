@@ -90,7 +90,8 @@
     "20261105011811_add_exercise_image_cards_batch_twenty_one.sql",
     "20261105015311_add_exercise_image_cards_batch_twenty_two.sql",
     "20261105022111_add_exercise_image_cards_batch_twenty_three.sql",
-    "20261105032411_add_exercise_image_cards_batch_twenty_four.sql"
+    "20261105032411_add_exercise_image_cards_batch_twenty_four.sql",
+    "20261105034211_add_exercise_image_cards_batch_twenty_five.sql"
   ],
   "nasmExerciseCatalogMigration": "20261001032427_add_complete_nasm_exercise_library.sql",
   "nasmExerciseCatalogCount": 75,
@@ -8375,6 +8376,90 @@
       "objectPath": "approved/2026-11-04/webp-768/v-squat.webp",
       "contentType": "image/webp",
       "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/ball-crunchies.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/ball-crunchies.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/ball-crunchies.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/ball-crunchies.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/ball-crunchies.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/ball-crunchies.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/decline-cable-press-flies.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/decline-cable-press-flies.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/decline-cable-press-flies.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/decline-cable-press-flies.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/decline-cable-press-flies.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/decline-cable-press-flies.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/outer-thigh.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/outer-thigh.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/outer-thigh.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/outer-thigh.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/outer-thigh.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/outer-thigh.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/tricep-rope-pull.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/tricep-rope-pull.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/tricep-rope-pull.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/tricep-rope-pull.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/tricep-rope-pull.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/tricep-rope-pull.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
     }
   ],
   "exerciseMedia": [
@@ -10164,6 +10249,22 @@
     {
       "name": "V-squat",
       "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/v-squat.webp"
+    },
+    {
+      "name": "ball crunchies",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/ball-crunchies.webp"
+    },
+    {
+      "name": "decline cable press flies",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/decline-cable-press-flies.webp"
+    },
+    {
+      "name": "Outer thigh",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/outer-thigh.webp"
+    },
+    {
+      "name": "Tricep rope pull",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/tricep-rope-pull.webp"
     }
   ]
 }
