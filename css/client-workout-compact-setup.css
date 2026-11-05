@@ -1,0 +1,189 @@
+/* Compact setup for custom, prescribed, mobility, and cardio logs. */
+body.client-dashboard-page :is(.client-workout-panel-custom, .client-workout-panel-assigned, .client-workout-panel-cardio) {
+  font-family: var(--font-ui, Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif);
+}
+
+body.client-dashboard-page .workout-compact-source { display: grid; gap: 8px; }
+body.client-dashboard-page .workout-compact-source h3,
+body.client-dashboard-page .workout-compact-format h3 {
+  margin: 0;
+  color: #aeb8c3;
+  font: 750 .82rem/1.2 var(--font-ui, Inter, sans-serif);
+  letter-spacing: .045em;
+}
+body.client-dashboard-page .workout-compact-source h3 { text-transform: uppercase; }
+body.client-dashboard-page .workout-compact-source-list {
+  overflow: hidden;
+  border: 1px solid #414852;
+  border-radius: 16px;
+  background: #24272d;
+}
+body.client-dashboard-page .workout-compact-source-list .workout-choice-card {
+  width: 100%;
+  min-height: 70px;
+  margin: 0;
+  padding: 11px 14px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  font-family: inherit;
+  text-align: left;
+}
+body.client-dashboard-page .workout-compact-source-list .workout-choice-card + .workout-choice-card {
+  border-top: 1px solid #414852;
+}
+body.client-dashboard-page .workout-compact-source-list .workout-choice-title { color: #59b5ff; }
+body.client-dashboard-page .workout-compact-source-list .workout-choice-description { color: #b8bfc8; }
+
+body.client-dashboard-page .workout-session-date.workout-compact-date {
+  display: grid;
+  width: 100%;
+  max-width: none;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto auto;
+  align-items: center;
+  gap: 2px 12px;
+  margin: 0;
+  padding: 11px 14px;
+  border: 1px solid #414852;
+  border-radius: 16px;
+  background: #24272d;
+  font-family: inherit;
+}
+body.client-dashboard-page .workout-compact-date > span:first-child {
+  grid-column: 1;
+  grid-row: 1;
+  color: #b8bfc8;
+  font-size: .82rem;
+  font-weight: 700;
+  text-transform: none;
+}
+body.client-dashboard-page .workout-compact-date .workout-session-date-control {
+  grid-column: 1;
+  grid-row: 2;
+  min-width: 0;
+  width: fit-content;
+}
+body.client-dashboard-page .workout-compact-date > small {
+  grid-column: 2;
+  grid-row: 1 / 3;
+  color: #59b5ff;
+  font-size: .72rem;
+  font-weight: 750;
+  line-height: 1.25;
+  text-align: right;
+  text-transform: uppercase;
+}
+
+body.client-dashboard-page .workout-gym-picker { margin: 0; padding: 12px 14px; }
+body.client-dashboard-page .workout-gym-main-row {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  min-width: 0;
+}
+body.client-dashboard-page .workout-gym-main-row > input { flex: 1 1 auto; min-width: 0; }
+body.client-dashboard-page .workout-gym-main-row > [data-workout-gym-history] { flex: 0 0 auto; position: relative; }
+body.client-dashboard-page .workout-gym-history > summary {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 1px solid #49515a;
+  border-radius: 10px;
+  list-style: none;
+  white-space: nowrap;
+}
+body.client-dashboard-page .workout-gym-history > summary::-webkit-details-marker { display: none; }
+body.client-dashboard-page .workout-gym-history-list {
+  position: absolute;
+  z-index: 25;
+  right: 0;
+  width: min(300px, 80vw);
+  max-height: 50vh;
+  overflow-y: auto;
+  padding: 4px 10px;
+  border: 1px solid #49515a;
+  border-radius: 12px;
+  background: #24272d;
+  box-shadow: 0 16px 30px #0009;
+}
+body.client-dashboard-page .workout-gym-default[hidden] { display: none; }
+
+body.client-dashboard-page .workout-compact-format { display: grid; gap: 7px; }
+body.client-dashboard-page .workout-compact-format .custom-workout-format-picker {
+  display: block;
+  width: 100%;
+  max-width: none;
+}
+body.client-dashboard-page .workout-compact-format .custom-workout-format-picker > summary,
+body.client-dashboard-page .workout-compact-format .workout-format-pill {
+  display: flex;
+  width: 100%;
+  min-height: 48px;
+  justify-content: space-between;
+  align-items: center;
+  padding: 9px 14px;
+  border: 1px solid #414852;
+  border-radius: 12px;
+  background: #24272d;
+  color: #f6f7f8;
+  font: 700 1rem/1.2 var(--font-ui, Inter, sans-serif);
+}
+body.client-dashboard-page .workout-compact-format .custom-workout-format-options { left: 0; right: auto; }
+
+body.client-dashboard-page .client-workout-panel-custom .custom-workout-primary-actions { margin-top: 0; }
+body.client-dashboard-page .client-workout-panel-custom .custom-workout-reset-button { flex-basis: 82px; width: 82px !important; }
+body.client-dashboard-page :is(.client-workout-panel-custom, .client-workout-panel-assigned) .workout-start-control { margin: 0; }
+body.client-dashboard-page :is(.client-workout-panel-custom, .client-workout-panel-assigned) .workout-start-button {
+  min-height: 54px;
+  border: 0;
+  border-radius: 12px;
+  background: #ffd400;
+  color: #151515;
+  font: 800 1rem/1.2 var(--font-ui, Inter, sans-serif);
+  text-transform: uppercase;
+}
+
+body.client-dashboard-page .workout-preview-coach-notes {
+  margin: 8px 0 14px;
+  padding: 12px 14px;
+  border: 1px solid #414852;
+  border-radius: 14px;
+  background: #24272d;
+  color: #f6f7f8;
+  font-family: var(--font-ui, Inter, sans-serif);
+}
+body.client-dashboard-page .workout-preview-coach-notes summary { min-height: 32px; color: #59b5ff; font-weight: 750; cursor: pointer; }
+body.client-dashboard-page .workout-preview-coach-notes > div { padding-top: 10px; }
+body.client-dashboard-page .workout-preview-coach-notes p { margin: 6px 0 0; white-space: pre-wrap; }
+
+:root[data-client-theme="light"] body.client-dashboard-page :is(
+  .workout-compact-source-list, .workout-session-date.workout-compact-date,
+  .workout-gym-history-list, .workout-preview-coach-notes
+) {
+  border-color: #d6ded2;
+  background: #fff;
+  color: #1b291f;
+}
+:root[data-client-theme="light"] body.client-dashboard-page :is(
+  .workout-compact-source-list .workout-choice-card + .workout-choice-card,
+  .workout-gym-history > summary
+) { border-color: #d6ded2; }
+:root[data-client-theme="light"] body.client-dashboard-page :is(
+  .workout-compact-source-list .workout-choice-description,
+  .workout-compact-date > span:first-child
+) { color: #5f6d61; }
+:root[data-client-theme="light"] body.client-dashboard-page .workout-compact-format .custom-workout-format-picker > summary,
+:root[data-client-theme="light"] body.client-dashboard-page .workout-compact-format .workout-format-pill {
+  border-color: #d6ded2;
+  background: #fff;
+  color: #1b291f;
+}
+
+@media (max-width: 380px) {
+  body.client-dashboard-page .workout-compact-date { grid-template-columns: minmax(0, 1fr); }
+  body.client-dashboard-page .workout-compact-date > small { grid-column: 1; grid-row: 3; text-align: left; }
+  body.client-dashboard-page .workout-gym-main-row { flex-wrap: wrap; }
+  body.client-dashboard-page .workout-gym-main-row > input { flex-basis: 100%; }
+}

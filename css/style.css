@@ -19727,7 +19727,7 @@ body.client-dashboard-page .client-progress-preview-empty { margin: 14px 0 0; co
 
 .client-home-snapshot-heading h3 {
   color: var(--black);
-  font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
+  font-family: var(--font-ui, Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif);
   font-size: clamp(2rem, 5vw, 3.45rem);
   font-weight: 900;
   line-height: .92;

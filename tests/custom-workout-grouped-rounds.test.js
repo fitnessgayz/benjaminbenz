@@ -135,7 +135,7 @@ test("renders exercise-first cards with previous values, Log boxes, and grouped 
   assert.match(sections, /warmUpRows\.map\(\(row, index\) => rowMarkup\(row, warmUpSetType, index\)\)/);
   assert.match(sections, /workingRows\.map\(\(row, index\) => rowMarkup\(row, workingSetType, index\)\)/);
   assert.doesNotMatch(sections, /data-custom-grouped-skip-warmup|data-custom-grouped-log-warmup/);
-  assert.match(sections, /<span>Set<\/span><span>Previous<\/span><span>Weight<\/span><span>Reps<\/span><span>Log<\/span>/);
+  assert.match(sections, /<span>Set<\/span><span>Previous<\/span><span>Weight<\/span><span>Reps \/ sec<\/span><span>Log<\/span>/);
   assert.equal(
     (sections.match(/\$\{columnLabelsMarkup\}/g) || []).length,
     1,

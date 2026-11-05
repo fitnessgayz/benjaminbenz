@@ -5593,7 +5593,7 @@ function workoutStartControlMarkup(workoutTitle) {
         type="button"
         data-workout-start
         data-workout-title="${escapeHtml(workoutTitle)}"
-      >Start workout</button>
+      >Start</button>
     </div>
   `;
 }
@@ -6122,6 +6122,7 @@ function refreshWorkoutGymControls(panel) {
   if (defaultButton) {
     const gym = normalizeWorkoutGymName(input?.value);
     defaultButton.disabled = !gym;
+    defaultButton.hidden = !gym;
     defaultButton.textContent = gym && sameWorkoutGym(gym, defaultWorkoutGymName())
       ? "★ Default gym · tap to remove" : "☆ Set as default gym";
   }
@@ -6197,10 +6198,12 @@ function workoutGymPickerMarkup(value = "", index = 0) {
   const fieldId = `workout-gym-location-${index}`;
   return `<div class="workout-gym-picker">
     <label for="${fieldId}">Gym location (optional)</label>
-    <input id="${fieldId}" data-workout-gym type="text" maxlength="80" autocomplete="off"
-      placeholder="Gym name, Home, or Outdoors" value="${escapeHtml(value)}" />
-    <button type="button" class="workout-gym-default" data-workout-gym-default-toggle ${normalizeWorkoutGymName(value) ? "" : "disabled"}>${value && sameWorkoutGym(value, defaultWorkoutGymName()) ? "★ Default gym · tap to remove" : "☆ Set as default gym"}</button>
-    <div data-workout-gym-history>${workoutGymHistoryMarkup()}</div>
+    <div class="workout-gym-main-row">
+      <input id="${fieldId}" data-workout-gym type="text" maxlength="80" autocomplete="off"
+        placeholder="Gym, Home, or Outdoors" value="${escapeHtml(value)}" />
+      <div data-workout-gym-history>${workoutGymHistoryMarkup()}</div>
+    </div>
+    <button type="button" class="workout-gym-default" data-workout-gym-default-toggle ${normalizeWorkoutGymName(value) ? "" : "hidden disabled"}>${value && sameWorkoutGym(value, defaultWorkoutGymName()) ? "★ Default gym · tap to remove" : "☆ Set as default gym"}</button>
     <span class="workout-gym-error" data-workout-gym-error role="status" hidden></span>
   </div>`;
 }
@@ -9307,7 +9310,7 @@ function syncWorkoutStartButtons() {
     button.classList.toggle("is-active", isActiveWorkout);
 
     if (!workoutElapsedTimerState) {
-      button.textContent = "Start workout";
+      button.textContent = "Start";
     } else if (!isActiveWorkout) {
       button.textContent = "Workout timer active";
     } else if (workoutElapsedTimerState.dismissed) {
@@ -13187,18 +13190,48 @@ function customWorkoutPanelMarkup(index) {
     >
       <div class="panel-heading custom-workout-launcher-heading">
         <div>
-          <h2 id="custom-workout-panel-title" tabindex="-1">${escapeHtml(customWorkoutTitle)}</h2>
-          <button type="button" class="custom-workout-copy-past-link" data-client-workout-copy-history
-            aria-label="Copy Past Workout from Logs">Copy Past Workout <span aria-hidden="true">→</span></button>
+          <h2 id="custom-workout-panel-title" tabindex="-1">Log Workout</h2>
         </div>
       </div>
       <p class="custom-workout-copy-status" data-custom-workout-copy-status role="status" aria-live="polite" ${copyStatusMessage ? "" : "hidden"}>${escapeHtml(copyStatusMessage)}</p>
+      <div class="workout-compact-source">
+        <h3>Source</h3>
+        <div class="workout-compact-source-list">
+          <button type="button" class="workout-choice-card" data-client-workout-copy-history
+            aria-label="Copy Past Workout from Logs" aria-labelledby="custom-workout-copy-title" aria-describedby="custom-workout-copy-description">
+            ${clientWorkoutChoiceContent({ icon: "copy", title: "Copy Past Workout",
+              description: "Choose a workout from Logs to copy.",
+              titleId: "custom-workout-copy-title", descriptionId: "custom-workout-copy-description" })}
+          </button>
+          <button type="button" class="workout-choice-card custom-workout-saved-plan" data-client-saved-workout-plans
+            aria-labelledby="custom-workout-saved-title" aria-describedby="custom-workout-saved-description">
+            ${clientWorkoutChoiceContent({ icon: "saved", title: "Saved Workout Program",
+              description: "Choose a workout from a saved weekly plan.",
+              titleId: "custom-workout-saved-title", descriptionId: "custom-workout-saved-description" })}
+          </button>
+        </div>
+      </div>
+      <label class="custom-workout-session-date workout-session-date workout-compact-date">
+        <span>Date</span>
+        <span class="workout-session-date-control">
+          <span class="workout-session-date-value" data-workout-date-value aria-hidden="true">${escapeHtml(formatLogDate(todayDate()))}</span>
+          <input type="date" value="${todayDate()}" data-workout-date />
+        </span>
+        <small>✓ Autosave on · Web + iPhone</small>
+      </label>
       <div class="custom-workout-launcher-gym">${workoutGymPickerMarkup(activeDraft?.gymName || storedWorkoutGymLocation(workoutStorageTitle), index)}</div>
+      <div class="workout-compact-format"><h3>Format</h3>${customWorkoutFormatPickerMarkup()}</div>
       <div class="custom-workout-builder">
+        <div class="custom-workout-primary-actions">
+          <div data-custom-workout-start-control ${format === "single" ? "" : "hidden"}>
+            ${workoutStartControlMarkup(workoutStorageTitle)}
+          </div>
+          <button type="button" class="custom-workout-reset-button" data-reset-custom-workout>Reset</button>
+        </div>
+        <p class="custom-workout-reset-status" data-custom-workout-reset-status role="status" aria-live="polite" hidden></p>
         <div class="custom-workout-launcher-exercise-card">
           <div class="custom-workout-launcher-exercise-heading">
             <div><h3>Your exercises</h3><p>Build as you go.</p></div>
-            ${customWorkoutFormatPickerMarkup()}
           </div>
           <button type="button" class="custom-workout-launcher-add" data-custom-workout-launcher-add data-pick-custom-exercise>
             <span class="custom-workout-launcher-add-icon" aria-hidden="true">＋</span>
@@ -13206,13 +13239,6 @@ function customWorkoutPanelMarkup(index) {
             <span class="custom-workout-launcher-add-help">Choose an exercise to get started<br />on your custom workout.</span>
           </button>
         </div>
-        <div class="custom-workout-primary-actions">
-          <div data-custom-workout-start-control ${format === "single" ? "" : "hidden"}>
-            ${workoutStartControlMarkup(workoutStorageTitle)}
-          </div>
-          <button type="button" class="custom-workout-reset-button" data-reset-custom-workout>Reset workout</button>
-        </div>
-        <p class="custom-workout-reset-status" data-custom-workout-reset-status role="status" aria-live="polite" hidden></p>
         ${customWorkoutCarouselMarkup(format, workoutStorageTitle)}
         <button type="button" class="custom-workout-footer-add" data-custom-workout-footer-add data-pick-custom-exercise hidden>
           <span class="custom-workout-footer-add-icon" aria-hidden="true">＋</span>
@@ -13223,20 +13249,6 @@ function customWorkoutPanelMarkup(index) {
           <summary>Workout options</summary>
           <div>
             <button type="button" data-generate-workout>Generate today’s workout</button>
-            <button type="button" class="workout-choice-card custom-workout-saved-plan" data-client-saved-workout-plans
-              aria-labelledby="custom-workout-saved-title" aria-describedby="custom-workout-saved-description">
-              ${clientWorkoutChoiceContent({ icon: "saved", title: "Saved Workout Program",
-                description: "Open a saved weekly plan and choose your next workout.",
-                titleId: "custom-workout-saved-title", descriptionId: "custom-workout-saved-description" })}
-            </button>
-            <label class="custom-workout-session-date workout-session-date">
-              <span>Workout date</span>
-              <span class="workout-session-date-control">
-                <span class="workout-session-date-value" data-workout-date-value aria-hidden="true">${escapeHtml(formatLogDate(todayDate()))}</span>
-                <input type="date" value="${todayDate()}" data-workout-date />
-              </span>
-              <small>This date applies to every exercise in this custom workout.</small>
-            </label>
           </div>
         </details>
         <div data-custom-workout-default-finish ${format === "single" ? "" : "hidden"}>
@@ -13252,14 +13264,15 @@ function cardioWorkoutPanelMarkup(index) {
     <section class="client-workout-panel client-workout-panel-cardio"
       id="client-workout-panel-${index}" data-custom-workout-title="Cardio"
       role="region" aria-labelledby="cardio-workout-panel-title" hidden>
-      <div class="panel-heading"><h2 id="cardio-workout-panel-title" tabindex="-1">Log cardio</h2></div>
+      <div class="panel-heading"><h2 id="cardio-workout-panel-title" tabindex="-1">Log Cardio</h2></div>
       <p>Record a walk, run, ride, swim, or machine session. Enter your minutes; distance, calories, and notes are optional.</p>
-      <label class="workout-session-date">
-        <span>Cardio date</span>
+      <label class="workout-session-date workout-compact-date">
+        <span>Date</span>
         <span class="workout-session-date-control">
           <span class="workout-session-date-value" data-workout-date-value aria-hidden="true">${escapeHtml(formatLogDate(todayDate()))}</span>
           <input type="date" value="${todayDate()}" max="${todayDate()}" data-workout-date />
         </span>
+        <small>Web sync</small>
       </label>
       ${cardioLogFields("Cardio", { showDate: false, expanded: true })}
       ${workoutActionsMarkup({ exercises: [] }, { includeCardio: true, finishLabel: "Save & finish cardio" })}
@@ -13810,6 +13823,7 @@ function clientWorkoutChoiceContent({ icon, title, description, titleId, descrip
     calendar: '<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M16 3v4M8 3v4M3 11h18"/><path d="M8 15h.01M12 15h.01M16 15h.01M8 18h.01M12 18h.01M16 18h.01"/>',
     calendarPlus: '<rect x="2" y="4" width="17" height="17" rx="3"/><path d="M6 2v4m9-4v4M2 10h17m-13 4h6m-6 3h3"/><circle cx="18" cy="18" r="4.5" fill="currentColor" stroke="none"/><path d="M18 15.5v5m-2.5-2.5h5" stroke="#101113" stroke-width="1.8"/>',
     saved: '<rect x="3" y="4" width="17" height="17" rx="3"/><path d="M7 2v4m9-4v4M3 10h17m-13 4h5m-5 3h3"/><circle cx="18" cy="18" r="4" fill="currentColor" stroke="none"/><path d="m16.5 18 1 1 2-2" stroke="#1b2117" stroke-width="1.8"/>',
+    copy: '<rect x="8" y="4" width="12" height="16" rx="2"/><path d="M16 4V2H6a2 2 0 0 0-2 2v12h4"/>',
     plan: '<rect x="3" y="4" width="17" height="17" rx="3"/><path d="M7 2v4m9-4v4M3 10h17m-13 4h5m-5 3h3"/><circle cx="18" cy="18" r="4" fill="currentColor" stroke="none"/><path d="M18 15.8v4.4m-2.2-2.2h4.4" stroke="#1b2117" stroke-width="1.8"/>',
     mobility: '<circle cx="8" cy="4" r="1.5"/><path d="m8 7 2.5 3 3.5 1m-4-1-3 4 3 2m0 0-4 5m4-5 5 4h5m-13-6-4 2"/>',
     plus: '<path d="M12 5v14M5 12h14"/>',
@@ -13855,6 +13869,11 @@ function clientWorkoutListMarkup(workouts) {
   return `<div class="workout-preview-heading">
     <button type="button" class="workout-text-button workout-preview-back" data-preview-programs aria-label="Back to workout choices"><span class="workout-preview-back-arrow" aria-hidden="true">←</span><span>Back to workout choices</span></button>
     <h3>${escapeHtml(currentProgram?.program_title || "Your workouts")}</h3>
+    ${currentProgram?.coach_note_title || currentProgram?.coach_note_body ? `<details class="workout-preview-coach-notes">
+      <summary>Coach Notes</summary>
+      <div><strong>${escapeHtml(currentProgram.coach_note_title || "From your coach")}</strong>
+      <p>${escapeHtml(currentProgram.coach_note_body || "")}</p></div>
+    </details>` : ""}
     ${clientAvailablePrograms.length > 1 ? `<div class="workout-preview-program-switcher" aria-label="Trainer programs">${clientAvailablePrograms.map((program, index) => `<button type="button" data-preview-program="${index}" ${program.id === currentProgram?.id ? 'aria-current="true"' : ""}>${escapeHtml(program.program_title || `Program ${index + 1}`)}</button>`).join("")}</div>` : ""}
     <p>Drag exercises to reorder them. Use each exercise’s menu to edit, substitute, or delete.</p>
     ${workoutElapsedTimerState ? '<p>Finish or cancel your current workout before editing exercises.</p>' : ""}
@@ -14323,19 +14342,19 @@ function renderClientWorkoutTabs(workouts = []) {
         </div>
         ${workout.focus ? `<span class="status-pill">${escapeHtml(workout.focus)}</span>` : ""}
       </div>
-      <label class="custom-workout-session-date workout-session-date">
-        <span>Workout date</span>
+      <label class="custom-workout-session-date workout-session-date workout-compact-date">
+        <span>Date</span>
         <span class="workout-session-date-control">
           <span class="workout-session-date-value" data-workout-date-value aria-hidden="true">${escapeHtml(formatLogDate(todayDate()))}</span>
           <input type="date" value="${todayDate()}" data-workout-date />
         </span>
-        <small>This date applies to every exercise in this workout.</small>
+        <small>✓ Autosave on · Web + iPhone</small>
       </label>
       ${workoutGymPickerMarkup(storedWorkoutGymLocation(title), index)}
-      <div class="workout-format-pill">${escapeHtml(formatLabel(workoutFormat))}</div>
+      <div class="workout-compact-format workout-compact-format-assigned"><h3>Format</h3><div class="workout-format-pill">${escapeHtml(formatLabel(workoutFormat))}</div></div>
+      ${workoutStartControlMarkup(title)}
       <div class="custom-workout-builder" data-assigned-workout-list role="list" aria-label="${escapeHtml(title)} exercises">
         ${warmupLogFields(title, { showDate: false })}
-        ${workoutStartControlMarkup(title)}
         ${workoutExerciseMarkup(workout, title)}
         <button class="button button-ghost custom-workout-add-bottom" type="button" data-add-assigned-exercise>Add exercise</button>
         ${workoutExerciseListMarkup()}
@@ -20893,7 +20912,7 @@ function setupWorkoutProgramWindows() {
     if (!button) return;
     trigger = button;
     const name = button.dataset.programWindow;
-    title.textContent = name === "notes" ? "Coach notes" : "Program overview";
+    title.textContent = name === "notes" ? "Coach Notes" : "Program overview";
     if (name === "notes") {
       noteTitle.textContent = String(currentProgram?.coach_note_title || "").trim() || "No note yet";
       noteBody.textContent = String(currentProgram?.coach_note_body || "").trim() || "Coach notes will appear here when Benjamin adds one.";
