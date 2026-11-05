@@ -13203,7 +13203,7 @@ function customWorkoutPanelMarkup(index) {
               description: "Choose a workout from Logs to copy.",
               titleId: "custom-workout-copy-title", descriptionId: "custom-workout-copy-description" })}
           </button>
-          <button type="button" class="workout-choice-card custom-workout-saved-plan" data-client-saved-workout-plans
+          <button type="button" class="workout-choice-card" data-client-saved-workout-plans
             aria-labelledby="custom-workout-saved-title" aria-describedby="custom-workout-saved-description">
             ${clientWorkoutChoiceContent({ icon: "saved", title: "Saved Workout Program",
               description: "Choose a workout from a saved weekly plan.",
