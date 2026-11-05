@@ -200,14 +200,16 @@
           </div>
           <div class="client-home-grid" id="client-home-grid">
             <section class="client-weekly-activity" id="client-weekly-activity" aria-labelledby="client-gym-hero-title">
-              <div class="client-gym-hero">
-                <span class="client-gym-hero-icon" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="16" cy="6" r="3" fill="currentColor" stroke="none"/><path d="m10 18 3-7h6l3 7M16 12v10m0 0-5 7m5-7 5 7M4 19h24M6 15v8m3-7v6m14-6v6m3-7v8"/></svg></span>
-                <div><span class="client-gym-kicker">Gym check-in</span><h3 id="client-gym-hero-title">Show up for yourself today</h3></div>
-              </div>
-              <p class="client-gym-description">Track your gym visits, one day at a time.</p>
+              <details class="client-gym-compact">
+                <summary>
+                  <span class="client-gym-hero-icon" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="16" cy="6" r="3" fill="currentColor" stroke="none"/><path d="m10 18 3-7h6l3 7M16 12v10m0 0-5 7m5-7 5 7M4 19h24M6 15v8m3-7v6m14-6v6m3-7v8"/></svg></span>
+                  <span class="client-gym-compact-copy"><strong id="client-gym-hero-title">Gym check-in</strong><small><span id="client-weekly-checkins-summary">0</span> visits this week</small></span>
+                  <span class="client-gym-compact-chevron" aria-hidden="true">⌄</span>
+                </summary>
+                <div class="client-gym-compact-body">
               <div class="client-weekly-summary">
                 <header class="client-weekly-header">
-                  <h4 id="client-weekly-heading">This Week</h4><strong><span id="client-weekly-checkins-summary">0</span> gym visits</strong>
+                  <h4 id="client-weekly-heading">This week</h4>
                 </header>
                 <div class="client-weekly-days" id="client-weekly-days"></div>
                 <div class="client-weekly-internal" hidden>
@@ -234,6 +236,8 @@
                 <span class="client-gym-checkin-icon" aria-hidden="true">✓</span><span data-client-gym-checkin-label>Gym check-in</span>
               </button>
               <p class="client-weekly-caption" id="client-gym-checkin-status" role="status">At the gym? Check in for today.</p>
+                </div>
+              </details>
             </section>
             <section class="client-home-streak" aria-label="Home rewards">
               <div class="client-home-rewards">

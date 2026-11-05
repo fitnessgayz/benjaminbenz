@@ -22,6 +22,28 @@
 :root body.client-dashboard-page .client-home-week-detail { min-height: 44px; margin-top: 8px; }
 :root body.client-dashboard-page .client-home-community-feed { gap: 6px; }
 :root body.client-dashboard-page .client-home-community-post { padding: 10px 12px; }
+:root body.client-dashboard-page .client-weekly-activity {
+  padding: 0; overflow: hidden; border-color: #4b5058;
+  background: linear-gradient(145deg, #292d34, #22262b);
+}
+:root body.client-dashboard-page .client-gym-compact > summary {
+  display: flex; align-items: center; gap: 12px;
+  min-height: 70px; padding: 10px 14px;
+  list-style: none; cursor: pointer;
+}
+:root body.client-dashboard-page .client-gym-compact > summary::-webkit-details-marker { display: none; }
+:root body.client-dashboard-page .client-gym-compact .client-gym-hero-icon {
+  width: 42px; height: 42px; flex-basis: 42px; border-radius: 11px;
+}
+:root body.client-dashboard-page .client-gym-compact .client-gym-hero-icon svg { width: 25px; height: 25px; }
+:root body.client-dashboard-page .client-gym-compact-copy { display: grid; flex: 1; min-width: 0; gap: 3px; }
+:root body.client-dashboard-page .client-gym-compact-copy strong { color: #f5f7f9; font-size: 16px; line-height: 1.2; }
+:root body.client-dashboard-page .client-gym-compact-copy small { color: #bec9d1; font-size: 12px; line-height: 1.25; }
+:root body.client-dashboard-page .client-gym-compact-chevron { color: #75b9eb; font-size: 24px; line-height: 1; }
+:root body.client-dashboard-page .client-gym-compact[open] .client-gym-compact-chevron { transform: rotate(180deg); }
+:root body.client-dashboard-page .client-gym-compact-body { padding: 2px 16px 14px; border-top: 1px solid #434c55; }
+:root body.client-dashboard-page .client-gym-compact-body .client-weekly-header { margin-top: 14px; }
+:root body.client-dashboard-page .client-gym-compact > summary:focus-visible { outline: 3px solid #75b9eb; outline-offset: -3px; }
 
 /* Log cards keep the exercise image and title together, then give sets their own lines. */
 :root body.client-dashboard-page .training-log-superset-heading,
@@ -96,6 +118,10 @@
 
 :root[data-client-theme="light"] body.client-dashboard-page .client-home-rewards,
 :root[data-client-theme="light"] body.client-dashboard-page .client-home-last-workout { background: #fff; }
+:root[data-client-theme="light"] body.client-dashboard-page .client-weekly-activity { background: #fff; border-color: #cbd5dd; }
+:root[data-client-theme="light"] body.client-dashboard-page .client-gym-compact-copy strong { color: #192632; }
+:root[data-client-theme="light"] body.client-dashboard-page .client-gym-compact-copy small { color: #4b5b66; }
+:root[data-client-theme="light"] body.client-dashboard-page .client-gym-compact-body { border-color: #d8e0e6; }
 :root[data-client-theme="light"] body.client-dashboard-page .training-log-row-nested,
 :root[data-client-theme="light"] body.client-dashboard-page .training-log-history-card-details .training-log-row-nested,
 :root[data-client-theme="light"] body.client-dashboard-page .training-log-workout-group {
