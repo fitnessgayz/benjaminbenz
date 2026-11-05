@@ -870,7 +870,8 @@ function renderClientHomeSummary() {
   const dailyButton = document.querySelector("[data-client-daily-checkin]");
   if (dailyButton) {
     dailyButton.hidden = isCoachDashboardPreview;
-    dailyButton.textContent = window.FWB_DAILY_WORKOUT?.parseCheckIn(todayClientMoodEntry()?.goal_note || "")
+    const dailyLabel = dailyButton.querySelector("[data-client-daily-checkin-label]") || dailyButton;
+    dailyLabel.textContent = window.FWB_DAILY_WORKOUT?.parseCheckIn(todayClientMoodEntry()?.goal_note || "")
       ? "View today’s workout" : "Daily check-in";
   }
   setText("#client-home-mood-meta", latestMood
@@ -18641,12 +18642,7 @@ function handleClientSummaryActions() {
     const startNext = event.target.closest("[data-client-home-start-next]");
     if (startNext) {
       setClientDashboardTab("workouts");
-      const index = Number(startNext.dataset.clientHomeWorkoutIndex);
-      if (Number.isInteger(index) && index > 0 && document.getElementById(`client-workout-panel-${index}`)) {
-        activateClientWorkoutPanel(index);
-      } else {
-        showClientWorkoutPicker();
-      }
+      showClientWorkoutPicker();
       return;
     }
 

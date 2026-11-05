@@ -23,7 +23,27 @@
 :root body.client-dashboard-page .client-home-community-feed { gap: 6px; }
 :root body.client-dashboard-page .client-home-community-post { padding: 10px 12px; }
 :root body.client-dashboard-page .client-weekly-activity { order: 5; }
-:root body.client-dashboard-page .client-home-checkin-links { order: 6; }
+:root body.client-dashboard-page .client-home-checkin-links {
+  order: 6; display: grid; gap: 10px; padding: 0;
+}
+:root body.client-dashboard-page .client-home-checkin-links .client-home-checkin-row {
+  display: flex; width: 100%; min-height: 70px; align-items: center; gap: 12px;
+  padding: 10px 14px; border: 1px solid #4b5058; border-radius: 20px;
+  background: linear-gradient(145deg, #292d34, #22262b);
+  color: #f5f7f9; text-align: left; text-decoration: none;
+  font: inherit; cursor: pointer;
+}
+:root body.client-dashboard-page .client-home-checkin-links .client-home-checkin-row[hidden] { display: none !important; }
+:root body.client-dashboard-page .client-home-checkin-icon {
+  display: grid; width: 42px; height: 42px; flex: 0 0 42px;
+  place-items: center; border-radius: 11px; background: #5aa9e8; color: #151a11;
+}
+:root body.client-dashboard-page .client-home-checkin-icon svg { width: 25px; height: 25px; }
+:root body.client-dashboard-page .client-home-checkin-copy { display: grid; flex: 1; min-width: 0; gap: 3px; text-align: left; }
+:root body.client-dashboard-page .client-home-checkin-copy strong { color: #f5f7f9; font-size: 16px; line-height: 1.2; }
+:root body.client-dashboard-page .client-home-checkin-copy small { color: #bec9d1; font-size: 12px; line-height: 1.25; }
+:root body.client-dashboard-page .client-home-checkin-chevron { color: #75b9eb; font-size: 24px; line-height: 1; }
+:root body.client-dashboard-page .client-home-checkin-links .client-home-checkin-row:focus-visible { outline: 3px solid #75b9eb; outline-offset: 2px; }
 :root body.client-dashboard-page .client-weekly-activity {
   padding: 0; overflow: hidden; border-color: #4b5058;
   background: linear-gradient(145deg, #292d34, #22262b);
@@ -121,6 +141,9 @@
 :root[data-client-theme="light"] body.client-dashboard-page .client-home-rewards,
 :root[data-client-theme="light"] body.client-dashboard-page .client-home-last-workout { background: #fff; }
 :root[data-client-theme="light"] body.client-dashboard-page .client-weekly-activity { background: #fff; border-color: #cbd5dd; }
+:root[data-client-theme="light"] body.client-dashboard-page .client-home-checkin-links .client-home-checkin-row { background: #fff; border-color: #cbd5dd; }
+:root[data-client-theme="light"] body.client-dashboard-page .client-home-checkin-copy strong { color: #192632; }
+:root[data-client-theme="light"] body.client-dashboard-page .client-home-checkin-copy small { color: #4b5b66; }
 :root[data-client-theme="light"] body.client-dashboard-page .client-gym-compact-copy strong { color: #192632; }
 :root[data-client-theme="light"] body.client-dashboard-page .client-gym-compact-copy small { color: #4b5b66; }
 :root[data-client-theme="light"] body.client-dashboard-page .client-gym-compact-body { border-color: #d8e0e6; }
