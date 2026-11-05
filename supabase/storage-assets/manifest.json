@@ -89,7 +89,8 @@
     "20261105004411_add_exercise_image_cards_batch_twenty.sql",
     "20261105011811_add_exercise_image_cards_batch_twenty_one.sql",
     "20261105015311_add_exercise_image_cards_batch_twenty_two.sql",
-    "20261105022111_add_exercise_image_cards_batch_twenty_three.sql"
+    "20261105022111_add_exercise_image_cards_batch_twenty_three.sql",
+    "20261105032411_add_exercise_image_cards_batch_twenty_four.sql"
   ],
   "nasmExerciseCatalogMigration": "20261001032427_add_complete_nasm_exercise_library.sql",
   "nasmExerciseCatalogCount": 75,
@@ -8164,6 +8165,216 @@
       "objectPath": "approved/2026-11-04/webp-768/belt-squat-rdl.webp",
       "contentType": "image/webp",
       "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/assisted-pull-up-or-lat-pulldown-v2.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/assisted-pull-up-or-lat-pulldown-v2.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/assisted-pull-up-or-lat-pulldown-v2.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/assisted-pull-up-or-lat-pulldown-v2.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/assisted-pull-up-or-lat-pulldown-v2.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/assisted-pull-up-or-lat-pulldown-v2.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/biking-from-caltrain-v2.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/biking-from-caltrain-v2.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/biking-from-caltrain-v2.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/biking-from-caltrain-v2.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/biking-from-caltrain-v2.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/biking-from-caltrain-v2.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/deadlift-glute-builder-v2.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/deadlift-glute-builder-v2.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/deadlift-glute-builder-v2.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/deadlift-glute-builder-v2.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/deadlift-glute-builder-v2.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/deadlift-glute-builder-v2.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/easy-bike-or-brisk-walk-v2.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/easy-bike-or-brisk-walk-v2.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/easy-bike-or-brisk-walk-v2.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/easy-bike-or-brisk-walk-v2.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/easy-bike-or-brisk-walk-v2.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/easy-bike-or-brisk-walk-v2.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/frontal-raise.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/frontal-raise.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/frontal-raise.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/frontal-raise.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/frontal-raise.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/frontal-raise.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/seated-neutral-grip-row.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/seated-neutral-grip-row.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/seated-neutral-grip-row.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/seated-neutral-grip-row.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/seated-neutral-grip-row.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/seated-neutral-grip-row.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/seated-row-overhand-wide-grip.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/seated-row-overhand-wide-grip.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/seated-row-overhand-wide-grip.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/seated-row-overhand-wide-grip.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/seated-row-overhand-wide-grip.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/seated-row-overhand-wide-grip.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/side-bend.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/side-bend.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/side-bend.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/side-bend.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/side-bend.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/side-bend.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/single-arm-triceps-ext.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/single-arm-triceps-ext.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/single-arm-triceps-ext.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/single-arm-triceps-ext.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/single-arm-triceps-ext.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/single-arm-triceps-ext.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/v-squat.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/v-squat.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/v-squat.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/v-squat.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/v-squat.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/v-squat.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
     }
   ],
   "exerciseMedia": [
@@ -9913,6 +10124,46 @@
     {
       "name": "Belt Squat RDL",
       "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/belt-squat-rdl.webp"
+    },
+    {
+      "name": "Assisted pull-up or lat pulldown",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/assisted-pull-up-or-lat-pulldown-v2.webp"
+    },
+    {
+      "name": "Biking from caltrain",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/biking-from-caltrain-v2.webp"
+    },
+    {
+      "name": "Deadlift glute builder",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/deadlift-glute-builder-v2.webp"
+    },
+    {
+      "name": "Easy Bike or Brisk Walk",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/easy-bike-or-brisk-walk-v2.webp"
+    },
+    {
+      "name": "Frontal Raise",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/frontal-raise.webp"
+    },
+    {
+      "name": "Seated Neutral Grip Row",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/seated-neutral-grip-row.webp"
+    },
+    {
+      "name": "Seated row overhand wide grip",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/seated-row-overhand-wide-grip.webp"
+    },
+    {
+      "name": "Side bend",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/side-bend.webp"
+    },
+    {
+      "name": "Single Arm Triceps Ext",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/single-arm-triceps-ext.webp"
+    },
+    {
+      "name": "V-squat",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/v-squat.webp"
     }
   ]
 }
