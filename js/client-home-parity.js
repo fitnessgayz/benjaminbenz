@@ -57,7 +57,7 @@
   function renderNextWorkout() {
     const card = document.querySelector('.client-home-last-workout');
     const suggestion = document.querySelector('[data-client-home-suggestion]');
-    if (!card || !suggestion || !start) return;
+    if (!card || !suggestion) return;
     const sessions = new Map();
     for (const row of logs) {
       const key = String(row.session_id || row.workout_session_id || '').trim().toLowerCase()
