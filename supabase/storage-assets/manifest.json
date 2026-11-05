@@ -83,7 +83,8 @@
     "20261104221111_add_exercise_image_cards_batch_fourteen.sql",
     "20261104222911_add_exercise_image_cards_batch_fifteen.sql",
     "20261104224511_add_exercise_image_cards_batch_sixteen.sql",
-    "20261104230911_add_exercise_image_cards_batch_seventeen.sql"
+    "20261104230911_add_exercise_image_cards_batch_seventeen.sql",
+    "20261104234111_add_exercise_image_cards_batch_eighteen.sql"
   ],
   "nasmExerciseCatalogMigration": "20261001032427_add_complete_nasm_exercise_library.sql",
   "nasmExerciseCatalogCount": 75,
@@ -6898,6 +6899,216 @@
       "objectPath": "approved/2026-11-04/webp-768/run-intervals.webp",
       "contentType": "image/webp",
       "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/stationary-bike-intervals.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/stationary-bike-intervals.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/stationary-bike-intervals.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/stationary-bike-intervals.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/stationary-bike-intervals.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/stationary-bike-intervals.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/incline-treadmill-intervals.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/incline-treadmill-intervals.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/incline-treadmill-intervals.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/incline-treadmill-intervals.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/incline-treadmill-intervals.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/incline-treadmill-intervals.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/stairs.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/stairs.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/stairs.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/stairs.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/stairs.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/stairs.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/stability-ball-russian-twist.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/stability-ball-russian-twist.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/stability-ball-russian-twist.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/stability-ball-russian-twist.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/stability-ball-russian-twist.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/stability-ball-russian-twist.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/standing-tubing-row.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/standing-tubing-row.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/standing-tubing-row.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/standing-tubing-row.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/standing-tubing-row.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/standing-tubing-row.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/single-leg-balance-reach-frontal-plane.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/single-leg-balance-reach-frontal-plane.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/single-leg-balance-reach-frontal-plane.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/single-leg-balance-reach-frontal-plane.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/single-leg-balance-reach-frontal-plane.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/single-leg-balance-reach-frontal-plane.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/single-leg-bent-knee-calf-raise.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/single-leg-bent-knee-calf-raise.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/single-leg-bent-knee-calf-raise.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/single-leg-bent-knee-calf-raise.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/single-leg-bent-knee-calf-raise.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/single-leg-bent-knee-calf-raise.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/pec-foam-roll-against-wall.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/pec-foam-roll-against-wall.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/pec-foam-roll-against-wall.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/pec-foam-roll-against-wall.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/pec-foam-roll-against-wall.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/pec-foam-roll-against-wall.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/cool-down-walk.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/cool-down-walk.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/cool-down-walk.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/cool-down-walk.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/cool-down-walk.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/cool-down-walk.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/easy-run-warm-up.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/easy-run-warm-up.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/easy-run-warm-up.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/easy-run-warm-up.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/easy-run-warm-up.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/easy-run-warm-up.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
     }
   ],
   "exerciseMedia": [
@@ -8411,6 +8622,42 @@
     {
       "name": "Run Intervals",
       "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/run-intervals.webp"
+    },
+    {
+      "name": "Stationary Bike Intervals",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/stationary-bike-intervals.webp"
+    },
+    {
+      "name": "Incline Treadmill Intervals",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/incline-treadmill-intervals.webp"
+    },
+    {
+      "name": "Stairs",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/stairs.webp"
+    },
+    {
+      "name": "Standing Tubing Row",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/standing-tubing-row.webp"
+    },
+    {
+      "name": "Single-Leg Balance Reach: Frontal Plane",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/single-leg-balance-reach-frontal-plane.webp"
+    },
+    {
+      "name": "Single-leg bent-knee calf raise",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/single-leg-bent-knee-calf-raise.webp"
+    },
+    {
+      "name": "Pec Foam Roll Against Wall",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/pec-foam-roll-against-wall.webp"
+    },
+    {
+      "name": "Cool Down Walk",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/cool-down-walk.webp"
+    },
+    {
+      "name": "Easy Run Warm-Up",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/easy-run-warm-up.webp"
     }
   ]
 }
