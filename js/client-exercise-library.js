@@ -85,7 +85,13 @@
     return normalize(value).replace(/\b(one|single)\s+(arm|leg)\b/g, "single $2")
       .replace(/\bdumbells?\b|\bdbs?\b/g, "dumbbell")
       .replace(/\bkbs?\b/g, "kettlebell")
-      .replace(/\bpull\s+downs?\b/g, "pulldown").split(/\s+/).filter(Boolean);
+      .replace(/\bpull\s+downs?\b/g, "pulldown").split(/\s+/).filter(Boolean)
+      .map((word) => {
+        if (word.length <= 3 || /(?:ss|us)$/.test(word) || !word.endsWith("s")) return word;
+        if (word.length > 4 && word.endsWith("ies")) return `${word.slice(0, -3)}y`;
+        if (/(?:sses|ches|shes|xes|zes)$/.test(word)) return word.slice(0, -2);
+        return word.slice(0, -1);
+      });
   }
 
   const FAMILY_MODIFIERS = new Set([
@@ -363,8 +369,9 @@
       const list = element("ul", "client-exercise-library-list");
       const showsUseCount = muscle === "Recent" || muscle === "Recently used";
       const usageLabel = (count) => `Used ${count} ${count === 1 ? "time" : "times"}`;
-      function renderEntry(record, target) {
+      function renderEntry(record, target, highlighted = false) {
         const item = element("li", "client-exercise-library-item");
+        if (highlighted) item.classList.add("is-variant-match");
         const button = element("button", "client-exercise-library-item-button");
         button.type = "button";
         button.setAttribute("aria-label", `Add ${record.name}, ${[record.primary, ...record.secondary].join(", ")}${showsUseCount ? `, ${usageLabel(record.useCount)}` : ""}`);
@@ -408,7 +415,7 @@
       }
       exerciseFamilies(records, muscle === "Recent" || muscle === "Recently used").forEach((family) => {
         if (family.entries.length === 1) {
-          renderEntry(family.entries[0], list);
+          renderEntry(family.entries[0], list, Boolean(query.trim()));
           return;
         }
         const item = element("li", "client-exercise-library-family");
@@ -419,9 +426,9 @@
         summaryCopy.append(element("strong", "", family.title));
         if (showsUseCount) summaryCopy.append(element("small", "client-exercise-library-item-use-count",
           usageLabel(family.entries.reduce((total, entry) => total + entry.useCount, 0))));
-        summary.append(summaryCopy, element("span", "", `${family.entries.length} variants`));
+        summary.append(summaryCopy, element("span", "", `View ${family.entries.length} variants`));
         const variants = element("ul", "client-exercise-library-variants");
-        family.entries.forEach((record) => renderEntry(record, variants));
+        family.entries.forEach((record) => renderEntry(record, variants, true));
         details.append(summary, variants);
         item.append(details);
         list.append(item);

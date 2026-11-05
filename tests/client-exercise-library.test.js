@@ -79,6 +79,22 @@ test("ranks recent exercises by use count, then latest use", () => {
   assert.deepEqual(exerciseFamilies(records, true)[0].entries.map((entry) => entry.name), ["Dumbbell Curl", "Cable Curl"]);
 });
 
+test("plural exercise searches find the singular catalog entry", () => {
+  const records = prepareRecords([
+    { name: "Seated Dip" }, { name: "Incline Dumbbell Curl" },
+    { name: "Dumbbell Lateral Raise" }, { name: "Bench Press" }, { name: "Dumbbell Fly" }
+  ]);
+  for (const [query, expected] of [
+    ["seated dips", "Seated Dip"],
+    ["incline dumbbell curls", "Incline Dumbbell Curl"],
+    ["dumbbell lateral raises", "Dumbbell Lateral Raise"],
+    ["bench presses", "Bench Press"],
+    ["dumbbell flies", "Dumbbell Fly"]
+  ]) {
+    assert.deepEqual(matchingRecords(records, query, "All").map((entry) => entry.name), [expected]);
+  }
+});
+
 test("illustrates every browse muscle with a distinct highlighted region", () => {
   const muscles = ["Chest", "Back", "Shoulders", "Biceps", "Triceps", "Forearms", "Core", "Glutes", "Quads", "Hamstrings", "Calves", "Full Body", "Cardio", "Mobility"];
   const artwork = muscles.map(muscleArtwork);
