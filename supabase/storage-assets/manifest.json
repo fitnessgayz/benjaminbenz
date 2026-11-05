@@ -84,7 +84,8 @@
     "20261104222911_add_exercise_image_cards_batch_fifteen.sql",
     "20261104224511_add_exercise_image_cards_batch_sixteen.sql",
     "20261104230911_add_exercise_image_cards_batch_seventeen.sql",
-    "20261104234111_add_exercise_image_cards_batch_eighteen.sql"
+    "20261104234111_add_exercise_image_cards_batch_eighteen.sql",
+    "20261105001211_add_exercise_image_cards_batch_nineteen.sql"
   ],
   "nasmExerciseCatalogMigration": "20261001032427_add_complete_nasm_exercise_library.sql",
   "nasmExerciseCatalogCount": 75,
@@ -7109,6 +7110,216 @@
       "objectPath": "approved/2026-11-04/webp-768/easy-run-warm-up.webp",
       "contentType": "image/webp",
       "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/incline-treadmill-walk.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/incline-treadmill-walk.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/incline-treadmill-walk.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/incline-treadmill-walk.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/incline-treadmill-walk.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/incline-treadmill-walk.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/stationary-bike.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/stationary-bike.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/stationary-bike.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/stationary-bike.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/stationary-bike.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/stationary-bike.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/easy-treadmill-run-or-brisk-walk.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/easy-treadmill-run-or-brisk-walk.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/easy-treadmill-run-or-brisk-walk.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/easy-treadmill-run-or-brisk-walk.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/easy-treadmill-run-or-brisk-walk.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/easy-treadmill-run-or-brisk-walk.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/torso-rotation-machine.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/torso-rotation-machine.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/torso-rotation-machine.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/torso-rotation-machine.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/torso-rotation-machine.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/torso-rotation-machine.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/v-squat-machine-hip-hinge.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/v-squat-machine-hip-hinge.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/v-squat-machine-hip-hinge.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/v-squat-machine-hip-hinge.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/v-squat-machine-hip-hinge.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/v-squat-machine-hip-hinge.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/wall-lat-stretch-with-side-bend.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/wall-lat-stretch-with-side-bend.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/wall-lat-stretch-with-side-bend.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/wall-lat-stretch-with-side-bend.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/wall-lat-stretch-with-side-bend.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/wall-lat-stretch-with-side-bend.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/arm-blaster-dumbbell-curls.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/arm-blaster-dumbbell-curls.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/arm-blaster-dumbbell-curls.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/arm-blaster-dumbbell-curls.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/arm-blaster-dumbbell-curls.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/arm-blaster-dumbbell-curls.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/bench-prayer-lat-stretch.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/bench-prayer-lat-stretch.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/bench-prayer-lat-stretch.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/bench-prayer-lat-stretch.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/bench-prayer-lat-stretch.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/bench-prayer-lat-stretch.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/childs-pose-with-side-reach.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/childs-pose-with-side-reach.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/childs-pose-with-side-reach.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/childs-pose-with-side-reach.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/childs-pose-with-side-reach.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/childs-pose-with-side-reach.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/couch-stretch.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/couch-stretch.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/couch-stretch.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/couch-stretch.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/couch-stretch.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/couch-stretch.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
     }
   ],
   "exerciseMedia": [
@@ -8658,6 +8869,46 @@
     {
       "name": "Easy Run Warm-Up",
       "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/easy-run-warm-up.webp"
+    },
+    {
+      "name": "Incline Treadmill Walk",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/incline-treadmill-walk.webp"
+    },
+    {
+      "name": "stationary bike",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/stationary-bike.webp"
+    },
+    {
+      "name": "Easy Treadmill Run or Brisk Walk",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/easy-treadmill-run-or-brisk-walk.webp"
+    },
+    {
+      "name": "Torso rotation machine",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/torso-rotation-machine.webp"
+    },
+    {
+      "name": "V squat machine - hip hinge",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/v-squat-machine-hip-hinge.webp"
+    },
+    {
+      "name": "Wall Lat Stretch with Side Bend",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/wall-lat-stretch-with-side-bend.webp"
+    },
+    {
+      "name": "Arm Blaster Dumbbell Curls",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/arm-blaster-dumbbell-curls.webp"
+    },
+    {
+      "name": "Bench Prayer Lat Stretch",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/bench-prayer-lat-stretch.webp"
+    },
+    {
+      "name": "Child’s Pose with Side Reach",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/childs-pose-with-side-reach.webp"
+    },
+    {
+      "name": "Couch Stretch",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/couch-stretch.webp"
     }
   ]
 }
