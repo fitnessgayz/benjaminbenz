@@ -22,6 +22,8 @@
 :root body.client-dashboard-page .client-home-week-detail { min-height: 44px; margin-top: 8px; }
 :root body.client-dashboard-page .client-home-community-feed { gap: 6px; }
 :root body.client-dashboard-page .client-home-community-post { padding: 10px 12px; }
+:root body.client-dashboard-page .client-weekly-activity { order: 5; }
+:root body.client-dashboard-page .client-home-checkin-links { order: 6; }
 :root body.client-dashboard-page .client-weekly-activity {
   padding: 0; overflow: hidden; border-color: #4b5058;
   background: linear-gradient(145deg, #292d34, #22262b);
