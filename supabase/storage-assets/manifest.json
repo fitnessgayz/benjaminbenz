@@ -86,7 +86,8 @@
     "20261104230911_add_exercise_image_cards_batch_seventeen.sql",
     "20261104234111_add_exercise_image_cards_batch_eighteen.sql",
     "20261105001211_add_exercise_image_cards_batch_nineteen.sql",
-    "20261105004411_add_exercise_image_cards_batch_twenty.sql"
+    "20261105004411_add_exercise_image_cards_batch_twenty.sql",
+    "20261105011811_add_exercise_image_cards_batch_twenty_one.sql"
   ],
   "nasmExerciseCatalogMigration": "20261001032427_add_complete_nasm_exercise_library.sql",
   "nasmExerciseCatalogCount": 75,
@@ -7531,6 +7532,216 @@
       "objectPath": "approved/2026-11-04/webp-768/supine-breathing-feet-elevated.webp",
       "contentType": "image/webp",
       "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/tricep-dip-machine-single-arm.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/tricep-dip-machine-single-arm.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/tricep-dip-machine-single-arm.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/tricep-dip-machine-single-arm.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/tricep-dip-machine-single-arm.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/tricep-dip-machine-single-arm.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/bent-knee-ankle-rocks.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/bent-knee-ankle-rocks.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/bent-knee-ankle-rocks.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/bent-knee-ankle-rocks.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/bent-knee-ankle-rocks.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/bent-knee-ankle-rocks.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/supine-hamstring-stretch-with-strap.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/supine-hamstring-stretch-with-strap.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/supine-hamstring-stretch-with-strap.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/supine-hamstring-stretch-with-strap.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/supine-hamstring-stretch-with-strap.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/supine-hamstring-stretch-with-strap.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/half-kneeling-ankle-rock-v2.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/half-kneeling-ankle-rock-v2.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/half-kneeling-ankle-rock-v2.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/half-kneeling-ankle-rock-v2.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/half-kneeling-ankle-rock-v2.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/half-kneeling-ankle-rock-v2.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/glute-biased-single-leg-press.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/glute-biased-single-leg-press.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/glute-biased-single-leg-press.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/glute-biased-single-leg-press.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/glute-biased-single-leg-press.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/glute-biased-single-leg-press.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/incline-neutral-grip-dumbbell-curl.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/incline-neutral-grip-dumbbell-curl.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/incline-neutral-grip-dumbbell-curl.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/incline-neutral-grip-dumbbell-curl.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/incline-neutral-grip-dumbbell-curl.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/incline-neutral-grip-dumbbell-curl.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/leg-press-calf-raise.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/leg-press-calf-raise.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/leg-press-calf-raise.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/leg-press-calf-raise.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/leg-press-calf-raise.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/leg-press-calf-raise.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/tricep-pushdown-dual-pulley.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/tricep-pushdown-dual-pulley.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/tricep-pushdown-dual-pulley.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/tricep-pushdown-dual-pulley.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/tricep-pushdown-dual-pulley.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/tricep-pushdown-dual-pulley.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/hip-flexor-stretch-v3.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/hip-flexor-stretch-v3.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/hip-flexor-stretch-v3.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/hip-flexor-stretch-v3.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/hip-flexor-stretch-v3.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/hip-flexor-stretch-v3.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/png/reverse-crunch-to-knee-up-with-rotation-v3.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/png/reverse-crunch-to-knee-up-with-rotation-v3.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-480/reverse-crunch-to-knee-up-with-rotation-v3.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-480/reverse-crunch-to-knee-up-with-rotation-v3.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-04/webp-768/reverse-crunch-to-knee-up-with-rotation-v3.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-04/webp-768/reverse-crunch-to-knee-up-with-rotation-v3.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
     }
   ],
   "exerciseMedia": [
@@ -9160,6 +9371,46 @@
     {
       "name": "Supine Breathing with Feet Elevated",
       "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/supine-breathing-feet-elevated.webp"
+    },
+    {
+      "name": "Tricep Dip Machine Single Arm",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/tricep-dip-machine-single-arm.webp"
+    },
+    {
+      "name": "Bent-knee ankle rocks",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/bent-knee-ankle-rocks.webp"
+    },
+    {
+      "name": "Supine Hamstring Stretch with Strap",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/supine-hamstring-stretch-with-strap.webp"
+    },
+    {
+      "name": "Half-Kneeling Ankle Rock",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/half-kneeling-ankle-rock-v2.webp"
+    },
+    {
+      "name": "Glute-Biased Single-Leg Press",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/glute-biased-single-leg-press.webp"
+    },
+    {
+      "name": "Incline Neutral-Grip Dumbbell Curl",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/incline-neutral-grip-dumbbell-curl.webp"
+    },
+    {
+      "name": "Leg Press Calf Raise",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/leg-press-calf-raise.webp"
+    },
+    {
+      "name": "Tricep Pushdown - Dual Pulley",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/tricep-pushdown-dual-pulley.webp"
+    },
+    {
+      "name": "Hip Flexor Stretch",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/hip-flexor-stretch-v3.webp"
+    },
+    {
+      "name": "Reverse Crunch to Knee-Up with Rotation",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/reverse-crunch-to-knee-up-with-rotation-v3.webp"
     }
   ]
 }
