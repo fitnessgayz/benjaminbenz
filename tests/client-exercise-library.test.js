@@ -47,6 +47,8 @@ test("keeps recent alias searches on the canonical exercise and filters equipmen
     { name: "Cable Curl", libraryEntry: { primary_muscle: "Biceps", equipment: "cable" } }
   ], ["RDL", "Dumbbell Curl", "RDL"]);
   assert.equal(prepared.find((entry) => entry.name === "Romanian Deadlift").recentRank, 0);
+  assert.equal(prepared.find((entry) => entry.name === "Romanian Deadlift").useCount, 2);
+  assert.equal(prepared.find((entry) => entry.name === "Dumbbell Curl").useCount, 1);
   assert.equal(prepared.find((entry) => entry.name === "Romanian Deadlift").substitutionGroup, "hip hinge");
   assert.deepEqual(matchingRecords(prepared, "", "All", "barbell", true).map((entry) => entry.name), ["Romanian Deadlift"]);
   assert.deepEqual(matchingRecords(prepared, "rdl", "All", "All").map((entry) => entry.name), ["Romanian Deadlift"]);

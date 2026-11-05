@@ -192,6 +192,8 @@
 }
 .client-exercise-library-family-summary strong { font-size: 1rem; }
 .client-exercise-library-family-summary span { color: #55b4ff; font-size: .8rem; font-weight: 700; white-space: nowrap; }
+.client-exercise-library-family-copy { display: grid; gap: 5px; min-width: 0; }
+.client-exercise-library-item-use-count { color: #aab0bb; font-size: .76rem; line-height: 1.2; }
 .client-exercise-library-variants { display: grid; gap: 8px; margin: 0; padding: 9px; border-top: 1px solid #3c4652; list-style: none; }
 .client-exercise-library-item-button {
   display: grid;
