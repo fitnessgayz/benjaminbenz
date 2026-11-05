@@ -9280,7 +9280,11 @@ function renderWorkoutResumeActions() {
 
   const homeActionLabel = document.querySelector("[data-home-workout-action-label]");
   const homeActionNote = document.querySelector("[data-home-workout-active-note]");
-  if (homeActionLabel) homeActionLabel.textContent = hasActiveWorkout ? "Resume workout" : "Start workout";
+  const homeAction = document.querySelector(".client-home-workout-action");
+  if (homeAction) homeAction.hidden = !hasActiveWorkout;
+  const startNext = document.querySelector("[data-client-home-start-next]");
+  if (startNext) startNext.hidden = hasActiveWorkout;
+  if (homeActionLabel) homeActionLabel.textContent = "Resume Workout";
   if (homeActionNote) {
     homeActionNote.hidden = !hasActiveWorkout;
     homeActionNote.textContent = hasActiveWorkout
@@ -18620,6 +18624,32 @@ function handleClientSummaryActions() {
 
     if (event.target.closest("[data-home-workout-action]") && workoutElapsedTimerState) {
       resumeActiveWorkout();
+      return;
+    }
+
+    const startNext = event.target.closest("[data-client-home-start-next]");
+    if (startNext) {
+      setClientDashboardTab("workouts");
+      const index = Number(startNext.dataset.clientHomeWorkoutIndex);
+      if (Number.isInteger(index) && index > 0 && document.getElementById(`client-workout-panel-${index}`)) {
+        activateClientWorkoutPanel(index);
+      } else {
+        showClientWorkoutPicker();
+      }
+      return;
+    }
+
+    const lastWorkout = event.target.closest("[data-client-last-workout-key]");
+    if (lastWorkout) {
+      setClientDashboardTab("logs");
+      const cards = [...document.querySelectorAll("[data-client-workout-history-card]")];
+      const index = cards.findIndex(card => card.dataset.clientWorkoutHistoryKey === lastWorkout.dataset.clientLastWorkoutKey);
+      if (index >= 0) {
+        setClientWorkoutHistoryDeckIndex(index);
+        const card = cards[index];
+        setClientWorkoutHistoryCardExpanded(card, true);
+        card.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
       return;
     }
 

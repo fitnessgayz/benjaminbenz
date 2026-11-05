@@ -4,15 +4,16 @@
   if (!document) return;
   const planner = document.querySelector('.client-home-planner');
   if (!planner) return;
+  const streakSection = document.querySelector('.client-home-streak');
   const daysHost = planner.querySelector('[data-client-home-week-days]');
   const label = planner.querySelector('[data-client-home-week-label]');
   const detail = planner.querySelector('[data-client-home-week-detail]');
-  const streak = planner.querySelector('[data-client-home-streak]');
-  const rewardTrack = planner.querySelector('[data-client-reward-track]');
+  const streak = streakSection.querySelector('[data-client-home-streak]');
+  const rewardTrack = streakSection.querySelector('[data-client-reward-track]');
   const rewardCards = [...rewardTrack.querySelectorAll('.client-home-reward-card')];
-  const rewardDots = [...planner.querySelectorAll('.client-home-reward-dots span')];
-  const rewardPrevious = planner.querySelector('[data-client-reward-prev]');
-  const rewardNext = planner.querySelector('[data-client-reward-next]');
+  const rewardDots = [...streakSection.querySelectorAll('.client-home-reward-dots span')];
+  const rewardPrevious = streakSection.querySelector('[data-client-reward-prev]');
+  const rewardNext = streakSection.querySelector('[data-client-reward-next]');
   const weekLink = document.querySelector('[data-client-weekly-checkin]');
   let logs = [];
   let weekOffset = 0;
@@ -22,6 +23,7 @@
   let preview = false;
   let weeklyRecord = null;
   let scheduled = [];
+  let program = null;
   let scheduleCache = new Map();
   let activityVersion = 0;
   const rewardIndex = () => Math.min(rewardCards.length - 1,
@@ -52,10 +54,62 @@
   const completed = () => new Set(logs.filter(row => row.completed_at && /^\d{4}-\d{2}-\d{2}$/.test(row.entry_date || '')).map(row => row.entry_date));
   const workoutsOn = key => [...new Set(logs.filter(row => row.entry_date === key && row.completed_at).map(row => String(row.workout_title || 'Workout').split(' · ')[0]))];
   const plannedOn = key => scheduled.filter(row => row.planned_date === key).map(row => row.title);
+  function renderNextWorkout() {
+    const card = document.querySelector('.client-home-last-workout');
+    const suggestion = document.querySelector('[data-client-home-suggestion]');
+    const start = document.querySelector('[data-client-home-start-next]');
+    if (!card || !suggestion || !start) return;
+    const sessions = new Map();
+    for (const row of logs) {
+      const key = String(row.session_id || row.workout_session_id || '').trim().toLowerCase()
+        || `${row.entry_date || ''}::${String(row.workout_title || '').toLowerCase()}`;
+      if (!sessions.has(key)) sessions.set(key, []);
+      sessions.get(key).push(row);
+    }
+    const latest = [...sessions.entries()].filter(([, rows]) => rows.some(row => row.completed_at)).sort((a, b) => {
+      const stamp = rows => `${rows[0]?.entry_date || ''} ${rows.map(row => row.completed_at || '').sort().at(-1) || ''}`;
+      return stamp(b[1]).localeCompare(stamp(a[1]));
+    })[0];
+    card.hidden = !latest;
+    if (latest) {
+      const [key, rows] = latest;
+      const day = new Date(`${rows[0].entry_date}T12:00:00`);
+      const today = new Date();
+      const days = Number.isNaN(day.getTime()) ? null : Math.max(0, Math.round((new Date(today.getFullYear(), today.getMonth(), today.getDate()) - new Date(day.getFullYear(), day.getMonth(), day.getDate())) / 86400000));
+      const recency = days === 0 ? 'Today' : days === 1 ? '1 day ago' : days !== null ? `${days} days ago` : 'Recent';
+      card.querySelector('[data-client-last-recency]').textContent = `Last workout · ${recency}`;
+      card.querySelector('[data-client-last-title]').textContent = String(rows[0].workout_title || 'Workout').split(' · ')[0];
+      const working = rows.filter(row => String(row.exercise_code || '').toUpperCase() !== 'WARMUP'
+        && String(row.exercise_code || '').toUpperCase() !== 'CARDIO'
+        && String(row.set_type || '').toLowerCase().replace(/[^a-z]/g, '') !== 'warmup'
+        && Number(row.set_number || 0) < 1000);
+      const duration = Math.max(0, ...rows.map(row => Number(row.workout_duration_seconds) || 0));
+      const volume = working.reduce((sum, row) => sum + (Number(row.weight_used) || 0) * (Number(row.reps) || 0), 0);
+      card.querySelector('[data-client-last-stats]').textContent = [
+        duration > 0 ? `${Math.max(1, Math.round(duration / 60))} min` : null,
+        `${working.length} ${working.length === 1 ? 'set' : 'sets'}`,
+        volume > 0 ? `${Math.round(volume).toLocaleString()} lb` : null
+      ].filter(Boolean).join(' · ');
+      card.dataset.clientLastWorkoutKey = key.startsWith('session:') || key.startsWith('legacy:') ? key
+        : rows[0].session_id || rows[0].workout_session_id ? `session:${key}` : `legacy:${key}`;
+    }
+    const workouts = (Array.isArray(program?.workouts) ? program.workouts : [])
+      .map((row, index) => ({ ...row, homePanelIndex: index + 1 }))
+      .filter(row => Array.isArray(row.exercises) && row.exercises.length);
+    const planned = scheduled.filter(row => row.planned_date >= dateKey(new Date())).sort((a, b) => a.planned_date.localeCompare(b.planned_date))[0];
+    const plannedIndex = planned ? workouts.findIndex(row => String(row.title || '').toLowerCase() === String(planned.title || '').toLowerCase()) : -1;
+    const lastTitle = latest ? String(latest[1][0].workout_title || '').split(' · ')[0].toLowerCase() : '';
+    const lastIndex = workouts.findIndex(row => String(row.title || '').toLowerCase() === lastTitle);
+    const nextIndex = plannedIndex >= 0 ? plannedIndex : lastIndex >= 0 ? (lastIndex + 1) % workouts.length : 0;
+    const next = workouts[nextIndex];
+    suggestion.textContent = next ? `Suggested next · ${next.title}` : 'Suggested next · Choose a workout';
+    if (next) start.dataset.clientHomeWorkoutIndex = String(next.homePanelIndex);
+    else delete start.dataset.clientHomeWorkoutIndex;
+  }
   async function refreshActivityTotals() {
     const version = ++activityVersion;
-    const challenge = planner.querySelector('[data-client-challenge-streak]');
-    const visits = planner.querySelector('[data-client-gym-visits]');
+    const challenge = streakSection.querySelector('[data-client-challenge-streak]');
+    const visits = streakSection.querySelector('[data-client-gym-visits]');
     if (!client || !email || preview) { challenge.textContent = '—'; visits.textContent = '—'; return; }
     try {
       const { data, error } = await client.rpc('client_home_activity_totals', { p_local_day: dateKey(new Date()) });
@@ -75,7 +129,7 @@
     const today = dateKey(new Date());
     const done = completed();
     const selectedKey = selectedDay || (weekOffset === 0 ? today : dateKey(start));
-    label.textContent = weekOffset === 0 ? 'This week' : `${formatDay(start)} – ${formatDay(end)}`;
+    label.textContent = `${formatDay(start)}–${end.getDate()}`;
     daysHost.replaceChildren();
     for (let i = 0; i < 7; i++) {
       const day = addDays(start, i);
@@ -110,6 +164,7 @@
       if (count > 520) break;
     }
     streak.textContent = String(count);
+    renderNextWorkout();
   }
   async function refreshSchedule() {
     const start = addDays(monday(new Date()), weekOffset * 7);
@@ -258,7 +313,7 @@
     button.disabled = false;
   });
   root.FWB_CLIENT_HOME_PARITY = {
-    render(nextLogs) { logs = Array.isArray(nextLogs) ? nextLogs : []; renderPlanner(); void refreshSchedule(); void refreshActivityTotals(); },
+    render(nextLogs, nextProgram) { logs = Array.isArray(nextLogs) ? nextLogs : []; program = nextProgram || null; renderPlanner(); void refreshSchedule(); void refreshActivityTotals(); },
     configure(nextClient, nextEmail, isPreview) {
       const normalizedEmail = String(nextEmail || '').trim().toLowerCase();
       if (client !== nextClient || email !== normalizedEmail || preview !== Boolean(isPreview)) {
