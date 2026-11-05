@@ -9278,6 +9278,16 @@ function renderWorkoutResumeActions() {
     ? "Workout in progress"
     : "Workout paused";
 
+  const homeActionLabel = document.querySelector("[data-home-workout-action-label]");
+  const homeActionNote = document.querySelector("[data-home-workout-active-note]");
+  if (homeActionLabel) homeActionLabel.textContent = hasActiveWorkout ? "Resume workout" : "Start workout";
+  if (homeActionNote) {
+    homeActionNote.hidden = !hasActiveWorkout;
+    homeActionNote.textContent = hasActiveWorkout
+      ? `${workoutElapsedTimerState.workoutTitle || "Workout"} · Ready to continue`
+      : "";
+  }
+
   document.querySelectorAll("[data-workout-resume-card]").forEach((card) => {
     card.hidden = !hasActiveWorkout;
 
@@ -9729,7 +9739,7 @@ function finishWorkoutLater(button) {
   pauseWorkoutTimersForCompletion();
   renderWorkoutResumeActions();
   setClientDashboardTab("home");
-  document.querySelector(".client-home-resume-card [data-resume-active-workout]")?.focus();
+  document.querySelector("[data-home-workout-action]")?.focus();
 }
 
 function customWorkoutInlineGroupOptionsMarkup(groupType = "single", isVisible = true) {
@@ -18607,6 +18617,11 @@ function handleClientSummaryActions() {
   document.addEventListener("click", async (event) => {
     const summaryTabButton = event.target.closest("[data-client-summary-go-tab]");
     const resetButton = event.target.closest("#client-dashboard-reset-password-button");
+
+    if (event.target.closest("[data-home-workout-action]") && workoutElapsedTimerState) {
+      resumeActiveWorkout();
+      return;
+    }
 
     if (summaryTabButton) {
       const tabName = summaryTabButton.dataset.clientSummaryGoTab;

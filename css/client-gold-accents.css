@@ -116,6 +116,16 @@
   color: #171a17;
 }
 
+:root body.client-dashboard-page .client-workout-panel-custom .custom-workout-footer-add {
+  border-color: #ffd400;
+  color: #ffd400;
+}
+
+:root body.client-dashboard-page .client-workout-panel-custom .custom-workout-circuit-add-exercise {
+  border-color: #ffd400;
+  color: #ffd400;
+}
+
 /* The inbox shortcut is a square control aligned with the Workouts title. */
 :root body.client-dashboard-page .client-workouts-tools {
   margin-bottom: 0;
