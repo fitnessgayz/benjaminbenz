@@ -16394,15 +16394,26 @@ function renderClientTrainingLogs() {
                         ? `<button type="button" data-client-edit-saved-set="${escapeHtml(String(set.id))}" aria-label="Correct ${escapeHtml(`${entry.exercise_name}, ${setName}`)}">Edit</button>` : ""}</div>`;
                     }).join("")}</div>`;
 
+                  const exerciseMediaMarkup = exerciseMediaButtonMarkup({ name: entry.exercise_name }, { compact: true, hideInfo: true });
+                  const setSummaryMarkup = (setSummary || "Sets saved")
+                    .split("  |  ")
+                    .filter(Boolean)
+                    .map((label) => `<span>${escapeHtml(label)}</span>`)
+                    .join("");
+
                   return `
                     <article class="training-log-row training-log-row-compact training-log-row-nested">
                       <div class="training-log-row-main">
-                        <span>${escapeHtml(
-                          entry.exercise_code === warmupExerciseCode || entry.exercise_code === cardioExerciseCode
-                            ? entry.exercise_name
-                            : `${entry.exercise_code} ${entry.exercise_name}`
-                        )}</span>
-                        <em>${escapeHtml(setSummary || "Sets saved")}</em>
+                        <div class="training-log-exercise-head">
+                          <span class="training-log-exercise-image">${exerciseMediaMarkup || '<span class="training-log-exercise-image-empty" aria-hidden="true">▥</span>'}</span>
+                          <span class="training-log-exercise-label">
+                            ${entry.exercise_code === warmupExerciseCode || entry.exercise_code === cardioExerciseCode
+                              ? ""
+                              : `<small>${escapeHtml(entry.exercise_code)}</small>`}
+                            <strong>${escapeHtml(entry.exercise_name)}</strong>
+                          </span>
+                        </div>
+                        <div class="training-log-set-summary">${setSummaryMarkup}</div>
                         ${![warmupExerciseCode, cardioExerciseCode].includes(entry.exercise_code)
                           ? `<button class="training-log-exercise-history-button" type="button" data-client-exercise-history-open="${escapeHtml(entry.exercise_name)}" aria-label="View all history for ${escapeHtml(entry.exercise_name)}">Exercise history</button>`
                           : ""}
