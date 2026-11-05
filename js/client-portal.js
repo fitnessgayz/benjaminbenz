@@ -13212,12 +13212,13 @@ function customWorkoutPanelMarkup(index) {
         </div>
       </div>
       <label class="custom-workout-session-date workout-session-date workout-compact-date">
-        <span>Date</span>
+        <span class="workout-date-icon" aria-hidden="true">▦</span>
+        <span class="workout-date-label">Date</span>
         <span class="workout-session-date-control">
           <span class="workout-session-date-value" data-workout-date-value aria-hidden="true">${escapeHtml(formatLogDate(todayDate()))}</span>
           <input type="date" value="${todayDate()}" data-workout-date />
         </span>
-        <small>✓ Autosave on · Web + iPhone</small>
+        <small><strong>✓ Autosave on</strong><span>Web + iPhone</span></small>
       </label>
       <div class="custom-workout-launcher-gym">${workoutGymPickerMarkup(activeDraft?.gymName || storedWorkoutGymLocation(workoutStorageTitle), index)}</div>
       <div class="workout-compact-format"><h3>Format</h3>${customWorkoutFormatPickerMarkup()}</div>
@@ -13267,7 +13268,8 @@ function cardioWorkoutPanelMarkup(index) {
       <div class="panel-heading"><h2 id="cardio-workout-panel-title" tabindex="-1">Log Cardio</h2></div>
       <p>Record a walk, run, ride, swim, or machine session. Enter your minutes; distance, calories, and notes are optional.</p>
       <label class="workout-session-date workout-compact-date">
-        <span>Date</span>
+        <span class="workout-date-icon" aria-hidden="true">▦</span>
+        <span class="workout-date-label">Date</span>
         <span class="workout-session-date-control">
           <span class="workout-session-date-value" data-workout-date-value aria-hidden="true">${escapeHtml(formatLogDate(todayDate()))}</span>
           <input type="date" value="${todayDate()}" max="${todayDate()}" data-workout-date />
@@ -14216,6 +14218,10 @@ function moveClientWorkoutPicker(step) {
 function activateClientWorkoutPanel(nextIndex, options = {}) {
   const picker = document.getElementById("client-workout-tabs");
   const summary = document.getElementById("client-workout-selection-summary");
+  const workoutsPanel = document.getElementById("client-workouts-panel");
+  const topbarBack = workoutsPanel?.querySelector(".client-workouts-back");
+  const topbarTitle = workoutsPanel?.querySelector("#client-workouts-title");
+  const topbarMessage = workoutsPanel?.querySelector(".client-workouts-message-button");
   const panels = Array.from(document.querySelectorAll(".client-workout-panel"));
   const cards = Array.from(picker?.querySelectorAll("[data-client-workout-picker-card]") || []);
   const index = clientWorkoutPickerIndex(nextIndex, panels.length);
@@ -14227,7 +14233,18 @@ function activateClientWorkoutPanel(nextIndex, options = {}) {
   }
 
   clientWorkoutPickerIsOpen = false;
-  document.getElementById("client-workouts-panel")?.classList.remove("is-choosing-workout");
+  workoutsPanel?.classList.remove("is-choosing-workout");
+  const compactLog = activePanel.classList.contains("client-workout-panel-custom") ||
+    activePanel.classList.contains("client-workout-panel-assigned");
+  workoutsPanel?.classList.toggle("is-compact-workout-log", compactLog);
+  if (topbarBack) topbarBack.hidden = !compactLog;
+  if (topbarTitle) topbarTitle.textContent = activePanel.classList.contains("client-workout-panel-custom")
+    ? "Log Workout" : activePanel.classList.contains("client-workout-panel-assigned") ? "Workout Log" : "Workouts";
+  if (topbarMessage) {
+    topbarMessage.setAttribute("aria-label", compactLog ? "Comments" : "Messages");
+    const label = topbarMessage.querySelector("span:not(.client-dashboard-nav-unread)");
+    if (label) label.textContent = compactLog ? "Comments" : "Messages";
+  }
   syncClientWorkoutPicker(index);
   picker.hidden = true;
   panels.forEach((panel, panelIndex) => {
@@ -14238,10 +14255,10 @@ function activateClientWorkoutPanel(nextIndex, options = {}) {
   });
   syncClientWorkoutSelectionSummary(activeCard);
   if (summary) {
-    summary.hidden = false;
-    if (options.focus !== false) {
-      summary.focus({ preventScroll: true });
-    }
+    summary.hidden = compactLog;
+  }
+  if (options.focus !== false) {
+    (compactLog ? topbarBack : summary)?.focus({ preventScroll: true });
   }
 
   if (activePanel.classList.contains("client-workout-panel-custom")) {
@@ -14252,7 +14269,7 @@ function activateClientWorkoutPanel(nextIndex, options = {}) {
 
   if (options.scroll !== false) {
     window.requestAnimationFrame(() => {
-      (summary || activePanel).scrollIntoView({
+      ((compactLog ? topbarBack : summary) || activePanel).scrollIntoView({
         behavior: window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches ? "auto" : "smooth",
         block: "start"
       });
@@ -14263,6 +14280,18 @@ function activateClientWorkoutPanel(nextIndex, options = {}) {
 function showClientWorkoutPicker(options = {}) {
   const picker = document.getElementById("client-workout-tabs");
   const summary = document.getElementById("client-workout-selection-summary");
+  const workoutsPanel = document.getElementById("client-workouts-panel");
+  workoutsPanel?.classList.remove("is-compact-workout-log");
+  const topbarBack = workoutsPanel?.querySelector(".client-workouts-back");
+  const topbarTitle = workoutsPanel?.querySelector("#client-workouts-title");
+  const topbarMessage = workoutsPanel?.querySelector(".client-workouts-message-button");
+  if (topbarBack) topbarBack.hidden = true;
+  if (topbarTitle) topbarTitle.textContent = "Workouts";
+  if (topbarMessage) {
+    topbarMessage.setAttribute("aria-label", "Messages");
+    const label = topbarMessage.querySelector("span:not(.client-dashboard-nav-unread)");
+    if (label) label.textContent = "Messages";
+  }
   const panels = document.querySelectorAll(".client-workout-panel");
 
   if (!picker) {
@@ -14343,12 +14372,13 @@ function renderClientWorkoutTabs(workouts = []) {
         ${workout.focus ? `<span class="status-pill">${escapeHtml(workout.focus)}</span>` : ""}
       </div>
       <label class="custom-workout-session-date workout-session-date workout-compact-date">
-        <span>Date</span>
+        <span class="workout-date-icon" aria-hidden="true">▦</span>
+        <span class="workout-date-label">Date</span>
         <span class="workout-session-date-control">
           <span class="workout-session-date-value" data-workout-date-value aria-hidden="true">${escapeHtml(formatLogDate(todayDate()))}</span>
           <input type="date" value="${todayDate()}" data-workout-date />
         </span>
-        <small>✓ Autosave on · Web + iPhone</small>
+        <small><strong>✓ Autosave on</strong><span>Web + iPhone</span></small>
       </label>
       ${workoutGymPickerMarkup(storedWorkoutGymLocation(title), index)}
       <div class="workout-compact-format workout-compact-format-assigned"><h3>Format</h3><div class="workout-format-pill">${escapeHtml(formatLabel(workoutFormat))}</div></div>

@@ -111,7 +111,7 @@ test("opens the existing workout logger and provides a back-to-choices control",
   assert.match(activateSource, /document\.querySelectorAll\("\.client-workout-panel"\)/);
   assert.match(activateSource, /panel\.hidden = !isActive/);
   assert.match(activateSource, /syncCustomWorkoutCarousel|syncAssignedWorkoutCarousels/);
-  assert.match(activateSource, /summary\.focus\(\{ preventScroll: true \}\)/);
+  assert.match(activateSource, /compactLog \? topbarBack : summary/);
   assert.match(activateSource, /scrollIntoView/);
   assert.match(dashboard, /data-client-workout-picker-back/);
   assert.match(dashboard, /id="client-workout-panels"/);
@@ -125,7 +125,7 @@ test("keeps the deck compact and clear of the fixed mobile dock", () => {
   assert.match(styles, /@media \(max-width: 420px\)[\s\S]*?\.client-workout-picker-status \{[\s\S]*?display:\s*grid;[\s\S]*?grid-template-columns:\s*minmax\(0, 1fr\)/);
   assert.match(styles, /@media \(max-width: 420px\)[\s\S]*?\.client-workout-picker-controls \{[\s\S]*?width:\s*100%;[\s\S]*?justify-content:\s*space-between/);
   assert.match(styles, /scroll-margin-bottom:\s*var\(--client-bottom-dock-clearance\)/);
-  assert.match(dashboard, /css\/style\.css\?v=workout-preview-1/);
+  assert.match(dashboard, /css\/style\.css\?v=[^\"]*workout-preview-1/);
   assert.match(dashboard, /js\/client-portal\.js\?v=[^"&]+/);
 });
 
