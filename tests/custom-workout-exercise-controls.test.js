@@ -65,6 +65,7 @@ test("exercise picker fills the next blank slot before appending", () => {
   const context = evaluate(["addCustomWorkoutPickedExercise"], {
     normalizeCustomWorkoutFormat: (value) => value || "single",
     customWorkoutExerciseAddConfig: () => ({ count: 1 }),
+    customWorkoutCarousels: () => [],
     customWorkoutEditableNameInput: () => input,
     persistCustomWorkoutDraftFromPanel: () => { persisted += 1; },
     Event: class {}
@@ -244,6 +245,56 @@ test("successive picks fill the current superset or circuit before starting the 
   }
 });
 
+test("a single picker confirmation fills superset pairs and an extended circuit", () => {
+  for (const [format, names, expectedSizes] of [
+    ["superset", ["Bench Press", "Cable Row", "Curl", "Triceps Pushdown"], [2, 2]],
+    ["circuit", ["Squat", "Push-up", "Row", "Jump Rope"], [4]]
+  ]) {
+    const carousels = [];
+    const makeCard = (exercise) => {
+      const log = { dataset: { exerciseCode: exercise.code, exerciseName: exercise.name }, querySelector: () => ({ value: "" }) };
+      const input = { value: exercise.name, dispatchEvent() { exercise.name = this.value; log.dataset.exerciseName = this.value; }, blur() {} };
+      return { exercise, log, input, dataset: { customWorkoutGroup: String(exercise.group) },
+        querySelector: (selector) => selector === "[data-exercise-log]" ? log : input };
+    };
+    const makeCarousel = (group) => {
+      const list = { children: [], insertAdjacentHTML(_position, markup) { this.children.push(makeCard(JSON.parse(markup).exercise)); },
+        get lastElementChild() { return this.children.at(-1); } };
+      return { dataset: { customWorkoutGroup: String(group) }, list, contains: (card) => list.children.includes(card),
+        querySelector: () => list };
+    };
+    const allCards = () => carousels.flatMap((carousel) => carousel.list.children);
+    const stack = { insertAdjacentHTML(_position, group) { carousels.push(makeCarousel(Number(group))); },
+      get lastElementChild() { return carousels.at(-1); } };
+    const panel = { dataset: { customWorkoutFormat: format, customWorkoutTitle: "Custom workout" },
+      querySelector: (selector) => selector === "[data-workout-date]" ? { value: "2026-11-06" } : stack,
+      querySelectorAll: (selector) => selector === "[data-exercise-log]" ? allCards().map((card) => card.log) : allCards() };
+    const context = evaluate(["normalizeCustomWorkoutFormat", "customWorkoutExerciseAddConfig", "customExerciseCode", "nextCustomExerciseCode", "addCustomWorkoutPickedExercise", "addCustomWorkoutPickedExercises"], {
+      customWorkoutFormats: { single: {}, superset: {}, circuit: {} }, customWorkoutTitle: "Custom workout",
+      trainingLogs: [], todayDate: () => "2026-11-06", Event: class {},
+      customWorkoutCarousels: () => carousels, customWorkoutCarouselCards: (carousel) => carousel?.list.children || [],
+      customWorkoutCarouselGroupMarkup: (_format, _exercises, group) => String(group),
+      customWorkoutCardMarkup: (exercise) => JSON.stringify({ exercise }), customWorkoutEditableNameInput: (card) => card.input,
+      updateExerciseLogField() {}, syncCustomWorkoutCarousel() {}, persistCustomWorkoutDraftFromPanel() {}
+    });
+    context.addCustomWorkoutPickedExercises(panel, names);
+    assert.deepEqual(carousels.map((carousel) => carousel.list.children.length), expectedSizes);
+    assert.deepEqual(allCards().map((card) => card.exercise.name), names);
+    assert(allCards().every((card) => card.exercise.name && card.log.dataset.exerciseName));
+  }
+});
+
+test("custom exercise notification passes selected names to the secured RPC", async () => {
+  const calls = [];
+  const context = evaluate(["notifyCoachAboutCustomExercises"], {
+    supabaseClient: { rpc: async (...args) => { calls.push(args); return { error: null }; } },
+    console: { warn: () => { throw new Error("Unexpected notification failure"); } }
+  });
+  context.notifyCoachAboutCustomExercises(["Machine Lat Pulldown", "New Cable Raise"]);
+  await Promise.resolve();
+  assert.deepEqual(plain(calls), [["notify_coach_custom_exercises", { p_names: ["Machine Lat Pulldown", "New Cable Raise"] }]]);
+});
+
 test("new exercise identities skip removed saved rows and retained draft numbers", () => {
   const panel = {
     dataset: { customWorkoutTitle: "Current workout" },
@@ -312,35 +363,90 @@ test("exercise editor targets the chosen card's first editable working weight wi
 function dialogFixture(format = "single") {
   const handlers = {};
   const calls = { add: [], remove: [], focus: 0 };
-  const input = { value: "" };
+  const input = { value: "", setAttribute() {}, focus() {} };
+  const selectedCount = { textContent: "" };
+  const selected = { hidden: true, querySelector: () => selectedCount };
+  const selectedList = { innerHTML: "" };
+  const submit = { disabled: false, textContent: "" };
+  const menu = { hidden: true };
   const cards = [0, 1, 2].map((index) => ({ querySelector: () => ({ index }) }));
   const panel = { id: "client-workout-panel-0", dataset: { customWorkoutFormat: format }, isConnected: true, matches: () => true, querySelectorAll: () => cards, contains: (card) => cards.includes(card) };
-  const trigger = { isConnected: true, disabled: false, closest: () => panel, focus: () => calls.focus++ };
+  const trigger = { isConnected: true, disabled: false, closest: (selector) => selector === ".client-workout-panel-custom" ? panel : null, focus: () => calls.focus++ };
   const dialog = {
     setAttribute() {}, addEventListener: (name, handler) => { handlers[name] = handler; },
-    querySelector: () => input, showModal() {}, remove() {},
+    querySelector: (selector) => ({
+      "#custom-workout-picker-search": input,
+      "[data-workout-picker-selected]": selected,
+      "[data-workout-picker-selected-list]": selectedList,
+      '[data-custom-exercise-suggestions]': menu,
+      'button[type="submit"]': submit
+    })[selector] || input,
+    isConnected: true, showModal() {}, remove() {},
     close: () => handlers.close()
   };
   const context = evaluate(["normalizeCustomWorkoutFormat", "customWorkoutExerciseAddConfig", "openCustomWorkoutExerciseDialog"], {
     customWorkoutFormats: { single: {}, superset: {}, circuit: {} },
     document: { querySelector: () => null, createElement: () => dialog, body: { append() {} } },
     escapeHtml: String, currentExerciseLabel: (log) => `Exercise ${log.index + 1}`,
+    customWorkoutCarousels: () => [],
     renderCustomExerciseSuggestions() {}, renderCustomWorkoutPickerResults() {},
     removeExerciseLog: (log) => calls.remove.push(log.index),
-    addCustomWorkoutPickedExercise: (_panel, name) => { calls.add.push(name); return null; }
+    addCustomWorkoutPickedExercise: (_panel, name) => { calls.add.push(name); return null; },
+    addCustomWorkoutPickedExercises: (_panel, names) => { calls.add.push(...names); return null; }
   });
   const click = (selector, target = {}) => handlers.click({ stopPropagation() {}, target: { closest: (candidate) => candidate === selector ? target : null } });
-  return { context, handlers, calls, trigger, input, click, dialog, panel };
+  return { context, handlers, calls, trigger, input, click, dialog, panel, selectedList, submit };
 }
 
-test("picker explains the companion slots created for a new superset or circuit", () => {
-  for (const [format, companionCount] of [["single", 0], ["superset", 1], ["circuit", 2]]) {
+test("picker asks for the full superset or circuit before adding it", () => {
+  for (const [format, minimum] of [["single", 1], ["superset", 2], ["circuit", 3]]) {
     const fixture = dialogFixture(format);
     fixture.context.openCustomWorkoutExerciseDialog(fixture.trigger);
-    assert(fixture.dialog.innerHTML.includes("Add exercise"));
-    assert.equal(fixture.dialog.innerHTML.includes("remaining slots") || fixture.dialog.innerHTML.includes("partner slot"), companionCount > 0);
+    assert.match(fixture.dialog.innerHTML, new RegExp(`Add ${format === "single" ? "exercise" : `${format} exercises`}`));
+    if (minimum > 1) {
+      assert.match(fixture.dialog.innerHTML, new RegExp(`Choose ${minimum} exercises`));
+      assert.equal(fixture.submit.disabled, true);
+    }
     assert.deepEqual(fixture.calls.add, []);
   }
+});
+
+test("superset picker collects two exercises before one add action", () => {
+  const fixture = dialogFixture("superset");
+  fixture.context.openCustomWorkoutExerciseDialog(fixture.trigger);
+  const choose = (name) => fixture.click("[data-custom-exercise-suggestion]", { dataset: { customExerciseSuggestion: name } });
+  choose("Cable Row");
+  assert.deepEqual(fixture.calls.add, []);
+  assert.equal(fixture.submit.disabled, true);
+  choose("Lat Pulldown");
+  assert.equal(fixture.submit.disabled, false);
+  fixture.handlers.submit({ preventDefault() {}, stopPropagation() {} });
+  assert.deepEqual(fixture.calls.add, ["Cable Row", "Lat Pulldown"]);
+});
+
+test("a typed manual exercise can be queued before the next superset choice", () => {
+  const fixture = dialogFixture("superset");
+  fixture.context.openCustomWorkoutExerciseDialog(fixture.trigger);
+  assert.match(fixture.dialog.innerHTML, /data-workout-picker-queue-typed/);
+  fixture.input.value = "Custom Cable Pull";
+  fixture.click("[data-workout-picker-queue-typed]");
+  assert.equal(fixture.input.value, "");
+  assert.match(fixture.selectedList.innerHTML, /Custom Cable Pull/);
+  fixture.click("[data-custom-exercise-suggestion]", { dataset: { customExerciseSuggestion: "Cable Row" } });
+  fixture.handlers.submit({ preventDefault() {}, stopPropagation() {} });
+  assert.deepEqual(fixture.calls.add, ["Custom Cable Pull", "Cable Row"]);
+});
+
+test("circuit picker accepts a fourth exercise and lets clients remove a choice", () => {
+  const fixture = dialogFixture("circuit");
+  fixture.context.openCustomWorkoutExerciseDialog(fixture.trigger);
+  const choose = (name) => fixture.click("[data-custom-exercise-suggestion]", { dataset: { customExerciseSuggestion: name } });
+  ["Squat", "Push-Up", "Row", "Jump Rope"].forEach(choose);
+  assert.equal(fixture.submit.disabled, false);
+  fixture.click("[data-workout-picker-remove]", { dataset: { workoutPickerRemove: "1" } });
+  assert.match(fixture.selectedList.innerHTML, /Jump Rope/);
+  fixture.handlers.submit({ preventDefault() {}, stopPropagation() {} });
+  assert.deepEqual(fixture.calls.add, ["Squat", "Row", "Jump Rope"]);
 });
 
 test("closing exercise pickers changes nothing and restores the triggering control", () => {

@@ -98,6 +98,7 @@ function safePushTitle(category: string, notification: Record<string, unknown> =
     check_in_submitted: "Client check-in submitted",
     client_message: "New client message",
     client_login: "Client signed in",
+    custom_exercise: "Client added a custom exercise",
     low_sessions: "Session balance update",
     inactivity: "Client activity reminder",
     coach_reply: "New coaching update",
@@ -113,6 +114,9 @@ function safePushTitle(category: string, notification: Record<string, unknown> =
 function safePushBody(category: string, notification: Record<string, unknown> = {}) {
   if (category === "client_login") {
     return "Open Coach Admin to see which client signed in.";
+  }
+  if (category === "custom_exercise") {
+    return "Open Coach Admin to review the custom exercise.";
   }
   if (category === "check_in_submitted") {
     return "Open Coach Admin to review the private check-in.";
