@@ -13158,22 +13158,27 @@ function openCustomWorkoutExerciseDialog(trigger, mode = "add") {
       <form>
         ${grouped ? `<p>Choose ${minimum} ${minimum === 1 ? "exercise" : "exercises"} before adding. Keep selecting to add more ${format === "circuit" ? "to this circuit" : "superset pairs"}.</p>` : addConfig.hint ? `<p>${addConfig.hint}</p>` : ""}
         <div class="custom-workout-name-editor">
+          ${grouped ? '<p class="custom-workout-picker-prompt" data-workout-picker-prompt role="status" aria-live="polite">Pick the first exercise</p>' : ""}
+          ${grouped ? `<div class="custom-workout-picker-selected" data-workout-picker-selected hidden>
+            <strong data-workout-picker-selected-count></strong>
+            <ol data-workout-picker-selected-list></ol>
+            <button class="button button-dark" type="submit" data-workout-picker-submit disabled>Add ${minimum} ${minimum === 1 ? "exercise" : "exercises"}</button>
+          </div>` : ""}
           <label for="custom-workout-picker-search">Search exercises</label>
           <div class="custom-workout-picker-search-row">
-            <input id="custom-workout-picker-search" type="text" maxlength="160" autocomplete="off" autofocus required
+            <input id="custom-workout-picker-search" type="text" maxlength="160" autocomplete="off" autofocus ${grouped ? "" : "required"}
               placeholder="Type or search any exercise name" data-exercise-title-name aria-autocomplete="list" aria-expanded="false" aria-controls="custom-workout-picker-options" />
             <select data-workout-picker-filter aria-label="Filter exercise list">
               <option value="all">All</option><option value="history">Program & history</option>
               <option value="upper">Upper body</option><option value="lower">Lower body</option><option value="core">Core</option>
             </select>
           </div>
-          ${grouped ? '<div class="custom-workout-picker-selected" data-workout-picker-selected hidden><strong data-workout-picker-selected-count></strong><ol data-workout-picker-selected-list></ol></div>' : ""}
           <div class="custom-workout-exercise-options custom-workout-suggestion-menu" id="custom-workout-picker-options" role="listbox" aria-label="Exercise suggestions" data-custom-exercise-suggestions hidden></div>
           <p data-workout-picker-empty hidden>No matching exercises. You can still add the name you typed.</p>
           ${grouped ? '<button class="custom-workout-picker-queue-typed" type="button" data-workout-picker-queue-typed hidden>Add typed name to selection</button>' : ""}
         </div>
         ${grouped ? '<button class="custom-workout-picker-browse" type="button" data-custom-exercise-browse>Browse full library</button>' : ""}
-        <button class="button button-dark" type="submit" ${grouped ? "disabled" : ""}>${grouped ? `Add ${minimum} ${minimum === 1 ? "exercise" : "exercises"}` : addConfig.label}</button>
+        ${grouped ? "" : `<button class="button button-dark" type="submit">${addConfig.label}</button>`}
       </form>`}
   `;
   let addedCard = null;
@@ -13185,8 +13190,19 @@ function openCustomWorkoutExerciseDialog(trigger, mode = "add") {
     const input = dialog.querySelector("#custom-workout-picker-search");
     const queueTyped = dialog.querySelector("[data-workout-picker-queue-typed]");
     if (queueTyped) queueTyped.hidden = !input?.value.trim();
-    const total = selectedNames.length + (input?.value.trim() ? 1 : 0);
+    const total = selectedNames.length;
     const valid = total >= minimum && (format !== "superset" || (total - minimum) % 2 === 0);
+    const prompt = dialog.querySelector("[data-workout-picker-prompt]");
+    if (prompt) {
+      let message = `${total} ${total === 1 ? "exercise" : "exercises"} selected. Ready to add.`;
+      if (total === 0) message = "Pick the first exercise";
+      else if (total === 1 && minimum > 1) message = "First exercise selected. Pick the second.";
+      else if (total === 2 && format === "circuit" && minimum > 2) message = "Second exercise selected. Pick the third.";
+      else if (total === 2 && format === "superset" && valid) message = "Second exercise selected. Ready to add.";
+      else if (total === 3 && format === "circuit") message = "Third exercise selected. Ready to add.";
+      else if (format === "superset" && !valid) message = "Pick one more exercise to complete the next pair.";
+      prompt.textContent = message;
+    }
     selected.hidden = selectedNames.length === 0;
     selected.querySelector("[data-workout-picker-selected-count]").textContent = `${selectedNames.length} selected · ${minimum} required`;
     list.innerHTML = selectedNames.map((name, index) => `<li><span>${escapeHtml(name)}</span><button type="button" data-workout-picker-remove="${index}" aria-label="Remove ${escapeHtml(name)}">×</button></li>`).join("");
@@ -13232,7 +13248,7 @@ function openCustomWorkoutExerciseDialog(trigger, mode = "add") {
     const livePanel = panel.isConnected ? panel : document.getElementById(panel.id);
     if (!livePanel?.matches(".client-workout-panel-custom")) return;
     if (grouped) {
-      const names = name ? [...selectedNames, name] : [...selectedNames];
+      const names = [...selectedNames];
       if (names.length < minimum || (format === "superset" && (names.length - minimum) % 2 !== 0)) return;
       addedCard = addCustomWorkoutPickedExercises(livePanel, names, { targetGroupIndex });
       if (addedCard) notifyCoachAboutCustomExercises(names);
