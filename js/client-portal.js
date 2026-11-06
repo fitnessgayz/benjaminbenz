@@ -7434,6 +7434,15 @@ if (typeof document !== "undefined") document.addEventListener("error", (event) 
   if (fallback) image.src = fallback;
 }, true);
 
+if (typeof document !== "undefined") document.addEventListener("load", (event) => {
+  const image = event.target;
+  if (!(image instanceof HTMLImageElement)) return;
+  const card = image.closest(".exercise-media-button-branded-crop");
+  if (card && image.naturalHeight) {
+    card.classList.toggle("is-wide-branded-card", image.naturalWidth / image.naturalHeight > 2.15);
+  }
+}, true);
+
 function openClientExerciseLibrary(input, onSelect, { referenceName = "" } = {}) {
   if (!window.FWB_CLIENT_EXERCISE_LIBRARY?.open || !input) return false;
   closeCustomExerciseSuggestions();
@@ -13147,8 +13156,9 @@ function openCustomWorkoutExerciseDialog(trigger, mode = "add") {
   });
   const add = () => {
     const name = dialog.querySelector("input").value.trim();
-    if (!name || !panel.isConnected) return;
-    addedCard = addCustomWorkoutPickedExercise(panel, name);
+    const livePanel = panel.isConnected ? panel : document.getElementById(panel.id);
+    if (!name || !livePanel?.matches(".client-workout-panel-custom")) return;
+    addedCard = addCustomWorkoutPickedExercise(livePanel, name);
     dialog.close();
   };
   dialog.addEventListener("click", (event) => {
@@ -21514,6 +21524,7 @@ async function loadDashboard() {
       && trainingLogResult.status === "fulfilled" && !trainingLogResult.value.error;
     exerciseLibraryEntries = exerciseLibraryData || [];
     if (typeof invalidateExerciseSearchCaches === "function") invalidateExerciseSearchCaches();
+    window.FWB_CLIENT_EXERCISE_LIBRARY?.refresh?.({ records: exerciseSuggestionRecords() });
     refreshExerciseMediaViews();
     workoutSessionFeedback = workoutFeedbackData || [];
 

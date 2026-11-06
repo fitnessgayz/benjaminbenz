@@ -95,6 +95,14 @@ test("plural exercise searches find the singular catalog entry", () => {
   }
 });
 
+test("lat pulldown machine searches find the approved exercise alias", () => {
+  const records = prepareRecords([{
+    name: "Lat Pulldown", aliases: ["Lat Pull Down", "Lat Pulldown Machine"],
+    libraryEntry: { primary_muscle: "Back", equipment: "cable" }
+  }]);
+  assert.deepEqual(matchingRecords(records, "lat pulldown machine", "All").map((entry) => entry.name), ["Lat Pulldown"]);
+});
+
 test("illustrates every browse muscle with a distinct highlighted region", () => {
   const muscles = ["Chest", "Back", "Shoulders", "Biceps", "Triceps", "Forearms", "Core", "Glutes", "Quads", "Hamstrings", "Calves", "Full Body", "Cardio", "Mobility"];
   const artwork = muscles.map(muscleArtwork);

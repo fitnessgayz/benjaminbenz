@@ -103,22 +103,30 @@ body.client-dashboard-page :is(.client-workout-panel-custom, .client-workout-pan
   gap: 20px;
 }
 
-/* Crop approved Start/Finish artwork to the photo panels. The source files
-   include a white outer mat and a text strip below the photos. */
+/* The older cards are 2:1, while the newer cards are much wider. Frame their
+   Start/Finish panels separately so neither template exposes its outer mat. */
 :root body.client-dashboard-page #client-workouts-panel .exercise-media-button-branded-crop {
-  aspect-ratio: 2 / 1;
+  aspect-ratio: 7 / 5;
   border: 0;
   background: #111;
 }
 :root body.client-dashboard-page #client-workouts-panel .exercise-media-button-branded-crop > img {
   position: absolute;
-  top: -21.4% !important;
-  left: -5.8% !important;
-  width: 172.7% !important;
+  top: -7.5% !important;
+  left: -3% !important;
+  width: 164% !important;
   max-width: none !important;
-  height: 171.4% !important;
+  height: auto !important;
   max-height: none !important;
   object-fit: fill;
+}
+:root body.client-dashboard-page #client-workouts-panel .exercise-media-button-branded-crop.is-wide-branded-card {
+  aspect-ratio: 17 / 10;
+}
+:root body.client-dashboard-page #client-workouts-panel .exercise-media-button-branded-crop.is-wide-branded-card > img {
+  top: -1.5% !important;
+  left: -1% !important;
+  width: 139% !important;
 }
 @media (max-width: 700px) {
   :root body.client-dashboard-page #client-workout-panels [data-custom-workout-grouped="true"] .ios-log-exercise-header {
@@ -137,8 +145,11 @@ body.client-dashboard-page :is(.client-workout-panel-custom, .client-workout-pan
   :root body.client-dashboard-page #client-workout-panels [data-custom-workout-grouped="true"] .ios-log-exercise-image .exercise-media-button-branded-crop {
     width: 100% !important;
     height: 100% !important;
-    aspect-ratio: 2 / 1 !important;
+    aspect-ratio: 7 / 5 !important;
   }
+  :root body.client-dashboard-page #client-workout-panels [data-custom-workout-grouped="true"] .ios-log-exercise-image:has(.exercise-media-button-branded-crop) { aspect-ratio: 7 / 5; }
+  :root body.client-dashboard-page #client-workout-panels [data-custom-workout-grouped="true"] .ios-log-exercise-image:has(.is-wide-branded-card) { aspect-ratio: 17 / 10; }
+  :root body.client-dashboard-page #client-workout-panels [data-custom-workout-grouped="true"] .ios-log-exercise-image .exercise-media-button-branded-crop.is-wide-branded-card { aspect-ratio: 17 / 10 !important; }
 }
 
 body.client-dashboard-page .workout-compact-source { display: grid; gap: 8px; }

@@ -314,7 +314,7 @@ function dialogFixture(format = "single") {
   const calls = { add: [], remove: [], focus: 0 };
   const input = { value: "" };
   const cards = [0, 1, 2].map((index) => ({ querySelector: () => ({ index }) }));
-  const panel = { dataset: { customWorkoutFormat: format }, isConnected: true, querySelectorAll: () => cards, contains: (card) => cards.includes(card) };
+  const panel = { id: "client-workout-panel-0", dataset: { customWorkoutFormat: format }, isConnected: true, matches: () => true, querySelectorAll: () => cards, contains: (card) => cards.includes(card) };
   const trigger = { isConnected: true, disabled: false, closest: () => panel, focus: () => calls.focus++ };
   const dialog = {
     setAttribute() {}, addEventListener: (name, handler) => { handlers[name] = handler; },
@@ -330,7 +330,7 @@ function dialogFixture(format = "single") {
     addCustomWorkoutPickedExercise: (_panel, name) => { calls.add.push(name); return null; }
   });
   const click = (selector, target = {}) => handlers.click({ stopPropagation() {}, target: { closest: (candidate) => candidate === selector ? target : null } });
-  return { context, handlers, calls, trigger, input, click, dialog };
+  return { context, handlers, calls, trigger, input, click, dialog, panel };
 }
 
 test("picker explains the companion slots created for a new superset or circuit", () => {
@@ -396,6 +396,19 @@ test("empty picker submission does not add a card and a named submission adds ex
   assert.deepEqual(fixture.calls.add, ["Cable Row"]);
 });
 
+test("exercise selection survives a workout panel refresh while the picker is open", () => {
+  const fixture = dialogFixture();
+  fixture.context.openCustomWorkoutExerciseDialog(fixture.trigger);
+  const currentPanel = { id: fixture.panel.id, isConnected: true, matches: () => true };
+  fixture.panel.isConnected = false;
+  fixture.context.document.getElementById = () => currentPanel;
+  let target = null;
+  fixture.context.addCustomWorkoutPickedExercise = (panel, name) => { target = { panel, name }; return null; };
+  fixture.input.value = "Lat Pulldown Machine";
+  fixture.handlers.submit({ preventDefault() {}, stopPropagation() {} });
+  assert.deepEqual(target, { panel: currentPanel, name: "Lat Pulldown Machine" });
+});
+
 test("custom builder search results include primary and secondary muscles", () => {
   const library = [{
     name: "45-Degree Back Extension",
@@ -418,6 +431,18 @@ test("custom builder search results include primary and secondary muscles", () =
   const matches = plain(context.customExerciseSuggestionMatches("back extension"));
   assert.equal(matches[0].name, "45-Degree Back Extension");
   assert.equal(matches[0].muscleLabel, "Glutes · Hamstrings · Erector Spinae");
+});
+
+test("custom builder finds the lat pulldown machine alias", () => {
+  const context = evaluate([
+    "approvedExerciseForName", "exerciseSuggestionRecords", "exerciseSuggestionMuscleLabel",
+    "customExerciseSuggestionMatches"
+  ], {
+    exerciseLibraryEntries: [{ name: "Lat Pulldown", aliases: ["Lat Pulldown Machine"], primary_muscle: "back" }],
+    exerciseNameMatcher: require("../js/exercise-name-matcher.js"),
+    currentProgram: null, trainingLogs: [], warmupExerciseCode: "WARMUP", cardioExerciseCode: "CARDIO"
+  });
+  assert.equal(context.customExerciseSuggestionMatches("lat pulldown machine")[0]?.name, "Lat Pulldown");
 });
 
 test("typing Che offers chest word prefixes without crunches or unrelated fuzzy matches", () => {
