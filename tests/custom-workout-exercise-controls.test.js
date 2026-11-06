@@ -411,6 +411,20 @@ test("picker asks for the full superset or circuit before adding it", () => {
   }
 });
 
+test("grouped picker places Add directly below selected exercises, ahead of search results", () => {
+  for (const format of ["superset", "circuit"]) {
+    const fixture = dialogFixture(format);
+    fixture.context.openCustomWorkoutExerciseDialog(fixture.trigger);
+    const markup = fixture.dialog.innerHTML;
+    const selectedList = markup.indexOf("data-workout-picker-selected-list");
+    const addButton = markup.indexOf("data-workout-picker-submit");
+    const searchRow = markup.indexOf("custom-workout-picker-search-row");
+    const results = markup.indexOf("data-custom-exercise-suggestions");
+    assert.ok(selectedList < addButton && addButton < searchRow && searchRow < results);
+    assert.doesNotMatch(markup, /autofocus required/, "Selected exercises must submit with an empty search field");
+  }
+});
+
 test("superset picker collects two exercises before one add action", () => {
   const fixture = dialogFixture("superset");
   fixture.context.openCustomWorkoutExerciseDialog(fixture.trigger);
@@ -418,8 +432,12 @@ test("superset picker collects two exercises before one add action", () => {
   choose("Cable Row");
   assert.deepEqual(fixture.calls.add, []);
   assert.equal(fixture.submit.disabled, true);
+  fixture.input.value = "Unqueued search text";
+  fixture.handlers.submit({ preventDefault() {}, stopPropagation() {} });
+  assert.deepEqual(fixture.calls.add, [], "Search text is not selected until queued");
   choose("Lat Pulldown");
   assert.equal(fixture.submit.disabled, false);
+  fixture.input.value = "Unselected search text";
   fixture.handlers.submit({ preventDefault() {}, stopPropagation() {} });
   assert.deepEqual(fixture.calls.add, ["Cable Row", "Lat Pulldown"]);
 });
