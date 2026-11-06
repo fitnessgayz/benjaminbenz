@@ -76,7 +76,7 @@
       const today = new Date();
       const days = Number.isNaN(day.getTime()) ? null : Math.max(0, Math.round((new Date(today.getFullYear(), today.getMonth(), today.getDate()) - new Date(day.getFullYear(), day.getMonth(), day.getDate())) / 86400000));
       const recency = days === 0 ? 'Today' : days === 1 ? '1 day ago' : days !== null ? `${days} days ago` : 'Recent';
-      card.querySelector('[data-client-last-recency]').textContent = `Last workout · ${recency}`;
+      card.querySelector('[data-client-last-recency]').textContent = recency;
       card.querySelector('[data-client-last-title]').textContent = String(rows[0].workout_title || 'Workout').split(' · ')[0];
       const working = rows.filter(row => String(row.exercise_code || '').toUpperCase() !== 'WARMUP'
         && String(row.exercise_code || '').toUpperCase() !== 'CARDIO'
@@ -89,8 +89,10 @@
         `${working.length} ${working.length === 1 ? 'set' : 'sets'}`,
         volume > 0 ? `${Math.round(volume).toLocaleString()} lb` : null
       ].filter(Boolean).join(' · ');
-      card.dataset.clientLastWorkoutKey = key.startsWith('session:') || key.startsWith('legacy:') ? key
+      const historyKey = key.startsWith('session:') || key.startsWith('legacy:') ? key
         : rows[0].session_id || rows[0].workout_session_id ? `session:${key}` : `legacy:${key}`;
+      card.querySelector('.client-home-last-detail').dataset.clientLastWorkoutKey = historyKey;
+      card.querySelector('[data-copy-workout-to-custom]').dataset.copyWorkoutToCustom = historyKey;
     }
     const workouts = (Array.isArray(program?.workouts) ? program.workouts : [])
       .filter(row => Array.isArray(row.exercises) && row.exercises.length);
@@ -100,7 +102,11 @@
     const lastIndex = workouts.findIndex(row => String(row.title || '').toLowerCase() === lastTitle);
     const nextIndex = plannedIndex >= 0 ? plannedIndex : lastIndex >= 0 ? (lastIndex + 1) % workouts.length : 0;
     const next = workouts[nextIndex];
-    suggestion.textContent = next ? `Suggested next · ${next.title}` : 'Suggested next · Choose a workout';
+    suggestion.textContent = next?.title || 'Choose your next workout';
+    const nextDay = document.querySelector('[data-client-home-next-day]');
+    if (nextDay) nextDay.textContent = planned && plannedIndex >= 0
+      ? new Date(`${planned.planned_date}T12:00:00`).toLocaleDateString(undefined, { weekday: 'long' })
+      : 'Ready when you are';
   }
   async function refreshActivityTotals() {
     const version = ++activityVersion;
@@ -124,6 +130,9 @@
     const end = addDays(start, 6);
     const today = dateKey(new Date());
     const done = completed();
+    const gymDays = new Set([...document.querySelectorAll('#client-weekly-days .client-weekly-day')]
+      .filter(day => day.querySelector('.has-checkin'))
+      .map(day => day.dataset.clientWeeklyDate));
     const selectedKey = selectedDay || (weekOffset === 0 ? today : dateKey(start));
     label.textContent = `${formatDay(start)}–${end.getDate()}`;
     daysHost.replaceChildren();
@@ -140,10 +149,15 @@
       name.textContent = day.toLocaleDateString(undefined, { weekday: 'short' });
       const number = document.createElement('strong');
       number.textContent = String(day.getDate());
-      const dot = document.createElement('span');
-      dot.className = 'client-home-day-dot';
-      dot.setAttribute('aria-hidden', 'true');
-      button.append(name, number, dot);
+      const dots = document.createElement('span');
+      dots.className = 'client-home-day-dots';
+      const workoutDot = document.createElement('span');
+      workoutDot.className = `client-home-day-dot workout${done.has(key) ? ' is-active' : ''}`;
+      const gymDot = document.createElement('span');
+      gymDot.className = `client-home-day-dot gym${gymDays.has(key) ? ' is-active' : ''}`;
+      dots.append(workoutDot, gymDot);
+      dots.setAttribute('aria-hidden', 'true');
+      button.append(name, number, dots);
       daysHost.append(button);
     }
     const key = selectedKey;
@@ -151,6 +165,7 @@
     const planned = plannedOn(key);
     detail.textContent = [titles.length ? `Completed: ${titles.join(', ')}` : '', planned.length ? `Planned: ${planned.join(', ')}` : ''].filter(Boolean).join(' · ') ||
       (key < today ? 'No workout logged on this day.' : 'No workout planned yet. Open Workouts to choose one.');
+    detail.hidden = !selectedDay;
     let count = 0;
     let week = monday(new Date());
     if (![...done].some(key => key >= dateKey(week) && key <= dateKey(addDays(week, 6)))) week = addDays(week, -7);
@@ -160,8 +175,20 @@
       if (count > 520) break;
     }
     streak.textContent = String(count);
+    const weekStreak = document.querySelector('[data-client-home-week-streak]');
+    if (weekStreak) weekStreak.textContent = String(count);
     renderNextWorkout();
   }
+  const gymAction = document.querySelector('[data-client-home-gym-action]');
+  gymAction?.addEventListener('click', () => {
+    const compact = document.querySelector('.client-gym-compact');
+    if (compact) {
+      compact.open = true;
+      compact.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  });
+  const gymDaysHost = document.getElementById('client-weekly-days');
+  if (gymDaysHost) new MutationObserver(() => renderPlanner()).observe(gymDaysHost, { childList: true });
   async function refreshSchedule() {
     const start = addDays(monday(new Date()), weekOffset * 7);
     const key = `${email}:${dateKey(start)}`;

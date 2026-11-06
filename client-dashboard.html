@@ -96,6 +96,8 @@
   <link rel="stylesheet" href="css/client-home-workout-action.css?v=2" />
   <link rel="stylesheet" href="css/client-home-selected.css?v=1" />
   <link rel="stylesheet" href="css/client-home-logs-preview.css?v=1" />
+  <link rel="stylesheet" href="css/client-home-approved.css?v=1" />
+  <link rel="stylesheet" href="css/client-picker-approved.css?v=1" />
 </head>
 <body class="dashboard-page client-dashboard-page is-loading">
   <nav class="coach-preview-toolbar" id="coach-preview-toolbar" aria-label="Coach navigation" hidden>
@@ -183,7 +185,7 @@
               <span class="client-dashboard-nav-unread" data-client-notification-unread hidden aria-label="0 unread notifications">0</span>
             </button>
           </div>
-          <div class="client-home-intro"><h3>Today</h3><p id="client-home-welcome">Welcome back.</p></div>
+          <div class="client-home-intro"><h3 id="client-home-welcome">Welcome back.</h3></div>
           <div class="client-home-workout-action" hidden>
             <button class="button client-home-workout-button" type="button" data-client-summary-go-tab="workouts" data-home-workout-action>
               <span data-home-workout-action-label>Resume Workout</span><span aria-hidden="true">→</span>
@@ -252,22 +254,32 @@
               <div class="client-home-reward-dots" aria-label="Reward pages"><span class="is-active"></span><span></span><span></span></div>
             </section>
             <section class="client-home-next" aria-label="Your next workout">
-              <button class="client-home-last-workout" type="button" data-client-summary-go-tab="logs" hidden>
-                <span class="client-home-last-icon" aria-hidden="true">▮▮</span>
-                <span class="client-home-last-copy"><small data-client-last-recency>Last workout</small><strong data-client-last-title></strong><small data-client-last-stats></small></span>
-                <span class="client-home-last-arrow" aria-hidden="true">›</span>
+              <p class="client-home-eyebrow">YOUR NEXT WORKOUT</p>
+              <h3 class="client-home-suggestion" data-client-home-suggestion>Choose your next workout</h3>
+              <p class="client-home-next-day"><span aria-hidden="true">▣</span> <span data-client-home-next-day>Ready when you are</span></p>
+              <button class="client-home-next-button" type="button" data-client-home-start-next>Start workout</button>
+            </section>
+            <section class="client-home-last-workout" aria-label="Last workout" hidden>
+              <button class="client-home-last-detail" type="button" data-client-summary-go-tab="logs">
+                <span class="client-home-eyebrow">LAST WORKOUT</span>
+                <strong data-client-last-title></strong>
+                <small><span data-client-last-recency></span> · <span data-client-last-stats></span></small>
               </button>
-              <p class="client-home-suggestion" data-client-home-suggestion>Suggested next · Choose a workout</p>
-              <button class="client-home-next-button" type="button" data-client-home-start-next>Start Next Workout</button>
+              <button class="client-home-last-repeat" type="button" data-copy-workout-to-custom>Repeat</button>
             </section>
             <section class="client-home-planner" aria-labelledby="client-home-planner-title">
-              <h3 id="client-home-planner-title" class="client-home-week-title">This week</h3>
+              <h3 id="client-home-planner-title" class="client-home-week-title">YOUR WEEK</h3>
               <div class="client-home-week-controls">
                 <button type="button" data-client-home-week-prev aria-label="Previous week">‹</button>
                 <strong data-client-home-week-label>This week</strong>
                 <button type="button" data-client-home-week-next aria-label="Next week">›</button>
               </div>
+              <div class="client-home-week-actions">
+                <span class="client-home-week-streak">♨ <strong data-client-home-week-streak>0</strong> week streak</span>
+                <button type="button" class="client-home-gym-pill" data-client-home-gym-action>Gym check-in</button>
+              </div>
               <div class="client-home-week-days" data-client-home-week-days aria-label="Workout activity this week"></div>
+              <div class="client-home-week-legend"><span><i></i> workout</span><span><i></i> gym</span></div>
               <button type="button" class="client-home-week-detail" data-client-home-week-detail data-client-summary-go-tab="workouts">Choose a day to see its activity.</button>
             </section>
             <div class="client-home-checkin-links" aria-label="Check-ins">

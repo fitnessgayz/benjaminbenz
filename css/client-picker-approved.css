@@ -1,0 +1,180 @@
+/* Grouped exercise selection, matching the approved pair and circuit picker. */
+:root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker {
+  box-sizing: border-box; display: flex; flex-direction: column;
+  width: min(100vw - 16px, 560px); max-width: min(100vw - 16px, 560px);
+  height: min(94dvh, 900px); max-height: 94dvh;
+  padding: 16px 16px max(14px, env(safe-area-inset-bottom));
+  overflow: hidden; border: 1px solid #3d414a; border-radius: 24px;
+  background: #0e1015; color: #f7f7f9; color-scheme: dark;
+}
+:root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker > header {
+  position: relative; display: flex; flex: 0 0 auto; min-height: 48px; align-items: center;
+  margin: 0 0 10px; justify-content: flex-start;
+}
+:root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker > header h2 {
+  position: absolute; left: 50%; transform: translateX(-50%); width: max-content; max-width: 52%;
+  margin: 0; color: #f7f7f9 !important; font-size: 18px; font-weight: 750; text-align: center;
+  text-transform: none !important; letter-spacing: 0 !important;
+}
+:root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker > header button {
+  width: auto !important; min-width: 76px !important; max-width: none !important;
+  padding: 0 13px; border: 1px solid #393d45; border-radius: 24px;
+  background: #26282d; color: #f7f7f9; font-size: 14px !important; font-weight: 600;
+}
+:root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker form {
+  display: flex; flex: 1 1 auto; flex-direction: column; min-height: 0; gap: 9px; overflow: hidden;
+}
+:root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker .custom-workout-name-editor {
+  display: flex; flex: 1 1 auto; flex-direction: column; min-height: 0; gap: 10px !important; overflow: hidden;
+}
+:root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker .custom-workout-picker-prompt {
+  flex: 0 0 auto; margin: 2px 0 4px; padding: 0 !important; border: 0 !important;
+  background: transparent !important; color: #ffd400;
+  font-size: 12px; font-weight: 800; letter-spacing: .08em; text-align: center;
+}
+:root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker .custom-workout-picker-selected {
+  display: grid; flex: 0 0 auto; gap: 6px; padding: 0; border: 0; background: transparent;
+}
+:root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker [data-workout-picker-selected-count] {
+  position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0);
+}
+:root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker [data-workout-picker-selected-list] {
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 0; padding: 0;
+}
+:root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker .custom-picker-slot {
+  display: flex; min-width: 0; min-height: 64px; align-items: center; gap: 7px;
+  padding: 9px; border: 1px solid #4a4e57; border-radius: 14px;
+  background: #1d2026; color: #c3c5cd; font-size: 13px; font-weight: 650;
+}
+:root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker .custom-picker-slot.is-filled { color: #fff; }
+:root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker .custom-picker-slot.is-next,
+:root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker .custom-picker-slot.is-filled:last-child { border-color: #ffd400; }
+:root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker .custom-picker-slot-letter {
+  display: grid; flex: 0 0 30px; width: 30px; height: 30px; place-items: center;
+  border-radius: 50%; background: #30333a; color: #f6f7f9;
+}
+:root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker .custom-picker-slot > span:nth-child(2) {
+  min-width: 0; overflow-wrap: anywhere; line-height: 1.2;
+}
+:root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker .custom-picker-slot button {
+  flex: 0 0 27px; width: 27px; height: 27px; min-width: 27px; min-height: 27px;
+  padding: 0; border: 0; border-radius: 50% !important; background: #ffd400; color: #141414;
+  font-size: 17px; font-weight: 800;
+}
+:root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker label[for="custom-workout-picker-search"] {
+  position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0);
+}
+:root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker .custom-workout-picker-search-row {
+  display: grid; flex: 0 0 auto; grid-template-columns: minmax(0, 1fr) 40px;
+  gap: 0; min-height: 50px; padding: 0 8px 0 12px;
+  border: 1px solid #4a4e57; border-radius: 14px; background: #1d2026;
+}
+:root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker #custom-workout-picker-search {
+  min-height: 48px; height: 48px; padding: 8px; border: 0; background: transparent;
+  color: #fff; font-size: 16px !important; box-shadow: none;
+}
+:root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker #custom-workout-picker-search::placeholder { color: #9da2ad; }
+:root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker [data-workout-picker-filter] {
+  width: 40px; max-width: 40px; min-width: 40px; min-height: 44px; padding: 0;
+  appearance: none; border: 0; background: transparent; color: transparent !important;
+  font-size: 0 !important; text-align: center;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2377bcf7' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M4 7h16M7 12h10M10 17h4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: center; background-size: 22px;
+}
+:root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker [data-workout-picker-filter] option {
+  color: #f7f7f9; font-size: 16px;
+}
+:root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker .custom-picker-chips {
+  display: flex; flex: 0 0 auto; gap: 7px; width: 100%; overflow-x: auto;
+  padding: 1px 0 4px; scrollbar-width: none;
+}
+:root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker .custom-picker-chips::-webkit-scrollbar { display: none; }
+:root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker .custom-picker-chips button {
+  flex: 0 0 auto; width: auto !important; min-width: 0 !important; max-width: none !important;
+  min-height: 35px; padding: 6px 13px;
+  border: 1px solid transparent; border-radius: 22px; background: #23262c;
+  color: #f4f4f6; font: 650 13px/1 var(--font-ui, Inter, sans-serif);
+}
+:root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker .custom-picker-chips button[aria-pressed="true"] {
+  border-color: #ffd400; background: #5c4c12; color: #ffd400;
+}
+:root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker .custom-workout-suggestion-menu {
+  display: grid; flex: 1 1 auto; min-height: 0; align-content: start; gap: 8px;
+  overflow-y: auto; overscroll-behavior: contain; padding: 2px 1px 8px;
+  border: 0; background: transparent; box-shadow: none;
+}
+:root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker .custom-workout-suggestion-menu[hidden] { display: none; }
+:root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker [data-custom-exercise-suggestion] {
+  display: flex !important; width: 100%; min-height: 76px; align-items: center; gap: 11px;
+  padding: 9px; border: 1px solid #2e333b; border-radius: 15px;
+  background: #1b1e24; color: #f7f7f9; text-align: left;
+}
+:root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker .custom-picker-image {
+  display: grid; flex: 0 0 60px; width: 60px; height: 60px; overflow: hidden;
+  place-items: center; border-radius: 10px; background: #292d35; color: #77bcf7;
+}
+:root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker .custom-picker-image img {
+  display: block; width: 100%; height: 100%; object-fit: cover; border: 0;
+}
+:root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker .custom-picker-image.is-fallback img {
+  mix-blend-mode: multiply;
+}
+:root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker .custom-picker-image.is-fallback {
+  background: #939aa1;
+}
+:root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker .custom-picker-copy {
+  display: grid; flex: 1 1 auto; min-width: 0; gap: 4px;
+}
+:root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker .custom-picker-copy strong {
+  color: #f7f7f9; font-size: 14px; line-height: 1.25; overflow-wrap: anywhere;
+}
+:root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker .custom-picker-copy small {
+  color: #b4b8c1; font-size: 11px; line-height: 1.25; overflow-wrap: anywhere;
+}
+:root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker .custom-picker-add {
+  display: grid; flex: 0 0 40px; width: 40px !important; min-width: 40px !important;
+  max-width: 64px !important; height: 40px; place-items: center;
+  border-radius: 22px; background: #62b2f4; color: #111; font-size: 28px; line-height: 1;
+}
+:root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker [aria-selected="true"] .custom-picker-add {
+  flex-basis: 68px; width: 68px !important; max-width: 68px !important;
+  padding: 0 4px; border: 1px solid #b89800; white-space: nowrap;
+  background: #4a3d0e; color: #ffd400; font-size: 10px; font-weight: 750;
+}
+:root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker .custom-workout-picker-browse {
+  flex: 0 0 auto; align-self: center; min-height: 34px; border: 0;
+  background: transparent; color: #77bcf7; font-size: 13px;
+}
+:root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker [data-workout-picker-submit] {
+  display: block; flex: 0 0 auto; width: 100%; min-height: 54px;
+  margin: 0; padding: 10px; border: 0; border-radius: 15px;
+  background: #ffd400; color: #111; font: 800 17px/1.2 var(--font-ui, Inter, sans-serif);
+}
+:root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker [data-workout-picker-submit]:disabled {
+  background: #6d5712; color: #1b1a12; opacity: 1;
+}
+:root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker [data-workout-picker-queue-typed] {
+  flex: 0 0 auto; min-height: 35px; border: 1px solid #6b7580; border-radius: 10px;
+  background: #252b33; color: #77bcf7; font-size: 13px;
+}
+:root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker [data-workout-picker-empty] {
+  color: #b4b8c1; font-size: 13px;
+}
+:root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker :is(button, input, select):focus-visible {
+  outline: 3px solid #ffd400; outline-offset: 2px;
+}
+@media (max-width: 380px) {
+  :root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker { padding: 12px; }
+  :root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker > header button {
+    width: 64px !important; min-width: 64px !important; max-width: 64px !important;
+    padding: 0 5px; font-size: 12px !important;
+  }
+  :root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker > header h2 {
+    font-size: 16px; max-width: 58%;
+  }
+  :root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker [data-workout-picker-selected-list] {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  :root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker .custom-picker-slot { min-height: 56px; padding: 6px; font-size: 12px; }
+  :root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker .custom-picker-image { flex-basis: 50px; width: 50px; height: 50px; }
+}

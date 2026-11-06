@@ -30,7 +30,10 @@ const root = path.resolve(__dirname, '..');
     });
     assert.deepEqual(errors, []);
     assert.equal(await page.locator('[data-client-last-title]').textContent(), 'Custom Workout');
-    assert.equal(await page.locator('[data-client-home-suggestion]').textContent(), 'Suggested next · Strength Day');
+    assert.equal(await page.locator('[data-client-home-suggestion]').textContent(), 'Strength Day');
+    assert.equal(await page.locator('[data-client-home-next-day]').textContent(), 'Ready when you are');
+    assert.equal(await page.locator('[data-copy-workout-to-custom]').getAttribute('data-copy-workout-to-custom'), 'session:session-1');
+    assert.equal(await page.locator('[data-client-home-week-streak]').textContent(), await page.locator('[data-client-home-streak]').textContent());
     console.log('Home parity startup rendered without a page error.');
   } finally {
     await browser.close();

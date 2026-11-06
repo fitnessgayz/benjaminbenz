@@ -9294,6 +9294,8 @@ function renderWorkoutResumeActions() {
   if (homeAction) homeAction.hidden = !hasActiveWorkout;
   const startNext = document.querySelector("[data-client-home-start-next]");
   if (startNext) startNext.hidden = hasActiveWorkout;
+  const nextWorkoutCard = document.querySelector(".client-home-next");
+  if (nextWorkoutCard) nextWorkoutCard.hidden = hasActiveWorkout;
   if (homeActionLabel) homeActionLabel.textContent = "Resume Workout";
   if (homeActionNote) {
     homeActionNote.hidden = !hasActiveWorkout;
@@ -12966,6 +12968,11 @@ function customWorkoutPickerMatches(query, category = "all") {
     ...trainingLogs.map((log) => String(log.exercise_name || "").toLowerCase())
   ]) : null;
   const byName = new Map(records.map((record) => [record.name, record]));
+  const useCounts = new Map();
+  if (category === "recent") trainingLogs.forEach((log) => {
+    const key = String(log.exercise_name || "").trim().toLowerCase();
+    if (key) useCounts.set(key, (useCounts.get(key) || 0) + 1);
+  });
   const matches = normalized
     ? customExerciseSuggestionMatches(text)
     : records.map((record) => ({ name: record.name, muscleLabel: exerciseSuggestionMuscleLabel(record.libraryEntry), libraryEntry: record.libraryEntry }));
@@ -12976,11 +12983,19 @@ function customWorkoutPickerMatches(query, category = "all") {
     const muscles = [exercise?.primary_muscle, ...(Array.isArray(exercise?.secondary_muscles) ? exercise.secondary_muscles : [])]
       .join(" ").toLowerCase();
     if (category === "history") return programAndHistory.has(match.name.toLowerCase());
+    if (category === "recent") return useCounts.has(match.name.toLowerCase());
+    if (["chest", "back", "shoulders", "arms"].includes(category)) {
+      const pattern = { chest: /chest|pec/, back: /back|lat|trap/, shoulders: /shoulder|delt/,
+        arms: /arm|bicep|tricep|forearm/ }[category];
+      return pattern.test(muscles);
+    }
     if (category === "upper") return /chest|back|shoulder|arm|bicep|tricep|forearm|lat|trap/.test(muscles);
     if (category === "lower") return /quad|hamstring|glute|calf|leg|hip|adductor|abductor/.test(muscles);
     if (category === "core") return /core|abdom|oblique/.test(muscles);
     return true;
-  }).slice(0, 30);
+  }).sort((a, b) => category === "recent"
+    ? (useCounts.get(b.name.toLowerCase()) || 0) - (useCounts.get(a.name.toLowerCase()) || 0)
+    : 0).slice(0, 30);
 }
 
 function renderCustomWorkoutPickerResults(dialog) {
@@ -12988,11 +13003,30 @@ function renderCustomWorkoutPickerResults(dialog) {
   const filter = dialog?.querySelector("[data-workout-picker-filter]");
   const menu = dialog?.querySelector("[data-custom-exercise-suggestions]");
   if (!input || !menu) return;
-  const matches = customWorkoutPickerMatches(input.value, filter?.value || "all");
-  menu.innerHTML = matches.map((match) => `<button type="button" role="option" data-custom-exercise-suggestion="${escapeHtml(match.name)}">
-    <strong>${escapeHtml(match.name)}</strong>
-    ${match.muscleLabel ? `<span class="custom-workout-suggestion-muscles">${escapeHtml(match.muscleLabel)}</span>` : ""}
-  </button>`).join("") + '<button type="button" data-custom-exercise-more>More exercises →</button>';
+  const matches = customWorkoutPickerMatches(input.value,
+    input.value.trim() ? "all" : filter?.value || "all");
+  const selected = dialog._pickerSelectedNames || [];
+  const usageByName = new Map();
+  trainingLogs.forEach((log) => {
+    const name = String(log.exercise_name || "").trim().toLowerCase();
+    if (!name) return;
+    if (!usageByName.has(name)) usageByName.set(name, new Set());
+    usageByName.get(name).add(log.session_id || log.workout_session_id || log.entry_date);
+  });
+  menu.innerHTML = matches.map((match) => {
+    const imageUrl = trustedExerciseImageUrl(match.libraryEntry?.image_url);
+    const thumbnail = imageUrl ? responsiveExerciseImageUrls(imageUrl).thumbnailUrl : "";
+    const muscles = String(match.libraryEntry?.primary_muscle || "").toLowerCase();
+    const fallback = muscleMeta[muscles] ? `images/muscle-highlights/library/${muscles}.png?v=2` : "";
+    const used = usageByName.get(match.name.toLowerCase())?.size || 0;
+    const isSelected = selected.includes(match.name);
+    return `<button type="button" role="option" aria-selected="${isSelected}" data-custom-exercise-suggestion="${escapeHtml(match.name)}">
+      <span class="custom-picker-image${!thumbnail ? " is-fallback" : ""}">${thumbnail || fallback ? `<img src="${escapeHtml(thumbnail || fallback)}" alt="" loading="lazy" />` : "✚"}</span>
+      <span class="custom-picker-copy"><strong>${escapeHtml(match.name)}</strong>
+      <small>${escapeHtml(match.muscleLabel || "Exercise")}${used ? ` · Used ${used}×` : ""}</small></span>
+      <span class="custom-picker-add" aria-hidden="true">${isSelected ? "Selected" : "+"}</span>
+    </button>`;
+  }).join("") + '<button type="button" data-custom-exercise-more>More exercises →</button>';
   menu.hidden = false;
   input.setAttribute("aria-expanded", "true");
   dialog.querySelector("[data-workout-picker-empty]")?.toggleAttribute("hidden", matches.length > 0);
@@ -13143,41 +13177,48 @@ function openCustomWorkoutExerciseDialog(trigger, mode = "add") {
   const minimum = !grouped ? 1 : format === "circuit" && sourceCarousel && filledLastGroup >= addConfig.count
     ? 1 : filledLastGroup > 0 && filledLastGroup < addConfig.count
       ? addConfig.count - filledLastGroup : addConfig.count;
+  const hasRecentExercises = typeof trainingLogs !== "undefined"
+    && trainingLogs.some((log) => String(log.exercise_name || "").trim());
   const selectedNames = [];
   const dialog = document.createElement("dialog");
-  dialog.className = "custom-workout-exercise-dialog";
+  dialog.className = `custom-workout-exercise-dialog${grouped ? " is-grouped-picker" : ""}`;
+  dialog._pickerSelectedNames = selectedNames;
   dialog.setAttribute("aria-labelledby", "custom-workout-exercise-dialog-title");
   dialog.innerHTML = `
-    <header><h2 id="custom-workout-exercise-dialog-title">${removing ? "Remove exercise" : grouped ? `Add ${format} exercises` : addConfig.label}</h2>
-      <button type="button" data-close-exercise-dialog aria-label="Close exercise ${removing ? "removal" : "picker"}">×</button></header>
+    <header><button type="button" data-close-exercise-dialog aria-label="Close exercise ${removing ? "removal" : "picker"}">${grouped ? "Cancel" : "×"}</button>
+      <h2 id="custom-workout-exercise-dialog-title">${removing ? "Remove exercise" : grouped ? `Add ${format}` : addConfig.label}</h2></header>
     ${removing ? `<p>Choose the exercise to remove from this workout. Saved logs stay in your history.</p>
       <div class="custom-workout-exercise-options">${cards.map((card, index) => {
         const name = currentExerciseLabel(card.querySelector("[data-exercise-log]")) || `Exercise ${index + 1}`;
         return `<button type="button" data-remove-exercise-choice="${index}" aria-label="Remove ${escapeHtml(name)}, exercise ${index + 1}">${escapeHtml(name)}<small>Exercise ${index + 1} · Remove</small></button>`;
       }).join("")}</div>` : `
       <form>
-        ${grouped ? `<p>Choose ${minimum} ${minimum === 1 ? "exercise" : "exercises"} before adding. Keep selecting to add more ${format === "circuit" ? "to this circuit" : "superset pairs"}.</p>` : addConfig.hint ? `<p>${addConfig.hint}</p>` : ""}
+        ${grouped ? "" : addConfig.hint ? `<p>${addConfig.hint}</p>` : ""}
         <div class="custom-workout-name-editor">
-          ${grouped ? '<p class="custom-workout-picker-prompt" data-workout-picker-prompt role="status" aria-live="polite">Pick the first exercise</p>' : ""}
-          ${grouped ? `<div class="custom-workout-picker-selected" data-workout-picker-selected hidden>
+          ${grouped ? '<p class="custom-workout-picker-prompt" data-workout-picker-prompt role="status" aria-live="polite">STEP 1 · PICK FIRST EXERCISE</p>' : ""}
+          ${grouped ? `<div class="custom-workout-picker-selected" data-workout-picker-selected>
             <strong data-workout-picker-selected-count></strong>
-            <ol data-workout-picker-selected-list></ol>
-            <button class="button button-dark" type="submit" data-workout-picker-submit disabled>Add ${minimum} ${minimum === 1 ? "exercise" : "exercises"}</button>
+            <div data-workout-picker-selected-list></div>
           </div>` : ""}
           <label for="custom-workout-picker-search">Search exercises</label>
           <div class="custom-workout-picker-search-row">
             <input id="custom-workout-picker-search" type="text" maxlength="160" autocomplete="off" autofocus ${grouped ? "" : "required"}
               placeholder="Type or search any exercise name" data-exercise-title-name aria-autocomplete="list" aria-expanded="false" aria-controls="custom-workout-picker-options" />
             <select data-workout-picker-filter aria-label="Filter exercise list">
-              <option value="all">All</option><option value="history">Program & history</option>
+              <option value="all" ${grouped && !hasRecentExercises ? "selected" : ""}>All</option><option value="recent" ${grouped && hasRecentExercises ? "selected" : ""}>Recent</option><option value="history">Program & history</option>
+              <option value="chest">Chest</option><option value="back">Back</option><option value="shoulders">Shoulders</option><option value="arms">Arms</option>
               <option value="upper">Upper body</option><option value="lower">Lower body</option><option value="core">Core</option>
             </select>
           </div>
+          ${grouped ? `<div class="custom-picker-chips" role="group" aria-label="Exercise categories">
+            ${["Recent", "Chest", "Back", "Shoulders", "Arms", "All"].map((label) => `<button type="button" data-picker-chip="${label.toLowerCase()}" aria-pressed="${label === (hasRecentExercises ? "Recent" : "All")}">${label}</button>`).join("")}
+          </div>` : ""}
           <div class="custom-workout-exercise-options custom-workout-suggestion-menu" id="custom-workout-picker-options" role="listbox" aria-label="Exercise suggestions" data-custom-exercise-suggestions hidden></div>
           <p data-workout-picker-empty hidden>No matching exercises. You can still add the name you typed.</p>
           ${grouped ? '<button class="custom-workout-picker-queue-typed" type="button" data-workout-picker-queue-typed hidden>Add typed name to selection</button>' : ""}
         </div>
         ${grouped ? '<button class="custom-workout-picker-browse" type="button" data-custom-exercise-browse>Browse full library</button>' : ""}
+        ${grouped ? `<button class="button button-dark" type="submit" data-workout-picker-submit disabled>Add ${format === "superset" ? "pair" : "circuit"} · 0/${minimum}</button>` : ""}
         ${grouped ? "" : `<button class="button button-dark" type="submit">${addConfig.label}</button>`}
       </form>`}
   `;
@@ -13194,35 +13235,38 @@ function openCustomWorkoutExerciseDialog(trigger, mode = "add") {
     const valid = total >= minimum && (format !== "superset" || (total - minimum) % 2 === 0);
     const prompt = dialog.querySelector("[data-workout-picker-prompt]");
     if (prompt) {
-      let message = `${total} ${total === 1 ? "exercise" : "exercises"} selected. Ready to add.`;
-      if (total === 0) message = "Pick the first exercise";
-      else if (total === 1 && minimum > 1) message = "First exercise selected. Pick the second.";
-      else if (total === 2 && format === "circuit" && minimum > 2) message = "Second exercise selected. Pick the third.";
-      else if (total === 2 && format === "superset" && valid) message = "Second exercise selected. Ready to add.";
-      else if (total === 3 && format === "circuit") message = "Third exercise selected. Ready to add.";
-      else if (format === "superset" && !valid) message = "Pick one more exercise to complete the next pair.";
+      let message = `${format === "superset" ? "PAIR" : "CIRCUIT"} READY · ${total} SELECTED`;
+      if (total < minimum) message = `STEP ${total + 1} OF ${minimum} · PICK ${["FIRST", "SECOND", "THIRD"][total] || "NEXT"} EXERCISE`;
+      else if (format === "superset" && !valid) message = "PICK SECOND EXERCISE FOR THE NEXT PAIR";
       prompt.textContent = message;
     }
-    selected.hidden = selectedNames.length === 0;
-    selected.querySelector("[data-workout-picker-selected-count]").textContent = `${selectedNames.length} selected · ${minimum} required`;
-    list.innerHTML = selectedNames.map((name, index) => `<li><span>${escapeHtml(name)}</span><button type="button" data-workout-picker-remove="${index}" aria-label="Remove ${escapeHtml(name)}">×</button></li>`).join("");
+    selected.hidden = false;
+    selected.querySelector("[data-workout-picker-selected-count]").textContent = `${total} of ${minimum} selected`;
+    list.innerHTML = Array.from({ length: Math.max(minimum, total) }, (_, index) => {
+      const name = selectedNames[index];
+      return `<div class="custom-picker-slot${name ? " is-filled" : ""}${index === total ? " is-next" : ""}">
+        <span class="custom-picker-slot-letter">${String.fromCharCode(65 + index)}</span>
+        <span>${name ? escapeHtml(name) : `Pick ${["first", "second", "third"][index] || "next"}`}</span>
+        ${name ? `<button type="button" data-workout-picker-remove="${index}" aria-label="Remove ${escapeHtml(name)}">✓</button>` : ""}
+      </div>`;
+    }).join("");
     const submit = dialog.querySelector('button[type="submit"]');
     submit.disabled = !valid;
-    submit.textContent = valid ? `Add ${total} ${total === 1 ? "exercise" : "exercises"}`
-      : format === "superset" && total >= minimum ? "Select one more to complete the pair"
-        : `Select ${Math.max(1, minimum - total)} more`;
+    submit.textContent = format === "superset" && total > minimum && valid
+      ? `Add ${total / 2} pairs · ${total} selected`
+      : `Add ${format === "superset" ? "pair" : "circuit"} · ${Math.min(total, minimum)}/${minimum}`;
   };
   const selectName = (name) => {
     const input = dialog.querySelector("#custom-workout-picker-search");
     if (!grouped) { input.value = name; add(); return; }
     if (!String(name).trim()) return;
-    selectedNames.push(String(name).trim());
+    const existing = selectedNames.indexOf(String(name).trim());
+    if (existing >= 0) selectedNames.splice(existing, 1);
+    else selectedNames.push(String(name).trim());
     input.value = "";
     const menu = dialog.querySelector("[data-custom-exercise-suggestions]");
-    menu.hidden = true;
-    input.setAttribute("aria-expanded", "false");
     renderSelection();
-    input.focus({ preventScroll: true });
+    renderCustomWorkoutPickerResults(dialog);
   };
   const scheduleSearchRefresh = () => {
     const input = dialog.querySelector("#custom-workout-picker-search");
@@ -13262,6 +13306,16 @@ function openCustomWorkoutExerciseDialog(trigger, mode = "add") {
   dialog.addEventListener("click", (event) => {
     event.stopPropagation();
     if (event.target.closest("[data-close-exercise-dialog]")) return dialog.close();
+    const chip = event.target.closest("[data-picker-chip]");
+    if (chip) {
+      const filter = dialog.querySelector("[data-workout-picker-filter]");
+      filter.value = chip.dataset.pickerChip;
+      dialog.querySelectorAll("[data-picker-chip]").forEach((item) => {
+        item.setAttribute("aria-pressed", String(item === chip));
+      });
+      renderCustomWorkoutPickerResults(dialog);
+      return;
+    }
     if (event.target.closest("[data-workout-picker-queue-typed]")) {
       selectName(dialog.querySelector("#custom-workout-picker-search")?.value);
       return;

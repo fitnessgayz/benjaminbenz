@@ -1,0 +1,157 @@
+/* Approved client Home composition. Keep this stylesheet after the older Home treatments. */
+:root body.client-dashboard-page .client-home-intro { margin: 10px 0 18px; }
+:root body.client-dashboard-page .client-home-intro h3 {
+  margin: 0; color: #f6f7fa !important; font-size: clamp(27px, 7vw, 34px) !important;
+  font-weight: 800; line-height: 1.15; letter-spacing: -.03em;
+}
+:root body.client-dashboard-page .client-home-grid { display: flex; flex-direction: column; gap: 16px; }
+:root body.client-dashboard-page .client-home-next {
+  order: 1; display: grid; gap: 9px; width: 100%; padding: 20px;
+  border: 1px solid #45494d; border-radius: 24px;
+  background: radial-gradient(circle at 65% 0%, #493e13 0, #26251d 48%, #1e2024 100%);
+  color: #f7f7f8;
+}
+:root body.client-dashboard-page .client-home-next[hidden] { display: none !important; }
+:root body.client-dashboard-page .client-home-eyebrow {
+  display: block; margin: 0; color: #ffd400; font-size: 12px;
+  font-weight: 800; letter-spacing: .09em; line-height: 1.25;
+}
+:root body.client-dashboard-page .client-home-next .client-home-suggestion {
+  margin: 2px 0 0; color: #f7f7f8 !important; font-size: clamp(20px, 5.2vw, 25px);
+  text-transform: none !important; letter-spacing: -.02em !important;
+  font-weight: 800; line-height: 1.2; overflow-wrap: anywhere;
+}
+:root body.client-dashboard-page .client-home-next-day {
+  margin: 0 0 4px; color: #d0d0d4; font-size: 15px; line-height: 1.3;
+}
+:root body.client-dashboard-page .client-home-next-day > span:first-child { color: #d0d0d4; margin-right: 6px; }
+:root body.client-dashboard-page .client-home-next-button {
+  min-height: 56px !important; margin-top: 6px;
+  border-radius: 15px !important; background: linear-gradient(180deg, #ffe257, #ffd400) !important;
+  box-shadow: 0 6px 22px #ffd40035; color: #111 !important;
+  font-size: 18px !important; font-weight: 800 !important;
+}
+:root body.client-dashboard-page .client-home-last-workout {
+  order: 2; display: flex; width: 100%; min-height: 96px; align-items: center; gap: 14px;
+  padding: 16px 18px; border: 1px solid #45494d; border-radius: 21px !important;
+  background: linear-gradient(145deg, #292b30, #202228); color: #f6f7f8;
+}
+:root body.client-dashboard-page .client-home-last-workout[hidden] { display: none !important; }
+:root body.client-dashboard-page .client-home-last-detail {
+  display: grid !important; flex: 1 1 0 !important; width: auto !important; min-width: 0 !important; gap: 3px; padding: 0;
+  border: 0; background: transparent; color: inherit; text-align: left !important; font: inherit;
+}
+:root body.client-dashboard-page .client-home-last-detail strong {
+  min-width: 0; overflow: hidden; color: #fff; font-size: 17px;
+  line-height: 1.22; text-overflow: ellipsis; white-space: nowrap;
+}
+:root body.client-dashboard-page .client-home-last-detail small {
+  min-width: 0; overflow: hidden; color: #bfc3cc; font-size: 12px;
+  text-overflow: ellipsis; white-space: nowrap;
+}
+:root body.client-dashboard-page .client-home-last-repeat {
+  flex: 0 0 auto !important; width: auto !important; min-width: 76px !important; max-width: 120px !important;
+  min-height: 42px; padding: 7px 13px;
+  border: 1px solid #ffd400; border-radius: 13px;
+  background: transparent; color: #fff; font: 750 14px/1 var(--font-ui, Inter, sans-serif);
+}
+:root body.client-dashboard-page .client-home-planner {
+  order: 3; position: relative; width: 100%; padding: 18px 14px;
+  border: 1px solid #45494d; border-radius: 22px;
+  background: linear-gradient(145deg, #282a2f, #202228); color: #f6f7f8;
+}
+:root body.client-dashboard-page .client-home-planner .client-home-week-title {
+  display: block !important; margin: 0 118px 14px 2px;
+  color: #ffd400 !important; font-size: 12px; font-weight: 800; letter-spacing: .09em;
+}
+:root body.client-dashboard-page .client-home-planner .client-home-week-controls {
+  position: absolute; top: 10px; right: 12px; display: flex; width: auto; margin: 0; gap: 2px;
+}
+:root body.client-dashboard-page .client-home-planner .client-home-week-controls::before { content: none; }
+:root body.client-dashboard-page .client-home-planner .client-home-week-controls strong {
+  order: 0; flex: 0 0 auto; color: #c5c8d0; font-size: 12px; white-space: nowrap;
+}
+:root body.client-dashboard-page .client-home-planner .client-home-week-controls button {
+  width: 24px !important; min-width: 24px !important; max-width: 24px !important;
+  height: 28px !important; flex-basis: 24px; border: 0; background: transparent;
+  color: #c5c8d0; font-size: 18px;
+}
+:root body.client-dashboard-page .client-home-week-actions {
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 9px;
+}
+:root body.client-dashboard-page .client-home-week-streak,
+:root body.client-dashboard-page .client-home-gym-pill {
+  display: flex; min-width: 0; min-height: 43px; align-items: center; justify-content: center;
+  padding: 8px; border-radius: 24px; text-align: center;
+  font: 750 14px/1.2 var(--font-ui, Inter, sans-serif);
+}
+:root body.client-dashboard-page .client-home-week-streak {
+  gap: 4px; border: 1px solid #635a1d; background: #51431466; color: #ffd400;
+}
+:root body.client-dashboard-page .client-home-gym-pill {
+  border: 0; border-radius: 24px !important;
+  background: linear-gradient(180deg, #78bfff, #55a9f3); color: #09121b;
+}
+:root body.client-dashboard-page .client-home-week-days { margin-top: 13px; padding: 8px 4px; border-radius: 14px; background: #202228; }
+:root body.client-dashboard-page .client-home-week-days button {
+  min-height: 64px !important; padding: 5px 1px !important; background: transparent !important;
+  border: 1px solid transparent !important; border-radius: 11px !important;
+}
+:root body.client-dashboard-page .client-home-week-days button.is-today {
+  border-color: #ffd400 !important; background: #564a1655 !important;
+}
+:root body.client-dashboard-page .client-home-week-days button.is-selected:not(.is-today) {
+  border-color: #627887 !important; background: #2d3238 !important;
+}
+:root body.client-dashboard-page .client-home-week-days button strong { color: #f5f6f7 !important; }
+:root body.client-dashboard-page .client-home-day-dots { display: flex; align-items: center; justify-content: center; gap: 3px; height: 7px; }
+:root body.client-dashboard-page .client-home-day-dot {
+  display: block; flex: 0 0 6px; width: 6px !important; min-width: 6px !important;
+  height: 6px; border-radius: 50%; background: transparent !important;
+}
+:root body.client-dashboard-page .client-home-day-dot.workout.is-active { background: #ffd400 !important; }
+:root body.client-dashboard-page .client-home-day-dot.gym.is-active { background: #69b8fa !important; }
+:root body.client-dashboard-page .client-home-week-legend {
+  display: flex; justify-content: center; gap: 18px; margin-top: 11px;
+  color: #bfc3cc; font-size: 12px;
+}
+:root body.client-dashboard-page .client-home-week-legend span { display: inline-flex; align-items: center; gap: 5px; }
+:root body.client-dashboard-page .client-home-week-legend i { width: 7px; height: 7px; border-radius: 50%; background: #ffd400; }
+:root body.client-dashboard-page .client-home-week-legend span:last-child i { background: #69b8fa; }
+:root body.client-dashboard-page .client-home-week-detail[hidden] { display: none !important; }
+:root body.client-dashboard-page .client-home-community { order: 4; }
+:root body.client-dashboard-page .client-home-checkin-links { order: 5; }
+:root body.client-dashboard-page .client-weekly-activity { order: 6; }
+:root body.client-dashboard-page .client-home-streak { order: 7; }
+:root body.client-dashboard-page :is(.client-home-last-detail, .client-home-last-repeat, .client-home-gym-pill):focus-visible {
+  outline: 3px solid #ffd400; outline-offset: 3px;
+}
+:root[data-client-theme="light"] body.client-dashboard-page .client-home-intro h3,
+:root[data-client-theme="light"] body.client-dashboard-page .client-home-next .client-home-suggestion { color: #172430 !important; }
+:root[data-client-theme="light"] body.client-dashboard-page :is(.client-home-next, .client-home-last-workout, .client-home-planner) {
+  background: #fff; color: #172430; border-color: #cbd5dd;
+}
+:root[data-client-theme="light"] body.client-dashboard-page .client-home-last-detail strong,
+:root[data-client-theme="light"] body.client-dashboard-page .client-home-last-repeat { color: #172430; }
+:root[data-client-theme="light"] body.client-dashboard-page .client-home-last-detail small,
+:root[data-client-theme="light"] body.client-dashboard-page .client-home-next-day { color: #52606b; }
+:root[data-client-theme="light"] body.client-dashboard-page .client-home-week-days { background: #eef2f5; }
+:root[data-client-theme="light"] body.client-dashboard-page .client-home-week-days button strong { color: #172430 !important; }
+:root[data-client-theme="light"] body.client-dashboard-page .client-home-week-legend { color: #52606b; }
+:root[data-client-theme="light"] body.client-dashboard-page .client-home-eyebrow,
+:root[data-client-theme="light"] body.client-dashboard-page .client-home-planner .client-home-week-title {
+  color: #866400 !important;
+}
+:root[data-client-theme="light"] body.client-dashboard-page .client-home-week-streak {
+  color: #684e00; background: #fff2b8; border-color: #bd9900;
+}
+@media (max-width: 380px) {
+  :root body.client-dashboard-page .client-home-next { padding: 16px; }
+  :root body.client-dashboard-page .client-home-last-workout { padding: 13px; gap: 9px; }
+  :root body.client-dashboard-page .client-home-last-repeat { padding: 7px 10px; }
+  :root body.client-dashboard-page .client-home-week-actions { gap: 6px; }
+  :root body.client-dashboard-page .client-home-week-streak,
+  :root body.client-dashboard-page .client-home-gym-pill {
+    padding: 6px 3px !important; font-size: 11px; white-space: nowrap;
+  }
+}

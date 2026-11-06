@@ -404,16 +404,17 @@ test("picker asks for the full superset or circuit before adding it", () => {
   for (const [format, minimum] of [["single", 1], ["superset", 2], ["circuit", 3]]) {
     const fixture = dialogFixture(format);
     fixture.context.openCustomWorkoutExerciseDialog(fixture.trigger);
-    assert.match(fixture.dialog.innerHTML, new RegExp(`Add ${format === "single" ? "exercise" : `${format} exercises`}`));
+    assert.match(fixture.dialog.innerHTML, new RegExp(`Add ${format === "single" ? "exercise" : format}`));
     if (minimum > 1) {
-      assert.match(fixture.dialog.innerHTML, new RegExp(`Choose ${minimum} exercises`));
+      assert.match(fixture.dialog.innerHTML, new RegExp(`STEP 1 · PICK FIRST EXERCISE`));
+      assert.match(fixture.dialog.innerHTML, /data-workout-picker-selected-list/);
       assert.equal(fixture.submit.disabled, true);
     }
     assert.deepEqual(fixture.calls.add, []);
   }
 });
 
-test("grouped picker places Add directly below selected exercises, ahead of search results", () => {
+test("grouped picker keeps Add at the bottom below the exercise list", () => {
   for (const format of ["superset", "circuit"]) {
     const fixture = dialogFixture(format);
     fixture.context.openCustomWorkoutExerciseDialog(fixture.trigger);
@@ -422,7 +423,7 @@ test("grouped picker places Add directly below selected exercises, ahead of sear
     const addButton = markup.indexOf("data-workout-picker-submit");
     const searchRow = markup.indexOf("custom-workout-picker-search-row");
     const results = markup.indexOf("data-custom-exercise-suggestions");
-    assert.ok(selectedList < addButton && addButton < searchRow && searchRow < results);
+    assert.ok(selectedList < searchRow && searchRow < results && results < addButton);
     assert.doesNotMatch(markup, /autofocus required/, "Selected exercises must submit with an empty search field");
   }
 });
@@ -430,17 +431,17 @@ test("grouped picker places Add directly below selected exercises, ahead of sear
 test("superset picker collects two exercises before one add action", () => {
   const fixture = dialogFixture("superset");
   fixture.context.openCustomWorkoutExerciseDialog(fixture.trigger);
-  assert.equal(fixture.prompt.textContent, "Pick the first exercise");
+  assert.equal(fixture.prompt.textContent, "STEP 1 OF 2 · PICK FIRST EXERCISE");
   const choose = (name) => fixture.click("[data-custom-exercise-suggestion]", { dataset: { customExerciseSuggestion: name } });
   choose("Cable Row");
-  assert.equal(fixture.prompt.textContent, "First exercise selected. Pick the second.");
+  assert.equal(fixture.prompt.textContent, "STEP 2 OF 2 · PICK SECOND EXERCISE");
   assert.deepEqual(fixture.calls.add, []);
   assert.equal(fixture.submit.disabled, true);
   fixture.input.value = "Unqueued search text";
   fixture.handlers.submit({ preventDefault() {}, stopPropagation() {} });
   assert.deepEqual(fixture.calls.add, [], "Search text is not selected until queued");
   choose("Lat Pulldown");
-  assert.equal(fixture.prompt.textContent, "Second exercise selected. Ready to add.");
+  assert.equal(fixture.prompt.textContent, "PAIR READY · 2 SELECTED");
   assert.equal(fixture.submit.disabled, false);
   fixture.input.value = "Unselected search text";
   fixture.handlers.submit({ preventDefault() {}, stopPropagation() {} });
@@ -465,11 +466,11 @@ test("circuit picker accepts a fourth exercise and lets clients remove a choice"
   fixture.context.openCustomWorkoutExerciseDialog(fixture.trigger);
   const choose = (name) => fixture.click("[data-custom-exercise-suggestion]", { dataset: { customExerciseSuggestion: name } });
   choose("Squat");
-  assert.equal(fixture.prompt.textContent, "First exercise selected. Pick the second.");
+  assert.equal(fixture.prompt.textContent, "STEP 2 OF 3 · PICK SECOND EXERCISE");
   choose("Push-Up");
-  assert.equal(fixture.prompt.textContent, "Second exercise selected. Pick the third.");
+  assert.equal(fixture.prompt.textContent, "STEP 3 OF 3 · PICK THIRD EXERCISE");
   choose("Row");
-  assert.equal(fixture.prompt.textContent, "Third exercise selected. Ready to add.");
+  assert.equal(fixture.prompt.textContent, "CIRCUIT READY · 3 SELECTED");
   choose("Jump Rope");
   assert.equal(fixture.submit.disabled, false);
   fixture.click("[data-workout-picker-remove]", { dataset: { workoutPickerRemove: "1" } });
