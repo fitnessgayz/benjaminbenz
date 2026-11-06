@@ -196,6 +196,7 @@
   let restoreFocus = null;
   let selection = null;
   let sourceRecords = [];
+  let recentNamesInView = [];
   let activeMuscle = "All";
   let activeEquipment = "All";
   let recentOnly = false;
@@ -276,9 +277,19 @@
     const count = element("p", "client-exercise-library-count");
     count.setAttribute("role", "status");
     count.setAttribute("aria-live", "polite");
+    const customButton = element("button", "client-exercise-library-custom");
+    customButton.type = "button";
+    customButton.hidden = true;
+    customButton.addEventListener("click", () => {
+      const name = search.value.trim();
+      if (!name) return;
+      const onSelect = selection;
+      close();
+      if (typeof onSelect === "function") onSelect(name);
+    });
     const results = element("div", "client-exercise-library-results");
     results.id = "client-exercise-library-results";
-    shell.append(header, help, searchLabel, browse, filters, equipmentLabel, count, results);
+    shell.append(header, help, searchLabel, browse, filters, equipmentLabel, count, customButton, results);
     dialog.append(shell);
     root.document.body.append(dialog);
     dialog.addEventListener("close", () => {
@@ -302,6 +313,8 @@
       }
       if (searchTimer) root.clearTimeout(searchTimer);
       if (renderFrame) root.cancelAnimationFrame(renderFrame);
+      results.classList.add("is-searching");
+      results.setAttribute("aria-busy", "true");
       searchTimer = root.setTimeout(() => {
         searchTimer = 0;
         renderFrame = root.requestAnimationFrame(() => { renderFrame = 0; renderResults(); });
@@ -357,12 +370,15 @@
 
   function renderResults() {
     const query = dialog.querySelector(".client-exercise-library-search").value;
+    const customButton = dialog.querySelector(".client-exercise-library-custom");
+    customButton.hidden = !query.trim();
+    customButton.textContent = query.trim() ? `Add “${query.trim()}” to this workout` : "";
     const matched = matchingRecords(sourceRecords, query, activeMuscle, activeEquipment, recentOnly);
     const count = dialog.querySelector(".client-exercise-library-count");
     count.textContent = `${matched.length} ${matched.length === 1 ? "exercise" : "exercises"}`;
     const results = dialog.querySelector(".client-exercise-library-results");
     const fragment = document.createDocumentFragment();
-    if (!matched.length) fragment.append(element("p", "client-exercise-library-empty", "No exercises found. Try another name or muscle group."));
+    if (!matched.length) fragment.append(element("p", "client-exercise-library-empty", "No library match. You can add the name you typed above."));
     const showRecentFirst = !recentOnly && !query.trim() && activeMuscle === "All" && activeEquipment === "All";
     const reference = sourceRecords.find((record) => normalize(record.name) === normalize(referenceName));
     const alternatives = showRecentFirst && reference?.substitutionGroup
@@ -453,11 +469,14 @@
     });
     results.replaceChildren(fragment);
     results.scrollTop = 0;
+    results.classList.remove("is-searching");
+    results.removeAttribute("aria-busy");
   }
 
   function open({ records = [], recentNames = [], referenceName: currentName = "", initialQuery = "", onSelect } = {}) {
     ensureDialog();
     if (dialog.open || !dialog.hidden) close();
+    recentNamesInView = recentNames;
     sourceRecords = prepareRecords(records, recentNames);
     selection = onSelect;
     restoreFocus = root.document.activeElement;
@@ -478,7 +497,20 @@
     search.focus();
   }
 
-  root.FWB_CLIENT_EXERCISE_LIBRARY = { open, close };
+  function refresh({ records = [] } = {}) {
+    if (!dialog || (dialog.hidden && !dialog.open)) return;
+    if (searchTimer) root.clearTimeout(searchTimer);
+    searchTimer = 0;
+    if (renderFrame) root.cancelAnimationFrame(renderFrame);
+    renderFrame = 0;
+    sourceRecords = prepareRecords(records, recentNamesInView);
+    renderBrowse();
+    renderFilters();
+    renderEquipment();
+    renderResults();
+  }
+
+  root.FWB_CLIENT_EXERCISE_LIBRARY = { open, close, refresh };
   if (typeof module !== "undefined" && module.exports) {
     module.exports = { muscleFor, prepareRecords, matchingRecords, groupedRecords, exerciseFamilies, muscleArtwork };
   }
