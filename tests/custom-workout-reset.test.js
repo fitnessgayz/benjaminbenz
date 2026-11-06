@@ -21,11 +21,11 @@ test("renders a compact reset action only inside the Custom Workout builder", ()
   const customPanel = sourceForFunction("customWorkoutPanelMarkup");
   const assignedPanel = sourceForFunction("renderClientWorkoutTabs");
 
-  assert.match(customPanel, /data-reset-custom-workout>Reset<\/button>/);
+  assert.match(customPanel, /data-reset-custom-workout>Reset workout<\/button>/);
   assert.match(customPanel, /data-custom-workout-reset-status role="status" aria-live="polite"/);
   assert.doesNotMatch(assignedPanel, /data-reset-custom-workout/);
-  assert.match(customPanel, /class="custom-workout-primary-actions"[\s\S]*data-custom-workout-start-control[\s\S]*data-reset-custom-workout/);
-  assert.doesNotMatch(customPanel, /class="custom-workout-launcher-menu"/);
+  assert.match(customPanel, /class="custom-workout-primary-actions"[\s\S]*data-reset-custom-workout[\s\S]*data-custom-workout-start-control/);
+  assert.match(customPanel, /class="custom-workout-launcher-menu"/);
   assert.match(dashboard, /client-custom-workout-launcher\.css\?v=7/);
   assert.match(launcherStyles, /\.custom-workout-primary-actions\s*\{[^}]*display: flex;/);
 });
@@ -35,10 +35,10 @@ test("uses the exercise-first launcher without a separate warm-up section", () =
   const exerciseControls = sourceForFunction("syncCustomWorkoutExerciseControls");
 
   assert.match(customPanel, /class="custom-workout-launcher-exercise-card"/);
-  assert.match(customPanel, /<h3>Your exercises<\/h3><p>Build as you go\.<\/p>/);
+  assert.match(customPanel, /data-custom-workout-launcher-add-label>Add your first exercise/);
   assert.ok(customPanel.indexOf("customWorkoutFormatPickerMarkup()") < customPanel.indexOf("data-custom-workout-launcher-add"));
-  assert.match(customPanel, /data-custom-workout-launcher-add-label>Add first exercise/);
-  assert.match(customPanel, /Choose an exercise to get started/);
+  assert.match(customPanel, /data-custom-workout-launcher-add-label>Add your first exercise/);
+  assert.match(customPanel, /Or start from something you've done before/);
   assert.doesNotMatch(customPanel, /warmupLogFields\(/);
   assert.ok(customPanel.indexOf("data-custom-workout-launcher-add-label") < customPanel.indexOf("customWorkoutCarouselMarkup(format, workoutStorageTitle)"));
   assert.ok(customPanel.indexOf("data-custom-workout-footer-add") > customPanel.indexOf("customWorkoutCarouselMarkup(format, workoutStorageTitle)"));

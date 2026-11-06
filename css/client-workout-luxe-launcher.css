@@ -1,0 +1,164 @@
+/* Compact custom workout launcher. The setup remains editable beneath the chips. */
+:root body.client-dashboard-page #client-workouts-panel.is-luxe-custom-workout .client-workout-panel-custom {
+  gap: 16px;
+  color: #f7f7f8;
+}
+:root body.client-dashboard-page #client-workouts-panel.is-luxe-custom-workout .client-workouts-back {
+  display: grid;
+  width: 44px !important;
+  height: 44px;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid #393b40;
+  border-radius: 50%;
+  background: #252629;
+  color: transparent;
+  font-size: 0;
+}
+:root body.client-dashboard-page #client-workouts-panel.is-luxe-custom-workout .client-workouts-back span {
+  color: #fff;
+  font-size: 2rem;
+}
+:root body.client-dashboard-page #client-workouts-panel.is-luxe-custom-workout .client-workouts-message-button {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border: 1px solid #393b40;
+  border-radius: 50%;
+  background: #252629;
+}
+:root body.client-dashboard-page #client-workouts-panel.is-luxe-custom-workout .client-workouts-message-button > span:not(.client-dashboard-nav-unread) {
+  display: none;
+}
+:root body.client-dashboard-page #client-workouts-panel .client-workout-panel-custom .custom-workout-setup {
+  margin: 0;
+  border: 1px solid #37393c;
+  border-radius: 20px;
+  background: linear-gradient(130deg, #242521, #1c1d1d);
+}
+:root body.client-dashboard-page #client-workouts-panel .client-workout-panel-custom .custom-workout-session-chips {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.2fr) 40px;
+  gap: 5px;
+  align-items: center;
+  min-height: 60px;
+  padding: 8px;
+  list-style: none;
+  cursor: pointer;
+}
+.custom-workout-session-chips::-webkit-details-marker { display: none; }
+:root body.client-dashboard-page #client-workouts-panel .client-workout-panel-custom .custom-workout-session-chip {
+  display: flex;
+  min-width: 0;
+  min-height: 36px;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 4px 7px;
+  border-radius: 18px;
+  background: #30312d;
+  color: #f3f3f2;
+  font-size: .76rem;
+  font-weight: 650;
+}
+.custom-workout-session-chip > span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.custom-workout-session-chip > span:first-child { flex: none; color: #ffd400; }
+:root body.client-dashboard-page #client-workouts-panel .client-workout-panel-custom .custom-workout-edit-icon {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border: 1px solid #45464a;
+  border-radius: 50%;
+  background: #2c2d2d;
+  font-size: 1.1rem;
+}
+.custom-workout-setup-fields { display: grid; gap: 16px; padding: 0 12px 14px; }
+:root body.client-dashboard-page #client-workouts-panel .client-workout-panel-custom .custom-workout-launcher-exercise-card {
+  display: block;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid #303236;
+  border-radius: 22px;
+  background: linear-gradient(180deg, #242525, #17181b 60%, #111215);
+}
+:root body.client-dashboard-page #client-workouts-panel .client-workout-panel-custom .custom-workout-launcher-add {
+  display: flex;
+  min-height: clamp(310px, 48vh, 490px);
+  gap: 14px;
+  border: 0;
+  border-radius: 22px;
+  background: transparent;
+  color: #f8f8f8;
+  font-size: 1rem;
+}
+:root body.client-dashboard-page #client-workouts-panel .client-workout-panel-custom .custom-workout-launcher-add-icon {
+  width: 90px;
+  height: 90px;
+  margin-bottom: 5px;
+  background: #ffd400;
+  box-shadow: 0 0 0 9px #ffd40024, 0 0 32px 15px #ffd40057;
+  color: #111;
+  font-size: 3rem;
+  font-weight: 400;
+}
+:root body.client-dashboard-page #client-workouts-panel .client-workout-panel-custom .custom-workout-launcher-add strong {
+  color: #fff;
+  font-size: 1.1rem;
+}
+:root body.client-dashboard-page #client-workouts-panel .client-workout-panel-custom .custom-workout-launcher-add-help {
+  color: #a6a8ae;
+  font-size: .86rem;
+}
+:root body.client-dashboard-page #client-workouts-panel .client-workout-panel-custom .workout-compact-source-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  overflow: visible;
+  border: 0;
+  background: transparent;
+}
+:root body.client-dashboard-page #client-workouts-panel .client-workout-panel-custom .workout-compact-source-list .workout-choice-card,
+:root body.client-dashboard-page #client-workouts-panel .client-workout-panel-custom .workout-compact-source-list .workout-choice-card + .workout-choice-card {
+  display: flex;
+  min-width: 0;
+  min-height: 82px;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 13px;
+  border: 1px solid #303236 !important;
+  border-radius: 18px !important;
+  background: linear-gradient(145deg, #202124, #17181b);
+  color: #fff;
+  font-size: .84rem;
+}
+.client-workout-panel-custom .workout-compact-source-list .workout-choice-card > svg { flex: none; color: #ffd400; }
+:root body.client-dashboard-page #client-workouts-panel .client-workout-panel-custom .custom-workout-primary-actions {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  gap: 10px;
+  margin: 0;
+}
+:root body.client-dashboard-page #client-workouts-panel .client-workout-panel-custom .custom-workout-launcher-menu > summary {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  background: #252629;
+  color: #f7f7f8;
+  font-size: 1rem;
+}
+:root body.client-dashboard-page #client-workouts-panel .client-workout-panel-custom .workout-start-button {
+  min-height: 56px;
+  border-radius: 16px;
+  background: #ffd400;
+  color: #111;
+  box-shadow: 0 0 24px #ffd40052;
+}
+:root body.client-dashboard-page #client-workouts-panel .client-workout-panel-custom.has-custom-exercises .custom-workout-launcher-exercise-card,
+:root body.client-dashboard-page #client-workouts-panel .client-workout-panel-custom.has-custom-exercises .workout-compact-source { display: none; }
+@media (max-width: 360px) {
+  :root body.client-dashboard-page #client-workouts-panel .client-workout-panel-custom .custom-workout-session-chip { font-size: .68rem; padding: 4px; }
+}
