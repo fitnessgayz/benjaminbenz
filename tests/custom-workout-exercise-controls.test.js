@@ -367,6 +367,7 @@ function dialogFixture(format = "single") {
   const selectedCount = { textContent: "" };
   const selected = { hidden: true, querySelector: () => selectedCount };
   const selectedList = { innerHTML: "" };
+  const prompt = { textContent: "" };
   const submit = { disabled: false, textContent: "" };
   const menu = { hidden: true };
   const cards = [0, 1, 2].map((index) => ({ querySelector: () => ({ index }) }));
@@ -378,6 +379,7 @@ function dialogFixture(format = "single") {
       "#custom-workout-picker-search": input,
       "[data-workout-picker-selected]": selected,
       "[data-workout-picker-selected-list]": selectedList,
+      "[data-workout-picker-prompt]": prompt,
       '[data-custom-exercise-suggestions]': menu,
       'button[type="submit"]': submit
     })[selector] || input,
@@ -395,7 +397,7 @@ function dialogFixture(format = "single") {
     addCustomWorkoutPickedExercises: (_panel, names) => { calls.add.push(...names); return null; }
   });
   const click = (selector, target = {}) => handlers.click({ stopPropagation() {}, target: { closest: (candidate) => candidate === selector ? target : null } });
-  return { context, handlers, calls, trigger, input, click, dialog, panel, selectedList, submit };
+  return { context, handlers, calls, trigger, input, click, dialog, panel, selectedList, prompt, submit };
 }
 
 test("picker asks for the full superset or circuit before adding it", () => {
@@ -428,14 +430,17 @@ test("grouped picker places Add directly below selected exercises, ahead of sear
 test("superset picker collects two exercises before one add action", () => {
   const fixture = dialogFixture("superset");
   fixture.context.openCustomWorkoutExerciseDialog(fixture.trigger);
+  assert.equal(fixture.prompt.textContent, "Pick the first exercise");
   const choose = (name) => fixture.click("[data-custom-exercise-suggestion]", { dataset: { customExerciseSuggestion: name } });
   choose("Cable Row");
+  assert.equal(fixture.prompt.textContent, "First exercise selected. Pick the second.");
   assert.deepEqual(fixture.calls.add, []);
   assert.equal(fixture.submit.disabled, true);
   fixture.input.value = "Unqueued search text";
   fixture.handlers.submit({ preventDefault() {}, stopPropagation() {} });
   assert.deepEqual(fixture.calls.add, [], "Search text is not selected until queued");
   choose("Lat Pulldown");
+  assert.equal(fixture.prompt.textContent, "Second exercise selected. Ready to add.");
   assert.equal(fixture.submit.disabled, false);
   fixture.input.value = "Unselected search text";
   fixture.handlers.submit({ preventDefault() {}, stopPropagation() {} });
@@ -459,7 +464,13 @@ test("circuit picker accepts a fourth exercise and lets clients remove a choice"
   const fixture = dialogFixture("circuit");
   fixture.context.openCustomWorkoutExerciseDialog(fixture.trigger);
   const choose = (name) => fixture.click("[data-custom-exercise-suggestion]", { dataset: { customExerciseSuggestion: name } });
-  ["Squat", "Push-Up", "Row", "Jump Rope"].forEach(choose);
+  choose("Squat");
+  assert.equal(fixture.prompt.textContent, "First exercise selected. Pick the second.");
+  choose("Push-Up");
+  assert.equal(fixture.prompt.textContent, "Second exercise selected. Pick the third.");
+  choose("Row");
+  assert.equal(fixture.prompt.textContent, "Third exercise selected. Ready to add.");
+  choose("Jump Rope");
   assert.equal(fixture.submit.disabled, false);
   fixture.click("[data-workout-picker-remove]", { dataset: { workoutPickerRemove: "1" } });
   assert.match(fixture.selectedList.innerHTML, /Jump Rope/);

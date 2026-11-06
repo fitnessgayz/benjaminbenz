@@ -787,6 +787,16 @@
   font-size: .85rem;
 }
 
+.dashboard-page .custom-workout-picker-prompt {
+  padding: 8px 10px;
+  border-radius: 9px;
+  background: #fff0a6;
+  color: #111411;
+  font-size: .9rem;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
 .dashboard-page .custom-workout-picker-selected {
   padding: 10px;
   border: 1px solid var(--line, #d7d9d2);
