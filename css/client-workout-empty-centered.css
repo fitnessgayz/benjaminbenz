@@ -1,0 +1,44 @@
+/* Keep the empty quick workout action centered, with sources and Start below it. */
+:root body.client-dashboard-page #client-workouts-panel .client-workout-panel-custom:not(.has-custom-exercises) .custom-workout-launcher-exercise-card {
+  order: 0; display: grid; min-height: clamp(320px, 42dvh, 430px);
+  padding: 14px; place-items: center; border: 1px solid #393d45;
+  background: linear-gradient(160deg, #242424, #14151a 75%);
+}
+:root body.client-dashboard-page #client-workouts-panel .client-workout-panel-custom:not(.has-custom-exercises) .custom-workout-launcher-exercise-heading { display: none; }
+:root body.client-dashboard-page #client-workouts-panel .client-workout-panel-custom:not(.has-custom-exercises) .custom-workout-launcher-add {
+  display: flex; min-height: 280px; width: 100%; padding: 20px 10px;
+  align-items: center; justify-content: center; gap: 15px;
+  border: 0; background: transparent; color: #f7f7f8;
+}
+:root body.client-dashboard-page #client-workouts-panel .client-workout-panel-custom:not(.has-custom-exercises) .custom-workout-launcher-add-icon {
+  width: 86px; height: 86px; background: #ffd400; color: #111;
+  font-size: 48px; box-shadow: 0 0 0 8px #ffd40022, 0 0 26px #ffd40077;
+}
+:root body.client-dashboard-page #client-workouts-panel .client-workout-panel-custom:not(.has-custom-exercises) .custom-workout-launcher-add strong {
+  color: #f7f7f8 !important; font-size: clamp(19px, 5.4vw, 24px); line-height: 1.2; text-align: center;
+}
+:root body.client-dashboard-page #client-workouts-panel .client-workout-panel-custom:not(.has-custom-exercises) .custom-workout-launcher-add-help {
+  color: #aeb3bd; font-size: 14px; line-height: 1.35;
+}
+:root body.client-dashboard-page #client-workouts-panel .client-workout-panel-custom:not(.has-custom-exercises) .workout-compact-source { order: 1; }
+:root body.client-dashboard-page #client-workouts-panel .client-workout-panel-custom:not(.has-custom-exercises) .workout-compact-source > h3 { display: none; }
+:root body.client-dashboard-page #client-workouts-panel .client-workout-panel-custom:not(.has-custom-exercises) .workout-compact-source-list {
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px;
+  overflow: visible; border: 0; background: transparent;
+}
+:root body.client-dashboard-page #client-workouts-panel .client-workout-panel-custom:not(.has-custom-exercises) .workout-compact-source-list .workout-choice-card {
+  display: flex; flex-direction: column; align-items: flex-start; justify-content: center;
+  min-width: 0; min-height: 86px; gap: 7px; padding: 12px;
+  border: 1px solid #393d45 !important; border-radius: 17px !important;
+  background: #1d1f25; color: #f7f7f8;
+}
+:root body.client-dashboard-page #client-workouts-panel .client-workout-panel-custom:not(.has-custom-exercises) .workout-compact-source-list .workout-choice-card + .workout-choice-card { border-top: 1px solid #393d45 !important; }
+:root body.client-dashboard-page #client-workouts-panel .client-workout-panel-custom:not(.has-custom-exercises) .workout-choice-icon {
+  width: 22px; height: 22px; background: transparent; color: #69b8fa;
+}
+:root body.client-dashboard-page #client-workouts-panel .client-workout-panel-custom:not(.has-custom-exercises) .workout-choice-title {
+  color: #f7f7f8; font-size: 14px; white-space: normal;
+}
+:root body.client-dashboard-page #client-workouts-panel .client-workout-panel-custom:not(.has-custom-exercises) .workout-choice-description,
+:root body.client-dashboard-page #client-workouts-panel .client-workout-panel-custom:not(.has-custom-exercises) .workout-choice-arrow { display: none; }
+:root body.client-dashboard-page #client-workouts-panel .client-workout-panel-custom:not(.has-custom-exercises) .custom-workout-primary-actions { order: 2; margin-top: 0; }

@@ -414,7 +414,7 @@ test("picker asks for the full superset or circuit before adding it", () => {
   }
 });
 
-test("grouped picker keeps Add at the bottom below the exercise list", () => {
+test("grouped picker keeps Add directly below selected exercises", () => {
   for (const format of ["superset", "circuit"]) {
     const fixture = dialogFixture(format);
     fixture.context.openCustomWorkoutExerciseDialog(fixture.trigger);
@@ -423,7 +423,7 @@ test("grouped picker keeps Add at the bottom below the exercise list", () => {
     const addButton = markup.indexOf("data-workout-picker-submit");
     const searchRow = markup.indexOf("custom-workout-picker-search-row");
     const results = markup.indexOf("data-custom-exercise-suggestions");
-    assert.ok(selectedList < searchRow && searchRow < results && results < addButton);
+    assert.ok(selectedList < addButton && addButton < searchRow && searchRow < results);
     assert.doesNotMatch(markup, /autofocus required/, "Selected exercises must submit with an empty search field");
   }
 });

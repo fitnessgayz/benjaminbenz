@@ -13199,6 +13199,7 @@ function openCustomWorkoutExerciseDialog(trigger, mode = "add") {
           ${grouped ? `<div class="custom-workout-picker-selected" data-workout-picker-selected>
             <strong data-workout-picker-selected-count></strong>
             <div data-workout-picker-selected-list></div>
+            <button class="button button-dark" type="submit" data-workout-picker-submit disabled>Add ${format === "superset" ? "pair" : "circuit"} · 0/${minimum}</button>
           </div>` : ""}
           <label for="custom-workout-picker-search">Search exercises</label>
           <div class="custom-workout-picker-search-row">
@@ -13218,7 +13219,6 @@ function openCustomWorkoutExerciseDialog(trigger, mode = "add") {
           ${grouped ? '<button class="custom-workout-picker-queue-typed" type="button" data-workout-picker-queue-typed hidden>Add typed name to selection</button>' : ""}
         </div>
         ${grouped ? '<button class="custom-workout-picker-browse" type="button" data-custom-exercise-browse>Browse full library</button>' : ""}
-        ${grouped ? `<button class="button button-dark" type="submit" data-workout-picker-submit disabled>Add ${format === "superset" ? "pair" : "circuit"} · 0/${minimum}</button>` : ""}
         ${grouped ? "" : `<button class="button button-dark" type="submit">${addConfig.label}</button>`}
       </form>`}
   `;
@@ -13399,23 +13399,6 @@ function customWorkoutPanelMarkup(index) {
         </div>
       </div>
       <p class="custom-workout-copy-status" data-custom-workout-copy-status role="status" aria-live="polite" ${copyStatusMessage ? "" : "hidden"}>${escapeHtml(copyStatusMessage)}</p>
-      <div class="workout-compact-source">
-        <h3>Source</h3>
-        <div class="workout-compact-source-list">
-          <button type="button" class="workout-choice-card" data-client-workout-copy-history
-            aria-label="Copy Past Workout from Logs" aria-labelledby="custom-workout-copy-title" aria-describedby="custom-workout-copy-description">
-            ${clientWorkoutChoiceContent({ icon: "copy", title: "Copy Past Workout",
-              description: "Choose a workout from Logs to copy.",
-              titleId: "custom-workout-copy-title", descriptionId: "custom-workout-copy-description" })}
-          </button>
-          <button type="button" class="workout-choice-card" data-client-saved-workout-plans
-            aria-labelledby="custom-workout-saved-title" aria-describedby="custom-workout-saved-description">
-            ${clientWorkoutChoiceContent({ icon: "saved", title: "Saved Workout Program",
-              description: "Choose a workout from a saved weekly plan.",
-              titleId: "custom-workout-saved-title", descriptionId: "custom-workout-saved-description" })}
-          </button>
-        </div>
-      </div>
       <label class="custom-workout-session-date workout-session-date workout-compact-date">
         <span class="workout-date-icon" aria-hidden="true">▦</span>
         <span class="workout-date-label">Date</span>
@@ -13442,8 +13425,25 @@ function customWorkoutPanelMarkup(index) {
           <button type="button" class="custom-workout-launcher-add" data-custom-workout-launcher-add data-pick-custom-exercise>
             <span class="custom-workout-launcher-add-icon" aria-hidden="true">＋</span>
             <strong data-custom-workout-launcher-add-label>Add first exercise</strong>
-            <span class="custom-workout-launcher-add-help">Choose an exercise to get started<br />on your custom workout.</span>
+            <span class="custom-workout-launcher-add-help">Build your workout as you go</span>
           </button>
+        </div>
+        <div class="workout-compact-source">
+          <h3>Source</h3>
+          <div class="workout-compact-source-list">
+            <button type="button" class="workout-choice-card" data-client-workout-copy-history
+              aria-label="Copy Past Workout from Logs" aria-labelledby="custom-workout-copy-title" aria-describedby="custom-workout-copy-description">
+              ${clientWorkoutChoiceContent({ icon: "copy", title: "Past workout",
+                description: "Choose a workout from Logs to copy.",
+                titleId: "custom-workout-copy-title", descriptionId: "custom-workout-copy-description" })}
+            </button>
+            <button type="button" class="workout-choice-card" data-client-saved-workout-plans
+              aria-labelledby="custom-workout-saved-title" aria-describedby="custom-workout-saved-description">
+              ${clientWorkoutChoiceContent({ icon: "saved", title: "Saved program",
+                description: "Choose a workout from a saved weekly plan.",
+                titleId: "custom-workout-saved-title", descriptionId: "custom-workout-saved-description" })}
+            </button>
+          </div>
         </div>
         ${customWorkoutCarouselMarkup(format, workoutStorageTitle)}
         <button type="button" class="custom-workout-footer-add" data-custom-workout-footer-add data-pick-custom-exercise hidden>
@@ -18566,7 +18566,7 @@ function handleClientHomeCheckin() {
   });
   document.addEventListener("click", event => {
     const button = event.target.closest("[data-client-daily-checkin]");
-    if (button) openClientDailyCheckin("recommendation", button);
+    if (button) openClientDailyCheckin(button.classList.contains("client-home-atari") ? "checkin" : "recommendation", button);
   });
   document.addEventListener("click", (event) => {
     const toggle = event.target.closest("[data-client-home-checkin-toggle]");

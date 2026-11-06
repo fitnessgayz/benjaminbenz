@@ -120,6 +120,27 @@
 :root body.client-dashboard-page .client-home-week-legend span:last-child i { background: #69b8fa; }
 :root body.client-dashboard-page .client-home-week-detail[hidden] { display: none !important; }
 :root body.client-dashboard-page .client-home-community { order: 4; }
+:root body.client-dashboard-page .client-weekly-activity,
+:root body.client-dashboard-page .client-home-gym-pill,
+:root body.client-dashboard-page .client-manual-daily-checkin { display: none !important; }
+:root body.client-dashboard-page .client-home-week-actions { grid-template-columns: 1fr; }
+:root body.client-dashboard-page .client-home-atari {
+  position: fixed; z-index: 35; right: 14px;
+  bottom: calc(94px + env(safe-area-inset-bottom));
+  display: block !important; width: 70px !important; height: 76px !important;
+  min-width: 70px !important; max-width: 70px !important; min-height: 76px !important;
+  padding: 0; overflow: hidden; cursor: pointer;
+  border: 1px solid #bc9d14; border-radius: 50% !important; background: #202228;
+  box-shadow: 0 4px 18px #0009;
+}
+:root body.client-dashboard-page .client-home-atari img {
+  position: absolute; display: block; width: 200%; height: 200%; max-width: none;
+}
+:root body.client-dashboard-page .client-home-atari[data-pose="0"] img { left: 0; top: 0; }
+:root body.client-dashboard-page .client-home-atari[data-pose="1"] img { left: -100%; top: 0; }
+:root body.client-dashboard-page .client-home-atari[data-pose="2"] img { left: 0; top: -100%; }
+:root body.client-dashboard-page .client-home-atari[data-pose="3"] img { left: -100%; top: -100%; }
+:root body.client-dashboard-page .client-home-atari:focus-visible { outline: 3px solid #ffd400; outline-offset: 3px; }
 :root body.client-dashboard-page .client-home-checkin-links { order: 5; }
 :root body.client-dashboard-page .client-weekly-activity { order: 6; }
 :root body.client-dashboard-page .client-home-streak { order: 7; }

@@ -4,6 +4,15 @@
   if (!document) return;
   const planner = document.querySelector('.client-home-planner');
   if (!planner) return;
+  const atari = document.querySelector('.client-home-atari');
+  if (atari) {
+    let pose = 0;
+    try {
+      pose = (Number(root.sessionStorage.getItem('fwb-home-atari-pose')) + 1) % 4;
+      root.sessionStorage.setItem('fwb-home-atari-pose', String(pose));
+    } catch (_) { pose = Math.floor(Math.random() * 4); }
+    atari.dataset.pose = String(pose);
+  }
   const streakSection = document.querySelector('.client-home-streak');
   const daysHost = planner.querySelector('[data-client-home-week-days]');
   const label = planner.querySelector('[data-client-home-week-label]');
@@ -256,7 +265,7 @@
   if (wall && homeFeed) {
     const syncFeed = () => {
       homeFeed.replaceChildren();
-      const cards = [...wall.querySelectorAll('.client-community-wall-card')].slice(0, 2);
+      const cards = [...wall.querySelectorAll('.client-community-wall-card')];
       if (!cards.length) {
         const empty = document.createElement('p');
         empty.textContent = 'No shared wins yet. Your next workout could be the first.';
