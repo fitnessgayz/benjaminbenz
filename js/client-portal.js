@@ -9334,7 +9334,7 @@ function syncWorkoutStartButtons() {
     button.classList.toggle("is-active", isActiveWorkout);
 
     if (!workoutElapsedTimerState) {
-      button.textContent = "Start";
+      button.textContent = button.closest(".client-workout-panel-custom") ? "Start workout" : "Start";
     } else if (!isActiveWorkout) {
       button.textContent = "Workout timer active";
     } else if (workoutElapsedTimerState.dismissed) {
@@ -13003,6 +13003,12 @@ function syncCustomWorkoutExerciseControls(panel) {
   if (!panel?.classList.contains("client-workout-panel-custom")) return;
   const count = panel.querySelectorAll("[data-custom-exercise-card]").length;
   panel.classList.toggle("has-custom-exercises", count > 0);
+  const dateChip = panel.querySelector("[data-compact-workout-date]");
+  const gymChip = panel.querySelector("[data-compact-workout-gym]");
+  const formatChip = panel.querySelector("[data-compact-workout-format]");
+  if (dateChip) dateChip.textContent = formatLogDate(panel.querySelector("[data-workout-date]")?.value || todayDate()).replace(/,? \d{4}$/, "");
+  if (gymChip) gymChip.textContent = normalizeWorkoutGymName(panel.querySelector("[data-workout-gym]")?.value) || "Gym";
+  if (formatChip) formatChip.textContent = customWorkoutFormats[normalizeCustomWorkoutFormat(panel.dataset.customWorkoutFormat)].label;
   const firstExerciseButton = panel.querySelector("[data-custom-workout-launcher-add]");
   const anotherExerciseButton = panel.querySelector("[data-custom-workout-footer-add]");
   if (firstExerciseButton) firstExerciseButton.hidden = count > 0;
@@ -13345,64 +13351,66 @@ function customWorkoutPanelMarkup(index) {
         </div>
       </div>
       <p class="custom-workout-copy-status" data-custom-workout-copy-status role="status" aria-live="polite" ${copyStatusMessage ? "" : "hidden"}>${escapeHtml(copyStatusMessage)}</p>
+      <details class="custom-workout-setup">
+        <summary class="custom-workout-session-chips" aria-label="Edit workout date, gym and format">
+          <span class="custom-workout-session-chip"><span aria-hidden="true">▦</span><span data-compact-workout-date>${escapeHtml(formatLogDate(todayDate()).replace(/,? \d{4}$/, ""))}</span></span>
+          <span class="custom-workout-session-chip"><span aria-hidden="true">⌂</span><span data-compact-workout-gym>${escapeHtml(activeDraft?.gymName || storedWorkoutGymLocation(workoutStorageTitle) || "Gym")}</span></span>
+          <span class="custom-workout-session-chip"><span aria-hidden="true">◇</span><span data-compact-workout-format>${escapeHtml(customWorkoutFormats[format].label)}</span></span>
+          <span class="custom-workout-edit-icon" aria-hidden="true">✎</span>
+        </summary>
+        <div class="custom-workout-setup-fields">
+          <label class="custom-workout-session-date workout-session-date workout-compact-date">
+            <span class="workout-date-icon" aria-hidden="true">▦</span>
+            <span class="workout-date-label">Date</span>
+            <span class="workout-session-date-control">
+              <span class="workout-session-date-value" data-workout-date-value aria-hidden="true">${escapeHtml(formatLogDate(todayDate()))}</span>
+              <input type="date" value="${todayDate()}" data-workout-date />
+            </span>
+            <small><strong>✓ Autosave on</strong><span>Web + iPhone</span></small>
+          </label>
+          <div class="custom-workout-launcher-gym">${workoutGymPickerMarkup(activeDraft?.gymName || storedWorkoutGymLocation(workoutStorageTitle), index)}</div>
+          <div class="workout-compact-format"><h3>Format</h3>${customWorkoutFormatPickerMarkup()}</div>
+        </div>
+      </details>
+      <div class="custom-workout-launcher-exercise-card">
+        <button type="button" class="custom-workout-launcher-add" data-custom-workout-launcher-add data-pick-custom-exercise>
+          <span class="custom-workout-launcher-add-icon" aria-hidden="true">＋</span>
+          <strong data-custom-workout-launcher-add-label>Add your first exercise</strong>
+          <span class="custom-workout-launcher-add-help">Or start from something you've done before</span>
+        </button>
+      </div>
       <div class="workout-compact-source">
-        <h3>Source</h3>
         <div class="workout-compact-source-list">
           <button type="button" class="workout-choice-card" data-client-workout-copy-history
-            aria-label="Copy Past Workout from Logs" aria-labelledby="custom-workout-copy-title" aria-describedby="custom-workout-copy-description">
-            ${clientWorkoutChoiceContent({ icon: "copy", title: "Copy Past Workout",
-              description: "Choose a workout from Logs to copy.",
-              titleId: "custom-workout-copy-title", descriptionId: "custom-workout-copy-description" })}
+            aria-label="Past workout from Logs">
+            <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="7" y="3" width="13" height="16" rx="2"/><path d="M16 19v2H5a2 2 0 0 1-2-2V7h4"/></svg><strong>Past workout</strong>
           </button>
           <button type="button" class="workout-choice-card" data-client-saved-workout-plans
-            aria-labelledby="custom-workout-saved-title" aria-describedby="custom-workout-saved-description">
-            ${clientWorkoutChoiceContent({ icon: "saved", title: "Saved Workout Program",
-              description: "Choose a workout from a saved weekly plan.",
-              titleId: "custom-workout-saved-title", descriptionId: "custom-workout-saved-description" })}
+            aria-label="Saved workout program">
+            <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M5 3h14v18l-7-4-7 4V3Z"/></svg><strong>Saved program</strong>
           </button>
         </div>
       </div>
-      <label class="custom-workout-session-date workout-session-date workout-compact-date">
-        <span class="workout-date-icon" aria-hidden="true">▦</span>
-        <span class="workout-date-label">Date</span>
-        <span class="workout-session-date-control">
-          <span class="workout-session-date-value" data-workout-date-value aria-hidden="true">${escapeHtml(formatLogDate(todayDate()))}</span>
-          <input type="date" value="${todayDate()}" data-workout-date />
-        </span>
-        <small><strong>✓ Autosave on</strong><span>Web + iPhone</span></small>
-      </label>
-      <div class="custom-workout-launcher-gym">${workoutGymPickerMarkup(activeDraft?.gymName || storedWorkoutGymLocation(workoutStorageTitle), index)}</div>
-      <div class="workout-compact-format"><h3>Format</h3>${customWorkoutFormatPickerMarkup()}</div>
       <div class="custom-workout-builder">
         <div class="custom-workout-primary-actions">
-          <div data-custom-workout-start-control ${format === "single" ? "" : "hidden"}>
+          <details class="custom-workout-launcher-menu">
+            <summary aria-label="Workout options">•••</summary>
+            <div class="custom-workout-launcher-menu-content">
+              <button type="button" data-reset-custom-workout>Reset workout</button>
+              <button type="button" data-generate-workout>Generate today’s workout</button>
+            </div>
+          </details>
+          <div data-custom-workout-start-control>
             ${workoutStartControlMarkup(workoutStorageTitle)}
           </div>
-          <button type="button" class="custom-workout-reset-button" data-reset-custom-workout>Reset</button>
         </div>
         <p class="custom-workout-reset-status" data-custom-workout-reset-status role="status" aria-live="polite" hidden></p>
-        <div class="custom-workout-launcher-exercise-card">
-          <div class="custom-workout-launcher-exercise-heading">
-            <div><h3>Your exercises</h3><p>Build as you go.</p></div>
-          </div>
-          <button type="button" class="custom-workout-launcher-add" data-custom-workout-launcher-add data-pick-custom-exercise>
-            <span class="custom-workout-launcher-add-icon" aria-hidden="true">＋</span>
-            <strong data-custom-workout-launcher-add-label>Add first exercise</strong>
-            <span class="custom-workout-launcher-add-help">Choose an exercise to get started<br />on your custom workout.</span>
-          </button>
-        </div>
         ${customWorkoutCarouselMarkup(format, workoutStorageTitle)}
         <button type="button" class="custom-workout-footer-add" data-custom-workout-footer-add data-pick-custom-exercise hidden>
           <span class="custom-workout-footer-add-icon" aria-hidden="true">＋</span>
           <strong>Add another exercise</strong>
         </button>
         <details class="custom-workout-manage-exercises"><summary>Manage exercises</summary>${workoutExerciseListMarkup(true)}</details>
-        <details class="custom-workout-launcher-more custom-workout-details">
-          <summary>Workout options</summary>
-          <div>
-            <button type="button" data-generate-workout>Generate today’s workout</button>
-          </div>
-        </details>
         <div data-custom-workout-default-finish ${format === "single" ? "" : "hidden"}>
           ${workoutActionsMarkup({ exercises }, { includeCardio: true })}
         </div>
@@ -13683,7 +13691,7 @@ function updateCustomWorkoutFormat(panel, value, options = {}) {
   }
   const workoutStartControl = panel.querySelector("[data-custom-workout-start-control]");
   if (workoutStartControl) {
-    workoutStartControl.hidden = format !== "single";
+    workoutStartControl.hidden = false;
   }
 
   syncCustomWorkoutFormatMarkers(panel);
@@ -14392,6 +14400,7 @@ function activateClientWorkoutPanel(nextIndex, options = {}) {
   const compactLog = activePanel.classList.contains("client-workout-panel-custom") ||
     activePanel.classList.contains("client-workout-panel-assigned");
   workoutsPanel?.classList.toggle("is-compact-workout-log", compactLog);
+  workoutsPanel?.classList.toggle("is-luxe-custom-workout", activePanel.classList.contains("client-workout-panel-custom"));
   if (topbarBack) topbarBack.hidden = !compactLog;
   if (topbarTitle) topbarTitle.textContent = activePanel.classList.contains("client-workout-panel-custom")
     ? "Log Workout" : activePanel.classList.contains("client-workout-panel-assigned") ? "Workout Log" : "Workouts";
@@ -14437,6 +14446,7 @@ function showClientWorkoutPicker(options = {}) {
   const summary = document.getElementById("client-workout-selection-summary");
   const workoutsPanel = document.getElementById("client-workouts-panel");
   workoutsPanel?.classList.remove("is-compact-workout-log");
+  workoutsPanel?.classList.remove("is-luxe-custom-workout");
   const topbarBack = workoutsPanel?.querySelector(".client-workouts-back");
   const topbarTitle = workoutsPanel?.querySelector("#client-workouts-title");
   const topbarMessage = workoutsPanel?.querySelector(".client-workouts-message-button");
