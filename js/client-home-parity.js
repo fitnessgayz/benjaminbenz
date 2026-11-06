@@ -238,11 +238,22 @@
       for (const card of cards) {
         const preview = document.createElement('article');
         preview.className = 'client-home-community-post';
+        const sourceHeading = card.querySelector('.client-community-wall-heading');
+        const heading = document.createElement('div');
+        heading.className = 'client-home-community-post-heading';
+        const avatar = document.createElement('span');
+        avatar.className = 'client-home-community-post-avatar';
+        avatar.setAttribute('aria-hidden', 'true');
+        avatar.textContent = sourceHeading?.querySelector('.client-community-avatar')?.textContent || '';
         const author = document.createElement('strong');
-        author.textContent = card.querySelector('.client-community-wall-heading')?.textContent || 'Community';
+        author.textContent = sourceHeading?.querySelector('strong')?.textContent || 'Community';
+        const time = document.createElement('time');
+        time.textContent = sourceHeading?.querySelector('time')?.textContent || '';
+        if (time.textContent) heading.append(avatar, author, time);
+        else heading.append(avatar, author);
         const body = document.createElement('p');
         body.textContent = card.querySelector('p')?.textContent || '';
-        preview.append(author, body);
+        preview.append(heading, body);
         homeFeed.append(preview);
       }
     };

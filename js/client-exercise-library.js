@@ -201,6 +201,7 @@
   let recentOnly = false;
   let referenceName = "";
   let renderFrame = 0;
+  let searchTimer = 0;
 
   function element(tag, className, text) {
     const node = document.createElement(tag);
@@ -211,6 +212,8 @@
 
   function close() {
     if (!dialog) return;
+    if (searchTimer) root.clearTimeout(searchTimer);
+    searchTimer = 0;
     if (renderFrame) root.cancelAnimationFrame(renderFrame);
     renderFrame = 0;
     if (dialog.open) dialog.close();
@@ -279,6 +282,10 @@
     dialog.append(shell);
     root.document.body.append(dialog);
     dialog.addEventListener("close", () => {
+      if (searchTimer) root.clearTimeout(searchTimer);
+      searchTimer = 0;
+      if (renderFrame) root.cancelAnimationFrame(renderFrame);
+      renderFrame = 0;
       root.document.body.classList.remove("client-exercise-library-open");
       if (restoreFocus?.isConnected) restoreFocus.focus();
       restoreFocus = null;
@@ -288,14 +295,22 @@
     dialog.addEventListener("keydown", (event) => {
       if (event.key === "Escape" && typeof dialog.showModal !== "function") close();
     });
-    search.addEventListener("input", () => {
+    const updateSearch = () => {
       if (recentOnly && search.value.trim()) {
         recentOnly = false;
         renderBrowse();
       }
+      if (searchTimer) root.clearTimeout(searchTimer);
       if (renderFrame) root.cancelAnimationFrame(renderFrame);
-      renderFrame = root.requestAnimationFrame(() => { renderFrame = 0; renderResults(); });
+      searchTimer = root.setTimeout(() => {
+        searchTimer = 0;
+        renderFrame = root.requestAnimationFrame(() => { renderFrame = 0; renderResults(); });
+      }, 240);
+    };
+    search.addEventListener("input", (event) => {
+      if (!event.isComposing) updateSearch();
     });
+    search.addEventListener("compositionend", updateSearch);
     return dialog;
   }
 

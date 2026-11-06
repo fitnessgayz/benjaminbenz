@@ -352,6 +352,30 @@ test("closing exercise pickers changes nothing and restores the triggering contr
   }
 });
 
+test("mobile exercise search waits for typing to pause before refreshing suggestions", () => {
+  const fixture = dialogFixture();
+  fixture.context.openCustomWorkoutExerciseDialog(fixture.trigger);
+  let refreshes = 0;
+  let pending = null;
+  fixture.context.renderCustomWorkoutPickerResults = () => { refreshes++; };
+  fixture.context.window = {
+    setTimeout(callback) { pending = callback; return 1; },
+    clearTimeout() { pending = null; }
+  };
+  fixture.dialog.isConnected = true;
+  fixture.input.setAttribute = () => {};
+  const target = { matches: (selector) => selector === "#custom-workout-picker-search" };
+  fixture.handlers.input({ stopPropagation() {}, target, isComposing: true });
+  assert.equal(pending, null);
+  fixture.handlers.compositionend({ target });
+  assert.equal(refreshes, 0);
+  assert.equal(typeof pending, "function");
+  fixture.handlers.input({ stopPropagation() {}, target, isComposing: false });
+  assert.equal(refreshes, 0);
+  pending();
+  assert.equal(refreshes, 1);
+});
+
 test("remove dialog deletes only the selected middle exercise", () => {
   const fixture = dialogFixture();
   fixture.context.openCustomWorkoutExerciseDialog(fixture.trigger, "remove");
