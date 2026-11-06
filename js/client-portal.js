@@ -13125,8 +13125,21 @@ function openCustomWorkoutExerciseDialog(trigger, mode = "add") {
       </form>`}
   `;
   let addedCard = null;
+  let searchRefreshTimer = 0;
+  const scheduleSearchRefresh = () => {
+    const input = dialog.querySelector("#custom-workout-picker-search");
+    const menu = dialog.querySelector("[data-custom-exercise-suggestions]");
+    if (menu) menu.hidden = true;
+    input?.setAttribute("aria-expanded", "false");
+    if (searchRefreshTimer) window.clearTimeout(searchRefreshTimer);
+    searchRefreshTimer = window.setTimeout(() => {
+      searchRefreshTimer = 0;
+      if (dialog.isConnected) renderCustomWorkoutPickerResults(dialog);
+    }, 240);
+  };
   document.body.append(dialog);
   dialog.addEventListener("close", () => {
+    if (searchRefreshTimer) window.clearTimeout(searchRefreshTimer);
     dialog.remove();
     if (addedCard?.isConnected) openCustomWorkoutExerciseEditor(addedCard);
     else if (trigger.isConnected && !trigger.disabled) trigger.focus();
@@ -13164,7 +13177,12 @@ function openCustomWorkoutExerciseDialog(trigger, mode = "add") {
   });
   dialog.addEventListener("input", (event) => {
     event.stopPropagation();
-    if (event.target.matches("#custom-workout-picker-search")) renderCustomWorkoutPickerResults(dialog);
+    if (event.target.matches("#custom-workout-picker-search") && !event.isComposing) {
+      scheduleSearchRefresh();
+    }
+  });
+  dialog.addEventListener("compositionend", (event) => {
+    if (event.target.matches("#custom-workout-picker-search")) scheduleSearchRefresh();
   });
   dialog.addEventListener("change", (event) => {
     if (event.target.matches("[data-workout-picker-filter]")) renderCustomWorkoutPickerResults(dialog);

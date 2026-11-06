@@ -842,6 +842,9 @@
 
 @media (max-width: 420px), (max-height: 520px) {
   .dashboard-page .custom-workout-exercise-dialog {
+    position: fixed;
+    top: max(12px, env(safe-area-inset-top));
+    bottom: auto;
     width: min(440px, calc(100vw - 24px));
     max-width: calc(100vw - 24px);
     max-height: calc(100vh - 16px);

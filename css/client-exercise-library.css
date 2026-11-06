@@ -155,6 +155,7 @@
   letter-spacing: .06em;
 }
 .client-exercise-library-results {
+  flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -261,13 +262,17 @@
 @media (max-width: 600px) {
   .client-exercise-library {
     inset: auto 0 0;
+    box-sizing: border-box;
     width: 100%;
     max-width: none;
+    height: min(94dvh, 1000px);
     max-height: min(94dvh, 1000px);
     margin: 0;
     border-radius: 24px 24px 0 0;
   }
   .client-exercise-library-shell {
+    box-sizing: border-box;
+    height: 100%;
     max-height: min(94dvh, 1000px);
     padding: 18px 15px 0;
   }

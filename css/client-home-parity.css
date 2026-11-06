@@ -61,6 +61,12 @@
 :root body.client-dashboard-page .client-home-community-heading button { border: 0; background: transparent; color: #72b8ef; font-weight: 700; }
 :root body.client-dashboard-page .client-home-community-feed { display: grid; gap: 8px; }
 :root body.client-dashboard-page .client-home-community-post { padding: 12px; border: 1px solid #45515b; border-radius: 12px; background: #1d2227; }
+:root body.client-dashboard-page .client-home-community-post-heading {
+  display: flex; align-items: center; min-width: 0; gap: 8px;
+}
+:root body.client-dashboard-page .client-home-community-post-avatar { flex: 0 0 auto; font-size: 18px; line-height: 1; }
+:root body.client-dashboard-page .client-home-community-post-heading strong { flex: 1 1 auto; min-width: 0; }
+:root body.client-dashboard-page .client-home-community-post-heading time { flex: 0 0 auto; color: #bbc0c9; font-size: 12px; }
 :root body.client-dashboard-page .client-home-community-post p { margin: 4px 0 0; }
 :root body.client-dashboard-page .client-home-community-feed > p { color: #c8d1d7; }
 :root body.client-dashboard-page .client-home-checkin-links button:focus-visible,

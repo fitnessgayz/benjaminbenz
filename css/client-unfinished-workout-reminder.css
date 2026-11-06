@@ -48,8 +48,12 @@
 }
 @media (max-width: 900px) {
   .client-unfinished-workout-reminder {
-    right: 12px;
+    left: max(12px, env(safe-area-inset-left));
+    right: max(12px, env(safe-area-inset-right));
     bottom: calc(96px + env(safe-area-inset-bottom));
-    width: calc(100vw - 24px);
+    box-sizing: border-box;
+    width: auto;
+    max-width: 390px;
+    margin-inline: auto;
   }
 }
