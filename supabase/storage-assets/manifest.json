@@ -92,7 +92,8 @@
     "20261105022111_add_exercise_image_cards_batch_twenty_three.sql",
     "20261105032411_add_exercise_image_cards_batch_twenty_four.sql",
     "20261105034211_add_exercise_image_cards_batch_twenty_five.sql",
-    "20261105035411_link_seated_row_image.sql"
+    "20261105035411_link_seated_row_image.sql",
+    "20261106163000_notify_coach_custom_exercises.sql"
   ],
   "nasmExerciseCatalogMigration": "20261001032427_add_complete_nasm_exercise_library.sql",
   "nasmExerciseCatalogCount": 75,
