@@ -535,6 +535,7 @@
   .workout-choice-title, .workout-choice-arrow, .client-workout-hub-heading h3
 ) { color: var(--client-neon); }
 :root[data-client-theme="light"] body.client-dashboard-page #client-workouts-panel.is-choosing-workout .workout-choice-description { color: var(--muted); }
+:root[data-client-theme="light"] body.client-dashboard-page #client-workouts-panel.is-choosing-workout .workout-choice-quick .workout-choice-title { color: #9b7100; }
 :root[data-client-theme="light"] body.client-dashboard-page #client-workouts-panel.is-choosing-workout .workout-choice-icon {
   color: var(--client-neon);
   background: var(--client-accent-soft);

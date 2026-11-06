@@ -76,6 +76,7 @@ function safeTitle(kind: string, storedTitle: string) {
     coach_reply: "New message from your coach",
     workout_completed: "Client workout completed",
     check_in_submitted: "Client check-in submitted",
+    custom_exercise: "Client added a custom exercise",
     general: "FWB Training notification"
   };
   return (titles[kind] || storedTitle || "FWB Training notification").replace(/\s+/g, " ").trim().slice(0, 120);

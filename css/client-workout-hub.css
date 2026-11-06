@@ -153,6 +153,10 @@
   line-height: 1.18;
 }
 
+:root body.client-dashboard-page #client-workouts-panel.is-choosing-workout .workout-choice-quick .workout-choice-title {
+  color: #ffd400;
+}
+
 :root body.client-dashboard-page #client-workouts-panel.is-choosing-workout .workout-choice-description {
   color: #abb9ad;
   font-size: 12px;
