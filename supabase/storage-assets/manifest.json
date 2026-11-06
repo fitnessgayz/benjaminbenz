@@ -8471,10 +8471,6 @@
       "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-videos/generated/2026-09-30/upright-row.mp4"
     },
     {
-      "name": "Upright Row",
-      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-videos/generated/2026-09-30/upright-row.mp4"
-    },
-    {
       "name": "Incline Dumbbell Curl",
       "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-videos/generated/2026-09-30/incline-dumbbell-curl.mp4"
     },
@@ -9364,10 +9360,6 @@
       "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/side-plank-pulses.webp"
     },
     {
-      "name": "Step Ups",
-      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/step-ups.webp"
-    },
-    {
       "name": "Tuck Jump",
       "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/tuck-jump.webp"
     },
@@ -9420,10 +9412,6 @@
       "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/incline-bench-press.webp"
     },
     {
-      "name": "Cable Row",
-      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/cable-row.webp"
-    },
-    {
       "name": "Shoulder Press",
       "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/shoulder-press.webp"
     },
@@ -9434,10 +9422,6 @@
     {
       "name": "DB Shoulder Press",
       "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/db-shoulder-press.webp"
-    },
-    {
-      "name": "Row Machine",
-      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/row-machine.webp"
     },
     {
       "name": "Side chest press machine",
@@ -9462,10 +9446,6 @@
     {
       "name": "Glute Builder Kickback",
       "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/glute-builder-kickback-v2.webp"
-    },
-    {
-      "name": "Incline chest press machine — single arm side",
-      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/incline-chest-press-machine-single-arm-side.webp"
     },
     {
       "name": "Body weight tricep dip",
@@ -9531,14 +9511,6 @@
     {
       "name": "Cable Chest Press with Reach",
       "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/cable-chest-press-with-reach-v4.webp"
-    },
-    {
-      "name": "Incline DB overhand row",
-      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/incline-dumbbell-row-overhand-grip.webp"
-    },
-    {
-      "name": "Leg Press - single leg",
-      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/leg-press-single-leg.webp"
     },
     {
       "name": "Oblique crunch",
@@ -9661,14 +9633,6 @@
       "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/barbell-deadlift.webp"
     },
     {
-      "name": "Barbell Hip Thrust",
-      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/barbell-hip-thrust.webp"
-    },
-    {
-      "name": "Barbell Romanian Deadlift",
-      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/barbell-romanian-deadlift.webp"
-    },
-    {
       "name": "Close-Grip Barbell Bench Press",
       "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/close-grip-barbell-bench-press.webp"
     },
@@ -9769,10 +9733,6 @@
       "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/heavy-seated-calf-soleus-raise.webp"
     },
     {
-      "name": "High-and-Wide Leg Press",
-      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/high-and-wide-leg-press.webp"
-    },
-    {
       "name": "Glute Squat Machine RDL",
       "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/glute-squat-machine-rdl.webp"
     },
@@ -9871,10 +9831,6 @@
     {
       "name": "One arm Incline cable curl",
       "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/one-arm-incline-cable-curl.webp"
-    },
-    {
-      "name": "One arm incline chest machine (side saddle)",
-      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/one-arm-incline-chest-machine-side-saddle.webp"
     },
     {
       "name": "Plyometric Push-Up",
@@ -10195,10 +10151,6 @@
     {
       "name": "Dumbbell Rows",
       "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/dumbell-rows.webp"
-    },
-    {
-      "name": "Row Machine - Overhand Grip",
-      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/row-machine-overhand-grip.webp"
     },
     {
       "name": "Seated Row Machine (Overhand Grip)",
