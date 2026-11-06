@@ -84,8 +84,8 @@ begin
          select 1 from public.exercise_library as library
           where library.is_active is true and library.is_approved is true
             and (lower(btrim(library.name)) = normalized_name
-              or exists (select 1 from unnest(library.aliases) as alias
-                          where lower(btrim(alias)) = normalized_name))
+              or exists (select 1 from unnest(library.aliases) as item(alias_name)
+                          where lower(btrim(item.alias_name)) = normalized_name))
        ) then
       continue;
     end if;
