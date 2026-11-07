@@ -7,9 +7,9 @@ const { chromium, webkit } = require('playwright');
 
 const root = path.resolve(__dirname, '..');
 const source = fs.readFileSync(path.join(root, 'js/client-portal.js'), 'utf8');
-const styles = ['custom-workout-mobile-fix.css', 'client-home-logs-preview.css',
-  'client-picker-approved.css', 'client-logs-compact.css']
-  .map(file => fs.readFileSync(path.join(root, 'css', file), 'utf8')).join('\n');
+const dashboard = fs.readFileSync(path.join(root, 'client-dashboard.html'), 'utf8');
+const styles = [...dashboard.matchAll(/<link[^>]+href="\/?(css\/[^"?]+)[^>]*>/g)]
+  .map(match => fs.readFileSync(path.join(root, match[1]), 'utf8')).join('\n');
 function production(name) {
   const start = source.indexOf(`function ${name}(`);
   assert.ok(start >= 0, `Missing ${name}`);
@@ -20,7 +20,8 @@ function production(name) {
 assert.match(source, /client-logs-detail-primary-actions[^\n]+\n\s*\$\{appleWorkoutMarkup\}\$\{detailsHtml\}/,
   'Share and Copy actions must render before Apple Workout and exercise details');
 
-const image = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="240" height="100"><rect width="240" height="100" fill="white"/><rect width="100" height="100" fill="red"/><rect x="100" width="100" height="100" fill="blue"/></svg>');
+const image = 'data:image/webp;base64,' + fs.readFileSync(path.join(root,
+  'supabase/storage-assets/exercise-images/approved/2026-10-05/webp-480/45-degree-glute-hip-drive.webp')).toString('base64');
 const fixture = `
 const image = ${JSON.stringify(image)};
 var trainingLogs = [], muscleMeta = {}, customWorkoutTitle = 'Custom Workout';
@@ -81,18 +82,34 @@ ${production('openCustomWorkoutExerciseDialog')}
       await page.locator('[data-close-exercise-dialog]').click();
 
       await page.evaluate((src) => {
-        document.body.innerHTML = `<div class="training-log-history-card-details"><div class="client-logs-detail-actions client-logs-detail-primary-actions"><button>Share workout</button><button>Copy workout</button></div><div class="apple-workout-empty"><button>+ Add Apple Workout</button></div><article class="training-log-row-nested"><div class="training-log-exercise-head"><span class="training-log-exercise-image"><button class="exercise-media-button exercise-media-button-branded-crop"><img src="${src}" alt=""></button></span><strong>Leg Press</strong></div></article></div>`;
+        document.body.innerHTML = `<section data-client-dashboard-panel="logs"><div class="client-logs-tabs"><button>Workouts</button><button>Exercises</button><button>Health</button></div><p class="training-log-download-status"></p><div class="client-workout-import-preview" hidden></div><p id="client-workout-import-status"></p><p class="training-log-copy-status"></p><div id="client-logs-workouts"><section class="client-saved-log-calendar"><strong>November 2026</strong></section></div><div class="training-log-history-card-details"><div class="client-logs-detail-actions client-logs-detail-primary-actions"><button>Share workout</button><button>Copy workout</button></div><div class="apple-workout-empty"><button>+ Add Apple Workout</button></div><article class="training-log-row-nested"><div class="training-log-exercise-head"><span class="training-log-exercise-image"><button class="exercise-media-button exercise-media-button-branded-crop"><img src="${src}" alt=""></button></span><strong>Leg Press</strong></div></article></div></section>`;
       }, image);
+      await page.locator('.training-log-exercise-image img').evaluate(img => img.decode());
       const layout = await page.evaluate(() => {
         const photo = document.querySelector('.training-log-exercise-image');
         const img = photo.querySelector('img');
         const head = photo.closest('.training-log-exercise-head');
-        return { photoWidth: photo.getBoundingClientRect().width, columnWidth: parseFloat(getComputedStyle(head).gridTemplateColumns), fit: getComputedStyle(img).objectFit, imgPosition: getComputedStyle(img).position, scrollWidth: document.documentElement.scrollWidth };
+        const tabs = document.querySelector('.client-logs-tabs');
+        const calendar = document.querySelector('.client-saved-log-calendar');
+        const imgBounds = img.getBoundingClientRect();
+        return { photoWidth: photo.getBoundingClientRect().width, photoHeight: photo.getBoundingClientRect().height,
+          imageWidth: imgBounds.width, imageHeight: imgBounds.height, naturalRatio: img.naturalWidth / img.naturalHeight,
+          columnWidth: parseFloat(getComputedStyle(head).gridTemplateColumns), fit: getComputedStyle(img).objectFit,
+          imgPosition: getComputedStyle(img).position, gap: calendar.getBoundingClientRect().top - tabs.getBoundingClientRect().bottom,
+          scrollWidth: document.documentElement.scrollWidth };
       });
       assert.equal(layout.photoWidth, layout.columnWidth, 'Photo frame must fit its grid column');
       assert.equal(layout.fit, 'contain', 'Logs photo must preserve its full aspect ratio');
-      assert.equal(layout.imgPosition, 'static', 'Branded photo crop must not distort Logs detail');
+      assert.equal(layout.imgPosition, 'absolute', 'Logs should frame the photo panels of a branded card');
+      assert.ok(layout.imageWidth > layout.photoWidth && layout.imageHeight >= layout.photoHeight - 1,
+        'Branded photo panels should fill the Logs thumbnail');
+      assert.ok(Math.abs(layout.imageWidth / layout.imageHeight - layout.naturalRatio) < 0.02,
+        'Logs thumbnail must not stretch the source image');
+      assert.ok(layout.gap <= 32, `Empty status fields must not leave a Logs gap (${layout.gap}px)`);
       assert.ok(layout.scrollWidth <= width + 1, 'Detail must not overflow the viewport');
+      if (process.env.MOBILE_WEB_SCREENSHOT && width === 390) {
+        await page.screenshot({ path: process.env.MOBILE_WEB_SCREENSHOT, fullPage: true });
+      }
       await page.close();
       process.stdout.write(`${browserName} ${width}px: picker selection, failure, persistence, photo layout passed\n`);
     }

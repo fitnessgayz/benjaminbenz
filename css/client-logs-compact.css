@@ -27,6 +27,11 @@ body.client-dashboard-page .client-logs-more-items :is(button, label) { display:
 body.client-dashboard-page .client-logs-search input { flex: 1; min-width: 0; height: 48px; padding: 0; border: 0; outline: 0; background: transparent; color: #fff; font: inherit; }
 .client-logs-search:focus-within { outline: 2px solid var(--logs-blue); outline-offset: 2px; }
 .client-logs-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 4px; margin-bottom: 12px; border-radius: 14px; background: #1f2024; }
+body.client-dashboard-page [data-client-dashboard-panel="logs"] :is(
+  .training-log-download-status,
+  #client-workout-import-status,
+  .training-log-copy-status
+):empty { display: none; }
 body.client-dashboard-page .client-logs-tabs button { min-height: 42px; padding: 8px 4px; border: 0; border-radius: 10px; background: transparent; color: #aeb2bc; font: inherit; font-size: .9rem; font-weight: 600; }
 body.client-dashboard-page .client-logs-tabs button[aria-selected="true"] { background: var(--logs-gold); color: #111; }
 body.client-dashboard-page .client-saved-log-calendar { max-width: none; margin-bottom: 12px; padding: 11px 10px 9px; border-color: var(--logs-line); border-radius: 18px; background: #1b1c20; color: #fff; }

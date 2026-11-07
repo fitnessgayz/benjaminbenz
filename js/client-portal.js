@@ -12681,7 +12681,7 @@ function regroupCustomWorkoutCarousels(panel) {
         return { index, format, cards: group.cards };
       });
     } else {
-      desiredGroups = Array.from({ length: Math.max(Math.ceil(cards.length / 2), 1) }, (_, index) => ({
+      desiredGroups = Array.from({ length: Math.ceil(cards.length / 2) }, (_, index) => ({
         index,
         format,
         cards: cards.slice(index * 2, (index * 2) + 2)
@@ -12700,7 +12700,6 @@ function regroupCustomWorkoutCarousels(panel) {
       });
       return { index, format, cards: group.cards };
     });
-    if (desiredGroups.length === 0) desiredGroups = [{ index: 0, format, cards: [] }];
   } else {
     desiredGroups = customWorkoutMixedGroups(cards.map((card) => ({
       card,

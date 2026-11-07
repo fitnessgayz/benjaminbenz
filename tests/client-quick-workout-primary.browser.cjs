@@ -21,7 +21,7 @@ function production(name) {
 const functions = [
   'workoutStartControlMarkup', 'workoutActionsMarkup', 'customWorkoutGroupedRoundCardMarkup',
   'customWorkoutCarouselGroupMarkup', 'customWorkoutCarouselMarkup',
-  'customWorkoutPanelMarkup', 'syncWorkoutStartButtons'
+  'customWorkoutPanelMarkup', 'regroupCustomWorkoutCarousels', 'syncWorkoutStartButtons'
 ].map(production).join('\n');
 const fixture = `
 var activeCustomWorkoutFormat = 'single', workoutElapsedTimerState = null;
@@ -31,6 +31,7 @@ function todayDate() { return '2026-11-06'; }
 function formatLogDate() { return 'Nov 6, 2026'; }
 function activeCustomWorkoutDraft() { return null; }
 function normalizeCustomWorkoutFormat(value) { return value; }
+function normalizeCustomWorkoutInlineGroupType(value) { return value || 'single'; }
 function customWorkoutExercises() { return fixtureExercises; }
 function customWorkoutCopyStatusMessage() { return ''; }
 function customWorkoutStorageTitle() { return 'Custom Workout'; }
@@ -46,6 +47,8 @@ function customWorkoutCardMarkup(exercise) { return '<article data-custom-exerci
 function floatingWorkoutFinishMarkup() { return ''; }
 function syncFloatingWorkoutFinishButtons() {}
 function customWorkoutMixedGroups(exercises) { return exercises.map((exercise, index) => ({ index, startIndex: index, format: 'single', items: [exercise] })); }
+function customWorkoutCarousels(panel) { return [...panel.querySelectorAll('[data-custom-workout-carousel]')]; }
+function customWorkoutCarouselCards(carousel) { return carousel ? [...carousel.querySelectorAll('[data-custom-exercise-card]')] : []; }
 ${functions}
 function renderCase(format, names, active) {
   activeCustomWorkoutFormat = format;
@@ -67,11 +70,18 @@ function renderCase(format, names, active) {
       await page.setContent(`<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>${styles}</style></head><body class="dashboard-page client-dashboard-page"><div id="client-workout-panels"></div></body></html>`);
       await page.addScriptTag({ content: fixture });
       for (const [format, names] of [
-        ['single', []], ['single', ['Leg Press']],
+        ['single', []], ['superset', []], ['circuit', []], ['single', ['Leg Press']],
         ['superset', ['Leg Press', 'Chest Press']],
         ['circuit', ['Leg Press', 'Chest Press', 'Cable Row']]
       ]) {
         await page.evaluate(([f, n]) => renderCase(f, n, false), [format, names]);
+        if (names.length === 0) {
+          await page.evaluate(() => regroupCustomWorkoutCarousels(document.querySelector('.client-workout-panel-custom')));
+          assert.equal(await page.locator('.client-workout-panel-custom [data-custom-workout-carousel]').count(), 0,
+            `${format} must not show a blank exercise group before a choice`);
+          assert.equal(await page.locator('.client-workout-panel-custom [data-custom-workout-launcher-add]').isVisible(), true,
+            `${format} must show Add first exercise`);
+        }
         const primary = page.locator('.client-workout-panel-custom [data-workout-start]');
         assert.equal(await primary.innerText(), 'Start workout', `${format} initial label`);
         assert.ok(await primary.isVisible(), `${format} Start visible`);
