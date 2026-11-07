@@ -13096,7 +13096,7 @@ function renderCustomWorkoutPickerResults(dialog) {
     const used = usageByName.get(match.name.toLowerCase())?.size || 0;
     const isSelected = selected.includes(match.name);
     return `<button type="button" role="option" aria-selected="${isSelected}" data-custom-exercise-suggestion="${escapeHtml(match.name)}">
-      <span class="custom-picker-image${!thumbnail ? " is-fallback" : ""}">${thumbnail || fallback ? `<img src="${escapeHtml(thumbnail || fallback)}" alt="" loading="lazy" />` : "✚"}</span>
+      <span class="custom-picker-image${!thumbnail ? " is-fallback" : isBrandedExerciseImage(thumbnail) ? " is-branded" : ""}">${thumbnail || fallback ? `<img src="${escapeHtml(thumbnail || fallback)}" alt="" loading="lazy" />` : "✚"}</span>
       <span class="custom-picker-copy"><strong>${escapeHtml(match.name)}</strong>
       <small>${escapeHtml(match.muscleLabel || "Exercise")}${used ? ` · Used ${used}×` : ""}</small></span>
       <span class="custom-picker-add" aria-hidden="true">${isSelected ? "Selected" : "+"}</span>
@@ -13287,7 +13287,7 @@ function openCustomWorkoutExerciseDialog(trigger, mode = "add") {
             </select>
           </div>
           <div class="custom-picker-chips" role="group" aria-label="Exercise categories">
-            ${["Recent", "Chest", "Back", "Shoulders", "Arms", "All"].map((label) => `<button type="button" data-picker-chip="${label.toLowerCase()}" aria-pressed="${label === (hasRecentExercises ? "Recent" : "All")}">${label}</button>`).join("")}
+            ${["Recent", "All", "Chest", "Back", "Shoulders", "Arms"].map((label) => `<button type="button" data-picker-chip="${label.toLowerCase()}" aria-pressed="${label === (hasRecentExercises ? "Recent" : "All")}">${label}</button>`).join("")}
           </div>
           <div class="custom-workout-exercise-options custom-workout-suggestion-menu" id="custom-workout-picker-options" role="listbox" aria-label="Exercise suggestions" data-custom-exercise-suggestions hidden></div>
           <p data-workout-picker-empty hidden>No matching exercises. You can still add the name you typed.</p>
@@ -16818,7 +16818,7 @@ function renderClientTrainingLogs() {
     return {
       sort_key: `${workout.entry_date || ""}::workout::${workout.workout_title || ""}`,
       entry_date: workout.entry_date,
-      compact_html: `<article class="client-logs-session" data-client-workout-history-card="${workoutIndex}" data-client-workout-history-key="${escapeHtml(workout.history_key)}">
+      compact_html: `<article class="client-logs-session${/^Custom Workout\b/i.test(displayTitle) ? " is-custom-workout" : ""}" data-client-workout-history-card="${workoutIndex}" data-client-workout-history-key="${escapeHtml(workout.history_key)}">
         <button class="client-logs-session-open" type="button" data-client-workout-history-open aria-expanded="false" aria-controls="${escapeHtml(detailsId)}" aria-label="Open ${escapeHtml(displayTitle)} from ${escapeHtml(formatLogDate(workout.entry_date))}">
           <span class="client-logs-session-day"><strong>${escapeHtml(String(Number(String(workout.entry_date || "").slice(-2)) || "—"))}</strong><small>${escapeHtml(weekdayLabel)}</small></span>
           <span class="client-logs-session-copy"><strong>${escapeHtml([displayTitle, workout.gym_name].filter(Boolean).join(" · "))}</strong><small>${escapeHtml(`${metrics.exerciseCount} exercises · ${metrics.workingSetCount} sets · ${metrics.volumeLabel}`)}</small></span>

@@ -20,8 +20,9 @@ function production(name) {
 assert.match(source, /client-logs-detail-primary-actions[^\n]+\n\s*\$\{appleWorkoutMarkup\}\$\{detailsHtml\}/,
   'Share and Copy actions must render before Apple Workout and exercise details');
 
-const image = 'data:image/webp;base64,' + fs.readFileSync(path.join(root,
-  'supabase/storage-assets/exercise-images/approved/2026-10-05/webp-480/45-degree-glute-hip-drive.webp')).toString('base64');
+const imagePath = path.join(root,
+  'supabase/storage-assets/exercise-images/approved/2026-10-05/webp-480/45-degree-glute-hip-drive.webp');
+const image = 'https://fixture.test/exercise-images/approved/2026-10-05/webp-480/45-degree-glute-hip-drive.webp';
 const fixture = `
 const image = ${JSON.stringify(image)};
 var trainingLogs = [], muscleMeta = {}, customWorkoutTitle = 'Custom Workout';
@@ -46,6 +47,7 @@ function addCustomWorkoutPickedExercise(panel, name) {
 }
 function notifyCoachAboutCustomExercises() {}
 function openCustomWorkoutExerciseEditor() {}
+${production('isBrandedExerciseImage')}
 ${production('renderCustomWorkoutPickerResults')}
 ${production('openCustomWorkoutExerciseDialog')}
 `;
@@ -58,6 +60,7 @@ ${production('openCustomWorkoutExerciseDialog')}
   try {
     for (const width of [360, 390]) {
       const page = await browser.newPage({ viewport: { width, height: 844 } });
+      await page.route('https://fixture.test/exercise-images/**', route => route.fulfill({ contentType: 'image/webp', body: fs.readFileSync(imagePath) }));
       await page.route('https://fixture.test/', route => route.fulfill({ contentType: 'text/html', body: `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>${styles}</style></head><body class="dashboard-page client-dashboard-page"><section id="panel" class="client-workout-panel-custom" data-custom-workout-format="single"><button id="trigger" data-pick-custom-exercise>Add first exercise</button></section></body></html>` }));
       await page.goto('https://fixture.test/');
       await page.addScriptTag({ content: fixture });
@@ -65,9 +68,27 @@ ${production('openCustomWorkoutExerciseDialog')}
       await page.locator('[data-custom-exercise-suggestion]').first().click();
       assert.equal(await page.evaluate(() => addAttempts), 0, 'Choosing a result must only stage it');
       assert.equal(await page.locator('#custom-workout-picker-search').inputValue(), 'Leg Press');
-      const pickerImage = await page.locator('.custom-picker-image img').evaluate(img => ({ fit: getComputedStyle(img).objectFit, width: img.getBoundingClientRect().width, height: img.getBoundingClientRect().height }));
-      assert.equal(pickerImage.fit, 'contain', 'Guide thumbnail must keep its full aspect ratio');
-      assert.ok(pickerImage.width > pickerImage.height, 'Guide thumbnail frame must be landscape');
+      await page.locator('.custom-picker-image img').evaluate(img => img.decode());
+      const pickerImage = await page.locator('.custom-picker-image img').evaluate(img => ({
+        fit: getComputedStyle(img).objectFit,
+        width: img.getBoundingClientRect().width,
+        frameWidth: img.parentElement.getBoundingClientRect().width,
+        left: img.getBoundingClientRect().left - img.parentElement.getBoundingClientRect().left,
+        top: img.getBoundingClientRect().top - img.parentElement.getBoundingClientRect().top,
+        branded: img.parentElement.classList.contains('is-branded')
+      }));
+      assert.equal(pickerImage.branded, true);
+      assert.equal(pickerImage.fit, 'fill');
+      assert.ok(pickerImage.width > pickerImage.frameWidth * 2.5, 'Branded thumbnail crops away its text panel');
+      assert.ok(pickerImage.left < 0 && pickerImage.top < 0, 'Branded thumbnail trims its white edge');
+      assert.deepEqual(await page.locator('[data-picker-chip]').evaluateAll(chips => chips.slice(0, 2).map(chip => chip.dataset.pickerChip)), ['recent', 'all']);
+      await page.locator('#custom-workout-picker-search').focus();
+      const focus = await page.locator('#custom-workout-picker-search').evaluate(input => ({
+        outline: getComputedStyle(input).outlineStyle,
+        rowShadow: getComputedStyle(input.parentElement).boxShadow
+      }));
+      assert.equal(focus.outline, 'none');
+      assert.match(focus.rowShadow, /rgb\(255, 212, 0\)/);
       await page.locator('.custom-workout-exercise-dialog button[type="submit"]').click();
       await page.locator('.custom-workout-exercise-dialog').waitFor({ state: 'detached' });
       assert.equal(await page.locator('.custom-workout-exercise-dialog').count(), 0, 'Picker closes after a successful add');
@@ -83,7 +104,12 @@ ${production('openCustomWorkoutExerciseDialog')}
 
       await page.evaluate((src) => {
         document.body.innerHTML = `<section data-client-dashboard-panel="logs"><div class="client-logs-tabs"><button>Workouts</button><button>Exercises</button><button>Health</button></div><p class="training-log-download-status"></p><div class="client-workout-import-preview" hidden></div><p id="client-workout-import-status"></p><p class="training-log-copy-status"></p><div id="client-logs-workouts"><section class="client-saved-log-calendar"><strong>November 2026</strong></section></div><div class="training-log-history-card-details"><div class="client-logs-detail-actions client-logs-detail-primary-actions"><button class="training-log-share-button" data-share-workout-history>Share workout</button><button class="training-log-copy-button">Copy workout</button></div><div class="apple-workout-empty"><button>+ Add Apple Workout</button></div><article class="training-log-row-nested"><div class="training-log-exercise-head"><span class="training-log-exercise-image"><button class="exercise-media-button exercise-media-button-branded-crop"><img src="${src}" alt=""></button></span><strong>Leg Press</strong></div></article></div></section>`;
+        document.getElementById('client-logs-workouts').insertAdjacentHTML('beforeend',
+          '<article class="client-logs-session is-custom-workout"><button class="client-logs-session-open"><span class="client-logs-session-copy"><strong>Custom Workout</strong></span></button></article>' +
+          '<article class="client-logs-session client-logs-health-session"><div class="client-logs-session-open"><span class="client-logs-session-copy"><strong>♥ Cycling</strong></span></div></article>');
       }, image);
+      const titleColors = await page.locator('.client-logs-session-copy strong').evaluateAll(nodes => nodes.map(node => getComputedStyle(node).color));
+      assert.deepEqual(titleColors, ['rgb(90, 169, 232)', 'rgb(247, 243, 233)']);
       await page.locator('.training-log-exercise-image img').evaluate(img => img.decode());
       const layout = await page.evaluate(() => {
         const photo = document.querySelector('.training-log-exercise-image');

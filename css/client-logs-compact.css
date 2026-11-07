@@ -64,7 +64,9 @@ body.client-dashboard-page .client-logs-session-open { display: grid; grid-templ
 .client-logs-session-copy small { overflow: hidden; color: #a5a9b3; font-size: .72rem; white-space: nowrap; text-overflow: ellipsis; }
 .client-logs-session-chevron { color: var(--logs-blue); font-size: 1.35rem; }
 .client-logs-health-session .client-logs-session-open { cursor: default; }
-.client-logs-health-session .client-logs-session-copy strong { color: #fff; }
+.client-logs-health-session .client-logs-session-copy strong { color: #f7f3e9; }
+body.client-dashboard-page .client-logs-session.is-custom-workout .client-logs-session-copy strong,
+body.client-dashboard-page .client-logs-session.is-custom-workout .training-log-history-card-details > h3 { color: #5aa9e8; }
 .client-logs-session .training-log-history-card-details { margin: 0; padding: 12px; border: 0; border-top: 1px solid var(--logs-line); border-radius: 0; background: #202126; }
 .client-logs-detail-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .client-logs-detail-heading > strong { color: #aeb2bc; font-size: .8rem; }

@@ -5,6 +5,14 @@ const path = require("node:path");
 
 const source = fs.readFileSync(path.join(__dirname, "../js/client-portal.js"), "utf8");
 const html = fs.readFileSync(path.join(__dirname, "../client-dashboard.html"), "utf8");
+const logStyles = fs.readFileSync(path.join(__dirname, "../css/client-logs-compact.css"), "utf8");
+
+test("Custom Workout log titles are blue and Apple Health titles stay warm white", () => {
+  assert.match(source, /client-logs-session\$\{\/\^Custom Workout\\b\/i\.test\(displayTitle\)/);
+  assert.match(source, /client-logs-session client-logs-health-session/);
+  assert.match(logStyles, /client-logs-session\.is-custom-workout \.client-logs-session-copy strong[\s\S]*?color: #5aa9e8/);
+  assert.match(logStyles, /client-logs-health-session \.client-logs-session-copy strong \{ color: #f7f3e9/);
+});
 
 function functionSource(name) {
   const match = new RegExp(`(?:async\\s+)?function\\s+${name}\\s*\\(`).exec(source);
