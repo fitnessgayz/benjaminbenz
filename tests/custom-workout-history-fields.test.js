@@ -69,7 +69,7 @@ function fixture(format = "single", assigned = false) {
     "logKey", "logsForExercise", "updateExerciseLogField", "renderPreviousExerciseWeights",
     "normalizedSetType", "setTypeForRow", "customWorkoutGroupedRows", "customWorkoutGroupedCanonicalRow",
     "customWorkoutCarouselCards", "customWorkoutGroupedLogElements",
-    "latestPreviousSetLogs", "personalBestWeightLog", "historyPlaceholder", "updateSetHistoryPlaceholders",
+    "latestPreviousSetLogs", "personalBestWeightLog", "historyPlaceholder", "previousHistorySet", "updateSetHistoryPlaceholders",
     "syncCustomWorkoutGroupedHistoryPlaceholders", "setRowInputValues",
     "customWorkoutGroupedFieldMarkup", "customWorkoutGroupedSetRowMarkup", "renderCustomWorkoutGroupedCard"
   ];
@@ -82,6 +82,8 @@ function fixture(format = "single", assigned = false) {
     renderCustomWorkoutGroupedExerciseKey: () => {}, syncCustomWorkoutGroupedRoundStepper: () => {},
     refreshCustomWorkoutGroupedCompletion: () => {}, renderCustomWorkoutGroupedTimerPanels: () => {},
     renderCustomWorkoutGroupedRestControls: () => {},
+    customWorkoutGroupedRestAction: null, workoutGymLocationForElement: () => "", sameWorkoutGym: () => true,
+    customWorkoutGroupedCopyValue: (value) => value,
     restoreStrengthSetRows: () => {}, renderSetRirValue: () => {}, renderExerciseNotesState: () => {},
     renderCustomWorkoutGroupedNotes: () => {},
     syncExerciseNamePreview: () => {}, updateVisibleSetProgress: () => {}, syncExerciseFinishedState: () => {}
@@ -100,15 +102,16 @@ function fixture(format = "single", assigned = false) {
 
 for (const assigned of [false, true]) {
  for (const format of ["single", "superset", "circuit"]) {
-  test(`${assigned ? "assigned" : "custom"} ${format}: initial render and added sets show all-time personal-best weight with previous reps as hints`, () => {
+  test(`${assigned ? "assigned" : "custom"} ${format}: initial render and added sets use previous values with the personal best as a note`, () => {
     const f = fixture(format, assigned);
     f.renderCustomWorkoutGroupedCard(f.carousel);
-    assert.match(f.sections.innerHTML, /value=""\s+placeholder="225"\s+data-custom-grouped-field="weight"/);
+    assert.match(f.sections.innerHTML, /value=""\s+placeholder="135"\s+data-custom-grouped-field="weight"/);
+    assert.match(f.sections.innerHTML, /aria-description="Personal best: 225 lb/);
     assert.match(f.sections.innerHTML, /value=""\s+placeholder="8"\s+data-custom-grouped-field="reps"/);
     assert.match(f.sections.innerHTML, /placeholder="0"\s+data-custom-grouped-field="weight"/);
     f.carousel.logs[0].rows.push(f.row(2));
     f.renderCustomWorkoutGroupedCard(f.carousel);
-    assert.equal((f.sections.innerHTML.match(/placeholder="225"/g) || []).length, 2);
+    assert.equal((f.sections.innerHTML.match(/placeholder="135"/g) || []).length, 2);
     assert.equal(f.carousel.logs[0].rows[1].fields.weight.value, "");
   });
  }
@@ -129,7 +132,7 @@ test("changing exercise updates only its visible hints and preserves entered val
   visibleBench.fields.rir.value = "2";
   bench.rows[0].fields.weight.value = "140";
   f.updateSetHistoryPlaceholders(bench);
-  assert.equal(visibleBench.fields.weight.placeholder, "225");
+  assert.equal(visibleBench.fields.weight.placeholder, "135");
   assert.equal(visibleBench.fields.reps.placeholder, "8");
   assert.equal(visibleSquat.fields.weight.placeholder, "");
   f.updateSetHistoryPlaceholders(squat);
@@ -146,18 +149,20 @@ test("changing exercise updates only its visible hints and preserves entered val
   assert.equal(visibleSquat.fields.reps.placeholder, "12");
 });
 
-test("personal-best weight is independent of selected date while reps remain historical", () => {
+test("personal-best note is independent of selected date while placeholders use earlier workouts", () => {
   const f = fixture();
   const log = f.carousel.logs[0];
   f.updateSetHistoryPlaceholders(log);
-  assert.equal(f.carousel.visibleRows[0].fields.weight.placeholder, "225");
+  assert.equal(f.carousel.visibleRows[0].fields.weight.placeholder, "135");
+  assert.match(f.carousel.visibleRows[0].fields.weight.attributes["aria-description"], /Personal best: 225 lb/);
   log.dateInput.value = "2026-09-09";
   f.updateSetHistoryPlaceholders(log);
-  assert.equal(f.carousel.visibleRows[0].fields.weight.placeholder, "225");
+  assert.equal(f.carousel.visibleRows[0].fields.weight.placeholder, "0");
+  assert.match(f.carousel.visibleRows[0].fields.weight.attributes["aria-description"], /Personal best: 225 lb/);
   assert.equal(f.carousel.visibleRows[0].fields.reps.placeholder, "0");
 });
 
-test("generated and today's workouts keep the exercise PR as the empty weight hint", () => {
+test("generated and today's workouts show previous weight plus the exercise PR note", () => {
   const f = fixture();
   const log = f.carousel.logs[0];
   log.dataset.generatedExercise = "true";
@@ -166,19 +171,19 @@ test("generated and today's workouts keep the exercise PR as the empty weight hi
     log.dataset.generatedFrom = source;
     f.updateSetHistoryPlaceholders(log);
     assert.equal(log.rows[0].fields.weight.value, "");
-    assert.equal(log.rows[0].fields.weight.placeholder, "225");
+    assert.equal(log.rows[0].fields.weight.placeholder, "135");
     assert.match(log.rows[0].fields.weight.attributes["aria-description"], /Personal best: 225 lb/);
   }
 });
 
-test("previous workout weight remains a hint when no valid personal best exists", () => {
+test("incomplete previous sets do not supply a weight hint or personal best", () => {
   const f = fixture();
   const log = f.carousel.logs[0];
   const previous = { exercise_name: "Bench Press", exercise_code: "A1", entry_date: "2026-09-10", set_number: 1, weight_used: 135, reps: null };
   f.history.splice(0, f.history.length, previous);
   f.updateSetHistoryPlaceholders(log);
   assert.equal(log.rows[0].fields.weight.value, "");
-  assert.equal(log.rows[0].fields.weight.placeholder, "135");
+  assert.equal(log.rows[0].fields.weight.placeholder, "0");
   assert.equal(log.rows[0].fields.weight.attributes["aria-description"], undefined);
 });
 
@@ -190,8 +195,8 @@ test("a record saved today replaces a previous record without changing typed val
   f.history.push({ exercise_name: "Bench Press", exercise_code: "CW9", entry_date: "2026-09-18", set_number: 2, weight_used: 230.25, reps: 1 });
   f.updateSetHistoryPlaceholders(bench);
   assert.equal(input.value, "150");
-  assert.equal(input.placeholder, "230.25");
-  assert.equal(f.carousel.visibleRows[0].fields.weight.placeholder, "230.25");
+  assert.equal(input.placeholder, "135");
+  assert.equal(f.carousel.visibleRows[0].fields.weight.placeholder, "135");
   assert.match(f.carousel.visibleRows[0].fields.weight.attributes["aria-description"], /Personal best: 230.25 lb/);
   f.renderCustomWorkoutGroupedCard(f.carousel);
   assert.match(f.sections.innerHTML, /aria-description="Personal best: 230.25 lb/);
@@ -234,7 +239,7 @@ test("warm-up fields use previous warm-up values and never the working-weight re
   assert.equal(warmup.fields.weight.placeholder, "45");
   assert.equal(warmup.fields.reps.placeholder, "10");
   assert.equal(warmup.fields.weight.dataset.historyHint, "");
-  assert.equal(bench.rows[1].fields.weight.placeholder, "225");
+  assert.equal(bench.rows[1].fields.weight.placeholder, "135");
   assert.equal(bench.rows[1].fields.reps.placeholder, "8");
 });
 
@@ -244,10 +249,10 @@ test("restoring a renamed exercise on another workout date refreshes the matchin
   Object.assign(slot.dataset, { exerciseName: "Bench Press", exerciseCode: "A1", workoutTitle: "Workout A" });
   f.history.push({ workout_title: "Workout A", exercise_name: "Squat", exercise_code: "A1", entry_date: "2026-09-18", set_number: 1, weight_used: 180, reps: 6 });
   f.updateSetHistoryPlaceholders(slot);
-  assert.equal(slot.rows[0].fields.weight.placeholder, "225");
+  assert.equal(slot.rows[0].fields.weight.placeholder, "135");
   f.updateExerciseLogField(slot);
   assert.equal(slot.nameInput.value, "Squat");
   assert.equal(slot.rows[0].fields.weight.value, 180);
-  assert.equal(slot.rows[0].fields.weight.placeholder, "180");
-  assert.equal(f.carousel.visibleRows[0].fields.weight.placeholder, "180");
+  assert.equal(slot.rows[0].fields.weight.placeholder, "0");
+  assert.equal(f.carousel.visibleRows[0].fields.weight.placeholder, "0");
 });

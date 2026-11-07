@@ -72,6 +72,7 @@ let clientSessionBalanceController = null;
 let clientGoogleHealthController = null;
 let clientProfilePhotoController = null;
 let clientAppleHealthController = null;
+let clientAppleHealthWorkouts = [];
 const dashboardRequestTimeout = 15000;
 const customWorkoutTitle = "Custom workout";
 const customWorkoutFormats = {
@@ -3380,6 +3381,7 @@ function exerciseProgressRecords(logs = []) {
     const tracksWeight = points.some((point) => point.maxWeight > 0);
     const comparablePoints = points.filter((point) => tracksWeight ? point.maxWeight > 0 : point.maxReps > 0);
     const started = comparablePoints[0];
+    const latest = comparablePoints[comparablePoints.length - 1];
     const valueKey = tracksWeight ? "maxWeight" : "maxReps";
     // Keep the first date this record was achieved when later sessions tie it.
     const best = comparablePoints.reduce((record, point) => (
@@ -3389,11 +3391,13 @@ function exerciseProgressRecords(logs = []) {
     return {
       ...exercise,
       started,
+      latest,
       best,
       latestDate: points[points.length - 1]?.date || "",
       unit: tracksWeight ? "lb" : "reps",
       change: started && best ? Number((best[valueKey] - started[valueKey]).toPrecision(12)) : 0,
       startingValue: started?.[valueKey] || 0,
+      latestValue: latest?.[valueKey] || 0,
       bestValue: best?.[valueKey] || 0
     };
   })
@@ -3440,6 +3444,7 @@ function clientExerciseProgressCardMarkup(record) {
 }
 
 function renderClientExerciseProgress(logs = trainingLogs) {
+  if (typeof window.FWB_RENDER_CLIENT_PROGRESS === "function") window.FWB_RENDER_CLIENT_PROGRESS(logs);
   const container = document.getElementById("client-exercise-progress");
   const count = document.getElementById("client-exercise-progress-count");
   if (!container) return;
@@ -9336,10 +9341,12 @@ function syncWorkoutStartButtons() {
     button.classList.toggle("is-active", isActiveWorkout);
 
     if (!workoutElapsedTimerState) {
-      button.textContent = button.closest(".client-workout-panel-custom:not(.has-custom-exercises)")
+      button.textContent = button.closest(".client-workout-panel-custom")
         ? "Start workout" : "Start";
     } else if (!isActiveWorkout) {
       button.textContent = "Workout timer active";
+    } else if (button.closest(".client-workout-panel-custom")) {
+      button.textContent = "Finish workout";
     } else if (workoutElapsedTimerState.dismissed) {
       button.textContent = "Show workout timer";
     } else {
@@ -15510,9 +15517,8 @@ function updateExerciseLogField(logElement) {
 function populateTrainingLogs(logs) {
   trainingLogs = Array.isArray(logs) ? logs : [];
   if (!clientLogCalendarInitialized) {
-    clientTrainingLogDateFilter = trainingLogs.map((log) => String(log.entry_date || ""))
-      .filter((date) => /^\d{4}-\d{2}-\d{2}$/.test(date)).sort().at(-1) || todayDate();
-    clientLogCalendarMonth = clientTrainingLogDateFilter.slice(0, 7);
+    clientTrainingLogDateFilter = "";
+    clientLogCalendarMonth = todayDate().slice(0, 7);
     clientLogCalendarInitialized = true;
   }
   if (typeof invalidateExerciseSearchCaches === "function") invalidateExerciseSearchCaches();
@@ -15908,10 +15914,15 @@ function configureClientAppleWorkouts() {
 
 function configureClientAppleHealth() {
   clientAppleHealthController?.destroy();
+  clientAppleHealthWorkouts = [];
   clientAppleHealthController = window.FWB_APPLE_HEALTH?.createController({
     supabaseClient, clientEmail: normalizeClientEmail(activeClientEmail),
     isCoach: isCoachDashboardPreview, expectedUserId: activeDashboardUser?.id,
-    onOpenStats: () => setClientDashboardTab("stats")
+    onOpenStats: () => setClientDashboardTab("stats"),
+    onSnapshot: (snapshot) => {
+      clientAppleHealthWorkouts = Array.isArray(snapshot.workouts) ? snapshot.workouts : [];
+      renderClientTrainingLogs();
+    }
   }) || null;
   void clientAppleHealthController?.initialize();
 }
@@ -16259,16 +16270,30 @@ function renderClientWorkoutCalendar(logs = trainingLogs) {
     if (!sessionsByDate.has(date)) sessionsByDate.set(date, new Set());
     sessionsByDate.get(date).add(clientWorkoutHistorySessionKey(log));
   });
+  const healthByDate = new Map();
+  clientAppleHealthWorkouts.forEach((workout) => {
+    const date = String(workout.started_at || "").slice(0, 10);
+    if (/^\d{4}-\d{2}-\d{2}$/.test(date)) healthByDate.set(date, (healthByDate.get(date) || 0) + 1);
+  });
 
   const offset = (monthDate.getDay() + 6) % 7;
   const length = new Date(year, month, 0).getDate();
-  days.innerHTML = `${Array.from({ length: offset }, () => '<span aria-hidden="true"></span>').join("")}${Array.from({ length }, (_, index) => {
-    const day = index + 1;
-    const date = `${monthKey}-${String(day).padStart(2, "0")}`;
+  const expanded = days.closest(".client-saved-log-calendar")?.dataset.calendarView === "month";
+  const today = new Date(`${todayDate()}T12:00:00`);
+  const reference = today.getFullYear() === year && today.getMonth() === month - 1 ? today : monthDate;
+  const weekStart = new Date(reference.getFullYear(), reference.getMonth(), reference.getDate() - (reference.getDay() + 6) % 7);
+  const visibleDates = expanded
+    ? Array.from({ length: length + offset }, (_, index) => index < offset ? null : new Date(year, month - 1, index - offset + 1))
+    : Array.from({ length: 7 }, (_, index) => new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() + index));
+  days.innerHTML = visibleDates.map((item) => {
+    if (!item) return '<span aria-hidden="true"></span>';
+    const day = item.getDate();
+    const date = `${item.getFullYear()}-${String(item.getMonth() + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
     const count = sessionsByDate.get(date)?.size || 0;
-    const ariaLabel = `${dateFormatter.format(new Date(year, month - 1, day))}${count ? `, ${count} saved ${count === 1 ? "workout" : "workouts"}` : ""}`;
-    return `<button class="client-saved-log-day" type="button" data-client-log-date="${date}" data-has-log="${count > 0}" aria-label="${escapeHtml(ariaLabel)}" aria-pressed="${date === clientTrainingLogDateFilter}">${day}</button>`;
-  }).join("")}`;
+    const healthCount = healthByDate.get(date) || 0;
+    const ariaLabel = `${dateFormatter.format(item)}${count ? `, ${count} saved ${count === 1 ? "workout" : "workouts"}` : ""}${healthCount ? `, ${healthCount} Apple Health ${healthCount === 1 ? "workout" : "workouts"}` : ""}`;
+    return `<button class="client-saved-log-day" type="button" data-client-log-date="${date}" data-has-log="${count > 0}" data-has-health="${healthCount > 0}" data-current-month="${item.getMonth() === month - 1}" aria-label="${escapeHtml(ariaLabel)}" aria-pressed="${date === clientTrainingLogDateFilter}"><span>${day}</span><i aria-hidden="true">${count ? '<b></b>' : ''}${healthCount ? '<em>♥</em>' : ''}</i></button>`;
+  }).join("");
 
   if (clientTrainingLogDateFilter) {
     const [selectedYear, selectedMonth, selectedDay] = clientTrainingLogDateFilter.split("-").map(Number);
@@ -16280,6 +16305,8 @@ function renderClientWorkoutCalendar(logs = trainingLogs) {
     const count = [...sessionsByDate.values()].reduce((total, sessions) => total + sessions.size, 0);
     selectedCount.textContent = `${count} ${count === 1 ? "LOG" : "LOGS"}`;
   }
+  const clearButton = document.getElementById("clear-client-training-log-date-filter");
+  if (clearButton) clearButton.hidden = !clientTrainingLogDateFilter;
 }
 
 function clientAchievementSnapshot() {
@@ -16366,6 +16393,30 @@ async function recordClientAchievementEvents(events = []) {
   }
 }
 
+function renderClientLogsExerciseList() {
+  const list = document.getElementById("client-logs-exercise-list");
+  if (!list) return;
+  const groups = new Map();
+  trainingLogs.forEach((log) => {
+    const name = String(log.exercise_name || "").trim();
+    if (!name || !name.toLowerCase().includes(clientTrainingLogSearchFilter.trim().toLowerCase())) return;
+    const key = name.toLowerCase();
+    if (!groups.has(key)) groups.set(key, { name, date: "", sessions: new Set(), sets: 0 });
+    const group = groups.get(key);
+    group.date = group.date > String(log.entry_date || "") ? group.date : String(log.entry_date || "");
+    group.sessions.add(clientWorkoutHistorySessionKey(log));
+    group.sets += 1;
+  });
+  const byUse = document.getElementById("client-logs-exercise-sort")?.value === "used";
+  const rows = [...groups.values()].sort((a, b) => byUse
+    ? b.sessions.size - a.sessions.size || b.date.localeCompare(a.date)
+    : b.date.localeCompare(a.date) || a.name.localeCompare(b.name));
+  list.innerHTML = rows.length ? rows.map((row) => `<article class="client-logs-exercise-row">
+    <span class="client-logs-exercise-thumb">${exerciseMediaButtonMarkup({ name: row.name }, { compact: true, hideInfo: true }) || '<span aria-hidden="true">▥</span>'}</span>
+    <button type="button" data-client-exercise-history-open="${escapeHtml(row.name)}" aria-label="View history for ${escapeHtml(row.name)}"><strong>${escapeHtml(row.name)}</strong><small>Last done ${escapeHtml(formatLogDate(row.date))} · ${row.sessions.size} workouts · ${row.sets} sets</small></button><span aria-hidden="true">›</span>
+  </article>`).join("") : '<p class="empty-state">No exercises match your search.</p>';
+}
+
 function renderClientTrainingLogs() {
   cancelScheduledClientTrainingLogsRender();
   window.FWB_CLIENT_EXERCISE_HISTORY_LOGS = trainingLogs;
@@ -16392,19 +16443,6 @@ function renderClientTrainingLogs() {
 
     return matchesDate && clientFoodLogMatchesSearch(log, clientTrainingLogSearchFilter);
   });
-
-  if (filteredLogs.length === 0 && filteredFoodLogs.length === 0) {
-    const hasFilter = clientTrainingLogDateFilter || clientTrainingLogSearchFilter;
-
-    if (count) {
-      count.textContent = hasFilter ? "No matching logs" : "No logs yet";
-    }
-
-    history.innerHTML = hasFilter
-      ? '<p class="empty-state">No workout or nutrition logs match that search.</p>'
-      : '<p class="empty-state">No workout or nutrition logs yet.</p>';
-    return;
-  }
 
   const workoutGroups = new Map();
 
@@ -16497,13 +16535,8 @@ function renderClientTrainingLogs() {
   });
 
   if (count) {
-    const nutritionDays = sortedFoodLogDayGroups(filteredFoodLogs).length;
-    const sessionLabel = `${workoutSections.length} ${workoutSections.length === 1 ? "session" : "sessions"}`;
-    const nutritionLabel = `${nutritionDays} nutrition ${nutritionDays === 1 ? "day" : "days"}`;
-
-    count.textContent = filteredFoodLogs.length
-      ? `${sessionLabel} · ${nutritionLabel}`
-      : sessionLabel;
+    const total = new Set(trainingLogs.map(clientWorkoutHistorySessionKey)).size;
+    count.textContent = `${total} ${total === 1 ? "session" : "sessions"}`;
   }
 
   const workoutHistorySections = workoutSections.map((workout, workoutIndex) => {
@@ -16525,6 +16558,10 @@ function renderClientTrainingLogs() {
     const deleteButtonMarkup = !isCoachDashboardPreview ? `<button class="training-log-delete-button" type="button" data-delete-workout-history="${escapeHtml(workout.history_key)}" aria-label="${escapeHtml(`Delete ${displayTitle} from ${formatLogDate(workout.entry_date)}`)}" ${clientWorkoutHistoryDeleteInFlight ? "disabled" : ""}>Delete workout</button>` : "";
     const copyButtonLabel = `Copy ${displayTitle} from ${formatLogDate(workout.entry_date)} to Custom workout`;
     const detailsId = `client-workout-history-details-${workoutIndex}`;
+    const weekdayDate = /^\d{4}-\d{2}-\d{2}$/.test(String(workout.entry_date || ""))
+      ? new Date(`${workout.entry_date}T12:00:00`) : null;
+    const weekdayLabel = weekdayDate && !Number.isNaN(weekdayDate.getTime())
+      ? new Intl.DateTimeFormat("en-US", { weekday: "short" }).format(weekdayDate).toUpperCase() : "—";
     const detailsHtml = `
       ${canCorrectSavedWorkout ? "" : '<p class="client-saved-set-locked">Finish this workout to correct saved sets here.</p>'}
       <div class="training-log-superset-list">
@@ -16639,121 +16676,25 @@ function renderClientTrainingLogs() {
 
     return {
       sort_key: `${workout.entry_date || ""}::workout::${workout.workout_title || ""}`,
-      desktop_html: `
-        <section class="training-log-workout-group">
-          <div class="training-log-workout-heading has-copy-action">
-            <div class="training-log-workout-title">
-              <strong>${escapeHtml(formatLogDate(workout.entry_date))}</strong>
-              <span>${escapeHtml(workoutHeading)}</span>
-            </div>
-            <div class="training-log-workout-actions">
-            ${canCopyToCustom ? `
-              <button
-                class="training-log-copy-button"
-                type="button"
-                data-copy-workout-to-custom="${escapeHtml(workout.history_key)}"
-                aria-label="${escapeHtml(copyButtonLabel)}"
-              >Copy Workout</button>
-            ` : ""}
-            ${shareButtonMarkup}
-            ${deleteButtonMarkup}
-            </div>
-          </div>
-          ${appleWorkoutMarkup}
-          ${detailsHtml}
-        </section>
-      `,
-      mobile_html: `
-        <article
-          class="training-log-history-card"
-          data-client-workout-history-card="${workoutIndex}"
-          data-client-workout-history-key="${escapeHtml(workout.history_key)}"
-          role="group"
-          aria-roledescription="slide"
-          aria-label="${escapeHtml(`${displayTitle}, ${formatLogDate(workout.entry_date)}. Workout ${workoutIndex + 1} of ${workoutSections.length}.`)}"
-        >
-          <div class="training-log-history-card-summary" data-client-workout-history-summary>
-            <div class="training-log-history-card-topline">
-              <span class="training-log-history-state${workout.completed_at ? " is-complete" : ""}">${escapeHtml(workoutStatus)}</span>
-              <strong>${escapeHtml(formatLogDate(workout.entry_date))}</strong>
-            </div>
-            <h3>${escapeHtml([displayTitle, workout.gym_name].filter(Boolean).join(" · "))}</h3>
-            <p>${escapeHtml(mobileWorkoutMeta)}</p>
-            <dl class="training-log-history-metrics">
-              <div><dt>Exercises</dt><dd>${escapeHtml(String(metrics.exerciseCount))}</dd></div>
-              <div><dt>Volume</dt><dd>${escapeHtml(metrics.volumeLabel)}</dd></div>
-              <div><dt>Working sets</dt><dd>${escapeHtml(String(metrics.workingSetCount))}</dd></div>
-            </dl>
-            ${appleWorkoutMarkup}
-            <div class="training-log-history-card-actions">
-              <button
-                class="training-log-history-open"
-                type="button"
-                data-client-workout-history-open
-                aria-expanded="false"
-                aria-controls="${escapeHtml(detailsId)}"
-              >View Exercises <span aria-hidden="true">→</span></button>
-              ${canCopyToCustom ? `
-                <button
-                  class="training-log-copy-button"
-                  type="button"
-                  data-copy-workout-to-custom="${escapeHtml(workout.history_key)}"
-                  aria-label="${escapeHtml(copyButtonLabel)}"
-                >Copy Workout</button>
-              ` : ""}
-              ${shareButtonMarkup}
-              ${deleteButtonMarkup}
-            </div>
-          </div>
-          <div
-            class="training-log-history-card-details"
-            id="${escapeHtml(detailsId)}"
-            data-client-workout-history-details
-            hidden
-          >
-            <div class="training-log-history-details-heading">
-              <div>
-                <p class="kicker">Exercises completed</p>
-                <h3>${escapeHtml(`${metrics.exerciseCount} ${metrics.exerciseCount === 1 ? "exercise" : "exercises"}`)}</h3>
-              </div>
-              <button type="button" data-client-workout-history-close>Back</button>
-            </div>
-            ${detailsHtml}
-          </div>
-        </article>
-      `
+      entry_date: workout.entry_date,
+      compact_html: `<article class="client-logs-session" data-client-workout-history-card="${workoutIndex}" data-client-workout-history-key="${escapeHtml(workout.history_key)}">
+        <button class="client-logs-session-open" type="button" data-client-workout-history-open aria-expanded="false" aria-controls="${escapeHtml(detailsId)}" aria-label="Open ${escapeHtml(displayTitle)} from ${escapeHtml(formatLogDate(workout.entry_date))}">
+          <span class="client-logs-session-day"><strong>${escapeHtml(String(Number(String(workout.entry_date || "").slice(-2)) || "—"))}</strong><small>${escapeHtml(weekdayLabel)}</small></span>
+          <span class="client-logs-session-copy"><strong>${escapeHtml([displayTitle, workout.gym_name].filter(Boolean).join(" · "))}</strong><small>${escapeHtml(`${metrics.exerciseCount} exercises · ${metrics.workingSetCount} sets · ${metrics.volumeLabel}`)}</small></span>
+          <span class="client-logs-session-chevron" aria-hidden="true">›</span>
+        </button>
+        <div class="training-log-history-card-details" id="${escapeHtml(detailsId)}" data-client-workout-history-details hidden>
+          <div class="client-logs-detail-heading"><span class="training-log-history-state${workout.completed_at ? " is-complete" : ""}">${escapeHtml(workoutStatus)}</span><strong>${escapeHtml(formatLogDate(workout.entry_date))}</strong></div>
+          <h3>${escapeHtml([displayTitle, workout.gym_name].filter(Boolean).join(" · "))}</h3>
+          <dl class="training-log-history-metrics"><div><dt>Exercises</dt><dd>${metrics.exerciseCount}</dd></div><div><dt>Sets</dt><dd>${metrics.workingSetCount}</dd></div><div><dt>Volume</dt><dd>${escapeHtml(metrics.volumeLabel)}</dd></div></dl>
+          ${appleWorkoutMarkup}${detailsHtml}
+          <div class="client-logs-detail-actions">${shareButtonMarkup}${canCopyToCustom ? `<button class="training-log-copy-button" type="button" data-copy-workout-to-custom="${escapeHtml(workout.history_key)}" aria-label="${escapeHtml(copyButtonLabel)}">Copy workout</button>` : ""}<details><summary aria-label="More workout actions">⋯</summary>${deleteButtonMarkup}</details></div>
+          <button class="client-logs-detail-back" type="button" data-client-workout-history-close>Back to workouts</button>
+        </div>
+      </article>`,
     };
   });
   const nutritionHistorySections = nutritionLogHistorySections(filteredFoodLogs);
-  const chronologicalHistory = [
-    ...workoutHistorySections.map((section) => ({ sort_key: section.sort_key, html: section.desktop_html })),
-    ...nutritionHistorySections.map((section) => ({ sort_key: section.sort_key, html: section.desktop_html }))
-  ].sort((a, b) => b.sort_key.localeCompare(a.sort_key));
-  const mobileWorkoutBrowser = workoutHistorySections.length > 0 ? `
-    <section class="training-log-mobile-workout-browser" data-client-workout-history-browser>
-      <div class="training-log-history-deck-heading">
-        <div>
-          <p class="kicker">Past workouts</p>
-          <strong data-client-workout-history-position aria-live="polite" aria-atomic="true">Workout 1 of ${workoutHistorySections.length}</strong>
-        </div>
-        <div class="training-log-history-deck-controls" aria-label="Past workout controls">
-          <button type="button" data-client-workout-history-previous aria-label="Previous workout">←</button>
-          <button type="button" data-client-workout-history-next aria-label="Next workout">→</button>
-        </div>
-      </div>
-      <div
-        class="training-log-history-deck"
-        data-client-workout-history-deck
-        role="region"
-        aria-roledescription="carousel"
-        aria-label="Past workouts. Swipe left or right, or use the arrow buttons."
-        tabindex="0"
-      >
-        ${workoutHistorySections.map((section) => section.mobile_html).join("")}
-      </div>
-      <p class="training-log-history-swipe-hint">Swipe left or right to browse</p>
-    </section>
-  ` : "";
   const mobileFoodBrowser = nutritionHistorySections.length > 0 ? `
     <section class="training-log-mobile-nutrition-history" data-client-food-history-browser>
       <div class="training-log-history-deck-heading">
@@ -16780,12 +16721,29 @@ function renderClientTrainingLogs() {
     </section>
   ` : "";
 
-  history.innerHTML = `
-    <div class="training-log-desktop-history">${chronologicalHistory.map((section) => section.html).join("")}</div>
-    ${mobileWorkoutBrowser}
-    ${mobileFoodBrowser}
-  `;
-  syncClientWorkoutHistoryDeck(activeWorkoutHistoryDeckIndex);
+  const healthRows = clientAppleHealthWorkouts.filter((workout) => {
+    const date = String(workout.started_at || "").slice(0, 10);
+    return (!clientTrainingLogDateFilter || date === clientTrainingLogDateFilter)
+      && (!clientTrainingLogSearchFilter || `${workout.activity_type} ${workout.source_name}`.toLowerCase().includes(clientTrainingLogSearchFilter.toLowerCase()));
+  }).filter((workout) => !Number.isNaN(new Date(String(workout.started_at || "")).getTime())).map((workout) => ({
+    sort_key: String(workout.started_at || "").slice(0, 10),
+    entry_date: String(workout.started_at || "").slice(0, 10),
+    compact_html: `<article class="client-logs-session client-logs-health-session"><div class="client-logs-session-open"><span class="client-logs-session-day"><strong>${escapeHtml(String(Number(String(workout.started_at).slice(8, 10))))}</strong><small>${escapeHtml(new Intl.DateTimeFormat("en-US", { weekday: "short" }).format(new Date(workout.started_at)).toUpperCase())}</small></span><span class="client-logs-session-copy"><strong>♥ ${escapeHtml(String(workout.activity_type || "Workout").replace(/_/g, " "))}</strong><small>${escapeHtml(`${workout.source_name || "Apple Health"} · ${Math.round(Number(workout.duration_seconds || 0) / 60)} min${workout.active_calories == null ? "" : ` · ${Math.round(Number(workout.active_calories))} kcal`}`)}</small></span></div></article>`
+  }));
+  const listRows = [...workoutHistorySections, ...healthRows].sort((a, b) => b.sort_key.localeCompare(a.sort_key));
+  let previousMonth = "";
+  history.innerHTML = listRows.length ? listRows.map((row) => {
+    const month = String(row.entry_date || "").slice(0, 7);
+    const monthDate = /^\d{4}-\d{2}$/.test(month) ? new Date(`${month}-01T12:00:00`) : null;
+    const monthLabel = monthDate && !Number.isNaN(monthDate.getTime())
+      ? new Intl.DateTimeFormat("en-US", { month: "long" }).format(monthDate).toUpperCase() : "UNDATED";
+    const heading = month !== previousMonth ? `<h3 class="client-logs-month-heading">${escapeHtml(monthLabel)}</h3>` : "";
+    previousMonth = month;
+    return `${heading}${row.compact_html}`;
+  }).join("") : '<p class="empty-state">No workouts match your search or date.</p>';
+  const foodHistory = document.getElementById("client-logs-food-history");
+  if (foodHistory) foodHistory.innerHTML = `<div class="training-log-desktop-history">${nutritionHistorySections.map((section) => section.desktop_html).join("")}</div>${mobileFoodBrowser}`;
+  renderClientLogsExerciseList();
   syncClientFoodHistoryDeck(activeFoodHistoryDeckIndex);
 }
 
@@ -16807,9 +16765,11 @@ function setClientWorkoutHistoryCardExpanded(card, expanded, options = {}) {
   card.classList.toggle("is-detail-open", isExpanded);
   details.hidden = !isExpanded;
   openButton.setAttribute("aria-expanded", isExpanded ? "true" : "false");
-  openButton.innerHTML = isExpanded
-    ? `${isFoodCard ? "Hide Foods" : "Hide Exercises"} <span aria-hidden="true">↑</span>`
-    : `${isFoodCard ? "View Foods" : "View Exercises"} <span aria-hidden="true">→</span>`;
+  if (!openButton.classList.contains("client-logs-session-open")) {
+    openButton.innerHTML = isExpanded
+      ? `${isFoodCard ? "Hide Foods" : "Hide Exercises"} <span aria-hidden="true">↑</span>`
+      : `${isFoodCard ? "View Foods" : "View Exercises"} <span aria-hidden="true">→</span>`;
+  }
 
   if (!isExpanded && options.restoreFocus) {
     openButton.focus({ preventScroll: true });
@@ -17607,6 +17567,8 @@ function handleClientWorkoutHistoryImport() {
 function handleClientTrainingLogDateFilter() {
   const searchInput = document.getElementById("client-training-log-search-filter");
   const clearButton = document.getElementById("clear-client-training-log-date-filter");
+  const calendar = document.querySelector("#client-logs-workouts .client-saved-log-calendar");
+  const monthToggle = document.getElementById("client-logs-calendar-toggle");
 
   if (!searchInput || !clearButton) {
     return;
@@ -17625,10 +17587,30 @@ function handleClientTrainingLogDateFilter() {
     const [year, month] = (clientLogCalendarMonth || todayDate().slice(0, 7)).split("-").map(Number);
     const target = new Date(year, month - 1 + (monthButton.dataset.clientLogMonth === "previous" ? -1 : 1), 1);
     clientLogCalendarMonth = `${target.getFullYear()}-${String(target.getMonth() + 1).padStart(2, "0")}`;
-    clientTrainingLogDateFilter = trainingLogs.map((log) => String(log.entry_date || ""))
-      .filter((date) => date.startsWith(`${clientLogCalendarMonth}-`)).sort().at(-1)
-      || `${clientLogCalendarMonth}-01`;
+    clientTrainingLogDateFilter = "";
     renderClientTrainingLogs();
+  });
+
+  monthToggle?.addEventListener("click", () => {
+    const expanded = calendar?.dataset.calendarView !== "month";
+    if (calendar) calendar.dataset.calendarView = expanded ? "month" : "week";
+    monthToggle.setAttribute("aria-expanded", String(expanded));
+    monthToggle.textContent = expanded ? "Week⌃" : "Month⌄";
+    renderClientWorkoutCalendar(trainingLogs);
+  });
+
+  document.querySelectorAll("[data-client-logs-tab]").forEach((button) => button.addEventListener("click", () => {
+    const active = button.dataset.clientLogsTab;
+    document.querySelectorAll("[data-client-logs-tab]").forEach((tab) => tab.setAttribute("aria-selected", String(tab === button)));
+    ["workouts", "exercises", "health"].forEach((name) => {
+      const panel = document.getElementById(`client-logs-${name}`);
+      if (panel) panel.hidden = name !== active;
+    });
+  }));
+  document.getElementById("client-logs-exercise-sort")?.addEventListener("change", renderClientLogsExerciseList);
+  document.getElementById("client-logs-health-settings")?.addEventListener("click", () => {
+    setClientDashboardTab("notifications");
+    setClientSettingsView("health-apps", { focus: true });
   });
 
   searchInput.addEventListener("input", () => {
@@ -17638,8 +17620,6 @@ function handleClientTrainingLogDateFilter() {
 
   clearButton.addEventListener("click", () => {
     clientTrainingLogDateFilter = "";
-    clientTrainingLogSearchFilter = "";
-    searchInput.value = "";
     renderClientTrainingLogs();
   });
 }
@@ -18577,7 +18557,7 @@ function handleClientHomeCheckin() {
   });
   document.addEventListener("click", event => {
     const button = event.target.closest("[data-client-daily-checkin]");
-    if (button) openClientDailyCheckin(button.classList.contains("client-home-atari") ? "checkin" : "recommendation", button);
+    if (button) openClientDailyCheckin("recommendation", button);
   });
   document.addEventListener("click", (event) => {
     const toggle = event.target.closest("[data-client-home-checkin-toggle]");
@@ -20233,7 +20213,20 @@ function handleWorkoutInteractions() {
         workoutDate === String(workoutElapsedTimerState.workoutDate || "")
       );
 
-      if (isActiveWorkout && workoutElapsedTimerState.dismissed) {
+      if (isActiveWorkout && workoutPanel?.classList.contains("client-workout-panel-custom")) {
+        if (!workoutPanel.querySelector("[data-exercise-log]")) {
+          const status = workoutPanel.querySelector("[data-custom-workout-reset-status]");
+          if (status) {
+            status.textContent = "Add your first exercise before finishing your workout.";
+            status.hidden = false;
+          }
+          workoutPanel.querySelector("[data-custom-workout-launcher-add]")?.focus();
+          return;
+        }
+        const finishButton = workoutPanel.querySelector("[data-custom-grouped-finish-workout]")
+          || workoutPanel.querySelector("[data-workout-finish]");
+        finishButton?.click();
+      } else if (isActiveWorkout && workoutElapsedTimerState.dismissed) {
         showWorkoutElapsedTimer();
       } else if (isActiveWorkout) {
         toggleWorkoutElapsedTimer();

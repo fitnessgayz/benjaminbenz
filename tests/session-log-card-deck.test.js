@@ -7,6 +7,7 @@ const root = path.resolve(__dirname, "..");
 const portal = fs.readFileSync(path.join(root, "js/client-portal.js"), "utf8");
 const dashboard = fs.readFileSync(path.join(root, "client-dashboard.html"), "utf8");
 const styles = fs.readFileSync(path.join(root, "css/style.css"), "utf8");
+const compactStyles = fs.readFileSync(path.join(root, "css/client-logs-compact.css"), "utf8");
 
 function sourceForFunction(name) {
   const start = portal.indexOf(`function ${name}(`);
@@ -84,45 +85,32 @@ test("exercise search selects complete matching sessions so card totals and copy
   assert.equal(filterLogs(logs, "2026-09-10", "curl").length, 0);
 });
 
-test("renders a mobile-only past-workout deck with expandable exercise details", () => {
+test("renders month-grouped workout and Health rows with expandable exercise details", () => {
   const renderSource = sourceForFunction("renderClientTrainingLogs");
 
-  assert.match(renderSource, /training-log-desktop-history/);
-  assert.match(renderSource, /training-log-mobile-workout-browser/);
-  assert.match(renderSource, /data-client-workout-history-deck/);
+  assert.match(renderSource, /client-logs-month-heading/);
+  assert.match(renderSource, /client-logs-health-session/);
   assert.match(renderSource, /data-client-workout-history-card/);
-  assert.match(renderSource, /data-client-workout-history-summary/);
   assert.match(renderSource, /data-client-workout-history-open/);
   assert.match(renderSource, /data-client-workout-history-details/);
-  assert.match(renderSource, /Exercises completed/);
+  assert.match(renderSource, /training-log-superset-list/);
   assert.match(renderSource, /workout\.completed_at \? "Completed" : "Saved"/);
   assert.match(renderSource, /data-copy-workout-to-custom/);
   assert.match(renderSource, /data-client-exercise-history-open/);
   assert.doesNotMatch(renderSource, /Average RIR/);
-  assert.match(renderSource, />Copy Workout<\/button>/);
-  assert.ok(
-    renderSource.indexOf("activeWorkoutHistoryDeckIndex = 0") <
-    renderSource.indexOf("filteredClientWorkoutHistoryLogs(")
-  );
+  assert.match(renderSource, /renderClientLogsExerciseList\(\)/);
+  assert.doesNotMatch(renderSource, /training-log-mobile-workout-browser/);
 });
 
-test("keeps only the current history card interactive and supports arrows, keyboard, and swipe", () => {
-  const syncSource = sourceForFunction("syncClientWorkoutHistoryDeck");
+test("workout list rows open and close saved exercise details", () => {
+  const expandSource = sourceForFunction("setClientWorkoutHistoryCardExpanded");
   const handlerSource = sourceForFunction("handleClientWorkoutHistoryDeck");
 
-  assert.match(syncSource, /is-deck-behind-1/);
-  assert.match(syncSource, /is-deck-behind-2/);
-  assert.match(syncSource, /is-deck-behind-3/);
-  assert.match(syncSource, /setAttribute\("aria-hidden", isCurrent \? "false" : "true"\)/);
-  assert.match(syncSource, /toggleAttribute\("inert", !isCurrent\)/);
-  assert.match(handlerSource, /data-client-workout-history-previous/);
-  assert.match(handlerSource, /data-client-workout-history-next/);
-  assert.match(handlerSource, /event\.key === "ArrowLeft"/);
-  assert.match(handlerSource, /event\.key === "ArrowRight"/);
-  assert.match(handlerSource, /clientWorkoutPickerSwipeStep/);
-  assert.match(handlerSource, /horizontalDistance > verticalDistance \* 1\.15/);
-  assert.match(handlerSource, /event\.target\.closest\("button, a, input, select, textarea"\)/);
-  assert.match(handlerSource, /setClientWorkoutHistoryCardExpanded\(card, true\)/);
+  assert.match(expandSource, /details\.hidden = !isExpanded/);
+  assert.match(expandSource, /openButton\.setAttribute\("aria-expanded"/);
+  assert.match(handlerSource, /data-client-workout-history-open/);
+  assert.match(handlerSource, /data-client-workout-history-close/);
+  assert.match(dashboard, /role="tablist" aria-label="Log sections"/);
 });
 
 test("renders food days as a separate mobile deck with expandable entries", () => {
@@ -148,28 +136,19 @@ test("renders food days as a separate mobile deck with expandable entries", () =
   assert.match(handlerSource, /moveClientWorkoutHistoryDeck\(step, historyType\)/);
 });
 
-test("mobile deck styles layer cards without clipping long workout content", () => {
-  const start = styles.indexOf("/* Mobile Session Log: past workouts shown as an interactive card deck. */");
-  const deckStyles = styles.slice(start);
-
-  assert.ok(start >= 0);
-  assert.match(deckStyles, /\.training-log-mobile-workout-browser,[\s\S]*?display:\s*none/);
-  assert.match(deckStyles, /@media \(max-width: 900px\) \{\s*\.training-log-desktop-history \{\s*display:\s*none/);
-  assert.doesNotMatch(deckStyles, /@media \(max-width: 700px\)/);
-  assert.match(deckStyles, /\.training-log-history-deck \{[\s\S]*?touch-action:\s*pan-y/);
-  assert.match(deckStyles, /\.training-log-history-deck \{[\s\S]*?overflow:\s*visible/);
-  assert.match(deckStyles, /\.training-log-history-card \{[\s\S]*?position:\s*absolute/);
-  assert.match(deckStyles, /\.training-log-history-card\.is-current \{[\s\S]*?position:\s*relative[\s\S]*?pointer-events:\s*auto/);
-  assert.match(deckStyles, /\.training-log-history-card\.is-deck-behind-1/);
-  assert.match(deckStyles, /\.training-log-history-card-summary > h3 \{[\s\S]*?overflow-wrap:\s*anywhere/);
-  assert.match(deckStyles, /\.training-log-history-card-details \{[\s\S]*?min-width:\s*0/);
-  assert.match(deckStyles, /\.training-log-history-open,[\s\S]*?min-height:\s*44px !important/);
-  assert.match(deckStyles, /\.training-log-history-metrics dt \{[\s\S]*?font-size:\s*1rem/);
-  assert.match(deckStyles, /\.training-log-history-swipe-hint \{[\s\S]*?font-size:\s*1rem/);
+test("compact Logs styling keeps cards readable and actions tappable", () => {
+  assert.match(compactStyles, /\.client-logs-tabs/);
+  assert.match(compactStyles, /\.client-logs-session-open/);
+  assert.match(compactStyles, /min-height:\s*84px/);
+  assert.match(compactStyles, /--logs-blue:/);
+  assert.match(compactStyles, /--logs-gold:/);
+  assert.match(compactStyles, /env\(safe-area-inset-bottom\)/);
+  assert.match(styles, /\.training-log-history-card-details\[hidden\]/);
 });
 
 test("cache-busts the live dashboard assets after the Session Log release", () => {
   assert.match(dashboard, /css\/style\.css\?v=[^\"]*workout-preview-1/);
   assert.match(dashboard, /js\/client-portal\.js\?v=workout-preview-1/);
+  assert.match(dashboard, /css\/client-logs-compact\.css\?v=1/);
   assert.match(portal, /handleClientWorkoutHistoryDeck\(\);/);
 });

@@ -255,6 +255,9 @@ body.client-dashboard-page .workout-compact-date .workout-session-date-value {
   text-overflow: ellipsis;
   font-size: .9rem;
 }
+body.client-dashboard-page .client-workout-panel-cardio .workout-compact-date .workout-session-date-value {
+  padding-block: 4px;
+}
 body.client-dashboard-page .workout-compact-date > small {
   grid-column: 3;
   grid-row: 1 / 3;

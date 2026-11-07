@@ -1,0 +1,88 @@
+/* Client Logs: compact list layout shared by iPhone and Android web. */
+body.client-dashboard-page [data-client-dashboard-panel="logs"] {
+  --logs-gold: #ffd400;
+  --logs-blue: #68b7f5;
+  --logs-card: #1b1c20;
+  --logs-line: #31343a;
+  max-width: 680px;
+  margin-inline: auto;
+  padding: 18px 12px calc(110px + env(safe-area-inset-bottom)) !important;
+  border: 0;
+  border-radius: 0;
+  background: radial-gradient(ellipse 72% 195px at 50% 0, #302807 0%, #101114 65%, #0b0c0f 100%);
+  color: #f6f6f6;
+}
+body.client-dashboard-page [data-client-dashboard-panel="logs"] [hidden] { display: none !important; }
+.client-logs-heading { display: flex; align-items: center; gap: 8px; margin-bottom: 18px; }
+body.client-dashboard-page .client-logs-heading h2 { flex: 1; margin: 0; color: #fff !important; font-size: 1.65rem; line-height: 1.15; text-transform: none !important; }
+body.client-dashboard-page .client-logs-heading .status-pill { border: 0; border-radius: 999px; background: #29271e; color: #aaaeb8; font-size: .78rem; font-weight: 500; white-space: nowrap; text-transform: none !important; }
+.client-logs-more { position: relative; z-index: 10; }
+.client-logs-more > summary { display: grid; place-items: center; width: 44px; height: 44px; border: 1px solid #3c3b37; border-radius: 50%; background: #25241f; color: white; cursor: pointer; font-size: 1.4rem; list-style: none; }
+.client-logs-more > summary::-webkit-details-marker { display: none; }
+.client-logs-more-items { position: absolute; top: 48px; right: 0; width: min(300px, 78vw); padding: 8px; border: 1px solid var(--logs-line); border-radius: 16px; background: #24262b; box-shadow: 0 16px 42px #0009; }
+body.client-dashboard-page .client-logs-more-items :is(button, label) { display: flex; align-items: center; width: 100%; min-height: 44px; padding: 10px 12px; border: 0; border-radius: 9px; background: transparent; color: #f6f6f6; font: inherit; text-align: left; cursor: pointer; }
+.client-logs-more-items small { display: block; padding: 6px 12px 9px; color: #aeb2bc; line-height: 1.35; }
+.client-logs-search { display: flex; align-items: center; gap: 12px; min-height: 52px; padding: 0 14px; margin-bottom: 12px; border: 1px solid #393a3c; border-radius: 18px; background: #1c1d20; color: var(--logs-blue); }
+.client-logs-search > span[aria-hidden] { font-size: 1.8rem; line-height: 1; }
+body.client-dashboard-page .client-logs-search input { flex: 1; min-width: 0; height: 48px; padding: 0; border: 0; outline: 0; background: transparent; color: #fff; font: inherit; }
+.client-logs-search:focus-within { outline: 2px solid var(--logs-blue); outline-offset: 2px; }
+.client-logs-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 4px; margin-bottom: 12px; border-radius: 14px; background: #1f2024; }
+body.client-dashboard-page .client-logs-tabs button { min-height: 42px; padding: 8px 4px; border: 0; border-radius: 10px; background: transparent; color: #aeb2bc; font: inherit; font-size: .9rem; font-weight: 600; }
+body.client-dashboard-page .client-logs-tabs button[aria-selected="true"] { background: var(--logs-gold); color: #111; }
+body.client-dashboard-page .client-saved-log-calendar { max-width: none; margin-bottom: 12px; padding: 11px 10px 9px; border-color: var(--logs-line); border-radius: 18px; background: #1b1c20; color: #fff; }
+.client-saved-log-month-row { grid-template-columns: 44px minmax(0, 1fr) 44px auto; margin-bottom: 2px; text-align: left; }
+.client-saved-log-month-row strong { font-size: .94rem; }
+body.client-dashboard-page .client-saved-log-month-row button[data-client-log-month] { width: 44px; height: 44px; min-height: 44px; font-size: 1.2rem; border: 0; background: transparent; color: var(--logs-blue); }
+body.client-dashboard-page .client-saved-log-calendar[data-calendar-view="week"] .client-saved-log-month-row button[data-client-log-month] { display: none !important; }
+body.client-dashboard-page .client-saved-log-calendar[data-calendar-view="week"] .client-saved-log-month-row { grid-template-columns: 1fr auto !important; }
+body.client-dashboard-page .client-saved-log-month-row button#client-logs-calendar-toggle { min-height: 36px; padding: 0 4px; border: 0; background: transparent; color: var(--logs-blue); font-size: .83rem; }
+.client-saved-log-weekdays, .client-saved-log-days { gap: 0; }
+.client-saved-log-weekdays span { padding: 1px 0; color: #9297a2; font-size: .68rem; }
+body.client-dashboard-page .client-saved-log-day { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; min-height: 54px; aspect-ratio: auto; padding: 3px 0; border-radius: 11px; background: transparent !important; color: #fff !important; font-size: .91rem; }
+body.client-dashboard-page .client-saved-log-day[data-current-month="false"] { color: #80848d !important; }
+body.client-dashboard-page .client-saved-log-day[aria-pressed="true"] { outline: 1px solid var(--logs-gold); outline-offset: -2px; background: #353019 !important; }
+.client-saved-log-day i { display: flex; align-items: center; justify-content: center; gap: 2px; height: 14px; font-style: normal; }
+.client-saved-log-day i b { width: 7px; height: 7px; border-radius: 50%; background: var(--logs-gold); }
+.client-saved-log-day i em { color: #9a9eac; font-size: .72rem; font-style: normal; }
+body.client-dashboard-page .client-saved-log-key, body.client-dashboard-page .client-saved-log-selected { display: none; }
+body.client-dashboard-page .client-logs-filter-controls { display: block; margin: 0 0 8px; }
+body.client-dashboard-page .client-logs-filter-controls button { min-height: 36px; padding: 5px 12px; border: 1px solid var(--logs-line); border-radius: 999px; background: #282a2f; color: var(--logs-blue); font-size: .78rem; }
+body.client-dashboard-page .client-logs-filter-controls button[hidden] { display: none; }
+.client-logs-month-heading { margin: 16px 0 8px; color: #aeb2bc !important; font-size: .71rem !important; font-weight: 700; letter-spacing: .16em; }
+.client-logs-session { margin-bottom: 8px; border: 1px solid transparent; border-radius: 16px; background: var(--logs-card); overflow: hidden; }
+body.client-dashboard-page .client-logs-session-open { display: grid; grid-template-columns: 43px minmax(0, 1fr) 12px; align-items: center; gap: 10px; width: 100%; min-height: 84px !important; padding: 12px 13px; border: 0; background: transparent; color: #fff; text-align: left !important; font: inherit; }
+.client-logs-session-day { display: grid; justify-items: center; line-height: 1.05; }
+.client-logs-session-day strong { font-size: 1.25rem; }
+.client-logs-session-day small { margin-top: 5px; color: #9da2ad; font-size: .61rem; letter-spacing: .08em; }
+.client-logs-session-copy { display: grid; justify-items: start; gap: 3px; min-width: 0; text-align: left !important; }
+.client-logs-session-copy strong { overflow: hidden; color: #fff; font-size: .92rem; white-space: nowrap; text-overflow: ellipsis; }
+.client-logs-session-copy small { overflow: hidden; color: #a5a9b3; font-size: .72rem; white-space: nowrap; text-overflow: ellipsis; }
+.client-logs-session-chevron { color: var(--logs-blue); font-size: 1.35rem; }
+.client-logs-health-session .client-logs-session-open { cursor: default; }
+.client-logs-health-session .client-logs-session-copy strong { color: #fff; }
+.client-logs-session .training-log-history-card-details { margin: 0; padding: 12px; border: 0; border-top: 1px solid var(--logs-line); border-radius: 0; background: #202126; }
+.client-logs-detail-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.client-logs-detail-heading > strong { color: #aeb2bc; font-size: .8rem; }
+.client-logs-session .training-log-history-card-details > h3 { margin: 12px 0; color: #fff; }
+.client-logs-detail-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+body.client-dashboard-page .client-logs-detail-actions > button, body.client-dashboard-page .client-logs-detail-actions > details > summary, body.client-dashboard-page .client-logs-detail-back { min-height: 44px; padding: 10px 14px; border: 1px solid var(--logs-line); border-radius: 11px; background: #282a2f; color: #fff; font: inherit; }
+body.client-dashboard-page .client-logs-detail-actions .training-log-copy-button { background: var(--logs-gold); color: #111; font-weight: 700; }
+.client-logs-detail-actions details { position: relative; }
+.client-logs-detail-actions details > summary { display: grid; place-items: center; list-style: none; cursor: pointer; }
+.client-logs-detail-actions details > summary::-webkit-details-marker { display: none; }
+body.client-dashboard-page .client-logs-detail-actions .training-log-delete-button { position: absolute; right: 0; top: 46px; z-index: 2; width: 160px; min-height: 44px; border: 1px solid #7b3439; border-radius: 9px; background: #2e1b1f; color: #ff898f; }
+body.client-dashboard-page .client-logs-detail-back { margin-top: 12px; color: var(--logs-blue); }
+.client-logs-exercise-controls { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 12px 0; }
+.client-logs-exercise-controls h3 { margin: 0; color: #fff; font-size: 1rem; }
+.client-logs-exercise-controls label { color: #aeb2bc; font-size: .75rem; }
+body.client-dashboard-page .client-logs-exercise-controls select { min-height: 44px; margin-left: 4px; padding: 7px; border: 1px solid var(--logs-line); border-radius: 9px; background: #24262b; color: #fff; }
+.client-logs-exercise-row { display: grid; grid-template-columns: 62px minmax(0, 1fr) 12px; align-items: center; gap: 11px; min-height: 86px; padding: 10px; margin-bottom: 8px; border: 1px solid var(--logs-line); border-radius: 16px; background: var(--logs-card); }
+.client-logs-exercise-thumb { display: grid; place-items: center; width: 62px; height: 62px; border-radius: 10px; overflow: hidden; background: #292b30; }
+.client-logs-exercise-thumb img { width: 100%; height: 100%; object-fit: cover; }
+body.client-dashboard-page .client-logs-exercise-row > button { display: grid; gap: 4px; min-height: 44px; padding: 0; border: 0; background: transparent; color: #fff; text-align: left; font: inherit; }
+.client-logs-exercise-row button strong { font-size: .93rem; }
+.client-logs-exercise-row button small { color: #aab0ba; font-size: .73rem; }
+body.client-dashboard-page .client-logs-health-settings { min-height: 44px; padding: 8px 0; border: 0; background: transparent; color: var(--logs-blue); font: inherit; font-weight: 700; }
+body.client-dashboard-page .client-logs-exercise-row > span:last-child { color: var(--logs-blue); }
+body.client-dashboard-page [data-client-dashboard-panel="logs"] :is(button, summary, select):focus-visible { outline: 2px solid var(--logs-blue); outline-offset: 2px; }
+@media (min-width: 650px) { body.client-dashboard-page [data-client-dashboard-panel="logs"] { padding-inline: 22px !important; } }

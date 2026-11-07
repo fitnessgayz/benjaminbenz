@@ -73,7 +73,7 @@ test("selecting an exercise suggestion closes the list and releases mobile focus
   assert.doesNotMatch(rowMarkup, /<label class="custom-workout-group-name-row"/);
 });
 
-test("fresh workouts start with no straight cards, two superset slots, or three circuit slots", () => {
+test("fresh workouts wait for exercise selection before rendering cards", () => {
   const defaultCountSource = sourceForFunction("customWorkoutDefaultExerciseCount");
   const defaultGroupSource = sourceForFunction("customWorkoutDefaultExerciseGroup");
   const addConfigSource = sourceForFunction("customWorkoutExerciseAddConfig");
@@ -101,7 +101,7 @@ test("fresh workouts start with no straight cards, two superset slots, or three 
     () => null
   );
 
-  for (const [format, count] of [["single", 0], ["superset", 2], ["circuit", 3], ["unknown", 0]]) {
+  for (const [format, count] of [["single", 0], ["superset", 0], ["circuit", 0], ["unknown", 0]]) {
     assert.equal(defaults.customWorkoutDefaultExerciseCount(format), count);
     assert.equal(defaults.customWorkoutExercises(format).length, count);
   }
@@ -115,11 +115,10 @@ test("fresh workouts start with no straight cards, two superset slots, or three 
     renderedGroups.push({ format, count: exercises.length, group, startIndex });
     return "";
   });
-  for (const [format, groupCount, groupSize] of [["superset", 1, 2], ["circuit", 1, 3]]) {
+  for (const format of ["superset", "circuit"]) {
     renderedGroups.length = 0;
     renderCarousel(format, "Custom workout");
-    assert.equal(renderedGroups.length, groupCount);
-    assert.ok(renderedGroups.every((group) => group.count === groupSize));
+    assert.equal(renderedGroups.length, 0);
   }
 
   draftExercises = [{ code: "CW01", name: "Existing exercise", group: 0, groupType: "single" }];
@@ -136,13 +135,13 @@ test("fresh workouts start with no straight cards, two superset slots, or three 
     () => ({ id: `generated-${generatedCard += 1}`, dataset: {}, remove() {} })
   );
   const circuitCards = resizeDefaults({}, "circuit", [{ id: "existing", dataset: {}, remove() {} }]);
-  assert.equal(circuitCards.length, 3);
+  assert.equal(circuitCards.length, 0);
   const removableCards = Array.from({ length: 3 }, (_, index) => ({
     id: `card-${index + 1}`, dataset: {}, removed: false, remove() { this.removed = true; }
   }));
   const supersetCards = resizeDefaults({}, "superset", removableCards);
-  assert.equal(supersetCards.length, 2);
-  assert.equal(removableCards.filter((card) => card.removed).length, 1);
+  assert.equal(supersetCards.length, 0);
+  assert.equal(removableCards.filter((card) => card.removed).length, 3);
 
 });
 

@@ -199,7 +199,7 @@ test("an in-flight workout save cannot update the new account after a switch", a
   let finish;
   f.context.rowsForTrainingLog = () => [{ ...f.context.trainingLogs[0] }];
   f.context.supabaseClient.from = () => ({ upsert: (rows) => ({ select: () => new Promise((resolve) => { finish = () => resolve({ data: rows, error: null }); }) }) });
-  const pending = f.context.saveTrainingLogRows(null, [{}], {}, { skipRemovedSetDelete: true, skipLogRefresh: true });
+  const pending = f.context.saveTrainingLogRows(null, [{ dataset: {} }], {}, { skipRemovedSetDelete: true, skipLogRefresh: true });
   await Promise.resolve();
   f.context.activeClientEmail = "next@example.com";
   finish();
@@ -220,10 +220,11 @@ test("switching accounts during removed-set reconciliation never starts an upser
   assert.equal(f.refreshed.length, 0);
 });
 
-test("desktop and mobile workout history both expose deletion and release assets are refreshed", () => {
+test("compact workout details keep deletion in an action menu and release assets are refreshed", () => {
   const render = functionSource("renderClientTrainingLogs");
-  assert.equal(render.split("${deleteButtonMarkup}").length - 1, 2);
+  assert.equal(render.split("${deleteButtonMarkup}").length - 1, 1);
   assert.match(render, /deleteButtonMarkup = !isCoachDashboardPreview/);
+  assert.match(render, /client-logs-detail-actions/);
   assert.match(render, /data-delete-workout-history=.*Delete workout/);
   assert.match(source, /handleClientWorkoutHistoryDelete\(\);/);
   assert.match(dashboard, /css\/style\.css\?[^"\n]*workout-delete=1/);

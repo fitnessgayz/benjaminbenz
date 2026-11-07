@@ -73,7 +73,7 @@ test("CSV export and copy status use readable names without mutating source reco
 test("log headings, accessible actions, confirmation and share summary use the formatter", () => {
   const render = functionSource("renderClientTrainingLogs");
   assert.match(render, /const displayTitle = workoutDisplayTitle\(workout.workout_title\)/);
-  assert.match(render, /<h3>\$\{escapeHtml\(displayTitle\)\}/);
+  assert.match(render, /<h3>\$\{escapeHtml\(\[displayTitle, workout\.gym_name\]\.filter\(Boolean\)\.join\(" · "\)\)\}<\/h3>/);
   assert.match(render, /Copy \$\{displayTitle\}/);
   assert.match(render, /Share \$\{displayTitle\}/);
   assert.match(functionSource("deleteClientWorkoutHistory"), /workoutDisplayTitle\(first.workout_title\)/);

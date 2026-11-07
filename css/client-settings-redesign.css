@@ -1,0 +1,47 @@
+body.client-dashboard-page .client-settings-panel .client-settings-menu { color:#fff; }
+body.client-dashboard-page .client-settings-panel .client-settings-menu .panel-heading { margin:0 0 10px; padding:0; }
+body.client-dashboard-page .client-settings-redesign-heading { display:flex; align-items:center; justify-content:space-between; }
+body.client-dashboard-page .client-settings-redesign-heading h2 { color:#fff !important; font-size:28px; margin:0; text-transform:none; }
+body.client-dashboard-page .client-settings-redesign-heading button { width:44px; height:44px; border:1px solid #393b3f; border-radius:50%; background:#242426; color:#fff; font-size:25px; cursor:pointer; }
+body.client-dashboard-page .client-settings-redesign-search { display:block; margin-top:9px; }
+body.client-dashboard-page .client-settings-redesign-search[hidden] { display:none; }
+body.client-dashboard-page .client-settings-redesign-search input { width:100%; min-height:44px; padding:10px 14px; border:1px solid #45474c; border-radius:12px; background:#202126; color:#fff; font-size:16px; }
+body.client-dashboard-page .client-settings-panel .client-settings-menu .profile-photo-card { display:block; margin:0 0 14px; background:#1b1c1e; border:1px solid #34363b; border-radius:18px; }
+body.client-dashboard-page .client-settings-panel .client-settings-menu .profile-photo-open { width:100%; min-height:88px; padding:12px 14px; }
+body.client-dashboard-page .client-settings-panel .client-settings-menu .profile-photo-account strong { color:#fff; font-size:16px; }
+body.client-dashboard-page .client-settings-panel .client-settings-menu .profile-photo-account .client-membership-label { display:inline-block; width:max-content; margin:3px 0 0; padding:3px 8px; color:#ffd400; background:#38310b; border-radius:20px; font-size:11px; font-weight:700; }
+body.client-dashboard-page .client-settings-panel .client-settings-menu .profile-photo-account .client-membership-label strong { color:#ffd400; font-size:11px; }
+body.client-dashboard-page .client-settings-redesign-groups { display:grid; gap:13px; }
+body.client-dashboard-page .client-settings-redesign-group h3 { margin:0 0 8px 4px; color:#aeb4c0; font-size:12px; font-weight:750; letter-spacing:.11em; }
+body.client-dashboard-page .client-settings-redesign-list { overflow:hidden; border:1px solid #303238; border-radius:18px; background:#1a1b1e; }
+body.client-dashboard-page .client-settings-redesign-list > .client-settings-shortcut { display:flex; align-items:center; gap:11px; width:100%; min-height:53px; margin:0; padding:9px 14px; border:0; border-bottom:1px solid #292b30; border-radius:0; background:transparent; text-align:left; color:#fff; }
+body.client-dashboard-page .client-settings-redesign-list > .client-settings-shortcut:last-child { border-bottom:0; }
+body.client-dashboard-page .client-settings-redesign-list > .client-settings-shortcut svg, body.client-dashboard-page .settings-redesign-icon { flex:none; width:18px; height:18px; color:#5aa9e8; }
+body.client-dashboard-page .client-settings-redesign-list .client-settings-shortcut-copy { flex:1; min-width:0; }
+body.client-dashboard-page .client-settings-redesign-list .client-settings-shortcut-copy strong { color:#fff; font-size:14px; line-height:1.2; }
+body.client-dashboard-page .client-settings-redesign-list .client-settings-shortcut-copy small { display:none; }
+body.client-dashboard-page .client-settings-redesign-list .client-settings-shortcut-arrow { color:#aeb4c0; }
+body.client-dashboard-page .client-settings-appearance-toggle > small { display:block; color:#aeb4c0; font-size:12px; }
+body.client-dashboard-page .client-settings-appearance-details[hidden] { display:none !important; }
+body.client-dashboard-page .client-settings-appearance-details { padding:12px; }
+body.client-dashboard-page .client-settings-appearance-details .client-theme-setting { display:block; margin:0 0 8px; }
+body.client-dashboard-page .client-settings-appearance-details .client-settings-shortcut { display:flex; width:100%; min-height:44px; }
+body.client-dashboard-page .client-settings-panel .client-settings-menu button:focus-visible, body.client-dashboard-page .client-settings-panel .client-settings-menu a:focus-visible { outline:2px solid #5aa9e8; outline-offset:2px; }
+@media(max-width:760px) {
+ body.client-dashboard-page:has(.client-settings-panel:not([hidden])) { background:#0e0f12; }
+ body.client-dashboard-page .client-settings-panel { background:#0e0f12 !important; border:0 !important; border-radius:0 !important; min-height:100dvh; padding:14px 16px calc(110px + env(safe-area-inset-bottom)) !important; }
+ body.client-dashboard-page .client-settings-panel .client-settings-redesign-heading button { width:44px !important; min-width:44px !important; flex:none !important; }
+ body.client-dashboard-page .client-settings-panel .client-settings-redesign-list > .client-settings-shortcut { display:flex !important; justify-content:flex-start !important; text-align:left !important; }
+}
+body.client-dashboard-page .client-settings-panel .client-settings-menu > .panel-heading { justify-content:space-between !important; text-align:left !important; order:-1; }
+body.client-dashboard-page .client-settings-panel .client-settings-menu > .profile-photo-card { order:0 !important; }
+body.client-dashboard-page .client-settings-panel .client-settings-menu .client-settings-redesign-heading h2#client-notification-settings-title { color:#fff !important; text-align:left !important; }
+body.client-dashboard-page .client-settings-panel .client-settings-menu .client-settings-redesign-group h3 { color:#aeb4c0 !important; text-align:left !important; }
+body.client-dashboard-page .client-settings-panel .client-settings-menu .profile-photo-account .client-settings-profile-name { display:block; color:#fff; font-size:16px; font-weight:750; }
+body.client-dashboard-page .client-settings-panel .client-settings-menu .profile-photo-account > strong[data-profile-email] { display:block; color:#aeb4c0; font-size:12px; font-weight:400; }
+body.client-dashboard-page .client-settings-panel .client-settings-menu .profile-photo-account > span:not(.client-settings-profile-name):not(.client-membership-label) { display:none; }
+body.client-dashboard-page .client-settings-panel .client-settings-menu .profile-photo-avatar { background:#333640; color:#fff; }
+body.client-dashboard-page .client-settings-panel .client-settings-menu .profile-photo-avatar [data-profile-placeholder] { color:#fff; }
+body.client-dashboard-page .client-settings-panel .client-settings-menu .profile-photo-camera { color:#101010; background:#5aa9e8; }
+body.client-dashboard-page .client-settings-panel .client-settings-menu .profile-photo-account .client-settings-profile-name { color:#fff !important; }
+body.client-dashboard-page .client-settings-panel .client-settings-menu .client-settings-redesign-heading button[data-settings-search-toggle] { border-radius:50% !important; }

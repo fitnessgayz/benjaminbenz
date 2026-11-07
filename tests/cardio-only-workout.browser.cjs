@@ -26,7 +26,7 @@ function production(name) {
 }
 
 const names = [
-  'formatLogDate', 'clientWorkoutPickerItems', 'clientWorkoutChoiceContent',
+  'formatLogDate', 'clientWorkoutPickerItems', 'clientWorkoutChoiceContent', 'clientWorkoutChoiceDialogMarkup',
   'clientCardioWorkoutChoiceMarkup', 'clientWorkoutListMarkup', 'cardioLogFields',
   'workoutActionsMarkup', 'cardioWorkoutPanelMarkup', 'renderClientWorkoutTabs',
   'clientWorkoutPickerIndex', 'syncClientWorkoutSelectionSummary', 'syncClientWorkoutPicker',
@@ -34,7 +34,7 @@ const names = [
   'handleClientWorkoutPreview', 'syncWorkoutPanelDate', 'handleTrainingDateChange',
   'cardioLogIssues', 'cardioWorkoutCompletionFields', 'workoutFinishIssues',
   'showWorkoutFinishIssues', 'workoutSectionForButton', 'cancelTrainingLogAutosaves',
-  'handleTrainingLogSave'
+  'handleTrainingLogSave', 'handleWorkoutInteractions'
 ];
 
 const fixture = `
@@ -65,6 +65,20 @@ function warmupLogFields() { return ''; }
 function workoutStartControlMarkup() { return ''; }
 function workoutExerciseMarkup() { return ''; }
 function workoutExerciseListMarkup() { return ''; }
+function storedWorkoutGymLocation() { return ''; }
+function workoutGymPickerMarkup() { return ''; }
+function closeCustomExerciseSuggestions() {}
+function requireWorkoutGymLocation() { return true; }
+function syncWorkoutGymLock() {}
+function syncExerciseNamePreview() {}
+function flushExerciseNameRefresh() {}
+function syncCardioLogDerivedState() {}
+function renderExerciseNotesState() {}
+function scheduleExerciseNameRefresh() {}
+function persistCustomWorkoutDraftForElement() {}
+function scheduleTrainingLogAutosave() {}
+function approvedExerciseForName() { return null; }
+function exerciseMediaButtonMarkup() { return ''; }
 function renderClientHomeSummary() {}
 function syncWorkoutStartButtons() {}
 function syncCustomWorkoutCarousels() {}
@@ -85,6 +99,7 @@ handleClientWorkoutTabs();
 handleClientWorkoutPreview();
 handleTrainingDateChange();
 handleTrainingLogSave();
+handleWorkoutInteractions();
 `;
 
 async function checkLayout(page, label) {
@@ -131,6 +146,7 @@ async function checkLayout(page, label) {
     for (const width of [320, 390, 1280]) {
       for (const scale of [1, 2]) {
         const page = await browser.newPage({ viewport: { width, height: 900 }, reducedMotion: 'reduce' });
+        page.setDefaultTimeout(5000);
         const errors = [];
         page.on('pageerror', error => errors.push(error.message));
         await page.route('**/*', route => route.abort());
@@ -148,7 +164,11 @@ async function checkLayout(page, label) {
         for (const mode of ['chooser', 'selected-program']) {
           const label = `${engine} ${width}px ${scale * 100}% ${mode}`;
           if (mode === 'selected-program') await page.locator('[data-preview-program]').click();
-          const shortcut = page.getByRole('button', { name: 'Log cardio', exact: true });
+          const cardioMenu = page.locator('[data-client-workout-choice-menu="cardio-mobility"]');
+          await cardioMenu.click();
+          const dialog = page.locator('[data-client-workout-choice-dialog]');
+          await dialog.waitFor({ state: 'visible' });
+          const shortcut = dialog.locator('[data-log-cardio]');
           await shortcut.waitFor({ state: 'visible' });
           assert.equal(await shortcut.count(), 1, `${label}: exactly one cardio shortcut`);
           await checkLayout(page, label);
@@ -169,9 +189,10 @@ async function checkLayout(page, label) {
 
           await panel.getByRole('button', { name: 'Save & finish cardio', exact: true }).click();
           const alert = panel.getByRole('alert');
-          await alert.waitFor({ state: 'visible' });
+          try { await alert.waitFor({ state: 'visible' }); }
+          catch (error) { console.error('Cardio scenario', label, errors); throw error; }
           assert.match(await alert.innerText(), /Enter a duration in minutes above 0/);
-          assert.match(await alert.innerText(), /Distance, calories, and notes are optional/);
+          assert.match(await alert.innerText(), /Distance and other metrics are optional/);
           assert.equal(await page.evaluate(() => fixtureEvents.filter(event => event[0] === 'feedback').length), scenarios % 2,
             `${label}: blank duration must stop before feedback`);
           await alert.getByRole('button', { name: 'Enter a duration in minutes above 0.' }).click();
@@ -191,9 +212,10 @@ async function checkLayout(page, label) {
             `${label}: valid entries reach feedback before the mocked cancel`);
           assert.equal(await panel.getByRole('alert').count(), 0, `${label}: valid entries clear field errors`);
           assert.equal(await panel.locator('[data-cardio-duration]').isEnabled(), true, `${label}: canceling feedback restores controls`);
-          await page.locator('[data-client-workout-picker-back]').click();
+          await page.locator('[data-client-workout-picker-back]:visible').click();
           assert.equal(await panel.isVisible(), false);
-          assert.equal(await shortcut.isVisible(), true);
+          assert.equal(await cardioMenu.isVisible(), true);
+          assert.equal(await dialog.isVisible(), false);
           assert.deepEqual(errors, [], `${label}: browser script errors`);
           scenarios++;
         }

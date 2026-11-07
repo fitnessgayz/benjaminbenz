@@ -1,0 +1,36 @@
+/* Client screen accents. Gold marks the primary action or selection; blue marks navigation. */
+:root:not([data-client-theme="light"]) body.client-dashboard-page .client-home-last-workout .client-home-eyebrow {
+  color: #69b8fa !important;
+}
+:root:not([data-client-theme="light"]) body.client-dashboard-page .client-home-last-repeat {
+  border-color: #69b8fa;
+  color: #69b8fa;
+}
+:root:not([data-client-theme="light"]) body.client-dashboard-page .client-home-planner .client-home-week-controls button {
+  color: #69b8fa;
+}
+:root:not([data-client-theme="light"]) body.client-dashboard-page #client-workouts-panel.is-choosing-workout .workout-choice-quick {
+  border-color: #aa8b17;
+  background: linear-gradient(115deg, #28271d, #202126);
+}
+:root:not([data-client-theme="light"]) body.client-dashboard-page #client-workouts-panel.is-choosing-workout .workout-choice-arrow,
+:root:not([data-client-theme="light"]) body.client-dashboard-page .custom-workout-saved-plan .workout-choice-arrow {
+  color: #69b8fa;
+}
+:root:not([data-client-theme="light"]) body.client-dashboard-page #client-workouts-panel .client-workout-panel-custom:not(.has-custom-exercises) .workout-compact-source-list .workout-choice-title {
+  color: #69b8fa;
+}
+:root:not([data-client-theme="light"]) body.client-dashboard-page [data-client-dashboard-panel="logs"] .client-logs-heading .status-pill {
+  border: 1px solid #7b681d;
+  color: #ffd400;
+}
+:root:not([data-client-theme="light"]) body.client-dashboard-page [data-client-dashboard-panel="logs"] .client-logs-search {
+  border-color: #4a82aa;
+}
+:root:not([data-client-theme="light"]) body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker .custom-workout-picker-search-row {
+  border-color: #4a82aa;
+}
+:root:not([data-client-theme="light"]) body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker [data-custom-exercise-suggestion][aria-selected="true"] {
+  border-color: #ffd400;
+  background: #282619;
+}

@@ -213,7 +213,7 @@ test("resume cards mirror running, paused, title, and elapsed timer state", () =
   assert.match(portalSource, /resumeActiveWorkoutButton[\s\S]*resumeActiveWorkout\(\)/);
 });
 
-test("Home greeting only shows Resume for an unfinished workout", () => {
+test("Home keeps the next workout visible alongside Resume for an unfinished workout", () => {
   const label = { textContent: "Resume Workout" };
   const action = { hidden: false };
   const startNext = { hidden: false };
@@ -254,7 +254,7 @@ test("Home greeting only shows Resume for an unfinished workout", () => {
 
   render(document, { workoutTitle: "Custom Workout", running: false }, () => "02:00", () => 120000)();
   assert.equal(action.hidden, false);
-  assert.equal(startNext.hidden, true);
+  assert.equal(startNext.hidden, false);
   assert.equal(label.textContent, "Resume Workout");
   assert.equal(note.hidden, false);
   assert.match(note.textContent, /Custom Workout/);

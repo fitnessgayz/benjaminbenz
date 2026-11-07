@@ -203,6 +203,7 @@
           snapshot = result;
           workoutLimit = 20;
           render();
+          options.onSnapshot?.(snapshot);
         } catch (error) {
           if (destroyed || version !== generation) return;
           clear(error?.code === "AUTH_CHANGED" ? "Your session changed. Reopen this page to continue." : "Couldn’t load shared Apple Health information. Refresh to try again.");

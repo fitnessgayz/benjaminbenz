@@ -98,8 +98,10 @@ function listFixture(logs) {
   const list = { dataset: {}, hidden: false, contains: () => false, querySelector: () => null,
     get innerHTML() { return html; }, set innerHTML(value) { html = value; writes++; } };
   const empty = { hidden: true };
-  const section = { querySelector: selector => selector === "[data-workout-exercise-list-items]" ? list : empty };
-  const panel = { querySelector: () => section, querySelectorAll: () => logs };
+  const section = { querySelector: selector => selector === "[data-workout-exercise-list-items]" ? list : empty,
+    classList: { toggle() {} } };
+  const panel = { querySelector: () => section, querySelectorAll: () => logs,
+    classList: { contains: () => false } };
   const document = { activeElement: {} };
   return { list, panel, empty, document, api: context({ document }), get writes() { return writes; } };
 }
@@ -180,7 +182,8 @@ test("jump targets the indexed visible exercise within the clicked panel without
     scrollIntoView(options) { scrolled.push([this, options]); } });
   const targets = [target(0), target(1)], staleHighlight = target(9);
   let cleared = 0; staleHighlight.classList.remove = () => { cleared++; };
-  const carousel = { dataset: { customWorkoutGrouped: "true" }, querySelector: () => ({ children: targets }) };
+  const carousel = { dataset: { customWorkoutGrouped: "true" }, querySelector: selector =>
+    selector === "[data-custom-grouped-exercise-key]" ? { children: targets } : null };
   const cards = [target(0), target(1)]; cards.forEach(card => { card.closest = () => carousel; });
   const logs = [log({ code: "CW01" }), log({ code: "CW02" })];
   logs.forEach((entry, index) => { entry.closest = () => cards[index]; });

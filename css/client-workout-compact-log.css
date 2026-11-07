@@ -644,3 +644,11 @@ body.client-dashboard-page #client-workout-panels .client-workout-panel :is(
 ) {
   display: none !important;
 }
+
+/* At large text sizes, keep the Set heading readable on wide mobile layouts. */
+@media (min-width: 761px) {
+  :root body.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-columns,
+  :root body.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-row {
+    grid-template-columns: 44px minmax(46px, .72fr) minmax(0, 1.16fr) minmax(0, .88fr) 38px !important;
+  }
+}

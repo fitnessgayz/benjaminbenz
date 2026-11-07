@@ -642,12 +642,12 @@ test("validates before saving and protects the grouped final save from deleting 
     "Invalid fields must be explained before a persistence attempt");
 });
 
-test("keeps the standalone start control hidden for grouped custom workouts", () => {
+test("shows Start before grouped exercise selection and hides it after selection", () => {
   const panelMarkup = sourceForFunction("customWorkoutPanelMarkup");
 
   assert.match(
     panelMarkup,
-    /<div data-custom-workout-start-control \$\{format === "single" \? "" : "hidden"\}>/,
+    /<div data-custom-workout-start-control \$\{exercises\.length && format !== "single" \? "hidden" : ""\}>/,
   );
   assert.match(panelMarkup, /\$\{workoutStartControlMarkup\(workoutStorageTitle\)\}/);
 });

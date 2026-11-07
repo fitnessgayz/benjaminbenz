@@ -67,7 +67,7 @@ test("Settings contains accessible email, password, reset, and sign-out controls
   assert.match(html, /data-client-current-password type="password" autocomplete="current-password"/);
   assert.equal((html.match(/autocomplete="new-password"/g) || []).length, 2);
   assert.match(html, /data-client-email-status role="status" aria-live="polite"/);
-  assert.match(html, /href="css\/client-account-settings\.css\?v=1"/);
+  assert.match(html, /href="css\/client-account-settings\.css\?v=1(?:&amp;[^"]*)?"/);
   assert.ok(html.indexOf("client-account-settings.js") < html.indexOf("client-portal.js"));
 });
 

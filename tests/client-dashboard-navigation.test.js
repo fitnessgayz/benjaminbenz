@@ -31,7 +31,7 @@ test("scopes the client navigation styles and cache-busts dashboard assets", () 
   assert.match(dashboardHtml, /href="css\/style\.css\?v=[^"\s]+"/);
   assert.match(dashboardHtml, /src="js\/client-portal\.js\?v=[^"\s]+"/);
   assert.match(styleSource, /body\.client-dashboard-page\s*\{[^}]*padding-bottom:\s*0;/s);
-  assert.match(dashboardHtml, /css\/style\.css\?v=workout-preview-1/);
+  assert.match(dashboardHtml, /css\/style\.css\?v=[^"\s]*workout-preview-1/);
   assert.match(dashboardHtml, /js\/client-portal\.js\?[^"\s]*viewport-dock=\d+/);
 });
 
@@ -155,21 +155,21 @@ test("keeps mobile navigation permanently expanded while preserving selected-tab
   assert.match(portalSource, /handleClientDashboardMobileNavigation\(\);/);
 });
 
-test("uses large, flat, evenly sized icons and legible labels in the mobile dock", () => {
+test("uses evenly sized icons and legible labels in the mobile dock", () => {
   const mobileStyles = sourceBetween("@media (max-width: 900px)", "@media (max-width: 420px)");
   const narrowStyles = sourceBetween("@media (max-width: 420px)", "@media (prefers-reduced-motion: reduce)");
 
-  assert.match(mobileStyles, /\.client-dashboard-tab-icon\s*\{[^}]*width:\s*32px[^}]*height:\s*32px[^}]*padding:\s*3px[^}]*background:\s*transparent[^}]*box-shadow:\s*none/s);
+  assert.match(mobileStyles, /\.client-dashboard-tab-icon\s*\{[^}]*width:\s*42px[^}]*height:\s*42px[^}]*padding:\s*8px[^}]*background:\s*transparent[^}]*box-shadow:\s*none/s);
   assert.match(mobileStyles, /\.client-dashboard-tab\[data-client-dashboard-tab\]\s*\{[^}]*width:\s*100% !important[^}]*min-width:\s*0 !important[^}]*max-width:\s*none !important/s);
   assert.match(mobileStyles, /\.client-dashboard-tab\.is-active \.client-dashboard-tab-icon\s*\{[^}]*width:\s*42px[^}]*height:\s*42px[^}]*padding:\s*8px/s);
-  assert.match(narrowStyles, /\.client-dashboard-tab-icon\s*\{[^}]*width:\s*30px[^}]*height:\s*30px/s);
-  assert.match(narrowStyles, /\.client-dashboard-tab\.is-active \.client-dashboard-tab-icon\s*\{[^}]*width:\s*40px[^}]*height:\s*40px/s);
+  assert.match(narrowStyles, /\.client-dashboard-tab-icon\s*\{[^}]*width:\s*42px[^}]*height:\s*42px/s);
+  assert.match(narrowStyles, /\.client-dashboard-tab\.is-active \.client-dashboard-tab-icon\s*\{[^}]*width:\s*42px[^}]*height:\s*42px/s);
 });
 
-test("keeps PAR-Q and Sessions available from Settings", () => {
+test("keeps questionnaire and Sessions available from Settings", () => {
   const tabHandlerSource = sourceForFunction("handleClientDashboardTabs");
 
-  assert.match(dashboardHtml, /class="client-settings-shortcuts"[\s\S]*?data-client-settings-destination="questionnaire"[\s\S]*?<strong>PAR-Q<\/strong>/);
+  assert.match(dashboardHtml, /class="client-settings-shortcuts"[\s\S]*?data-client-settings-destination="questionnaire"[\s\S]*?<strong>Fitness questionnaire<\/strong>/);
   assert.match(dashboardHtml, /data-client-settings-destination="sessions"[\s\S]*?<strong>Sessions<\/strong>/);
   assert.match(dashboardHtml, /class="client-settings-shortcut"[^>]*data-message-coach disabled[\s\S]*?<strong>Messages<\/strong>/);
   assert.match(tabHandlerSource, /settingsDestination\.dataset\.clientSettingsDestination/);
@@ -250,8 +250,14 @@ test("Stats and Nutrition preserve Settings as the selected navigation parent", 
     dataset: { clientDashboardPanel: name }, hidden: true
   }));
   const context = vm.createContext({
-    document: { querySelectorAll(selector) { return selector === "[data-client-dashboard-tab]" ? buttons : panels; } },
+    document: {
+      querySelectorAll(selector) { return selector === "[data-client-dashboard-tab]" ? buttons : panels; },
+      querySelector() { return null; }
+    },
+    window: { FWB_CLIENT_WORKOUT_CALENDAR: { close() {} } },
     syncClientDashboardMobileNavigationIcon() {}, activeClientDashboardTab: "home",
+    clientWorkoutPickerIsOpen: false, savedWorkoutScrollY: null,
+    flushScheduledClientTrainingLogsRender() {},
     clientWebNotificationController: null, clientProfilePhotoController: null,
     clientAppleHealthController: null, clientGoogleHealthController: null,
     setClientSettingsView() {}

@@ -38,7 +38,7 @@ test("uses the exercise-first launcher without a separate warm-up section", () =
   assert.match(customPanel, /<h3>Your exercises<\/h3><p>Build as you go\.<\/p>/);
   assert.ok(customPanel.indexOf("customWorkoutFormatPickerMarkup()") < customPanel.indexOf("data-custom-workout-launcher-add"));
   assert.match(customPanel, /data-custom-workout-launcher-add-label>Add first exercise/);
-  assert.match(customPanel, /Choose an exercise to get started/);
+  assert.match(customPanel, /Build your workout as you go/);
   assert.doesNotMatch(customPanel, /warmupLogFields\(/);
   assert.ok(customPanel.indexOf("data-custom-workout-launcher-add-label") < customPanel.indexOf("customWorkoutCarouselMarkup(format, workoutStorageTitle)"));
   assert.ok(customPanel.indexOf("data-custom-workout-footer-add") > customPanel.indexOf("customWorkoutCarouselMarkup(format, workoutStorageTitle)"));

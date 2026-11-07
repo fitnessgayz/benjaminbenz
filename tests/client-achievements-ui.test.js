@@ -81,9 +81,9 @@ test("home links to Progress and displays the next reachable badge and XP", () =
   assert.match(html, /1 \/ 3/);
 });
 
-test("Progress has an upper-right badge button that opens the full collection dialog", () => {
+test("Progress keeps the badge collection reachable from Body", () => {
   assert.doesNotMatch(dashboard, /client-achievements-nav-launcher|data-profile-badge-image|data-profile-badge-placeholder/);
-  assert.match(dashboard, /class="client-achievements-progress-button"[\s\S]*data-achievements-dialog-open[\s\S]*aria-label="Open badges"[\s\S]*?<span>Badges<\/span>/);
+  assert.match(dashboard, /data-progress-content="body"[\s\S]*class="client-achievements-progress-button"[^>]*data-achievements-dialog-open[^>]*>Badges<\/button>/);
   assert.match(dashboard, /<dialog class="client-achievements-dialog"[\s\S]*data-client-achievements-room/);
   assert.match(achievementStyles, /\.progress-panel-actions/);
   assert.match(achievementStyles, /\.client-achievements-progress-button/);
@@ -281,9 +281,11 @@ for (const activity of ["strength", "cardio"]) test(`${activity} feedback retry 
     activeClientEmail: "client@example.com", isCoachDashboardPreview: false,
     clientAchievementSnapshot: () => snapshot, todayDate: () => today,
     workoutSectionForButton: () => section, workoutFinishIssues: () => [], showWorkoutFinishIssues: () => true,
+    requireWorkoutGymLocation: () => true,
     cancelTrainingLogAutosaves() {}, workoutElapsedTimerState: {}, pauseWorkoutTimersForCompletion: () => ({}),
     workoutCompletionFields: () => ({ completed_at: savedRow.completed_at }),
     cardioWorkoutCompletionFields: () => ({ completed_at: savedRow.completed_at, workout_duration_seconds: 1800 }),
+    resetCardioIntervalTimer() {},
     requestWorkoutDifficulty: async () => ({ difficulty: "moderate" }), workoutHistoryDifficultyLabel: () => "Moderate",
     async saveTrainingLogRows() { snapshot = evaluate([savedRow]); return { saved: true, rows: [savedRow] }; },
     finishWorkoutElapsedTimer() {}, renderClientTrainingLogs() {},

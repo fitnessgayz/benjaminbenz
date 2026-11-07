@@ -15,23 +15,45 @@ function sourceForFunction(name) {
   return portal.slice(start, end);
 }
 
-test("calendar fills only dates with saved workouts and marks the selected date", () => {
+test("November 2026 week starts on Monday 2 and marks saved and Health days", () => {
   const nodes = Object.fromEntries([
     "client-saved-log-days", "client-saved-log-month-label", "client-saved-log-selected-date",
-    "client-saved-log-selected-count"
+    "client-saved-log-selected-count", "clear-client-training-log-date-filter"
   ].map((id) => [id, { innerHTML: "", textContent: "" }]));
+  nodes["client-saved-log-days"].closest = () => ({ dataset: { calendarView: "week" } });
   const render = Function("document", "nodes", "clientLogCalendarMonth", "clientTrainingLogDateFilter", "trainingLogs",
-    "clientWorkoutHistorySessionKey", "escapeHtml", "todayDate",
+    "clientAppleHealthWorkouts", "clientWorkoutHistorySessionKey", "escapeHtml", "todayDate",
     `${sourceForFunction("renderClientWorkoutCalendar")}; renderClientWorkoutCalendar(); return nodes;`)(
-    { getElementById: (id) => nodes[id] }, nodes, "2026-10", "2026-10-06",
-    [{ entry_date: "2026-10-06", session_id: "one" }, { entry_date: "2026-10-06", session_id: "one" },
-      { entry_date: "2026-10-05", session_id: "two" }],
-    (log) => log.session_id, (value) => value, () => "2026-10-07"
+    { getElementById: (id) => nodes[id] }, nodes, "2026-11", "2026-11-06",
+    [{ entry_date: "2026-11-04", session_id: "one" }, { entry_date: "2026-11-04", session_id: "one" },
+      { entry_date: "2026-11-02", session_id: "two" }],
+    [{ started_at: "2026-11-03T16:00:00Z" }],
+    (log) => log.session_id, (value) => value, () => "2026-11-06"
   );
-  assert.equal(render["client-saved-log-month-label"].textContent, "October 2026");
+  assert.equal(render["client-saved-log-month-label"].textContent, "November 2026");
+  assert.deepEqual([...render["client-saved-log-days"].innerHTML.matchAll(/data-client-log-date="([^"]+)"/g)].map((match) => match[1]),
+    [2, 3, 4, 5, 6, 7, 8].map((day) => `2026-11-${String(day).padStart(2, "0")}`));
   assert.equal((render["client-saved-log-days"].innerHTML.match(/data-has-log="true"/g) || []).length, 2);
-  assert.match(render["client-saved-log-days"].innerHTML, /data-client-log-date="2026-10-06"[^>]*aria-pressed="true"/);
-  assert.equal(render["client-saved-log-selected-count"].textContent, "1 LOG");
+  assert.match(render["client-saved-log-days"].innerHTML, /data-client-log-date="2026-11-03"[^>]*data-has-health="true"/);
+  assert.match(render["client-saved-log-days"].innerHTML, /data-client-log-date="2026-11-06"[^>]*aria-pressed="true"/);
+  assert.equal(render["client-saved-log-selected-count"].textContent, "0 LOGS");
+});
+
+test("November 2026 month places Sunday the 1st after six blank cells", () => {
+  const nodes = Object.fromEntries([
+    "client-saved-log-days", "client-saved-log-month-label", "client-saved-log-selected-date",
+    "client-saved-log-selected-count", "clear-client-training-log-date-filter"
+  ].map((id) => [id, { innerHTML: "", textContent: "" }]));
+  nodes["client-saved-log-days"].closest = () => ({ dataset: { calendarView: "month" } });
+  Function("document", "clientLogCalendarMonth", "clientTrainingLogDateFilter", "clientAppleHealthWorkouts",
+    "clientWorkoutHistorySessionKey", "escapeHtml", "todayDate", "trainingLogs",
+    `${sourceForFunction("renderClientWorkoutCalendar")}; renderClientWorkoutCalendar();`)(
+    { getElementById: (id) => nodes[id] }, "2026-11", "", [], (log) => log.session_id,
+    (value) => value, () => "2026-11-06", []
+  );
+  assert.match(nodes["client-saved-log-days"].innerHTML,
+    /^(<span aria-hidden="true"><\/span>){6}<button[^>]*data-client-log-date="2026-11-01"/);
+  assert.equal((nodes["client-saved-log-days"].innerHTML.match(/data-client-log-date=/g) || []).length, 30);
 });
 
 test("correction rejects empty or invalid set values", () => {

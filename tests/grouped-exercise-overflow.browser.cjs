@@ -34,6 +34,8 @@ const context = vm.createContext({
   URL,
   window: { FWB_SUPABASE_CONFIG: { url: "https://project.supabase.co" } },
   WorkoutLayout: require("../js/workout-layout.js"),
+  // This fixture exercises the demo fallback without approved catalog images.
+  exerciseMedia: () => ({ imageUrl: "" }),
   exerciseNameMatcher: null,
   exerciseLibraryEntries: [],
   customWorkoutGroupedLogElements: (carousel) => carousel.logs,
