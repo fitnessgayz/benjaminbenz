@@ -19,7 +19,7 @@ button, input { font: inherit; }
 .site-header, .login-main, .services-main, .site-footer { position: relative; z-index: 1; }
 .site-header { display: flex; align-items: center; justify-content: space-between; gap: 20px; max-width: 1440px; margin: auto; padding: 29px clamp(24px, 5vw, 74px); }
 .brand { display: inline-flex; align-items: center; gap: 9px; color: #fff; text-decoration: none; font-size: 14px; font-weight: 800; line-height: 1.05; letter-spacing: -.035em; }
-.brand img { display: block; width: 83px; height: 46px; object-fit: contain; filter: brightness(0) invert(1); }
+.brand img { display: block; width: 83px; height: 46px; object-fit: contain; }
 .header-link { flex: none; padding: 10px 14px; border: 1px solid #53606b; border-radius: 999px; color: var(--blue); background: #1b1d22b8; text-decoration: none; font-size: 12px; font-weight: 750; }
 .header-link span { margin-left: 6px; }
 .eyebrow { margin: 0; color: var(--blue); font-size: 11px; font-weight: 800; letter-spacing: .15em; }
