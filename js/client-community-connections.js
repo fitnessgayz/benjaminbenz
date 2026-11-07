@@ -101,7 +101,11 @@
         heading.append(field('span', avatars[event.avatar_id] || avatars.strength, 'client-community-avatar'));
         heading.append(field('strong', event.nickname));
         const date = new Date(event.occurred_at);
-        if (!Number.isNaN(date.getTime())) heading.append(field('time', date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })));
+        if (!Number.isNaN(date.getTime())) {
+          const time = field('time', date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }));
+          time.dateTime = [date.getFullYear(), String(date.getMonth() + 1).padStart(2, '0'), String(date.getDate()).padStart(2, '0')].join('-');
+          heading.append(time);
+        }
         card.append(heading, field('p', event.headline));
         const actions = field('div', '', 'client-community-wall-actions');
         const button = field('button', event.is_own ? 'Your win' : event.gave_props ? 'Props given' : 'Give props 👏');

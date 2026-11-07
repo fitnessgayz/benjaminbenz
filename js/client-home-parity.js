@@ -256,7 +256,11 @@
   if (wall && homeFeed) {
     const syncFeed = () => {
       homeFeed.replaceChildren();
-      const cards = [...wall.querySelectorAll('.client-community-wall-card')];
+      const allCards = [...wall.querySelectorAll('.client-community-wall-card')];
+      const recentDay = allCards.map(card => card.querySelector('time')?.dateTime || '').sort().at(-1);
+      const cards = recentDay
+        ? allCards.filter(card => card.querySelector('time')?.dateTime === recentDay)
+        : allCards.slice(0, 1);
       if (!cards.length) {
         const empty = document.createElement('p');
         empty.textContent = 'No shared wins yet. Your next workout could be the first.';

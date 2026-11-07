@@ -18,7 +18,7 @@ const root = path.resolve(__dirname, '..');
     const page = await browser.newPage();
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));
-    await page.setContent(`<main>${home}</main>`);
+    await page.setContent(`<main>${home}<div data-community-wall-list></div></main>`);
     await page.addScriptTag({ path: path.join(root, 'js/client-home-parity.js') });
     await page.evaluate(() => {
       window.FWB_CLIENT_HOME_PARITY.configure(null, 'client@example.com', true);
@@ -34,6 +34,17 @@ const root = path.resolve(__dirname, '..');
     assert.equal(await page.locator('[data-client-home-next-day]').textContent(), 'Ready when you are');
     assert.equal(await page.locator('[data-copy-workout-to-custom]').getAttribute('data-copy-workout-to-custom'), 'session:session-1');
     assert.equal(await page.locator('[data-client-home-week-streak]').textContent(), await page.locator('[data-client-home-streak]').textContent());
+    await page.locator('[data-community-wall-list]').evaluate(wall => {
+      for (const [day, name] of [['2026-11-05', 'Older'], ['2026-11-06', 'Recent A'], ['2026-11-06', 'Recent B']]) {
+        const card = document.createElement('article');
+        card.className = 'client-community-wall-card';
+        card.innerHTML = `<div class="client-community-wall-heading"><strong>${name}</strong><time datetime="${day}">${day}</time></div><p>Completed a workout</p>`;
+        wall.append(card);
+      }
+    });
+    await page.waitForFunction(() => document.querySelectorAll('[data-client-home-community-feed] article').length === 2);
+    assert.deepEqual(await page.locator('[data-client-home-community-feed] article strong').allTextContents(), ['Recent A', 'Recent B']);
+    assert.equal(await page.locator('[data-community-wall-list] article').count(), 3, 'View all retains the full wall');
     console.log('Home parity startup rendered without a page error.');
   } finally {
     await browser.close();
