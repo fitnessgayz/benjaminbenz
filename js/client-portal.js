@@ -13208,11 +13208,11 @@ function openCustomWorkoutExerciseDialog(trigger, mode = "add") {
     && trainingLogs.some((log) => String(log.exercise_name || "").trim());
   const selectedNames = [];
   const dialog = document.createElement("dialog");
-  dialog.className = `custom-workout-exercise-dialog${grouped ? " is-grouped-picker" : ""}`;
+  dialog.className = `custom-workout-exercise-dialog${!removing ? " is-grouped-picker" : ""}`;
   dialog._pickerSelectedNames = selectedNames;
   dialog.setAttribute("aria-labelledby", "custom-workout-exercise-dialog-title");
   dialog.innerHTML = `
-    <header><button type="button" data-close-exercise-dialog aria-label="Close exercise ${removing ? "removal" : "picker"}">${grouped ? "Cancel" : "×"}</button>
+    <header><button type="button" data-close-exercise-dialog aria-label="Close exercise ${removing ? "removal" : "picker"}">${removing ? "×" : "Cancel"}</button>
       <h2 id="custom-workout-exercise-dialog-title">${removing ? "Remove exercise" : grouped ? `Add ${format}` : addConfig.label}</h2></header>
     ${removing ? `<p>Choose the exercise to remove from this workout. Saved logs stay in your history.</p>
       <div class="custom-workout-exercise-options">${cards.map((card, index) => {
@@ -13222,7 +13222,7 @@ function openCustomWorkoutExerciseDialog(trigger, mode = "add") {
       <form>
         ${grouped ? "" : addConfig.hint ? `<p>${addConfig.hint}</p>` : ""}
         <div class="custom-workout-name-editor">
-          ${grouped ? '<p class="custom-workout-picker-prompt" data-workout-picker-prompt role="status" aria-live="polite">STEP 1 · PICK FIRST EXERCISE</p>' : ""}
+          ${grouped ? '<p class="custom-workout-picker-prompt" data-workout-picker-prompt role="status" aria-live="polite">STEP 1 · PICK FIRST EXERCISE</p>' : '<p class="custom-workout-picker-prompt">PICK AN EXERCISE</p>'}
           ${grouped ? `<div class="custom-workout-picker-selected" data-workout-picker-selected>
             <strong data-workout-picker-selected-count></strong>
             <div data-workout-picker-selected-list></div>
@@ -13233,19 +13233,19 @@ function openCustomWorkoutExerciseDialog(trigger, mode = "add") {
             <input id="custom-workout-picker-search" type="text" maxlength="160" autocomplete="off" autofocus ${grouped ? "" : "required"}
               placeholder="Type or search any exercise name" data-exercise-title-name aria-autocomplete="list" aria-expanded="false" aria-controls="custom-workout-picker-options" />
             <select data-workout-picker-filter aria-label="Filter exercise list">
-              <option value="all" ${grouped && !hasRecentExercises ? "selected" : ""}>All</option><option value="recent" ${grouped && hasRecentExercises ? "selected" : ""}>Recent</option><option value="history">Program & history</option>
+              <option value="all" ${!hasRecentExercises ? "selected" : ""}>All</option><option value="recent" ${hasRecentExercises ? "selected" : ""}>Recent</option><option value="history">Program & history</option>
               <option value="chest">Chest</option><option value="back">Back</option><option value="shoulders">Shoulders</option><option value="arms">Arms</option>
               <option value="upper">Upper body</option><option value="lower">Lower body</option><option value="core">Core</option>
             </select>
           </div>
-          ${grouped ? `<div class="custom-picker-chips" role="group" aria-label="Exercise categories">
+          <div class="custom-picker-chips" role="group" aria-label="Exercise categories">
             ${["Recent", "Chest", "Back", "Shoulders", "Arms", "All"].map((label) => `<button type="button" data-picker-chip="${label.toLowerCase()}" aria-pressed="${label === (hasRecentExercises ? "Recent" : "All")}">${label}</button>`).join("")}
-          </div>` : ""}
+          </div>
           <div class="custom-workout-exercise-options custom-workout-suggestion-menu" id="custom-workout-picker-options" role="listbox" aria-label="Exercise suggestions" data-custom-exercise-suggestions hidden></div>
           <p data-workout-picker-empty hidden>No matching exercises. You can still add the name you typed.</p>
           ${grouped ? '<button class="custom-workout-picker-queue-typed" type="button" data-workout-picker-queue-typed hidden>Add typed name to selection</button>' : ""}
         </div>
-        ${grouped ? '<button class="custom-workout-picker-browse" type="button" data-custom-exercise-browse>Browse full library</button>' : ""}
+        <button class="custom-workout-picker-browse" type="button" data-custom-exercise-browse>Browse full library</button>
         ${grouped ? "" : `<button class="button button-dark" type="submit">${addConfig.label}</button>`}
       </form>`}
   `;

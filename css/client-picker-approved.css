@@ -150,6 +150,10 @@
   margin: 0; padding: 10px; border: 0; border-radius: 15px;
   background: #ffd400; color: #111; font: 800 17px/1.2 var(--font-ui, Inter, sans-serif);
 }
+:root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker form > button[type="submit"] {
+  flex: 0 0 auto; min-height: 54px; border: 0; border-radius: 15px;
+  background: #ffd400; color: #111; font: 800 17px/1.2 var(--font-ui, Inter, sans-serif);
+}
 :root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker [data-workout-picker-submit]:disabled {
   background: #6d5712; color: #1b1a12; opacity: 1;
 }

@@ -392,6 +392,7 @@ function dialogFixture(format = "single") {
     escapeHtml: String, currentExerciseLabel: (log) => `Exercise ${log.index + 1}`,
     customWorkoutCarousels: () => [],
     renderCustomExerciseSuggestions() {}, renderCustomWorkoutPickerResults() {},
+    selectCustomExerciseSuggestion: (suggestion) => { input.value = suggestion.dataset.customExerciseSuggestion; },
     removeExerciseLog: (log) => calls.remove.push(log.index),
     addCustomWorkoutPickedExercise: (_panel, name) => { calls.add.push(name); return null; },
     addCustomWorkoutPickedExercises: (_panel, names) => { calls.add.push(...names); return null; }
@@ -412,6 +413,19 @@ test("picker asks for the full superset or circuit before adding it", () => {
     }
     assert.deepEqual(fixture.calls.add, []);
   }
+});
+
+test("straight sets use the same visual picker and keep one-tap exercise selection", () => {
+  const fixture = dialogFixture("single");
+  fixture.context.openCustomWorkoutExerciseDialog(fixture.trigger);
+  assert.match(fixture.dialog.className, /is-grouped-picker/);
+  assert.match(fixture.dialog.innerHTML, /data-picker-chip="recent"/);
+  assert.match(fixture.dialog.innerHTML, /data-custom-exercise-browse/);
+  assert.match(fixture.dialog.innerHTML, /Browse full library/);
+  fixture.click("[data-custom-exercise-suggestion]", {
+    dataset: { customExerciseSuggestion: "Hip Thrust Machine" }
+  });
+  assert.deepEqual(fixture.calls.add, ["Hip Thrust Machine"]);
 });
 
 test("grouped picker keeps Add directly below selected exercises", () => {
