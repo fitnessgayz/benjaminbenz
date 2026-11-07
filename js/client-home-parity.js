@@ -4,16 +4,9 @@
   if (!document) return;
   const planner = document.querySelector('.client-home-planner');
   if (!planner) return;
-  const streakSection = document.querySelector('.client-home-streak');
   const daysHost = planner.querySelector('[data-client-home-week-days]');
   const label = planner.querySelector('[data-client-home-week-label]');
   const detail = planner.querySelector('[data-client-home-week-detail]');
-  const streak = streakSection.querySelector('[data-client-home-streak]');
-  const rewardTrack = streakSection.querySelector('[data-client-reward-track]');
-  const rewardCards = [...rewardTrack.querySelectorAll('.client-home-reward-card')];
-  const rewardDots = [...streakSection.querySelectorAll('.client-home-reward-dots span')];
-  const rewardPrevious = streakSection.querySelector('[data-client-reward-prev]');
-  const rewardNext = streakSection.querySelector('[data-client-reward-next]');
   const weekLink = document.querySelector('[data-client-weekly-checkin]');
   let logs = [];
   let weekOffset = 0;
@@ -25,20 +18,6 @@
   let scheduled = [];
   let program = null;
   let scheduleCache = new Map();
-  let activityVersion = 0;
-  const rewardIndex = () => Math.min(rewardCards.length - 1,
-    Math.max(0, Math.round(rewardTrack.scrollLeft / Math.max(1, rewardTrack.clientWidth))));
-  const updateRewardControls = () => {
-    const index = rewardIndex();
-    rewardPrevious.disabled = index === 0;
-    rewardNext.disabled = index === rewardCards.length - 1;
-    rewardDots.forEach((dot, position) => dot.classList.toggle('is-active', position === index));
-  };
-  rewardPrevious.addEventListener('click', () => rewardCards[Math.max(0, rewardIndex() - 1)].scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' }));
-  rewardNext.addEventListener('click', () => rewardCards[Math.min(rewardCards.length - 1, rewardIndex() + 1)].scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' }));
-  rewardTrack.addEventListener('scroll', updateRewardControls, { passive: true });
-  root.addEventListener('resize', updateRewardControls);
-  updateRewardControls();
   const dateKey = date => [date.getFullYear(), String(date.getMonth() + 1).padStart(2, '0'), String(date.getDate()).padStart(2, '0')].join('-');
   const monday = value => {
     const date = new Date(value.getFullYear(), value.getMonth(), value.getDate());
@@ -108,20 +87,6 @@
       ? new Date(`${planned.planned_date}T12:00:00`).toLocaleDateString(undefined, { weekday: 'long' })
       : 'Ready when you are';
   }
-  async function refreshActivityTotals() {
-    const version = ++activityVersion;
-    const visits = streakSection.querySelector('[data-client-gym-visits]');
-    if (!client || !email || preview) { visits.textContent = '—'; return; }
-    try {
-      const { data, error } = await client.rpc('client_home_activity_totals', { p_local_day: dateKey(new Date()) });
-      if (error) throw error;
-      if (version !== activityVersion) return;
-      visits.textContent = String(data?.[0]?.gym_visits ?? '—');
-    } catch (_) {
-      if (version === activityVersion) visits.textContent = '—';
-    }
-  }
-  document.addEventListener('fwb:gym-checkin-saved', () => void refreshActivityTotals());
   function renderPlanner() {
     const start = addDays(monday(new Date()), weekOffset * 7);
     const end = addDays(start, 6);
@@ -171,7 +136,6 @@
       week = addDays(week, -7);
       if (count > 520) break;
     }
-    streak.textContent = String(count);
     const weekStreak = document.querySelector('[data-client-home-week-streak]');
     if (weekStreak) weekStreak.textContent = String(count);
     renderNextWorkout();
@@ -341,19 +305,17 @@
     button.disabled = false;
   });
   root.FWB_CLIENT_HOME_PARITY = {
-    render(nextLogs, nextProgram) { logs = Array.isArray(nextLogs) ? nextLogs : []; program = nextProgram || null; renderPlanner(); void refreshSchedule(); void refreshActivityTotals(); },
+    render(nextLogs, nextProgram) { logs = Array.isArray(nextLogs) ? nextLogs : []; program = nextProgram || null; renderPlanner(); void refreshSchedule(); },
     configure(nextClient, nextEmail, isPreview) {
       const normalizedEmail = String(nextEmail || '').trim().toLowerCase();
       if (client !== nextClient || email !== normalizedEmail || preview !== Boolean(isPreview)) {
         weeklyRecord = null;
         scheduleCache = new Map();
-        activityVersion++;
       }
       client = nextClient;
       email = normalizedEmail;
       preview = Boolean(isPreview);
       if (weekLink) weekLink.hidden = preview;
-      void refreshActivityTotals();
     }
   };
 })(window);

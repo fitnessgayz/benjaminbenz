@@ -33,7 +33,8 @@ const root = path.resolve(__dirname, '..');
     assert.equal(await page.locator('[data-client-home-suggestion]').textContent(), 'Strength Day');
     assert.equal(await page.locator('[data-client-home-next-day]').textContent(), 'Ready when you are');
     assert.equal(await page.locator('[data-copy-workout-to-custom]').getAttribute('data-copy-workout-to-custom'), 'session:session-1');
-    assert.equal(await page.locator('[data-client-home-week-streak]').textContent(), await page.locator('[data-client-home-streak]').textContent());
+    assert.match(await page.locator('[data-client-home-week-streak]').textContent(), /^\d+$/);
+    assert.equal(await page.locator('.client-home-reward-card').count(), 0);
     await page.locator('[data-community-wall-list]').evaluate(wall => {
       for (const [day, name] of [['2026-11-05', 'Older'], ['2026-11-06', 'Recent A'], ['2026-11-06', 'Recent B']]) {
         const card = document.createElement('article');
