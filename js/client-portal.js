@@ -13255,8 +13255,8 @@ function openCustomWorkoutExerciseDialog(trigger, mode = "add") {
     list.innerHTML = Array.from({ length: Math.max(minimum, total) }, (_, index) => {
       const name = selectedNames[index];
       return `<div class="custom-picker-slot${name ? " is-filled" : ""}${index === total ? " is-next" : ""}">
-        <span class="custom-picker-slot-letter">${String.fromCharCode(65 + index)}</span>
-        <span>${name ? escapeHtml(name) : `Pick ${["first", "second", "third"][index] || "next"}`}</span>
+        <span class="custom-picker-slot-letter">${index + 1}</span>
+        <span>${name ? escapeHtml(name) : `Exercise ${index + 1}`}</span>
         ${name ? `<button type="button" data-workout-picker-remove="${index}" aria-label="Remove ${escapeHtml(name)}">✓</button>` : ""}
       </div>`;
     }).join("");
