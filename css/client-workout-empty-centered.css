@@ -10,19 +10,20 @@
   font: 600 12px/1.15 var(--font-ui, Inter, sans-serif);
 }
 :root body.client-dashboard-page #client-workouts-panel .client-workout-panel-custom .custom-workout-setup-summary button {
-  display: flex; min-width: 0; flex: 1 1 0; min-height: 44px; align-items: center; justify-content: center;
-  gap: 4px; overflow: hidden; padding: 8px 5px;
+  display: flex; width: auto !important; inline-size: auto !important; max-width: none !important;
+  min-width: 0; flex: 0 1 auto; min-height: 44px; align-items: center; justify-content: center;
+  gap: 4px; overflow: hidden; padding: 8px 4px;
   border: 0; border-radius: 18px; background: #33312c; color: #f7f7f8;
-  font: inherit; text-overflow: ellipsis; white-space: nowrap; cursor: pointer;
+  font: inherit; font-size: clamp(11px, 3.3vw, 13px) !important;
+  text-overflow: ellipsis; white-space: nowrap !important; cursor: pointer;
 }
-:root body.client-dashboard-page #client-workouts-panel .custom-workout-setup-summary button:first-child { flex-grow: .85; }
-:root body.client-dashboard-page #client-workouts-panel .custom-workout-setup-summary button:last-child { flex-grow: 1.35; }
+:root body.client-dashboard-page #client-workouts-panel .custom-workout-setup-summary button:nth-child(2) { flex: 1 1 auto; }
 :root body.client-dashboard-page #client-workouts-panel .custom-workout-setup-summary svg {
   flex: 0 0 17px; width: 17px; height: 17px; color: #62b2f4;
 }
 :root body.client-dashboard-page #client-workouts-panel .custom-workout-setup-summary .custom-workout-setup-gym-icon { flex: 0 0 auto; }
 :root body.client-dashboard-page #client-workouts-panel .custom-workout-setup-summary button span {
-  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: middle;
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap !important; vertical-align: middle;
 }
 :root body.client-dashboard-page #client-workouts-panel .custom-workout-setup-dialog {
   box-sizing: border-box; width: min(420px, calc(100vw - 24px)); max-width: calc(100vw - 24px);
