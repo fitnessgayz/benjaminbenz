@@ -31,8 +31,8 @@ var workoutElapsedTimerMaximumMilliseconds = 43200000, workoutElapsedTimerState 
 var restTimerRunSequence = 0, customWorkoutGroupedRestAction = null, restTimerReturnFocus = null;
 function todayDate() { return '2026-11-06'; }
 function activeWorkoutElapsedTitle() { return 'Custom Workout'; }
-function workoutTimerAutoShowEnabled() { return true; }
 function runWorkoutElapsedTimer() { syncWorkoutStartButtons(); }
+function syncFloatingWorkoutFinishButtons() {}
 function clearWorkoutElapsedTimerInterval() {}
 function resetRestTimer() {}
 function closeRestTimer() {}

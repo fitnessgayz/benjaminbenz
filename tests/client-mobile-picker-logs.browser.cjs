@@ -82,7 +82,7 @@ ${production('openCustomWorkoutExerciseDialog')}
       await page.locator('[data-close-exercise-dialog]').click();
 
       await page.evaluate((src) => {
-        document.body.innerHTML = `<section data-client-dashboard-panel="logs"><div class="client-logs-tabs"><button>Workouts</button><button>Exercises</button><button>Health</button></div><p class="training-log-download-status"></p><div class="client-workout-import-preview" hidden></div><p id="client-workout-import-status"></p><p class="training-log-copy-status"></p><div id="client-logs-workouts"><section class="client-saved-log-calendar"><strong>November 2026</strong></section></div><div class="training-log-history-card-details"><div class="client-logs-detail-actions client-logs-detail-primary-actions"><button>Share workout</button><button>Copy workout</button></div><div class="apple-workout-empty"><button>+ Add Apple Workout</button></div><article class="training-log-row-nested"><div class="training-log-exercise-head"><span class="training-log-exercise-image"><button class="exercise-media-button exercise-media-button-branded-crop"><img src="${src}" alt=""></button></span><strong>Leg Press</strong></div></article></div></section>`;
+        document.body.innerHTML = `<section data-client-dashboard-panel="logs"><div class="client-logs-tabs"><button>Workouts</button><button>Exercises</button><button>Health</button></div><p class="training-log-download-status"></p><div class="client-workout-import-preview" hidden></div><p id="client-workout-import-status"></p><p class="training-log-copy-status"></p><div id="client-logs-workouts"><section class="client-saved-log-calendar"><strong>November 2026</strong></section></div><div class="training-log-history-card-details"><div class="client-logs-detail-actions client-logs-detail-primary-actions"><button class="training-log-share-button" data-share-workout-history>Share workout</button><button class="training-log-copy-button">Copy workout</button></div><div class="apple-workout-empty"><button>+ Add Apple Workout</button></div><article class="training-log-row-nested"><div class="training-log-exercise-head"><span class="training-log-exercise-image"><button class="exercise-media-button exercise-media-button-branded-crop"><img src="${src}" alt=""></button></span><strong>Leg Press</strong></div></article></div></section>`;
       }, image);
       await page.locator('.training-log-exercise-image img').evaluate(img => img.decode());
       const layout = await page.evaluate(() => {
@@ -107,6 +107,15 @@ ${production('openCustomWorkoutExerciseDialog')}
         'Logs thumbnail must not stretch the source image');
       assert.ok(layout.gap <= 32, `Empty status fields must not leave a Logs gap (${layout.gap}px)`);
       assert.ok(layout.scrollWidth <= width + 1, 'Detail must not overflow the viewport');
+      const actions = await page.locator('.client-logs-detail-primary-actions > button').evaluateAll(buttons => buttons.map(button => {
+        const style = getComputedStyle(button);
+        const rect = button.getBoundingClientRect();
+        return { width: rect.width, height: rect.height, fontFamily: style.fontFamily,
+          fontSize: style.fontSize, fontWeight: style.fontWeight, lineHeight: style.lineHeight,
+          color: style.color, background: style.backgroundColor, borderColor: style.borderTopColor };
+      }));
+      assert.equal(actions.length, 2);
+      assert.deepEqual(actions[0], actions[1], 'Share and Copy workout buttons should look the same');
       if (process.env.MOBILE_WEB_SCREENSHOT && width === 390) {
         await page.screenshot({ path: process.env.MOBILE_WEB_SCREENSHOT, fullPage: true });
       }

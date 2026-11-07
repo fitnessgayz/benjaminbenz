@@ -202,7 +202,6 @@ const workoutElapsedTimerPositionStorageKey = "fwb_workout_elapsed_timer_positio
 const workoutElapsedTimerMaximumMilliseconds = 24 * 60 * 60 * 1000;
 const restTimerNotificationPreferenceStorageKey = "fwb_rest_timer_notifications_v1";
 const autoRestTimerPreferenceStorageKey = "fwb_auto_rest_timer_v1";
-const workoutTimerAutoShowStorageKey = "fwb_workout_timer_auto_show_v1";
 const dailyCheckinPromptStorageKey = "fwb_daily_checkin_prompt_enabled_v1";
 const restTimerNotificationServiceWorkerUrl = "/timer-notifications-sw.js?v=web-push-notifications-1";
 let exerciseLibraryEntries = [];
@@ -221,7 +220,6 @@ let customWorkoutGroupedRestAction = null;
 let restTimerNotificationRegistrationPromise = null;
 let restTimerNotificationPreferenceFallback = null;
 let autoRestTimerPreferenceFallback = true;
-let workoutTimerAutoShowFallback = true;
 let dailyCheckinPromptFallback = true;
 let workoutElapsedTimerState = null;
 let workoutElapsedTimerIntervalId = null;
@@ -7611,22 +7609,12 @@ function clientTrainingPreferenceEnabled(key, fallback) {
   }
 }
 
-function workoutTimerAutoShowEnabled() {
-  return clientTrainingPreferenceEnabled(workoutTimerAutoShowStorageKey, workoutTimerAutoShowFallback);
-}
-
 function dailyCheckinPromptEnabled() {
   return clientTrainingPreferenceEnabled(dailyCheckinPromptStorageKey, dailyCheckinPromptFallback);
 }
 
 function configureClientTrainingPreferences() {
   const preferences = [
-    {
-      selector: "[data-workout-timer-auto-show]",
-      key: workoutTimerAutoShowStorageKey,
-      enabled: workoutTimerAutoShowEnabled,
-      remember(value) { workoutTimerAutoShowFallback = value; }
-    },
     {
       selector: "[data-daily-checkin-prompt]",
       key: dailyCheckinPromptStorageKey,
@@ -9419,7 +9407,7 @@ function startWorkoutElapsedTimer(workoutTitle = "", context = {}) {
     0,
     Number(workoutElapsedTimerState.startedAfterRound) || Number(context.startedAfterRound) || 0
   );
-  workoutElapsedTimerState.dismissed = !workoutTimerAutoShowEnabled();
+  workoutElapsedTimerState.dismissed = true;
 
   if (!workoutElapsedTimerState.running) {
     workoutElapsedTimerState.startedAt = Date.now();
@@ -9443,7 +9431,7 @@ function resumeActiveWorkout() {
     workoutElapsedTimerState.startedAt = Date.now();
     workoutElapsedTimerState.running = true;
   }
-  workoutElapsedTimerState.dismissed = false;
+  workoutElapsedTimerState.dismissed = true;
   persistWorkoutElapsedTimerState();
   runWorkoutElapsedTimer();
   setClientDashboardTab("workouts");
@@ -9508,6 +9496,8 @@ function restoreWorkoutElapsedTimer() {
   }
 
   workoutElapsedTimerState = storedState;
+  workoutElapsedTimerState.dismissed = true;
+  persistWorkoutElapsedTimerState();
   runWorkoutElapsedTimer();
 }
 
