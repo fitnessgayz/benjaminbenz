@@ -6132,6 +6132,7 @@ function refreshWorkoutGymControls(panel) {
     defaultButton.textContent = gym && sameWorkoutGym(gym, defaultWorkoutGymName())
       ? "★ Default gym · tap to remove" : "☆ Set as default gym";
   }
+  syncCustomWorkoutSetupSummary(panel);
 }
 
 function workoutGymStorageKey(title, date) {
@@ -13402,6 +13403,37 @@ function openCustomWorkoutExerciseDialog(trigger, mode = "add") {
   if (!removing) { renderCustomWorkoutPickerResults(dialog); renderSelection(); }
 }
 
+function syncCustomWorkoutSetupSummary(panel) {
+  if (!panel?.classList.contains("client-workout-panel-custom")) return;
+  const date = panel.querySelector("[data-workout-date]")?.value || todayDate();
+  const gym = normalizeWorkoutGymName(panel.querySelector("[data-workout-gym]")?.value) || "Gym";
+  const format = normalizeCustomWorkoutFormat(panel.dataset.customWorkoutFormat);
+  const dateLabel = panel.querySelector("[data-custom-workout-summary-date]");
+  const gymLabel = panel.querySelector("[data-custom-workout-summary-gym]");
+  const formatLabel = panel.querySelector("[data-custom-workout-summary-format]");
+  if (dateLabel) dateLabel.textContent = formatLogDate(date).replace(/,?\s*\d{4}$/, "");
+  if (gymLabel) gymLabel.textContent = gym;
+  if (formatLabel) formatLabel.textContent = customWorkoutFormats[format].label;
+}
+
+function openCustomWorkoutSetupDialog(button) {
+  const panel = button.closest(".client-workout-panel-custom");
+  const dialog = panel?.querySelector("[data-custom-workout-setup-dialog]");
+  const section = button.dataset.customWorkoutSetupOpen;
+  if (!dialog || !["date", "gym", "format"].includes(section)) return;
+  dialog.dataset.section = section;
+  dialog.querySelector("[data-custom-workout-setup-title]").textContent =
+    section === "date" ? "Workout date" : section === "gym" ? "Gym location" : "Workout format";
+  if (section === "format") dialog.querySelector(".custom-workout-format-picker").open = true;
+  dialog.showModal();
+  if (section === "date") {
+    const input = dialog.querySelector("[data-workout-date]");
+    try { input?.showPicker?.(); } catch (_) { input?.focus(); }
+  } else if (section === "gym") {
+    dialog.querySelector("[data-workout-gym]")?.focus();
+  }
+}
+
 function customWorkoutPanelMarkup(index) {
   const activeDraft = activeCustomWorkoutDraft();
   const format = normalizeCustomWorkoutFormat(activeCustomWorkoutFormat);
@@ -13426,13 +13458,14 @@ function customWorkoutPanelMarkup(index) {
         </div>
       </div>
       <p class="custom-workout-copy-status" data-custom-workout-copy-status role="status" aria-live="polite" ${copyStatusMessage ? "" : "hidden"}>${escapeHtml(copyStatusMessage)}</p>
-      <button type="button" class="custom-workout-setup-summary" data-custom-workout-setup-toggle aria-expanded="false" aria-label="Edit workout date, gym, and format">
-        <span>▦ ${escapeHtml(formatLogDate(todayDate()).replace(/,?\s*\d{4}$/, ""))}</span>
-        <span>🏋 ${escapeHtml(activeDraft?.gymName || storedWorkoutGymLocation(workoutStorageTitle) || "Gym")}</span>
-        <span>◇ ${escapeHtml(format === "single" ? "Straight Sets" : format === "superset" ? "Superset" : "Circuit")}</span>
-        <span aria-hidden="true">✎</span>
-      </button>
-      <div class="custom-workout-setup-fields">
+      <div class="custom-workout-setup-summary" role="group" aria-label="Workout date, gym, and format">
+        <button type="button" data-custom-workout-setup-open="date" aria-label="Change workout date">▦ <span data-custom-workout-summary-date>${escapeHtml(formatLogDate(todayDate()).replace(/,?\s*\d{4}$/, ""))}</span></button>
+        <button type="button" data-custom-workout-setup-open="gym" aria-label="Change workout gym">🏋 <span data-custom-workout-summary-gym>${escapeHtml(activeDraft?.gymName || storedWorkoutGymLocation(workoutStorageTitle) || "Gym")}</span></button>
+        <button type="button" data-custom-workout-setup-open="format" aria-label="Change workout format">◇ <span data-custom-workout-summary-format>${escapeHtml(format === "single" ? "Straight Sets" : format === "superset" ? "Superset" : "Circuit")}</span></button>
+      </div>
+      <dialog class="custom-workout-setup-dialog" data-custom-workout-setup-dialog aria-labelledby="custom-workout-setup-dialog-title-${index}">
+        <header><h2 id="custom-workout-setup-dialog-title-${index}" data-custom-workout-setup-title>Date</h2><button type="button" data-custom-workout-setup-close aria-label="Close workout setup">Done</button></header>
+        <div class="custom-workout-setup-fields">
       <label class="custom-workout-session-date workout-session-date workout-compact-date">
         <span class="workout-date-icon" aria-hidden="true">▦</span>
         <span class="workout-date-label">Date</span>
@@ -13444,7 +13477,8 @@ function customWorkoutPanelMarkup(index) {
       </label>
       <div class="custom-workout-launcher-gym">${workoutGymPickerMarkup(activeDraft?.gymName || storedWorkoutGymLocation(workoutStorageTitle), index)}</div>
       <div class="workout-compact-format"><h3>Format</h3>${customWorkoutFormatPickerMarkup()}</div>
-      </div>
+        </div>
+      </dialog>
       <div class="custom-workout-builder">
         <div class="custom-workout-primary-actions">
           <div data-custom-workout-start-control>
@@ -13613,6 +13647,7 @@ function syncWorkoutPanelDate(panel, value, refresh = true) {
   if (display) {
     display.textContent = formatLogDate(date);
   }
+  syncCustomWorkoutSetupSummary(panel);
 
   panel?.querySelectorAll("[data-exercise-log] [data-log-date]").forEach((input) => {
     const logElement = input.closest("[data-exercise-log]");
@@ -13767,6 +13802,7 @@ function updateCustomWorkoutFormat(panel, value, options = {}) {
   if (guide) {
     guide.textContent = config.guide;
   }
+  syncCustomWorkoutSetupSummary(panel);
 
   syncCustomWorkoutExerciseControls(panel);
   const defaultFinish = panel.querySelector("[data-custom-workout-default-finish]");
@@ -15688,6 +15724,7 @@ function handleTrainingDateChange() {
     syncGroupedWorkoutGymInputs(panel);
     const defaultButton = panel?.querySelector("[data-workout-gym-default-toggle]");
     if (defaultButton) defaultButton.disabled = !normalizeWorkoutGymName(gymInput.value);
+    syncCustomWorkoutSetupSummary(panel);
   });
   document.addEventListener("change", (event) => {
     const groupedGymInput = event.target.closest("[data-custom-grouped-gym]");
@@ -15728,6 +15765,7 @@ function handleTrainingDateChange() {
     if (workoutDate) {
       const panel = workoutDate.closest(".client-workout-panel");
       syncWorkoutPanelDate(panel, workoutDate.value || todayDate());
+      workoutDate.closest("[data-custom-workout-setup-dialog]")?.close();
       if (panel?.classList.contains("client-workout-panel-assigned")) {
         const gymInput = panel.querySelector("[data-workout-gym]");
         if (gymInput) gymInput.value = storedWorkoutGymLocation(panel.dataset.customWorkoutTitle, workoutDate.value || todayDate());
@@ -20048,7 +20086,8 @@ function handleWorkoutInteractions() {
     const workoutElapsedCompactButton = event.target.closest("[data-workout-elapsed-compact]");
     const workoutElapsedCloseButton = event.target.closest("[data-workout-elapsed-close]");
     const resetCustomWorkoutButton = event.target.closest("[data-reset-custom-workout]");
-    const customWorkoutSetupToggle = event.target.closest("[data-custom-workout-setup-toggle]");
+    const customWorkoutSetupOpen = event.target.closest("[data-custom-workout-setup-open]");
+    const customWorkoutSetupClose = event.target.closest("[data-custom-workout-setup-close]");
 
     if (workoutLaterButton) {
       finishWorkoutLater(workoutLaterButton);
@@ -20212,10 +20251,12 @@ function handleWorkoutInteractions() {
       return;
     }
 
-    if (customWorkoutSetupToggle) {
-      const panel = customWorkoutSetupToggle.closest(".client-workout-panel-custom");
-      const expanded = panel?.classList.toggle("is-editing-setup") || false;
-      customWorkoutSetupToggle.setAttribute("aria-expanded", String(expanded));
+    if (customWorkoutSetupOpen) {
+      openCustomWorkoutSetupDialog(customWorkoutSetupOpen);
+      return;
+    }
+    if (customWorkoutSetupClose) {
+      customWorkoutSetupClose.closest("[data-custom-workout-setup-dialog]")?.close();
       return;
     }
 
@@ -20532,6 +20573,7 @@ function handleWorkoutInteractions() {
 
     if (customWorkoutFormatButton) {
       customWorkoutFormatButton.closest(".custom-workout-format-picker")?.removeAttribute("open");
+      customWorkoutFormatButton.closest("[data-custom-workout-setup-dialog]")?.close();
       updateCustomWorkoutFormat(
         customWorkoutFormatButton.closest(".client-workout-panel-custom"),
         customWorkoutFormatButton.dataset.customWorkoutFormatOption

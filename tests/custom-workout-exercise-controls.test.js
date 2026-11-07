@@ -428,6 +428,64 @@ test("straight sets use the same visual picker and keep one-tap exercise selecti
   assert.deepEqual(fixture.calls.add, ["Hip Thrust Machine"]);
 });
 
+test("workout setup chips open only their matching popup and keep summary labels current", () => {
+  const labels = { date: { textContent: "" }, gym: { textContent: "" }, format: { textContent: "" } };
+  const dateInput = { value: "2026-11-06", showPicker() { calls.push("calendar"); } };
+  const gymInput = { value: "Alex Fitness", focus() { calls.push("gym focus"); } };
+  const formatPicker = { open: false };
+  const heading = { textContent: "" };
+  const calls = [];
+  const dialog = {
+    dataset: {},
+    showModal() { calls.push("open"); },
+    querySelector(selector) {
+      return {
+        "[data-custom-workout-setup-title]": heading,
+        "[data-workout-date]": dateInput,
+        "[data-workout-gym]": gymInput,
+        ".custom-workout-format-picker": formatPicker
+      }[selector];
+    }
+  };
+  const panel = {
+    classList: { contains: () => true },
+    dataset: { customWorkoutFormat: "superset" },
+    querySelector(selector) {
+      return {
+        "[data-workout-date]": dateInput,
+        "[data-workout-gym]": gymInput,
+        "[data-custom-workout-summary-date]": labels.date,
+        "[data-custom-workout-summary-gym]": labels.gym,
+        "[data-custom-workout-summary-format]": labels.format,
+        "[data-custom-workout-setup-dialog]": dialog
+      }[selector];
+    }
+  };
+  const context = evaluate(["syncCustomWorkoutSetupSummary", "openCustomWorkoutSetupDialog"], {
+    todayDate: () => "2026-11-06",
+    formatLogDate: () => "Nov 6, 2026",
+    normalizeWorkoutGymName: String,
+    normalizeCustomWorkoutFormat: String,
+    customWorkoutFormats: { superset: { label: "Superset" } }
+  });
+  context.syncCustomWorkoutSetupSummary(panel);
+  assert.deepEqual(Object.values(labels).map((label) => label.textContent), ["Nov 6", "Alex Fitness", "Superset"]);
+  const open = (section) => context.openCustomWorkoutSetupDialog({
+    dataset: { customWorkoutSetupOpen: section },
+    closest: () => panel
+  });
+  open("date");
+  assert.equal(dialog.dataset.section, "date");
+  assert.equal(heading.textContent, "Workout date");
+  assert.deepEqual(calls, ["open", "calendar"]);
+  open("gym");
+  assert.equal(dialog.dataset.section, "gym");
+  assert.deepEqual(calls.slice(-2), ["open", "gym focus"]);
+  open("format");
+  assert.equal(dialog.dataset.section, "format");
+  assert.equal(formatPicker.open, true);
+});
+
 test("grouped picker keeps Add directly below selected exercises", () => {
   for (const format of ["superset", "circuit"]) {
     const fixture = dialogFixture(format);
