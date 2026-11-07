@@ -72,6 +72,8 @@ body.client-dashboard-page:has([data-client-dashboard-panel="progress"]:not([hid
 body.client-dashboard-page [data-client-dashboard-panel="progress"] .client-progress-chart-title button#client-progress-axis { width:auto !important; min-width:58px !important; border:0; background:transparent; color:#5aa9e8; font-size:12px; font-weight:700; cursor:pointer; }
 body.client-dashboard-page [data-client-dashboard-panel="progress"] .client-progress-exercise-thumb { display:block; position:relative; flex:0 0 52px !important; width:52px !important; height:52px !important; min-width:52px !important; overflow:hidden; border-radius:10px; background:#25272c; color:#5aa9e8; text-align:center; line-height:52px; font-size:24px; }
 body.client-dashboard-page [data-client-dashboard-panel="progress"] .client-progress-exercise-thumb img { display:block; width:100%; height:100%; object-fit:cover; object-position:center; }
-body.client-dashboard-page [data-client-dashboard-panel="progress"] .client-progress-exercise-thumb.is-branded img { object-position:left center; }
+body.client-dashboard-page [data-client-dashboard-panel="progress"] .client-progress-exercise-thumb.is-branded img {
+  position:absolute; top:-12.5%; left:-4%; width:auto; max-width:none; height:125%; max-height:none; object-fit:fill;
+}
 body.client-dashboard-page [data-client-dashboard-panel="progress"] .client-progress-latest-list .client-progress-exercise-thumb { flex-basis:42px !important; width:42px !important; min-width:42px !important; height:42px !important; line-height:42px; font-size:20px; }
 body.client-dashboard-page [data-client-dashboard-panel="progress"] .client-progress-lift-top > .client-progress-lift-info { flex:1 1 auto; min-width:0; }
