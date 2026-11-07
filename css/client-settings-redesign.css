@@ -45,3 +45,24 @@ body.client-dashboard-page .client-settings-panel .client-settings-menu .profile
 body.client-dashboard-page .client-settings-panel .client-settings-menu .profile-photo-camera { color:#101010; background:#5aa9e8; }
 body.client-dashboard-page .client-settings-panel .client-settings-menu .profile-photo-account .client-settings-profile-name { color:#fff !important; }
 body.client-dashboard-page .client-settings-panel .client-settings-menu .client-settings-redesign-heading button[data-settings-search-toggle] { border-radius:50% !important; }
+
+/* The redesigned Settings screen follows the selected client theme. */
+:root[data-client-theme="light"] body.client-dashboard-page:has(.client-settings-panel:not([hidden])) { background:var(--canvas); }
+:root[data-client-theme="light"] body.client-dashboard-page .client-settings-panel { background:var(--canvas) !important; color:var(--ink); }
+:root[data-client-theme="light"] body.client-dashboard-page .client-settings-panel .client-settings-menu { color:var(--ink); }
+:root[data-client-theme="light"] body.client-dashboard-page .client-settings-redesign-heading h2,
+:root[data-client-theme="light"] body.client-dashboard-page .client-settings-panel .client-settings-menu .client-settings-redesign-heading h2#client-notification-settings-title { color:var(--ink) !important; }
+:root[data-client-theme="light"] body.client-dashboard-page .client-settings-redesign-heading button { color:var(--ink); background:var(--surface); border-color:var(--line); }
+:root[data-client-theme="light"] body.client-dashboard-page .client-settings-redesign-search input { color:var(--ink); background:var(--surface); border-color:var(--control-border); }
+:root[data-client-theme="light"] body.client-dashboard-page .client-settings-panel .client-settings-menu .profile-photo-card,
+:root[data-client-theme="light"] body.client-dashboard-page .client-settings-redesign-list { background:var(--surface); border-color:var(--line); }
+:root[data-client-theme="light"] body.client-dashboard-page .client-settings-panel .client-settings-menu .profile-photo-account .client-settings-profile-name { color:var(--ink) !important; }
+:root[data-client-theme="light"] body.client-dashboard-page .client-settings-panel .client-settings-menu .profile-photo-account > strong[data-profile-email],
+:root[data-client-theme="light"] body.client-dashboard-page .client-settings-appearance-toggle > small { color:var(--muted) !important; }
+:root[data-client-theme="light"] body.client-dashboard-page .client-settings-panel .client-settings-menu .client-settings-redesign-group h3 { color:var(--muted) !important; }
+:root[data-client-theme="light"] body.client-dashboard-page .client-settings-redesign-list > .client-settings-shortcut { color:var(--ink); background:transparent; border-bottom-color:var(--line); }
+:root[data-client-theme="light"] body.client-dashboard-page .client-settings-redesign-list .client-settings-shortcut-copy strong { color:var(--ink); }
+:root[data-client-theme="light"] body.client-dashboard-page .client-settings-redesign-list .client-settings-shortcut-arrow { color:var(--client-settings-accent); }
+:root[data-client-theme="light"] body.client-dashboard-page .client-settings-appearance-details { background:var(--surface); color:var(--ink); }
+:root[data-client-theme="light"] body.client-dashboard-page .client-settings-appearance-details .client-theme-setting legend { color:var(--muted); }
+:root[data-client-theme="light"] body.client-dashboard-page .client-settings-appearance-details .client-theme-options { background:var(--surface-soft); border-color:var(--line); }
