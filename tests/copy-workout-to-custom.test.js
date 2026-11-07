@@ -166,7 +166,7 @@ test("infers older grouped formats and gives each copied session a unique storag
   assert.match(sourceForFunction("renderClientWorkoutTabs"), /warmupLogFields\(title/);
   assert.match(panelSource, /workoutStartControlMarkup\(workoutStorageTitle/);
   assert.match(panelSource, /customWorkoutCarouselMarkup\(format, workoutStorageTitle\)/);
-  assert.match(panelSource, /cardioLogFields\(workoutStorageTitle/);
+  assert.match(sourceForFunction("renderClientWorkoutTabs"), /cardioLogFields\(title, \{ showDate: false \}\)/);
   assert.match(sourceForFunction("regroupCustomWorkoutCarousels"), /const hasExplicitGroups = cards\.some/);
 });
 
