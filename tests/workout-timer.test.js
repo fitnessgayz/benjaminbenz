@@ -67,7 +67,7 @@ test("set Log box follows reps and starts the rest timer after a saved working s
   assert.match(rowMarkupSource, /aria-pressed="false"/);
   assert.match(interactionsSource, /completeSetButton[\s\S]*classList\.add\("is-complete"\)/);
   assert.match(interactionsSource, /completeSetButton[\s\S]*animateCompletedSet\(setRow\)/);
-  assert.match(interactionsSource, /completeSetButton[\s\S]*await saveTrainingLogRows\(completeSetButton[\s\S]*if \(!isWarmUp && autoRestTimerEnabled\(\)[\s\S]*resetRestTimer\(\)[\s\S]*openRestTimer\(completeSetButton\)[\s\S]*startOrPauseRestTimer\(\)/);
+  assert.match(interactionsSource, /completeSetButton[\s\S]*await saveTrainingLogRows\(completeSetButton[\s\S]*if \(!isWarmUp && autoRestTimerEnabled\(\)[\s\S]*resetRestTimer\(\)[\s\S]*startOrPauseRestTimer\(\)[\s\S]*showRestTimerPopup\(/);
   assert.match(styleSource, /grid-template-columns:\s*52px minmax\(0, 1fr\) minmax\(0, 1fr\) 60px 48px/);
   assert.match(styleSource, /\.set-complete-button\s*\{[^}]*width:\s*48px;[^}]*height:\s*48px;/s);
   assert.match(styleSource, /fwb-set-completion-sweep/);
@@ -92,7 +92,24 @@ test("automatic rest can be turned off without removing manual timer controls", 
   assert.match(sourceForFunction("logCustomWorkoutGroupedRound"), /if \(autoRestTimerEnabled\(\) && workoutGroupReadyForRest\(carousel\.dataset\.customWorkoutFormat, logElements\.length\)\)/);
   assert.match(sourceForFunction("toggleCustomWorkoutGroupedSet"), /workoutGroupReadyForRest\(carousel\.dataset\.customWorkoutFormat, customWorkoutGroupedLogElements\(carousel\)\.length\)/);
   assert.match(sourceForFunction("logCurrentWorkoutCarouselSet"), /completedRound && workoutGroupReadyForRest\(format, cards\.length\) && autoRestTimerEnabled\(\)/);
-  assert.match(sourceForFunction("handleWorkoutInteractions"), /if \(!isWarmUp && autoRestTimerEnabled\(\) && [^\n]+\) \{\s*resetRestTimer\(\);\s*openRestTimer\(completeSetButton\)/);
+  assert.match(sourceForFunction("handleWorkoutInteractions"), /if \(!isWarmUp && autoRestTimerEnabled\(\) && [^\n]+\) \{\s*resetRestTimer\(\);\s*startOrPauseRestTimer\(\);\s*showRestTimerPopup\(/);
+  assert.match(sourceForFunction("handleWorkoutInteractions"), /if \(setRestButton\) \{[\s\S]*?openRestTimer\(setRestButton\)/);
+});
+
+test("compact rest popup is opt-in and keeps the manual timer accessible", () => {
+  const readPreference = Function(
+    "window", "restTimerPopupPreferenceStorageKey", "restTimerPopupPreferenceFallback",
+    `${sourceForFunction("restTimerPopupEnabled")}; return restTimerPopupEnabled;`
+  );
+  let stored = null;
+  const enabled = readPreference({ localStorage: { getItem: () => stored } }, "test-rest-popup", false);
+  assert.equal(enabled(), false);
+  stored = "true";
+  assert.equal(enabled(), true);
+  stored = "false";
+  assert.equal(enabled(), false);
+  assert.match(dashboardSource, /data-rest-timer-popup-preference/);
+  assert.match(sourceForFunction("restTimerMarkup"), /data-rest-timer-popup-pause/);
   assert.match(sourceForFunction("handleWorkoutInteractions"), /if \(setRestButton\) \{[\s\S]*?openRestTimer\(setRestButton\)/);
 });
 

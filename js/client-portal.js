@@ -201,6 +201,7 @@ const workoutElapsedTimerPositionStorageKey = "fwb_workout_elapsed_timer_positio
 const workoutElapsedTimerMaximumMilliseconds = 24 * 60 * 60 * 1000;
 const restTimerNotificationPreferenceStorageKey = "fwb_rest_timer_notifications_v1";
 const autoRestTimerPreferenceStorageKey = "fwb_auto_rest_timer_v1";
+const restTimerPopupPreferenceStorageKey = "fwb_rest_timer_popup_v1";
 const workoutTimerAutoShowStorageKey = "fwb_workout_timer_auto_show_v1";
 const dailyCheckinPromptStorageKey = "fwb_daily_checkin_prompt_enabled_v1";
 const restTimerNotificationServiceWorkerUrl = "/timer-notifications-sw.js?v=web-push-notifications-1";
@@ -220,6 +221,7 @@ let customWorkoutGroupedRestAction = null;
 let restTimerNotificationRegistrationPromise = null;
 let restTimerNotificationPreferenceFallback = null;
 let autoRestTimerPreferenceFallback = true;
+let restTimerPopupPreferenceFallback = false;
 let workoutTimerAutoShowFallback = true;
 let dailyCheckinPromptFallback = true;
 let workoutElapsedTimerState = null;
@@ -7596,6 +7598,36 @@ function configureAutoRestTimerPreference() {
   });
 }
 
+function restTimerPopupEnabled() {
+  try {
+    const stored = window.localStorage.getItem(restTimerPopupPreferenceStorageKey);
+    return stored === null ? restTimerPopupPreferenceFallback : stored === "true";
+  } catch (_) {
+    return restTimerPopupPreferenceFallback;
+  }
+}
+
+function syncRestTimerPopupPreference() {
+  const input = document.querySelector("[data-rest-timer-popup-preference]");
+  if (input) input.checked = restTimerPopupEnabled();
+  if (!restTimerPopupEnabled()) closeRestTimerPopup();
+}
+
+function configureRestTimerPopupPreference() {
+  const input = document.querySelector("[data-rest-timer-popup-preference]");
+  if (!input) return;
+  syncRestTimerPopupPreference();
+  input.addEventListener("change", () => {
+    restTimerPopupPreferenceFallback = input.checked;
+    try { window.localStorage.setItem(restTimerPopupPreferenceStorageKey, String(input.checked)); }
+    catch (_) { /* Keep this visit's preference if storage is unavailable. */ }
+    syncRestTimerPopupPreference();
+  });
+  window.addEventListener("storage", (event) => {
+    if (event.key === restTimerPopupPreferenceStorageKey) syncRestTimerPopupPreference();
+  });
+}
+
 function clientTrainingPreferenceEnabled(key, fallback) {
   try {
     const stored = window.localStorage.getItem(key);
@@ -7923,7 +7955,36 @@ function restTimerMarkup() {
         </div>
       </section>
     </div>
+    <aside class="rest-timer-popup" data-rest-timer-popup hidden aria-label="Rest timer">
+      <div class="rest-timer-popup-heading">
+        <span data-rest-timer-popup-context>REST BETWEEN SETS</span>
+        <button type="button" data-rest-timer-popup-close aria-label="Hide rest timer popup">×</button>
+      </div>
+      <div class="rest-timer-popup-time" data-rest-timer-popup-time>01:00</div>
+      <div class="rest-timer-popup-track" aria-hidden="true"><span data-rest-timer-popup-progress></span></div>
+      <div class="rest-timer-popup-actions">
+        <button type="button" data-rest-timer-popup-adjust="-15">−15 sec</button>
+        <button type="button" data-rest-timer-popup-pause>Pause</button>
+        <button type="button" data-rest-timer-popup-skip>Skip</button>
+        <button type="button" data-rest-timer-popup-adjust="15">+15 sec</button>
+      </div>
+    </aside>
   `;
+}
+
+function closeRestTimerPopup() {
+  const popup = document.querySelector("[data-rest-timer-popup]");
+  if (popup) popup.hidden = true;
+}
+
+function showRestTimerPopup(context = "REST BETWEEN SETS") {
+  if (!restTimerPopupEnabled()) return;
+  ensureRestTimer();
+  const popup = document.querySelector("[data-rest-timer-popup]");
+  if (!popup) return;
+  popup.querySelector("[data-rest-timer-popup-context]").textContent = context;
+  popup.hidden = false;
+  renderRestTimer();
 }
 
 function ensureRestTimer() {
@@ -7984,6 +8045,13 @@ function renderRestTimer() {
   }
   if (startButton) {
     startButton.textContent = isRunning ? "Pause" : restTimerRemainingSeconds === 0 ? "Start again" : "Start";
+  }
+  const popup = document.querySelector("[data-rest-timer-popup]");
+  if (popup) {
+    popup.querySelector("[data-rest-timer-popup-time]").textContent = restTimerTimeLabel(restTimerRemainingSeconds);
+    popup.querySelector("[data-rest-timer-popup-progress]").style.width = `${Math.max(0, Math.min(100, restTimerRemainingSeconds / Math.max(restTimerDurationSeconds, 1) * 100))}%`;
+    popup.querySelector("[data-rest-timer-popup-pause]").textContent = isRunning ? "Pause" : "Resume";
+    if (restTimerRemainingSeconds === 0) closeRestTimerPopup();
   }
   overlay?.querySelectorAll("[data-rest-timer-preset]").forEach((button) => {
     const isActive = Number(button.dataset.restTimerPreset) === restTimerDurationSeconds;
@@ -8081,6 +8149,7 @@ function adjustRestTimer(seconds) {
 }
 
 function openRestTimer(button) {
+  closeRestTimerPopup();
   const overlay = ensureRestTimer();
   const logElement = button?.closest?.("[data-exercise-log]");
   if (logElement?.dataset.generatedExercise === "true" && logElement.dataset.exerciseRest) {
@@ -11449,6 +11518,7 @@ async function logCustomWorkoutGroupedRound(button) {
     if (generatedRestDurations.length) setRestTimerDuration(Math.max(...generatedRestDurations));
     resetRestTimer();
     startOrPauseRestTimer();
+    showRestTimerPopup(`ROUND ${roundNumber} COMPLETE · REST`);
   } else {
     renderCustomWorkoutGroupedRestControls();
   }
@@ -11610,6 +11680,7 @@ async function toggleCustomWorkoutGroupedSet(button) {
       if (generatedRestDurations.length) setRestTimerDuration(Math.max(...generatedRestDurations));
       resetRestTimer();
       startOrPauseRestTimer();
+      showRestTimerPopup(`ROUND ${roundNumber} COMPLETE · REST`);
     } else {
       renderCustomWorkoutGroupedRestControls();
     }
@@ -12389,8 +12460,8 @@ async function logCurrentWorkoutCarouselSet(button) {
   if (completedRound && workoutGroupReadyForRest(format, cards.length) && autoRestTimerEnabled()) {
     const restValue = current.exercise.logElement?.dataset.exerciseRest || "";
     setRestTimerDuration(workoutCarouselRestSeconds(restValue));
-    openRestTimer(button);
     startOrPauseRestTimer();
+    showRestTimerPopup(`ROUND ${current.round} COMPLETE · REST`);
   }
 
   if (nextProgress.current) {
@@ -19962,6 +20033,10 @@ function handleWorkoutInteractions() {
     const restTimerStartButton = event.target.closest("[data-rest-timer-start]");
     const restTimerResetButton = event.target.closest("[data-rest-timer-reset]");
     const restTimerNotificationButton = event.target.closest("[data-rest-timer-notifications]");
+    const restTimerPopupCloseButton = event.target.closest("[data-rest-timer-popup-close]");
+    const restTimerPopupAdjustButton = event.target.closest("[data-rest-timer-popup-adjust]");
+    const restTimerPopupPauseButton = event.target.closest("[data-rest-timer-popup-pause]");
+    const restTimerPopupSkipButton = event.target.closest("[data-rest-timer-popup-skip]");
     const rirOptionButton = event.target.closest("[data-rir-option]");
     const rirSaveButton = event.target.closest("[data-rir-save]");
     const rirCloseButton = event.target.closest("[data-rir-close]");
@@ -20296,8 +20371,8 @@ function handleWorkoutInteractions() {
       }
       if (!isWarmUp && autoRestTimerEnabled() && (!groupCarousel || groupFormat === "single" || completedGroupRound)) {
         resetRestTimer();
-        openRestTimer(completeSetButton);
         startOrPauseRestTimer();
+        showRestTimerPopup(completedGroupRound ? "ROUND COMPLETE · REST" : "SET COMPLETE · REST");
       }
       return;
     }
@@ -20408,6 +20483,24 @@ function handleWorkoutInteractions() {
 
     if (closeRestTimerButton || event.target.matches("[data-rest-timer-overlay]")) {
       closeRestTimer();
+      return;
+    }
+
+    if (restTimerPopupCloseButton) {
+      closeRestTimerPopup();
+      return;
+    }
+    if (restTimerPopupAdjustButton) {
+      adjustRestTimer(Number(restTimerPopupAdjustButton.dataset.restTimerPopupAdjust));
+      return;
+    }
+    if (restTimerPopupPauseButton) {
+      startOrPauseRestTimer();
+      return;
+    }
+    if (restTimerPopupSkipButton) {
+      resetRestTimer();
+      closeRestTimerPopup();
       return;
     }
 
@@ -22514,6 +22607,7 @@ function disableClientDashboardZoom() {
 disableClientDashboardZoom();
 initializeRestTimerNotifications();
 configureAutoRestTimerPreference();
+configureRestTimerPopupPreference();
 configureClientTrainingPreferences();
 handleClientDashboardSidebar();
 handleClientDashboardMobileNavigation();

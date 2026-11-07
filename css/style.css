@@ -5209,6 +5209,96 @@ body.is-client-checkin-prompt-open {
   overflow: hidden;
 }
 
+.rest-timer-popup {
+  position: fixed;
+  z-index: 101;
+  right: max(16px, env(safe-area-inset-right));
+  bottom: calc(90px + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+  width: min(390px, calc(100vw - 32px));
+  padding: 17px;
+  border: 1px solid #58606a;
+  border-radius: 23px;
+  color: #f8f9fa;
+  background: #25272c;
+  box-shadow: 0 20px 55px rgba(0, 0, 0, .45);
+}
+
+.rest-timer-popup[hidden] { display: none; }
+
+.rest-timer-popup-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: #61b7ff;
+  font-size: .72rem;
+  font-weight: 900;
+  letter-spacing: .08em;
+}
+
+.rest-timer-popup-heading button {
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 50%;
+  color: #f8f9fa;
+  background: #353940;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.rest-timer-popup-time {
+  margin: 2px 0 10px;
+  color: #ffd400;
+  font-size: clamp(2.8rem, 11vw, 4rem);
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.rest-timer-popup-track {
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #424951;
+}
+
+.rest-timer-popup-track span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #ffd400;
+}
+
+.rest-timer-popup-actions {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 14px;
+}
+
+.rest-timer-popup-actions button {
+  min-width: 0;
+  min-height: 42px;
+  padding: 5px 3px;
+  border: 1px solid #60656e;
+  border-radius: 10px;
+  color: #f8f9fa;
+  background: #34383e;
+  font: inherit;
+  font-size: .72rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.rest-timer-popup-actions button:focus-visible,
+.rest-timer-popup-heading button:focus-visible {
+  outline: 2px solid #61b7ff;
+  outline-offset: 2px;
+}
+
 .rest-timer-overlay {
   position: fixed;
   inset: 0;
