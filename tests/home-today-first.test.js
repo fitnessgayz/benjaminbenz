@@ -28,12 +28,14 @@ test("Home keeps the avatar and notifications in its compact header", () => {
   assert.match(styles, /\.client-home-topbar/);
 });
 
-test("Home shows the Wall feed and uses Atari for Daily check-in", () => {
-  assert.match(home, /class="client-home-atari"[^>]*data-client-daily-checkin/);
+test("Home shows the Wall feed and keeps the daily check-in prompt without an Atari button", () => {
+  assert.doesNotMatch(home, /class="client-home-atari"/);
+  assert.match(home, /data-client-home-checkin-backdrop hidden/);
   assert.match(homeBehavior, /const cards = \[\.\.\.wall\.querySelectorAll\('\.client-community-wall-card'\)\];/);
   assert.match(homeStyles, /\.client-manual-daily-checkin \{ display: none !important; \}/);
   assert.match(homeStyles, /\.client-home-gym-pill,/);
-  assert.match(portal, /client-home-atari"\) \? "checkin"/);
+  assert.match(portal, /function maybeShowClientHomeCheckinPrompt\(\)/);
+  assert.match(portal, /window\.FWB_GYM_CHECKIN_PROMPT\?\.maybeShow\(/);
 });
 
 test("Workouts still opens its program overview and coach notes", () => {
