@@ -9353,6 +9353,19 @@ function syncWorkoutStartButtons() {
       button.textContent = workoutElapsedTimerState.running ? "Pause workout" : "Resume workout";
     }
   });
+  syncFloatingWorkoutFinishButtons();
+}
+
+function syncFloatingWorkoutFinishButtons() {
+  document.querySelectorAll("[data-floating-workout-finish]").forEach((button) => {
+    const panel = button.closest(".client-workout-panel");
+    const workoutTitle = String(panel?.querySelector("[data-workout-start]")?.dataset.workoutTitle
+      || panel?.dataset.customWorkoutTitle || "").trim();
+    const workoutDate = panel?.querySelector("[data-workout-date]")?.value || todayDate();
+    button.hidden = !panel || panel.hidden || !panel.classList.contains("is-active") || !workoutElapsedTimerState
+      || workoutTitle !== String(workoutElapsedTimerState.workoutTitle || "").trim()
+      || workoutDate !== String(workoutElapsedTimerState.workoutDate || "");
+  });
 }
 
 function runWorkoutElapsedTimer() {
@@ -9744,6 +9757,10 @@ function workoutActionsMarkup(workout, options = {}) {
       <small data-workout-status></small>
     </div>
   `;
+}
+
+function floatingWorkoutFinishMarkup() {
+  return '<div class="workout-floating-finish" data-floating-workout-finish hidden><button type="button" data-floating-workout-finish-action aria-label="Save and finish workout"><span aria-hidden="true">✓</span> Save &amp; finish workout</button></div>';
 }
 
 function finishWorkoutLater(button) {
@@ -13481,6 +13498,7 @@ function customWorkoutPanelMarkup(index) {
           ${workoutActionsMarkup({ exercises }, { includeCardio: true })}
         </div>
       </div>
+      ${floatingWorkoutFinishMarkup()}
     </section>
   `;
 }
@@ -14482,6 +14500,7 @@ function activateClientWorkoutPanel(nextIndex, options = {}) {
     panel.classList.toggle("is-active", isActive);
     panel.hidden = !isActive;
   });
+  syncFloatingWorkoutFinishButtons();
   syncClientWorkoutSelectionSummary(activeCard);
   if (summary) {
     summary.hidden = compactLog;
@@ -14522,6 +14541,7 @@ function showClientWorkoutPicker(options = {}) {
     if (label) label.textContent = "Messages";
   }
   const panels = document.querySelectorAll(".client-workout-panel");
+  panels.forEach((panel) => panel.querySelectorAll("[data-floating-workout-finish]").forEach((button) => { button.hidden = true; }));
 
   if (!picker) {
     return;
@@ -14620,6 +14640,7 @@ function renderClientWorkoutTabs(workouts = []) {
         ${cardioLogFields(title, { showDate: false })}
         ${workoutActionsMarkup(workout, { includeCardio: true })}
       </div>
+      ${floatingWorkoutFinishMarkup()}
     </section>
   `;
   }).join("");
@@ -20019,6 +20040,7 @@ function handleWorkoutInteractions() {
     const nextExerciseYesButton = event.target.closest("[data-next-exercise-yes]");
     const nextExerciseFinishButton = event.target.closest("[data-next-exercise-finish]");
     const workoutStartButton = event.target.closest("[data-workout-start]");
+    const floatingWorkoutFinishAction = event.target.closest("[data-floating-workout-finish-action]");
     const resumeActiveWorkoutButton = event.target.closest("[data-resume-active-workout]");
     const cancelActiveWorkoutButton = event.target.closest("[data-cancel-active-workout]");
     const workoutElapsedToggleButton = event.target.closest("[data-workout-elapsed-toggle]");
@@ -20199,6 +20221,15 @@ function handleWorkoutInteractions() {
 
     if (resetCustomWorkoutButton) {
       resetCustomWorkout(resetCustomWorkoutButton.closest(".client-workout-panel-custom"));
+      return;
+    }
+
+    if (floatingWorkoutFinishAction) {
+      const panel = floatingWorkoutFinishAction.closest(".client-workout-panel");
+      const finishControl = panel?.classList.contains("client-workout-panel-custom")
+        ? panel.querySelector("[data-workout-start]")
+        : panel?.querySelector("[data-workout-finish]");
+      finishControl?.click();
       return;
     }
 

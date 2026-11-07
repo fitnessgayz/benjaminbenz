@@ -201,6 +201,39 @@ test("resume state preserves the workout date and exact workout panel", () => {
   assert.doesNotMatch(resumeSource, /startWorkoutElapsedTimer/);
 });
 
+test("floating finish action follows the active workout and clears after reset", () => {
+  const panel = {
+    hidden: false,
+    classList: { contains: (name) => name === "is-active" },
+    querySelector: (selector) => selector === "[data-workout-start]"
+      ? { dataset: { workoutTitle: "Custom Workout" } }
+      : selector === "[data-workout-date]" ? { value: "2026-11-06" } : null
+  };
+  const button = { hidden: true, closest: () => panel };
+  const document = { querySelectorAll: () => [button] };
+  const fixture = Function("document", "todayDate", `
+    let workoutElapsedTimerState = null;
+    ${sourceForFunction("syncFloatingWorkoutFinishButtons")}
+    return {
+      sync: syncFloatingWorkoutFinishButtons,
+      setSession: (session) => { workoutElapsedTimerState = session; }
+    };
+  `)(document, () => "2026-11-06");
+
+  fixture.sync();
+  assert.equal(button.hidden, true);
+  fixture.setSession({ workoutTitle: "Custom Workout", workoutDate: "2026-11-06" });
+  fixture.sync();
+  assert.equal(button.hidden, false);
+  panel.hidden = true;
+  fixture.sync();
+  assert.equal(button.hidden, true);
+  panel.hidden = false;
+  fixture.setSession(null);
+  fixture.sync();
+  assert.equal(button.hidden, true);
+});
+
 test("resume cards mirror running, paused, title, and elapsed timer state", () => {
   const renderSource = sourceForFunction("renderWorkoutResumeActions");
   const timerRenderSource = sourceForFunction("renderWorkoutElapsedTimer");
