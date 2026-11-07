@@ -162,14 +162,15 @@ function finishFixture({ outcome = 'success', hasStrengthTimer = true, isCardio 
   const context = evaluate(['cardioLogIssues', 'cardioWorkoutCompletionFields', 'workoutFinishIssues', 'handleTrainingLogSave', 'rowsForTrainingLog', 'buildCardioNotes'], {
     document: { addEventListener: (name, handler) => listeners.set(name, handler) },
     workoutSectionForButton: () => f.section,
+    requireWorkoutGymLocation: () => true,
+    workoutGymLocationForElement: () => '',
     exerciseNameInputForLog: (log) => log.querySelector('[data-cardio-type]'),
     showWorkoutFinishIssues(_button, issues) { if (issues.length) events.push(['issues', issues.map((issue) => issue.message)]); return !issues.length; },
     workoutElapsedTimerState: strengthTimer,
     restTimerEndsAt: 777777,
     pendingGroupedCustomWorkoutRestart: { panel: { id: 'unrelated-strength-panel' }, format: 'superset' },
     cancelTrainingLogAutosaves: () => events.push(['cancel-autosaves']),
-    requestWorkoutDifficulty: async () => outcome === 'cancel' ? null : { difficulty: 3, before: 2, after: 4 },
-    workoutHistoryDifficultyLabel: () => 'Moderate',
+    requestWorkoutDifficulty: () => assert.fail('Finish must not open the rating prompt'),
     startWorkoutElapsedTimer: () => events.push(['timer-start']),
     pauseWorkoutTimersForCompletion: () => { events.push(['timer-pause']); return {}; },
     workoutCompletionFields: () => { events.push(['timer-fields']); return { workout_duration_seconds: 999 }; },
@@ -181,7 +182,8 @@ function finishFixture({ outcome = 'success', hasStrengthTimer = true, isCardio 
       if (outcome === 'save-fails') return { saved: false };
       return { saved: true, rows: logs.flatMap((log) => context.rowsForTrainingLog(log)).map((row) => ({ ...row, ...options.workoutCompletion, session_id: 'saved-session' })) };
     },
-    saveWorkoutDifficultyFeedback: async () => { events.push(['feedback']); return { saved: outcome !== 'feedback-fails' }; },
+    saveWorkoutDifficultyFeedback: async () => assert.fail('Finish must not save a rating'),
+    resetCardioIntervalTimer: () => {},
     renderClientTrainingLogs: () => events.push(['render-logs']),
     activeCustomWorkoutDraft: () => customDraft,
     clearCustomWorkoutDraft: () => events.push(['clear-custom-draft']),
@@ -208,13 +210,13 @@ for (const hasStrengthTimer of [false, true]) {
     assert.ok(!f.events.some(([name]) => name.startsWith('timer-') || name === 'clear-custom-draft'));
     assert.equal(f.events.filter(([name]) => name === 'save').length, 1);
     assert.equal(f.events.find(([name]) => name === 'save')[1].workoutCompletion.workout_duration_seconds, 1800);
-    assert.equal(f.events.find(([name]) => name === 'share')[1][0].weight_used, 30);
+    assert.equal(f.events.find(([name]) => name === 'share')?.[1][0].weight_used, 30, JSON.stringify(f.events));
     assert.equal(f.section.workoutCompletionPendingFeedback, undefined);
     assert.equal(f.button.disabled, false);
   });
 }
 
-for (const outcome of ['cancel', 'save-fails', 'throw', 'feedback-fails']) {
+for (const outcome of ['save-fails', 'throw']) {
   test(`cardio ${outcome} retains entries, active strength timer and retry controls`, async () => {
     const f = finishFixture({ outcome });
     const timerBefore = plain(f.strengthTimer);
@@ -227,8 +229,7 @@ for (const outcome of ['cancel', 'save-fails', 'throw', 'feedback-fails']) {
     assert.equal(f.section.dataset.workoutFinishing, undefined);
     assert.equal(f.context.pendingGroupedCustomWorkoutRestart.format, 'superset');
     assert.ok(!f.events.some(([name]) => name.startsWith('timer-') || name === 'clear-custom-draft' || name === 'share'));
-    if (outcome === 'cancel') assert.ok(!f.events.some(([name]) => name === 'save'));
-    if (outcome === 'feedback-fails') assert.equal(f.section.workoutCompletionPendingFeedback.workout_duration_seconds, 1800);
+    assert.ok(f.events.some(([name]) => name === 'save'));
   });
 }
 
@@ -258,13 +259,13 @@ test('opening cardio explicitly restarts a deleted daily context without rotatin
   }
 });
 
-for (const outcome of ['success', 'cancel', 'save-fails']) {
+for (const outcome of ['success', 'save-fails']) {
   test(`ordinary workout ${outcome} still follows the existing strength timer completion path`, async () => {
     const f = finishFixture({ outcome, isCardio: false });
     await f.click();
     const timerCalls = f.events.filter(([name]) => name.startsWith('timer-')).map(([name]) => name);
     assert.deepEqual(timerCalls, ['timer-pause', 'timer-fields', outcome === 'success' ? 'timer-finish' : 'timer-resume']);
-    if (outcome !== 'cancel') assert.equal(f.events.find(([name]) => name === 'save')[1].workoutCompletion.workout_duration_seconds, 999);
+    assert.equal(f.events.find(([name]) => name === 'save')[1].workoutCompletion.workout_duration_seconds, 999);
   });
 }
 

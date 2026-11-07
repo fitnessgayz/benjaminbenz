@@ -8541,7 +8541,7 @@ function workoutCompletionSharePromptMarkup() {
         <header class="workout-completion-share-heading">
           <div>
             <small>Workout saved</small>
-            <strong id="workout-share-title">Share your win?</strong>
+            <strong id="workout-share-title">Congratulations!</strong>
           </div>
           <button type="button" data-workout-share-dismiss aria-label="Close workout sharing prompt">×</button>
         </header>
@@ -8572,9 +8572,9 @@ function workoutCompletionSharePromptMarkup() {
         <p class="workout-completion-share-copy">Open your phone’s share menu to post this achievement to any available social app.</p>
         <p class="workout-completion-share-status" data-workout-share-status aria-live="polite"></p>
         <div class="workout-completion-share-actions">
-          <button class="workout-completion-share-button" type="button" data-workout-share>Share workout</button>
+          <button class="workout-completion-share-button" type="button" data-workout-share>Share Workout</button>
           <button class="workout-completion-share-not-now" type="button" data-workout-share-apple hidden>Add Apple Workout</button>
-          <button class="workout-completion-share-not-now" type="button" data-workout-share-dismiss>Not now</button>
+          <button class="workout-completion-share-not-now" type="button" data-workout-share-dismiss>Done</button>
         </div>
       </section>
     </div>
@@ -8651,7 +8651,7 @@ function openWorkoutCompletionSharePrompt(summary, returnFocus = null, achieveme
     if (pendingWorkoutCompletionShare === summary) {
       pendingWorkoutCompletionShareFile = file;
       shareButton.disabled = false;
-      shareButton.textContent = "Share workout";
+      shareButton.textContent = "Share Workout";
       overlay.querySelector("[data-workout-share-status]").textContent = file ? "" : "The image couldn’t be prepared. You can still share the workout details as text.";
     }
   });
@@ -22510,28 +22510,18 @@ async function handleTrainingLogSave() {
       const controls = Array.from(section.querySelectorAll("input, textarea, select, button"))
         .map((control) => ({ control, disabled: control.disabled }));
       controls.forEach(({ control }) => { control.disabled = true; });
-      const previousCompletion = section.workoutCompletionPendingFeedback;
-      const achievementsBefore = previousCompletion
-        ? section.workoutAchievementBeforeFeedback : clientAchievementSnapshot();
-      if (!isCardioOnly && !workoutElapsedTimerState && !previousCompletion) {
+      const achievementsBefore = clientAchievementSnapshot();
+      if (!isCardioOnly && !workoutElapsedTimerState) {
         startWorkoutElapsedTimer(logElements[0]?.dataset.workoutTitle || activeWorkoutElapsedTitle());
       }
       const timerSnapshot = isCardioOnly ? null : pauseWorkoutTimersForCompletion();
-      const workoutCompletion = previousCompletion || (isCardioOnly ? cardioWorkoutCompletionFields(section) : workoutCompletionFields());
-      let workoutSaved = Boolean(previousCompletion);
+      const workoutCompletion = isCardioOnly ? cardioWorkoutCompletionFields(section) : workoutCompletionFields();
+      let workoutSaved = false;
       let completionSucceeded = false;
       try {
-        const workoutFeedback = await requestWorkoutDifficulty(difficultyTrigger);
-        if (workoutFeedback === null) {
-          if (pendingGroupedCustomWorkoutRestart?.panel === section) pendingGroupedCustomWorkoutRestart = null;
-          return;
-        }
-        const workoutFeedbackSkipped = workoutFeedback.skipped === true;
-        const workoutDifficulty = workoutFeedbackSkipped ? null : workoutFeedback.difficulty;
-        const difficultySummary = workoutFeedbackSkipped ? "" : workoutHistoryDifficultyLabel(workoutDifficulty);
         const saveResult = await saveTrainingLogRows(workoutButton, logElements, status, {
           savingMessage: "Finishing workout...",
-          successMessage: "Workout saved. Saving feedback...",
+          successMessage: "Workout saved.",
           workoutCompletion,
           ...groupedSaveOptions
         });
@@ -22543,28 +22533,10 @@ async function handleTrainingLogSave() {
         // Manual cardio uses its entered duration and leaves any strength timer running.
         workoutSaved = true;
         if (isCardioOnly) resetCardioIntervalTimer(logElements[0]);
-        section.workoutCompletionPendingFeedback = workoutCompletion;
-        section.workoutAchievementBeforeFeedback = achievementsBefore;
         if (!isCardioOnly) finishWorkoutElapsedTimer();
-        const feedbackResult = workoutFeedbackSkipped
-          ? { saved: true }
-          : await saveWorkoutDifficultyFeedback(saveResult.rows, workoutDifficulty, workoutFeedback);
-        if (!feedbackResult.saved) {
-          const retryMessage = isCardioOnly
-            ? "Cardio saved. Tap Save & finish cardio again to retry saving your ratings."
-            : "Your workout is saved and the timer has stopped. Tap Finish workout again to retry saving your ratings.";
-          if (status) status.textContent = retryMessage;
-          showWorkoutFinishIssues(difficultyTrigger, [{ message: retryMessage, target: difficultyTrigger }]);
-          return;
-        }
-
         renderClientTrainingLogs();
         completionSucceeded = true;
-        if (status) status.textContent = difficultySummary
-          ? `Workout finished · ${difficultySummary}.`
-          : "Workout finished.";
-        delete section.workoutCompletionPendingFeedback;
-        delete section.workoutAchievementBeforeFeedback;
+        if (status) status.textContent = "Workout finished.";
         const groupedRestart = pendingGroupedCustomWorkoutRestart?.panel === section
           ? pendingGroupedCustomWorkoutRestart : null;
         if (!isCardioOnly) pendingGroupedCustomWorkoutRestart = null;
@@ -22573,14 +22545,14 @@ async function handleTrainingLogSave() {
           startFreshGroupedCustomWorkout(groupedRestart);
         } else {
           openWorkoutCompletionSharePrompt(
-            workoutCompletionShareSummary(saveResult.rows, workoutCompletion, workoutDifficulty),
+            workoutCompletionShareSummary(saveResult.rows, workoutCompletion),
             null, clientWorkoutAchievementCelebration(achievementsBefore, saveResult.rows)
           );
         }
       } catch (_error) {
         showWorkoutFinishIssues(difficultyTrigger, [{
           message: workoutSaved
-            ? `Your workout is saved. Tap ${finishLabel} again to retry saving your ratings.`
+            ? "Your workout was saved, but the completion screen could not open."
             : `Your workout could not be saved. Your entries are still here. Check your connection, then tap ${finishLabel} again.`,
           target: difficultyTrigger
         }]);
