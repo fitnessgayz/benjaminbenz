@@ -9347,14 +9347,22 @@ function syncWorkoutStartButtons() {
 }
 
 function syncFloatingWorkoutFinishButtons() {
-  document.querySelectorAll("[data-floating-workout-finish]").forEach((button) => {
-    const panel = button.closest(".client-workout-panel");
+  document.querySelectorAll("[data-floating-workout-finish]").forEach((bar) => {
+    const panel = bar.closest(".client-workout-panel");
     const workoutTitle = String(panel?.querySelector("[data-workout-start]")?.dataset.workoutTitle
       || panel?.dataset.customWorkoutTitle || "").trim();
     const workoutDate = panel?.querySelector("[data-workout-date]")?.value || todayDate();
-    button.hidden = !panel || panel.hidden || !panel.classList.contains("is-active") || !workoutElapsedTimerState
-      || workoutTitle !== String(workoutElapsedTimerState.workoutTitle || "").trim()
-      || workoutDate !== String(workoutElapsedTimerState.workoutDate || "");
+    const isCurrentWorkout = Boolean(workoutElapsedTimerState
+      && workoutTitle === String(workoutElapsedTimerState.workoutTitle || "").trim()
+      && workoutDate === String(workoutElapsedTimerState.workoutDate || ""));
+    bar.hidden = !panel || panel.hidden || !panel.classList.contains("is-active")
+      || Boolean(workoutElapsedTimerState && !isCurrentWorkout);
+    bar.querySelector("[data-floating-workout-start-action]")?.toggleAttribute("hidden", isCurrentWorkout);
+    bar.querySelector("[data-floating-workout-finish-action]")?.toggleAttribute("hidden", !isCurrentWorkout);
+    bar.querySelector("[data-floating-workout-reset-action]")?.toggleAttribute("hidden", isCurrentWorkout);
+    const more = bar.querySelector("[data-floating-workout-more]");
+    more?.toggleAttribute("hidden", !isCurrentWorkout);
+    if (more && !isCurrentWorkout) more.open = false;
   });
 }
 
@@ -9751,8 +9759,17 @@ function workoutActionsMarkup(workout, options = {}) {
   `;
 }
 
-function floatingWorkoutFinishMarkup() {
-  return '<div class="workout-floating-finish" data-floating-workout-finish hidden><button type="button" data-floating-workout-finish-action aria-label="Save and finish workout"><span aria-hidden="true">✓</span> Save &amp; finish workout</button></div>';
+function floatingWorkoutFinishMarkup(options = {}) {
+  const resetAction = options.assigned ? "data-reset-assigned-workout" : "data-reset-custom-workout";
+  return `<div class="workout-floating-finish" data-floating-workout-finish hidden>
+    <button type="button" class="workout-floating-secondary" data-floating-workout-reset-action ${resetAction}>Reset</button>
+    <details class="workout-floating-more" data-floating-workout-more hidden>
+      <summary aria-label="More workout actions">•••</summary>
+      <div><button type="button" ${resetAction}>Reset workout</button></div>
+    </details>
+    <button type="button" class="workout-floating-primary" data-floating-workout-start-action>Start workout</button>
+    <button type="button" class="workout-floating-primary" data-floating-workout-finish-action aria-label="Save and finish workout" hidden>Save &amp; finish workout</button>
+  </div>`;
 }
 
 function finishWorkoutLater(button) {
@@ -13632,6 +13649,32 @@ function resetCustomWorkout(panel) {
   return replacement;
 }
 
+function resetAssignedWorkout(panel) {
+  if (!panel || !window.confirm(
+    "Reset this prescribed workout? Unsaved entries and the workout timer will be cleared. Sets already saved will stay in your history."
+  )) return null;
+
+  const panels = Array.from(document.querySelectorAll(".client-workout-panel"));
+  const panelIndex = panels.indexOf(panel);
+  if (panelIndex < 0) return null;
+  cancelTrainingLogAutosaves(panel);
+  const workoutTitle = String(panel.querySelector("[data-workout-start]")?.dataset.workoutTitle || "").trim();
+  const workoutDate = panel.querySelector("[data-workout-date]")?.value || todayDate();
+  if (workoutElapsedTimerState && workoutTitle === String(workoutElapsedTimerState.workoutTitle || "").trim()
+      && workoutDate === String(workoutElapsedTimerState.workoutDate || "")) {
+    finishWorkoutElapsedTimer();
+  }
+  renderClientWorkoutTabs(currentProgram.workouts);
+  activateClientWorkoutPanel(panelIndex, { scroll: false, focus: false });
+  const replacement = document.querySelectorAll(".client-workout-panel")[panelIndex] || null;
+  if (replacement) {
+    syncWorkoutPanelDate(replacement, workoutDate, false);
+    replacement.querySelectorAll("[data-exercise-log]").forEach(updateExerciseLogField);
+    syncWorkoutGymLock(replacement);
+  }
+  return replacement;
+}
+
 function syncWorkoutPanelDate(panel, value, refresh = true) {
   const date = value || todayDate();
   const picker = panel?.querySelector("[data-workout-date]");
@@ -14673,7 +14716,7 @@ function renderClientWorkoutTabs(workouts = []) {
         ${cardioLogFields(title, { showDate: false })}
         ${workoutActionsMarkup(workout, { includeCardio: true })}
       </div>
-      ${floatingWorkoutFinishMarkup()}
+      ${floatingWorkoutFinishMarkup({ assigned: true })}
     </section>
   `;
   }).join("");
@@ -20076,6 +20119,7 @@ function handleWorkoutInteractions() {
     const nextExerciseYesButton = event.target.closest("[data-next-exercise-yes]");
     const nextExerciseFinishButton = event.target.closest("[data-next-exercise-finish]");
     const workoutStartButton = event.target.closest("[data-workout-start]");
+    const floatingWorkoutStartAction = event.target.closest("[data-floating-workout-start-action]");
     const floatingWorkoutFinishAction = event.target.closest("[data-floating-workout-finish-action]");
     const resumeActiveWorkoutButton = event.target.closest("[data-resume-active-workout]");
     const cancelActiveWorkoutButton = event.target.closest("[data-cancel-active-workout]");
@@ -20084,6 +20128,7 @@ function handleWorkoutInteractions() {
     const workoutElapsedCompactButton = event.target.closest("[data-workout-elapsed-compact]");
     const workoutElapsedCloseButton = event.target.closest("[data-workout-elapsed-close]");
     const resetCustomWorkoutButton = event.target.closest("[data-reset-custom-workout]");
+    const resetAssignedWorkoutButton = event.target.closest("[data-reset-assigned-workout]");
     const customWorkoutSetupOpen = event.target.closest("[data-custom-workout-setup-open]");
     const customWorkoutSetupClose = event.target.closest("[data-custom-workout-setup-close]");
 
@@ -20260,6 +20305,16 @@ function handleWorkoutInteractions() {
 
     if (resetCustomWorkoutButton) {
       resetCustomWorkout(resetCustomWorkoutButton.closest(".client-workout-panel-custom"));
+      return;
+    }
+
+    if (resetAssignedWorkoutButton) {
+      resetAssignedWorkout(resetAssignedWorkoutButton.closest(".client-workout-panel-assigned"));
+      return;
+    }
+
+    if (floatingWorkoutStartAction) {
+      floatingWorkoutStartAction.closest(".client-workout-panel")?.querySelector("[data-workout-start]")?.click();
       return;
     }
 

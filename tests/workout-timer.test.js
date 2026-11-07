@@ -201,7 +201,7 @@ test("resume state preserves the workout date and exact workout panel", () => {
   assert.doesNotMatch(resumeSource, /startWorkoutElapsedTimer/);
 });
 
-test("floating finish action follows the active workout and clears after reset", () => {
+test("floating workout actions switch from Start and Reset to Finish and More", () => {
   const panel = {
     hidden: false,
     classList: { contains: (name) => name === "is-active" },
@@ -209,8 +209,16 @@ test("floating finish action follows the active workout and clears after reset",
       ? { dataset: { workoutTitle: "Custom Workout" } }
       : selector === "[data-workout-date]" ? { value: "2026-11-06" } : null
   };
-  const button = { hidden: true, closest: () => panel };
-  const document = { querySelectorAll: () => [button] };
+  const controls = Object.fromEntries([
+    "[data-floating-workout-start-action]", "[data-floating-workout-finish-action]",
+    "[data-floating-workout-reset-action]", "[data-floating-workout-more]"
+  ].map((selector) => [selector, {
+    hidden: true,
+    open: false,
+    toggleAttribute: (attribute, hidden) => { controls[selector].hidden = hidden; }
+  }]));
+  const bar = { hidden: true, closest: () => panel, querySelector: (selector) => controls[selector] };
+  const document = { querySelectorAll: () => [bar] };
   const fixture = Function("document", "todayDate", `
     let workoutElapsedTimerState = null;
     ${sourceForFunction("syncFloatingWorkoutFinishButtons")}
@@ -221,17 +229,26 @@ test("floating finish action follows the active workout and clears after reset",
   `)(document, () => "2026-11-06");
 
   fixture.sync();
-  assert.equal(button.hidden, true);
+  assert.equal(bar.hidden, false);
+  assert.equal(controls["[data-floating-workout-start-action]"].hidden, false);
+  assert.equal(controls["[data-floating-workout-reset-action]"].hidden, false);
+  assert.equal(controls["[data-floating-workout-finish-action]"].hidden, true);
   fixture.setSession({ workoutTitle: "Custom Workout", workoutDate: "2026-11-06" });
   fixture.sync();
-  assert.equal(button.hidden, false);
+  assert.equal(bar.hidden, false);
+  assert.equal(controls["[data-floating-workout-start-action]"].hidden, true);
+  assert.equal(controls["[data-floating-workout-reset-action]"].hidden, true);
+  assert.equal(controls["[data-floating-workout-finish-action]"].hidden, false);
+  assert.equal(controls["[data-floating-workout-more]"].hidden, false);
   panel.hidden = true;
   fixture.sync();
-  assert.equal(button.hidden, true);
+  assert.equal(bar.hidden, true);
   panel.hidden = false;
   fixture.setSession(null);
   fixture.sync();
-  assert.equal(button.hidden, true);
+  assert.equal(bar.hidden, false);
+  assert.equal(controls["[data-floating-workout-start-action]"].hidden, false);
+  assert.equal(controls["[data-floating-workout-more]"].hidden, true);
 });
 
 test("resume cards mirror running, paused, title, and elapsed timer state", () => {

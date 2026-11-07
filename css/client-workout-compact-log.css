@@ -666,6 +666,11 @@ body.client-dashboard-page #client-workout-panels .client-workout-panel :is(
     display: none !important;
   }
 
+  body.client-dashboard-page #client-workout-panels .client-workout-panel-custom.is-active:has(.workout-floating-finish:not([hidden])) .custom-workout-primary-actions,
+  body.client-dashboard-page #client-workout-panels .client-workout-panel-assigned.is-active:has(.workout-floating-finish:not([hidden])) > .workout-start-control {
+    display: none !important;
+  }
+
   body.client-dashboard-page #client-workout-panels .workout-floating-finish {
     position: fixed;
     z-index: 1001;
@@ -675,14 +680,22 @@ body.client-dashboard-page #client-workout-panels .client-workout-panel :is(
     padding: 16px max(20px, env(safe-area-inset-right)) 8px max(20px, env(safe-area-inset-left));
     background: linear-gradient(transparent, rgba(12, 13, 16, .96) 38%, #0c0d10);
     pointer-events: none;
+    display: flex;
+    align-items: stretch;
+    gap: 10px;
   }
 
-  body.client-dashboard-page #client-workout-panels .workout-floating-finish button {
+  body.client-dashboard-page #client-workout-panels .workout-floating-finish [hidden] {
+    display: none !important;
+  }
+
+  body.client-dashboard-page #client-workout-panels .workout-floating-finish .workout-floating-primary {
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 10px;
-    width: 100%;
+    flex: 1 1 auto;
+    min-width: 0;
     min-height: 56px;
     border: 0;
     border-radius: 14px;
@@ -695,10 +708,80 @@ body.client-dashboard-page #client-workout-panels .client-workout-panel :is(
     pointer-events: auto;
   }
 
-  body.client-dashboard-page #client-workout-panels .workout-floating-finish button:focus-visible {
+  body.client-dashboard-page #client-workout-panels .workout-floating-finish .workout-floating-secondary,
+  body.client-dashboard-page #client-workout-panels .workout-floating-more > summary {
+    display: grid;
+    place-items: center;
+    flex: 0 0 68px;
+    min-width: 68px;
+    min-height: 56px;
+    padding: 0 8px;
+    border: 1px solid #49515a;
+    border-radius: 14px;
+    background: #22252b;
+    color: #f7f7f8;
+    font: 750 13px var(--font-ui, Inter, sans-serif);
+    cursor: pointer;
+    pointer-events: auto;
+  }
+
+  body.client-dashboard-page #client-workout-panels .workout-floating-more {
+    flex: 0 0 56px;
+    position: relative;
+    pointer-events: auto;
+  }
+
+  body.client-dashboard-page #client-workout-panels .workout-floating-more > summary {
+    box-sizing: border-box;
+    width: 56px;
+    min-width: 56px;
+    font-size: 18px;
+    list-style: none;
+  }
+
+  body.client-dashboard-page #client-workout-panels .workout-floating-more > summary::-webkit-details-marker { display: none; }
+
+  body.client-dashboard-page #client-workout-panels .workout-floating-more > div {
+    position: absolute;
+    left: 0;
+    bottom: calc(100% + 10px);
+    min-width: 164px;
+    padding: 6px;
+    border: 1px solid #49515a;
+    border-radius: 12px;
+    background: #24272d;
+    box-shadow: 0 12px 30px #0009;
+  }
+
+  body.client-dashboard-page #client-workout-panels .workout-floating-more button {
+    width: 100%;
+    min-height: 44px;
+    padding: 10px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: #f7f7f8;
+    font: 700 14px var(--font-ui, Inter, sans-serif);
+    text-align: left;
+    cursor: pointer;
+  }
+
+  body.client-dashboard-page #client-workout-panels .workout-floating-finish :is(button, summary):focus-visible {
     outline: 3px solid #58b5ff;
     outline-offset: 3px;
   }
+
+  :root[data-client-theme="light"] body.client-dashboard-page #client-workout-panels .workout-floating-finish {
+    background: linear-gradient(transparent, rgba(247, 249, 246, .96) 38%, #f7f9f6);
+  }
+
+  :root[data-client-theme="light"] body.client-dashboard-page #client-workout-panels .workout-floating-finish :is(.workout-floating-secondary, .workout-floating-more > summary, .workout-floating-more > div) {
+    background: #fff;
+    color: #1b291f;
+    border-color: #c9d2cb;
+  }
+
+  :root[data-client-theme="light"] body.client-dashboard-page #client-workout-panels .workout-floating-more button { color: #1b291f; }
 
   body.client-dashboard-page:has(#client-workout-panels .client-workout-panel.is-active :is(input, textarea, select):focus) .workout-floating-finish {
     display: none;

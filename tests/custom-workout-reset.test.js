@@ -97,3 +97,50 @@ test("wires the reset action and cache-busts its assets", () => {
   assert.match(dashboard, /css\/style\.css\?v=[^"\s]*workout-preview-1/);
   assert.match(dashboard, /js\/client-portal\.js\?v=[^"\s]*workout-preview-1/);
 });
+
+test("mobile workout bar keeps Reset behind More after starting, for custom and prescribed logs", () => {
+  const barMarkup = Function(`${sourceForFunction("floatingWorkoutFinishMarkup")}; return floatingWorkoutFinishMarkup;`)();
+  const customBar = barMarkup();
+  const assignedBar = barMarkup({ assigned: true });
+
+  for (const markup of [customBar, assignedBar]) {
+    assert.match(markup, /data-floating-workout-reset-action[^>]*>Reset<\/button>/);
+    assert.match(markup, /data-floating-workout-start-action>Start workout<\/button>/);
+    assert.match(markup, /data-floating-workout-more hidden>[\s\S]*More workout actions/);
+    assert.match(markup, /data-floating-workout-finish-action[^>]*hidden>Save &amp; finish workout<\/button>/);
+  }
+  assert.match(customBar, /data-reset-custom-workout/);
+  assert.match(assignedBar, /data-reset-assigned-workout/);
+  assert.match(sourceForFunction("handleWorkoutInteractions"), /resetAssignedWorkout\(resetAssignedWorkoutButton\.closest/);
+});
+
+test("resetting a prescribed log confirms, clears its timer, and reopens a fresh panel", () => {
+  const reset = sourceForFunction("resetAssignedWorkout");
+  const calls = [];
+  const panel = { querySelectorAll: () => [], querySelector: (selector) => selector === "[data-workout-start]"
+    ? { dataset: { workoutTitle: "Trainer Workout" } }
+    : selector === "[data-workout-date]" ? { value: "2026-11-07" } : null };
+  const document = { querySelectorAll: () => [panel] };
+  const window = { confirm: () => false };
+  const fixture = Function("window", "document", "calls", `
+    let workoutElapsedTimerState = { workoutTitle: "Trainer Workout", workoutDate: "2026-11-07" };
+    const currentProgram = { workouts: ["prescription"] };
+    const todayDate = () => "2026-11-07";
+    const cancelTrainingLogAutosaves = () => calls.push("autosaves");
+    const finishWorkoutElapsedTimer = () => calls.push("timer");
+    const renderClientWorkoutTabs = () => calls.push("render");
+    const activateClientWorkoutPanel = () => calls.push("activate");
+    const syncWorkoutPanelDate = () => calls.push("date");
+    const updateExerciseLogField = () => calls.push("log");
+    const syncWorkoutGymLock = () => calls.push("gym");
+    ${reset}
+    return resetAssignedWorkout;
+  `)(window, document, calls);
+
+  assert.equal(fixture(panel), null);
+  assert.deepEqual(calls, []);
+  window.confirm = () => true;
+  assert.equal(fixture(panel), panel);
+  assert.deepEqual(calls, ["autosaves", "timer", "render", "activate", "date", "gym"]);
+  assert.match(reset, /Sets already saved will stay in your history/);
+});

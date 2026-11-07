@@ -21,7 +21,8 @@ function production(name) {
 const functions = [
   'workoutStartControlMarkup', 'workoutActionsMarkup', 'customWorkoutGroupedRoundCardMarkup',
   'customWorkoutCarouselGroupMarkup', 'customWorkoutCarouselMarkup',
-  'customWorkoutPanelMarkup', 'regroupCustomWorkoutCarousels', 'syncWorkoutStartButtons'
+  'customWorkoutPanelMarkup', 'regroupCustomWorkoutCarousels',
+  'floatingWorkoutFinishMarkup', 'syncFloatingWorkoutFinishButtons', 'syncWorkoutStartButtons'
 ].map(production).join('\n');
 const fixture = `
 var activeCustomWorkoutFormat = 'single', workoutElapsedTimerState = null;
@@ -44,8 +45,6 @@ function workoutCarouselExerciseCode(format, group, index) { return String(index
 function setCountFromPrescription() { return 1; }
 function customWorkoutGroupNameEditorMarkup() { return ''; }
 function customWorkoutCardMarkup(exercise) { return '<article data-custom-exercise-card><div data-exercise-log>' + escapeHtml(exercise.name) + '</div></article>'; }
-function floatingWorkoutFinishMarkup() { return ''; }
-function syncFloatingWorkoutFinishButtons() {}
 function customWorkoutMixedGroups(exercises) { return exercises.map((exercise, index) => ({ index, startIndex: index, format: 'single', items: [exercise] })); }
 function customWorkoutCarousels(panel) { return [...panel.querySelectorAll('[data-custom-workout-carousel]')]; }
 function customWorkoutCarouselCards(carousel) { return carousel ? [...carousel.querySelectorAll('[data-custom-exercise-card]')] : []; }
@@ -57,6 +56,15 @@ function renderCase(format, names, active) {
   document.querySelector('#client-workout-panels').innerHTML = customWorkoutPanelMarkup(0);
   const panel = document.querySelector('.client-workout-panel-custom');
   panel.hidden = false;
+  panel.classList.add('is-active');
+  syncWorkoutStartButtons();
+}
+function renderAssignedCase(active) {
+  workoutElapsedTimerState = active ? { workoutTitle: 'Trainer Workout', workoutDate: todayDate(), running: true } : null;
+  document.querySelector('#client-workout-panels').innerHTML = '<section class="client-workout-panel client-workout-panel-assigned is-active" data-custom-workout-title="Trainer Workout">'
+    + '<input data-workout-date value="' + todayDate() + '">'
+    + workoutStartControlMarkup('Trainer Workout')
+    + floatingWorkoutFinishMarkup({ assigned: true }) + '</section>';
   syncWorkoutStartButtons();
 }
 `;
@@ -84,7 +92,17 @@ function renderCase(format, names, active) {
         }
         const primary = page.locator('.client-workout-panel-custom [data-workout-start]');
         assert.equal(await primary.innerText(), 'Start workout', `${format} initial label`);
-        assert.ok(await primary.isVisible(), `${format} Start visible`);
+        assert.equal(await primary.isVisible(), false, `${format} top Start hidden on mobile`);
+        assert.equal(await page.locator('[data-floating-workout-start-action]').isVisible(), true,
+          `${format} floating Start visible`);
+        assert.equal(await page.locator('[data-floating-workout-reset-action]').isVisible(), true,
+          `${format} floating Reset visible`);
+        assert.equal(await page.locator('[data-floating-workout-more]').isVisible(), false,
+          `${format} More hidden until workout starts`);
+        assert.equal(await page.locator('.workout-floating-finish').evaluate(bar => {
+          const rect = bar.getBoundingClientRect();
+          return getComputedStyle(bar).position === 'fixed' && rect.left >= 0 && rect.right <= innerWidth;
+        }), true, `${format} action bar fits the phone viewport`);
         assert.equal(await page.locator('.client-workout-panel-custom [data-custom-workout-default-finish] .workout-finish-button').isVisible(), false,
           `${format} legacy Finish hidden`);
         assert.equal(await page.locator('.client-workout-panel-custom [data-workout-finish-later]').filter({ visible: true }).count(), 0,
@@ -93,10 +111,51 @@ function renderCase(format, names, active) {
         if (await grouped.count()) assert.equal(await grouped.isVisible(), false, `${format} grouped footer hidden`);
         await page.evaluate(([f, n]) => renderCase(f, n, true), [format, names]);
         assert.equal(await primary.innerText(), 'Finish workout', `${format} active label`);
-        assert.ok(await primary.isVisible(), `${format} Finish visible`);
+        assert.equal(await page.locator('[data-floating-workout-finish-action]').isVisible(), true,
+          `${format} floating Finish visible`);
+        assert.equal(await page.locator('[data-floating-workout-reset-action]').isVisible(), false,
+          `${format} direct Reset hidden after Start`);
+        assert.equal(await page.locator('[data-floating-workout-more]').isVisible(), true,
+          `${format} reset menu available after Start`);
+        assert.equal(await page.locator('[data-floating-workout-more] [data-reset-custom-workout]').isVisible(), false,
+          `${format} Reset requires opening More`);
+        await page.locator('[data-floating-workout-more] > summary').click();
+        assert.equal(await page.locator('[data-floating-workout-more] [data-reset-custom-workout]').isVisible(), true,
+          `${format} More reveals Reset`);
+        assert.equal(await page.locator('[data-floating-workout-more] > div').evaluate(menu => {
+          const rect = menu.getBoundingClientRect();
+          return rect.left >= 0 && rect.right <= innerWidth;
+        }), true, `${format} reset menu fits the phone viewport`);
+      }
+      for (const active of [false, true]) {
+        await page.evaluate(active => renderAssignedCase(active), active);
+        assert.equal(await page.locator('.client-workout-panel-assigned > .workout-start-control').isVisible(), false,
+          'trainer Start control is replaced by the floating bar on mobile');
+        assert.equal(await page.locator('[data-floating-workout-start-action]').isVisible(), !active,
+          'trainer floating Start follows session state');
+        assert.equal(await page.locator('[data-floating-workout-finish-action]').isVisible(), active,
+          'trainer floating Finish follows session state');
+        assert.equal(await page.locator('[data-floating-workout-more]').isVisible(), active,
+          'trainer reset menu follows session state');
+        if (active) {
+          assert.equal(await page.locator('[data-floating-workout-more] [data-reset-assigned-workout]').isVisible(), false,
+            'trainer Reset requires opening More');
+          await page.locator('[data-floating-workout-more] > summary').click();
+          assert.equal(await page.locator('[data-floating-workout-more] [data-reset-assigned-workout]').isVisible(), true,
+            'trainer More reveals Reset');
+          assert.equal(await page.locator('[data-floating-workout-more] > div').evaluate(menu => {
+            const rect = menu.getBoundingClientRect();
+            return rect.left >= 0 && rect.right <= innerWidth;
+          }), true, 'trainer reset menu fits the phone viewport');
+          await page.evaluate(() => { document.documentElement.dataset.clientTheme = 'light'; });
+          assert.equal(await page.locator('[data-floating-workout-more] > div').evaluate(menu =>
+            getComputedStyle(menu).backgroundColor), 'rgb(255, 255, 255)',
+          'trainer reset menu follows light mode');
+          await page.evaluate(() => { delete document.documentElement.dataset.clientTheme; });
+        }
       }
       await page.close();
-      process.stdout.write(`${browserName} ${width}px: empty, single, superset, circuit primary action passed\n`);
+      process.stdout.write(`${browserName} ${width}px: quick and trainer floating actions passed\n`);
     }
   } finally { await browser.close(); }
 })().catch(error => { console.error(error); process.exit(1); });
