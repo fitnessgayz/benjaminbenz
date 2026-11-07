@@ -9293,9 +9293,9 @@ function renderWorkoutResumeActions() {
   const homeAction = document.querySelector(".client-home-workout-action");
   if (homeAction) homeAction.hidden = !hasActiveWorkout;
   const startNext = document.querySelector("[data-client-home-start-next]");
-  if (startNext) startNext.hidden = hasActiveWorkout;
+  if (startNext) startNext.hidden = false;
   const nextWorkoutCard = document.querySelector(".client-home-next");
-  if (nextWorkoutCard) nextWorkoutCard.hidden = hasActiveWorkout;
+  if (nextWorkoutCard) nextWorkoutCard.hidden = false;
   if (homeActionLabel) homeActionLabel.textContent = "Resume Workout";
   if (homeActionNote) {
     homeActionNote.hidden = !hasActiveWorkout;
@@ -9336,7 +9336,8 @@ function syncWorkoutStartButtons() {
     button.classList.toggle("is-active", isActiveWorkout);
 
     if (!workoutElapsedTimerState) {
-      button.textContent = "Start";
+      button.textContent = button.closest(".client-workout-panel-custom:not(.has-custom-exercises)")
+        ? "Start workout" : "Start";
     } else if (!isActiveWorkout) {
       button.textContent = "Workout timer active";
     } else if (workoutElapsedTimerState.dismissed) {
@@ -13399,6 +13400,13 @@ function customWorkoutPanelMarkup(index) {
         </div>
       </div>
       <p class="custom-workout-copy-status" data-custom-workout-copy-status role="status" aria-live="polite" ${copyStatusMessage ? "" : "hidden"}>${escapeHtml(copyStatusMessage)}</p>
+      <button type="button" class="custom-workout-setup-summary" data-custom-workout-setup-toggle aria-expanded="false" aria-label="Edit workout date, gym, and format">
+        <span>▦ ${escapeHtml(formatLogDate(todayDate()).replace(/,?\s*\d{4}$/, ""))}</span>
+        <span>🏋 ${escapeHtml(activeDraft?.gymName || storedWorkoutGymLocation(workoutStorageTitle) || "Gym")}</span>
+        <span>◇ ${escapeHtml(format === "single" ? "Straight Sets" : format === "superset" ? "Superset" : "Circuit")}</span>
+        <span aria-hidden="true">✎</span>
+      </button>
+      <div class="custom-workout-setup-fields">
       <label class="custom-workout-session-date workout-session-date workout-compact-date">
         <span class="workout-date-icon" aria-hidden="true">▦</span>
         <span class="workout-date-label">Date</span>
@@ -13410,12 +13418,15 @@ function customWorkoutPanelMarkup(index) {
       </label>
       <div class="custom-workout-launcher-gym">${workoutGymPickerMarkup(activeDraft?.gymName || storedWorkoutGymLocation(workoutStorageTitle), index)}</div>
       <div class="workout-compact-format"><h3>Format</h3>${customWorkoutFormatPickerMarkup()}</div>
+      </div>
       <div class="custom-workout-builder">
         <div class="custom-workout-primary-actions">
-          <div data-custom-workout-start-control ${format === "single" ? "" : "hidden"}>
+          <div data-custom-workout-start-control ${exercises.length && format !== "single" ? "hidden" : ""}>
             ${workoutStartControlMarkup(workoutStorageTitle)}
           </div>
-          <button type="button" class="custom-workout-reset-button" data-reset-custom-workout>Reset</button>
+          ${exercises.length
+            ? '<button type="button" class="custom-workout-reset-button" data-reset-custom-workout>Reset</button>'
+            : '<details class="custom-workout-launcher-options"><summary aria-label="Workout options">•••</summary><div><button type="button" data-reset-custom-workout>Reset workout</button><button type="button" data-generate-workout>Generate workout</button></div></details>'}
         </div>
         <p class="custom-workout-reset-status" data-custom-workout-reset-status role="status" aria-live="polite" hidden></p>
         <div class="custom-workout-launcher-exercise-card">
@@ -13737,7 +13748,7 @@ function updateCustomWorkoutFormat(panel, value, options = {}) {
   }
   const workoutStartControl = panel.querySelector("[data-custom-workout-start-control]");
   if (workoutStartControl) {
-    workoutStartControl.hidden = format !== "single";
+    workoutStartControl.hidden = format !== "single" && customWorkoutExercises(format).length > 0;
   }
 
   syncCustomWorkoutFormatMarkers(panel);
@@ -20033,6 +20044,7 @@ function handleWorkoutInteractions() {
     const workoutElapsedCompactButton = event.target.closest("[data-workout-elapsed-compact]");
     const workoutElapsedCloseButton = event.target.closest("[data-workout-elapsed-close]");
     const resetCustomWorkoutButton = event.target.closest("[data-reset-custom-workout]");
+    const customWorkoutSetupToggle = event.target.closest("[data-custom-workout-setup-toggle]");
 
     if (workoutLaterButton) {
       finishWorkoutLater(workoutLaterButton);
@@ -20193,6 +20205,13 @@ function handleWorkoutInteractions() {
 
     if (cancelActiveWorkoutButton) {
       cancelActiveWorkout();
+      return;
+    }
+
+    if (customWorkoutSetupToggle) {
+      const panel = customWorkoutSetupToggle.closest(".client-workout-panel-custom");
+      const expanded = panel?.classList.toggle("is-editing-setup") || false;
+      customWorkoutSetupToggle.setAttribute("aria-expanded", String(expanded));
       return;
     }
 
