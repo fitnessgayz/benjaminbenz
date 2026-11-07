@@ -33,10 +33,12 @@ test("Home shows the Wall feed and keeps the daily check-in prompt without an At
   assert.match(home, /data-client-home-checkin-backdrop hidden/);
   assert.match(homeBehavior, /const allCards = \[\.\.\.wall\.querySelectorAll\('\.client-community-wall-card'\)\];/);
   assert.match(homeStyles, /\.client-manual-daily-checkin \{ display: none !important; \}/);
-  assert.match(home, /data-client-home-gym-action>Gym check-in/);
+  assert.match(home, /data-client-home-gym-action disabled>Gym check-in/);
   assert.match(home, /id="client-gym-checkin"/);
-  assert.doesNotMatch(homeStyles, /\.client-weekly-activity,\s*:root body\.client-dashboard-page \.client-home-gym-pill,/);
-  assert.match(homeBehavior, /gymAction\?\.addEventListener\('click'/);
+  assert.doesNotMatch(home, /id="client-gym-name"/);
+  assert.match(homeStyles, /\.client-home-week-actions\s*\{\s*display:\s*grid;\s*grid-template-columns:\s*1fr/);
+  assert.match(homeStyles, /\.client-weekly-activity \{ display: none !important; \}/);
+  assert.match(fs.readFileSync(path.join(root, "js/client-weekly-activity.js"), "utf8"), /homeButton\?\.addEventListener\('click', \(\) => \{ void checkIn\(\)/);
   assert.match(portal, /function maybeShowClientHomeCheckinPrompt\(\)/);
   assert.match(portal, /window\.FWB_GYM_CHECKIN_PROMPT\?\.maybeShow\(/);
 });

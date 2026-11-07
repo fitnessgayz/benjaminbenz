@@ -77,7 +77,7 @@
   color: #c5c8d0; font-size: 18px;
 }
 :root body.client-dashboard-page .client-home-week-actions {
-  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 9px;
+  display: grid; grid-template-columns: 1fr; gap: 9px;
 }
 :root body.client-dashboard-page .client-home-week-streak,
 :root body.client-dashboard-page .client-home-gym-pill {
@@ -92,6 +92,9 @@
   border: 0; border-radius: 24px !important;
   background: linear-gradient(180deg, #78bfff, #55a9f3); color: #09121b;
 }
+:root body.client-dashboard-page .client-home-gym-pill:disabled { opacity: .65; cursor: default; }
+:root body.client-dashboard-page .client-home-gym-status { margin: 8px 2px 0; color: #bfc3cc; font-size: 13px; }
+:root body.client-dashboard-page .client-home-gym-status:empty { display: none; }
 :root body.client-dashboard-page .client-home-week-days { margin-top: 13px; padding: 8px 4px; border-radius: 14px; background: #202228; }
 :root body.client-dashboard-page .client-home-week-days button {
   min-height: 64px !important; padding: 5px 1px !important; background: transparent !important;
@@ -120,6 +123,7 @@
 :root body.client-dashboard-page .client-home-week-legend span:last-child i { background: #69b8fa; }
 :root body.client-dashboard-page .client-home-week-detail[hidden] { display: none !important; }
 :root body.client-dashboard-page .client-home-community { order: 4; }
+:root body.client-dashboard-page .client-weekly-activity { display: none !important; }
 :root body.client-dashboard-page .client-manual-daily-checkin { display: none !important; }
 :root body.client-dashboard-page .client-home-checkin-links { order: 5; }
 :root body.client-dashboard-page .client-weekly-activity { order: 6; }
@@ -139,6 +143,7 @@
 :root[data-client-theme="light"] body.client-dashboard-page .client-home-week-days { background: #eef2f5; }
 :root[data-client-theme="light"] body.client-dashboard-page .client-home-week-days button strong { color: #172430 !important; }
 :root[data-client-theme="light"] body.client-dashboard-page .client-home-week-legend { color: #52606b; }
+:root[data-client-theme="light"] body.client-dashboard-page .client-home-gym-status { color: #52606b; }
 :root[data-client-theme="light"] body.client-dashboard-page .client-home-eyebrow,
 :root[data-client-theme="light"] body.client-dashboard-page .client-home-planner .client-home-week-title {
   color: #866400 !important;

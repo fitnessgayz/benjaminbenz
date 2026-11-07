@@ -179,14 +179,6 @@
     if (weekStreak) weekStreak.textContent = String(count);
     renderNextWorkout();
   }
-  const gymAction = document.querySelector('[data-client-home-gym-action]');
-  gymAction?.addEventListener('click', () => {
-    const compact = document.querySelector('.client-gym-compact');
-    if (compact) {
-      compact.open = true;
-      compact.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
-  });
   const gymDaysHost = document.getElementById('client-weekly-days');
   if (gymDaysHost) new MutationObserver(() => renderPlanner()).observe(gymDaysHost, { childList: true });
   async function refreshSchedule() {

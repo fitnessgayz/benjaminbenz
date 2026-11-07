@@ -96,7 +96,7 @@
   <link rel="stylesheet" href="css/client-home-workout-action.css?v=2" />
   <link rel="stylesheet" href="css/client-home-selected.css?v=1" />
   <link rel="stylesheet" href="css/client-home-logs-preview.css?v=3" />
-  <link rel="stylesheet" href="css/client-home-approved.css?v=3" />
+  <link rel="stylesheet" href="css/client-home-approved.css?v=4" />
   <link rel="stylesheet" href="css/client-picker-approved.css?v=3" />
   <link rel="stylesheet" href="css/client-workout-empty-centered.css?v=5" />
   <link rel="stylesheet" href="css/client-logs-compact.css?v=5" />
@@ -235,10 +235,6 @@
                 </details>
                 <p class="client-weekly-caption" id="client-weekly-status" role="status">Loading weekly activity…</p>
               </div>
-              <label class="client-gym-name-field" for="client-gym-name">
-                <span>Gym name <small>(optional)</small></span>
-                <input id="client-gym-name" type="text" maxlength="120" autocomplete="off" placeholder="Where are you training?" />
-              </label>
               <button class="button client-gym-checkin" id="client-gym-checkin" type="button" disabled>
                 <span class="client-gym-checkin-icon" aria-hidden="true">✓</span><span data-client-gym-checkin-label>Gym check-in</span>
               </button>
@@ -281,8 +277,9 @@
               </div>
               <div class="client-home-week-actions">
                 <span class="client-home-week-streak">♨ <strong data-client-home-week-streak>0</strong> week streak</span>
-                <button type="button" class="client-home-gym-pill" data-client-home-gym-action>Gym check-in</button>
+                <button type="button" class="client-home-gym-pill" data-client-home-gym-action disabled>Gym check-in</button>
               </div>
+              <p class="client-home-gym-status" data-client-home-gym-status role="status" aria-live="polite"></p>
               <div class="client-home-week-days" data-client-home-week-days aria-label="Workout activity this week"></div>
               <div class="client-home-week-legend"><span><i></i> workout</span><span><i></i> gym</span></div>
               <button type="button" class="client-home-week-detail" data-client-home-week-detail data-client-summary-go-tab="workouts">Choose a day to see its activity.</button>
@@ -1441,8 +1438,8 @@
   <script src="js/web-notifications.js?v=coach-activity-likes-5&amp;client-login-alert=1&amp;compact-activity-inbox=4"></script>
   <script src="https://cdn.jsdelivr.net/npm/@zxing/browser@0.2.1/umd/zxing-browser.min.js" integrity="sha384-HRtzk9lZgkbSgvUyQrnfC/GxiXZgwaNyD7hC9wcXlsBpDhkS80ISl73juef2FRuf" crossorigin="anonymous"></script>
   <script src="js/workout-layout.js?v=exercise-preview-3"></script>
-  <script src="js/client-weekly-activity.js?v=home-community-2&amp;gym-name=1"></script>
-  <script src="js/client-gym-checkin-prompt.js?v=2"></script>
+  <script src="js/client-weekly-activity.js?v=home-community-2&amp;gym-name=1&amp;home-checkin=1"></script>
+  <script src="js/client-gym-checkin-prompt.js?v=3"></script>
   <script src="js/apple-workout.js?v=3"></script>
   <script src="js/google-health.js?v=1"></script>
   <script src="js/profile-photo-store.js?v=2"></script>
