@@ -327,10 +327,12 @@ test("changing set counts preserves entered rows and blocks destructive reductio
 test("accepts optional warm-ups while validating working reps", () => {
   const fieldMarkup = sourceForFunction("customWorkoutGroupedFieldMarkup");
   const validate = sourceForFunction("validateCustomWorkoutGroupedSection");
+  const placeholder = sourceForFunction("numericSetPlaceholder");
+  const applyPlaceholder = sourceForFunction("applyNumericSetPlaceholder");
   const validateSection = Function(
     "customWorkoutGroupedStatus",
     "warmUpSetType",
-    `${validate}; return validateCustomWorkoutGroupedSection;`,
+    `${placeholder}; ${applyPlaceholder}; ${validate}; return validateCustomWorkoutGroupedSection;`,
   )(() => null, "warm_up");
   const input = (value) => ({
     value,
@@ -375,6 +377,67 @@ test("accepts optional warm-ups while validating working reps", () => {
   assert.equal(validateSection(section([zeroRepWorkingSet]), { focus: false }).valid, false);
   assert.equal(zeroRepWorkingSet.fields.reps.invalid, true);
 
+});
+
+test("grey numeric set values become logged inputs, with zero allowed only for weight", () => {
+  const source = ["numericSetPlaceholder", "applyNumericSetPlaceholder", "validateCustomWorkoutGroupedSection"]
+    .map(sourceForFunction).join("\n");
+  const canonical = { weight: { value: "" }, reps: { value: "" }, querySelector(selector) {
+    return this[selector.includes("weight") ? "weight" : "reps"];
+  } };
+  const validate = Function("canonical", "warmUpSetType", `
+    const customWorkoutGroupedStatus = () => null;
+    const customWorkoutGroupedCanonicalRow = () => canonical;
+    ${source}
+    return validateCustomWorkoutGroupedSection;
+  `)(canonical, "warm_up");
+  const input = (placeholder) => ({ value: "", placeholder, setAttribute() {}, removeAttribute() {}, focus() {} });
+  const row = (weightPlaceholder, repsPlaceholder) => {
+    const fields = { weight: input(weightPlaceholder), reps: input(repsPlaceholder) };
+    return { dataset: { customGroupedSetType: "working", customGroupedExerciseIndex: "0", customGroupedSetNumber: "1" },
+      fields, closest: () => ({}), querySelector(selector) {
+        return fields[selector.includes('="weight"') ? "weight" : "reps"];
+      } };
+  };
+  const section = (item) => ({ querySelectorAll: () => [item], closest: () => null });
+
+  const valid = row("0", "8");
+  assert.equal(validate(section(valid), { focus: false }).valid, true);
+  assert.equal(valid.fields.weight.value, "0");
+  assert.equal(valid.fields.reps.value, "8");
+  assert.equal(canonical.weight.value, "0");
+  assert.equal(canonical.reps.value, "8");
+
+  const zeroReps = row("0", "0");
+  assert.equal(validate(section(zeroReps), { focus: false }).valid, false);
+  assert.equal(zeroReps.fields.weight.value, "0");
+  assert.equal(zeroReps.fields.reps.value, "");
+
+  const range = row("45", "8–12");
+  assert.equal(validate(section(range), { focus: false }).valid, false);
+  assert.equal(range.fields.reps.value, "");
+});
+
+test("explicit warm-up Log accepts grey numeric values without auto-logging optional warm-ups", () => {
+  const source = ["numericSetPlaceholder", "completeEnteredCustomWorkoutWarmUps"].map(sourceForFunction).join("\n");
+  const canonical = { classList: { contains: () => false } };
+  const run = Function("rows", "canonical", `
+    const warmUpSetType = "warm_up";
+    const customWorkoutGroupedStatus = () => null;
+    const validateCustomWorkoutGroupedSection = () => ({ valid: true });
+    const customWorkoutGroupedCanonicalRow = () => canonical;
+    const setCustomWorkoutGroupedRowComplete = () => {};
+    ${source}
+    const section = { querySelectorAll: () => rows };
+    const carousel = { querySelector: () => section };
+    return (options) => completeEnteredCustomWorkoutWarmUps(carousel, options);
+  `)([{ querySelectorAll: () => [
+    { value: "", placeholder: "0" }, { value: "", placeholder: "10" }
+  ], querySelector(selector) { return selector.includes('="weight"')
+    ? { value: "", placeholder: "0" } : { value: "", placeholder: "10" }; },
+  dataset: { customGroupedExerciseIndex: "0", customGroupedSetType: "warm_up", customGroupedSetNumber: "1001" } }], canonical);
+  assert.equal(run({}).rows.length, 1);
+  assert.equal(run({ optional: true }).rows.length, 0);
 });
 
 test("starts the persistent workout timer and rest timer after a successful round log", () => {

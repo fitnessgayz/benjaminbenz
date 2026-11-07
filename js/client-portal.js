@@ -10422,6 +10422,23 @@ function customWorkoutGroupedCopyValue(value, field = "weight") {
   return String(number);
 }
 
+function numericSetPlaceholder(input, field) {
+  const raw = String(input?.placeholder || "").trim();
+  if (!/^(?:\d+|\d*\.\d+)$/.test(raw)) return null;
+  const value = Number(raw);
+  if (!Number.isFinite(value) || value < 0) return null;
+  if (field === "reps" && (!Number.isInteger(value) || value <= 0)) return null;
+  return raw;
+}
+
+function applyNumericSetPlaceholder(input, field) {
+  if (!input || String(input.value || "").trim() !== "") return false;
+  const value = numericSetPlaceholder(input, field);
+  if (value === null) return false;
+  input.value = value;
+  return true;
+}
+
 function previousCustomWorkoutGroupedValue(logElement, roundNumber, field = "weight") {
   if (!Number.isInteger(roundNumber) || roundNumber <= 1) return null;
   const previousRow = customWorkoutGroupedRows(logElement, workingSetType)[roundNumber - 2];
@@ -11258,6 +11275,21 @@ function validateCustomWorkoutGroupedSection(section, options = {}) {
     const weight = row.querySelector('[data-custom-grouped-field="weight"]');
     const reps = row.querySelector('[data-custom-grouped-field="reps"]');
     const isWarmUp = row.dataset.customGroupedSetType === warmUpSetType;
+    const defaultedWeight = applyNumericSetPlaceholder(weight, "weight");
+    const defaultedReps = applyNumericSetPlaceholder(reps, "reps");
+    if (defaultedWeight || defaultedReps) {
+      const carousel = row.closest?.("[data-custom-workout-grouped='true']");
+      const canonical = carousel && customWorkoutGroupedCanonicalRow(carousel,
+        row.dataset.customGroupedExerciseIndex, row.dataset.customGroupedSetType, row.dataset.customGroupedSetNumber);
+      if (defaultedWeight) {
+        const input = canonical?.querySelector("[data-set-weight]");
+        if (input) input.value = weight.value;
+      }
+      if (defaultedReps) {
+        const input = canonical?.querySelector("[data-set-reps]");
+        if (input) input.value = reps.value;
+      }
+    }
     const weightRaw = String(weight?.value || "").trim();
     const repsRaw = String(reps?.value || "").trim();
     const weightValue = Number(weight?.value);
@@ -11289,13 +11321,21 @@ function completeEnteredCustomWorkoutWarmUps(carousel, options = {}) {
   const warmUpSection = carousel?.querySelector('.custom-workout-grouped-section[data-kind="warmup"]');
   if (!warmUpSection) return { valid: true, rows: [], previousStates: [] };
 
-  let enteredRows = Array.from(warmUpSection.querySelectorAll(".custom-workout-grouped-row")).filter((row) => (
-    Array.from(row.querySelectorAll("[data-custom-grouped-field]")).some((input) => String(input.value || "").trim() !== "")
-  ));
+  let enteredRows = Array.from(warmUpSection.querySelectorAll(".custom-workout-grouped-row")).filter((row) => {
+    const inputs = Array.from(row.querySelectorAll("[data-custom-grouped-field]"));
+    if (inputs.some((input) => String(input.value || "").trim() !== "")) return true;
+    if (options.optional) return false;
+    return ["weight", "reps"].every((field) => numericSetPlaceholder(
+      row.querySelector(`[data-custom-grouped-field="${field}"]`), field
+    ) !== null);
+  });
   // A working set must never be blocked by an optional, unfinished warm-up.
   if (options.optional) {
     enteredRows = enteredRows.filter((row) => {
-      const value = (field) => String(row.querySelector(`[data-custom-grouped-field="${field}"]`)?.value || "").trim();
+      const value = (field) => {
+        const input = row.querySelector(`[data-custom-grouped-field="${field}"]`);
+        return String(input?.value || numericSetPlaceholder(input, field) || "").trim();
+      };
       const weight = value("weight"), reps = value("reps");
       return weight !== "" && reps !== "" && Number.isFinite(Number(weight)) && Number(weight) >= 0 &&
         Number.isFinite(Number(reps)) && Number(reps) >= 0;
@@ -20437,6 +20477,8 @@ function handleWorkoutInteractions() {
       }
       const weight = setRow.querySelector("[data-set-weight]");
       const reps = setRow.querySelector("[data-set-reps]");
+      applyNumericSetPlaceholder(weight, "weight");
+      applyNumericSetPlaceholder(reps, "reps");
       const weightValue = customWorkoutGroupedCopyValue(weight?.value);
       const isWarmUp = setTypeForRow(setRow) === warmUpSetType;
       const repsValue = isWarmUp ? customWorkoutGroupedCopyValue(reps?.value) : customWorkoutGroupedCopyValue(reps?.value, "reps");
@@ -22144,15 +22186,17 @@ function workoutFinishIssues(section, options = {}) {
       const label = `${name} · ${unit} ${number}`;
       const target = (field) => visibleRow?.querySelector(`[data-custom-grouped-field="${field}"]`) ||
         row.querySelector(`[data-set-${field}]`);
+      const weightRaw = values.weightRaw || numericSetPlaceholder(target("weight"), "weight") || "";
+      const repsRaw = values.repsRaw || numericSetPlaceholder(target("reps"), "reps") || "";
       const missing = [];
       if (!enteredName && !nameReported) {
         issues.push({ message: `${name}: enter the exercise name.`, target: nameField });
         nameReported = true;
       }
-      if (values.weightRaw === "" || !Number.isFinite(values.weightValue) || values.weightValue < 0) {
+      if (weightRaw === "" || !Number.isFinite(Number(weightRaw)) || Number(weightRaw) < 0) {
         missing.push(["weight", "enter weight (0 is allowed)"]);
       }
-      if (values.repsRaw === "" || !Number.isFinite(values.repsValue) || values.repsValue <= 0) {
+      if (repsRaw === "" || !Number.isFinite(Number(repsRaw)) || Number(repsRaw) <= 0) {
         missing.push(["reps", "enter reps above 0"]);
       }
       missing.forEach(([field, message]) => issues.push({ message: `${label}: ${message}.`, target: target(field) }));
@@ -22555,6 +22599,12 @@ async function handleTrainingLogSave() {
           section.querySelector('[data-custom-grouped-warmup-saving="true"]') ||
           section.querySelector('[data-custom-workout-grouped="true"][data-custom-grouped-row-saving="true"]')) {
         showWorkoutFinishIssues(difficultyTrigger, [{ message: `Your latest entries are still saving. Wait a moment, then tap ${finishLabel} again.`, target: difficultyTrigger }]);
+        return;
+      }
+      if (typeof globalThis.confirm === "function" && !globalThis.confirm(
+        isCardioOnly ? "Save and finish this cardio workout?" : "Save and finish this workout?"
+      )) {
+        if (allowIncompleteWorkoutFinish) workoutButton.dataset.allowIncompleteWorkoutFinish = "true";
         return;
       }
 

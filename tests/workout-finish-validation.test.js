@@ -124,7 +124,7 @@ function fixture({ format = "single", assigned = false, grouped = true } = {}) {
     warmUpSetType: "warm_up", workingSetType: "working", warmUpSetNumberBase: 1000
   });
   const helpers = [
-    "normalizedSetType", "setTypeForRow", "setRowInputValues", "setNumberLabel", "warmUpOrdinal",
+    "normalizedSetType", "setTypeForRow", "setRowInputValues", "numericSetPlaceholder", "setNumberLabel", "warmUpOrdinal",
     "exerciseNameInputForLog", "currentExerciseLabel", "workoutSetUnit",
     "customWorkoutCarouselCards", "customWorkoutGroupedLogElements", "customWorkoutGroupedRows", "customWorkoutGroupedCanonicalRow",
     "showWorkoutFinishIssues", "workoutSectionForButton",
@@ -247,6 +247,44 @@ test("unused named and unnamed exercise cards do not block finishing completed w
     h.addExercise("Unused row", [{ weight: "", reps: "" }]);
     assert.equal(h.issues().length, 0, `${assigned ? "assigned" : "custom"} ${format}`);
   }
+});
+
+test("finish guidance accepts numeric grey defaults but still requires Log and rejects grey zero reps", () => {
+  const h = fixture({ format: "superset" });
+  const exercise = h.addExercise("Press", [{ weight: "", reps: "8" }]);
+  exercise.rows[0].visibleFields.weight.placeholder = "0";
+  assert.match(h.issues()[0].message, /tap Log/);
+  exercise.rows[0].fields.weight.value = "20";
+  exercise.rows[0].fields.reps.value = "";
+  exercise.rows[0].visibleFields.reps.placeholder = "0";
+  assert.match(h.issues()[0].message, /enter reps above 0/);
+  exercise.rows[0].visibleFields.reps.placeholder = "10";
+  assert.match(h.issues()[0].message, /tap Log/);
+});
+
+test("canceling the finish confirmation leaves workout saving untouched", async () => {
+  const calls = [];
+  let onClick;
+  const button = { dataset: {} };
+  const panel = {
+    dataset: {}, classList: { contains: () => false },
+    querySelectorAll: () => [], querySelector: () => null
+  };
+  const sandbox = {
+    document: { addEventListener: (_type, callback) => { onClick = callback; } },
+    confirm: () => { calls.push("confirm"); return false; },
+    workoutSectionForButton: () => panel,
+    requireWorkoutGymLocation: () => true,
+    workoutFinishIssues: () => [],
+    showWorkoutFinishIssues: () => true,
+    cancelTrainingLogAutosaves: () => calls.push("cancel autosave"),
+    saveTrainingLogRows: () => calls.push("save")
+  };
+  vm.runInNewContext(functionSource("handleTrainingLogSave"), sandbox);
+  await sandbox.handleTrainingLogSave();
+  await onClick({ target: { closest: (selector) => selector === "[data-workout-finish]" ? button : null } });
+  assert.deepEqual(calls, ["confirm"]);
+  assert.equal(panel.dataset.workoutFinishing, undefined);
 });
 
 test("allowUnstarted skips only untouched blank working rows, preserving edited and reopened requirements", () => {
