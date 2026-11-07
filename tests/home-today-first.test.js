@@ -31,9 +31,12 @@ test("Home keeps the avatar and notifications in its compact header", () => {
 test("Home shows the Wall feed and keeps the daily check-in prompt without an Atari button", () => {
   assert.doesNotMatch(home, /class="client-home-atari"/);
   assert.match(home, /data-client-home-checkin-backdrop hidden/);
-  assert.match(homeBehavior, /const cards = \[\.\.\.wall\.querySelectorAll\('\.client-community-wall-card'\)\];/);
+  assert.match(homeBehavior, /const allCards = \[\.\.\.wall\.querySelectorAll\('\.client-community-wall-card'\)\];/);
   assert.match(homeStyles, /\.client-manual-daily-checkin \{ display: none !important; \}/);
-  assert.match(homeStyles, /\.client-home-gym-pill,/);
+  assert.match(home, /data-client-home-gym-action>Gym check-in/);
+  assert.match(home, /id="client-gym-checkin"/);
+  assert.doesNotMatch(homeStyles, /\.client-weekly-activity,\s*:root body\.client-dashboard-page \.client-home-gym-pill,/);
+  assert.match(homeBehavior, /gymAction\?\.addEventListener\('click'/);
   assert.match(portal, /function maybeShowClientHomeCheckinPrompt\(\)/);
   assert.match(portal, /window\.FWB_GYM_CHECKIN_PROMPT\?\.maybeShow\(/);
 });
