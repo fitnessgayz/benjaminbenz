@@ -560,7 +560,7 @@ test("shows the grouped session timer and finish action on the last group only",
   assert.match(groupedMarkup, /\$\{showSessionControls \? `[\s\S]*?data-custom-grouped-timer[\s\S]*?` : ""\}/);
   assert.match(
     groupedMarkup,
-    /\$\{showSessionControls \? '<footer class="custom-workout-grouped-actions"><button type="button" data-custom-grouped-finish-workout>Finish workout<\/button><button class="workout-later-button" type="button" data-workout-finish-later>Finish workout later<\/button><\/footer>' : ""\}/,
+    /\$\{showSessionControls \? `<footer class="custom-workout-grouped-actions"\$\{options\.assigned \? "" : " hidden"\}>[\s\S]*?data-custom-grouped-finish-workout[\s\S]*?data-workout-finish-later[\s\S]*?<\/footer>` : ""\}/,
   );
   assert.match(initialGroups, /isLastGroup: index === groups\.length - 1/);
   assert.match(regroup, /isLastGroup: index === desiredGroups\.length - 1/);
@@ -642,12 +642,12 @@ test("validates before saving and protects the grouped final save from deleting 
     "Invalid fields must be explained before a persistence attempt");
 });
 
-test("shows Start before grouped exercise selection and hides it after selection", () => {
+test("keeps the primary Start or Finish action visible after grouped exercise selection", () => {
   const panelMarkup = sourceForFunction("customWorkoutPanelMarkup");
 
   assert.match(
     panelMarkup,
-    /<div data-custom-workout-start-control \$\{exercises\.length && format !== "single" \? "hidden" : ""\}>/,
+    /<div data-custom-workout-start-control>/,
   );
   assert.match(panelMarkup, /\$\{workoutStartControlMarkup\(workoutStorageTitle\)\}/);
 });
@@ -729,7 +729,7 @@ test("rebuilds a grouped custom panel from its draft when switching back to Stra
   assert.match(replacePanel, /syncWorkoutStartButtons\(\)/);
   assert.match(
     panelMarkup,
-    /<div data-custom-workout-default-finish \$\{format === "single" \? "" : "hidden"\}>/,
+    /<div data-custom-workout-default-finish hidden>/,
   );
 });
 

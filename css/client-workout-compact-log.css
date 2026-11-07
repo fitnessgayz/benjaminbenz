@@ -1,4 +1,11 @@
 /* Prescribed, generated, and custom logs share the compact five-column grid. */
+/* The quick workout uses its yellow Start/Finish control. Keep the legacy
+   completion buttons in the DOM for the existing save flow, but out of view. */
+body.client-dashboard-page .client-workout-panel-custom [data-custom-workout-default-finish],
+body.client-dashboard-page .client-workout-panel-custom .custom-workout-grouped-actions[hidden] {
+  display: none !important;
+}
+
 .client-workout-panel-custom .workout-exercise-list.is-empty-custom-workout > :not(.workout-exercise-list-add) {
   display: none !important;
 }

@@ -10029,7 +10029,7 @@ function customWorkoutGroupedRoundCardMarkup(format, exercises, groupIndex = 0, 
             <time data-custom-grouped-timer-time datetime="PT0S">00:00</time>
           </div>
         ` : ""}
-        ${showSessionControls ? '<footer class="custom-workout-grouped-actions"><button type="button" data-custom-grouped-finish-workout>Finish workout</button><button class="workout-later-button" type="button" data-workout-finish-later>Finish workout later</button></footer>' : ""}
+        ${showSessionControls ? `<footer class="custom-workout-grouped-actions"${options.assigned ? "" : " hidden"}><button type="button" data-custom-grouped-finish-workout>Finish workout</button><button class="workout-later-button" type="button" data-workout-finish-later>Finish workout later</button></footer>` : ""}
         <p class="custom-workout-grouped-status" data-custom-grouped-status aria-live="polite"></p>
       </article>
       <div class="custom-workout-grouped-source" data-custom-workout-grouped-source hidden aria-hidden="true">
@@ -11742,7 +11742,9 @@ function openCustomWorkoutGroupedFinishPanel(button) {
 
   const overlay = ensureCustomWorkoutGroupedFinishPanel();
   const summary = overlay.querySelector("[data-custom-grouped-finish-summary]");
-  customGroupedFinishReturnFocus = button;
+  customGroupedFinishReturnFocus = panel.classList.contains("client-workout-panel-custom")
+    ? panel.querySelector("[data-workout-start]") || button
+    : button;
   overlay.dataset.customGroupedFinishCarouselGroup = carousel.dataset.customWorkoutGroup || "0";
   if (summary) summary.textContent = `${loggedRounds} round${loggedRounds === 1 ? "" : "s"} logged and saved.`;
   overlay.hidden = false;
@@ -13428,7 +13430,7 @@ function customWorkoutPanelMarkup(index) {
       </div>
       <div class="custom-workout-builder">
         <div class="custom-workout-primary-actions">
-          <div data-custom-workout-start-control ${exercises.length && format !== "single" ? "hidden" : ""}>
+          <div data-custom-workout-start-control>
             ${workoutStartControlMarkup(workoutStorageTitle)}
           </div>
           ${exercises.length
@@ -13475,7 +13477,7 @@ function customWorkoutPanelMarkup(index) {
             <button type="button" data-generate-workout>Generate today’s workout</button>
           </div>
         </details>
-        <div data-custom-workout-default-finish ${format === "single" ? "" : "hidden"}>
+        <div data-custom-workout-default-finish hidden>
           ${workoutActionsMarkup({ exercises }, { includeCardio: true })}
         </div>
       </div>
@@ -13751,11 +13753,11 @@ function updateCustomWorkoutFormat(panel, value, options = {}) {
   syncCustomWorkoutExerciseControls(panel);
   const defaultFinish = panel.querySelector("[data-custom-workout-default-finish]");
   if (defaultFinish) {
-    defaultFinish.hidden = format !== "single";
+    defaultFinish.hidden = true;
   }
   const workoutStartControl = panel.querySelector("[data-custom-workout-start-control]");
   if (workoutStartControl) {
-    workoutStartControl.hidden = format !== "single" && customWorkoutExercises(format).length > 0;
+    workoutStartControl.hidden = false;
   }
 
   syncCustomWorkoutFormatMarkers(panel);
@@ -22080,7 +22082,9 @@ function showWorkoutFinishIssues(button, issues) {
     ? "Duration is required. For HIIT, enter valid work, rest, and round values. Distance and other metrics are optional."
     : "Warm-ups are optional. Enter weight and reps, then tap the Log box to save each set.";
   summary.appendChild(help);
-  (button.closest("footer") || button).insertAdjacentElement("afterend", summary);
+  const customPanel = section?.classList.contains("client-workout-panel-custom") ? section : null;
+  const visiblePrimaryActions = customPanel?.querySelector(".custom-workout-primary-actions");
+  (visiblePrimaryActions || button.closest("footer") || button).insertAdjacentElement("afterend", summary);
   summary.scrollIntoView?.({ block: "center", behavior: "smooth" });
   summary.focus({ preventScroll: true });
   return false;
