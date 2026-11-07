@@ -43,6 +43,8 @@ function workoutCarouselExerciseCode(format, group, index) { return String(index
 function setCountFromPrescription() { return 1; }
 function customWorkoutGroupNameEditorMarkup() { return ''; }
 function customWorkoutCardMarkup(exercise) { return '<article data-custom-exercise-card><div data-exercise-log>' + escapeHtml(exercise.name) + '</div></article>'; }
+function floatingWorkoutFinishMarkup() { return ''; }
+function syncFloatingWorkoutFinishButtons() {}
 function customWorkoutMixedGroups(exercises) { return exercises.map((exercise, index) => ({ index, startIndex: index, format: 'single', items: [exercise] })); }
 ${functions}
 function renderCase(format, names, active) {

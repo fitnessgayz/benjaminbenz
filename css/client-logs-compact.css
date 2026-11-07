@@ -65,6 +65,8 @@ body.client-dashboard-page .client-logs-session-open { display: grid; grid-templ
 .client-logs-detail-heading > strong { color: #aeb2bc; font-size: .8rem; }
 .client-logs-session .training-log-history-card-details > h3 { margin: 12px 0; color: #fff; }
 .client-logs-detail-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+.client-logs-detail-primary-actions { margin: 14px 0 10px; }
+body.client-dashboard-page .client-logs-detail-primary-actions > button { flex: 1 1 130px; max-width: none !important; }
 body.client-dashboard-page .client-logs-detail-actions > button, body.client-dashboard-page .client-logs-detail-actions > details > summary, body.client-dashboard-page .client-logs-detail-back { min-height: 44px; padding: 10px 14px; border: 1px solid var(--logs-line); border-radius: 11px; background: #282a2f; color: #fff; font: inherit; }
 body.client-dashboard-page .client-logs-detail-actions .training-log-copy-button { background: var(--logs-gold); color: #111; font-weight: 700; }
 .client-logs-detail-actions details { position: relative; }

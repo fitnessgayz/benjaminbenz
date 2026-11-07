@@ -13244,6 +13244,7 @@ function openCustomWorkoutExerciseDialog(trigger, mode = "add") {
           </div>
           <div class="custom-workout-exercise-options custom-workout-suggestion-menu" id="custom-workout-picker-options" role="listbox" aria-label="Exercise suggestions" data-custom-exercise-suggestions hidden></div>
           <p data-workout-picker-empty hidden>No matching exercises. You can still add the name you typed.</p>
+          <p data-workout-picker-error role="alert" hidden>Could not add this exercise. Please try again.</p>
           ${grouped ? '<button class="custom-workout-picker-queue-typed" type="button" data-workout-picker-queue-typed hidden>Add typed name to selection</button>' : ""}
         </div>
         <button class="custom-workout-picker-browse" type="button" data-custom-exercise-browse>Browse full library</button>
@@ -13286,7 +13287,13 @@ function openCustomWorkoutExerciseDialog(trigger, mode = "add") {
   };
   const selectName = (name) => {
     const input = dialog.querySelector("#custom-workout-picker-search");
-    if (!grouped) { input.value = name; add(); return; }
+    dialog.querySelector("[data-workout-picker-error]")?.setAttribute("hidden", "");
+    if (!grouped) {
+      selectedNames.splice(0, selectedNames.length, String(name).trim());
+      input.value = selectedNames[0];
+      renderCustomWorkoutPickerResults(dialog);
+      return;
+    }
     if (!String(name).trim()) return;
     const existing = selectedNames.indexOf(String(name).trim());
     if (existing >= 0) selectedNames.splice(existing, 1);
@@ -13329,7 +13336,8 @@ function openCustomWorkoutExerciseDialog(trigger, mode = "add") {
       addedCard = addCustomWorkoutPickedExercise(livePanel, name);
       if (addedCard) notifyCoachAboutCustomExercises([name]);
     }
-    dialog.close();
+    if (addedCard) dialog.close();
+    else dialog.querySelector("[data-workout-picker-error]")?.removeAttribute("hidden");
   };
   dialog.addEventListener("click", (event) => {
     event.stopPropagation();
@@ -13369,14 +13377,13 @@ function openCustomWorkoutExerciseDialog(trigger, mode = "add") {
       dialog.close();
     }
     const suggestion = event.target.closest("[data-custom-exercise-suggestion]");
-    if (suggestion) {
-      if (grouped) selectName(suggestion.dataset.customExerciseSuggestion);
-      else { selectCustomExerciseSuggestion(suggestion); add(); }
-    }
+    if (suggestion) selectName(suggestion.dataset.customExerciseSuggestion);
   });
   dialog.addEventListener("input", (event) => {
     event.stopPropagation();
     if (event.target.matches("#custom-workout-picker-search") && !event.isComposing) {
+      dialog.querySelector("[data-workout-picker-error]")?.setAttribute("hidden", "");
+      if (!grouped && selectedNames[0] !== event.target.value.trim()) selectedNames.length = 0;
       scheduleSearchRefresh();
       renderSelection();
     }
@@ -16748,8 +16755,9 @@ function renderClientTrainingLogs() {
           <div class="client-logs-detail-heading"><span class="training-log-history-state${workout.completed_at ? " is-complete" : ""}">${escapeHtml(workoutStatus)}</span><strong>${escapeHtml(formatLogDate(workout.entry_date))}</strong></div>
           <h3>${escapeHtml([displayTitle, workout.gym_name].filter(Boolean).join(" · "))}</h3>
           <dl class="training-log-history-metrics"><div><dt>Exercises</dt><dd>${metrics.exerciseCount}</dd></div><div><dt>Sets</dt><dd>${metrics.workingSetCount}</dd></div><div><dt>Volume</dt><dd>${escapeHtml(metrics.volumeLabel)}</dd></div></dl>
+          <div class="client-logs-detail-actions client-logs-detail-primary-actions">${shareButtonMarkup}${canCopyToCustom ? `<button class="training-log-copy-button" type="button" data-copy-workout-to-custom="${escapeHtml(workout.history_key)}" aria-label="${escapeHtml(copyButtonLabel)}">Copy workout</button>` : ""}</div>
           ${appleWorkoutMarkup}${detailsHtml}
-          <div class="client-logs-detail-actions">${shareButtonMarkup}${canCopyToCustom ? `<button class="training-log-copy-button" type="button" data-copy-workout-to-custom="${escapeHtml(workout.history_key)}" aria-label="${escapeHtml(copyButtonLabel)}">Copy workout</button>` : ""}<details><summary aria-label="More workout actions">⋯</summary>${deleteButtonMarkup}</details></div>
+          ${deleteButtonMarkup ? `<div class="client-logs-detail-actions"><details><summary aria-label="More workout actions">⋯</summary>${deleteButtonMarkup}</details></div>` : ""}
           <button class="client-logs-detail-back" type="button" data-client-workout-history-close>Back to workouts</button>
         </div>
       </article>`,

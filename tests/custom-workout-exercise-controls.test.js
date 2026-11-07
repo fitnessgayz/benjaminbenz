@@ -96,6 +96,29 @@ test("draft serialization records intentional zero without dropping title, date 
   });
 });
 
+test("a selected exercise draft survives a fresh page context", () => {
+  const storage = new Map();
+  const localStorage = {
+    getItem: (key) => storage.get(key) || null,
+    setItem: (key, value) => storage.set(key, value),
+    removeItem: (key) => storage.delete(key)
+  };
+  const names = ["customWorkoutDraftKey", "readCustomWorkoutDraft", "storeCustomWorkoutDraft", "activeCustomWorkoutDraft"];
+  const values = {
+    currentProgram: { id: "program-1", client_email: "client@example.com" },
+    activeClientEmail: "client@example.com", customWorkoutDraftVersion: 2,
+    window: { localStorage }, todayDate: () => {
+      const now = new Date();
+      return new Date(now.getTime() - now.getTimezoneOffset() * 60_000).toISOString().slice(0, 10);
+    },
+    upgradeCustomWorkoutDraft: (draft) => draft, clearCustomWorkoutDraft: () => assert.fail("Current draft must not be cleared")
+  };
+  const firstPage = evaluate(names, values);
+  firstPage.storeCustomWorkoutDraft({ format: "single", exercises: [{ code: "CW01", name: "Leg Press" }] });
+  const reloadedPage = evaluate(names, values);
+  assert.equal(reloadedPage.activeCustomWorkoutDraft().exercises[0].name, "Leg Press");
+});
+
 test("both exercise counters and remove controls follow canonical cards, including zero", () => {
   const counters = [{ textContent: "9" }, { textContent: "9" }];
   const removers = [{ disabled: false }, { disabled: false }];
@@ -363,7 +386,7 @@ test("exercise editor targets the chosen card's first editable working weight wi
 function dialogFixture(format = "single") {
   const handlers = {};
   const calls = { add: [], remove: [], focus: 0 };
-  const input = { value: "", setAttribute() {}, focus() {} };
+  const input = { value: "", setAttribute() {}, removeAttribute() {}, focus() {} };
   const selectedCount = { textContent: "" };
   const selected = { hidden: true, querySelector: () => selectedCount };
   const selectedList = { innerHTML: "" };
@@ -394,8 +417,9 @@ function dialogFixture(format = "single") {
     renderCustomExerciseSuggestions() {}, renderCustomWorkoutPickerResults() {},
     selectCustomExerciseSuggestion: (suggestion) => { input.value = suggestion.dataset.customExerciseSuggestion; },
     removeExerciseLog: (log) => calls.remove.push(log.index),
-    addCustomWorkoutPickedExercise: (_panel, name) => { calls.add.push(name); return null; },
-    addCustomWorkoutPickedExercises: (_panel, names) => { calls.add.push(...names); return null; }
+    notifyCoachAboutCustomExercises() {},
+    addCustomWorkoutPickedExercise: (_panel, name) => { calls.add.push(name); return { isConnected: false }; },
+    addCustomWorkoutPickedExercises: (_panel, names) => { calls.add.push(...names); return { isConnected: false }; }
   });
   const click = (selector, target = {}) => handlers.click({ stopPropagation() {}, target: { closest: (candidate) => candidate === selector ? target : null } });
   return { context, handlers, calls, trigger, input, click, dialog, panel, selectedList, prompt, submit };
@@ -415,7 +439,7 @@ test("picker asks for the full superset or circuit before adding it", () => {
   }
 });
 
-test("straight sets use the same visual picker and keep one-tap exercise selection", () => {
+test("straight sets stage a suggestion until Add exercise is pressed", () => {
   const fixture = dialogFixture("single");
   fixture.context.openCustomWorkoutExerciseDialog(fixture.trigger);
   assert.match(fixture.dialog.className, /is-grouped-picker/);
@@ -425,6 +449,9 @@ test("straight sets use the same visual picker and keep one-tap exercise selecti
   fixture.click("[data-custom-exercise-suggestion]", {
     dataset: { customExerciseSuggestion: "Hip Thrust Machine" }
   });
+  assert.deepEqual(fixture.calls.add, []);
+  assert.equal(fixture.input.value, "Hip Thrust Machine");
+  fixture.handlers.submit({ preventDefault() {}, stopPropagation() {} });
   assert.deepEqual(fixture.calls.add, ["Hip Thrust Machine"]);
 });
 
@@ -572,7 +599,7 @@ test("mobile exercise search waits for typing to pause before refreshing suggest
   };
   fixture.dialog.isConnected = true;
   fixture.input.setAttribute = () => {};
-  const target = { matches: (selector) => selector === "#custom-workout-picker-search" };
+  const target = Object.assign(fixture.input, { matches: (selector) => selector === "#custom-workout-picker-search" });
   fixture.handlers.input({ stopPropagation() {}, target, isComposing: true });
   assert.equal(pending, null);
   fixture.handlers.compositionend({ target });
