@@ -110,21 +110,18 @@
   }
   async function refreshActivityTotals() {
     const version = ++activityVersion;
-    const challenge = streakSection.querySelector('[data-client-challenge-streak]');
     const visits = streakSection.querySelector('[data-client-gym-visits]');
-    if (!client || !email || preview) { challenge.textContent = '—'; visits.textContent = '—'; return; }
+    if (!client || !email || preview) { visits.textContent = '—'; return; }
     try {
       const { data, error } = await client.rpc('client_home_activity_totals', { p_local_day: dateKey(new Date()) });
       if (error) throw error;
       if (version !== activityVersion) return;
-      challenge.textContent = String(data?.[0]?.challenge_streak ?? '—');
       visits.textContent = String(data?.[0]?.gym_visits ?? '—');
     } catch (_) {
-      if (version === activityVersion) { challenge.textContent = '—'; visits.textContent = '—'; }
+      if (version === activityVersion) visits.textContent = '—';
     }
   }
   document.addEventListener('fwb:gym-checkin-saved', () => void refreshActivityTotals());
-  document.addEventListener('fwb:daily-challenge-updated', () => void refreshActivityTotals());
   function renderPlanner() {
     const start = addDays(monday(new Date()), weekOffset * 7);
     const end = addDays(start, 6);

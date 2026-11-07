@@ -28,6 +28,15 @@ test("Home keeps the avatar and notifications in its compact header", () => {
   assert.match(styles, /\.client-home-topbar/);
 });
 
+test("Home rewards show workout streak and gym visits without the challenge streak", () => {
+  assert.equal((home.match(/class="client-home-reward-card/g) || []).length, 2);
+  assert.doesNotMatch(home, /Challenge streak|data-client-challenge-streak/);
+  assert.match(home, /data-client-home-streak/);
+  assert.match(home, /data-client-gym-visits/);
+  assert.match(home, /class="client-home-reward-dots"[^>]*><span class="is-active"><\/span><span><\/span><\/div>/);
+  assert.doesNotMatch(homeBehavior, /data-client-challenge-streak/);
+});
+
 test("Home shows the Wall feed and keeps the daily check-in prompt without an Atari button", () => {
   assert.doesNotMatch(home, /class="client-home-atari"/);
   assert.match(home, /data-client-home-checkin-backdrop hidden/);
