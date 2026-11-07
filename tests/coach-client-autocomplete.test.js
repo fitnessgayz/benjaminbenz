@@ -87,6 +87,22 @@ test('pointer selection, Escape, blur, and outside dismissal work', () => {
     assert.equal(f.input.attributes['aria-expanded'], 'false');
   }
 });
+test('iPhone touch selects on pointer release when Safari suppresses click', () => {
+  const f = fixture();
+  f.search('Sam');
+  const option = f.list.children[0];
+  f.list.fire('pointerdown', {pointerType:'touch', target:option});
+  assert.deepEqual(f.selected, []);
+  f.list.fire('pointerup', {pointerType:'touch', target:option});
+  assert.deepEqual(f.selected, ['one']);
+  assert.equal(f.context.tab, 'profile');
+
+  const scrolling = fixture();
+  scrolling.search('Sam');
+  scrolling.list.fire('pointerdown', {pointerType:'touch', target:scrolling.list.children[0]});
+  scrolling.list.fire('pointercancel', {pointerType:'touch', target:scrolling.list.children[0]});
+  assert.deepEqual(scrolling.selected, [], 'scrolling the list must not select a client');
+});
 test('unmatched names never select or create a client, and labels are plain text', () => {
   const f = fixture();
   f.search('Unknown');

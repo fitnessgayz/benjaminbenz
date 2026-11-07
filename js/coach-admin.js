@@ -7262,8 +7262,15 @@ function handleClientSearch() {
       if (program) selectClientSuggestion(program.id);
     }
   });
-  // Keep input focus until the click selects the option (including touch taps).
+  // Keep input focus while the option is selected.
   list.addEventListener("pointerdown", (event) => event.preventDefault());
+  // iPhone Safari suppresses the synthetic click after a prevented touch pointerdown.
+  // Select on release so a scroll gesture (which cancels the pointer) does not choose a client.
+  list.addEventListener("pointerup", (event) => {
+    if (event.pointerType !== "touch") return;
+    const option = event.target.closest("[data-program-id]");
+    if (option) selectClientSuggestion(option.dataset.programId);
+  });
   list.addEventListener("click", (event) => {
     const option = event.target.closest("[data-program-id]");
     if (option) selectClientSuggestion(option.dataset.programId);
