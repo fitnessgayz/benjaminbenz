@@ -6,26 +6,30 @@ const vm = require("node:vm");
 
 const root = path.resolve(__dirname, "..");
 const homepage = fs.readFileSync(path.join(root, "index.html"), "utf8");
-const styles = fs.readFileSync(path.join(root, "css/homepage-gold-blue.css"), "utf8");
+const services = fs.readFileSync(path.join(root, "personal-training.html"), "utf8");
+const styles = fs.readFileSync(path.join(root, "css/homepage-login-first.css"), "utf8");
 const script = fs.readFileSync(path.join(root, "js/homepage-one-page.js"), "utf8");
 
-test("keeps the one-page layout usable on a phone", () => {
-  assert.match(homepage, /class="page-shell"/);
-  assert.match(homepage, /id="training"[\s\S]*?id="start"[\s\S]*?id="client-login"/);
-  assert.match(styles, /@media \(max-width: 850px\)[\s\S]*?\.page-shell \{ display: block; \}/);
-  assert.match(homepage, /<main id="top" class="page-shell">\s*<section id="training" class="hero"/);
-  assert.match(styles, /\.hero \{[^}]*background: linear-gradient\(135deg/);
-  assert.match(homepage, /href="questionnaire\.html"/);
+test("puts client login first and links to a separate coaching page", () => {
+  assert.match(homepage, /<main class="login-main">/);
+  assert.match(homepage, /id="home-login-form"/);
+  assert.match(homepage, /class="training-route"[\s\S]*?href="personal-training\.html"/);
   assert.match(homepage, /href="coach-login\.html"/);
   assert.match(homepage, /href="fwb-training-privacy\.html"/);
+  assert.match(services, /href="questionnaire\.html">Fitness questionnaire/);
+  for (const name of ["Personal Training", "Online Coaching", "Hybrid Coaching"]) {
+    assert.ok(services.includes(name));
+  }
+  assert.match(styles, /@media \(max-width: 850px\)/);
 });
 
-test("uses blue and gold without a dark homepage background", () => {
-  assert.match(styles, /--blue: #2878ff;/);
-  assert.match(styles, /--gold: #ffd526;/);
-  assert.match(styles, /--cream: #faf9f4;/);
+test("uses the dark app palette and places artwork behind the login", () => {
+  assert.match(styles, /--bg: #0c0d10;/);
+  assert.match(styles, /--blue: #58b5ff;/);
+  assert.match(styles, /--gold: #ffd400;/);
+  assert.match(styles, /\.artwork \{[^}]*opacity: \.25;/);
   assert.match(homepage, /images\/home\/fwb-logo-transparent\.svg/);
-  assert.match(homepage, /theme-color" content="#2878ff"/);
+  assert.match(homepage, /theme-color" content="#0c0d10"/);
 });
 
 test("ships every rotating anatomy image referenced by the homepage", () => {

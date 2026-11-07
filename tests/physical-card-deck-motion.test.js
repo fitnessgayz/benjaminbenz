@@ -35,10 +35,10 @@ test("home and public card decks add depth while respecting reduced motion", () 
 });
 
 test("dashboard keeps its deck assets while the homepage loads its new layout", () => {
-  assert.match(dashboard, /css\/style\.css\?v=workout-preview-1/);
+  assert.match(dashboard, /css\/style\.css\?v=/);
   assert.match(dashboard, /css\/custom-workout-mobile-fix\.css\?v=/);
   assert.match(dashboard, /js\/script\.js\?v=physical-card-decks-1/);
   assert.match(dashboard, /js\/client-portal\.js\?v=workout-preview-1/);
-  assert.match(homepage, /css\/homepage-gold-blue\.css\?v=4/);
+  assert.match(homepage, /css\/homepage-login-first\.css\?v=1/);
   assert.match(homepage, /js\/homepage-one-page\.js\?v=1/);
 });

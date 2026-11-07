@@ -7,6 +7,7 @@ const root = path.resolve(__dirname, "..");
 const read = (name) => fs.readFileSync(path.join(root, name), "utf8");
 
 const homepage = read("index.html");
+const services = read("personal-training.html");
 const questionnaire = read("questionnaire.html");
 const interest = read("app-interest.html");
 const privateInterest = read("fwb-ios-invite-d00108bdaab031f8.html");
@@ -14,21 +15,21 @@ const publicStyles = read("css/public-brand.css");
 const support = read("fwb-training-support.html");
 const privacy = read("fwb-training-privacy.html");
 const assistantTerms = read("ai-coach-terms.html");
-const publicConversionPages = [homepage, questionnaire, interest, privateInterest];
+const publicConversionPages = [homepage, services, questionnaire, interest, privateInterest];
 
-test("leads the homepage with the canonical promise and a direct coaching-fit action", () => {
-  assert.match(homepage, /Train with intention\.<br><em>Feel your progress\.<\/em>/);
-  assert.match(homepage, /href="questionnaire\.html">Fitness questionnaire/);
+test("leads with client login and a direct personal-training action", () => {
+  assert.match(homepage, /<h1 id="login-title">Client <em>login\.<\/em><\/h1>/);
+  assert.match(homepage, /href="personal-training\.html">Explore personal training/);
   assert.doesNotMatch(homepage, /home-tabs|data-home-tab-panel/);
 });
 
-test("presents services, inquiry and client access on one page", () => {
-  for (const service of ["Personal Training", "Online Coaching", "Hybrid Coaching"]) assert.match(homepage, new RegExp(service));
-  assert.match(homepage, /Interested in training\?/);
+test("keeps services and questionnaire on the second page", () => {
+  for (const service of ["Personal Training", "Online Coaching", "Hybrid Coaching"]) assert.match(services, new RegExp(service));
+  assert.match(services, /href="questionnaire\.html">Fitness questionnaire/);
   assert.match(homepage, /id="home-login-form"/);
   assert.match(homepage, /Keep me signed in/);
   assert.match(homepage, /href="coach-login\.html"/);
-  assert.match(homepage, /San Francisco \+ online coaching/);
+  assert.match(services, /SAN FRANCISCO \+ ONLINE COACHING/);
 });
 
 test("uses the anatomy artwork and complete sharing metadata", () => {
@@ -81,7 +82,7 @@ test("keeps public styling isolated and based on canonical tokens", () => {
     assert.match(page, /css\/public-brand\.css\?v=public-nav-3/);
     assert.match(page, /public-page/);
   }
-  assert.match(homepage, /css\/homepage-gold-blue\.css\?v=5/);
+  assert.match(homepage, /css\/homepage-login-first\.css\?v=1/);
   assert.match(homepage, /public-page/);
 
   assert.match(publicStyles, /\.public-page \{/);
