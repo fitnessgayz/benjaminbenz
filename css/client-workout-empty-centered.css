@@ -44,6 +44,22 @@
 :root body.client-dashboard-page #client-workouts-panel .custom-workout-setup-dialog .custom-workout-setup-fields {
   display: grid; gap: 12px; padding: 0; border: 0; background: transparent;
 }
+:root body.client-dashboard-page #client-workouts-panel .custom-workout-setup-dialog[data-section="gym"] .workout-gym-main-row:has(.workout-gym-history[open]) {
+  flex-wrap: wrap;
+}
+:root body.client-dashboard-page #client-workouts-panel .custom-workout-setup-dialog[data-section="gym"] .workout-gym-main-row:has(.workout-gym-history[open]) > [data-workout-gym-history] {
+  flex: 1 1 100%; min-width: 0;
+}
+:root body.client-dashboard-page #client-workouts-panel .custom-workout-setup-dialog[data-section="gym"] .workout-gym-history-list {
+  position: static; width: 100%; max-height: 50dvh; margin-top: 8px;
+  overflow-y: auto; -webkit-overflow-scrolling: touch;
+}
+:root body.client-dashboard-page #client-workouts-panel .custom-workout-setup-dialog[data-section="gym"] .workout-gym-scroll-cue {
+  margin: 8px 2px 0; color: #aeb3bd; font-size: 12px; line-height: 1.3;
+}
+.workout-gym-scroll-cue { display: none; }
+:root body.client-dashboard-page #client-workouts-panel .custom-workout-setup-dialog[data-section="gym"] .workout-gym-history[open] .workout-gym-scroll-cue { display: block; }
+:root[data-client-theme="light"] body.client-dashboard-page #client-workouts-panel .custom-workout-setup-dialog[data-section="gym"] .workout-gym-scroll-cue { color: #566158; }
 :root body.client-dashboard-page #client-workouts-panel .custom-workout-setup-dialog[data-section="date"] :is(.custom-workout-launcher-gym, .workout-compact-format),
 :root body.client-dashboard-page #client-workouts-panel .custom-workout-setup-dialog[data-section="gym"] :is(.custom-workout-session-date, .workout-compact-format),
 :root body.client-dashboard-page #client-workouts-panel .custom-workout-setup-dialog[data-section="format"] :is(.custom-workout-session-date, .custom-workout-launcher-gym) { display: none; }

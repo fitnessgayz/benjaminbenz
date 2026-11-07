@@ -6112,6 +6112,7 @@ function workoutGymHistoryMarkup() {
   if (!names.length) return "";
   const defaultGym = defaultWorkoutGymName();
   return `<details class="workout-gym-history"><summary>Gym history</summary>
+    ${names.length > 3 ? '<p class="workout-gym-scroll-cue">Scroll down for more gyms ↓</p>' : ""}
     <div class="workout-gym-history-list">${names.map((gym) => `<div class="workout-gym-history-row">
       <button type="button" data-workout-gym-select="${escapeHtml(gym)}">${escapeHtml(gym)}${sameWorkoutGym(gym, defaultGym) ? ' <span aria-label="default gym">★</span>' : ""}</button>
       <button type="button" data-workout-gym-remove="${escapeHtml(gym)}" aria-label="Remove ${escapeHtml(gym)} from gym history">×</button>
