@@ -219,6 +219,13 @@ function preferenceColumn(notification: NotificationRow) {
 }
 
 function pushCopy(notification: NotificationRow) {
+  if (notification.recipient_role === "coach" && notification.kind === "progress_submitted"
+      && notification.title === "Client uploaded a progress photo") {
+    return {
+      title: "Client uploaded a progress photo",
+      body: "Open Coach Admin to view the private progress photo."
+    };
+  }
   if (notification.recipient_role === "coach" && notification.kind === "check_in_submitted") {
     const safeTitle = String(notification.title || "")
       .replace(/\s+/g, " ")

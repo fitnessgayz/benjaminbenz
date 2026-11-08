@@ -48,6 +48,32 @@ test("both push backends preserve client names and check-in types while excludin
   }
 });
 
+test("both push backends identify progress photo uploads without exposing private notes", () => {
+  const notification = { title: "Client uploaded a progress photo", body: privateBody };
+  const modernCopy = modern.pushCopy({ recipient_role: "coach", kind: "progress_submitted", ...notification });
+  const compatibilityCopy = {
+    title: compatibility.safePushTitle("progress_submitted", notification),
+    body: compatibility.safePushBody("progress_submitted", notification)
+  };
+  for (const copy of [modernCopy, compatibilityCopy]) {
+    assert.deepEqual(JSON.parse(JSON.stringify(copy)), {
+      title: "Client uploaded a progress photo",
+      body: "Open Coach Admin to view the private progress photo."
+    });
+    assert.doesNotMatch(JSON.stringify(copy), /PRIVATE|pain details|personal client note/);
+  }
+});
+
+test("monthly report push points to the private report without exposing metrics", () => {
+  const privateNotification = { title: "Your monthly training report is ready", body: "PRIVATE 12 workouts, 480 lb" };
+  assert.deepEqual(JSON.parse(JSON.stringify(modern.pushCopy({ recipient_role: "client", kind: "monthly_report", ...privateNotification }))), {
+    title: "Monthly report ready",
+    body: "Open FWB to view your private training report."
+  });
+  assert.equal(compatibility.safePushTitle("monthly_report", privateNotification), "Monthly report ready");
+  assert.equal(compatibility.safePushBody("monthly_report", privateNotification), "Open FWB to view your private training report.");
+});
+
 test("both check-in title helpers normalize whitespace and enforce the existing 160-character bound", () => {
   for (const copy of copies({ title: " \n Alex\t  Green \r\n completed a mood check-in  ", body: privateBody })) {
     assert.equal(copy.title, "Alex Green completed a mood check-in");

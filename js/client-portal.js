@@ -52,6 +52,8 @@ let clientSavedSetEditingId = "";
 let activeClientDashboardTab = "home";
 let savedWorkoutScrollY = null;
 let latestMonthlyProgressReport = null;
+let savedMonthlyTrainingReports = [];
+let savedMonthlyReportsLoadedFor = "";
 let monthlyReportReturnTab = "progress";
 let monthlyReportReturnFocus = null;
 let clientExerciseProgressSearch = "";
@@ -3666,6 +3668,55 @@ function buildMonthlyProgressReport(logs, monthKey = "") {
   };
 }
 
+function monthlyReportFromSavedSnapshot(row) {
+  const monthKey = String(row.report_month || "").slice(0, 7);
+  if (!/^\d{4}-\d{2}$/.test(monthKey)) return null;
+  const workouts = Number(row.workouts) || 0;
+  const nextMonthDate = new Date(`${monthKey}-01T00:00:00Z`);
+  nextMonthDate.setUTCMonth(nextMonthDate.getUTCMonth() + 1);
+  return {
+    monthKey,
+    monthLabel: monthlyReportMonthLabel(monthKey),
+    clientName: String(row.client_name || monthlyReportClientName()),
+    workouts,
+    workingSets: Number(row.working_sets) || 0,
+    activeWeeks: Number(row.active_weeks) || 0,
+    exerciseCount: Number(row.exercise_count) || 0,
+    highlights: Array.isArray(row.highlights) ? row.highlights : [],
+    nextMonth: nextMonthDate.toLocaleDateString("en-US", { month: "long", timeZone: "UTC" }),
+    focus: [
+      workouts < 4 ? "Schedule at least one workout each week." : `Keep training frequency near ${workouts} sessions per month.`,
+      "Add load or reps only when prescribed reps stay controlled.",
+      "Log every working set so comparisons stay complete."
+    ]
+  };
+}
+
+function availableMonthlyProgressReport(logs, monthKey = "") {
+  const saved = monthKey
+    ? savedMonthlyTrainingReports.find((row) => String(row.report_month || "").startsWith(monthKey))
+    : savedMonthlyTrainingReports[0];
+  return saved ? monthlyReportFromSavedSnapshot(saved) : buildMonthlyProgressReport(logs, monthKey);
+}
+
+async function loadSavedMonthlyTrainingReports() {
+  const email = String(activeClientEmail || "").trim().toLowerCase();
+  if (!email || !supabaseClient || savedMonthlyReportsLoadedFor === email) return;
+  savedMonthlyReportsLoadedFor = email;
+  const { data, error } = await supabaseClient.from("client_monthly_training_reports")
+    .select("report_month,client_name,workouts,working_sets,active_weeks,exercise_count,highlights")
+    .eq("client_email", email)
+    .order("report_month", { ascending: false })
+    .limit(12);
+  if (email !== String(activeClientEmail || "").trim().toLowerCase()) return;
+  if (error) {
+    savedMonthlyReportsLoadedFor = "";
+    return;
+  }
+  savedMonthlyTrainingReports = Array.isArray(data) ? data : [];
+  renderMonthlyProgressReport(trainingLogs);
+}
+
 function monthlyProgressReportUrl(monthKey, tabName = "progress") {
   const url = new URL(window.location.href);
 
@@ -3715,7 +3766,7 @@ function monthlyProgressReportMarkup(report) {
 }
 
 function openMonthlyProgressReport(monthKey, updateUrl = true, returnFocus = null) {
-  const report = buildMonthlyProgressReport(trainingLogs, monthKey);
+  const report = availableMonthlyProgressReport(trainingLogs, monthKey);
   const dialog = document.getElementById("client-monthly-report-dialog");
   const documentElement = document.getElementById("client-monthly-report-document");
 
@@ -3776,7 +3827,7 @@ function renderMonthlyProgressReport(logs = trainingLogs) {
   ];
   const requestedMonth = new URLSearchParams(window.location.search).get("report") || "";
 
-  latestMonthlyProgressReport = buildMonthlyProgressReport(logs);
+  latestMonthlyProgressReport = availableMonthlyProgressReport(logs);
   if (!reportCards.some(({ card, link }) => card && link)) {
     return;
   }
@@ -3805,7 +3856,7 @@ function renderMonthlyProgressReport(logs = trainingLogs) {
     setText(summarySelector, summary);
   });
 
-  if (requestedMonth && buildMonthlyProgressReport(logs, requestedMonth)) {
+  if (requestedMonth && availableMonthlyProgressReport(logs, requestedMonth)) {
     window.requestAnimationFrame?.(() => openMonthlyProgressReport(requestedMonth, false));
   }
 }
@@ -15684,6 +15735,7 @@ function populateTrainingLogs(logs) {
   syncAssignedWorkoutCarousels();
   renderClientTrainingLogs();
   renderMonthlyProgressReport(trainingLogs);
+  void loadSavedMonthlyTrainingReports();
   renderClientHomeSummary();
 }
 

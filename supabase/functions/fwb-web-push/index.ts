@@ -81,6 +81,9 @@ function safeNotificationText(value: unknown, maxLength: number) {
 }
 
 function safePushTitle(category: string, notification: Record<string, unknown> = {}) {
+  if (category === "progress_submitted" && notification.title === "Client uploaded a progress photo") {
+    return "Client uploaded a progress photo";
+  }
   if (category === "check_in_submitted") {
     return safeNotificationText(notification.title, 160) || "Client check-in submitted";
   }
@@ -105,6 +108,7 @@ function safePushTitle(category: string, notification: Record<string, unknown> =
     program_update: "Training plan update",
     workout_reminder: "Workout reminder",
     weekly_check_in: "Weekly check-in reminder",
+    monthly_report: "Monthly report ready",
     general: "FWB notification"
   };
 
@@ -112,6 +116,12 @@ function safePushTitle(category: string, notification: Record<string, unknown> =
 }
 
 function safePushBody(category: string, notification: Record<string, unknown> = {}) {
+  if (category === "monthly_report") {
+    return "Open FWB to view your private training report.";
+  }
+  if (category === "progress_submitted" && notification.title === "Client uploaded a progress photo") {
+    return "Open Coach Admin to view the private progress photo.";
+  }
   if (category === "client_login") {
     return "Open Coach Admin to see which client signed in.";
   }

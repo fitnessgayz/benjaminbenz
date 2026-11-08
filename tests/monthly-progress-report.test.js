@@ -47,10 +47,13 @@ function monthlyReportRuntime() {
   };
 
   vm.createContext(sandbox);
-  vm.runInContext(`${source}\nthis.__monthlyReport = buildMonthlyProgressReport;\nthis.__setClient = (program, email) => { currentProgram = program; activeClientEmail = email; };`, sandbox);
+  vm.runInContext(`${source}\nthis.__monthlyReport = buildMonthlyProgressReport;\nthis.__availableMonthlyReport = availableMonthlyProgressReport;\nthis.__setSavedReports = (reports) => { savedMonthlyTrainingReports = reports; };\nthis.__setClient = (program, email) => { currentProgram = program; activeClientEmail = email; };`, sandbox);
   sandbox.__setClient({ client_name: "John Lam" }, "john@example.com");
 
-  return sandbox.__monthlyReport;
+  const buildReport = sandbox.__monthlyReport;
+  buildReport.available = sandbox.__availableMonthlyReport;
+  buildReport.setSaved = sandbox.__setSavedReports;
+  return buildReport;
 }
 
 test("builds a completed-month client report from working sets", () => {
@@ -78,9 +81,21 @@ test("builds a completed-month client report from working sets", () => {
 
 test("does not publish an in-progress current-month report", () => {
   const buildReport = monthlyReportRuntime();
+  const thisMonth = new Date().toISOString().slice(0, 7);
   const report = buildReport([
-    { entry_date: "2026-09-03", workout_title: "Upper", exercise_code: "BP", exercise_name: "Bench Press", set_number: 1, set_type: "working", weight_used: 100, reps: 8 }
+    { entry_date: `${thisMonth}-03`, workout_title: "Upper", exercise_code: "BP", exercise_name: "Bench Press", set_number: 1, set_type: "working", weight_used: 100, reps: 8 }
   ]);
 
   assert.equal(report, null);
+});
+
+test("shows a generated report even when the active client logged no sets", () => {
+  const buildReport = monthlyReportRuntime();
+  buildReport.setSaved([{ report_month: "2026-10-01", client_name: "John Lam", workouts: 0,
+    working_sets: 0, active_weeks: 0, exercise_count: 0, highlights: [] }]);
+  const report = buildReport.available([]);
+  assert.equal(report.monthKey, "2026-10");
+  assert.equal(report.workouts, 0);
+  assert.equal(report.clientName, "John Lam");
+  assert.equal(report.focus.length, 3);
 });

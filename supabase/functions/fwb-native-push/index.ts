@@ -77,12 +77,14 @@ function safeTitle(kind: string, storedTitle: string) {
     workout_completed: "Client workout completed",
     check_in_submitted: "Client check-in submitted",
     custom_exercise: "Client added a custom exercise",
+    monthly_report: "Monthly report ready",
     general: "FWB Training notification"
   };
   return (titles[kind] || storedTitle || "FWB Training notification").replace(/\s+/g, " ").trim().slice(0, 120);
 }
 
 function safeBody(kind: string) {
+  if (kind === "monthly_report") return "Open FWB Training to view your private monthly report.";
   if (kind === "client_message") return "Open FWB Training to read and reply.";
   if (kind === "coach_reply") return "Open FWB Training to read your coach's message.";
   return "Open FWB Training to view your update.";
