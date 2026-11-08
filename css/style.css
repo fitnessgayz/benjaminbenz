@@ -6232,6 +6232,7 @@ body.is-client-checkin-prompt-open {
   width: fit-content;
   margin-top: 5px;
   padding: 3px 6px;
+  color: #111;
   background: var(--lime);
   font-size: .58rem;
   font-weight: 900;
