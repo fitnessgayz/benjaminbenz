@@ -93,7 +93,11 @@
     "20261105032411_add_exercise_image_cards_batch_twenty_four.sql",
     "20261105034211_add_exercise_image_cards_batch_twenty_five.sql",
     "20261105035411_link_seated_row_image.sql",
-    "20261106163000_notify_coach_custom_exercises.sql"
+    "20261106163000_notify_coach_custom_exercises.sql",
+    "20261108185837_coach_progress_photo_notifications.sql",
+    "20261108190300_generate_monthly_training_reports.sql",
+    "20261108192500_schedule_monthly_reports_first_day.sql",
+    "20261108193000_quiet_historical_monthly_report_backfill.sql"
   ],
   "nasmExerciseCatalogMigration": "20261001032427_add_complete_nasm_exercise_library.sql",
   "nasmExerciseCatalogCount": 75,
