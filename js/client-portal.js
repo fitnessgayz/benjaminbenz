@@ -10354,7 +10354,6 @@ function exerciseLibraryMetaLabel(exerciseName) {
 }
 
 function customWorkoutGroupedExerciseKeyMarkup(carousel) {
-  const isCustom = Boolean(carousel?.closest?.(".client-workout-panel-custom"));
   const format = String(carousel?.dataset?.customWorkoutFormat || "single").toLowerCase();
   const groupIndex = Math.max(Number(carousel?.dataset?.customWorkoutGroup) || 0, 0);
   return customWorkoutGroupedLogElements(carousel).map((logElement, index) => {
@@ -10379,7 +10378,7 @@ function customWorkoutGroupedExerciseKeyMarkup(carousel) {
         ${media || `<span class="custom-workout-grouped-media-placeholder" aria-hidden="true"></span>`}
         <span class="custom-workout-grouped-exercise-copy">
           <span class="custom-workout-grouped-exercise-number">${escapeHtml(marker)}</span>
-          ${isCustom ? `<button type="button" data-change-custom-exercise="${index}" aria-label="Change ${escapeHtml(name)} in exercise library"><strong data-custom-grouped-exercise-name="${index}">${escapeHtml(name)}</strong></button>` : `<strong data-custom-grouped-exercise-name="${index}">${escapeHtml(name)}</strong>`}
+          <button type="button" data-change-custom-exercise="${index}" aria-label="Change ${escapeHtml(name)} in exercise library"><strong data-custom-grouped-exercise-name="${index}">${escapeHtml(name)}</strong></button>
           ${target ? `<p class="custom-workout-grouped-target" data-custom-grouped-target="${index}">${escapeHtml(target)}</p>` : ""}
           ${meta ? `<p class="custom-workout-grouped-meta">${escapeHtml(meta)}</p>` : ""}
         </span>
@@ -10852,7 +10851,7 @@ function customWorkoutGroupedSectionsMarkup(carousel) {
         <header class="ios-log-exercise-header">
           <span class="ios-log-exercise-image">${media || '<span class="ios-log-exercise-image-placeholder" aria-hidden="true">◼</span>'}</span>
           <span class="ios-log-exercise-heading-copy">
-            ${isCustom ? `<button class="ios-log-exercise-title" type="button" data-change-custom-exercise="${exerciseIndex}" aria-label="Change ${escapeHtml(exerciseName)} in exercise library"><span class="ios-log-exercise-marker">${escapeHtml(marker)}</span> ${escapeHtml(exerciseName)}</button>` : `<strong class="ios-log-exercise-title"><span class="ios-log-exercise-marker">${escapeHtml(marker)}</span> ${escapeHtml(exerciseName)}</strong>`}
+            <button class="ios-log-exercise-title" type="button" data-change-custom-exercise="${exerciseIndex}" aria-label="Change ${escapeHtml(exerciseName)} in exercise library"><span class="ios-log-exercise-marker">${escapeHtml(marker)}</span> ${escapeHtml(exerciseName)}</button>
             ${meta ? `<small class="ios-log-exercise-meta">${escapeHtml(meta)}</small>` : ""}
             <small class="ios-log-exercise-progress" data-ios-log-exercise-progress>${completeCount} / ${workingRows.length} complete</small>
           </span>
@@ -14258,7 +14257,7 @@ function clientWorkoutListMarkup(workouts) {
         description: "Open a saved workout plan or log your own exercises, sets, reps, and weights.",
         action: 'data-client-workout-picker-choose="0" data-client-workout-picker-card="0" data-client-workout-selection-target="Custom workout"',
         titleId: "client-workout-card-title-0", descriptionId: "workout-custom-description", className: "workout-choice-quick" },
-      { icon: "calendar", title: "Trainer Prescribed Workouts",
+      { icon: "calendar", title: "Trainer Program",
         description: `${programs[0].program_title || "Your program"} · ${(programs[0].workouts || []).length} ${(programs[0].workouts || []).length === 1 ? "workout" : "workouts"}${programs.length > 1 ? ` · ${programs.length} plans` : ""}`,
         action: 'data-preview-program="0"', titleId: "workout-program-title-0", descriptionId: "workout-program-description-0" },
       { icon: "sparkles", title: "Generate Workout",

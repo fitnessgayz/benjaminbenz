@@ -28,13 +28,14 @@ test('workout chooser puts Quick Workout first and calendar above Find a Gym', (
   ].map(declaration).join('\n'), context);
   const markup = context.clientWorkoutListMarkup([{ isCardio: true, panelIndex: 8 }]);
   assert.equal((markup.match(/class="workout-choice-card(?: [^"]*)?"/g) || []).length, 10);
-  for (const title of ['Start Quick Workout', 'Workout calendar', 'Trainer Prescribed Workouts', 'Find a Gym',
+  for (const title of ['Start Quick Workout', 'Workout calendar', 'Trainer Program', 'Find a Gym',
     'Generate Workout', 'Cardio &amp; Mobility', 'Weekly plan', 'Today’s workout', 'Log cardio', 'Mobility &amp; recovery']) {
     assert.ok(markup.includes(title), `${title} is shown`);
   }
   const choices = markup.split('data-client-workout-choice-dialog')[0];
   assert.equal((choices.match(/class="workout-choice-card(?: [^"]*)?"/g) || []).length, 6);
-  assert(choices.indexOf('Start Quick Workout') < choices.indexOf('Trainer Prescribed Workouts'));
+  assert(choices.indexOf('Start Quick Workout') < choices.indexOf('Trainer Program'));
+  assert.doesNotMatch(choices, /Trainer Prescribed Workouts/);
   assert(choices.indexOf('Cardio &amp; Mobility') < choices.indexOf('Workout calendar'));
   assert(choices.indexOf('Workout calendar') < choices.indexOf('Find a Gym'));
   assert.match(choices, /workout-choice-quick/);

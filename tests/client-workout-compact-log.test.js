@@ -23,6 +23,49 @@ function functionSource(name) {
   return source.slice(start, start + match[0].length + next);
 }
 
+test("selected exercise titles reopen the picker in trainer workouts without clearing sets", () => {
+  const keyMarkup = functionSource("customWorkoutGroupedExerciseKeyMarkup");
+  const logMarkup = functionSource("customWorkoutGroupedSectionsMarkup");
+  assert.match(keyMarkup, /<button type="button" data-change-custom-exercise="\$\{index\}"/);
+  assert.match(logMarkup, /<button class="ios-log-exercise-title" type="button" data-change-custom-exercise="\$\{exerciseIndex\}"/);
+
+  const input = {
+    value: "Leg Press",
+    events: [],
+    dispatchEvent(event) { this.events.push(event.type); }
+  };
+  const set = { weight: "180", reps: "10", classList: { contains: () => false } };
+  const logElement = {};
+  const carousel = {};
+  const card = {};
+  const block = { querySelector: () => null };
+  let pickerSelect;
+  let rendered = 0;
+  const changeExercise = Function("deps", `
+    const { input, set, logElement, carousel, card, block } = deps;
+    const iosLogExerciseContext = () => ({ block, carousel, logElement, card });
+    const customWorkoutEditableNameInput = () => input;
+    const customWorkoutGroupedRows = () => [set];
+    const workingSetType = "working";
+    const openClientExerciseLibrary = (_input, onSelect) => { deps.setPickerSelect(onSelect); };
+    const persistCustomWorkoutDraftForElement = () => {};
+    const renderCustomWorkoutGroupedCard = () => { deps.rendered(); };
+    const customWorkoutGroupedStatus = () => null;
+    ${functionSource("handleIosLogExerciseAction")}
+    return handleIosLogExerciseAction;
+  `)({ input, set, logElement, carousel, card, block,
+    setPickerSelect: (callback) => { pickerSelect = callback; },
+    rendered: () => { rendered += 1; }
+  });
+  changeExercise({ dataset: { iosLogAction: "change" } });
+  assert.equal(typeof pickerSelect, "function");
+  pickerSelect("Hack Squat");
+  assert.equal(input.value, "Hack Squat");
+  assert.deepEqual(input.events, ["input", "change"]);
+  assert.deepEqual([set.weight, set.reps], ["180", "10"]);
+  assert.equal(rendered, 1);
+});
+
 test("all strength logger rows use a four-column Log box and only logged rows are saved", () => {
   const markup = functionSource("setRowMarkup");
   const fields = functionSource("exerciseLogFields");
