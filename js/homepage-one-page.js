@@ -82,9 +82,11 @@
         return;
       }
       const email = String(result.data.user?.email || "").toLowerCase();
-      window.location.href = email === "benjaminbenz.fit@gmail.com"
-        ? "coach-admin.html?v=invite-list-layout-fix-1"
-        : "client-dashboard.html?v=manual-sessions-1";
+      if (email === "benjaminbenz.fit@gmail.com") {
+        window.location.href = "coach-admin.html?v=invite-list-layout-fix-1";
+      } else {
+        window.location.replace("client-dashboard.html?v=manual-sessions-1");
+      }
     } catch (error) {
       status.textContent = error.message || "Could not sign in. Please try again.";
     } finally {

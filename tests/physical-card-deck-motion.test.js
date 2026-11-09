@@ -40,5 +40,5 @@ test("dashboard keeps its deck assets while the homepage loads its new layout", 
   assert.match(dashboard, /js\/script\.js\?v=physical-card-decks-1/);
   assert.match(dashboard, /js\/client-portal\.js\?v=workout-preview-1/);
   assert.match(homepage, /css\/homepage-login-first\.css\?v=2/);
-  assert.match(homepage, /js\/homepage-one-page\.js\?v=1/);
+  assert.match(homepage, /js\/homepage-one-page\.js\?v=2/);
 });

@@ -50,6 +50,8 @@ let clientLogCalendarMonth = "";
 let clientLogCalendarInitialized = false;
 let clientSavedSetEditingId = "";
 let activeClientDashboardTab = "home";
+let clientDashboardBrowserHistoryReady = false;
+let clientDashboardHistoryHasDetail = false;
 let savedWorkoutScrollY = null;
 let latestMonthlyProgressReport = null;
 let savedMonthlyTrainingReports = [];
@@ -18491,7 +18493,51 @@ function clientDashboardMobileTabPressAction(tabName, activeTab, previousTabPres
   };
 }
 
-function setClientDashboardTab(tabName) {
+function clientDashboardHistoryUrl(tabName, source = window.location.href) {
+  const url = new URL(source, window.location.origin);
+  url.searchParams.set("tab", tabName);
+  if (tabName !== "progress") url.searchParams.delete("report");
+  return url.toString();
+}
+
+function initializeClientDashboardBrowserHistory(availableTabs) {
+  if (clientDashboardBrowserHistoryReady) return;
+  const initialTab = activeClientDashboardTab;
+  const initialUrl = window.location.href;
+  const currentState = window.history.state && typeof window.history.state === "object"
+    ? window.history.state : {};
+  window.history.replaceState({ ...currentState, fwbClientDashboardTab: "home" }, "", clientDashboardHistoryUrl("home"));
+  if (initialTab !== "home") {
+    window.history.pushState({ ...currentState, fwbClientDashboardTab: initialTab }, "", clientDashboardHistoryUrl(initialTab, initialUrl));
+    clientDashboardHistoryHasDetail = true;
+  }
+  clientDashboardBrowserHistoryReady = true;
+  window.addEventListener("popstate", () => {
+    const requestedTab = new URLSearchParams(window.location.search).get("tab");
+    const nextTab = availableTabs.has(requestedTab) ? requestedTab : "home";
+    clientDashboardHistoryHasDetail = nextTab !== "home";
+    setClientDashboardTab(nextTab, { fromHistory: true });
+    if (nextTab === "home") window.scrollTo({ top: 0, behavior: "auto" });
+  });
+}
+
+function syncClientDashboardBrowserHistory(tabName) {
+  const state = { ...(window.history.state || {}), fwbClientDashboardTab: tabName };
+  if (tabName === "home" && clientDashboardHistoryHasDetail) {
+    clientDashboardHistoryHasDetail = false;
+    window.history.back();
+    return;
+  }
+  const url = clientDashboardHistoryUrl(tabName);
+  if (clientDashboardHistoryHasDetail || tabName === "home") {
+    window.history.replaceState(state, "", url);
+  } else {
+    window.history.pushState(state, "", url);
+    clientDashboardHistoryHasDetail = true;
+  }
+}
+
+function setClientDashboardTab(tabName, options = {}) {
   const nextTab = tabName || "home";
   const previousTab = activeClientDashboardTab;
   if (nextTab !== "workouts") window.FWB_CLIENT_WORKOUT_CALENDAR?.close();
@@ -18545,6 +18591,10 @@ function setClientDashboardTab(tabName) {
     void clientGoogleHealthController.refresh().catch(() => {
       // Settings and Saved Logs display their own connection errors.
     });
+  }
+  if (typeof clientDashboardBrowserHistoryReady !== "undefined" && clientDashboardBrowserHistoryReady &&
+      !options.fromHistory && nextTab !== previousTab) {
+    syncClientDashboardBrowserHistory(nextTab);
   }
 }
 
@@ -21624,7 +21674,9 @@ async function handleLogin() {
           // A notification outage must never stop a client from signing in.
         }
       }
-      window.location.href = portalLoginDestination(data.user);
+      const destination = portalLoginDestination(data.user);
+      if (isCoachPortalEmail(data.user?.email)) window.location.href = destination;
+      else window.location.replace(destination);
     } catch (error) {
       if (status) {
         status.textContent = error.message || "Could not sign in. Please try again.";
@@ -21834,6 +21886,7 @@ async function loadDashboard() {
     const targetClientEmail = isCoachPortalEmail(signedInEmail) ? previewEmail : signedInEmail;
     signedInDashboardEmail = signedInEmail;
     isCoachDashboardPreview = isCoachPortalEmail(signedInEmail) && Boolean(previewEmail);
+    if (!isCoachDashboardPreview) initializeClientDashboardBrowserHistory(availableTabs);
     setClientNotificationSettingsAvailable(!isCoachDashboardPreview);
     // Alert recovery must not wait for workout data to load successfully.
     void initializeClientWebNotifications(user);

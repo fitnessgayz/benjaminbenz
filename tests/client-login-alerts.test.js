@@ -13,7 +13,7 @@ test("only explicit client password sign-ins request a coach alert", () => {
   assert.match(login, /await signInToPortal\(form\)/);
   assert.match(login, /!isCoachPortalEmail\(data\.user\?\.email\)/);
   assert.match(login, /supabaseClient\.rpc\("record_client_login_notification"\)/);
-  assert.ok(login.indexOf('rpc("record_client_login_notification")') < login.indexOf("window.location.href = portalLoginDestination"));
+  assert.ok(login.indexOf('rpc("record_client_login_notification")') < login.indexOf("window.location.replace(destination)"));
   assert.doesNotMatch(restore, /record_client_login_notification/);
 });
 

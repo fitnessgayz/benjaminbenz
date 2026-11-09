@@ -75,7 +75,7 @@ test("homepage sign-in uses the shared session choice and routes clients to thei
       setRememberMe: value => calls.push(["remember", value])
     },
     supabase: { createClient: () => ({ auth }) },
-    location: { href: "", origin: "https://benjaminbenz.com" }
+    location: { href: "", origin: "https://benjaminbenz.com", replace(value) { this.href = value; calls.push(["replace", value]); } }
   };
   const document = { querySelector: selector => nodes[selector] || null };
   const FormData = class { get(name) { return name === "email" ? "client@example.com" : "password"; } };
@@ -83,7 +83,7 @@ test("homepage sign-in uses the shared session choice and routes clients to thei
   vm.runInNewContext(script, { window, document, FormData, Date, Math });
   assert.equal(form.elements.remember_me.checked, true);
   await handlers.submit({ preventDefault() {} });
-  assert.deepEqual(calls.map(([name]) => name), ["remember", "sign-in"]);
+  assert.deepEqual(calls.map(([name]) => name), ["remember", "sign-in", "replace"]);
   assert.equal(calls[0][1], true);
   assert.equal(calls[1][1].email, "client@example.com");
   assert.equal(window.location.href, "client-dashboard.html?v=manual-sessions-1");
