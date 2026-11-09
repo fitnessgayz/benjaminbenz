@@ -658,6 +658,17 @@ body.client-dashboard-page #client-workout-panels .client-workout-panel :is(
 }
 
 @media (max-width: 900px) {
+  /* In the logger, the start/save action takes the bottom dock's place. The back
+     control in the workout header returns clients to the regular tabs. */
+  body.client-dashboard-page:has(#client-workouts-panel:not([hidden]) #client-workout-panels .client-workout-panel.is-active .workout-floating-finish:not([hidden])) .client-dashboard-tabs,
+  body.client-dashboard-page:has(#client-workouts-panel:not([hidden]) #client-workout-panels .client-workout-panel.is-active .workout-floating-finish:not([hidden])) .client-dashboard-mobile-nav-toggle {
+    display: none !important;
+  }
+
+  body.client-dashboard-page:has(#client-workouts-panel:not([hidden]) #client-workout-panels .client-workout-panel.is-active .workout-floating-finish:not([hidden])) #client-workout-panels .workout-floating-finish {
+    bottom: calc(env(safe-area-inset-bottom) + 8px);
+  }
+
   body.client-dashboard-page #client-workout-panels .client-workout-panel.is-active:has(.workout-floating-finish:not([hidden])) {
     padding-bottom: 94px;
   }

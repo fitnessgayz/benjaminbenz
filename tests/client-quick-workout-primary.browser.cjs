@@ -75,7 +75,7 @@ function renderAssignedCase(active) {
   try {
     for (const width of [360, 390]) {
       const page = await browser.newPage({ viewport: { width, height: 844 } });
-      await page.setContent(`<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>${styles}</style></head><body class="dashboard-page client-dashboard-page"><div id="client-workout-panels"></div></body></html>`);
+      await page.setContent(`<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>${styles}</style></head><body class="dashboard-page client-dashboard-page"><nav class="client-dashboard-tabs" aria-label="FWB Training sections"><button>Home</button><button>Workouts</button></nav><button class="client-dashboard-mobile-nav-toggle">Navigation</button><section id="client-workouts-panel"><div id="client-workout-panels"></div></section></body></html>`);
       await page.addScriptTag({ content: fixture });
       for (const [format, names] of [
         ['single', []], ['superset', []], ['circuit', []], ['single', ['Leg Press']],
@@ -95,6 +95,8 @@ function renderAssignedCase(active) {
         assert.equal(await primary.isVisible(), false, `${format} top Start hidden on mobile`);
         assert.equal(await page.locator('[data-floating-workout-start-action]').isVisible(), true,
           `${format} floating Start visible`);
+        assert.equal(await page.locator('.client-dashboard-tabs').isVisible(), false,
+          `${format} logger setup hides the navigation bar`);
         assert.equal(await page.locator('[data-floating-workout-reset-action]').isVisible(), true,
           `${format} floating Reset visible`);
         assert.equal(await page.locator('[data-floating-workout-more]').isVisible(), false,
@@ -103,6 +105,9 @@ function renderAssignedCase(active) {
           const rect = bar.getBoundingClientRect();
           return getComputedStyle(bar).position === 'fixed' && rect.left >= 0 && rect.right <= innerWidth;
         }), true, `${format} action bar fits the phone viewport`);
+        assert.ok(await page.locator('.workout-floating-finish').evaluate(bar =>
+          innerHeight - bar.getBoundingClientRect().bottom <= 12),
+        `${format} Start action also sits at the bottom of the logger`);
         assert.equal(await page.locator('.client-workout-panel-custom [data-custom-workout-default-finish] .workout-finish-button').isVisible(), false,
           `${format} legacy Finish hidden`);
         assert.equal(await page.locator('.client-workout-panel-custom [data-workout-finish-later]').filter({ visible: true }).count(), 0,
@@ -113,6 +118,13 @@ function renderAssignedCase(active) {
         assert.equal(await primary.innerText(), 'Finish workout', `${format} active label`);
         assert.equal(await page.locator('[data-floating-workout-finish-action]').isVisible(), true,
           `${format} floating Finish visible`);
+        assert.equal(await page.locator('.client-dashboard-tabs').isVisible(), false,
+          `${format} logger hides the navigation bar`);
+        assert.equal(await page.locator('.client-dashboard-mobile-nav-toggle').isVisible(), false,
+          `${format} logger hides the mobile navigation control`);
+        assert.ok(await page.locator('.workout-floating-finish').evaluate(bar =>
+          innerHeight - bar.getBoundingClientRect().bottom <= 12),
+        `${format} save action moves to the bottom of the viewport`);
         assert.equal(await page.locator('[data-floating-workout-reset-action]').isVisible(), false,
           `${format} direct Reset hidden after Start`);
         assert.equal(await page.locator('[data-floating-workout-more]').isVisible(), true,
@@ -135,6 +147,8 @@ function renderAssignedCase(active) {
           'trainer floating Start follows session state');
         assert.equal(await page.locator('[data-floating-workout-finish-action]').isVisible(), active,
           'trainer floating Finish follows session state');
+        assert.equal(await page.locator('.client-dashboard-tabs').isVisible(), false,
+          'trainer logger keeps navigation hidden before and after Start');
         assert.equal(await page.locator('[data-floating-workout-more]').isVisible(), active,
           'trainer reset menu follows session state');
         if (active) {
@@ -154,6 +168,12 @@ function renderAssignedCase(active) {
           await page.evaluate(() => { delete document.documentElement.dataset.clientTheme; });
         }
       }
+      await page.evaluate(() => { document.querySelector('.workout-floating-finish').hidden = true; });
+      assert.equal(await page.locator('.client-dashboard-tabs').isVisible(), true,
+        'navigation returns when the client backs out to the workout picker');
+      await page.evaluate(() => { document.getElementById('client-workouts-panel').hidden = true; });
+      assert.equal(await page.locator('.client-dashboard-tabs').isVisible(), true,
+        'navigation returns when the client leaves the workout logger');
       await page.close();
       process.stdout.write(`${browserName} ${width}px: quick and trainer floating actions passed\n`);
     }
