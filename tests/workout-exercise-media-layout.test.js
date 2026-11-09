@@ -43,8 +43,16 @@ test("crops branded workout thumbnails to the photo without the label strip or t
   assert.match(css, /\.exercise-media-button-branded-crop\s*\{[\s\S]*aspect-ratio: 176 \/ 117/);
   assert.match(css, /\.exercise-media-button-branded-crop > img\s*\{[\s\S]*object-position: left center/);
   assert.match(workoutCss, /\.workout-preview-exercise-media \.exercise-media-button-branded-crop/);
-  assert.match(compactSetupCss, /#client-workouts-panel \.exercise-media-button-branded-crop > img\s*\{[^}]*top: -45% !important;[^}]*left: -10% !important;[^}]*width: 300% !important;/);
-  assert.doesNotMatch(compactSetupCss, /\.exercise-media-button-branded-crop\.is-wide-branded-card > img/);
+  assert.match(compactSetupCss, /#client-workouts-panel \.exercise-media-button-branded-crop > img\s*\{[^}]*top: -23% !important;[^}]*left: -6% !important;[^}]*width: 184% !important;/);
+  assert.match(compactSetupCss, /#client-workouts-panel \.exercise-media-button-branded-crop\.is-wide-branded-card > img\s*\{[^}]*top: -21% !important;[^}]*left: -8% !important;[^}]*width: 210% !important;/);
+});
+
+test("recognizes approved cards served from both storage and the website", () => {
+  const helper = portal.slice(portal.indexOf("function isBrandedExerciseImage("), portal.indexOf("function exerciseMediaButtonMarkup("));
+  const isBrandedExerciseImage = Function(`${helper}\nreturn isBrandedExerciseImage;`)();
+  assert.equal(isBrandedExerciseImage("https://example.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-29/webp-480/leg-press.webp"), true);
+  assert.equal(isBrandedExerciseImage("https://benjaminbenz.com/images/exercises/approved/2026-09-29/png/leg-press.png"), true);
+  assert.equal(isBrandedExerciseImage("https://benjaminbenz.com/images/exercises/photo-only.png"), false);
 });
 
 test("shows the complete branded card without cropping in the detail dialog", () => {

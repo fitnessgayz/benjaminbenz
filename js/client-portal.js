@@ -2566,7 +2566,7 @@ function exerciseMedia(exercise = {}) {
 }
 
 function isBrandedExerciseImage(value) {
-  return /\/exercise-images\/approved\/\d{4}-\d{2}-\d{2}\/(?:webp-(?:480|768)|png)\//i.test(String(value || ""));
+  return /\/(?:exercise-images|images\/exercises)\/approved\/\d{4}-\d{2}-\d{2}\/(?:webp-(?:480|768)|png|jpe?g)\//i.test(String(value || ""));
 }
 
 function exerciseMediaButtonMarkup(exercise, options = {}) {

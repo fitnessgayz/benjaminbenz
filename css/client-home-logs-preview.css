@@ -113,11 +113,11 @@
   object-fit: contain; object-position: center;
 }
 :root body.client-dashboard-page .training-log-exercise-image .exercise-media-button-branded-crop > img {
-  position: absolute; top: 50%; left: -4%; width: 160%; max-width: none;
-  height: auto; max-height: none; transform: translateY(-50%); object-fit: contain;
+  position: absolute; top: -25%; left: -6%; width: 184%; max-width: none;
+  height: auto; max-height: none; transform: none; object-fit: fill;
 }
 :root body.client-dashboard-page .training-log-exercise-image .exercise-media-button-branded-crop.is-wide-branded-card > img {
-  width: 180%;
+  top: -21%; left: -9%; width: 225%;
 }
 :root body.client-dashboard-page .training-log-exercise-image-empty { color: #79b8e9; font-size: 26px; }
 :root body.client-dashboard-page .training-log-set-summary {

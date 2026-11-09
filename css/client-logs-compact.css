@@ -112,13 +112,17 @@ body.client-dashboard-page .client-logs-exercise-controls select { min-height: 4
 .client-logs-exercise-thumb .exercise-media-button { width: 100%; height: 100%; aspect-ratio: auto; border-radius: 0; }
 .client-logs-exercise-thumb .exercise-media-button-branded-crop > img {
   position: absolute;
-  top: -12.5%;
-  left: -4%;
-  width: auto;
+  top: -45%;
+  left: -12%;
+  width: 370%;
   max-width: none;
-  height: 125%;
+  height: auto;
   max-height: none;
   object-fit: fill;
+}
+.client-logs-exercise-thumb .exercise-media-button-branded-crop.is-wide-branded-card > img {
+  left: -16%;
+  width: 430%;
 }
 body.client-dashboard-page .client-logs-exercise-row > button { display: grid; gap: 4px; min-height: 44px; padding: 0; border: 0; background: transparent; color: #fff; text-align: left; font: inherit; }
 .client-logs-exercise-row button strong { font-size: .93rem; }

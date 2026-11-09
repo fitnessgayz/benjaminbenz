@@ -103,8 +103,8 @@ body.client-dashboard-page :is(.client-workout-panel-custom, .client-workout-pan
   gap: 20px;
 }
 
-/* Show the first photo panel in branded exercise art. Both the older 2:1
-   masters and newer wider masters include labels and a text panel outside it. */
+/* Frame the Start/End photos inside approved exercise art, leaving the label
+   strip and the right-hand text panel outside the workout thumbnail. */
 :root body.client-dashboard-page #client-workouts-panel .exercise-media-button-branded-crop {
   aspect-ratio: 7 / 5;
   border: 0;
@@ -112,9 +112,9 @@ body.client-dashboard-page :is(.client-workout-panel-custom, .client-workout-pan
 }
 :root body.client-dashboard-page #client-workouts-panel .exercise-media-button-branded-crop > img {
   position: absolute;
-  top: -45% !important;
-  left: -10% !important;
-  width: 300% !important;
+  top: -23% !important;
+  left: -6% !important;
+  width: 184% !important;
   max-width: none !important;
   height: auto !important;
   max-height: none !important;
@@ -122,6 +122,11 @@ body.client-dashboard-page :is(.client-workout-panel-custom, .client-workout-pan
 }
 :root body.client-dashboard-page #client-workouts-panel .exercise-media-button-branded-crop.is-wide-branded-card {
   aspect-ratio: 17 / 10;
+}
+:root body.client-dashboard-page #client-workouts-panel .exercise-media-button-branded-crop.is-wide-branded-card > img {
+  top: -21% !important;
+  left: -8% !important;
+  width: 210% !important;
 }
 @media (max-width: 700px) {
   :root body.client-dashboard-page #client-workout-panels [data-custom-workout-grouped="true"] .ios-log-exercise-header {
