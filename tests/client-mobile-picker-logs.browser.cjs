@@ -183,6 +183,19 @@ ${production('openCustomWorkoutExerciseDialog')}
         });
         assert.equal(await page.locator('[data-workout-picker-selected-list]').isVisible(), true,
           `${format} selected exercises return when the keyboard closes`);
+        const titleAndSlots = await page.locator('.custom-workout-exercise-dialog').evaluate(dialog => {
+          const header = dialog.querySelector('header').getBoundingClientRect();
+          const selected = dialog.querySelector('.custom-workout-picker-selected').getBoundingClientRect();
+          const search = dialog.querySelector('.custom-workout-picker-search-row').getBoundingClientRect();
+          const prompt = dialog.querySelector('[data-workout-picker-prompt]').getBoundingClientRect();
+          const count = dialog.querySelector('[data-workout-picker-selected-count]').getBoundingClientRect();
+          return { gap: selected.top - header.bottom, selectedBottom: selected.bottom,
+            searchTop: search.top, promptWidth: prompt.width, countWidth: count.width };
+        });
+        assert.ok(titleAndSlots.gap >= 0 && titleAndSlots.gap <= 20 && titleAndSlots.selectedBottom <= titleAndSlots.searchTop,
+          `${format} selected exercises sit directly below the title`);
+        assert.ok(titleAndSlots.promptWidth <= 1 && titleAndSlots.countWidth <= 1,
+          `${format} no separate selected-count row appears`);
         if (process.env.MOBILE_PICKER_SCREENSHOT && width === 390 && format === 'circuit') {
           await page.screenshot({ path: process.env.MOBILE_PICKER_SCREENSHOT });
         }

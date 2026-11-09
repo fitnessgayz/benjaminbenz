@@ -226,7 +226,7 @@
   gap: 6px !important;
 }
 :root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker .custom-workout-picker-selected {
-  order: 1; gap: 5px;
+  order: -4; gap: 5px;
 }
 :root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker [data-workout-picker-selected-list] {
   gap: 5px;
