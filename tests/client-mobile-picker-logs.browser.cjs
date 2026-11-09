@@ -27,13 +27,14 @@ const fixture = `
 const image = ${JSON.stringify(image)};
 var trainingLogs = [{ exercise_name: 'Leg Press' }], muscleMeta = {}, customWorkoutTitle = 'Custom Workout';
 var addAttempts = 0, failAdd = false;
+var extraPickerRecords = [];
 var exerciseNameMatcher = { normalizeName: value => String(value).trim().toLowerCase() };
 function escapeHtml(value) { return String(value ?? '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;'); }
 function customWorkoutExerciseAddConfig(format) { return { count: format === 'superset' ? 2 : format === 'circuit' ? 3 : 1, label: 'Add exercise', hint: '' }; }
 function normalizeCustomWorkoutFormat(value) { return value || 'single'; }
 function customWorkoutCarousels() { return []; }
 function customWorkoutCarouselCards() { return []; }
-function exerciseSuggestionRecords() { return [{ name: 'Leg Press', aliases: ['Leg Machine Press'], libraryEntry: { image_url: image, equipment: 'machine', primary_muscle: 'quads' } }]; }
+function exerciseSuggestionRecords() { return [{ name: 'Leg Press', aliases: ['Leg Machine Press'], libraryEntry: { image_url: image, equipment: 'machine', primary_muscle: 'quads' } }, ...extraPickerRecords]; }
 function exerciseSuggestionMuscleLabel(entry) { return entry.primary_muscle; }
 function customExerciseSuggestionMatches(query) { return exerciseSuggestionRecords().filter(record => record.name.toLowerCase().includes(query.toLowerCase())).map(record => ({ name: record.name, muscleLabel: 'Quads', libraryEntry: record.libraryEntry })); }
 function trustedExerciseImageUrl(value) { return value; }
@@ -143,6 +144,29 @@ ${production('openCustomWorkoutExerciseDialog')}
         assert.ok(layout.searchBottom <= layout.filtersTop && layout.filtersBottom <= layout.resultTop,
           `${format} search, filters, and results follow the iOS picker order`);
         assert.ok(layout.scrollWidth <= layout.clientWidth + 1, `${format} picker must not overflow horizontally`);
+        const compactResults = await page.locator('.custom-workout-exercise-dialog').evaluate(dialog => {
+          const label = dialog.querySelector('[data-workout-picker-results-label]').getBoundingClientRect();
+          const menu = dialog.querySelector('[data-custom-exercise-suggestions]');
+          const quick = dialog.querySelector('[data-workout-picker-quick-suggestions]').getBoundingClientRect();
+          const result = menu.querySelector('[data-custom-exercise-suggestion]').getBoundingClientRect();
+          return { countHeight: label.height, customLast: menu.lastElementChild?.hasAttribute('data-workout-picker-queue-typed'),
+            customInsideList: menu.querySelector('[data-workout-picker-queue-typed]')?.parentElement === menu,
+            quickTop: quick.top, quickBottom: quick.bottom, resultBottom: result.bottom,
+            menuBottom: menu.getBoundingClientRect().bottom,
+            dialogBottom: dialog.getBoundingClientRect().bottom };
+        });
+        assert.ok(compactResults.countHeight <= 1, `${format} result counts stay offscreen`);
+        assert.ok(compactResults.customLast && compactResults.customInsideList,
+          `${format} custom exercise action follows the matching results inside the scrollable list`);
+        assert.ok(compactResults.resultBottom <= compactResults.quickTop && compactResults.menuBottom <= compactResults.quickTop
+          && compactResults.quickBottom <= compactResults.dialogBottom,
+          `${format} matching quick suggestions sit below visible results and above the keyboard`);
+        assert.ok(compactResults.dialogBottom - compactResults.quickBottom <= 16,
+          `${format} matching quick suggestions anchor immediately above the keyboard`);
+        assert.equal(await page.locator('[data-workout-picker-quick-suggestion]').first().innerText(), 'Leg Press');
+        if (process.env.MOBILE_PICKER_TYPING_SCREENSHOT && width === 390 && format === 'superset') {
+          await page.screenshot({ path: process.env.MOBILE_PICKER_TYPING_SCREENSHOT });
+        }
         await page.evaluate(() => document.querySelector('.custom-workout-exercise-dialog').style.setProperty('--picker-viewport-height', '300px'));
         const typingLayout = await page.evaluate(() => {
           const dialog = document.querySelector('.custom-workout-exercise-dialog');
@@ -156,7 +180,8 @@ ${production('openCustomWorkoutExerciseDialog')}
         await page.evaluate(() => document.querySelector('.custom-workout-exercise-dialog').style.setProperty('--picker-viewport-height', '440px'));
         assert.equal(await page.locator('[data-custom-exercise-suggestion] .custom-picker-add').first().innerText(), '+',
           `${format} unselected exercise keeps its add control`);
-        await page.locator('[data-custom-exercise-suggestion]').first().click();
+        if (format === 'circuit') await page.locator('[data-workout-picker-quick-suggestion]').first().click();
+        else await page.locator('[data-custom-exercise-suggestion]').first().click();
         const selectedPill = await page.locator('[data-custom-exercise-suggestion][aria-selected="true"] .custom-picker-add').first().evaluate(pill => ({
           label: pill.textContent, background: getComputedStyle(pill).backgroundColor,
           color: getComputedStyle(pill).color, radius: getComputedStyle(pill).borderRadius
@@ -237,6 +262,35 @@ ${production('openCustomWorkoutExerciseDialog')}
         await page.locator('[data-close-exercise-dialog]').click();
         await page.locator('.custom-workout-exercise-dialog').waitFor({ state: 'detached' });
       }
+
+      await page.evaluate(() => {
+        extraPickerRecords = ['Dumbbell Shoulder Press', 'Incline Dumbbell Press', 'Machine Chest Press'].map(name => ({
+          name, aliases: [], libraryEntry: { image_url: image, equipment: 'dumbbell', primary_muscle: 'chest' }
+        }));
+        document.getElementById('panel').dataset.customWorkoutFormat = 'superset';
+        openCustomWorkoutExerciseDialog(document.getElementById('trigger'));
+        const dialog = document.querySelector('.custom-workout-exercise-dialog');
+        dialog.style.setProperty('--picker-viewport-height', '440px');
+        dialog.classList.add('is-keyboard-open');
+      });
+      await page.locator('#custom-workout-picker-search').fill('Press');
+      await page.waitForFunction(() => document.querySelector('[data-workout-picker-results-label]')?.textContent === '4 results');
+      const visibleRows = await page.locator('.custom-workout-exercise-dialog').evaluate(dialog => {
+        const menu = dialog.querySelector('[data-custom-exercise-suggestions]').getBoundingClientRect();
+        const quick = dialog.querySelector('[data-workout-picker-quick-suggestions]').getBoundingClientRect();
+        return [...dialog.querySelectorAll('[data-custom-exercise-suggestion]')].filter(row => {
+          const bounds = row.getBoundingClientRect();
+          return bounds.top >= menu.top && bounds.bottom <= menu.bottom + 1 && bounds.bottom <= quick.top;
+        }).length;
+      });
+      assert.ok(visibleRows >= 2, 'Multiple matching exercises remain visible above the keyboard shortcut strip');
+      assert.deepEqual(await page.locator('[data-workout-picker-quick-suggestion]').allInnerTexts(),
+        ['Leg Press', 'Dumbbell Shoulder Press', 'Incline Dumbbell Press']);
+      await page.locator('[data-workout-picker-quick-suggestion]').nth(1).click();
+      assert.deepEqual(await page.locator('.custom-workout-exercise-dialog').evaluate(dialog => dialog._pickerSelectedNames),
+        ['Dumbbell Shoulder Press'], 'Keyboard shortcut selects the same exercise as its result row');
+      await page.locator('[data-close-exercise-dialog]').click();
+      await page.locator('.custom-workout-exercise-dialog').waitFor({ state: 'detached' });
 
       await page.evaluate((src) => {
         document.body.innerHTML = `<section data-client-dashboard-panel="logs"><div class="client-logs-tabs"><button>Workouts</button><button>Exercises</button><button>Health</button></div><p class="training-log-download-status"></p><div class="client-workout-import-preview" hidden></div><p id="client-workout-import-status"></p><p class="training-log-copy-status"></p><div id="client-logs-workouts"><section class="client-saved-log-calendar"><strong>November 2026</strong></section></div><div class="training-log-history-card-details"><div class="client-logs-detail-actions client-logs-detail-primary-actions"><button class="training-log-share-button" data-share-workout-history>Share workout</button><button class="training-log-copy-button">Copy workout</button></div><div class="apple-workout-empty"><button>+ Add Apple Workout</button></div><article class="training-log-row-nested"><div class="training-log-exercise-head"><span class="training-log-exercise-image"><button class="exercise-media-button exercise-media-button-branded-crop"><img src="${src}" alt=""></button></span><strong>Leg Press</strong></div></article></div></section>`;

@@ -552,7 +552,7 @@ test("superset picker collects two exercises before one add action", () => {
 test("a typed manual exercise can be queued before the next superset choice", () => {
   const fixture = dialogFixture("superset");
   fixture.context.openCustomWorkoutExerciseDialog(fixture.trigger);
-  assert.match(fixture.dialog.innerHTML, /data-workout-picker-queue-typed/);
+  assert.match(fixture.dialog.innerHTML, /data-workout-picker-quick-suggestions/);
   fixture.input.value = "Custom Cable Pull";
   fixture.click("[data-workout-picker-queue-typed]");
   assert.equal(fixture.input.value, "");

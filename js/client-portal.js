@@ -13153,11 +13153,7 @@ function renderCustomWorkoutPickerResults(dialog) {
   const knownRecords = typeof exerciseSuggestionRecords === "function" ? exerciseSuggestionRecords() : matches;
   const hasExactMatch = knownRecords.some((record) =>
     [record.name, ...(record.aliases || [])].some((name) => name.toLowerCase() === query.toLowerCase()));
-  const customAction = dialog.querySelector("[data-workout-picker-queue-typed]");
-  if (customAction) {
-    customAction.hidden = !query || hasExactMatch;
-    customAction.textContent = `＋ Add “${query}” as custom`;
-  }
+  const showCustomAction = Boolean(query && !hasExactMatch);
   const resultsLabel = dialog.querySelector("[data-workout-picker-results-label]");
   if (resultsLabel) resultsLabel.textContent = query
     ? `${matches.length} ${matches.length === 1 ? "result" : "results"}`
@@ -13180,10 +13176,17 @@ function renderCustomWorkoutPickerResults(dialog) {
       <small>${escapeHtml(meta)}</small></span>
       <span class="custom-picker-add" aria-hidden="true">${isSelected ? "Selected" : "+"}</span>
     </button>`;
-  }).join("");
+  }).join("") + (showCustomAction
+    ? `<button class="custom-workout-picker-queue-typed" type="button" role="option" aria-selected="false" data-workout-picker-queue-typed>＋ Add “${escapeHtml(query)}” as custom</button>`
+    : "");
+  const quickSuggestions = dialog.querySelector("[data-workout-picker-quick-suggestions]");
+  if (quickSuggestions) {
+    quickSuggestions.hidden = !query || matches.length === 0;
+    quickSuggestions.innerHTML = matches.slice(0, 3).map((match) => `<button type="button" data-workout-picker-quick-suggestion="${escapeHtml(match.name)}" aria-pressed="${selected.includes(match.name)}">${escapeHtml(match.name)}</button>`).join("");
+  }
   menu.hidden = false;
   input.setAttribute("aria-expanded", "true");
-  dialog.querySelector("[data-workout-picker-empty]")?.toggleAttribute("hidden", matches.length > 0 || !query);
+  dialog.querySelector("[data-workout-picker-empty]")?.toggleAttribute("hidden", matches.length > 0 || !query || showCustomAction);
 }
 
 
@@ -13370,10 +13373,10 @@ function openCustomWorkoutExerciseDialog(trigger, mode = "add") {
           </div>
           <div class="custom-picker-results">
             <p data-workout-picker-results-label role="status" aria-live="polite"></p>
-            <button class="custom-workout-picker-queue-typed" type="button" data-workout-picker-queue-typed hidden></button>
             <p data-workout-picker-empty hidden>No matching library exercises.</p>
             <div class="custom-workout-exercise-options custom-workout-suggestion-menu" id="custom-workout-picker-options" role="listbox" aria-label="Exercise suggestions" data-custom-exercise-suggestions hidden></div>
           </div>
+          <div class="custom-picker-quick-suggestions" data-workout-picker-quick-suggestions role="group" aria-label="Matching exercise shortcuts" hidden></div>
           <p data-workout-picker-error role="alert" hidden>Could not add this exercise. Please try again.</p>
         </div>
         <button class="custom-workout-picker-browse" type="button" data-custom-exercise-browse>Browse full library</button>
@@ -13441,7 +13444,7 @@ function openCustomWorkoutExerciseDialog(trigger, mode = "add") {
     searchRefreshTimer = window.setTimeout(() => {
       searchRefreshTimer = 0;
       if (dialog.isConnected) renderCustomWorkoutPickerResults(dialog);
-    }, 240);
+    }, 100);
   };
   document.body.append(dialog);
   const viewport = typeof window !== "undefined" ? window.visualViewport : null;
@@ -13502,6 +13505,11 @@ function openCustomWorkoutExerciseDialog(trigger, mode = "add") {
       selectName(dialog.querySelector("#custom-workout-picker-search")?.value);
       return;
     }
+    const quickSuggestion = event.target.closest("[data-workout-picker-quick-suggestion]");
+    if (quickSuggestion) {
+      selectName(quickSuggestion.dataset.workoutPickerQuickSuggestion);
+      return;
+    }
     if (event.target.closest("[data-custom-exercise-more], [data-custom-exercise-browse]")) {
       const input = dialog.querySelector("#custom-workout-picker-search");
       openClientExerciseLibrary(input, (name) => {
@@ -13543,7 +13551,7 @@ function openCustomWorkoutExerciseDialog(trigger, mode = "add") {
   dialog.addEventListener("submit", (event) => { event.preventDefault(); event.stopPropagation(); add(); });
   dialog.addEventListener("keydown", (event) => {
     if (!["ArrowDown", "ArrowUp"].includes(event.key) || removing) return;
-    const options = Array.from(dialog.querySelectorAll("[data-custom-exercise-suggestion]"));
+    const options = Array.from(dialog.querySelectorAll("[data-custom-exercise-suggestion], [data-workout-picker-queue-typed]"));
     if (!options.length) return;
     event.preventDefault();
     const index = options.indexOf(document.activeElement);
