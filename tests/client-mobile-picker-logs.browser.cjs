@@ -127,6 +127,20 @@ ${production('openCustomWorkoutExerciseDialog')}
         assert.equal(layout.slots, slots, `${format} must keep each named selection slot`);
         assert.ok(layout.selectedVisible && layout.resultVisible, `${format} slots and a result must fit above the keyboard`);
         assert.ok(layout.scrollWidth <= layout.clientWidth + 1, `${format} picker must not overflow horizontally`);
+        await page.evaluate(() => document.querySelector('.custom-workout-exercise-dialog').style.setProperty('--picker-viewport-height', '300px'));
+        const typingLayout = await page.evaluate(() => {
+          const dialog = document.querySelector('.custom-workout-exercise-dialog');
+          const search = dialog.querySelector('.custom-workout-picker-search-row').getBoundingClientRect();
+          const slots = dialog.querySelector('[data-workout-picker-selected-list]').getBoundingClientRect();
+          const bounds = dialog.getBoundingClientRect();
+          return { searchTop: search.top, searchBottom: search.bottom, slotsTop: slots.top,
+            dialogTop: bounds.top, dialogBottom: bounds.bottom };
+        });
+        assert.ok(typingLayout.searchTop >= typingLayout.dialogTop && typingLayout.searchBottom <= typingLayout.dialogBottom,
+          `${format} search remains visible in a short keyboard viewport`);
+        assert.ok(typingLayout.searchTop < typingLayout.slotsTop,
+          `${format} search stays above selection slots while typing`);
+        await page.evaluate(() => document.querySelector('.custom-workout-exercise-dialog').style.setProperty('--picker-viewport-height', '440px'));
         await page.locator('[data-custom-exercise-suggestion]').first().click();
         for (const name of (format === 'superset' ? ['Cable Row'] : ['Cable Row', 'Push-Up'])) {
           await page.locator('#custom-workout-picker-search').fill(name);
