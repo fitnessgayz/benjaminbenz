@@ -112,6 +112,13 @@ ${production('openCustomWorkoutExerciseDialog')}
           dialog.style.setProperty('--picker-viewport-height', '440px');
           dialog.classList.add('is-keyboard-open');
         }, format);
+        assert.equal(await page.locator('#custom-workout-exercise-dialog-title').innerText(),
+          format === 'superset' ? 'Superset' : 'Circuit');
+        assert.equal(await page.locator('[data-workout-picker-submit]').innerText(), 'Add');
+        assert.equal(await page.locator('[data-workout-picker-submit]').isDisabled(), true);
+        assert.deepEqual(await page.locator('.custom-picker-slot').evaluateAll(items => items.map(item => ({
+          label: item.textContent.trim(), repeatedNumber: Boolean(item.querySelector('.custom-picker-slot-letter'))
+        }))), Array.from({ length: slots }, (_, index) => ({ label: `Exercise ${index + 1}`, repeatedNumber: false })));
         await page.locator('#custom-workout-picker-search').fill('Leg');
         await page.locator('[data-workout-picker-queue-typed]').waitFor({ state: 'visible' });
         const layout = await page.evaluate(() => {
@@ -157,6 +164,18 @@ ${production('openCustomWorkoutExerciseDialog')}
         assert.equal(ready.disabled, false, `${format} action becomes enabled once all slots are chosen`);
         assert.equal(ready.visible, true, `${format} action stays visible above the keyboard`);
         assert.equal(ready.background, 'rgb(255, 212, 0)', `${format} action is highlighted in gold`);
+        assert.equal(ready.label, 'Add', `${format} uses a short inline action label`);
+        const inline = await page.locator('.custom-workout-picker-selected').evaluate(selected => {
+          const slots = selected.querySelector('[data-workout-picker-selected-list]').getBoundingClientRect();
+          const button = selected.querySelector('[data-workout-picker-submit]').getBoundingClientRect();
+          return { listRight: slots.right, buttonLeft: button.left,
+            listMid: (slots.top + slots.bottom) / 2, buttonMid: (button.top + button.bottom) / 2,
+            buttonRight: button.right, dialogRight: selected.closest('dialog').getBoundingClientRect().right };
+        });
+        assert.ok(inline.buttonLeft >= inline.listRight - 1 && inline.buttonRight <= inline.dialogRight,
+          `${format} Add sits immediately beside the numbered exercises without overflow`);
+        assert.ok(Math.abs(inline.buttonMid - inline.listMid) <= 2,
+          `${format} Add aligns with its exercise slots`);
         await page.evaluate(() => {
           const dialog = document.querySelector('.custom-workout-exercise-dialog');
           dialog.classList.remove('is-keyboard-open');

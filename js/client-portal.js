@@ -13339,7 +13339,7 @@ function openCustomWorkoutExerciseDialog(trigger, mode = "add") {
   dialog.setAttribute("aria-labelledby", "custom-workout-exercise-dialog-title");
   dialog.innerHTML = `
     <header><button type="button" data-close-exercise-dialog aria-label="Close exercise ${removing ? "removal" : "picker"}">${removing ? "×" : "Cancel"}</button>
-      <h2 id="custom-workout-exercise-dialog-title">${removing ? "Remove exercise" : grouped ? `Add ${format}` : addConfig.label}</h2></header>
+      <h2 id="custom-workout-exercise-dialog-title">${removing ? "Remove exercise" : grouped ? format === "superset" ? "Superset" : "Circuit" : addConfig.label}</h2></header>
     ${removing ? `<p>Choose the exercise to remove from this workout. Saved logs stay in your history.</p>
       <div class="custom-workout-exercise-options">${cards.map((card, index) => {
         const name = currentExerciseLabel(card.querySelector("[data-exercise-log]")) || `Exercise ${index + 1}`;
@@ -13352,7 +13352,7 @@ function openCustomWorkoutExerciseDialog(trigger, mode = "add") {
           ${grouped ? `<div class="custom-workout-picker-selected" data-workout-picker-selected>
             <strong data-workout-picker-selected-count></strong>
             <div data-workout-picker-selected-list></div>
-            <button class="button button-dark" type="submit" data-workout-picker-submit disabled>Add ${format === "superset" ? "pair" : "circuit"} · 0/${minimum}</button>
+            <button class="button button-dark" type="submit" data-workout-picker-submit aria-label="Add ${format}" disabled>Add</button>
           </div>` : ""}
           <label for="custom-workout-picker-search">Search exercises</label>
           <div class="custom-workout-picker-search-row">
@@ -13400,7 +13400,7 @@ function openCustomWorkoutExerciseDialog(trigger, mode = "add") {
     list.innerHTML = Array.from({ length: Math.max(minimum, total) }, (_, index) => {
       const name = selectedNames[index];
       return `<div class="custom-picker-slot${name ? " is-filled" : ""}${index === total ? " is-next" : ""}">
-        <span class="custom-picker-slot-letter">${index + 1}</span>
+        ${name ? `<span class="custom-picker-slot-letter">${index + 1}</span>` : ""}
         <span>${name ? escapeHtml(name) : `Exercise ${index + 1}`}</span>
         ${name ? `<button type="button" data-workout-picker-remove="${index}" aria-label="Remove ${escapeHtml(name)}">✓</button>` : ""}
       </div>`;
@@ -13408,9 +13408,10 @@ function openCustomWorkoutExerciseDialog(trigger, mode = "add") {
     const submit = dialog.querySelector('button[type="submit"]');
     submit.disabled = !valid;
     dialog.classList?.toggle("is-ready-to-add", valid);
-    submit.textContent = format === "superset" && total > minimum && valid
-      ? `Add ${total / 2} pairs · ${total} selected`
-      : `Add ${format === "superset" ? "pair" : "circuit"} · ${Math.min(total, minimum)}/${minimum}`;
+    submit.textContent = "Add";
+    submit.setAttribute("aria-label", format === "superset" && total > minimum && valid
+      ? `Add ${total / 2} superset pairs`
+      : `Add ${format}`);
   };
   const selectName = (name) => {
     const input = dialog.querySelector("#custom-workout-picker-search");

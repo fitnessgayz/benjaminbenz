@@ -391,7 +391,7 @@ function dialogFixture(format = "single") {
   const selected = { hidden: true, querySelector: () => selectedCount };
   const selectedList = { innerHTML: "" };
   const prompt = { textContent: "" };
-  const submit = { disabled: false, textContent: "" };
+  const submit = { disabled: false, textContent: "", setAttribute(name, value) { this[name] = value; } };
   const menu = { hidden: true };
   const cards = [0, 1, 2].map((index) => ({ querySelector: () => ({ index }) }));
   const panel = { id: "client-workout-panel-0", dataset: { customWorkoutFormat: format }, isConnected: true, matches: () => true, querySelectorAll: () => cards, contains: (card) => cards.includes(card) };
