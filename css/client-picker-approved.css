@@ -226,10 +226,10 @@
   gap: 6px !important;
 }
 :root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker .custom-workout-picker-prompt {
-  margin: 0; font-size: 10px; text-align: left;
+  order: -4; margin: 0; font-size: 10px; text-align: left;
 }
 :root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker .custom-workout-picker-selected {
-  gap: 5px;
+  order: 1; gap: 5px;
 }
 :root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker [data-workout-picker-selected-list] {
   gap: 5px;
@@ -253,6 +253,7 @@
   min-height: 38px; padding: 5px; border-radius: 10px; font-size: 13px;
 }
 :root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker .custom-workout-picker-search-row {
+  order: -3;
   grid-template-columns: 22px minmax(0, 1fr) 27px;
   min-height: 44px; padding: 0 8px; border-color: #314d65; border-radius: 11px;
 }
@@ -263,20 +264,13 @@
 :root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker #custom-workout-picker-search {
   min-height: 42px; height: 42px; padding: 5px 3px;
 }
-/* Keep the search above selection slots when the on-screen keyboard reduces
-   the visible viewport. Focus also covers keyboards that do not resize it. */
-@media (max-width: 700px) {
-  :root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker:is(.is-keyboard-open, :has(#custom-workout-picker-search:focus)) .custom-workout-picker-search-row {
-    order: -1; position: relative; z-index: 1;
-  }
-}
 :root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker [data-workout-picker-clear] {
   width: 27px !important; min-width: 27px !important; height: 27px; min-height: 27px;
   padding: 0; border: 0; border-radius: 50%; background: #343a43; color: #a7b2bd;
   font: 700 18px/1 var(--font-ui, Inter, sans-serif);
 }
 :root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker .custom-picker-chips {
-  align-items: center; gap: 6px; min-height: 38px; padding: 0 0 3px;
+  order: -2; align-items: center; gap: 6px; min-height: 38px; padding: 0 0 3px;
 }
 :root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker [data-workout-picker-equipment],
 :root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker .custom-picker-chips button {
@@ -296,7 +290,7 @@
   border-color: #ffd400; background: #ffd400; color: #111;
 }
 :root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker .custom-picker-results {
-  display: flex; flex: 1 1 auto; flex-direction: column; min-height: 64px; overflow: hidden;
+  order: -1; display: flex; flex: 1 1 auto; flex-direction: column; min-height: 64px; overflow: hidden;
 }
 :root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker [data-workout-picker-results-label] {
   flex: 0 0 auto; min-height: 24px; padding: 4px 0; border-bottom: 1px solid #2b3038;
@@ -358,6 +352,10 @@
   display: none;
 }
 @media (max-width: 700px) {
+  :root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker:is(.is-keyboard-open, :has(#custom-workout-picker-search:focus)) [data-workout-picker-selected-list],
+  :root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker:is(.is-keyboard-open, :has(#custom-workout-picker-search:focus)):not(.is-ready-to-add) .custom-workout-picker-selected {
+    display: none;
+  }
   :root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker:has(#custom-workout-picker-search:focus) .custom-workout-picker-browse,
   :root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker:not(.is-ready-to-add):has(#custom-workout-picker-search:focus) [data-workout-picker-submit],
   :root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker:has(#custom-workout-picker-search:focus) form > button[type="submit"] {

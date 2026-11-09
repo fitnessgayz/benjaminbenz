@@ -119,27 +119,29 @@ ${production('openCustomWorkoutExerciseDialog')}
           const selected = dialog.querySelector('[data-workout-picker-selected-list]');
           const result = dialog.querySelector('[data-custom-exercise-suggestion]');
           const bottom = dialog.getBoundingClientRect().bottom;
+          const search = dialog.querySelector('.custom-workout-picker-search-row').getBoundingClientRect();
+          const filters = dialog.querySelector('.custom-picker-chips').getBoundingClientRect();
           return { slots: selected.children.length, selectedVisible: selected.getBoundingClientRect().height > 0,
             resultVisible: result.getBoundingClientRect().top < bottom && result.getBoundingClientRect().height > 0,
+            searchBottom: search.bottom, filtersTop: filters.top, filtersBottom: filters.bottom,
             resultTop: result.getBoundingClientRect().top, bottom,
             scrollWidth: dialog.scrollWidth, clientWidth: dialog.clientWidth };
         });
         assert.equal(layout.slots, slots, `${format} must keep each named selection slot`);
-        assert.ok(layout.selectedVisible && layout.resultVisible, `${format} slots and a result must fit above the keyboard`);
+        assert.ok(!layout.selectedVisible && layout.resultVisible, `${format} keeps results visible while condensing slots above the keyboard`);
+        assert.ok(layout.searchBottom <= layout.filtersTop && layout.filtersBottom <= layout.resultTop,
+          `${format} search, filters, and results follow the iOS picker order`);
         assert.ok(layout.scrollWidth <= layout.clientWidth + 1, `${format} picker must not overflow horizontally`);
         await page.evaluate(() => document.querySelector('.custom-workout-exercise-dialog').style.setProperty('--picker-viewport-height', '300px'));
         const typingLayout = await page.evaluate(() => {
           const dialog = document.querySelector('.custom-workout-exercise-dialog');
           const search = dialog.querySelector('.custom-workout-picker-search-row').getBoundingClientRect();
-          const slots = dialog.querySelector('[data-workout-picker-selected-list]').getBoundingClientRect();
           const bounds = dialog.getBoundingClientRect();
-          return { searchTop: search.top, searchBottom: search.bottom, slotsTop: slots.top,
+          return { searchTop: search.top, searchBottom: search.bottom,
             dialogTop: bounds.top, dialogBottom: bounds.bottom };
         });
         assert.ok(typingLayout.searchTop >= typingLayout.dialogTop && typingLayout.searchBottom <= typingLayout.dialogBottom,
           `${format} search remains visible in a short keyboard viewport`);
-        assert.ok(typingLayout.searchTop < typingLayout.slotsTop,
-          `${format} search stays above selection slots while typing`);
         await page.evaluate(() => document.querySelector('.custom-workout-exercise-dialog').style.setProperty('--picker-viewport-height', '440px'));
         await page.locator('[data-custom-exercise-suggestion]').first().click();
         for (const name of (format === 'superset' ? ['Cable Row'] : ['Cable Row', 'Push-Up'])) {
@@ -155,6 +157,13 @@ ${production('openCustomWorkoutExerciseDialog')}
         assert.equal(ready.disabled, false, `${format} action becomes enabled once all slots are chosen`);
         assert.equal(ready.visible, true, `${format} action stays visible above the keyboard`);
         assert.equal(ready.background, 'rgb(255, 212, 0)', `${format} action is highlighted in gold`);
+        await page.evaluate(() => {
+          const dialog = document.querySelector('.custom-workout-exercise-dialog');
+          dialog.classList.remove('is-keyboard-open');
+          dialog.querySelector('#custom-workout-picker-search').blur();
+        });
+        assert.equal(await page.locator('[data-workout-picker-selected-list]').isVisible(), true,
+          `${format} selected exercises return when the keyboard closes`);
         if (process.env.MOBILE_PICKER_SCREENSHOT && width === 390 && format === 'circuit') {
           await page.screenshot({ path: process.env.MOBILE_PICKER_SCREENSHOT });
         }
