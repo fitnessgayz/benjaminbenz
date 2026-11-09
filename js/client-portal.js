@@ -13124,13 +13124,12 @@ function customWorkoutPickerMatches(query, category = "all", equipment = "all") 
       : !equipmentLabel.includes(equipment))) return false;
     if (category === "all") return true;
     const exercise = record?.libraryEntry;
-    const muscles = [exercise?.primary_muscle, ...(Array.isArray(exercise?.secondary_muscles) ? exercise.secondary_muscles : [])]
-      .join(" ").toLowerCase();
+    const muscles = String(exercise?.primary_muscle || "").toLowerCase();
     if (category === "history") return programAndHistory.has(match.name.toLowerCase());
     if (category === "recent") return useCounts.has(match.name.toLowerCase());
-    if (["chest", "back", "shoulders", "arms"].includes(category)) {
+    if (["chest", "back", "shoulders", "biceps", "triceps"].includes(category)) {
       const pattern = { chest: /chest|pec/, back: /back|lat|trap/, shoulders: /shoulder|delt/,
-        arms: /arm|bicep|tricep|forearm/ }[category];
+        biceps: /bicep/, triceps: /tricep/ }[category];
       return pattern.test(muscles);
     }
     if (category === "upper") return /chest|back|shoulder|arm|bicep|tricep|forearm|lat|trap/.test(muscles);
@@ -13140,6 +13139,19 @@ function customWorkoutPickerMatches(query, category = "all", equipment = "all") 
   }).sort((a, b) => category === "recent"
     ? (useCounts.get(b.name.toLowerCase()) || 0) - (useCounts.get(a.name.toLowerCase()) || 0)
     : 0).slice(0, 30);
+}
+
+function customWorkoutPickerArmFamily(match, category) {
+  if (category !== "biceps" && category !== "triceps") return "";
+  const name = String(match.name || "").toLowerCase();
+  if (category === "biceps") return /curl/.test(name) ? "Biceps Curl" : "Other Biceps";
+  if (/pushdown|pressdown/.test(name)) return "Triceps Pushdown";
+  if (/kickback/.test(name)) return "Triceps Kickback";
+  if (/skull crusher/.test(name)) return "Skull Crusher";
+  if (/extension|\bext\b/.test(name)) return "Triceps Extension";
+  if (/\bdip\b/.test(name)) return "Triceps Dip";
+  if (/press/.test(name)) return "Triceps Press";
+  return "Other Triceps";
 }
 
 function renderCustomWorkoutPickerResults(dialog) {
@@ -13159,7 +13171,20 @@ function renderCustomWorkoutPickerResults(dialog) {
     ? `${matches.length} ${matches.length === 1 ? "result" : "results"}`
     : `${category === "all" ? "All exercises" : category.charAt(0).toUpperCase() + category.slice(1)} · ${matches.length}`;
   const selected = dialog._pickerSelectedNames || [];
-  menu.innerHTML = matches.map((match) => {
+  const armOrder = category === "biceps"
+    ? ["Biceps Curl", "Other Biceps"]
+    : ["Triceps Pushdown", "Triceps Extension", "Triceps Dip", "Triceps Kickback",
+      "Skull Crusher", "Triceps Press", "Other Triceps"];
+  const sortedMatches = !query && ["biceps", "triceps"].includes(category)
+    ? [...matches].sort((a, b) => armOrder.indexOf(customWorkoutPickerArmFamily(a, category))
+      - armOrder.indexOf(customWorkoutPickerArmFamily(b, category)) || a.name.localeCompare(b.name))
+    : matches;
+  let previousFamily = "";
+  menu.innerHTML = sortedMatches.map((match) => {
+    const family = !query ? customWorkoutPickerArmFamily(match, category) : "";
+    const familyHeading = family && family !== previousFamily
+      ? `<div class="custom-picker-family-heading" role="presentation">${escapeHtml(family)}</div>` : "";
+    previousFamily = family;
     const imageUrl = trustedExerciseImageUrl(match.libraryEntry?.image_url);
     const thumbnail = imageUrl ? responsiveExerciseImageUrls(imageUrl).thumbnailUrl : "";
     const muscles = String(match.libraryEntry?.primary_muscle || "").toLowerCase();
@@ -13170,7 +13195,7 @@ function renderCustomWorkoutPickerResults(dialog) {
       .replace(/\b\w/g, (letter) => letter.toUpperCase());
     const meta = [equipmentName, primaryMuscle].filter(Boolean).join(" · ") || match.muscleLabel || "Exercise";
     const isSelected = selected.includes(match.name);
-    return `<button type="button" role="option" aria-selected="${isSelected}" data-custom-exercise-suggestion="${escapeHtml(match.name)}">
+    return `${familyHeading}<button type="button" role="option" aria-selected="${isSelected}" data-custom-exercise-suggestion="${escapeHtml(match.name)}">
       <span class="custom-picker-image${!thumbnail ? " is-fallback" : isBrandedExerciseImage(thumbnail) ? " is-branded" : ""}">${thumbnail || fallback ? `<img src="${escapeHtml(thumbnail || fallback)}" alt="" loading="lazy" />` : "✚"}</span>
       <span class="custom-picker-copy"><strong>${escapeHtml(match.name)}</strong>
       <small>${escapeHtml(meta)}</small></span>
@@ -13369,7 +13394,7 @@ function openCustomWorkoutExerciseDialog(trigger, mode = "add") {
               <option value="cable">Cable</option><option value="machine">Machine</option><option value="smith">Smith machine</option>
               <option value="bodyweight">Bodyweight</option><option value="other">Other</option>
             </select>
-            ${["Recent", "All", "Chest", "Back", "Shoulders", "Arms", "Lower", "Core"].map((label) => `<button type="button" data-picker-chip="${label.toLowerCase()}" aria-pressed="${label === "All"}">${label}</button>`).join("")}
+            ${["Recent", "All", "Chest", "Back", "Shoulders", "Biceps", "Triceps", "Lower", "Core"].map((label) => `<button type="button" data-picker-chip="${label.toLowerCase()}" aria-pressed="${label === "All"}">${label}</button>`).join("")}
           </div>
           <div class="custom-picker-results">
             <p data-workout-picker-results-label role="status" aria-live="polite"></p>

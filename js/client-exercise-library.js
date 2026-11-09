@@ -94,34 +94,117 @@
       });
   }
 
-  const FAMILY_MODIFIERS = new Set([
-    "barbell", "dumbbell", "dumbell", "db", "kettlebell", "kb", "cable", "machine", "smith",
-    "band", "banded", "resistance", "plate", "trx", "bodyweight", "weighted", "assisted",
-    "wide", "close", "narrow", "neutral", "reverse", "underhand", "overhand", "pronated",
-    "supinated", "grip", "single", "one", "arm", "leg", "alternating", "unilateral", "bilateral",
-    "seated", "standing", "lying", "incline", "decline", "flat", "supported",
-    "front", "back", "high", "low", "horizontal", "vertical", "iso", "lateral"
-  ]);
+  // Group recognizable variations only. A shared movement pattern does not
+  // mean every press or row belongs under one heading.
+  const FAMILY_GROUPS = [
+      ["chest", "Chest Press", (value) => value.includes("bench press") || value.includes("chest press") || value.includes("dumbbell press")],
+      ["chest", "Chest Fly", (value) => value.includes("chest fly") || value.includes("cable fly") || value.includes("pec deck")],
+      ["chest", "Push-Up", (value) => value.includes("push up")],
+      ["back", "Lat Pulldown", (value) => value.includes("lat pulldown") && !value.includes("straight arm")],
+      ["back", "Straight-Arm Pulldown", (value) => value.includes("straight arm") && value.includes("pulldown")],
+      ["back", "Row", (value) => value.includes("row") && !value.includes("upright row")],
+      ["back", "Pull-Up", (value) => value.includes("pull up") && !value.includes(" or ")],
+      ["shoulders", "Shoulder Press", (value) => value.includes("shoulder press") || value.includes("overhead press")],
+      ["shoulders", "Lateral Raise", (value) => value.includes("lateral raise")],
+      ["biceps", "Biceps Curl", (value) => value.includes("curl")],
+      ["triceps", "Triceps Pushdown", (value) => value.includes("tricep") && /pushdown|pressdown|pulldown/.test(value)],
+      ["triceps", "Triceps Kickback", (value) => value.includes("tricep") && value.includes("kickback")],
+      ["triceps", "Skull Crusher", (value) => value.includes("skull crusher")],
+      ["triceps", "Triceps Extension", (value) => value.includes("tricep") && /extension| ext\b/.test(value)],
+      ["triceps", "Triceps Dip", (value) => value.includes("dip")],
+      ["triceps", "Triceps Press", (value) => value.includes("press") || value === "tricep push"],
+      ["quads", "Leg Press", (value) => value.includes("leg press")],
+      ["quads", "Squat", isSquatVariation],
+      ["glutes", "Squat", isSquatVariation],
+      ["full body", "Squat", isSquatVariation],
+      ["quads", "Deadlift", (value) => value.includes("deadlift") || value.includes(" rdl")],
+      ["glutes", "Deadlift", (value) => value.includes("deadlift") || value.includes(" rdl")],
+      ["hamstrings", "Deadlift", (value) => value.includes("deadlift") || value.includes(" rdl")],
+      ["full body", "Deadlift", (value) => value.includes("deadlift") || value.includes(" rdl")],
+      ["quads", "Lunge", (value) => value.includes("lunge")],
+      ["glutes", "Lunge", (value) => value.includes("lunge")],
+      ["hamstrings", "Leg Curl", (value) => value.includes("leg curl")],
+      ["glutes", "Hip Thrust", (value) => value.includes("hip thrust")],
+      ["glutes", "Glute Bridge", (value) => value.includes("glute bridge") || value.includes("floor bridge")],
+      ["glutes", "Glute Kickback", (value) => value.includes("glute kickback") || value.includes("machine kickback")],
+      ["calves", "Calf Raise", (value) => value.includes("calf raise")],
+      ["core", "Sit-Up", (value) => value === "sit up" || value.includes(" sit up")],
+      ["core", "Plank", (value) => (value === "plank" || value.includes(" plank")) && !value.includes("side plank")],
+      ["core", "Side Plank", (value) => value.includes("side plank")]
+  ];
 
-  function exerciseFamily(name) {
-    const tokens = searchWords(name.replace(/\bchest[ -]supported\b/gi, "supported"))
-      .filter((word) => !FAMILY_MODIFIERS.has(word));
-    const key = tokens.join(" ") || normalize(name);
-    return { key, title: key.replace(/\b\w/g, (letter) => letter.toUpperCase()) };
+  function isSquatVariation(value) {
+    return value.includes("squat") && !["jump", "stretch", "rotation", "to row", "hip hinge", " rdl"]
+      .some((modifier) => value.includes(modifier));
+  }
+
+  function exerciseFamily(record) {
+    const name = searchWords(record.name).join(" ");
+    const muscle = record.primary.toLowerCase();
+    const group = FAMILY_GROUPS.find(([target, , matches]) => target === muscle && matches(name));
+    return group ? { key: group[1].toLowerCase(), title: group[1] } : { key: name, title: record.name };
+  }
+
+  function browseMuscle(record) {
+    switch (exerciseFamily(record).title) {
+      case "Deadlift": return "Full Body";
+      case "Squat": return "Quads";
+      default: return record.primary;
+    }
+  }
+
+  function variationOrder(name, familyTitle) {
+    const value = searchWords(name).join(" ");
+    if (value === searchWords(familyTitle).join(" ")) return [0, 0];
+    if (familyTitle === "Deadlift" && value === "barbell deadlift") return [0, 1];
+    if (familyTitle === "Squat" && value === "barbell back squat") return [0, 1];
+    const equipment = ["dumbbell", "barbell", "trap bar", "cable", "machine", "smith", "kettlebell", "band"];
+    const equipmentRank = equipment.findIndex((word) => value.includes(word)) + 1;
+    if (familyTitle === "Biceps Curl") {
+      if (value === "dumbbell curl") return [0, 0];
+      if (value === "barbell curl" || value === "cable curl") return [1, equipmentRank];
+      if (value.includes("hammer")) return [2, equipmentRank];
+      if (value.includes("preacher")) return [3, equipmentRank];
+      if (value.includes("spider")) return [4, equipmentRank];
+      if (value.includes("concentration")) return [5, equipmentRank];
+      if (value.includes("incline")) return [6, equipmentRank];
+      if (value.includes("single arm")) return [7, equipmentRank];
+      return [8, equipmentRank];
+    }
+    if (familyTitle === "Triceps Pushdown" && value === "cable tricep pushdown") return [0, 0];
+    if (familyTitle === "Deadlift") {
+      if (value.includes("romanian") || value.includes(" rdl")) return [2, equipmentRank];
+      if (value.includes("sumo")) return [3, equipmentRank];
+      if (value.includes("stiff leg")) return [4, equipmentRank];
+    }
+    if (familyTitle === "Squat") {
+      if (value.includes("front squat")) return [2, equipmentRank];
+      if (value.includes("single leg") || value.includes("pistol")) return [4, equipmentRank];
+      if (value.includes("bulgarian") || value.includes("split squat")) return [5, equipmentRank];
+    }
+    if (value.includes("incline")) return [2, equipmentRank];
+    if (value.includes("decline")) return [3, equipmentRank];
+    if (value.includes("single arm") || value.includes("single leg")) return [4, equipmentRank];
+    if (value.includes("neutral grip")) return [5, equipmentRank];
+    if (value.includes("underhand grip") || value.includes("supinated")) return [6, equipmentRank];
+    if (value.includes("overhand grip") || value.includes("pronated")) return [7, equipmentRank];
+    if (["wide grip", "close grip", "narrow grip"].some((word) => value.includes(word))) return [8, equipmentRank];
+    return [1, equipmentRank];
   }
 
   function exerciseFamilies(records, byUsage = false) {
     const families = new Map();
     records.forEach((record) => {
-      const family = exerciseFamily(record.name);
-      const key = `${record.primary}|${family.key}`;
+      const family = exerciseFamily(record);
+      const key = `${browseMuscle(record)}|${family.key}`;
       if (!families.has(key)) families.set(key, { ...family, entries: [] });
       families.get(key).entries.push(record);
     });
-    families.forEach((family) => {
-      family.title = [...family.entries].sort((a, b) => a.name.length - b.name.length || a.name.localeCompare(b.name))[0].name;
-      if (byUsage) family.entries.sort((a, b) => b.useCount - a.useCount || a.recentRank - b.recentRank);
-    });
+    families.forEach((family) => family.entries.sort((a, b) => {
+      const left = variationOrder(a.name, family.title);
+      const right = variationOrder(b.name, family.title);
+      return left[0] - right[0] || left[1] - right[1] || a.name.localeCompare(b.name);
+    }));
     return [...families.values()].sort((a, b) => byUsage
       ? b.entries.reduce((total, entry) => total + entry.useCount, 0)
         - a.entries.reduce((total, entry) => total + entry.useCount, 0)
@@ -169,8 +252,7 @@
   function matchingRecords(records, query, muscle, equipment = "All", recentOnly = false) {
     const words = searchWords(query);
     return records.filter((record) => {
-      const muscles = [record.primary, ...record.secondary];
-      return (muscle === "All" || muscles.includes(muscle)) &&
+      return (muscle === "All" || record.primary === muscle || browseMuscle(record) === muscle) &&
         (equipment === "All" || normalize(record.equipment) === normalize(equipment)) &&
         (!recentOnly || Number.isFinite(record.recentRank)) &&
         words.every((word) => record.searchText.includes(word));
@@ -180,7 +262,7 @@
   function groupedRecords(records, muscle) {
     const groups = new Map();
     records.forEach((record) => {
-      const heading = muscle === "All" ? record.primary : muscle;
+      const heading = muscle === "All" ? browseMuscle(record) : muscle;
       if (!groups.has(heading)) groups.set(heading, []);
       groups.get(heading).push(record);
     });
@@ -350,7 +432,7 @@
   function renderFilters() {
     const filters = dialog.querySelector(".client-exercise-library-filters");
     filters.replaceChildren();
-    const available = new Set(sourceRecords.flatMap((record) => [record.primary, ...record.secondary]));
+    const available = new Set(sourceRecords.flatMap((record) => [record.primary, browseMuscle(record)]));
     const sorted = [...available].sort((a, b) => {
       const left = MUSCLE_ORDER.indexOf(a), right = MUSCLE_ORDER.indexOf(b);
       return (left < 0 ? 99 : left) - (right < 0 ? 99 : right) || a.localeCompare(b);
@@ -388,12 +470,11 @@
     const recent = showRecentFirst ? matched.filter((record) => Number.isFinite(record.recentRank))
       .filter((record) => !alternativeNames.has(record.name))
       .sort((a, b) => b.useCount - a.useCount || a.recentRank - b.recentRank).slice(0, 8) : [];
-    const recentNames = new Set(recent.map((record) => record.name));
     const groups = recentOnly
       ? [["Recent", [...matched].sort((a, b) => b.useCount - a.useCount || a.recentRank - b.recentRank)]]
       : [...(alternatives.length ? [["Suggested alternatives", alternatives]] : []),
         ...(recent.length ? [["Recently used", recent]] : []),
-        ...groupedRecords(matched.filter((record) => !recentNames.has(record.name) && !alternativeNames.has(record.name)), activeMuscle)];
+        ...groupedRecords(matched, activeMuscle)];
     groups.forEach(([muscle, records]) => {
       const group = element("section", "client-exercise-library-group");
       group.append(element("h3", "client-exercise-library-group-title", muscle));
@@ -457,7 +538,7 @@
         summaryCopy.append(element("strong", "", family.title));
         if (showsUseCount) summaryCopy.append(element("small", "client-exercise-library-item-use-count",
           usageLabel(family.entries.reduce((total, entry) => total + entry.useCount, 0))));
-        summary.append(summaryCopy, element("span", "", `View ${family.entries.length} variants`));
+        summary.append(summaryCopy, element("span", "", `${family.entries.length} variations`));
         const variants = element("ul", "client-exercise-library-variants");
         family.entries.forEach((record) => renderEntry(record, variants, true));
         details.append(summary, variants);

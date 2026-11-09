@@ -53,6 +53,7 @@ function notifyCoachAboutCustomExercises() {}
 function openCustomWorkoutExerciseEditor() {}
 ${production('isBrandedExerciseImage')}
 ${production('customWorkoutPickerMatches')}
+${production('customWorkoutPickerArmFamily')}
 ${production('renderCustomWorkoutPickerResults')}
 ${production('openCustomWorkoutExerciseDialog')}
 `;
@@ -108,6 +109,29 @@ ${production('openCustomWorkoutExerciseDialog')}
       assert.equal(await page.locator('[data-workout-picker-error]').isVisible(), true);
       await page.locator('[data-close-exercise-dialog]').click();
       await page.locator('.custom-workout-exercise-dialog').waitFor({ state: 'detached' });
+
+      await page.evaluate(() => {
+        extraPickerRecords = [
+          { name: 'Dumbbell Curl', libraryEntry: { primary_muscle: 'biceps' } },
+          { name: 'Barbell Row', libraryEntry: { primary_muscle: 'back', secondary_muscles: ['biceps'] } },
+          { name: 'Cable Triceps Pushdown', libraryEntry: { primary_muscle: 'triceps' } },
+          { name: 'Barbell Bench Press', libraryEntry: { primary_muscle: 'chest', secondary_muscles: ['triceps'] } }
+        ];
+        openCustomWorkoutExerciseDialog(document.getElementById('trigger'));
+      });
+      await page.locator('[data-picker-chip="biceps"]').click();
+      assert.deepEqual(await page.locator('.custom-picker-family-heading').allInnerTexts(),
+        ['Biceps Curl']);
+      assert.deepEqual(await page.locator('[data-custom-exercise-suggestion]').evaluateAll(rows => rows.map(row => row.dataset.customExerciseSuggestion)),
+        ['Dumbbell Curl']);
+      await page.locator('[data-picker-chip="triceps"]').click();
+      assert.deepEqual(await page.locator('.custom-picker-family-heading').allInnerTexts(),
+        ['Triceps Pushdown']);
+      assert.deepEqual(await page.locator('[data-custom-exercise-suggestion]').evaluateAll(rows => rows.map(row => row.dataset.customExerciseSuggestion)),
+        ['Cable Triceps Pushdown']);
+      await page.locator('[data-close-exercise-dialog]').click();
+      await page.locator('.custom-workout-exercise-dialog').waitFor({ state: 'detached' });
+      await page.evaluate(() => { extraPickerRecords = []; });
 
       for (const [format, slots] of [['superset', 2], ['circuit', 3]]) {
         await page.evaluate((value) => {

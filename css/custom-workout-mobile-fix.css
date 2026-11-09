@@ -893,6 +893,14 @@
   text-overflow: clip !important;
 }
 
+.dashboard-page .custom-workout-exercise-dialog .custom-picker-family-heading {
+  padding: 7px 3px 2px;
+  color: #59b7f0;
+  font-size: .75rem;
+  font-weight: 800;
+  letter-spacing: .03em;
+}
+
 .dashboard-page .custom-workout-exercise-dialog [hidden] {
   display: none !important;
 }
