@@ -25,14 +25,17 @@ const imagePath = path.join(root,
 const image = 'https://fixture.test/exercise-images/approved/2026-10-05/webp-480/45-degree-glute-hip-drive.webp';
 const fixture = `
 const image = ${JSON.stringify(image)};
-var trainingLogs = [], muscleMeta = {}, customWorkoutTitle = 'Custom Workout';
+var trainingLogs = [{ exercise_name: 'Leg Press' }], muscleMeta = {}, customWorkoutTitle = 'Custom Workout';
 var addAttempts = 0, failAdd = false;
+var exerciseNameMatcher = { normalizeName: value => String(value).trim().toLowerCase() };
 function escapeHtml(value) { return String(value ?? '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;'); }
 function customWorkoutExerciseAddConfig(format) { return { count: format === 'superset' ? 2 : format === 'circuit' ? 3 : 1, label: 'Add exercise', hint: '' }; }
 function normalizeCustomWorkoutFormat(value) { return value || 'single'; }
 function customWorkoutCarousels() { return []; }
 function customWorkoutCarouselCards() { return []; }
-function customWorkoutPickerMatches() { return [{ name: 'Leg Press', muscleLabel: 'Quads', libraryEntry: { image_url: image } }]; }
+function exerciseSuggestionRecords() { return [{ name: 'Leg Press', aliases: ['Leg Machine Press'], libraryEntry: { image_url: image, equipment: 'machine', primary_muscle: 'quads' } }]; }
+function exerciseSuggestionMuscleLabel(entry) { return entry.primary_muscle; }
+function customExerciseSuggestionMatches(query) { return exerciseSuggestionRecords().filter(record => record.name.toLowerCase().includes(query.toLowerCase())).map(record => ({ name: record.name, muscleLabel: 'Quads', libraryEntry: record.libraryEntry })); }
 function trustedExerciseImageUrl(value) { return value; }
 function responsiveExerciseImageUrls(value) { return { thumbnailUrl: value }; }
 function addCustomWorkoutPickedExercise(panel, name) {
@@ -48,6 +51,7 @@ function addCustomWorkoutPickedExercise(panel, name) {
 function notifyCoachAboutCustomExercises() {}
 function openCustomWorkoutExerciseEditor() {}
 ${production('isBrandedExerciseImage')}
+${production('customWorkoutPickerMatches')}
 ${production('renderCustomWorkoutPickerResults')}
 ${production('openCustomWorkoutExerciseDialog')}
 `;
@@ -161,6 +165,27 @@ ${production('openCustomWorkoutExerciseDialog')}
         assert.equal(selectedPill.background, 'rgb(255, 212, 0)');
         assert.equal(selectedPill.color, 'rgb(17, 17, 17)');
         assert.equal(selectedPill.radius, '999px');
+        await page.locator('[data-picker-chip="chest"]').click();
+        assert.equal(await page.locator('[data-custom-exercise-suggestion]').count(), 0,
+          `${format} category filters can hide a selected exercise`);
+        await page.locator('[data-picker-chip="recent"]').click();
+        assert.equal(await page.locator('[data-custom-exercise-suggestion][aria-selected="true"] .custom-picker-add').innerText(), 'Selected',
+          `${format} Recent restores the selected pill`);
+        await page.locator('#custom-workout-picker-search').fill('Leg');
+        await page.waitForFunction(() => document.querySelector('[data-workout-picker-results-label]')?.textContent === '1 result');
+        assert.equal(await page.locator('[data-custom-exercise-suggestion][aria-selected="true"] .custom-picker-add').innerText(), 'Selected',
+          `${format} the selected pill survives a new search`);
+        await page.locator('[data-workout-picker-clear]').click();
+        await page.waitForFunction(() => document.querySelector('[data-workout-picker-results-label]')?.textContent === 'Recent · 1');
+        await page.locator('[data-picker-chip="all"]').click();
+        assert.equal(await page.locator('[data-custom-exercise-suggestion][aria-selected="true"] .custom-picker-add').innerText(), 'Selected',
+          `${format} clearing search and switching to All keeps the selection`);
+        await page.locator('[data-custom-exercise-suggestion][aria-selected="true"]').click();
+        assert.equal(await page.locator('.custom-workout-exercise-dialog').evaluate(dialog => dialog._pickerSelectedNames.length), 0,
+          `${format} choosing an already selected exercise toggles it off instead of duplicating it`);
+        await page.locator('[data-custom-exercise-suggestion]').first().click();
+        assert.deepEqual(await page.locator('.custom-workout-exercise-dialog').evaluate(dialog => dialog._pickerSelectedNames), ['Leg Press'],
+          `${format} the exercise can be reselected once without a duplicate slot`);
         for (const name of (format === 'superset' ? ['Cable Row'] : ['Cable Row', 'Push-Up'])) {
           await page.locator('#custom-workout-picker-search').fill(name);
           await page.locator('[data-workout-picker-queue-typed]').waitFor({ state: 'visible' });
