@@ -43,7 +43,8 @@ test("the exercise list offers Add exercise and picker starts with results below
   assert.match(scope.workoutExerciseListMarkup(), /data-workout-exercise-add/);
   const dialogSource = declaration("openCustomWorkoutExerciseDialog");
   assert.ok(dialogSource.indexOf('id="custom-workout-picker-search"') < dialogSource.indexOf('id="custom-workout-picker-options"'));
-  assert.match(dialogSource, /data-workout-picker-filter/);
+  assert.match(dialogSource, /data-workout-picker-equipment/);
+  assert.ok(dialogSource.indexOf('data-workout-picker-equipment') < dialogSource.indexOf('id="custom-workout-picker-options"'));
   assert.match(dialogSource, /renderCustomWorkoutPickerResults\(dialog\)/);
   for (const name of ["exerciseCard", "customWorkoutGroupNameRowMarkup", "customWorkoutCardMarkup"]) {
     const markup = declaration(name);
@@ -68,6 +69,25 @@ test("picker can browse without a query and filter results by muscle group", () 
   assert.deepEqual(Array.from(scope.customWorkoutPickerMatches("")).map((item) => item.name), records.map((item) => item.name));
   assert.deepEqual(Array.from(scope.customWorkoutPickerMatches("", "lower")).map((item) => item.name), ["Leg press"]);
   assert.deepEqual(Array.from(scope.customWorkoutPickerMatches("curl", "upper")).map((item) => item.name), ["Bicep curl"]);
+});
+
+test("picker searches exercise names with muscle labels and filters by equipment", () => {
+  const records = [
+    { name: "Incline Barbell Bench Press", aliases: [], libraryEntry: { primary_muscle: "chest", equipment: "barbell" } },
+    { name: "Incline Dumbbell Press", aliases: [], libraryEntry: { primary_muscle: "chest", equipment: "dumbbells" } },
+    { name: "Seated Row", aliases: [], libraryEntry: { primary_muscle: "back", equipment: "machine" } }
+  ];
+  const scope = vm.createContext({
+    currentProgram: { workouts: [] }, trainingLogs: [], exerciseNameMatcher: null,
+    exerciseSuggestionRecords: () => records,
+    exerciseSuggestionMuscleLabel: (entry) => entry?.primary_muscle || "",
+    customExerciseSuggestionMatches: () => []
+  });
+  vm.runInContext(declaration("customWorkoutPickerMatches"), scope);
+  assert.deepEqual(Array.from(scope.customWorkoutPickerMatches("incline chest")).map((item) => item.name),
+    ["Incline Barbell Bench Press", "Incline Dumbbell Press"]);
+  assert.deepEqual(Array.from(scope.customWorkoutPickerMatches("incline chest", "all", "dumbbell")).map((item) => item.name),
+    ["Incline Dumbbell Press"]);
 });
 
 test("metadata uses actual working sets and entered reps, including uniform zero and ranges", () => {

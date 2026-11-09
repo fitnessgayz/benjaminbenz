@@ -28,7 +28,7 @@ const image = ${JSON.stringify(image)};
 var trainingLogs = [], muscleMeta = {}, customWorkoutTitle = 'Custom Workout';
 var addAttempts = 0, failAdd = false;
 function escapeHtml(value) { return String(value ?? '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;'); }
-function customWorkoutExerciseAddConfig() { return { count: 1, label: 'Add exercise', hint: '' }; }
+function customWorkoutExerciseAddConfig(format) { return { count: format === 'superset' ? 2 : format === 'circuit' ? 3 : 1, label: 'Add exercise', hint: '' }; }
 function normalizeCustomWorkoutFormat(value) { return value || 'single'; }
 function customWorkoutCarousels() { return []; }
 function customWorkoutCarouselCards() { return []; }
@@ -89,6 +89,7 @@ ${production('openCustomWorkoutExerciseDialog')}
       }));
       assert.equal(focus.outline, 'none');
       assert.match(focus.rowShadow, /rgb\(255, 212, 0\)/);
+      await page.locator('#custom-workout-picker-search').evaluate(input => input.blur());
       await page.locator('.custom-workout-exercise-dialog button[type="submit"]').click();
       await page.locator('.custom-workout-exercise-dialog').waitFor({ state: 'detached' });
       assert.equal(await page.locator('.custom-workout-exercise-dialog').count(), 0, 'Picker closes after a successful add');
@@ -101,6 +102,37 @@ ${production('openCustomWorkoutExerciseDialog')}
       assert.equal(await page.locator('.custom-workout-exercise-dialog').count(), 1, 'Picker stays open when add fails');
       assert.equal(await page.locator('[data-workout-picker-error]').isVisible(), true);
       await page.locator('[data-close-exercise-dialog]').click();
+      await page.locator('.custom-workout-exercise-dialog').waitFor({ state: 'detached' });
+
+      for (const [format, slots] of [['superset', 2], ['circuit', 3]]) {
+        await page.evaluate((value) => {
+          document.getElementById('panel').dataset.customWorkoutFormat = value;
+          openCustomWorkoutExerciseDialog(document.getElementById('trigger'));
+          const dialog = document.querySelector('.custom-workout-exercise-dialog');
+          dialog.style.setProperty('--picker-viewport-height', '440px');
+          dialog.classList.add('is-keyboard-open');
+        }, format);
+        await page.locator('#custom-workout-picker-search').fill('Leg');
+        await page.locator('[data-workout-picker-queue-typed]').waitFor({ state: 'visible' });
+        const layout = await page.evaluate(() => {
+          const dialog = document.querySelector('.custom-workout-exercise-dialog');
+          const selected = dialog.querySelector('[data-workout-picker-selected-list]');
+          const result = dialog.querySelector('[data-custom-exercise-suggestion]');
+          const bottom = dialog.getBoundingClientRect().bottom;
+          return { slots: selected.children.length, selectedVisible: selected.getBoundingClientRect().height > 0,
+            resultVisible: result.getBoundingClientRect().top < bottom && result.getBoundingClientRect().height > 0,
+            resultTop: result.getBoundingClientRect().top, bottom,
+            scrollWidth: dialog.scrollWidth, clientWidth: dialog.clientWidth };
+        });
+        assert.equal(layout.slots, slots, `${format} must keep each named selection slot`);
+        assert.ok(layout.selectedVisible && layout.resultVisible, `${format} slots and a result must fit above the keyboard`);
+        assert.ok(layout.scrollWidth <= layout.clientWidth + 1, `${format} picker must not overflow horizontally`);
+        if (process.env.MOBILE_PICKER_SCREENSHOT && width === 390 && format === 'circuit') {
+          await page.screenshot({ path: process.env.MOBILE_PICKER_SCREENSHOT });
+        }
+        await page.locator('[data-close-exercise-dialog]').click();
+        await page.locator('.custom-workout-exercise-dialog').waitFor({ state: 'detached' });
+      }
 
       await page.evaluate((src) => {
         document.body.innerHTML = `<section data-client-dashboard-panel="logs"><div class="client-logs-tabs"><button>Workouts</button><button>Exercises</button><button>Health</button></div><p class="training-log-download-status"></p><div class="client-workout-import-preview" hidden></div><p id="client-workout-import-status"></p><p class="training-log-copy-status"></p><div id="client-logs-workouts"><section class="client-saved-log-calendar"><strong>November 2026</strong></section></div><div class="training-log-history-card-details"><div class="client-logs-detail-actions client-logs-detail-primary-actions"><button class="training-log-share-button" data-share-workout-history>Share workout</button><button class="training-log-copy-button">Copy workout</button></div><div class="apple-workout-empty"><button>+ Add Apple Workout</button></div><article class="training-log-row-nested"><div class="training-log-exercise-head"><span class="training-log-exercise-image"><button class="exercise-media-button exercise-media-button-branded-crop"><img src="${src}" alt=""></button></span><strong>Leg Press</strong></div></article></div></section>`;
@@ -125,7 +157,7 @@ ${production('openCustomWorkoutExerciseDialog')}
           scrollWidth: document.documentElement.scrollWidth };
       });
       assert.equal(layout.photoWidth, layout.columnWidth, 'Photo frame must fit its grid column');
-      assert.equal(layout.fit, 'contain', 'Logs photo must preserve its full aspect ratio');
+      assert.equal(layout.fit, 'fill', 'Logs photo uses its natural dimensions while cropping to the photo panels');
       assert.equal(layout.imgPosition, 'absolute', 'Logs should frame the photo panels of a branded card');
       assert.ok(layout.imageWidth > layout.photoWidth && layout.imageHeight >= layout.photoHeight - 1,
         'Branded photo panels should fill the Logs thumbnail');

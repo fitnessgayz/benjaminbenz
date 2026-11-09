@@ -7497,6 +7497,10 @@ if (typeof document !== "undefined") document.addEventListener("load", (event) =
   if (card && image.naturalHeight) {
     card.classList.toggle("is-wide-branded-card", image.naturalWidth / image.naturalHeight > 2.15);
   }
+  const pickerImage = image.closest(".custom-picker-image.is-branded");
+  if (pickerImage && image.naturalHeight) {
+    pickerImage.classList.toggle("is-wide-branded-card", image.naturalWidth / image.naturalHeight > 2.15);
+  }
 }, true);
 
 function openClientExerciseLibrary(input, onSelect, { referenceName = "" } = {}) {
@@ -13083,7 +13087,7 @@ function workoutGroupReadyForRest(format, exerciseCount) {
   return exerciseCount >= customWorkoutExerciseAddConfig(format).count;
 }
 
-function customWorkoutPickerMatches(query, category = "all") {
+function customWorkoutPickerMatches(query, category = "all", equipment = "all") {
   const text = String(query || "").trim();
   const records = exerciseSuggestionRecords();
   const normalized = exerciseNameMatcher?.normalizeName(text) || text.toLowerCase();
@@ -13098,12 +13102,27 @@ function customWorkoutPickerMatches(query, category = "all") {
     const key = String(log.exercise_name || "").trim().toLowerCase();
     if (key) useCounts.set(key, (useCounts.get(key) || 0) + 1);
   });
-  const matches = normalized
-    ? customExerciseSuggestionMatches(text)
-    : records.map((record) => ({ name: record.name, muscleLabel: exerciseSuggestionMuscleLabel(record.libraryEntry), libraryEntry: record.libraryEntry }));
-  return matches.filter((match) => {
-    if (category === "all") return true;
+  const matches = records.map((record) => ({
+    name: record.name,
+    muscleLabel: exerciseSuggestionMuscleLabel(record.libraryEntry),
+    libraryEntry: record.libraryEntry
+  }));
+  const tokens = normalized.split(/[^a-z0-9]+/).filter(Boolean);
+  const orderedMatches = normalized
+    ? [...customExerciseSuggestionMatches(text), ...matches.filter((match) => {
+        const record = byName.get(match.name);
+        const words = [record?.name, ...(record?.aliases || []), match.libraryEntry?.equipment,
+          match.muscleLabel].join(" ").toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+        return tokens.every((token) => words.some((word) => word.startsWith(token)));
+      })].filter((match, index, all) => all.findIndex((item) => item.name === match.name) === index)
+    : matches;
+  return orderedMatches.filter((match) => {
     const record = byName.get(match.name);
+    const equipmentLabel = String(record?.libraryEntry?.equipment || "").toLowerCase();
+    if (equipment !== "all" && (equipment === "other"
+      ? /barbell|dumbbell|cable|machine|smith|bodyweight/.test(equipmentLabel)
+      : !equipmentLabel.includes(equipment))) return false;
+    if (category === "all") return true;
     const exercise = record?.libraryEntry;
     const muscles = [exercise?.primary_muscle, ...(Array.isArray(exercise?.secondary_muscles) ? exercise.secondary_muscles : [])]
       .join(" ").toLowerCase();
@@ -13125,36 +13144,46 @@ function customWorkoutPickerMatches(query, category = "all") {
 
 function renderCustomWorkoutPickerResults(dialog) {
   const input = dialog?.querySelector("#custom-workout-picker-search");
-  const filter = dialog?.querySelector("[data-workout-picker-filter]");
+  const category = dialog?.querySelector('[data-picker-chip][aria-pressed="true"]')?.dataset.pickerChip || "all";
+  const equipment = dialog?.querySelector("[data-workout-picker-equipment]")?.value || "all";
   const menu = dialog?.querySelector("[data-custom-exercise-suggestions]");
   if (!input || !menu) return;
-  const matches = customWorkoutPickerMatches(input.value,
-    input.value.trim() ? "all" : filter?.value || "all");
+  const matches = customWorkoutPickerMatches(input.value, category, equipment);
+  const query = input.value.trim();
+  const knownRecords = typeof exerciseSuggestionRecords === "function" ? exerciseSuggestionRecords() : matches;
+  const hasExactMatch = knownRecords.some((record) =>
+    [record.name, ...(record.aliases || [])].some((name) => name.toLowerCase() === query.toLowerCase()));
+  const customAction = dialog.querySelector("[data-workout-picker-queue-typed]");
+  if (customAction) {
+    customAction.hidden = !query || hasExactMatch;
+    customAction.textContent = `＋ Add “${query}” as custom`;
+  }
+  const resultsLabel = dialog.querySelector("[data-workout-picker-results-label]");
+  if (resultsLabel) resultsLabel.textContent = query
+    ? `${matches.length} ${matches.length === 1 ? "result" : "results"}`
+    : `${category === "all" ? "All exercises" : category.charAt(0).toUpperCase() + category.slice(1)} · ${matches.length}`;
   const selected = dialog._pickerSelectedNames || [];
-  const usageByName = new Map();
-  trainingLogs.forEach((log) => {
-    const name = String(log.exercise_name || "").trim().toLowerCase();
-    if (!name) return;
-    if (!usageByName.has(name)) usageByName.set(name, new Set());
-    usageByName.get(name).add(log.session_id || log.workout_session_id || log.entry_date);
-  });
   menu.innerHTML = matches.map((match) => {
     const imageUrl = trustedExerciseImageUrl(match.libraryEntry?.image_url);
     const thumbnail = imageUrl ? responsiveExerciseImageUrls(imageUrl).thumbnailUrl : "";
     const muscles = String(match.libraryEntry?.primary_muscle || "").toLowerCase();
     const fallback = muscleMeta[muscles] ? `images/muscle-highlights/library/${muscles}.png?v=2` : "";
-    const used = usageByName.get(match.name.toLowerCase())?.size || 0;
+    const equipmentName = String(match.libraryEntry?.equipment || "").replace(/[_-]+/g, " ")
+      .replace(/\b\w/g, (letter) => letter.toUpperCase());
+    const primaryMuscle = String(match.libraryEntry?.primary_muscle || "").replace(/[_-]+/g, " ")
+      .replace(/\b\w/g, (letter) => letter.toUpperCase());
+    const meta = [equipmentName, primaryMuscle].filter(Boolean).join(" · ") || match.muscleLabel || "Exercise";
     const isSelected = selected.includes(match.name);
     return `<button type="button" role="option" aria-selected="${isSelected}" data-custom-exercise-suggestion="${escapeHtml(match.name)}">
       <span class="custom-picker-image${!thumbnail ? " is-fallback" : isBrandedExerciseImage(thumbnail) ? " is-branded" : ""}">${thumbnail || fallback ? `<img src="${escapeHtml(thumbnail || fallback)}" alt="" loading="lazy" />` : "✚"}</span>
       <span class="custom-picker-copy"><strong>${escapeHtml(match.name)}</strong>
-      <small>${escapeHtml(match.muscleLabel || "Exercise")}${used ? ` · Used ${used}×` : ""}</small></span>
-      <span class="custom-picker-add" aria-hidden="true">${isSelected ? "Selected" : "+"}</span>
+      <small>${escapeHtml(meta)}</small></span>
+      <span class="custom-picker-add" aria-hidden="true">${isSelected ? "✓" : "+"}</span>
     </button>`;
-  }).join("") + '<button type="button" data-custom-exercise-more>More exercises →</button>';
+  }).join("");
   menu.hidden = false;
   input.setAttribute("aria-expanded", "true");
-  dialog.querySelector("[data-workout-picker-empty]")?.toggleAttribute("hidden", matches.length > 0);
+  dialog.querySelector("[data-workout-picker-empty]")?.toggleAttribute("hidden", matches.length > 0 || !query);
 }
 
 
@@ -13302,11 +13331,10 @@ function openCustomWorkoutExerciseDialog(trigger, mode = "add") {
   const minimum = !grouped ? 1 : format === "circuit" && sourceCarousel && filledLastGroup >= addConfig.count
     ? 1 : filledLastGroup > 0 && filledLastGroup < addConfig.count
       ? addConfig.count - filledLastGroup : addConfig.count;
-  const hasRecentExercises = typeof trainingLogs !== "undefined"
-    && trainingLogs.some((log) => String(log.exercise_name || "").trim());
   const selectedNames = [];
   const dialog = document.createElement("dialog");
   dialog.className = `custom-workout-exercise-dialog${!removing ? " is-grouped-picker" : ""}`;
+  dialog.setAttribute("data-picker-format", format);
   dialog._pickerSelectedNames = selectedNames;
   dialog.setAttribute("aria-labelledby", "custom-workout-exercise-dialog-title");
   dialog.innerHTML = `
@@ -13320,7 +13348,7 @@ function openCustomWorkoutExerciseDialog(trigger, mode = "add") {
       <form>
         ${grouped ? "" : addConfig.hint ? `<p>${addConfig.hint}</p>` : ""}
         <div class="custom-workout-name-editor">
-          ${grouped ? '<p class="custom-workout-picker-prompt" data-workout-picker-prompt role="status" aria-live="polite">STEP 1 · PICK FIRST EXERCISE</p>' : '<p class="custom-workout-picker-prompt">PICK AN EXERCISE</p>'}
+          ${grouped ? '<p class="custom-workout-picker-prompt" data-workout-picker-prompt role="status" aria-live="polite">STEP 1 · PICK FIRST EXERCISE</p>' : ""}
           ${grouped ? `<div class="custom-workout-picker-selected" data-workout-picker-selected>
             <strong data-workout-picker-selected-count></strong>
             <div data-workout-picker-selected-list></div>
@@ -13329,20 +13357,24 @@ function openCustomWorkoutExerciseDialog(trigger, mode = "add") {
           <label for="custom-workout-picker-search">Search exercises</label>
           <div class="custom-workout-picker-search-row">
             <input id="custom-workout-picker-search" type="text" maxlength="160" autocomplete="off" autofocus ${grouped ? "" : "required"}
-              placeholder="Type or search any exercise name" data-exercise-title-name aria-autocomplete="list" aria-expanded="false" aria-controls="custom-workout-picker-options" />
-            <select data-workout-picker-filter aria-label="Filter exercise list">
-              <option value="all" ${!hasRecentExercises ? "selected" : ""}>All</option><option value="recent" ${hasRecentExercises ? "selected" : ""}>Recent</option><option value="history">Program & history</option>
-              <option value="chest">Chest</option><option value="back">Back</option><option value="shoulders">Shoulders</option><option value="arms">Arms</option>
-              <option value="upper">Upper body</option><option value="lower">Lower body</option><option value="core">Core</option>
-            </select>
+              placeholder="Search or type your own…" data-exercise-title-name aria-autocomplete="list" aria-expanded="false" aria-controls="custom-workout-picker-options" />
+            <button type="button" data-workout-picker-clear aria-label="Clear exercise search">×</button>
           </div>
           <div class="custom-picker-chips" role="group" aria-label="Exercise categories">
-            ${["Recent", "All", "Chest", "Back", "Shoulders", "Arms"].map((label) => `<button type="button" data-picker-chip="${label.toLowerCase()}" aria-pressed="${label === (hasRecentExercises ? "Recent" : "All")}">${label}</button>`).join("")}
+            <select data-workout-picker-equipment aria-label="Filter by equipment">
+              <option value="all">Equipment</option><option value="barbell">Barbell</option><option value="dumbbell">Dumbbells</option>
+              <option value="cable">Cable</option><option value="machine">Machine</option><option value="smith">Smith machine</option>
+              <option value="bodyweight">Bodyweight</option><option value="other">Other</option>
+            </select>
+            ${["Recent", "All", "Chest", "Back", "Shoulders", "Arms", "Lower", "Core"].map((label) => `<button type="button" data-picker-chip="${label.toLowerCase()}" aria-pressed="${label === "All"}">${label}</button>`).join("")}
           </div>
-          <div class="custom-workout-exercise-options custom-workout-suggestion-menu" id="custom-workout-picker-options" role="listbox" aria-label="Exercise suggestions" data-custom-exercise-suggestions hidden></div>
-          <p data-workout-picker-empty hidden>No matching exercises. You can still add the name you typed.</p>
+          <div class="custom-picker-results">
+            <p data-workout-picker-results-label role="status" aria-live="polite"></p>
+            <button class="custom-workout-picker-queue-typed" type="button" data-workout-picker-queue-typed hidden></button>
+            <p data-workout-picker-empty hidden>No matching library exercises.</p>
+            <div class="custom-workout-exercise-options custom-workout-suggestion-menu" id="custom-workout-picker-options" role="listbox" aria-label="Exercise suggestions" data-custom-exercise-suggestions hidden></div>
+          </div>
           <p data-workout-picker-error role="alert" hidden>Could not add this exercise. Please try again.</p>
-          ${grouped ? '<button class="custom-workout-picker-queue-typed" type="button" data-workout-picker-queue-typed hidden>Add typed name to selection</button>' : ""}
         </div>
         <button class="custom-workout-picker-browse" type="button" data-custom-exercise-browse>Browse full library</button>
         ${grouped ? "" : `<button class="button button-dark" type="submit">${addConfig.label}</button>`}
@@ -13354,9 +13386,6 @@ function openCustomWorkoutExerciseDialog(trigger, mode = "add") {
     if (!grouped) return;
     const selected = dialog.querySelector("[data-workout-picker-selected]");
     const list = dialog.querySelector("[data-workout-picker-selected-list]");
-    const input = dialog.querySelector("#custom-workout-picker-search");
-    const queueTyped = dialog.querySelector("[data-workout-picker-queue-typed]");
-    if (queueTyped) queueTyped.hidden = !input?.value.trim();
     const total = selectedNames.length;
     const valid = total >= minimum && (format !== "superset" || (total - minimum) % 2 === 0);
     const prompt = dialog.querySelector("[data-workout-picker-prompt]");
@@ -13389,6 +13418,7 @@ function openCustomWorkoutExerciseDialog(trigger, mode = "add") {
       selectedNames.splice(0, selectedNames.length, String(name).trim());
       input.value = selectedNames[0];
       renderCustomWorkoutPickerResults(dialog);
+      input.blur?.();
       return;
     }
     if (!String(name).trim()) return;
@@ -13399,12 +13429,12 @@ function openCustomWorkoutExerciseDialog(trigger, mode = "add") {
     const menu = dialog.querySelector("[data-custom-exercise-suggestions]");
     renderSelection();
     renderCustomWorkoutPickerResults(dialog);
+    if (selectedNames.length >= minimum && (format !== "superset" || (selectedNames.length - minimum) % 2 === 0)) {
+      input.blur?.();
+    }
   };
   const scheduleSearchRefresh = () => {
     const input = dialog.querySelector("#custom-workout-picker-search");
-    const menu = dialog.querySelector("[data-custom-exercise-suggestions]");
-    if (menu) menu.hidden = true;
-    input?.setAttribute("aria-expanded", "false");
     if (searchRefreshTimer) window.clearTimeout(searchRefreshTimer);
     searchRefreshTimer = window.setTimeout(() => {
       searchRefreshTimer = 0;
@@ -13412,7 +13442,19 @@ function openCustomWorkoutExerciseDialog(trigger, mode = "add") {
     }, 240);
   };
   document.body.append(dialog);
+  const viewport = typeof window !== "undefined" ? window.visualViewport : null;
+  const updatePickerViewport = () => {
+    if (!dialog.style?.setProperty || !viewport) return;
+    dialog.style.setProperty("--picker-viewport-height", `${viewport.height}px`);
+    dialog.style.setProperty("--picker-viewport-top", `${viewport.offsetTop}px`);
+    dialog.classList?.toggle("is-keyboard-open", viewport.height < window.innerHeight - 140);
+  };
+  updatePickerViewport();
+  viewport?.addEventListener?.("resize", updatePickerViewport);
+  viewport?.addEventListener?.("scroll", updatePickerViewport);
   dialog.addEventListener("close", () => {
+    viewport?.removeEventListener?.("resize", updatePickerViewport);
+    viewport?.removeEventListener?.("scroll", updatePickerViewport);
     if (searchRefreshTimer) window.clearTimeout(searchRefreshTimer);
     dialog.remove();
     if (addedCard?.isConnected) openCustomWorkoutExerciseEditor(addedCard);
@@ -13439,10 +13481,15 @@ function openCustomWorkoutExerciseDialog(trigger, mode = "add") {
   dialog.addEventListener("click", (event) => {
     event.stopPropagation();
     if (event.target.closest("[data-close-exercise-dialog]")) return dialog.close();
+    if (event.target.closest("[data-workout-picker-clear]")) {
+      const input = dialog.querySelector("#custom-workout-picker-search");
+      input.value = "";
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      input.focus();
+      return;
+    }
     const chip = event.target.closest("[data-picker-chip]");
     if (chip) {
-      const filter = dialog.querySelector("[data-workout-picker-filter]");
-      filter.value = chip.dataset.pickerChip;
       dialog.querySelectorAll("[data-picker-chip]").forEach((item) => {
         item.setAttribute("aria-pressed", String(item === chip));
       });
@@ -13489,7 +13536,7 @@ function openCustomWorkoutExerciseDialog(trigger, mode = "add") {
     if (event.target.matches("#custom-workout-picker-search")) scheduleSearchRefresh();
   });
   dialog.addEventListener("change", (event) => {
-    if (event.target.matches("[data-workout-picker-filter]")) renderCustomWorkoutPickerResults(dialog);
+    if (event.target.matches("[data-workout-picker-equipment]")) renderCustomWorkoutPickerResults(dialog);
   });
   dialog.addEventListener("submit", (event) => { event.preventDefault(); event.stopPropagation(); add(); });
   dialog.addEventListener("keydown", (event) => {
