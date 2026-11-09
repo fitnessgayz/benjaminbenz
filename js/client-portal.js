@@ -13407,6 +13407,7 @@ function openCustomWorkoutExerciseDialog(trigger, mode = "add") {
     }).join("");
     const submit = dialog.querySelector('button[type="submit"]');
     submit.disabled = !valid;
+    dialog.classList?.toggle("is-ready-to-add", valid);
     submit.textContent = format === "superset" && total > minimum && valid
       ? `Add ${total / 2} pairs · ${total} selected`
       : `Add ${format === "superset" ? "pair" : "circuit"} · ${Math.min(total, minimum)}/${minimum}`;

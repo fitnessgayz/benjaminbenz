@@ -127,6 +127,20 @@ ${production('openCustomWorkoutExerciseDialog')}
         assert.equal(layout.slots, slots, `${format} must keep each named selection slot`);
         assert.ok(layout.selectedVisible && layout.resultVisible, `${format} slots and a result must fit above the keyboard`);
         assert.ok(layout.scrollWidth <= layout.clientWidth + 1, `${format} picker must not overflow horizontally`);
+        await page.locator('[data-custom-exercise-suggestion]').first().click();
+        for (const name of (format === 'superset' ? ['Cable Row'] : ['Cable Row', 'Push-Up'])) {
+          await page.locator('#custom-workout-picker-search').fill(name);
+          await page.locator('[data-workout-picker-queue-typed]').waitFor({ state: 'visible' });
+          await page.locator('[data-workout-picker-queue-typed]').click();
+        }
+        const ready = await page.locator('[data-workout-picker-submit]').evaluate(button => ({
+          disabled: button.disabled, visible: getComputedStyle(button).display !== 'none',
+          background: getComputedStyle(button).backgroundColor,
+          label: button.textContent
+        }));
+        assert.equal(ready.disabled, false, `${format} action becomes enabled once all slots are chosen`);
+        assert.equal(ready.visible, true, `${format} action stays visible above the keyboard`);
+        assert.equal(ready.background, 'rgb(255, 212, 0)', `${format} action is highlighted in gold`);
         if (process.env.MOBILE_PICKER_SCREENSHOT && width === 390 && format === 'circuit') {
           await page.screenshot({ path: process.env.MOBILE_PICKER_SCREENSHOT });
         }

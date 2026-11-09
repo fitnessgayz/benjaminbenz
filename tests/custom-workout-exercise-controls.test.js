@@ -397,6 +397,7 @@ function dialogFixture(format = "single") {
   const panel = { id: "client-workout-panel-0", dataset: { customWorkoutFormat: format }, isConnected: true, matches: () => true, querySelectorAll: () => cards, contains: (card) => cards.includes(card) };
   const trigger = { isConnected: true, disabled: false, closest: (selector) => selector === ".client-workout-panel-custom" ? panel : null, focus: () => calls.focus++ };
   const dialog = {
+    classList: { names: new Set(), toggle(name, enabled) { if (enabled) this.names.add(name); else this.names.delete(name); }, contains(name) { return this.names.has(name); } },
     setAttribute() {}, addEventListener: (name, handler) => { handlers[name] = handler; },
     querySelector: (selector) => ({
       "#custom-workout-picker-search": input,
@@ -542,6 +543,7 @@ test("superset picker collects two exercises before one add action", () => {
   choose("Lat Pulldown");
   assert.equal(fixture.prompt.textContent, "PAIR READY · 2 SELECTED");
   assert.equal(fixture.submit.disabled, false);
+  assert.equal(fixture.dialog.classList.contains("is-ready-to-add"), true);
   fixture.input.value = "Unselected search text";
   fixture.handlers.submit({ preventDefault() {}, stopPropagation() {} });
   assert.deepEqual(fixture.calls.add, ["Cable Row", "Lat Pulldown"]);
