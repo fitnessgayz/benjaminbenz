@@ -7,6 +7,7 @@ const root = path.resolve(__dirname, "..");
 const portal = fs.readFileSync(path.join(root, "js/client-portal.js"), "utf8");
 const css = fs.readFileSync(path.join(root, "css/custom-workout-mobile-fix.css"), "utf8");
 const workoutCss = fs.readFileSync(path.join(root, "css/workout-layout.css"), "utf8");
+const compactSetupCss = fs.readFileSync(path.join(root, "css/client-workout-compact-setup.css"), "utf8");
 
 test("opens the static branded card first and offers video as a secondary action", () => {
   assert.match(portal, /data-exercise-media-static/);
@@ -37,11 +38,13 @@ test("uses the 480w branded card in lists and keeps the 768w card for the full d
   assert.match(portal, /data-exercise-media-static="\$\{escapeHtml\(fullUrl\)\}"/);
 });
 
-test("crops branded list thumbnails to the Start and End photos without the pale rim", () => {
+test("crops branded workout thumbnails to the photo without the label strip or text panel", () => {
   assert.match(portal, /exercise-media-button-branded-crop/);
   assert.match(css, /\.exercise-media-button-branded-crop\s*\{[\s\S]*aspect-ratio: 176 \/ 117/);
   assert.match(css, /\.exercise-media-button-branded-crop > img\s*\{[\s\S]*object-position: left center/);
   assert.match(workoutCss, /\.workout-preview-exercise-media \.exercise-media-button-branded-crop/);
+  assert.match(compactSetupCss, /#client-workouts-panel \.exercise-media-button-branded-crop > img\s*\{[^}]*top: -45% !important;[^}]*left: -10% !important;[^}]*width: 300% !important;/);
+  assert.doesNotMatch(compactSetupCss, /\.exercise-media-button-branded-crop\.is-wide-branded-card > img/);
 });
 
 test("shows the complete branded card without cropping in the detail dialog", () => {
