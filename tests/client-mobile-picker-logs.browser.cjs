@@ -150,7 +150,17 @@ ${production('openCustomWorkoutExerciseDialog')}
         assert.ok(typingLayout.searchTop >= typingLayout.dialogTop && typingLayout.searchBottom <= typingLayout.dialogBottom,
           `${format} search remains visible in a short keyboard viewport`);
         await page.evaluate(() => document.querySelector('.custom-workout-exercise-dialog').style.setProperty('--picker-viewport-height', '440px'));
+        assert.equal(await page.locator('[data-custom-exercise-suggestion] .custom-picker-add').first().innerText(), '+',
+          `${format} unselected exercise keeps its add control`);
         await page.locator('[data-custom-exercise-suggestion]').first().click();
+        const selectedPill = await page.locator('[data-custom-exercise-suggestion][aria-selected="true"] .custom-picker-add').first().evaluate(pill => ({
+          label: pill.textContent, background: getComputedStyle(pill).backgroundColor,
+          color: getComputedStyle(pill).color, radius: getComputedStyle(pill).borderRadius
+        }));
+        assert.equal(selectedPill.label, 'Selected');
+        assert.equal(selectedPill.background, 'rgb(255, 212, 0)');
+        assert.equal(selectedPill.color, 'rgb(17, 17, 17)');
+        assert.equal(selectedPill.radius, '999px');
         for (const name of (format === 'superset' ? ['Cable Row'] : ['Cable Row', 'Push-Up'])) {
           await page.locator('#custom-workout-picker-search').fill(name);
           await page.locator('[data-workout-picker-queue-typed]').waitFor({ state: 'visible' });

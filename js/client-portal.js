@@ -13178,7 +13178,7 @@ function renderCustomWorkoutPickerResults(dialog) {
       <span class="custom-picker-image${!thumbnail ? " is-fallback" : isBrandedExerciseImage(thumbnail) ? " is-branded" : ""}">${thumbnail || fallback ? `<img src="${escapeHtml(thumbnail || fallback)}" alt="" loading="lazy" />` : "✚"}</span>
       <span class="custom-picker-copy"><strong>${escapeHtml(match.name)}</strong>
       <small>${escapeHtml(meta)}</small></span>
-      <span class="custom-picker-add" aria-hidden="true">${isSelected ? "✓" : "+"}</span>
+      <span class="custom-picker-add" aria-hidden="true">${isSelected ? "Selected" : "+"}</span>
     </button>`;
   }).join("");
   menu.hidden = false;
