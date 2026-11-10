@@ -153,6 +153,7 @@ body.client-dashboard-page :is(.client-workout-panel-custom, .client-workout-pan
 }
 
 body.client-dashboard-page .workout-compact-source { display: grid; gap: 8px; }
+body.client-dashboard-page .client-workout-panel-custom .workout-compact-source[hidden] { display: none !important; }
 body.client-dashboard-page .workout-compact-source h3,
 body.client-dashboard-page .workout-compact-format h3 {
   margin: 0;

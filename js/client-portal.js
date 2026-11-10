@@ -330,6 +330,10 @@ function workoutDisplayTitle(value) {
   }).join("");
 }
 
+function isCustomWorkoutHistoryTitle(value) {
+  return /^Custom Workout(?:\s*·|$)/i.test(String(value || "").trim());
+}
+
 function clientTrainingLogMatchesSearch(log, query) {
   return logFieldsMatchSearch([
     log.entry_date,
@@ -9429,6 +9433,7 @@ function syncWorkoutStartButtons() {
       button.textContent = workoutElapsedTimerState.running ? "Pause workout" : "Resume workout";
     }
   });
+  document.querySelectorAll(".client-workout-panel-custom").forEach(syncCustomWorkoutExerciseControls);
   syncFloatingWorkoutFinishButtons();
 }
 
@@ -10889,7 +10894,7 @@ function customWorkoutGroupedSectionsMarkup(carousel) {
         <header class="ios-log-exercise-header">
           <span class="ios-log-exercise-image">${media || '<span class="ios-log-exercise-image-placeholder" aria-hidden="true">◼</span>'}</span>
           <span class="ios-log-exercise-heading-copy">
-            <button class="ios-log-exercise-title" type="button" data-change-custom-exercise="${exerciseIndex}" aria-label="Change ${escapeHtml(exerciseName)} in exercise library"><span class="ios-log-exercise-marker">${escapeHtml(marker)}</span> ${escapeHtml(exerciseName)}</button>
+            <button class="ios-log-exercise-title" type="button" data-change-custom-exercise="${exerciseIndex}" aria-label="Change ${escapeHtml(exerciseName)} in exercise library"><span class="ios-log-exercise-marker">${escapeHtml(marker)}</span><span class="ios-log-exercise-name">${escapeHtml(exerciseName)}</span></button>
             ${meta ? `<small class="ios-log-exercise-meta">${escapeHtml(meta)}</small>` : ""}
             <small class="ios-log-exercise-progress" data-ios-log-exercise-progress>${completeCount} / ${workingRows.length} complete</small>
           </span>
@@ -13252,6 +13257,14 @@ function renderCustomWorkoutPickerResults(dialog) {
 function syncCustomWorkoutExerciseControls(panel) {
   if (!panel?.classList.contains("client-workout-panel-custom")) return;
   const count = panel.querySelectorAll("[data-custom-exercise-card]").length;
+  const workoutTitle = String(panel.querySelector("[data-workout-start]")?.dataset.workoutTitle
+    || panel.dataset.customWorkoutTitle || "").trim();
+  const workoutDate = panel.querySelector("[data-workout-date]")?.value || todayDate();
+  const isStarted = Boolean(workoutElapsedTimerState
+    && workoutTitle === String(workoutElapsedTimerState.workoutTitle || "").trim()
+    && workoutDate === String(workoutElapsedTimerState.workoutDate || ""));
+  const source = panel.querySelector(".workout-compact-source");
+  if (source) source.hidden = count > 0 || isStarted;
   panel.classList.toggle("has-custom-exercises", count > 0);
   const firstExerciseButton = panel.querySelector("[data-custom-workout-launcher-add]");
   const anotherExerciseButton = panel.querySelector("[data-custom-workout-footer-add]");
@@ -13719,7 +13732,7 @@ function customWorkoutPanelMarkup(index) {
             <span class="custom-workout-launcher-add-help">Build your workout as you go</span>
           </button>
         </div>
-        <div class="workout-compact-source">
+        <div class="workout-compact-source" ${exercises.length ? "hidden" : ""}>
           <h3>Source</h3>
           <div class="workout-compact-source-list">
             <button type="button" class="workout-choice-card" data-client-workout-copy-history
@@ -14747,8 +14760,6 @@ function activateClientWorkoutPanel(nextIndex, options = {}) {
     ? "Log Workout" : activePanel.classList.contains("client-workout-panel-assigned") ? "Workout Log" : "Workouts";
   if (topbarMessage) {
     topbarMessage.setAttribute("aria-label", compactLog ? "Comments" : "Messages");
-    const label = topbarMessage.querySelector("span:not(.client-dashboard-nav-unread)");
-    if (label) label.textContent = compactLog ? "Comments" : "Messages";
   }
   syncClientWorkoutPicker(index);
   picker.hidden = true;
@@ -16961,7 +16972,7 @@ function renderClientTrainingLogs() {
     return {
       sort_key: `${workout.entry_date || ""}::workout::${workout.workout_title || ""}`,
       entry_date: workout.entry_date,
-      compact_html: `<article class="client-logs-session${/^Custom Workout\b/i.test(displayTitle) ? " is-custom-workout" : ""}" data-client-workout-history-card="${workoutIndex}" data-client-workout-history-key="${escapeHtml(workout.history_key)}">
+      compact_html: `<article class="client-logs-session${isCustomWorkoutHistoryTitle(workout.workout_title) ? " is-custom-workout" : ""}" data-client-workout-history-card="${workoutIndex}" data-client-workout-history-key="${escapeHtml(workout.history_key)}">
         <button class="client-logs-session-open" type="button" data-client-workout-history-open aria-expanded="false" aria-controls="${escapeHtml(detailsId)}" aria-label="Open ${escapeHtml(displayTitle)} from ${escapeHtml(formatLogDate(workout.entry_date))}">
           <span class="client-logs-session-day"><strong>${escapeHtml(String(Number(String(workout.entry_date || "").slice(-2)) || "—"))}</strong><small>${escapeHtml(weekdayLabel)}</small></span>
           <span class="client-logs-session-copy"><strong>${escapeHtml([displayTitle, workout.gym_name].filter(Boolean).join(" · "))}</strong><small>${escapeHtml(`${metrics.exerciseCount} exercises · ${metrics.workingSetCount} sets · ${metrics.volumeLabel}`)}</small></span>

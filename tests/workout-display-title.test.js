@@ -30,6 +30,16 @@ test("generated workout names show their readable title and keep abbreviations",
   assert.equal(title(`Custom workout · ${id}`), "Custom Workout");
 });
 
+test("quick and custom workout logs retain their source after display title formatting", () => {
+  const { isCustomWorkoutHistoryTitle: isCustom } = evaluate(["isCustomWorkoutHistoryTitle"]);
+  assert.equal(isCustom(stored), true);
+  assert.equal(isCustom("Custom workout"), true);
+  assert.equal(isCustom(" Custom Workout · New · 09:25:00.123 "), true);
+  assert.equal(isCustom("Full Body Workout"), false);
+  assert.equal(isCustom("Custom Workout Challenge · Week 3"), false);
+  assert.equal(isCustom("Lower Body"), false);
+});
+
 test("only a full trailing UUID is stripped; meaningful names and non-UUID suffixes remain", () => {
   const { workoutDisplayTitle: title } = evaluate([]);
   assert.equal(title("Custom workout · Phase 2 · 12345678"), "Phase 2 · 12345678");

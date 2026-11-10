@@ -302,6 +302,9 @@ body.client-dashboard-page .client-workout-panel-custom .custom-workout-grouped-
   }
 
   body.client-dashboard-page #client-workout-panels [data-custom-workout-grouped="true"] .ios-log-exercise-title {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
     min-width: 0;
     margin: 0;
     color: #f7f8fa !important;
@@ -320,16 +323,19 @@ body.client-dashboard-page .client-workout-panel-custom .custom-workout-grouped-
 
   body.client-dashboard-page #client-workout-panels [data-custom-workout-grouped="true"] .ios-log-exercise-marker {
     display: inline-grid;
-    min-width: 23px;
-    min-height: 23px;
-    padding: 0 3px;
+    flex: none;
+    width: 23px;
+    height: 23px;
     place-items: center;
     border: 1px solid #40a7ff;
     border-radius: 6px;
     color: #40a7ff;
     font-size: .8rem;
     line-height: 1;
-    vertical-align: 1px;
+  }
+
+  body.client-dashboard-page #client-workout-panels [data-custom-workout-grouped="true"] .ios-log-exercise-name {
+    min-width: 0;
   }
 
   body.client-dashboard-page #client-workout-panels [data-custom-workout-grouped="true"] .ios-log-exercise-meta {

@@ -183,8 +183,8 @@ test("visible grouped markup gives each exercise one card and Previous column wi
   assert.equal((markup.match(/class="ios-log-exercise-card"/g) || []).length, 2);
   assert.equal((markup.match(/<span>Previous<\/span>/g) || []).length, 2);
   assert.equal((markup.match(/class="ios-log-exercise-menu"/g) || []).length, 2);
-  assert.match(markup, /A1<\/span> Bench Press/);
-  assert.match(markup, /A2<\/span> Dumbbell Row/);
+  assert.match(markup, /A1<\/span><span class="ios-log-exercise-name">Bench Press<\/span>/);
+  assert.match(markup, /A2<\/span><span class="ios-log-exercise-name">Dumbbell Row<\/span>/);
   assert.doesNotMatch(markup, /data-one-rm-open|one-rm-pr-trigger|Estimate 1RM|data-custom-grouped-history/);
 });
 

@@ -319,11 +319,33 @@ ${production('openCustomWorkoutExerciseDialog')}
       await page.evaluate((src) => {
         document.body.innerHTML = `<section data-client-dashboard-panel="logs"><div class="client-logs-tabs"><button>Workouts</button><button>Exercises</button><button>Health</button></div><p class="training-log-download-status"></p><div class="client-workout-import-preview" hidden></div><p id="client-workout-import-status"></p><p class="training-log-copy-status"></p><div id="client-logs-workouts"><section class="client-saved-log-calendar"><strong>November 2026</strong></section></div><div class="training-log-history-card-details"><div class="client-logs-detail-actions client-logs-detail-primary-actions"><button class="training-log-share-button" data-share-workout-history>Share workout</button><button class="training-log-copy-button">Copy workout</button></div><div class="apple-workout-empty"><button>+ Add Apple Workout</button></div><article class="training-log-row-nested"><div class="training-log-exercise-head"><span class="training-log-exercise-image"><button class="exercise-media-button exercise-media-button-branded-crop"><img src="${src}" alt=""></button></span><strong>Leg Press</strong></div></article></div></section>`;
         document.getElementById('client-logs-workouts').insertAdjacentHTML('beforeend',
-          '<article class="client-logs-session is-custom-workout"><button class="client-logs-session-open"><span class="client-logs-session-copy"><strong>Custom Workout</strong></span></button></article>' +
+          '<article class="client-logs-session is-custom-workout"><button class="client-logs-session-open"><span class="client-logs-session-copy"><strong>Custom Workout</strong></span></button><div class="training-log-history-card-details"><h3>Custom Workout</h3></div></article>' +
+          '<article class="client-logs-session is-custom-workout"><button class="client-logs-session-open"><span class="client-logs-session-copy"><strong>Full Body Workout</strong></span></button><div class="training-log-history-card-details"><h3>Full Body Workout</h3></div></article>' +
+          '<article class="client-logs-session"><button class="client-logs-session-open"><span class="client-logs-session-copy"><strong>Trainer Workout</strong></span></button></article>' +
           '<article class="client-logs-session client-logs-health-session"><div class="client-logs-session-open"><span class="client-logs-session-copy"><strong>♥ Cycling</strong></span></div></article>');
       }, image);
       const titleColors = await page.locator('.client-logs-session-copy strong').evaluateAll(nodes => nodes.map(node => getComputedStyle(node).color));
-      assert.deepEqual(titleColors, ['rgb(90, 169, 232)', 'rgb(247, 243, 233)']);
+      assert.deepEqual(titleColors, ['rgb(90, 169, 232)', 'rgb(90, 169, 232)', 'rgb(255, 255, 255)', 'rgb(247, 243, 233)']);
+      assert.deepEqual(await page.locator('.client-logs-session .training-log-history-card-details > h3').evaluateAll(nodes => nodes.map(node => getComputedStyle(node).color)),
+        ['rgb(87, 168, 255)', 'rgb(87, 168, 255)']);
+      const exerciseLabel = await page.evaluate(() => {
+        document.body.insertAdjacentHTML('beforeend', `<section id="client-workout-panels"><div data-custom-workout-grouped="true">
+          <header class="ios-log-exercise-header"><span class="ios-log-exercise-image"></span>
+            <span class="ios-log-exercise-heading-copy"><button class="ios-log-exercise-title" type="button">
+              <span class="ios-log-exercise-marker">1</span><span class="ios-log-exercise-name">45-Degree Back Extension</span>
+            </button></span><span></span></header></div></section>`);
+        const badge = document.querySelector('.ios-log-exercise-marker');
+        const name = document.querySelector('.ios-log-exercise-name');
+        const title = document.querySelector('.ios-log-exercise-title');
+        const badgeBounds = badge.getBoundingClientRect();
+        const titleBounds = title.getBoundingClientRect();
+        const nameBounds = name.getBoundingClientRect();
+        return { display: getComputedStyle(title).display,
+          badgeInside: badgeBounds.top >= titleBounds.top && badgeBounds.bottom <= titleBounds.bottom,
+          nameStartsAfterBadge: nameBounds.left >= badgeBounds.right + 5,
+          badgeDoesNotShrink: badgeBounds.width >= 23 };
+      });
+      assert.deepEqual(exerciseLabel, { display: 'flex', badgeInside: true, nameStartsAfterBadge: true, badgeDoesNotShrink: true });
       await page.locator('.training-log-exercise-image img').evaluate(img => img.decode());
       const layout = await page.evaluate(() => {
         const photo = document.querySelector('.training-log-exercise-image');
