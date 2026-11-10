@@ -7037,7 +7037,9 @@ function customWorkoutExercises(format = activeCustomWorkoutFormat) {
     }
   });
 
-  const exercises = Array.from(grouped.values()).sort((left, right) => left.code.localeCompare(right.code, undefined, { numeric: true }));
+  // The draft array is the client's chosen order. Exercise codes identify logs;
+  // sorting by code here would undo drag-and-drop after a reload.
+  const exercises = Array.from(grouped.values());
 
   if (exercises.length > 0) {
     return exercises;
@@ -9763,6 +9765,35 @@ function straightSetRows(workout, workoutTitle) {
   ).join("");
 }
 
+function assignedWorkoutOrderKey(workoutTitle) {
+  const client = String(activeClientEmail || signedInDashboardEmail || "").trim().toLowerCase();
+  const program = String(currentProgram?.id || "").trim();
+  return client && program && workoutTitle
+    ? `fwb_assigned_workout_order:${client}:${program}:${workoutTitle}`
+    : "";
+}
+
+function orderedAssignedWorkoutExercises(exercises, workoutTitle) {
+  const key = assignedWorkoutOrderKey(workoutTitle);
+  if (!key) return exercises;
+  let codes;
+  try {
+    codes = JSON.parse(window.localStorage.getItem(key) || "null");
+  } catch (_) {
+    return exercises;
+  }
+  if (!Array.isArray(codes)) return exercises;
+  const positions = new Map(codes.map((code, index) => [String(code).toUpperCase(), index]));
+  return exercises.map((exercise, index) => ({ exercise, index })).sort((left, right) => {
+    const leftPosition = positions.get(String(left.exercise.code || "").toUpperCase());
+    const rightPosition = positions.get(String(right.exercise.code || "").toUpperCase());
+    if (leftPosition === undefined && rightPosition === undefined) return left.index - right.index;
+    if (leftPosition === undefined) return 1;
+    if (rightPosition === undefined) return -1;
+    return leftPosition - rightPosition;
+  }).map(({ exercise }) => exercise);
+}
+
 function assignedWorkoutExercises(workout, workoutTitle) {
   const assignedExercises = Array.isArray(workout.exercises) ? workout.exercises : [];
   const assignedCodes = new Set(assignedExercises.map((exercise) => String(exercise.code || "").trim().toUpperCase()));
@@ -9808,7 +9839,7 @@ function assignedWorkoutExercises(workout, workoutTitle) {
     }))
     .sort((left, right) => left.code.localeCompare(right.code, undefined, { numeric: true }));
 
-  return [...assignedExercises, ...extras];
+  return orderedAssignedWorkoutExercises([...assignedExercises, ...extras], workoutTitle);
 }
 
 function workoutExerciseMarkup(workout, workoutTitle) {
@@ -10115,6 +10146,10 @@ function customWorkoutGroupedRoundCardMarkup(format, exercises, groupIndex = 0, 
       data-custom-workout-format="${escapeHtml(format)}"
       aria-label="${escapeHtml(groupTitle)}"
     >
+      <div class="workout-card-reorder-bar">
+        <button type="button" class="workout-card-drag-handle" data-workout-card-drag-handle
+          aria-label="Move ${escapeHtml(groupTitle)}. Drag or use the up and down arrow keys" title="Drag to reorder">⠿ <span>Move</span></button>
+      </div>
       ${customWorkoutGroupNameEditorMarkup(format, exercises, groupIndex, options.assigned ? `${encodeURIComponent(workoutTitle)}-` : "", startIndex)}
       <article class="custom-workout-grouped-card">
         <header class="custom-workout-grouped-card-heading">
@@ -10899,6 +10934,8 @@ function customWorkoutGroupedSectionsMarkup(carousel) {
             <small class="ios-log-exercise-progress" data-ios-log-exercise-progress>${completeCount} / ${workingRows.length} complete</small>
           </span>
           ${menuMarkup}
+          <button type="button" class="ios-log-exercise-collapse" data-ios-log-exercise-collapse
+            aria-label="Minimize ${escapeHtml(exerciseName)}" aria-expanded="true">⌃</button>
         </header>
         <div class="ios-log-exercise-rows">${columnLabelsMarkup}
           ${warmUpRows.map((row, index) => rowMarkup(row, warmUpSetType, index)).join("")}
@@ -10968,6 +11005,24 @@ function refreshCustomWorkoutGroupedWarmUp(carousel) {
   if (skipButton) skipButton.disabled = saving || logged;
 }
 
+function syncGroupedExerciseCollapse(block, logElement, rows) {
+  const completed = rows.filter((row) => row.classList.contains("is-complete")).length;
+  const label = block.querySelector("[data-ios-log-exercise-progress]");
+  if (label) label.textContent = `${completed} / ${rows.length} complete`;
+  const isComplete = rows.length > 0 && completed === rows.length;
+  if (!isComplete && logElement) delete logElement.dataset.exerciseManuallyExpanded;
+  const saving = block.closest?.("[data-custom-workout-grouped='true']")?.dataset.customGroupedRowSaving === "true";
+  const collapsed = logElement?.dataset.exerciseManuallyCollapsed === "true" ||
+    (isComplete && !saving && logElement?.dataset.exerciseManuallyExpanded !== "true");
+  block.classList.toggle("is-exercise-collapsed", collapsed);
+  const collapseButton = block.querySelector("[data-ios-log-exercise-collapse]");
+  if (collapseButton) {
+    collapseButton.setAttribute("aria-expanded", String(!collapsed));
+    collapseButton.setAttribute("aria-label", `${collapsed ? "Expand" : "Minimize"} ${currentExerciseLabel(logElement) || "exercise"}`);
+    collapseButton.textContent = collapsed ? "⌄" : "⌃";
+  }
+}
+
 function refreshCustomWorkoutGroupedCompletion(carousel) {
   const visibleRows = Array.from(carousel?.querySelectorAll(".custom-workout-grouped-row") || []);
   let completeCount = 0;
@@ -11010,9 +11065,7 @@ function refreshCustomWorkoutGroupedCompletion(carousel) {
   carousel?.querySelectorAll("[data-ios-log-exercise-index]").forEach((block) => {
     const logElement = customWorkoutGroupedLogElements(carousel)[Number(block.dataset.iosLogExerciseIndex)];
     const rows = customWorkoutGroupedRows(logElement, workingSetType);
-    const completed = rows.filter((row) => row.classList.contains("is-complete")).length;
-    const label = block.querySelector("[data-ios-log-exercise-progress]");
-    if (label) label.textContent = `${completed} / ${rows.length} complete`;
+    syncGroupedExerciseCollapse(block, logElement, rows);
   });
   refreshCustomWorkoutGroupedWarmUp(carousel);
   refreshCustomWorkoutGroupedCopyWeights(carousel);
@@ -11729,8 +11782,8 @@ async function toggleCustomWorkoutGroupedSet(button) {
   const roundNumber = Number(visibleRow.closest("[data-custom-grouped-round]")?.dataset.customGroupedRound) || 0;
   setCustomWorkoutGroupedRowComplete(canonicalRow, true);
   persistCustomWorkoutDraftForElement(carousel);
-  refreshCustomWorkoutGroupedCompletion(carousel);
   carousel.dataset.customGroupedRowSaving = "true";
+  refreshCustomWorkoutGroupedCompletion(carousel);
   let result = { saved: false };
   try {
     result = await saveTrainingLogRows(button, customWorkoutGroupedLogElements(carousel), status, {
@@ -12978,6 +13031,108 @@ function syncAssignedWorkoutCarousels(panel = null) {
     syncWorkoutExerciseList(assignedPanel);
   });
 }
+
+function reorderWorkoutCardGroup(source, target, after = false) {
+  if (!source || !target || source === target) return false;
+  const panel = source.closest(".client-workout-panel-custom, .client-workout-panel-assigned");
+  if (!panel || target.closest(".client-workout-panel-custom, .client-workout-panel-assigned") !== panel) return false;
+  const assigned = panel.classList.contains("client-workout-panel-assigned");
+  const sourceItem = assigned ? source.closest(".workout-format-group") || source : source;
+  const targetItem = assigned ? target.closest(".workout-format-group") || target : target;
+  if (sourceItem === targetItem || sourceItem.parentNode !== targetItem.parentNode) return false;
+  targetItem.parentNode.insertBefore(sourceItem, after ? targetItem.nextSibling : targetItem);
+
+  let startIndex = 0;
+  const carousels = customWorkoutCarousels(panel);
+  carousels.forEach((carousel, index) => {
+    carousel.dataset.customWorkoutGroup = String(index);
+    carousel.dataset.exerciseStartIndex = String(startIndex);
+    const cards = customWorkoutCarouselCards(carousel);
+    cards.forEach((card) => { card.dataset.customWorkoutGroup = String(index); });
+    startIndex += cards.length;
+  });
+  if (assigned) {
+    const key = assignedWorkoutOrderKey(panel.dataset.customWorkoutTitle);
+    if (key) {
+      try {
+        window.localStorage.setItem(key, JSON.stringify(workoutExerciseListLogs(panel)
+          .map((log) => String(log.dataset.exerciseCode || "").toUpperCase()).filter(Boolean)));
+      } catch (_) { /* The new order still applies for this visit. */ }
+    }
+    syncAssignedWorkoutMarkers(panel);
+    syncAssignedWorkoutCarousels(panel);
+  } else {
+    syncCustomWorkoutCarousel(panel);
+    persistCustomWorkoutDraftFromPanel(panel);
+  }
+  panel.querySelector("[data-workout-exercise-list-items]")?.removeAttribute("data-exercise-order");
+  syncWorkoutExerciseList(panel);
+  return true;
+}
+
+function bindWorkoutCardReordering() {
+  if (bindWorkoutCardReordering.bound || typeof document === "undefined") return;
+  bindWorkoutCardReordering.bound = true;
+  let drag = null;
+  const candidateAt = (event) => {
+    const element = document.elementFromPoint(event.clientX, event.clientY);
+    const candidate = element?.closest?.("[data-custom-workout-carousel]");
+    return candidate?.closest(".client-workout-panel") === drag?.panel ? candidate : null;
+  };
+  const clear = () => {
+    drag?.source.classList.remove("is-workout-card-dragging");
+    drag?.target?.classList.remove("is-workout-card-drop-target");
+    drag = null;
+  };
+
+  document.addEventListener("pointerdown", (event) => {
+    const handle = event.target.closest?.("[data-workout-card-drag-handle]");
+    if (!handle || (event.button !== undefined && event.button !== 0)) return;
+    const source = handle.closest("[data-custom-workout-carousel]");
+    const panel = source?.closest(".client-workout-panel-custom, .client-workout-panel-assigned");
+    if (!source || !panel) return;
+    drag = { pointerId: event.pointerId, source, panel, target: null };
+    source.classList.add("is-workout-card-dragging");
+    handle.setPointerCapture?.(event.pointerId);
+    event.preventDefault();
+  });
+  document.addEventListener("pointermove", (event) => {
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    const target = candidateAt(event);
+    if (drag.target !== target) {
+      drag.target?.classList.remove("is-workout-card-drop-target");
+      drag.target = target && target !== drag.source ? target : null;
+      drag.target?.classList.add("is-workout-card-drop-target");
+    }
+    if (event.clientY < 72) window.scrollBy(0, -14);
+    else if (event.clientY > window.innerHeight - 72) window.scrollBy(0, 14);
+    event.preventDefault();
+  });
+  const finish = (event) => {
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    const { source, target } = drag;
+    const after = Boolean(target && event.clientY > target.getBoundingClientRect().top + target.getBoundingClientRect().height / 2);
+    clear();
+    if (event.type === "pointerup" && target) reorderWorkoutCardGroup(source, target, after);
+  };
+  document.addEventListener("pointerup", finish);
+  document.addEventListener("pointercancel", finish);
+  document.addEventListener("keydown", (event) => {
+    const handle = event.target.closest?.("[data-workout-card-drag-handle]");
+    if (!handle || !["ArrowUp", "ArrowDown"].includes(event.key)) return;
+    const source = handle.closest("[data-custom-workout-carousel]");
+    const panel = source?.closest(".client-workout-panel-custom, .client-workout-panel-assigned");
+    const carousels = customWorkoutCarousels(panel);
+    const index = carousels.indexOf(source);
+    const direction = event.key === "ArrowUp" ? -1 : 1;
+    const target = carousels[index + direction];
+    if (!target) return;
+    event.preventDefault();
+    if (reorderWorkoutCardGroup(source, target, direction > 0)) source.querySelector("[data-workout-card-drag-handle]")?.focus();
+  });
+}
+
+bindWorkoutCardReordering();
 
 function workoutExerciseListMarkup(organize = false) {
   return `
@@ -20324,6 +20479,7 @@ function handleWorkoutInteractions() {
     const customGroupedFinishButton = event.target.closest("[data-custom-grouped-finish-workout]");
     const workoutLaterButton = event.target.closest("[data-workout-finish-later]");
     const customGroupedSetToggle = event.target.closest("[data-custom-grouped-set-toggle]");
+    const exerciseCollapseButton = event.target.closest("[data-ios-log-exercise-collapse]");
     const customGroupedSetOptions = event.target.closest("[data-custom-grouped-set-options]");
     const customGroupedFinishClose = event.target.closest("[data-custom-grouped-finish-close]");
     const customGroupedStartNew = event.target.closest("[data-custom-grouped-start-new]");
@@ -20373,6 +20529,19 @@ function handleWorkoutInteractions() {
     const resetAssignedWorkoutButton = event.target.closest("[data-reset-assigned-workout]");
     const customWorkoutSetupOpen = event.target.closest("[data-custom-workout-setup-open]");
     const customWorkoutSetupClose = event.target.closest("[data-custom-workout-setup-close]");
+
+    if (exerciseCollapseButton) {
+      const block = exerciseCollapseButton.closest("[data-ios-log-exercise-index]");
+      const carousel = block?.closest("[data-custom-workout-grouped='true']");
+      const logElement = customWorkoutGroupedLogElements(carousel)[Number(block?.dataset.iosLogExerciseIndex)];
+      if (block && logElement) {
+        const expanding = block.classList.contains("is-exercise-collapsed");
+        logElement.dataset.exerciseManuallyExpanded = expanding ? "true" : "false";
+        logElement.dataset.exerciseManuallyCollapsed = expanding ? "false" : "true";
+        refreshCustomWorkoutGroupedCompletion(carousel);
+      }
+      return;
+    }
 
     if (workoutLaterButton) {
       finishWorkoutLater(workoutLaterButton);
