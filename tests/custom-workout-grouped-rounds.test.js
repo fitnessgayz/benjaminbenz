@@ -619,6 +619,7 @@ test("shows the grouped session timer and finish action on the last group only",
   const initialGroups = sourceForFunction("customWorkoutCarouselMarkup");
   const regroup = sourceForFunction("regroupCustomWorkoutCarousels");
 
+  assert.match(groupedMarkup, /custom-workout-group-format-button[^>]*data-custom-workout-setup-open="format"/);
   assert.match(groupedMarkup, /const showSessionControls = format !== "single" && options\.isLastGroup !== false/);
   assert.match(groupedMarkup, /\$\{showSessionControls \? `[\s\S]*?data-custom-grouped-timer[\s\S]*?` : ""\}/);
   assert.match(
@@ -771,25 +772,13 @@ test("makes grouped Log boxes accessible and disables them only during a save", 
   assert.match(refresh, /`Log \$\{context\}`/);
 });
 
-test("rebuilds a grouped custom panel from its draft when switching back to Straight", () => {
+test("switching back to Straight keeps the current custom panel and exercise cards", () => {
   const updateFormat = sourceForFunction("updateCustomWorkoutFormat");
-  const replacePanel = sourceForFunction("replaceCustomWorkoutPanelFromDraft");
   const panelMarkup = sourceForFunction("customWorkoutPanelMarkup");
 
-  assert.match(
-    updateFormat,
-    /if \(format === "single" && previousFormat !== "single" && !options\.skipDraft\)/,
-  );
-  assert.match(
-    updateFormat,
-    /persistCustomWorkoutDraftFromPanel\(panel\);[\s\S]*?replaceCustomWorkoutPanelFromDraft\(panelIndex\)/,
-  );
-  assert.match(updateFormat, /activateClientWorkoutPanel\(panelIndex, \{ focus: false, scroll: false \}\)/);
-  assert.match(updateFormat, /replacement\?\.querySelector\("\.custom-workout-format-picker > summary"\)\?\.focus\(\{ preventScroll: true \}\);[\s\S]*?return/);
-  assert.match(replacePanel, /template\.innerHTML = customWorkoutPanelMarkup\(index\)\.trim\(\)/);
-  assert.match(replacePanel, /currentPanel\.replaceWith\(replacement\)/);
-  assert.match(replacePanel, /applyCustomWorkoutDraft\(replacement\)/);
-  assert.match(replacePanel, /syncWorkoutStartButtons\(\)/);
+  assert.doesNotMatch(updateFormat, /replaceCustomWorkoutPanelFromDraft|\.replaceWith\(/);
+  assert.match(updateFormat, /currentCards\.forEach\(\(card, index\) => \{/);
+  assert.match(updateFormat, /syncCustomWorkoutCarousel\(panel,/);
   assert.match(
     panelMarkup,
     /<div data-custom-workout-default-finish hidden>/,

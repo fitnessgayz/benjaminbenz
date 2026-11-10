@@ -812,3 +812,27 @@ body.client-dashboard-page #client-workout-panels .client-workout-panel :is(
     grid-template-columns: 44px minmax(46px, .72fr) minmax(0, 1.16fr) minmax(0, .88fr) 38px !important;
   }
 }
+
+body.client-dashboard-page .client-workout-panel-custom .custom-workout-grouped-title-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  min-width: 0;
+}
+
+body.client-dashboard-page .client-workout-panel-custom .custom-workout-group-format-button {
+  min-height: 36px;
+  padding: 5px 10px;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  background: transparent;
+  color: #58b6fa;
+  font-size: .8rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+:root[data-client-theme="light"] body.client-dashboard-page .client-workout-panel-custom .custom-workout-group-format-button {
+  color: #096ab9;
+}

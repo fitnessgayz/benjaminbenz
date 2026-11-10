@@ -152,7 +152,7 @@ test("keeps grouped deck visuals separate from straight-set add permission", () 
   assert.match(move, /isVisualDeck && index !== currentIndex/);
 });
 
-test("places clearly numbered exercise-name editors above the grouped swipe deck", () => {
+test("places format-aware exercise codes above the grouped swipe deck", () => {
   const groupMarkup = sourceForFunction("customWorkoutGroupedRoundCardMarkup");
   const editorMarkup = sourceForFunction("customWorkoutGroupNameEditorMarkup");
   const rowMarkup = sourceForFunction("customWorkoutGroupNameRowMarkup");
@@ -165,17 +165,17 @@ test("places clearly numbered exercise-name editors above the grouped swipe deck
   assert.doesNotMatch(editorMarkup, /format === "single"[\s\S]*?return ""/);
   assert.match(editorMarkup, /data-custom-workout-group-name-toggle/);
   assert.match(editorMarkup, /data-custom-workout-group-name-fields/);
-  const renderEditor = Function("escapeHtml", `${rowMarkup}\n${editorMarkup}; return customWorkoutGroupNameEditorMarkup;`)(
+  const renderEditor = Function("escapeHtml", `${sourceForFunction("workoutCarouselExerciseCode")}\n${rowMarkup}\n${editorMarkup}; return customWorkoutGroupNameEditorMarkup;`)(
     value => String(value).replaceAll("&", "&amp;").replaceAll('"', "&quot;").replaceAll("<", "&lt;")
   );
   for (const format of ["single", "superset", "circuit"]) {
     const html = renderEditor(format, [{ name: "Press" }, { name: "Row" }], 1, "assigned-", 2);
     assert.match(html, /data-custom-workout-group-name-summary>2 exercises<\/small>/);
-    assert.match(html, /<label[^>]+>Exercise 3<\/label>/);
-    assert.match(html, /<label[^>]+>Exercise 4<\/label>/);
-    assert.match(html, /aria-label="Exercise 3 name"/);
-    assert.match(html, /aria-label="Delete Exercise 4"/);
-    assert.doesNotMatch(html, />[A-Z]\d+<|aria-label="[A-Z]\d+ exercise name"/);
+    assert.match(html, /<label[^>]+>B1<\/label>/);
+    assert.match(html, /<label[^>]+>B2<\/label>/);
+    assert.match(html, /aria-label="B1 name"/);
+    assert.match(html, /aria-label="Delete B2"/);
+    assert.doesNotMatch(html, /<label[^>]+>Exercise [34]<\/label>/);
     assert.match(html, /data-custom-workout-group-name-input="0"/);
     assert.match(html, /data-custom-workout-group-name-input="1"/);
   }

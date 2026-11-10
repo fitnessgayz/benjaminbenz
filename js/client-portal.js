@@ -5927,23 +5927,52 @@ function customWorkoutDefaultExerciseGroup(format, index) {
   }
 }
 
+function customWorkoutFormatGroupSize(format) {
+  switch (normalizeCustomWorkoutFormat(format)) {
+    case "superset": return 2;
+    case "circuit": return 3;
+    default: return 1;
+  }
+}
+
+function customWorkoutCardHasEnteredContent(card) {
+  const logElement = card?.querySelector("[data-exercise-log]");
+  if (!logElement) return false;
+  const name = exerciseNameInputForLog(logElement)?.value || logElement.dataset.exerciseName || "";
+  const notes = logElement.querySelector("[data-log-notes]")?.value || "";
+  if (String(name).trim() || String(notes).trim() || logElement.dataset.exerciseSkipped === "true") return true;
+  return Array.from(logElement.querySelectorAll("[data-set-row]")).some((row) => (
+    String(row.querySelector("[data-set-weight]")?.value || "").trim() ||
+    String(row.querySelector("[data-set-reps]")?.value || "").trim() ||
+    String(row.dataset.repsInReserve || "").trim() ||
+    row.classList.contains("is-complete") ||
+    row.querySelector("[data-complete-set]")?.getAttribute("aria-pressed") === "true" ||
+    (String(row.querySelector("[data-set-label]")?.value || "").trim() &&
+      !/^(?:W\d*|\d+)$/i.test(String(row.querySelector("[data-set-label]")?.value || "").trim()))
+  ));
+}
+
+function removeEmptyCustomWorkoutWarmUps(card) {
+  const logElement = card?.querySelector("[data-exercise-log]");
+  if (!logElement) return;
+  const emptyWarmUps = Array.from(logElement.querySelectorAll("[data-set-row]"))
+    .filter((row) => setTypeForRow(row) === warmUpSetType &&
+      !String(row.querySelector("[data-set-weight]")?.value || "").trim() &&
+      !String(row.querySelector("[data-set-reps]")?.value || "").trim() &&
+      !String(row.dataset.repsInReserve || "").trim() &&
+      !row.classList.contains("is-complete") &&
+      row.querySelector("[data-complete-set]")?.getAttribute("aria-pressed") !== "true" &&
+      /^(?:W\d*)?$/i.test(String(row.querySelector("[data-set-label]")?.value || "").trim()));
+  if (!emptyWarmUps.length) return;
+  emptyWarmUps.forEach((row) => row.remove());
+  renumberSetRows(logElement);
+  syncVisibleSetTarget(logElement);
+  updateVisibleSetProgress(logElement);
+}
+
 function customWorkoutPanelHasEnteredExerciseContent(panel) {
-  return Array.from(panel?.querySelectorAll("[data-custom-exercise-card] [data-exercise-log]") || []).some((logElement) => {
-    const name = exerciseNameInputForLog(logElement)?.value || logElement.dataset.exerciseName || "";
-    const notes = logElement.querySelector("[data-log-notes]")?.value || "";
-
-    if (String(name).trim() || String(notes).trim() || logElement.dataset.exerciseSkipped === "true") {
-      return true;
-    }
-
-    return Array.from(logElement.querySelectorAll("[data-set-row]")).some((row) => (
-      String(row.querySelector("[data-set-weight]")?.value || "").trim() ||
-      String(row.querySelector("[data-set-reps]")?.value || "").trim() ||
-      String(row.dataset.repsInReserve || "").trim() ||
-      row.classList.contains("is-complete") ||
-      row.querySelector("[data-complete-set]")?.getAttribute("aria-pressed") === "true"
-    ));
-  });
+  return Array.from(panel?.querySelectorAll("[data-custom-exercise-card]") || [])
+    .some(customWorkoutCardHasEnteredContent);
 }
 
 function setUntouchedCustomWorkoutDefaultExercises(panel, format, cards = []) {
@@ -9868,7 +9897,7 @@ function customWorkoutInlineGroupOptionsMarkup(groupType = "single", isVisible =
 
 function customWorkoutGroupNameRowMarkup(exercise, format, groupIndex, index, namespace = "", exerciseIndex = index) {
   const exerciseName = String(exercise?.name || "").trim();
-  const position = `Exercise ${exerciseIndex + 1}`;
+  const position = workoutCarouselExerciseCode(format, groupIndex, index);
   const groupKey = `${namespace}${format}-${groupIndex}`;
   const suggestionMenuId = `custom-group-exercise-options-${groupKey}-${index}`;
 
@@ -10085,7 +10114,10 @@ function customWorkoutGroupedRoundCardMarkup(format, exercises, groupIndex = 0, 
       <article class="custom-workout-grouped-card">
         <header class="custom-workout-grouped-card-heading">
           <div>
-            <h3>${escapeHtml(groupTitle)}</h3>
+            <div class="custom-workout-grouped-title-row">
+              <h3>${escapeHtml(groupTitle)}</h3>
+              ${options.assigned ? "" : '<button class="custom-workout-group-format-button" type="button" data-custom-workout-setup-open="format">Change format <span aria-hidden="true">⌄</span></button>'}
+            </div>
             <p class="custom-workout-grouped-cue">${escapeHtml(groupCue)}</p>
           </div>
           <p class="custom-workout-grouped-progress" data-custom-grouped-progress aria-live="polite">0 / 0 complete</p>
@@ -11940,7 +11972,7 @@ function syncCustomWorkoutGroupNameEditor(carousel, cards, format, groupIndex) {
   }
 
   cards.forEach((card, index) => {
-    const position = `Exercise ${startIndex + index + 1}`;
+    const position = workoutCarouselExerciseCode(format, groupIndex, index);
     const logElement = card.querySelector("[data-exercise-log]");
     const sourceInput = exerciseNameInputForLog(logElement);
     const groupInput = fields.querySelector(`[data-custom-workout-group-name-input="${index}"]`);
@@ -13952,53 +13984,29 @@ function updateCustomWorkoutFormat(panel, value, options = {}) {
   storeCustomWorkoutFormat(format);
 
   let currentCards = Array.from(panel.querySelectorAll("[data-custom-exercise-card]"));
-  if (currentCards.length === 0 && format !== previousFormat && !options.skipDraft) {
-    const panels = Array.from(document.querySelectorAll(".client-workout-panel"));
-    const panelIndex = Math.max(panels.indexOf(panel), 0);
-    const wasActive = panel.classList.contains("is-active") && !panel.hidden;
-    const wasHidden = panel.hidden;
-    persistCustomWorkoutDraftFromPanel(panel);
-    const replacement = replaceCustomWorkoutPanelFromDraft(panelIndex);
-    if (replacement && wasActive && document.getElementById("client-workout-tabs")) {
-      activateClientWorkoutPanel(panelIndex, { focus: false, scroll: false });
-    } else if (replacement) {
-      replacement.hidden = wasHidden;
-      replacement.classList.toggle("is-active", wasActive);
-    }
-    replacement?.querySelector(".custom-workout-format-picker > summary")?.focus({ preventScroll: true });
-    return;
-  }
   if (format !== previousFormat) {
-    currentCards.forEach((card) => {
-      card.dataset.customWorkoutGroup = "0";
-      card.dataset.customWorkoutGroupType = "single";
-    });
-  }
-
-  if (
-    format !== previousFormat &&
-    !options.skipDraft &&
-    !customWorkoutPanelHasEnteredExerciseContent(panel)
-  ) {
-    currentCards = setUntouchedCustomWorkoutDefaultExercises(panel, format, currentCards);
-  }
-
-  if (format === "single" && previousFormat !== "single" && !options.skipDraft) {
-    const panels = Array.from(document.querySelectorAll(".client-workout-panel"));
-    const panelIndex = Math.max(panels.indexOf(panel), 0);
-    const wasActive = panel.classList.contains("is-active") && !panel.hidden;
-    const wasHidden = panel.hidden;
-
-    persistCustomWorkoutDraftFromPanel(panel);
-    const replacement = replaceCustomWorkoutPanelFromDraft(panelIndex);
-    if (replacement && wasActive && document.getElementById("client-workout-tabs")) {
-      activateClientWorkoutPanel(panelIndex, { focus: false, scroll: false });
-    } else if (replacement) {
-      replacement.hidden = wasHidden;
-      replacement.classList.toggle("is-active", wasActive);
+    // Keep the canonical exercise cards in the DOM. Their rows hold entered
+    // values, completed sets, warm-ups, notes, and stable log identities.
+    if (!options.skipDraft) {
+      const nextExerciseNumber = nextCustomExerciseCode(panel).match(/\d+$/)?.[0];
+      let removedBlankCard = false;
+      currentCards = currentCards.filter((card) => {
+        if (customWorkoutCardHasEnteredContent(card)) return true;
+        removedBlankCard = true;
+        cancelTrainingLogAutosaves(card);
+        card.remove();
+        return false;
+      });
+      if (removedBlankCard && nextExerciseNumber) {
+        panel.dataset.customWorkoutNextExerciseNumber = nextExerciseNumber;
+      }
+      if (format === "single") currentCards.forEach(removeEmptyCustomWorkoutWarmUps);
     }
-    replacement?.querySelector(".custom-workout-format-picker > summary")?.focus({ preventScroll: true });
-    return;
+    const groupSize = customWorkoutFormatGroupSize(format);
+    currentCards.forEach((card, index) => {
+      card.dataset.customWorkoutGroup = String(Math.floor(index / groupSize));
+      card.dataset.customWorkoutGroupType = format;
+    });
   }
 
   panel.querySelectorAll("[data-custom-workout-format-option]").forEach((button) => {
@@ -20976,24 +20984,45 @@ function handleWorkoutInteractions() {
       const format = normalizeCustomWorkoutFormat(panel?.dataset.customWorkoutFormat || activeCustomWorkoutFormat);
       const stack = panel?.querySelector("[data-custom-workout-carousel-stack]");
       if (format !== "single" && stack) {
-        const groupNumbers = customWorkoutCarousels(panel).map(carousel => Number(carousel.dataset.customWorkoutGroup) || 0);
-        const groupIndex = groupNumbers.length ? Math.max(...groupNumbers) + 1 : 0;
+        const carousels = customWorkoutCarousels(panel);
+        const lastCarousel = carousels.at(-1);
+        const groupSize = customWorkoutFormatGroupSize(format);
+        const lastGroupCount = customWorkoutCarouselCards(lastCarousel).length;
+        const fillLastGroup = Boolean(lastCarousel && lastGroupCount < groupSize);
+        const groupIndex = fillLastGroup
+          ? Number(lastCarousel.dataset.customWorkoutGroup) || 0
+          : carousels.length
+            ? Math.max(...carousels.map((carousel) => Number(carousel.dataset.customWorkoutGroup) || 0)) + 1
+            : 0;
         const startIndex = panel.querySelectorAll("[data-custom-exercise-card]").length;
-        const firstCodeNumber = Number(nextCustomExerciseCode(panel).match(/\d+/)?.[0]) || 1;
-        const exercises = Array.from({ length: customWorkoutExerciseAddConfig(format).count }, (_, index) => ({
-          code: customExerciseCode(firstCodeNumber - 1 + index),
+        const exercises = Array.from({ length: fillLastGroup ? groupSize - lastGroupCount : groupSize }, () => ({
+          code: "",
           name: "",
           group: groupIndex,
           groupType: format,
           prescription: "Custom sets",
           rest: ""
         }));
-        stack.insertAdjacentHTML("beforeend", customWorkoutCarouselGroupMarkup(
-          format, exercises, groupIndex, startIndex,
-          panel.dataset.customWorkoutTitle || customWorkoutTitle,
-          { panelFormat: format, isLastGroup: true }
-        ));
-        const newCards = Array.from(stack.lastElementChild.querySelectorAll("[data-custom-exercise-card]"));
+        let targetList = fillLastGroup ? lastCarousel.querySelector("[data-custom-workout-list]") : null;
+        if (!targetList) {
+          stack.insertAdjacentHTML("beforeend", customWorkoutCarouselGroupMarkup(
+            format, [], groupIndex, startIndex,
+            panel.dataset.customWorkoutTitle || customWorkoutTitle,
+            { panelFormat: format, isLastGroup: true }
+          ));
+          targetList = stack.lastElementChild.querySelector("[data-custom-workout-list]");
+        }
+        const position = targetList.querySelectorAll("[data-custom-exercise-card]").length;
+        exercises.forEach((exercise, index) => {
+          // Generate the next identity after each insertion, so new cards never
+          // share the same log code when filling an existing group.
+          exercise.code = nextCustomExerciseCode(panel);
+          targetList.insertAdjacentHTML("beforeend", customWorkoutCardMarkup(
+            exercise, panel.dataset.customWorkoutTitle || customWorkoutTitle,
+            startIndex + index, { format, panelFormat: format, groupPosition: position + index }
+          ));
+        });
+        const newCards = Array.from(targetList.querySelectorAll("[data-custom-exercise-card]")).slice(position);
         const sharedDate = panel.querySelector("[data-workout-date]")?.value || todayDate();
         newCards.forEach(card => {
           const logElement = card.querySelector("[data-exercise-log]");
