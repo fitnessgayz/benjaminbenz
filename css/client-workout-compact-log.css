@@ -842,3 +842,74 @@ body.client-dashboard-page .client-workout-panel-custom .custom-workout-group-fo
 :root[data-client-theme="light"] body.client-dashboard-page .client-workout-panel-custom .custom-workout-group-format-button {
   color: #096ab9;
 }
+/* Reordering moves the canonical group, including its saved set fields. */
+body.client-dashboard-page #client-workout-panels .workout-card-reorder-bar {
+  display: flex;
+  justify-content: flex-end;
+  padding: 6px 10px 0;
+}
+
+body.client-dashboard-page #client-workout-panels .workout-card-drag-handle {
+  min-width: 44px;
+  min-height: 36px;
+  padding: 4px 10px;
+  border: 1px solid #4b525e;
+  border-radius: 10px;
+  background: #24272d;
+  color: #58b7ff;
+  font: inherit;
+  font-weight: 800;
+  cursor: grab;
+  touch-action: none;
+}
+
+body.client-dashboard-page #client-workout-panels .workout-card-drag-handle:focus-visible,
+body.client-dashboard-page #client-workout-panels .ios-log-exercise-collapse:focus-visible {
+  outline: 2px solid #ffd400;
+  outline-offset: 2px;
+}
+
+body.client-dashboard-page #client-workout-panels .is-workout-card-dragging {
+  opacity: .55;
+}
+
+body.client-dashboard-page #client-workout-panels .is-workout-card-drop-target {
+  outline: 2px dashed #ffd400;
+  outline-offset: 3px;
+}
+
+body.client-dashboard-page #client-workout-panels .ios-log-exercise-collapse {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid #4b525e;
+  border-radius: 9px;
+  background: #24272d;
+  color: #ffd400;
+  font: inherit;
+  font-size: 1.15rem;
+  cursor: pointer;
+}
+
+body.client-dashboard-page #client-workout-panels .ios-log-exercise-block.is-exercise-collapsed :is(.ios-log-exercise-rows, .ios-log-exercise-footer, .ios-log-exercise-notes) {
+  display: none !important;
+}
+
+body.client-dashboard-page #client-workout-panels .ios-log-exercise-block.is-exercise-collapsed .ios-log-exercise-header {
+  border-bottom: 0 !important;
+  border-radius: 15px !important;
+}
+
+@media (max-width: 760px) {
+  body.client-dashboard-page #client-workout-panels [data-custom-workout-grouped="true"] .ios-log-exercise-header {
+    --ios-log-image-size: clamp(72px, 20vw, 84px) !important;
+    grid-template-columns: var(--ios-log-image-size) minmax(0, 1fr) 34px 32px !important;
+    gap: 6px;
+  }
+
+  body.client-dashboard-page #client-workout-panels .workout-card-drag-handle span {
+    font-size: .73rem;
+  }
+}
