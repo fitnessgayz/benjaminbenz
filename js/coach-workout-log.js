@@ -630,14 +630,17 @@ function coachWorkoutGroupedNameRowMarkup(exercise, groupIndex, position, exerci
   `;
 }
 
-function coachWorkoutGroupedNameEditorMarkup(group, groupIndex) {
+function coachWorkoutGroupedNameEditorMarkup(group, groupIndex, format) {
   const codes = group.map((_, index) => coachWorkoutGroupedExerciseCode(groupIndex, index));
   const fieldsId = `coach-workout-group-names-${groupIndex}`;
+  const title = format === "single"
+    ? group[0]?.exercise.querySelector("[data-coach-workout-name]")?.value.trim() || `Exercise ${groupIndex + 1}`
+    : format === "circuit" ? "Circuit" : "Superset";
 
   return `
     <section class="coach-workout-group-name-section">
       <button class="coach-workout-group-name-toggle" type="button" data-coach-grouped-name-toggle aria-expanded="true" aria-controls="${fieldsId}">
-        <span><strong>Exercises</strong><small>${escapeCoachWorkoutHtml(codes.join(" · "))}</small></span>
+        <span><strong data-coach-grouped-title>${escapeCoachWorkoutHtml(title)}</strong><small>${escapeCoachWorkoutHtml(codes.join(" · "))}</small></span>
         <i aria-hidden="true">−</i>
       </button>
       <div class="coach-workout-group-name-fields" id="${fieldsId}" data-coach-grouped-name-fields>
@@ -1110,7 +1113,7 @@ function coachWorkoutGroupedCardMarkup(format, group, groupIndex) {
 
   return `
     <section class="coach-workout-group-shell" data-coach-workout-group-card data-coach-workout-grouped="true" data-coach-workout-format="${format}" data-coach-workout-group-index="${groupIndex}" data-coach-workout-group-indexes="${indexes}">
-      ${coachWorkoutGroupedNameEditorMarkup(group, groupIndex)}
+      ${coachWorkoutGroupedNameEditorMarkup(group, groupIndex, format)}
       ${format === "circuit" || (format === "superset" && group.length < 2) ? `<button class="coach-workout-group-add-exercise" type="button" data-coach-grouped-add-exercise>${format === "circuit" ? "Add exercise to circuit" : "Add paired exercise"}</button>` : ""}
       <article class="coach-workout-grouped-card">
         <header class="coach-workout-grouped-card-heading">
@@ -1370,6 +1373,7 @@ function renderCoachWorkoutCardLayout() {
   const carousel = document.getElementById("coach-workout-carousel");
   const list = document.getElementById("coach-workout-exercises");
   const stack = document.getElementById("coach-workout-group-stack");
+  const firstExerciseButton = document.getElementById("coach-workout-first-exercise");
   const exercises = coachWorkoutExerciseElements();
   const format = coachWorkoutFormatValue();
   const usesWorkoutCards = ["single", "superset", "circuit"].includes(format);
@@ -1378,8 +1382,15 @@ function renderCoachWorkoutCardLayout() {
 
   carousel.dataset.coachWorkoutFormat = format;
   carousel.dataset.carouselEnabled = "false";
+  const firstExercise = exercises[0];
+  const awaitingFirstExercise = exercises.length === 1 &&
+    !firstExercise?.querySelector("[data-coach-workout-name]")?.value.trim() &&
+    !Array.from(firstExercise?.querySelectorAll("[data-coach-workout-weight], [data-coach-workout-reps], [data-coach-workout-rir]") || [])
+      .some((input) => input.value.trim()) &&
+    carousel.dataset.coachWorkoutStarted !== "true";
+  if (firstExerciseButton) firstExerciseButton.hidden = !awaitingFirstExercise;
   list?.classList.toggle("is-grouped-source", usesWorkoutCards);
-  if (stack) stack.hidden = !usesWorkoutCards;
+  if (stack) stack.hidden = !usesWorkoutCards || awaitingFirstExercise;
   if (stack && usesWorkoutCards) {
     stack.innerHTML = coachWorkoutGroups(format, exercises)
       .filter((group) => group.length > 0)
@@ -1701,6 +1712,7 @@ function readCoachWorkoutDraft(context = coachWorkoutActiveContext) {
 
 function resetCoachWorkoutEditor() {
   const exerciseList = document.getElementById("coach-workout-exercises");
+  const carousel = document.getElementById("coach-workout-carousel");
   const singleFormat = document.querySelector('input[name="coach_workout_format"][value="single"]');
   const gymInput = document.getElementById("coach-workout-gym");
   if (gymInput) gymInput.value = "";
@@ -1712,6 +1724,7 @@ function resetCoachWorkoutEditor() {
   if (exerciseList) {
     exerciseList.innerHTML = "";
   }
+  if (carousel) delete carousel.dataset.coachWorkoutStarted;
 
   coachWorkoutPendingDeletes = [];
   coachWorkoutLastSavedSignature = "";
@@ -2533,7 +2546,18 @@ function handleCoachWorkoutForm() {
 
   window.CoachRestTimer?.subscribe(renderCoachWorkoutInlineRest);
 
+  document.getElementById("coach-workout-first-exercise")?.addEventListener("click", () => {
+    const carousel = document.getElementById("coach-workout-carousel");
+    if (carousel) carousel.dataset.coachWorkoutStarted = "true";
+    renderCoachWorkoutCardLayout();
+    focusCoachWorkoutVisibleField(0, "name");
+  });
+
   document.getElementById("coach-workout-add-exercise")?.addEventListener("click", () => {
+    if (!document.getElementById("coach-workout-first-exercise")?.hidden) {
+      document.getElementById("coach-workout-first-exercise")?.click();
+      return;
+    }
     const exercise = addCoachWorkoutExercise();
     const index = coachWorkoutExerciseElements().indexOf(exercise);
     scheduleCoachWorkoutAutosave();
@@ -2700,6 +2724,10 @@ function handleCoachWorkoutForm() {
 
       if (canonicalName) canonicalName.value = event.target.value;
       if (keyName) keyName.textContent = event.target.value.trim() || `Exercise ${exerciseIndex + 1}`;
+      if (card?.dataset.coachWorkoutFormat === "single") {
+        const title = card.querySelector("[data-coach-grouped-title]");
+        if (title) title.textContent = event.target.value.trim() || `Exercise ${exerciseIndex + 1}`;
+      }
       refreshCoachWorkoutPreviousHistoryCards();
       renderCoachWorkoutSuggestions(event.target);
       return;
