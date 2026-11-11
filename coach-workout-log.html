@@ -23,7 +23,7 @@
   <meta name="theme-color" content="#030D1C" />
   <link rel="stylesheet" href="/css/fwb-dark-theme.css?v=coach-blue-gold-1" />
   <link rel="stylesheet" href="css/site-close-buttons.css?v=1" />
-  <link rel="stylesheet" href="css/coach-workout-client-style.css?v=1" />
+  <link rel="stylesheet" href="css/coach-workout-client-style.css?v=2" />
 </head>
 <body class="dashboard-page coach-workout-log-page">
   <header class="site-header dashboard-header">
@@ -52,6 +52,17 @@
     </section>
 
     <form class="coach-workout-logger" id="coach-workout-log-form" hidden>
+      <section class="coach-workout-client-search" aria-labelledby="coach-workout-client-search-title">
+        <label id="coach-workout-client-search-title" for="coach-workout-client-name">Find a client</label>
+        <div class="coach-workout-client-control">
+          <input type="text" id="coach-workout-client-name" list="coach-workout-client-suggestions" placeholder="Search clients" required autocomplete="off" />
+          <datalist id="coach-workout-client-suggestions"></datalist>
+          <select id="coach-workout-client" hidden aria-hidden="true" tabindex="-1">
+            <option value="">Choose a client</option>
+          </select>
+          <a class="button coach-client-view-link" id="coach-workout-client-view" target="_blank" rel="noopener" hidden>View client page <span aria-hidden="true">↗</span></a>
+        </div>
+      </section>
       <section class="admin-card coach-workout-session-details" aria-labelledby="coach-workout-session-title">
         <div class="admin-section-heading compact-heading">
           <div>
@@ -61,17 +72,6 @@
           <span class="status-pill coach-workout-autosave-pill">Autosave on</span>
         </div>
         <div class="coach-workout-session-grid">
-          <div class="coach-workout-client-control">
-            <label>
-              Client
-              <input type="text" id="coach-workout-client-name" list="coach-workout-client-suggestions" placeholder="Type client name" required autocomplete="off" />
-              <datalist id="coach-workout-client-suggestions"></datalist>
-              <select id="coach-workout-client" hidden aria-hidden="true" tabindex="-1">
-                <option value="">Choose a client</option>
-              </select>
-            </label>
-            <a class="button coach-client-view-link" id="coach-workout-client-view" target="_blank" rel="noopener" hidden>View client page <span aria-hidden="true">↗</span></a>
-          </div>
           <label>
             Workout date
             <input type="date" id="coach-workout-date" required />
@@ -111,6 +111,11 @@
           </div>
         </div>
         <div class="coach-workout-carousel" id="coach-workout-carousel" data-coach-workout-format="single">
+          <button class="coach-workout-first-exercise" id="coach-workout-first-exercise" type="button" hidden>
+            <span aria-hidden="true">+</span>
+            <strong>Add first exercise</strong>
+            <small>Build your workout as you go</small>
+          </button>
           <div class="coach-workout-group-stack" id="coach-workout-group-stack" data-coach-workout-group-stack hidden></div>
           <div class="coach-workout-exercise-list" id="coach-workout-exercises" aria-live="polite"></div>
         </div>
@@ -154,6 +159,6 @@
   </aside>
   <script src="js/coach-rest-timer.js?v=inline-rest-1"></script>
   <script src="js/one-rep-max.js?v=2"></script>
-  <script src="js/coach-workout-log.js?v=client-view-shortcut-1&amp;remember-login=1&amp;coach-copy-weights=1&amp;blank-zero=1&amp;recovery-catalog=1&amp;gym-location=1"></script>
+  <script src="js/coach-workout-log.js?v=client-view-shortcut-1&amp;remember-login=1&amp;coach-copy-weights=1&amp;blank-zero=1&amp;recovery-catalog=1&amp;gym-location=1&amp;client-layout=2"></script>
 </body>
 </html>

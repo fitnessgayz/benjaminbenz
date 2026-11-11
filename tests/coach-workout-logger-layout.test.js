@@ -244,7 +244,7 @@ test("repeats Set Weight Reps and RIR labels in warm-up and round sections", () 
   const sections = sourceForFunction("coachWorkoutGroupedSectionsMarkup");
 
   assert.match(columns, /<span>Set<\/span>/);
-  assert.match(columns, /<span>Weight<\/span>/);
+  assert.match(columns, /data-one-rm-open[^>]*>Weight/);
   assert.match(columns, /<span>Reps<\/span>/);
   assert.match(columns, /<span>RIR<\/span>/);
   assert.match(sections, /data-coach-grouped-section="warm-up"/);
@@ -255,6 +255,18 @@ test("repeats Set Weight Reps and RIR labels in warm-up and round sections", () 
     (sections.match(/coachWorkoutGroupedColumnLabelsMarkup\(\)/g) || []).length >= 2,
     "Column labels should render in the warm-up and every generated round",
   );
+});
+
+test("places client search above workout details and starts with a first-exercise action", () => {
+  const search = loggerHtml.indexOf('id="coach-workout-client-name"');
+  const details = loggerHtml.indexOf('class="admin-card coach-workout-session-details"');
+  const firstExercise = loggerHtml.indexOf('id="coach-workout-first-exercise"');
+  const groupedCards = loggerHtml.indexOf('id="coach-workout-group-stack"');
+
+  assert.ok(search > 0 && search < details);
+  assert.ok(firstExercise > details && firstExercise < groupedCards);
+  assert.match(sourceForFunction("renderCoachWorkoutCardLayout"), /awaitingFirstExercise/);
+  assert.match(sourceForFunction("handleCoachWorkoutForm"), /coach-workout-first-exercise/);
 });
 
 test("adds and deletes a whole grouped round across every exercise", () => {
