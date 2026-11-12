@@ -1,0 +1,81 @@
+/* Picker confirmation, plus readable accent text in light appearance. */
+.dashboard-page .custom-workout-add-card-prompt {
+  width: min(420px, calc(100vw - 32px));
+  max-width: calc(100vw - 32px);
+  margin: auto;
+  padding: 24px;
+  border: 1px solid #484b55;
+  border-radius: 22px;
+  background: #22242a;
+  color: #f7f7f8;
+  box-shadow: 0 24px 70px #0008;
+}
+.dashboard-page .custom-workout-add-card-prompt::backdrop { background: #050607b8; }
+.dashboard-page .custom-workout-add-card-prompt h2 {
+  margin: 0 0 10px;
+  color: inherit;
+  font-size: 1.3rem;
+}
+.dashboard-page .custom-workout-add-card-prompt p {
+  margin: 0 0 20px;
+  color: #b9bdc5;
+  overflow-wrap: anywhere;
+}
+.dashboard-page .custom-workout-add-card-prompt > div { display: grid; gap: 10px; }
+.dashboard-page .custom-workout-add-card-prompt [data-confirm-add-card] {
+  min-height: 50px;
+  border: 1px solid #ffd400;
+  border-radius: 14px;
+  background: #ffd400;
+  color: #111411;
+  font-weight: 800;
+}
+.dashboard-page .custom-workout-add-card-prompt [data-keep-choosing] {
+  min-height: 45px;
+  border: 1px solid #5a6070;
+  border-radius: 14px;
+  background: #2c2f37;
+  color: #f7f7f8;
+}
+.dashboard-page .custom-workout-add-card-prompt button:focus-visible {
+  outline: 3px solid #55b2ff;
+  outline-offset: 2px;
+}
+:root[data-client-theme="light"] body.client-dashboard-page .custom-workout-add-card-prompt {
+  border-color: #c6ccd4;
+  background: #fff;
+  color: #172430;
+}
+:root[data-client-theme="light"] body.client-dashboard-page .custom-workout-add-card-prompt p { color: #52606b; }
+:root[data-client-theme="light"] body.client-dashboard-page .custom-workout-add-card-prompt [data-keep-choosing] {
+  border-color: #b9c9db;
+  background: #eef3f9;
+  color: #0751c7;
+}
+
+:root[data-client-theme="light"] body.client-dashboard-page #client-workouts-panel.is-choosing-workout .workout-choice-quick .workout-choice-title {
+  color: #0751c7 !important;
+}
+:root[data-client-theme="light"] body.client-dashboard-page .client-home-planner .client-home-week-title,
+:root[data-client-theme="light"] body.client-dashboard-page .client-home-week-streak {
+  color: #0751c7 !important;
+}
+:root[data-client-theme="light"] body.client-dashboard-page .client-home-week-streak {
+  border-color: #a9c3e7;
+  background: #eaf1ff;
+}
+:root[data-client-theme="light"] body.client-dashboard-page .client-home-gym-pill {
+  background: #dbeaff !important;
+  color: #0751c7 !important;
+}
+:root[data-client-theme="light"] body.dashboard-page.client-dashboard-page button.client-home-gym-pill:disabled:not([aria-pressed="true"]):not(.is-logged) {
+  background: #dbeaff !important;
+  color: #0751c7 !important;
+  opacity: 1;
+}
+:root body.client-dashboard-page .client-home-gym-pill.is-logged { opacity: 1; }
+
+:root[data-client-theme="light"] body.client-dashboard-page .client-gym-checkin-prompt-kicker,
+:root[data-client-theme="light"] body.client-dashboard-page [data-custom-exercise-more] {
+  color: #0751c7;
+}

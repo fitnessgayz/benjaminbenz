@@ -86,6 +86,7 @@
       label.textContent = busy ? 'Saving check-in…' : done ? 'Checked in today' : 'Gym check-in';
       if (homeButton) {
         homeButton.disabled = button.disabled;
+        homeButton.classList.toggle('is-logged', done);
         homeButton.textContent = label.textContent;
       }
     }

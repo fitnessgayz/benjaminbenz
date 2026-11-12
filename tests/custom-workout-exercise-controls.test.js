@@ -131,7 +131,7 @@ test("both exercise counters and remove controls follow canonical cards, includi
     querySelectorAll: (selector) => selector === "[data-custom-exercise-card]" ? cards : selector === "[data-custom-exercise-count]" ? counters : selector === "[data-pick-custom-exercise]" ? adders : removers
   };
   const context = evaluate(["normalizeCustomWorkoutFormat", "customWorkoutExerciseAddConfig", "syncCustomWorkoutExerciseControls"], {
-    customWorkoutFormats: { single: {}, superset: {}, circuit: {} }
+    customWorkoutFormats: { single: {}, superset: {}, circuit: {} }, todayDate: () => "2026-11-12", workoutElapsedTimerState: null
   });
   context.syncCustomWorkoutExerciseControls(panel);
   assert.deepEqual(counters.map((counter) => counter.textContent), ["3", "3"]);
@@ -385,8 +385,9 @@ test("exercise editor targets the chosen card's first editable working weight wi
 
 function dialogFixture(format = "single") {
   const handlers = {};
+  const promptHandlers = {};
   const calls = { add: [], remove: [], focus: 0 };
-  const input = { value: "", setAttribute() {}, removeAttribute() {}, focus() {} };
+  const input = { value: "", setAttribute() {}, removeAttribute() {}, focus() {}, blur() {} };
   const selectedCount = { textContent: "" };
   const selected = { hidden: true, querySelector: () => selectedCount };
   const selectedList = { innerHTML: "" };
@@ -407,12 +408,20 @@ function dialogFixture(format = "single") {
       '[data-custom-exercise-suggestions]': menu,
       'button[type="submit"]': submit
     })[selector] || input,
-    isConnected: true, showModal() {}, remove() {},
-    close: () => handlers.close()
+    isConnected: true, open: false, showModal() { this.open = true; }, remove() { this.isConnected = false; },
+    close() { this.open = false; handlers.close(); }
+  };
+  const confirmation = {
+    isConnected: false, open: false, setAttribute() {},
+    addEventListener(name, handler) { promptHandlers[name] = handler; },
+    querySelector() { return { textContent: "" }; },
+    showModal() { this.open = true; },
+    close() { this.open = false; promptHandlers.close(); },
+    remove() { this.isConnected = false; }
   };
   const context = evaluate(["normalizeCustomWorkoutFormat", "customWorkoutExerciseAddConfig", "openCustomWorkoutExerciseDialog"], {
     customWorkoutFormats: { single: {}, superset: {}, circuit: {} },
-    document: { querySelector: () => null, createElement: () => dialog, body: { append() {} } },
+    document: { querySelector: () => null, createElement: (() => { let count = 0; return () => count++ ? confirmation : dialog; })(), body: { append(node) { node.isConnected = true; } } },
     escapeHtml: String, currentExerciseLabel: (log) => `Exercise ${log.index + 1}`,
     customWorkoutCarousels: () => [],
     renderCustomExerciseSuggestions() {}, renderCustomWorkoutPickerResults() {},
@@ -423,7 +432,8 @@ function dialogFixture(format = "single") {
     addCustomWorkoutPickedExercises: (_panel, names) => { calls.add.push(...names); return { isConnected: false }; }
   });
   const click = (selector, target = {}) => handlers.click({ stopPropagation() {}, target: { closest: (candidate) => candidate === selector ? target : null } });
-  return { context, handlers, calls, trigger, input, click, dialog, panel, selectedList, prompt, submit };
+  const clickPrompt = (selector) => promptHandlers.click({ target: { closest: (candidate) => candidate === selector ? {} : null } });
+  return { context, handlers, promptHandlers, calls, trigger, input, click, clickPrompt, confirmation, dialog, panel, selectedList, prompt, submit };
 }
 
 test("picker asks for the full superset or circuit before adding it", () => {
@@ -452,7 +462,8 @@ test("straight sets stage a suggestion until Add exercise is pressed", () => {
   });
   assert.deepEqual(fixture.calls.add, []);
   assert.equal(fixture.input.value, "Hip Thrust Machine");
-  fixture.handlers.submit({ preventDefault() {}, stopPropagation() {} });
+  assert.equal(fixture.confirmation.open, true);
+  fixture.clickPrompt("[data-confirm-add-card]");
   assert.deepEqual(fixture.calls.add, ["Hip Thrust Machine"]);
 });
 
@@ -572,6 +583,8 @@ test("circuit picker accepts a fourth exercise and lets clients remove a choice"
   assert.equal(fixture.prompt.textContent, "STEP 3 OF 3 · PICK THIRD EXERCISE");
   choose("Row");
   assert.equal(fixture.prompt.textContent, "CIRCUIT READY · 3 SELECTED");
+  assert.equal(fixture.confirmation.open, true);
+  fixture.clickPrompt("[data-keep-choosing]");
   choose("Jump Rope");
   assert.equal(fixture.submit.disabled, false);
   fixture.click("[data-workout-picker-remove]", { dataset: { workoutPickerRemove: "1" } });
@@ -630,6 +643,8 @@ test("empty picker submission does not add a card and a named submission adds ex
   assert.deepEqual(fixture.calls.add, []);
   fixture.input.value = "  Cable Row  ";
   fixture.handlers.submit(event);
+  assert.equal(fixture.confirmation.open, true);
+  fixture.clickPrompt("[data-confirm-add-card]");
   assert.deepEqual(fixture.calls.add, ["Cable Row"]);
 });
 
@@ -643,6 +658,7 @@ test("exercise selection survives a workout panel refresh while the picker is op
   fixture.context.addCustomWorkoutPickedExercise = (panel, name) => { target = { panel, name }; return null; };
   fixture.input.value = "Lat Pulldown Machine";
   fixture.handlers.submit({ preventDefault() {}, stopPropagation() {} });
+  fixture.clickPrompt("[data-confirm-add-card]");
   assert.deepEqual(target, { panel: currentPanel, name: "Lat Pulldown Machine" });
 });
 
