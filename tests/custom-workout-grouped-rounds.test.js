@@ -619,7 +619,7 @@ test("shows the grouped session timer and finish action on the last group only",
   const initialGroups = sourceForFunction("customWorkoutCarouselMarkup");
   const regroup = sourceForFunction("regroupCustomWorkoutCarousels");
 
-  assert.match(groupedMarkup, /custom-workout-group-format-button[^>]*data-custom-workout-setup-open="format"/);
+  assert.doesNotMatch(groupedMarkup, /custom-workout-group-format-button|data-custom-grouped-gym/);
   assert.match(groupedMarkup, /const showSessionControls = format !== "single" && options\.isLastGroup !== false/);
   assert.match(groupedMarkup, /\$\{showSessionControls \? `[\s\S]*?data-custom-grouped-timer[\s\S]*?` : ""\}/);
   assert.match(

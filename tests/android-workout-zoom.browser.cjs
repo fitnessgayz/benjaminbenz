@@ -12,10 +12,12 @@ const styles = [...dashboard.matchAll(/<link[^>]+href="\/?(css\/[^"?]+)[^>]*>/g)
 const groupStart = source.indexOf('function customWorkoutGroupedRoundCardMarkup(');
 const groupEnd = source.indexOf('\nfunction ', groupStart + 1);
 assert.ok(groupStart >= 0 && groupEnd > groupStart);
-assert.doesNotMatch(source.slice(groupStart, groupEnd), /data-custom-grouped-gym|Gym location \(optional\)/,
-  'superset and circuit cards do not repeat the workout gym selector');
+assert.doesNotMatch(source.slice(groupStart, groupEnd), /data-custom-grouped-gym|Gym location \(optional\)|custom-workout-group-format-button/,
+  'superset and circuit cards do not repeat the workout gym or format selectors');
 assert.match(source, /<div class="custom-workout-launcher-gym">\$\{workoutGymPickerMarkup/,
   'the workout setup keeps its gym selector');
+assert.match(source, /data-custom-workout-setup-open="format" aria-label="Change workout format"/,
+  'the workout summary keeps its format selector');
 
 const fixture = `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1">
   <style>${styles}</style></head><body class="dashboard-page client-dashboard-page">

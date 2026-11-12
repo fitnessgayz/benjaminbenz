@@ -10156,7 +10156,6 @@ function customWorkoutGroupedRoundCardMarkup(format, exercises, groupIndex = 0, 
           <div>
             <div class="custom-workout-grouped-title-row">
               <h3>${escapeHtml(groupTitle)}</h3>
-              ${options.assigned ? "" : '<button class="custom-workout-group-format-button" type="button" data-custom-workout-setup-open="format">Change format <span aria-hidden="true">⌄</span></button>'}
             </div>
             <p class="custom-workout-grouped-cue">${escapeHtml(groupCue)}</p>
           </div>

@@ -842,6 +842,10 @@ body.client-dashboard-page .client-workout-panel-custom .custom-workout-group-fo
   white-space: nowrap;
 }
 
+body.client-dashboard-page #client-workout-panels [data-custom-workout-grouped="true"] :is(.custom-workout-group-format-button, .custom-workout-grouped-gym) {
+  display: none !important;
+}
+
 :root[data-client-theme="light"] body.client-dashboard-page .client-workout-panel-custom .custom-workout-group-format-button {
   color: #096ab9;
 }
