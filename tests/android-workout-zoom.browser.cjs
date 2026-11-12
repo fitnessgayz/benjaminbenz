@@ -58,6 +58,9 @@ const fixture = `<!doctype html><html><head><meta name="viewport" content="width
             headerWidth: header.clientWidth,
             headerScrollWidth: header.scrollWidth,
             imageWidth: bounds('.ios-log-exercise-image').width,
+            imageHeight: bounds('.ios-log-exercise-image').height,
+            imageBottom: bounds('.ios-log-exercise-image').bottom,
+            titleTop: bounds('.ios-log-exercise-title').top,
             titleRight: bounds('.ios-log-exercise-name').right,
             headerRight: bounds('.ios-log-exercise-header').right,
             titleScrollWidth: title.scrollWidth,
@@ -69,7 +72,9 @@ const fixture = `<!doctype html><html><head><meta name="viewport" content="width
           const context = `${engineName}/${format}/${width}px/${rootFontSize}px`;
           assert.ok(layout.documentWidth <= layout.viewport + 1, `${context}: page fits (${JSON.stringify(layout)})`);
           assert.ok(layout.headerScrollWidth <= layout.headerWidth + 1, `${context}: card fits (${JSON.stringify(layout)})`);
-          assert.ok(layout.imageWidth >= (width === 390 ? 128 : 103), `${context}: image is legible (${JSON.stringify(layout)})`);
+          assert.ok(layout.imageWidth >= layout.headerWidth - 26, `${context}: image spans the card interior (${JSON.stringify(layout)})`);
+          assert.ok(layout.imageHeight >= 112 && layout.imageHeight <= 161, `${context}: image stays compact (${JSON.stringify(layout)})`);
+          assert.ok(layout.titleTop >= layout.imageBottom - 1, `${context}: name sits below the image (${JSON.stringify(layout)})`);
           assert.ok(layout.titleRight <= layout.headerRight + 1 && layout.titleScrollWidth <= layout.titleWidth + 1,
             `${context}: title stays inside card (${JSON.stringify(layout)})`);
           assert.ok(layout.menuRight <= layout.headerRight + 1 && layout.collapseRight <= layout.headerRight + 1,
@@ -78,6 +83,6 @@ const fixture = `<!doctype html><html><head><meta name="viewport" content="width
         await page.close();
       }
     }
-    console.log(`${engineName}: superset and circuit cards fit at 280–390px with normal and enlarged type`);
+    console.log(`${engineName}: compact images and titles fit superset and circuit cards at 280–390px`);
   } finally { await browser.close(); }
 })().catch(error => { console.error(error); process.exitCode = 1; });

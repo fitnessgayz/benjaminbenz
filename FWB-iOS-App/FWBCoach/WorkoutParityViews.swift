@@ -304,20 +304,19 @@ struct WorkoutParityGroupView: View {
         VStack(spacing: 0) {
             ForEach(group.exercises) { exercise in
                 let media = mediaByCode[exercise.code]
-                HStack(alignment: .top, spacing: 9) {
-                    Text(labels[exercise.code] ?? "1")
-                        .font(WorkoutParityStyle.heading(16).italic())
-                        .frame(width: 26, alignment: .center)
-                        .padding(.top, 3)
+                VStack(alignment: .leading, spacing: 8) {
                     if let media, media.imageURL != nil {
                         Button { actions.showMedia(exercise) } label: {
                             ZStack(alignment: .bottomTrailing) {
                                 ExerciseRemoteImage(
                                     urls: media.thumbnailURLs,
                                     animated: false,
-                                    cropLeadingFraction: media.cropsThumbnailToPhotoPanels ? 0.51 : nil
+                                    cropLeadingFraction: media.cropsThumbnailToPhotoPanels ? 0.73 : nil,
+                                    cropTopFraction: media.cropsThumbnailToPhotoPanels ? 0.82 : nil,
+                                    fillsFrame: true
                                 )
-                                    .frame(width: 112, height: media.cropsThumbnailToPhotoPanels ? 96 : 74)
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: 132)
                                     .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
                                 Image(systemName: "info")
                                     .font(FWBFont.sized(9).weight(.bold))
@@ -331,50 +330,56 @@ struct WorkoutParityGroupView: View {
                         .buttonStyle(.plain)
                         .accessibilityLabel("View exercise card and instructions for \(exercise.name)")
                     }
-                    Button { actions.showExercise(exercise) } label: {
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text(exercise.name.isEmpty ? "EXERCISE \(labels[exercise.code] ?? "1")" : exercise.name.uppercased())
-                                .font(WorkoutParityStyle.heading(16).italic())
-                                .fixedSize(horizontal: false, vertical: true)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                            if !isCustom && !exercise.prescription.isEmpty {
-                                Text("Target: \(exercise.prescription)")
-                                    .font(FWBFont.sized(12).weight(.semibold))
-                                    .foregroundStyle(WorkoutParityStyle.muted)
+                    HStack(alignment: .top, spacing: 9) {
+                        Text(labels[exercise.code] ?? "1")
+                            .font(WorkoutParityStyle.heading(16).italic())
+                            .frame(width: 26, alignment: .center)
+                            .padding(.top, 7)
+                        Button { actions.showExercise(exercise) } label: {
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text(exercise.name.isEmpty ? "EXERCISE \(labels[exercise.code] ?? "1")" : exercise.name.uppercased())
+                                    .font(WorkoutParityStyle.heading(16).italic())
                                     .fixedSize(horizontal: false, vertical: true)
-                            }
-                            if let media {
-                                let metadata = [media.primaryMuscle, media.equipment]
-                                    .filter { !$0.isEmpty }
-                                    .joined(separator: " · ")
-                                if !metadata.isEmpty {
-                                    Text(metadata)
-                                        .font(FWBFont.sized(11).weight(.medium))
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                if !isCustom && !exercise.prescription.isEmpty {
+                                    Text("Target: \(exercise.prescription)")
+                                        .font(FWBFont.sized(12).weight(.semibold))
                                         .foregroundStyle(WorkoutParityStyle.muted)
-                                        .lineLimit(1)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                }
+                                if let media {
+                                    let metadata = [media.primaryMuscle, media.equipment]
+                                        .filter { !$0.isEmpty }
+                                        .joined(separator: " · ")
+                                    if !metadata.isEmpty {
+                                        Text(metadata)
+                                            .font(FWBFont.sized(11).weight(.medium))
+                                            .foregroundStyle(WorkoutParityStyle.muted)
+                                            .lineLimit(1)
+                                    }
+                                }
+                                if let record = personalRecordSummaries[exercise.code], !record.isEmpty {
+                                    Text("PR: \(record)")
+                                        .font(FWBFont.sized(11).weight(.semibold))
+                                        .foregroundStyle(WorkoutParityStyle.muted)
+                                        .fixedSize(horizontal: false, vertical: true)
                                 }
                             }
-                            if let record = personalRecordSummaries[exercise.code], !record.isEmpty {
-                                Text("PR: \(record)")
-                                    .font(FWBFont.sized(11).weight(.semibold))
-                                    .foregroundStyle(WorkoutParityStyle.muted)
-                                    .fixedSize(horizontal: false, vertical: true)
+                            .multilineTextAlignment(.leading)
+                            .padding(.vertical, 4)
+                            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("\(exercise.name.isEmpty ? "Exercise" : exercise.name), details and options")
+                        if media?.imageURL == nil, let url = exercise.demoURL {
+                            Link(destination: url) {
+                                Image(systemName: "play.rectangle")
+                                    .font(FWBFont.sized(19).weight(.semibold))
+                                    .frame(width: 36, height: 44)
                             }
+                            .accessibilityLabel("Watch \(exercise.name) demo")
                         }
-                        .multilineTextAlignment(.leading)
-                        .padding(.vertical, 4)
-                        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("\(exercise.name.isEmpty ? "Exercise" : exercise.name), details and options")
-                    if media?.imageURL == nil, let url = exercise.demoURL {
-                        Link(destination: url) {
-                            Image(systemName: "play.rectangle")
-                                .font(FWBFont.sized(19).weight(.semibold))
-                                .frame(width: 36, height: 44)
-                        }
-                        .accessibilityLabel("Watch \(exercise.name) demo")
                     }
                 }
                 .padding(.vertical, 7)

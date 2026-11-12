@@ -4050,24 +4050,30 @@ struct ExerciseRemoteImage: View {
     let urls: [URL]
     let animated: Bool
     let cropLeadingFraction: CGFloat?
+    let cropTopFraction: CGFloat?
+    let fillsFrame: Bool
 
-    init(url: URL?, animated: Bool, cropLeadingFraction: CGFloat? = nil) {
+    init(url: URL?, animated: Bool, cropLeadingFraction: CGFloat? = nil, cropTopFraction: CGFloat? = nil, fillsFrame: Bool = false) {
         urls = url.map { [$0] } ?? []
         self.animated = animated
         self.cropLeadingFraction = cropLeadingFraction
+        self.cropTopFraction = cropTopFraction
+        self.fillsFrame = fillsFrame
     }
 
-    init(urls: [URL], animated: Bool, cropLeadingFraction: CGFloat? = nil) {
+    init(urls: [URL], animated: Bool, cropLeadingFraction: CGFloat? = nil, cropTopFraction: CGFloat? = nil, fillsFrame: Bool = false) {
         self.urls = urls
         self.animated = animated
         self.cropLeadingFraction = cropLeadingFraction
+        self.cropTopFraction = cropTopFraction
+        self.fillsFrame = fillsFrame
     }
 
     var body: some View {
         ZStack {
             Color.fwbSurface
             if let image = loader.image {
-                ExerciseUIImageView(image: image, cropLeadingFraction: cropLeadingFraction)
+                ExerciseUIImageView(image: image, cropLeadingFraction: cropLeadingFraction, cropTopFraction: cropTopFraction, fillsFrame: fillsFrame)
             } else if loader.isLoading {
                 ProgressView().tint(Color.fwbLime)
             } else {
@@ -4088,10 +4094,12 @@ struct ExerciseRemoteImage: View {
 private struct ExerciseUIImageView: UIViewRepresentable {
     let image: UIImage
     let cropLeadingFraction: CGFloat?
+    let cropTopFraction: CGFloat?
+    let fillsFrame: Bool
 
     func makeUIView(context: Context) -> UIImageView {
         let imageView = UIImageView()
-        imageView.contentMode = .scaleAspectFit
+        imageView.contentMode = fillsFrame ? .scaleAspectFill : .scaleAspectFit
         imageView.clipsToBounds = true
         return imageView
     }
@@ -4099,6 +4107,7 @@ private struct ExerciseUIImageView: UIViewRepresentable {
     func updateUIView(_ imageView: UIImageView, context: Context) {
         let displayedImage = croppedImage ?? image
         imageView.image = displayedImage
+        imageView.contentMode = fillsFrame ? .scaleAspectFill : .scaleAspectFit
         if displayedImage.images != nil { imageView.startAnimating() } else { imageView.stopAnimating() }
     }
 
@@ -4108,13 +4117,14 @@ private struct ExerciseUIImageView: UIViewRepresentable {
     }
 
     private var croppedImage: UIImage? {
-        guard let fraction = cropLeadingFraction,
-              fraction > 0,
-              fraction < 1,
-              image.images == nil,
+        guard image.images == nil,
+              (cropLeadingFraction != nil || cropTopFraction != nil),
               let cgImage = image.cgImage else { return nil }
-        let cropWidth = max(CGFloat(1), (CGFloat(cgImage.width) * fraction).rounded(.down))
-        let cropRect = CGRect(x: 0, y: 0, width: cropWidth, height: CGFloat(cgImage.height))
+        let widthFraction = min(max(cropLeadingFraction ?? 1, 0.01), 1)
+        let heightFraction = min(max(cropTopFraction ?? 1, 0.01), 1)
+        let cropWidth = max(CGFloat(1), (CGFloat(cgImage.width) * widthFraction).rounded(.down))
+        let cropHeight = max(CGFloat(1), (CGFloat(cgImage.height) * heightFraction).rounded(.down))
+        let cropRect = CGRect(x: 0, y: 0, width: cropWidth, height: cropHeight)
         guard let cropped = cgImage.cropping(to: cropRect) else { return nil }
         return UIImage(cgImage: cropped, scale: image.scale, orientation: image.imageOrientation)
     }
