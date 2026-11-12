@@ -13609,6 +13609,7 @@ function openCustomWorkoutExerciseDialog(trigger, mode = "add") {
   const showAddCardPrompt = () => {
     if (!dialog.isConnected || addCardPrompt?.isConnected) return;
     const names = grouped ? selectedNames : [dialog.querySelector("#custom-workout-picker-search")?.value.trim()];
+    if (grouped ? !canAddSelection(names.length) : !names[0]) return;
     addCardPrompt = document.createElement("dialog");
     addCardPrompt.className = "custom-workout-add-card-prompt";
     addCardPrompt.setAttribute("aria-labelledby", "custom-workout-add-card-title");
@@ -13808,7 +13809,7 @@ function openCustomWorkoutExerciseDialog(trigger, mode = "add") {
     event.stopPropagation();
     const name = dialog.querySelector("#custom-workout-picker-search")?.value.trim();
     if (!grouped && name && selectedNames[0] !== name) selectName(name);
-    else add();
+    else showAddCardPrompt();
   });
   dialog.addEventListener("keydown", (event) => {
     if (!["ArrowDown", "ArrowUp"].includes(event.key) || removing) return;

@@ -463,6 +463,10 @@ test("straight sets stage a suggestion until Add exercise is pressed", () => {
   assert.deepEqual(fixture.calls.add, []);
   assert.equal(fixture.input.value, "Hip Thrust Machine");
   assert.equal(fixture.confirmation.open, true);
+  fixture.clickPrompt("[data-keep-choosing]");
+  fixture.handlers.submit({ preventDefault() {}, stopPropagation() {} });
+  assert.equal(fixture.confirmation.open, true);
+  assert.deepEqual(fixture.calls.add, [], "Add cannot skip the confirmation after Keep choosing");
   fixture.clickPrompt("[data-confirm-add-card]");
   assert.deepEqual(fixture.calls.add, ["Hip Thrust Machine"]);
 });
@@ -556,7 +560,11 @@ test("superset picker collects two exercises before one add action", () => {
   assert.equal(fixture.submit.disabled, false);
   assert.equal(fixture.dialog.classList.contains("is-ready-to-add"), true);
   fixture.input.value = "Unselected search text";
+  fixture.clickPrompt("[data-keep-choosing]");
   fixture.handlers.submit({ preventDefault() {}, stopPropagation() {} });
+  assert.equal(fixture.confirmation.open, true);
+  assert.deepEqual(fixture.calls.add, []);
+  fixture.clickPrompt("[data-confirm-add-card]");
   assert.deepEqual(fixture.calls.add, ["Cable Row", "Lat Pulldown"]);
 });
 
@@ -569,7 +577,7 @@ test("a typed manual exercise can be queued before the next superset choice", ()
   assert.equal(fixture.input.value, "");
   assert.match(fixture.selectedList.innerHTML, /Custom Cable Pull/);
   fixture.click("[data-custom-exercise-suggestion]", { dataset: { customExerciseSuggestion: "Cable Row" } });
-  fixture.handlers.submit({ preventDefault() {}, stopPropagation() {} });
+  fixture.clickPrompt("[data-confirm-add-card]");
   assert.deepEqual(fixture.calls.add, ["Custom Cable Pull", "Cable Row"]);
 });
 
@@ -590,6 +598,9 @@ test("circuit picker accepts a fourth exercise and lets clients remove a choice"
   fixture.click("[data-workout-picker-remove]", { dataset: { workoutPickerRemove: "1" } });
   assert.match(fixture.selectedList.innerHTML, /Jump Rope/);
   fixture.handlers.submit({ preventDefault() {}, stopPropagation() {} });
+  assert.equal(fixture.confirmation.open, true);
+  assert.deepEqual(fixture.calls.add, []);
+  fixture.clickPrompt("[data-confirm-add-card]");
   assert.deepEqual(fixture.calls.add, ["Squat", "Row", "Jump Rope"]);
 });
 
