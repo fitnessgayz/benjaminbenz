@@ -896,6 +896,7 @@ private struct WorkoutRoutineCard: View {
         return ExerciseMedia(
             imageURL: imageURL,
             thumbnailURL: ExerciseMediaURL.thumbnail(for: imageURL),
+            motionURL: url(approved?.motionURL),
             instructions: approved?.instructions.trimmingCharacters(in: .whitespacesAndNewlines) ?? "",
             primaryMuscle: approved?.primaryMuscle.trimmingCharacters(in: .whitespacesAndNewlines) ?? "",
             equipment: approved?.equipment.trimmingCharacters(in: .whitespacesAndNewlines) ?? "",

@@ -1,6 +1,7 @@
 import SwiftUI
 import UIKit
 import ImageIO
+import AVKit
 
 enum ExerciseMediaURL {
     static func thumbnail(for imageURL: URL?) -> URL? {
@@ -25,6 +26,7 @@ enum ExerciseMediaURL {
 struct ExerciseMedia: Equatable {
     let imageURL: URL?
     let thumbnailURL: URL?
+    let motionURL: URL?
     let instructions: String
     let primaryMuscle: String
     let equipment: String
@@ -1546,6 +1548,7 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
         return ExerciseMedia(
             imageURL: imageURL,
             thumbnailURL: ExerciseMediaURL.thumbnail(for: imageURL),
+            motionURL: url(approved?.motionURL),
             instructions: approved?.instructions.trimmingCharacters(in: .whitespacesAndNewlines) ?? "",
             primaryMuscle: approved?.primaryMuscle.trimmingCharacters(in: .whitespacesAndNewlines) ?? "",
             equipment: approved?.equipment.trimmingCharacters(in: .whitespacesAndNewlines) ?? "",
@@ -4132,6 +4135,9 @@ private struct ExerciseUIImageView: UIViewRepresentable {
 
 struct ExerciseMediaViewer: View {
     @Environment(\.dismiss) private var dismiss
+    @State private var showingMotion = true
+    @State private var player = AVQueuePlayer()
+    @State private var looper: AVPlayerLooper?
     let request: ExerciseMediaViewerRequest
 
     var body: some View {
@@ -4146,15 +4152,28 @@ struct ExerciseMediaViewer: View {
                     .frame(maxWidth: .infinity)
                     .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                     .overlay { RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(Color.fwbLine, lineWidth: 1) }
-                    .accessibilityLabel("Static start and end form reference for \(request.exerciseName)")
+                    .accessibilityLabel(showingMotion && request.media.motionURL != nil
+                        ? "Moving demonstration for \(request.exerciseName)"
+                        : "Static start and end form reference for \(request.exerciseName)")
 
                     Text(request.exerciseName.fwbTitleCased)
                         .font(FWBFont.title3.weight(.bold))
                         .foregroundStyle(Color.fwbWarmWhite)
-                    Text("START / END FORM REFERENCE")
+                    Text(showingMotion && request.media.motionURL != nil
+                        ? "MOVING EXERCISE DEMONSTRATION"
+                        : "START / END FORM REFERENCE")
                         .font(FWBFont.caption.weight(.semibold))
                         .tracking(0.5)
                         .foregroundStyle(Color.fwbMuted)
+
+                    if request.media.motionURL != nil {
+                        Button(showingMotion ? "Show static card" : "Watch exercise demo") {
+                            showingMotion.toggle()
+                            if showingMotion { player.play() } else { player.pause() }
+                        }
+                        .font(FWBFont.subheadline.weight(.semibold))
+                        .foregroundStyle(Color.fwbLime)
+                    }
 
                     if !metadata.isEmpty {
                         Text(metadata)
@@ -4184,11 +4203,35 @@ struct ExerciseMediaViewer: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .topBarTrailing) { Button("Done") { dismiss() } } }
         }
+        .onAppear { startVideoIfNeeded() }
+        .onDisappear {
+            player.pause()
+            player.removeAllItems()
+            looper = nil
+        }
     }
 
     @ViewBuilder
     private var mediaContent: some View {
-        ExerciseRemoteImage(urls: preferredURLs, animated: false)
+        if showingMotion, let motionURL = request.media.motionURL {
+            if motionURL.pathExtension.lowercased() == "webp" {
+                ExerciseRemoteImage(urls: [motionURL, request.media.imageURL].compactMap { $0 }, animated: true)
+            } else if motionURL.pathExtension.lowercased() == "mp4" {
+                VideoPlayer(player: player)
+            } else {
+                ExerciseRemoteImage(urls: preferredURLs, animated: false)
+            }
+        } else {
+            ExerciseRemoteImage(urls: preferredURLs, animated: false)
+        }
+    }
+
+    private func startVideoIfNeeded() {
+        guard let motionURL = request.media.motionURL,
+              motionURL.pathExtension.lowercased() == "mp4" else { return }
+        looper = AVPlayerLooper(player: player, templateItem: AVPlayerItem(url: motionURL))
+        player.isMuted = true
+        player.play()
     }
 
     private var preferredURLs: [URL] {
@@ -4196,6 +4239,9 @@ struct ExerciseMediaViewer: View {
     }
 
     private var preferredAspectRatio: CGFloat {
+        if showingMotion, let motionURL = request.media.motionURL {
+            return motionURL.pathExtension.lowercased() == "webp" ? 6 / 7 : 16 / 9
+        }
         return ExerciseMediaURL.isBrandedCard(request.media.imageURL) ? 1902 / 827 : 16 / 9
     }
 

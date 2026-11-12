@@ -2722,16 +2722,33 @@ function renderExerciseMediaDialog(dialog, showVideo = false) {
       videoLink.setAttribute("aria-label", `Watch ${name} exercise video (opens in a new tab)`);
     }
   }
-  if (toggleLabel) toggleLabel.textContent = shouldShowVideo ? "Show static card" : "Watch exercise video";
-  if (caption) caption.textContent = shouldShowVideo ? "Exercise video demonstration" : "Static start and end reference";
+  const isAnimatedCard = /\.webp(?:$|[?#])/i.test(videoUrl);
+  if (toggleLabel) toggleLabel.textContent = shouldShowVideo
+    ? "Show full start/end card"
+    : isAnimatedCard ? "Play start/end animation" : "Watch exercise video";
+  if (caption) caption.textContent = shouldShowVideo
+    ? isAnimatedCard ? "Animated start and end reference" : "Exercise video demonstration"
+    : "Static start and end reference";
 
   if (shouldShowVideo) {
+    if (isAnimatedCard) {
+      const animation = document.createElement("img");
+      animation.src = videoUrl;
+      animation.alt = `${name} animated exercise demonstration`;
+      animation.addEventListener("error", () => renderExerciseMediaDialog(dialog, false), { once: true });
+      stage.replaceChildren(animation);
+      return;
+    }
     const video = document.createElement("video");
     video.src = videoUrl;
     video.controls = true;
+    video.autoplay = true;
+    video.loop = true;
+    video.muted = true;
     video.playsInline = true;
     video.preload = "metadata";
     video.setAttribute("aria-label", `${name} exercise video`);
+    video.addEventListener("error", () => renderExerciseMediaDialog(dialog, false), { once: true });
     stage.replaceChildren(video);
     return;
   }
@@ -2760,8 +2777,9 @@ function openExerciseMedia(button) {
   dialog.dataset.exerciseMediaStatic = staticUrl;
   dialog.dataset.exerciseMediaVideo = videoUrl;
   dialog.dataset.exerciseMediaDemo = demoUrl;
-  renderExerciseMediaDialog(dialog, false);
+  renderExerciseMediaDialog(dialog, Boolean(videoUrl));
   dialog.showModal();
+  dialog.querySelector("video")?.play().catch(() => {});
 }
 
 function exerciseVideoUrl(exercise) {
