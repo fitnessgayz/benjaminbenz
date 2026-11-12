@@ -9,7 +9,7 @@ const css = fs.readFileSync(path.join(root, "css/custom-workout-mobile-fix.css")
 const workoutCss = fs.readFileSync(path.join(root, "css/workout-layout.css"), "utf8");
 const compactSetupCss = fs.readFileSync(path.join(root, "css/client-workout-compact-setup.css"), "utf8");
 
-test("opens the static branded card first and offers video as a secondary action", () => {
+test("opens uploaded motion first and keeps the full start/end card available", () => {
   assert.match(portal, /data-exercise-media-static/);
   assert.match(portal, /data-exercise-media-video/);
   assert.match(portal, /data-exercise-media-demo/);
@@ -17,13 +17,13 @@ test("opens the static branded card first and offers video as a secondary action
   assert.match(portal, /loading="lazy"[\s\S]{0,80}decoding="async"/);
   assert.match(portal, /approvedExercise\?\.instructions \|\| exercise\.instructions/);
   assert.match(portal, /image\.src = staticUrl/);
-  assert.match(portal, /renderExerciseMediaDialog\(dialog, false\)/);
+  assert.match(portal, /renderExerciseMediaDialog\(dialog, Boolean\(videoUrl\)\)/);
   assert.match(portal, /Watch exercise video/);
   assert.match(portal, /data-exercise-media-video-link target="_blank" rel="noopener noreferrer"/);
   assert.match(portal, /videoLink\.href = demoUrl/);
   assert.match(portal, /video\.src = videoUrl/);
   assert.match(portal, /video\.controls = true/);
-  assert.match(portal, /Show static card/);
+  assert.match(portal, /Show full start\/end card/);
   assert.doesNotMatch(portal, /data-exercise-media-animated/);
   assert.doesNotMatch(portal, /class="exercise-media-button[\s\S]{0,500}<video/);
 });
@@ -98,7 +98,7 @@ test("full-card framing applies only to branded stills and clears for video and 
   const render = Function("trustedExerciseImageUrl", "trustedExerciseMotionUrl", "exerciseVideoUrl", "document",
     `${helper}\n${renderer}\nreturn renderExerciseMediaDialog;`)(
     (url) => url, (url) => url, () => "", {
-      createElement: (tag) => ({ tag, setAttribute() {} }),
+      createElement: (tag) => ({ tag, setAttribute() {}, addEventListener() {} }),
     });
   let showsFullCard = false;
   let media;
@@ -122,6 +122,13 @@ test("full-card framing applies only to branded stills and clears for video and 
   assert.equal(showsFullCard, false);
   assert.equal(media.tag, "video");
   assert.equal(media.controls, true);
+  assert.equal(media.autoplay, true);
+  assert.equal(media.loop, true);
+  dialog.dataset.exerciseMediaVideo = "https://example.com/start-end.webp";
+  render(dialog, true);
+  assert.equal(showsFullCard, false);
+  assert.equal(media.tag, "img");
+  assert.equal(media.alt, "Shoulder press animated exercise demonstration");
   render(dialog, false);
   assert.equal(showsFullCard, true);
   dialog.dataset.exerciseMediaStatic = "https://example.com/images/exercises/plain-photo.jpg";

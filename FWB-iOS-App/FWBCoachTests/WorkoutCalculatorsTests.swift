@@ -721,6 +721,7 @@ final class ExerciseMediaTests: XCTestCase {
         let media = ExerciseMedia(
             imageURL: full,
             thumbnailURL: thumbnail,
+            motionURL: nil,
             instructions: "Brace, lower with control, and press to the start position.",
             primaryMuscle: "Chest",
             equipment: "Dumbbells",
