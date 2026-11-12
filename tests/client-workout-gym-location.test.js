@@ -148,7 +148,7 @@ test("a superset card lets the client choose the workout's gym without leaving t
   assert.equal(api.requireWorkoutGymLocation(panel), true);
 });
 
-test("superset and circuit round cards both expose the gym location picker", () => {
+test("superset and circuit cards use the workout-level gym selector", () => {
   const render = Function("normalizeCustomWorkoutFormat", "workoutCarouselExerciseCode", "setCountFromPrescription",
     "customWorkoutGroupNameEditorMarkup", "escapeHtml", "customWorkoutCardMarkup", "customWorkoutInlineGroupOptionsMarkup",
     `${sourceForFunction("customWorkoutGroupedRoundCardMarkup")}; return customWorkoutGroupedRoundCardMarkup;`)(
@@ -157,8 +157,8 @@ test("superset and circuit round cards both expose the gym location picker", () 
     );
   for (const format of ["superset", "circuit"]) {
     const markup = render(format, [{ name: "Squat" }, { name: "Row" }], 0, 0, "Custom workout", { panelFormat: format });
-    assert.match(markup, /data-custom-grouped-gym/);
-    assert.match(markup, /data-custom-grouped-gym/);
+    assert.doesNotMatch(markup, /data-custom-grouped-gym|Gym location \(optional\)/);
     assert.match(markup, /data-custom-workout-format="(?:superset|circuit)"/);
   }
+  assert.match(portal, /<div class="custom-workout-launcher-gym">\$\{workoutGymPickerMarkup/);
 });

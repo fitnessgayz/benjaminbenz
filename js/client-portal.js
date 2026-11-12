@@ -10162,14 +10162,6 @@ function customWorkoutGroupedRoundCardMarkup(format, exercises, groupIndex = 0, 
           </div>
           <p class="custom-workout-grouped-progress" data-custom-grouped-progress aria-live="polite">0 / 0 complete</p>
         </header>
-        ${format === "superset" || format === "circuit" ? `
-          <label class="custom-workout-grouped-gym">
-            <span>Gym location (optional)</span>
-            <input data-custom-grouped-gym type="text" maxlength="80" autocomplete="off" placeholder="Gym name, Home, or Outdoors" />
-            <small data-custom-grouped-gym-error hidden></small>
-            <small data-custom-grouped-gym-locked hidden>This location stays with the workout after a round is saved.</small>
-          </label>
-        ` : ""}
         <div class="custom-workout-grouped-exercise-key" data-custom-grouped-exercise-key role="list" aria-label="Exercises in this group"></div>
         ${setCountControls}
         <div data-custom-grouped-sections></div>
