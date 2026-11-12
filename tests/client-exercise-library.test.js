@@ -25,6 +25,34 @@ test("shows the full catalog without a suggestion-list limit", () => {
   assert.equal(groupedRecords(prepared, "All").reduce((sum, [, group]) => sum + group.length, 0), 404);
 });
 
+test("prepares reviewed still and motion media only from approved storage", (t) => {
+  const previousConfig = globalThis.FWB_SUPABASE_CONFIG;
+  globalThis.FWB_SUPABASE_CONFIG = { url: "https://example.supabase.co" };
+  t.after(() => { globalThis.FWB_SUPABASE_CONFIG = previousConfig; });
+  const base = "https://example.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-12";
+  const valid = prepareRecords([{
+    name: "Barbell Bench Press",
+    libraryEntry: {
+      image_url: `${base}/webp-768/barbell-bench-press-benjamin.webp`,
+      motion_url: `${base}/motion-webp/barbell-bench-press-benjamin.webp`,
+      instructions: "Lower to the chest, then press."
+    }
+  }])[0];
+  assert.match(valid.imageUrl, /webp-768\/barbell-bench-press-benjamin\.webp$/);
+  assert.match(valid.motionUrl, /motion-webp\/barbell-bench-press-benjamin\.webp$/);
+  assert.equal(valid.instructions, "Lower to the chest, then press.");
+
+  const untrusted = prepareRecords([{
+    name: "Barbell Bench Press",
+    libraryEntry: {
+      image_url: `${base}/webp-768/barbell-bench-press-benjamin.webp`,
+      motion_url: "https://another.example/video.webp"
+    }
+  }])[0];
+  assert.equal(untrusted.imageUrl, "");
+  assert.equal(untrusted.motionUrl, "");
+});
+
 test("searches aliases and filters by primary muscle", () => {
   const prepared = prepareRecords([
     { name: "Romanian Deadlift", aliases: ["RDL"], libraryEntry: { primary_muscle: "Hamstrings", secondary_muscles: ["Glutes"] } },
