@@ -13553,7 +13553,10 @@ function openCustomWorkoutExerciseDialog(trigger, mode = "add") {
     ? 1 : filledLastGroup > 0 && filledLastGroup < addConfig.count
       ? addConfig.count - filledLastGroup : addConfig.count;
   const selectedNames = [];
+  const canAddSelection = (count) => count >= minimum &&
+    (format !== "superset" || (count - minimum) % 2 === 0);
   const dialog = document.createElement("dialog");
+  let addCardPrompt = null;
   dialog.className = `custom-workout-exercise-dialog${!removing ? " is-grouped-picker" : ""}`;
   dialog.setAttribute("data-picker-format", format);
   dialog._pickerSelectedNames = selectedNames;
@@ -13603,12 +13606,42 @@ function openCustomWorkoutExerciseDialog(trigger, mode = "add") {
   `;
   let addedCard = null;
   let searchRefreshTimer = 0;
+  const showAddCardPrompt = () => {
+    if (!dialog.isConnected || addCardPrompt?.isConnected) return;
+    const names = grouped ? selectedNames : [dialog.querySelector("#custom-workout-picker-search")?.value.trim()];
+    addCardPrompt = document.createElement("dialog");
+    addCardPrompt.className = "custom-workout-add-card-prompt";
+    addCardPrompt.setAttribute("aria-labelledby", "custom-workout-add-card-title");
+    addCardPrompt.innerHTML = `
+      <h2 id="custom-workout-add-card-title">${format === "single" ? "Add exercise card?" : "Add exercise?"}</h2>
+      <p data-workout-add-card-names></p>
+      <div>
+        <button class="button" type="button" data-confirm-add-card>${format === "single" ? "Add exercise card" : "Add exercise"}</button>
+        <button class="button button-ghost" type="button" data-keep-choosing>Keep choosing</button>
+      </div>`;
+    addCardPrompt.querySelector("[data-workout-add-card-names]").textContent = names.filter(Boolean).join(", ");
+    addCardPrompt.addEventListener("click", (event) => {
+      if (event.target.closest("[data-confirm-add-card]")) {
+        addCardPrompt.close();
+        add();
+      } else if (event.target.closest("[data-keep-choosing]")) {
+        addCardPrompt.close();
+      }
+    });
+    addCardPrompt.addEventListener("close", () => {
+      addCardPrompt.remove();
+      addCardPrompt = null;
+      if (dialog.isConnected) dialog.querySelector("#custom-workout-picker-search")?.focus();
+    });
+    document.body.append(addCardPrompt);
+    addCardPrompt.showModal();
+  };
   const renderSelection = () => {
     if (!grouped) return;
     const selected = dialog.querySelector("[data-workout-picker-selected]");
     const list = dialog.querySelector("[data-workout-picker-selected-list]");
     const total = selectedNames.length;
-    const valid = total >= minimum && (format !== "superset" || (total - minimum) % 2 === 0);
+    const valid = canAddSelection(total);
     const prompt = dialog.querySelector("[data-workout-picker-prompt]");
     if (prompt) {
       let message = `${format === "superset" ? "PAIR" : "CIRCUIT"} READY · ${total} SELECTED`;
@@ -13642,9 +13675,11 @@ function openCustomWorkoutExerciseDialog(trigger, mode = "add") {
       input.value = selectedNames[0];
       renderCustomWorkoutPickerResults(dialog);
       input.blur?.();
+      if (selectedNames[0]) showAddCardPrompt();
       return;
     }
     if (!String(name).trim()) return;
+    const wasValid = canAddSelection(selectedNames.length);
     const existing = selectedNames.indexOf(String(name).trim());
     if (existing >= 0) selectedNames.splice(existing, 1);
     else selectedNames.push(String(name).trim());
@@ -13652,8 +13687,9 @@ function openCustomWorkoutExerciseDialog(trigger, mode = "add") {
     const menu = dialog.querySelector("[data-custom-exercise-suggestions]");
     renderSelection();
     renderCustomWorkoutPickerResults(dialog);
-    if (selectedNames.length >= minimum && (format !== "superset" || (selectedNames.length - minimum) % 2 === 0)) {
+    if (canAddSelection(selectedNames.length)) {
       input.blur?.();
+      if (!wasValid) showAddCardPrompt();
     }
   };
   const scheduleSearchRefresh = () => {
@@ -13676,6 +13712,7 @@ function openCustomWorkoutExerciseDialog(trigger, mode = "add") {
   viewport?.addEventListener?.("resize", updatePickerViewport);
   viewport?.addEventListener?.("scroll", updatePickerViewport);
   dialog.addEventListener("close", () => {
+    if (addCardPrompt?.open) addCardPrompt.close();
     viewport?.removeEventListener?.("resize", updatePickerViewport);
     viewport?.removeEventListener?.("scroll", updatePickerViewport);
     if (searchRefreshTimer) window.clearTimeout(searchRefreshTimer);
@@ -13690,7 +13727,7 @@ function openCustomWorkoutExerciseDialog(trigger, mode = "add") {
     if (!livePanel?.matches(".client-workout-panel-custom")) return;
     if (grouped) {
       const names = [...selectedNames];
-      if (names.length < minimum || (format === "superset" && (names.length - minimum) % 2 !== 0)) return;
+      if (!canAddSelection(names.length)) return;
       addedCard = addCustomWorkoutPickedExercises(livePanel, names, { targetGroupIndex });
       if (addedCard) notifyCoachAboutCustomExercises(names);
     } else {
@@ -13766,7 +13803,13 @@ function openCustomWorkoutExerciseDialog(trigger, mode = "add") {
   dialog.addEventListener("change", (event) => {
     if (event.target.matches("[data-workout-picker-equipment]")) renderCustomWorkoutPickerResults(dialog);
   });
-  dialog.addEventListener("submit", (event) => { event.preventDefault(); event.stopPropagation(); add(); });
+  dialog.addEventListener("submit", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const name = dialog.querySelector("#custom-workout-picker-search")?.value.trim();
+    if (!grouped && name && selectedNames[0] !== name) selectName(name);
+    else add();
+  });
   dialog.addEventListener("keydown", (event) => {
     if (!["ArrowDown", "ArrowUp"].includes(event.key) || removing) return;
     const options = Array.from(dialog.querySelectorAll("[data-custom-exercise-suggestion], [data-workout-picker-queue-typed]"));
