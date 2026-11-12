@@ -315,7 +315,7 @@ test("keeps the coach autosave save and finish controls with the new card layout
 
   assert.match(loggerHtml, /id="coach-workout-save"[^>]*>Save Workout<\/button>/);
   assert.match(loggerHtml, /id="coach-workout-finish"[^>]*>Finish Workout<\/button>/);
-  assert.match(loggerHtml, /id="coach-workout-reset"[^>]*>Clear form<\/button>/);
+  assert.match(loggerHtml, /id="coach-workout-reset"[^>]*aria-label="Clear form"[^>]*>⋯<\/button>/);
   assert.match(loggerScript, /function scheduleCoachWorkoutAutosave/);
   assert.match(save, /client_workout_logs/);
   assert.match(save, /coachWorkoutExerciseValues/);

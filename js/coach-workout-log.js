@@ -2565,7 +2565,9 @@ function handleCoachWorkoutForm() {
       || exercise?.querySelector("[data-coach-workout-name]");
     visibleName?.focus();
   });
-  document.getElementById("coach-workout-reset")?.addEventListener("click", () => resetCoachWorkoutForm());
+  document.getElementById("coach-workout-reset")?.addEventListener("click", () => {
+    if (window.confirm("Clear this workout form?")) resetCoachWorkoutForm();
+  });
   document.getElementById("coach-workout-finish")?.addEventListener("click", finishCoachWorkout);
   form.addEventListener("submit", saveCoachWorkout);
   form.addEventListener("input", (event) => {
