@@ -79,3 +79,8 @@
 :root[data-client-theme="light"] body.client-dashboard-page [data-custom-exercise-more] {
   color: #0751c7;
 }
+
+/* The weekly check-in dialog uses a white surface in light appearance. */
+:root[data-client-theme="light"] .client-weekly-dialog [data-weekly-status] {
+  color: #0751c7;
+}
