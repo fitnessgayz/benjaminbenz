@@ -5759,6 +5759,7 @@ private struct ExercisePickerSheet: View {
 
     @State private var exerciseName = ""
     @State private var selectedCategory = "All"
+    @State private var pendingAdditionName: String?
 
     private let categoryColumns = [
         GridItem(.flexible(), spacing: 8),
@@ -5894,8 +5895,7 @@ private struct ExercisePickerSheet: View {
                                 LazyVStack(spacing: 0) {
                                     ForEach(visibleSuggestions, id: \.self) { suggestion in
                                         Button {
-                                            onSave(suggestion)
-                                            dismiss()
+                                            choose(suggestion)
                                         } label: {
                                             HStack(spacing: 12) {
                                                 Image(systemName: exerciseIcon(for: suggestion))
@@ -5964,8 +5964,7 @@ private struct ExercisePickerSheet: View {
                         }
 
                         Button {
-                            onSave(trimmedExerciseName)
-                            dismiss()
+                            choose(trimmedExerciseName)
                         } label: {
                             Label(customActionTitle, systemImage: actionIcon)
                         }
@@ -5989,6 +5988,37 @@ private struct ExercisePickerSheet: View {
         }
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
+        .confirmationDialog(
+            "Add exercise?",
+            isPresented: Binding(
+                get: { pendingAdditionName != nil },
+                set: { if !$0 { pendingAdditionName = nil } }
+            ),
+            titleVisibility: .visible
+        ) {
+            if let name = pendingAdditionName {
+                Button("Add \(name.fwbTitleCased)") {
+                    pendingAdditionName = nil
+                    onSave(name)
+                    dismiss()
+                }
+            }
+            Button("Keep choosing", role: .cancel) { pendingAdditionName = nil }
+        } message: {
+            if let name = pendingAdditionName {
+                Text("Add \(name.fwbTitleCased) to this workout?")
+            }
+        }
+    }
+
+    private func choose(_ name: String) {
+        guard !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+        if case .add = request.mode {
+            pendingAdditionName = name
+        } else {
+            onSave(name)
+            dismiss()
+        }
     }
 
     private var instructionText: String {
