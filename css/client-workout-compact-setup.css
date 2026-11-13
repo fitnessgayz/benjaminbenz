@@ -162,6 +162,13 @@ body.client-dashboard-page :is(.client-workout-panel-custom, .client-workout-pan
     left: -10% !important;
     width: 210% !important;
   }
+  /* This dual-pose card already fills most of the source image. Keep both
+     positions in frame while trimming only its printed border and side panel. */
+  :root body.client-dashboard-page #client-workout-panels [data-custom-workout-grouped="true"] .ios-log-exercise-image .exercise-media-button-branded-crop > img[src*="dual-45-hip-extension.webp"] {
+    top: -12% !important;
+    left: -4% !important;
+    width: 150% !important;
+  }
 }
 
 body.client-dashboard-page .workout-compact-source { display: grid; gap: 8px; }
