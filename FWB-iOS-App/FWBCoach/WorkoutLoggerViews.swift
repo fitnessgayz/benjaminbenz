@@ -657,7 +657,8 @@ struct WorkoutLoggingView<WorkoutSelector: View>: View {
         .sheet(item: $exerciseEditorRequest, onDismiss: { pendingSlotAssignment = nil }) { request in
             ExercisePickerSheet(
                 request: request,
-                suggestions: suggestionNames
+                suggestions: suggestionNames,
+                approvedExercises: exerciseLibraryStore.exercises
             ) { exerciseName in
                 applyExerciseEdit(request, exerciseName: exerciseName)
             }
@@ -5801,11 +5802,13 @@ private struct ExercisePickerSheet: View {
 
     let request: ExerciseEditorRequest
     let suggestions: [String]
+    let approvedExercises: [ApprovedExercise]
     let onSave: (String) -> Void
 
     @State private var exerciseName = ""
     @State private var selectedCategory = "All"
     @State private var pendingAdditionName: String?
+    @State private var mediaViewerRequest: ExerciseMediaViewerRequest?
 
     private let categoryColumns = [
         GridItem(.flexible(), spacing: 8),
@@ -5940,38 +5943,63 @@ private struct ExercisePickerSheet: View {
                             } else {
                                 LazyVStack(spacing: 0) {
                                     ForEach(visibleSuggestions, id: \.self) { suggestion in
-                                        Button {
-                                            choose(suggestion)
-                                        } label: {
-                                            HStack(spacing: 12) {
-                                                Image(systemName: exerciseIcon(for: suggestion))
-                                                    .font(FWBFont.subheadline.weight(.bold))
-                                                    .foregroundStyle(Color.fwbBrandPrimaryInk)
-                                                    .frame(width: 34, height: 34)
-                                                    .background(Color.fwbAccentFill, in: RoundedRectangle(cornerRadius: FWBLayout.controlRadius, style: .continuous))
-
-                                                VStack(alignment: .leading, spacing: 3) {
-                                                    Text(suggestion.fwbTitleCased)
-                                                        .font(FWBFont.subheadline.weight(.bold))
-                                                        .foregroundStyle(Color.fwbWarmWhite)
-                                                        .multilineTextAlignment(.leading)
-                                                    Text((ExerciseLibrary.category(for: suggestion) ?? "Program & history").uppercased())
-                                                        .font(FWBFont.footnote.weight(.semibold))
-                                                        .tracking(0.5)
-                                                        .foregroundStyle(Color.fwbMuted)
+                                        let media = likenessMedia(for: suggestion)
+                                        HStack(spacing: 0) {
+                                            if let media {
+                                                Button {
+                                                    mediaViewerRequest = ExerciseMediaViewerRequest(exerciseName: suggestion, media: media)
+                                                } label: {
+                                                    ExerciseRemoteImage(
+                                                        urls: media.thumbnailURLs,
+                                                        animated: false,
+                                                        cropLeadingFraction: 0.36,
+                                                        fillsFrame: true
+                                                    )
+                                                    .frame(width: 50, height: 50)
+                                                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                                                    .overlay(alignment: .bottomTrailing) {
+                                                        Image(systemName: "play.circle.fill")
+                                                            .foregroundStyle(Color.fwbLime)
+                                                            .padding(3)
+                                                    }
                                                 }
-
-                                                Spacer(minLength: 6)
-                                                Image(systemName: "plus")
-                                                    .font(FWBFont.footnote.weight(.semibold))
-                                                    .foregroundStyle(Color.fwbLime)
+                                                .buttonStyle(.plain)
+                                                .accessibilityLabel("Preview \(suggestion) animation")
+                                                .padding(.leading, 12)
                                             }
-                                            .padding(.horizontal, 12)
-                                            .frame(minHeight: 58)
-                                            .contentShape(Rectangle())
+                                            Button {
+                                                choose(suggestion)
+                                            } label: {
+                                                HStack(spacing: 12) {
+                                                    if media == nil {
+                                                        Image(systemName: exerciseIcon(for: suggestion))
+                                                            .font(FWBFont.subheadline.weight(.bold))
+                                                            .foregroundStyle(Color.fwbBrandPrimaryInk)
+                                                            .frame(width: 34, height: 34)
+                                                            .background(Color.fwbAccentFill, in: RoundedRectangle(cornerRadius: FWBLayout.controlRadius, style: .continuous))
+                                                    }
+                                                    VStack(alignment: .leading, spacing: 3) {
+                                                        Text(suggestion.fwbTitleCased)
+                                                            .font(FWBFont.subheadline.weight(.bold))
+                                                            .foregroundStyle(Color.fwbWarmWhite)
+                                                            .multilineTextAlignment(.leading)
+                                                        Text((ExerciseLibrary.category(for: suggestion) ?? "Program & history").uppercased())
+                                                            .font(FWBFont.footnote.weight(.semibold))
+                                                            .tracking(0.5)
+                                                            .foregroundStyle(Color.fwbMuted)
+                                                    }
+                                                    Spacer(minLength: 6)
+                                                    Image(systemName: "plus")
+                                                        .font(FWBFont.footnote.weight(.semibold))
+                                                        .foregroundStyle(Color.fwbLime)
+                                                }
+                                                .padding(.horizontal, 12)
+                                                .frame(minHeight: 58)
+                                                .contentShape(Rectangle())
+                                            }
+                                            .buttonStyle(.plain)
+                                            .accessibilityLabel("Add \(suggestion)")
                                         }
-                                        .buttonStyle(.plain)
-                                        .accessibilityLabel("Add \(suggestion)")
 
                                         if suggestion != visibleSuggestions.last {
                                             FWBRule()
@@ -6032,6 +6060,9 @@ private struct ExercisePickerSheet: View {
                 }
             }
         }
+        .sheet(item: $mediaViewerRequest) { request in
+            ExerciseMediaViewer(request: request)
+        }
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
         .confirmationDialog(
@@ -6055,6 +6086,27 @@ private struct ExercisePickerSheet: View {
                 Text("Add \(name.fwbTitleCased) to this workout?")
             }
         }
+    }
+
+    private func likenessMedia(for name: String) -> ExerciseMedia? {
+        let key = ExerciseNameIdentity.key(for: name)
+        guard let approved = approvedExercises.first(where: { exercise in
+            ExerciseNameIdentity.key(for: exercise.name) == key
+                || exercise.aliases.contains { ExerciseNameIdentity.key(for: $0) == key }
+        }),
+        let imageURL = URL(string: approved.imageURL ?? ""),
+        let motionURL = URL(string: approved.motionURL ?? ""),
+        motionURL.path.contains("/motion-webp/") else { return nil }
+
+        return ExerciseMedia(
+            imageURL: imageURL,
+            thumbnailURL: ExerciseMediaURL.thumbnail(for: imageURL),
+            motionURL: motionURL,
+            instructions: approved.instructions,
+            primaryMuscle: approved.primaryMuscle,
+            equipment: approved.equipment,
+            fallbackDemoURL: URL(string: approved.demoURL ?? "")
+        )
     }
 
     private func choose(_ name: String) {

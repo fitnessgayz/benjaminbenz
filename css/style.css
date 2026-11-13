@@ -11805,6 +11805,19 @@ textarea:focus {
   transition: transform .2s ease, filter .2s ease;
 }
 
+.exercise-library-card-media.has-motion-card > .exercise-library-card-video-button > img {
+  object-fit: contain;
+}
+
+.exercise-library-card-media.has-motion-card.is-motion-playing {
+  min-height: 300px;
+  aspect-ratio: 6 / 7;
+}
+
+.exercise-library-card-media.has-motion-card.is-motion-playing .exercise-library-card-play {
+  display: none;
+}
+
 .exercise-library-card-video-button:hover > img,
 .exercise-library-card-video-button:hover > .exercise-library-card-placeholder {
   filter: brightness(.78);

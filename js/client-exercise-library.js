@@ -76,6 +76,20 @@
     return [primary, ...secondary].join("--");
   }
 
+  function approvedLikenessMediaUrl(value, variant) {
+    try {
+      const url = new URL(value);
+      const storageOrigin = new URL(root.FWB_SUPABASE_CONFIG?.url).origin;
+      const pattern = variant === "motion"
+        ? /^\/storage\/v1\/object\/public\/exercise-images\/approved\/\d{4}-\d{2}-\d{2}\/motion-webp\/[a-z0-9-]+\.webp$/i
+        : /^\/storage\/v1\/object\/public\/exercise-images\/approved\/\d{4}-\d{2}-\d{2}\/webp-768\/[a-z0-9-]+\.webp$/i;
+      return url.protocol === "https:" && url.origin === storageOrigin
+        && !url.username && !url.password && pattern.test(url.pathname) ? url.href : "";
+    } catch {
+      return "";
+    }
+  }
+
   function normalize(value) {
     return String(value || "").normalize("NFKD").replace(/[\u0300-\u036f]/g, "")
       .replace(/[_-]+/g, " ").trim().toLocaleLowerCase();
@@ -238,11 +252,14 @@
       const aliases = (Array.isArray(record.aliases) ? record.aliases : entry.aliases || [])
         .filter((alias) => typeof alias === "string");
       const equipment = String(entry.equipment || "").trim();
+      const motionUrl = approvedLikenessMediaUrl(entry.motion_url, "motion");
+      const imageUrl = motionUrl ? approvedLikenessMediaUrl(entry.image_url, "image") : "";
       const substitutionGroup = normalize(entry.substitution_group);
       const recentRank = Math.min(...[name, ...aliases].map((label) => recent.get(normalize(label)) ?? Infinity));
       const useCount = [name, ...aliases].reduce((total, label) => total + (useCounts.get(normalize(label)) || 0), 0);
       return [{ name, primary, secondary: [...new Set(secondary)],
         equipment, substitutionGroup, recentRank, useCount,
+        imageUrl, motionUrl: imageUrl ? motionUrl : "", instructions: String(entry.instructions || "").trim(),
         highlightKey: muscleHighlightKey(entry),
         highlightFallback: String(entry.primary_muscle || "").trim().toLowerCase(),
         searchText: searchWords([name, ...aliases, primary, ...secondary, equipment].join(" ")).join(" ") }];
@@ -489,13 +506,21 @@
         button.setAttribute("aria-label", `Add ${record.name}, ${[record.primary, ...record.secondary].join(", ")}${showsUseCount ? `, ${usageLabel(record.useCount)}` : ""}`);
         const artwork = element("span", "client-exercise-library-item-artwork");
         const image = element("img", "");
-        image.src = record.highlightKey
+        const muscleImageUrl = record.highlightKey
           ? `images/muscle-highlights/library/${record.highlightKey}.png?v=2`
           : muscleArtworkUrl(record.primary);
+        image.src = record.imageUrl || muscleImageUrl;
         image.alt = "";
         image.loading = "lazy";
         image.decoding = "async";
-        if (record.highlightKey) image.addEventListener("error", () => {
+        if (record.imageUrl) artwork.classList.add("is-likeness-card");
+        if (record.imageUrl || record.highlightKey) image.addEventListener("error", () => {
+          if (record.imageUrl && !image.dataset.likenessFallbackUsed) {
+            image.dataset.likenessFallbackUsed = "true";
+            artwork.classList.remove("is-likeness-card");
+            image.src = muscleImageUrl;
+            return;
+          }
           const fallback = `images/muscle-highlights/library/${record.highlightFallback}.png?v=2`;
           if (!image.dataset.muscleFallbackUsed && image.src.includes(`/${record.highlightKey}.png`)) {
             image.dataset.muscleFallbackUsed = "true";
@@ -523,6 +548,17 @@
           if (typeof onSelect === "function") onSelect(record.name);
         });
         item.append(button);
+        if (record.imageUrl && record.motionUrl) {
+          const preview = element("button", "client-exercise-library-preview", "▶");
+          preview.type = "button";
+          preview.setAttribute("aria-label", `Preview ${record.name} start and end animation`);
+          preview.dataset.exerciseMediaOpen = "";
+          preview.dataset.exerciseMediaStatic = record.imageUrl;
+          preview.dataset.exerciseMediaVideo = record.motionUrl;
+          preview.dataset.exerciseMediaName = record.name;
+          preview.dataset.exerciseMediaInstructions = record.instructions;
+          item.append(preview);
+        }
         target.append(item);
       }
       exerciseFamilies(records, muscle === "Recent" || muscle === "Recently used").forEach((family) => {

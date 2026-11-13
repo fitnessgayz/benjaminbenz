@@ -4788,11 +4788,14 @@ function exerciseLibraryYoutubeId(value) {
 }
 
 function exerciseLibraryHasVideo(record) {
-  return Boolean(uploadedExerciseDemoUrl(record?.demo_url) || exerciseLibraryYoutubeId(record?.demo_url));
+  return Boolean(exerciseLibraryAnimationUrl(record?.motion_url)
+    || uploadedExerciseDemoUrl(record?.demo_url)
+    || exerciseLibraryYoutubeId(record?.demo_url));
 }
 
 function exerciseLibraryMediaMarkup(record) {
   const name = String(record?.name || "Exercise");
+  const animationUrl = exerciseLibraryAnimationUrl(record?.motion_url);
   const uploadedVideo = uploadedExerciseDemoUrl(record?.demo_url);
   const youtubeId = exerciseLibraryYoutubeId(record?.demo_url);
   const artworkUrl = trustedExerciseImageUrl(record?.image_url) || exerciseLibraryArtworkUrl(record);
@@ -4800,6 +4803,19 @@ function exerciseLibraryMediaMarkup(record) {
   const artwork = artworkUrl
     ? `<img${instructionArtwork ? ' class="is-instruction-card"' : ""} src="${escapeHtml(artworkUrl)}" alt="${escapeHtml(name)} exercise demonstration" loading="lazy" />`
     : `<span class="exercise-library-card-placeholder" aria-hidden="true"><b>${escapeHtml(exerciseLibraryLabel(record?.primary_muscle || "Exercise"))}</b><i>Move well. Get stronger.</i></span>`;
+
+  if (animationUrl && artworkUrl) {
+    return `
+      <div class="exercise-library-card-media has-video has-motion-card">
+        <button type="button" class="exercise-library-card-video-button" data-exercise-library-motion-url="${escapeHtml(animationUrl)}" data-exercise-library-image-url="${escapeHtml(artworkUrl)}" aria-label="Play ${escapeHtml(name)} start and end animation" aria-pressed="false">
+          ${artwork}
+          <span class="exercise-library-card-play" aria-hidden="true"><i></i></span>
+          <strong>Play start/end animation</strong>
+        </button>
+        <span class="exercise-library-card-brand" aria-hidden="true">FWB</span>
+      </div>
+    `;
+  }
 
   if (uploadedVideo) {
     return `
@@ -5683,6 +5699,19 @@ function trustedExerciseImageUrl(value) {
   }
 }
 
+function exerciseLibraryAnimationUrl(value) {
+  try {
+    const url = new URL(value);
+    const storageOrigin = new URL(window.FWB_SUPABASE_CONFIG.url).origin;
+    return url.protocol === "https:" && url.origin === storageOrigin
+      && !url.username && !url.password
+      && /^\/storage\/v1\/object\/public\/exercise-images\/approved\/\d{4}-\d{2}-\d{2}\/motion-webp\/[a-z0-9-]+\.webp$/i.test(url.pathname)
+      ? url.href : "";
+  } catch {
+    return "";
+  }
+}
+
 function exerciseVideoFileDetails(file) {
   const types = { mp4: "video/mp4", mov: "video/quicktime", m4v: "video/x-m4v", webm: "video/webm" };
   const extension = String(file?.name || "").split(".").pop().toLowerCase();
@@ -5890,7 +5919,8 @@ function exerciseLibraryCardMarkup(record) {
         </span>
         ${record.instructions ? `<span class="exercise-library-card-instructions">${escapeHtml(record.instructions)}</span>` : ""}
         <span class="exercise-library-badges">
-          ${exerciseLibraryHasVideo(record) ? '<small class="has-demo">Video</small>' : ""}
+          ${exerciseLibraryAnimationUrl(record.motion_url) ? '<small class="has-demo">Animation</small>'
+            : exerciseLibraryHasVideo(record) ? '<small class="has-demo">Video</small>' : ""}
           ${record.is_approved ? '<small class="is-approved">Approved</small>' : '<small>Hidden</small>'}
           ${record.is_active ? "" : '<small>Archived</small>'}
         </span>
@@ -6058,6 +6088,36 @@ function handleExerciseLibraryEditor() {
 
   list.addEventListener("click", (event) => {
     if (isExerciseLibrarySaving) return;
+    const motionButton = event.target.closest("[data-exercise-library-motion-url]");
+
+    if (motionButton) {
+      const animationUrl = exerciseLibraryAnimationUrl(motionButton.dataset.exerciseLibraryMotionUrl);
+      const artworkUrl = trustedExerciseImageUrl(motionButton.dataset.exerciseLibraryImageUrl);
+      const image = motionButton.querySelector("img");
+      const media = motionButton.closest(".exercise-library-card-media");
+      if (!animationUrl || !artworkUrl || !image || !media) return;
+      const playing = motionButton.dataset.exerciseLibraryMotionPlaying !== "true";
+      const name = motionButton.closest(".exercise-library-card")
+        ?.querySelector(".exercise-library-card-heading strong")?.textContent || "exercise";
+      motionButton.dataset.exerciseLibraryMotionPlaying = String(playing);
+      motionButton.setAttribute("aria-pressed", String(playing));
+      motionButton.setAttribute("aria-label", playing
+        ? `Show full ${name} card` : `Play ${name} start and end animation`);
+      motionButton.querySelector("strong").textContent = playing ? "Show full card" : "Play start/end animation";
+      media.classList.toggle("is-motion-playing", playing);
+      image.onerror = playing ? () => {
+        image.onerror = null;
+        image.src = artworkUrl;
+        media.classList.remove("is-motion-playing");
+        motionButton.dataset.exerciseLibraryMotionPlaying = "false";
+        motionButton.setAttribute("aria-pressed", "false");
+        motionButton.setAttribute("aria-label", `Play ${name} start and end animation`);
+        motionButton.querySelector("strong").textContent = "Play start/end animation";
+      } : null;
+      image.src = playing ? animationUrl : artworkUrl;
+      return;
+    }
+
     const videoButton = event.target.closest("[data-exercise-library-youtube-id]");
 
     if (videoButton) {
