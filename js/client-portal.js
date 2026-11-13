@@ -14547,7 +14547,6 @@ function clientWorkoutChoiceContent({ icon, title, description, titleId, descrip
     plan: '<rect x="3" y="4" width="17" height="17" rx="3"/><path d="M7 2v4m9-4v4M3 10h17m-13 4h5m-5 3h3"/><circle cx="18" cy="18" r="4" fill="currentColor" stroke="none"/><path d="M18 15.8v4.4m-2.2-2.2h4.4" stroke="#1b2117" stroke-width="1.8"/>',
     mobility: '<circle cx="8" cy="4" r="1.5"/><path d="m8 7 2.5 3 3.5 1m-4-1-3 4 3 2m0 0-4 5m4-5 5 4h5m-13-6-4 2"/>',
     plus: '<path d="M12 5v14M5 12h14"/>',
-    pin: '<path d="M12 22V8m0 7c-4.8 0-8 1.2-8 3s3.2 3 8 3 8-1.2 8-3-3.2-3-8-3Z"/><circle cx="12" cy="6" r="3"/>',
     sparkles: '<path d="m9 3 2.2 5.8L17 11l-5.8 2.2L9 19l-2.2-5.8L1 11l5.8-2.2L9 3Z"/><path d="m19 14 1.1 2.9L23 18l-2.9 1.1L19 22l-1.1-2.9L15 18l2.9-1.1L19 14Z"/>'
   };
   return `<span class="workout-choice-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false">${icons[icon] || icons.calendar}</svg></span>
@@ -14577,10 +14576,7 @@ function clientWorkoutListMarkup(workouts) {
         action: 'data-client-workout-choice-menu="cardio-mobility"', titleId: "workout-cardio-mobility-title", descriptionId: "workout-cardio-mobility-description" },
       { icon: "calendarPlus", title: "Workout calendar",
         description: "Plan sessions from your coach or saved workouts.",
-        action: 'data-client-workout-calendar-open', titleId: "workout-calendar-title", descriptionId: "workout-calendar-description" },
-      { icon: "pin", title: "Find a Gym",
-        description: "Search nearby gyms and hotel gyms, read reviews, or add a place.",
-        action: 'data-find-nearby-gym', titleId: "workout-find-gym-title", descriptionId: "workout-find-gym-description" }
+        action: 'data-client-workout-calendar-open', titleId: "workout-calendar-title", descriptionId: "workout-calendar-description" }
     ];
     return `<div class="workout-program-picker"><div class="workout-choice-list">${cards.map((card) => card.markup || `
       <button type="button" class="workout-choice-card ${card.className || ""}" ${card.action}
