@@ -411,10 +411,11 @@ function dialogFixture(format = "single") {
     isConnected: true, open: false, showModal() { this.open = true; }, remove() { this.isConnected = false; },
     close() { this.open = false; handlers.close(); }
   };
+  const confirmationDetail = { textContent: "" };
   const confirmation = {
     isConnected: false, open: false, setAttribute() {},
     addEventListener(name, handler) { promptHandlers[name] = handler; },
-    querySelector() { return { textContent: "" }; },
+    querySelector() { return confirmationDetail; },
     showModal() { this.open = true; },
     close() { this.open = false; promptHandlers.close(); },
     remove() { this.isConnected = false; }
@@ -433,7 +434,7 @@ function dialogFixture(format = "single") {
   });
   const click = (selector, target = {}) => handlers.click({ stopPropagation() {}, target: { closest: (candidate) => candidate === selector ? target : null } });
   const clickPrompt = (selector) => promptHandlers.click({ target: { closest: (candidate) => candidate === selector ? {} : null } });
-  return { context, handlers, promptHandlers, calls, trigger, input, click, clickPrompt, confirmation, dialog, panel, selectedList, prompt, submit };
+  return { context, handlers, promptHandlers, calls, trigger, input, click, clickPrompt, confirmation, confirmationDetail, dialog, panel, selectedList, prompt, submit };
 }
 
 test("picker asks for the full superset or circuit before adding it", () => {
@@ -463,6 +464,9 @@ test("straight sets stage a suggestion until Add exercise is pressed", () => {
   assert.deepEqual(fixture.calls.add, []);
   assert.equal(fixture.input.value, "Hip Thrust Machine");
   assert.equal(fixture.confirmation.open, true);
+  assert.match(fixture.confirmation.innerHTML, /Add this exercise to your workout\?/);
+  assert.match(fixture.confirmation.innerHTML, /data-confirm-add-card>Add to workout<\/button>/);
+  assert.equal(fixture.confirmationDetail.textContent, "Hip Thrust Machine");
   fixture.clickPrompt("[data-keep-choosing]");
   fixture.handlers.submit({ preventDefault() {}, stopPropagation() {} });
   assert.equal(fixture.confirmation.open, true);
@@ -563,6 +567,8 @@ test("superset picker collects two exercises before one add action", () => {
   fixture.clickPrompt("[data-keep-choosing]");
   fixture.handlers.submit({ preventDefault() {}, stopPropagation() {} });
   assert.equal(fixture.confirmation.open, true);
+  assert.match(fixture.confirmation.innerHTML, /Add these 2 exercises to your workout\?/);
+  assert.equal(fixture.confirmationDetail.textContent, "Superset: Cable Row, Lat Pulldown");
   assert.deepEqual(fixture.calls.add, []);
   fixture.clickPrompt("[data-confirm-add-card]");
   assert.deepEqual(fixture.calls.add, ["Cable Row", "Lat Pulldown"]);
@@ -599,6 +605,8 @@ test("circuit picker accepts a fourth exercise and lets clients remove a choice"
   assert.match(fixture.selectedList.innerHTML, /Jump Rope/);
   fixture.handlers.submit({ preventDefault() {}, stopPropagation() {} });
   assert.equal(fixture.confirmation.open, true);
+  assert.match(fixture.confirmation.innerHTML, /Add these 3 exercises to your workout\?/);
+  assert.equal(fixture.confirmationDetail.textContent, "Circuit: Squat, Row, Jump Rope");
   assert.deepEqual(fixture.calls.add, []);
   fixture.clickPrompt("[data-confirm-add-card]");
   assert.deepEqual(fixture.calls.add, ["Squat", "Row", "Jump Rope"]);

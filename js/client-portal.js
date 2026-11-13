@@ -13624,17 +13624,23 @@ function openCustomWorkoutExerciseDialog(trigger, mode = "add") {
     if (!dialog.isConnected || addCardPrompt?.isConnected) return;
     const names = grouped ? selectedNames : [dialog.querySelector("#custom-workout-picker-search")?.value.trim()];
     if (grouped ? !canAddSelection(names.length) : !names[0]) return;
+    const exerciseNames = names.filter(Boolean);
+    const count = exerciseNames.length;
+    const groupLabel = format === "superset" ? count > 2 ? "Superset pairs" : "Superset"
+      : format === "circuit" ? "Circuit" : "";
     addCardPrompt = document.createElement("dialog");
     addCardPrompt.className = "custom-workout-add-card-prompt";
     addCardPrompt.setAttribute("aria-labelledby", "custom-workout-add-card-title");
+    addCardPrompt.setAttribute("aria-describedby", "custom-workout-add-card-names");
     addCardPrompt.innerHTML = `
-      <h2 id="custom-workout-add-card-title">${format === "single" ? "Add exercise card?" : "Add exercise?"}</h2>
-      <p data-workout-add-card-names></p>
+      <h2 id="custom-workout-add-card-title">${count === 1 ? "Add this exercise to your workout?" : `Add these ${count} exercises to your workout?`}</h2>
+      <p id="custom-workout-add-card-names" data-workout-add-card-names></p>
       <div>
-        <button class="button" type="button" data-confirm-add-card>${format === "single" ? "Add exercise card" : "Add exercise"}</button>
+        <button class="button" type="button" data-confirm-add-card>Add to workout</button>
         <button class="button button-ghost" type="button" data-keep-choosing>Keep choosing</button>
       </div>`;
-    addCardPrompt.querySelector("[data-workout-add-card-names]").textContent = names.filter(Boolean).join(", ");
+    addCardPrompt.querySelector("[data-workout-add-card-names]").textContent =
+      `${groupLabel ? `${groupLabel}: ` : ""}${exerciseNames.join(", ")}`;
     addCardPrompt.addEventListener("click", (event) => {
       if (event.target.closest("[data-confirm-add-card]")) {
         addCardPrompt.close();
