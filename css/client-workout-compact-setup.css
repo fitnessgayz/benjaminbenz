@@ -155,6 +155,13 @@ body.client-dashboard-page :is(.client-workout-panel-custom, .client-workout-pan
     max-width: none !important;
     height: auto !important;
   }
+  /* Wide branded cards reserve their right side for printed instructions.
+     Fill the logger image with the two exercise photos instead. */
+  :root body.client-dashboard-page #client-workout-panels [data-custom-workout-grouped="true"] .ios-log-exercise-image .exercise-media-button-branded-crop.is-wide-branded-card > img {
+    top: -54% !important;
+    left: -10% !important;
+    width: 210% !important;
+  }
 }
 
 body.client-dashboard-page .workout-compact-source { display: grid; gap: 8px; }

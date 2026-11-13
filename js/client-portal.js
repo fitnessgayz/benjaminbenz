@@ -10164,10 +10164,6 @@ function customWorkoutGroupedRoundCardMarkup(format, exercises, groupIndex = 0, 
       data-custom-workout-format="${escapeHtml(format)}"
       aria-label="${escapeHtml(groupTitle)}"
     >
-      <div class="workout-card-reorder-bar">
-        <button type="button" class="workout-card-drag-handle" data-workout-card-drag-handle
-          aria-label="Move ${escapeHtml(groupTitle)}. Drag or use the up and down arrow keys" title="Drag to reorder">⠿ <span>Move</span></button>
-      </div>
       ${customWorkoutGroupNameEditorMarkup(format, exercises, groupIndex, options.assigned ? `${encodeURIComponent(workoutTitle)}-` : "", startIndex)}
       <article class="custom-workout-grouped-card">
         <header class="custom-workout-grouped-card-heading">
