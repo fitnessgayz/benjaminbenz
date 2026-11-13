@@ -136,7 +136,7 @@ body.client-dashboard-page :is(.client-workout-panel-custom, .client-workout-pan
   :root body.client-dashboard-page #client-workout-panels [data-custom-workout-grouped="true"] .ios-log-exercise-image {
     width: 100% !important;
     min-width: 0 !important;
-    height: clamp(112px, 39vw, 160px) !important;
+    height: clamp(160px, 49vw, 205px) !important;
     min-height: 0 !important;
     aspect-ratio: 11 / 5 !important;
     border: 0 !important;
@@ -149,18 +149,28 @@ body.client-dashboard-page :is(.client-workout-panel-custom, .client-workout-pan
   }
   :root body.client-dashboard-page #client-workout-panels [data-custom-workout-grouped="true"] .ios-log-exercise-image:has(.exercise-media-button-branded-crop) { aspect-ratio: 11 / 5 !important; }
   :root body.client-dashboard-page #client-workout-panels [data-custom-workout-grouped="true"] .ios-log-exercise-image .exercise-media-button-branded-crop > img {
-    top: 0 !important;
-    left: -1% !important;
-    width: 148% !important;
+    top: -20% !important;
+    left: -7% !important;
+    width: 180% !important;
     max-width: none !important;
     height: auto !important;
   }
   /* Wide branded cards reserve their right side for printed instructions.
      Fill the logger image with the two exercise photos instead. */
   :root body.client-dashboard-page #client-workout-panels [data-custom-workout-grouped="true"] .ios-log-exercise-image .exercise-media-button-branded-crop.is-wide-branded-card > img {
-    top: -54% !important;
-    left: -10% !important;
-    width: 210% !important;
+    top: -21% !important;
+    left: -8% !important;
+    width: 215% !important;
+  }
+  /* The newer card artwork uses wider exercise photos than the original set. */
+  :root body.client-dashboard-page #client-workout-panels [data-custom-workout-grouped="true"] .ios-log-exercise-image:has(img[src*="/2026-11-04/"]),
+  :root body.client-dashboard-page #client-workout-panels [data-custom-workout-grouped="true"] .ios-log-exercise-image:has(img[src*="dual-45-hip-extension.webp"]) {
+    height: clamp(112px, 39vw, 160px) !important;
+  }
+  :root body.client-dashboard-page #client-workout-panels [data-custom-workout-grouped="true"] .ios-log-exercise-image .exercise-media-button-branded-crop > img[src*="/2026-11-04/"] {
+    top: -2% !important;
+    left: -1% !important;
+    width: 142% !important;
   }
   /* This dual-pose card already fills most of the source image. Keep both
      positions in frame while trimming only its printed border and side panel. */
