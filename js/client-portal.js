@@ -14567,7 +14567,7 @@ function clientWorkoutListMarkup(workouts) {
   if (!clientPreviewProgramSelected) {
     const programs = clientAvailablePrograms.length ? clientAvailablePrograms : [currentProgram || { workouts: [] }];
     const cards = [
-      { icon: "plus", title: "Start Quick Workout",
+      { icon: "plus", title: "Log Workout",
         description: "Open a saved workout plan or log your own exercises, sets, reps, and weights.",
         action: 'data-client-workout-picker-choose="0" data-client-workout-picker-card="0" data-client-workout-selection-target="Custom workout"',
         titleId: "client-workout-card-title-0", descriptionId: "workout-custom-description", className: "workout-choice-quick" },
