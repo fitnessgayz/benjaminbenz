@@ -38,13 +38,19 @@ test("uses the 480w branded card in lists and keeps the 768w card for the full d
   assert.match(portal, /data-exercise-media-static="\$\{escapeHtml\(fullUrl\)\}"/);
 });
 
-test("crops branded workout thumbnails to the photo without the label strip or text panel", () => {
+test("keeps both poses visible in branded workout thumbnails", () => {
   assert.match(portal, /exercise-media-button-branded-crop/);
   assert.match(css, /\.exercise-media-button-branded-crop\s*\{[\s\S]*aspect-ratio: 176 \/ 117/);
   assert.match(css, /\.exercise-media-button-branded-crop > img\s*\{[\s\S]*object-position: left center/);
   assert.match(workoutCss, /\.workout-preview-exercise-media \.exercise-media-button-branded-crop/);
-  assert.match(compactSetupCss, /#client-workouts-panel \.exercise-media-button-branded-crop > img\s*\{[^}]*top: -23% !important;[^}]*left: -6% !important;[^}]*width: 184% !important;/);
-  assert.match(compactSetupCss, /#client-workouts-panel \.exercise-media-button-branded-crop\.is-wide-branded-card > img\s*\{[^}]*top: -21% !important;[^}]*left: -8% !important;[^}]*width: 210% !important;/);
+  const crop = compactSetupCss.match(/#client-workouts-panel \.exercise-media-button-branded-crop > img\s*\{([^}]*)\}/)?.[1] || "";
+  const scale = Number(crop.match(/width:\s*([\d.]+)% !important/)?.[1]) / 100;
+  // Both 480 × 209 and 480 × 240 cards put both photos in the first 345 pixels.
+  assert.ok(Math.abs(480 / scale - 345) < 2);
+  assert.match(crop, /top: 0 !important;[\s\S]*left: 0 !important;/);
+  assert.match(compactSetupCss, /#client-workouts-panel \.exercise-media-button-branded-crop\.is-wide-branded-card > img\s*\{[^}]*width: 139\.13% !important;/);
+  assert.match(compactSetupCss, /\.ios-log-exercise-image:has\(\.exercise-media-button-branded-crop > img\)\s*\{[^}]*aspect-ratio: 345 \/ 240 !important;/);
+  assert.match(compactSetupCss, /\.ios-log-exercise-image:has\(\.exercise-media-button-branded-crop\.is-wide-branded-card > img\)\s*\{[^}]*aspect-ratio: 345 \/ 209 !important;/);
 });
 
 test("recognizes approved cards served from both storage and the website", () => {

@@ -55,14 +55,14 @@ body.client-dashboard-page .client-logs-filter-controls button { min-height: 36p
 body.client-dashboard-page .client-logs-filter-controls button[hidden] { display: none; }
 .client-logs-month-heading { margin: 16px 0 8px; color: #aeb2bc !important; font-size: .71rem !important; font-weight: 700; letter-spacing: .16em; }
 .client-logs-session { margin-bottom: 8px; border: 1px solid transparent; border-radius: 16px; background: var(--logs-card); overflow: hidden; }
-body.client-dashboard-page .client-logs-session-open { display: grid; grid-template-columns: 43px minmax(0, 1fr) 12px; align-items: center; gap: 10px; width: 100%; min-height: 84px !important; padding: 12px 13px; border: 0; background: transparent; color: #fff; text-align: left !important; font: inherit; }
-.client-logs-session-day { display: grid; justify-items: center; line-height: 1.05; }
+body.client-dashboard-page .client-logs-session-open { display: grid; grid-template-columns: 43px minmax(0, 1fr) 16px; align-items: center; justify-content: stretch; gap: 10px; box-sizing: border-box; width: 100%; min-width: 0; min-height: 84px !important; padding: 12px 13px; border: 0; background: transparent; color: #fff; text-align: left !important; font: inherit; }
+.client-logs-session-day { display: grid; width: 43px; min-width: 43px; justify-items: center; line-height: 1.05; white-space: nowrap; }
 .client-logs-session-day strong { font-size: 1.25rem; }
 .client-logs-session-day small { margin-top: 5px; color: #9da2ad; font-size: .61rem; letter-spacing: .08em; }
-.client-logs-session-copy { display: grid; justify-items: start; gap: 3px; min-width: 0; text-align: left !important; }
+.client-logs-session-copy { display: grid; width: 100%; justify-items: start; gap: 3px; min-width: 0; text-align: left !important; }
 .client-logs-session-copy strong { overflow: hidden; color: #fff; font-size: .92rem; white-space: nowrap; text-overflow: ellipsis; }
 .client-logs-session-copy small { overflow: hidden; color: #a5a9b3; font-size: .72rem; white-space: nowrap; text-overflow: ellipsis; }
-.client-logs-session-chevron { color: var(--logs-blue); font-size: 1.35rem; }
+.client-logs-session-chevron { display: block; width: 16px; justify-self: end; color: var(--logs-blue); font-size: 1.35rem; text-align: center; }
 .client-logs-health-session .client-logs-session-open { cursor: default; }
 .client-logs-health-session .client-logs-session-copy strong { color: #f7f3e9; }
 body.client-dashboard-page .client-logs-session.is-custom-workout .client-logs-session-copy strong,
