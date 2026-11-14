@@ -16,7 +16,7 @@ function declaration(name) {
   return source.slice(match.index, end < 0 ? undefined : match.index + match[0].length + end);
 }
 
-test('workout chooser keeps Quick Workout first without Gym Finder', () => {
+test('workout chooser keeps Log Workout first without Gym Finder', () => {
   const context = vm.createContext({
     clientPreviewProgramSelected: false,
     clientAvailablePrograms: [{ program_title: 'Strength + Mobility', workouts: Array(7).fill({}) }],
@@ -28,13 +28,13 @@ test('workout chooser keeps Quick Workout first without Gym Finder', () => {
   ].map(declaration).join('\n'), context);
   const markup = context.clientWorkoutListMarkup([{ isCardio: true, panelIndex: 8 }]);
   assert.equal((markup.match(/class="workout-choice-card(?: [^"]*)?"/g) || []).length, 9);
-  for (const title of ['Start Quick Workout', 'Workout calendar', 'Trainer Program',
+  for (const title of ['Log Workout', 'Workout calendar', 'Trainer Program',
     'Generate Workout', 'Cardio &amp; Mobility', 'Weekly plan', 'Today’s workout', 'Log cardio', 'Mobility &amp; recovery']) {
     assert.ok(markup.includes(title), `${title} is shown`);
   }
   const choices = markup.split('data-client-workout-choice-dialog')[0];
   assert.equal((choices.match(/class="workout-choice-card(?: [^"]*)?"/g) || []).length, 5);
-  assert(choices.indexOf('Start Quick Workout') < choices.indexOf('Trainer Program'));
+  assert(choices.indexOf('Log Workout') < choices.indexOf('Trainer Program'));
   assert.doesNotMatch(choices, /Trainer Prescribed Workouts/);
   assert(choices.indexOf('Cardio &amp; Mobility') < choices.indexOf('Workout calendar'));
   assert.match(choices, /workout-choice-quick/);
