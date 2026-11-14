@@ -1,0 +1,366 @@
+{
+  "version": 1,
+  "selection": "Next 40 active, approved exercises by distinct logged sessions after the first 10 likeness cards; canonical names include known aliases.",
+  "exercises": [
+    {
+      "rank": 1,
+      "id": "f0f7bfab-5919-4d3f-a2e8-efae2c5f2d9d",
+      "name": "Barbell Deadlift",
+      "slug": "barbell-deadlift",
+      "equipment": "barbell",
+      "previousImageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/barbell-deadlift.webp",
+      "previousMotionUrl": null
+    },
+    {
+      "rank": 2,
+      "id": "434bd4e2-a877-4e72-b701-656ac5d3abe6",
+      "name": "Barbell Back Squat",
+      "slug": "barbell-back-squat",
+      "equipment": "barbell",
+      "previousImageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/barbell-back-squat.webp",
+      "previousMotionUrl": null
+    },
+    {
+      "rank": 3,
+      "id": "3a5728d6-401c-4c62-96f3-afd1239744df",
+      "name": "Incline Barbell Bench Press",
+      "slug": "incline-barbell-bench-press",
+      "equipment": "barbell",
+      "previousImageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-29/webp-768/incline-barbell-bench-press.webp",
+      "previousMotionUrl": null
+    },
+    {
+      "rank": 4,
+      "id": "83b76f5d-d7aa-4ad0-9948-2e3f06f9f1bb",
+      "name": "Wide-Grip Lat Pulldown",
+      "slug": "wide-grip-lat-pulldown",
+      "equipment": "other",
+      "previousImageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/wide-grip-lat-pulldown-v2.webp",
+      "previousMotionUrl": null
+    },
+    {
+      "rank": 5,
+      "id": "e17d1c48-b6d1-430a-afb5-0210e936aa8d",
+      "name": "EZ-Bar Biceps Curl",
+      "slug": "ez-bar-biceps-curl",
+      "equipment": "barbell",
+      "previousImageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-29/webp-480/ez-bar-biceps-curl.webp",
+      "previousMotionUrl": null
+    },
+    {
+      "rank": 6,
+      "id": "b97edf78-0391-4ff4-a257-da1b426aadbf",
+      "name": "Barbell Row",
+      "slug": "barbell-row",
+      "equipment": "barbell",
+      "previousImageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/barbell-row.webp",
+      "previousMotionUrl": null
+    },
+    {
+      "rank": 7,
+      "id": "54f051a1-2a0a-4788-bb9d-7ea6fad9ec8e",
+      "name": "Seated Leg Curl",
+      "slug": "seated-leg-curl",
+      "equipment": "machine",
+      "previousImageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-29/webp-768/seated-leg-curl.webp",
+      "previousMotionUrl": null
+    },
+    {
+      "rank": 8,
+      "id": "4c5c8e03-2cc6-49cb-abba-137585c1deb6",
+      "name": "Hammer Curl",
+      "slug": "hammer-curl",
+      "equipment": "dumbbell",
+      "previousImageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-29/webp-768/hammer-curl.webp",
+      "previousMotionUrl": null
+    },
+    {
+      "rank": 9,
+      "id": "5b0c83e6-1585-4014-8f94-c8a6cdafa808",
+      "name": "Leg Extension",
+      "slug": "leg-extension",
+      "equipment": "machine",
+      "previousImageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-29/webp-768/leg-extension.webp",
+      "previousMotionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-videos/generated/2026-09-30/leg-extension.mp4"
+    },
+    {
+      "rank": 10,
+      "id": "94793ed8-ee41-4af3-9d5c-0b03c74f5c1e",
+      "name": "Dumbbell Rows",
+      "slug": "dumbbell-rows",
+      "equipment": "dumbbell",
+      "previousImageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/dumbell-rows.webp",
+      "previousMotionUrl": null
+    },
+    {
+      "rank": 11,
+      "id": "a1f8eb80-c6d0-44a7-8e5b-237333b651df",
+      "name": "Hip Abduction Machine",
+      "slug": "hip-abduction-machine",
+      "equipment": "machine",
+      "previousImageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-29/webp-768/hip-abduction-machine.webp",
+      "previousMotionUrl": null
+    },
+    {
+      "rank": 12,
+      "id": "a2b78545-b2fc-41c5-a250-9021d64dd8f7",
+      "name": "Dumbbell Romanian Deadlift",
+      "slug": "dumbbell-romanian-deadlift",
+      "equipment": "dumbbell",
+      "previousImageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-29/webp-768/dumbbell-romanian-deadlift.webp",
+      "previousMotionUrl": null
+    },
+    {
+      "rank": 13,
+      "id": "1e7b8d90-8a37-4051-9fad-b070430c8a58",
+      "name": "DB Shoulder Press",
+      "slug": "db-shoulder-press",
+      "equipment": "dumbbell",
+      "previousImageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/db-shoulder-press.webp",
+      "previousMotionUrl": null
+    },
+    {
+      "rank": 14,
+      "id": "d3b4befa-79a7-4b64-9add-4b84ced61ba0",
+      "name": "Romanian Deadlift",
+      "slug": "romanian-deadlift",
+      "equipment": "barbell",
+      "previousImageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-29/webp-768/romanian-deadlift.webp",
+      "previousMotionUrl": null
+    },
+    {
+      "rank": 15,
+      "id": "e1ef58e3-d5dd-42c5-a8b8-d40767565998",
+      "name": "Cable Chest Fly",
+      "slug": "cable-chest-fly",
+      "equipment": "cable",
+      "previousImageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-29/webp-768/cable-chest-fly.webp",
+      "previousMotionUrl": null
+    },
+    {
+      "rank": 16,
+      "id": "0b03ae4c-6bd4-48be-8158-a9b60ae7dbd9",
+      "name": "Seated Dip Machine",
+      "slug": "seated-dip-machine",
+      "equipment": "machine",
+      "previousImageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-29/webp-768/seated-dip-machine.webp",
+      "previousMotionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-videos/generated/2026-09-30/seated-dip-machine.mp4"
+    },
+    {
+      "rank": 17,
+      "id": "71ef23f3-1e66-43c2-854d-78ccddb72dd5",
+      "name": "Machine Chest Press",
+      "slug": "machine-chest-press",
+      "equipment": "machine",
+      "previousImageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-29/webp-768/machine-chest-press.webp",
+      "previousMotionUrl": null
+    },
+    {
+      "rank": 18,
+      "id": "663a3366-ebe0-401f-a41c-2ce30ae8dbe1",
+      "name": "Incline Machine Chest Press",
+      "slug": "incline-machine-chest-press",
+      "equipment": "machine",
+      "previousImageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-29/webp-768/incline-machine-chest-press.webp",
+      "previousMotionUrl": null
+    },
+    {
+      "rank": 19,
+      "id": "07931525-adcc-474d-8582-98e79ccdaaff",
+      "name": "Push-Up",
+      "slug": "push-up",
+      "equipment": "bodyweight",
+      "previousImageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-29/webp-768/push-up.webp",
+      "previousMotionUrl": null
+    },
+    {
+      "rank": 20,
+      "id": "8c3fe671-ff24-4755-b9f3-ef4c5c1e4820",
+      "name": "Seated Dumbbell Shoulder Press",
+      "slug": "seated-dumbbell-shoulder-press",
+      "equipment": "dumbbell",
+      "previousImageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-29/webp-768/seated-dumbbell-shoulder-press.webp",
+      "previousMotionUrl": null
+    },
+    {
+      "rank": 21,
+      "id": "e787cf81-c0f7-40fc-94db-0589e22a4ed7",
+      "name": "Hip Thrust",
+      "slug": "hip-thrust",
+      "equipment": "barbell",
+      "previousImageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-29/webp-768/hip-thrust.webp",
+      "previousMotionUrl": null
+    },
+    {
+      "rank": 22,
+      "id": "c1c4e27f-b6ba-485d-abb9-bccad9d4ea88",
+      "name": "Barbell Curl",
+      "slug": "barbell-curl",
+      "equipment": "barbell",
+      "previousImageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-29/webp-768/barbell-curl.webp",
+      "previousMotionUrl": null
+    },
+    {
+      "rank": 23,
+      "id": "012cd17c-e06e-4367-ac7b-4d432d2347c4",
+      "name": "Dumbbell Reverse Fly",
+      "slug": "dumbbell-reverse-fly",
+      "equipment": "dumbbell",
+      "previousImageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-29/webp-768/dumbbell-reverse-fly.webp",
+      "previousMotionUrl": null
+    },
+    {
+      "rank": 24,
+      "id": "8b2171d4-dae1-4efe-b462-17ed33a0330d",
+      "name": "Decline Chest Press Machine",
+      "slug": "decline-chest-press-machine",
+      "equipment": "machine",
+      "previousImageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/decline-chest-press-machine.webp",
+      "previousMotionUrl": null
+    },
+    {
+      "rank": 25,
+      "id": "eeded50d-2e21-4cad-a25e-f37dcc4e3ad1",
+      "name": "Face Pull",
+      "slug": "face-pull",
+      "equipment": "cable",
+      "previousImageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-29/webp-768/face-pull.webp",
+      "previousMotionUrl": null
+    },
+    {
+      "rank": 26,
+      "id": "68b1eabf-0c14-4a10-b30c-efdcdaa867bd",
+      "name": "Hack Squat",
+      "slug": "hack-squat",
+      "equipment": "machine",
+      "previousImageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-29/webp-768/hack-squat.webp",
+      "previousMotionUrl": null
+    },
+    {
+      "rank": 27,
+      "id": "d5d1f9b4-5be8-41d4-a761-aa0e2d5ab5bc",
+      "name": "Standing Calf Raise",
+      "slug": "standing-calf-raise",
+      "equipment": "machine",
+      "previousImageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-29/webp-768/standing-calf-raise.webp",
+      "previousMotionUrl": null
+    },
+    {
+      "rank": 28,
+      "id": "7631a136-d172-48e5-8890-fd4f51aa2f14",
+      "name": "Incline Dumbbell Curl",
+      "slug": "incline-dumbbell-curl",
+      "equipment": "dumbbell",
+      "previousImageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-29/webp-768/incline-dumbbell-curl.webp",
+      "previousMotionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-videos/generated/2026-09-30/incline-dumbbell-curl.mp4"
+    },
+    {
+      "rank": 29,
+      "id": "1c591a67-247d-41da-8458-d2e326abc06a",
+      "name": "Rope Triceps Pressdown",
+      "slug": "rope-triceps-pressdown",
+      "equipment": "cable",
+      "previousImageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-29/webp-768/rope-triceps-pressdown.webp",
+      "previousMotionUrl": null
+    },
+    {
+      "rank": 30,
+      "id": "9221786d-3249-447f-99f2-a2fd219cecee",
+      "name": "Reverse Pec Deck",
+      "slug": "reverse-pec-deck",
+      "equipment": "machine",
+      "previousImageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/reverse-pec-deck.webp",
+      "previousMotionUrl": null
+    },
+    {
+      "rank": 31,
+      "id": "3c4e2a76-658d-414a-bbb5-20dd542281b5",
+      "name": "Cable Triceps Pushdown",
+      "slug": "cable-triceps-pushdown",
+      "equipment": "cable",
+      "previousImageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/cable-triceps-pushdown.webp",
+      "previousMotionUrl": null
+    },
+    {
+      "rank": 32,
+      "id": "6ccfb1ea-70ef-4fa5-a17a-bf2e048992b6",
+      "name": "Cable Crunch",
+      "slug": "cable-crunch",
+      "equipment": "cable",
+      "previousImageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-29/webp-768/cable-crunch.webp",
+      "previousMotionUrl": null
+    },
+    {
+      "rank": 33,
+      "id": "762b3ebe-d766-47ca-bde6-392977aee000",
+      "name": "Preacher Curl",
+      "slug": "preacher-curl",
+      "equipment": "machine",
+      "previousImageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-29/webp-768/preacher-curl.webp",
+      "previousMotionUrl": null
+    },
+    {
+      "rank": 34,
+      "id": "80d296fa-7238-4366-8598-02e875ae802d",
+      "name": "Dumbbell Chest Fly",
+      "slug": "dumbbell-chest-fly",
+      "equipment": "dumbbell",
+      "previousImageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-29/webp-768/dumbbell-chest-fly.webp",
+      "previousMotionUrl": null
+    },
+    {
+      "rank": 35,
+      "id": "29685b9a-0812-4ffa-9146-0fa17fb79b7c",
+      "name": "Pec Deck Chest Fly",
+      "slug": "pec-deck-chest-fly",
+      "equipment": "machine",
+      "previousImageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-29/webp-768/pec-deck-fly.webp",
+      "previousMotionUrl": null
+    },
+    {
+      "rank": 36,
+      "id": "44fa714a-6293-445e-a2cf-db9f77a18bfd",
+      "name": "Dumbbell Front Raise",
+      "slug": "dumbbell-front-raise",
+      "equipment": "dumbbell",
+      "previousImageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/dumbbell-front-raise.webp",
+      "previousMotionUrl": null
+    },
+    {
+      "rank": 37,
+      "id": "55c9ab7c-b6c5-4ca9-9447-79883a341bd1",
+      "name": "Crunches",
+      "slug": "crunches",
+      "equipment": "other",
+      "previousImageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/crunches.webp",
+      "previousMotionUrl": null
+    },
+    {
+      "rank": 38,
+      "id": "74393147-8e68-4590-9a69-31ae0fb08440",
+      "name": "Bulgarian Split Squat",
+      "slug": "bulgarian-split-squat",
+      "equipment": "dumbbell",
+      "previousImageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-29/webp-768/bulgarian-split-squat.webp",
+      "previousMotionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-videos/generated/2026-09-30/bulgarian-split-squat.mp4"
+    },
+    {
+      "rank": 39,
+      "id": "17f273de-b9ab-4850-94f4-78091bd19bac",
+      "name": "Glute Kickback Machine",
+      "slug": "glute-kickback-machine",
+      "equipment": "machine",
+      "previousImageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-29/webp-768/machine-glute-kickback.webp",
+      "previousMotionUrl": null
+    },
+    {
+      "rank": 40,
+      "id": "3a377d34-5f02-441d-b227-1557cc76c388",
+      "name": "Cable Curl",
+      "slug": "cable-curl",
+      "equipment": "cable",
+      "previousImageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-29/webp-768/cable-curl.webp",
+      "previousMotionUrl": null
+    }
+  ]
+}

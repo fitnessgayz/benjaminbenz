@@ -99,7 +99,8 @@
     "20261108192500_schedule_monthly_reports_first_day.sql",
     "20261108193000_quiet_historical_monthly_report_backfill.sql",
     "20261112172150_replace_popular_exercise_images.sql",
-    "20261112172709_archive_duplicate_exercise_aliases.sql"
+    "20261112172709_archive_duplicate_exercise_aliases.sql",
+    "20261114192124_add_next_forty_popular_exercise_media.sql"
   ],
   "nasmExerciseCatalogMigration": "20261001032427_add_complete_nasm_exercise_library.sql",
   "nasmExerciseCatalogCount": 75,
@@ -8748,6 +8749,1126 @@
       "objectPath": "approved/2026-11-12/motion-webp/dumbbell-curl-benjamin.webp",
       "contentType": "image/webp",
       "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/png/barbell-deadlift-benjamin.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/png/barbell-deadlift-benjamin.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/webp-480/barbell-deadlift-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/webp-480/barbell-deadlift-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/webp-768/barbell-deadlift-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/webp-768/barbell-deadlift-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/motion-webp/barbell-deadlift-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/motion-webp/barbell-deadlift-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/png/barbell-back-squat-benjamin.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/png/barbell-back-squat-benjamin.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/webp-480/barbell-back-squat-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/webp-480/barbell-back-squat-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/webp-768/barbell-back-squat-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/webp-768/barbell-back-squat-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/motion-webp/barbell-back-squat-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/motion-webp/barbell-back-squat-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/png/incline-barbell-bench-press-benjamin.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/png/incline-barbell-bench-press-benjamin.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/webp-480/incline-barbell-bench-press-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/webp-480/incline-barbell-bench-press-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/webp-768/incline-barbell-bench-press-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/webp-768/incline-barbell-bench-press-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/motion-webp/incline-barbell-bench-press-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/motion-webp/incline-barbell-bench-press-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/png/wide-grip-lat-pulldown-benjamin.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/png/wide-grip-lat-pulldown-benjamin.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/webp-480/wide-grip-lat-pulldown-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/webp-480/wide-grip-lat-pulldown-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/webp-768/wide-grip-lat-pulldown-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/webp-768/wide-grip-lat-pulldown-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/motion-webp/wide-grip-lat-pulldown-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/motion-webp/wide-grip-lat-pulldown-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/png/ez-bar-biceps-curl-benjamin.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/png/ez-bar-biceps-curl-benjamin.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/webp-480/ez-bar-biceps-curl-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/webp-480/ez-bar-biceps-curl-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/webp-768/ez-bar-biceps-curl-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/webp-768/ez-bar-biceps-curl-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/motion-webp/ez-bar-biceps-curl-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/motion-webp/ez-bar-biceps-curl-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/png/barbell-row-benjamin.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/png/barbell-row-benjamin.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/webp-480/barbell-row-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/webp-480/barbell-row-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/webp-768/barbell-row-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/webp-768/barbell-row-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/motion-webp/barbell-row-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/motion-webp/barbell-row-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/png/seated-leg-curl-benjamin.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/png/seated-leg-curl-benjamin.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/webp-480/seated-leg-curl-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/webp-480/seated-leg-curl-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/webp-768/seated-leg-curl-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/webp-768/seated-leg-curl-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/motion-webp/seated-leg-curl-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/motion-webp/seated-leg-curl-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/png/hammer-curl-benjamin.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/png/hammer-curl-benjamin.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/webp-480/hammer-curl-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/webp-480/hammer-curl-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/webp-768/hammer-curl-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/webp-768/hammer-curl-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/motion-webp/hammer-curl-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/motion-webp/hammer-curl-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/png/leg-extension-benjamin.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/png/leg-extension-benjamin.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/webp-480/leg-extension-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/webp-480/leg-extension-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/webp-768/leg-extension-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/webp-768/leg-extension-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/motion-webp/leg-extension-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/motion-webp/leg-extension-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/png/dumbbell-rows-benjamin.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/png/dumbbell-rows-benjamin.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/webp-480/dumbbell-rows-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/webp-480/dumbbell-rows-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/webp-768/dumbbell-rows-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/webp-768/dumbbell-rows-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/motion-webp/dumbbell-rows-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/motion-webp/dumbbell-rows-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/png/hip-abduction-machine-benjamin.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/png/hip-abduction-machine-benjamin.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/webp-480/hip-abduction-machine-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/webp-480/hip-abduction-machine-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/webp-768/hip-abduction-machine-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/webp-768/hip-abduction-machine-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/motion-webp/hip-abduction-machine-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/motion-webp/hip-abduction-machine-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/png/dumbbell-romanian-deadlift-benjamin.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/png/dumbbell-romanian-deadlift-benjamin.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/webp-480/dumbbell-romanian-deadlift-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/webp-480/dumbbell-romanian-deadlift-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/webp-768/dumbbell-romanian-deadlift-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/webp-768/dumbbell-romanian-deadlift-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/motion-webp/dumbbell-romanian-deadlift-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/motion-webp/dumbbell-romanian-deadlift-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/png/db-shoulder-press-benjamin.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/png/db-shoulder-press-benjamin.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/webp-480/db-shoulder-press-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/webp-480/db-shoulder-press-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/webp-768/db-shoulder-press-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/webp-768/db-shoulder-press-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/motion-webp/db-shoulder-press-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/motion-webp/db-shoulder-press-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/png/romanian-deadlift-benjamin.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/png/romanian-deadlift-benjamin.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/webp-480/romanian-deadlift-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/webp-480/romanian-deadlift-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/webp-768/romanian-deadlift-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/webp-768/romanian-deadlift-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/motion-webp/romanian-deadlift-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/motion-webp/romanian-deadlift-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/png/cable-chest-fly-benjamin.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/png/cable-chest-fly-benjamin.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/webp-480/cable-chest-fly-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/webp-480/cable-chest-fly-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/webp-768/cable-chest-fly-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/webp-768/cable-chest-fly-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/motion-webp/cable-chest-fly-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/motion-webp/cable-chest-fly-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/png/seated-dip-machine-benjamin.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/png/seated-dip-machine-benjamin.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/webp-480/seated-dip-machine-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/webp-480/seated-dip-machine-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/webp-768/seated-dip-machine-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/webp-768/seated-dip-machine-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/motion-webp/seated-dip-machine-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/motion-webp/seated-dip-machine-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/png/machine-chest-press-benjamin.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/png/machine-chest-press-benjamin.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/webp-480/machine-chest-press-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/webp-480/machine-chest-press-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/webp-768/machine-chest-press-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/webp-768/machine-chest-press-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/motion-webp/machine-chest-press-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/motion-webp/machine-chest-press-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/png/incline-machine-chest-press-benjamin.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/png/incline-machine-chest-press-benjamin.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/webp-480/incline-machine-chest-press-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/webp-480/incline-machine-chest-press-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/webp-768/incline-machine-chest-press-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/webp-768/incline-machine-chest-press-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/motion-webp/incline-machine-chest-press-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/motion-webp/incline-machine-chest-press-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/png/push-up-benjamin.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/png/push-up-benjamin.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/webp-480/push-up-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/webp-480/push-up-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/webp-768/push-up-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/webp-768/push-up-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/motion-webp/push-up-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/motion-webp/push-up-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/png/seated-dumbbell-shoulder-press-benjamin.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/png/seated-dumbbell-shoulder-press-benjamin.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/webp-480/seated-dumbbell-shoulder-press-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/webp-480/seated-dumbbell-shoulder-press-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/webp-768/seated-dumbbell-shoulder-press-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/webp-768/seated-dumbbell-shoulder-press-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/motion-webp/seated-dumbbell-shoulder-press-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/motion-webp/seated-dumbbell-shoulder-press-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/png/hip-thrust-benjamin.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/png/hip-thrust-benjamin.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/webp-480/hip-thrust-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/webp-480/hip-thrust-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/webp-768/hip-thrust-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/webp-768/hip-thrust-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/motion-webp/hip-thrust-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/motion-webp/hip-thrust-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/png/barbell-curl-benjamin.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/png/barbell-curl-benjamin.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/webp-480/barbell-curl-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/webp-480/barbell-curl-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/webp-768/barbell-curl-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/webp-768/barbell-curl-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/motion-webp/barbell-curl-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/motion-webp/barbell-curl-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/png/dumbbell-reverse-fly-benjamin.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/png/dumbbell-reverse-fly-benjamin.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/webp-480/dumbbell-reverse-fly-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/webp-480/dumbbell-reverse-fly-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/webp-768/dumbbell-reverse-fly-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/webp-768/dumbbell-reverse-fly-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/motion-webp/dumbbell-reverse-fly-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/motion-webp/dumbbell-reverse-fly-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/png/decline-chest-press-machine-benjamin.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/png/decline-chest-press-machine-benjamin.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/webp-480/decline-chest-press-machine-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/webp-480/decline-chest-press-machine-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/webp-768/decline-chest-press-machine-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/webp-768/decline-chest-press-machine-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/motion-webp/decline-chest-press-machine-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/motion-webp/decline-chest-press-machine-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/png/face-pull-benjamin.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/png/face-pull-benjamin.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/webp-480/face-pull-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/webp-480/face-pull-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/webp-768/face-pull-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/webp-768/face-pull-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/motion-webp/face-pull-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/motion-webp/face-pull-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/png/hack-squat-benjamin.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/png/hack-squat-benjamin.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/webp-480/hack-squat-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/webp-480/hack-squat-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/webp-768/hack-squat-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/webp-768/hack-squat-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/motion-webp/hack-squat-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/motion-webp/hack-squat-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/png/standing-calf-raise-benjamin.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/png/standing-calf-raise-benjamin.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/webp-480/standing-calf-raise-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/webp-480/standing-calf-raise-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/webp-768/standing-calf-raise-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/webp-768/standing-calf-raise-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/motion-webp/standing-calf-raise-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/motion-webp/standing-calf-raise-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/png/incline-dumbbell-curl-benjamin.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/png/incline-dumbbell-curl-benjamin.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/webp-480/incline-dumbbell-curl-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/webp-480/incline-dumbbell-curl-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/webp-768/incline-dumbbell-curl-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/webp-768/incline-dumbbell-curl-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/motion-webp/incline-dumbbell-curl-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/motion-webp/incline-dumbbell-curl-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/png/rope-triceps-pressdown-benjamin.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/png/rope-triceps-pressdown-benjamin.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/webp-480/rope-triceps-pressdown-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/webp-480/rope-triceps-pressdown-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/webp-768/rope-triceps-pressdown-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/webp-768/rope-triceps-pressdown-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/motion-webp/rope-triceps-pressdown-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/motion-webp/rope-triceps-pressdown-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/png/reverse-pec-deck-benjamin.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/png/reverse-pec-deck-benjamin.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/webp-480/reverse-pec-deck-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/webp-480/reverse-pec-deck-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/webp-768/reverse-pec-deck-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/webp-768/reverse-pec-deck-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/motion-webp/reverse-pec-deck-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/motion-webp/reverse-pec-deck-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/png/cable-triceps-pushdown-benjamin.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/png/cable-triceps-pushdown-benjamin.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/webp-480/cable-triceps-pushdown-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/webp-480/cable-triceps-pushdown-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/webp-768/cable-triceps-pushdown-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/webp-768/cable-triceps-pushdown-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/motion-webp/cable-triceps-pushdown-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/motion-webp/cable-triceps-pushdown-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/png/cable-crunch-benjamin.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/png/cable-crunch-benjamin.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/webp-480/cable-crunch-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/webp-480/cable-crunch-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/webp-768/cable-crunch-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/webp-768/cable-crunch-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/motion-webp/cable-crunch-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/motion-webp/cable-crunch-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/png/preacher-curl-benjamin.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/png/preacher-curl-benjamin.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/webp-480/preacher-curl-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/webp-480/preacher-curl-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/webp-768/preacher-curl-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/webp-768/preacher-curl-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/motion-webp/preacher-curl-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/motion-webp/preacher-curl-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/png/dumbbell-chest-fly-benjamin.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/png/dumbbell-chest-fly-benjamin.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/webp-480/dumbbell-chest-fly-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/webp-480/dumbbell-chest-fly-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/webp-768/dumbbell-chest-fly-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/webp-768/dumbbell-chest-fly-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/motion-webp/dumbbell-chest-fly-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/motion-webp/dumbbell-chest-fly-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/png/pec-deck-chest-fly-benjamin.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/png/pec-deck-chest-fly-benjamin.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/webp-480/pec-deck-chest-fly-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/webp-480/pec-deck-chest-fly-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/webp-768/pec-deck-chest-fly-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/webp-768/pec-deck-chest-fly-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/motion-webp/pec-deck-chest-fly-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/motion-webp/pec-deck-chest-fly-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/png/dumbbell-front-raise-benjamin.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/png/dumbbell-front-raise-benjamin.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/webp-480/dumbbell-front-raise-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/webp-480/dumbbell-front-raise-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/webp-768/dumbbell-front-raise-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/webp-768/dumbbell-front-raise-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/motion-webp/dumbbell-front-raise-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/motion-webp/dumbbell-front-raise-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/png/crunches-benjamin.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/png/crunches-benjamin.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/webp-480/crunches-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/webp-480/crunches-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/webp-768/crunches-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/webp-768/crunches-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/motion-webp/crunches-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/motion-webp/crunches-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/png/bulgarian-split-squat-benjamin.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/png/bulgarian-split-squat-benjamin.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/webp-480/bulgarian-split-squat-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/webp-480/bulgarian-split-squat-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/webp-768/bulgarian-split-squat-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/webp-768/bulgarian-split-squat-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/motion-webp/bulgarian-split-squat-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/motion-webp/bulgarian-split-squat-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/png/glute-kickback-machine-benjamin.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/png/glute-kickback-machine-benjamin.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/webp-480/glute-kickback-machine-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/webp-480/glute-kickback-machine-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/webp-768/glute-kickback-machine-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/webp-768/glute-kickback-machine-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/motion-webp/glute-kickback-machine-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/motion-webp/glute-kickback-machine-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/png/cable-curl-benjamin.png",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/png/cable-curl-benjamin.png",
+      "contentType": "image/png",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/webp-480/cable-curl-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/webp-480/cable-curl-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/webp-768/cable-curl-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/webp-768/cable-curl-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/approved/2026-11-14/motion-webp/cable-curl-benjamin.webp",
+      "bucket": "exercise-images",
+      "objectPath": "approved/2026-11-14/motion-webp/cable-curl-benjamin.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
     }
   ],
   "exerciseMedia": [
@@ -8758,22 +9879,26 @@
     },
     {
       "name": "Incline Dumbbell Curl",
-      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-videos/generated/2026-09-30/incline-dumbbell-curl.mp4"
+      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-14/motion-webp/incline-dumbbell-curl-benjamin.webp",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-14/webp-768/incline-dumbbell-curl-benjamin.webp"
     },
     {
       "name": "Leg Extension",
-      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-videos/generated/2026-09-30/leg-extension.mp4",
-      "demoUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-videos/generated/2026-09-30/leg-extension.mp4"
+      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-14/motion-webp/leg-extension-benjamin.webp",
+      "demoUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-videos/generated/2026-09-30/leg-extension.mp4",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-14/webp-768/leg-extension-benjamin.webp"
     },
     {
       "name": "Seated Dip Machine",
-      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-videos/generated/2026-09-30/seated-dip-machine.mp4",
-      "demoUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-videos/generated/2026-09-30/seated-dip-machine.mp4"
+      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-14/motion-webp/seated-dip-machine-benjamin.webp",
+      "demoUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-videos/generated/2026-09-30/seated-dip-machine.mp4",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-14/webp-768/seated-dip-machine-benjamin.webp"
     },
     {
       "name": "Bulgarian Split Squat",
-      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-videos/generated/2026-09-30/bulgarian-split-squat.mp4",
-      "demoUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-videos/generated/2026-09-30/bulgarian-split-squat.mp4"
+      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-14/motion-webp/bulgarian-split-squat-benjamin.webp",
+      "demoUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-videos/generated/2026-09-30/bulgarian-split-squat.mp4",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-14/webp-768/bulgarian-split-squat-benjamin.webp"
     },
     {
       "name": "One Dumbbell Bulgarian Split Squat",
@@ -8935,11 +10060,15 @@
     },
     {
       "name": "Incline Barbell Bench Press",
-      "demoUrl": "https://www.youtube.com/watch?v=BjGLs6KGWUc"
+      "demoUrl": "https://www.youtube.com/watch?v=BjGLs6KGWUc",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-14/webp-768/incline-barbell-bench-press-benjamin.webp",
+      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-14/motion-webp/incline-barbell-bench-press-benjamin.webp"
     },
     {
       "name": "Machine Chest Press",
-      "demoUrl": "https://www.youtube.com/watch?v=lRo9zZ7EwpM"
+      "demoUrl": "https://www.youtube.com/watch?v=lRo9zZ7EwpM",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-14/webp-768/machine-chest-press-benjamin.webp",
+      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-14/motion-webp/machine-chest-press-benjamin.webp"
     },
     {
       "name": "Single-Arm Dumbbell Chest Press",
@@ -8953,7 +10082,9 @@
     },
     {
       "name": "Push-Up",
-      "demoUrl": "https://www.youtube.com/watch?v=WDIpL0pjun0"
+      "demoUrl": "https://www.youtube.com/watch?v=WDIpL0pjun0",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-14/webp-768/push-up-benjamin.webp",
+      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-14/motion-webp/push-up-benjamin.webp"
     },
     {
       "name": "Pull-Up",
@@ -8961,11 +10092,15 @@
     },
     {
       "name": "Face Pull",
-      "demoUrl": "https://www.youtube.com/watch?v=eTCBSFlCJ_s"
+      "demoUrl": "https://www.youtube.com/watch?v=eTCBSFlCJ_s",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-14/webp-768/face-pull-benjamin.webp",
+      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-14/motion-webp/face-pull-benjamin.webp"
     },
     {
       "name": "Barbell Curl",
-      "demoUrl": "https://www.youtube.com/watch?v=pQfJR-sSIvA"
+      "demoUrl": "https://www.youtube.com/watch?v=pQfJR-sSIvA",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-14/webp-768/barbell-curl-benjamin.webp",
+      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-14/motion-webp/barbell-curl-benjamin.webp"
     },
     {
       "name": "Bench Dip",
@@ -8991,11 +10126,15 @@
     },
     {
       "name": "Dumbbell Romanian Deadlift",
-      "demoUrl": "https://www.youtube.com/watch?v=V8Hdl1FiNt4"
+      "demoUrl": "https://www.youtube.com/watch?v=V8Hdl1FiNt4",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-14/webp-768/dumbbell-romanian-deadlift-benjamin.webp",
+      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-14/motion-webp/dumbbell-romanian-deadlift-benjamin.webp"
     },
     {
       "name": "Seated Leg Curl",
-      "demoUrl": "https://www.youtube.com/watch?v=_2Kd0d-JEUM"
+      "demoUrl": "https://www.youtube.com/watch?v=_2Kd0d-JEUM",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-14/webp-768/seated-leg-curl-benjamin.webp",
+      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-14/motion-webp/seated-leg-curl-benjamin.webp"
     },
     {
       "name": "Plank",
@@ -9019,8 +10158,9 @@
     },
     {
       "name": "Barbell Row",
-      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/barbell-row.webp",
-      "demoUrl": "https://www.youtube.com/watch?v=TZLCvXbej_Q"
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-14/webp-768/barbell-row-benjamin.webp",
+      "demoUrl": "https://www.youtube.com/watch?v=TZLCvXbej_Q",
+      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-14/motion-webp/barbell-row-benjamin.webp"
     },
     {
       "name": "Reverse Lunge",
@@ -9174,8 +10314,9 @@
     },
     {
       "name": "Barbell Back Squat",
-      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/barbell-back-squat.webp",
-      "demoUrl": "https://www.youtube.com/watch?v=UFs6E3Ti1jg"
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-14/webp-768/barbell-back-squat-benjamin.webp",
+      "demoUrl": "https://www.youtube.com/watch?v=UFs6E3Ti1jg",
+      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-14/motion-webp/barbell-back-squat-benjamin.webp"
     },
     {
       "name": "Barbell Overhead Press",
@@ -9234,8 +10375,9 @@
     },
     {
       "name": "Dumbbell Front Raise",
-      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-30/webp-768/dumbbell-front-raise.webp",
-      "demoUrl": "https://www.youtube.com/watch?v=zkP0MsTcIVU"
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-14/webp-768/dumbbell-front-raise-benjamin.webp",
+      "demoUrl": "https://www.youtube.com/watch?v=zkP0MsTcIVU",
+      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-14/motion-webp/dumbbell-front-raise-benjamin.webp"
     },
     {
       "name": "Hanging Leg Raise",
@@ -9409,7 +10551,8 @@
     },
     {
       "name": "Cable Crunch",
-      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-09-29/webp-768/cable-crunch.webp"
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-14/webp-768/cable-crunch-benjamin.webp",
+      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-14/motion-webp/cable-crunch-benjamin.webp"
     },
     {
       "name": "Standing Cable Crunch (Star Trac)",
@@ -9441,15 +10584,18 @@
     },
     {
       "name": "Cable Triceps Pushdown",
-      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/cable-triceps-pushdown.webp"
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-14/webp-768/cable-triceps-pushdown-benjamin.webp",
+      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-14/motion-webp/cable-triceps-pushdown-benjamin.webp"
     },
     {
       "name": "Crunches",
-      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/crunches.webp"
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-14/webp-768/crunches-benjamin.webp",
+      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-14/motion-webp/crunches-benjamin.webp"
     },
     {
       "name": "Decline Chest Press Machine",
-      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/decline-chest-press-machine.webp"
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-14/webp-768/decline-chest-press-machine-benjamin.webp",
+      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-14/motion-webp/decline-chest-press-machine-benjamin.webp"
     },
     {
       "name": "Dumbbell Shrug",
@@ -9465,11 +10611,13 @@
     },
     {
       "name": "Reverse Pec Deck",
-      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/reverse-pec-deck.webp"
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-14/webp-768/reverse-pec-deck-benjamin.webp",
+      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-14/motion-webp/reverse-pec-deck-benjamin.webp"
     },
     {
       "name": "Wide-Grip Lat Pulldown",
-      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/wide-grip-lat-pulldown-v2.webp"
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-14/webp-768/wide-grip-lat-pulldown-benjamin.webp",
+      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-14/motion-webp/wide-grip-lat-pulldown-benjamin.webp"
     },
     {
       "name": "Bicep curl (machine)",
@@ -9565,7 +10713,8 @@
     },
     {
       "name": "DB Shoulder Press",
-      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/db-shoulder-press.webp"
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-14/webp-768/db-shoulder-press-benjamin.webp",
+      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-14/motion-webp/db-shoulder-press-benjamin.webp"
     },
     {
       "name": "Side chest press machine",
@@ -9766,7 +10915,8 @@
     },
     {
       "name": "Barbell Deadlift",
-      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/barbell-deadlift.webp"
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-14/webp-768/barbell-deadlift-benjamin.webp",
+      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-14/motion-webp/barbell-deadlift-benjamin.webp"
     },
     {
       "name": "Close-Grip Barbell Bench Press",
@@ -10254,7 +11404,8 @@
     },
     {
       "name": "Dumbbell Rows",
-      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/dumbell-rows.webp"
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-14/webp-768/dumbbell-rows-benjamin.webp",
+      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-14/motion-webp/dumbbell-rows-benjamin.webp"
     },
     {
       "name": "Seated Row Machine (Overhand Grip)",
@@ -10358,6 +11509,91 @@
       "name": "Dumbbell Curl",
       "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-12/webp-768/dumbbell-curl-benjamin.webp",
       "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-12/motion-webp/dumbbell-curl-benjamin.webp"
+    },
+    {
+      "name": "EZ-Bar Biceps Curl",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-14/webp-768/ez-bar-biceps-curl-benjamin.webp",
+      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-14/motion-webp/ez-bar-biceps-curl-benjamin.webp"
+    },
+    {
+      "name": "Hammer Curl",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-14/webp-768/hammer-curl-benjamin.webp",
+      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-14/motion-webp/hammer-curl-benjamin.webp"
+    },
+    {
+      "name": "Hip Abduction Machine",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-14/webp-768/hip-abduction-machine-benjamin.webp",
+      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-14/motion-webp/hip-abduction-machine-benjamin.webp"
+    },
+    {
+      "name": "Romanian Deadlift",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-14/webp-768/romanian-deadlift-benjamin.webp",
+      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-14/motion-webp/romanian-deadlift-benjamin.webp"
+    },
+    {
+      "name": "Cable Chest Fly",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-14/webp-768/cable-chest-fly-benjamin.webp",
+      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-14/motion-webp/cable-chest-fly-benjamin.webp"
+    },
+    {
+      "name": "Incline Machine Chest Press",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-14/webp-768/incline-machine-chest-press-benjamin.webp",
+      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-14/motion-webp/incline-machine-chest-press-benjamin.webp"
+    },
+    {
+      "name": "Seated Dumbbell Shoulder Press",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-14/webp-768/seated-dumbbell-shoulder-press-benjamin.webp",
+      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-14/motion-webp/seated-dumbbell-shoulder-press-benjamin.webp"
+    },
+    {
+      "name": "Hip Thrust",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-14/webp-768/hip-thrust-benjamin.webp",
+      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-14/motion-webp/hip-thrust-benjamin.webp"
+    },
+    {
+      "name": "Dumbbell Reverse Fly",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-14/webp-768/dumbbell-reverse-fly-benjamin.webp",
+      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-14/motion-webp/dumbbell-reverse-fly-benjamin.webp"
+    },
+    {
+      "name": "Hack Squat",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-14/webp-768/hack-squat-benjamin.webp",
+      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-14/motion-webp/hack-squat-benjamin.webp"
+    },
+    {
+      "name": "Standing Calf Raise",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-14/webp-768/standing-calf-raise-benjamin.webp",
+      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-14/motion-webp/standing-calf-raise-benjamin.webp"
+    },
+    {
+      "name": "Rope Triceps Pressdown",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-14/webp-768/rope-triceps-pressdown-benjamin.webp",
+      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-14/motion-webp/rope-triceps-pressdown-benjamin.webp"
+    },
+    {
+      "name": "Preacher Curl",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-14/webp-768/preacher-curl-benjamin.webp",
+      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-14/motion-webp/preacher-curl-benjamin.webp"
+    },
+    {
+      "name": "Dumbbell Chest Fly",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-14/webp-768/dumbbell-chest-fly-benjamin.webp",
+      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-14/motion-webp/dumbbell-chest-fly-benjamin.webp"
+    },
+    {
+      "name": "Pec Deck Chest Fly",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-14/webp-768/pec-deck-chest-fly-benjamin.webp",
+      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-14/motion-webp/pec-deck-chest-fly-benjamin.webp"
+    },
+    {
+      "name": "Glute Kickback Machine",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-14/webp-768/glute-kickback-machine-benjamin.webp",
+      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-14/motion-webp/glute-kickback-machine-benjamin.webp"
+    },
+    {
+      "name": "Cable Curl",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-14/webp-768/cable-curl-benjamin.webp",
+      "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-14/motion-webp/cable-curl-benjamin.webp"
     }
   ]
 }
