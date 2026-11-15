@@ -330,15 +330,61 @@ function workoutDisplayTitle(value) {
   }).join("");
 }
 
+function automaticCustomWorkoutDisplayTitle(value, logs = []) {
+  const storedTitle = String(value || "").trim();
+  const fallback = workoutDisplayTitle(storedTitle);
+  // The title is also part of older saved-set identities. Derive a readable
+  // label without changing that storage key, and preserve named/copied plans.
+  if (!/^custom workout(?:\s*·\s*new(?:\s*·\s*[\d:.]+)?)?$/i.test(storedTitle)) return fallback;
+
+  const seen = new Set();
+  const counts = new Map();
+  (Array.isArray(logs) ? logs : []).forEach((log) => {
+    const code = String(log?.exercise_code || "").toUpperCase();
+    const name = String(log?.exercise_name || log?.name || "").trim();
+    if (!name || [warmupExerciseCode, cardioExerciseCode].includes(code)) return;
+    const identity = `${code}|${name.toLowerCase()}`;
+    if (seen.has(identity)) return;
+    seen.add(identity);
+    const primary = normalizeMuscle(approvedExerciseForName(name)?.primary_muscle)
+      || inferExerciseMuscles({ name })[0];
+    if (!primary) return;
+    const focus = primary === "lats" ? "back"
+      : ["biceps", "triceps"].includes(primary) ? "arms" : primary;
+    counts.set(focus, (counts.get(focus) || 0) + 1);
+  });
+  if (!counts.size) return fallback;
+
+  const upper = ["chest", "back", "shoulders", "arms"];
+  const lower = ["glutes", "hamstrings", "quads", "calves"];
+  const hasUpper = upper.some((muscle) => counts.has(muscle));
+  const hasLower = lower.some((muscle) => counts.has(muscle));
+  if (hasUpper && hasLower) return "Full Body Workout";
+  const focusCounts = [...counts].filter(([muscle]) => muscle !== "core" || counts.size === 1)
+    .sort((left, right) => right[1] - left[1]);
+  if (!focusCounts.length) return "Core Workout";
+  const [top, topCount] = focusCounts[0];
+  const secondCount = focusCounts[1]?.[1] || 0;
+  const label = (muscle) => muscle === "arms" ? "Arms" : muscle.charAt(0).toUpperCase() + muscle.slice(1);
+  if (focusCounts.length === 1 || topCount >= secondCount * 2) return `${label(top)} Workout`;
+  if (hasLower) return "Lower Body Workout";
+  if (counts.has("shoulders") && counts.has("arms") && focusCounts.length === 2) return "Shoulders & Arms Workout";
+  if (focusCounts.length === 2 && counts.has("arms") && ["chest", "back"].includes(top)) {
+    return `${label(top)} & Arms Workout`;
+  }
+  return "Upper Body Workout";
+}
+
 function isCustomWorkoutHistoryTitle(value) {
   return /^Custom Workout(?:\s*·|$)/i.test(String(value || "").trim());
 }
 
-function clientTrainingLogMatchesSearch(log, query) {
+function clientTrainingLogMatchesSearch(log, query, sessionTitle = "") {
   return logFieldsMatchSearch([
     log.entry_date,
     log.workout_title,
     workoutDisplayTitle(log.workout_title),
+    sessionTitle,
     log.gym_name,
     log.exercise_code,
     log.exercise_name,
@@ -631,15 +677,15 @@ function latestWorkoutLogSummary() {
     return null;
   }
 
+  const latestSessionKey = clientWorkoutHistorySessionKey(latest);
   const sameWorkoutLogs = workoutLogs.filter((log) => (
-    String(log.entry_date || "") === String(latest.entry_date || "") &&
-    String(log.workout_title || "") === String(latest.workout_title || "")
+    clientWorkoutHistorySessionKey(log) === latestSessionKey
   ));
   const exerciseNames = new Set(sameWorkoutLogs.map((log) => log.exercise_name).filter(Boolean));
 
   return {
     date: latest.entry_date || "",
-    title: workoutDisplayTitle(latest.workout_title),
+    title: automaticCustomWorkoutDisplayTitle(latest.workout_title, sameWorkoutLogs),
     exerciseCount: exerciseNames.size
   };
 }
@@ -8605,7 +8651,7 @@ function workoutCompletionShareSummary(rows = [], workoutCompletion = {}, diffic
     }
   });
 
-  const title = workoutDisplayTitle(savedRows[0]?.workout_title);
+  const title = automaticCustomWorkoutDisplayTitle(savedRows[0]?.workout_title, savedRows);
   const entryDate = String(savedRows[0]?.entry_date || todayDate());
   const durationSeconds = Math.max(
     0,
@@ -16727,9 +16773,20 @@ function filteredClientWorkoutHistoryLogs(logs = [], dateFilter = "", searchFilt
     return safeLogs.filter(matchesDate);
   }
 
+  const sessionLogs = new Map();
+  safeLogs.filter(matchesDate).forEach((log) => {
+    const key = clientWorkoutHistorySessionKey(log);
+    if (!sessionLogs.has(key)) sessionLogs.set(key, []);
+    sessionLogs.get(key).push(log);
+  });
+  const sessionTitles = new Map([...sessionLogs].map(([key, rows]) => [
+    key, automaticCustomWorkoutDisplayTitle(rows[0]?.workout_title, rows)
+  ]));
   const matchingSessionKeys = new Set(
     safeLogs
-      .filter((log) => matchesDate(log) && clientTrainingLogMatchesSearch(log, normalizedSearch))
+      .filter((log) => matchesDate(log) && clientTrainingLogMatchesSearch(
+        log, normalizedSearch, sessionTitles.get(clientWorkoutHistorySessionKey(log))
+      ))
       .map((log) => clientWorkoutHistorySessionKey(log))
   );
 
@@ -16966,11 +17023,13 @@ function renderClientTrainingLogs() {
         workout_duration_seconds: null,
         workout_difficulty: null,
         completed_at: "",
+        logs: [],
         supersets: new Map()
       });
     }
 
     const workoutGroup = workoutGroups.get(workoutKey);
+    workoutGroup.logs.push(log);
     if (!workoutGroup.gym_name && log.gym_name) workoutGroup.gym_name = log.gym_name;
     const hasWorkoutDuration = log.workout_duration_seconds !== null &&
       log.workout_duration_seconds !== undefined &&
@@ -17045,7 +17104,7 @@ function renderClientTrainingLogs() {
     const supersets = Array.from(workout.supersets.values()).sort((a, b) => a.key.localeCompare(b.key));
     const workoutDuration = workoutHistoryDurationLabel(workout.workout_duration_seconds);
     const workoutDifficulty = workoutHistoryDifficultyLabel(workout.workout_difficulty);
-    const displayTitle = workoutDisplayTitle(workout.workout_title);
+    const displayTitle = automaticCustomWorkoutDisplayTitle(workout.workout_title, workout.logs);
     const workoutHeading = [displayTitle, workout.gym_name, workoutDuration, workoutDifficulty].filter(Boolean).join(" · ");
     const mobileWorkoutMeta = [workoutDuration, workoutDifficulty].filter(Boolean).join(" · ") || "Workout saved";
     const workoutStatus = workout.completed_at ? "Completed" : "Saved";
@@ -17659,7 +17718,7 @@ async function deleteClientWorkoutHistory(historyKey) {
     return false;
   }
   const first = target.rows[0];
-  if (!window.confirm(`Delete ${workoutDisplayTitle(first.workout_title)} from ${formatLogDate(first.entry_date)}? This removes its saved sets and ratings from your logs on all devices. This cannot be undone. Your workout plans are kept.`)) return false;
+  if (!window.confirm(`Delete ${automaticCustomWorkoutDisplayTitle(first.workout_title, target.rows)} from ${formatLogDate(first.entry_date)}? This removes its saved sets and ratings from your logs on all devices. This cannot be undone. Your workout plans are kept.`)) return false;
 
   clientWorkoutHistoryDeleteInFlight = true;
   document.querySelectorAll("[data-delete-workout-history]").forEach((button) => { button.disabled = true; });
@@ -17885,13 +17944,22 @@ function workoutHistoryCsv(logs = []) {
     "Distance",
     "Notes"
   ];
+  const sessionLogs = new Map();
+  logs.forEach((log) => {
+    const key = clientWorkoutHistorySessionKey(log);
+    if (!sessionLogs.has(key)) sessionLogs.set(key, []);
+    sessionLogs.get(key).push(log);
+  });
+  const sessionTitles = new Map([...sessionLogs].map(([key, rows]) => [
+    key, automaticCustomWorkoutDisplayTitle(rows[0]?.workout_title, rows)
+  ]));
   const rows = sortedTrainingLogsForExport(logs).map((log) => {
     const isWarmup = log.exercise_code === warmupExerciseCode;
     const isCardio = log.exercise_code === cardioExerciseCode;
 
     return [
       log.entry_date || "",
-      workoutDisplayTitle(log.workout_title),
+      sessionTitles.get(clientWorkoutHistorySessionKey(log)) || workoutDisplayTitle(log.workout_title),
       log.gym_name || "",
       csvSectionForLog(log),
       log.exercise_code || "",

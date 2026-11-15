@@ -65,10 +65,66 @@ test("search finds the readable name while preserving raw-name lookup", () => {
   assert.equal(context.clientTrainingLogMatchesSearch(row, id), true);
 });
 
+test("unnamed custom workouts get a readable name from distinct primary exercise muscles", () => {
+  const context = evaluate(["automaticCustomWorkoutDisplayTitle"], {
+    warmupExerciseCode: "WARMUP", cardioExerciseCode: "CARDIO",
+    approvedExerciseForName: (name) => ({ primary_muscle: ({
+      "Hip Thrust Machine": "glutes", "Leg Extension": "quads",
+      "Seated Dumbbell Shoulder Press": "shoulders", "Dumbbell Lateral Raise": "shoulders",
+      "Dumbbell Biceps Curl": "biceps", "Incline Dumbbell Press": "chest"
+    })[name] }),
+    normalizeMuscle: (value) => value || "",
+    inferExerciseMuscles: () => []
+  });
+  const title = "Custom workout · New · 09:25:00.123";
+  const row = (code, name) => Object.freeze({ workout_title: title, exercise_code: code, exercise_name: name });
+  const glutes = row("A1", "Hip Thrust Machine");
+  const shoulder = row("A1", "Seated Dumbbell Shoulder Press");
+  const arms = row("A2", "Dumbbell Biceps Curl");
+  assert.equal(context.automaticCustomWorkoutDisplayTitle(title, [glutes, glutes]), "Glutes Workout");
+  assert.equal(context.automaticCustomWorkoutDisplayTitle(title, [shoulder, arms]), "Shoulders & Arms Workout");
+  assert.equal(context.automaticCustomWorkoutDisplayTitle(title, [glutes, shoulder]), "Full Body Workout");
+  assert.equal(context.automaticCustomWorkoutDisplayTitle(stored, [glutes]), "Full Body Workout");
+  assert.equal(glutes.workout_title, title);
+});
+
+test("searching an automatic name returns every set in the workout", () => {
+  const context = evaluate([
+    "automaticCustomWorkoutDisplayTitle", "normalizeLogSearch", "logFieldsMatchSearch",
+    "clientTrainingLogMatchesSearch", "clientWorkoutHistorySessionKey", "filteredClientWorkoutHistoryLogs"
+  ], {
+    warmupExerciseCode: "WARMUP", cardioExerciseCode: "CARDIO",
+    approvedExerciseForName: (name) => ({ primary_muscle: name === "Leg Extension" ? "quads" : "glutes" }),
+    normalizeMuscle: (value) => value || "", inferExerciseMuscles: () => []
+  });
+  const logs = [
+    { session_id: "one", entry_date: "2026-09-25", workout_title: "Custom workout · New · 09:25:00.123", exercise_code: "A1", exercise_name: "Hip Thrust Machine", set_number: 1 },
+    { session_id: "one", entry_date: "2026-09-25", workout_title: "Custom workout · New · 09:25:00.123", exercise_code: "A2", exercise_name: "Leg Extension", set_number: 1 },
+    { session_id: "two", entry_date: "2026-09-25", workout_title: "Chest Day", exercise_code: "A1", exercise_name: "Bench Press", set_number: 1 }
+  ];
+  assert.equal(context.filteredClientWorkoutHistoryLogs(logs, "", "Lower Body Workout").length, 2);
+  assert.equal(context.filteredClientWorkoutHistoryLogs(logs, "", "Chest Day").length, 1);
+});
+
+test("latest workout summary names only the latest session", () => {
+  const title = "Custom workout · New · 09:25:00.123";
+  const context = evaluate(["automaticCustomWorkoutDisplayTitle", "clientWorkoutHistorySessionKey", "latestWorkoutLogSummary"], {
+    warmupExerciseCode: "WARMUP", cardioExerciseCode: "CARDIO",
+    approvedExerciseForName: (name) => ({ primary_muscle: name === "Hip Thrust Machine" ? "glutes" : "chest" }),
+    normalizeMuscle: (value) => value || "", inferExerciseMuscles: () => [],
+    trainingLogs: [
+      { session_id: "latest", entry_date: "2026-09-25", created_at: "2026-09-25T11:00:00Z", workout_title: title, exercise_code: "A1", exercise_name: "Hip Thrust Machine" },
+      { session_id: "older", entry_date: "2026-09-25", created_at: "2026-09-25T10:00:00Z", workout_title: title, exercise_code: "A1", exercise_name: "Bench Press" }
+    ]
+  });
+  assert.equal(context.latestWorkoutLogSummary().title, "Glutes Workout");
+});
+
 test("CSV export and copy status use readable names without mutating source records", () => {
   const row = Object.freeze({ workout_title: stored, entry_date: "2026-09-25", exercise_code: "A1", exercise_name: "Squat", set_number: 1, set_type: "working" });
-  const context = evaluate(["workoutHistoryCsv", "csvCell", "customWorkoutCopyStatusMessage"], {
+  const context = evaluate(["automaticCustomWorkoutDisplayTitle", "clientWorkoutHistorySessionKey", "workoutHistoryCsv", "csvCell", "customWorkoutCopyStatusMessage"], {
     warmupExerciseCode: "WARMUP", cardioExerciseCode: "CARDIO", warmUpSetType: "warm_up",
+    approvedExerciseForName: () => null, normalizeMuscle: () => "", inferExerciseMuscles: () => [],
     sortedTrainingLogsForExport: (rows) => rows, csvSectionForLog: () => "Superset A",
     setNumberLabel: String, normalizedSetType: (value) => value, workoutDifficultyForLog: () => null,
     formatLogDate: String
@@ -80,16 +136,18 @@ test("CSV export and copy status use readable names without mutating source reco
   assert.equal(row.workout_title, stored);
 });
 
-test("log headings, accessible actions, confirmation and share summary use the formatter", () => {
+test("log headings, accessible actions, confirmation and share summary use readable names", () => {
   const render = functionSource("renderClientTrainingLogs");
-  assert.match(render, /const displayTitle = workoutDisplayTitle\(workout.workout_title\)/);
+  assert.match(render, /const displayTitle = automaticCustomWorkoutDisplayTitle\(workout.workout_title, workout.logs\)/);
   assert.match(render, /<h3>\$\{escapeHtml\(\[displayTitle, workout\.gym_name\]\.filter\(Boolean\)\.join\(" · "\)\)\}<\/h3>/);
   assert.match(render, /Copy \$\{displayTitle\}/);
   assert.match(render, /Share \$\{displayTitle\}/);
-  assert.match(functionSource("deleteClientWorkoutHistory"), /workoutDisplayTitle\(first.workout_title\)/);
+  assert.match(functionSource("deleteClientWorkoutHistory"), /automaticCustomWorkoutDisplayTitle\(first.workout_title, target.rows\)/);
   const row = Object.freeze({ workout_title: stored, session_id: id, entry_date: "2026-09-25", exercise_code: "A1", exercise_name: "Squat" });
-  const context = evaluate(["workoutCompletionShareSummary", "clientWorkoutHistorySessionKey", "workoutFeedbackSessionId"], {
+  const context = evaluate(["automaticCustomWorkoutDisplayTitle", "workoutCompletionShareSummary", "clientWorkoutHistorySessionKey", "workoutFeedbackSessionId"], {
     window: {}, warmupExerciseCode: "WARMUP", todayDate: () => "2026-09-25",
+    cardioExerciseCode: "CARDIO", approvedExerciseForName: () => null,
+    normalizeMuscle: () => "", inferExerciseMuscles: () => [],
     completedWorkoutCountForWeek: () => 1, workoutDifficultyLabel: () => "", workoutElapsedTimeLabel: () => ""
   });
   const summary = context.workoutCompletionShareSummary([row]);
