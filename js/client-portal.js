@@ -192,6 +192,7 @@ const cardioExerciseCode = "CARDIO";
 const warmUpSetNumberBase = 1000;
 const workingSetType = "working";
 const warmUpSetType = "warm_up";
+const customWorkoutGroupedLogQueues = new WeakMap();
 const customWorkoutDefaultWorkingSetCount = 3;
 const customWorkoutDraftVersion = 2;
 const clientDashboardUrl = "client-dashboard.html?v=manual-sessions-1";
@@ -7129,6 +7130,7 @@ function serializeSetRowDraft(row) {
     weight: row.querySelector("[data-set-weight]")?.value || "",
     reps: row.querySelector("[data-set-reps]")?.value || "",
     setType: setTypeForRow(row),
+    specialSetType: row.dataset.specialSetType || "",
     rir: row.dataset.repsInReserve || "",
     complete: row.classList.contains("is-complete") || completeButton?.getAttribute("aria-pressed") === "true",
     groupedRoundRequired: row.dataset.groupedRoundRequired === "true",
@@ -7222,6 +7224,8 @@ function applyCustomSetDraft(row, draftSet) {
 
   row.dataset.setType = setType;
   row.dataset.timedSet = draftSet?.timed === true ? "true" : "false";
+  if (["drop", "failure"].includes(draftSet?.specialSetType)) row.dataset.specialSetType = draftSet.specialSetType;
+  else delete row.dataset.specialSetType;
   if (draftSet?.groupedRoundRequired) {
     row.dataset.groupedRoundRequired = "true";
   } else {
@@ -10348,6 +10352,69 @@ function customWorkoutGroupedCanonicalRow(carousel, exerciseIndex, setType, setN
   return rows[Math.max(0, Number(setNumber) - 1)] || null;
 }
 
+function customWorkoutGroupedRowIdentity(row) {
+  return `${row?.dataset.customGroupedExerciseIndex}|${row?.dataset.customGroupedSetType}|${row?.dataset.customGroupedSetNumber}`;
+}
+
+function setCustomWorkoutGroupedRowError(row, message) {
+  if (!row) return;
+  let error = row.nextElementSibling?.matches?.("[data-custom-grouped-row-error]")
+    ? row.nextElementSibling : null;
+  if (!message) { error?.remove(); return; }
+  if (!error) {
+    error = document.createElement("small");
+    error.className = "custom-workout-grouped-row-error";
+    error.dataset.customGroupedRowError = "";
+    error.setAttribute("role", "alert");
+    row.insertAdjacentElement("afterend", error);
+  }
+  error.textContent = message;
+}
+
+function nextCustomWorkoutGroupedExerciseIndex(carousel, currentIndex) {
+  const logs = customWorkoutGroupedLogElements(carousel);
+  if (logs.length < 2 || !["superset", "circuit"].includes(carousel?.dataset.customWorkoutFormat)) return -1;
+  const following = Array.from({ length: logs.length - 1 }, (_, offset) =>
+    (currentIndex + offset + 1) % logs.length);
+  return [...following, currentIndex].find((index) =>
+    customWorkoutGroupedRows(logs[index], workingSetType).some((row) => !row.classList.contains("is-complete"))) ?? -1;
+}
+
+function scrollToNextCustomWorkoutGroupedExercise(carousel, currentIndex) {
+  const nextIndex = nextCustomWorkoutGroupedExerciseIndex(carousel, currentIndex);
+  if (nextIndex < 0) return;
+  const logElement = customWorkoutGroupedLogElements(carousel)[nextIndex];
+  delete logElement.dataset.exerciseManuallyCollapsed;
+  refreshCustomWorkoutGroupedCompletion(carousel);
+  window.requestAnimationFrame(() => {
+    if (!carousel.isConnected) return;
+    const block = carousel.querySelector(`[data-ios-log-exercise-index="${nextIndex}"]`);
+    const row = Array.from(block?.querySelectorAll('.custom-workout-grouped-row[data-custom-grouped-set-type="working"]') || [])
+      .find((visible) => !customWorkoutGroupedCanonicalRow(carousel, nextIndex, workingSetType,
+        visible.dataset.customGroupedSetNumber)?.classList.contains("is-complete"));
+    (row || block)?.scrollIntoView?.({ block: "center", behavior: "smooth" });
+  });
+}
+
+async function drainCustomWorkoutGroupedLogQueue(carousel) {
+  if (carousel?.dataset.customGroupedQueueDraining === "true") return;
+  carousel.dataset.customGroupedQueueDraining = "true";
+  try {
+    const queue = customWorkoutGroupedLogQueues.get(carousel) || [];
+    while (queue.length && carousel.isConnected) {
+      const identity = queue.shift();
+      refreshCustomWorkoutGroupedCompletion(carousel);
+      const row = Array.from(carousel.querySelectorAll(".custom-workout-grouped-row"))
+        .find((candidate) => customWorkoutGroupedRowIdentity(candidate) === identity);
+      const button = row?.querySelector("[data-custom-grouped-set-toggle]");
+      if (button && !button.disabled) await toggleCustomWorkoutGroupedSet(button);
+    }
+  } finally {
+    delete carousel.dataset.customGroupedQueueDraining;
+    refreshCustomWorkoutGroupedCompletion(carousel);
+  }
+}
+
 function setCustomWorkoutGroupedRowComplete(row, complete) {
   const isComplete = Boolean(complete);
 
@@ -11087,19 +11154,22 @@ function refreshCustomWorkoutGroupedCompletion(carousel) {
     );
     const complete = canonicalRow?.classList.contains("is-complete") || false;
     const code = visibleRow.querySelector("[data-custom-grouped-set-toggle]");
+    const queued = (customWorkoutGroupedLogQueues.get(carousel) || [])
+      .includes(customWorkoutGroupedRowIdentity(visibleRow));
 
     visibleRow.classList.toggle("is-complete", complete);
     if (code) {
       code.setAttribute("aria-pressed", String(complete));
       const context = (code.getAttribute("aria-label") || "")
-        .replace(/^(Log|Edit|Reopen|Mark)\s+/, "")
+        .replace(/^(Log|Edit|Reopen|Mark|Queued)\s+/, "")
+        .replace(/\s+to log$/, "")
         .replace(/\s+not logged$/, "");
-      code.disabled = carousel.dataset.customGroupedRowSaving === "true";
-      code.setAttribute("aria-label", complete
-        ? `Edit ${context}`
-        : `Log ${context}`);
+      code.disabled = queued || (carousel.dataset.customGroupedRowSaving === "true" && complete);
+      code.setAttribute("aria-busy", String(queued));
+      code.setAttribute("aria-label", queued ? `Queued ${context} to log` :
+        complete ? `Edit ${context}` : `Log ${context}`);
       const check = code.querySelector("span");
-      if (check) check.textContent = complete ? "✓" : "";
+      if (check) check.textContent = queued ? "⌛" : complete ? "✓" : "";
     }
     if (complete && visibleRow.dataset.customGroupedSetType !== warmUpSetType) completeCount += 1;
   });
@@ -11457,6 +11527,7 @@ function syncCustomWorkoutGroupedField(input) {
   }
 
   input.removeAttribute("aria-invalid");
+  setCustomWorkoutGroupedRowError(visibleRow, "");
   persistCustomWorkoutDraftForElement(canonicalRow);
   refreshCustomWorkoutGroupedCompletion(carousel);
 }
@@ -11469,6 +11540,7 @@ function validateCustomWorkoutGroupedSection(section, options = {}) {
   let firstInvalid = null;
 
   rows.forEach((row) => {
+    setCustomWorkoutGroupedRowError(row, "");
     const weight = row.querySelector('[data-custom-grouped-field="weight"]');
     const reps = row.querySelector('[data-custom-grouped-field="reps"]');
     const isWarmUp = row.dataset.customGroupedSetType === warmUpSetType;
@@ -11508,6 +11580,7 @@ function validateCustomWorkoutGroupedSection(section, options = {}) {
 
   if (firstInvalid && status) {
     status.textContent = "Enter weight (0 is allowed) and reps (0 is allowed for warm-ups). Working reps must be above 0.";
+    setCustomWorkoutGroupedRowError(firstInvalid.closest(".custom-workout-grouped-row"), status.textContent);
   }
   if (firstInvalid && options.focus !== false) firstInvalid.focus();
 
@@ -11804,7 +11877,16 @@ async function toggleCustomWorkoutGroupedSet(button) {
   );
   const status = customWorkoutGroupedStatus(carousel);
 
-  if (!visibleRow || !canonicalRow || !carousel || button.disabled || carousel.dataset.customGroupedRowSaving === "true") return { saved: false };
+  if (!visibleRow || !canonicalRow || !carousel || button.disabled) return { saved: false };
+  if (carousel.dataset.customGroupedRowSaving === "true") {
+    if (canonicalRow.classList.contains("is-complete")) return { saved: false };
+    const queue = customWorkoutGroupedLogQueues.get(carousel) || [];
+    const identity = customWorkoutGroupedRowIdentity(visibleRow);
+    if (!queue.includes(identity)) queue.push(identity);
+    customWorkoutGroupedLogQueues.set(carousel, queue);
+    refreshCustomWorkoutGroupedCompletion(carousel);
+    return { saved: false, queued: true };
+  }
 
   if (canonicalRow.classList.contains("is-complete")) {
     canonicalRow.dataset.customGroupedReopened = "true";
@@ -11856,9 +11938,13 @@ async function toggleCustomWorkoutGroupedSet(button) {
     setCustomWorkoutGroupedRowComplete(canonicalRow, false);
     persistCustomWorkoutDraftForElement(carousel);
     refreshCustomWorkoutGroupedCompletion(carousel);
+    setCustomWorkoutGroupedRowError(visibleRow,
+      status?.textContent || "This set could not be saved. Your entries are still here; try Log again.");
+    void drainCustomWorkoutGroupedLogQueue(carousel);
     return result;
   }
 
+  setCustomWorkoutGroupedRowError(visibleRow, "");
   if (!isWarmUp) autoCopyCustomWorkoutGroupedNextRound(carousel, roundNumber);
   if (!workoutElapsedTimerState) {
     const panels = Array.from(document.querySelectorAll(".client-workout-panel"));
@@ -11887,6 +11973,10 @@ async function toggleCustomWorkoutGroupedSet(button) {
       renderCustomWorkoutGroupedRestControls();
     }
   }
+  if (!(customWorkoutGroupedLogQueues.get(carousel) || []).length) {
+    scrollToNextCustomWorkoutGroupedExercise(carousel, Number(visibleRow.dataset.customGroupedExerciseIndex) || 0);
+  }
+  void drainCustomWorkoutGroupedLogQueue(carousel);
   return result;
 }
 
@@ -11903,14 +11993,19 @@ function openCustomWorkoutGroupedSetOptions(button) {
   const isWarmUp = setTypeForRow(row) === warmUpSetType;
   const workingRows = customWorkoutGroupedRows(logElement, workingSetType);
   const label = String(button.textContent || "Set").trim();
+  const currentKind = isWarmUp ? warmUpSetType : row.dataset.timedSet === "true" ? "timed" :
+    (["drop", "failure"].includes(row.dataset.specialSetType) ? row.dataset.specialSetType : workingSetType);
   const dialog = document.createElement("dialog");
   dialog.className = "custom-workout-exercise-dialog custom-workout-set-options-dialog";
   dialog.dataset.setOptionsDialog = "";
-  dialog.innerHTML = `<header><h2>${escapeHtml(label)} options</h2><button type="button" data-close-set-options aria-label="Close set options">×</button></header>
+  dialog.innerHTML = `<header><h2>Set options</h2><button type="button" data-close-set-options aria-label="Close set options">×</button></header>
     <div class="custom-workout-set-options">
-      <button type="button" data-set-option="timed">${row.dataset.timedSet === "true" ? "Use reps instead of time" : "Make this a timed set (seconds)"}</button>
+      ${[[workingSetType, "Working"], [warmUpSetType, "Warm-up"], ["drop", "Drop"],
+        ["failure", "Failure"], ["timed", "Timed"]].map(([kind, title]) =>
+        `<button type="button" data-set-option="${kind}" aria-pressed="${currentKind === kind}"
+          ${kind === warmUpSetType && !isWarmUp && workingRows.length <= 1 ? "disabled" : ""}>${title}</button>`).join("")}
       ${row.classList.contains("is-complete") ? '<button type="button" data-set-option="reopen">Reopen set</button>' : ""}
-      <button type="button" data-set-option="delete" ${!isWarmUp && workingRows.length <= 1 ? "disabled" : ""}>Delete ${isWarmUp ? "warm-up" : "set"}</button>
+      <button type="button" data-set-option="delete" ${!isWarmUp && workingRows.length <= 1 ? "disabled" : ""}>Delete set</button>
     </div>`;
   dialog.addEventListener("click", (event) => {
     if (event.target.closest("[data-close-set-options]")) return dialog.close();
@@ -11920,11 +12015,21 @@ function openCustomWorkoutGroupedSetOptions(button) {
       const logButton = visibleRow.querySelector("[data-custom-grouped-set-toggle]");
       if (logButton) toggleCustomWorkoutGroupedSet(logButton);
     }
-    if (action === "timed") {
+    if ([workingSetType, warmUpSetType, "drop", "failure", "timed"].includes(action) && action !== currentKind) {
       const wasLogged = row.classList.contains("is-complete");
-      row.dataset.timedSet = row.dataset.timedSet === "true" ? "false" : "true";
-      row.querySelector("[data-set-reps]").value = "";
-      setCustomWorkoutGroupedRowComplete(row, false);
+      const wasTimed = row.dataset.timedSet === "true";
+      row.dataset.setType = action === warmUpSetType ? warmUpSetType : workingSetType;
+      row.dataset.timedSet = action === "timed" ? "true" : "false";
+      if (["drop", "failure"].includes(action)) row.dataset.specialSetType = action;
+      else delete row.dataset.specialSetType;
+      const labelInput = row.querySelector("[data-set-label]");
+      if (labelInput) labelInput.value = action === warmUpSetType ? "W" : "1";
+      if (wasTimed !== (action === "timed")) {
+        row.querySelector("[data-set-reps]").value = "";
+        setCustomWorkoutGroupedRowComplete(row, false);
+      }
+      renumberSetRows(logElement);
+      syncVisibleSetTarget(logElement);
       if (wasLogged) logElement.dataset.removedSetPending = "true";
       persistCustomWorkoutDraftForElement(row);
       renderCustomWorkoutGroupedCard(carousel);
@@ -16023,7 +16128,11 @@ function updateExerciseLogField(logElement) {
       weightInput.value = selectedLog?.weight_used ?? "";
     }
 
-    if (selectedLog) row.dataset.timedSet = selectedLog.set_type === "timed" ? "true" : "false";
+    if (selectedLog) {
+      row.dataset.timedSet = selectedLog.set_type === "timed" ? "true" : "false";
+      if (["drop", "failure"].includes(selectedLog.set_type)) row.dataset.specialSetType = selectedLog.set_type;
+      else delete row.dataset.specialSetType;
+    }
     if (repsInput) {
       repsInput.value = selectedLog?.set_type === "timed" ? selectedLog?.duration_seconds ?? "" : selectedLog?.reps ?? "";
     }
@@ -22524,7 +22633,9 @@ function rowsForTrainingLog(logElement) {
           exercise_code: logElement.dataset.exerciseCode,
           exercise_name: exerciseName,
           set_number: Number(setRow.dataset.setNumber || 1),
-          set_type: setRow.dataset.timedSet === "true" ? "timed" : setType,
+          set_type: setRow.dataset.timedSet === "true" ? "timed" :
+            setType === warmUpSetType ? warmUpSetType :
+              (["drop", "failure"].includes(setRow.dataset.specialSetType) ? setRow.dataset.specialSetType : workingSetType),
           duration_seconds: setRow.dataset.timedSet === "true" ? values.repsValue : null,
           ...(isSetRowLogged(setRow) && typeof workoutProgressionLogTarget === "function" ? workoutProgressionLogTarget(logElement) : {}),
           weight_used: values.weightRaw === "" ? 0 : values.weightValue,
