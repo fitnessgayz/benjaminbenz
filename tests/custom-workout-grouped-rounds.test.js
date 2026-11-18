@@ -332,7 +332,7 @@ test("accepts optional warm-ups while validating working reps", () => {
   const validateSection = Function(
     "customWorkoutGroupedStatus",
     "warmUpSetType",
-    `${placeholder}; ${applyPlaceholder}; ${validate}; return validateCustomWorkoutGroupedSection;`,
+    `const setCustomWorkoutGroupedRowError = () => {}; ${placeholder}; ${applyPlaceholder}; ${validate}; return validateCustomWorkoutGroupedSection;`,
   )(() => null, "warm_up");
   const input = (value) => ({
     value,
@@ -388,6 +388,7 @@ test("grey numeric set values become logged inputs, with zero allowed only for w
   const validate = Function("canonical", "warmUpSetType", `
     const customWorkoutGroupedStatus = () => null;
     const customWorkoutGroupedCanonicalRow = () => canonical;
+    const setCustomWorkoutGroupedRowError = () => {};
     ${source}
     return validateCustomWorkoutGroupedSection;
   `)(canonical, "warm_up");
@@ -762,13 +763,14 @@ test("rolls warm-up completion back to its prior state when a grouped save fails
   );
 });
 
-test("makes grouped Log boxes accessible and disables them only during a save", () => {
+test("keeps other grouped Log boxes available during a save and marks queued taps", () => {
   const rowMarkup = sourceForFunction("customWorkoutGroupedSetRowMarkup");
   const refresh = sourceForFunction("refreshCustomWorkoutGroupedCompletion");
 
   assert.match(rowMarkup, /aria-label="\$\{escapeHtml\(complete \? `Edit \$\{context\}` : `Log \$\{context\}`\)\}"/);
   assert.match(rowMarkup, /data-custom-grouped-set-toggle/);
-  assert.match(refresh, /code\.disabled = carousel\.dataset\.customGroupedRowSaving === "true"/);
+  assert.match(refresh, /code\.disabled = queued \|\| \(carousel\.dataset\.customGroupedRowSaving === "true" && complete\)/);
+  assert.match(refresh, /code\.setAttribute\("aria-busy", String\(queued\)\)/);
   assert.match(refresh, /`Log \$\{context\}`/);
 });
 
@@ -829,4 +831,76 @@ test("keys grouped timer rendering, conflicts, and start-resume behavior by titl
     /const isActiveWorkout = Boolean\([\s\S]*?workoutTitle === String\(workoutElapsedTimerState\.workoutTitle \|\| ""\)\.trim\(\) &&[\s\S]*?workoutDate === String\(workoutElapsedTimerState\.workoutDate \|\| ""\)[\s\S]*?\)/,
   );
   assert.match(interactions, /startWorkoutElapsedTimer\(workoutTitle, \{ workoutDate, panelIndex \}\)/);
+});
+
+test("grouped Log advances through unfinished exercises and wraps to the next round", () => {
+  const source = sourceForFunction("nextCustomWorkoutGroupedExerciseIndex");
+  const logs = [
+    { rows: [true, false] },
+    { rows: [false] },
+    { rows: [false, false] },
+  ];
+  const next = Function("logs", "workingSetType", `
+    const customWorkoutGroupedLogElements = () => logs;
+    const customWorkoutGroupedRows = (log) => log.rows.map((complete) => ({
+      classList: { contains: () => complete }
+    }));
+    ${source}
+    return nextCustomWorkoutGroupedExerciseIndex;
+  `)(logs, "working");
+  const carousel = { dataset: { customWorkoutFormat: "circuit" } };
+
+  assert.equal(next(carousel, 0), 1);
+  logs[1].rows[0] = true;
+  assert.equal(next(carousel, 1), 2);
+  logs[2].rows = [true, true];
+  assert.equal(next(carousel, 2), 0);
+  logs[0].rows[1] = true;
+  assert.equal(next(carousel, 0), -1);
+  carousel.dataset.customWorkoutFormat = "single";
+  logs[1].rows[0] = false;
+  assert.equal(next(carousel, 0), -1);
+});
+
+test("set options expose every supported set type and persist drop or failure", () => {
+  const menu = sourceForFunction("openCustomWorkoutGroupedSetOptions");
+  const serialize = sourceForFunction("serializeSetRowDraft");
+  const save = sourceForFunction("rowsForTrainingLog");
+  assert.match(menu, /\[workingSetType, "Working"\]/);
+  assert.match(menu, /\[warmUpSetType, "Warm-up"\]/);
+  assert.match(menu, /\["drop", "Drop"\]/);
+  assert.match(menu, /\["failure", "Failure"\]/);
+  assert.match(menu, /\["timed", "Timed"\]/);
+  assert.match(menu, /data-set-option="delete"/);
+  assert.match(serialize, /specialSetType: row\.dataset\.specialSetType/);
+  assert.match(save, /\["drop", "failure"\]\.includes\(setRow\.dataset\.specialSetType\)/);
+});
+
+test("queued grouped Log taps run in order after a save", async () => {
+  const source = sourceForFunction("drainCustomWorkoutGroupedLogQueue").replace(/^function /, "async function ");
+  const queue = new WeakMap();
+  const logged = [];
+  const rows = ["0|working|1", "1|working|1"].map((identity) => ({
+    identity,
+    querySelector: () => ({ identity, disabled: false })
+  }));
+  const carousel = {
+    dataset: {},
+    isConnected: true,
+    querySelectorAll: () => rows
+  };
+  queue.set(carousel, rows.map((row) => row.identity));
+  const drain = Function("queue", "logged", `
+    const customWorkoutGroupedLogQueues = queue;
+    const customWorkoutGroupedRowIdentity = (row) => row.identity;
+    const refreshCustomWorkoutGroupedCompletion = () => {};
+    const toggleCustomWorkoutGroupedSet = async (button) => { logged.push(button.identity); };
+    ${source}
+    return drainCustomWorkoutGroupedLogQueue;
+  `)(queue, logged);
+
+  await drain(carousel);
+  assert.deepEqual(logged, ["0|working|1", "1|working|1"]);
+  assert.deepEqual(queue.get(carousel), []);
+  assert.equal(carousel.dataset.customGroupedQueueDraining, undefined);
 });
