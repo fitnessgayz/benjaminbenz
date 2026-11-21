@@ -104,14 +104,14 @@ test("straight, superset and circuit rest waits for the final exercise in the ro
         filledSetCount: () => 1, setWorkoutCarouselAutosaveState() {},
         saveTrainingLogRows: async () => ({ saved: true }),
         workoutGroupReadyForRest: (_format, size) => size >= count, autoRestTimerEnabled: () => true,
-        workoutCarouselRestSeconds: () => 60,
+        workoutRestSecondsForLogs: () => 60,
         setRestTimerDuration: () => timerCalls.push("duration"),
         openRestTimer: () => timerCalls.push("open"),
         startOrPauseRestTimer: () => timerCalls.push("start"),
         moveCustomWorkoutCarousel() {}, renderCustomWorkoutCarousel() {}
       });
       await ctx.logCurrentWorkoutCarouselSet({ closest: () => carousel });
-      assert.deepEqual(timerCalls, index === count - 1 ? ["duration", "open", "start"] : [],
+      assert.deepEqual(timerCalls, index === count - 1 ? ["open", "start"] : [],
         `${format} exercise ${index + 1} of ${count}`);
     }
   }

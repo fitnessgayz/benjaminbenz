@@ -438,20 +438,21 @@ test("missing generator assets produce a recoverable message", () => {
   assert.match(alerts[0], /Refresh the page/);
 });
 
-test("generated rest buttons use the prescribed duration while ordinary workout buttons retain the chosen timer", () => {
+test("manual rest buttons use resolved durations and remain available when automatic rest is off", () => {
   for (const [dataset, expectedSeconds] of [
     [{ generatedExercise: "true", exerciseRest: "75 seconds" }, 75],
     [{ generatedExercise: "true", exerciseRest: "1.5 minutes" }, 90],
-    [{ generatedExercise: "true", exerciseRest: "" }, null],
-    [{ exerciseRest: "75 seconds" }, null]
+    [{ generatedExercise: "true", exerciseRest: "" }, 60],
+    [{ exerciseRest: "75 seconds" }, 75]
   ]) {
     const durations = [];
     const classes = [];
     let focused = false;
-    const overlay = { hidden: true, querySelector: () => ({ focus() { focused = true; } }) };
+    const overlay = { hidden: true, dataset: {}, querySelector: (selector) => selector === "[data-rest-timer-start]" ? ({ focus() { focused = true; } }) : null };
     const button = { closest: () => ({ dataset }) };
     const context = evaluate(["workoutCarouselRestSeconds", "openRestTimer"], {
       ensureRestTimer: () => overlay,
+      workoutRestSecondsForLogs: ([log]) => log.dataset.exerciseRest ? context.workoutCarouselRestSeconds(log.dataset.exerciseRest) : 0,
       setRestTimerDuration: (seconds) => durations.push(seconds),
       renderRestTimer: () => {},
       document: { body: { classList: { add: (value) => classes.push(value) } } },
@@ -467,11 +468,11 @@ test("generated rest buttons use the prescribed duration while ordinary workout 
   }
 });
 
-test("logging a generated set uses its prescribed rest and mixed groups use the longest generated rest", async () => {
+test("grouped logging uses the longest resolved rest and never starts after a failed save", async () => {
   for (const [specs, expectedRest, saved] of [
     [[{ generatedExercise: "true", exerciseRest: "75 seconds" }], 75, true],
-    [[{ generatedExercise: "true", exerciseRest: "75 seconds" }, { generatedExercise: "true", exerciseRest: "1.5 minutes" }, { exerciseRest: "180 seconds" }], 90, true],
-    [[{ exerciseRest: "180 seconds" }], null, true],
+    [[{ generatedExercise: "true", exerciseRest: "75 seconds" }, { generatedExercise: "true", exerciseRest: "1.5 minutes" }, { exerciseRest: "180 seconds" }], 180, true],
+    [[{ exerciseRest: "180 seconds" }], 180, true],
     [[{ generatedExercise: "true", exerciseRest: "75 seconds" }], null, false]
   ]) {
     const calls = [];
@@ -497,6 +498,7 @@ test("logging a generated set uses its prescribed rest and mixed groups use the 
       requireWorkoutGymLocation: () => true,
       customWorkoutGroupedStatus: () => ({}),
       customWorkoutGroupedLogElements: () => logs,
+      workoutRestSecondsForLogs: (items) => Math.max(...items.map(log => context.workoutCarouselRestSeconds(log.dataset.exerciseRest))),
       workoutGroupReadyForRest: () => true,
       customWorkoutGroupedRows: (log) => log.rows,
       customWorkoutGroupedTimerConflict: () => false,
@@ -523,7 +525,7 @@ test("logging a generated set uses its prescribed rest and mixed groups use the 
     const result = await context.logCustomWorkoutGroupedRound(button);
     assert.equal(result.saved, saved);
     assert.deepEqual(calls, saved
-      ? [["save"], ...(expectedRest === null ? [] : [["duration", expectedRest]]), ["reset"], ["start"]]
+      ? [["save"], ...(expectedRest === null ? [] : [["duration", expectedRest], ["start"]])]
       : [["save"]]);
     assert.equal(context.customWorkoutGroupedRestAction, saved ? restAction : null);
     assert.ok(logs.every((log) => log.rows[0].classList.contains("is-complete") === saved));

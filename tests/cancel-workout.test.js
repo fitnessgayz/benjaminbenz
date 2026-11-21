@@ -29,7 +29,9 @@ function session({ running = true, dismissed = false, confirm = true, storageThr
     customWorkoutGroupedRestAction: {},
     clientPreviewProgramSelected: true,
     currentProgram: { workouts: [] },
-    document: { getElementById: () => picker },
+    document: { getElementById: () => picker, querySelectorAll: () => [] },
+    readCustomWorkoutDraft: () => null,
+    renderClientWorkoutTabs: () => { picker.innerHTML = "program choices"; },
     window: {
       confirm: message => { events.push(["confirm", message]); return confirm; },
       clearInterval: id => events.push(["clearInterval", id]),

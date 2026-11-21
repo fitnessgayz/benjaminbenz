@@ -176,6 +176,9 @@
         reps: row.querySelector("[data-set-reps]")?.value || "" }));
     try { context.storage?.setItem(key(log, context) + ":draft", JSON.stringify(rows)); } catch (_) { /* Keep live input intact. */ }
   }
+  function clearPending(log, context) {
+    try { context.storage?.removeItem(key(log, context) + ":draft"); } catch (_) { /* Best effort. */ }
+  }
   function restorePending(log, context) {
     const contextKey = key(log, context);
     if (log.dataset.progressionDraftRestored === contextKey) return;
@@ -201,5 +204,5 @@
     return Boolean(error && ["PGRST204", "42703"].includes(error.code) &&
       /progression_target/i.test(String(error.message || "")) && /column|schema cache/i.test(String(error.message || "")));
   }
-  return { configFor, freeze, recommendation, markup, render, applyRecommendationPlaceholders, apply, configure, serialize, restore, persistPending, restorePending, isPending, isMissingTargetColumn };
+  return { configFor, freeze, recommendation, markup, render, applyRecommendationPlaceholders, apply, configure, serialize, restore, persistPending, clearPending, restorePending, isPending, isMissingTargetColumn };
 }));

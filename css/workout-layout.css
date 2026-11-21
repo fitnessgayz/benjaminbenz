@@ -146,3 +146,11 @@
     aspect-ratio: 345 / 240;
   }
 }
+
+/* A workout preview is browseable before starting or logging anything. */
+.workout-preview-guide { border:0; background:transparent; color:inherit; text-align:left; padding:4px 0; cursor:pointer; min-height:38px; }
+.workout-preview-guide:hover strong, .workout-preview-guide:focus-visible strong { text-decoration:underline; }
+.workout-prescription small { display:block; font-size:10px; margin-top:3px; font-weight:700; }
+.exercise-media-dialog-instructions p { white-space:pre-line; }
+.workout-exercise-rest-choice:not([hidden]), .workout-floating-more label { display:grid; gap:5px; font-size:12px; }
+.exercise-media-dialog-stage[hidden] { display:none; }

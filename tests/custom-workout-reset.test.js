@@ -98,8 +98,8 @@ test("wires the reset action and cache-busts its assets", () => {
   assert.match(dashboard, /js\/client-portal\.js\?v=[^"\s]*workout-preview-1/);
 });
 
-test("mobile workout bar keeps Reset behind More after starting, for custom and prescribed logs", () => {
-  const barMarkup = Function(`${sourceForFunction("floatingWorkoutFinishMarkup")}; return floatingWorkoutFinishMarkup;`)();
+test("mobile workout bar exposes scope-limited Discard and Finish later under More", () => {
+  const barMarkup = Function("workoutRestOptionsMarkup", `${sourceForFunction("floatingWorkoutFinishMarkup")}; return floatingWorkoutFinishMarkup;`)(() => "");
   const customBar = barMarkup();
   const assignedBar = barMarkup({ assigned: true });
 
@@ -107,6 +107,9 @@ test("mobile workout bar keeps Reset behind More after starting, for custom and 
     assert.match(markup, /data-floating-workout-reset-action[^>]*>Reset<\/button>/);
     assert.match(markup, /data-floating-workout-start-action>Start workout<\/button>/);
     assert.match(markup, /data-floating-workout-more hidden>[\s\S]*More workout actions/);
+    assert.match(markup, /data-workout-rest-override/);
+    assert.match(markup, /data-workout-finish-later>Finish later/);
+    assert.match(markup, /data-cancel-active-workout>Discard workout/);
     assert.match(markup, /data-floating-workout-finish-action[^>]*hidden>Save &amp; finish workout<\/button>/);
   }
   assert.match(customBar, /data-reset-custom-workout/);

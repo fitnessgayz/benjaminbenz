@@ -67,7 +67,7 @@ test("set Log box follows reps and starts the rest timer after a saved working s
   assert.match(rowMarkupSource, /aria-pressed="false"/);
   assert.match(interactionsSource, /completeSetButton[\s\S]*classList\.add\("is-complete"\)/);
   assert.match(interactionsSource, /completeSetButton[\s\S]*animateCompletedSet\(setRow\)/);
-  assert.match(interactionsSource, /completeSetButton[\s\S]*await saveTrainingLogRows\(completeSetButton[\s\S]*if \(!isWarmUp && autoRestTimerEnabled\(\)[\s\S]*resetRestTimer\(\)[\s\S]*openRestTimer\(completeSetButton\)[\s\S]*startOrPauseRestTimer\(\)/);
+  assert.match(interactionsSource, /completeSetButton[\s\S]*await saveTrainingLogRows\(completeSetButton[\s\S]*if \(!isWarmUp && workoutRestSecondsForLogs\(\[logElement\]\) > 0[\s\S]*openRestTimer\(completeSetButton\)[\s\S]*startOrPauseRestTimer\(\)/);
   assert.match(styleSource, /grid-template-columns:\s*52px minmax\(0, 1fr\) minmax\(0, 1fr\) 60px 48px/);
   assert.match(styleSource, /\.set-complete-button\s*\{[^}]*width:\s*48px;[^}]*height:\s*48px;/s);
   assert.match(styleSource, /fwb-set-completion-sweep/);
@@ -89,10 +89,10 @@ test("automatic rest can be turned off without removing manual timer controls", 
 
   assert.match(dashboardSource, /data-auto-rest-timer checked/);
   assert.doesNotMatch(sourceForFunction("logCustomWorkoutGroupedWarmUp"), /startOrPauseRestTimer\(\)/);
-  assert.match(sourceForFunction("logCustomWorkoutGroupedRound"), /if \(autoRestTimerEnabled\(\) && workoutGroupReadyForRest\(carousel\.dataset\.customWorkoutFormat, logElements\.length\)\)/);
+  assert.match(sourceForFunction("logCustomWorkoutGroupedRound"), /if \(restSeconds > 0 && workoutGroupReadyForRest\(carousel\.dataset\.customWorkoutFormat, logElements\.length\)\)/);
   assert.match(sourceForFunction("toggleCustomWorkoutGroupedSet"), /workoutGroupReadyForRest\(carousel\.dataset\.customWorkoutFormat, customWorkoutGroupedLogElements\(carousel\)\.length\)/);
-  assert.match(sourceForFunction("logCurrentWorkoutCarouselSet"), /completedRound && workoutGroupReadyForRest\(format, cards\.length\) && autoRestTimerEnabled\(\)/);
-  assert.match(sourceForFunction("handleWorkoutInteractions"), /if \(!isWarmUp && autoRestTimerEnabled\(\) && [^\n]+\) \{\s*resetRestTimer\(\);\s*openRestTimer\(completeSetButton\)/);
+  assert.match(sourceForFunction("logCurrentWorkoutCarouselSet"), /completedRound && workoutGroupReadyForRest\(format, cards\.length\) && workoutRestSecondsForLogs\(\[logElement\]\) > 0/);
+  assert.match(sourceForFunction("handleWorkoutInteractions"), /if \(!isWarmUp && workoutRestSecondsForLogs\(\[logElement\]\) > 0 && [^\n]+\) \{\s*openRestTimer\(completeSetButton\)/);
   assert.match(sourceForFunction("handleWorkoutInteractions"), /if \(setRestButton\) \{[\s\S]*?openRestTimer\(setRestButton\)/);
 });
 
@@ -116,19 +116,19 @@ test("automatic rest preference saves immediately when the Settings switch chang
     checked: true,
     addEventListener: (name, callback) => { listeners[name] = callback; }
   };
-  const document = { querySelector: () => input };
+  const document = { querySelector: selector => selector === "[data-auto-rest-timer]" ? input : null, addEventListener() {} };
   const window = {
     localStorage: { setItem: (key, value) => writes.push([key, value]) },
     addEventListener: (name, callback) => { listeners[name] = callback; }
   };
   const fixture = Function(
     "document", "window", "autoRestTimerPreferenceStorageKey", "syncAutoRestTimerPreference",
-    `let autoRestTimerPreferenceFallback = true; ${sourceForFunction("configureAutoRestTimerPreference")}; configureAutoRestTimerPreference(); return () => autoRestTimerPreferenceFallback;`
+    `let autoRestTimerPreferenceFallback = true, workoutRestDefaultFallback = null; const workoutRestDefaultStorageKey = "test-default-rest"; ${sourceForFunction("configureAutoRestTimerPreference")}; configureAutoRestTimerPreference(); return () => autoRestTimerPreferenceFallback;`
   )(document, window, "test-auto-rest", () => { synchronizations += 1; });
 
   input.checked = false;
   listeners.change();
-  assert.deepEqual(writes, [["test-auto-rest", "false"]]);
+  assert.deepEqual(writes, [["test-auto-rest", "false"], ["test-default-rest", "0"]]);
   assert.equal(fixture(), false);
   assert.equal(synchronizations, 2);
 });
@@ -179,7 +179,7 @@ test("resume state preserves the workout date and exact workout panel", () => {
     "workoutElapsedTimerStorageKey",
     "workoutElapsedTimerMaximumMilliseconds",
     "workoutElapsedTimerIsStale",
-    `${readStateSource}; return readWorkoutElapsedTimerState;`
+    `${sourceForFunction("normalizedWorkoutRestChoice")}; ${readStateSource}; return readWorkoutElapsedTimerState;`
   )(
     { localStorage: { getItem: () => storedValue, removeItem: () => {} } },
     "timer-key",

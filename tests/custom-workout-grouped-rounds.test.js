@@ -452,7 +452,7 @@ test("starts the persistent workout timer and rest timer after a successful roun
   assert.match(logRound, /if \(!workoutElapsedTimerState\)/);
   assert.match(logRound, /startWorkoutElapsedTimer\([\s\S]*?startedAfterRound: roundNumber/);
   assert.match(logRound, /customWorkoutGroupedRestAction/);
-  assert.match(logRound, /resetRestTimer\(\)/);
+  assert.match(logRound, /setRestTimerDuration\(restSeconds\)/);
   assert.match(logRound, /startOrPauseRestTimer\(\)/);
   assert.match(readTimer, /startedAfterRound/);
   assert.match(startTimer, /context\.startedAfterRound/);

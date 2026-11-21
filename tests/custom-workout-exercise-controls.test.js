@@ -462,7 +462,9 @@ test("straight sets stage a suggestion until Add exercise is pressed", () => {
     dataset: { customExerciseSuggestion: "Hip Thrust Machine" }
   });
   assert.deepEqual(fixture.calls.add, []);
-  assert.equal(fixture.input.value, "Hip Thrust Machine");
+  assert.equal(fixture.input.value, "");
+  assert.equal(fixture.confirmation.open, false);
+  fixture.handlers.submit({ preventDefault() {}, stopPropagation() {} });
   assert.equal(fixture.confirmation.open, true);
   assert.match(fixture.confirmation.innerHTML, /Add this exercise to your workout\?/);
   assert.match(fixture.confirmation.innerHTML, /data-confirm-add-card>Add to workout<\/button>/);
@@ -662,6 +664,8 @@ test("empty picker submission does not add a card and a named submission adds ex
   assert.deepEqual(fixture.calls.add, []);
   fixture.input.value = "  Cable Row  ";
   fixture.handlers.submit(event);
+  assert.equal(fixture.confirmation.open, false);
+  fixture.handlers.submit(event);
   assert.equal(fixture.confirmation.open, true);
   fixture.clickPrompt("[data-confirm-add-card]");
   assert.deepEqual(fixture.calls.add, ["Cable Row"]);
@@ -674,8 +678,9 @@ test("exercise selection survives a workout panel refresh while the picker is op
   fixture.panel.isConnected = false;
   fixture.context.document.getElementById = () => currentPanel;
   let target = null;
-  fixture.context.addCustomWorkoutPickedExercise = (panel, name) => { target = { panel, name }; return null; };
+  fixture.context.addCustomWorkoutPickedExercises = (panel, [name]) => { target = { panel, name }; return null; };
   fixture.input.value = "Lat Pulldown Machine";
+  fixture.handlers.submit({ preventDefault() {}, stopPropagation() {} });
   fixture.handlers.submit({ preventDefault() {}, stopPropagation() {} });
   fixture.clickPrompt("[data-confirm-add-card]");
   assert.deepEqual(target, { panel: currentPanel, name: "Lat Pulldown Machine" });

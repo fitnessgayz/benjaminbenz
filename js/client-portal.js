@@ -193,6 +193,7 @@ const warmUpSetNumberBase = 1000;
 const workingSetType = "working";
 const warmUpSetType = "warm_up";
 const customWorkoutGroupedLogQueues = new WeakMap();
+const activeWorkoutLogSaves = new WeakMap();
 const customWorkoutDefaultWorkingSetCount = 3;
 const customWorkoutDraftVersion = 2;
 const clientDashboardUrl = "client-dashboard.html?v=manual-sessions-1";
@@ -207,6 +208,9 @@ const workoutElapsedTimerPositionStorageKey = "fwb_workout_elapsed_timer_positio
 const workoutElapsedTimerMaximumMilliseconds = 24 * 60 * 60 * 1000;
 const restTimerNotificationPreferenceStorageKey = "fwb_rest_timer_notifications_v1";
 const autoRestTimerPreferenceStorageKey = "fwb_auto_rest_timer_v1";
+const workoutRestDefaultStorageKey = "fwb_workout_rest_default_v1";
+let workoutRestDefaultFallback = null;
+const workoutRestOptions = Object.freeze([0, 30, 45, 60, 90, 120, 180, 240, 300]);
 const dailyCheckinPromptStorageKey = "fwb_daily_checkin_prompt_enabled_v1";
 const restTimerNotificationServiceWorkerUrl = "/timer-notifications-sw.js?v=web-push-notifications-1";
 let exerciseLibraryEntries = [];
@@ -2756,9 +2760,10 @@ function renderExerciseMediaDialog(dialog, showVideo = false) {
   const staticUrl = trustedExerciseImageUrl(dialog.dataset.exerciseMediaStatic);
   const videoUrl = trustedExerciseMotionUrl(dialog.dataset.exerciseMediaVideo);
   const demoUrl = exerciseVideoUrl({ name, video: dialog.dataset.exerciseMediaDemo });
-  if (!stage || !staticUrl) return;
+  if (!stage) return;
 
   const shouldShowVideo = Boolean(showVideo && videoUrl);
+  stage.hidden = !shouldShowVideo && !staticUrl;
   stage.classList.toggle("is-branded-card", !shouldShowVideo && isBrandedExerciseImage(staticUrl));
   dialog.dataset.exerciseMediaShowingVideo = String(shouldShowVideo);
   if (toggle) toggle.hidden = !videoUrl;
@@ -2776,7 +2781,7 @@ function renderExerciseMediaDialog(dialog, showVideo = false) {
     : isAnimatedCard ? "Play start/end animation" : "Watch exercise video";
   if (caption) caption.textContent = shouldShowVideo
     ? isAnimatedCard ? "Animated start and end reference" : "Exercise video demonstration"
-    : "Static start and end reference";
+    : staticUrl ? "Static start and end reference" : "";
 
   if (shouldShowVideo) {
     if (isAnimatedCard) {
@@ -2801,6 +2806,7 @@ function renderExerciseMediaDialog(dialog, showVideo = false) {
     return;
   }
 
+  if (!staticUrl) { stage.replaceChildren(); return; }
   const image = document.createElement("img");
   image.src = staticUrl;
   image.alt = `${name} start and end positions`;
@@ -2808,24 +2814,27 @@ function renderExerciseMediaDialog(dialog, showVideo = false) {
   stage.replaceChildren(image);
 }
 
-function openExerciseMedia(button) {
+function openExerciseMedia(button, exercise = null) {
   const dialog = ensureExerciseMediaDialog();
-  const name = String(button?.dataset.exerciseMediaName || "Exercise").trim();
-  const staticUrl = trustedExerciseImageUrl(button?.dataset.exerciseMediaStatic);
-  const videoUrl = trustedExerciseMotionUrl(button?.dataset.exerciseMediaVideo);
-  const demoUrl = exerciseVideoUrl({ name, video: button?.dataset.exerciseMediaDemo });
-  const instructions = String(button?.dataset.exerciseMediaInstructions || "").trim();
-  if (!staticUrl) return;
+  const media = exercise ? exerciseMedia(exercise) : null;
+  const name = String(exercise?.name || button?.dataset.exerciseMediaName || "Exercise").trim();
+  const staticUrl = media?.imageUrl || trustedExerciseImageUrl(button?.dataset.exerciseMediaStatic);
+  const videoUrl = media?.motionUrl || trustedExerciseMotionUrl(button?.dataset.exerciseMediaVideo);
+  const demoUrl = media?.demoUrl || exerciseVideoUrl({ name, video: button?.dataset.exerciseMediaDemo });
+  const instructions = String(media?.instructions || button?.dataset.exerciseMediaInstructions || "").trim();
   dialog.querySelector("h2").textContent = name;
   const instructionsBlock = dialog.querySelector("[data-exercise-media-instructions-block]");
   const instructionsCopy = dialog.querySelector("[data-exercise-media-instructions]");
-  if (instructionsCopy) instructionsCopy.textContent = instructions;
-  if (instructionsBlock) instructionsBlock.hidden = !instructions;
+  const rest = exercise ? workoutPreviewRestLabel(exercise, approvedExerciseForName(name)) : "";
+  const prescription = exercise ? [WorkoutLayout.label(exercise.prescription), rest].filter(Boolean).join(" · ") : "";
+  if (instructionsCopy) instructionsCopy.textContent = [prescription, instructions].filter(Boolean).join("\n")
+    || (!staticUrl && !videoUrl && !demoUrl ? "No exercise guide is available yet." : "");
+  if (instructionsBlock) instructionsBlock.hidden = !instructionsCopy?.textContent;
   dialog.dataset.exerciseMediaName = name;
   dialog.dataset.exerciseMediaStatic = staticUrl;
   dialog.dataset.exerciseMediaVideo = videoUrl;
   dialog.dataset.exerciseMediaDemo = demoUrl;
-  renderExerciseMediaDialog(dialog, Boolean(videoUrl));
+  renderExerciseMediaDialog(dialog, Boolean(videoUrl && (!exercise || !staticUrl)));
   dialog.showModal();
   dialog.querySelector("video")?.play().catch(() => {});
 }
@@ -7194,7 +7203,7 @@ function customWorkoutPanelDraft(panel) {
 }
 
 function persistCustomWorkoutDraftFromPanel(panel) {
-  if (!panel || !panel.classList.contains("client-workout-panel-custom")) {
+  if (!panel || panel.isConnected === false || !panel.classList.contains("client-workout-panel-custom")) {
     return;
   }
 
@@ -7737,28 +7746,114 @@ function autoRestTimerEnabled() {
   }
 }
 
+function normalizedWorkoutRestChoice(value) {
+  if (value == null || value === "") return null;
+  const seconds = Number(value);
+  return Number.isInteger(seconds) && seconds >= 0 && seconds <= 600 ? seconds : null;
+}
+
+function savedWorkoutRestDefault() {
+  try {
+    return normalizedWorkoutRestChoice(window.localStorage.getItem(workoutRestDefaultStorageKey)) ?? workoutRestDefaultFallback;
+  } catch (_) {
+    return workoutRestDefaultFallback;
+  }
+}
+
+function workoutRestSecondsForLogs(logs = []) {
+  const choices = logs.map((log) => {
+    const explicit = normalizedWorkoutRestChoice(workoutElapsedTimerState?.restTimerOverrides?.[log?.dataset?.exerciseCode]);
+    if (explicit !== null) return explicit;
+    const perWorkout = normalizedWorkoutRestChoice(workoutElapsedTimerState?.restTimerOverride);
+    if (perWorkout !== null) return perWorkout;
+    const saved = savedWorkoutRestDefault();
+    if (saved !== null) return saved;
+    if (!autoRestTimerEnabled()) return 0;
+    const rest = String(log?.dataset?.exerciseRest ?? "").trim();
+    if (!rest) return 60;
+    if (/^(off|none|no rest|0(?:\s*(?:s|sec|seconds))?)$/i.test(rest)) return 0;
+    return workoutCarouselRestSeconds(rest);
+  });
+  return choices.length ? Math.max(...choices) : (savedWorkoutRestDefault() ?? (autoRestTimerEnabled() ? 60 : 0));
+}
+
+function workoutRestOptionsMarkup(inheritedLabel) {
+  return `<option value="">${escapeHtml(inheritedLabel)}</option>` + workoutRestOptions.map((seconds) =>
+    `<option value="${seconds}">${seconds === 0 ? "Off" : `${seconds} sec`}</option>`).join("");
+}
+
 function syncAutoRestTimerPreference() {
   const enabled = autoRestTimerEnabled();
   const input = document.querySelector("[data-auto-rest-timer]");
-  if (input) input.checked = enabled;
+  const choice = document.querySelector("[data-default-workout-rest]");
+  const saved = savedWorkoutRestDefault();
+  if (input) input.checked = saved === null ? enabled : saved > 0;
+  if (choice) choice.value = saved === null ? "" : String(saved);
   document.querySelectorAll("[data-complete-set]").forEach((button) => {
     const label = (button.getAttribute("aria-label") || "").replace(/ and start rest timer$/, "");
-    if (label) button.setAttribute("aria-label", `${label}${enabled ? " and start rest timer" : ""}`);
+    const log = button.closest("[data-exercise-log]");
+    const working = setTypeForRow(button.closest("[data-set-row]")) !== warmUpSetType;
+    if (label) button.setAttribute("aria-label", `${label}${log && working && workoutRestSecondsForLogs([log]) > 0 ? " and start rest timer" : ""}`);
   });
 }
 
 function configureAutoRestTimerPreference() {
   const input = document.querySelector("[data-auto-rest-timer]");
   if (!input) return;
+  const choice = document.querySelector("[data-default-workout-rest]");
+  if (choice) {
+    choice.innerHTML = workoutRestOptionsMarkup("Use exercise rest");
+    choice.addEventListener("change", () => {
+      workoutRestDefaultFallback = normalizedWorkoutRestChoice(choice.value);
+      try {
+        if (workoutRestDefaultFallback === null) window.localStorage.removeItem(workoutRestDefaultStorageKey);
+        else window.localStorage.setItem(workoutRestDefaultStorageKey, String(workoutRestDefaultFallback));
+        // The legacy switch remains a compatible setting when duration is inherited.
+        window.localStorage.setItem(autoRestTimerPreferenceStorageKey, "true");
+        autoRestTimerPreferenceFallback = true;
+      } catch (_) { /* Keep the choice in memory for this visit. */ }
+      syncAutoRestTimerPreference();
+    });
+  }
   syncAutoRestTimerPreference();
   input.addEventListener("change", () => {
     autoRestTimerPreferenceFallback = input.checked;
-    try { window.localStorage.setItem(autoRestTimerPreferenceStorageKey, String(input.checked)); }
+    workoutRestDefaultFallback = input.checked ? null : 0;
+    try {
+      window.localStorage.setItem(autoRestTimerPreferenceStorageKey, String(input.checked));
+      if (input.checked) window.localStorage.removeItem(workoutRestDefaultStorageKey);
+      else window.localStorage.setItem(workoutRestDefaultStorageKey, "0");
+    }
     catch (_) { /* Keep the choice for this visit when storage is unavailable. */ }
     syncAutoRestTimerPreference();
   });
+  document.addEventListener("change", (event) => {
+    const control = event.target.closest("[data-workout-rest-override], [data-exercise-rest-override]");
+    if (!control || !workoutElapsedTimerState) return;
+    const choice = normalizedWorkoutRestChoice(control.value);
+    if (control.matches("[data-exercise-rest-override]")) {
+      const code = control.closest("[data-rest-timer-overlay]")?.dataset.restOverrideExerciseCode;
+      if (!code || !/^[A-Za-z0-9_-]{1,64}$/.test(code)) return;
+      const overrides = workoutElapsedTimerState.restTimerOverrides ||= {};
+      if (choice === null) delete overrides[code];
+      else overrides[code] = choice;
+    } else {
+      const panel = control.closest(".client-workout-panel");
+      const title = panel?.querySelector("[data-workout-start]")?.dataset.workoutTitle;
+      const date = panel?.querySelector("[data-workout-date]")?.value;
+      if (title !== workoutElapsedTimerState.workoutTitle || (date || todayDate()) !== workoutElapsedTimerState.workoutDate) return;
+      workoutElapsedTimerState.restTimerOverride = choice;
+    }
+    if (choice === 0) { resetRestTimer(); closeRestTimer(); }
+    else if (choice !== null) setRestTimerDuration(choice);
+    persistWorkoutElapsedTimerState();
+    syncAutoRestTimerPreference();
+  });
   window.addEventListener("storage", (event) => {
-    if (event.key === autoRestTimerPreferenceStorageKey) syncAutoRestTimerPreference();
+    if (event.key === autoRestTimerPreferenceStorageKey || event.key === workoutRestDefaultStorageKey) {
+      if (event.key === workoutRestDefaultStorageKey) workoutRestDefaultFallback = null;
+      syncAutoRestTimerPreference();
+    }
   });
 }
 
@@ -8069,6 +8164,7 @@ function restTimerMarkup() {
             <button type="button" data-rest-timer-preset="${seconds}" aria-pressed="${seconds === 60 ? "true" : "false"}">${seconds} sec</button>
           `).join("")}
         </div>
+        <label class="workout-exercise-rest-choice" hidden>For this exercise <select data-exercise-rest-override>${workoutRestOptionsMarkup("Use workout default")}</select></label>
         <div class="rest-timer-actions">
           <button class="rest-timer-start" type="button" data-rest-timer-start>Start</button>
           <button class="rest-timer-reset" type="button" data-rest-timer-reset>Reset</button>
@@ -8239,8 +8335,15 @@ function adjustRestTimer(seconds) {
 function openRestTimer(button) {
   const overlay = ensureRestTimer();
   const logElement = button?.closest?.("[data-exercise-log]");
-  if (logElement?.dataset.generatedExercise === "true" && logElement.dataset.exerciseRest) {
-    setRestTimerDuration(workoutCarouselRestSeconds(logElement.dataset.exerciseRest));
+  const seconds = workoutRestSecondsForLogs(logElement ? [logElement] : []);
+  setRestTimerDuration(seconds > 0 ? seconds : 60);
+  const override = overlay.querySelector("[data-exercise-rest-override]");
+  const exerciseCode = logElement?.dataset.exerciseCode || "";
+  const validOverrideTarget = Boolean(exerciseCode && workoutElapsedTimerState);
+  overlay.dataset.restOverrideExerciseCode = validOverrideTarget ? exerciseCode : "";
+  if (override) {
+    override.closest("label").hidden = !validOverrideTarget;
+    if (validOverrideTarget) override.value = workoutElapsedTimerState.restTimerOverrides?.[exerciseCode] ?? "";
   }
 
   customWorkoutGroupedRestAction = null;
@@ -9259,7 +9362,11 @@ function readWorkoutElapsedTimerState() {
       updatedAt: Math.max(0, Number(parsed.updatedAt) || Number(parsed.startedAt) || 0),
       running: Boolean(parsed.running),
       dismissed: Boolean(parsed.dismissed),
-      startedAfterRound: Math.max(0, Number(parsed.startedAfterRound) || 0)
+      startedAfterRound: Math.max(0, Number(parsed.startedAfterRound) || 0),
+      restTimerOverride: normalizedWorkoutRestChoice(parsed.restTimerOverride),
+      restTimerOverrides: Object.fromEntries(Object.entries(parsed.restTimerOverrides || {})
+        .filter(([code, seconds]) => /^[A-Za-z0-9_-]{1,64}$/.test(code) && normalizedWorkoutRestChoice(seconds) !== null)
+        .map(([code, seconds]) => [code, Number(seconds)]))
     };
     const activeMilliseconds = state.running && state.startedAt
       ? Math.max(0, Date.now() - state.startedAt)
@@ -9523,6 +9630,8 @@ function syncFloatingWorkoutFinishButtons() {
     bar.querySelector("[data-floating-workout-finish-action]")?.toggleAttribute("hidden", !isCurrentWorkout);
     bar.querySelector("[data-floating-workout-reset-action]")?.toggleAttribute("hidden", isCurrentWorkout);
     const more = bar.querySelector("[data-floating-workout-more]");
+    const restChoice = more?.querySelector?.("[data-workout-rest-override]");
+    if (restChoice && isCurrentWorkout) restChoice.value = workoutElapsedTimerState.restTimerOverride ?? "";
     more?.toggleAttribute("hidden", !isCurrentWorkout);
     if (more && !isCurrentWorkout) more.open = false;
   });
@@ -9565,7 +9674,9 @@ function startWorkoutElapsedTimer(workoutTitle = "", context = {}) {
         startedAt: Date.now(),
         running: true,
         dismissed: false,
-        startedAfterRound: Math.max(0, Number(context.startedAfterRound) || 0)
+        startedAfterRound: Math.max(0, Number(context.startedAfterRound) || 0),
+        restTimerOverride: null,
+        restTimerOverrides: {}
       };
 
   workoutElapsedTimerState.clientEmail = clientEmail;
@@ -9638,13 +9749,32 @@ function cancelActiveWorkout() {
     return;
   }
 
-  const title = workoutElapsedTimerState.workoutTitle || "this workout";
-  if (!window.confirm(
-    `Cancel ${title}? The workout timer will be cleared so you can choose another workout. This will not mark the workout complete. Any sets already saved will stay in your history.`
-  )) {
+  const active = workoutElapsedTimerState;
+  const title = active.workoutTitle || "this workout";
+  const panel = Array.from(document.querySelectorAll(".client-workout-panel")).find((candidate) => (
+    String(candidate.querySelector("[data-workout-start]")?.dataset.workoutTitle || "").trim() === active.workoutTitle
+    && (candidate.querySelector("[data-workout-date]")?.value || todayDate()) === active.workoutDate
+  ));
+  if (panel && activeWorkoutLogSaves.get(panel)) {
+    window.alert("Wait for the current set to finish saving, then discard the workout. Saved sets will stay in your history.");
     return;
   }
-
+  if (!window.confirm(
+    `Discard ${title}? Only the active draft and timer will be cleared. This will not mark the workout complete. Any sets already saved will stay in your history.`
+  )) return;
+  if (panel) {
+    cancelTrainingLogAutosaves(panel);
+    panel.querySelectorAll("[data-custom-workout-carousel]").forEach((carousel) => {
+      const queue = customWorkoutGroupedLogQueues.get(carousel);
+      if (queue) queue.length = 0;
+      customWorkoutGroupedLogQueues.delete(carousel);
+    });
+    panel.querySelectorAll("[data-exercise-log]").forEach((log) => {
+      window.FWB_WORKOUT_PROGRESSION_UI?.clearPending?.(log, workoutProgressionContext(log));
+    });
+  }
+  const draft = readCustomWorkoutDraft();
+  if (draft?.workoutTitle === active.workoutTitle && draft.date === active.workoutDate) clearCustomWorkoutDraft();
   closeRestTimer();
   customWorkoutGroupedRestAction = null;
   resetRestTimer();
@@ -9652,7 +9782,7 @@ function cancelActiveWorkout() {
   clientPreviewProgramSelected = false;
   const picker = document.getElementById("client-workout-tabs");
   if (picker) {
-    picker.innerHTML = clientWorkoutListMarkup(clientWorkoutPickerItems(currentProgram.workouts));
+    renderClientWorkoutTabs(currentProgram?.workouts || []);
   }
   setClientDashboardTab("workouts");
   showClientWorkoutPicker();
@@ -9956,7 +10086,7 @@ function floatingWorkoutFinishMarkup(options = {}) {
     <button type="button" class="workout-floating-secondary" data-floating-workout-reset-action ${resetAction}>Reset</button>
     <details class="workout-floating-more" data-floating-workout-more hidden>
       <summary aria-label="More workout actions">•••</summary>
-      <div><button type="button" ${resetAction}>Reset workout</button></div>
+      <div><label>Workout rest timer <select data-workout-rest-override>${workoutRestOptionsMarkup("Use saved default")}</select></label><button type="button" data-workout-finish-later>Finish later</button><button type="button" data-cancel-active-workout>Discard workout</button></div>
     </details>
     <button type="button" class="workout-floating-primary" data-floating-workout-start-action>Start workout</button>
     <button type="button" class="workout-floating-primary" data-floating-workout-finish-action aria-label="Save and finish workout" hidden>Save &amp; finish workout</button>
@@ -9978,6 +10108,7 @@ function finishWorkoutLater(button) {
   persistWorkoutProgressionPending(panel);
   persistCustomWorkoutDraftFromPanel(panel);
   pauseWorkoutTimersForCompletion();
+  closeRestTimer();
   renderWorkoutResumeActions();
   setClientDashboardTab("home");
   document.querySelector("[data-home-workout-action]")?.focus();
@@ -11789,12 +11920,9 @@ async function logCustomWorkoutGroupedRound(button) {
   customWorkoutGroupedRestAction = carousel.querySelector(
     `[data-custom-grouped-round="${roundNumber}"] [data-custom-grouped-round-action]`
   );
-  if (autoRestTimerEnabled() && workoutGroupReadyForRest(carousel.dataset.customWorkoutFormat, logElements.length)) {
-    const generatedRestDurations = logElements
-      .filter(logElement => logElement.dataset?.generatedExercise === "true" && logElement.dataset.exerciseRest)
-      .map(logElement => workoutCarouselRestSeconds(logElement.dataset.exerciseRest));
-    if (generatedRestDurations.length) setRestTimerDuration(Math.max(...generatedRestDurations));
-    resetRestTimer();
+  const restSeconds = workoutRestSecondsForLogs(logElements);
+  if (restSeconds > 0 && workoutGroupReadyForRest(carousel.dataset.customWorkoutFormat, logElements.length)) {
+    setRestTimerDuration(restSeconds);
     startOrPauseRestTimer();
   } else {
     renderCustomWorkoutGroupedRestControls();
@@ -11963,12 +12091,9 @@ async function toggleCustomWorkoutGroupedSet(button) {
     customWorkoutGroupedRestAction = carousel.querySelector(
       `[data-custom-grouped-round="${roundNumber}"] [data-custom-grouped-round-action]`
     );
-    if (autoRestTimerEnabled()) {
-      const generatedRestDurations = customWorkoutGroupedLogElements(carousel)
-        .filter((logElement) => logElement.dataset?.generatedExercise === "true" && logElement.dataset.exerciseRest)
-        .map((logElement) => workoutCarouselRestSeconds(logElement.dataset.exerciseRest));
-      if (generatedRestDurations.length) setRestTimerDuration(Math.max(...generatedRestDurations));
-      resetRestTimer();
+    const restSeconds = workoutRestSecondsForLogs(customWorkoutGroupedLogElements(carousel));
+    if (restSeconds > 0) {
+      setRestTimerDuration(restSeconds);
       startOrPauseRestTimer();
     } else {
       renderCustomWorkoutGroupedRestControls();
@@ -12767,9 +12892,7 @@ async function logCurrentWorkoutCarouselSet(button) {
   const completedRound = current.index === cards.length - 1 &&
     (nextProgress.isComplete || (nextProgress.current?.round || current.round) > current.round);
 
-  if (completedRound && workoutGroupReadyForRest(format, cards.length) && autoRestTimerEnabled()) {
-    const restValue = current.exercise.logElement?.dataset.exerciseRest || "";
-    setRestTimerDuration(workoutCarouselRestSeconds(restValue));
+  if (completedRound && workoutGroupReadyForRest(format, cards.length) && workoutRestSecondsForLogs([logElement]) > 0) {
     openRestTimer(button);
     startOrPauseRestTimer();
   }
@@ -13707,6 +13830,7 @@ function openCustomWorkoutExerciseDialog(trigger, mode = "add") {
   const addConfig = customWorkoutExerciseAddConfig(panel.dataset.customWorkoutFormat);
   const format = normalizeCustomWorkoutFormat(panel.dataset.customWorkoutFormat);
   const grouped = !removing && format !== "single";
+  const multiSelect = !removing;
   const sourceCarousel = grouped ? trigger.closest("[data-custom-workout-carousel]") : null;
   const targetGroupIndex = sourceCarousel ? Number(sourceCarousel.dataset.customWorkoutGroup) : undefined;
   const lastCarousel = grouped ? customWorkoutCarousels(panel).at(-1) : null;
@@ -13739,14 +13863,14 @@ function openCustomWorkoutExerciseDialog(trigger, mode = "add") {
         ${grouped ? "" : addConfig.hint ? `<p>${addConfig.hint}</p>` : ""}
         <div class="custom-workout-name-editor">
           ${grouped ? '<p class="custom-workout-picker-prompt" data-workout-picker-prompt role="status" aria-live="polite">STEP 1 · PICK FIRST EXERCISE</p>' : ""}
-          ${grouped ? `<div class="custom-workout-picker-selected" data-workout-picker-selected>
+          ${multiSelect ? `<div class="custom-workout-picker-selected" data-workout-picker-selected>
             <strong data-workout-picker-selected-count></strong>
             <div data-workout-picker-selected-list></div>
             <button class="button button-dark" type="submit" data-workout-picker-submit aria-label="Add ${format}" disabled>Add</button>
           </div>` : ""}
           <label for="custom-workout-picker-search">Search exercises</label>
           <div class="custom-workout-picker-search-row">
-            <input id="custom-workout-picker-search" type="text" maxlength="160" autocomplete="off" autofocus ${grouped ? "" : "required"}
+            <input id="custom-workout-picker-search" type="text" maxlength="160" autocomplete="off" autofocus
               placeholder="Search or type your own…" data-exercise-title-name aria-autocomplete="list" aria-expanded="false" aria-controls="custom-workout-picker-options" />
             <button type="button" data-workout-picker-clear aria-label="Clear exercise search">×</button>
           </div>
@@ -13767,15 +13891,15 @@ function openCustomWorkoutExerciseDialog(trigger, mode = "add") {
           <p data-workout-picker-error role="alert" hidden>Could not add this exercise. Please try again.</p>
         </div>
         <button class="custom-workout-picker-browse" type="button" data-custom-exercise-browse>Browse full library</button>
-        ${grouped ? "" : `<button class="button button-dark" type="submit">${addConfig.label}</button>`}
+
       </form>`}
   `;
   let addedCard = null;
   let searchRefreshTimer = 0;
   const showAddCardPrompt = () => {
     if (!dialog.isConnected || addCardPrompt?.isConnected) return;
-    const names = grouped ? selectedNames : [dialog.querySelector("#custom-workout-picker-search")?.value.trim()];
-    if (grouped ? !canAddSelection(names.length) : !names[0]) return;
+    const names = selectedNames;
+    if (!canAddSelection(names.length)) return;
     const exerciseNames = names.filter(Boolean);
     const count = exerciseNames.length;
     const groupLabel = format === "superset" ? count > 2 ? "Superset pairs" : "Superset"
@@ -13810,7 +13934,7 @@ function openCustomWorkoutExerciseDialog(trigger, mode = "add") {
     addCardPrompt.showModal();
   };
   const renderSelection = () => {
-    if (!grouped) return;
+    if (!multiSelect) return;
     const selected = dialog.querySelector("[data-workout-picker-selected]");
     const list = dialog.querySelector("[data-workout-picker-selected-list]");
     const total = selectedNames.length;
@@ -13823,8 +13947,8 @@ function openCustomWorkoutExerciseDialog(trigger, mode = "add") {
       prompt.textContent = message;
     }
     selected.hidden = false;
-    selected.querySelector("[data-workout-picker-selected-count]").textContent = `${total} of ${minimum} selected`;
-    list.innerHTML = Array.from({ length: Math.max(minimum, total) }, (_, index) => {
+    selected.querySelector("[data-workout-picker-selected-count]").textContent = grouped ? `${total} of ${minimum} selected` : `${total} selected`;
+    list.innerHTML = Array.from({ length: grouped ? Math.max(minimum, total) : total }, (_, index) => {
       const name = selectedNames[index];
       return `<div class="custom-picker-slot${name ? " is-filled" : ""}${index === total ? " is-next" : ""}">
         ${name ? `<span class="custom-picker-slot-letter">${index + 1}</span>` : ""}
@@ -13835,32 +13959,31 @@ function openCustomWorkoutExerciseDialog(trigger, mode = "add") {
     const submit = dialog.querySelector('button[type="submit"]');
     submit.disabled = !valid;
     dialog.classList?.toggle("is-ready-to-add", valid);
-    submit.textContent = "Add";
+    submit.textContent = grouped ? "Add" : total === 1 ? "Add exercise" : `Add ${total || ""} exercises`.replace("  ", " ");
     submit.setAttribute("aria-label", format === "superset" && total > minimum && valid
       ? `Add ${total / 2} superset pairs`
-      : `Add ${format}`);
+      : grouped ? `Add ${format}` : submit.textContent);
   };
   const selectName = (name) => {
     const input = dialog.querySelector("#custom-workout-picker-search");
     dialog.querySelector("[data-workout-picker-error]")?.setAttribute("hidden", "");
-    if (!grouped) {
-      selectedNames.splice(0, selectedNames.length, String(name).trim());
-      input.value = selectedNames[0];
-      renderCustomWorkoutPickerResults(dialog);
-      input.blur?.();
-      if (selectedNames[0]) showAddCardPrompt();
-      return;
-    }
     if (!String(name).trim()) return;
     const wasValid = canAddSelection(selectedNames.length);
     const existing = selectedNames.indexOf(String(name).trim());
     if (existing >= 0) selectedNames.splice(existing, 1);
     else selectedNames.push(String(name).trim());
-    input.value = "";
+    if (grouped) input.value = "";
     const menu = dialog.querySelector("[data-custom-exercise-suggestions]");
+    const scrollTop = menu?.scrollTop;
+    const focusedChoice = document.activeElement?.dataset.customExerciseSuggestion;
     renderSelection();
     renderCustomWorkoutPickerResults(dialog);
-    if (canAddSelection(selectedNames.length)) {
+    if (!grouped && focusedChoice) {
+      Array.from(menu?.querySelectorAll("[data-custom-exercise-suggestion]") || [])
+        .find((button) => button.dataset.customExerciseSuggestion === focusedChoice)?.focus({ preventScroll: true });
+    }
+    if (menu) menu.scrollTop = scrollTop || 0;
+    if (grouped && canAddSelection(selectedNames.length)) {
       input.blur?.();
       if (!wasValid) showAddCardPrompt();
     }
@@ -13895,19 +14018,12 @@ function openCustomWorkoutExerciseDialog(trigger, mode = "add") {
     else panel.querySelector("[data-pick-custom-exercise]:not([hidden])")?.focus();
   });
   const add = () => {
-    const name = dialog.querySelector("#custom-workout-picker-search")?.value.trim();
     const livePanel = panel.isConnected ? panel : document.getElementById(panel.id);
     if (!livePanel?.matches(".client-workout-panel-custom")) return;
-    if (grouped) {
-      const names = [...selectedNames];
-      if (!canAddSelection(names.length)) return;
-      addedCard = addCustomWorkoutPickedExercises(livePanel, names, { targetGroupIndex });
-      if (addedCard) notifyCoachAboutCustomExercises(names);
-    } else {
-      if (!name) return;
-      addedCard = addCustomWorkoutPickedExercise(livePanel, name);
-      if (addedCard) notifyCoachAboutCustomExercises([name]);
-    }
+    const names = [...selectedNames];
+    if (!canAddSelection(names.length)) return;
+    addedCard = addCustomWorkoutPickedExercises(livePanel, names, { targetGroupIndex });
+    if (addedCard) notifyCoachAboutCustomExercises(names);
     if (addedCard) dialog.close();
     else dialog.querySelector("[data-workout-picker-error]")?.removeAttribute("hidden");
   };
@@ -13950,6 +14066,7 @@ function openCustomWorkoutExerciseDialog(trigger, mode = "add") {
     if (removeSelected) {
       selectedNames.splice(Number(removeSelected.dataset.workoutPickerRemove), 1);
       renderSelection();
+      renderCustomWorkoutPickerResults(dialog);
       return;
     }
     const choice = event.target.closest("[data-remove-exercise-choice]");
@@ -13965,7 +14082,6 @@ function openCustomWorkoutExerciseDialog(trigger, mode = "add") {
     event.stopPropagation();
     if (event.target.matches("#custom-workout-picker-search") && !event.isComposing) {
       dialog.querySelector("[data-workout-picker-error]")?.setAttribute("hidden", "");
-      if (!grouped && selectedNames[0] !== event.target.value.trim()) selectedNames.length = 0;
       scheduleSearchRefresh();
       renderSelection();
     }
@@ -13980,7 +14096,7 @@ function openCustomWorkoutExerciseDialog(trigger, mode = "add") {
     event.preventDefault();
     event.stopPropagation();
     const name = dialog.querySelector("#custom-workout-picker-search")?.value.trim();
-    if (!grouped && name && selectedNames[0] !== name) selectName(name);
+    if (!grouped && !selectedNames.length && name) selectName(name);
     else showAddCardPrompt();
   });
   dialog.addEventListener("keydown", (event) => {
@@ -14567,6 +14683,17 @@ function clientWorkoutPickerSummary(workout, details) {
   return `A ${formatDescription} session focused on ${target}. Review the exercises, then open the workout to start logging.`;
 }
 
+function workoutPreviewRestLabel(exercise, approvedExercise) {
+  const configured = String(exercise?.rest ?? "").trim();
+  if (configured) {
+    if (/^(off|none|no rest|0(?:\s*(?:s|sec|seconds?))?)$/i.test(configured)) return "Rest off";
+    return `Rest ${/^\d+$/.test(configured) ? `${configured}s` : configured}`;
+  }
+  const value = approvedExercise?.default_rest_seconds;
+  if (value == null || value === "" || !Number.isFinite(Number(value))) return "";
+  return Number(value) > 0 ? `Rest ${Number(value)}s` : "Rest off";
+}
+
 function clientWorkoutPickerPreviewMarkup(workout) {
   if (workout?.isCustom) {
     return [
@@ -14770,21 +14897,22 @@ function clientWorkoutListMarkup(workouts) {
 
       </div>
       <div id="workout-preview-body-${index}" class="workout-preview-body" ${position === 0 ? "" : "hidden"}>
-        <div class="workout-preview-columns"><span>Exercises</span><span>Sets × reps</span></div>
+        <div class="workout-preview-columns"><span>Exercises</span><span>Sets × reps · Rest</span></div>
         <ol class="workout-preview-exercises" data-preview-workout="${position}">${exercises.map((exercise, exerciseIndex) => {
           const approvedExercise = approvedExerciseForName(exercise.name);
           const exerciseMeta = [approvedExercise?.primary_muscle, approvedExercise?.equipment]
             .map((value) => String(value || "").trim())
             .filter(Boolean)
             .join(" · ");
+          const rest = workoutPreviewRestLabel(exercise, approvedExercise);
           return `<li class="workout-preview-exercise-card" data-preview-exercise="${exerciseIndex}">
             <button type="button" class="workout-drag" data-exercise-drag ${locked ? "disabled" : ""} aria-label="Reorder ${escapeHtml(exercise.name || "exercise")}. Use up and down arrow keys.">⠿</button>
             <div class="workout-preview-exercise-media" data-workout-preview-exercise-media="${escapeHtml(exercise.name || "")}">${exerciseMediaButtonMarkup(exercise, { compact: true })}</div>
-            <span class="workout-preview-exercise-copy">
+            <button type="button" class="workout-preview-exercise-copy workout-preview-guide" data-preview-exercise-guide aria-label="View ${escapeHtml(exercise.name || "exercise")} guide">
               <span class="workout-row-number">${exerciseIndex + 1}</span>
               <span><strong>${escapeHtml(exercise.name || "Exercise")}</strong>${exerciseMeta ? `<small>${escapeHtml(exerciseMeta)}</small>` : ""}</span>
-            </span>
-            <span class="workout-prescription">${escapeHtml(WorkoutLayout.label(exercise.prescription))}</span>
+            </button>
+            <span class="workout-prescription">${escapeHtml(WorkoutLayout.label(exercise.prescription))}${rest ? `<small>${escapeHtml(rest)}</small>` : ""}</span>
             <details class="workout-preview-menu"><summary aria-label="${escapeHtml(exercise.name || "Exercise")} options">•••</summary><div>
               <button type="button" data-exercise-edit ${locked ? "disabled" : ""}>Edit exercise</button>
               <button type="button" data-exercise-substitute ${locked ? "disabled" : ""}>Substitute exercise</button>
@@ -14924,6 +15052,15 @@ function handleClientWorkoutPreview() {
       const body = document.getElementById(toggle.getAttribute("aria-controls"));
       body.hidden = !body.hidden;
       toggle.setAttribute("aria-expanded", String(!body.hidden));
+      return;
+    }
+    const guide = event.target.closest("[data-preview-exercise-guide]");
+    if (guide) {
+      const row = guide.closest("[data-preview-exercise]");
+      const assigned = currentProgram.workouts.filter(workout => !workout.isCustom && !workout.isCardio);
+      const exercise = assigned[Number(row?.closest("[data-preview-workout]")?.dataset.previewWorkout)]
+        ?.exercises?.[Number(row?.dataset.previewExercise)];
+      if (exercise) openExerciseMedia(guide, exercise);
       return;
     }
     const start = event.target.closest("[data-preview-start]");
@@ -21129,8 +21266,7 @@ function handleWorkoutInteractions() {
           (progress.isComplete || Boolean(progress.current && progress.current.round > Number(setRow.dataset.setNumber)));
         renderCustomWorkoutCarousel(groupCarousel);
       }
-      if (!isWarmUp && autoRestTimerEnabled() && (!groupCarousel || groupFormat === "single" || completedGroupRound)) {
-        resetRestTimer();
+      if (!isWarmUp && workoutRestSecondsForLogs([logElement]) > 0 && (!groupCarousel || groupFormat === "single" || completedGroupRound)) {
         openRestTimer(completeSetButton);
         startOrPauseRestTimer();
       }
@@ -23061,6 +23197,8 @@ async function saveTrainingLogRows(button, logElements, status, options = {}) {
     return { saved: false };
   }
 
+  if (panel) activeWorkoutLogSaves.set(panel, (activeWorkoutLogSaves.get(panel) || 0) + 1);
+  try {
   if (button) {
     button.disabled = true;
   }
@@ -23186,6 +23324,13 @@ async function saveTrainingLogRows(button, logElements, status, options = {}) {
     button.disabled = false;
   }
   return { saved: true, rows: data || persistedRows };
+  } finally {
+    if (panel) {
+      const remaining = (activeWorkoutLogSaves.get(panel) || 1) - 1;
+      if (remaining) activeWorkoutLogSaves.set(panel, remaining);
+      else activeWorkoutLogSaves.delete(panel);
+    }
+  }
 }
 
 async function handleTrainingLogSave() {

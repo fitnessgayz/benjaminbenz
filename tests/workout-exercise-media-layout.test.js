@@ -17,7 +17,7 @@ test("opens uploaded motion first and keeps the full start/end card available", 
   assert.match(portal, /loading="lazy"[\s\S]{0,80}decoding="async"/);
   assert.match(portal, /approvedExercise\?\.instructions \|\| exercise\.instructions/);
   assert.match(portal, /image\.src = staticUrl/);
-  assert.match(portal, /renderExerciseMediaDialog\(dialog, Boolean\(videoUrl\)\)/);
+  assert.match(portal, /renderExerciseMediaDialog\(dialog, Boolean\(videoUrl && \(!exercise \|\| !staticUrl\)\)\)/);
   assert.match(portal, /Watch exercise video/);
   assert.match(portal, /data-exercise-media-video-link target="_blank" rel="noopener noreferrer"/);
   assert.match(portal, /videoLink\.href = demoUrl/);

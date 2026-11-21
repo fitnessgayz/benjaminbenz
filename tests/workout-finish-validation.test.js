@@ -22,13 +22,14 @@ test("Finish workout later preserves entries, pauses timers and exposes Resume w
     persistWorkoutProgressionPending: value => { assert.equal(value, panel); calls.push("entries"); },
     persistCustomWorkoutDraftFromPanel: value => { assert.equal(value, panel); calls.push("draft"); },
     pauseWorkoutTimersForCompletion: () => calls.push("pause"),
+    closeRestTimer: () => calls.push("close"),
     renderWorkoutResumeActions: () => calls.push("resume"),
     setClientDashboardTab: tab => calls.push(tab),
     document: { querySelector: () => ({ focus: () => calls.push("focus") }) }
   };
   vm.runInNewContext(functionSource("finishWorkoutLater"), sandbox);
   sandbox.finishWorkoutLater({ closest: () => panel });
-  assert.deepEqual(calls, ["entries", "draft", "pause", "resume", "home", "focus"]);
+  assert.deepEqual(calls, ["entries", "draft", "pause", "close", "resume", "home", "focus"]);
   calls.length = 0;
   sandbox.workoutElapsedTimerState.workoutTitle = "Another workout";
   sandbox.finishWorkoutLater({ closest: () => panel });
