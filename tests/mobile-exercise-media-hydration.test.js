@@ -63,6 +63,10 @@ test("mobile thumbnails use 480px cards while the clickable demo keeps the 768px
     fullUrl: full,
     thumbnailUrl: full.replace("/webp-768/", "/webp-480/")
   });
+  const anatomy = full.replace("/approved/2026-09-29/webp-768/", "/anatomy/2026-11-21/");
+  assert.deepEqual(urlsFor(anatomy), { fullUrl: anatomy, thumbnailUrl: anatomy });
+  assert.deepEqual(urlsFor(anatomy.replace("qukdfjeupjhpthfbaonv.supabase.co", "other.example")),
+    { fullUrl: "", thumbnailUrl: "" });
 });
 
 test("late exercise-library results hydrate programmed, custom, and active demo views", () => {
