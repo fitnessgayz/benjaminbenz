@@ -5,23 +5,33 @@
   min-width: 0;
 }
 
-.client-explore-program > summary {
+.client-explore-program > summary,
+.client-explore-routine-summary {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  min-height: 60px;
-  gap: 14px;
-  padding: 12px 15px;
   border-radius: inherit;
   list-style: none;
   cursor: pointer;
 }
 
-.client-explore-program > summary::-webkit-details-marker {
+.client-explore-program > summary {
+  min-height: 60px;
+  gap: 12px;
+  padding: 10px 15px 10px 10px;
+}
+
+.client-explore-routine-summary {
+  gap: 10px;
+  padding: 7px 1px;
+}
+
+.client-explore-program > summary::-webkit-details-marker,
+.client-explore-routine-summary::-webkit-details-marker {
   display: none;
 }
 
-.client-explore-program > summary::after {
+.client-explore-program > summary::after,
+.client-explore-routine-summary::after {
   content: "";
   flex: 0 0 8px;
   height: 8px;
@@ -30,7 +40,8 @@
   transform: rotate(45deg) translate(-2px, -2px);
 }
 
-.client-explore-program[open] > summary::after {
+.client-explore-program[open] > summary::after,
+.client-routine[open] > .client-explore-routine-summary::after {
   transform: rotate(225deg) translate(-2px, -2px);
 }
 
@@ -39,6 +50,33 @@
   display: grid;
   min-width: 0;
   gap: 5px;
+}
+
+.client-explore-program-title {
+  flex: 1;
+  overflow-wrap: anywhere;
+}
+
+.client-explore-cover {
+  flex: none;
+  width: clamp(70px, 22vw, 100px);
+  height: auto;
+  aspect-ratio: 3 / 2;
+  object-fit: contain;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.client-explore-routine-summary .client-explore-cover {
+  width: clamp(60px, 19vw, 84px);
+}
+
+.client-explore-routine-summary .client-explore-program-title {
+  gap: 2px;
+}
+
+.client-routine .client-explore-routine-summary small {
+  margin-inline-start: 0;
 }
 
 .client-explore-program-title small,
@@ -54,7 +92,7 @@
 }
 
 .client-explore-program:not([open]) > .client-explore-program-workouts,
-.client-explore-program-workouts .client-routine:not([open]) > :not(summary) {
+.client-workout-routines .client-routine:not([open]) > :not(summary) {
   display: none;
 }
 
@@ -62,7 +100,7 @@
   padding: 0 3px 4px;
 }
 
-.client-explore-program-workouts .client-routine {
+.client-workout-routines .client-routine {
   background: var(--surface, #17191c);
   min-width: 0;
 }
@@ -96,6 +134,7 @@
 }
 
 .client-explore-program > summary:focus-visible,
+.client-explore-routine-summary:focus-visible,
 .client-explore-filters select:focus-visible {
   outline: 2px solid var(--client-settings-accent, #ffd400);
   outline-offset: 2px;

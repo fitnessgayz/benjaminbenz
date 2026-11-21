@@ -1,4 +1,6 @@
 const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const path = require("node:path");
 const test = require("node:test");
 const routines = require("../js/client-workout-routines.js");
 const { programs } = require("../js/client-explore-programs.js");
@@ -13,6 +15,13 @@ const days = [
   ["lower-body", "Lower Body"]
 ];
 
+const targeted = [
+  ["arms-day", "Arms Day"],
+  ["shoulders-arms", "Shoulders & Arms"],
+  ["abs-core", "Abs & Core"],
+  ["abs-butt", "Abs & Butt"]
+];
+
 test("opens each of Benjamin’s intermediate and advanced routines by its stable ID", () => {
   for (const [id, title] of days) {
     const intermediate = routines.find(`benjamin-${id}`);
@@ -21,6 +30,8 @@ test("opens each of Benjamin’s intermediate and advanced routines by its stabl
     assert.equal(advanced.title, title);
     assert.equal(intermediate.level, "Intermediate");
     assert.equal(advanced.level, "Advanced");
+    assert.equal(intermediate.cover, `benjamin-${id}`);
+    assert.equal(advanced.cover, intermediate.cover);
     assert.equal(intermediate.format, "single");
     assert.equal(advanced.format, "single");
     assert.equal(intermediate.warmUpCount, 0);
@@ -58,6 +69,50 @@ test("renders the two personal levels before the generic program catalog", () =>
   }
   assert.equal((html.match(/data-client-explore-program="[^"]+"[^>]* hidden>/g) || []).length, programs.length - 3);
   assert.doesNotMatch(html, /data-client-explore-routine="benjamin-(push|superset|circuit)"/);
+});
+
+test("keeps the four targeted workouts independent of Benjamin’s levels", () => {
+  const html = routines.markup(String);
+  const section = html.split('aria-label="Targeted Routines">')[1];
+  for (const [id, title] of targeted) {
+    const routine = routines.find(id);
+    assert.equal(routine.title, title);
+    assert.equal(routine.cover, id);
+    assert.equal(routine.format, "single");
+    assert.equal(routine.warmUpCount, 0);
+    assert.equal(routines.find(`benjamin-${id}`), undefined);
+    assert.equal(routines.find(`${id}-advanced`), undefined);
+    assert.ok(section.includes(`data-client-explore-routine="${id}"`));
+  }
+  assert.equal(routines.find("abs-core").exercises[0].prescription, "10–15 reps x 3 sets");
+  assert.equal(routines.find("abs-butt").exercises[0].prescription, "8–12 reps x 3 sets");
+});
+
+test("uses a cover on every personal routine and generic program family", () => {
+  const html = routines.markup(String);
+  for (const [id] of days) {
+    assert.equal(html.split(`src="images/routines/benjamin-${id}.webp"`).length - 1, 2);
+  }
+  for (const [id] of targeted) {
+    assert.equal(html.split(`src="images/routines/${id}.webp"`).length - 1, 1);
+  }
+  for (const [id, family] of [
+    ["beginner-push-pull-legs-gym", "push-pull-legs"], ["intermediate-full-body-gym", "full-body"],
+    ["beginner-upper-lower-gym", "upper-lower"], ["beginner-5x5", "five-by-five"],
+    ["power-hypertrophy-4-day", "power-hypertrophy"]
+  ]) {
+    const header = html.split(`data-client-explore-program="${id}"`)[1].split("</summary>")[0];
+    assert.ok(header.includes(`src="images/routines/${family}.webp"`));
+  }
+  const covers = Array.from(html.matchAll(/<img class="client-explore-cover"[^>]+>/g), match => match[0]);
+  assert.equal(covers.length, days.length * 2 + targeted.length + programs.length);
+  for (const cover of covers) assert.match(cover, /width="96" height="64" alt="" loading="lazy" decoding="async"/);
+  const imagePaths = new Set(Array.from(html.matchAll(/src="(images\/routines\/[^" ]+\.webp)"/g), match => match[1]));
+  assert.equal(imagePaths.size, 16);
+  for (const imagePath of imagePaths) {
+    const bytes = fs.readFileSync(path.join(__dirname, "..", imagePath));
+    assert.equal(bytes.toString("ascii", 8, 12), "WEBP", imagePath);
+  }
 });
 
 test("filters the full catalog and resets without adding duplicate dialog listeners", () => {

@@ -38,6 +38,30 @@
       ["Single Leg Dumbbell RDL", 3, "8–12"], ["Seated Leg Curl", 3, "10–15"]
     ]]
   ];
+  const targeted = {
+    title: "Targeted Routines",
+    routines: [
+      ["arms-day", "Arms Day", 35, [
+        ["Barbell Curl", 3, "8–12"], ["Incline Dumbbell Curl", 3, "10–15"],
+        ["Cable Triceps Pushdown", 3, "10–15"], ["Overhead Dumbbell Triceps Extension", 3, "10–15"]
+      ]],
+      ["shoulders-arms", "Shoulders & Arms", 45, [
+        ["Seated Dumbbell Shoulder Press", 3, "8–12"], ["Cable Lateral Raise", 3, "12–15"],
+        ["Cable Reverse Fly", 2, "12–15"], ["Preacher Curl", 3, "10–15"], ["Rope Triceps Pressdown", 3, "10–15"]
+      ]],
+      ["abs-core", "Abs & Core", 30, [
+        ["Cable Crunch", 3, "10–15"], ["Cable Woodchop", 3, "10–15"],
+        ["Lying Leg Raise", 3, "10–15"], ["Reverse Crunch", 2, "12–15"]
+      ]],
+      ["abs-butt", "Abs & Butt", 40, [
+        ["Hip Thrust Machine", 3, "8–12"], ["Cable Glute Kickback", 3, "12–15"],
+        ["Hip Abduction Machine", 3, "12–15"], ["Cable Crunch", 3, "10–15"], ["Hanging Leg Raise", 2, "10–15"]
+      ]]
+    ].map(([id, title, minutes, exercises]) => ({
+      id, title, minutes, cover: id, format: "single", warmUpCount: 0,
+      exercises: exercises.map(([name, sets, reps]) => strength(name, sets, reps))
+    }))
+  };
   const benjaminLevels = ["Intermediate", "Advanced"].map(level => {
     const advanced = level === "Advanced";
     return {
@@ -46,6 +70,7 @@
         id: `benjamin-${id}${advanced ? "-advanced" : ""}`,
         title,
         level,
+        cover: `benjamin-${id}`,
         format: "single",
         minutes: advanced ? minutes + 5 : minutes,
         warmUpCount: 0,
@@ -108,6 +133,7 @@
   ];
 
   const filters = [["level", "Level"], ["goal", "Goal"], ["equipment", "Equipment"]];
+  const programCoverFamilies = ["full-body", "upper-lower", "push-pull-legs"];
   const initialPrograms = 3;
   const mountedCatalogs = new WeakSet();
 
@@ -117,13 +143,26 @@
   }
 
   function find(id) {
-    return [...benjaminLevels, ...programs(), ...legacyGroups]
+    return [...benjaminLevels, ...programs(), targeted, ...legacyGroups]
       .flatMap(group => group.routines).find(routine => routine.id === id);
+  }
+
+  function programCover(id = "") {
+    if (id.endsWith("-5x5")) return "five-by-five";
+    if (id.startsWith("power-hypertrophy-")) return "power-hypertrophy";
+    return programCoverFamilies.find(family => id.includes(`-${family}-`));
+  }
+
+  function coverMarkup(slug, escape) {
+    return slug ? `<img class="client-explore-cover" src="images/routines/${escape(slug)}.webp" width="96" height="64" alt="" loading="lazy" decoding="async">` : "";
   }
 
   function routineMarkup(routine, escape) {
     return `<details class="client-routine">
-      <summary><strong>${escape(routine.title)}</strong><small>${routine.exercises.length} exercises</small></summary>
+      <summary class="client-explore-routine-summary">
+        ${coverMarkup(routine.cover, escape)}
+        <span class="client-explore-program-title"><strong>${escape(routine.title)}</strong><small>${routine.exercises.length} exercises</small></span>
+      </summary>
       <ol>${routine.exercises.map(exercise => `<li><span>${escape(exercise.name)}</span><small>${escape(exercise.prescription)}</small></li>`).join("")}</ol>
       <button type="button" class="button" data-client-explore-routine="${escape(routine.id)}">Open workout</button>
     </details>`;
@@ -134,6 +173,7 @@
     const workoutCount = `${program.routines.length} ${program.routines.length === 1 ? "workout" : "workouts"}`;
     return `<details class="client-explore-program"${program.id ? ` data-client-explore-program="${escape(program.id)}"${filters.map(([key]) => ` data-${key}="${escape(program[key] || "")}"`).join("")}` : ""}${index >= initialPrograms ? " hidden" : ""}>
       <summary>
+        ${coverMarkup(programCover(program.id), escape)}
         <span class="client-explore-program-title"><strong>${escape(program.title)}</strong><small>${escape([...metadata, workoutCount].join(" · "))}</small></span>
       </summary>
       <div class="client-explore-program-workouts">
@@ -165,7 +205,11 @@
       <p data-client-explore-empty hidden>No programs match these filters.</p>
       <button type="button" class="button button-ghost" data-client-explore-reset hidden>Clear filters</button>
       ${available.length > initialPrograms ? `<button type="button" class="button button-ghost" data-client-explore-more aria-expanded="false">Show all ${available.length} programs</button>` : ""}
-    </section>` : ""}`;
+    </section>` : ""}
+    <section class="client-routine-group" aria-label="${targeted.title}">
+      <h4>${targeted.title}</h4>
+      ${targeted.routines.map(routine => routineMarkup(routine, escape)).join("")}
+    </section>`;
   }
 
   function bind(container) {
