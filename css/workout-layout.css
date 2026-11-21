@@ -154,3 +154,36 @@
 .exercise-media-dialog-instructions p { white-space:pre-line; }
 .workout-exercise-rest-choice:not([hidden]), .workout-floating-more label { display:grid; gap:5px; font-size:12px; }
 .exercise-media-dialog-stage[hidden] { display:none; }
+
+/* Reusable Explore workouts are read-only until explicitly opened in the logger. */
+.benjamin-routine-view[hidden],
+.workout-program-picker[hidden] { display: none !important; }
+
+.benjamin-routine-view { width: 100%; max-width: 46rem; margin-inline: auto; }
+.benjamin-routine-view h3, .benjamin-routine-view h4 { margin-block: .65rem .35rem; }
+.benjamin-routine-view p { margin-block: .35rem .8rem; }
+.benjamin-routine-view section + section { margin-top: 1.25rem; }
+.benjamin-routine-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(min(8rem, 100%), 1fr));
+  gap: .65rem; list-style: none; padding: 0; margin: 0;
+}
+.benjamin-routine-view .benjamin-routine-card {
+  display: grid; align-content: start; gap: .35rem; width: 100%; height: 100%;
+  border: 1px solid var(--line, currentColor); border-radius: .75rem;
+  background: transparent; color: inherit; font: inherit; padding: .35rem .35rem .55rem;
+  text-align: start; cursor: pointer;
+}
+.benjamin-routine-card > strong, .benjamin-routine-card > span { padding-inline: .2rem; overflow-wrap: anywhere; }
+.benjamin-routine-card > span { font-size: .82em; }
+.benjamin-routine-cover {
+  display: block; width: 100%; aspect-ratio: 3 / 2; object-fit: contain;
+  border-radius: .55rem; background: #161616;
+}
+.benjamin-routine-view > .benjamin-routine-cover { max-height: 20rem; }
+.workout-choice-card.benjamin-routine-choice .benjamin-routine-cover { width: 4rem; }
+.benjamin-routine-choice small { display: block; }
+.benjamin-routine-view .benjamin-routine-exercises .workout-preview-exercise-card {
+  grid-template-columns: minmax(0, 1fr) auto; column-gap: .45rem;
+}
+.benjamin-routine-view .benjamin-routine-exercises .workout-preview-exercise-copy { min-height: 44px; }
+.benjamin-routine-view .workout-preview-start { min-height: 44px; }

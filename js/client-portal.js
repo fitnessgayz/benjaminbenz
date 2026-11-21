@@ -6529,6 +6529,9 @@ function activeCustomWorkoutDraft() {
 }
 
 function customWorkoutCopyStatusMessage(draft = activeCustomWorkoutDraft()) {
+  if (draft?.builtInRoutine) {
+    return `Benjamin’s Routine · ${draft.builtInRoutine.level} · ${draft.builtInRoutine.title}`;
+  }
   if (draft?.generatedFrom?.daily) {
     return `${draft.generatedFrom.title} · A shorter session for today. Your assigned program stays the same.`;
   }
@@ -6630,17 +6633,33 @@ function generatedCustomWorkoutDraft(workout, createdAt = new Date()) {
   };
 }
 
+function benjaminRoutineDraft(session, createdAt = new Date(), sessionId = window.crypto.randomUUID()) {
+  // Use the established logger's straight-set seeding, not the workout generator.
+  const { generatedFrom, ...draft } = generatedCustomWorkoutDraft(session, createdAt);
+  return {
+    ...draft,
+    workoutTitle: `${customWorkoutTitle} · ${session.title} · ${session.level} · ${sessionId}`,
+    builtInRoutine: { id: sessionId, templateId: session.id, title: session.title, level: session.level }
+  };
+}
+
 function useGeneratedClientWorkout(workout, preparedDraft = null, gymName = "") {
+  const builtIn = preparedDraft?.builtInRoutine;
   if (workoutElapsedTimerState) {
-    throw new Error("Finish or cancel your current workout before using a generated workout.");
+    throw new Error(builtIn
+      ? "Finish or discard your current workout before starting another."
+      : "Finish or cancel your current workout before using a generated workout.");
   }
   const panel = document.querySelector(".client-workout-panel-custom");
   if (!panel) throw new Error("Your workout builder is not ready. Refresh the page and try again.");
+  if (builtIn && (activeWorkoutLogSaves.has(panel) || customWorkoutGroupedLogQueues.has(panel))) {
+    throw new Error("Your workout is still saving. Try again in a moment.");
+  }
   const previousDraft = activeCustomWorkoutDraft();
   const hasEnteredWorkout = customWorkoutPanelHasEnteredExerciseContent(panel)
     || customWorkoutPanelHasAuxiliaryContent(panel)
-    || Boolean(previousDraft?.generatedFrom || previousDraft?.copiedFrom);
-  if (hasEnteredWorkout && !window.confirm("Replace your current Custom Workout draft with this generated workout? Unsaved entries will be cleared. Your saved workout history will not change.")) {
+    || Boolean(previousDraft?.generatedFrom || previousDraft?.copiedFrom || previousDraft?.builtInRoutine);
+  if (hasEnteredWorkout && !window.confirm(`Replace your current Custom Workout draft with this ${builtIn ? "routine" : "generated workout"}? Unsaved entries will be cleared. Your saved workout history will not change.`)) {
     return false;
   }
 
@@ -6650,7 +6669,8 @@ function useGeneratedClientWorkout(workout, preparedDraft = null, gymName = "") 
   // Stop queued writes from the old panel before replacing its local draft.
   cancelTrainingLogAutosaves(panel);
   storeCustomWorkoutDraft(draft);
-  if (activeCustomWorkoutDraft()?.generatedFrom?.id !== draft.generatedFrom.id) {
+  const persisted = activeCustomWorkoutDraft();
+  if (builtIn ? persisted?.builtInRoutine?.id !== builtIn.id : persisted?.generatedFrom?.id !== draft.generatedFrom.id) {
     throw new Error("This device could not save the workout draft. Free some browser storage and try again.");
   }
   const previousFormat = activeCustomWorkoutFormat;
@@ -7196,6 +7216,7 @@ function customWorkoutPanelDraft(panel) {
     nextExerciseNumber: Number(panel?.dataset.customWorkoutNextExerciseNumber) || 1,
     ...(currentDraft?.copiedFrom ? { copiedFrom: currentDraft.copiedFrom } : {}),
     ...(currentDraft?.generatedFrom ? { generatedFrom: currentDraft.generatedFrom } : {}),
+    ...(currentDraft?.builtInRoutine ? { builtInRoutine: currentDraft.builtInRoutine } : {}),
     exercises: logElements
       .map((logElement, index) => serializeCustomExerciseDraft(logElement, index))
       .filter(Boolean)
@@ -14842,6 +14863,89 @@ function clientWorkoutChoiceContent({ icon, title, description, titleId, descrip
     <svg class="workout-choice-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 12h16m-7-7 7 7-7 7"/></svg>`;
 }
 
+function benjaminRoutineCoverMarkup(cover) {
+  return `<img class="benjamin-routine-cover" src="${escapeHtml(cover)}" alt="" loading="lazy" decoding="async">`;
+}
+
+function benjaminRoutineCollectionMarkup(catalog) {
+  return `<button type="button" class="workout-text-button workout-preview-back" data-benjamin-routine-close>← <span>Back to workout choices</span></button>
+    <h3 tabindex="-1">Benjamin’s Routine</h3><p>7 reusable sessions per level. Choose any session to see the full workout.</p>
+    ${catalog.levels.map((level) => `<section><h4>${level}</h4>
+      <ul class="benjamin-routine-grid">${catalog.sessions.filter((session) => session.level === level).map((session) => `
+        <li><button type="button" class="benjamin-routine-card" data-benjamin-routine-session="${session.id}">
+          ${benjaminRoutineCoverMarkup(session.cover)}
+          <strong>${escapeHtml(session.title)}</strong><span>${escapeHtml(session.focus)}</span>
+        </button></li>`).join("")}</ul></section>`).join("")}`;
+}
+
+function benjaminRoutineSessionMarkup(session) {
+  const rest = savedWorkoutRestDefault() ?? (autoRestTimerEnabled() ? 60 : 0);
+  return `<button type="button" class="workout-text-button workout-preview-back" data-benjamin-routine-back>← <span>Back to Benjamin’s Routine</span></button>
+    <h3 tabindex="-1">${escapeHtml(session.title)}</h3>
+    <p>${escapeHtml(session.level)} · ${escapeHtml(session.focus)}</p>
+    ${benjaminRoutineCoverMarkup(session.cover)}
+    <p>Straight Sets · ${rest ? `Automatic rest: ${rest}s (your setting)` : "Automatic rest: Off"}</p>
+    <ol class="workout-preview-exercises benjamin-routine-exercises">${session.exercises.map((exercise, index) => `
+      <li class="workout-preview-exercise-card" data-benjamin-routine-exercise="${index}">
+        <button type="button" class="workout-preview-exercise-copy workout-preview-guide" data-benjamin-routine-guide aria-label="View ${escapeHtml(exercise.name)} guide">
+          <span class="workout-row-number">${index + 1}</span><span><strong>${escapeHtml(exercise.name)}</strong></span>
+        </button>
+        <span class="workout-prescription">${escapeHtml(WorkoutLayout.label(exercise.prescription))}</span>
+      </li>`).join("")}</ol>
+    <button type="button" class="button button-dark workout-preview-start" data-benjamin-routine-start>Start workout</button>
+    <p class="benjamin-routine-status" data-benjamin-routine-status role="status" hidden></p>`;
+}
+
+function handleBenjaminRoutineChoice(event, picker) {
+  const control = event.target.closest("[data-benjamin-routine-open], [data-benjamin-routine-close], [data-benjamin-routine-back], [data-benjamin-routine-session], [data-benjamin-routine-guide], [data-benjamin-routine-start]");
+  if (!control) return false;
+  const catalog = window.FWB_BENJAMIN_ROUTINE;
+  const view = picker.querySelector("[data-benjamin-routine-view]");
+  const choices = picker.querySelector(".workout-program-picker");
+  if (!catalog || !view || !choices) return true;
+  if (control.hasAttribute("data-benjamin-routine-close")) {
+    view.hidden = true;
+    view.innerHTML = "";
+    delete view.dataset.sessionId;
+    choices.hidden = false;
+    choices.querySelector("[data-benjamin-routine-open]")?.focus();
+    return true;
+  }
+  if (control.hasAttribute("data-benjamin-routine-open") || control.hasAttribute("data-benjamin-routine-back")) {
+    const returnSession = view.dataset.sessionId;
+    choices.hidden = true;
+    view.innerHTML = benjaminRoutineCollectionMarkup(catalog);
+    delete view.dataset.sessionId;
+    view.hidden = false;
+    const focusTarget = returnSession && view.querySelector(`[data-benjamin-routine-session="${returnSession}"]`);
+    (focusTarget || view.querySelector("h3"))?.focus();
+    return true;
+  }
+  const session = catalog.find(control.dataset.benjaminRoutineSession || view.dataset.sessionId);
+  if (!session) return true;
+  if (control.hasAttribute("data-benjamin-routine-session")) {
+    view.dataset.sessionId = session.id;
+    view.innerHTML = benjaminRoutineSessionMarkup(session);
+    view.querySelector("h3")?.focus();
+  } else if (control.hasAttribute("data-benjamin-routine-guide")) {
+    const exercise = session.exercises[Number(control.closest("[data-benjamin-routine-exercise]")?.dataset.benjaminRoutineExercise)];
+    if (exercise) openExerciseMedia(control, exercise);
+  } else {
+    const status = view.querySelector("[data-benjamin-routine-status]");
+    status.hidden = true;
+    try {
+      if (useGeneratedClientWorkout(session, benjaminRoutineDraft(session))) {
+        // Delegate to the ordinary Start control and its existing timer/setup logic.
+        document.querySelector(".client-workout-panel-custom [data-workout-start]")?.click();
+      }
+    } catch (error) {
+      status.textContent = error.message;
+      status.hidden = false;
+    }
+  }
+  return true;
+}
+
 function clientWorkoutListMarkup(workouts) {
   if (!clientPreviewProgramSelected) {
     const programs = clientAvailablePrograms.length ? clientAvailablePrograms : [currentProgram || { workouts: [] }];
@@ -14863,11 +14967,18 @@ function clientWorkoutListMarkup(workouts) {
         description: "Plan sessions from your coach or saved workouts.",
         action: 'data-client-workout-calendar-open', titleId: "workout-calendar-title", descriptionId: "workout-calendar-description" }
     ];
+    const routine = globalThis.FWB_BENJAMIN_ROUTINE;
+    if (routine) cards.splice(2, 0, { markup: `
+      <button type="button" class="workout-choice-card benjamin-routine-choice" data-benjamin-routine-open
+        aria-labelledby="benjamin-routine-title" aria-describedby="benjamin-routine-description">
+        ${benjaminRoutineCoverMarkup(routine.collectionCover)}
+        <span><strong id="benjamin-routine-title">Benjamin’s Routine</strong><small id="benjamin-routine-description">7 sessions per level · Intermediate and Advanced</small></span>
+      </button>` });
     return `<div class="workout-program-picker"><div class="workout-choice-list">${cards.map((card) => card.markup || `
       <button type="button" class="workout-choice-card ${card.className || ""}" ${card.action}
         aria-labelledby="${card.titleId}" aria-describedby="${card.descriptionId}">
         ${clientWorkoutChoiceContent(card)}
-      </button>`).join("")}</div></div>${clientWorkoutChoiceDialogMarkup(workouts)}`;
+      </button>`).join("")}</div></div><section class="benjamin-routine-view" data-benjamin-routine-view hidden></section>${clientWorkoutChoiceDialogMarkup(workouts)}`;
   }
   const assigned = workouts.filter(workout => !workout.isCustom && !workout.isCardio);
   const locked = clientWorkoutLayoutSaving || Boolean(workoutElapsedTimerState);
@@ -15029,6 +15140,7 @@ function handleClientWorkoutPreview() {
   });
   picker.addEventListener("click", async event => {
     if (clientWorkoutLayoutSaving) return;
+    if (handleBenjaminRoutineChoice(event, picker)) return;
     const programButton = event.target.closest("[data-preview-program]");
     if (programButton) {
       const program = clientAvailablePrograms[Number(programButton.dataset.previewProgram)];
