@@ -23,11 +23,12 @@ function functionSource(name) {
   return source.slice(start, start + match[0].length + next);
 }
 
-test("selected exercise titles reopen the picker in trainer workouts without clearing sets", () => {
+test("exercise titles open details and the Replace action keeps entered sets", () => {
   const keyMarkup = functionSource("customWorkoutGroupedExerciseKeyMarkup");
   const logMarkup = functionSource("customWorkoutGroupedSectionsMarkup");
   assert.match(keyMarkup, /<button type="button" data-change-custom-exercise="\$\{index\}"/);
-  assert.match(logMarkup, /<button class="ios-log-exercise-title" type="button" data-change-custom-exercise="\$\{exerciseIndex\}"/);
+  assert.match(logMarkup, /<button class="ios-log-exercise-title" type="button" data-ios-log-exercise-detail/);
+  assert.match(logMarkup, /data-ios-log-action="change">Replace exercise/);
 
   const input = {
     value: "Leg Press",
@@ -36,7 +37,7 @@ test("selected exercise titles reopen the picker in trainer workouts without cle
   };
   const set = { weight: "180", reps: "10", classList: { contains: () => false } };
   const logElement = {};
-  const carousel = {};
+  const carousel = { closest: () => null };
   const card = {};
   const block = { querySelector: () => null };
   let pickerSelect;
@@ -125,9 +126,11 @@ test("logging a working set copies valid weight and reps into empty next-row fie
   assert.equal(drafts, 2);
 });
 
-test("grouped Log box saves its row, pre-fills the next round, and starts rest only after the full round", async () => {
+test("grouped Log saves rows, prefills the next round, and starts rest only for an enabled exercise", async () => {
   const states = [new Set(), new Set()];
-  const canonical = states.map((state) => ({ classList: { contains: (name) => name === "is-complete" && state.has(name) }, dataset: {} }));
+  const logs = [{ dataset: { workoutRestSeconds: "45" } }, { dataset: { workoutRestSeconds: "0" } }];
+  const canonical = states.map((state, index) => ({ classList: { contains: (name) => name === "is-complete" && state.has(name) },
+    dataset: {}, closest: () => logs[index] }));
   const panel = { dataset: { customWorkoutTitle: "Custom Workout" }, querySelector: () => ({ value: "2026-10-29" }) };
   const section = { dataset: { customGroupedRound: "1" } };
   const visible = canonical.map((_, index) => ({ dataset: { customGroupedSetType: "working", customGroupedExerciseIndex: String(index), customGroupedSetNumber: "1" }, closest: () => section }));
@@ -136,7 +139,7 @@ test("grouped Log box saves its row, pre-fills the next round, and starts rest o
   const status = { textContent: "" };
   const calls = { saved: 0, copied: 0, rest: 0, started: 0 };
   const toggle = Function("deps", `
-    const { canonical, carousel, panel, status, calls } = deps;
+    const { canonical, carousel, panel, status, calls, logs } = deps;
     const warmUpSetType = "warm_up", customWorkoutTitle = "Custom Workout";
     const workoutElapsedTimerState = null;
     const customWorkoutGroupedCanonicalRow = (_carousel, index) => canonical[Number(index)];
@@ -148,30 +151,57 @@ test("grouped Log box saves its row, pre-fills the next round, and starts rest o
     const customWorkoutGroupedTimerConflict = () => false;
     const validateCustomWorkoutGroupedExerciseNames = () => true;
     const validateCustomWorkoutGroupedSection = () => ({ valid: true });
-    const customWorkoutGroupedLogElements = () => [{}, {}];
-    const workoutGroupReadyForRest = (_format, count) => count >= 2;
+    const customWorkoutGroupedLogElements = () => logs;
     const saveTrainingLogRows = async () => { calls.saved++; return { saved: true }; };
     const autoCopyCustomWorkoutGroupedNextRound = () => { calls.copied++; };
     const startWorkoutElapsedTimer = () => { calls.started++; };
-    const customWorkoutGroupedRoundIsLogged = () => deps.states.every((state) => state.has("is-complete"));
     const renderCustomWorkoutGroupedCard = () => {};
-    const autoRestTimerEnabled = () => true;
-    const workoutCarouselRestSeconds = () => 60;
-    const setRestTimerDuration = () => {};
-    const resetRestTimer = () => {};
-    const startOrPauseRestTimer = () => { calls.rest++; };
-    const renderCustomWorkoutGroupedRestControls = () => {};
+    const automaticRestSeconds = () => 0;
+    let customWorkoutGroupedRestAction = null;
+    const startAutomaticRestTimer = (_button, seconds) => { assert.equal(seconds, 45); calls.rest++; };
+    const setCustomWorkoutGroupedRowError = () => {};
+    const customWorkoutGroupedLogQueues = new WeakMap();
+    const scrollToNextCustomWorkoutGroupedExercise = () => {};
+    const drainCustomWorkoutGroupedLogQueue = () => {};
     const todayDate = () => "2026-10-29";
     const document = { querySelectorAll: () => [panel] };
+    const assert = deps.assert;
+    ${functionSource("workoutExerciseRestSeconds")}
     ${functionSource("toggleCustomWorkoutGroupedSet")}
     return toggleCustomWorkoutGroupedSet;
-  `)({ canonical, carousel, panel, status, calls, states });
+  `)({ canonical, carousel, panel, status, calls, states, logs, assert });
   const first = await toggle(button[0]);
   assert.equal(first.saved, true);
-  assert.equal(calls.rest, 0);
+  assert.equal(calls.rest, 1, "The timer opens for an enabled exercise even before the group is complete");
   const last = await toggle(button[1]);
   assert.equal(last.saved, true);
   assert.deepEqual(calls, { saved: 2, copied: 2, rest: 1, started: 2 });
   assert(canonical.every((row) => row.classList.contains("is-complete")));
   assert.equal(carousel.dataset.customGroupedRowSaving, undefined);
+});
+
+test("grouped rows show the same personal record and letter badges for special sets", () => {
+  const render = Function(`
+    const warmUpSetType = "warm_up";
+    const escapeHtml = String;
+    const setRowInputValues = () => ({ weightRaw: "", repsRaw: "" });
+    const customWorkoutGroupedFieldMarkup = () => "";
+    ${functionSource("customWorkoutGroupedSetRowMarkup")}
+    return customWorkoutGroupedSetRowMarkup;
+  `)();
+  const cases = [
+    [{ specialSetType: "drop" }, "D", "Drop set"],
+    [{ specialSetType: "failure" }, "F", "Failure set"],
+    [{ timedSet: "true" }, "T", "Timed set"],
+    [{}, "A4", "round 4"]
+  ];
+  cases.forEach(([dataset, marker, label]) => {
+    const markup = render({
+      dataset: { ...dataset, personalRecordLabel: "205 lb" },
+      classList: { contains: () => false },
+      querySelector: () => null,
+    }, "A4", 0, "working", 4, "Bench press");
+    assert.match(markup, new RegExp(`Options for ${label}[^>]*>${marker}</button>`));
+    assert.match(markup, /class="ios-log-previous">205 lb<\/span>/);
+  });
 });

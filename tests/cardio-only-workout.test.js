@@ -61,8 +61,8 @@ function cardioFixture(overrides = {}) {
   return { fields, log, section, button, status };
 }
 
-test('cardio shortcut appears in both workout chooser views and is excluded from assigned previews', () => {
-  const context = evaluate(['clientWorkoutPickerItems', 'clientWorkoutChoiceContent', 'clientCardioWorkoutChoiceMarkup', 'clientWorkoutListMarkup'], {
+test('the assigned program offers a cardio shortcut without adding a program exercise editor', () => {
+  const context = evaluate(['clientWorkoutPickerItems', 'clientWorkoutChoiceContent', 'clientCardioWorkoutChoiceMarkup', 'clientWorkoutChoiceDialogMarkup', 'clientWorkoutListMarkup'], {
     clientPreviewProgramSelected: false,
     clientAvailablePrograms: [], currentProgram: { program_title: 'Strength plan', workouts: [] },
     clientWorkoutLayoutSaving: false, workoutElapsedTimerState: null,
@@ -71,24 +71,25 @@ test('cardio shortcut appears in both workout chooser views and is excluded from
   const items = context.clientWorkoutPickerItems([{ title: 'Assigned strength', exercises: [] }]);
   const cardio = items.find((item) => item.isCardio);
   assert.ok(cardio);
-  for (const selected of [false, true]) {
-    context.clientPreviewProgramSelected = selected;
-    const markup = context.clientWorkoutListMarkup(items);
-    assert.match(markup, /Log cardio/);
-    assert.match(markup, new RegExp(`data-client-workout-picker-choose="${cardio.panelIndex}"`));
-    assert.match(markup, new RegExp(`data-client-workout-picker-card="${cardio.panelIndex}"`));
-    assert.match(markup, /data-client-workout-selection-target="Cardio"/);
-    assert.doesNotMatch(markup, /data-preview-workout="1"/, 'Cardio must not become another assigned exercise editor');
-  }
+  assert.doesNotMatch(context.clientWorkoutListMarkup(items), /data-log-cardio/);
+  context.clientPreviewProgramSelected = true;
+  const markup = context.clientWorkoutListMarkup(items);
+  assert.match(markup, /Log cardio/);
+  assert.match(markup, new RegExp(`data-client-workout-picker-choose="${cardio.panelIndex}"`));
+  assert.match(markup, new RegExp(`data-client-workout-picker-card="${cardio.panelIndex}"`));
+  assert.match(markup, /data-client-workout-selection-target="Cardio"/);
+  assert.doesNotMatch(markup, /data-preview-workout="1"/, 'Cardio must not become another assigned exercise editor');
 });
 
-test('standalone cardio panel exposes date and expanded cardio fields with no strength or warm-up fields', () => {
-  const context = evaluate(['cardioLogFields', 'workoutActionsMarkup', 'cardioWorkoutPanelMarkup']);
+test('standalone cardio panel exposes settings and expanded cardio fields with no strength or warm-up fields', () => {
+  const context = evaluate(['cardioLogFields', 'workoutActionsMarkup', 'workoutLoggerSetupMarkup', 'cardioWorkoutPanelMarkup']);
   const markup = context.cardioWorkoutPanelMarkup(3);
   assert.match(markup, /client-workout-panel-cardio/);
   assert.match(markup, /id="client-workout-panel-3"/);
   assert.match(markup, /data-custom-workout-title="Cardio"/);
-  assert.match(markup, /data-workout-date/);
+  assert.match(markup, /type="hidden"[^>]*data-workout-date/);
+  assert.match(markup, /data-custom-workout-setup-open="settings"/);
+  assert.match(markup, /type="hidden" data-cardio-effort/);
   assert.match(markup, /data-log-date/);
   assert.match(markup, /data-cardio-log/);
   assert.match(markup, /aria-expanded="true"/);
@@ -100,7 +101,8 @@ test('standalone cardio panel exposes date and expanded cardio fields with no st
 test('cardio completion records entered minutes as seconds and keeps the selected workout date', () => {
   const f = cardioFixture({ 'log-date': '2026-09-21', 'workout-date': '2026-09-21', 'cardio-distance': '2.5', 'cardio-calories': '180', 'log-notes': 'Comfortable pace' });
   const context = evaluate(['cardioWorkoutCompletionFields', 'rowsForTrainingLog', 'buildCardioNotes'], {
-    exerciseNameInputForLog: (log) => log.querySelector('[data-cardio-type]')
+    exerciseNameInputForLog: (log) => log.querySelector('[data-cardio-type]'),
+    workoutGymLocationForElement: () => ''
   });
   const now = Date.parse('2026-09-26T10:20:30.000Z');
   const completion = plain(context.cardioWorkoutCompletionFields(f.section, now));
@@ -109,7 +111,7 @@ test('cardio completion records entered minutes as seconds and keeps the selecte
   assert.equal(rows.length, 1);
   assert.deepEqual(rows[0], {
     client_email: 'client@example.com', entry_date: '2026-09-21', workout_title: 'Cardio',
-    exercise_code: 'CARDIO', exercise_name: 'Outdoor walk', set_number: 1,
+    exercise_code: 'CARDIO', exercise_name: 'Outdoor walk', set_number: 1, gym_name: null,
     weight_used: 30, reps: 2.5, notes: 'Calories: 180\nComfortable pace'
   });
 });
@@ -287,6 +289,7 @@ test('cardio date synchronization refreshes only the cardio entry and preserves 
   f.fields['[data-log-date]'].closest = () => f.log;
   const customDraft = { workoutTitle: 'My strength session', exercises: [{ name: 'Squat' }] };
   const context = evaluate(['syncWorkoutPanelDate', 'persistCustomWorkoutDraftFromPanel'], {
+    syncCustomWorkoutSetupSummary: () => {},
     updateExerciseLogField: (log) => updates.push(log),
     renderCustomWorkoutCarousel: () => assert.fail('Cardio has no strength carousel'),
     storeCustomWorkoutDraft: () => assert.fail('Cardio must not replace a strength draft'),

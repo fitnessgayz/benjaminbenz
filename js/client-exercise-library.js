@@ -95,6 +95,37 @@
       .replace(/[_-]+/g, " ").trim().toLocaleLowerCase();
   }
 
+  // Keep the catalog's canonical name for logs and matching. This is only the
+  // label shown in exercise search results.
+  function displayName(name) {
+    let title = String(name || "").trim();
+    if (!title || /\([^)]*\)$/.test(title)) return title;
+    const equipment = [
+      ["smith machine", "Smith Machine"], ["trap[ -]?bar", "Trap Bar"],
+      ["ez[ -]?bar", "EZ Bar"], ["bodyweight", "Bodyweight"],
+      ["dumbbells?", "Dumbbell"], ["barbells?", "Barbell"],
+      ["kettlebells?", "Kettlebell"], ["cables?", "Cable"],
+      ["machines?", "Machine"], ["bands?", "Band"],
+      ["suspension", "Suspension"]
+    ];
+    for (const [pattern, label] of equipment) {
+      const first = new RegExp(`^${pattern}[ -]+`, "i");
+      const last = new RegExp(`[ -]+${pattern}$`, "i");
+      if (!first.test(title) && !last.test(title)) continue;
+      title = title.replace(first, "").replace(last, "").trim();
+      if (/^back squat$/i.test(title) && label === "Barbell") title = "Squat";
+      return `${title} (${label})`;
+    }
+    // Some approved names place equipment between the angle and the movement.
+    title = title.replace(/^(Incline|Decline|Flat) (Smith Machine|Trap[ -]?Bar|Dumbbell|Barbell|Cable|Machine) (.+)$/i,
+      (_, angle, item, movement) => {
+        const lift = /^(Dumbbell|Barbell)$/i.test(item) && /^(Chest )?Press$/i.test(movement)
+          ? "Bench Press" : movement;
+        return `${angle} ${lift} (${item.replace(/\b\w/g, (letter) => letter.toUpperCase())})`;
+      });
+    return title;
+  }
+
   function searchWords(value) {
     return normalize(value).replace(/\b(one|single)\s+(arm|leg)\b/g, "single $2")
       .replace(/\bdumbells?\b|\bdbs?\b/g, "dumbbell")
@@ -262,7 +293,7 @@
         imageUrl, motionUrl: imageUrl ? motionUrl : "", instructions: String(entry.instructions || "").trim(),
         highlightKey: muscleHighlightKey(entry),
         highlightFallback: String(entry.primary_muscle || "").trim().toLowerCase(),
-        searchText: searchWords([name, ...aliases, primary, ...secondary, equipment].join(" ")).join(" ") }];
+        searchText: searchWords([name, displayName(name), ...aliases, primary, ...secondary, equipment].join(" ")).join(" ") }];
     }).sort((a, b) => a.name.localeCompare(b.name));
   }
 
@@ -362,9 +393,6 @@
       });
       browse.append(button);
     });
-    const filters = element("div", "client-exercise-library-filters");
-    filters.setAttribute("role", "group");
-    filters.setAttribute("aria-label", "Filter by muscle");
     const equipmentLabel = element("label", "client-exercise-library-equipment-label", "Equipment");
     const equipmentSelect = element("select", "client-exercise-library-equipment");
     equipmentSelect.setAttribute("aria-label", "Filter by equipment");
@@ -373,6 +401,16 @@
       renderResults();
     });
     equipmentLabel.append(equipmentSelect);
+    const muscleLabel = element("label", "client-exercise-library-muscle-label", "Muscle");
+    const muscleSelect = element("select", "client-exercise-library-muscle");
+    muscleSelect.setAttribute("aria-label", "Filter by muscle");
+    muscleSelect.addEventListener("change", () => {
+      activeMuscle = muscleSelect.value;
+      renderResults();
+    });
+    muscleLabel.append(muscleSelect);
+    const filters = element("div", "client-exercise-library-filters");
+    filters.append(equipmentLabel, muscleLabel);
     const count = element("p", "client-exercise-library-count");
     count.setAttribute("role", "status");
     count.setAttribute("aria-live", "polite");
@@ -388,7 +426,7 @@
     });
     const results = element("div", "client-exercise-library-results");
     results.id = "client-exercise-library-results";
-    shell.append(header, help, searchLabel, browse, filters, equipmentLabel, count, customButton, results);
+    shell.append(header, help, searchLabel, browse, filters, count, customButton, results);
     dialog.append(shell);
     root.document.body.append(dialog);
     dialog.addEventListener("close", () => {
@@ -447,24 +485,18 @@
   }
 
   function renderFilters() {
-    const filters = dialog.querySelector(".client-exercise-library-filters");
-    filters.replaceChildren();
+    const select = dialog.querySelector(".client-exercise-library-muscle");
     const available = new Set(sourceRecords.flatMap((record) => [record.primary, browseMuscle(record)]));
     const sorted = [...available].sort((a, b) => {
       const left = MUSCLE_ORDER.indexOf(a), right = MUSCLE_ORDER.indexOf(b);
       return (left < 0 ? 99 : left) - (right < 0 ? 99 : right) || a.localeCompare(b);
     });
-    ["All", ...sorted].forEach((muscle) => {
-      const button = element("button", "client-exercise-library-filter", muscle);
-      button.type = "button";
-      button.setAttribute("aria-pressed", String(activeMuscle === muscle));
-      button.addEventListener("click", () => {
-        activeMuscle = muscle;
-        filters.querySelectorAll("button").forEach((item) => item.setAttribute("aria-pressed", String(item === button)));
-        renderResults();
-      });
-      filters.append(button);
-    });
+    select.replaceChildren(...["All", ...sorted].map((muscle) => {
+      const option = element("option", "", muscle === "All" ? "All muscles" : muscle);
+      option.value = muscle;
+      return option;
+    }));
+    select.value = activeMuscle;
   }
 
   function renderResults() {
@@ -474,7 +506,7 @@
     customButton.textContent = query.trim() ? `Add “${query.trim()}” to this workout` : "";
     const matched = matchingRecords(sourceRecords, query, activeMuscle, activeEquipment, recentOnly);
     const count = dialog.querySelector(".client-exercise-library-count");
-    count.textContent = `${matched.length} ${matched.length === 1 ? "exercise" : "exercises"}`;
+    count.textContent = query.trim() ? "Search results" : `${matched.length} ${matched.length === 1 ? "exercise" : "exercises"}`;
     const results = dialog.querySelector(".client-exercise-library-results");
     const fragment = document.createDocumentFragment();
     if (!matched.length) fragment.append(element("p", "client-exercise-library-empty", "No library match. You can add the name you typed above."));
@@ -487,14 +519,19 @@
     const recent = showRecentFirst ? matched.filter((record) => Number.isFinite(record.recentRank))
       .filter((record) => !alternativeNames.has(record.name))
       .sort((a, b) => b.useCount - a.useCount || a.recentRank - b.recentRank).slice(0, 8) : [];
-    const groups = recentOnly
+    const groups = query.trim() ? [["Search results", [...matched].sort((a, b) => {
+      const needle = normalize(query);
+      const rank = (record) => normalize(displayName(record.name)).startsWith(needle) ? 0
+        : normalize(displayName(record.name)).includes(needle) ? 1 : 2;
+      return rank(a) - rank(b) || displayName(a.name).localeCompare(displayName(b.name));
+    })]] : recentOnly
       ? [["Recent", [...matched].sort((a, b) => b.useCount - a.useCount || a.recentRank - b.recentRank)]]
       : [...(alternatives.length ? [["Suggested alternatives", alternatives]] : []),
         ...(recent.length ? [["Recently used", recent]] : []),
         ...groupedRecords(matched, activeMuscle)];
     groups.forEach(([muscle, records]) => {
       const group = element("section", "client-exercise-library-group");
-      group.append(element("h3", "client-exercise-library-group-title", muscle));
+      if (!query.trim()) group.append(element("h3", "client-exercise-library-group-title", muscle));
       const list = element("ul", "client-exercise-library-list");
       const showsUseCount = muscle === "Recent" || muscle === "Recently used";
       const usageLabel = (count) => `Used ${count} ${count === 1 ? "time" : "times"}`;
@@ -503,7 +540,7 @@
         if (highlighted) item.classList.add("is-variant-match");
         const button = element("button", "client-exercise-library-item-button");
         button.type = "button";
-        button.setAttribute("aria-label", `Add ${record.name}, ${[record.primary, ...record.secondary].join(", ")}${showsUseCount ? `, ${usageLabel(record.useCount)}` : ""}`);
+        button.setAttribute("aria-label", `Add ${displayName(record.name)}, ${record.primary}${showsUseCount ? `, ${usageLabel(record.useCount)}` : ""}`);
         const artwork = element("span", "client-exercise-library-item-artwork");
         const image = element("img", "");
         const muscleImageUrl = record.highlightKey
@@ -531,13 +568,12 @@
         });
         artwork.append(image);
         const text = element("span", "client-exercise-library-item-copy");
-        text.append(element("strong", "", record.name));
+        text.append(element("strong", "", displayName(record.name)));
         const muscles = element("span", "client-exercise-library-item-muscles");
-        [record.primary, ...record.secondary].forEach((muscle) => {
+        [record.primary].forEach((muscle) => {
           muscles.append(element("small", "client-exercise-library-item-muscle", muscle));
         });
         text.append(muscles);
-        if (record.equipment) text.append(element("small", "client-exercise-library-item-equipment", record.equipment.replace(/[_-]+/g, " ")));
         if (showsUseCount) text.append(element("small", "client-exercise-library-item-use-count", usageLabel(record.useCount)));
         const add = element("span", "client-exercise-library-item-plus", "+");
         add.setAttribute("aria-hidden", "true");
@@ -561,7 +597,9 @@
         }
         target.append(item);
       }
-      exerciseFamilies(records, muscle === "Recent" || muscle === "Recently used").forEach((family) => {
+      if (query.trim()) {
+        records.forEach((record) => renderEntry(record, list));
+      } else exerciseFamilies(records, muscle === "Recent" || muscle === "Recently used").forEach((family) => {
         if (family.entries.length === 1) {
           renderEntry(family.entries[0], list, Boolean(query.trim()));
           return;
@@ -627,8 +665,8 @@
     renderResults();
   }
 
-  root.FWB_CLIENT_EXERCISE_LIBRARY = { open, close, refresh };
+  root.FWB_CLIENT_EXERCISE_LIBRARY = { open, close, refresh, displayName };
   if (typeof module !== "undefined" && module.exports) {
-    module.exports = { muscleFor, prepareRecords, matchingRecords, groupedRecords, exerciseFamilies, muscleArtwork };
+    module.exports = { muscleFor, displayName, prepareRecords, matchingRecords, groupedRecords, exerciseFamilies, muscleArtwork };
   }
 })(typeof window !== "undefined" ? window : globalThis);

@@ -17,10 +17,11 @@ test("hides only the unreliable native date text while keeping the picker intera
   assert.match(mobileStyles, /::-webkit-calendar-picker-indicator[\s\S]*?position: absolute;[\s\S]*?right: 14px;/);
 });
 
-test("renders and updates the centered date label for assigned, custom and cardio workouts", () => {
-  const displayMarkupCount = (portal.match(/data-workout-date-value aria-hidden="true"/g) || []).length;
-
-  assert.equal(displayMarkupCount, 3);
-  assert.match(portal, /const display = panel\?\.querySelector\("\[data-workout-date-value\]"\);/);
-  assert.match(portal, /display\.textContent = formatLogDate\(date\);/);
+test("shares the Workout Settings toolbar and hidden date across custom, assigned, and cardio logs", () => {
+  assert.doesNotMatch(portal, /data-workout-date-value/);
+  assert.match(portal, /<input type="hidden" value="\$\{todayDate\(\)\}" data-workout-date \/>/);
+  assert.doesNotMatch(portal, /data-custom-workout-setup-open="date"/);
+  assert.equal((portal.match(/\$\{workoutLoggerSetupMarkup\(index/g) || []).length, 3);
+  assert.match(portal, /data-custom-workout-setup-open="settings" aria-label="Workout Settings"/);
+  assert.match(portal, /picker\.value = date;/);
 });

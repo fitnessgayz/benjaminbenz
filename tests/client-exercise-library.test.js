@@ -3,8 +3,21 @@ const test = require("node:test");
 const fs = require("node:fs");
 const path = require("node:path");
 const {
-  muscleFor, prepareRecords, matchingRecords, groupedRecords, exerciseFamilies, muscleArtwork
+  muscleFor, displayName, prepareRecords, matchingRecords, groupedRecords, exerciseFamilies, muscleArtwork
 } = require("../js/client-exercise-library.js");
+
+test("shows equipment after the movement while preserving the catalog identity", () => {
+  assert.equal(displayName("Machine Chest Press"), "Chest Press (Machine)");
+  assert.equal(displayName("Incline Machine Chest Press"), "Incline Chest Press (Machine)");
+  assert.equal(displayName("Incline Dumbbell Press"), "Incline Bench Press (Dumbbell)");
+  assert.equal(displayName("Decline Dumbbell Chest Press"), "Decline Bench Press (Dumbbell)");
+  assert.equal(displayName("Barbell Back Squat"), "Squat (Barbell)");
+  assert.equal(displayName("Dumbbell Romanian Deadlift"), "Romanian Deadlift (Dumbbell)");
+  assert.equal(displayName("Goblet Squat"), "Goblet Squat");
+  const [record] = prepareRecords([{ name: "Machine Chest Press", libraryEntry: { primary_muscle: "Chest" } }]);
+  assert.equal(record.name, "Machine Chest Press");
+  assert.deepEqual(matchingRecords([record], "chest press machine", "All").map((item) => item.name), ["Machine Chest Press"]);
+});
 
 test("normalizes common muscle names into useful browse filters", () => {
   assert.equal(muscleFor("Quadriceps"), "Quads");
@@ -234,11 +247,12 @@ test("illustrates every browse muscle with a distinct highlighted region", () =>
   assert.equal(muscleArtwork("Other"), muscleArtwork("Full Body"));
 });
 
-test("both exercise search menus offer More and connect it to the full library", () => {
+test("exercise search still offers the full library", () => {
   const root = path.resolve(__dirname, "..");
   const portal = fs.readFileSync(path.join(root, "js/client-portal.js"), "utf8");
   const dashboard = fs.readFileSync(path.join(root, "client-dashboard.html"), "utf8");
-  assert.equal((portal.match(/data-custom-exercise-more>More exercises/g) || []).length, 2);
+  assert.ok((portal.match(/data-custom-exercise-more>More exercises/g) || []).length >= 1);
+  assert.match(portal, /data-custom-exercise-browse/);
   assert.match(portal, /function openClientExerciseLibrary\(input, onSelect,/);
   assert.match(portal, /records: exerciseSuggestionRecords\(\)/);
   assert.match(portal, /openClientExerciseLibrary\(input, \(name\) =>/);

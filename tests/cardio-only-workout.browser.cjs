@@ -12,7 +12,7 @@ const dashboard = fs.readFileSync(path.join(root, 'client-dashboard.html'), 'utf
 const styles = [...dashboard.matchAll(/<link[^>]+href="\/?(css\/[^"?]+)[^>]*>/g)]
   .map(match => fs.readFileSync(path.join(root, match[1]), 'utf8')).join('\n');
 const sectionStart = dashboard.indexOf('<section class="client-workouts-panel"');
-const sectionEnd = dashboard.indexOf('<section class="progress-panel nutrition-panel"', sectionStart);
+const sectionEnd = dashboard.indexOf('<section class="client-community-panel"', sectionStart);
 assert.ok(sectionStart >= 0 && sectionEnd > sectionStart);
 const workoutsSection = dashboard.slice(sectionStart, sectionEnd).replace('aria-labelledby="client-workouts-title" hidden', 'aria-labelledby="client-workouts-title"');
 
@@ -28,7 +28,7 @@ function production(name) {
 const names = [
   'formatLogDate', 'clientWorkoutPickerItems', 'clientWorkoutChoiceContent', 'clientWorkoutChoiceDialogMarkup',
   'clientCardioWorkoutChoiceMarkup', 'clientWorkoutListMarkup', 'cardioLogFields',
-  'workoutActionsMarkup', 'cardioWorkoutPanelMarkup', 'renderClientWorkoutTabs',
+  'workoutActionsMarkup', 'workoutLoggerSetupMarkup', 'openCustomWorkoutSetupDialog', 'cardioWorkoutPanelMarkup', 'renderClientWorkoutTabs',
   'clientWorkoutPickerIndex', 'syncClientWorkoutSelectionSummary', 'syncClientWorkoutPicker',
   'activateClientWorkoutPanel', 'showClientWorkoutPicker', 'handleClientWorkoutTabs',
   'handleClientWorkoutPreview', 'syncWorkoutPanelDate', 'handleTrainingDateChange',
@@ -39,8 +39,10 @@ const names = [
 
 const fixture = `
 window.fixtureEvents = [];
+window.confirm = () => true;
 var activeClientEmail = 'synthetic-client@example.com';
 var customWorkoutTitle = 'Custom workout', cardioExerciseCode = 'CARDIO';
+var customWorkoutFormats = { single: { label: 'Straight sets' } };
 var clientPreviewProgramSelected = false, clientAvailablePrograms = [];
 var clientWorkoutLayoutSaving = false, workoutElapsedTimerState = null;
 var activeWorkoutTabIndex = 0, clientWorkoutPickerIsOpen = true;
@@ -61,8 +63,11 @@ function todayDate() { return '2026-09-26'; }
 function customWorkoutPanelMarkup(index) { return '<section class="client-workout-panel client-workout-panel-custom" id="client-workout-panel-' + index + '" hidden></section>'; }
 function inferWorkoutFormat() { return 'single'; }
 function formatLabel() { return 'Straight sets'; }
+function normalizeCustomWorkoutFormat(value) { return value || 'single'; }
+function syncAutoRestTimerPreference() {}
 function warmupLogFields() { return ''; }
 function workoutStartControlMarkup() { return ''; }
+function floatingWorkoutFinishMarkup() { return ''; }
 function workoutExerciseMarkup() { return ''; }
 function workoutExerciseListMarkup() { return ''; }
 function storedWorkoutGymLocation() { return ''; }
@@ -81,6 +86,9 @@ function approvedExerciseForName() { return null; }
 function exerciseMediaButtonMarkup() { return ''; }
 function renderClientHomeSummary() {}
 function syncWorkoutStartButtons() {}
+function syncFloatingWorkoutFinishButtons() {}
+function syncWorkoutWakeLock() {}
+function syncCustomWorkoutSetupSummary() {}
 function syncCustomWorkoutCarousels() {}
 function syncAssignedWorkoutCarousels() {}
 function syncCustomWorkoutCarousel() {}
@@ -89,10 +97,11 @@ function persistCustomWorkoutDraftFromPanel(panel) {
   if (panel.classList.contains('client-workout-panel-custom')) throw new Error('Unexpected strength draft write');
 }
 function restartDeletedClientWorkoutContext(context) { fixtureEvents.push(['restart-context', context]); }
-function requestWorkoutDifficulty() { fixtureEvents.push(['feedback']); return Promise.resolve(null); }
 function clientAchievementSnapshot() { return null; }
-function clientWorkoutAchievementCelebration() { return null; }
-function saveTrainingLogRows() { throw new Error('Network persistence is forbidden in browser proof'); }
+function saveTrainingLogRows(_button, _logs, _status, { workoutCompletion }) {
+  fixtureEvents.push(['save', workoutCompletion]);
+  return { saved: false };
+}
 ${names.map(production).join('\n')}
 renderClientWorkoutTabs(currentProgram.workouts);
 handleClientWorkoutTabs();
@@ -148,7 +157,10 @@ async function checkLayout(page, label) {
         const page = await browser.newPage({ viewport: { width, height: 900 }, reducedMotion: 'reduce' });
         page.setDefaultTimeout(5000);
         const errors = [];
-        page.on('pageerror', error => errors.push(error.message));
+        page.on('pageerror', error => {
+          errors.push(error.message);
+          console.error(error.message);
+        });
         await page.route('**/*', route => route.abort());
         await page.setContent(`<!doctype html><html><head><meta name="viewport" content="width=device-width, initial-scale=1"></head>
           <body class="dashboard-page client-dashboard-page"><main class="dashboard-shell"><div id="dashboard-content">${workoutsSection}</div></main></body></html>`);
@@ -161,68 +173,74 @@ async function checkLayout(page, label) {
           await page.screenshot({ path: filename, fullPage: true });
           screenshots.push(filename);
         };
-        for (const mode of ['chooser', 'selected-program']) {
-          const label = `${engine} ${width}px ${scale * 100}% ${mode}`;
-          if (mode === 'selected-program') await page.locator('[data-preview-program]').click();
-          const cardioMenu = page.locator('[data-client-workout-choice-menu="cardio-mobility"]');
-          await cardioMenu.click();
-          const dialog = page.locator('[data-client-workout-choice-dialog]');
-          await dialog.waitFor({ state: 'visible' });
-          const shortcut = dialog.locator('[data-log-cardio]');
-          await shortcut.waitFor({ state: 'visible' });
-          assert.equal(await shortcut.count(), 1, `${label}: exactly one cardio shortcut`);
-          await checkLayout(page, label);
-          if (scale === 1) await take(mode);
-          await shortcut.click();
-          const panel = page.locator('.client-workout-panel-cardio');
-          await panel.waitFor({ state: 'visible' });
-          assert.equal(await page.locator('#client-workout-tabs').isVisible(), false);
-          assert.equal(await panel.locator('.workout-cardio-card').getAttribute('class').then(value => value.includes('is-open')), true);
-          assert.equal(await panel.locator('[data-exercise-toggle]').getAttribute('aria-expanded'), 'true');
-          for (const selector of ['[data-workout-date]', '[data-cardio-type]', '[data-cardio-duration]', '[data-cardio-distance]', '[data-cardio-calories]', '[data-log-notes]']) {
-            assert.equal(await panel.locator(selector).isVisible(), true, `${label}: visible ${selector}`);
-          }
-          assert.equal(await panel.locator('[data-set-row], [data-warmup-log], [data-set-weight], [data-set-reps], [data-add-custom-exercise]').count(), 0);
-          await panel.getByRole('button', { name: 'Save & finish cardio', exact: true }).waitFor({ state: 'visible' });
-          await checkLayout(page, label + ' cardio form');
-          if (mode === 'chooser' && (scale === 1 || width === 390)) await take('cardio');
-
-          await panel.getByRole('button', { name: 'Save & finish cardio', exact: true }).click();
-          const alert = panel.getByRole('alert');
-          try { await alert.waitFor({ state: 'visible' }); }
-          catch (error) { console.error('Cardio scenario', label, errors); throw error; }
-          assert.match(await alert.innerText(), /Enter a duration in minutes above 0/);
-          assert.match(await alert.innerText(), /Distance and other metrics are optional/);
-          assert.equal(await page.evaluate(() => fixtureEvents.filter(event => event[0] === 'feedback').length), scenarios % 2,
-            `${label}: blank duration must stop before feedback`);
-          await alert.getByRole('button', { name: 'Enter a duration in minutes above 0.' }).click();
-          assert.equal(await page.evaluate(() => document.activeElement.hasAttribute('data-cardio-duration')), true);
-          await panel.locator('[data-workout-date]').fill('2026-09-21');
-          await panel.locator('[data-workout-date]').dispatchEvent('change');
-          assert.equal(await panel.locator('[data-log-date]').inputValue(), '2026-09-21');
-          assert.equal(await panel.locator('[data-workout-date-value]').innerText(), 'Sep 21, 2026');
-          await panel.locator('[data-cardio-type]').fill('Outdoor walk');
-          await panel.locator('[data-cardio-duration]').fill('30');
-          await panel.locator('[data-cardio-distance]').fill('2.5');
-          await panel.locator('[data-cardio-calories]').fill('180');
-          await panel.locator('[data-log-notes]').fill('Synthetic browser proof: comfortable pace.');
-          await panel.getByRole('button', { name: 'Save & finish cardio', exact: true }).click();
-          await page.waitForFunction(() => !document.querySelector('.client-workout-panel-cardio').dataset.workoutFinishing);
-          assert.equal(await page.evaluate(() => fixtureEvents.filter(event => event[0] === 'feedback').length), scenarios % 2 + 1,
-            `${label}: valid entries reach feedback before the mocked cancel`);
-          assert.equal(await panel.getByRole('alert').count(), 0, `${label}: valid entries clear field errors`);
-          assert.equal(await panel.locator('[data-cardio-duration]').isEnabled(), true, `${label}: canceling feedback restores controls`);
-          await page.locator('[data-client-workout-picker-back]:visible').click();
-          assert.equal(await panel.isVisible(), false);
-          assert.equal(await cardioMenu.isVisible(), true);
-          assert.equal(await dialog.isVisible(), false);
-          assert.deepEqual(errors, [], `${label}: browser script errors`);
-          scenarios++;
+        const label = `${engine} ${width}px ${scale * 100}%`;
+        const routines = page.locator('#workout-hub-routines');
+        await routines.waitFor({ state: 'visible' });
+        assert.equal(await routines.getByRole('button', { name: /mobility|cardio/i }).count(), 0,
+          `${label}: Routines has no standalone cardio or mobility shortcut`);
+        if (scale === 1) await take('chooser');
+        await page.getByRole('tab', { name: 'Personal Training' }).click();
+        await page.locator('[data-preview-program]').click();
+        const dialog = page.locator('[data-client-workout-choice-dialog]');
+        const shortcut = page.locator('[data-log-cardio]');
+        await shortcut.waitFor({ state: 'visible' });
+        assert.equal(await shortcut.count(), 1, `${label}: exactly one cardio shortcut`);
+        await checkLayout(page, label);
+        if (scale === 1) await take('selected-program');
+        await shortcut.click();
+        assert.equal(await dialog.isVisible(), false, `${label}: Cardio opens directly`);
+        const panel = page.locator('.client-workout-panel-cardio');
+        await panel.waitFor({ state: 'visible' });
+        assert.equal(await page.locator('#client-workout-tabs').isVisible(), false);
+        assert.equal(await panel.locator('.workout-cardio-card').getAttribute('class').then(value => value.includes('is-open')), true);
+        assert.equal(await panel.locator('[data-exercise-toggle]').getAttribute('aria-expanded'), 'true');
+        for (const selector of ['[data-cardio-type]', '[data-cardio-duration]', '[data-cardio-distance]', '[data-cardio-calories]', '[data-log-notes]']) {
+          assert.equal(await panel.locator(selector).isVisible(), true, `${label}: visible ${selector}`);
         }
+        assert.equal(await panel.locator('[data-workout-date]').isVisible(), false, `${label}: date stays in session data`);
+        assert.equal(await panel.locator('[data-cardio-effort]').isVisible(), false, `${label}: previous effort is preserved in data only`);
+        await panel.getByRole('button', { name: 'Workout Settings' }).click();
+        await panel.getByRole('dialog', { name: 'Workout Settings' }).getByRole('button', { name: 'Close workout setup' }).click();
+        assert.equal(await panel.locator('[data-set-row], [data-warmup-log], [data-set-weight], [data-set-reps], [data-add-custom-exercise]').count(), 0);
+        await panel.getByRole('button', { name: 'Save & finish cardio', exact: true }).waitFor({ state: 'visible' });
+        await checkLayout(page, label + ' cardio form');
+        if (scale === 1 || width === 390) await take('cardio');
+
+        await panel.getByRole('button', { name: 'Save & finish cardio', exact: true }).click();
+        const alert = panel.getByRole('alert');
+        try { await alert.waitFor({ state: 'visible' }); }
+        catch (error) { console.error('Cardio scenario', label, errors); throw error; }
+        assert.match(await alert.innerText(), /Enter a duration in minutes above 0/);
+        assert.match(await alert.innerText(), /Distance and other metrics are optional/);
+        assert.equal(await page.evaluate(() => fixtureEvents.filter(event => event[0] === 'save').length), 0,
+          `${label}: blank duration must stop before saving`);
+        await alert.getByRole('button', { name: 'Enter a duration in minutes above 0.' }).click();
+        assert.equal(await page.evaluate(() => document.activeElement.hasAttribute('data-cardio-duration')), true);
+        await panel.locator('[data-workout-date]').evaluate(input => { input.value = '2026-09-21'; });
+        await panel.locator('[data-workout-date]').dispatchEvent('change');
+        assert.equal(await panel.locator('[data-log-date]').inputValue(), '2026-09-21');
+        await panel.locator('[data-cardio-type]').fill('Outdoor walk');
+        await panel.locator('[data-cardio-duration]').fill('30');
+        await panel.locator('[data-cardio-distance]').fill('2.5');
+        await panel.locator('[data-cardio-calories]').fill('180');
+        await panel.locator('[data-log-notes]').fill('Synthetic browser proof: comfortable pace.');
+        await panel.getByRole('button', { name: 'Save & finish cardio', exact: true }).click();
+        await page.waitForFunction(() => !document.querySelector('.client-workout-panel-cardio').dataset.workoutFinishing);
+        const saves = await page.evaluate(() => fixtureEvents.filter(event => event[0] === 'save'));
+        assert.equal(saves.length, 1, `${label}: valid entries reach the mocked save`);
+        assert.equal(saves[0][1].workout_duration_seconds, 1800);
+        assert.match(await alert.innerText(), /could not be saved/);
+        assert.equal(await panel.locator('[data-cardio-duration]').isEnabled(), true, `${label}: a failed save restores controls`);
+        await page.locator('[data-client-workout-picker-back]:visible').click();
+        assert.equal(await panel.isVisible(), false);
+        assert.equal(await shortcut.isVisible(), true);
+        assert.equal(await dialog.isVisible(), false);
+        assert.deepEqual(errors, [], `${label}: browser script errors`);
+        scenarios++;
         await page.close();
       }
     }
-    console.log(`Cardio browser proof passed: ${scenarios} ${engine} scenarios; 320/390/1280px; 100%/200% text; chooser/program → cardio → validation → back; no network writes.`);
+    console.log(`Cardio browser proof passed: ${scenarios} ${engine} scenarios; 320/390/1280px; 100%/200% text; Personal Training → Cardio → validation → back; no network writes.`);
     console.log(JSON.stringify({ screenshots }, null, 2));
   } finally { await browser.close(); }
 })().catch(error => { console.error(error); process.exitCode = 1; });

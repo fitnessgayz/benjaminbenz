@@ -10,7 +10,7 @@ test("installed apps keep distinct product identities and useful launch shortcut
   const client = JSON.parse(read("client.webmanifest"));
   const coach = JSON.parse(read("coach.webmanifest"));
 
-  assert.equal(client.name, "FWB Training");
+  assert.equal(client.name, "LIFTHARDR");
   assert.equal(coach.name, "FWB Coach");
   assert.notEqual(client.id, coach.id);
   assert.notEqual(client.start_url, coach.start_url);
@@ -42,8 +42,8 @@ test("auth, support, and privacy surfaces preserve install-to-launch identity", 
   for (const file of clientPages) {
     const html = read(file);
     assert.match(html, /rel="manifest" href="\/client\.webmanifest"/);
-    assert.match(html, /apple-mobile-web-app-title" content="FWB Training"/);
-    assert.match(html, /application-name" content="FWB Training"/);
+    assert.match(html, /apple-mobile-web-app-title" content="LIFTHARDR"/);
+    assert.match(html, /application-name" content="LIFTHARDR"/);
     assert.doesNotMatch(html, /user-scalable=no|maximum-scale=1/);
   }
 

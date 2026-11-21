@@ -19,7 +19,7 @@ test("coach app has a distinct install identity and coach entry point", () => {
   assert.equal(coachManifest.id, "/coach-app");
   assert.equal(coachManifest.name, "FWB Coach");
   assert.equal(coachManifest.start_url, "/coach-admin.html");
-  assert.equal(clientManifest.name, "FWB Training");
+  assert.equal(clientManifest.name, "LIFTHARDR");
   assert.notEqual(coachManifest.name, clientManifest.name);
   assert.match(coachLogin, /rel="manifest" href="\/coach\.webmanifest"/);
   assert.match(coachLogin, /id="coach-login-form"/);

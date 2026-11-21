@@ -88,13 +88,13 @@ test("renders a compact accessible 3D deck with descriptions and direct controls
   assert.match(handlerSource, /\{ passive: false \}/);
 });
 
-test("opens Saved Logs from the Custom Workout copy link", () => {
+test("opens Saved Logs from the Custom Workout copy link with a return route", () => {
   const handlerSource = sourceForFunction("handleClientWorkoutTabs");
   const openHistorySource = sourceForFunction("openClientWorkoutCopyHistory");
 
   assert.match(handlerSource, /data-client-workout-copy-history/);
   assert.match(handlerSource, /openClientWorkoutCopyHistory\(\)/);
-  assert.match(openHistorySource, /setClientDashboardTab\("logs"\)/);
+  assert.match(openHistorySource, /setClientDashboardTab\("logs", \{ fromPreviousWorkout: true \}\)/);
   assert.match(openHistorySource, /client-logs-title/);
   assert.match(openHistorySource, /scrollIntoView/);
   assert.match(openHistorySource, /focus\(\{ preventScroll: true \}\)/);

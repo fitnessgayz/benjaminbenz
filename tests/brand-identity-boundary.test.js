@@ -35,24 +35,27 @@ test("client and coach manifests use approved installed identities", () => {
   const coach = JSON.parse(read("coach.webmanifest"));
 
   assert.equal(client.id, "/client-dashboard.html");
-  assert.equal(client.name, "FWB Training");
-  assert.equal(client.short_name, "FWB Training");
+  assert.equal(client.name, "LIFTHARDR");
+  assert.equal(client.short_name, "LIFTHARDR");
   assert.equal(client.background_color, "#050806");
   assert.equal(client.theme_color, "#050806");
   assert.equal(coach.name, "FWB Coach");
   assert.equal(coach.background_color, "#030D1C");
   assert.equal(coach.theme_color, "#030D1C");
-  assert.deepEqual(client.icons.map((icon) => icon.src), coach.icons.map((icon) => icon.src));
+  assert.ok(client.icons.every((icon) => icon.src.startsWith("/images/lifthardr/")));
+  assert.ok(coach.icons.every((icon) => icon.src.startsWith("/fwb-brand-icon-gold-")));
   assert.deepEqual(client.shortcuts.map(({ name }) => name), ["Start training", "View progress", "Message your coach"]);
   assert.deepEqual(coach.shortcuts.map(({ name }) => name), ["Coach home", "Coach inbox", "Manage clients", "Log a workout", "Exercise library"]);
 });
 
-test("client auth and onboarding stay inside the FWB Training identity", () => {
+test("client auth and onboarding stay inside the LIFTHARDR identity", () => {
   for (const file of ["client-login.html", "client-signup.html", "client-invite.html"]) {
     const html = read(file);
     assert.match(html, /rel="manifest" href="\/client\.webmanifest"/);
-    assert.match(html, /apple-mobile-web-app-title" content="FWB Training"/);
-    assert.match(html, /application-name" content="FWB Training"/);
+    assert.match(html, /apple-mobile-web-app-title" content="LIFTHARDR"/);
+    assert.match(html, /application-name" content="LIFTHARDR"/);
+    assert.match(html, /rel="apple-touch-icon"[^>]*href="\/images\/lifthardr\/icon-180\.png"/);
+    assert.match(html, /<img src="\/images\/lifthardr\/icon-180\.png"/);
   }
 
   const login = read("client-login.html");
@@ -60,15 +63,15 @@ test("client auth and onboarding stay inside the FWB Training identity", () => {
   assert.match(login, /Train with intention\. Feel your progress\./);
   assert.doesNotMatch(login, /Training portal|<h2>Client access<\/h2>/);
   assert.doesNotMatch(read("js/client-portal.js"), /Use the email and password from your coach\./);
-  assert.match(read("client-invite.html"), /Welcome to FWB Training/);
+  assert.match(read("client-invite.html"), /Welcome to LIFTHARDR/);
 });
 
 test("installed entry pages expose the same product names and deep-ink browser chrome", () => {
   const clientDashboard = read("client-dashboard.html");
-  assert.match(clientDashboard, /apple-mobile-web-app-title" content="FWB Training"/);
-  assert.match(clientDashboard, /application-name" content="FWB Training"/);
-  assert.match(clientDashboard, /<title>FWB Training \| Fitness with Benjamin<\/title>/);
-  assert.match(clientDashboard, /<p class="client-dashboard-nav-title">FWB Training<\/p>/);
+  assert.match(clientDashboard, /apple-mobile-web-app-title" content="LIFTHARDR"/);
+  assert.match(clientDashboard, /application-name" content="LIFTHARDR"/);
+  assert.match(clientDashboard, /<title>LIFTHARDR \| Fitness with Benjamin<\/title>/);
+  assert.match(clientDashboard, /<p class="client-dashboard-nav-title"><img src="\/images\/lifthardr\/icon-192\.png"[^>]*> LIFTHARDR<\/p>/);
   assert.doesNotMatch(clientDashboard, /user-scalable=no|maximum-scale=1/);
 
   for (const file of ["coach-login.html", "coach-admin.html", "coach-workout-log.html"]) {
@@ -111,19 +114,18 @@ test("AI-facing pages use FWB Training Assistant without claiming the coach prod
   }
 });
 
-test("PWA manifests use the versioned electric-gold icon set at every declared size", () => {
-  const manifests = ["site.webmanifest", "client.webmanifest", "coach.webmanifest"]
-    .map((file) => JSON.parse(read(file)));
-  const sizes = [180, 192, 512, 1024];
-  for (const size of sizes) {
-    const filename = `fwb-brand-icon-gold-${size}-v5.png`;
-    const png = fs.readFileSync(path.join(root, filename));
-    assert.equal(png.toString("ascii", 1, 4), "PNG");
-    assert.equal(png.readUInt32BE(16), size);
-    assert.equal(png.readUInt32BE(20), size);
-
-    for (const manifest of manifests) {
-      assert.ok(manifest.icons.some((icon) => icon.src === `/${filename}` && icon.sizes === `${size}x${size}`));
+test("PWA manifests provide correctly sized product icons", () => {
+  const sizes = ["180x180", "192x192", "512x512", "1024x1024"];
+  for (const filename of ["site.webmanifest", "client.webmanifest", "coach.webmanifest"]) {
+    const { icons } = JSON.parse(read(filename));
+    assert.ok(sizes.every((size) => icons.some((icon) => icon.sizes === size && icon.purpose === "any")));
+    for (const icon of icons) {
+      const png = fs.readFileSync(path.join(root, icon.src));
+      assert.equal(png.toString("ascii", 1, 4), "PNG");
+      assert.equal(`${png.readUInt32BE(16)}x${png.readUInt32BE(20)}`, icon.sizes);
+    }
+    if (filename === "client.webmanifest") {
+      assert.ok(icons.some((icon) => icon.purpose === "maskable" && icon.sizes === "512x512"));
     }
   }
 });

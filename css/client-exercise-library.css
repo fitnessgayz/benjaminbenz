@@ -339,3 +339,51 @@
   .client-exercise-library-item-plus { width: 40px; height: 40px; }
   .client-exercise-library-item-copy strong { font-size: .93rem; }
 }
+
+/* A compact search list keeps the movement and its primary muscle easy to scan. */
+.client-exercise-library-help {
+  position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%);
+}
+.client-exercise-library-filters {
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px; overflow: visible; padding: 0; margin-bottom: 12px;
+}
+.client-exercise-library-equipment-label,
+.client-exercise-library-muscle-label {
+  display: block; min-width: 0; margin: 0; font-size: 0;
+}
+.client-exercise-library-equipment,
+.client-exercise-library-muscle {
+  width: 100%; min-width: 0; min-height: 44px; padding: 0 28px 0 10px;
+  appearance: none; border: 1px solid #3c4652; border-radius: 11px;
+  color: #f6f7f8; background: #25282e; font: 600 .88rem/1.2 var(--font-ui, Inter, sans-serif);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8' fill='none' stroke='%23a9d8ff' stroke-width='1.5'%3E%3Cpath d='m1 1 5 5 5-5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 10px center; background-size: 10px 7px;
+}
+.client-exercise-library-count { margin: 6px 0 8px; color: #f6f7f8; font-size: .9rem; text-transform: none; letter-spacing: 0; }
+.client-exercise-library-group { margin: 0; }
+.client-exercise-library-list,
+.client-exercise-library-variants { gap: 0; margin: 0; padding: 0; }
+.client-exercise-library-item-button {
+  grid-template-columns: 60px minmax(0, 1fr) 32px; gap: 12px;
+  min-height: 84px; padding: 9px 4px; border: 0; border-bottom: 1px solid #343840;
+  border-radius: 0; background: transparent;
+}
+.client-exercise-library-item-artwork { width: 60px; height: 60px; border-radius: 50%; }
+.client-exercise-library-item-artwork img { width: 60px; max-height: 60px; }
+.client-exercise-library-item-copy { gap: 4px; }
+.client-exercise-library-item-copy strong { font-size: .95rem; font-weight: 600; overflow-wrap: normal; }
+.client-exercise-library-item-muscle {
+  padding: 0; border: 0; background: transparent; color: #aab0bb; font-size: .83rem;
+}
+.client-exercise-library-item-plus {
+  width: 30px; height: 30px; background: #25313d; color: #69bdff; font-size: 1.45rem;
+}
+.client-exercise-library-preview { top: 9px; left: 4px; width: 60px; height: 60px; border-radius: 50%; }
+@media (max-width: 370px) {
+  .client-exercise-library-item-button { grid-template-columns: 54px minmax(0, 1fr) 30px; gap: 9px; min-height: 76px; }
+  .client-exercise-library-item-artwork { width: 54px; height: 54px; border-radius: 50%; }
+  .client-exercise-library-item-artwork img { width: 54px; max-height: 54px; }
+  .client-exercise-library-preview { width: 54px; height: 54px; }
+  .client-exercise-library-item-plus { width: 30px; height: 30px; }
+}

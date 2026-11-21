@@ -28,9 +28,16 @@ function setClientSettingsView() {}
 ${production('clientDashboardHistoryUrl')}
 ${production('initializeClientDashboardBrowserHistory')}
 ${production('syncClientDashboardBrowserHistory')}
+${production('clientDashboardNavigationTab')}
 ${production('setClientDashboardTab')}
+${production('handleClientDashboardTabs')}
+${production('openClientWorkoutCopyHistory')}
 initializeClientDashboardBrowserHistory(new Set(['home', 'workouts', 'logs']));
-setClientDashboardTab(activeClientDashboardTab, { fromHistory: true });
+setClientDashboardTab(activeClientDashboardTab, {
+  fromHistory: true,
+  fromPreviousWorkout: clientDashboardBrowserHistoryReady && window.history.state?.fwbPreviousWorkout === true
+});
+handleClientDashboardTabs();
 `;
 
 (async () => {
@@ -58,6 +65,18 @@ setClientDashboardTab(activeClientDashboardTab, { fromHistory: true });
       assert.equal(new URL(page.url()).searchParams.get('tab'), 'home');
       assert.equal(await page.locator('[data-client-dashboard-panel="home"]').isVisible(), true);
       assert.equal(await page.locator('[data-client-dashboard-panel="workouts"]').isVisible(), false);
+
+      await page.evaluate(() => {
+        setClientDashboardTab('workouts');
+        openClientWorkoutCopyHistory();
+      });
+      assert.equal(await page.locator('[data-client-dashboard-tab="workouts"]').getAttribute('aria-current'), 'page');
+      await page.reload();
+      await page.addScriptTag({ content: fixture });
+      assert.equal(await page.locator('[data-client-dashboard-tab="workouts"]').getAttribute('aria-current'), 'page');
+      await page.getByRole('button', { name: 'Close', exact: true }).click();
+      assert.equal(new URL(page.url()).searchParams.get('tab'), 'workouts');
+      assert.equal(await page.locator('[data-client-dashboard-panel="workouts"]').isVisible(), true);
 
       await page.evaluate(() => setClientDashboardTab('workouts'));
       await page.evaluate(() => setClientDashboardTab('home'));

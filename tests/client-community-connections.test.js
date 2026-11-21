@@ -109,6 +109,7 @@ test('accepted connection shows shared achievements without reading workout reco
   const connection = elements['[data-community-connection-list]'].children[0];
   assert.equal(connection.children[0].textContent, '🏃');
   assert.equal(connection.children[1].textContent, 'Jordan');
+  assert.equal(connection.children[2].textContent, 'In your Squad');
   assert.ok(connection.children.some(child => /First Spark|workout 1/i.test(child.textContent)));
   assert.ok(connection.children.some(child => /8 gym visits/.test(child.textContent)));
   assert.ok(connection.children.some(child => /4 props received/.test(child.textContent)));
@@ -126,6 +127,7 @@ test('accepted connection shows shared achievements without reading workout reco
   assert.ok(calls.includes('community_give_wall_props'));
   assert.equal(calls.includes('client_community_achievements'), false);
   const actions = connection.children.find(child => child.className === 'client-community-connection-actions');
+  assert.equal(actions.children[1].textContent, 'Remove from Squad');
   actions.children[0].listeners.click();
   await new Promise(resolve => setImmediate(resolve));
   await new Promise(resolve => setImmediate(resolve));

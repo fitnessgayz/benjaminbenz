@@ -395,7 +395,8 @@ function dialogFixture(format = "single") {
   const submit = { disabled: false, textContent: "", setAttribute(name, value) { this[name] = value; } };
   const menu = { hidden: true };
   const cards = [0, 1, 2].map((index) => ({ querySelector: () => ({ index }) }));
-  const panel = { id: "client-workout-panel-0", dataset: { customWorkoutFormat: format }, isConnected: true, matches: () => true, querySelectorAll: () => cards, contains: (card) => cards.includes(card) };
+  const panel = { id: "client-workout-panel-0", dataset: { customWorkoutFormat: format }, isConnected: true, matches: () => true,
+    querySelector: () => null, querySelectorAll: () => cards, contains: (card) => cards.includes(card) };
   const trigger = { isConnected: true, disabled: false, closest: (selector) => selector === ".client-workout-panel-custom" ? panel : null, focus: () => calls.focus++ };
   const dialog = {
     classList: { names: new Set(), toggle(name, enabled) { if (enabled) this.names.add(name); else this.names.delete(name); }, contains(name) { return this.names.has(name); } },
@@ -426,9 +427,17 @@ function dialogFixture(format = "single") {
     escapeHtml: String, currentExerciseLabel: (log) => `Exercise ${log.index + 1}`,
     customWorkoutCarousels: () => [],
     renderCustomExerciseSuggestions() {}, renderCustomWorkoutPickerResults() {},
+    customWorkoutPickerDisplayName(name) { return name; },
+    customWorkoutPickerRecordForName() { return null; },
     selectCustomExerciseSuggestion: (suggestion) => { input.value = suggestion.dataset.customExerciseSuggestion; },
     removeExerciseLog: (log) => calls.remove.push(log.index),
     notifyCoachAboutCustomExercises() {},
+    startCustomWorkoutOnEntry: (panel) => { calls.start = panel; },
+    renderCustomWorkoutInlineCardio: (panel) => {
+      calls.cardio = panel;
+      return { isConnected: true, querySelector: () => ({ focus() {} }) };
+    },
+    persistCustomWorkoutDraftFromPanel: (panel) => { calls.persisted = panel; },
     addCustomWorkoutPickedExercise: (_panel, name) => { calls.add.push(name); return { isConnected: false }; },
     addCustomWorkoutPickedExercises: (_panel, names) => { calls.add.push(...names); return { isConnected: false }; }
   });
@@ -436,6 +445,18 @@ function dialogFixture(format = "single") {
   const clickPrompt = (selector) => promptHandlers.click({ target: { closest: (candidate) => candidate === selector ? {} : null } });
   return { context, handlers, promptHandlers, calls, trigger, input, click, clickPrompt, confirmation, confirmationDetail, dialog, panel, selectedList, prompt, submit };
 }
+
+test("Add cardio in the exercise picker opens cardio in the same workout", () => {
+  const fixture = dialogFixture("superset");
+  fixture.context.openCustomWorkoutExerciseDialog(fixture.trigger);
+  assert.match(fixture.dialog.innerHTML, /data-pick-inline-cardio>Add cardio/);
+  fixture.click("[data-pick-inline-cardio]");
+  assert.equal(fixture.calls.cardio, fixture.panel);
+  assert.equal(fixture.calls.persisted, fixture.panel);
+  assert.equal(fixture.calls.start, fixture.panel);
+  assert.deepEqual(fixture.calls.add, []);
+  assert.equal(fixture.dialog.open, false);
+});
 
 test("picker asks for the full superset or circuit before adding it", () => {
   for (const [format, minimum] of [["single", 1], ["superset", 2], ["circuit", 3]]) {
@@ -473,11 +494,11 @@ test("straight sets stage a suggestion until Add exercise is pressed", () => {
   assert.deepEqual(fixture.calls.add, [], "Add cannot skip the confirmation after Keep choosing");
   fixture.clickPrompt("[data-confirm-add-card]");
   assert.deepEqual(fixture.calls.add, ["Hip Thrust Machine"]);
+  assert.equal(fixture.calls.start, fixture.panel);
 });
 
 test("workout setup chips open only their matching popup and keep summary labels current", () => {
-  const labels = { date: { textContent: "" }, gym: { textContent: "" }, format: { textContent: "" } };
-  const dateInput = { value: "2026-11-06", showPicker() { calls.push("calendar"); } };
+  const labels = { gym: { textContent: "" }, format: { textContent: "" } };
   const gymInput = { value: "Alex Fitness", focus() { calls.push("gym focus"); } };
   const formatPicker = { open: false };
   const heading = { textContent: "" };
@@ -488,7 +509,6 @@ test("workout setup chips open only their matching popup and keep summary labels
     querySelector(selector) {
       return {
         "[data-custom-workout-setup-title]": heading,
-        "[data-workout-date]": dateInput,
         "[data-workout-gym]": gymInput,
         ".custom-workout-format-picker": formatPicker
       }[selector];
@@ -499,9 +519,7 @@ test("workout setup chips open only their matching popup and keep summary labels
     dataset: { customWorkoutFormat: "superset" },
     querySelector(selector) {
       return {
-        "[data-workout-date]": dateInput,
         "[data-workout-gym]": gymInput,
-        "[data-custom-workout-summary-date]": labels.date,
         "[data-custom-workout-summary-gym]": labels.gym,
         "[data-custom-workout-summary-format]": labels.format,
         "[data-custom-workout-setup-dialog]": dialog
@@ -510,27 +528,28 @@ test("workout setup chips open only their matching popup and keep summary labels
   };
   const context = evaluate(["syncCustomWorkoutSetupSummary", "openCustomWorkoutSetupDialog"], {
     todayDate: () => "2026-11-06",
-    formatLogDate: () => "Nov 6, 2026",
+    syncAutoRestTimerPreference: () => calls.push("settings"),
     normalizeWorkoutGymName: String,
     normalizeCustomWorkoutFormat: String,
     customWorkoutFormats: { superset: { label: "Superset" } }
   });
   context.syncCustomWorkoutSetupSummary(panel);
-  assert.deepEqual(Object.values(labels).map((label) => label.textContent), ["Nov 6", "Alex Fitness", "Superset"]);
+  assert.deepEqual(Object.values(labels).map((label) => label.textContent), ["Alex Fitness", "Superset"]);
   const open = (section) => context.openCustomWorkoutSetupDialog({
     dataset: { customWorkoutSetupOpen: section },
     closest: () => panel
   });
   open("date");
-  assert.equal(dialog.dataset.section, "date");
-  assert.equal(heading.textContent, "Workout date");
-  assert.deepEqual(calls, ["open", "calendar"]);
+  assert.deepEqual(calls, []);
   open("gym");
   assert.equal(dialog.dataset.section, "gym");
   assert.deepEqual(calls.slice(-2), ["open", "gym focus"]);
   open("format");
   assert.equal(dialog.dataset.section, "format");
   assert.equal(formatPicker.open, true);
+  open("settings");
+  assert.equal(heading.textContent, "Workout Settings");
+  assert.deepEqual(calls.slice(-2), ["settings", "open"]);
 });
 
 test("grouped picker keeps Add directly below selected exercises", () => {

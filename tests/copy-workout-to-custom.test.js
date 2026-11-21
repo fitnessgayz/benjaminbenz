@@ -31,6 +31,7 @@ test("selects an exact previous session before falling back to date and title", 
 test("copies exercise and set structure without marking the new workout complete", () => {
   const copyableSource = sourceForFunction("isCopyableWorkoutHistoryLog");
   const draftSource = sourceForFunction("customWorkoutDraftFromLogs");
+  const cardioSource = sourceForFunction("parseCardioNotes");
   const buildDraft = Function(
     "warmupExerciseCode",
     "cardioExerciseCode",
@@ -39,7 +40,7 @@ test("copies exercise and set structure without marking the new workout complete
     "warmUpSetNumberBase",
     "customExerciseCode",
     "customWorkoutTitle",
-    `${copyableSource}\n${draftSource}; return customWorkoutDraftFromLogs;`
+    `${copyableSource}\n${cardioSource}\n${draftSource}; return customWorkoutDraftFromLogs;`
   )(
     "WARMUP",
     "CARDIO",
@@ -54,8 +55,8 @@ test("copies exercise and set structure without marking the new workout complete
     { workout_title: "Lower Body", entry_date: "2026-09-08", exercise_code: "A2", exercise_name: "Split Squat", set_number: 1, set_type: "working", weight_used: 0, reps: 10, effort_value: 2, notes: "Hard" },
     { workout_title: "Lower Body", entry_date: "2026-09-08", exercise_code: "A1", exercise_name: "Goblet Squat", set_number: 1001, set_type: "warm_up", weight_used: 20, reps: 8 },
     { workout_title: "Lower Body", entry_date: "2026-09-08", exercise_code: "A1", exercise_name: "Goblet Squat", set_number: 1, set_type: "working", weight_used: 40, reps: 10 },
-    { workout_title: "Lower Body", entry_date: "2026-09-08", exercise_code: "A1", exercise_name: "Goblet Squat", set_number: 3, set_type: "working", weight_used: 50, reps: 8 },
-    { workout_title: "Lower Body", entry_date: "2026-09-08", exercise_code: "CARDIO", exercise_name: "Walk", set_number: 1 }
+    { workout_title: "Lower Body", entry_date: "2026-09-08", exercise_code: "A1", exercise_name: "Goblet Squat", set_number: 3, set_type: "timed", duration_seconds: 30 },
+    { workout_title: "Lower Body", entry_date: "2026-09-08", exercise_code: "CARDIO", exercise_name: "Walk", set_number: 1, weight_used: 20, notes: "Cardio placement: before" }
   ];
   const draft = buildDraft(logs, {
     date: "2026-09-11",
@@ -70,6 +71,10 @@ test("copies exercise and set structure without marking the new workout complete
   assert.equal(draft.copiedFrom.sessionKey, "session:lower-1");
   assert.deepEqual(draft.exercises.map((exercise) => exercise.code), ["CW01", "CW02"]);
   assert.deepEqual(draft.exercises.map((exercise) => exercise.name), ["Goblet Squat", "Split Squat"]);
+  assert.equal(draft.cardioPlacement, "before");
+  assert.equal(draft.cardio.cardioType, "Walk");
+  assert.equal(draft.cardio.cardioDuration, undefined);
+  assert.equal(draft.exercises[0].sets[3].timed, true);
   assert.deepEqual(
     draft.exercises[0].sets.map((set) => [set.label, set.setType]),
     [["W", "warm_up"], ["1", "working"], ["2", "working"], ["3", "working"]]
@@ -79,6 +84,13 @@ test("copies exercise and set structure without marking the new workout complete
     draft.exercises.flatMap((exercise) => exercise.sets).map(() => ["", "", ""])
   );
   assert.ok(draft.exercises.every((exercise) => exercise.notes === "" && exercise.skipped === false));
+
+  const cardio = { exercise_code: "CARDIO", exercise_name: "Bike", exercise_order: 0, set_type: "timed" };
+  const press = { exercise_code: "1", exercise_name: "Press", exercise_order: 1, set_number: 1 };
+  const imported = buildDraft([{ ...cardio, set_number: 1 }, { ...cardio, set_number: 2 }, press]);
+  assert.deepEqual(imported.exercises.map((exercise) => exercise.name), ["Bike", "Press"]);
+  assert.deepEqual(imported.exercises[0].sets.map((set) => [set.timed, set.reps]), [[true, ""], [true, ""]]);
+  assert.equal(buildDraft([{ ...cardio, set_number: 1 }, press]).cardioPlacement, "before");
 });
 
 test("keeps incomplete superset groups separate and keeps one circuit together", () => {

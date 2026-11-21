@@ -1,8 +1,8 @@
 (function (root) {
   "use strict";
 
-  const defaults = ["home", "workouts", "logs", "progress", "notifications"];
-  const labels = { home: "Home", workouts: "Workouts", logs: "Logs", progress: "Progress", notifications: "Settings" };
+  const defaults = ["home", "workouts", "community", "profile"];
+  const labels = { home: "Home", workouts: "Workout", community: "Social", profile: "Profile" };
   const storagePrefix = "fwb_client_bottom_tabs_v1:";
   let state = normalize();
   let accountId = "";
@@ -16,7 +16,7 @@
     const order = [...new Set(requestedOrder.filter((id) => defaults.includes(id)))];
     defaults.forEach((id) => { if (!order.includes(id)) order.push(id); });
     const requestedHidden = Array.isArray(value.hidden) ? value.hidden : [];
-    const hidden = [...new Set(requestedHidden.filter((id) => defaults.includes(id) && id !== "notifications"))];
+    const hidden = [...new Set(requestedHidden.filter((id) => defaults.includes(id) && id !== "profile"))];
     return { order, hidden };
   }
 
@@ -30,7 +30,7 @@
 
   function toggleHidden(value, id) {
     const next = normalize(value);
-    if (id === "notifications" || !next.order.includes(id)) return next;
+    if (id === "profile" || !next.order.includes(id)) return next;
     next.hidden = next.hidden.includes(id) ? next.hidden.filter((item) => item !== id) : [...next.hidden, id];
     return next;
   }
@@ -115,7 +115,7 @@
     row.append(iconFor(id), element("strong", "client-bottom-tab-name", labels[id]));
     const controls = element("div", "client-bottom-tab-controls");
     if (shown) {
-      if (id === "notifications") {
+      if (id === "profile") {
         controls.append(element("span", "client-bottom-tab-always", "Always shown"));
       } else {
         controls.append(actionButton("Hide", id, "toggle", `Hide ${labels[id]} from bottom tabs`));

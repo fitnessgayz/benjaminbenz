@@ -100,7 +100,12 @@
     "20261108193000_quiet_historical_monthly_report_backfill.sql",
     "20261112172150_replace_popular_exercise_images.sql",
     "20261112172709_archive_duplicate_exercise_aliases.sql",
-    "20261114192124_add_next_forty_popular_exercise_media.sql"
+    "20261114192124_add_next_forty_popular_exercise_media.sql",
+    "20261121054601_create_community_avatar_sharing.sql",
+    "20261121055934_create_community_wall_comments.sql",
+    "20261121061518_create_community_weekly_leaderboard.sql",
+    "20261121061846_create_community_wall_workout_summaries.sql",
+    "20261121062338_create_community_request_circle.sql"
   ],
   "nasmExerciseCatalogMigration": "20261001032427_add_complete_nasm_exercise_library.sql",
   "nasmExerciseCatalogCount": 75,
