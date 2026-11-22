@@ -105,7 +105,8 @@
     "20261122011529_consolidate_client_exercise_duplicates.sql",
     "20261122011802_replace_belt_squat_and_glute_drive_artwork.sql",
     "20261122012807_retire_fringe_exercise_entries.sql",
-    "20261122025449_replace_t_bar_row_photo.sql"
+    "20261122025449_replace_t_bar_row_photo.sql",
+    "20261122030158_illustrate_t_bar_row.sql"
   ],
   "nasmExerciseCatalogMigration": "20261001032427_add_complete_nasm_exercise_library.sql",
   "nasmExerciseCatalogCount": 75,
@@ -10665,6 +10666,13 @@
       "objectPath": "anatomy/2026-11-21/t-bar-row-photo.webp",
       "contentType": "image/webp",
       "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/anatomy/2026-11-21/t-bar-row-chest-supported.webp",
+      "bucket": "exercise-images",
+      "objectPath": "anatomy/2026-11-21/t-bar-row-chest-supported.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
     }
   ],
   "exerciseMedia": [
@@ -11234,7 +11242,7 @@
     },
     {
       "name": "T-Bar Row",
-      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/anatomy/2026-11-21/t-bar-row-photo.webp",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/anatomy/2026-11-21/t-bar-row-chest-supported.webp",
       "demoUrl": "https://www.youtube.com/watch?v=yPis7nlbqdY"
     },
     {
