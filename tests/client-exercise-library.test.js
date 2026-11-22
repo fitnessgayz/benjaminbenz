@@ -115,6 +115,23 @@ test("keeps recent alias searches on the canonical exercise and filters equipmen
   assert.deepEqual(matchingRecords(prepared, "", "All", "cable", true), []);
 });
 
+test("consolidates duplicate labels and 45-degree extensions without swallowing other variations", () => {
+  const prepared = prepareRecords([
+    { name: "45° Degree Hip Extension", aliases: ["45 Degree Hip Extension"], libraryEntry: { primary_muscle: "Glutes", equipment: "machine" } },
+    { name: "45-Degree Back Extension", libraryEntry: { primary_muscle: "Glutes", equipment: "machine" } },
+    { name: "Reverse Hyperextension", libraryEntry: { primary_muscle: "Glutes" } },
+    { name: "Machine Chest Press", libraryEntry: { primary_muscle: "Chest" } },
+    { name: "Chest Press (Machine)" },
+    { name: "Incline Machine Chest Press", libraryEntry: { primary_muscle: "Chest" } }
+  ], ["45 Degree Hip Extension", "45° Degree Hip Extension", "45-Degree Back Extension"]);
+  assert.equal(prepared.length, 4);
+  const [extension] = matchingRecords(prepared, "45 degree hip extension", "Glutes");
+  assert.equal(extension.name, "45-Degree Back Extension");
+  assert.equal(extension.useCount, 3);
+  assert.deepEqual(matchingRecords(prepared, "chest press machine", "Chest").map((record) => record.name),
+    ["Incline Machine Chest Press", "Machine Chest Press"]);
+});
+
 test("groups movement variants and searches common equipment and laterality aliases", () => {
   const records = prepareRecords([
     { name: "Lat Pulldown", libraryEntry: { primary_muscle: "Back" } },
@@ -156,7 +173,7 @@ test("orders chest press variants from basic through equipment angle and grip", 
   const records = prepareRecords(names.map((name) => ({ name, libraryEntry: { primary_muscle: "Chest" } })));
   const family = exerciseFamilies(records).find((item) => item.title === "Chest Press");
   assert.deepEqual(family.entries.map((entry) => entry.name), ["Chest Press", "Dumbbell Chest Press",
-    "Incline Dumbbell Chest Press", "Incline Dumbbell Press",
+    "Incline Dumbbell Chest Press",
     "Decline Dumbbell Chest Press", "Single Arm Chest Press",
     "Neutral Grip Chest Press", "Underhand Grip Chest Press"]);
 });

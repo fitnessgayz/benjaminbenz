@@ -82,6 +82,7 @@ function validateManifest() {
 
   for (const expected of manifest.exerciseMedia) {
     assert(typeof expected.name === "string" && expected.name.length > 0, "Each exerciseMedia entry needs a name.");
+    assert(expected.active === undefined || typeof expected.active === "boolean", `${expected.name} has an invalid active flag.`);
     assert(expected.imageUrl || expected.motionUrl || expected.demoUrl, `${expected.name} needs an imageUrl, motionUrl, or demoUrl.`);
   }
 }
@@ -235,7 +236,7 @@ async function verifyExerciseMedia(baseUrl, secretKey, nasmExerciseCatalog) {
   await forEachInBatches(manifest.exerciseMedia, async (expected) => {
     const row = await fetchExercise(baseUrl, secretKey, expected.name);
     assert(row.is_approved === true, `${expected.name} is not approved for the shared exercise library.`);
-    assert(row.is_active === true, `${expected.name} is not active in the shared exercise library.`);
+    assert(row.is_active === (expected.active ?? true), `${expected.name} has an unexpected active status in the shared exercise library.`);
     if (expected.imageUrl) assert(row.image_url === expected.imageUrl, `${expected.name} image_url mismatch.`);
     if (expected.motionUrl) assert(row.motion_url === expected.motionUrl, `${expected.name} motion_url mismatch.`);
     if (expected.demoUrl) assert(row.demo_url === expected.demoUrl, `${expected.name} demo_url mismatch.`);
