@@ -11744,6 +11744,16 @@ textarea:focus {
   object-position: left center;
 }
 
+/* Anatomy illustrations use the whole image for their two poses. */
+:root body.client-dashboard-page .exercise-media-button > img[src*="/exercise-images/anatomy/"],
+:root body.client-dashboard-page #client-workout-panels .ios-log-exercise-image .exercise-media-button > img[src*="/exercise-images/anatomy/"],
+:root body.client-dashboard-page .custom-workout-exercise-dialog.is-grouped-picker .custom-picker-image img[src*="/exercise-images/anatomy/"],
+.exercise-library-card-media img[src*="/exercise-images/anatomy/"] {
+  object-fit: contain;
+  object-position: center;
+  background: #fff;
+}
+
 .exercise-library-card-media video,
 .exercise-library-card-media iframe {
   position: absolute;

@@ -5690,7 +5690,8 @@ function trustedExerciseImageUrl(value) {
     const url = new URL(value);
     const storageOrigin = new URL(window.FWB_SUPABASE_CONFIG.url).origin;
     const storageImage = url.origin === storageOrigin
-      && /^\/storage\/v1\/object\/public\/exercise-images\/approved\/[a-z0-9/-]+\.(png|jpe?g|webp)$/i.test(url.pathname);
+      && (/^\/storage\/v1\/object\/public\/exercise-images\/approved\/[a-z0-9/-]+\.(png|jpe?g|webp)$/i.test(url.pathname)
+        || /^\/storage\/v1\/object\/public\/exercise-images\/anatomy\/\d{4}-\d{2}-\d{2}\/[a-z0-9-]+\.webp$/i.test(url.pathname));
     const siteImage = url.origin === "https://benjaminbenz.com"
       && /^\/images\/exercises\/[a-z0-9/-]+\.(png|jpe?g|webp)$/i.test(url.pathname);
     return url.protocol === "https:" && !url.username && !url.password && (storageImage || siteImage) ? url.href : "";

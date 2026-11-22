@@ -53,6 +53,23 @@ test("prepares reviewed still and motion media only from approved storage", (t) 
   assert.equal(untrusted.motionUrl, "");
 });
 
+test("accepts approved full-width anatomy artwork independently of motion media", (t) => {
+  const previousConfig = globalThis.FWB_SUPABASE_CONFIG;
+  globalThis.FWB_SUPABASE_CONFIG = { url: "https://example.supabase.co" };
+  t.after(() => { globalThis.FWB_SUPABASE_CONFIG = previousConfig; });
+  const imageUrl = "https://example.supabase.co/storage/v1/object/public/exercise-images/anatomy/2026-11-21/push-up.webp";
+  const records = prepareRecords([
+    { name: "Push-Up", libraryEntry: { image_url: imageUrl } },
+    { name: "Other", libraryEntry: { image_url: imageUrl.replace("example.supabase.co", "other.example") } }
+  ]);
+  const anatomy = records.find((record) => record.name === "Push-Up");
+  const untrusted = records.find((record) => record.name === "Other");
+  assert.equal(anatomy.imageUrl, imageUrl);
+  assert.equal(anatomy.anatomy, true);
+  assert.equal(anatomy.motionUrl, "");
+  assert.equal(untrusted.imageUrl, "");
+});
+
 test("searches aliases and filters by primary muscle", () => {
   const prepared = prepareRecords([
     { name: "Romanian Deadlift", aliases: ["RDL"], libraryEntry: { primary_muscle: "Hamstrings", secondary_muscles: ["Glutes"] } },

@@ -82,7 +82,9 @@
       const storageOrigin = new URL(root.FWB_SUPABASE_CONFIG?.url).origin;
       const pattern = variant === "motion"
         ? /^\/storage\/v1\/object\/public\/exercise-images\/approved\/\d{4}-\d{2}-\d{2}\/motion-webp\/[a-z0-9-]+\.webp$/i
-        : /^\/storage\/v1\/object\/public\/exercise-images\/approved\/\d{4}-\d{2}-\d{2}\/webp-768\/[a-z0-9-]+\.webp$/i;
+        : variant === "anatomy"
+          ? /^\/storage\/v1\/object\/public\/exercise-images\/anatomy\/\d{4}-\d{2}-\d{2}\/[a-z0-9-]+\.webp$/i
+          : /^\/storage\/v1\/object\/public\/exercise-images\/approved\/\d{4}-\d{2}-\d{2}\/webp-768\/[a-z0-9-]+\.webp$/i;
       return url.protocol === "https:" && url.origin === storageOrigin
         && !url.username && !url.password && pattern.test(url.pathname) ? url.href : "";
     } catch {
@@ -253,13 +255,14 @@
         .filter((alias) => typeof alias === "string");
       const equipment = String(entry.equipment || "").trim();
       const motionUrl = approvedLikenessMediaUrl(entry.motion_url, "motion");
-      const imageUrl = motionUrl ? approvedLikenessMediaUrl(entry.image_url, "image") : "";
+      const anatomyUrl = approvedLikenessMediaUrl(entry.image_url, "anatomy");
+      const imageUrl = anatomyUrl || (motionUrl ? approvedLikenessMediaUrl(entry.image_url, "image") : "");
       const substitutionGroup = normalize(entry.substitution_group);
       const recentRank = Math.min(...[name, ...aliases].map((label) => recent.get(normalize(label)) ?? Infinity));
       const useCount = [name, ...aliases].reduce((total, label) => total + (useCounts.get(normalize(label)) || 0), 0);
       return [{ name, primary, secondary: [...new Set(secondary)],
         equipment, substitutionGroup, recentRank, useCount,
-        imageUrl, motionUrl: imageUrl ? motionUrl : "", instructions: String(entry.instructions || "").trim(),
+        imageUrl, anatomy: Boolean(anatomyUrl), motionUrl: imageUrl ? motionUrl : "", instructions: String(entry.instructions || "").trim(),
         highlightKey: muscleHighlightKey(entry),
         highlightFallback: String(entry.primary_muscle || "").trim().toLowerCase(),
         searchText: searchWords([name, ...aliases, primary, ...secondary, equipment].join(" ")).join(" ") }];
@@ -513,7 +516,7 @@
         image.alt = "";
         image.loading = "lazy";
         image.decoding = "async";
-        if (record.imageUrl) artwork.classList.add("is-likeness-card");
+        if (record.imageUrl && !record.anatomy) artwork.classList.add("is-likeness-card");
         if (record.imageUrl || record.highlightKey) image.addEventListener("error", () => {
           if (record.imageUrl && !image.dataset.likenessFallbackUsed) {
             image.dataset.likenessFallbackUsed = "true";
