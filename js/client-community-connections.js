@@ -280,7 +280,9 @@
         return;
       }
       const photos = [];
-      for (const connection of connections) {
+      const incoming = connection => connection.status === 'pending' && connection.requested_by !== userId;
+      const sorted = [...connections].sort((a, b) => Number(incoming(b)) - Number(incoming(a)));
+      for (const connection of sorted) {
         const peer = connection.user_a === userId ? connection.user_b : connection.user_a;
         const peerProfile = profiles.get(peer);
         const name = peerProfile?.display_name || 'Community member';
@@ -380,8 +382,9 @@
             .eq('user_id', id).maybeSingle()
         ]);
         if (profileResult.error) throw profileResult.error;
-        if (preferenceResult.error) throw preferenceResult.error;
         if (!current(id, version)) return;
+        root.FWB_GRUNTR_SOCIAL?.profileLoaded(id, Boolean(profileResult.data));
+        if (preferenceResult.error) throw preferenceResult.error;
         profile = profileResult.data;
         preferences = preferenceResult.data;
         void loadPhoto(client, id, version);
