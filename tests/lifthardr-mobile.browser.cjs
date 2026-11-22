@@ -195,6 +195,8 @@ async function check(engine, label, width) {
         sessionKey: row => row.workout_title, isWorkingSet: () => true
       });
     ` });
+    assert.equal(await page.title(), "GRUNTR");
+    assert.equal(await page.getByRole("heading", { name: "GRUNTR Home" }).isVisible(), true);
     const dock = page.locator(".client-dashboard-tabs");
     assert.equal(await dock.evaluate(node => node.parentElement.tagName), "BODY");
     assert.deepEqual(await dock.locator("[data-client-dashboard-tab]").evaluateAll(nodes => nodes.map(node => node.getAttribute("aria-label"))),

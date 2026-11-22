@@ -1,7 +1,7 @@
 {
-  "name": "Fitness with Benjamin",
-  "short_name": "FWB",
-  "description": "Fitness with Benjamin personal training and online coaching.",
+  "name": "GRUNTR",
+  "short_name": "GRUNTR",
+  "description": "GRUNTR personal training and online coaching.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#050806",

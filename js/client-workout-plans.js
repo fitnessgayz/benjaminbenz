@@ -124,7 +124,7 @@
       <section data-fwb-plan-page hidden>
       <h3 tabindex="-1">Health terms and policy</h3>
       <p>FWB Trainer provides exercise guidance. Choose activity appropriate to your health and consult a qualified professional if you have an injury or health condition.</p>
-      <a href="fwb-training-privacy.html" target="_blank" rel="noopener">LIFTHARDR Privacy Policy</a>
+      <a href="fwb-training-privacy.html" target="_blank" rel="noopener">GRUNTR Privacy Policy</a>
       <label class="plan-equipment fwb-plan-health-terms"><input type="checkbox" name="acceptedHealthTerms" required /> I have read and accept the health terms.</label>
       <div class="fwb-plan-step-actions"><button type="button" data-fwb-plan-step="1">Back</button><button class="plan-primary" type="submit">Preview my plan</button></div>
       </section>

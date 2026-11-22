@@ -35,7 +35,7 @@ test("scopes the client navigation styles and cache-busts dashboard assets", () 
   assert.match(dashboardHtml, /js\/client-portal\.js\?[^"\s]*viewport-dock=\d+/);
 });
 
-test("renders the four LIFTHARDR destinations in order with current-page semantics", () => {
+test("renders the four GRUNTR destinations in order with current-page semantics", () => {
   const navStart = dashboardHtml.indexOf('<nav class="client-dashboard-tabs"');
   const navEnd = dashboardHtml.indexOf("</nav>", navStart);
   const navMarkup = dashboardHtml.slice(navStart, navEnd);

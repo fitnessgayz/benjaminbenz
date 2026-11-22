@@ -1,8 +1,8 @@
 {
   "id": "/client-dashboard.html",
-  "name": "LIFTHARDR",
-  "short_name": "LIFTHARDR",
-  "description": "Your Fitness with Benjamin training plan, progress, and coach connection.",
+  "name": "GRUNTR",
+  "short_name": "GRUNTR",
+  "description": "Your GRUNTR training plan, progress, and coach connection.",
   "start_url": "/client-dashboard.html",
   "scope": "/",
   "display": "standalone",

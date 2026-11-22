@@ -28,7 +28,7 @@ test("uses the dark app palette and places artwork behind the login", () => {
   assert.match(styles, /--blue: #58b5ff;/);
   assert.match(styles, /--gold: #ffd400;/);
   assert.match(styles, /\.artwork \{[^}]*opacity: \.25;/);
-  assert.match(homepage, /images\/home\/fwb-logo-transparent\.svg/);
+  assert.match(homepage, /aria-label="GRUNTR home"><b>GRUNTR<\/b><\/a>/);
   assert.match(homepage, /theme-color" content="#0c0d10"/);
 });
 

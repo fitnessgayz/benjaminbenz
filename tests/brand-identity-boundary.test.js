@@ -35,8 +35,8 @@ test("client and coach manifests use approved installed identities", () => {
   const coach = JSON.parse(read("coach.webmanifest"));
 
   assert.equal(client.id, "/client-dashboard.html");
-  assert.equal(client.name, "LIFTHARDR");
-  assert.equal(client.short_name, "LIFTHARDR");
+  assert.equal(client.name, "GRUNTR");
+  assert.equal(client.short_name, "GRUNTR");
   assert.equal(client.background_color, "#050806");
   assert.equal(client.theme_color, "#050806");
   assert.equal(coach.name, "FWB Coach");
@@ -48,14 +48,14 @@ test("client and coach manifests use approved installed identities", () => {
   assert.deepEqual(coach.shortcuts.map(({ name }) => name), ["Coach home", "Coach inbox", "Manage clients", "Log a workout", "Exercise library"]);
 });
 
-test("client auth and onboarding stay inside the LIFTHARDR identity", () => {
+test("client auth and onboarding stay inside the GRUNTR identity", () => {
   for (const file of ["client-login.html", "client-signup.html", "client-invite.html"]) {
     const html = read(file);
     assert.match(html, /rel="manifest" href="\/client\.webmanifest"/);
-    assert.match(html, /apple-mobile-web-app-title" content="LIFTHARDR"/);
-    assert.match(html, /application-name" content="LIFTHARDR"/);
+    assert.match(html, /apple-mobile-web-app-title" content="GRUNTR"/);
+    assert.match(html, /application-name" content="GRUNTR"/);
     assert.match(html, /rel="apple-touch-icon"[^>]*href="\/images\/lifthardr\/icon-180\.png"/);
-    assert.match(html, /<img src="\/images\/lifthardr\/icon-180\.png"/);
+    assert.match(html, /<a class="brand" href="index\.html#top" aria-label="GRUNTR">\s*<span>GRUNTR<\/span>/);
   }
 
   const login = read("client-login.html");
@@ -63,15 +63,15 @@ test("client auth and onboarding stay inside the LIFTHARDR identity", () => {
   assert.match(login, /Train with intention\. Feel your progress\./);
   assert.doesNotMatch(login, /Training portal|<h2>Client access<\/h2>/);
   assert.doesNotMatch(read("js/client-portal.js"), /Use the email and password from your coach\./);
-  assert.match(read("client-invite.html"), /Welcome to LIFTHARDR/);
+  assert.match(read("client-invite.html"), /Welcome to GRUNTR/);
 });
 
 test("installed entry pages expose the same product names and deep-ink browser chrome", () => {
   const clientDashboard = read("client-dashboard.html");
-  assert.match(clientDashboard, /apple-mobile-web-app-title" content="LIFTHARDR"/);
-  assert.match(clientDashboard, /application-name" content="LIFTHARDR"/);
-  assert.match(clientDashboard, /<title>LIFTHARDR \| Fitness with Benjamin<\/title>/);
-  assert.match(clientDashboard, /<p class="client-dashboard-nav-title"><img src="\/images\/lifthardr\/icon-192\.png"[^>]*> LIFTHARDR<\/p>/);
+  assert.match(clientDashboard, /apple-mobile-web-app-title" content="GRUNTR"/);
+  assert.match(clientDashboard, /application-name" content="GRUNTR"/);
+  assert.match(clientDashboard, /<title>GRUNTR<\/title>/);
+  assert.match(clientDashboard, /<p class="client-dashboard-nav-title">GRUNTR<\/p>/);
   assert.doesNotMatch(clientDashboard, /user-scalable=no|maximum-scale=1/);
 
   for (const file of ["coach-login.html", "coach-admin.html", "coach-workout-log.html"]) {
@@ -87,7 +87,7 @@ test("installed entry pages expose the same product names and deep-ink browser c
   assert.doesNotMatch(read("coach-workout-log.html"), /user-scalable=no|maximum-scale=1/);
 
   const publicManifest = JSON.parse(read("site.webmanifest"));
-  assert.equal(publicManifest.name, "Fitness with Benjamin");
+  assert.equal(publicManifest.name, "GRUNTR");
   assert.equal(publicManifest.background_color, "#050806");
   assert.equal(publicManifest.theme_color, "#050806");
 });
@@ -130,9 +130,9 @@ test("PWA manifests provide correctly sized product icons", () => {
   }
 });
 
-test("public and native products use the canonical version 5 monogram", () => {
+test("public sharing uses training artwork and native products use the canonical monogram", () => {
   const publicHome = read("index.html");
-  assert.match(publicHome, /fwb-brand-icon-gold-1024-v5\.png/);
+  assert.match(publicHome, /property="og:image" content="https:\/\/benjaminbenz\.com\/images\/home\/anatomy\/curl\.png"/);
   assert.match(read("css/style.css"), /fwb-brand-icon-gold-192-v5\.png/);
 
   const nativeIcons = [

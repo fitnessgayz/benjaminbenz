@@ -35,7 +35,7 @@ test("keeps services and questionnaire on the second page", () => {
 test("uses the anatomy artwork and complete sharing metadata", () => {
   assert.match(homepage, /images\/home\/anatomy\/curl\.png/);
   assert.match(homepage, /rel="canonical" href="https:\/\/benjaminbenz\.com\/"/);
-  assert.match(homepage, /property="og:title" content="Fitness with Benjamin \| Train with intention"/);
+  assert.match(homepage, /property="og:title" content="GRUNTR \| Train with intention"/);
   assert.match(homepage, /name="twitter:card" content="summary_large_image"/);
 });
 
@@ -64,8 +64,8 @@ test("sets expectations and privacy context before the public questionnaire", ()
 
 test("uses the approved client product name on public app-interest pages", () => {
   for (const page of [interest, privateInterest]) {
-    assert.match(page, /FWB Training app interest list/);
-    assert.match(page, /FWB Training brings your workouts, progress, and connection with Benjamin together/);
+    assert.match(page, /GRUNTR app interest list/);
+    assert.match(page, /GRUNTR brings your workouts, progress, and connection with Benjamin together/);
     assert.doesNotMatch(page, /Android coming soon|iOS only|available now/i);
   }
 });
@@ -82,7 +82,7 @@ test("keeps public styling isolated and based on canonical tokens", () => {
     assert.match(page, /css\/public-brand\.css\?v=public-nav-3/);
     assert.match(page, /public-page/);
   }
-  assert.match(homepage, /css\/homepage-login-first\.css\?v=2/);
+  assert.match(homepage, /css\/homepage-login-first\.css\?v=3/);
   assert.match(homepage, /public-page/);
 
   assert.match(publicStyles, /\.public-page \{/);

@@ -3871,7 +3871,7 @@ function monthlyProgressReportMarkup(report) {
 
   return `
     <header class="client-monthly-report-hero">
-      <p>Fitness with Benjamin</p>
+      <p>GRUNTR</p>
       <h2>${escapeHtml(report.monthLabel)}<br />Monthly Training Report</h2>
       <span>${escapeHtml(report.clientName)}</span>
     </header>
@@ -22382,7 +22382,7 @@ function renderProgram(program) {
   const workouts = currentProgram.workouts;
   const programTitle = displayProgram.program_title || "Your Program";
 
-  document.title = `${programTitle} | LIFTHARDR`;
+  document.title = `${programTitle} | GRUNTR`;
   setText("#dashboard-program-title", programTitle);
   setText("#dashboard-program-summary", displayProgram.program_summary || "Your current training block is ready.");
   setText("[data-client-membership]", clientMembershipLabel(program));
