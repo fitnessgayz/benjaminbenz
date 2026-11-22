@@ -68,10 +68,11 @@ async function check(engine, width, height) {
       const url = new URL(route.request().url());
       if (url.hostname === "fixture.test" && url.pathname === "/") {
         return route.fulfill({ contentType:"text/html", body:`<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1">
+          <style>body{background:#121316;color:#edf0f4;font:16px system-ui;margin:14px}</style>
           <div id="client-workout-tabs"></div><main class="client-workout-panel-custom"></main>
           <dialog><form method="dialog"><button>Close guide</button></form></dialog>` });
       }
-      if (url.hostname === "fixture.test" && /^\/images\/workouts\/benjamin-routine\/[a-z-]+\.jpg$/.test(url.pathname)) {
+      if (url.hostname === "fixture.test" && /^\/images\/workouts\/(?:benjamin-routine|at-home-routines)\/[a-z-]+\.jpg$/.test(url.pathname)) {
         return route.fulfill({path:path.join(root,url.pathname.slice(1)),contentType:"image/jpeg"});
       }
       unexpected.push(url.href);
@@ -143,9 +144,58 @@ async function check(engine, width, height) {
     await view.getByRole("button",{name:"Back to Benjamin’s Routine"}).click();
     await view.getByRole("button",{name:"Back to workout choices"}).click();
     assert.ok(await page.getByRole("button",{name:"Benjamin’s Routine"}).isVisible());
+    await page.setViewportSize({width:320,height:740});
+    await page.getByRole("button",{name:"Explore Routines"}).click();
+    const cards = view.locator(".at-home-routine-card");
+    const titles = ["Full Body Foundations","Lower Body & Core","Upper Body Strength","Full Body Strength"];
+    assert.equal(await cards.count(),4);
+    assert.deepEqual(await cards.locator("strong").allTextContents(),titles);
+    assert.deepEqual(await cards.locator(".at-home-routine-meta").allTextContents(),
+      ["Beginner · Bodyweight","Intermediate · Bodyweight","Intermediate · Dumbbells","Advanced · Dumbbells"]);
+    await view.locator(".at-home-routine-grid").scrollIntoViewIfNeeded();
+    await page.waitForFunction(() => [...document.querySelectorAll(".at-home-routine-card img")].every(img => img.complete && img.naturalWidth >= 900));
+    const layout = await cards.evaluateAll(nodes => nodes.map(node => {
+      const box=node.getBoundingClientRect(), image=node.querySelector("img").getBoundingClientRect();
+      const meta=node.querySelector(".at-home-routine-meta"), title=node.querySelector("strong");
+      return {left:box.left,top:box.top,right:box.right,width:box.width,imageWidth:image.width,
+        labelFits:meta.scrollWidth <= meta.clientWidth && title.scrollWidth <= title.clientWidth};
+    }));
+    assert.equal(layout[0].top,layout[1].top);
+    assert.equal(layout[2].top,layout[3].top);
+    assert.ok(layout[0].top < layout[2].top && layout[0].right < layout[1].left);
+    assert.ok(layout.every(box=>box.right<=320 && box.left>=0 && box.imageWidth>=box.width-2 && box.labelFits));
+    assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+    if(process.env.AT_HOME_SCREENSHOT && engine.name() === "chromium") {
+      await view.screenshot({path:process.env.AT_HOME_SCREENSHOT});
+    }
+    const writesBefore = await page.evaluate(() => fixture.calls.writes);
+    for (const title of titles) {
+      await view.getByRole("button",{name:new RegExp(title)}).click();
+      assert.equal(await view.locator("h3").textContent(),title);
+      assert.match(await view.locator(".workout-prescription small").first().textContent(),/^(60|75|90)s rest$/);
+      assert.ok(await view.getByRole("button",{name:"Start workout"}).isVisible());
+      assert.equal(await page.evaluate(() => fixture.calls.writes),writesBefore);
+      await view.getByRole("button",{name:"Back to Explore Routines"}).click();
+      assert.equal(await page.evaluate(() => document.activeElement.querySelector("strong")?.textContent),title);
+    }
+    await view.getByRole("button",{name:/Lower Body & Core/}).click();
+    await view.getByRole("button",{name:/View Side Plank guide/}).click();
+    assert.equal(await page.evaluate(() => fixture.calls.guide.name),"Side Plank");
+    await page.getByRole("button",{name:"Close guide"}).click();
+    await page.evaluate(() => localStorage.removeItem("fixture-draft"));
+    await view.getByRole("button",{name:"Start workout"}).click();
+    const atHomeDraft = await page.evaluate(() => fixture.activeCustomWorkoutDraft());
+    assert.equal(atHomeDraft.builtInRoutine.collection,"at-home");
+    assert.equal(atHomeDraft.builtInRoutine.title,"Lower Body & Core");
+    assert.equal(atHomeDraft.exercises.at(-1).rest,"60s rest");
+    assert.ok(atHomeDraft.exercises.at(-1).sets.every(set=>set.timed && !set.complete));
+    assert.ok(atHomeDraft.exercises.slice(0,-1).every(item=>item.sets.every(set=>!set.timed)));
+    await view.getByRole("button",{name:"Back to Explore Routines"}).click();
+    await view.getByRole("button",{name:"Back to workout choices"}).click();
+    assert.equal(await page.evaluate(() => document.activeElement.getAttribute("data-at-home-routine-open")),"");
     assert.deepEqual(unexpected, []);
     assert.deepEqual(pageErrors, []);
-    console.log(engine.name(), width, "Benjamin’s Routine fixture passed");
+    console.log(engine.name(), width, "Benjamin’s Routine + 320px at-home routines fixtures passed");
   } finally { await browser.close(); }
 }
 (async () => { await check(chromium,393,873); await check(webkit,390,844); })().catch(error => { console.error(error); process.exitCode=1; });

@@ -6530,7 +6530,7 @@ function activeCustomWorkoutDraft() {
 
 function customWorkoutCopyStatusMessage(draft = activeCustomWorkoutDraft()) {
   if (draft?.builtInRoutine) {
-    return `Benjamin’s Routine · ${draft.builtInRoutine.level} · ${draft.builtInRoutine.title}`;
+    return `${draft.builtInRoutine.collection === "at-home" ? "At-home routines" : "Benjamin’s Routine"} · ${draft.builtInRoutine.level} · ${draft.builtInRoutine.title}`;
   }
   if (draft?.generatedFrom?.daily) {
     return `${draft.generatedFrom.title} · A shorter session for today. Your assigned program stays the same.`;
@@ -6638,8 +6638,13 @@ function benjaminRoutineDraft(session, createdAt = new Date(), sessionId = windo
   const { generatedFrom, ...draft } = generatedCustomWorkoutDraft(session, createdAt);
   return {
     ...draft,
+    ...(session.collection === "at-home" ? { exercises: draft.exercises.map((exercise, index) => ({
+      ...exercise,
+      sets: exercise.sets.map(set => session.exercises[index].timed ? { ...set, timed: true } : set)
+    })) } : {}),
     workoutTitle: `${customWorkoutTitle} · ${session.title} · ${session.level} · ${sessionId}`,
-    builtInRoutine: { id: sessionId, templateId: session.id, title: session.title, level: session.level }
+    builtInRoutine: { id: sessionId, templateId: session.id, title: session.title, level: session.level,
+      ...(session.collection ? { collection: session.collection } : {}) }
   };
 }
 
@@ -14867,7 +14872,22 @@ function benjaminRoutineCoverMarkup(cover) {
   return `<img class="benjamin-routine-cover" src="${escapeHtml(cover)}" alt="" loading="lazy" decoding="async">`;
 }
 
-function benjaminRoutineCollectionMarkup(catalog) {
+function benjaminRoutineCollectionMarkup(catalog, collection = "benjamin") {
+  if (collection === "at-home") {
+    return `<button type="button" class="workout-text-button workout-preview-back" data-benjamin-routine-close>← <span>Back to workout choices</span></button>
+      <h3 tabindex="-1">Explore Routines</h3>
+      <section aria-labelledby="at-home-routine-heading"><h4 id="at-home-routine-heading">At-home routines</h4>
+        <ul class="at-home-routine-grid">${catalog.atHome.map(session => `
+          <li><button type="button" class="at-home-routine-card" data-benjamin-routine-session="${session.id}">
+            ${benjaminRoutineCoverMarkup(session.cover)}
+            <span class="at-home-routine-copy">
+              <span class="at-home-routine-title"><strong>${escapeHtml(session.title)}</strong><span aria-hidden="true">→</span></span>
+              <span class="at-home-routine-meta">${escapeHtml(session.level)} · ${escapeHtml(session.focus)}</span>
+            </span>
+          </button></li>`).join("")}
+        </ul>
+      </section>`;
+  }
   return `<button type="button" class="workout-text-button workout-preview-back" data-benjamin-routine-close>← <span>Back to workout choices</span></button>
     <h3 tabindex="-1">Benjamin’s Routine</h3><p>7 reusable sessions per level. Choose any session to see the full workout.</p>
     ${catalog.levels.map((level) => `<section><h4>${level}</h4>
@@ -14880,7 +14900,7 @@ function benjaminRoutineCollectionMarkup(catalog) {
 
 function benjaminRoutineSessionMarkup(session) {
   const rest = savedWorkoutRestDefault() ?? (autoRestTimerEnabled() ? 60 : 0);
-  return `<button type="button" class="workout-text-button workout-preview-back" data-benjamin-routine-back>← <span>Back to Benjamin’s Routine</span></button>
+  return `<button type="button" class="workout-text-button workout-preview-back" data-benjamin-routine-back>← <span>${session.collection === "at-home" ? "Back to Explore Routines" : "Back to Benjamin’s Routine"}</span></button>
     <h3 tabindex="-1">${escapeHtml(session.title)}</h3>
     <p>${escapeHtml(session.level)} · ${escapeHtml(session.focus)}</p>
     ${benjaminRoutineCoverMarkup(session.cover)}
@@ -14890,14 +14910,14 @@ function benjaminRoutineSessionMarkup(session) {
         <button type="button" class="workout-preview-exercise-copy workout-preview-guide" data-benjamin-routine-guide aria-label="View ${escapeHtml(exercise.name)} guide">
           <span class="workout-row-number">${index + 1}</span><span><strong>${escapeHtml(exercise.name)}</strong></span>
         </button>
-        <span class="workout-prescription">${escapeHtml(WorkoutLayout.label(exercise.prescription))}</span>
+        <span class="workout-prescription">${escapeHtml(WorkoutLayout.label(exercise.prescription))}${session.collection === "at-home" && exercise.rest ? `<small>${escapeHtml(exercise.rest)}</small>` : ""}</span>
       </li>`).join("")}</ol>
     <button type="button" class="button button-dark workout-preview-start" data-benjamin-routine-start>Start workout</button>
     <p class="benjamin-routine-status" data-benjamin-routine-status role="status" hidden></p>`;
 }
 
 function handleBenjaminRoutineChoice(event, picker) {
-  const control = event.target.closest("[data-benjamin-routine-open], [data-benjamin-routine-close], [data-benjamin-routine-back], [data-benjamin-routine-session], [data-benjamin-routine-guide], [data-benjamin-routine-start]");
+  const control = event.target.closest("[data-at-home-routine-open], [data-benjamin-routine-open], [data-benjamin-routine-close], [data-benjamin-routine-back], [data-benjamin-routine-session], [data-benjamin-routine-guide], [data-benjamin-routine-start]");
   if (!control) return false;
   const catalog = window.FWB_BENJAMIN_ROUTINE;
   const view = picker.querySelector("[data-benjamin-routine-view]");
@@ -14908,13 +14928,17 @@ function handleBenjaminRoutineChoice(event, picker) {
     view.innerHTML = "";
     delete view.dataset.sessionId;
     choices.hidden = false;
-    choices.querySelector("[data-benjamin-routine-open]")?.focus();
+    choices.querySelector(view.dataset.collection === "at-home" ? "[data-at-home-routine-open]" : "[data-benjamin-routine-open]")?.focus();
+    delete view.dataset.collection;
     return true;
   }
-  if (control.hasAttribute("data-benjamin-routine-open") || control.hasAttribute("data-benjamin-routine-back")) {
+  if (control.hasAttribute("data-at-home-routine-open") || control.hasAttribute("data-benjamin-routine-open") || control.hasAttribute("data-benjamin-routine-back")) {
     const returnSession = view.dataset.sessionId;
+    if (!control.hasAttribute("data-benjamin-routine-back")) {
+      view.dataset.collection = control.hasAttribute("data-at-home-routine-open") ? "at-home" : "benjamin";
+    }
     choices.hidden = true;
-    view.innerHTML = benjaminRoutineCollectionMarkup(catalog);
+    view.innerHTML = benjaminRoutineCollectionMarkup(catalog, view.dataset.collection);
     delete view.dataset.sessionId;
     view.hidden = false;
     const focusTarget = returnSession && view.querySelector(`[data-benjamin-routine-session="${returnSession}"]`);
@@ -14974,6 +14998,10 @@ function clientWorkoutListMarkup(workouts) {
         ${benjaminRoutineCoverMarkup(routine.collectionCover)}
         <span><strong id="benjamin-routine-title">Benjamin’s Routine</strong><small id="benjamin-routine-description">7 sessions per level · Intermediate and Advanced</small></span>
       </button>` });
+    if (routine?.atHome?.length) cards.splice(3, 0, {
+      icon: "plan", title: "Explore Routines", description: "Four at-home workouts for every level.",
+      action: "data-at-home-routine-open", titleId: "at-home-collection-title", descriptionId: "at-home-collection-description"
+    });
     return `<div class="workout-program-picker"><div class="workout-choice-list">${cards.map((card) => card.markup || `
       <button type="button" class="workout-choice-card ${card.className || ""}" ${card.action}
         aria-labelledby="${card.titleId}" aria-describedby="${card.descriptionId}">

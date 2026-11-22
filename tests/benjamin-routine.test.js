@@ -54,3 +54,21 @@ test("native level-specific sets and rep ranges feed the same standard web progr
     });
   });
 });
+
+test("Explore at-home catalog uses native identities, difficulty, equipment, rest and art", () => {
+  assert.deepEqual(catalog.atHome.map(item=>[item.title,item.level,item.focus]),[
+    ["Full Body Foundations","Beginner","Bodyweight"], ["Lower Body & Core","Intermediate","Bodyweight"],
+    ["Upper Body Strength","Intermediate","Dumbbells"], ["Full Body Strength","Advanced","Dumbbells"]
+  ]);
+  assert.deepEqual(catalog.atHome.map(item=>item.exercises.length),[4,5,5,6]);
+  assert.deepEqual(catalog.atHome.flatMap(item=>item.exercises.filter(x=>x.timed).map(x=>x.name)),["Side Plank","Front Plank"]);
+  assert.equal(new Set(catalog.atHome.map(item=>item.cover)).size,4);
+  for (const [index,item] of catalog.atHome.entries()) {
+    const id = createHash("sha256").update("fwb-explore-at-home-v1|" + item.slug).digest().subarray(0, 16);
+    id[6] = (id[6] & 15) | 80; id[8] = (id[8] & 63) | 128;
+    assert.equal(item.id.replaceAll("-", ""),id.toString("hex"));
+    assert.equal(catalog.find(item.id),item);
+    assert.ok(fs.readFileSync(path.join(__dirname,"..",item.cover)).subarray(0,2).equals(Buffer.from([0xff,0xd8])));
+    assert.ok(item.exercises.every(x=>x.rest===[60,60,75,90][index]+"s rest"));
+  }
+});
