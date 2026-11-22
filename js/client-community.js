@@ -133,6 +133,7 @@
     function showView(name, focus = false) {
       name = Object.hasOwn(views, name) ? name : 'wall';
       const view = views[name];
+      root.FWB_GRUNTR_SOCIAL?.selectView(name);
       if (name !== 'connections') lastTab = name;
       panel.querySelectorAll('[data-community-view]').forEach((button) => {
         const active = button.dataset.communityView === name;

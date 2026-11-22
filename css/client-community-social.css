@@ -284,3 +284,33 @@ body.client-dashboard-page[data-client-theme="light"] .client-community-panel {
   --social-secondary: #4d5d6d;
   --social-accent: #14568c;
 }
+
+.client-social-profile-offer {
+  box-sizing: border-box;
+  width: min(30rem, calc(100% - 24px));
+  max-height: calc(100dvh - 24px);
+  margin: auto;
+  border: 1px solid var(--border, #544b2e);
+  border-radius: 20px;
+  padding: 22px;
+  background: var(--surface, #1b1b1b);
+  color: var(--text, #f5f2df);
+  box-shadow: 0 14px 45px #0008;
+}
+.client-social-profile-offer::backdrop { background: #000a; }
+.client-social-profile-offer h2 { margin: 0 0 10px; font-size: clamp(1.25rem, 4vw, 1.55rem); }
+.client-social-profile-offer-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 9px; }
+.client-social-profile-offer button { min-height: 44px; }
+.client-auto-sharing, .client-auto-activity { padding: 12px; border: 1px solid var(--border, #544b2e); border-radius: 12px; }
+.client-auto-sharing { margin: 8px 0 14px; }
+.client-auto-sharing h3, .client-auto-activity h3 { margin: 0 0 6px; }
+.client-auto-sharing p, .client-social-leaderboard-disclosure { font-size: .875rem; }
+
+.gruntr-profile-insights { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 0.5rem 0 0; }
+.gruntr-profile-insights dt, .gruntr-profile-activity time { color: var(--muted, #aaa); font-size: .8rem; }
+.gruntr-profile-insights dd { font-size: 1.2rem; margin: 0.3rem 0 0; font-weight: 800; }
+.gruntr-profile-activity ol { list-style: none; margin: 0; padding: 0; }
+.gruntr-profile-activity li { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 4px 10px; padding: 10px 0; border-bottom: 1px solid var(--border, #423a27); }
+.gruntr-profile-activity li span { grid-column: 1 / -1; overflow-wrap: anywhere; font-size: .86rem; }
+.gruntr-profile-activity li strong { overflow-wrap: anywhere; }
+.gruntr-profile-activity button { min-height: 44px; }

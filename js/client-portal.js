@@ -17305,6 +17305,11 @@ function renderClientAchievements() {
         type !== warmUpSetType && type !== "timed" && !(Number(row.duration_seconds) > 0);
     }
   });
+  window.FWB_GRUNTR_PROFILE_ACTIVITY?.render({
+    client: supabaseClient, owner: activeDashboardUser?.id, email: activeClientEmail,
+    preview: isCoachDashboardPreview, today: todayDate(), status: clientAchievementHistoryStatus,
+    logs: trainingLogs, achievements: snapshot, sessionKey: clientWorkoutHistorySessionKey
+  });
   window.FWB_COMMUNITY_CONNECTIONS?.syncAchievements(snapshot);
   clientQuarterGoalController?.render();
 }
@@ -19219,6 +19224,7 @@ function clientDashboardHistoryUrl(tabName, source = window.location.href) {
   const url = new URL(source, window.location.origin);
   url.searchParams.set("tab", tabName);
   if (tabName !== "progress") url.searchParams.delete("report");
+  if (tabName !== "community") url.searchParams.delete("squad");
   return url.toString();
 }
 
@@ -19317,6 +19323,8 @@ function setClientDashboardTab(tabName, options = {}) {
     window.requestAnimationFrame(() => window.scrollTo({ top: savedWorkoutScrollY, behavior: "auto" }));
   }
 
+  window.FWB_GRUNTR_SOCIAL?.selectTab(nextTab);
+  window.FWB_GRUNTR_PROFILE_ACTIVITY?.selectTab(nextTab);
   if (nextTab === "logs") flushScheduledClientTrainingLogsRender();
 
   if (nextTab === "notifications" && typeof setClientSettingsView === "function") {
@@ -22839,6 +22847,7 @@ async function loadDashboard() {
     };
 
     activeClientEmail = data.client_email || targetClientEmail;
+    window.FWB_GRUNTR_SOCIAL?.configure(supabaseClient, user.id, isCoachDashboardPreview);
     window.FWB_CLIENT_COMMUNITY?.configure(supabaseClient, user.id, isCoachDashboardPreview);
     window.FWB_COMMUNITY_CONNECTIONS?.configure(supabaseClient, user.id, isCoachDashboardPreview);
     configureClientAppleWorkouts();
