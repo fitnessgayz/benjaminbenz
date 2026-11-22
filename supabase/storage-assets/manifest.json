@@ -107,7 +107,8 @@
     "20261122012807_retire_fringe_exercise_entries.sql",
     "20261122025449_replace_t_bar_row_photo.sql",
     "20261122030158_illustrate_t_bar_row.sql",
-    "20261122030620_expand_exercise_anatomy_illustrations.sql"
+    "20261122030620_expand_exercise_anatomy_illustrations.sql",
+    "20261122034245_illustrate_approved_custom_exercises.sql"
   ],
   "nasmExerciseCatalogMigration": "20261001032427_add_complete_nasm_exercise_library.sql",
   "nasmExerciseCatalogCount": 75,
@@ -11276,6 +11277,62 @@
       "objectPath": "anatomy/2026-11-21/hack-squat-bulgarian-lunge.webp",
       "contentType": "image/webp",
       "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/anatomy/2026-11-21/dumbbell-wolverine.webp",
+      "bucket": "exercise-images",
+      "objectPath": "anatomy/2026-11-21/dumbbell-wolverine.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/anatomy/2026-11-21/glute-machine-bulgarian-split-squat.webp",
+      "bucket": "exercise-images",
+      "objectPath": "anatomy/2026-11-21/glute-machine-bulgarian-split-squat.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/anatomy/2026-11-21/belt-squat-rdl.webp",
+      "bucket": "exercise-images",
+      "objectPath": "anatomy/2026-11-21/belt-squat-rdl.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/anatomy/2026-11-21/decline-cable-chest-press.webp",
+      "bucket": "exercise-images",
+      "objectPath": "anatomy/2026-11-21/decline-cable-chest-press.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/anatomy/2026-11-21/chest-supported-dumbbell-wide-row.webp",
+      "bucket": "exercise-images",
+      "objectPath": "anatomy/2026-11-21/chest-supported-dumbbell-wide-row.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/anatomy/2026-11-21/inner-chest-press.webp",
+      "bucket": "exercise-images",
+      "objectPath": "anatomy/2026-11-21/inner-chest-press.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/anatomy/2026-11-21/lat-pull-neutral-grip.webp",
+      "bucket": "exercise-images",
+      "objectPath": "anatomy/2026-11-21/lat-pull-neutral-grip.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/anatomy/2026-11-21/lat-pull-down-wide-neutral-grip.webp",
+      "bucket": "exercise-images",
+      "objectPath": "anatomy/2026-11-21/lat-pull-down-wide-neutral-grip.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
     }
   ],
   "exerciseMedia": [
@@ -11319,7 +11376,7 @@
     },
     {
       "name": "Chest-Supported Dumbbell Wide Row",
-      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-10-07/webp-768/chest-supported-dumbbell-wide-row.webp",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/anatomy/2026-11-21/chest-supported-dumbbell-wide-row.webp",
       "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-videos/generated/2026-10-07/chest-supported-dumbbell-wide-row.mp4"
     },
     {
@@ -11947,7 +12004,7 @@
     },
     {
       "name": "Glute Machine Bulgarian Split Squat",
-      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-10-04/webp-768/glute-squat-machine-bulgarian-split-squat.webp",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/anatomy/2026-11-21/glute-machine-bulgarian-split-squat.webp",
       "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-videos/generated/2026-10-04/glute-squat-machine-bulgarian-split-squat.mp4"
     },
     {
@@ -11982,12 +12039,12 @@
     },
     {
       "name": "Inner Chest Press",
-      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-10-09/webp-768/inner-chest-press.webp",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/anatomy/2026-11-21/inner-chest-press.webp",
       "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-videos/generated/2026-10-09/inner-chest-press.mp4"
     },
     {
       "name": "Dumbbell Wolverine",
-      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-10-09/webp-768/dumbbell-wolverine.webp",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/anatomy/2026-11-21/dumbbell-wolverine.webp",
       "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-videos/generated/2026-10-09/dumbbell-wolverine.mp4"
     },
     {
@@ -12147,7 +12204,7 @@
     },
     {
       "name": "lat pull neutral grip",
-      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/lat-pull-neutral-grip.webp"
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/anatomy/2026-11-21/lat-pull-neutral-grip.webp"
     },
     {
       "name": "Rear-Delt Cable Fly",
@@ -12164,7 +12221,7 @@
     },
     {
       "name": "Decline cable chest press",
-      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/decline-cable-chest-press.webp"
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/anatomy/2026-11-21/decline-cable-chest-press.webp"
     },
     {
       "name": "Hip Thrust Machine (Resistance Band)",
@@ -12213,7 +12270,7 @@
     },
     {
       "name": "Lat pull down wide neutral grip",
-      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/lat-pull-down-wide-neutral-grip.webp"
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/anatomy/2026-11-21/lat-pull-down-wide-neutral-grip.webp"
     },
     {
       "name": "straight leg situps",
@@ -12844,7 +12901,7 @@
     },
     {
       "name": "Belt Squat RDL",
-      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/belt-squat-rdl.webp"
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/anatomy/2026-11-21/belt-squat-rdl.webp"
     },
     {
       "name": "Assisted pull-up or lat pulldown",
