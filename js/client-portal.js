@@ -2644,7 +2644,9 @@ function exerciseMediaButtonMarkup(exercise, options = {}) {
   const compact = options.compact ? " exercise-media-button-compact" : "";
   const brandedCrop = isBrandedExerciseImage(thumbnailUrl)
     ? " exercise-media-button-branded-crop" : "";
-  return `
+  const inlineMotion = options.inlineMotion && !isCoachDashboardPreview
+    && /\.(?:webp|gif)(?:$|[?#])/i.test(motionUrl);
+  const guide = `
     <button
       class="exercise-media-button${compact}${brandedCrop}"
       type="button"
@@ -2664,15 +2666,68 @@ function exerciseMediaButtonMarkup(exercise, options = {}) {
         loading="lazy"
         decoding="async"
       />
-      ${options.hideInfo ? "" : '<span class="exercise-media-info" aria-hidden="true">i</span>'}
+      ${options.hideInfo || inlineMotion ? "" : '<span class="exercise-media-info" aria-hidden="true">i</span>'}
     </button>
   `;
+  if (!inlineMotion) return guide;
+  return `<span class="exercise-inline-media" data-exercise-inline-media>
+    ${guide}
+    <button class="exercise-inline-motion-toggle" type="button" data-exercise-inline-motion-toggle
+      aria-label="Play animation for ${escapeHtml(name)}">
+      <svg class="exercise-inline-motion-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+      <svg class="exercise-inline-motion-pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h4v14H7zm6 0h4v14h-4z"/></svg>
+    </button>
+    <span class="exercise-inline-motion-status" role="status"></span>
+  </span>`;
 }
 
-function exerciseImageMarkup(exercise) {
+function stopInlineExerciseMotion(media, message = "") {
+  const animation = media.querySelector(".exercise-inline-motion-image");
+  if (!animation) return;
+  animation.remove();
+  animation.removeAttribute("src");
+  const button = media.querySelector("[data-exercise-inline-motion-toggle]");
+  const name = media.querySelector("[data-exercise-media-open]").dataset.exerciseMediaName;
+  button.dataset.playing = "false";
+  button.setAttribute("aria-label", `Play animation for ${name}`);
+  media.querySelector("[role='status']").textContent = message;
+}
+
+function stopInlineExerciseMotions(root = document) {
+  root.querySelectorAll("[data-exercise-inline-media]").forEach((media) => stopInlineExerciseMotion(media));
+}
+
+function toggleInlineExerciseMotion(button) {
+  const media = button.closest("[data-exercise-inline-media]");
+  if (button.dataset.playing === "true") {
+    stopInlineExerciseMotion(media);
+    return;
+  }
+  const guide = media.querySelector("[data-exercise-media-open]");
+  const url = trustedExerciseMotionUrl(guide.dataset.exerciseMediaVideo);
+  if (!/\.(?:webp|gif)(?:$|[?#])/i.test(url)) return;
+
+  stopInlineExerciseMotions();
+  media.querySelector("[role='status']").textContent = "";
+  const animation = document.createElement("img");
+  animation.className = "exercise-inline-motion-image";
+  animation.alt = "";
+  animation.decoding = "async";
+  animation.hidden = true;
+  animation.addEventListener("load", () => { animation.hidden = false; }, { once: true });
+  animation.addEventListener("error", () => {
+    if (animation.parentElement === media) stopInlineExerciseMotion(media, "The animation couldn’t load.");
+  }, { once: true });
+  media.insertBefore(animation, button);
+  button.dataset.playing = "true";
+  button.setAttribute("aria-label", `Pause animation for ${guide.dataset.exerciseMediaName}`);
+  animation.src = url;
+}
+
+function exerciseImageMarkup(exercise, options = {}) {
   const approvedImageUrl = approvedExerciseForName(exercise.name)?.image_url;
   const imageUrl = trustedExerciseImageUrl(approvedImageUrl) || trustedExerciseImageUrl(exercise.image_url);
-  const media = exerciseMediaButtonMarkup({ ...exercise, image_url: imageUrl });
+  const media = exerciseMediaButtonMarkup({ ...exercise, image_url: imageUrl }, options);
   return media ? `<figure class="exercise-demo-image">${media}</figure>` : "";
 }
 
@@ -2687,7 +2742,7 @@ function refreshExerciseMediaViews(root = document) {
       exerciseNameInputForLog(logElement)?.value || logElement.dataset.exerciseName || ""
     ).trim();
     const current = Array.from(logElement.children).find((child) => child.matches?.(".exercise-demo-image"));
-    const markup = name ? exerciseImageMarkup({ name }) : "";
+    const markup = name ? exerciseImageMarkup({ name }, { inlineMotion: true }) : "";
 
     if (current) {
       if (markup) current.outerHTML = markup;
@@ -2881,7 +2936,7 @@ function exerciseVideoMarkup(exercise, options = {}) {
   if (staticMedia.imageUrl) {
     return options.iconOnly
       ? exerciseMediaButtonMarkup(exercise, { compact: true })
-      : exerciseImageMarkup(exercise);
+      : exerciseImageMarkup(exercise, options);
   }
   const videoUrl = exerciseVideoUrl(exercise);
 
@@ -5512,7 +5567,7 @@ function exerciseLogFields(exercise, workoutTitle, options = {}) {
         </label>
       `}
       ${options.showActions === false ? "" : exerciseLogActions({ showSkip: options.showSkipAction !== false })}
-      ${options.showDemo === false ? "" : exerciseVideoMarkup(exercise)}
+      ${options.showDemo === false ? "" : exerciseVideoMarkup(exercise, { inlineMotion: true })}
       ${dateMarkup}
       <div data-workout-progression></div>
       <div class="set-table" aria-label="${escapeHtml(exercise.name)} set tracker">
@@ -11135,7 +11190,7 @@ function customWorkoutGroupedSectionsMarkup(carousel) {
     const marker = format === "single"
       ? String(exerciseNumber)
       : `${String.fromCharCode(65 + Math.min(Number(carousel.dataset.customWorkoutGroup || 0), 25))}${exerciseIndex + 1}`;
-    const media = exerciseMediaButtonMarkup({ name: exerciseName }, { compact: true, hideInfo: true });
+    const media = exerciseMediaButtonMarkup({ name: exerciseName }, { compact: true, hideInfo: true, inlineMotion: true });
     const meta = exerciseLibraryMetaLabel(exerciseName);
     const warmUpRows = customWorkoutGroupedRows(logElement, warmUpSetType);
     const workingRows = customWorkoutGroupedRows(logElement, workingSetType);
@@ -15303,6 +15358,7 @@ function activateClientWorkoutPanel(nextIndex, options = {}) {
 }
 
 function showClientWorkoutPicker(options = {}) {
+  if (typeof stopInlineExerciseMotions === "function") stopInlineExerciseMotions();
   const picker = document.getElementById("client-workout-tabs");
   const summary = document.getElementById("client-workout-selection-summary");
   const workoutsPanel = document.getElementById("client-workouts-panel");
@@ -19138,6 +19194,9 @@ function setClientDashboardTab(tabName, options = {}) {
   const nextTab = tabName || "home";
   const previousTab = activeClientDashboardTab;
   if (nextTab !== "workouts") window.FWB_CLIENT_WORKOUT_CALENDAR?.close();
+  if (previousTab === "workouts" && nextTab !== "workouts" && typeof stopInlineExerciseMotions === "function") {
+    stopInlineExerciseMotions();
+  }
   if (previousTab === "workouts" && nextTab !== "workouts" && !clientWorkoutPickerIsOpen &&
       document.querySelector(".client-workout-panel.is-active")) {
     savedWorkoutScrollY = window.scrollY;
@@ -20772,6 +20831,13 @@ function handleWorkoutInteractions() {
     if (workoutChoiceDialog && event.target.closest("[data-client-generate-workout-plan], [data-generate-workout]")) {
       workoutChoiceDialog.close();
     }
+    const inlineMotionButton = event.target.closest("[data-exercise-inline-motion-toggle]");
+    if (inlineMotionButton) {
+      event.preventDefault();
+      event.stopPropagation();
+      toggleInlineExerciseMotion(inlineMotionButton);
+      return;
+    }
     const exerciseMediaOpen = event.target.closest("[data-exercise-media-open]");
     const exerciseMediaClose = event.target.closest("[data-exercise-media-close]");
     const exerciseMediaDialog = event.target.closest("[data-exercise-media-dialog]");
@@ -20782,6 +20848,7 @@ function handleWorkoutInteractions() {
     if (exerciseMediaOpen) {
       event.preventDefault();
       event.stopPropagation();
+      stopInlineExerciseMotions();
       openExerciseMedia(exerciseMediaOpen);
       return;
     }
@@ -22079,6 +22146,7 @@ function handleWorkoutInteractions() {
   });
 
   document.addEventListener("visibilitychange", () => {
+    if (document.hidden) stopInlineExerciseMotions();
     if (!document.hidden && restTimerEndsAt) {
       tickRestTimer();
     }

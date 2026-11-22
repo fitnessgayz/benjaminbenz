@@ -945,3 +945,70 @@ body.client-dashboard-page #client-workout-panels .ios-log-exercise-block.is-exe
 .ios-log-exercise-reorder ol { display: grid; gap: 8px; margin: 12px; padding: 0; list-style: none; }
 .ios-log-exercise-reorder li { display: grid; grid-template-columns: minmax(0, 1fr) 44px 44px; align-items: center; gap: 6px; }
 .ios-log-exercise-reorder li button { min-height: 44px; }
+
+.client-dashboard-page #client-workouts-panel .exercise-inline-media {
+  position: relative;
+  display: block;
+}
+
+.client-dashboard-page #client-workouts-panel .ios-log-exercise-image > .exercise-inline-media {
+  height: 100%;
+}
+
+.client-dashboard-page #client-workouts-panel .exercise-inline-media > .exercise-inline-motion-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-height: none;
+  border-radius: 0;
+  background: #111;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.client-dashboard-page #client-workouts-panel .exercise-inline-motion-image[hidden] {
+  display: none;
+}
+
+.client-dashboard-page #client-workouts-panel .exercise-inline-motion-toggle {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  display: grid;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  place-items: center;
+  border: 1px solid #fff8;
+  border-radius: 50%;
+  background: #17191ce6;
+  color: #fff;
+  cursor: pointer;
+}
+
+.client-dashboard-page #client-workouts-panel .exercise-inline-motion-toggle svg {
+  width: 22px;
+  height: 22px;
+  fill: currentColor;
+}
+
+.client-dashboard-page #client-workouts-panel .exercise-inline-motion-toggle:not([data-playing="true"]) .exercise-inline-motion-pause,
+.client-dashboard-page #client-workouts-panel .exercise-inline-motion-toggle[data-playing="true"] .exercise-inline-motion-play,
+.client-dashboard-page #client-workouts-panel .exercise-inline-motion-status:empty {
+  display: none;
+}
+
+.client-dashboard-page #client-workouts-panel .exercise-inline-motion-status {
+  position: absolute;
+  right: 58px;
+  bottom: 12px;
+  left: 8px;
+  width: fit-content;
+  padding: 4px 7px;
+  border-radius: 5px;
+  background: #17191ce6;
+  color: #fff;
+  font-size: .75rem;
+  pointer-events: none;
+}
