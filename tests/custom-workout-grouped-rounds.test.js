@@ -162,6 +162,8 @@ test("visible grouped markup gives each exercise one card and Previous column wi
     const customWorkoutGroupedRoundCode = (round, exercise) => "A" + (exercise + 1) + "-" + round;
     const customWorkoutGroupedSetRowMarkup = (_row, code) => '<div data-visible-set="' + code + '"></div>';
     const escapeHtml = (value) => String(value);
+    const workoutExerciseRestOptions = [0,30,60,90];
+    const selectedWorkoutExerciseRestSeconds = () => null;
     ${sourceForFunction("customWorkoutGroupedSectionsMarkup")}
     return customWorkoutGroupedSectionsMarkup;
   `)({

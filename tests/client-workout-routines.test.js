@@ -89,7 +89,7 @@ test("keeps the four targeted workouts independent of Benjamin’s levels", () =
 });
 
 test("uses a cover on every personal routine and generic program family", () => {
-  const html = routines.markup(String);
+  const html = routines.markup(String).split('aria-label="At-home routines"')[0];
   for (const [id] of days) {
     assert.equal(html.split(`src="images/routines/benjamin-${id}.webp?v=2"`).length - 1, 2);
   }

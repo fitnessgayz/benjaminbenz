@@ -166,6 +166,7 @@ test("grouped Log saves rows, prefills the next round, and starts rest only for 
     const todayDate = () => "2026-10-29";
     const document = { querySelectorAll: () => [panel] };
     const assert = deps.assert;
+    const selectedWorkoutExerciseRestSeconds = log => log.dataset.workoutRestSeconds === undefined ? null : Number(log.dataset.workoutRestSeconds);
     ${functionSource("workoutExerciseRestSeconds")}
     ${functionSource("toggleCustomWorkoutGroupedSet")}
     return toggleCustomWorkoutGroupedSet;

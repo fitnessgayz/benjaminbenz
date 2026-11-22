@@ -517,6 +517,7 @@ test("logging a generated round uses the client’s chosen default rest duration
       renderCustomWorkoutGroupedCard: () => {},
       customWorkoutGroupedRestAction: null,
       automaticRestSeconds: () => 30,
+      selectedWorkoutExerciseRestSeconds: log => log.dataset.workoutRestSeconds === undefined ? null : Number(log.dataset.workoutRestSeconds),
       autoRestTimerEnabled: () => true,
       openRestTimer: () => calls.push(["open"]),
       setRestTimerDuration: (seconds) => calls.push(["duration", seconds]),
