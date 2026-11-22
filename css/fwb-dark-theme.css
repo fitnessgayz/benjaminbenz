@@ -749,18 +749,9 @@
   color: var(--secondary-accent); background: var(--secondary-surface); border-color: var(--secondary-border);
 }
 
-/* Workouts owns the inbox shortcut; Settings owns measurements and nutrition. */
 :root body.client-dashboard-page .client-workouts-tools {
   display: flex; justify-content: flex-start; margin-bottom: 16px;
 }
-:root body.client-dashboard-page .client-workouts-message-button {
-  display: inline-flex; position: relative; align-items: center; gap: 8px;
-  min-height: 44px; padding: 10px 14px; border: 1px solid var(--secondary-border);
-  border-radius: 12px; color: var(--secondary-accent); background: var(--secondary-surface);
-  font: inherit; font-weight: 800; cursor: pointer;
-}
-:root body.client-dashboard-page .client-workouts-message-button > svg { width: 22px; height: 22px; }
-:root body.client-dashboard-page .client-workouts-message-button:disabled { opacity: .55; cursor: wait; }
 :root body.client-dashboard-page .client-settings-return { margin-bottom: 14px; }
 
 /* Progress panels, stacked cards, and gain badges remain readable on forest. */

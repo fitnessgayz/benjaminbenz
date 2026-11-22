@@ -457,7 +457,7 @@
   .client-community-tabs, .client-community-feature,
   .client-community-consent, .client-community-connections, .client-community-feed,
   .client-community-wall,
-  .client-community-challenges, .client-workouts-message-button,
+  .client-community-challenges,
   .client-home-settings-button, .client-home-bell
 ) {
   color: var(--ink);

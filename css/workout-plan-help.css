@@ -87,8 +87,7 @@
   background: #202936;
   color: #ffd400;
 }
-:root body.dashboard-page .client-workout-program-links button svg,
-:root body.dashboard-page .client-workouts-message-button svg {
+:root body.dashboard-page .client-workout-program-links button svg {
   color: #ffd400;
   stroke: currentColor;
 }
@@ -139,6 +138,7 @@
   color: #075ce8;
   background: #e8f1ff;
 }
-:root[data-client-theme="light"] body.client-dashboard-page :is(
-  .client-workout-program-links button svg, .client-workouts-message-button svg
-) { color: #075ce8; stroke: currentColor; }
+:root[data-client-theme="light"] body.client-dashboard-page .client-workout-program-links button svg {
+  color: #075ce8;
+  stroke: currentColor;
+}

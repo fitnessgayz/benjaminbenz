@@ -39,7 +39,7 @@ body.client-dashboard-page .client-workout-panel-custom .custom-workout-grouped-
 :root body.dashboard-page .set-table .set-header,
 :root body.dashboard-page .set-table .set-row {
   display: grid !important;
-  grid-template-columns: 36px minmax(46px, .72fr) minmax(0, 1.16fr) minmax(0, .88fr) 38px !important;
+  grid-template-columns: 36px minmax(64px, .8fr) minmax(0, 1.16fr) minmax(0, .88fr) 38px !important;
   align-items: center;
   gap: 6px !important;
   padding: 6px 8px !important;
@@ -71,10 +71,10 @@ body.client-dashboard-page .client-workout-panel-custom .custom-workout-grouped-
 :root body.dashboard-page .set-table .ios-log-previous {
   min-width: 0;
   color: #aab2be !important;
-  font-size: .72rem;
+  font-size: clamp(.625rem, 2.75vw, .72rem);
   font-variant-numeric: tabular-nums;
   text-align: center;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 :root body.dashboard-page .set-table .set-row :is(input[data-set-weight], input[data-set-reps]) {
@@ -120,7 +120,7 @@ body.client-dashboard-page .client-workout-panel-custom .custom-workout-grouped-
 
 :root body.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-columns,
 :root body.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-row {
-  grid-template-columns: 36px minmax(46px, .72fr) minmax(0, 1.16fr) minmax(0, .88fr) 38px !important;
+  grid-template-columns: 36px minmax(64px, .8fr) minmax(0, 1.16fr) minmax(0, .88fr) 38px !important;
   align-items: center !important;
   gap: 6px !important;
 }
@@ -159,7 +159,7 @@ body.client-dashboard-page .client-workout-panel-custom .custom-workout-grouped-
 @media (max-width: 380px) {
   :root body.dashboard-page .set-table .set-header,
   :root body.dashboard-page .set-table .set-row {
-    grid-template-columns: 30px minmax(42px, .7fr) minmax(0, 1.1fr) minmax(0, .85fr) 34px !important;
+    grid-template-columns: 30px minmax(61px, .78fr) minmax(0, 1.1fr) minmax(0, .85fr) 34px !important;
     gap: 4px !important;
     padding-inline: 5px !important;
   }
@@ -411,7 +411,7 @@ body.client-dashboard-page .client-workout-panel-custom .custom-workout-grouped-
 
   body.client-dashboard-page #client-workout-panels [data-custom-workout-grouped="true"] .ios-log-exercise-card :is(.custom-workout-grouped-columns, .custom-workout-grouped-row) {
     display: grid !important;
-    grid-template-columns: 34px minmax(46px, .72fr) minmax(0, 1.16fr) minmax(0, .88fr) 38px !important;
+    grid-template-columns: 34px minmax(64px, .8fr) minmax(0, 1.16fr) minmax(0, .88fr) 38px !important;
     width: 100%;
     min-width: 0;
     align-items: center !important;
@@ -458,10 +458,10 @@ body.client-dashboard-page .client-workout-panel-custom .custom-workout-grouped-
   body.client-dashboard-page #client-workout-panels [data-custom-workout-grouped="true"] .ios-log-previous {
     min-width: 0;
     color: #aab2be !important;
-    font-size: .72rem;
+    font-size: clamp(.625rem, 2.75vw, .72rem);
     font-variant-numeric: tabular-nums;
     text-align: center;
-    white-space: nowrap;
+    overflow-wrap: anywhere;
   }
 
   body.client-dashboard-page #client-workout-panels [data-custom-workout-grouped="true"] .ios-log-exercise-card .custom-workout-grouped-field {
@@ -634,7 +634,7 @@ body.client-dashboard-page .client-workout-panel-custom .custom-workout-grouped-
 
 @media (max-width: 365px) {
   body.client-dashboard-page #client-workout-panels [data-custom-workout-grouped="true"] .ios-log-exercise-card :is(.custom-workout-grouped-columns, .custom-workout-grouped-row) {
-    grid-template-columns: 30px minmax(42px, .7fr) minmax(0, 1.1fr) minmax(0, .85fr) 34px !important;
+    grid-template-columns: 30px minmax(61px, .78fr) minmax(0, 1.1fr) minmax(0, .85fr) 34px !important;
     gap: 3px !important;
     padding-inline: 5px !important;
   }
@@ -725,8 +725,6 @@ body.client-dashboard-page #client-workout-panels .client-workout-panel :is(
   body.client-dashboard-page #client-workout-panels .workout-floating-more > summary {
     display: grid;
     place-items: center;
-    flex: 0 0 68px;
-    min-width: 68px;
     min-height: 56px;
     padding: 0 8px;
     border: 1px solid #49515a;
@@ -736,6 +734,15 @@ body.client-dashboard-page #client-workout-panels .client-workout-panel :is(
     font: 750 13px var(--font-ui, Inter, sans-serif);
     cursor: pointer;
     pointer-events: auto;
+  }
+
+  body.client-dashboard-page #client-workout-panels .workout-floating-finish .workout-floating-secondary {
+    flex: 0 0 auto;
+    width: auto;
+    min-width: max-content;
+    padding-inline: 12px;
+    color: #ff8d95;
+    white-space: nowrap;
   }
 
   body.client-dashboard-page #client-workout-panels .workout-floating-more {
@@ -794,6 +801,10 @@ body.client-dashboard-page #client-workout-panels .client-workout-panel :is(
     border-color: #c9d2cb;
   }
 
+  :root[data-client-theme="light"] body.client-dashboard-page #client-workout-panels .workout-floating-finish .workout-floating-secondary {
+    color: var(--danger, #a34434);
+  }
+
   :root[data-client-theme="light"] body.client-dashboard-page #client-workout-panels .workout-floating-more button { color: #1b291f; }
 
   body.client-dashboard-page:has(#client-workout-panels .client-workout-panel.is-active :is(input, textarea, select):focus) .workout-floating-finish {
@@ -811,7 +822,7 @@ body.client-dashboard-page #client-workout-panels .client-workout-panel :is(
 @media (min-width: 761px) {
   :root body.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-columns,
   :root body.dashboard-page [data-custom-workout-grouped="true"] .custom-workout-grouped-row {
-    grid-template-columns: 44px minmax(46px, .72fr) minmax(0, 1.16fr) minmax(0, .88fr) 38px !important;
+    grid-template-columns: 44px minmax(64px, .8fr) minmax(0, 1.16fr) minmax(0, .88fr) 38px !important;
   }
 }
 
@@ -994,17 +1005,21 @@ body.client-dashboard-page #client-workout-panels .ios-log-rest-control > select
   display: none;
 }
 
-.client-dashboard-page #client-workouts-panel .exercise-inline-motion-toggle {
+:root body.client-dashboard-page #client-workouts-panel .exercise-inline-media > .exercise-inline-motion-toggle {
+  box-sizing: border-box;
   position: absolute;
-  right: 8px;
-  bottom: 8px;
+  z-index: 2;
+  inset: auto 8px 8px auto;
   display: grid;
-  width: 44px;
-  height: 44px;
-  padding: 0;
+  width: 44px !important;
+  min-width: 44px;
+  height: 44px !important;
+  min-height: 44px;
+  margin: 0;
+  padding: 0 !important;
   place-items: center;
   border: 1px solid #fff8;
-  border-radius: 50%;
+  border-radius: 50% !important;
   background: #17191ce6;
   color: #fff;
   cursor: pointer;
@@ -1034,4 +1049,9 @@ body.client-dashboard-page #client-workout-panels .ios-log-rest-control > select
   color: #fff;
   font-size: .75rem;
   pointer-events: none;
+}
+
+body.client-dashboard-page .exercise-media-dialog-actions {
+  display: grid;
+  gap: 8px;
 }

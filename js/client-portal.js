@@ -2823,12 +2823,14 @@ function renderExerciseMediaDialog(dialog, showVideo = false) {
   if (!stage || !staticUrl) return;
 
   const shouldShowVideo = Boolean(showVideo && videoUrl);
+  const hasSeparateDemo = Boolean(demoUrl && demoUrl !== videoUrl &&
+    (!videoUrl || demoUrl !== youtubeExerciseSearchUrl(name)));
   stage.classList.toggle("is-branded-card", !shouldShowVideo && isBrandedExerciseImage(staticUrl));
   dialog.dataset.exerciseMediaShowingVideo = String(shouldShowVideo);
   if (toggle) toggle.hidden = !videoUrl;
   if (videoLink) {
-    videoLink.hidden = Boolean(videoUrl || !demoUrl);
-    if (videoUrl || !demoUrl) videoLink.removeAttribute("href");
+    videoLink.hidden = !hasSeparateDemo;
+    if (!hasSeparateDemo) videoLink.removeAttribute("href");
     else {
       videoLink.href = demoUrl;
       videoLink.setAttribute("aria-label", `Watch ${name} exercise video (opens in a new tab)`);
@@ -2840,7 +2842,7 @@ function renderExerciseMediaDialog(dialog, showVideo = false) {
     : isAnimatedCard ? "Play start/end animation" : "Watch exercise video";
   if (caption) caption.textContent = shouldShowVideo
     ? isAnimatedCard ? "Animated start and end reference" : "Exercise video demonstration"
-    : "Static start and end reference";
+    : /\/exercise-images\/anatomy\//i.test(staticUrl) ? "Start and end · muscles worked" : "Static start and end reference";
 
   if (shouldShowVideo) {
     if (isAnimatedCard) {
@@ -2901,8 +2903,8 @@ function exerciseVideoUrl(exercise) {
   const approvedExercise = approvedExerciseForName(exercise.name);
   // Approved uploaded motion media wins over legacy YouTube fields in saved
   // workouts and later catalog imports.
-  const libraryUpload = uploadedExerciseDemoUrl(approvedExercise?.motion_url)
-    || uploadedExerciseDemoUrl(approvedExercise?.demo_url);
+  const libraryUpload = uploadedExerciseDemoUrl(approvedExercise?.demo_url)
+    || uploadedExerciseDemoUrl(approvedExercise?.motion_url);
   if (libraryUpload) return libraryUpload;
   let rawUrl = String(
     exercise.video ||
@@ -3253,6 +3255,10 @@ function renderProgressGraph(entries, { chart = document.getElementById("progres
   const metricPoints = pointsFor(chartEntries, metricKey, width, height, padding);
   const values = chartEntries.map((entry) => progressMetricNumber(entry, metricKey));
   const latestValue = values[values.length - 1];
+  const narrowScreen = document.defaultView?.matchMedia?.("(max-width: 480px)")?.matches;
+  const maxLabels = Math.min(chartEntries.length, maxPoints || (narrowScreen ? 4 : 8));
+  const labelIndexes = new Set(Array.from({ length: maxLabels }, (_, index) =>
+    Math.round(index * (chartEntries.length - 1) / Math.max(maxLabels - 1, 1))));
 
   chart.innerHTML = `
     <div class="progress-chart-summary"><span>${escapeHtml(metric.label)}</span><strong>${escapeHtml(latestValue)}${escapeHtml(metric.suffix)}</strong></div>
@@ -3262,12 +3268,14 @@ function renderProgressGraph(entries, { chart = document.getElementById("progres
       <polyline class="progress-metric-line" points="${metricPoints}" />
       ${circlesFor(metricPoints, "progress-metric-dot")}
       ${metricPoints.split(" ").filter(Boolean).map((point, index) => {
+        if (!labelIndexes.has(index)) return "";
         const [x, y] = point.split(",").map(Number);
         const labelY = Math.max(15, y - 13);
 
         return `<text class="progress-chart-value" x="${x}" y="${labelY}" text-anchor="middle">${escapeHtml(values[index])}${escapeHtml(metric.suffix)}</text>`;
       }).join("")}
       ${chartEntries.map((entry, index) => {
+        if (!labelIndexes.has(index)) return "";
         const x = padding + (chartEntries.length === 1 ? width - padding * 2 : (index / (chartEntries.length - 1)) * (width - padding * 2));
         return `<text x="${x}" y="${height - 8}" text-anchor="middle">${escapeHtml(entry.entry_date.slice(5))}</text>`;
       }).join("")}
@@ -5316,7 +5324,7 @@ function setRowMarkup(setNumber, repPlaceholder = "", setType = workingSetType, 
         <em>Set</em>
         <input type="text" value="${label}" maxlength="3" inputmode="text" autocomplete="off" data-set-label aria-label="${labelAria}" />
       </label>
-      <span class="ios-log-previous" data-set-previous aria-label="Previous set">—</span>
+      <span class="ios-log-previous" data-set-previous aria-label="No personal record">—</span>
       <label class="set-input-field">
         <em>Weight</em>
         <input type="number" min="0" step="0.5" placeholder="${escapeHtml(weightPlaceholder)}" data-default-placeholder="${escapeHtml(weightPlaceholder)}" data-set-weight />
@@ -5596,7 +5604,7 @@ function exerciseLogFields(exercise, workoutTitle, options = {}) {
       <div class="set-table" aria-label="${escapeHtml(exercise.name)} set tracker">
       <div class="set-header">
         <span>Set</span>
-        <span>Previous</span>
+        <span>PR</span>
         <span>Weight</span>
         <span>Reps</span>
         <span>Log</span>
@@ -10733,7 +10741,7 @@ function customWorkoutGroupedSetRowMarkup(row, code, exerciseIndex, setType, rou
     >
       <button class="custom-workout-grouped-code" type="button" data-custom-grouped-set-options
         aria-label="Options for ${escapeHtml(kindLabel ? `${kindLabel}, ${context}` : context)}">${escapeHtml(marker)}</button>
-      <span class="ios-log-previous">${escapeHtml(row?.dataset.personalRecordLabel || "—")}</span>
+      <span class="ios-log-previous" aria-label="${escapeHtml(row?.dataset.personalRecordDescription || "No personal record")}">${escapeHtml(row?.dataset.personalRecordLabel || "—")}</span>
       ${customWorkoutGroupedFieldMarkup("weight", values.weightRaw, context, row?.querySelector("[data-set-weight]")?.placeholder || "", row?.querySelector("[data-set-weight]")?.dataset.historyHint || "")}
       ${customWorkoutGroupedFieldMarkup("reps", values.repsRaw, context, row?.dataset.timedSet === "true" ? "Seconds" : row?.querySelector("[data-set-reps]")?.placeholder || "", "", row?.dataset.timedSet === "true" ? "Seconds" : "")}
       <button class="custom-workout-grouped-log-check" type="button" data-custom-grouped-set-toggle
@@ -10907,7 +10915,10 @@ function syncCustomWorkoutGroupedHistoryPlaceholders(logElement) {
       visibleRow.dataset.customGroupedSetNumber
     );
     const previous = visibleRow.querySelector(".ios-log-previous");
-    if (previous) previous.textContent = canonicalRow?.dataset.personalRecordLabel || "—";
+    if (previous) {
+      previous.textContent = canonicalRow?.dataset.personalRecordLabel || "—";
+      previous.setAttribute("aria-label", canonicalRow?.dataset.personalRecordDescription || "No personal record");
+    }
     ["weight", "reps"].forEach((field) => {
       const input = visibleRow.querySelector(`[data-custom-grouped-field="${field}"]`);
       if (input) {
@@ -11257,7 +11268,7 @@ function customWorkoutGroupedSectionsMarkup(carousel) {
   const startIndex = Number(carousel?.dataset.exerciseStartIndex) || 0;
   const columnLabelsMarkup = `
     <div class="custom-workout-grouped-columns">
-      <span>Set</span><span>Previous</span><span>Weight</span><span>Reps / sec</span><span>Log</span>
+      <span>Set</span><span>PR</span><span>Weight</span><span>Reps / sec</span><span>Log</span>
     </div>
   `;
 
@@ -12247,6 +12258,7 @@ function openCustomWorkoutGroupedSetOptions(button) {
     (["drop", "failure"].includes(row.dataset.specialSetType) ? row.dataset.specialSetType : workingSetType);
   const dialog = document.createElement("dialog");
   dialog.className = "custom-workout-exercise-dialog custom-workout-set-options-dialog";
+  dialog.setAttribute("aria-label", "Set options");
   dialog.dataset.setOptionsDialog = "";
   dialog.innerHTML = `<header><h2>Set options</h2><button type="button" data-close-set-options aria-label="Close set options">×</button></header>
     <div class="custom-workout-set-options">
@@ -15378,7 +15390,6 @@ function activateClientWorkoutPanel(nextIndex, options = {}) {
   const workoutsPanel = document.getElementById("client-workouts-panel");
   const topbarBack = workoutsPanel?.querySelector(".client-workouts-back");
   const topbarTitle = workoutsPanel?.querySelector("#client-workouts-title");
-  const topbarMessage = workoutsPanel?.querySelector(".client-workouts-message-button");
   const panels = Array.from(document.querySelectorAll(".client-workout-panel"));
   const cards = Array.from(picker?.querySelectorAll("[data-client-workout-picker-card]") || []);
   const index = clientWorkoutPickerIndex(nextIndex, panels.length);
@@ -15397,9 +15408,6 @@ function activateClientWorkoutPanel(nextIndex, options = {}) {
   if (topbarBack) topbarBack.hidden = !compactLog;
   if (topbarTitle) topbarTitle.textContent = activePanel.classList.contains("client-workout-panel-custom")
     ? "Log Workout" : activePanel.classList.contains("client-workout-panel-cardio") ? "Log Cardio" : "Workout Log";
-  if (topbarMessage) {
-    topbarMessage.setAttribute("aria-label", compactLog ? "Comments" : "Messages");
-  }
   syncClientWorkoutPicker(index);
   picker.hidden = true;
   panels.forEach((panel, panelIndex) => {
@@ -15442,15 +15450,9 @@ function showClientWorkoutPicker(options = {}) {
   workoutsPanel?.classList.remove("is-compact-workout-log");
   const topbarBack = workoutsPanel?.querySelector(".client-workouts-back");
   const topbarTitle = workoutsPanel?.querySelector("#client-workouts-title");
-  const topbarMessage = workoutsPanel?.querySelector(".client-workouts-message-button");
   workoutsPanel?.querySelector("[data-compact-workout-later]")?.setAttribute("hidden", "");
   if (topbarBack) topbarBack.hidden = true;
   if (topbarTitle) topbarTitle.textContent = "Workouts";
-  if (topbarMessage) {
-    topbarMessage.setAttribute("aria-label", "Messages");
-    const label = topbarMessage.querySelector("span:not(.client-dashboard-nav-unread)");
-    if (label) label.textContent = "Messages";
-  }
   const panels = document.querySelectorAll(".client-workout-panel");
   panels.forEach((panel) => panel.querySelectorAll("[data-floating-workout-finish]").forEach((button) => { button.hidden = true; }));
 
@@ -16161,6 +16163,7 @@ function personalBestWeightLog(logs) {
     const code = String(log.exercise_code || "").trim().toUpperCase();
     const isWorkingSet = Boolean(log.entry_date) &&
       ![warmupExerciseCode, cardioExerciseCode].includes(code) &&
+      log.set_type !== "timed" &&
       normalizedSetType(log.set_type, log.set_number) === workingSetType &&
       Number.isFinite(reps) && reps > 0;
 
@@ -16175,10 +16178,11 @@ function personalBestWeightLog(logs) {
       return heaviestLog;
     }
 
-    return !heaviestLog || weight > Number(heaviestLog.weight_used) ||
-      (weight === Number(heaviestLog.weight_used) && String(log.entry_date) < String(heaviestLog.entry_date))
-      ? log
-      : heaviestLog;
+    if (!heaviestLog) return log;
+    if (weight !== Number(heaviestLog.weight_used)) return weight > Number(heaviestLog.weight_used) ? log : heaviestLog;
+    if (reps !== Number(heaviestLog.reps)) return reps > Number(heaviestLog.reps) ? log : heaviestLog;
+    if (log.entry_date !== heaviestLog.entry_date) return log.entry_date < heaviestLog.entry_date ? log : heaviestLog;
+    return Number(log.set_number || 1) < Number(heaviestLog.set_number || 1) ? log : heaviestLog;
   }, null);
 }
 
@@ -16223,7 +16227,10 @@ function syncExerciseFinishedState(logElement) {
 function updateSetHistoryPlaceholders(logElement, logs = logsForExerciseDisplay(logElement)) {
   const selectedDate = logElement?.querySelector("[data-log-date]")?.value || todayDate();
   const best = personalBestWeightLog(logs);
-  const personalRecordLabel = best ? `${Number(best.weight_used)} lb` : "—";
+  const personalRecordLabel = best ? `${Number(best.weight_used)} lb × ${Number(best.reps)}` : "—";
+  const personalRecordDescription = best
+    ? `Personal record, ${personalRecordLabel} ${Number(best.reps) === 1 ? "rep" : "reps"}`
+    : "No personal record";
   const previousByType = new Map([warmUpSetType, workingSetType].map((setType) => [
     setType,
     latestPreviousSetLogs(
@@ -16248,8 +16255,12 @@ function updateSetHistoryPlaceholders(logElement, logs = logsForExerciseDisplay(
       : "—";
     row.dataset.previousSetLabel = previousLabel;
     row.dataset.personalRecordLabel = personalRecordLabel;
+    row.dataset.personalRecordDescription = personalRecordDescription;
     const previousCell = row.querySelector("[data-set-previous]");
-    if (previousCell) previousCell.textContent = previousLabel;
+    if (previousCell) {
+      previousCell.textContent = personalRecordLabel;
+      previousCell.setAttribute("aria-label", personalRecordDescription);
+    }
 
     if (weightInput) {
       weightInput.placeholder = historyPlaceholder(
@@ -16257,7 +16268,7 @@ function updateSetHistoryPlaceholders(logElement, logs = logsForExerciseDisplay(
         weightInput.dataset.defaultPlaceholder || "0"
       );
       const hint = setType !== warmUpSetType && best
-        ? `Personal best: ${best.weight_used} lb · ${formatLogDate(best.entry_date)}`
+        ? `Personal best: ${personalRecordLabel} · ${formatLogDate(best.entry_date)}`
         : "";
       weightInput.dataset.historyHint = hint;
       weightInput.title = hint;

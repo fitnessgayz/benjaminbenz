@@ -214,18 +214,22 @@ test("clearing an editable exercise name clears its old record hints", () => {
   assert.equal(f.carousel.visibleRows[0].fields.weight.attributes["aria-description"], undefined);
 });
 
-test("personal best excludes warm-ups, cardio and invalid weights; ties use first achievement", () => {
+test("personal best uses one eligible set, ranks by weight then reps, and keeps the first tied achievement", () => {
   const f = fixture();
   const base = { exercise_code: "A1", entry_date: "2026-09-19", set_number: 1, weight_used: 225, reps: 3 };
   const firstRecord = { ...base, entry_date: "2026-08-01" };
   const invalid = [
-    { weight_used: 999, set_type: "warm_up" }, { weight_used: 999, set_number: 1001 },
+    { weight_used: 999, set_type: "warm_up" }, { weight_used: 999, set_type: "timed" }, { weight_used: 999, set_number: 1001 },
     { weight_used: 999, exercise_code: "CARDIO" }, { weight_used: 999, exercise_code: "WU" },
     { weight_used: 999, entry_date: "" },
     ...[null, undefined, "", "  ", -10, Infinity, "bad"].map(weight_used => ({ weight_used }))
   ].map(values => ({ ...base, ...values }));
   assert.equal(f.personalBestWeightLog([base, ...invalid, firstRecord]), firstRecord);
   assert.equal(f.personalBestWeightLog(invalid), null);
+  const lighter = { ...base, weight_used: 180, reps: 50 };
+  const heavierWithMoreReps = { ...base, reps: 4, set_type: "failure" };
+  const laterSet = { ...heavierWithMoreReps, set_number: 2 };
+  assert.equal(f.personalBestWeightLog([lighter, firstRecord, laterSet, heavierWithMoreReps]), heavierWithMoreReps);
 });
 
 test("warm-up fields use previous warm-up values and never the working-weight record", () => {

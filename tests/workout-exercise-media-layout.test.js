@@ -67,9 +67,9 @@ test("shows the complete branded card without cropping in the detail dialog", ()
   assert.doesNotMatch(css, /\.exercise-media-dialog-stage\.is-branded-card\s*\{[\s\S]*?aspect-ratio:\s*176 \/ 117/);
 });
 
-test("offers approved YouTube demos when a static card has no uploaded motion video", () => {
+test("offers a separate full demo even when an illustration animation is available", () => {
   assert.match(portal, /const demoUrl = exerciseVideoUrl\(exercise\)/);
-  assert.match(portal, /videoLink\.hidden = Boolean\(videoUrl \|\| !demoUrl\)/);
+  assert.match(portal, /videoLink\.hidden = !hasSeparateDemo/);
   assert.match(css, /data-exercise-media-video-link/);
 });
 
@@ -101,9 +101,9 @@ test("keeps suggested-target UI out of the visible exercise card", () => {
 test("full-card framing applies only to branded stills and clears for video and ordinary images", () => {
   const helper = portal.slice(portal.indexOf("function isBrandedExerciseImage("), portal.indexOf("function exerciseMediaButtonMarkup("));
   const renderer = portal.slice(portal.indexOf("function renderExerciseMediaDialog("), portal.indexOf("function openExerciseMedia("));
-  const render = Function("trustedExerciseImageUrl", "trustedExerciseMotionUrl", "exerciseVideoUrl", "document",
+  const render = Function("trustedExerciseImageUrl", "trustedExerciseMotionUrl", "exerciseVideoUrl", "youtubeExerciseSearchUrl", "document",
     `${helper}\n${renderer}\nreturn renderExerciseMediaDialog;`)(
-    (url) => url, (url) => url, () => "", {
+    (url) => url, (url) => url, (exercise) => exercise.video || "", () => "https://youtube.com/results?search_query=shoulder", {
       createElement: (tag) => ({ tag, setAttribute() {}, addEventListener() {} }),
     });
   let showsFullCard = false;
@@ -112,13 +112,19 @@ test("full-card framing applies only to branded stills and clears for video and 
     classList: { toggle: (name, value) => { assert.equal(name, "is-branded-card"); showsFullCard = value; } },
     replaceChildren: (node) => { media = node; },
   };
+  const caption = {};
+  const demo = { setAttribute() {}, removeAttribute() { delete this.href; } };
   const dialog = {
     dataset: {
       exerciseMediaName: "Shoulder press",
       exerciseMediaStatic: "https://example.com/exercise-images/approved/2026-09-29/webp-768/shoulder-press.webp",
       exerciseMediaVideo: "https://example.com/demo.mp4",
     },
-    querySelector: (selector) => selector === "[data-exercise-media-stage]" ? stage : null,
+    querySelector: (selector) => ({
+      "[data-exercise-media-stage]": stage,
+      "[data-exercise-media-caption]": caption,
+      "[data-exercise-media-video-link]": demo,
+    })[selector],
   };
   render(dialog, false);
   assert.equal(showsFullCard, true);
@@ -135,10 +141,20 @@ test("full-card framing applies only to branded stills and clears for video and 
   assert.equal(showsFullCard, false);
   assert.equal(media.tag, "img");
   assert.equal(media.alt, "Shoulder press animated exercise demonstration");
+  dialog.dataset.exerciseMediaDemo = "https://example.com/full-demo.mp4";
+  render(dialog, true);
+  assert.equal(demo.hidden, false);
+  assert.equal(demo.href, "https://example.com/full-demo.mp4");
+  dialog.dataset.exerciseMediaDemo = "https://youtube.com/results?search_query=shoulder";
+  render(dialog, true);
+  assert.equal(demo.hidden, true);
   render(dialog, false);
   assert.equal(showsFullCard, true);
   dialog.dataset.exerciseMediaStatic = "https://example.com/images/exercises/plain-photo.jpg";
   render(dialog, false);
   assert.equal(showsFullCard, false);
   assert.equal(media.tag, "img");
+  dialog.dataset.exerciseMediaStatic = "https://example.com/exercise-images/anatomy/2026-11-22/shoulder-press.webp";
+  render(dialog, false);
+  assert.equal(caption.textContent, "Start and end · muscles worked");
 });

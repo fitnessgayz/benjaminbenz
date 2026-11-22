@@ -84,7 +84,6 @@ test("floats the darker four-destination dock above the safe area on mobile", ()
   assert.match(dockSource, /width:\s*min\(340px, calc\(100% - 28px\)\)/);
   assert.match(dockSource, /background:\s*rgba\(36, 40, 46, \.93\)/);
   assert.match(dockSource, /-webkit-backdrop-filter:\s*blur\(12px\)/);
-  assert.match(dashboardHtml, /class="client-workouts-message-button"[\s\S]*?data-message-coach[\s\S]*?data-client-message-unread/);
   assert.match(dockSource, /\.client-dashboard-tab\.is-active \.client-dashboard-tab-icon\s*\{[^}]*background:\s*#ffd400/s);
   assert.match(dockSource, /\.client-dashboard-tab\.is-active \.client-dashboard-tab-label\s*\{[^}]*color:\s*#ffd400/s);
   assert.match(mobileStyles, /\.client-dashboard-tab-label\s*\{[^}]*display:\s*block !important[^}]*font-size:\s*\.52rem/s);
@@ -153,11 +152,12 @@ test("keeps questionnaire and Sessions available from Settings", () => {
   assert.match(tabHandlerSource, /setClientDashboardTab\(settingsDestination\.dataset\.clientSettingsDestination\)/);
 });
 
-test("keeps Logs, Progress and Settings reachable from Profile and Messages from Workout", () => {
+test("keeps Logs, Progress and Settings reachable from Profile and Messages in Settings", () => {
   assert.match(dashboardHtml, /data-client-dashboard-panel="profile"[\s\S]*?data-client-settings-destination="notifications"[\s\S]*?data-client-summary-go-tab="logs"[\s\S]*?data-client-summary-go-tab="progress"/);
   assert.doesNotMatch(dashboardHtml, /data-client-dashboard-tab="(?:logs|progress|notifications)"/);
   assert.doesNotMatch(dashboardHtml, /client-dashboard-message-tab/);
-  assert.match(dashboardHtml, /data-client-dashboard-panel="workouts"[\s\S]*?client-workouts-message-button[\s\S]*?data-client-message-unread/);
+  assert.doesNotMatch(dashboardHtml, /client-workouts-message-button/);
+  assert.match(dashboardHtml, /class="client-settings-shortcut"[^>]*data-message-coach disabled[\s\S]*?data-client-message-unread/);
 });
 
 test("lets the Workouts tab open the active exercise list", () => {

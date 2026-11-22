@@ -198,11 +198,11 @@ test("grouped rows show the same personal record and letter badges for special s
   ];
   cases.forEach(([dataset, marker, label]) => {
     const markup = render({
-      dataset: { ...dataset, personalRecordLabel: "205 lb" },
+      dataset: { ...dataset, personalRecordLabel: "205 lb × 5", personalRecordDescription: "Personal record, 205 lb × 5 reps" },
       classList: { contains: () => false },
       querySelector: () => null,
     }, "A4", 0, "working", 4, "Bench press");
     assert.match(markup, new RegExp(`Options for ${label}[^>]*>${marker}</button>`));
-    assert.match(markup, /class="ios-log-previous">205 lb<\/span>/);
+    assert.match(markup, /class="ios-log-previous" aria-label="Personal record, 205 lb × 5 reps">205 lb × 5<\/span>/);
   });
 });

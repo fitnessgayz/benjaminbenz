@@ -131,7 +131,7 @@ test("renders exercise-first cards with a PR column and per-exercise Rest and No
   assert.match(sections, /warmUpRows\.map\(\(row, index\) => rowMarkup\(row, warmUpSetType, index\)\)/);
   assert.match(sections, /workingRows\.map\(\(row, index\) => rowMarkup\(row, workingSetType, index\)\)/);
   assert.doesNotMatch(sections, /data-custom-grouped-skip-warmup|data-custom-grouped-log-warmup/);
-  assert.match(sections, /<span>Set<\/span><span>Previous<\/span><span>Weight<\/span><span>Reps \/ sec<\/span><span>Log<\/span>/);
+  assert.match(sections, /<span>Set<\/span><span>PR<\/span><span>Weight<\/span><span>Reps \/ sec<\/span><span>Log<\/span>/);
   assert.equal(
     (sections.match(/\$\{columnLabelsMarkup\}/g) || []).length,
     1,
@@ -143,14 +143,14 @@ test("renders exercise-first cards with a PR column and per-exercise Rest and No
   assert.match(sections, /data-ios-log-rest/);
   assert.match(sections, /data-ios-log-note-toggle/);
   assert.match(rowMarkup, /data-custom-grouped-set-toggle/);
-  assert.match(rowMarkup, /class="ios-log-previous">\$\{escapeHtml\(row\?\.dataset.personalRecordLabel/);
+  assert.match(rowMarkup, /class="ios-log-previous"[^>]*>\$\{escapeHtml\(row\?\.dataset.personalRecordLabel/);
   assert.match(groupedMarkup, /data-custom-grouped-remove-round/);
   assert.match(groupedMarkup, /data-custom-grouped-round-count/);
   assert.match(groupedMarkup, /data-custom-grouped-add-round/);
   assert.match(groupedMarkup, /data-custom-grouped-finish-workout>Finish workout<\/button>/);
 });
 
-test("visible grouped markup gives each exercise one card and Previous column without a PR calculator", () => {
+test("visible grouped markup gives each exercise one card and PR column without a PR calculator", () => {
   const render = Function("deps", `
     const { logElements, customWorkoutGroupedRows } = deps;
     const warmUpSetType = "warm_up", workingSetType = "working";
@@ -179,7 +179,7 @@ test("visible grouped markup gives each exercise one card and Previous column wi
   const markup = render({ dataset: { customWorkoutFormat: "superset", customWorkoutGroup: "0" }, closest: () => null });
 
   assert.equal((markup.match(/class="ios-log-exercise-card"/g) || []).length, 2);
-  assert.equal((markup.match(/<span>Previous<\/span>/g) || []).length, 2);
+  assert.equal((markup.match(/<span>PR<\/span>/g) || []).length, 2);
   assert.equal((markup.match(/class="ios-log-exercise-menu"/g) || []).length, 2);
   assert.match(markup, /A1<\/span><span class="ios-log-exercise-name">Bench Press<\/span>/);
   assert.match(markup, /A2<\/span><span class="ios-log-exercise-name">Dumbbell Row<\/span>/);

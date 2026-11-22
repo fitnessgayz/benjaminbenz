@@ -251,10 +251,6 @@ body.client-dashboard-page #client-workouts-panel .client-workout-routines[hidde
   transform: none;
 }
 
-:root body.client-dashboard-page #client-workouts-panel.is-compact-workout-log .client-workouts-message-button {
-  display: none;
-}
-
 #client-workouts-panel.is-compact-workout-log .client-workouts-tools {
   display: flex;
   gap: 4px;
@@ -282,6 +278,46 @@ body.client-dashboard-page #client-workouts-panel .client-workout-routines[hidde
 
 body.client-dashboard-page .rest-timer-overlay {
   z-index: 1200;
+}
+
+:root body.client-dashboard-page .rest-timer-sheet .rest-timer-display {
+  color: var(--ink, #f7f8fa);
+}
+
+:root body.client-dashboard-page .rest-timer-sheet :is(.rest-timer-close, .rest-timer-presets button, .rest-timer-actions button, .rest-timer-notification-setting button) {
+  border-color: var(--line);
+  background: var(--surface-soft);
+  color: var(--ink);
+}
+
+:root body.client-dashboard-page .rest-timer-sheet :is(.rest-timer-presets .is-active, .rest-timer-start, .rest-timer-notification-setting .is-enabled) {
+  border-color: #ffd400;
+  background: #ffd400;
+  color: #111316;
+}
+
+:root body.client-dashboard-page .rest-timer-sheet .rest-timer-notification-setting {
+  background: var(--surface);
+}
+
+:root body.client-dashboard-page .custom-workout-set-options-dialog :is(h2, button) {
+  color: var(--ink);
+}
+
+:root body.client-dashboard-page .custom-workout-set-options-dialog .custom-workout-set-options button {
+  border-color: var(--line);
+  background: var(--surface-soft);
+}
+
+:root body.client-dashboard-page .custom-workout-set-options-dialog button[aria-pressed="true"] {
+  border-color: var(--secondary-accent);
+  background: var(--secondary-surface);
+  color: var(--secondary-accent);
+  font-weight: 700;
+}
+
+:root body.client-dashboard-page .custom-workout-set-options-dialog button[data-set-option="delete"] {
+  color: var(--danger);
 }
 
 .client-picker-shortcuts {
