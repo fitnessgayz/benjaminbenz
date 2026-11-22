@@ -102,7 +102,8 @@
     "20261112172709_archive_duplicate_exercise_aliases.sql",
     "20261114192124_add_next_forty_popular_exercise_media.sql",
     "20261121235444_replace_exercise_cards_with_anatomy.sql",
-    "20261122011529_consolidate_client_exercise_duplicates.sql"
+    "20261122011529_consolidate_client_exercise_duplicates.sql",
+    "20261122011802_replace_belt_squat_and_glute_drive_artwork.sql"
   ],
   "nasmExerciseCatalogMigration": "20261001032427_add_complete_nasm_exercise_library.sql",
   "nasmExerciseCatalogCount": 75,
@@ -10641,6 +10642,20 @@
       "objectPath": "approved/2026-11-21/motion-webp/standing-calf-raise-anatomy.webp",
       "contentType": "image/webp",
       "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/anatomy/2026-11-21/belt-squat.webp",
+      "bucket": "exercise-images",
+      "objectPath": "anatomy/2026-11-21/belt-squat.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
+    },
+    {
+      "source": "supabase/storage-assets/exercise-images/anatomy/2026-11-21/45-degree-glute-drive-machine.webp",
+      "bucket": "exercise-images",
+      "objectPath": "anatomy/2026-11-21/45-degree-glute-drive-machine.webp",
+      "contentType": "image/webp",
+      "cacheControl": 31536000
     }
   ],
   "exerciseMedia": [
@@ -11315,12 +11330,12 @@
     },
     {
       "name": "Belt Squat",
-      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-10-04/webp-768/belt-squat.webp",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/anatomy/2026-11-21/belt-squat.webp",
       "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-videos/generated/2026-10-04/belt-squat.mp4"
     },
     {
       "name": "45° Degree Glute Drive Machine",
-      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-10-05/webp-768/45-degree-glute-hip-drive.webp",
+      "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/anatomy/2026-11-21/45-degree-glute-drive-machine.webp",
       "motionUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-videos/generated/2026-10-05/45-degree-glute-hip-drive.mp4"
     },
     {
