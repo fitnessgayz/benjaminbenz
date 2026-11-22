@@ -7980,7 +7980,7 @@ function restTimerNotificationUiState() {
       disabled: true,
       label: "Timer alerts unavailable",
       help: support.reason === "ios-home-screen"
-        ? "On iPhone, add FWB to your Home Screen, then open it there to enable alerts."
+        ? "On iPhone, add GRUNTR to your Home Screen, then open it there to enable alerts."
         : "This browser cannot show timer notifications. Vibration and the on-screen timer still work."
     };
   }
@@ -7989,7 +7989,7 @@ function restTimerNotificationUiState() {
       enabled: false,
       disabled: true,
       label: "Timer alerts blocked",
-      help: "Allow notifications for FWB in your browser or device settings."
+      help: "Allow notifications for GRUNTR in your browser or device settings."
     };
   }
 
@@ -7999,8 +7999,8 @@ function restTimerNotificationUiState() {
     disabled: false,
     label: enabled ? "Timer alerts on" : "Enable timer alerts",
     help: enabled
-      ? "Keep FWB open while the timer runs; you’ll get a system alert when rest ends."
-      : "Turn this on once, then keep FWB open while the timer runs."
+      ? "Keep GRUNTR open while the timer runs; you’ll get a system alert when rest ends."
+      : "Turn this on once, then keep GRUNTR open while the timer runs."
   };
 }
 
@@ -8079,8 +8079,8 @@ async function showRestTimerCompleteNotification() {
 
   const options = {
     body: "Your next set is ready.",
-    icon: "/fwb-brand-icon-gold-192-v5.png",
-    badge: "/favicon-32.png",
+    icon: "/images/gruntr/icons/v1/gruntr-192.png",
+    badge: "/images/gruntr/icons/v1/gruntr-32.png",
     tag: "fwb-rest-timer-complete",
     renotify: true,
     silent: false,
@@ -8197,7 +8197,7 @@ function restTimerMarkup() {
         </div>
         <div class="rest-timer-notification-setting">
           <button type="button" data-rest-timer-notifications aria-pressed="false">Enable timer alerts</button>
-          <small data-rest-timer-notification-help>Turn this on once, then keep FWB open while the timer runs.</small>
+          <small data-rest-timer-notification-help>Turn this on once, then keep GRUNTR open while the timer runs.</small>
         </div>
       </section>
     </div>
@@ -22290,7 +22290,7 @@ function renderProgram(program) {
   const workouts = currentProgram.workouts;
   const programTitle = displayProgram.program_title || "Your Program";
 
-  document.title = `${programTitle} | Fitness with Benjamin`;
+  document.title = `${programTitle} | GRUNTR`;
   setText("#dashboard-program-title", programTitle);
   setText("#dashboard-program-summary", displayProgram.program_summary || "Your current training block is ready.");
   setText("[data-client-membership]", clientMembershipLabel(program));

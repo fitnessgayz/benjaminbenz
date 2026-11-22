@@ -272,7 +272,7 @@ test("initialization does not request permission and explicit enable requests it
   assert.ok(requestIndex >= 0 && requestIndex < registerIndex);
   assert.match(registration, /navigator\.serviceWorker[\s\S]*?\.register\(restTimerNotificationServiceWorkerUrl, \{ scope: "\/" \}\)/);
   assert.match(support, /isIosDevice\(\) && !isStandaloneWebApp\(\)/);
-  assert.match(sourceForFunction("restTimerNotificationUiState"), /add FWB to your Home Screen/);
+  assert.match(sourceForFunction("restTimerNotificationUiState"), /add GRUNTR to your Home Screen/);
 });
 
 test("notifies exactly once for each completed timer run", () => {
@@ -401,8 +401,8 @@ test("service worker handles timer and dynamic same-origin pushes", () => {
 });
 
 test("timer-alert copy explains that the web app must remain open", () => {
-  assert.match(sourceForFunction("restTimerNotificationUiState"), /Keep FWB open while the timer runs/);
-  assert.match(sourceForFunction("restTimerMarkup"), /keep FWB open while the timer runs/);
+  assert.match(sourceForFunction("restTimerNotificationUiState"), /Keep GRUNTR open while the timer runs/);
+  assert.match(sourceForFunction("restTimerMarkup"), /keep GRUNTR open while the timer runs/);
 });
 
 test("client PWA opens at the dashboard and cache-busts notification assets", () => {
@@ -410,7 +410,7 @@ test("client PWA opens at the dashboard and cache-busts notification assets", ()
   assert.equal(manifest.start_url, "/client-dashboard.html");
   assert.equal(manifest.display, "standalone");
   assert.match(dashboard, /href="\/client\.webmanifest"/);
-  assert.match(dashboard, /css\/style\.css\?v=workout-preview-1/);
+  assert.match(dashboard, /css\/style\.css\?v=[^"]*workout-preview-1/);
   assert.match(dashboard, /js\/web-notifications\.js\?v=coach-activity-likes-5/);
   assert.match(dashboard, /js\/client-portal\.js\?v=workout-preview-1/);
 });

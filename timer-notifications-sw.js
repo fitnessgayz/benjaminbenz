@@ -1,8 +1,8 @@
 const defaultTimerNotification = {
   title: "Rest complete",
   body: "Your next set is ready.",
-  icon: "/fwb-brand-icon-gold-192-v5.png",
-  badge: "/favicon-32.png",
+  icon: "/images/gruntr/icons/v1/gruntr-192.png",
+  badge: "/images/gruntr/icons/v1/gruntr-32.png",
   tag: "fwb-rest-timer-complete",
   url: "/client-dashboard.html?tab=workouts"
 };

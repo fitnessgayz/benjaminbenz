@@ -1,15 +1,22 @@
 {
   "id": "/client-dashboard.html",
-  "name": "FWB Training",
-  "short_name": "FWB Training",
-  "description": "Your Fitness with Benjamin training plan, progress, and coach connection.",
+  "name": "GRUNTR",
+  "short_name": "GRUNTR",
+  "description": "Your training plan, progress, and coach connection from Fitness with Benjamin.",
   "start_url": "/client-dashboard.html",
   "scope": "/",
   "display": "standalone",
-  "display_override": ["standalone", "minimal-ui"],
+  "display_override": [
+    "standalone",
+    "minimal-ui"
+  ],
   "background_color": "#050806",
   "theme_color": "#050806",
-  "categories": ["fitness", "health", "lifestyle"],
+  "categories": [
+    "fitness",
+    "health",
+    "lifestyle"
+  ],
   "shortcuts": [
     {
       "name": "Start training",
@@ -29,28 +36,40 @@
   ],
   "icons": [
     {
-      "src": "/fwb-brand-icon-gold-180-v5.png",
+      "src": "/images/gruntr/icons/v1/gruntr-180.png",
       "sizes": "180x180",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/fwb-brand-icon-gold-192-v5.png",
+      "src": "/images/gruntr/icons/v1/gruntr-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/fwb-brand-icon-gold-512-v5.png",
+      "src": "/images/gruntr/icons/v1/gruntr-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/fwb-brand-icon-gold-1024-v5.png",
+      "src": "/images/gruntr/icons/v1/gruntr-1024.png",
       "sizes": "1024x1024",
       "type": "image/png",
       "purpose": "any"
+    },
+    {
+      "src": "/images/gruntr/icons/v1/gruntr-maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/images/gruntr/icons/v1/gruntr-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }

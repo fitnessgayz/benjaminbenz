@@ -35,24 +35,27 @@ test("client and coach manifests use approved installed identities", () => {
   const coach = JSON.parse(read("coach.webmanifest"));
 
   assert.equal(client.id, "/client-dashboard.html");
-  assert.equal(client.name, "FWB Training");
-  assert.equal(client.short_name, "FWB Training");
+  assert.equal(client.name, "GRUNTR");
+  assert.equal(client.short_name, "GRUNTR");
   assert.equal(client.background_color, "#050806");
   assert.equal(client.theme_color, "#050806");
   assert.equal(coach.name, "FWB Coach");
   assert.equal(coach.background_color, "#030D1C");
   assert.equal(coach.theme_color, "#030D1C");
-  assert.deepEqual(client.icons.map((icon) => icon.src), coach.icons.map((icon) => icon.src));
+  assert.equal(client.start_url, "/client-dashboard.html");
+  assert.equal(client.scope, "/");
+  assert.equal(client.display, "standalone");
+  assert.ok(client.icons.every(icon => !coach.icons.some(coachIcon => coachIcon.src === icon.src)));
   assert.deepEqual(client.shortcuts.map(({ name }) => name), ["Start training", "View progress", "Message your coach"]);
   assert.deepEqual(coach.shortcuts.map(({ name }) => name), ["Coach home", "Coach inbox", "Manage clients", "Log a workout", "Exercise library"]);
 });
 
-test("client auth and onboarding stay inside the FWB Training identity", () => {
+test("client auth and onboarding stay inside the GRUNTR identity", () => {
   for (const file of ["client-login.html", "client-signup.html", "client-invite.html"]) {
     const html = read(file);
     assert.match(html, /rel="manifest" href="\/client\.webmanifest"/);
-    assert.match(html, /apple-mobile-web-app-title" content="FWB Training"/);
-    assert.match(html, /application-name" content="FWB Training"/);
+    assert.match(html, /apple-mobile-web-app-title" content="GRUNTR"/);
+    assert.match(html, /application-name" content="GRUNTR"/);
   }
 
   const login = read("client-login.html");
@@ -60,15 +63,15 @@ test("client auth and onboarding stay inside the FWB Training identity", () => {
   assert.match(login, /Train with intention\. Feel your progress\./);
   assert.doesNotMatch(login, /Training portal|<h2>Client access<\/h2>/);
   assert.doesNotMatch(read("js/client-portal.js"), /Use the email and password from your coach\./);
-  assert.match(read("client-invite.html"), /Welcome to FWB Training/);
+  assert.match(read("client-invite.html"), /Welcome to GRUNTR/);
 });
 
 test("installed entry pages expose the same product names and deep-ink browser chrome", () => {
   const clientDashboard = read("client-dashboard.html");
-  assert.match(clientDashboard, /apple-mobile-web-app-title" content="FWB Training"/);
-  assert.match(clientDashboard, /application-name" content="FWB Training"/);
-  assert.match(clientDashboard, /<title>FWB Training \| Fitness with Benjamin<\/title>/);
-  assert.match(clientDashboard, /<p class="client-dashboard-nav-title">FWB Training<\/p>/);
+  assert.match(clientDashboard, /apple-mobile-web-app-title" content="GRUNTR"/);
+  assert.match(clientDashboard, /application-name" content="GRUNTR"/);
+  assert.match(clientDashboard, /<title>GRUNTR \| Fitness with Benjamin<\/title>/);
+  assert.match(clientDashboard, /<p class="client-dashboard-nav-title">GRUNTR<\/p>/);
   assert.doesNotMatch(clientDashboard, /user-scalable=no|maximum-scale=1/);
 
   for (const file of ["coach-login.html", "coach-admin.html", "coach-workout-log.html"]) {
@@ -80,7 +83,7 @@ test("installed entry pages expose the same product names and deep-ink browser c
 
   assert.match(read("coach-admin.html"), /rel="manifest" href="\/coach\.webmanifest"/);
   assert.match(read("coach-admin.html"), /<h1>Your coaching workspace<\/h1>/);
-  assert.match(read("coach-workout-log.html"), /<h1 id="coach-workout-page-title">Log a client workout<\/h1>/);
+  assert.match(read("coach-workout-log.html"), /<h1 id="coach-workout-page-title">Log Workout<\/h1>/);
   assert.doesNotMatch(read("coach-workout-log.html"), /user-scalable=no|maximum-scale=1/);
 
   const publicManifest = JSON.parse(read("site.webmanifest"));
@@ -112,7 +115,7 @@ test("AI-facing pages use FWB Training Assistant without claiming the coach prod
 });
 
 test("PWA manifests use the versioned electric-gold icon set at every declared size", () => {
-  const manifests = ["site.webmanifest", "client.webmanifest", "coach.webmanifest"]
+  const manifests = ["site.webmanifest", "coach.webmanifest"]
     .map((file) => JSON.parse(read(file)));
   const sizes = [180, 192, 512, 1024];
   for (const size of sizes) {
@@ -145,5 +148,39 @@ test("public and native products use the canonical version 5 monogram", () => {
     assert.equal(png.readUInt32BE(16), 1024);
     assert.equal(png.readUInt32BE(20), 1024);
     assert.deepEqual(png, canonical);
+  }
+});
+
+test("GRUNTR icon files preserve opaque original framing across app and install entry routes", () => {
+  const client = JSON.parse(read("client.webmanifest"));
+  const dir = "/images/gruntr/icons/v1/";
+  assert.deepEqual(client.icons.filter(i=>i.purpose==="any").map(i=>i.sizes),["180x180","192x192","512x512","1024x1024"]);
+  assert.deepEqual(client.icons.filter(i=>i.purpose==="maskable").map(i=>i.sizes),["192x192","512x512"]);
+  function assertPNG(src,size) {
+    const png=fs.readFileSync(path.join(root,src));
+    assert.equal(png.toString("ascii",1,4),"PNG");
+    assert.equal(png.readUInt32BE(16),size);
+    assert.equal(png.readUInt32BE(20),size);
+    assert.equal(png[25],2); // opaque RGB, no unexpected transparent corners
+  }
+  for (const icon of client.icons) assertPNG(icon.src,parseInt(icon.sizes,10));
+  for (const size of [16,32,120,152,167,180]) assertPNG(dir+`gruntr-${size}.png`,size);
+  const ico = fs.readFileSync(path.join(root,dir+"gruntr.ico"));
+  assert.equal(ico.readUInt16LE(2),1);
+  assert.equal(ico.readUInt16LE(4),3);
+  assert.deepEqual([ico[6],ico[22],ico[38]],[16,32,48]);
+  for (const file of ["client-dashboard.html","client-login.html","client-invite.html","client-signup.html",
+    "client-access-request.html","fwb-training-privacy.html","fwb-training-support.html"]) {
+    const html=read(file);
+    assert.match(html,/<title>[^<]*GRUNTR/);
+    assert.match(html,/application-name" content="GRUNTR"/);
+    assert.ok(html.includes(`rel="apple-touch-icon" sizes="180x180" href="${dir}gruntr-180.png"`),file);
+    assert.ok(html.includes(`rel="icon" type="image/png" sizes="16x16" href="${dir}gruntr-16.png"`),file);
+    assert.doesNotMatch(html, /rel="(?:[^"]*icon[^"]*)"[^>]*href="\/(?:fwb-|favicon\.|apple-touch-icon-)/i);
+  }
+  assert.ok(read("js/client-portal.js").includes('document.title = `${programTitle} | GRUNTR`'));
+  for (const file of ["js/client-portal.js","js/client-unfinished-workout-reminder.js","timer-notifications-sw.js"]) {
+    assert.ok(read(file).includes(dir+"gruntr-192.png"));
+    assert.doesNotMatch(read(file), /fwb-brand-icon-gold-192-v5/);
   }
 });
