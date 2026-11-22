@@ -77,7 +77,7 @@
   <link rel="stylesheet" href="css/client-workout-back.css?v=2" />
   <link rel="stylesheet" href="css/client-mobile-tab-gold.css?v=4" />
   <link rel="stylesheet" href="css/client-bottom-tabs.css?v=2" />
-  <link rel="stylesheet" href="css/lifthardr-profile.css?v=3" />
+  <link rel="stylesheet" href="css/lifthardr-profile.css?v=4" />
   <link rel="stylesheet" href="css/client-exercise-history-detail.css?v=4&amp;blue-gold=1" />
   <link rel="stylesheet" href="css/client-workout-compact-log.css?v=22&amp;blue-gold=1&amp;workout-logger-1358=1" />
   <link rel="stylesheet" href="css/client-custom-workout-launcher.css?v=7&amp;blue-gold=1" />
@@ -1111,73 +1111,80 @@
               </span>
               <img data-client-settings-avatar-image alt="" hidden />
             </span>
-            <div>
-              <h3 data-lifthardr-profile-name>Client</h3>
-              <button type="button" class="lifthardr-profile-circles" data-client-profile-circles>
-                <span data-client-circle-count>0</span><span>in your Squad</span><span aria-hidden="true">›</span>
-              </button>
+            <div class="lifthardr-profile-identity-copy">
+              <h3 data-lifthardr-profile-name>Your profile</h3>
+              <div class="lifthardr-profile-counts" data-gruntr-profile-insights role="group" aria-label="Profile stats">
+                <button type="button" class="lifthardr-profile-count" data-client-profile-circles
+                  title="Squad members"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 20v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2m3-6a4 4 0 0 1 3 4v2"/><circle cx="9" cy="7" r="3"/><path d="M16 4a3 3 0 0 1 0 6"/></svg><span data-client-circle-count>0</span><span class="sr-only"> Squad members</span></button>
+                <button type="button" class="lifthardr-profile-count is-badges" data-client-profile-earned-open
+                  title="Badges earned" aria-haspopup="dialog" aria-controls="client-profile-earned-badges"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7 3 4 6m6-6-4 6"/><circle cx="12" cy="15" r="6"/><path d="m12 12 .8 2 2.2.2-1.6 1.4.5 2.1-1.9-1.1-1.9 1.1.5-2.1L9 14.2l2.2-.2Z"/></svg><span data-gruntr-profile-badges>–</span><span class="sr-only"> Badges earned</span></button>
+                <span class="lifthardr-profile-count is-records" title="Personal records"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 4h8v5c0 3-1.8 5-4 5S8 12 8 9V4ZM8 6H4v3c0 2 2 3 5 3m7-6h4v3c0 2-2 3-5 3m-3 2v4m-4 2h8"/></svg><span data-gruntr-profile-records>–</span><span class="sr-only"> Personal records</span></span>
+                <span class="lifthardr-profile-count is-gym" title="Gym workouts logged"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 7v10m-4-7v4m14-7v10m4-7v4M7 12h10M3 12h4m10 0h4"/></svg><span data-gruntr-profile-gym-workouts>–</span><span class="sr-only"> Gym workouts logged</span></span>
+              </div>
+              <p class="lifthardr-profile-session-pack" data-client-profile-session-pack hidden aria-live="polite"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16v13H4zM8 4v5m8-5v5M4 11h16m-11 5 2 2 4-4"/></svg><span data-client-profile-session-pack-label></span></p>
             </div>
           </div>
-          <section class="lifthardr-profile-card" data-gruntr-profile-insights hidden aria-labelledby="gruntr-profile-insights-title">
-            <h3 id="gruntr-profile-insights-title">Profile insights</h3>
-            <dl class="gruntr-profile-insights">
-              <div><dt>Badges</dt><dd data-gruntr-profile-badges>–</dd></div>
-              <div><dt>Personal records</dt><dd data-gruntr-profile-records>–</dd></div>
-              <div><dt>Gym workouts</dt><dd data-gruntr-profile-gym-workouts>–</dd></div>
-            </dl>
-          </section>
-          <section class="lifthardr-profile-card lifthardr-profile-measurements" id="client-profile-measurements" aria-labelledby="client-profile-measurements-title">
-            <h3 id="client-profile-measurements-title">Stats &amp; Measurements</h3>
-            <div class="client-progress-preview-values" id="client-profile-measurement-values" aria-live="polite"><p class="client-progress-preview-empty">Loading measurements…</p></div>
-            <label for="client-profile-measurement-metric">Trend</label>
-            <select id="client-profile-measurement-metric">
-              <option value="bodyweight">Bodyweight</option>
-              <option value="bodyfat">Body fat</option>
-              <option value="lean_mass">DEXA lean mass</option>
-              <option value="muscle_mass">Muscle mass</option>
-              <option value="chest">Chest</option>
-              <option value="waist">Waist</option>
-              <option value="hips">Hips</option>
-              <option value="arm">Arm</option>
-              <option value="thigh">Thigh</option>
-            </select>
-            <div class="progress-chart" id="client-profile-measurement-chart" aria-live="polite"></div>
-            <div class="lifthardr-profile-links lifthardr-profile-measurements-actions">
-              <button type="button" data-client-progress-stats-open data-client-profile-measurement-edit aria-controls="client-stats-panel">Update measurements</button>
-              <button type="button" data-client-progress-stats-open aria-controls="client-stats-panel">View all stats <span aria-hidden="true">›</span></button>
-            </div>
-          </section>
-          <section class="lifthardr-profile-card" aria-labelledby="lifthardr-profile-snapshot">
+          <div class="lifthardr-profile-insight-stack">
+            <details class="lifthardr-profile-card lifthardr-profile-insight lifthardr-profile-measurements" id="client-profile-measurements" aria-labelledby="client-profile-measurements-title">
+              <summary class="lifthardr-profile-disclosure"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 15 12-12 6 6L9 21l-6-6Zm5-5 2 2m1-5 2 2m1-5 2 2"/></svg>
+                <span class="lifthardr-profile-disclosure-copy"><strong id="client-profile-measurements-title">Stats &amp; Measurements</strong><span data-client-profile-measurement-summary></span></span>
+                <span class="lifthardr-profile-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></span>
+              </summary>
+              <div class="lifthardr-profile-insight-body">
+                <div class="client-progress-preview-values" id="client-profile-measurement-values" role="group" aria-label="Measurement trends"><p class="client-progress-preview-empty">Loading measurements…</p></div>
+                <select id="client-profile-measurement-metric" hidden>
+                  <option value="bodyweight">Bodyweight</option><option value="bodyfat">Body fat</option>
+                  <option value="lean_mass">DEXA lean mass</option><option value="muscle_mass">Muscle mass</option>
+                  <option value="chest">Chest</option><option value="waist">Waist</option><option value="hips">Hips</option>
+                  <option value="arm">Arm</option><option value="thigh">Thigh</option>
+                </select>
+                <div class="progress-chart" id="client-profile-measurement-chart" aria-live="polite"></div>
+                <div class="lifthardr-profile-links lifthardr-profile-measurements-actions">
+                  <button type="button" data-client-progress-stats-open data-client-profile-measurement-edit aria-controls="client-stats-panel">Update Measurements</button>
+                  <button type="button" data-client-progress-stats-open aria-controls="client-stats-panel">View Full Stats <span aria-hidden="true">›</span></button>
+                </div>
+              </div>
+            </details>
+            <details class="lifthardr-profile-card lifthardr-profile-insight" aria-labelledby="lifthardr-profile-snapshot">
+              <summary class="lifthardr-profile-disclosure"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4v16h16M8 16v-4m5 4V9m5 7V6"/></svg>
+                <span class="lifthardr-profile-disclosure-copy"><strong id="lifthardr-profile-snapshot">Training Snapshot</strong><span class="is-gold" data-lifthardr-profile-week-summary></span></span>
+                <span class="lifthardr-profile-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></span>
+              </summary>
+              <div class="lifthardr-profile-insight-body">
+                <div class="lifthardr-profile-snapshot-heading">
+                  <div><span>This week</span><strong data-lifthardr-profile-week-value>–</strong></div>
+                  <select aria-label="Training history range" data-lifthardr-profile-range>
+                    <option value="1">Last month</option><option value="3" selected>Last 3 months</option><option value="6">Last 6 months</option>
+                  </select>
+                </div>
+                <div class="lifthardr-profile-metrics" role="group" aria-label="Training snapshot metric">
+                  <button type="button" data-lifthardr-profile-metric="duration" aria-pressed="true">Duration</button>
+                  <button type="button" data-lifthardr-profile-metric="volume" aria-pressed="false">Volume</button>
+                  <button type="button" data-lifthardr-profile-metric="reps" aria-pressed="false">Reps</button>
+                </div>
+                <div data-lifthardr-profile-chart aria-live="polite"><p>Loading workouts…</p></div>
+              </div>
+            </details>
+          </div>
+          <nav class="lifthardr-profile-shortcuts" aria-label="Profile tools">
+            <button type="button" data-client-summary-go-tab="logs" aria-label="Workout logs"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h14v16H5zM9 8h6m-6 4h6m-6 4h6"/></svg> Logs</button>
+            <button type="button" data-client-summary-go-tab="progress"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4v16h16M7 15l4-5 3 3 5-6"/></svg> Progress</button>
+            <button type="button" data-client-workout-calendar-open aria-label="Workout calendar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16v13H4zM8 4v5m8-5v5M4 11h16"/></svg> Calendar</button>
+          </nav>
+          <dialog class="client-achievements-dialog lifthardr-profile-earned" id="client-profile-earned-badges" aria-labelledby="client-profile-earned-title">
             <div class="lifthardr-profile-snapshot-heading">
-              <h3 id="lifthardr-profile-snapshot">Training Snapshot</h3>
-              <span>Last 12 weeks</span>
-            </div>
-            <div class="lifthardr-profile-metrics" role="group" aria-label="Training snapshot metric">
-              <button type="button" data-lifthardr-profile-metric="duration" aria-pressed="true">Duration</button>
-              <button type="button" data-lifthardr-profile-metric="volume" aria-pressed="false">Volume</button>
-              <button type="button" data-lifthardr-profile-metric="reps" aria-pressed="false">Reps</button>
-            </div>
-            <div data-lifthardr-profile-chart aria-live="polite"><p>Loading workouts…</p></div>
-          </section>
-          <section class="lifthardr-profile-card" aria-labelledby="lifthardr-profile-badges">
-            <div class="lifthardr-profile-snapshot-heading">
-              <h3 id="lifthardr-profile-badges">Badges</h3>
-              <button type="button" data-achievements-dialog-open aria-haspopup="dialog" aria-controls="client-achievements-dialog">View all</button>
+              <h3 id="client-profile-earned-title">Badges Earned</h3>
+              <form method="dialog"><button type="submit" autofocus>Done</button></form>
             </div>
             <div data-lifthardr-profile-badges><p>Loading badges…</p></div>
-          </section>
-          <nav class="lifthardr-profile-links" aria-label="Profile tools">
-            <button type="button" data-client-summary-go-tab="logs">Workout Logs <span aria-hidden="true">›</span></button>
-            <button type="button" data-client-summary-go-tab="progress">Progress <span aria-hidden="true">›</span></button>
-            <button type="button" data-client-summary-go-tab="nutrition">Nutrition <span aria-hidden="true">›</span></button>
-            <button type="button" data-client-summary-go-tab="sessions">Sessions <span aria-hidden="true">›</span></button>
-            <button type="button" data-client-summary-go-tab="questionnaire">PAR-Q <span aria-hidden="true">›</span></button>
-          </nav>
-          <section class="lifthardr-profile-card gruntr-profile-activity" data-gruntr-profile-activity hidden aria-labelledby="gruntr-profile-activity-title">
+            <button type="button" data-client-profile-earned-all data-achievements-dialog-open aria-haspopup="dialog" aria-controls="client-achievements-dialog">View all badges</button>
+          </dialog>
+          <section class="gruntr-profile-activity" data-gruntr-profile-activity hidden aria-labelledby="gruntr-profile-activity-title">
             <h3 id="gruntr-profile-activity-title">Activity Feed</h3>
             <p data-gruntr-profile-activity-status aria-live="polite"></p>
+            <button type="button" class="client-social-control" data-gruntr-profile-retry hidden>Try Again</button>
             <ol data-gruntr-profile-activity-list></ol>
-            <button type="button" class="client-social-control" data-gruntr-profile-more hidden>Show more activity</button>
+            <button type="button" class="client-social-control" data-gruntr-profile-more hidden>Show More Activity</button>
           </section>
         </section>
 
@@ -1566,7 +1573,7 @@
   <script src="js/one-rep-max.js?v=2"></script>
   <script src="js/client-plate-calculator.js?v=1"></script>
   <script src="js/pr-help.js?v=1"></script>
-  <script src="js/client-session-alerts.js?v=2"></script>
+  <script src="js/client-session-alerts.js?v=3"></script>
   <script src="js/daily-workout-recommendation.js?v=1"></script>
   <script src="js/daily-checkin-dialog.js?v=2"></script>
   <script src="js/workout-generator.js?v=6"></script>
@@ -1596,18 +1603,5 @@
   <script src="js/client-exercise-library.js?v=13&amp;likeness-motion=1&amp;anatomy-images=1&amp;catalog-consolidation=1"></script>
   <script src="js/workout-csv-import.js?v=1"></script>
   <script src="js/client-personal-bests-list.js?v=1"></script>
-  <script src="js/client-workout-calendar.js?v=2"></script>
-<script src="js/client-portal.js?v=web-release-1356&amp;workout-preview-1&amp;custom-workout-history-1&amp;cancel-workout=1&amp;energy-feedback=1&amp;mood-redesign=1&amp;visible-group-controls=1&amp;exercise-videos=1&amp;remember-login=1&amp;visible-demos=1&amp;personal-bests=1&amp;copy-last-weights=1&amp;demo-icons=1&amp;keyboard-entry=1&amp;copy-set-pr=3&amp;return-coach=1&amp;apple-workout=2&amp;apple-share=1&amp;rir-help=1&amp;viewport-dock=6&amp;home-actions=1&amp;compact-copy=1&amp;exercise-pr-notes=1&amp;pr-info=1&amp;finish-workout=2&amp;prescribed-targets=1&amp;exercise-controls=1&amp;session-alerts=1&amp;exercise-labels=1&amp;exercise-list=3&amp;grouped-add=2&amp;google-health=1&amp;exercise-defaults=3&amp;workout-generator=4&amp;profile-photo=1&amp;account-settings=1&amp;workout-delete=1&amp;apple-health=1&amp;daily-checkin=1&amp;recovery-catalog=1&amp;messages=2&amp;cardio-shortcut=1&amp;achievements=1&amp;progression=1&amp;exercise-images=5&amp;exercise-motion=3&amp;exercise-guide=3&amp;settings-tabs=2&amp;workout-feedback-actions=4&amp;set-motion=1&amp;next-exercise=1&amp;warmup-actions=1&amp;photo-crop=2&amp;navigation=2&amp;demo-svg=1&amp;timer-alert-recovery=2&amp;finish-later=1&amp;suggestions-prefix=1&amp;quarter-goals=1&amp;progress-cards=1&amp;program-windows=1&amp;activity-likes=1&amp;workout-hub=3&amp;home-community=1&amp;remove-home-more=1&amp;client-light=1&amp;training-preferences=1&amp;exercise-name-performance=1&amp;rep-weight-hints=2&amp;gym-location=2&amp;round-focus=1&amp;exercise-picker-list=2&amp;web-parity=11&amp;atari-mascot=1&amp;atari-words=1&amp;back-control=2&amp;compact-set-menus=1&amp;grouped-set-counts=2&amp;generated-counts=1&amp;progress-snapshot=2&amp;first-login-intake=2&amp;client-login-alert=1&amp;bottom-tabs=1&amp;exercise-history-detail=1&amp;muscle-highlights=2&amp;workout-calendar=1&amp;copy-past-workout=1&amp;custom-polish=1&amp;grouped-controls=1&amp;grouped-rest=1&amp;exercise-library-merge=1&amp;gym-picker=1&amp;muscle-fallback=1&amp;cardio-intervals=1&amp;compact-setup=4&amp;home-next-workout=1&amp;logs-readable=2&amp;android-search=1&amp;android-selection=1&amp;grouped-picker=3&amp;quick-workout=1&amp;home-wall-atari=1&amp;centered-exercise=1&amp;quick-workout-controls=1&amp;floating-finish=1&amp;straight-picker=2&amp;setup-popups=1&amp;setup-icons=1&amp;timer-auto-hide=1&amp;setup-row=1&amp;gym-scroll-cue=1&amp;floating-actions=1&amp;grey-set-defaults=1&amp;finish-confirm=1&amp;picker-focus-crop=1&amp;android-workout-photo-crop=2&amp;compact-mobile-picker=5&amp;logs-title=2&amp;trainer-program=1&amp;dashboard-back=1&amp;format-switch=1&amp;source-hide=1&amp;workout-card-order=1&amp;exercise-collapse=1&amp;android-zoom=1&amp;card-controls=2&amp;add-card-prompt=3&amp;gym-finder=0&amp;log-workout-label=1&amp;auto-workout-title=1&amp;grouped-log-parity=1&amp;lifthardr=1&amp;workout-mobility=2&amp;logger-parity=1&amp;exercise-search-simple=1&amp;exercise-guide-motion=1&amp;explore-programs=1&amp;anatomy-images=1&amp;inline-exercise-motion=1&amp;gruntr-brand=2&amp;rest-preference-resume=1&amp;picker-logger-controls=1&amp;profile-measurements=1&amp;mobile-workout-polish=1&amp;workout-logger-1358=1"></script>
-<script src="js/client-progress-redesign.js?v=1"></script>
-<script src="js/client-settings-redesign.js?v=2"></script>
-  <script src="js/client-next-workout.js?v=1"></script>
-  <script src="js/client-home-parity.js?v=11"></script>
-  <script src="js/client-bottom-tabs.js?v=2"></script>
-  <script src="js/lifthardr-profile.js?v=1"></script>
-<script src="js/gruntr-profile-activity.js?v=1"></script>
-  <script src="js/client-exercise-history-detail.js?v=3"></script>
-  <script src="js/client-unfinished-workout-reminder.js?v=2"></script>
-  <script src="js/client-fascia-backgrounds.js?v=2"></script>
-  <script src="js/workout-exercise-dock.js?v=5"></script>
-</body>
-</html>
+  <script src="js/client-workout-calendar.js?v=3"></script>
+<script src="js/client-portal.js?v=web-release-1356&amp;own-profile-parity=1&amp;pt-entitlement=1&amp;workout-preview-1&amp;custom-workout-history-1&amp;cancel-workout=1&amp;energy-feedback=1&amp;mood-redesign=1&amp;visible-group-controls=1&amp;exercise-videos=1&amp;remember-login=1&amp;visible-demos=1&amp;personal-bests=1&amp;copy-last-weights=1&amp;demo-icons=1&amp;keyboard-entry=1&amp;copy-set-pr=3&amp;return-coach=1&amp;apple-workout=2&amp;apple-share=1&amp;rir-help=1&amp;viewport-dock=6&amp;home-actions=1&amp;compact-copy=1&amp;exercise-pr-notes=1&amp;pr-info=1&amp;finish-workout=2&amp;prescribed-targets=1&amp;exercise-controls=1&amp;session-alerts=1&amp;exercise-labels=1&amp;exercise-list=3&amp;grouped-add=2&amp;google-health=1&amp;exercise-defaults=3&amp;workout-generator=4&amp;profile-photo=1&amp;account-settings=1&amp;workout-delete=1&amp;apple-health=1&amp;daily-checkin=1&amp;recovery-catalog=1&amp;messages=2&amp;cardio-shortcut=1&amp;achievements=1&amp;progression=1&amp;exercise-images=5&amp;exercise-motion=3&amp;exercise-guide=3&amp;settings-tabs=2&amp;workout-feedback-actions=4&amp;set-motion=1&amp;next-exercise=1&amp;warmup-actions=1&amp;photo-crop=2&amp;navigation=2&amp;demo-svg=1&amp;timer-alert-recovery=2&amp;finish-later=1&amp;suggestions-prefix=1&amp;quarter-goals=1&amp;progress-cards=1&amp;program-windows=1&amp;activity-likes=1&amp;workout-hub=3&amp;home-community=1&amp;remove-home-more=1&amp;client-light=1&amp;training-preferences=1&amp;exercise-name-performance=1&amp;rep-weight-hints=2&amp;gym-location=2&amp;round-focus=1&amp;exercise-picker-list=2&amp;web-parity=11&amp;atari-mascot=1&amp;atari-words=1&amp;back-control=2&amp;compact-set-menus=1&amp;grouped-set-counts=2&amp;generated-counts=1&amp;progress-snapshot=2&amp;first-login-intake=2&amp;client-login-alert=1&amp;bottom-tabs=1&amp;exercise-history-detail=1&amp;muscle-highlights=2&amp;workout-calendar=1&amp;copy-past-workout=1&amp;custom-polish=1&amp;grouped-controls=1&amp;grouped-rest=1&amp;exercise-library-merge=1&amp;gym-picker=1&amp;muscle-fallback=1&amp;cardio-intervals=1&amp;compact-setup=4&amp;home-next-workout=1&amp;logs-readable=2&amp;android-search=1&amp;android-selection=1&amp;grouped-picker=3&amp;quick-workout=1&amp;home-wall-atari=1&amp;centered-exercise=1&amp;quick-workout-controls=1&amp;floating-finish=1&amp;straight-picker=2&amp;setup-popups=1&amp;setup-icons=1&amp;timer-auto-hide=1&amp;setup-row=1&amp;gym-scroll-cue=1&amp;floating-actions=1&amp;grey-set-defaults=1&amp;finish-confirm=1&amp;picker-focus-crop=1&amp;android-workout-photo-crop=2&amp;compact-mobile-picker=5&amp;logs-title=2&amp;trainer-program=1&amp;dashboard-back=1&amp;format-switch=1&amp;source-hide=1&amp;workout-card-order=1&amp;exercise-collapse=1&amp;android-zoom=1&amp;card-controls=2&amp;add-card-prompt=3&amp;gym-finder=0&amp;log-workout-label=1&amp;auto-workout-title=1&amp;grouped-log-parity=1&amp;lifthardr=1&amp;workout-mobility=2&amp;logger-parity=1&amp;exercise-search-simple=1&amp;exercise-guide-motion=1&amp;explore-programs=1&amp;anatomy-images=1&amp;inline-exercise-motion=1&amp;gruntr-brand=2&amp;rest-preference-resume=1&amp;picker-logger-controls=1&amp;profile-measurements=1&amp;mobile-workout-polish=1&amp;workout-logger-1358=1"></script>

@@ -543,6 +543,7 @@ function configureClientSessionBalance() {
     supabaseClient, clientEmail: email, programs: clientAvailablePrograms,
     onUpdate(program) {
       if (normalizeClientEmail(activeClientEmail) !== email) return;
+      window.FWB_LIFTHARDR_PROFILE?.refreshPack?.(program);
       const fields = Object.fromEntries([
         "session_count_used", "session_count_total", "session_dates", "session_package_history", "sheet_url"
       ].map((field) => [field, program?.[field] ?? null]));
@@ -3286,9 +3287,32 @@ function renderProgressGraph(entries, { chart = document.getElementById("progres
 function renderProfileMeasurementChart(entries = progressEntries) {
   const metric = document.getElementById("client-profile-measurement-metric");
   const chart = document.getElementById("client-profile-measurement-chart");
-  if (!metric || !chart) return;
+  const optionsHost = document.getElementById("client-profile-measurement-values");
+  const summary = document.querySelector("[data-client-profile-measurement-summary]");
+  if (!metric || !chart || !optionsHost) return;
 
-  renderProgressGraph(entries, { chart, metricKey: metric.value, maxPoints: 5 });
+  const options = [...metric.options].flatMap(({ value }) => {
+    const number = latestClientProgressValue(entries, row => progressMetricNumber(row, value));
+    if (number === null) return [];
+    const { label, suffix } = progressMetricDetails(value);
+    return [{ key: value, label, text: formatProgressValue(number, suffix) }];
+  });
+  const selected = options.find(option => option.key === metric.value) || options[0];
+  const activeKey = optionsHost.contains(document.activeElement) ? document.activeElement.dataset.profileMeasure : null;
+  if (summary) summary.textContent = selected?.text || "";
+  if (selected) {
+    metric.value = selected.key;
+    optionsHost.innerHTML = options.map(option =>
+      `<button type="button" data-profile-measure="${escapeHtml(option.key)}" aria-pressed="${option.key === selected.key}"><span>${escapeHtml(option.label)}</span><strong>${escapeHtml(option.text)}</strong></button>`).join("");
+    if (activeKey) {
+      [...optionsHost.querySelectorAll("[data-profile-measure]")].find(button => button.dataset.profileMeasure === activeKey)?.focus();
+    }
+  } else {
+    optionsHost.innerHTML = '<p class="client-progress-preview-empty">Add a measurement to start tracking your progress.</p>';
+    chart.replaceChildren();
+    return;
+  }
+  renderProgressGraph(entries, { chart, metricKey: selected.key, maxPoints: 5 });
 }
 
 function renderClientProgressHistory(entries) {
@@ -4336,7 +4360,6 @@ function renderProgress(entries) {
   if (profileMeasurements) {
     profileMeasurements.hidden = isCoachDashboardPreview;
     if (!isCoachDashboardPreview) {
-      renderClientProgressPreview(safeEntries, document.getElementById("client-profile-measurement-values"));
       renderProfileMeasurementChart(safeEntries);
     }
   }
@@ -5073,7 +5096,13 @@ function handleClientDexaReview() {
 
 function handleClientProgressMetricTabs() {
   const tabs = document.getElementById("progress-metric-tabs");
-  document.getElementById("client-profile-measurement-metric")?.addEventListener("change", () => renderProfileMeasurementChart());
+  document.getElementById("client-profile-measurement-values")?.addEventListener("click", (event) => {
+    const choice = event.target.closest("[data-profile-measure]");
+    const metric = document.getElementById("client-profile-measurement-metric");
+    if (!choice || !metric || isCoachDashboardPreview) return;
+    metric.value = choice.dataset.profileMeasure;
+    renderProfileMeasurementChart();
+  });
 
   tabs?.addEventListener("click", (event) => {
     const button = event.target.closest("[data-progress-metric]");
@@ -17353,6 +17382,27 @@ function clientAchievementSnapshot() {
   return window.FWB_ACHIEVEMENTS.evaluate(trainingLogs, { today: todayDate(), clientEmail: activeClientEmail });
 }
 
+function openClientProfileActivityWorkout(key) {
+  if (isCoachDashboardPreview || !activeDashboardUser?.id ||
+      normalizeClientEmail(activeDashboardUser.email) !== normalizeClientEmail(activeClientEmail)) return;
+  const record = trainingLogs.find(row => clientWorkoutHistorySessionKey(row) === key && row.completed_at);
+  if (!record) return;
+  setClientDashboardTab("logs");
+  document.querySelector('[data-client-logs-tab="workouts"]')?.click();
+  const find = () => [...document.querySelectorAll("[data-client-workout-history-key]")]
+    .find(card => card.dataset.clientWorkoutHistoryKey === key);
+  let card = find();
+  if (!card) {
+    clientTrainingLogDateFilter = record.entry_date;
+    clientTrainingLogSearchFilter = "";
+    const search = document.getElementById("client-training-log-search-filter");
+    if (search) search.value = "";
+    renderClientTrainingLogs();
+    card = find();
+  }
+  card?.querySelector("[data-client-workout-history-open]")?.click();
+}
+
 function renderClientAchievements() {
   if (!window.FWB_ACHIEVEMENTS_UI) return;
   clientAchievementController ||= window.FWB_ACHIEVEMENTS_UI.createController(document, retryClientAchievements);
@@ -17376,7 +17426,16 @@ function renderClientAchievements() {
   window.FWB_GRUNTR_PROFILE_ACTIVITY?.render({
     client: supabaseClient, owner: activeDashboardUser?.id, email: activeClientEmail,
     preview: isCoachDashboardPreview, today: todayDate(), status: clientAchievementHistoryStatus,
-    logs: trainingLogs, achievements: snapshot, sessionKey: clientWorkoutHistorySessionKey
+    logs: trainingLogs, achievements: snapshot, sessionKey: clientWorkoutHistorySessionKey,
+    workoutTitle: workoutDisplayTitle, openWorkout: openClientProfileActivityWorkout, retry: retryClientAchievements,
+    setKind(row) {
+      const code = String(row.exercise_code || "").trim().toUpperCase();
+      const type = normalizedSetType(row.set_type, row.set_number);
+      if (code === warmupExerciseCode || type === warmUpSetType) return "warmup";
+      if (code === cardioExerciseCode) return "cardio";
+      if (type === "timed" || Number(row.duration_seconds) > 0) return "timed";
+      return "strength";
+    }
   });
   window.FWB_COMMUNITY_CONNECTIONS?.syncAchievements(snapshot);
   clientQuarterGoalController?.render();
@@ -21057,7 +21116,9 @@ function handleWorkoutInteractions() {
       event.preventDefault();
       const calendar = window.FWB_CLIENT_WORKOUT_CALENDAR;
       if (!calendar) { window.alert("Workout calendar could not load. Refresh and try again."); return; }
+      const profilePanel = calendarButton.closest('[data-client-dashboard-panel="profile"]');
       void calendar.open({
+        panel: profilePanel,
         client: supabaseClient, userId: isCoachDashboardPreview ? null : activeDashboardUser?.id,
         email: normalizeClientEmail(activeClientEmail), returnFocus: calendarButton,
         getAssignedWorkouts() {
@@ -21079,6 +21140,7 @@ function handleWorkoutInteractions() {
               else renderClientWorkoutTabs(currentProgram.workouts);
               const panel = document.getElementById(`client-workout-panel-${index + 1}`);
               syncWorkoutPanelDate(panel, row.planned_date);
+              if (profilePanel) setClientDashboardTab("workouts");
               activateClientWorkoutPanel(index + 1);
               return true;
             }
@@ -22945,6 +23007,12 @@ async function loadDashboard() {
     window.FWB_COMMUNITY_CONNECTIONS?.configure(supabaseClient, user.id, isCoachDashboardPreview);
     configureClientAppleWorkouts();
     clientAvailablePrograms = Array.isArray(programRows) ? programRows : [];
+    // Use the original owner-scoped rows before the existing Sessions controller
+    // copies display balance fields across programs for other dashboard views.
+    window.FWB_LIFTHARDR_PROFILE?.configurePack?.({
+      user, clientEmail: activeClientEmail, preview: isCoachDashboardPreview,
+      isCoach: isCoachPortalEmail(signedInEmail), programs: clientAvailablePrograms, auth: supabaseClient.auth
+    });
     renderProgram(data);
     void loadClientFitnessPlan(user.id);
     configureClientSessionBalance();
@@ -23891,6 +23959,7 @@ async function handleSignOut() {
       clearClientQuestionnaire();
       clientMessagesController?.destroy();
       clientMessagesController = null;
+      window.FWB_LIFTHARDR_PROFILE?.clearPack?.();
       clientSessionBalanceController?.destroy();
       clientSessionBalanceController = null;
       clientGoogleHealthController?.destroy();
