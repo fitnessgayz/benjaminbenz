@@ -66,7 +66,7 @@
   group('TRAINING', [take('[data-client-settings-open="training-preferences"]'), take('[data-client-settings-destination="sessions"]'), take('[data-client-settings-destination="nutrition"]'), take('[data-client-settings-destination="questionnaire"]')]);
   group('HEALTH & DEVICES', [take('[data-client-settings-open="health-apps"]')]);
   group('APP', [appearance, appearanceDetails, take('[data-client-settings-destination="stats"]'), take('[data-client-settings-open="recent-updates"]'), take('[data-message-coach]')]);
-  group('SUPPORT & PRIVACY', [...children.filter((node) => node.parentNode !== nav && !node.parentNode), take('.client-settings-signout')]);
+  group('SUPPORT & PRIVACY', [take('[data-client-settings-open="app-guide"]'), take('[data-client-settings-open="workout-logging-guide"]'), ...children.filter((node) => node.parentNode !== nav && !node.parentNode), take('.client-settings-signout')]);
   const rename = (selector, label) => { const node = nav.querySelector(selector); if (node) node.querySelector('strong').textContent = label; };
   rename('[data-client-settings-open="security"]', 'Password & Security');
   rename('[data-client-settings-open="training-preferences"]', 'Workout settings');

@@ -16,6 +16,10 @@
   let preview = false;
   let weeklyRecord = null;
   let scheduled = [];
+  let upcoming = [];
+  let upcomingDateKey = '';
+  let upcomingRequestVersion = 0;
+  let ownerUserId = '';
   let program = null;
   let scheduleCache = new Map();
   const dateKey = date => [date.getFullYear(), String(date.getMonth() + 1).padStart(2, '0'), String(date.getDate()).padStart(2, '0')].join('-');
@@ -73,19 +77,19 @@
       card.querySelector('.client-home-last-detail').dataset.clientLastWorkoutKey = historyKey;
       card.querySelector('[data-copy-workout-to-custom]').dataset.copyWorkoutToCustom = historyKey;
     }
-    const workouts = (Array.isArray(program?.workouts) ? program.workouts : [])
-      .filter(row => Array.isArray(row.exercises) && row.exercises.length);
-    const planned = scheduled.filter(row => row.planned_date >= dateKey(new Date())).sort((a, b) => a.planned_date.localeCompare(b.planned_date))[0];
-    const plannedIndex = planned ? workouts.findIndex(row => String(row.title || '').toLowerCase() === String(planned.title || '').toLowerCase()) : -1;
-    const lastTitle = latest ? String(latest[1][0].workout_title || '').split(' · ')[0].toLowerCase() : '';
-    const lastIndex = workouts.findIndex(row => String(row.title || '').toLowerCase() === lastTitle);
-    const nextIndex = plannedIndex >= 0 ? plannedIndex : lastIndex >= 0 ? (lastIndex + 1) % workouts.length : 0;
-    const next = workouts[nextIndex];
+    const next = root.FWB_CLIENT_NEXT_WORKOUT?.recommendation({
+      scheduled: upcomingDateKey === dateKey(new Date()) ? upcoming : [],
+      workouts: Array.isArray(program?.workouts) ? program.workouts : [],
+      lastTitle: latest ? String(latest[1][0].workout_title || '').split(' · ')[0] : '',
+      today: dateKey(new Date())
+    });
     suggestion.textContent = next?.title || 'Choose your next workout';
     const nextDay = document.querySelector('[data-client-home-next-day]');
-    if (nextDay) nextDay.textContent = planned && plannedIndex >= 0
-      ? new Date(`${planned.planned_date}T12:00:00`).toLocaleDateString(undefined, { weekday: 'long' })
+    if (nextDay) nextDay.textContent = next?.date
+      ? new Date(`${next.date}T12:00:00`).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })
       : 'Ready when you are';
+    const start = document.querySelector('[data-client-home-start-next]');
+    if (start) start.dataset.clientHomeNextSection = next?.section || 'routines';
   }
   function renderPlanner() {
     const start = addDays(monday(new Date()), weekOffset * 7);
@@ -164,9 +168,32 @@
       // The activity week remains usable if scheduled plans are unavailable.
     }
   }
+  async function refreshUpcoming({ force = false } = {}) {
+    if (!client || !ownerUserId || preview) return;
+    const today = dateKey(new Date());
+    if (!force && upcomingDateKey === today) return;
+    const version = ++upcomingRequestVersion;
+    upcomingDateKey = today;
+    upcoming = [];
+    renderNextWorkout();
+    try {
+      const { data, error } = await client.from('client_workout_schedule')
+        .select('id,planned_date,title,source_type')
+        .eq('owner_user_id', ownerUserId).eq('is_deleted', false)
+        .gte('planned_date', today)
+        .order('planned_date', { ascending: true }).order('id', { ascending: true }).limit(20);
+      if (version !== upcomingRequestVersion) return;
+      if (error) { upcomingDateKey = ''; return; }
+      upcoming = Array.isArray(data) ? data : [];
+      renderNextWorkout();
+    } catch (_) {
+      if (version === upcomingRequestVersion) upcomingDateKey = '';
+    }
+  }
   document.addEventListener('fwb:workout-schedule-changed', () => {
     scheduleCache.clear();
     void refreshSchedule();
+    void refreshUpcoming({ force: true });
   });
   planner.addEventListener('click', event => {
     const previous = event.target.closest('[data-client-home-week-prev]');
@@ -305,12 +332,25 @@
     button.disabled = false;
   });
   root.FWB_CLIENT_HOME_PARITY = {
-    render(nextLogs, nextProgram) { logs = Array.isArray(nextLogs) ? nextLogs : []; program = nextProgram || null; renderPlanner(); void refreshSchedule(); },
-    configure(nextClient, nextEmail, isPreview) {
+    render(nextLogs, nextProgram) {
+      logs = Array.isArray(nextLogs) ? nextLogs : [];
+      program = nextProgram || null;
+      renderPlanner();
+      void refreshSchedule();
+      void refreshUpcoming();
+    },
+    refreshNext() { renderNextWorkout(); void refreshUpcoming(); },
+    configure(nextClient, nextEmail, isPreview, nextOwnerUserId) {
       const normalizedEmail = String(nextEmail || '').trim().toLowerCase();
-      if (client !== nextClient || email !== normalizedEmail || preview !== Boolean(isPreview)) {
+      const nextOwner = String(nextOwnerUserId || '');
+      if (client !== nextClient || email !== normalizedEmail || preview !== Boolean(isPreview) || ownerUserId !== nextOwner) {
         weeklyRecord = null;
         scheduleCache = new Map();
+        upcoming = [];
+        scheduled = [];
+        upcomingDateKey = '';
+        upcomingRequestVersion++;
+        ownerUserId = nextOwner;
       }
       client = nextClient;
       email = normalizedEmail;

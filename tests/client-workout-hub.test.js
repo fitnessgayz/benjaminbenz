@@ -16,7 +16,7 @@ function declaration(name) {
   return source.slice(match.index, end < 0 ? undefined : match.index + match[0].length + end);
 }
 
-test('workout chooser separates routines, personal training and FWB Trainer', () => {
+test('workout chooser separates routines, personal training and GRUNTR Trainer', () => {
   const context = vm.createContext({
     clientPreviewProgramSelected: false,
     clientAvailablePrograms: [{ program_title: 'Strength + Mobility', workouts: Array(7).fill({}) }],
@@ -28,8 +28,8 @@ test('workout chooser separates routines, personal training and FWB Trainer', ()
     'clientWorkoutChoiceContent', 'clientCardioWorkoutChoiceMarkup', 'clientWorkoutChoiceDialogMarkup', 'clientWorkoutListMarkup'
   ].map(declaration).join('\n'), context);
   const markup = context.clientWorkoutListMarkup([{ isCardio: true, panelIndex: 8 }]);
-  for (const title of ['Routines', 'Personal Training', 'FWB Trainer', 'Start Workout', 'Previous Workout',
-    'Explore Routines', 'Workout calendar', 'Strength + Mobility', 'Start with FWB Trainer', 'Saved FWB Workout', 'Benjamin’s Routine']) {
+  for (const title of ['Routines', 'Personal Training', 'GRUNTR Trainer', 'Start Workout', 'Previous Workout',
+    'Explore Routines', 'Workout calendar', 'Strength + Mobility', 'Start with GRUNTR Trainer', 'Saved workouts', 'Benjamin’s Routine']) {
     assert.ok(markup.includes(title), `${title} is shown`);
   }
   const routines = markup.match(/id="workout-hub-routines"[\s\S]*?<\/section>/)[0];

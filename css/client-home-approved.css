@@ -161,3 +161,15 @@
     padding: 6px 3px !important; font-size: 11px; white-space: nowrap;
   }
 }
+
+/* Light-theme text and state indicators must remain dark on the light planner. */
+:root[data-client-theme="light"] body.client-dashboard-page .client-home-planner :is([data-client-home-week-label], .client-home-week-controls button),
+:root[data-client-theme="light"] body.client-dashboard-page .client-home-next-day > span:first-child {
+  color: #465563;
+}
+:root[data-client-theme="light"] body.client-dashboard-page :is(.client-home-day-dot.workout.is-active, .client-home-week-legend span:first-child i) {
+  background: #856700 !important;
+}
+:root[data-client-theme="light"] body.client-dashboard-page :is(.client-home-day-dot.gym.is-active, .client-home-week-legend span:last-child i) {
+  background: #176595 !important;
+}

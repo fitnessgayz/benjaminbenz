@@ -66,3 +66,20 @@ body.client-dashboard-page .client-settings-panel .client-settings-menu .client-
 :root[data-client-theme="light"] body.client-dashboard-page .client-settings-appearance-details { background:var(--surface); color:var(--ink); }
 :root[data-client-theme="light"] body.client-dashboard-page .client-settings-appearance-details .client-theme-setting legend { color:var(--muted); }
 :root[data-client-theme="light"] body.client-dashboard-page .client-settings-appearance-details .client-theme-options { background:var(--surface-soft); border-color:var(--line); }
+
+body.client-dashboard-page .client-app-guide .client-app-guide-steps {
+  display: grid;
+  gap: 1rem;
+  margin: 0;
+  padding-inline-start: 1.5rem;
+  line-height: 1.55;
+  color: var(--ink);
+}
+body.client-dashboard-page .client-app-guide-steps strong { display: block; }
+body.client-dashboard-page .client-app-guide .client-app-guide-more {
+  width: 100%;
+  min-height: 44px;
+  margin-top: 1.25rem;
+  color: var(--ink);
+  background: var(--surface-soft);
+}

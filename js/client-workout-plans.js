@@ -123,7 +123,7 @@
       </section>
       <section data-fwb-plan-page hidden>
       <h3 tabindex="-1">Health terms and policy</h3>
-      <p>FWB Trainer provides exercise guidance. Choose activity appropriate to your health and consult a qualified professional if you have an injury or health condition.</p>
+      <p>GRUNTR Trainer provides exercise guidance. Choose activity appropriate to your health and consult a qualified professional if you have an injury or health condition.</p>
       <a href="fwb-training-privacy.html" target="_blank" rel="noopener">GRUNTR Privacy Policy</a>
       <label class="plan-equipment fwb-plan-health-terms"><input type="checkbox" name="acceptedHealthTerms" required /> I have read and accept the health terms.</label>
       <div class="fwb-plan-step-actions"><button type="button" data-fwb-plan-step="1">Back</button><button class="plan-primary" type="submit">Preview my plan</button></div>
@@ -148,7 +148,7 @@
     dialog.className = "client-workout-plan-dialog";
     dialog.setAttribute("aria-labelledby", "client-workout-plan-heading");
     dialog.innerHTML = `<div class="plan-dialog-top"><div><p class="plan-kicker">Your training</p><h2 id="client-workout-plan-heading">Workout plans</h2></div><button type="button" data-plan-close aria-label="Close">×</button></div>
-      <nav aria-label="Workout plan views"><button type="button" data-plan-view="saved">Saved FWB Workout</button><button type="button" data-plan-view="generate">FWB Trainer</button></nav>
+      <nav aria-label="Workout plan views"><button type="button" data-plan-view="saved">Saved workouts</button><button type="button" data-plan-view="generate">GRUNTR Trainer</button></nav>
       <p data-plan-status role="status" aria-live="polite"></p><div data-plan-body></div>`;
     dialog.addEventListener("close", () => { returnFocus?.focus?.({ preventScroll: true }); context = null; preview = null; });
     dialog.addEventListener("cancel", (event) => { if (busy) event.preventDefault(); });
@@ -227,7 +227,7 @@
     try {
       preview = build(readForm(event.target), root.FWB_WORKOUT_GENERATOR);
       dialog.querySelector("[data-plan-preview]").innerHTML = planMarkup(preview, "", event.target.elements.bodyWeight.value);
-      status("Review your plan, then save it in FWB Trainer.");
+      status("Review your plan, then save it in GRUNTR Trainer.");
       dialog.querySelector("[data-plan-preview]").scrollIntoView({ block: "start", behavior: "smooth" });
     } catch (error) { preview = null; dialog.querySelector("[data-plan-preview]").innerHTML = ""; status(error.message, true); }
   }
@@ -270,7 +270,7 @@
         saved.unshift(data); preview = null;
         setBusy(false); showView("saved");
         dialog.querySelector(`[data-plan-open="${data.id}"]`)?.click();
-        status("Your plan is saved under FWB Trainer. Choose a day to start.");
+        status("Your plan is saved under GRUNTR Trainer. Choose a day to start.");
       } catch (error) { setBusy(false); status(`Could not save plan: ${error.message}`, true); }
       return;
     }
