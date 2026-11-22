@@ -131,19 +131,24 @@
       const requested = control.checked, key = owner, revision = scope, signal = requestController.signal;
       if (!state?.available || saving || preview || !key) { render(); return; }
       reading++; saving = true; render();
+      let confirmed = false;
+      if (!requested) { feed.hidden = true; feed.replaceChildren(); }
       try {
         const result = normalizeSharing(await rpc('community_set_auto_activity_sharing',
           { p_category: 'workouts', p_enabled: requested }, key, revision, signal));
         if (key !== owner || revision !== scope) return;
         if (!result?.available || result.enabled !== requested) throw Error('Not saved');
-        state = result;
+        state = result; confirmed = true;
         setStatus(requested ? 'Automatic workout sharing is on.' : 'Automatic workout sharing is off.');
       } catch (_) {
         if (key !== owner || revision !== scope) return;
         state = null;
         setStatus('Could not confirm the change. Reopen Social to check your saved choice.');
       } finally {
-        if (key === owner && revision === scope) { saving = false; render(); }
+        if (key === owner && revision === scope) {
+          saving = false; render();
+          if (confirmed) await refresh();
+        }
       }
     });
     setStatus(statusText); render();

@@ -80,10 +80,15 @@ test('mounted Social UI does not auto-consent, prioritizes an incoming Squad lin
       const call = new URL(url).pathname.split('/').at(-1);
       assert.equal(opts.headers.Authorization, 'Bearer synthetic-original-owner');
       if (call === 'community_set_auto_activity_sharing') {
-        writes.push(JSON.parse(opts.body));
-        result = { ...result, workouts: { available: true, enabled: true, decided_at: '2026-11-22T12:00:00Z' } };
+        const body = JSON.parse(opts.body);
+        writes.push(body);
+        result = { ...result, workouts: { available: true, enabled: body.p_enabled, decided_at: '2026-11-22T12:00:00Z' } };
       }
-      return { ok: true, async json() { return call.endsWith('_feed') ? [] : result; } };
+      return { ok: true, async json() {
+        if (!call.endsWith('_feed')) return result;
+        return result.workouts.enabled ? [{ kind: 'workouts', post_id: other,
+          activity_day: '2026-11-22', headline: 'Completed a workout' }] : [];
+      } };
     };
     const ui = mount(document);
     globalThis.FWB_CLIENT_COMMUNITY = { showView(name, focus) { views.push([name, focus]); ui.selectView(name); } };
@@ -111,13 +116,22 @@ test('mounted Social UI does not auto-consent, prioritizes an incoming Squad lin
     await control.handlers.change();
     assert.deepEqual(writes, [{ p_category: 'workouts', p_enabled: true }]);
     assert.equal(control.checked, true);
+    const feed = select['[data-gruntr-anonymous-feed]'];
+    assert.equal(feed.hidden, false);
+    control.checked = false;
+    const disabling = control.handlers.change();
+    assert.equal(feed.hidden, true);
+    assert.deepEqual(feed.children, []);
+    await disabling;
+    assert.equal(control.checked, false);
+    assert.equal(feed.hidden, true);
     ui.configure(client, other, false);
     ui.selectTab('community');
     await new Promise(resolve => setImmediate(resolve));
     assert.equal(control.disabled, true); // stored token belonged to previous owner
     assert.equal(control.checked, false);
     assert.equal(popup.open, false);
-    assert.equal(writes.length, 1);
+    assert.deepEqual(writes, [{ p_category: 'workouts', p_enabled: true }, { p_category: 'workouts', p_enabled: false }]);
   } finally {
     for (const [key,val] of restore) {
       if (val === undefined) delete globalThis[key];
