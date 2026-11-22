@@ -386,7 +386,7 @@ test("portal setup replaces the previous controller and passes the signed-in acc
   vm.runInNewContext(`${functionSource}\nconfigureClientProfilePhoto();`, context);
   assert.deepEqual(events, ["destroy", "create", "initialize"]);
   assert.equal(context.clientProfilePhotoController, next);
-  assert.match(portal, /if \(nextTab === "notifications"\) \{\s*void clientProfilePhotoController\?\.refresh\(\)/);
+  assert.match(portal, /if \(nextTab === "notifications" \|\| nextTab === "profile"\) \{\s*void clientProfilePhotoController\?\.refresh\(\)/);
   assert.match(portal, /async function loadDashboard\(\)[\s\S]*?clientProfilePhotoController\?\.destroy\(\);[\s\S]*?configureClientProfilePhoto\(\);/);
   assert.match(portal, /async function handleSignOut\(\)[\s\S]*?clientProfilePhotoController\?\.destroy\(\);[\s\S]*?clientProfilePhotoController = null;[\s\S]*?auth\.signOut\(\)/);
 });

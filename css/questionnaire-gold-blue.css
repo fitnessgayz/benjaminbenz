@@ -29,13 +29,11 @@
   border-color: rgb(255 255 255 / 24%);
   box-shadow: 0 5px 24px rgb(18 99 233 / 15%);
 }
-:root body.questionnaire-page .brand img {
-  display: block;
-  width: 78px;
-  height: 48px;
-  object-fit: contain;
+:root body.questionnaire-page .brand {
+  font-size: 1.25rem;
+  letter-spacing: .025em;
 }
-:root body.questionnaire-page .site-header :is(.brand strong, .nav-links a, .login-link, .login-link:visited) {
+:root body.questionnaire-page .site-header :is(.brand, .nav-links a, .login-link, .login-link:visited) {
   color: #fff;
 }
 :root body.questionnaire-page .site-header .login-link {
@@ -113,7 +111,6 @@
 :root body.questionnaire-page .public-footer :is(strong, a) { color: #fff; }
 
 @media (max-width: 600px) {
-  :root body.questionnaire-page .brand img { width: 58px; height: 40px; }
-  :root body.questionnaire-page .brand strong { font-size: .78rem; }
+  :root body.questionnaire-page .brand { font-size: 1rem; }
   :root body.questionnaire-page .questionnaire-hero { padding: 28px 24px; }
 }

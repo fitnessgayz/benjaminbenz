@@ -1,0 +1,390 @@
+body.client-dashboard-page #client-workouts-panel .client-workout-hub {
+  display: grid;
+  gap: 18px;
+}
+
+:root body.client-dashboard-page #client-workouts-panel.is-choosing-workout > .client-workout-hub-heading {
+  display: none;
+}
+
+.client-workout-hub-tabs {
+  display: grid;
+  grid-template-columns: .85fr 1.3fr 1fr;
+  border-bottom: 1px solid var(--fwb-border, #6b737a);
+  gap: 5px;
+}
+
+:root body.client-dashboard-page #client-workouts-panel .client-workout-hub-tabs button {
+  min-width: 0;
+  min-height: 48px;
+  padding: 4px 4px 2px;
+  background: none;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  border-radius: 0 !important;
+  box-shadow: none;
+  color: inherit;
+  font-family: inherit;
+  font-size: clamp(.78rem, 3.3vw, .95rem);
+  font-weight: 650;
+  cursor: pointer;
+}
+
+:root body.client-dashboard-page #client-workouts-panel .client-workout-hub-tabs button[aria-selected="true"] {
+  border-bottom-color: #edbf00;
+  font-weight: 800;
+}
+
+body.client-dashboard-page #client-workouts-panel .client-workout-hub-section[hidden],
+body.client-dashboard-page #client-workouts-panel .client-workout-routines[hidden] {
+  display: none !important;
+}
+
+:root body.client-dashboard-page #client-workouts-panel #workout-hub-routines {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+#workout-hub-routines .client-workout-hub-start {
+  grid-column: 1 / -1;
+}
+
+:root body.client-dashboard-page #client-workouts-panel #workout-hub-routines > .workout-choice-card {
+  min-height: 70px;
+  grid-template-columns: 1fr auto;
+  align-content: center;
+  gap: 6px;
+  padding: 10px;
+}
+
+#workout-hub-routines :is(.workout-choice-icon, .workout-choice-description) {
+  display: none;
+}
+
+#workout-hub-routines .workout-choice-title {
+  font-size: clamp(.82rem, 3.5vw, 1rem);
+}
+
+:root body.client-dashboard-page #client-workouts-panel .client-workout-hub-start {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 56px;
+  gap: .5em;
+  padding: 10px;
+  border: 0;
+  border-radius: 15px;
+  background: #ffd400;
+  color: #151513;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+:root body.client-dashboard-page #client-workouts-panel .client-workout-hub-start:hover {
+  background: #edbf00;
+}
+
+:root body.client-dashboard-page #client-workouts-panel .client-workout-hub-resume {
+  display: none;
+}
+
+:root body.client-dashboard-page #client-workouts-panel:has(> .client-workouts-resume-card:not([hidden])) .client-workout-hub-resume {
+  display: flex;
+}
+
+:root body.client-dashboard-page #client-workouts-panel:has(> .client-workouts-resume-card:not([hidden])) .client-workout-hub-start:not(.client-workout-hub-resume),
+:root body.client-dashboard-page #client-workouts-panel:has(#workout-hub-routines:not([hidden])) > .client-workouts-resume-card {
+  display: none !important;
+}
+
+.client-workout-routines {
+  display: grid;
+  gap: 18px;
+  padding: 4px 0 12px;
+}
+
+.client-routine-group {
+  display: grid;
+  gap: 10px;
+}
+
+.client-routine-group h4,
+.client-routine-group p,
+.client-routine-group [role="status"]:empty {
+  margin: 0;
+}
+
+.client-routine {
+  border: 1px solid var(--fwb-border, #6b737a);
+  border-radius: 12px;
+  padding: 0 12px;
+}
+
+.client-routine summary {
+  min-height: 44px;
+  align-content: center;
+  cursor: pointer;
+}
+
+.client-routine summary small {
+  margin-inline-start: .5em;
+}
+
+.client-routine li small {
+  display: block;
+}
+
+.client-routine > button {
+  margin-block-end: 12px;
+}
+
+:root body.client-dashboard-page #client-workouts-panel .custom-workout-setup-summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 44px;
+}
+
+:root body.client-dashboard-page #client-workouts-panel .workout-setup-gear-only {
+  grid-template-columns: minmax(0, 1fr);
+  width: max-content;
+  max-width: 100%;
+}
+
+:root body.client-dashboard-page #client-workouts-panel .custom-workout-setup-summary [data-custom-workout-setup-open="settings"] {
+  min-width: 44px;
+  font-size: 1.2rem !important;
+}
+
+:root body.client-dashboard-page #client-workouts-panel .workout-setup-gear-only [data-custom-workout-setup-open="settings"] {
+  padding-inline: 12px;
+  gap: 8px;
+  font-size: .95rem !important;
+}
+
+.client-logger-settings {
+  display: none;
+}
+
+:root body.client-dashboard-page #client-workouts-panel .custom-workout-setup-dialog[data-section="settings"] :is(.custom-workout-launcher-gym, .workout-compact-format) {
+  display: none;
+}
+
+:root body.client-dashboard-page #client-workouts-panel .custom-workout-setup-dialog[data-section="settings"] .client-logger-settings {
+  display: grid;
+  gap: 14px;
+}
+
+.client-logger-settings label {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.client-logger-settings select {
+  min-height: 44px;
+  padding: 5px;
+}
+
+.client-plate-calculator {
+  border-top: 1px solid var(--fwb-border, #6b737a);
+}
+
+.client-plate-calculator > summary {
+  min-height: 44px;
+  padding-block: 10px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.client-plate-calculator [data-plate-calculator-fields] {
+  display: grid;
+  gap: 8px;
+}
+
+.client-plate-calculator input[type="number"] {
+  width: 6rem;
+  min-height: 44px;
+}
+
+.client-plate-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.client-plate-presets button {
+  min-height: 44px;
+  padding-inline: 9px;
+  font: inherit;
+}
+
+.client-plate-result {
+  padding: 10px;
+  border: 1px solid var(--fwb-border, #6b737a);
+  border-radius: 10px;
+}
+
+.client-plate-inventory {
+  min-width: 0;
+  padding: 0;
+  border: 0;
+}
+
+.client-plate-inventory legend {
+  font-weight: 700;
+}
+
+:root body.client-dashboard-page #client-workouts-panel .client-workout-panel-custom .custom-workout-primary-actions {
+  display: none !important;
+}
+
+#client-workouts-panel .client-logger-clock,
+#client-workouts-panel .client-logger-later {
+  display: none;
+}
+
+:root body.client-dashboard-page #client-workouts-panel.is-compact-workout-log .client-workouts-topbar h2 {
+  position: static;
+  transform: none;
+}
+
+:root body.client-dashboard-page #client-workouts-panel.is-compact-workout-log .client-workouts-message-button {
+  display: none;
+}
+
+#client-workouts-panel.is-compact-workout-log .client-workouts-tools {
+  display: flex;
+  gap: 4px;
+}
+
+#client-workouts-panel.is-compact-workout-log .client-logger-clock,
+#client-workouts-panel.is-compact-workout-log .client-logger-later:not([hidden]) {
+  display: grid;
+  min-width: 44px;
+  min-height: 44px;
+  place-items: center;
+  padding: 0 6px;
+  border: 0;
+  border-radius: 12px;
+  background: #252932;
+  color: #8ac7fb;
+  font: 700 .78rem/1.1 var(--font-ui, sans-serif);
+  cursor: pointer;
+}
+
+#client-workouts-panel.is-compact-workout-log .client-logger-clock svg {
+  width: 21px;
+  height: 21px;
+}
+
+body.client-dashboard-page .rest-timer-overlay {
+  z-index: 1200;
+}
+
+.client-picker-shortcuts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.client-picker-shortcuts > button {
+  flex: 1 1 max-content;
+  min-height: 44px;
+}
+
+#client-workouts-panel [data-custom-inline-cardio]:empty {
+  display: none;
+}
+
+#client-workout-panels :is(.client-workout-panel-custom, .client-workout-panel-assigned) .workout-floating-secondary {
+  flex-basis: 138px;
+  min-width: 116px;
+}
+
+@media (max-width: 900px) {
+  body.client-dashboard-page:has(#client-workouts-panel.is-compact-workout-log:not([hidden])) :is(.client-dashboard-tabs, .client-dashboard-mobile-nav-toggle) {
+    display: none !important;
+  }
+}
+
+@media (min-width: 901px) {
+  #client-workout-panels :is(.client-workout-panel-custom, .client-workout-panel-assigned) .workout-floating-finish:not([hidden]) {
+    position: sticky;
+    bottom: 0;
+    z-index: 4;
+    display: flex;
+    gap: 12px;
+    padding-block: 12px;
+    background: var(--fwb-bg, #17191c);
+  }
+
+  #client-workout-panels :is(.client-workout-panel-custom, .client-workout-panel-assigned) .workout-floating-finish [hidden] {
+    display: none;
+  }
+
+  #client-workout-panels :is(.client-workout-panel-custom, .client-workout-panel-assigned) :is(.workout-floating-primary, .workout-floating-secondary) {
+    min-height: 48px;
+    padding: 8px 16px;
+    border: 1px solid #6b737a;
+    border-radius: 12px;
+    font: inherit;
+    font-weight: 750;
+  }
+
+  #client-workout-panels .client-workout-panel-assigned:has(.workout-floating-finish:not([hidden])) :is(.workout-start-control, .workout-actions > div) {
+    display: none;
+  }
+
+  #client-workout-panels .client-workout-panel-custom .workout-floating-primary {
+    flex: 1;
+    background: #ffd400;
+    color: #151513;
+  }
+}
+
+.client-workout-plan-dialog [data-fwb-plan-page]:not([hidden]) {
+  display: grid;
+  gap: 12px;
+  animation: fwb-plan-step-in .2s ease-out;
+}
+
+.fwb-plan-progress {
+  display: grid;
+  gap: 6px;
+}
+
+.fwb-plan-progress progress {
+  width: 100%;
+  accent-color: #ffd400;
+}
+
+.fwb-plan-step-actions {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 8px;
+}
+
+.client-workout-plan-dialog [data-fwb-plan-step],
+.client-workout-plan-dialog [name="bodyWeight"] {
+  min-height: 44px;
+}
+
+.client-workout-plan-dialog [data-plan-form] .fwb-plan-health-terms {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  align-items: center;
+  min-height: 44px;
+}
+
+@keyframes fwb-plan-step-in {
+  from { opacity: .35; transform: translateY(5px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .client-workout-plan-dialog [data-fwb-plan-page]:not([hidden]) {
+    animation: none;
+  }
+}

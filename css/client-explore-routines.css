@@ -1,0 +1,154 @@
+.client-explore-program {
+  background: var(--surface-soft, #25282c);
+  border: 1px solid var(--client-settings-line, #43484e);
+  border-radius: 14px;
+  min-width: 0;
+}
+
+.client-explore-program > summary,
+.client-explore-routine-summary {
+  display: flex;
+  align-items: center;
+  border-radius: inherit;
+  list-style: none;
+  cursor: pointer;
+}
+
+.client-explore-program > summary {
+  min-height: 60px;
+  gap: 12px;
+  padding: 10px 15px 10px 10px;
+}
+
+.client-explore-routine-summary {
+  gap: 10px;
+  padding: 7px 1px;
+}
+
+.client-explore-program > summary::-webkit-details-marker,
+.client-explore-routine-summary::-webkit-details-marker {
+  display: none;
+}
+
+.client-explore-program > summary::after,
+.client-explore-routine-summary::after {
+  content: "";
+  flex: 0 0 8px;
+  height: 8px;
+  border: solid currentColor;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg) translate(-2px, -2px);
+}
+
+.client-explore-program[open] > summary::after,
+.client-routine[open] > .client-explore-routine-summary::after {
+  transform: rotate(225deg) translate(-2px, -2px);
+}
+
+.client-explore-program-title,
+.client-explore-program-workouts {
+  display: grid;
+  min-width: 0;
+  gap: 5px;
+}
+
+.client-explore-program-title {
+  flex: 1;
+  overflow-wrap: anywhere;
+}
+
+.client-explore-cover {
+  flex: none;
+  width: clamp(70px, 22vw, 100px);
+  height: auto;
+  aspect-ratio: 3 / 2;
+  object-fit: contain;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.client-explore-routine-summary .client-explore-cover {
+  width: clamp(60px, 19vw, 84px);
+}
+
+.client-explore-routine-summary .client-explore-program-title {
+  gap: 2px;
+}
+
+.client-routine .client-explore-routine-summary small {
+  margin-inline-start: 0;
+}
+
+.client-explore-program-title small,
+.client-explore-program-workouts > p,
+.client-explore-filters label {
+  color: var(--muted, #aeb5bc);
+  line-height: 1.4;
+}
+
+.client-explore-program-workouts {
+  gap: 9px;
+  padding: 0 12px 12px;
+}
+
+.client-explore-program:not([open]) > .client-explore-program-workouts,
+.client-workout-routines .client-routine:not([open]) > :not(summary) {
+  display: none;
+}
+
+.client-explore-program-workouts > p {
+  padding: 0 3px 4px;
+}
+
+.client-workout-routines .client-routine {
+  background: var(--surface, #17191c);
+  min-width: 0;
+}
+
+.client-explore-filters {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: end;
+  gap: 8px;
+}
+
+.client-explore-filters label {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+  font-size: .82rem;
+  font-weight: 700;
+}
+
+.client-explore-filters select {
+  min-width: 0;
+  min-height: 44px;
+  width: 100%;
+  padding: 6px;
+  border: 1px solid var(--client-settings-line, #43484e);
+  border-radius: 10px;
+  color: var(--fwb-text, #f5f5f5);
+  background: var(--surface, #17191c);
+  font: inherit;
+  text-overflow: ellipsis;
+}
+
+.client-explore-program > summary:focus-visible,
+.client-explore-routine-summary:focus-visible,
+.client-explore-filters select:focus-visible {
+  outline: 2px solid var(--client-settings-accent, #ffd400);
+  outline-offset: 2px;
+}
+
+.client-workout-routines [data-client-explore-results] {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.client-workout-routines :is([data-client-explore-program], [data-client-explore-reset], [data-client-explore-empty], [data-client-explore-more])[hidden] {
+  display: none !important;
+}

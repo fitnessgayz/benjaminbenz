@@ -14,7 +14,7 @@ const home = dashboard.match(/data-client-dashboard-panel="home"[\s\S]*?data-cli
 test("Home keeps the primary actions and removes the More disclosure", () => {
   assert.match(home, /id="client-weekly-activity"/);
   assert.match(home, /id="client-home-planner-title"/);
-  assert.match(home, /id="client-home-community-title"/);
+  assert.doesNotMatch(home, /id="client-home-community-title"/);
   assert.doesNotMatch(home, /client-home-glance-title|client-home-note-title/);
   assert.match(home, /data-home-workout-action-label>Resume Workout/);
   assert.match(home, /data-client-home-start-next>Start workout/);
@@ -34,10 +34,10 @@ test("Home omits the rewards carousel and keeps the week streak in Your Week", (
   assert.match(home, /data-client-home-week-streak/);
 });
 
-test("Home shows the Wall feed and keeps the daily check-in prompt without an Atari button", () => {
+test("Social has the Feed and Home keeps the daily check-in prompt", () => {
   assert.doesNotMatch(home, /class="client-home-atari"/);
   assert.match(home, /data-client-home-checkin-backdrop hidden/);
-  assert.match(homeBehavior, /const allCards = \[\.\.\.wall\.querySelectorAll\('\.client-community-wall-card'\)\];/);
+  assert.match(dashboard, /data-client-dashboard-panel="community"[\s\S]*?data-community-view="wall"[^>]*>Feed<\/button>/);
   assert.match(homeStyles, /\.client-manual-daily-checkin \{ display: none !important; \}/);
   assert.match(home, /data-client-home-gym-action disabled>Gym check-in/);
   assert.match(home, /id="client-gym-checkin"/);

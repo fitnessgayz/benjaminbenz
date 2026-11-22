@@ -77,9 +77,8 @@ test("moving a custom card preserves its live set fields and persists the new or
 
 test("completed exercises minimize automatically and expand on request", () => {
   const state = new Set();
-  const attrs = {};
   const progress = { textContent: "" };
-  const button = { textContent: "", setAttribute: (name, value) => { attrs[name] = value; } };
+  const button = { textContent: "" };
   const carousel = { dataset: {} };
   const block = { classList: { toggle: (name, enabled) => enabled ? state.add(name) : state.delete(name) },
     closest: () => carousel,
@@ -94,10 +93,10 @@ test("completed exercises minimize automatically and expand on request", () => {
   delete carousel.dataset.customGroupedRowSaving;
   context.syncGroupedExerciseCollapse(block, log, rows);
   assert.equal(state.has("is-exercise-collapsed"), true);
-  assert.equal(attrs["aria-expanded"], "false");
+  assert.equal(button.textContent, "Expand exercise");
   assert.equal(progress.textContent, "2 / 2 complete");
   log.dataset.exerciseManuallyExpanded = "true";
   context.syncGroupedExerciseCollapse(block, log, rows);
   assert.equal(state.has("is-exercise-collapsed"), false);
-  assert.equal(attrs["aria-expanded"], "true");
+  assert.equal(button.textContent, "Minimize exercise");
 });

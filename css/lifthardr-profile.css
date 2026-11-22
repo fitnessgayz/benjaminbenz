@@ -1,0 +1,161 @@
+.lifthardr-profile {
+  --profile-card: #22262c;
+  --profile-border: #3b434b;
+  --profile-ink: #f5f7fa;
+  --profile-muted: #b0b8c2;
+  --profile-link: #69baf2;
+}
+
+:root[data-client-theme="light"] .lifthardr-profile {
+  --profile-card: #f3f6f9;
+  --profile-border: #ccd5df;
+  --profile-ink: #162433;
+  --profile-muted: #435367;
+  --profile-link: #0759b5;
+}
+
+.lifthardr-profile-topbar,
+.lifthardr-profile-snapshot-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.lifthardr-profile-topbar h2,
+.lifthardr-profile h3 { margin: 0; }
+
+.lifthardr-profile button {
+  min-height: 44px;
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.lifthardr-profile .lifthardr-profile-gear {
+  display: grid;
+  place-items: center;
+  flex: 0 0 44px;
+  min-width: 44px;
+  padding: 0;
+  border: 1px solid var(--profile-border);
+  border-radius: 50%;
+  background: var(--profile-card);
+  color: var(--profile-link);
+}
+
+.lifthardr-profile-gear svg { width: 20px; height: 20px; }
+
+.lifthardr-profile-identity {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 16px 0;
+  color: var(--profile-ink);
+}
+
+.lifthardr-profile-avatar {
+  display: grid;
+  place-items: center;
+  flex: 0 0 64px;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--profile-card);
+  color: var(--profile-link);
+  overflow: hidden;
+}
+
+.lifthardr-profile-avatar svg { width: 27px; height: 27px; vertical-align: middle; }
+.lifthardr-profile-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+.lifthardr-profile .lifthardr-profile-circles,
+.lifthardr-profile-snapshot-heading button {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--profile-link);
+}
+
+.lifthardr-profile .lifthardr-profile-circles {
+  display: inline-flex;
+  align-items: center;
+  gap: .3em;
+}
+
+.lifthardr-profile-card {
+  margin-block: 14px;
+  padding: clamp(13px, 3vw, 20px);
+  border: 1px solid var(--profile-border);
+  border-radius: 18px;
+  background: var(--profile-card);
+  color: var(--profile-ink);
+}
+
+.lifthardr-profile-snapshot-heading > span,
+.lifthardr-profile-chart-range {
+  color: var(--profile-muted);
+  font-size: .82rem;
+}
+
+.lifthardr-profile-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin-block: 12px;
+}
+
+.lifthardr-profile-metrics button {
+  border: 1px solid var(--profile-border);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--profile-ink);
+}
+
+body.client-dashboard-page .lifthardr-profile-metrics button[aria-pressed="true"] {
+  background: #ffd400;
+  color: #101111;
+  border-color: #ffd400;
+}
+.lifthardr-profile-chart-total { margin: 0 0 8px; font-size: 1.15rem; font-weight: 750; }
+.lifthardr-profile-chart-bars {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 4px;
+  height: 95px;
+  margin: 0;
+  padding: 0;
+  border-bottom: 1px solid var(--profile-border);
+  list-style: none;
+}
+.lifthardr-profile-chart-bars li { display: flex; align-items: flex-end; }
+.lifthardr-profile-chart-bars span { display: block; width: 100%; border-radius: 4px 4px 0 0; background: var(--profile-link); }
+.lifthardr-profile-chart-range { display: flex; justify-content: space-between; margin-top: 5px; }
+
+.lifthardr-profile-badge-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(64px, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.lifthardr-profile-badge-grid li { display: grid; justify-items: center; text-align: center; font-size: .77rem; }
+.lifthardr-profile-badge-grid img { width: 44px; height: 44px; }
+
+.lifthardr-profile-links { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+.lifthardr-profile-links button, .lifthardr-profile-return {
+  border: 1px solid var(--profile-border, #46505b);
+  border-radius: 12px;
+  background: var(--profile-card, transparent);
+  color: var(--profile-ink, inherit);
+}
+.lifthardr-profile-links button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 9px 12px;
+  text-align: start;
+}
+.lifthardr-profile-return { min-height: 44px; margin-bottom: 10px; padding: 4px 12px; font: inherit; }

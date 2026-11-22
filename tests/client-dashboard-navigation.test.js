@@ -7,7 +7,7 @@ const projectRoot = path.resolve(__dirname, "..");
 const dashboardHtml = fs.readFileSync(path.join(projectRoot, "client-dashboard.html"), "utf8");
 const portalSource = fs.readFileSync(path.join(projectRoot, "js/client-portal.js"), "utf8");
 const styleSource = fs.readFileSync(path.join(projectRoot, "css/style.css"), "utf8");
-const designSystemSource = fs.readFileSync(path.join(projectRoot, "css/fwb-design-system.css"), "utf8");
+const dockSource = fs.readFileSync(path.join(projectRoot, "css/client-mobile-tab-gold.css"), "utf8");
 
 function sourceForFunction(name) {
   const start = portalSource.indexOf(`function ${name}(`);
@@ -35,47 +35,26 @@ test("scopes the client navigation styles and cache-busts dashboard assets", () 
   assert.match(dashboardHtml, /js\/client-portal\.js\?[^"\s]*viewport-dock=\d+/);
 });
 
-test("renders seven labeled client destinations in order with current-page semantics", () => {
+test("renders the four GRUNTR destinations in order with current-page semantics", () => {
   const navStart = dashboardHtml.indexOf('<nav class="client-dashboard-tabs"');
   const navEnd = dashboardHtml.indexOf("</nav>", navStart);
   const navMarkup = dashboardHtml.slice(navStart, navEnd);
   const buttons = [...navMarkup.matchAll(/<button\b([^>]*data-client-dashboard-tab="([^"]+)"[^>]*)>([\s\S]*?)<\/button>/g)];
 
   assert.ok(navStart >= 0);
-  assert.equal(buttons.length, 7);
-  assert.deepEqual(buttons.map((match) => match[2]), [
-    "home",
-    "workouts",
-    "logs",
-    "progress",
-    "questionnaire",
-    "sessions",
-    "notifications"
-  ]);
+  assert.equal(buttons.length, 4);
+  assert.deepEqual(buttons.map((match) => match[2]), ["home", "workouts", "community", "profile"]);
   assert.deepEqual(buttons.map((match) => match[1].match(/aria-label="([^"]+)"/)?.[1]), [
-    "Home",
-    "Workouts",
-    "Logs",
-    "Progress",
-    "PAR-Q",
-    "Sessions",
-    "Settings"
+    "Home", "Workout", "Social", "Profile"
   ]);
   assert.deepEqual(buttons.map((match) => match[3].match(/client-dashboard-tab-label">([^<]+)</)?.[1]), [
-    "Home",
-    "Workouts",
-    "Logs",
-    "Progress",
-    "PAR-Q",
-    "Sessions",
-    "Settings"
+    "Home", "Workout", "Social", "Profile"
   ]);
   assert.equal(buttons.filter((match) => /aria-current="page"/.test(match[1])).length, 1);
   assert.equal(buttons.find((match) => /aria-current="page"/.test(match[1]))?.[2], "home");
   assert.doesNotMatch(navMarkup, /aria-selected=/);
-  assert.match(navMarkup, /data-client-dashboard-tab="notifications"[\s\S]*?client-dashboard-settings-icon/);
-  assert.equal((dashboardHtml.match(/data-client-notification-unread hidden/g) || []).length, 4);
-  assert.equal((dashboardHtml.match(/aria-describedby="client-notification-unread-status"/g) || []).length, 2);
+  assert.match(navMarkup, /m9\.6 14\.4 4\.8-4\.8/);
+  assert.match(dashboardHtml, /data-client-home-notifications[\s\S]*?data-client-notification-unread hidden/);
   assert.match(dashboardHtml, /data-client-notification-unread-status aria-live="polite">0 unread notifications/);
 });
 
@@ -93,22 +72,21 @@ test("uses a sticky 240px desktop sidebar with a persistent 78px icon rail", () 
   assert.match(dashboardHtml, /client-dashboard-sidebar-toggle-label">Minimize</);
 });
 
-test("uses a permanent five-destination frosted safe-area dock on mobile", () => {
+test("floats the darker four-destination dock above the safe area on mobile", () => {
   const mobileStyles = sourceBetween("@media (max-width: 900px)", "@media (max-width: 420px)");
 
   assert.match(mobileStyles, /body\.client-dashboard-page\s*\{[^}]*--client-mobile-dock-height:\s*90px[^}]*min-height:\s*100dvh[^}]*padding-bottom:\s*calc\(var\(--client-bottom-dock-clearance\) \+ 24px\)/s);
   assert.match(mobileStyles, /\.client-dashboard-page \.dashboard-shell\s*\{[^}]*padding-top:\s*10px/s);
   assert.match(mobileStyles, /\.client-dashboard-page \.dashboard-grid\s*\{[^}]*padding-top:\s*0/s);
-  assert.match(mobileStyles, /\.dashboard-page \.client-dashboard-tabs\s*\{[^}]*position:\s*fixed[^}]*inset:\s*auto 0 0[^}]*z-index:\s*1000[^}]*grid-template-columns:\s*repeat\(5, minmax\(0, 1fr\)\)[^}]*width:\s*100%[^}]*overflow:\s*visible/s);
-  assert.match(mobileStyles, /background:\s*rgba\(247, 248, 245, \.64\)[^}]*border-top:\s*1px solid rgba\(255, 255, 255, \.72\)[^}]*box-shadow:\s*0 -10px 30px rgba\(20, 24, 20, \.08\)/s);
-  assert.match(mobileStyles, /backdrop-filter:\s*blur\(20px\) saturate\(175%\)/);
-  assert.match(mobileStyles, /-webkit-backdrop-filter:\s*blur\(20px\) saturate\(175%\)/);
-  assert.match(mobileStyles, /padding:[^;]*env\(safe-area-inset-right\)[^;]*env\(safe-area-inset-bottom\)[^;]*env\(safe-area-inset-left\)/);
-  assert.match(mobileStyles, /data-client-dashboard-tab="questionnaire"[\s\S]*?data-client-dashboard-tab="sessions"[\s\S]*?display:\s*none !important/);
-  assert.doesNotMatch(mobileStyles, /data-client-dashboard-tab="nutrition"[^}]*display:\s*none/);
+  assert.match(mobileStyles, /\.dashboard-page \.client-dashboard-tabs\s*\{[^}]*position:\s*fixed/s);
+  assert.match(dockSource, /inset:\s*auto 0 calc\(9px \+ env\(safe-area-inset-bottom\)\)/);
+  assert.match(dockSource, /repeat\(var\(--client-visible-tab-count, 4\), minmax\(0, 1fr\)\)/);
+  assert.match(dockSource, /width:\s*min\(340px, calc\(100% - 28px\)\)/);
+  assert.match(dockSource, /background:\s*rgba\(36, 40, 46, \.93\)/);
+  assert.match(dockSource, /-webkit-backdrop-filter:\s*blur\(12px\)/);
   assert.match(dashboardHtml, /class="client-workouts-message-button"[\s\S]*?data-message-coach[\s\S]*?data-client-message-unread/);
-  assert.match(mobileStyles, /\.client-dashboard-tab\.is-active \.client-dashboard-tab-icon\s*\{[^}]*color:\s*var\(--black\)[^}]*background:\s*var\(--lime\)[^}]*border-radius:\s*13px[^}]*box-shadow:\s*none/s);
-  assert.match(mobileStyles, /\.client-dashboard-tab\.is-active \.client-dashboard-tab-label\s*\{[^}]*color:\s*#344000[^}]*font-weight:\s*900[^}]*text-shadow:\s*none/s);
+  assert.match(dockSource, /\.client-dashboard-tab\.is-active \.client-dashboard-tab-icon\s*\{[^}]*background:\s*#ffd400/s);
+  assert.match(dockSource, /\.client-dashboard-tab\.is-active \.client-dashboard-tab-label\s*\{[^}]*color:\s*#ffd400/s);
   assert.match(mobileStyles, /\.client-dashboard-tab-label\s*\{[^}]*display:\s*block !important[^}]*font-size:\s*\.52rem/s);
   assert.match(mobileStyles, /\.client-dashboard-nav-title,[\s\S]*?\.client-dashboard-sidebar-toggle\s*\{[^}]*display:\s*none !important/s);
 });
@@ -124,16 +102,15 @@ test("uses dynamic viewport sizing and a single bottom-clearance contract", () =
   assert.doesNotMatch(styleSource, /--client-visual-viewport-bottom/);
 });
 
-test("removes mobile scrolling, the arrow cue, and the dark capsule", () => {
+test("removes horizontal scrolling from the floating dock", () => {
   const mobileStyles = sourceBetween("@media (max-width: 900px)", "@media (max-width: 420px)");
   const mobileHandler = sourceForFunction("handleClientDashboardMobileNavigation");
 
   assert.doesNotMatch(dashboardHtml, /data-client-nav-scroll-(?:fade|cue)/);
   assert.doesNotMatch(mobileStyles, /overflow-x:\s*auto|scroll-snap-type|rgba\(23, 26, 23, \.98\)|border-radius:\s*34px/);
   assert.doesNotMatch(mobileHandler, /addEventListener\("scroll"/);
-  assert.match(dashboardHtml, /fwb-design-system\.css\?v=web-app-brand-1/);
-  assert.match(designSystemSource, /@media \(max-width: 900px\)[\s\S]*?:root body\.client-dashboard-page \.client-dashboard-tabs \{[\s\S]*?background:\s*rgba\(247, 248, 245, \.64\)[\s\S]*?border-radius:\s*0 !important/);
-  assert.doesNotMatch(designSystemSource, /@media \(max-width: 900px\)[\s\S]*?client-dashboard-tabs \{\s*border-radius:\s*34px !important/);
+  assert.match(dockSource, /overflow:\s*visible/);
+  assert.match(dockSource, /border-radius:\s*999px !important/);
 });
 
 test("keeps mobile navigation permanently expanded while preserving selected-tab routing", () => {
@@ -176,11 +153,9 @@ test("keeps questionnaire and Sessions available from Settings", () => {
   assert.match(tabHandlerSource, /setClientDashboardTab\(settingsDestination\.dataset\.clientSettingsDestination\)/);
 });
 
-test("keeps Logs and Settings visible on mobile and moves Messages into Workouts", () => {
-  const mobileStyles = sourceBetween("@media (max-width: 900px)", "@media (max-width: 420px)");
-
-  assert.match(dashboardHtml, /data-client-dashboard-tab="logs" aria-label="Logs"/);
-  assert.doesNotMatch(mobileStyles, /data-client-dashboard-tab="(?:logs|notifications)"\][^}]*display:\s*none !important/s);
+test("keeps Logs, Progress and Settings reachable from Profile and Messages from Workout", () => {
+  assert.match(dashboardHtml, /data-client-dashboard-panel="profile"[\s\S]*?data-client-settings-destination="notifications"[\s\S]*?data-client-summary-go-tab="logs"[\s\S]*?data-client-summary-go-tab="progress"/);
+  assert.doesNotMatch(dashboardHtml, /data-client-dashboard-tab="(?:logs|progress|notifications)"/);
   assert.doesNotMatch(dashboardHtml, /client-dashboard-message-tab/);
   assert.match(dashboardHtml, /data-client-dashboard-panel="workouts"[\s\S]*?client-workouts-message-button[\s\S]*?data-client-message-unread/);
 });
@@ -237,22 +212,26 @@ test("timer avoids the mobile dock and cannot overlap the desktop sidebar", () =
   assert.match(dragSource, /Math\.min\(bounds\.maxLeft, Math\.max\(bounds\.minLeft,/);
 });
 
-test("Stats and Nutrition preserve Settings as the selected navigation parent", () => {
+test("Profile tools keep Profile selected while Social is an independent destination", () => {
   const vm = require("node:vm");
-  const buttons = ["home", "workouts", "logs", "progress", "notifications"].map((name) => ({
+  const buttons = ["home", "workouts", "community", "profile"].map((name) => ({
     dataset: { clientDashboardTab: name },
     active: false, attributes: {},
     classList: { toggle(_name, active) { buttons.find((button) => button.dataset.clientDashboardTab === name).active = active; } },
     setAttribute(key, value) { this.attributes[key] = value; },
     removeAttribute(key) { delete this.attributes[key]; }
   }));
-  const panels = ["home", "workouts", "logs", "progress", "stats", "nutrition", "notifications"].map((name) => ({
-    dataset: { clientDashboardPanel: name }, hidden: true
+  const panels = ["home", "workouts", "community", "profile", "logs", "progress", "stats", "nutrition", "notifications"].map((name) => ({
+    dataset: { clientDashboardPanel: name },
+    hidden: true,
+    querySelector() { return this.back; },
+    prepend(back) { this.back = back; }
   }));
   const context = vm.createContext({
     document: {
       querySelectorAll(selector) { return selector === "[data-client-dashboard-tab]" ? buttons : panels; },
-      querySelector() { return null; }
+      querySelector() { return null; },
+      createElement() { return { dataset: {} }; }
     },
     window: { FWB_CLIENT_WORKOUT_CALENDAR: { close() {} } },
     syncClientDashboardMobileNavigationIcon() {}, activeClientDashboardTab: "home",
@@ -262,15 +241,16 @@ test("Stats and Nutrition preserve Settings as the selected navigation parent", 
     clientAppleHealthController: null, clientGoogleHealthController: null,
     setClientSettingsView() {}
   });
-  vm.runInContext(sourceForFunction("setClientDashboardTab"), context);
-  for (const destination of ["stats", "nutrition", "logs", "notifications"]) {
+  vm.runInContext(["clientDashboardNavigationTab", "setClientDashboardTab"].map(sourceForFunction).join("\n"), context);
+  for (const destination of ["stats", "nutrition", "logs", "notifications", "progress", "community"]) {
     context.setClientDashboardTab(destination);
     assert.equal(context.activeClientDashboardTab, destination);
     assert.deepEqual(panels.filter((panel) => !panel.hidden).map((panel) => panel.dataset.clientDashboardPanel), [destination]);
     const selected = buttons.filter((button) => button.active);
     assert.equal(selected.length, 1);
-    assert.equal(selected[0].dataset.clientDashboardTab, ["stats", "nutrition"].includes(destination) ? "notifications" : destination);
+    assert.equal(selected[0].dataset.clientDashboardTab, destination === "community" ? "community" : "profile");
     assert.equal(selected[0].attributes["aria-current"], "page");
+    if (destination !== "community") assert.equal(panels.find(panel => !panel.hidden).back.textContent, "‹ Profile");
   }
 });
 

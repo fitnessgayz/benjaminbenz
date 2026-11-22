@@ -76,7 +76,7 @@
 @media (max-width: 900px) {
   :root body.client-dashboard-page .client-dashboard-tabs {
     display: grid;
-    grid-template-columns: repeat(var(--client-visible-tab-count, 5), minmax(0, 1fr));
+    grid-template-columns: repeat(var(--client-visible-tab-count, 4), minmax(0, 1fr));
     overflow: visible;
   }
   :root body.client-dashboard-page .client-dashboard-tabs .client-dashboard-tab.is-mobile-tab-hidden { display: none !important; }

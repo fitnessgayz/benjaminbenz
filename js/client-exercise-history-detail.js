@@ -10,6 +10,9 @@
   let selectedGym = allGyms;
   let visibleCount = pageSize;
   let returnFocus = null;
+  let detailMedia = null;
+  let activeSection = "";
+  const sections = [["summary", "Summary"], ["history", "History"], ["guide", "How to"]];
 
   function normalizedName(value) {
     return String(value || "").trim().toLowerCase().replace(/\s+/g, " ");
@@ -156,25 +159,99 @@
       <ol class="client-exercise-history-trend">${points.map((point) => `<li><span>${escapeHtml(point.date)}</span><span class="client-exercise-history-trend-track"><span style="width:${Math.round(point.value / peak * 100)}%"></span></span><strong>${escapeHtml(`${numberLabel(point.value)} ${unit}`)}</strong></li>`).join("")}</ol></section>`;
   }
 
+  function guideMarkup(media) {
+    function safeUrl(value) {
+      if (!value) return null;
+      try {
+        const url = new URL(value, root.location.href);
+        return ["http:", "https:"].includes(url.protocol) && !url.username && !url.password ? url : null;
+      } catch (_) {
+        return null;
+      }
+    }
+    const image = safeUrl(media.imageUrl);
+    const demo = safeUrl(media.demoUrl);
+    const motion = safeUrl(media.motionUrl);
+    const motionKind = motion?.protocol === "https:"
+      ? (/\.(webp|gif)$/i.test(motion.pathname) ? "animation" : /\.mp4$/i.test(motion.pathname) ? "video" : "")
+      : "";
+    const instructions = String(media.instructions || "").trim();
+    return `<section class="client-exercise-history-section client-exercise-history-guide">
+      ${image ? `<div data-exercise-guide-still><img src="${escapeHtml(image.href)}" alt="${escapeHtml(exerciseName)} start and end positions" decoding="async" /></div>` : ""}
+      ${motionKind ? `<div id="client-exercise-guide-motion" hidden></div>
+        <button type="button" class="client-exercise-history-more" data-exercise-guide-play="${escapeHtml(motion.href)}" data-motion-kind="${motionKind}" aria-controls="client-exercise-guide-motion" aria-expanded="false">Play ${motionKind}</button>
+        <p data-exercise-guide-status role="status" hidden></p>` : ""}
+      ${instructions ? `<p>${escapeHtml(instructions)}</p>` : ""}
+      ${demo ? `<a href="${escapeHtml(demo.href)}" target="_blank" rel="noopener">Watch demonstration</a>` : ""}
+      ${!image && !motionKind && !instructions && !demo ? "<p>No guide is available for this exercise.</p>" : ""}
+    </section>`;
+  }
+
+  function setGuidePlayback(button, playing, failed = false) {
+    if (!button) return;
+    const guide = button.closest(".client-exercise-history-guide");
+    const stage = guide.querySelector("#client-exercise-guide-motion");
+    const still = guide.querySelector("[data-exercise-guide-still]");
+    const status = guide.querySelector("[data-exercise-guide-status]");
+    const kind = button.dataset.motionKind;
+    if (still) still.hidden = playing;
+    stage.hidden = !playing;
+    button.setAttribute("aria-expanded", String(playing));
+    button.textContent = `${playing ? "Pause" : "Play"} ${kind}`;
+    status.hidden = !failed;
+    status.textContent = failed ? `The ${kind} couldn’t load.` : "";
+
+    if (!playing) {
+      stage.querySelector("video")?.pause();
+      stage.replaceChildren();
+      return;
+    }
+
+    const clip = root.document.createElement(kind === "video" ? "video" : "img");
+    const description = `${exerciseName} exercise demonstration`;
+    if (kind === "video") {
+      clip.setAttribute("aria-label", description);
+      clip.autoplay = true;
+      clip.controls = true;
+      clip.loop = true;
+      clip.muted = true;
+      clip.playsInline = true;
+    } else {
+      clip.alt = description;
+    }
+    clip.addEventListener("error", () => {
+      if (clip.parentElement === stage) setGuidePlayback(button, false, true);
+    }, { once: true });
+    stage.replaceChildren(clip);
+    clip.src = button.dataset.exerciseGuidePlay;
+  }
+
   function render() {
     if (!dialog) return;
     const history = buildHistory(logs, exerciseName, selectedGym);
     const selected = history.sessions;
     const latestTop = topSet(selected[0]);
     const more = selected.length > visibleCount;
-    dialog.innerHTML = `<div class="client-exercise-history-header"><div><p>Exercise history</p><h2 id="client-exercise-history-title">${escapeHtml(history.name)}</h2></div><button type="button" data-client-exercise-history-close aria-label="Close exercise history">×</button></div>
+    const tabButtons = detailMedia ? `<div class="client-exercise-history-sections" role="group" aria-label="Exercise details">${sections.map(([id, label]) =>
+      `<button type="button" data-client-exercise-section="${id}" aria-pressed="${id === activeSection}">${label}</button>`).join("")}</div>` : "";
+    dialog.innerHTML = `<div class="client-exercise-history-header"><div><h2 id="client-exercise-history-title">${escapeHtml(history.name)}</h2></div><button type="button" data-client-exercise-history-close aria-label="Close exercise details">×</button></div>
+      ${tabButtons}
       <div class="client-exercise-history-body">
+      ${activeSection === "guide" ? guideMarkup(detailMedia) : `
       <label class="client-exercise-history-filter">Gym <select data-client-exercise-history-gym><option value="${allGyms}">All gyms</option>${history.gyms.map((gym) => `<option value="${escapeHtml(gym.id)}" ${selectedGym === gym.id ? "selected" : ""}>${escapeHtml(gym.name)}</option>`).join("")}</select></label>
+      ${activeSection === "history" ? "" : `
       <div class="client-exercise-history-metrics"><div><span>Sessions</span><strong>${history.metrics.sessionCount}</strong></div><div><span>Best weight</span><strong>${history.metrics.maxWeight > 0 ? `${numberLabel(history.metrics.maxWeight)} lb` : "—"}</strong></div><div><span>Best reps</span><strong>${history.metrics.maxReps > 0 ? numberLabel(history.metrics.maxReps) : "—"}</strong></div><div><span>Total volume</span><strong>${history.metrics.totalVolume > 0 ? `${numberLabel(history.metrics.totalVolume)} lb` : "—"}</strong></div></div>
       <p class="client-exercise-history-latest">Latest top set: <strong>${escapeHtml(topSetLabel(latestTop))}</strong></p>
       ${trendMarkup(selected)}
       <section class="client-exercise-history-section" aria-labelledby="client-exercise-history-gyms-title"><h3 id="client-exercise-history-gyms-title">By gym</h3>
         ${history.gyms.length ? `<div class="client-exercise-history-gym-list">${history.gyms.map((gym) => `<div><strong>${escapeHtml(gym.name)}</strong><span>${gym.metrics.sessionCount} ${gym.metrics.sessionCount === 1 ? "session" : "sessions"}</span><span>Latest top set: ${escapeHtml(topSetLabel(gym.latestTopSet))}</span><span>Best: ${gym.metrics.maxWeight > 0 ? `${numberLabel(gym.metrics.maxWeight)} lb` : "—"}</span><span>Volume: ${numberLabel(gym.metrics.totalVolume)} lb</span></div>`).join("")}</div>` : '<p>No saved sets yet.</p>'}
       </section>
+      `}
+      ${activeSection === "summary" ? "" : `
       <section class="client-exercise-history-section" aria-labelledby="client-exercise-history-sets-title"><h3 id="client-exercise-history-sets-title">Dated sets</h3>
         ${selected.length ? selected.slice(0, visibleCount).map(sessionMarkup).join("") : '<p>No saved sets for this gym.</p>'}
         ${more ? `<button type="button" class="client-exercise-history-more" data-client-exercise-history-more>Show ${Math.min(pageSize, selected.length - visibleCount)} more sessions</button>` : ""}
-      </section></div>`;
+      </section>`}`}</div>`;
   }
 
   function ensureDialog() {
@@ -185,6 +262,16 @@
     root.document.body.append(dialog);
     dialog.addEventListener("click", (event) => {
       if (event.target === dialog || event.target.closest?.("[data-client-exercise-history-close]")) dialog.close();
+      const section = event.target.closest?.("[data-client-exercise-section]")?.dataset.clientExerciseSection;
+      if (section && sections.some(([id]) => id === section)) {
+        if (section === activeSection) return;
+        if (activeSection === "guide") setGuidePlayback(dialog.querySelector("[data-exercise-guide-play]"), false);
+        activeSection = section;
+        render();
+        dialog.querySelector(`[data-client-exercise-section="${section}"]`)?.focus({ preventScroll: true });
+      }
+      const play = event.target.closest?.("[data-exercise-guide-play]");
+      if (play) setGuidePlayback(play, play.getAttribute("aria-expanded") !== "true");
       if (event.target.closest?.("[data-client-exercise-history-more]")) {
         visibleCount += pageSize;
         render();
@@ -199,6 +286,7 @@
       dialog.querySelector("[data-client-exercise-history-gym]")?.focus({ preventScroll: true });
     });
     dialog.addEventListener("close", () => {
+      if (activeSection === "guide") setGuidePlayback(dialog.querySelector("[data-exercise-guide-play]"), false);
       if (returnFocus?.isConnected) returnFocus.focus({ preventScroll: true });
       returnFocus = null;
     });
@@ -207,20 +295,22 @@
 
   function setLogs(value) {
     logs = Array.isArray(value) ? value : [];
-    if (dialog?.open) render();
+    if (dialog?.open && activeSection !== "guide") render();
   }
 
-  function open(name, trigger) {
+  function open(name, trigger, media = null) {
     if (!normalizedName(name)) return;
     exerciseName = String(name).trim();
     selectedGym = allGyms;
     visibleCount = pageSize;
     returnFocus = trigger || null;
+    detailMedia = media;
+    activeSection = media ? "summary" : "";
     const node = ensureDialog();
     if (!node) return;
     render();
     if (!node.open) node.showModal();
-    node.querySelector("[data-client-exercise-history-gym]")?.focus({ preventScroll: true });
+    node.querySelector('[data-client-exercise-section="summary"], [data-client-exercise-history-gym]')?.focus({ preventScroll: true });
   }
 
   const api = { buildHistory, setLogs, open };

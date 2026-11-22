@@ -31,10 +31,10 @@ test("cardio notes preserve interval settings, effort, heart rate and free text"
   const context = cardioContext(["parseCardioNotes", "buildCardioNotes"]);
   const saved = context.buildCardioNotes("185", "Felt strong", {
     mode: "intervals", heartRate: "147", effort: "8", workSeconds: "40", restSeconds: "20", rounds: "6",
-    stations: "Air bike\nBurpees"
+    stations: "Air bike\nBurpees", placement: "before"
   });
   assert.deepEqual(JSON.parse(JSON.stringify(context.parseCardioNotes(saved))), {
-    calories: "185", heartRate: "147", effort: "8", mode: "intervals",
+    calories: "185", heartRate: "147", effort: "8", mode: "intervals", placement: "before",
     workSeconds: "40", restSeconds: "20", rounds: "6", stations: "Air bike | Burpees",
     amrapCap: "", amrapRounds: "", amrapReps: "", hybridSegments: "", hybridSplits: "", notes: "Felt strong"
   });

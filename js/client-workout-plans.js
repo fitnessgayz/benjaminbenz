@@ -28,6 +28,8 @@
     }
   };
   const focusLabels = { full_body: "Full body", upper_body: "Upper body", lower_body: "Lower body" };
+  const experienceIntensity = { beginner: "easy", intermediate: "moderate", advanced: "challenging" };
+  const cardioLabels = { before: "Cardio before lifting", after: "Cardio after lifting" };
   let dialog;
   let context;
   let preview;
@@ -45,10 +47,12 @@
     const days = Number(input.days);
     const schedule = focusSchedules[input.split]?.[days];
     const format = input.format || "single";
+    const intensity = experienceIntensity[input.experience] || input.intensity;
+    const cardioPlacement = Object.hasOwn(cardioLabels, input.cardioPlacement) ? input.cardioPlacement : "";
     const warmUpCount = input.warmUpCount === undefined ? 1 : Number(input.warmUpCount);
     const workingSetCount = input.workingSetCount === undefined ? 3 : Number(input.workingSetCount);
     if (!schedule || ![20, 30, 45, 60].includes(Number(input.minutes))
-      || !["easy", "moderate", "challenging"].includes(input.intensity)
+      || !["easy", "moderate", "challenging"].includes(intensity)
       || !["single", "superset", "circuit"].includes(format)
       || !Number.isInteger(warmUpCount) || warmUpCount < 0 || warmUpCount > 3
       || !Number.isInteger(workingSetCount) || workingSetCount < 1 || workingSetCount > 10
@@ -57,18 +61,20 @@
     }
     const workouts = schedule.map((focus, index) => {
       try {
-        const workout = generator.generate({ ...input, focus, minutes: Number(input.minutes),
+        const workout = generator.generate({ ...input, focus, intensity, minutes: Number(input.minutes),
           format, ...(input.warmUpCount === undefined ? {} : { warmUpCount }),
           ...(input.workingSetCount === undefined ? {} : { workingSetCount }),
           seed: `${input.seed || Date.now()}:${index}` });
-        return { ...workout, day: index + 1, title: `${focusLabels[focus]} · Day ${index + 1}` };
+        return { ...workout, day: index + 1, title: `${focusLabels[focus]} · Day ${index + 1}`,
+          ...(cardioPlacement ? { cardioPlacement } : {}) };
       } catch (error) {
         throw new Error(`Day ${index + 1}: ${error?.message || "This workout could not be generated."}`);
       }
     });
     return { version: 1, title: `${days}-day ${input.split === "upper_lower" ? "Upper / Lower" : input.split === "full_body" ? "Full Body" : "Balanced Strength"} Plan`,
-      days, split: input.split, minutes: Number(input.minutes), intensity: input.intensity,
+      days, split: input.split, minutes: Number(input.minutes), intensity,
       equipment: [...input.equipment], format,
+      ...(cardioPlacement ? { cardioPlacement } : {}),
       ...(input.warmUpCount === undefined ? {} : { warmUpCount }),
       ...(input.workingSetCount === undefined ? {} : { workingSetCount }), workouts };
   }
@@ -95,26 +101,45 @@
 
   function formMarkup() {
     return `<form data-plan-form>
+      <div class="fwb-plan-progress"><span data-fwb-plan-step-label>Step 1 of 3</span><progress data-fwb-plan-progress max="3" value="1" aria-label="Setup progress"></progress></div>
+      <section data-fwb-plan-page>
+      <h3 tabindex="-1">Training experience</h3>
+      <label>Fitness experience<select name="experience"><option value="beginner">Beginner</option><option value="intermediate" selected>Intermediate</option><option value="advanced">Advanced</option></select></label>
+      <label>Current body weight (optional)<input name="bodyWeight" type="number" inputmode="decimal" min="0.1" step="0.1" placeholder="Weight in lb" /><small>Shown in this preview only.</small></label>
+      <button type="button" data-fwb-plan-step="1">Continue</button>
+      </section>
+      <section data-fwb-plan-page hidden>
+      <h3 tabindex="-1">Your training week</h3>
       <label>Workouts per week<select name="days"><option value="2">2 days</option><option value="3" selected>3 days</option><option value="4">4 days</option><option value="5">5 days</option></select></label>
       <label>Training focus<select name="split"><option value="balanced">Balanced strength</option><option value="full_body">Full body</option><option value="upper_lower">Upper / lower</option></select></label>
-      <label>Time per workout<select name="minutes"><option value="20">20 minutes</option><option value="30" selected>30 minutes</option><option value="45">45 minutes</option><option value="60">60 minutes</option></select></label>
-      <label>Intensity<select name="intensity"><option value="easy">Easy</option><option value="moderate" selected>Moderate</option><option value="challenging">Challenging</option></select></label>
+      <label>Strength training time<select name="minutes"><option value="20">20 minutes</option><option value="30" selected>30 minutes</option><option value="45">45 minutes</option><option value="60">60 minutes</option></select></label>
+      <label>Add cardio?<select name="cardioPlacement"><option value="">No cardio</option><option value="before">Before the workout</option><option value="after">After the workout</option></select></label>
       <label>Workout format<select name="format"><option value="single">Straight Sets</option><option value="superset">Superset</option><option value="circuit">Circuit</option></select></label>
       <div class="plan-set-counts"><label>Warm-up<select name="warmUpCount">${Array.from({ length: 4 }, (_, count) => `<option value="${count}" ${count === 1 ? "selected" : ""}>${count}</option>`).join("")}</select></label>
       <label>Sets<select name="workingSetCount">${Array.from({ length: 10 }, (_, index) => `<option value="${index + 1}" ${index === 2 ? "selected" : ""}>${index + 1}</option>`).join("")}</select></label></div>
       <fieldset><legend>Equipment available</legend>${(root.FWB_WORKOUT_GENERATOR?.EQUIPMENT_OPTIONS || [])
         .map((item) => `<label class="plan-equipment"><input type="checkbox" name="equipment" value="${escape(item.value)}" ${item.value === "full_gym" ? "checked" : ""}>${escape(item.label)}</label>`).join("")}</fieldset>
-      <button class="plan-primary" type="submit">Generate weekly plan</button>
+      <div class="fwb-plan-step-actions"><button type="button" data-fwb-plan-step="0">Back</button><button type="button" data-fwb-plan-step="2">Continue</button></div>
+      </section>
+      <section data-fwb-plan-page hidden>
+      <h3 tabindex="-1">Health terms and policy</h3>
+      <p>FWB Trainer provides exercise guidance. Choose activity appropriate to your health and consult a qualified professional if you have an injury or health condition.</p>
+      <a href="fwb-training-privacy.html" target="_blank" rel="noopener">GRUNTR Privacy Policy</a>
+      <label class="plan-equipment fwb-plan-health-terms"><input type="checkbox" name="acceptedHealthTerms" required /> I have read and accept the health terms.</label>
+      <div class="fwb-plan-step-actions"><button type="button" data-fwb-plan-step="1">Back</button><button class="plan-primary" type="submit">Preview my plan</button></div>
+      </section>
     </form><div data-plan-preview></div>`;
   }
 
-  function planMarkup(plan, savedId = "") {
+  function planMarkup(plan, savedId = "", bodyWeight = "") {
     return `<article class="saved-plan-detail"><h3>${escape(plan.title)}</h3><p>${plan.days} workouts per week · ${escape(({ single: "Straight Sets", superset: "Superset", circuit: "Circuit" })[plan.format] || "Straight Sets")}${plan.workingSetCount === undefined ? "" : ` · ${escape(plan.warmUpCount ?? 1)} warm-up sets · ${escape(plan.workingSetCount)} working sets`}</p>
+      ${Object.hasOwn(cardioLabels, plan.cardioPlacement) ? `<p>${cardioLabels[plan.cardioPlacement]}</p>` : ""}
+      ${bodyWeight ? `<p>Current body weight: ${escape(bodyWeight)} lb</p>` : ""}
       <div class="saved-plan-days">${plan.workouts.map((workout, index) => `<section class="saved-plan-day"><h4>Day ${index + 1}: ${escape(workout.title.replace(/ · Day \d+$/, ""))}</h4>
         <p>${workout.exercises.length} exercises · About ${Math.round(Number(workout.estimatedMinutes) || plan.minutes)} minutes</p>
         <ul>${workout.exercises.map((exercise) => `<li>${escape(exercise.name)} <span>${escape(workout.workingSetCount === undefined ? (exercise.prescription || `${exercise.sets} sets`) : String(exercise.prescription || `${exercise.sets} sets`).replace(/ x \d+ sets$/i, ` x ${workout.workingSetCount} sets`))}</span></li>`).join("")}</ul>
         ${savedId ? `<button type="button" data-plan-start="${escape(savedId)}" data-plan-day="${index}">Start this workout</button>` : ""}</section>`).join("")}</div>
-      ${savedId ? `<button type="button" class="plan-delete" data-plan-delete="${escape(savedId)}">Delete this plan</button>` : '<button type="button" class="plan-primary" data-plan-save>Save plan to Log Workout</button>'}</article>`;
+      ${savedId ? `<button type="button" class="plan-delete" data-plan-delete="${escape(savedId)}">Delete this plan</button>` : '<button type="button" class="plan-primary" data-plan-save>Save FWB workout</button>'}</article>`;
   }
 
   function ensureDialog() {
@@ -123,7 +148,7 @@
     dialog.className = "client-workout-plan-dialog";
     dialog.setAttribute("aria-labelledby", "client-workout-plan-heading");
     dialog.innerHTML = `<div class="plan-dialog-top"><div><p class="plan-kicker">Your training</p><h2 id="client-workout-plan-heading">Workout plans</h2></div><button type="button" data-plan-close aria-label="Close">×</button></div>
-      <nav aria-label="Workout plan views"><button type="button" data-plan-view="saved">Saved Workout Program</button><button type="button" data-plan-view="generate">Generate Workout Plan</button></nav>
+      <nav aria-label="Workout plan views"><button type="button" data-plan-view="saved">Saved FWB Workout</button><button type="button" data-plan-view="generate">FWB Trainer</button></nav>
       <p data-plan-status role="status" aria-live="polite"></p><div data-plan-body></div>`;
     dialog.addEventListener("close", () => { returnFocus?.focus?.({ preventScroll: true }); context = null; preview = null; });
     dialog.addEventListener("cancel", (event) => { if (busy) event.preventDefault(); });
@@ -189,7 +214,8 @@
   function readForm(form) {
     const data = new FormData(form);
     return { days: Number(data.get("days")), split: data.get("split"), minutes: Number(data.get("minutes")),
-      intensity: data.get("intensity"), format: data.get("format"), warmUpCount: Number(data.get("warmUpCount")),
+      experience: data.get("experience"), cardioPlacement: data.get("cardioPlacement"),
+      format: data.get("format"), warmUpCount: Number(data.get("warmUpCount")),
       workingSetCount: Number(data.get("workingSetCount")), equipment: data.getAll("equipment"),
       library: context.library, history: context.history, seed: `${Date.now()}-${Math.random()}` };
   }
@@ -197,10 +223,11 @@
   function handleSubmit(event) {
     if (!event.target.matches("[data-plan-form]") || busy) return;
     event.preventDefault();
+    if (event.target.elements.acceptedHealthTerms.closest("[hidden]") || !event.target.elements.acceptedHealthTerms.checked) return;
     try {
       preview = build(readForm(event.target), root.FWB_WORKOUT_GENERATOR);
-      dialog.querySelector("[data-plan-preview]").innerHTML = planMarkup(preview);
-      status("Review your plan, then save it to find it in Log Workout.");
+      dialog.querySelector("[data-plan-preview]").innerHTML = planMarkup(preview, "", event.target.elements.bodyWeight.value);
+      status("Review your plan, then save it in FWB Trainer.");
       dialog.querySelector("[data-plan-preview]").scrollIntoView({ block: "start", behavior: "smooth" });
     } catch (error) { preview = null; dialog.querySelector("[data-plan-preview]").innerHTML = ""; status(error.message, true); }
   }
@@ -208,6 +235,19 @@
   async function handleClick(event) {
     if (busy) return;
     if (event.target.closest("[data-plan-close]")) { dialog.close(); return; }
+    const step = event.target.closest("[data-fwb-plan-step]");
+    if (step) {
+      const form = step.form;
+      const pages = Array.from(form.querySelectorAll("[data-fwb-plan-page]"));
+      const target = Number(step.dataset.fwbPlanStep);
+      const current = pages.findIndex(page => !page.hidden);
+      if (target > current && Array.from(pages[current].querySelectorAll("input, select")).some(input => !input.reportValidity())) return;
+      pages.forEach((page, index) => { page.hidden = index !== target; });
+      form.querySelector("[data-fwb-plan-step-label]").textContent = `Step ${target + 1} of ${pages.length}`;
+      form.querySelector("[data-fwb-plan-progress]").value = target + 1;
+      pages[target].querySelector("h3")?.focus();
+      return;
+    }
     const viewButton = event.target.closest("[data-plan-view]");
     if (viewButton) {
       const view = viewButton.dataset.planView;
@@ -230,7 +270,7 @@
         saved.unshift(data); preview = null;
         setBusy(false); showView("saved");
         dialog.querySelector(`[data-plan-open="${data.id}"]`)?.click();
-        status("Your weekly plan is saved in Log Workout → Saved Workout Program. Choose a day to start.");
+        status("Your plan is saved under FWB Trainer. Choose a day to start.");
       } catch (error) { setBusy(false); status(`Could not save plan: ${error.message}`, true); }
       return;
     }

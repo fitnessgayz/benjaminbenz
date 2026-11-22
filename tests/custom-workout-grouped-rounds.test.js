@@ -84,22 +84,18 @@ test("renders grouped custom workouts as one full-width card instead of a swipe 
   );
 });
 
-test("Make straight set reverses a grouped exercise through its saved source control", () => {
-  const option = { checked: true };
-  const card = { dataset: { customWorkoutGroupType: "superset" }, querySelector: (selector) =>
-    selector === '[data-custom-workout-inline-group-option="superset"]' ? option : null };
-  const panel = { dataset: { customWorkoutFormat: "single" } };
+test("exercise menu changes the custom workout format through its existing editor", () => {
+  const panel = { dataset: { customWorkoutFormat: "superset" },
+    classList: { contains: (name) => name === "client-workout-panel-custom" } };
   const carousel = { closest: () => panel };
-  const block = { querySelector: () => ({ removeAttribute() {} }) };
+  const block = { querySelector: () => ({ removeAttribute() {}, querySelector: () => null }) };
   let reversed = false;
   const context = vm.createContext({
-    iosLogExerciseContext: () => ({ block, carousel, logElement: {}, card }),
-    normalizeCustomWorkoutFormat: (value) => value,
-    normalizeCustomWorkoutInlineGroupType: (value) => value,
-    updateCustomWorkoutInlineGrouping: (input) => { reversed = input === option && !input.checked; },
+    iosLogExerciseContext: () => ({ block, carousel, logElement: {} }),
+    updateCustomWorkoutFormat: (target, value) => { reversed = target === panel && value === "single"; },
   });
   vm.runInContext(sourceForFunction("handleIosLogExerciseAction"), context);
-  context.handleIosLogExerciseAction({ dataset: { iosLogAction: "straight" } });
+  context.handleIosLogExerciseAction({ dataset: { iosLogAction: "format", iosLogFormat: "single" } });
   assert.equal(reversed, true);
 });
 
@@ -119,7 +115,7 @@ test("uses a compact collapsible EXERCISES editor with per-exercise delete contr
   );
 });
 
-test("renders exercise-first cards with previous values, Log boxes, and grouped rest controls", () => {
+test("renders exercise-first cards with a PR column and per-exercise Rest and Note", () => {
   const groupedMarkup = sourceForFunction("customWorkoutGroupedRoundCardMarkup");
   const sections = sourceForFunction("customWorkoutGroupedSectionsMarkup");
   const rowMarkup = sourceForFunction("customWorkoutGroupedSetRowMarkup");
@@ -128,10 +124,10 @@ test("renders exercise-first cards with previous values, Log boxes, and grouped 
   assert.match(sections, /class="ios-log-exercise-card"/);
   assert.match(sections, /class="ios-log-exercise-header"/);
   assert.match(sections, /class="ios-log-exercise-menu"/);
-  assert.match(sections, /data-ios-log-action="straight"/);
+  assert.match(sections, /data-ios-log-action="format"/);
   assert.match(sections, /hideInfo: true/);
-  assert.match(sections, /data-ios-log-action="add-warmup"/);
-  assert.match(sections, /data-ios-log-action="remove-set"/);
+  assert.match(sections, /data-ios-log-action="collapse"/);
+  assert.doesNotMatch(sections, /data-ios-log-exercise-collapse|data-ios-log-action="add-warmup"|data-ios-log-action="remove-set"/);
   assert.match(sections, /warmUpRows\.map\(\(row, index\) => rowMarkup\(row, warmUpSetType, index\)\)/);
   assert.match(sections, /workingRows\.map\(\(row, index\) => rowMarkup\(row, workingSetType, index\)\)/);
   assert.doesNotMatch(sections, /data-custom-grouped-skip-warmup|data-custom-grouped-log-warmup/);
@@ -144,11 +140,10 @@ test("renders exercise-first cards with previous values, Log boxes, and grouped 
   assert.doesNotMatch(groupedMarkup, /custom-workout-grouped-columns/);
   assert.doesNotMatch(sections, /data-custom-grouped-log-round=/);
   assert.doesNotMatch(sections, /data-one-rm-open|one-rm-pr-trigger|custom-workout-grouped-copy-weights/);
-  assert.match(sections, /data-custom-grouped-rest-adjust="-15"/);
-  assert.match(sections, /data-custom-grouped-rest-toggle/);
-  assert.match(sections, /data-custom-grouped-rest-adjust="15"/);
+  assert.match(sections, /data-ios-log-rest/);
+  assert.match(sections, /data-ios-log-note-toggle/);
   assert.match(rowMarkup, /data-custom-grouped-set-toggle/);
-  assert.match(rowMarkup, /class="ios-log-previous"/);
+  assert.match(rowMarkup, /class="ios-log-previous">\$\{escapeHtml\(row\?\.dataset.personalRecordLabel/);
   assert.match(groupedMarkup, /data-custom-grouped-remove-round/);
   assert.match(groupedMarkup, /data-custom-grouped-round-count/);
   assert.match(groupedMarkup, /data-custom-grouped-add-round/);
@@ -172,6 +167,7 @@ test("visible grouped markup gives each exercise one card and Previous column wi
   `)({
     logElements: ["Bench Press", "Dumbbell Row"].map((name) => ({
       name,
+      dataset: {},
       querySelector: () => null,
       warmups: [],
       working: [{ classList: { contains: () => false } }]
@@ -452,8 +448,8 @@ test("starts the persistent workout timer and rest timer after a successful roun
   assert.match(logRound, /if \(!workoutElapsedTimerState\)/);
   assert.match(logRound, /startWorkoutElapsedTimer\([\s\S]*?startedAfterRound: roundNumber/);
   assert.match(logRound, /customWorkoutGroupedRestAction/);
-  assert.match(logRound, /resetRestTimer\(\)/);
-  assert.match(logRound, /startOrPauseRestTimer\(\)/);
+  assert.match(logRound, /startAutomaticRestTimer\(/);
+  assert.match(sourceForFunction("startAutomaticRestTimer"), /setRestTimerDuration\(seconds\)[\s\S]*?startOrPauseRestTimer\(\)/);
   assert.match(readTimer, /startedAfterRound/);
   assert.match(startTimer, /context\.startedAfterRound/);
   assert.match(renderTimer, /renderCustomWorkoutGroupedTimerPanels\(\)/);
@@ -465,8 +461,8 @@ test("logging or skipping a grouped warm-up leaves automatic rest stopped", () =
   const interactions = sourceForFunction("handleWorkoutInteractions");
 
   assert.match(logWarmUp, /if \(!result\.saved\) return result/);
-  assert.match(logWarmUp, /customWorkoutGroupedRestAction = carousel\.querySelector/);
-  assert.doesNotMatch(logWarmUp, /resetRestTimer\(\)|startOrPauseRestTimer\(\)/);
+  assert.match(logWarmUp, /customWorkoutGroupedRestAction = null/);
+  assert.doesNotMatch(logWarmUp, /startAutomaticRestTimer|resetRestTimer\(\)|startOrPauseRestTimer\(\)/);
   assert.match(logWarmUp, /renderCustomWorkoutGroupedRestControls\(\)/);
   assert.match(skipWarmUp, /Warm-up skipped\. Start the first round when you’re ready\./);
   assert.match(skipWarmUp, /data-custom-grouped-round="1"/);

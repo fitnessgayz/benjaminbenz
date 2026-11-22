@@ -337,8 +337,9 @@ body.client-dashboard-page .client-workout-panel-custom .custom-workout-grouped-
   body.client-dashboard-page #client-workout-panels [data-custom-workout-grouped="true"] .ios-log-exercise-name {
     display: block;
     min-width: 0;
-    overflow-wrap: anywhere;
-    white-space: normal;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap !important;
   }
 
   body.client-dashboard-page #client-workout-panels [data-custom-workout-grouped="true"] .ios-log-exercise-meta {
@@ -533,8 +534,8 @@ body.client-dashboard-page .client-workout-panel-custom .custom-workout-grouped-
 
   body.client-dashboard-page #client-workout-panels [data-custom-workout-grouped="true"] .ios-log-exercise-menu > summary {
     display: grid;
-    width: 38px;
-    height: 38px;
+    width: 44px;
+    height: 44px;
     padding: 0;
     place-items: center;
     border-radius: 9px;
@@ -598,26 +599,7 @@ body.client-dashboard-page .client-workout-panel-custom .custom-workout-grouped-
   }
 
   body.client-dashboard-page #client-workout-panels [data-custom-workout-grouped="true"] .ios-log-exercise-notes {
-    margin: -4px 10px 12px;
-    overflow: hidden;
-    border: 1px solid #363b44;
-    border-radius: 12px;
-    background: #20242a !important;
-    color: #f7f8fa !important;
-  }
-
-  body.client-dashboard-page #client-workout-panels [data-custom-workout-grouped="true"] .ios-log-exercise-notes > summary {
-    min-height: 40px;
-    padding: 10px 12px;
-    color: #c8d0dc !important;
-    font-size: .78rem;
-    font-weight: 750;
-    cursor: pointer;
-  }
-
-  body.client-dashboard-page #client-workout-panels [data-custom-workout-grouped="true"] .ios-log-exercise-notes label {
-    display: block;
-    padding: 0 10px 10px;
+    margin: 0 10px 8px;
   }
 
   body.client-dashboard-page #client-workout-panels [data-custom-workout-grouped="true"] .ios-log-exercise-notes textarea {
@@ -870,8 +852,7 @@ body.client-dashboard-page #client-workout-panels .workout-card-drag-handle {
   touch-action: none;
 }
 
-body.client-dashboard-page #client-workout-panels .workout-card-drag-handle:focus-visible,
-body.client-dashboard-page #client-workout-panels .ios-log-exercise-collapse:focus-visible {
+body.client-dashboard-page #client-workout-panels .workout-card-drag-handle:focus-visible {
   outline: 2px solid #ffd400;
   outline-offset: 2px;
 }
@@ -885,22 +866,7 @@ body.client-dashboard-page #client-workout-panels .is-workout-card-drop-target {
   outline-offset: 3px;
 }
 
-body.client-dashboard-page #client-workout-panels .ios-log-exercise-collapse {
-  display: grid;
-  place-items: center;
-  width: 32px;
-  height: 32px;
-  padding: 0;
-  border: 1px solid #4b525e;
-  border-radius: 9px;
-  background: #24272d;
-  color: #ffd400;
-  font: inherit;
-  font-size: 1.15rem;
-  cursor: pointer;
-}
-
-body.client-dashboard-page #client-workout-panels .ios-log-exercise-block.is-exercise-collapsed :is(.ios-log-exercise-rows, .ios-log-exercise-footer, .ios-log-exercise-notes) {
+body.client-dashboard-page #client-workout-panels .ios-log-exercise-block.is-exercise-collapsed :is(.ios-log-exercise-rows, .ios-log-exercise-footer, .ios-log-exercise-notes, .ios-log-exercise-controls) {
   display: none !important;
 }
 
@@ -911,9 +877,10 @@ body.client-dashboard-page #client-workout-panels .ios-log-exercise-block.is-exe
 
 @media (max-width: 760px) {
   body.client-dashboard-page #client-workout-panels [data-custom-workout-grouped="true"] .ios-log-exercise-header {
-    grid-template-columns: minmax(0, 1fr) 38px 32px !important;
-    align-items: start;
-    gap: 10px 6px;
+    grid-template-columns: minmax(0, 1fr) 44px !important;
+    align-items: center;
+    gap: 8px 6px;
+    min-height: 0;
   }
 
   body.client-dashboard-page #client-workout-panels [data-custom-workout-grouped="true"] .ios-log-exercise-image {
@@ -938,12 +905,110 @@ body.client-dashboard-page #client-workout-panels .ios-log-exercise-block.is-exe
     grid-row: 2;
   }
 
-  body.client-dashboard-page #client-workout-panels [data-custom-workout-grouped="true"] .ios-log-exercise-collapse {
-    grid-column: 3;
-    grid-row: 2;
-  }
-
   body.client-dashboard-page #client-workout-panels .workout-card-drag-handle span {
     font-size: .73rem;
   }
+}
+
+.ios-log-exercise-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px 10px;
+}
+
+.ios-log-rest-control {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding-inline: 8px;
+}
+
+.ios-log-exercise-controls :is(label, button, select) {
+  min-height: 44px;
+  color: var(--ink, #f7f8fa);
+  font: inherit;
+}
+
+.ios-log-exercise-controls :is(label, button) {
+  border: 1px solid var(--line, #48505c);
+  border-radius: 10px;
+  background: var(--surface, #20242a);
+  font-size: .82rem;
+  font-weight: 750;
+}
+
+.ios-log-exercise-controls button { padding-inline: 12px; }
+.ios-log-exercise-controls select { border: 0; background: transparent; }
+.ios-log-exercise-notes:not([hidden]) { display: block; }
+.ios-log-exercise-notes[hidden] { display: none !important; }
+.ios-log-exercise-reorder ol { display: grid; gap: 8px; margin: 12px; padding: 0; list-style: none; }
+.ios-log-exercise-reorder li { display: grid; grid-template-columns: minmax(0, 1fr) 44px 44px; align-items: center; gap: 6px; }
+.ios-log-exercise-reorder li button { min-height: 44px; }
+
+.client-dashboard-page #client-workouts-panel .exercise-inline-media {
+  position: relative;
+  display: block;
+}
+
+.client-dashboard-page #client-workouts-panel .ios-log-exercise-image > .exercise-inline-media {
+  height: 100%;
+}
+
+.client-dashboard-page #client-workouts-panel .exercise-inline-media > .exercise-inline-motion-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-height: none;
+  border-radius: 0;
+  background: #111;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.client-dashboard-page #client-workouts-panel .exercise-inline-motion-image[hidden] {
+  display: none;
+}
+
+.client-dashboard-page #client-workouts-panel .exercise-inline-motion-toggle {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  display: grid;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  place-items: center;
+  border: 1px solid #fff8;
+  border-radius: 50%;
+  background: #17191ce6;
+  color: #fff;
+  cursor: pointer;
+}
+
+.client-dashboard-page #client-workouts-panel .exercise-inline-motion-toggle svg {
+  width: 22px;
+  height: 22px;
+  fill: currentColor;
+}
+
+.client-dashboard-page #client-workouts-panel .exercise-inline-motion-toggle:not([data-playing="true"]) .exercise-inline-motion-pause,
+.client-dashboard-page #client-workouts-panel .exercise-inline-motion-toggle[data-playing="true"] .exercise-inline-motion-play,
+.client-dashboard-page #client-workouts-panel .exercise-inline-motion-status:empty {
+  display: none;
+}
+
+.client-dashboard-page #client-workouts-panel .exercise-inline-motion-status {
+  position: absolute;
+  right: 58px;
+  bottom: 12px;
+  left: 8px;
+  width: fit-content;
+  padding: 4px 7px;
+  border-radius: 5px;
+  background: #17191ce6;
+  color: #fff;
+  font-size: .75rem;
+  pointer-events: none;
 }
