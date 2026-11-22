@@ -59,9 +59,9 @@ const root = path.resolve(__dirname, '..');
         wall.append(card);
       }
     });
-    await page.waitForFunction(() => document.querySelectorAll('[data-client-home-community-feed] article').length === 2);
-    assert.deepEqual(await page.locator('[data-client-home-community-feed] article strong').allTextContents(), ['Recent A', 'Recent B']);
-    assert.equal(await page.locator('[data-community-wall-list] article').count(), 3, 'View all retains the full wall');
+    assert.equal(await page.locator('[data-client-home-community-feed]').count(), 0, 'Home does not embed the Social feed');
+    assert.equal(await page.locator('[data-community-wall-list] article').count(), 3, 'Social retains the full wall');
+    assert.deepEqual(errors, []);
     console.log('Home parity startup rendered without a page error.');
   } finally {
     await browser.close();
