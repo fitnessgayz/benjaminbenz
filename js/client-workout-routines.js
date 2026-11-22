@@ -154,7 +154,7 @@
   }
 
   function coverMarkup(slug, escape) {
-    return slug ? `<img class="client-explore-cover" src="images/routines/${escape(slug)}.webp" width="96" height="64" alt="" loading="lazy" decoding="async">` : "";
+    return slug ? `<img class="client-explore-cover" src="images/routines/${escape(slug)}.webp?v=2" width="96" height="64" alt="" loading="lazy" decoding="async">` : "";
   }
 
   function routineMarkup(routine, escape) {

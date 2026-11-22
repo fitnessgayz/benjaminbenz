@@ -91,10 +91,10 @@ test("keeps the four targeted workouts independent of Benjamin’s levels", () =
 test("uses a cover on every personal routine and generic program family", () => {
   const html = routines.markup(String);
   for (const [id] of days) {
-    assert.equal(html.split(`src="images/routines/benjamin-${id}.webp"`).length - 1, 2);
+    assert.equal(html.split(`src="images/routines/benjamin-${id}.webp?v=2"`).length - 1, 2);
   }
   for (const [id] of targeted) {
-    assert.equal(html.split(`src="images/routines/${id}.webp"`).length - 1, 1);
+    assert.equal(html.split(`src="images/routines/${id}.webp?v=2"`).length - 1, 1);
   }
   for (const [id, family] of [
     ["beginner-push-pull-legs-gym", "push-pull-legs"], ["intermediate-full-body-gym", "full-body"],
@@ -102,12 +102,16 @@ test("uses a cover on every personal routine and generic program family", () => 
     ["power-hypertrophy-4-day", "power-hypertrophy"]
   ]) {
     const header = html.split(`data-client-explore-program="${id}"`)[1].split("</summary>")[0];
-    assert.ok(header.includes(`src="images/routines/${family}.webp"`));
+    assert.ok(header.includes(`src="images/routines/${family}.webp?v=2"`));
   }
   const covers = Array.from(html.matchAll(/<img class="client-explore-cover"[^>]+>/g), match => match[0]);
   assert.equal(covers.length, days.length * 2 + targeted.length + programs.length);
   for (const cover of covers) assert.match(cover, /width="96" height="64" alt="" loading="lazy" decoding="async"/);
-  const imagePaths = new Set(Array.from(html.matchAll(/src="(images\/routines\/[^" ]+\.webp)"/g), match => match[1]));
+  const imagePaths = new Set(covers.map(cover => {
+    const image = cover.match(/src="(images\/routines\/[a-z-]+\.webp)\?v=2"/);
+    assert.ok(image, cover);
+    return image[1];
+  }));
   assert.equal(imagePaths.size, 16);
   for (const imagePath of imagePaths) {
     const bytes = fs.readFileSync(path.join(__dirname, "..", imagePath));
