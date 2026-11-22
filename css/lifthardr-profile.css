@@ -127,6 +127,19 @@
   stroke: var(--profile-link);
 }
 
+/* Profile and the full Stats page share this SVG chart renderer. */
+body.client-dashboard-page :is(#progress-chart, #client-profile-measurement-chart) .progress-chart-value {
+  fill: var(--profile-ink, var(--ink));
+  stroke: var(--profile-card, var(--surface));
+  stroke-width: 3px;
+}
+
+@media (max-width: 480px) {
+  body.client-dashboard-page #progress-chart svg text { font-size: 21px; }
+  body.client-dashboard-page #progress-chart svg .progress-chart-value { font-size: 24px; }
+  body.client-dashboard-page #client-profile-measurement-chart svg .progress-chart-value { font-size: 17px; }
+}
+
 .lifthardr-profile-measurements-actions button {
   min-width: 0;
 }

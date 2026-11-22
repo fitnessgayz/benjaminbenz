@@ -38,6 +38,7 @@ test("recent matched sets supply gray weight and rep hints, with prescription fa
   `)(logs, log);
   assert.deepEqual(api.map((item) => [item.weight.placeholder, item.reps.placeholder]),
     [["50", "10"], ["55", "9"], ["55", "9"]]);
+  assert.deepEqual(api.map((item) => item.dataset.personalRecordLabel), ["100 lb × 4", "100 lb × 4", "100 lb × 4"]);
   assert.ok(api.every((item) => item.weight.value === "" && item.reps.value === ""));
   logs.length = 0;
   // A new exercise still shows the assigned/generated rep prescription.
@@ -54,6 +55,7 @@ test("recent matched sets supply gray weight and rep hints, with prescription fa
   `)(logs, log);
   assert.equal(rows[0].reps.placeholder, "8–12");
   assert.equal(rows[0].weight.placeholder, "0");
+  assert.equal(rows[0].dataset.personalRecordDescription, "No personal record");
 });
 
 test("logging a round copies valid weight and reps only into blank next-round fields", () => {

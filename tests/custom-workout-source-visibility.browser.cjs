@@ -8,9 +8,6 @@ const { chromium, webkit } = require('playwright');
 const root = path.join(__dirname, '..');
 const source = fs.readFileSync(path.join(root, 'js/client-portal.js'), 'utf8');
 const styles = fs.readFileSync(path.join(root, 'css/client-workout-compact-setup.css'), 'utf8');
-const dashboard = fs.readFileSync(path.join(root, 'client-dashboard.html'), 'utf8');
-const messageButton = dashboard.match(/<button class="client-workouts-message-button"[\s\S]*?<\/button>/)?.[0];
-assert.ok(messageButton, 'workout message control exists');
 
 function production(name) {
   const start = source.indexOf(`function ${name}(`);
@@ -26,7 +23,6 @@ const fixture = `<!doctype html><html><head><style>${styles}</style></head><body
     <input data-workout-date value="2026-11-09">
     <div class="workout-compact-source"><h3>Source</h3><button>Past workout</button><button>Saved program</button></div>
   </section>
-  ${messageButton}
   <script>
     let workoutElapsedTimerState = null;
     const todayDate = () => '2026-11-09';
@@ -72,12 +68,7 @@ const fixture = `<!doctype html><html><head><style>${styles}</style></head><body
     await page.evaluate(() => window.setWorkout(null));
     assert.deepEqual(await visible(), { hidden: false, display: 'grid' }, `${name}: fresh workout restores Source`);
 
-    const message = await page.locator('.client-workouts-message-button').evaluate(node => ({
-      hasIcon: Boolean(node.querySelector('svg')),
-      hasVisibleTitle: Boolean(node.querySelector('span:not(.client-dashboard-nav-unread)'))
-    }));
-    assert.deepEqual(message, { hasIcon: true, hasVisibleTitle: false }, `${name}: message control is icon-only`);
     await page.close();
-    console.log(`${name}: Source hides after exercise selection or Start; message control is icon-only`);
+    console.log(`${name}: Source hides after exercise selection or Start`);
   } finally { await browser.close(); }
 })().catch(error => { console.error(error); process.exitCode = 1; });

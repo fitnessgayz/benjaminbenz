@@ -67,38 +67,6 @@ body.client-dashboard-page :is(.client-workout-panel-custom, .client-workout-pan
   flex: none;
   margin: 0 0 0 auto;
 }
-:root body.client-dashboard-page #client-workouts-panel.is-compact-workout-log .client-workouts-message-button {
-  display: inline-flex;
-  flex: none;
-  width: auto;
-  min-width: 0;
-  max-width: none;
-  height: 44px;
-  min-height: 44px;
-  max-height: none;
-  align-items: center;
-  gap: 5px;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  box-shadow: none;
-  color: #59b5ff;
-  font: 700 .86rem/1 var(--font-ui, Inter, sans-serif);
-  white-space: nowrap;
-}
-:root body.client-dashboard-page #client-workouts-panel.is-compact-workout-log .client-workouts-message-button > svg {
-  width: 20px;
-  height: 20px;
-  color: #59b5ff;
-}
-:root body.client-dashboard-page #client-workouts-panel.is-compact-workout-log .client-workouts-message-button > span:not(.client-dashboard-nav-unread) {
-  position: static;
-  width: auto;
-  height: auto;
-  overflow: visible;
-  clip-path: none;
-  white-space: nowrap;
-}
 :root body.client-dashboard-page #client-workouts-panel.is-compact-workout-log .client-workout-panel {
   gap: 20px;
 }

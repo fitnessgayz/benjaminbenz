@@ -23,7 +23,8 @@ const functions = [
   'customWorkoutCarouselGroupMarkup', 'customWorkoutCarouselMarkup',
   'customWorkoutPanelMarkup', 'regroupCustomWorkoutCarousels', 'openCustomWorkoutSetupDialog', 'workoutLoggerSetupMarkup',
   'floatingWorkoutFinishMarkup', 'syncFloatingWorkoutFinishButtons', 'syncWorkoutStartButtons',
-  'clientWorkoutChoiceContent', 'clientWorkoutChoiceDialogMarkup', 'clientWorkoutListMarkup'
+  'clientWorkoutChoiceContent', 'clientWorkoutChoiceDialogMarkup', 'clientWorkoutListMarkup',
+  'exerciseMediaButtonMarkup', 'restTimerMarkup'
 ].map(production).join('\n');
 const fixture = `
 var activeCustomWorkoutFormat = 'single', workoutElapsedTimerState = null;
@@ -53,6 +54,16 @@ function customWorkoutCardMarkup(exercise) { return '<article data-custom-exerci
 function customWorkoutMixedGroups(exercises) { return exercises.map((exercise, index) => ({ index, startIndex: index, format: 'single', items: [exercise] })); }
 function customWorkoutCarousels(panel) { return [...panel.querySelectorAll('[data-custom-workout-carousel]')]; }
 function customWorkoutCarouselCards(carousel) { return carousel ? [...carousel.querySelectorAll('[data-custom-exercise-card]')] : []; }
+const isCoachDashboardPreview = false;
+function exerciseMedia() {
+  return {
+    imageUrl: 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22320%22 height=%22200%22/%3E',
+    motionUrl: 'https://example.test/leg-press.webp',
+    demoUrl: '', instructions: ''
+  };
+}
+function responsiveExerciseImageUrls(value) { return { fullUrl: value, thumbnailUrl: value }; }
+function isBrandedExerciseImage() { return false; }
 ${functions}
 function renderCase(format, names, active) {
   activeCustomWorkoutFormat = format;
@@ -78,7 +89,7 @@ function renderAssignedCase(active) {
   const browserName = process.env.PLAYWRIGHT_BROWSER || 'chromium';
   const browser = await playwright[browserName].launch({ headless: true });
   try {
-    for (const width of [360, 390]) {
+    for (const width of [320, 360, 390]) {
       const page = await browser.newPage({ viewport: { width, height: 844 } });
       await page.setContent(`<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>${styles}</style></head><body class="dashboard-page client-dashboard-page"><nav class="client-dashboard-tabs" aria-label="FWB Training sections"><button>Home</button><button>Workouts</button></nav><button class="client-dashboard-mobile-nav-toggle">Navigation</button><section id="client-workouts-panel" class="is-compact-workout-log"><button data-compact-workout-later hidden>Finish later</button><div id="client-workout-panels"></div></section></body></html>`);
       await page.addScriptTag({ content: fixture });
@@ -198,6 +209,13 @@ function renderAssignedCase(active) {
         `${format} save action moves to the bottom of the viewport`);
         assert.equal(await page.locator('[data-floating-workout-reset-action]').isVisible(), true,
           `${format} Discard is a direct button`);
+        assert.equal(await page.locator('[data-floating-workout-reset-action]').evaluate(button => {
+          const range = document.createRange();
+          range.selectNodeContents(button);
+          const [line] = range.getClientRects();
+          const box = button.getBoundingClientRect();
+          return range.getClientRects().length === 1 && line.left >= box.left && line.right <= box.right;
+        }), true, `${format} the complete Discard Workout label fits inside its button`);
         assert.equal(await page.locator('[data-floating-workout-more]').isVisible(), false,
           `${format} has no duplicate More action`);
       }
@@ -215,6 +233,44 @@ function renderAssignedCase(active) {
         return range.getClientRects().length === 1 && line.right <= select.getBoundingClientRect().left + .5
           && select.getBoundingClientRect().right <= label.getBoundingClientRect().right + .5;
       }), true, 'Rest fits on one line next to the timer selector');
+      await page.evaluate(() => {
+        const panel = document.querySelector('#client-workout-panels .client-workout-panel-custom');
+        panel.insertAdjacentHTML('beforeend', '<section data-custom-workout-grouped="true"><div class="ios-log-exercise-image">'
+          + exerciseMediaButtonMarkup({ name: 'Leg Press' }, { compact: true, inlineMotion: true }) + '</div></section>');
+      });
+      const play = page.getByRole('button', { name: 'Play animation for Leg Press' });
+      const overlay = await play.evaluate(button => {
+        const buttonBox = button.getBoundingClientRect();
+        const artBox = button.parentElement.getBoundingClientRect();
+        return {
+          width: buttonBox.width, height: buttonBox.height,
+          bottomInset: artBox.bottom - buttonBox.bottom, rightInset: artBox.right - buttonBox.right,
+          radius: getComputedStyle(button).borderRadius
+        };
+      });
+      assert.deepEqual(overlay, { width: 44, height: 44, bottomInset: 8, rightInset: 8, radius: '50%' },
+        'Exercise animation plays from a round button in the bottom right of the artwork');
+      await page.evaluate(() => {
+        document.body.insertAdjacentHTML('beforeend', restTimerMarkup());
+        document.querySelector('[data-rest-timer-overlay]').hidden = false;
+      });
+      for (const theme of ['dark', 'light']) {
+        assert.ok(await page.locator('[data-rest-timer-display]').evaluate((digits, theme) => {
+          document.documentElement.dataset.clientTheme = theme;
+          const luminance = color => color.match(/[\d.]+/g).slice(0, 3).reduce((total, component, index) => {
+            const channel = Number(component) / 255;
+            const linear = channel <= .04045 ? channel / 12.92 : ((channel + .055) / 1.055) ** 2.4;
+            return total + linear * [.2126, .7152, .0722][index];
+          }, 0);
+          const fg = luminance(getComputedStyle(digits).color);
+          const bg = luminance(getComputedStyle(digits.closest('.rest-timer-sheet')).backgroundColor);
+          return (Math.max(fg, bg) + .05) / (Math.min(fg, bg) + .05) >= 4.5;
+        }, theme), `Rest timer digits stay readable on the ${theme} theme`);
+      }
+      await page.evaluate(() => {
+        delete document.documentElement.dataset.clientTheme;
+        document.querySelector('[data-rest-timer-overlay]').remove();
+      });
       for (const active of [false, true]) {
         await page.evaluate(active => renderAssignedCase(active), active);
         assert.equal(await page.locator('.client-workout-panel-assigned > .workout-start-control').isVisible(), false,

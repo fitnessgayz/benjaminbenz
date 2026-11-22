@@ -2,6 +2,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
+const vm = require("node:vm");
 
 const root = path.resolve(__dirname, "..");
 const dashboard = fs.readFileSync(path.join(root, "client-dashboard.html"), "utf8");
@@ -115,11 +116,28 @@ test("measurement history uses a keyboard-accessible animated card deck", () => 
   assert.match(styles, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?client-progress-history-deck/);
 });
 
-test("progress graph labels every plotted point with its value and unit", () => {
+test("measurement graphs preserve all points and space readable value and date labels", () => {
   const renderGraph = sourceForFunction("renderProgressGraph");
+  const chartStyles = fs.readFileSync(path.join(root, "css", "lifthardr-profile.css"), "utf8");
+  assert.match(chartStyles, /:is\(#progress-chart, #client-profile-measurement-chart\) \.progress-chart-value\s*\{\s*fill: var\(--profile-ink, var\(--ink\)\)/);
 
-  assert.match(renderGraph, /class="progress-chart-value"/);
-  assert.match(renderGraph, /values\[index\]/);
-  assert.match(renderGraph, /metric\.suffix/);
-  assert.match(styles, /\.progress-chart \.progress-chart-value/);
+  const entries = Array.from({ length: 12 }, (_, index) => ({
+    bodyweight: 158 + index / 2, entry_date: `2026-11-${String(index + 1).padStart(2, "0")}`
+  }));
+  for (const { narrowScreen, maxPoints, dots, labels } of [
+    { narrowScreen: true, maxPoints: 0, dots: 12, labels: 4 },
+    { narrowScreen: false, maxPoints: 0, dots: 12, labels: 8 },
+    { narrowScreen: true, maxPoints: 5, dots: 5, labels: 5 }
+  ]) {
+    const chart = {};
+    const document = { defaultView: { matchMedia: () => ({ matches: narrowScreen }) } };
+    const chartTools = ["progressMetricValue", "progressMetricDetails", "progressMetricNumber", "pointsFor", "circlesFor"];
+    const output = vm.runInNewContext(`${chartTools.map(sourceForFunction).join("\n")}\n${renderGraph}\n` +
+      'renderProgressGraph(entries, { chart, metricKey: "bodyweight", maxPoints }); chart.innerHTML;',
+    { entries, chart, maxPoints, document, escapeHtml: String });
+    assert.equal([...output.matchAll(/class="progress-metric-dot"/g)].length, dots);
+    assert.equal([...output.matchAll(/class="progress-chart-value"/g)].length, labels);
+    assert.equal([...output.matchAll(/>\d{2}-\d{2}<\/text>/g)].length, labels);
+    assert.match(output, /class="progress-chart-value"[^>]*>163\.5 lb<\/text>/);
+  }
 });

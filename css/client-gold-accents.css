@@ -126,29 +126,8 @@
   color: #ffd400;
 }
 
-/* The inbox shortcut is a square control aligned with the Workouts title. */
 :root body.client-dashboard-page .client-workouts-tools {
   margin-bottom: 0;
-}
-
-:root body.client-dashboard-page .client-workouts-message-button {
-  display: grid;
-  flex: 0 0 48px;
-  place-items: center;
-  width: 48px;
-  min-width: 48px;
-  max-width: 48px;
-  height: 48px;
-  min-height: 48px;
-  max-height: 48px;
-  padding: 0;
-  border-radius: 14px;
-}
-
-:root body.client-dashboard-page .client-workouts-message-button > svg {
-  display: block;
-  width: 25px;
-  height: 25px;
 }
 
 @media (max-width: 700px) {

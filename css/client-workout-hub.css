@@ -29,35 +29,6 @@
   margin: 0;
 }
 
-:root body.client-dashboard-page .client-workouts-message-button {
-  display: grid;
-  place-items: center;
-  width: 55px;
-  height: 55px;
-  min-height: 0;
-  padding: 0;
-  border: 1px solid #353a3c;
-  border-radius: 50%;
-  background: #1d2022;
-  color: var(--client-neon);
-  box-shadow: 0 3px 8px #0005;
-}
-
-:root body.client-dashboard-page .client-workouts-message-button > svg {
-  width: 27px;
-  height: 27px;
-  stroke-width: 1.8;
-}
-
-:root body.client-dashboard-page .client-workouts-message-button > span:not(.client-dashboard-nav-unread) {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
-
 :root body.client-dashboard-page #client-workouts-panel:not(.is-choosing-workout) .client-workout-hub-heading {
   display: none !important;
 }
