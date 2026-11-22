@@ -103,7 +103,8 @@
     "20261114192124_add_next_forty_popular_exercise_media.sql",
     "20261121235444_replace_exercise_cards_with_anatomy.sql",
     "20261122011529_consolidate_client_exercise_duplicates.sql",
-    "20261122011802_replace_belt_squat_and_glute_drive_artwork.sql"
+    "20261122011802_replace_belt_squat_and_glute_drive_artwork.sql",
+    "20261122012807_retire_fringe_exercise_entries.sql"
   ],
   "nasmExerciseCatalogMigration": "20261001032427_add_complete_nasm_exercise_library.sql",
   "nasmExerciseCatalogCount": 75,
@@ -11844,6 +11845,7 @@
     },
     {
       "name": "Lateral shuffle → controlled stop",
+      "active": false,
       "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/lateral-shuffle-controlled-stop.webp"
     },
     {
@@ -11961,10 +11963,12 @@
     },
     {
       "name": "Split step → 2 shuffles → controlled stop",
+      "active": false,
       "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/split-step-two-shuffles-controlled-stop.webp"
     },
     {
       "name": "Split step + lateral push-off",
+      "active": false,
       "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/split-step-lateral-push-off.webp"
     },
     {
@@ -12210,6 +12214,7 @@
     },
     {
       "name": "EZ-bar or dumbbell curl",
+      "active": false,
       "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/ez-bar-or-dumbbell-curl.webp"
     },
     {
@@ -12222,6 +12227,7 @@
     },
     {
       "name": "Biking from caltrain",
+      "active": false,
       "imageUrl": "https://qukdfjeupjhpthfbaonv.supabase.co/storage/v1/object/public/exercise-images/approved/2026-11-04/webp-768/biking-from-caltrain-v2.webp"
     },
     {

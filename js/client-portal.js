@@ -745,8 +745,7 @@ function clientProgressPreviewItems(entries = progressEntries) {
   });
 }
 
-function renderClientProgressPreview(entries = progressEntries) {
-  const preview = document.getElementById("client-progress-preview-values");
+function renderClientProgressPreview(entries = progressEntries, preview = document.getElementById("client-progress-preview-values")) {
   if (!preview) return;
 
   const items = clientProgressPreviewItems(entries);
@@ -2630,17 +2629,21 @@ function isBrandedExerciseImage(value) {
 
 function exerciseMediaButtonMarkup(exercise, options = {}) {
   const { imageUrl, motionUrl, demoUrl, instructions } = exerciseMedia(exercise);
-  if (!imageUrl) {
-    const name = String(exercise.name || "").trim();
+  const name = String(exercise.name || "Exercise").trim() || "Exercise";
+  const fallbackArtwork = () => {
     const approved = approvedExerciseForName(name);
     const primary = normalizeMuscle(approved?.primary_muscle)
       || inferExerciseMuscles({ name })[0];
-    if (!primary || !muscleMeta[primary]) return "";
+    const hasMuscleArtwork = Boolean(primary && muscleMeta[primary]);
+    if (!hasMuscleArtwork && !options.defaultArtwork) return "";
     const compact = options.compact ? " exercise-muscle-fallback-compact" : "";
-    return `<span class="exercise-muscle-fallback${compact}"><img src="images/muscle-highlights/library/${primary}.png?v=2" alt="${escapeHtml(name)} highlighted muscles" loading="lazy" decoding="async" /></span>`;
-  }
+    const artwork = hasMuscleArtwork ? primary : "anatomy-base";
+    const alt = hasMuscleArtwork ? `${name} highlighted muscles` : "";
+    return `<span class="exercise-muscle-fallback${compact}"><img src="images/muscle-highlights/library/${artwork}.png?v=2" alt="${escapeHtml(alt)}" loading="lazy" decoding="async" /></span>`;
+  };
+  if (!imageUrl) return fallbackArtwork();
+
   const { fullUrl, thumbnailUrl } = responsiveExerciseImageUrls(imageUrl);
-  const name = String(exercise.name || "Exercise").trim() || "Exercise";
   const compact = options.compact ? " exercise-media-button-compact" : "";
   const brandedCrop = isBrandedExerciseImage(thumbnailUrl)
     ? " exercise-media-button-branded-crop" : "";
@@ -2669,7 +2672,8 @@ function exerciseMediaButtonMarkup(exercise, options = {}) {
       ${options.hideInfo || inlineMotion ? "" : '<span class="exercise-media-info" aria-hidden="true">i</span>'}
     </button>
   `;
-  if (!inlineMotion) return guide;
+  const fallback = options.defaultArtwork ? `<template data-exercise-media-default>${fallbackArtwork()}</template>` : "";
+  if (!inlineMotion) return `${guide}${fallback}`;
   return `<span class="exercise-inline-media" data-exercise-inline-media>
     ${guide}
     <button class="exercise-inline-motion-toggle" type="button" data-exercise-inline-motion-toggle
@@ -2678,7 +2682,7 @@ function exerciseMediaButtonMarkup(exercise, options = {}) {
       <svg class="exercise-inline-motion-pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h4v14H7zm6 0h4v14h-4z"/></svg>
     </button>
     <span class="exercise-inline-motion-status" role="status"></span>
-  </span>`;
+  </span>${fallback}`;
 }
 
 function stopInlineExerciseMotion(media, message = "") {
@@ -3227,28 +3231,27 @@ function circlesFor(points, className) {
     .join("");
 }
 
-function renderProgressGraph(entries) {
-  const chart = document.getElementById("progress-chart");
-
+function renderProgressGraph(entries, { chart = document.getElementById("progress-chart"), metricKey = activeProgressMetric, maxPoints = 0 } = {}) {
   if (!chart) {
     return;
   }
 
-  const metric = progressMetricDetails(activeProgressMetric);
-  const chartEntries = Array.isArray(entries)
-    ? entries.filter((entry) => progressMetricNumber(entry, activeProgressMetric) !== null)
+  const metric = progressMetricDetails(metricKey);
+  const availableEntries = Array.isArray(entries)
+    ? entries.filter((entry) => progressMetricNumber(entry, metricKey) !== null)
     : [];
+  const chartEntries = maxPoints > 0 ? availableEntries.slice(-maxPoints) : availableEntries;
 
   if (chartEntries.length === 0) {
     chart.innerHTML = `<p class="empty-state">${escapeHtml(metric.label)} will appear after it is added to a measurement entry.</p>`;
     return;
   }
 
-  const width = 680;
-  const height = 260;
-  const padding = 46;
-  const metricPoints = pointsFor(chartEntries, activeProgressMetric, width, height, padding);
-  const values = chartEntries.map((entry) => progressMetricNumber(entry, activeProgressMetric));
+  const width = maxPoints > 0 ? 440 : 680;
+  const height = maxPoints > 0 ? 180 : 260;
+  const padding = maxPoints > 0 ? 36 : 46;
+  const metricPoints = pointsFor(chartEntries, metricKey, width, height, padding);
+  const values = chartEntries.map((entry) => progressMetricNumber(entry, metricKey));
   const latestValue = values[values.length - 1];
 
   chart.innerHTML = `
@@ -3270,6 +3273,14 @@ function renderProgressGraph(entries) {
       }).join("")}
     </svg>
   `;
+}
+
+function renderProfileMeasurementChart(entries = progressEntries) {
+  const metric = document.getElementById("client-profile-measurement-metric");
+  const chart = document.getElementById("client-profile-measurement-chart");
+  if (!metric || !chart) return;
+
+  renderProgressGraph(entries, { chart, metricKey: metric.value, maxPoints: 5 });
 }
 
 function renderClientProgressHistory(entries) {
@@ -4313,6 +4324,14 @@ function renderProgress(entries) {
   const safeEntries = Array.isArray(entries) ? entries : [];
   progressEntries = safeEntries;
   renderClientProgressPreview(safeEntries);
+  const profileMeasurements = document.getElementById("client-profile-measurements");
+  if (profileMeasurements) {
+    profileMeasurements.hidden = isCoachDashboardPreview;
+    if (!isCoachDashboardPreview) {
+      renderClientProgressPreview(safeEntries, document.getElementById("client-profile-measurement-values"));
+      renderProfileMeasurementChart(safeEntries);
+    }
+  }
   clientQuarterGoalController?.refresh();
   const latest = safeEntries[safeEntries.length - 1];
 
@@ -4354,7 +4373,7 @@ function setClientProgressPhotoStatus(message) {
 function configureClientProgressAccess() {
   const coachPreview = isCoachPortalEmail(activeDashboardUser?.email);
   const controls = document.querySelectorAll(
-    "#client-checkin-form input, #client-checkin-form textarea, #client-save-progress-button, #client-add-past-progress-button, #client-progress-photo-date, #client-progress-photo-file, #client-progress-photo-note, #upload-client-progress-photo-button, #client-dexa-file, #upload-client-dexa-button, #client-dexa-review-form input, #client-dexa-review-form button"
+    "#client-checkin-form input, #client-checkin-form textarea, #client-save-progress-button, #client-add-past-progress-button, [data-client-profile-measurement-edit], #client-progress-photo-date, #client-progress-photo-file, #client-progress-photo-note, #upload-client-progress-photo-button, #client-dexa-file, #upload-client-dexa-button, #client-dexa-review-form input, #client-dexa-review-form button"
   );
 
   controls.forEach((control) => {
@@ -5046,6 +5065,7 @@ function handleClientDexaReview() {
 
 function handleClientProgressMetricTabs() {
   const tabs = document.getElementById("progress-metric-tabs");
+  document.getElementById("client-profile-measurement-metric")?.addEventListener("change", () => renderProfileMeasurementChart());
 
   tabs?.addEventListener("click", (event) => {
     const button = event.target.closest("[data-progress-metric]");
@@ -7476,9 +7496,16 @@ function exerciseSuggestionRecords() {
     return exerciseSuggestionRecords.cache;
   }
 
+  const labelKey = exerciseNameMatcher?.displayNameKey || ((label) => label.toLowerCase());
+  const retiredLabels = new Set([
+    "Super incoming dumbbell chest press", "Biking from caltrain",
+    "EZ-bar or dumbbell curl", "Lateral shuffle → controlled stop",
+    "Split step → 2 shuffles → controlled stop", "Split step + lateral push-off"
+  ].map(labelKey));
   const suggestions = new Map();
   const addSuggestion = (value, libraryEntry = null) => {
     const name = String(value || "").trim();
+    if (retiredLabels.has(labelKey(name))) return;
     const approvedExercise = libraryEntry || approvedExerciseForName(name);
     const canonicalName = String(approvedExercise?.name || name).trim();
     const key = canonicalName.toLowerCase();
@@ -11240,7 +11267,7 @@ function customWorkoutGroupedSectionsMarkup(carousel) {
     const marker = format === "single"
       ? String(exerciseNumber)
       : `${String.fromCharCode(65 + Math.min(Number(carousel.dataset.customWorkoutGroup || 0), 25))}${exerciseIndex + 1}`;
-    const media = exerciseMediaButtonMarkup({ name: exerciseName }, { compact: true, hideInfo: true, inlineMotion: true });
+    const media = exerciseMediaButtonMarkup({ name: exerciseName }, { compact: true, hideInfo: true, inlineMotion: true, defaultArtwork: true });
     const meta = exerciseLibraryMetaLabel(exerciseName);
     const warmUpRows = customWorkoutGroupedRows(logElement, warmUpSetType);
     const workingRows = customWorkoutGroupedRows(logElement, workingSetType);
@@ -11283,7 +11310,7 @@ function customWorkoutGroupedSectionsMarkup(carousel) {
     return `<div class="ios-log-exercise-block" data-ios-log-exercise-index="${exerciseIndex}">
       <article class="ios-log-exercise-card">
         <header class="ios-log-exercise-header">
-          <span class="ios-log-exercise-image">${media || '<span class="ios-log-exercise-image-placeholder" aria-hidden="true">◼</span>'}</span>
+          <span class="ios-log-exercise-image">${media}</span>
           <span class="ios-log-exercise-heading-copy">
             <button class="ios-log-exercise-title" type="button" data-ios-log-exercise-detail aria-label="Exercise details for ${escapeHtml(exerciseName)}" title="${escapeHtml(exerciseName)}"><span class="ios-log-exercise-marker" aria-hidden="true">${escapeHtml(marker)}</span><span class="ios-log-exercise-name">${escapeHtml(exerciseName)}</span></button>
             ${meta ? `<small class="ios-log-exercise-meta">${escapeHtml(meta)}</small>` : ""}
@@ -20296,9 +20323,19 @@ function handleClientDashboardTabs() {
       window.FWB_CLIENT_COMMUNITY?.showView("connections");
       return;
     }
-    if (event.target.closest("[data-client-progress-stats-open]")) {
+    const statsOpen = event.target.closest("[data-client-progress-stats-open]");
+    if (statsOpen) {
       setClientDashboardTab("stats");
       const panel = document.querySelector('[data-client-dashboard-panel="stats"]');
+      if (statsOpen.dataset?.clientProfileMeasurementEdit !== undefined) {
+        const editor = panel?.querySelector("#client-progress-entry-content");
+        const dateInput = editor?.querySelector('[name="progress_date"]');
+        if (dateInput && !dateInput.disabled) {
+          editor.scrollIntoView({ block: "start" });
+          dateInput.focus({ preventScroll: true });
+          return;
+        }
+      }
       panel?.scrollIntoView({ block: "start" });
       panel?.querySelector('h2[tabindex="-1"]')?.focus({ preventScroll: true });
       return;
@@ -20802,14 +20839,22 @@ function handleIosLogExerciseAction(button) {
 
 function handleWorkoutInteractions() {
   document.addEventListener("error", (event) => {
-    const image = event.target?.closest?.("img[data-exercise-media-fallback]");
-    if (!image || image.dataset.exerciseMediaFallbackUsed === "true") return;
-    const fallback = trustedExerciseImageUrl(image.dataset.exerciseMediaFallback);
-    if (!fallback) return;
-    image.dataset.exerciseMediaFallbackUsed = "true";
-    image.removeAttribute("srcset");
-    image.removeAttribute("sizes");
-    image.src = fallback;
+    const image = event.target?.closest?.("img[data-exercise-media-fallback], .ios-log-exercise-image .exercise-media-button > img");
+    if (!image) return;
+    const fallback = image.dataset.exerciseMediaFallbackUsed !== "true" && trustedExerciseImageUrl(image.dataset.exerciseMediaFallback);
+    if (fallback) {
+      image.dataset.exerciseMediaFallbackUsed = "true";
+      image.removeAttribute("srcset");
+      image.removeAttribute("sizes");
+      image.src = fallback;
+      return;
+    }
+    const defaultArtwork = image.closest(".ios-log-exercise-image")?.querySelector("template[data-exercise-media-default]");
+    if (defaultArtwork) {
+      const media = image.closest(".exercise-inline-media") || image.closest(".exercise-media-button");
+      media.replaceWith(defaultArtwork.content);
+      defaultArtwork.remove();
+    }
   }, true);
 
   document.addEventListener("click", async (event) => {

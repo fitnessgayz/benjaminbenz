@@ -91,12 +91,17 @@ test("an exercise without a demo photo uses highlighted muscle artwork", () => {
   const render = Function("exerciseMedia", "approvedExerciseForName", "normalizeMuscle",
     "inferExerciseMuscles", "muscleMeta", "escapeHtml",
     `${sourceForFunction("exerciseMediaButtonMarkup")}; return exerciseMediaButtonMarkup;`)(
-      () => ({ imageUrl: "" }), () => null, () => "", () => ["lats"], { lats: { label: "Lats" } },
+      () => ({ imageUrl: "" }), () => null, () => "",
+      ({ name }) => name.includes("Pulldown") ? ["lats"] : [], { lats: { label: "Lats" } },
       (value) => String(value)
     );
   const markup = render({ name: "Iso-Lateral Front Lat Pulldown" }, { compact: true });
   assert.match(markup, /images\/muscle-highlights\/library\/lats\.png/);
   assert.match(markup, /Iso-Lateral Front Lat Pulldown highlighted muscles/);
+  const defaultArtwork = render({ name: "Custom movement" }, { compact: true, defaultArtwork: true });
+  assert.match(defaultArtwork, /images\/muscle-highlights\/library\/anatomy-base\.png/);
+  assert.match(defaultArtwork, /alt=""/);
+  assert.equal(render({ name: "Custom movement" }, { compact: true }), "");
 });
 
 test("a superset card lets the client choose the workout's gym without leaving the round", () => {

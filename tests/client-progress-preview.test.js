@@ -33,6 +33,16 @@ test("Progress starts with an inline measurement preview and a direct stats cont
   assert.match(html, /data-client-dashboard-panel="stats" id="client-stats-panel"/);
 });
 
+test("the owner profile puts measurement values, trends and actions directly below the profile identity", () => {
+  const profile = html.match(/data-client-dashboard-panel="profile"[\s\S]*?data-client-dashboard-panel="notifications"/)?.[0] || "";
+  assert.match(profile, /data-lifthardr-profile-name[\s\S]*?id="client-profile-measurements"[\s\S]*?id="client-profile-measurement-values"/);
+  assert.match(profile, /<select id="client-profile-measurement-metric">[\s\S]*?id="client-profile-measurement-chart"/);
+  assert.match(profile, /data-client-profile-measurement-edit aria-controls="client-stats-panel">Update measurements/);
+  assert.match(profile, /data-client-progress-stats-open aria-controls="client-stats-panel">View all stats/);
+  assert.ok(profile.indexOf('id="client-profile-measurements"') < profile.indexOf('id="lifthardr-profile-snapshot"'));
+  assert.match(functionSource("renderProgress"), /profileMeasurements\.hidden = isCoachDashboardPreview/);
+});
+
 test("preview uses the latest saved value for each metric and handles empty history", () => {
   const preview = node("div");
   const context = vm.createContext({
@@ -104,5 +114,25 @@ test("preview button opens the full measurements panel and moves focus to its ti
   clickHandler({ target: { closest(selector) { return selector === "[data-client-progress-stats-open]" ? {} : null; } } });
   assert.deepEqual(destinations, ["stats"]);
   assert.equal(scrolled, true);
+  assert.equal(focused, true);
+});
+
+test("update measurements from Profile focuses the existing editor when editing is available", () => {
+  let handler;
+  let focused = false;
+  const date = { disabled: false, focus() { focused = true; } };
+  const editor = { scrollIntoView() {}, querySelector() { return date; } };
+  const context = vm.createContext({
+    document: {
+      addEventListener(_event, listener) { handler = listener; },
+      querySelector() { return { querySelector() { return editor; } }; }
+    },
+    setClientDashboardTab(name) { assert.equal(name, "stats"); }
+  });
+  vm.runInContext(functionSource("handleClientDashboardTabs"), context);
+  context.handleClientDashboardTabs();
+  handler({ target: { closest(selector) {
+    return selector === "[data-client-progress-stats-open]" ? { dataset: { clientProfileMeasurementEdit: "" } } : null;
+  } } });
   assert.equal(focused, true);
 });
