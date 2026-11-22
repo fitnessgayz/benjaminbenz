@@ -1,4 +1,5 @@
 /* Client portal Appearance control. Dark remains the default. */
+body.client-dashboard-page { --client-input-placeholder-on-light: #58665d; }
 :root[data-client-theme="light"] { background-color: #f4f5ef; color-scheme: light; }
 :root[data-client-theme="light"] body.fwb-client-document-page {
   color-scheme: light;
@@ -389,7 +390,10 @@
   background-color: var(--surface);
   border-color: var(--control-border);
 }
-:root[data-client-theme="light"] body.client-dashboard-page :is(input, textarea)::placeholder { color: #778678; }
+:root[data-client-theme="light"] body.client-dashboard-page :is(input, textarea)::placeholder {
+  color: var(--client-input-placeholder-on-light);
+  opacity: 1;
+}
 :root[data-client-theme="light"] body.client-dashboard-page :is(.client-home-card-note, .client-home-coach-note) {
   color: var(--ink);
   background-color: var(--secondary-surface);

@@ -47,14 +47,35 @@ function contrast(a, b) {
             return { x: bounds.x, right: bounds.right, height: bounds.height, label: tab.innerText.trim(), color: getComputedStyle(tab.querySelector(".client-dashboard-tab-label")).color };
           });
           const clearance = parseFloat(getComputedStyle(document.body).paddingBottom);
+          const loggerFixture = document.createElement("div");
+          loggerFixture.innerHTML = '<div class="custom-workout-carousel" data-carousel-enabled="true"><div class="custom-workout-card"><input placeholder="Exercise title"><textarea placeholder="Add a note"></textarea></div></div>';
+          document.body.appendChild(loggerFixture);
+          const placeholder = input => {
+            const style = getComputedStyle(input, "::placeholder");
+            return { color: style.color, opacity: style.opacity, background: getComputedStyle(input).backgroundColor };
+          };
+          const searchPlaceholder = placeholder(document.getElementById("client-training-log-search-filter"));
+          const carouselPlaceholders = [...loggerFixture.querySelectorAll("input, textarea")].map(placeholder);
+          loggerFixture.remove();
           return { theme: selected, pageWidth: document.documentElement.scrollWidth,
             weekBackground: getComputedStyle(planner).backgroundColor,
             weekLabel: getComputedStyle(label).color,
             nav: { left: box.left, right: box.right, height: box.height, bottom: box.bottom, position: getComputedStyle(nav).position, background: getComputedStyle(nav).backgroundColor },
-            buttons, clearance, viewportHeight: innerHeight };
+            buttons, clearance, searchPlaceholder, carouselPlaceholders, viewportHeight: innerHeight };
         }, theme);
         assert.equal(resolved.pageWidth, width, `${width}px ${theme} viewport overflow`);
         assert.ok(contrast(resolved.weekLabel, resolved.weekBackground) >= 4.5, `Week label: ${JSON.stringify(resolved)}`);
+        if (theme === "light") {
+          assert.equal(resolved.searchPlaceholder.opacity, "1");
+          assert.ok(contrast(resolved.searchPlaceholder.color, resolved.searchPlaceholder.background) >= 4.5, `Light workout log search: ${JSON.stringify(resolved.searchPlaceholder)}`);
+        }
+        if (width <= 760) {
+          for (const placeholder of resolved.carouselPlaceholders) {
+            assert.equal(placeholder.opacity, "1");
+            assert.equal(placeholder.background, "rgb(255, 255, 255)");
+            assert.ok(contrast(placeholder.color, placeholder.background) >= 4.5, `Mobile carousel ${theme}: ${JSON.stringify(placeholder)}`);
+          }
+        }
         if (width <= 900) {
           assert.equal(resolved.nav.position, "fixed");
           assert.ok(resolved.nav.left >= 12 && resolved.nav.right <= width - 12);
@@ -66,7 +87,7 @@ function contrast(a, b) {
             assert.ok(contrast(b.color, resolved.nav.background) >= 4.5);
           }
         }
-        console.log(`GRUNTR ${width}px ${theme}: no overflow, readable Week label and accessible navigation`);
+        console.log(`GRUNTR ${width}px ${theme}: no overflow, readable Week label, placeholders and navigation`);
         await page.close();
       }
     }
