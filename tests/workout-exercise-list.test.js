@@ -4,6 +4,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const vm = require("node:vm");
 const WorkoutLayout = require("../js/workout-layout.js");
+const { displayName } = require("../js/client-exercise-library.js");
 const source = fs.readFileSync(path.join(__dirname, "../js/client-portal.js"), "utf8");
 
 function declaration(name) {
@@ -44,6 +45,7 @@ test("the exercise list offers Add exercise and picker starts with results below
   const dialogSource = declaration("openCustomWorkoutExerciseDialog");
   assert.ok(dialogSource.indexOf('id="custom-workout-picker-search"') < dialogSource.indexOf('id="custom-workout-picker-options"'));
   assert.match(dialogSource, /data-workout-picker-equipment/);
+  assert.match(dialogSource, /data-workout-picker-muscle/);
   assert.ok(dialogSource.indexOf('data-workout-picker-equipment') < dialogSource.indexOf('id="custom-workout-picker-options"'));
   assert.match(dialogSource, /renderCustomWorkoutPickerResults\(dialog\)/);
   for (const name of ["exerciseCard", "customWorkoutGroupNameRowMarkup", "customWorkoutCardMarkup"]) {
@@ -61,6 +63,7 @@ test("picker can browse without a query and filter results by muscle group", () 
   const scope = vm.createContext({
     currentProgram: { workouts: [] }, trainingLogs: [], exerciseNameMatcher: null,
     exerciseSuggestionRecords: () => records,
+    customWorkoutPickerDisplayName: displayName,
     exerciseSuggestionMuscleLabel: (entry) => entry?.primary_muscle || "",
     customExerciseSuggestionMatches: (query) => records.filter((record) => record.name.toLowerCase().includes(query.toLowerCase()))
       .map((record) => ({ name: record.name, muscleLabel: record.libraryEntry.primary_muscle }))
@@ -69,6 +72,7 @@ test("picker can browse without a query and filter results by muscle group", () 
   assert.deepEqual(Array.from(scope.customWorkoutPickerMatches("")).map((item) => item.name), records.map((item) => item.name));
   assert.deepEqual(Array.from(scope.customWorkoutPickerMatches("", "lower")).map((item) => item.name), ["Leg press"]);
   assert.deepEqual(Array.from(scope.customWorkoutPickerMatches("curl", "upper")).map((item) => item.name), ["Bicep curl"]);
+  assert.deepEqual(Array.from(scope.customWorkoutPickerMatches("", "all", "all", "core")).map((item) => item.name), ["Plank"]);
 });
 
 test("picker searches exercise names with muscle labels and filters by equipment", () => {
@@ -80,6 +84,7 @@ test("picker searches exercise names with muscle labels and filters by equipment
   const scope = vm.createContext({
     currentProgram: { workouts: [] }, trainingLogs: [], exerciseNameMatcher: null,
     exerciseSuggestionRecords: () => records,
+    customWorkoutPickerDisplayName: displayName,
     exerciseSuggestionMuscleLabel: (entry) => entry?.primary_muscle || "",
     customExerciseSuggestionMatches: () => []
   });
@@ -87,6 +92,8 @@ test("picker searches exercise names with muscle labels and filters by equipment
   assert.deepEqual(Array.from(scope.customWorkoutPickerMatches("incline chest")).map((item) => item.name),
     ["Incline Barbell Bench Press", "Incline Dumbbell Press"]);
   assert.deepEqual(Array.from(scope.customWorkoutPickerMatches("incline chest", "all", "dumbbell")).map((item) => item.name),
+    ["Incline Dumbbell Press"]);
+  assert.deepEqual(Array.from(scope.customWorkoutPickerMatches("Incline Bench Press (Dumbbell)")).map((item) => item.name),
     ["Incline Dumbbell Press"]);
 });
 

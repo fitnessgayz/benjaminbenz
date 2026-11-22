@@ -50,10 +50,11 @@ test("uses the exercise-first launcher without a separate warm-up section", () =
 
 test("keeps gym selection visible on the exercise-first starter", () => {
   const customPanel = sourceForFunction("customWorkoutPanelMarkup");
+  const setup = sourceForFunction("workoutLoggerSetupMarkup");
   const gym = sourceForFunction("requireWorkoutGymLocation");
 
-  assert.match(customPanel, /<div class="custom-workout-launcher-gym">\$\{workoutGymPickerMarkup\(/);
-  assert.ok(customPanel.indexOf('class="custom-workout-launcher-gym"') < customPanel.indexOf('class="custom-workout-builder"'));
+  assert.match(setup, /<div class="custom-workout-launcher-gym">\$\{workoutGymPickerMarkup\(/);
+  assert.ok(customPanel.indexOf('workoutLoggerSetupMarkup(index,') < customPanel.indexOf('class="custom-workout-builder"'));
   assert.doesNotMatch(gym, /input\.closest\("\.custom-workout-launcher-more"\)/);
 });
 
@@ -62,7 +63,7 @@ test("confirms destructive reset and creates a separate blank workout session", 
   const draft = sourceForFunction("freshCustomWorkoutDraft");
   const title = sourceForFunction("freshCustomWorkoutStorageTitle");
 
-  assert.match(reset, /window\.confirm\([\s\S]*?Saved workout history will not be deleted/);
+  assert.match(reset, /window\.confirm\([\s\S]*?Any sets already saved will stay in your history/);
   assert.match(reset, /cancelTrainingLogAutosaves\(panel\)/);
   assert.match(reset, /clearCustomWorkoutDraft\(\)/);
   assert.match(reset, /activeCustomWorkoutFormat = "single"/);
@@ -98,19 +99,16 @@ test("wires the reset action and cache-busts its assets", () => {
   assert.match(dashboard, /js\/client-portal\.js\?v=[^"\s]*workout-preview-1/);
 });
 
-test("mobile workout bar keeps Reset behind More after starting, for custom and prescribed logs", () => {
+test("custom and prescribed workouts both show Discard and Finish", () => {
   const barMarkup = Function(`${sourceForFunction("floatingWorkoutFinishMarkup")}; return floatingWorkoutFinishMarkup;`)();
   const customBar = barMarkup();
   const assignedBar = barMarkup({ assigned: true });
 
-  for (const markup of [customBar, assignedBar]) {
-    assert.match(markup, /data-floating-workout-reset-action[^>]*>Reset<\/button>/);
-    assert.match(markup, /data-floating-workout-start-action>Start workout<\/button>/);
-    assert.match(markup, /data-floating-workout-more hidden>[\s\S]*More workout actions/);
-    assert.match(markup, /data-floating-workout-finish-action[^>]*hidden>Save &amp; finish workout<\/button>/);
-  }
-  assert.match(customBar, /data-reset-custom-workout/);
-  assert.match(assignedBar, /data-reset-assigned-workout/);
+  assert.match(customBar, /data-reset-custom-workout>Discard Workout<\/button>/);
+  assert.match(customBar, /data-floating-workout-finish-action[^>]*hidden>Finish<\/button>/);
+  assert.match(assignedBar, /data-reset-assigned-workout>Discard Workout<\/button>/);
+  assert.doesNotMatch(assignedBar, /data-floating-workout-more/);
+  assert.match(assignedBar, /data-floating-workout-finish-action[^>]*hidden>Finish<\/button>/);
   assert.match(sourceForFunction("handleWorkoutInteractions"), /resetAssignedWorkout\(resetAssignedWorkoutButton\.closest/);
 });
 

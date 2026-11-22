@@ -16,7 +16,7 @@
     },
     connections: {
       title: 'Train With Your People',
-      body: 'Exchange invite codes, accept connections, and choose which milestones to share.'
+      body: 'Exchange invite codes, accept Squad requests, and choose which milestones to share.'
     },
     challenges: {
       title: 'Move Together',
@@ -88,7 +88,7 @@
         document.dispatchEvent?.(new CustomEvent('fwb:daily-challenge-updated'));
         void root.FWB_COMMUNITY_CONNECTIONS?.refresh();
       } catch (_) {
-        if (version === dailyVersion) dailyStatus.textContent = 'Could not load the challenge. Join Community, then try again.';
+        if (version === dailyVersion) dailyStatus.textContent = 'Could not load the challenge. Set up your Social profile, then try again.';
       } finally { dailyBusy = false; }
     }
 
@@ -111,7 +111,7 @@
         if (version === dailyVersion && userId === request.userId) renderDaily(data?.[0] || null);
       } catch (_) {
         if (version === dailyVersion && userId === request.userId)
-          dailyStatus.textContent = 'Join Community in Connections to start a daily challenge.';
+          dailyStatus.textContent = 'Set up your Social profile in Manage Squad to start a challenge.';
       }
     }
 
@@ -129,25 +129,37 @@
       Object.entries(savedChoices).forEach(([key, enabled]) => { if (choices[key]) choices[key].checked = enabled; });
     }
 
-    function showView(name) {
-      const view = views[name] || views.wall;
+    let lastTab = 'wall';
+    function showView(name, focus = false) {
+      name = Object.hasOwn(views, name) ? name : 'wall';
+      const view = views[name];
+      if (name !== 'connections') lastTab = name;
       panel.querySelectorAll('[data-community-view]').forEach((button) => {
         const active = button.dataset.communityView === name;
         button.setAttribute('aria-selected', String(active));
         button.tabIndex = active ? 0 : -1;
       });
-      panel.querySelector('#client-community-feature-title').textContent = view.title;
-      panel.querySelector('#client-community-feature-body').textContent = view.body;
+      const legacyTitle = panel.querySelector('#client-community-feature-title');
+      const legacyBody = panel.querySelector('#client-community-feature-body');
+      if (legacyTitle) legacyTitle.textContent = view.title;
+      if (legacyBody) legacyBody.textContent = view.body;
       const connections = panel.querySelector('[data-community-connections]');
       const challenges = panel.querySelector('[data-community-challenges]');
       const wall = panel.querySelector('[data-community-wall]');
-      const feature = panel.querySelector('.client-community-feature');
-      if (connections && feature) {
-        if (wall) wall.hidden = name !== 'wall';
-        connections.hidden = name !== 'connections';
-        if (challenges) challenges.hidden = name !== 'challenges';
-        feature.hidden = name !== 'leaderboard';
-        if (name === 'wall' || name === 'connections' || name === 'challenges') void root.FWB_COMMUNITY_CONNECTIONS?.refresh();
+      const feature = panel.querySelector('[data-community-leaderboard]') || panel.querySelector('.client-community-feature');
+      const tabs = panel.querySelector('.client-community-tabs');
+      const manage = panel.querySelector('.client-social-top > [data-community-circles]');
+      if (wall) wall.hidden = name !== 'wall';
+      if (connections) connections.hidden = name !== 'connections';
+      if (challenges) challenges.hidden = name !== 'challenges';
+      if (feature) feature.hidden = name !== 'leaderboard';
+      if (tabs) tabs.hidden = name === 'connections';
+      if (manage) manage.hidden = name === 'connections';
+      if (name === 'leaderboard') void root.FWB_COMMUNITY_CONNECTIONS?.refreshBoard?.();
+      else void root.FWB_COMMUNITY_CONNECTIONS?.refresh();
+      if (focus) {
+        const target = name === 'connections' ? '#client-community-connections-title' : '[data-community-view="' + name + '"]';
+        panel.querySelector(target)?.focus?.();
       }
     }
 
@@ -159,6 +171,8 @@
     panel.addEventListener('click', (event) => {
       const view = event.target.closest('[data-community-view]');
       if (view) { showView(view.dataset.communityView); return; }
+      if (event.target.closest('[data-community-circles]')) { showView('connections', true); return; }
+      if (event.target.closest('[data-community-circles-back]')) { showView(lastTab, true); return; }
       if (event.target.closest('[data-community-save]')) void saveChoices();
     });
     panel.addEventListener('keydown', (event) => {
@@ -185,7 +199,7 @@
         if (request.generation !== generation || userId !== request.userId) return;
         applyChoices(data || {});
         status.textContent = data
-          ? 'Your sharing choices are saved. The FWB Wall follows the choices below.'
+          ? 'Your Feed sharing choices are saved.'
           : 'Your milestones are private. All sharing choices are off.';
         setControls(false);
       } catch (_) {
@@ -231,7 +245,7 @@
 
     showView('wall');
     setControls(true);
-    return { configure(nextClient, nextUserId, isPreview) {
+    return { showView, configure(nextClient, nextUserId, isPreview) {
       const id = String(nextUserId || '').trim();
       if (id === userId && client === nextClient && preview === Boolean(isPreview)) return;
       generation++;

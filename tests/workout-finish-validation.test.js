@@ -24,11 +24,12 @@ test("Finish workout later preserves entries, pauses timers and exposes Resume w
     pauseWorkoutTimersForCompletion: () => calls.push("pause"),
     renderWorkoutResumeActions: () => calls.push("resume"),
     setClientDashboardTab: tab => calls.push(tab),
+    showClientWorkoutPicker: () => calls.push("picker"),
     document: { querySelector: () => ({ focus: () => calls.push("focus") }) }
   };
   vm.runInNewContext(functionSource("finishWorkoutLater"), sandbox);
   sandbox.finishWorkoutLater({ closest: () => panel });
-  assert.deepEqual(calls, ["entries", "draft", "pause", "resume", "home", "focus"]);
+  assert.deepEqual(calls, ["entries", "draft", "pause", "resume", "workouts", "picker", "focus"]);
   calls.length = 0;
   sandbox.workoutElapsedTimerState.workoutTitle = "Another workout";
   sandbox.finishWorkoutLater({ closest: () => panel });
@@ -149,6 +150,7 @@ function fixture({ format = "single", assigned = false, grouped = true } = {}) {
       const number = spec.number ?? (type === "warm_up" ? 1001 : rowIndex + 1);
       const row = new Element("div", {
         setRow: "", setNumber: String(number), setType: type,
+        ...(spec.timed ? { timedSet: "true" } : {}),
         ...(grouped ? { groupedRoundRequired: "true" } : {}),
         ...(spec.reopened ? { customGroupedReopened: "true" } : {}),
         ...(spec.rir !== undefined ? { repsInReserve: String(spec.rir) } : {})
@@ -182,6 +184,16 @@ test("assigned and custom formats finish with logged working sets and optional b
     ]);
     assert.equal(h.issues().length, 0, `${assigned ? "assigned" : "custom"} ${format}`);
   }
+});
+
+test("a copied timed exercise accepts seconds without weight", () => {
+  const h = fixture();
+  h.addExercise("Bike", [{ timed: true, reps: "45", complete: true }]);
+  assert.deepEqual(h.issues(), []);
+  h.addExercise("Plank", [{ timed: true, complete: true }]);
+  const issues = h.issues();
+  assert.equal(issues.length, 1);
+  assert.match(issues[0].message, /enter seconds above 0/);
 });
 
 test("zero working weight is valid for bodyweight exercises when reps are positive", () => {

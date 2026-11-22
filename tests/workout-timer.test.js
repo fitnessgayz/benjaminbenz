@@ -67,7 +67,7 @@ test("set Log box follows reps and starts the rest timer after a saved working s
   assert.match(rowMarkupSource, /aria-pressed="false"/);
   assert.match(interactionsSource, /completeSetButton[\s\S]*classList\.add\("is-complete"\)/);
   assert.match(interactionsSource, /completeSetButton[\s\S]*animateCompletedSet\(setRow\)/);
-  assert.match(interactionsSource, /completeSetButton[\s\S]*await saveTrainingLogRows\(completeSetButton[\s\S]*if \(!isWarmUp && autoRestTimerEnabled\(\)[\s\S]*resetRestTimer\(\)[\s\S]*openRestTimer\(completeSetButton\)[\s\S]*startOrPauseRestTimer\(\)/);
+  assert.match(interactionsSource, /completeSetButton[\s\S]*await saveTrainingLogRows\(completeSetButton[\s\S]*if \(!isWarmUp && autoRestTimerEnabled\(\)[\s\S]*startAutomaticRestTimer\(completeSetButton\)/);
   assert.match(styleSource, /grid-template-columns:\s*52px minmax\(0, 1fr\) minmax\(0, 1fr\) 60px 48px/);
   assert.match(styleSource, /\.set-complete-button\s*\{[^}]*width:\s*48px;[^}]*height:\s*48px;/s);
   assert.match(styleSource, /fwb-set-completion-sweep/);
@@ -77,22 +77,24 @@ test("set Log box follows reps and starts the rest timer after a saved working s
 test("automatic rest can be turned off without removing manual timer controls", () => {
   const readPreference = Function(
     "window", "autoRestTimerPreferenceStorageKey", "autoRestTimerPreferenceFallback",
-    `${sourceForFunction("autoRestTimerEnabled")}; return autoRestTimerEnabled;`
+    `${sourceForFunction("automaticRestSeconds")}; ${sourceForFunction("autoRestTimerEnabled")}; return autoRestTimerEnabled;`
   );
   let stored = null;
-  const enabled = readPreference({ localStorage: { getItem: () => stored } }, "test-auto-rest", true);
-  assert.equal(enabled(), true);
+  const enabled = readPreference({ localStorage: { getItem: () => stored } }, "test-auto-rest", 0);
+  assert.equal(enabled(), false);
   stored = "false";
   assert.equal(enabled(), false);
   stored = "true";
   assert.equal(enabled(), true);
+  stored = "120";
+  assert.equal(enabled(), true);
 
-  assert.match(dashboardSource, /data-auto-rest-timer checked/);
+  assert.match(dashboardSource, /data-auto-rest-timer>[\s\S]*?<option value="0">Off<\/option>/);
   assert.doesNotMatch(sourceForFunction("logCustomWorkoutGroupedWarmUp"), /startOrPauseRestTimer\(\)/);
-  assert.match(sourceForFunction("logCustomWorkoutGroupedRound"), /if \(autoRestTimerEnabled\(\) && workoutGroupReadyForRest\(carousel\.dataset\.customWorkoutFormat, logElements\.length\)\)/);
-  assert.match(sourceForFunction("toggleCustomWorkoutGroupedSet"), /workoutGroupReadyForRest\(carousel\.dataset\.customWorkoutFormat, customWorkoutGroupedLogElements\(carousel\)\.length\)/);
+  assert.match(sourceForFunction("logCustomWorkoutGroupedRound"), /if \(seconds\) startAutomaticRestTimer/);
+  assert.match(sourceForFunction("toggleCustomWorkoutGroupedSet"), /isWarmUp \? 0 : workoutExerciseRestSeconds[\s\S]*?if \(seconds\) \{[\s\S]*?startAutomaticRestTimer/);
   assert.match(sourceForFunction("logCurrentWorkoutCarouselSet"), /completedRound && workoutGroupReadyForRest\(format, cards\.length\) && autoRestTimerEnabled\(\)/);
-  assert.match(sourceForFunction("handleWorkoutInteractions"), /if \(!isWarmUp && autoRestTimerEnabled\(\) && [^\n]+\) \{\s*resetRestTimer\(\);\s*openRestTimer\(completeSetButton\)/);
+  assert.match(sourceForFunction("handleWorkoutInteractions"), /if \(!isWarmUp && autoRestTimerEnabled\(\) && [^\n]+\) \{\s*startAutomaticRestTimer\(completeSetButton\)/);
   assert.match(sourceForFunction("handleWorkoutInteractions"), /if \(setRestButton\) \{[\s\S]*?openRestTimer\(setRestButton\)/);
 });
 
@@ -108,28 +110,29 @@ test("grouped rest waits until the superset or circuit has every exercise slot",
   assert.equal(ready("circuit", 4), true);
 });
 
-test("automatic rest preference saves immediately when the Settings switch changes", () => {
+test("automatic rest preference saves immediately when the Settings duration changes", () => {
   const listeners = {};
   const writes = [];
   let synchronizations = 0;
   const input = {
-    checked: true,
-    addEventListener: (name, callback) => { listeners[name] = callback; }
+    value: "90",
+    matches: (selector) => selector === "[data-auto-rest-timer]"
   };
-  const document = { querySelector: () => input };
+  const document = { addEventListener: (name, callback) => { listeners[name] = callback; } };
   const window = {
     localStorage: { setItem: (key, value) => writes.push([key, value]) },
     addEventListener: (name, callback) => { listeners[name] = callback; }
   };
   const fixture = Function(
     "document", "window", "autoRestTimerPreferenceStorageKey", "syncAutoRestTimerPreference",
-    `let autoRestTimerPreferenceFallback = true; ${sourceForFunction("configureAutoRestTimerPreference")}; configureAutoRestTimerPreference(); return () => autoRestTimerPreferenceFallback;`
+    `let autoRestTimerPreferenceFallback = 0, keepWorkoutScreenAwake = false;
+      const syncWorkoutWakeLock = () => {};
+      ${sourceForFunction("configureAutoRestTimerPreference")}; configureAutoRestTimerPreference(); return () => autoRestTimerPreferenceFallback;`
   )(document, window, "test-auto-rest", () => { synchronizations += 1; });
 
-  input.checked = false;
-  listeners.change();
-  assert.deepEqual(writes, [["test-auto-rest", "false"]]);
-  assert.equal(fixture(), false);
+  listeners.change({ target: input });
+  assert.deepEqual(writes, [["test-auto-rest", "90"]]);
+  assert.equal(fixture(), 90);
   assert.equal(synchronizations, 2);
 });
 
@@ -201,10 +204,10 @@ test("resume state preserves the workout date and exact workout panel", () => {
   assert.doesNotMatch(resumeSource, /startWorkoutElapsedTimer/);
 });
 
-test("floating workout actions switch from Start and Reset to Finish and More", () => {
+test("floating custom workout actions appear after the workout starts automatically", () => {
   const panel = {
     hidden: false,
-    classList: { contains: (name) => name === "is-active" },
+    classList: { contains: (name) => ["is-active", "client-workout-panel-custom"].includes(name) },
     querySelector: (selector) => selector === "[data-workout-start]"
       ? { dataset: { workoutTitle: "Custom Workout" } }
       : selector === "[data-workout-date]" ? { value: "2026-11-06" } : null
@@ -213,12 +216,12 @@ test("floating workout actions switch from Start and Reset to Finish and More", 
     "[data-floating-workout-start-action]", "[data-floating-workout-finish-action]",
     "[data-floating-workout-reset-action]", "[data-floating-workout-more]"
   ].map((selector) => [selector, {
-    hidden: true,
+    hidden: selector !== "[data-floating-workout-reset-action]",
     open: false,
     toggleAttribute: (attribute, hidden) => { controls[selector].hidden = hidden; }
   }]));
   const bar = { hidden: true, closest: () => panel, querySelector: (selector) => controls[selector] };
-  const document = { querySelectorAll: () => [bar] };
+  const document = { querySelectorAll: () => [bar], getElementById: () => null };
   const fixture = Function("document", "todayDate", `
     let workoutElapsedTimerState = null;
     ${sourceForFunction("syncFloatingWorkoutFinishButtons")}
@@ -229,25 +232,25 @@ test("floating workout actions switch from Start and Reset to Finish and More", 
   `)(document, () => "2026-11-06");
 
   fixture.sync();
-  assert.equal(bar.hidden, false);
-  assert.equal(controls["[data-floating-workout-start-action]"].hidden, false);
+  assert.equal(bar.hidden, true);
+  assert.equal(controls["[data-floating-workout-start-action]"].hidden, true);
   assert.equal(controls["[data-floating-workout-reset-action]"].hidden, false);
   assert.equal(controls["[data-floating-workout-finish-action]"].hidden, true);
   fixture.setSession({ workoutTitle: "Custom Workout", workoutDate: "2026-11-06" });
   fixture.sync();
   assert.equal(bar.hidden, false);
   assert.equal(controls["[data-floating-workout-start-action]"].hidden, true);
-  assert.equal(controls["[data-floating-workout-reset-action]"].hidden, true);
+  assert.equal(controls["[data-floating-workout-reset-action]"].hidden, false);
   assert.equal(controls["[data-floating-workout-finish-action]"].hidden, false);
-  assert.equal(controls["[data-floating-workout-more]"].hidden, false);
+  assert.equal(controls["[data-floating-workout-more]"].hidden, true);
   panel.hidden = true;
   fixture.sync();
   assert.equal(bar.hidden, true);
   panel.hidden = false;
   fixture.setSession(null);
   fixture.sync();
-  assert.equal(bar.hidden, false);
-  assert.equal(controls["[data-floating-workout-start-action]"].hidden, false);
+  assert.equal(bar.hidden, true);
+  assert.equal(controls["[data-floating-workout-start-action]"].hidden, true);
   assert.equal(controls["[data-floating-workout-more]"].hidden, true);
 });
 

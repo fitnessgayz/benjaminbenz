@@ -95,7 +95,7 @@ test("straight, superset and circuit rest waits for the final exercise in the ro
       const cards = Array.from({ length: count }, () => ({}));
       const carousel = { dataset: { customWorkoutFormat: format, customWorkoutGroup: "0" }, closest: () => ({ dataset: {} }) };
       let progressCalls = 0;
-      const ctx = context(["logCurrentWorkoutCarouselSet"], {
+    const ctx = context(["logCurrentWorkoutCarouselSet", "startAutomaticRestTimer"], {
         activeCustomWorkoutFormat: format, normalizeCustomWorkoutFormat: (value) => value,
         customWorkoutCarouselCards: () => cards,
         workoutCarouselProgress: () => (++progressCalls === 1
@@ -104,14 +104,14 @@ test("straight, superset and circuit rest waits for the final exercise in the ro
         filledSetCount: () => 1, setWorkoutCarouselAutosaveState() {},
         saveTrainingLogRows: async () => ({ saved: true }),
         workoutGroupReadyForRest: (_format, size) => size >= count, autoRestTimerEnabled: () => true,
-        workoutCarouselRestSeconds: () => 60,
+        automaticRestSeconds: () => 60,
         setRestTimerDuration: () => timerCalls.push("duration"),
         openRestTimer: () => timerCalls.push("open"),
         startOrPauseRestTimer: () => timerCalls.push("start"),
         moveCustomWorkoutCarousel() {}, renderCustomWorkoutCarousel() {}
       });
       await ctx.logCurrentWorkoutCarouselSet({ closest: () => carousel });
-      assert.deepEqual(timerCalls, index === count - 1 ? ["duration", "open", "start"] : [],
+      assert.deepEqual(timerCalls, index === count - 1 ? ["open", "duration", "start"] : [],
         `${format} exercise ${index + 1} of ${count}`);
     }
   }

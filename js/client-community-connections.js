@@ -36,9 +36,21 @@
     const challengeStatus = document.querySelector('[data-community-challenge-status]');
     const moreAvatars = panel.querySelector('[data-community-avatar-more]');
     const extraAvatars = Array.from(panel.querySelectorAll('[data-community-avatar-extra]'));
+    const customAvatar = panel.querySelector('#client-community-custom-emoji');
+    const photoOptions = panel.querySelector('[data-community-photo-options]');
+    const photoCurrent = panel.querySelector('[data-community-photo-current]');
     let client = null, userId = '', preview = false, generation = 0;
     let profile = null, preferences = null, snapshot = null, published = '', busy = false, wallBusy = false;
     let selectedAvatar = 'strength';
+    let acceptedCount = 0, connected = [], photoPath = null, photoMode = 'keep', photoSupported = false;
+
+    const socialAPI = root.FWB_COMMUNITY_SOCIAL;
+    const socialPanel = document.querySelector('[data-client-dashboard-panel="community"]');
+    const social = socialAPI && socialPanel && socialAPI.mount(document, socialPanel, {
+      openCircles: () => root.FWB_CLIENT_COMMUNITY?.showView('connections', true),
+      requestCircle: owner => perform(() => client.rpc('community_request_circle', { p_member_id: owner }), 'Squad request sent.')
+    });
+    const avatarSymbol = id => socialAPI?.avatarSymbol(id) || avatars[id] || avatars.strength;
 
     const current = (id, version) => id === userId && version === generation;
     const message = text => { status.textContent = text; };
@@ -48,8 +60,17 @@
       if (className) node.className = className;
       return node;
     };
+    function updateAcceptedCount(rows, force = false) {
+      const count = rows.filter(row => row.status === 'accepted').length;
+      if (count === acceptedCount && !force) return;
+      acceptedCount = count;
+      document.querySelectorAll?.('[data-client-circle-count]').forEach(node => { node.textContent = String(count); });
+      if (typeof root.CustomEvent === 'function') document.dispatchEvent?.(new root.CustomEvent('fwb:circle-count-updated', { detail: { count } }));
+    }
     function chooseAvatar(id) {
-      selectedAvatar = Object.hasOwn(avatars, id) ? id : 'strength';
+      const custom = typeof id === 'string' && id.startsWith('emoji:') ? socialAPI?.customEmoji(id.slice(6)) : '';
+      selectedAvatar = custom ? 'emoji:' + custom : Object.hasOwn(avatars, id) ? id : 'strength';
+      if (customAvatar) customAvatar.value = custom || '';
       avatarButtons.forEach(button => button.setAttribute('aria-pressed', String(button.dataset.communityAvatar === selectedAvatar)));
       if (extraAvatars.some(button => button.dataset.communityAvatar === selectedAvatar)) setMoreAvatars(true);
     }
@@ -60,6 +81,72 @@
     }
     moreAvatars.addEventListener('click', () => setMoreAvatars(moreAvatars.getAttribute('aria-expanded') !== 'true'));
     avatarButtons.forEach(button => button.addEventListener('click', () => chooseAvatar(button.dataset.communityAvatar)));
+    customAvatar?.addEventListener('input', () => {
+      const emoji = socialAPI?.customEmoji(customAvatar.value);
+      if (emoji) chooseAvatar('emoji:' + emoji);
+    });
+
+    function updatePhotoOptions() {
+      if (!photoOptions || !photoCurrent) return;
+      photoOptions.hidden = !photoSupported;
+      photoCurrent.textContent = photoMode === 'account' ? 'Account photo selected for your next save'
+        : photoMode === 'emoji' || !photoPath ? 'Using an emoji' : 'Using your shared photo';
+    }
+
+    panel.querySelector('[data-community-use-photo]')?.addEventListener('click', () => {
+      if (photoSupported) { photoMode = 'account'; updatePhotoOptions(); }
+    });
+    panel.querySelector('[data-community-use-emoji]')?.addEventListener('click', () => {
+      photoMode = 'emoji'; updatePhotoOptions();
+    });
+
+    async function loadPhoto(requestClient, owner, version) {
+      if (!photoOptions || !requestClient.storage || !root.FWB_PROFILE_PHOTO_STORE) return;
+      try {
+        const result = await requestClient.rpc('community_avatar_paths', { p_user_ids: [owner] });
+        if (!current(owner, version)) return;
+        photoSupported = !result.error && Array.isArray(result.data);
+        const path = photoSupported ? result.data.find(row => row.user_id === owner)?.avatar_photo_path : null;
+        photoPath = socialAPI.avatarPath(path, owner) ? path : null;
+        updatePhotoOptions();
+      } catch (_) { if (current(owner, version)) { photoSupported = false; updatePhotoOptions(); } }
+    }
+
+    async function savePhotoProfile(displayName) {
+      const owner = userId, api = client;
+      const previous = photoPath;
+      const storage = api.storage.from(socialAPI.bucket);
+      let path = photoMode === 'emoji' ? null : previous;
+      let candidate;
+      if (photoMode === 'account') {
+        const store = root.FWB_PROFILE_PHOTO_STORE.createStore({ supabaseClient: api, userId: owner });
+        const { blob } = await store.load();
+        if (!blob) throw new Error('Add a photo to your account before using it here.');
+        if (userId !== owner || client !== api || preview) return { error: new Error('Account changed.') };
+        candidate = owner + '/' + root.crypto.randomUUID().toLowerCase() + '.jpg';
+        const result = await storage.upload(candidate, blob, { contentType: 'image/jpeg', cacheControl: '60', upsert: false });
+        if (result.error) return result;
+        path = candidate;
+      }
+      if (userId !== owner || client !== api || preview) return { error: new Error('Account changed.') };
+      const params = { p_display_name: displayName, p_avatar_id: selectedAvatar, p_avatar_photo_path: path };
+      const result = await api.rpc('community_save_avatar_profile', params);
+      if (result.error) {
+        if (candidate && userId === owner && client === api) {
+          const checked = await api.rpc('community_avatar_paths', { p_user_ids: [owner] });
+          if (!checked.error && Array.isArray(checked.data) && !checked.data.some(row => row.avatar_photo_path === candidate)) {
+            void storage.remove([candidate]);
+          }
+        }
+        return result;
+      }
+      if (userId === owner && client === api) {
+        photoPath = path;
+        photoMode = 'keep';
+        if (previous && previous !== path) void storage.remove([previous]);
+      }
+      return result;
+    }
 
     async function refreshPublic(id, version) {
       if (!feedList || !feedStatus) return;
@@ -71,7 +158,7 @@
       const entries = data || [];
       for (const entry of entries) {
         const card = field('article', '', 'client-community-feed-card');
-        card.append(field('span', avatars[entry.avatar_id] || avatars.strength, 'client-community-avatar'));
+        card.append(field('span', avatarSymbol(entry.avatar_id), 'client-community-avatar'));
         card.append(field('strong', entry.nickname));
         const metrics = [];
         if (entry.xp != null) metrics.push(`${entry.xp} XP`);
@@ -89,6 +176,7 @@
     }
 
     async function refreshWall(id, version) {
+      if (social) return social.refreshFeed();
       if (!wallList || !wallStatus) return;
       wallStatus.textContent = 'Loading the FWB Wall…';
       const { data, error } = await client.rpc('community_wall_feed');
@@ -140,12 +228,12 @@
       if (!challengeList) return;
       challengeList.replaceChildren();
       if (!rows.length) {
-        challengeList.append(field('p', 'No challenges yet. Challenge a connection from the Connections tab.'));
+        challengeList.append(field('p', 'No challenges yet. Choose someone from your Squad to start one.'));
         return;
       }
       for (const challenge of rows) {
         const card = field('article', '', 'client-community-challenge-card');
-        card.append(field('strong', `${avatars[challenge.peer_avatar_id] || avatars.strength} ${challenge.peer_nickname}`));
+        card.append(field('strong', `${avatarSymbol(challenge.peer_avatar_id)} ${challenge.peer_nickname}`));
         const label = challenge.metric === 'workouts' ? 'workouts' : 'gym visits';
         card.append(field('p', `${challenge.target_count} ${label} each in seven days`));
         if (challenge.status === 'pending') {
@@ -188,18 +276,21 @@
     function renderConnections(connections, profiles, achievements, props) {
       list.replaceChildren();
       if (!connections.length) {
-        list.append(field('p', 'No invitations yet. Share your code or enter a friend’s code.'));
+        list.append(field('p', 'No one in your Squad yet. Add someone from the Feed or use an invite code.'));
         return;
       }
+      const photos = [];
       for (const connection of connections) {
         const peer = connection.user_a === userId ? connection.user_b : connection.user_a;
         const peerProfile = profiles.get(peer);
         const name = peerProfile?.display_name || 'Community member';
         const card = field('article', '', 'client-community-connection');
-        card.append(field('span', avatars[peerProfile?.avatar_id] || avatars.strength, 'client-community-avatar'));
+        const avatar = field('span', avatarSymbol(peerProfile?.avatar_id), 'client-community-avatar client-social-avatar');
+        photos.push([peer, avatar]);
+        card.append(avatar);
         card.append(field('strong', name));
         const incoming = connection.status === 'pending' && connection.requested_by !== userId;
-        const statusLabel = connection.status === 'accepted' ? 'Connected' : incoming ? 'Invitation received' : 'Invitation sent';
+        const statusLabel = connection.status === 'accepted' ? 'In your Squad' : incoming ? 'Squad request received' : 'Squad request sent';
         card.append(field('small', statusLabel));
         const achievement = connection.status === 'accepted' ? achievements.get(peer) : null;
         if (achievement && [achievement.xp, achievement.badge_ids, achievement.workout_count, achievement.gym_visit_count]
@@ -242,8 +333,11 @@
           }
           target.value = '3'; target.setAttribute('aria-label', 'Weekly target');
           const send = field('button', 'Send challenge'); send.type = 'button';
-          send.addEventListener('click', () => void perform(() => client.rpc('community_create_challenge',
-            { p_connection_id: connection.id, p_metric: metric.value, p_target_count: Number(target.value) }), 'Challenge sent.'));
+          send.addEventListener('click', async () => {
+            const saved = await perform(() => client.rpc('community_create_challenge',
+              { p_connection_id: connection.id, p_metric: metric.value, p_target_count: Number(target.value) }), 'Challenge sent.');
+            if (saved && social) root.FWB_CLIENT_COMMUNITY?.showView('challenges', true);
+          });
           form.append(metric, target, send);
           card.append(form);
         }
@@ -253,19 +347,29 @@
           accept.addEventListener('click', () => void changeConnection('community_accept_connection', connection.id));
           actions.append(accept);
         }
-        const remove = field('button', incoming ? 'Decline' : connection.status === 'pending' ? 'Cancel invite' : 'Remove');
+        const remove = field('button', incoming ? 'Decline' : connection.status === 'pending' ? 'Cancel request' : 'Remove from Squad');
         remove.type = 'button';
         remove.addEventListener('click', () => void changeConnection('community_remove_connection', connection.id));
         actions.append(remove);
         card.append(actions);
         list.append(card);
       }
+      void social?.enhancePhotos(photos);
+    }
+
+    async function readPeerProfiles(peerIds) {
+      if (!peerIds.length) return { data: [], error: null };
+      if (social) {
+        const result = await client.rpc('community_connection_peer_profiles');
+        if (result.error?.code !== 'PGRST202') return result;
+      }
+      return client.from('client_community_profiles').select('user_id,display_name,avatar_id').in('user_id', peerIds);
     }
 
     async function refresh() {
       if (!client || !userId || preview) return;
       const id = userId, version = ++generation;
-      message('Loading Community…');
+      message('Loading your Squad…');
       void refreshPublic(id, version);
       void refreshWall(id, version);
       try {
@@ -280,13 +384,18 @@
         if (!current(id, version)) return;
         profile = profileResult.data;
         preferences = preferenceResult.data;
+        void loadPhoto(client, id, version);
+        social?.setMembers(profile, connected);
         profileEditor.hidden = false;
         join.hidden = Boolean(profile);
         member.hidden = !profile;
         if (!profile) {
+          connected = [];
+          updateAcceptedCount(connected);
+          social?.setMembers(null, connected);
           list.replaceChildren(); chooseAvatar('strength');
           renderChallenges([]);
-          message('Choose a nickname and avatar to join Community.'); return;
+          message('Choose a nickname and avatar for your Social profile.'); return;
         }
         codeOutput.textContent = profile.invite_code;
         nameInput.value = profile.display_name;
@@ -295,11 +404,15 @@
           .select('id,user_a,user_b,requested_by,status').or(`user_a.eq.${id},user_b.eq.${id}`);
         if (connectionError) throw connectionError;
         const connections = rows || [];
+        if (!current(id, version)) return;
+        connected = connections;
+        updateAcceptedCount(connected);
+        social?.setMembers(profile, connected);
         const peerIds = connections.map(row => row.user_a === id ? row.user_b : row.user_a);
         const acceptedIds = connections.filter(row => row.status === 'accepted')
           .map(row => row.user_a === id ? row.user_b : row.user_a);
         const [profilePeers, shared, propsResult, challengeResult] = await Promise.all([
-          peerIds.length ? client.from('client_community_profiles').select('user_id,display_name,avatar_id').in('user_id', peerIds) : { data: [], error: null },
+          readPeerProfiles(peerIds),
           acceptedIds.length ? client.rpc('community_shared_progress') : { data: [], error: null },
           client.rpc('community_props_summary'),
           client.rpc('community_challenge_summary')
@@ -310,37 +423,40 @@
         ownProps.textContent = String(props.get(id)?.received_count || 0);
         renderConnections(connections, new Map((profilePeers.data || []).map(row => [row.user_id, row])),
           new Map((shared.data || []).map(row => [row.user_id, row])), props);
-        if (challengeResult.error) challengeStatus.textContent = 'Challenges could not load. Try opening Community again.';
+        if (challengeResult.error) challengeStatus.textContent = 'Challenges could not load. Try opening Social again.';
         else { renderChallenges(challengeResult.data || []); challengeStatus.textContent = ''; }
-        message('Only accepted connections can see milestones you choose to share.');
+        message('Squad members can see the milestones you choose to share with them.');
         void publish();
       } catch (_) {
-        if (current(id, version)) message('Community could not load. Try opening this section again.');
+        if (current(id, version)) message('Your Squad could not load. Try opening this section again.');
       }
     }
 
     async function perform(action, success) {
-      if (busy || !client || !userId || preview) return;
+      if (busy || !client || !userId || preview) return false;
       busy = true;
       message('Saving…');
       const id = userId;
       try {
         const result = await action();
         if (result.error) throw result.error;
-        if (id !== userId) return;
-        message(success);
+        if (id !== userId) return false;
         await refresh();
+        if (id !== userId) return false;
+        message(success);
+        return true;
       } catch (error) {
         if (id === userId) {
           const detail = String(error?.message || '');
-          message(/^(Invite code not found|A connection or invitation already exists|Join Community before sending an invitation|An active challenge already exists for this goal)/.test(detail)
+          message(/^(Invite code not found|A connection or invitation already exists|Join Community before sending an invitation|An active challenge already exists for this goal|Add a photo to your account)/.test(detail)
             ? detail : 'Could not save. Please try again.');
         }
+        return false;
       } finally { busy = false; }
     }
 
     function changeConnection(rpc, connectionId) {
-      void perform(() => client.rpc(rpc, { p_connection_id: connectionId }), 'Connection updated.');
+      void perform(() => client.rpc(rpc, { p_connection_id: connectionId }), 'Squad updated.');
     }
     async function giveProps(peer) {
       if (busy || !client || !userId || preview) return;
@@ -357,22 +473,27 @@
       } finally { busy = false; }
     }
 
-    panel.querySelector('[data-community-join-button]').addEventListener('click', () => {
+    function saveProfile(joining) {
       const name = nameInput.value.trim();
       if (name.length < 2 || name.length > 40) { message('Use a nickname between 2 and 40 characters.'); return; }
-      void perform(() => client.from('client_community_profiles')
-        .insert({ user_id: userId, display_name: name, avatar_id: selectedAvatar }), 'Welcome to Community.');
-    });
-    panel.querySelector('[data-community-profile-save]').addEventListener('click', () => {
-      const name = nameInput.value.trim();
-      if (name.length < 2 || name.length > 40) { message('Use a nickname between 2 and 40 characters.'); return; }
-      void perform(() => client.from('client_community_profiles')
-        .update({ display_name: name, avatar_id: selectedAvatar }).eq('user_id', userId), 'Profile updated.');
-    });
+      if (customAvatar?.value.trim()) {
+        const emoji = socialAPI?.customEmoji(customAvatar.value);
+        if (!emoji) { message('Enter one emoji for your avatar.'); return; }
+        selectedAvatar = 'emoji:' + emoji;
+      }
+      void perform(() => {
+        if (photoSupported) return savePhotoProfile(name);
+        const values = { display_name: name, avatar_id: selectedAvatar };
+        return joining ? client.from('client_community_profiles').insert({ user_id: userId, ...values })
+          : client.from('client_community_profiles').update(values).eq('user_id', userId);
+      }, joining ? 'Welcome to Social.' : 'Social profile updated.');
+    }
+    panel.querySelector('[data-community-join-button]').addEventListener('click', () => saveProfile(true));
+    panel.querySelector('[data-community-profile-save]').addEventListener('click', () => saveProfile(false));
     panel.querySelector('[data-community-invite]').addEventListener('click', () => {
       const code = codeInput.value.trim().toUpperCase();
       if (!/^[A-F0-9]{16}$/.test(code)) { message('Enter the 16-character invite code.'); return; }
-      void perform(() => client.rpc('community_request_connection', { p_invite_code: code }), 'Invitation sent.');
+      void perform(() => client.rpc('community_request_connection', { p_invite_code: code }), 'Squad request sent.');
       codeInput.value = '';
     });
     panel.querySelector('[data-community-copy]').addEventListener('click', async () => {
@@ -383,7 +504,7 @@
       void perform(() => client.rpc('community_rotate_invite_code'), 'New invite code ready.');
     });
     panel.querySelector('[data-community-leave]').addEventListener('click', async () => {
-      if (!root.confirm('Leave Community and remove all your connections?')) return;
+      if (!root.confirm('Leave Social and remove all Squad members?')) return;
       await perform(async () => {
         const choice = await client.from('client_community_preferences')
           .update({ xp_opt_in: false, badges_opt_in: false, workout_count_opt_in: false,
@@ -392,12 +513,13 @@
             weekly_challenge_opt_in: false }).eq('user_id', userId);
         if (choice.error) return choice;
         return client.from('client_community_profiles').delete().eq('user_id', userId);
-      }, 'You left Community.');
+      }, 'You left Social.');
       if (!profile) {
         for (const selector of ['#client-community-share-xp', '#client-community-share-badges',
           '#client-community-share-workouts', '#client-community-share-gym-visits', '#client-community-share-public',
           '#client-community-share-wall-activity', '#client-community-share-daily', '#client-community-share-weekly']) {
-          document.querySelector(selector).checked = false;
+          const control = document.querySelector(selector);
+          if (control) control.checked = false;
         }
       }
     });
@@ -407,19 +529,25 @@
         generation++;
         client = nextClient; userId = String(nextUserId || ''); preview = Boolean(isPreview);
         profile = null; preferences = null; snapshot = null; published = ''; wallBusy = false;
+        connected = []; photoPath = null; photoMode = 'keep'; photoSupported = false;
+        updatePhotoOptions(); updateAcceptedCount([], true);
+        social?.configure(client, userId, preview);
         profileEditor.hidden = true; join.hidden = true; member.hidden = true; list.replaceChildren();
         feedList?.replaceChildren(); wallList?.replaceChildren(); challengeList?.replaceChildren();
         if (preview) {
-          if (wallStatus) wallStatus.textContent = 'The FWB Wall is available when the client signs in.';
-          message('Connections are available only when the client signs in.'); return;
+          if (wallStatus) wallStatus.textContent = 'The Feed is available when the client signs in.';
+          message('Sign in to view your Squad.'); return;
         }
         if (!client || !userId) {
-          if (wallStatus) wallStatus.textContent = 'Sign in to see the FWB Wall.';
-          message('Sign in to join Community.'); return;
+          if (wallStatus) wallStatus.textContent = 'Sign in to see the Feed.';
+          message('Sign in to set up your Social profile.'); return;
         }
         void refresh();
+        void social?.refreshBoard();
       },
       refresh,
+      refreshBoard() { return social?.refreshBoard(); },
+      getAcceptedCount() { return acceptedCount; },
       syncAchievements(nextSnapshot) { snapshot = nextSnapshot; void publish(); }
     };
   }

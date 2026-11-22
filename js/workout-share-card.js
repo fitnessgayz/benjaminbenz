@@ -238,7 +238,7 @@
     context.fillStyle = palette.text;
     drawBlock(context, data.praise, left, Math.max(1194, Math.min(cursor + 28, 1204)), innerWidth, { maxSize: 34, minSize: 28, maxLines: 1, weight: 800 });
     context.fillStyle = palette.muted;
-    drawBlock(context, "Fitness with Benjamin · benjaminbenz.com", left, 1294, innerWidth, { maxSize: 24, minSize: 24, maxLines: 1, weight: 700 });
+    drawBlock(context, "GRUNTR · benjaminbenz.com", left, 1294, innerWidth, { maxSize: 24, minSize: 24, maxLines: 1, weight: 700 });
     return { contentBottom: cursor, footerTop: 1194, title, width, height };
   }
 

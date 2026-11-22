@@ -1,8 +1,8 @@
 {
   "id": "/client-dashboard.html",
-  "name": "FWB Training",
-  "short_name": "FWB Training",
-  "description": "Your Fitness with Benjamin training plan, progress, and coach connection.",
+  "name": "GRUNTR",
+  "short_name": "GRUNTR",
+  "description": "Your GRUNTR training plan, progress, and coach connection.",
   "start_url": "/client-dashboard.html",
   "scope": "/",
   "display": "standalone",
@@ -29,28 +29,34 @@
   ],
   "icons": [
     {
-      "src": "/fwb-brand-icon-gold-180-v5.png",
+      "src": "/images/gruntr/icon-180.png",
       "sizes": "180x180",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/fwb-brand-icon-gold-192-v5.png",
+      "src": "/images/gruntr/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/fwb-brand-icon-gold-512-v5.png",
+      "src": "/images/gruntr/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/fwb-brand-icon-gold-1024-v5.png",
+      "src": "/images/gruntr/icon-1024.png",
       "sizes": "1024x1024",
       "type": "image/png",
       "purpose": "any"
+    },
+    {
+      "src": "/images/gruntr/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }

@@ -9,21 +9,21 @@ const tabs = require(path.join(root, 'js/client-bottom-tabs.js'));
 const dashboard = fs.readFileSync(path.join(root, 'client-dashboard.html'), 'utf8');
 const styles = fs.readFileSync(path.join(root, 'css/client-bottom-tabs.css'), 'utf8');
 
-test('bottom tab preferences discard invalid values and keep Settings visible', () => {
+test('bottom tab preferences migrate legacy tabs and keep Profile visible', () => {
   const value = tabs.normalize({
-    order: ['progress', 'progress', 'mystery', 'notifications', 'home'],
-    hidden: ['home', 'notifications', 'mystery', 'home']
+    order: ['workouts', 'progress', 'mystery', 'notifications', 'home', 'workouts'],
+    hidden: ['home', 'notifications', 'profile', 'mystery', 'home']
   });
-  assert.deepEqual(value.order, ['progress', 'notifications', 'home', 'workouts', 'logs']);
+  assert.deepEqual(value.order, ['workouts', 'home', 'community', 'profile']);
   assert.deepEqual(value.hidden, ['home']);
-  assert.deepEqual(tabs.normalize(null).order, ['home', 'workouts', 'logs', 'progress', 'notifications']);
-  assert.deepEqual(tabs.toggleHidden(value, 'notifications'), value);
+  assert.deepEqual(tabs.normalize(null).order, ['home', 'workouts', 'community', 'profile']);
+  assert.deepEqual(tabs.toggleHidden(value, 'profile'), value);
 });
 
 test('shown tabs can move, hide, show, and reset without losing order', () => {
   const defaultState = tabs.normalize();
-  const moved = tabs.moveRelative(defaultState, 'progress', 'home');
-  assert.deepEqual(moved.order, ['progress', 'home', 'workouts', 'logs', 'notifications']);
+  const moved = tabs.moveRelative(defaultState, 'community', 'home');
+  assert.deepEqual(moved.order, ['community', 'home', 'workouts', 'profile']);
   const hidden = tabs.toggleHidden(moved, 'workouts');
   assert.deepEqual(hidden.hidden, ['workouts']);
   assert.deepEqual(tabs.toggleHidden(hidden, 'workouts').order, moved.order);
@@ -44,7 +44,7 @@ test('Settings exposes controls, preview and reset, with a responsive dock', () 
 test('mobile order changes preserve desktop sidebar controls and account preferences', () => {
   const title = { name: 'title' };
   const sidebar = { name: 'sidebar' };
-  const ids = ['home', 'workouts', 'logs', 'progress', 'questionnaire', 'sessions', 'notifications'];
+  const ids = ['home', 'workouts', 'community', 'profile'];
   const nodes = ids.map((id) => ({
     name: id,
     dataset: { clientDashboardTab: id },
@@ -59,7 +59,7 @@ test('mobile order changes preserve desktop sidebar controls and account prefere
   const view = { dataset: {}, addEventListener() {} };
   let mobile = true;
   const preferences = new Map([['fwb_client_bottom_tabs_v1:client-a', JSON.stringify({
-    order: ['progress', 'home', 'workouts', 'logs', 'notifications'], hidden: ['logs']
+    order: ['community', 'home', 'workouts', 'profile'], hidden: ['home', 'profile']
   })]]);
   const document = {
     getElementById() { return view; },
@@ -73,10 +73,10 @@ test('mobile order changes preserve desktop sidebar controls and account prefere
   vm.runInNewContext(fs.readFileSync(path.join(root, 'js/client-bottom-tabs.js'), 'utf8'), { window });
   window.FWB_CLIENT_BOTTOM_TABS.setAccount('client-a');
   assert.deepEqual(nav.children.map((node) => node.name),
-    ['title', 'progress', 'home', 'workouts', 'logs', 'notifications', 'questionnaire', 'sessions', 'sidebar']);
-  assert.equal(nodes.find((node) => node.name === 'logs').classList['is-mobile-tab-hidden'], true);
-  assert.equal(nodes.find((node) => node.name === 'notifications').classList['is-mobile-tab-hidden'], false);
-  assert.equal(nav.style['--client-visible-tab-count'], '4');
+    ['title', 'community', 'home', 'workouts', 'profile', 'sidebar']);
+  assert.equal(nodes.find((node) => node.name === 'home').classList['is-mobile-tab-hidden'], true);
+  assert.equal(nodes.find((node) => node.name === 'profile').classList['is-mobile-tab-hidden'], false);
+  assert.equal(nav.style['--client-visible-tab-count'], '3');
   mobile = false;
   window.FWB_CLIENT_BOTTOM_TABS.setAccount('client-b');
   assert.deepEqual(nav.children.map((node) => node.name), ['title', ...ids, 'sidebar']);

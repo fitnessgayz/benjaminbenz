@@ -1,12 +1,73 @@
-/* Client mobile dock: gold identifies the selected section without a second marker. */
+/* LIFTHARDR floating navigation */
+.client-dashboard-nav-title img {
+  margin-inline-end: 6px;
+  vertical-align: middle;
+  border-radius: 7px;
+}
+
 @media (max-width: 900px) {
+  :root body.client-dashboard-page {
+    --client-mobile-dock-height: 80px;
+  }
+
+  :root body.client-dashboard-page .client-dashboard-tabs,
+  :root[data-client-theme="light"] body.client-dashboard-page .client-dashboard-tabs {
+    inset: auto 0 calc(9px + env(safe-area-inset-bottom));
+    display: grid;
+    grid-template-columns: repeat(var(--client-visible-tab-count, 4), minmax(0, 1fr));
+    width: min(340px, calc(100% - 28px));
+    min-height: 70px;
+    max-width: 340px;
+    margin-inline: auto;
+    padding: 5px;
+    gap: 2px;
+    overflow: visible;
+    background: rgba(36, 40, 46, .93);
+    border: 1px solid rgba(255, 255, 255, .15);
+    border-radius: 999px !important;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, .32);
+    backdrop-filter: blur(12px) saturate(120%);
+    -webkit-backdrop-filter: blur(12px) saturate(120%);
+  }
+
+  :root body.client-dashboard-page .client-dashboard-tabs .client-dashboard-tab[data-client-dashboard-tab],
+  :root[data-client-theme="light"] body.client-dashboard-page .client-dashboard-tabs .client-dashboard-tab[data-client-dashboard-tab] {
+    min-width: 0 !important;
+    min-height: 58px !important;
+    padding: 3px 0 !important;
+    color: #bdc5cc;
+  }
+
+  :root body.client-dashboard-page .client-dashboard-tabs .client-dashboard-tab .client-dashboard-tab-icon,
+  :root[data-client-theme="light"] body.client-dashboard-page .client-dashboard-tabs .client-dashboard-tab .client-dashboard-tab-icon {
+    width: 36px;
+    height: 36px;
+    flex-basis: 36px;
+    padding: 7px;
+    color: inherit;
+    border-radius: 50%;
+  }
+
   :root body.client-dashboard-page .client-dashboard-tabs .client-dashboard-tab.is-active .client-dashboard-tab-icon {
-    color: #101900 !important;
+    color: #101111 !important;
     background: #ffd400 !important;
+  }
+
+  :root body.client-dashboard-page .client-dashboard-tabs .client-dashboard-tab.is-active .client-dashboard-tab-label {
+    color: #ffd400 !important;
   }
 
   :root body.client-dashboard-page .client-dashboard-tabs .client-dashboard-tab.is-active::after {
     display: none !important;
     content: none;
+  }
+}
+
+@media (max-width: 900px) and (prefers-reduced-transparency: reduce) {
+  :root body.client-dashboard-page .client-dashboard-tabs,
+  :root[data-client-theme="light"] body.client-dashboard-page .client-dashboard-tabs {
+    background-color: #24282e;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
   }
 }

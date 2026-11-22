@@ -18,8 +18,7 @@ button, input { font: inherit; }
 .artwork img { position: absolute; top: -14%; right: -3%; width: auto; height: 132%; max-width: none; }
 .site-header, .login-main, .services-main, .site-footer { position: relative; z-index: 1; }
 .site-header { display: flex; align-items: center; justify-content: space-between; gap: 20px; max-width: 1440px; margin: auto; padding: 29px clamp(24px, 5vw, 74px); }
-.brand { display: inline-flex; align-items: center; gap: 9px; color: #fff; text-decoration: none; font-size: 14px; font-weight: 800; line-height: 1.05; letter-spacing: -.035em; }
-.brand img { display: block; width: 83px; height: 46px; object-fit: contain; }
+.brand { display: inline-flex; align-items: center; gap: 9px; color: #fff; text-decoration: none; font-size: 21px; font-weight: 800; line-height: 1.05; letter-spacing: .025em; }
 .header-link { flex: none; padding: 10px 14px; border: 1px solid #53606b; border-radius: 999px; color: var(--blue); background: #1b1d22b8; text-decoration: none; font-size: 12px; font-weight: 750; }
 .header-link span { margin-left: 6px; }
 .eyebrow { margin: 0; color: var(--blue); font-size: 11px; font-weight: 800; letter-spacing: .15em; }
@@ -89,8 +88,7 @@ h1 em, h2 em { color: var(--blue); font-style: normal; }
   .service-card h3 { margin: 10px 0 5px; }
 }
 @media (max-width: 560px) {
-  .brand { font-size: 11px; gap: 3px; }
-  .brand img { width: 70px; height: 40px; }
+  .brand { font-size: 17px; }
   .header-link { padding: 9px 11px; font-size: 11px; }
   .login-main { padding: 18px 20px 28px; }
   .login-panel { padding: 23px 21px; border-radius: 18px; }

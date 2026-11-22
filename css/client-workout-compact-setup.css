@@ -9,7 +9,7 @@ body.client-dashboard-page :is(.client-workout-panel-custom, .client-workout-pan
   color: #f6f7f8;
 }
 :root body.client-dashboard-page #client-workouts-panel.is-compact-workout-log > .client-workout-selection-summary,
-:root body.client-dashboard-page #client-workouts-panel.is-compact-workout-log .client-workout-panel-custom > .panel-heading {
+:root body.client-dashboard-page #client-workouts-panel.is-compact-workout-log :is(.client-workout-panel-custom, .client-workout-panel-cardio) > .panel-heading {
   display: none !important;
 }
 :root body.client-dashboard-page #client-workouts-panel.is-compact-workout-log .client-workout-panel-assigned > .panel-heading {
@@ -138,7 +138,7 @@ body.client-dashboard-page :is(.client-workout-panel-custom, .client-workout-pan
 }
 @media (max-width: 700px) {
   :root body.client-dashboard-page #client-workout-panels [data-custom-workout-grouped="true"] .ios-log-exercise-header {
-    grid-template-columns: minmax(0, 1fr) 38px 32px !important;
+    grid-template-columns: minmax(0, 1fr) 44px !important;
     min-height: 0;
   }
   :root body.client-dashboard-page #client-workout-panels [data-custom-workout-grouped="true"] .ios-log-exercise-image {

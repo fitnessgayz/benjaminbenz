@@ -256,7 +256,7 @@ function useFixture(options = {}) {
     resetRestTimer: () => state.calls.push(["reset-rest"]),
     setClientDashboardTab: (tab) => state.calls.push(["tab", tab]),
     activateClientWorkoutPanel: (index, opts) => state.calls.push(["activate", index, plain(opts)]),
-    startWorkoutElapsedTimer: () => { throw new Error("Using a preview must not start a workout"); },
+    startCustomWorkoutOnEntry: () => state.calls.push(["start"]),
     saveTrainingLog: () => { throw new Error("Using a preview must not save completed exercise logs"); },
     saveTrainingLogs: () => { throw new Error("Using a preview must not save completed exercise logs"); }
   });
@@ -313,7 +313,7 @@ for (const options of [{ replacementMissing: true }, { replacementThrows: true }
   }
 }
 
-test("using a generated preview opens a ready draft without starting a timer or changing saved history", () => {
+test("opening a generated workout starts a timer without changing saved history", () => {
   const fixture = useFixture();
   const beforeLogs = plain(fixture.state.logs);
   assert.equal(fixture.context.useGeneratedClientWorkout(workout()), true);
@@ -323,7 +323,7 @@ test("using a generated preview opens a ready draft without starting a timer or 
   assert.deepEqual(fixture.state.logs, beforeLogs);
   assert.deepEqual(fixture.state.calls.map(([name]) => name), [
     "cancel-autosaves", "store-draft", "replace", "store-format", "close-suggestions", "close-rir",
-    "close-rest", "reset-rest", "tab", "activate", "frame", "scroll", "focus"
+    "close-rest", "reset-rest", "tab", "activate", "start", "frame", "scroll", "focus"
   ]);
   assert.deepEqual(fixture.state.calls.find(([name]) => name === "activate"), ["activate", 4, { scroll: false, focus: false }]);
   assert.deepEqual(fixture.state.calls.find(([name]) => name === "tab"), ["tab", "workouts"]);
@@ -467,11 +467,11 @@ test("generated rest buttons use the prescribed duration while ordinary workout 
   }
 });
 
-test("logging a generated set uses its prescribed rest and mixed groups use the longest generated rest", async () => {
+test("logging a generated round uses the client’s chosen default rest duration", async () => {
   for (const [specs, expectedRest, saved] of [
-    [[{ generatedExercise: "true", exerciseRest: "75 seconds" }], 75, true],
-    [[{ generatedExercise: "true", exerciseRest: "75 seconds" }, { generatedExercise: "true", exerciseRest: "1.5 minutes" }, { exerciseRest: "180 seconds" }], 90, true],
-    [[{ exerciseRest: "180 seconds" }], null, true],
+    [[{ generatedExercise: "true", exerciseRest: "75 seconds" }], 30, true],
+    [[{ generatedExercise: "true", exerciseRest: "75 seconds" }, { generatedExercise: "true", exerciseRest: "1.5 minutes" }, { exerciseRest: "180 seconds" }], 30, true],
+    [[{ exerciseRest: "180 seconds" }], 30, true],
     [[{ generatedExercise: "true", exerciseRest: "75 seconds" }], null, false]
   ]) {
     const calls = [];
@@ -483,7 +483,7 @@ test("logging a generated set uses its prescribed rest and mixed groups use the 
       }, querySelector: () => null };
       return { dataset, rows: [row], querySelectorAll: () => [row] };
     });
-    const restAction = {};
+    const restAction = { querySelector: () => null };
     const carousel = {
       dataset: {},
       querySelector: (selector) => selector.includes("round-action") ? restAction : null
@@ -493,7 +493,7 @@ test("logging a generated set uses its prescribed rest and mixed groups use the 
       dataset: { customGroupedLogRound: "1" },
       closest: (selector) => selector.includes("data-custom-workout-grouped") ? carousel : section
     };
-    const context = evaluate(["setCustomWorkoutGroupedRowComplete", "workoutCarouselRestSeconds", "logCustomWorkoutGroupedRound"], {
+    const context = evaluate(["setCustomWorkoutGroupedRowComplete", "workoutExerciseRestSeconds", "startAutomaticRestTimer", "logCustomWorkoutGroupedRound"], {
       requireWorkoutGymLocation: () => true,
       customWorkoutGroupedStatus: () => ({}),
       customWorkoutGroupedLogElements: () => logs,
@@ -516,6 +516,9 @@ test("logging a generated set uses its prescribed rest and mixed groups use the 
       workoutElapsedTimerState: { running: true },
       renderCustomWorkoutGroupedCard: () => {},
       customWorkoutGroupedRestAction: null,
+      automaticRestSeconds: () => 30,
+      autoRestTimerEnabled: () => true,
+      openRestTimer: () => calls.push(["open"]),
       setRestTimerDuration: (seconds) => calls.push(["duration", seconds]),
       resetRestTimer: () => calls.push(["reset"]),
       startOrPauseRestTimer: () => calls.push(["start"])
@@ -523,9 +526,9 @@ test("logging a generated set uses its prescribed rest and mixed groups use the 
     const result = await context.logCustomWorkoutGroupedRound(button);
     assert.equal(result.saved, saved);
     assert.deepEqual(calls, saved
-      ? [["save"], ...(expectedRest === null ? [] : [["duration", expectedRest]]), ["reset"], ["start"]]
+      ? [["save"], ["open"], ["duration", expectedRest], ["start"]]
       : [["save"]]);
-    assert.equal(context.customWorkoutGroupedRestAction, saved ? restAction : null);
+    assert.equal(context.customWorkoutGroupedRestAction, null);
     assert.ok(logs.every((log) => log.rows[0].classList.contains("is-complete") === saved));
   }
 });

@@ -33,26 +33,31 @@ test("publishes the approved web palette with migration aliases", () => {
 test("client and coach manifests use approved installed identities", () => {
   const client = JSON.parse(read("client.webmanifest"));
   const coach = JSON.parse(read("coach.webmanifest"));
+  const website = JSON.parse(read("site.webmanifest"));
 
   assert.equal(client.id, "/client-dashboard.html");
-  assert.equal(client.name, "FWB Training");
-  assert.equal(client.short_name, "FWB Training");
+  assert.equal(client.name, "GRUNTR");
+  assert.equal(client.short_name, "GRUNTR");
   assert.equal(client.background_color, "#050806");
   assert.equal(client.theme_color, "#050806");
   assert.equal(coach.name, "FWB Coach");
   assert.equal(coach.background_color, "#030D1C");
   assert.equal(coach.theme_color, "#030D1C");
-  assert.deepEqual(client.icons.map((icon) => icon.src), coach.icons.map((icon) => icon.src));
+  assert.ok(client.icons.every((icon) => icon.src.startsWith("/images/gruntr/")));
+  assert.deepEqual(website.icons, client.icons.filter((icon) => icon.purpose === "any"));
+  assert.ok(coach.icons.every((icon) => icon.src.startsWith("/fwb-brand-icon-gold-")));
   assert.deepEqual(client.shortcuts.map(({ name }) => name), ["Start training", "View progress", "Message your coach"]);
   assert.deepEqual(coach.shortcuts.map(({ name }) => name), ["Coach home", "Coach inbox", "Manage clients", "Log a workout", "Exercise library"]);
 });
 
-test("client auth and onboarding stay inside the FWB Training identity", () => {
+test("client auth and onboarding stay inside the GRUNTR identity", () => {
   for (const file of ["client-login.html", "client-signup.html", "client-invite.html"]) {
     const html = read(file);
     assert.match(html, /rel="manifest" href="\/client\.webmanifest"/);
-    assert.match(html, /apple-mobile-web-app-title" content="FWB Training"/);
-    assert.match(html, /application-name" content="FWB Training"/);
+    assert.match(html, /apple-mobile-web-app-title" content="GRUNTR"/);
+    assert.match(html, /application-name" content="GRUNTR"/);
+    assert.match(html, /rel="apple-touch-icon"[^>]*href="\/images\/gruntr\/icon-180\.png"/);
+    assert.match(html, /<a class="brand" href="index\.html#top" aria-label="GRUNTR">\s*<img src="\/images\/gruntr\/icon-192\.png"[^>]*alt=""[^>]*>\s*<strong>GRUNTR<\/strong>/);
   }
 
   const login = read("client-login.html");
@@ -60,15 +65,15 @@ test("client auth and onboarding stay inside the FWB Training identity", () => {
   assert.match(login, /Train with intention\. Feel your progress\./);
   assert.doesNotMatch(login, /Training portal|<h2>Client access<\/h2>/);
   assert.doesNotMatch(read("js/client-portal.js"), /Use the email and password from your coach\./);
-  assert.match(read("client-invite.html"), /Welcome to FWB Training/);
+  assert.match(read("client-invite.html"), /Welcome to GRUNTR/);
 });
 
 test("installed entry pages expose the same product names and deep-ink browser chrome", () => {
   const clientDashboard = read("client-dashboard.html");
-  assert.match(clientDashboard, /apple-mobile-web-app-title" content="FWB Training"/);
-  assert.match(clientDashboard, /application-name" content="FWB Training"/);
-  assert.match(clientDashboard, /<title>FWB Training \| Fitness with Benjamin<\/title>/);
-  assert.match(clientDashboard, /<p class="client-dashboard-nav-title">FWB Training<\/p>/);
+  assert.match(clientDashboard, /apple-mobile-web-app-title" content="GRUNTR"/);
+  assert.match(clientDashboard, /application-name" content="GRUNTR"/);
+  assert.match(clientDashboard, /<title>GRUNTR<\/title>/);
+  assert.match(clientDashboard, /<p class="client-dashboard-nav-title"><img src="\/images\/gruntr\/icon-192\.png"[^>]*> GRUNTR<\/p>/);
   assert.doesNotMatch(clientDashboard, /user-scalable=no|maximum-scale=1/);
 
   for (const file of ["coach-login.html", "coach-admin.html", "coach-workout-log.html"]) {
@@ -84,7 +89,7 @@ test("installed entry pages expose the same product names and deep-ink browser c
   assert.doesNotMatch(read("coach-workout-log.html"), /user-scalable=no|maximum-scale=1/);
 
   const publicManifest = JSON.parse(read("site.webmanifest"));
-  assert.equal(publicManifest.name, "Fitness with Benjamin");
+  assert.equal(publicManifest.name, "GRUNTR");
   assert.equal(publicManifest.background_color, "#050806");
   assert.equal(publicManifest.theme_color, "#050806");
 });
@@ -111,26 +116,25 @@ test("AI-facing pages use FWB Training Assistant without claiming the coach prod
   }
 });
 
-test("PWA manifests use the versioned electric-gold icon set at every declared size", () => {
-  const manifests = ["site.webmanifest", "client.webmanifest", "coach.webmanifest"]
-    .map((file) => JSON.parse(read(file)));
-  const sizes = [180, 192, 512, 1024];
-  for (const size of sizes) {
-    const filename = `fwb-brand-icon-gold-${size}-v5.png`;
-    const png = fs.readFileSync(path.join(root, filename));
-    assert.equal(png.toString("ascii", 1, 4), "PNG");
-    assert.equal(png.readUInt32BE(16), size);
-    assert.equal(png.readUInt32BE(20), size);
-
-    for (const manifest of manifests) {
-      assert.ok(manifest.icons.some((icon) => icon.src === `/${filename}` && icon.sizes === `${size}x${size}`));
+test("PWA manifests provide correctly sized product icons", () => {
+  const sizes = ["180x180", "192x192", "512x512", "1024x1024"];
+  for (const filename of ["site.webmanifest", "client.webmanifest", "coach.webmanifest"]) {
+    const { icons } = JSON.parse(read(filename));
+    assert.ok(sizes.every((size) => icons.some((icon) => icon.sizes === size && icon.purpose === "any")));
+    for (const icon of icons) {
+      const png = fs.readFileSync(path.join(root, icon.src));
+      assert.equal(png.toString("ascii", 1, 4), "PNG");
+      assert.equal(`${png.readUInt32BE(16)}x${png.readUInt32BE(20)}`, icon.sizes);
+    }
+    if (filename === "client.webmanifest") {
+      assert.ok(icons.some((icon) => icon.purpose === "maskable" && icon.sizes === "512x512"));
     }
   }
 });
 
-test("public and native products use the canonical version 5 monogram", () => {
+test("public sharing uses the GRUNTR logo and native products use the canonical monogram", () => {
   const publicHome = read("index.html");
-  assert.match(publicHome, /fwb-brand-icon-gold-1024-v5\.png/);
+  assert.match(publicHome, /property="og:image" content="https:\/\/benjaminbenz\.com\/images\/gruntr\/icon-1024\.png"/);
   assert.match(read("css/style.css"), /fwb-brand-icon-gold-192-v5\.png/);
 
   const nativeIcons = [

@@ -21,12 +21,15 @@ function production(name) {
 const functions = [
   'workoutStartControlMarkup', 'workoutActionsMarkup', 'customWorkoutGroupedRoundCardMarkup',
   'customWorkoutCarouselGroupMarkup', 'customWorkoutCarouselMarkup',
-  'customWorkoutPanelMarkup', 'regroupCustomWorkoutCarousels',
-  'floatingWorkoutFinishMarkup', 'syncFloatingWorkoutFinishButtons', 'syncWorkoutStartButtons'
+  'customWorkoutPanelMarkup', 'regroupCustomWorkoutCarousels', 'openCustomWorkoutSetupDialog', 'workoutLoggerSetupMarkup',
+  'floatingWorkoutFinishMarkup', 'syncFloatingWorkoutFinishButtons', 'syncWorkoutStartButtons',
+  'clientWorkoutChoiceContent', 'clientWorkoutChoiceDialogMarkup', 'clientWorkoutListMarkup'
 ].map(production).join('\n');
 const fixture = `
 var activeCustomWorkoutFormat = 'single', workoutElapsedTimerState = null;
+var customWorkoutFormats = { single: {label: 'Straight sets'}, superset: {label: 'Superset'}, circuit: {label: 'Circuit'} };
 var customWorkoutTitle = 'Custom Workout', fixtureExercises = [];
+var clientPreviewProgramSelected = false, clientAvailablePrograms = [], currentProgram = { workouts: [] };
 function escapeHtml(value) { return String(value ?? '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;'); }
 function todayDate() { return '2026-11-06'; }
 function formatLogDate() { return 'Nov 6, 2026'; }
@@ -35,11 +38,12 @@ function normalizeCustomWorkoutFormat(value) { return value; }
 function normalizeCustomWorkoutInlineGroupType(value) { return value || 'single'; }
 function customWorkoutExercises() { return fixtureExercises; }
 function customWorkoutCopyStatusMessage() { return ''; }
+function syncCustomWorkoutExerciseControls() {}
+function syncAutoRestTimerPreference() {}
 function customWorkoutStorageTitle() { return 'Custom Workout'; }
 function storedWorkoutGymLocation() { return 'Gym'; }
 function workoutGymPickerMarkup() { return ''; }
 function customWorkoutFormatPickerMarkup() { return ''; }
-function clientWorkoutChoiceContent() { return ''; }
 function workoutExerciseListMarkup() { return ''; }
 function workoutCarouselExerciseCode(format, group, index) { return String(index + 1); }
 function setCountFromPrescription() { return 1; }
@@ -62,7 +66,7 @@ function renderCase(format, names, active) {
 function renderAssignedCase(active) {
   workoutElapsedTimerState = active ? { workoutTitle: 'Trainer Workout', workoutDate: todayDate(), running: true } : null;
   document.querySelector('#client-workout-panels').innerHTML = '<section class="client-workout-panel client-workout-panel-assigned is-active" data-custom-workout-title="Trainer Workout">'
-    + '<input data-workout-date value="' + todayDate() + '">'
+    + workoutLoggerSetupMarkup(1, { gymName: 'Gym', format: 'superset' })
     + workoutStartControlMarkup('Trainer Workout')
     + floatingWorkoutFinishMarkup({ assigned: true }) + '</section>';
   syncWorkoutStartButtons();
@@ -75,8 +79,74 @@ function renderAssignedCase(active) {
   try {
     for (const width of [360, 390]) {
       const page = await browser.newPage({ viewport: { width, height: 844 } });
-      await page.setContent(`<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>${styles}</style></head><body class="dashboard-page client-dashboard-page"><nav class="client-dashboard-tabs" aria-label="FWB Training sections"><button>Home</button><button>Workouts</button></nav><button class="client-dashboard-mobile-nav-toggle">Navigation</button><section id="client-workouts-panel"><div id="client-workout-panels"></div></section></body></html>`);
+      await page.setContent(`<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>${styles}</style></head><body class="dashboard-page client-dashboard-page"><nav class="client-dashboard-tabs" aria-label="FWB Training sections"><button>Home</button><button>Workouts</button></nav><button class="client-dashboard-mobile-nav-toggle">Navigation</button><section id="client-workouts-panel" class="is-compact-workout-log"><button data-compact-workout-later hidden>Finish later</button><div id="client-workout-panels"></div></section></body></html>`);
       await page.addScriptTag({ content: fixture });
+      await page.addScriptTag({ path: path.join(root, "js/client-workout-routines.js") });
+      await page.addScriptTag({ path: path.join(root, "js/client-workout-plans.js") });
+      await page.addScriptTag({ path: path.join(root, "js/client-plate-calculator.js") });
+      await page.evaluate(() => {
+        const section = document.getElementById('client-workouts-panel');
+        section.classList.add('is-choosing-workout');
+        section.insertAdjacentHTML('afterbegin', clientWorkoutListMarkup([]));
+      });
+      const selectedTab = await page.getByRole('tab', { name: 'Routines' }).evaluate(button => {
+        const style = getComputedStyle(button);
+        return { radius: style.borderRadius, fill: style.backgroundColor, underline: style.borderBottomColor };
+      });
+      assert.deepEqual(selectedTab, {
+        radius: '0px', fill: 'rgba(0, 0, 0, 0)', underline: 'rgb(237, 191, 0)'
+      }, 'Selected Workout section has a straight gold underline');
+      const routines = page.locator('#workout-hub-routines');
+      assert.equal(await routines.getByRole('button', { name: 'Mobility', exact: true }).count(), 0);
+      const previous = routines.getByRole('button', { name: 'Previous Workout' });
+      const explore = routines.getByRole('button', { name: 'Explore Routines' });
+      const start = routines.getByRole('button', { name: 'Start Workout' });
+      const [startRect, previousRect, exploreRect] = await Promise.all([start.boundingBox(), previous.boundingBox(), explore.boundingBox()]);
+      assert.ok(Math.abs(previousRect.y - exploreRect.y) <= 1, 'Previous and Explore occupy one row');
+      assert.ok(exploreRect.x < previousRect.x, 'Explore comes first');
+      assert.ok(startRect.width >= previousRect.width + exploreRect.width, 'Start is full-width');
+      assert.equal(await start.evaluate(button => getComputedStyle(button).color), 'rgb(21, 21, 19)', 'Start uses dark text on yellow');
+      assert.equal(await page.getByText('Benjamin’s Routine', { exact: true }).count(), 1);
+      await page.evaluate(() => {
+        window.FWB_WORKOUT_GENERATOR = {
+          EQUIPMENT_OPTIONS: [{value: 'full_gym', label: 'Full gym'}],
+          generate: ({intensity, minutes}) => ({intensity, estimatedMinutes: minutes, exercises: [{name: 'Goblet Squat', sets: 3}]})
+        };
+        return window.FWB_CLIENT_WORKOUT_PLANS.open('generate', {});
+      });
+      await page.getByLabel('Fitness experience').selectOption('beginner');
+      await page.getByLabel('Current body weight').fill('160');
+      await page.getByRole('button', { name: 'Continue' }).click();
+      await page.getByLabel('Add cardio?').selectOption('before');
+      await page.getByRole('button', { name: 'Continue' }).click();
+      await page.getByRole('button', { name: 'Preview my plan' }).click();
+      assert.equal(await page.locator('[data-plan-preview] article').count(), 0, 'Health terms are required');
+      await page.getByLabel('I have read and accept the health terms.').check();
+      await page.getByRole('button', { name: 'Preview my plan' }).click();
+      assert.equal(await page.locator('[data-plan-preview]').getByText('Cardio before lifting').count(), 1);
+      assert.equal(await page.locator('[data-plan-preview]').getByText('Current body weight: 160 lb').count(), 1);
+      await page.locator('[data-plan-close]').click();
+      await page.evaluate(() => {
+        const section = document.getElementById('client-workouts-panel');
+        section.classList.remove('is-choosing-workout');
+        section.querySelector('.client-workout-hub').remove();
+      });
+      await page.evaluate(() => {
+        renderCase('single', [], false);
+        openCustomWorkoutSetupDialog(document.querySelector('[data-custom-workout-setup-open="settings"]'));
+      });
+      const workoutSettings = page.getByRole('dialog', { name: 'Workout Settings' });
+      await workoutSettings.getByText('Plate Calculator', { exact: true }).click();
+      const plateResult = workoutSettings.locator('[data-plate-result]');
+      await plateResult.waitFor();
+      assert.equal(await plateResult.textContent(), 'Exact load 135 lb. Per side: 1 × 45 lb.');
+      await workoutSettings.getByLabel('Target weight (lb)', { exact: true }).fill('137.5');
+      assert.match(await plateResult.textContent(), /Nearest available load 135 lb/);
+      await workoutSettings.getByLabel('Weight unit').selectOption('kg');
+      await workoutSettings.getByRole('button', { name: '80 kg', exact: true }).click();
+      await workoutSettings.getByLabel('20 kg pairs', { exact: true }).fill('0');
+      assert.equal(await plateResult.textContent(), 'Exact load 80 kg. Per side: 1 × 25 kg + 1 × 5 kg.');
+      await page.evaluate(() => document.querySelector('[data-custom-workout-setup-dialog]').close());
       for (const [format, names] of [
         ['single', []], ['superset', []], ['circuit', []], ['single', ['Leg Press']],
         ['superset', ['Leg Press', 'Chest Press']],
@@ -93,21 +163,19 @@ function renderAssignedCase(active) {
         const primary = page.locator('.client-workout-panel-custom [data-workout-start]');
         assert.equal(await primary.innerText(), 'Start workout', `${format} initial label`);
         assert.equal(await primary.isVisible(), false, `${format} top Start hidden on mobile`);
-        assert.equal(await page.locator('[data-floating-workout-start-action]').isVisible(), true,
-          `${format} floating Start visible`);
+        assert.equal(await page.locator('[data-floating-workout-start-action]').isVisible(), false,
+          `${format} has no second workout Start control`);
         assert.equal(await page.locator('.client-dashboard-tabs').isVisible(), false,
           `${format} logger setup hides the navigation bar`);
-        assert.equal(await page.locator('[data-floating-workout-reset-action]').isVisible(), true,
-          `${format} floating Reset visible`);
+        assert.equal(await page.locator('[data-floating-workout-reset-action]').isVisible(), false,
+          `${format} Discard stays hidden before a workout starts`);
         assert.equal(await page.locator('[data-floating-workout-more]').isVisible(), false,
           `${format} More hidden until workout starts`);
-        assert.equal(await page.locator('.workout-floating-finish').evaluate(bar => {
-          const rect = bar.getBoundingClientRect();
-          return getComputedStyle(bar).position === 'fixed' && rect.left >= 0 && rect.right <= innerWidth;
-        }), true, `${format} action bar fits the phone viewport`);
-        assert.ok(await page.locator('.workout-floating-finish').evaluate(bar =>
-          innerHeight - bar.getBoundingClientRect().bottom <= 12),
-        `${format} Start action also sits at the bottom of the logger`);
+        const setupChips = page.locator('.custom-workout-setup-summary > button');
+        assert.equal(await setupChips.count(), 3);
+        const dimensions = await setupChips.evaluateAll(chips => chips.map(chip => Math.round(chip.getBoundingClientRect().width)));
+        assert.equal(dimensions[0], dimensions[1], 'Gym and workout format are equal width');
+        assert.equal(dimensions[2], 44, 'Settings is a 44px tap target');
         assert.equal(await page.locator('.client-workout-panel-custom [data-custom-workout-default-finish] .workout-finish-button').isVisible(), false,
           `${format} legacy Finish hidden`);
         assert.equal(await page.locator('.client-workout-panel-custom [data-workout-finish-later]').filter({ visible: true }).count(), 0,
@@ -125,19 +193,10 @@ function renderAssignedCase(active) {
         assert.ok(await page.locator('.workout-floating-finish').evaluate(bar =>
           innerHeight - bar.getBoundingClientRect().bottom <= 12),
         `${format} save action moves to the bottom of the viewport`);
-        assert.equal(await page.locator('[data-floating-workout-reset-action]').isVisible(), false,
-          `${format} direct Reset hidden after Start`);
-        assert.equal(await page.locator('[data-floating-workout-more]').isVisible(), true,
-          `${format} reset menu available after Start`);
-        assert.equal(await page.locator('[data-floating-workout-more] [data-reset-custom-workout]').isVisible(), false,
-          `${format} Reset requires opening More`);
-        await page.locator('[data-floating-workout-more] > summary').click();
-        assert.equal(await page.locator('[data-floating-workout-more] [data-reset-custom-workout]').isVisible(), true,
-          `${format} More reveals Reset`);
-        assert.equal(await page.locator('[data-floating-workout-more] > div').evaluate(menu => {
-          const rect = menu.getBoundingClientRect();
-          return rect.left >= 0 && rect.right <= innerWidth;
-        }), true, `${format} reset menu fits the phone viewport`);
+        assert.equal(await page.locator('[data-floating-workout-reset-action]').isVisible(), true,
+          `${format} Discard is a direct button`);
+        assert.equal(await page.locator('[data-floating-workout-more]').isVisible(), false,
+          `${format} has no duplicate More action`);
       }
       for (const active of [false, true]) {
         await page.evaluate(active => renderAssignedCase(active), active);
@@ -149,26 +208,23 @@ function renderAssignedCase(active) {
           'trainer floating Finish follows session state');
         assert.equal(await page.locator('.client-dashboard-tabs').isVisible(), false,
           'trainer logger keeps navigation hidden before and after Start');
-        assert.equal(await page.locator('[data-floating-workout-more]').isVisible(), active,
-          'trainer reset menu follows session state');
+        assert.equal(await page.locator('[data-floating-workout-more]').count(), 0,
+          'trainer has no duplicate reset menu');
+        assert.equal(await page.locator('[data-floating-workout-reset-action]').innerText(), 'Discard Workout');
+        assert.equal(await page.locator('[data-workout-date]').isVisible(), false, 'trainer date is stored without a visible field');
         if (active) {
-          assert.equal(await page.locator('[data-floating-workout-more] [data-reset-assigned-workout]').isVisible(), false,
-            'trainer Reset requires opening More');
-          await page.locator('[data-floating-workout-more] > summary').click();
-          assert.equal(await page.locator('[data-floating-workout-more] [data-reset-assigned-workout]').isVisible(), true,
-            'trainer More reveals Reset');
-          assert.equal(await page.locator('[data-floating-workout-more] > div').evaluate(menu => {
-            const rect = menu.getBoundingClientRect();
-            return rect.left >= 0 && rect.right <= innerWidth;
-          }), true, 'trainer reset menu fits the phone viewport');
-          await page.evaluate(() => { document.documentElement.dataset.clientTheme = 'light'; });
-          assert.equal(await page.locator('[data-floating-workout-more] > div').evaluate(menu =>
-            getComputedStyle(menu).backgroundColor), 'rgb(255, 255, 255)',
-          'trainer reset menu follows light mode');
-          await page.evaluate(() => { delete document.documentElement.dataset.clientTheme; });
+          assert.equal(await page.locator('[data-reset-assigned-workout]').isVisible(), true,
+            'trainer Discard is a direct button');
+          await page.evaluate(() => openCustomWorkoutSetupDialog(document.querySelector('[data-custom-workout-setup-open="settings"]')));
+          await workoutSettings.getByText('Plate Calculator', { exact: true }).click();
+          assert.equal(await plateResult.textContent(), 'Exact load 135 lb. Per side: 1 × 45 lb.');
+          await page.evaluate(() => document.querySelector('[data-custom-workout-setup-dialog]').close());
         }
       }
-      await page.evaluate(() => { document.querySelector('.workout-floating-finish').hidden = true; });
+      await page.evaluate(() => {
+        document.querySelector('.workout-floating-finish').hidden = true;
+        document.getElementById('client-workouts-panel').classList.remove('is-compact-workout-log');
+      });
       assert.equal(await page.locator('.client-dashboard-tabs').isVisible(), true,
         'navigation returns when the client backs out to the workout picker');
       await page.evaluate(() => { document.getElementById('client-workouts-panel').hidden = true; });

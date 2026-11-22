@@ -591,8 +591,7 @@
     .workout-choice-card, .workout-exercise-card, .client-workout-picker-card,
     .client-workout-picker-card-top, .client-workout-picker-card-body
   ) { background-color: var(--surface) !important; }
-  :root[data-client-theme="light"] body.client-dashboard-page .client-dashboard-tabs,
-  :root[data-client-theme="light"] body.client-dashboard-page:has(#client-workouts-panel.is-choosing-workout:not([hidden])) .client-dashboard-tabs {
+  :root[data-client-theme="light"] body.client-dashboard-page .client-dashboard-tabs {
     color: var(--ink);
     background: rgb(249 251 246 / 95%);
     border-color: var(--line);

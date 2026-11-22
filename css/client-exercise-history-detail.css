@@ -55,6 +55,22 @@
   cursor: pointer;
 }
 .client-exercise-history-body { display: grid; gap: 18px; padding: 20px; }
+.client-exercise-history-sections { display: flex; flex-wrap: wrap; gap: 6px; padding: 12px 20px 0; }
+.client-exercise-history-sections button {
+  min-height: 44px;
+  padding: 4px 10px;
+  border: 1px solid var(--client-settings-line, #506050);
+  color: inherit;
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+}
+.client-exercise-history-sections button[aria-pressed="true"] {
+  border-color: var(--client-settings-accent, #61aaff);
+  background: var(--surface-soft, #18211c);
+}
+.client-exercise-history-guide :is(img, video) { display: block; width: 100%; max-height: 55dvh; object-fit: contain; }
+.client-exercise-history-guide p { white-space: pre-line; }
 .client-exercise-history-filter { display: grid; gap: 6px; font-weight: 850; }
 .client-exercise-history-filter select { width: 100%; min-height: 46px; padding: 9px 12px; border: 1px solid var(--client-settings-line, #506050); border-radius: 12px; color: inherit; background: var(--surface-soft, #18211c); font: inherit; }
 .client-exercise-history-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }

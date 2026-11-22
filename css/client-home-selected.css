@@ -1,5 +1,12 @@
 /* Final Home treatment shared with the selected iOS layout. Keep this last in the cascade. */
+:root body.client-dashboard-page .client-dashboard-nav-title,
 :root body.client-dashboard-page .client-home-topbar h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+:root body.client-dashboard-page .client-home-topbar h2 {
+  justify-content: center;
   color: #f7f8fa !important;
   text-transform: none !important;
   letter-spacing: 0 !important;
