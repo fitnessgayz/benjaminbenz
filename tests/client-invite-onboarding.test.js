@@ -30,7 +30,7 @@ test("presents account, fitness, and optional macro cards as one onboarding deck
   assert.match(styles, /touch-action: pan-y/);
   assert.match(script, /addEventListener\("touchstart"/);
   assert.match(script, /if \(distance < -55\) advanceInviteStep\(\)/);
-  assert.match(html, /Welcome to FWB Training/);
+  assert.match(html, /Welcome to GRUNTR/);
   assert.match(script, /"About your training", "Optional nutrition"/);
   assert.match(html, /name="wants_macros" value="yes" checked/);
 });
